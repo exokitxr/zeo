@@ -495,6 +495,7 @@ class ZBuild {
                 shapeMeshClone.position.copy(zeroVector);
                 shapeMeshClone.quaternion.copy(zeroQuaternion);
                 shapeMeshClone.scale.copy(oneVector);
+                shapeMeshClone.material = _makeShapeMaterial();
                 return shapeMeshClone;
               };
               let mesh = null;
@@ -591,12 +592,15 @@ class ZBuild {
               const _makeBuildState = () => ({
                 grabbed: false,
                 building: false,
-                pressed: false,
                 touchStart: null,
                 touchCurrent: null,
+                pressStart: null,
+                pressCurrent: null,
                 menu: 'shape',
                 angle: 0,
                 shape: 'box',
+                rotation: new THREE.Quaternion(),
+                scale: 0,
                 color: '',
               });
               const buildStates = {
@@ -630,9 +634,11 @@ class ZBuild {
                   if (grabbed) {
                     buildState.building = true;
 
-                    const {shape} = buildState;
+                    const {shape, rotation, scale} = buildState;
                     mesh = _makeShapeMesh({
                       shapeType: shape,
+                      rotation,
+                      scale,
                     });
                     const {shapeMeshContainer} = toolMesh;
                     shapeMeshContainer.add(mesh);
@@ -657,6 +663,8 @@ class ZBuild {
                     mesh.quaternion.copy(rotation);
                     mesh.scale.copy(scale);
 
+                    mesh = null;
+
                     entityApi.save();
                   }
                 }
@@ -668,11 +676,15 @@ class ZBuild {
                 const {grabbed} = buildState;
 
                 if (grabbed) {
-                  buildState.pressed = true;
+                  const {gamepads} = pose.getStatus();
+                  const gamepad = gamepads[side];
+                  const {axes} = gamepad;
+                  buildState.pressStart = new THREE.Vector2().fromArray(axes);
                   buildState.touchStart = null;
 
                   const {menuMesh} = toolMesh;
-                  menuMesh.rotation.z = 0;
+                  const {angle} = buildState;
+                  menuMesh.rotation.z = angle;
 
                   e.stopImmediatePropagation();
                 }
@@ -686,9 +698,27 @@ class ZBuild {
                 const {grabbed} = buildState;
 
                 if (grabbed) {
-                  buildState.pressed = false;
+                  const {menu} = buildState;
 
-                  // XXX handle pressing the current menu here
+                  if (menu === 'rotate') {
+                    const {pressStart, pressCurrent, rotation} = buildState;
+                    const pressDiff = pressCurrent.clone().sub(pressStart);
+                    const xAngle = _padDiffToAngle(pressDiff.x);
+                    const yAngle = _padDiffToAngle(-pressDiff.y);
+
+                    rotation.premultiply(
+                      new THREE.Quaternion().setFromEuler(new THREE.Euler(yAngle, 0, xAngle, camera.rotation.order))
+                    );
+                  } else if (menu === 'resize') {
+                    const {pressStart, pressCurrent, scale} = buildState;
+                    const pressDiff = pressCurrent.clone().sub(pressStart);
+                    const yValue = pressDiff.y;
+
+                    buildState.scale = scale + yValue;
+                  }
+
+                  buildState.pressStart = null;
+                  buildState.pressCurrent = null;
 
                   e.stopImmediatePropagation();
                 }
@@ -704,18 +734,18 @@ class ZBuild {
                 },
                 {
                   menu: 'color',
-                  angle: Math.PI / 2 * 3,
+                  angle: Math.PI / 2,
                 },
                 {
-                  menu: 'resize',
+                  menu: 'rotate',
                   angle: Math.PI,
                 },
                 {
-                  menu: 'scale',
-                  angle: Math.PI / 2,
+                  menu: 'resize',
+                  angle: Math.PI / 2 * 3,
                 },
               ];
-              const _touchDiffToAngle = touchDiff => (-touchDiff.x / 2) * Math.PI;
+              const _padDiffToAngle = v => (v / 2) * Math.PI;
               const _angleDiff = (a, b) => {
                 let diff = b - a;
                 diff = mod(diff + Math.PI, Math.PI * 2) - Math.PI;
@@ -725,89 +755,125 @@ class ZBuild {
                 const {gamepads} = pose.getStatus();
 
                 SIDES.forEach(side => {
-                  const buildState = buildStates[side];
-                  const {grabbed} = buildState;
+                  const gamepad = gamepads[side];
 
-                  if (grabbed) {
-                    const gamepad = gamepads[side];
+                  if (gamepad) {
+                    const buildState = buildStates[side];
+                    const {grabbed} = buildState;
 
-                    if (gamepad) {
+                    if (grabbed) {
                       const {buttons: {pad: {touched: padTouched}}} = gamepad;
-                      const {pressed, touchStart} = buildState;
+                      const {touchStart, pressStart} = buildState;
 
-                      if (padTouched && !touchStart && !pressed) {
-                        const {axes} = gamepad;
-                        buildState.touchStart = new THREE.Vector2().fromArray(axes);
-                        buildState.touchCurrent = buildState.touchStart.clone();
-                      } else if (!padTouched && touchStart) {
-                        const {touchCurrent, angle: startAngle} = buildState;
-                        const touchDiff = touchCurrent.clone().sub(touchStart);
+                      if (!pressStart) {
+                        if (padTouched && !touchStart) {
+                          const {axes} = gamepad;
+                          buildState.touchStart = new THREE.Vector2().fromArray(axes);
+                          buildState.touchCurrent = buildState.touchStart.clone();
+                        } else if (!padTouched && touchStart) {
+                          const {touchCurrent, angle: startAngle} = buildState;
+                          const touchDiff = touchCurrent.clone().sub(touchStart);
 
-                        const menuRotationDistanceSpecs = menuRotationSpecs.map(menuRotationSpec => {
-                          const {menu, angle} = menuRotationSpec;
-                          const distance = _angleDiff(startAngle + _touchDiffToAngle(touchDiff), angle);
+                          const menuRotationDistanceSpecs = menuRotationSpecs.map(menuRotationSpec => {
+                            const {menu, angle} = menuRotationSpec;
+                            const distance = _angleDiff(startAngle + _padDiffToAngle(-touchDiff.x), angle);
 
-                          return {
-                            menu,
-                            angle,
-                            distance,
-                          };
-                        });
-                        const closestMenuRotationSpec = menuRotationDistanceSpecs.sort((a, b) => a.distance - b.distance)[0];
+                            return {
+                              menu,
+                              angle,
+                              distance,
+                            };
+                          });
+                          const closestMenuRotationSpec = menuRotationDistanceSpecs.sort((a, b) => a.distance - b.distance)[0];
 
-                        buildState.touchStart = null;
-                        buildState.menu = closestMenuRotationSpec.menu;
-                        buildState.angle = closestMenuRotationSpec.angle;
+                          buildState.touchStart = null;
+                          buildState.menu = closestMenuRotationSpec.menu;
+                          buildState.angle = closestMenuRotationSpec.angle;
 
-                        const {menuMesh} = toolMesh;
-                        menuMesh.rotation.z = closestMenuRotationSpec.angle;
-                      } else if (padTouched && touchStart) {
-                        const {axes} = gamepad;
-                        const touchCurrent = new THREE.Vector2().fromArray(axes);
-                        buildState.touchCurrent = touchCurrent;
+                          const {menuMesh} = toolMesh;
+                          menuMesh.rotation.z = buildState.angle;
+                        } else if (padTouched && touchStart) {
+                          const {axes} = gamepad;
+                          const touchCurrent = new THREE.Vector2().fromArray(axes);
+                          buildState.touchCurrent = touchCurrent;
 
-                        const {menuMesh} = toolMesh;
-                        const {angle: startAngle} = buildState;
-                        const touchDiff = touchCurrent.clone().sub(touchStart);
-                        menuMesh.rotation.z = startAngle + _touchDiffToAngle(touchDiff);
-                      }
-                    }
-                  }
-
-                  const {pressed} = buildState;
-                  if (pressed) {
-                    const {menu} = buildState;
-
-                    if (menu === 'shape') {
-                      const gamepad = gamepads[side];
-
-                      if (gamepad) {
-                        const {axes} = gamepad;
-
-                        const x = Math.round(((((axes[0] / 2) + 0.5) * shapesWidth) - (shapeWidth / 2)) / shapeWidth);
-                        const y = Math.round((((-(axes[1] / 2) + 0.5) * shapesHeight) - (shapeHeight / 2)) / shapeHeight);
-                        const shapeIndex = (y * shapesPerRow) + x;
-
-                        const {
-                          menuMesh: {
-                            shapeMesh: {
-                              shapeMeshes,
-                            },
-                          },
-                        } = toolMesh;
-                        for (let i = 0; i < shapeMeshes.length; i++) {
-                          const shapeMesh = shapeMeshes[i];
-                          const selected = i !== shapeIndex;
-                          shapeMesh.scale.copy(selected ? oneVector : oneAndHalfVector);
-                          shapeMesh.material.color.setHex(selected ? 0x808080 : 0xFF0000);
+                          const {menuMesh} = toolMesh;
+                          const {angle: startAngle} = buildState;
+                          const touchDiff = touchCurrent.clone().sub(touchStart);
+                          menuMesh.rotation.z = startAngle + _padDiffToAngle(-touchDiff.x);
                         }
-
-                        const shapeMesh = shapeMeshes[shapeIndex];
-                        const {shapeType} = shapeMesh;
-                        buildState.shape = shapeType;
                       }
-                    } else if (menu === 'color') {
-                      // XXX handle this
+
+                      const {menu} = buildState;
+                      if (menu === 'shape') {
+                        const {pressStart} = buildState;
+
+                        if (pressStart) {
+                          const {axes} = gamepad;
+
+                          const x = Math.round(((((axes[0] / 2) + 0.5) * shapesWidth) - (shapeWidth / 2)) / shapeWidth);
+                          const y = Math.round((((-(axes[1] / 2) + 0.5) * shapesHeight) - (shapeHeight / 2)) / shapeHeight);
+                          const shapeIndex = (y * shapesPerRow) + x;
+
+                          const {
+                            menuMesh: {
+                              shapeMesh: {
+                                shapeMeshes,
+                              },
+                            },
+                          } = toolMesh;
+                          for (let i = 0; i < shapeMeshes.length; i++) {
+                            const shapeMesh = shapeMeshes[i];
+                            const selected = i !== shapeIndex;
+                            shapeMesh.scale.copy(selected ? oneVector : oneAndHalfVector);
+                            shapeMesh.material.color.setHex(selected ? 0x808080 : 0xFF0000);
+                          }
+
+                          const shapeMesh = shapeMeshes[shapeIndex];
+                          const {shapeType} = shapeMesh;
+                          buildState.shape = shapeType;
+                        }
+                      } else if (menu === 'color') {
+                        // XXX handle this
+                      } else if (menu === 'rotate') {
+                        const {pressStart} = buildState;
+
+                        if (pressStart) {
+                          const {axes} = gamepad;
+                          const pressCurrent = new THREE.Vector2().fromArray(axes);
+                          buildState.pressCurrent = pressCurrent;
+
+                          if (mesh) {
+                            const pressDiff = pressCurrent.clone().sub(pressStart);
+                            const xAngle = _padDiffToAngle(-pressDiff.x);
+                            const yAngle = _padDiffToAngle(-pressDiff.y);
+
+                            const {rotation} = buildState;
+                            const newRotation = rotation.clone().premultiply(
+                              new THREE.Quaternion().setFromEuler(new THREE.Euler(yAngle, 0, xAngle, camera.rotation.order))
+                            );
+                            mesh.quaternion.copy(newRotation);
+                          }
+                        }
+                      } else if (menu === 'resize') {
+                        const {pressStart} = buildState;
+
+                        if (pressStart) {
+                          const {axes} = gamepad;
+                          const pressCurrent = new THREE.Vector2().fromArray(axes);
+                          buildState.pressCurrent = pressCurrent;
+
+                          if (mesh) {
+                            const pressDiff = pressCurrent.clone().sub(pressStart);
+                            const yValue = pressDiff.y;
+
+                            const {scale} = buildState;
+                            const newScale = scale + yValue;
+                            const newScaleVector = oneVector.clone().multiplyScalar(Math.pow(2, newScale));
+                            mesh.scale.copy(newScaleVector);
+                          }
+                        }
+                      }
                     }
                   }
                 });
