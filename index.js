@@ -9,92 +9,38 @@ const rnd = require('rnd');
 rnd.setSeed(process.env.USER + ';' + process.cwd());
 
 const args = process.argv.slice(2);
+const _findArg = name => {
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    const match = arg.match(new RegExp('^' + name + '=(.+)$'));
+    if (match) {
+      return match[1];
+    }
+  }
+  return null;
+};
 const flags = {
   server: args.includes('server'),
   site: args.includes('site'),
   hub: args.includes('hub'),
   install: args.includes('install'),
   makeToken: args.includes('makeToken'),
-  host: (() => {
-    for (let i = 0; i < args.length; i++) {
-      const arg = args[i];
-      const match = arg.match(/^host=(.+)$/);
-      if (match) {
-        return match[1];
-      }
-    }
-    return null;
-  })(),
+  host: _findArg('host'),
   port: (() => {
-    for (let i = 0; i < args.length; i++) {
-      const arg = args[i];
-      const match = arg.match(/^port=([0-9]+)$/);
-      if (match) {
-        return parseInt(match[1], 10);
-      }
+    const s = _findArg('port');
+
+    if (s && /^[0-9]+$/.test(s)) {
+      return parseInt(s, 10);
+    } else {
+      return null;
     }
-    return null;
   })(),
-  dataDirectory: (() => {
-    for (let i = 0; i < args.length; i++) {
-      const arg = args[i];
-      const match = arg.match(/^dataDirectory=(.+)$/);
-      if (match) {
-        return match[1];
-      }
-    }
-    return null;
-  })(),
-  cryptoDirectory: (() => {
-    for (let i = 0; i < args.length; i++) {
-      const arg = args[i];
-      const match = arg.match(/^cryptoDirectory=(.+)$/);
-      if (match) {
-        return match[1];
-      }
-    }
-    return null;
-  })(),
-  installDirectory: (() => {
-    for (let i = 0; i < args.length; i++) {
-      const arg = args[i];
-      const match = arg.match(/^installDirectory=(.+)$/);
-      if (match) {
-        return match[1];
-      }
-    }
-    return null;
-  })(),
-  serverHost: (() => {
-    for (let i = 0; i < args.length; i++) {
-      const arg = args[i];
-      const match = arg.match(/^serverHost=(.+)$/);
-      if (match) {
-        return match[1];
-      }
-    }
-    return null;
-  })(),
-  worldname: (() => {
-    for (let i = 0; i < args.length; i++) {
-      const arg = args[i];
-      const match = arg.match(/^worldname=(.+)$/);
-      if (match) {
-        return match[1];
-      }
-    }
-    return null;
-  })(),
-  hubUrl: (() => {
-    for (let i = 0; i < args.length; i++) {
-      const arg = args[i];
-      const match = arg.match(/^hubUrl=(.+)$/);
-      if (match) {
-        return match[1];
-      }
-    }
-    return null;
-  })(),
+  dataDirectory: _findArg('dataDirectory'),
+  cryptoDirectory: _findArg('cryptoDirectory'),
+  installDirectory: _findArg('installDirectory'),
+  serverHost: _findArg('serverHost'),
+  worldname: _findArg('worldname'),
+  hubUrl: _findArg('hubUrl'),
 };
 const hasSomeFlag = (() => {
   for (const k in flags) {
