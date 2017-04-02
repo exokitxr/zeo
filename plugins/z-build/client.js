@@ -110,16 +110,16 @@ class ZBuild {
                   const geometry = (() => {
                     const sq = n => Math.sqrt((n * n) + (n * n));
 
-                    const coreGeometry = new THREE.BoxBufferGeometry(0.02, 0.02, 0.1);
+                    const coreGeometry = new THREE.BoxBufferGeometry(0.04, 0.04, 0.2);
                     const tipsGeometries = [
-                      new THREE.BoxBufferGeometry(0.01, 0.01, 0.03)
-                        .applyMatrix(new THREE.Matrix4().makeTranslation(-0.02 / 2, 0.02 / 2, -0.1 / 2)),
-                      new THREE.BoxBufferGeometry(0.01, 0.01, 0.03)
-                        .applyMatrix(new THREE.Matrix4().makeTranslation(0.02 / 2, 0.02 / 2, -0.1 / 2)),
-                      new THREE.BoxBufferGeometry(0.01, 0.01, 0.03)
-                        .applyMatrix(new THREE.Matrix4().makeTranslation(-0.02 / 2, -0.02 / 2, -0.1 / 2)),
-                      new THREE.BoxBufferGeometry(0.01, 0.01, 0.03)
-                        .applyMatrix(new THREE.Matrix4().makeTranslation(0.02 / 2, -0.02 / 2, -0.1 / 2)),
+                      new THREE.BoxBufferGeometry(0.02, 0.02, 0.05)
+                        .applyMatrix(new THREE.Matrix4().makeTranslation(-0.04 / 2, 0.04 / 2, -0.2 / 2)),
+                      new THREE.BoxBufferGeometry(0.02, 0.02, 0.05)
+                        .applyMatrix(new THREE.Matrix4().makeTranslation(0.04 / 2, 0.04 / 2, -0.2 / 2)),
+                      new THREE.BoxBufferGeometry(0.02, 0.02, 0.05)
+                        .applyMatrix(new THREE.Matrix4().makeTranslation(-0.04 / 2, -0.04 / 2, -0.2 / 2)),
+                      new THREE.BoxBufferGeometry(0.02, 0.02, 0.05)
+                        .applyMatrix(new THREE.Matrix4().makeTranslation(0.04 / 2, -0.04 / 2, -0.2 / 2)),
                     ];
 
                     return geometryUtils.concatBufferGeometry([coreGeometry].concat(tipsGeometries));
@@ -136,7 +136,7 @@ class ZBuild {
 
                 const shapeMeshContainer = (() => {
                   const object = new THREE.Object3D();
-                  object.position.z = -(0.1 / 2) - (0.03 / 2);
+                  object.position.z = -(0.2 / 2) - (0.05 / 2) - (0.02 / 2);
                   return object;
                 })();
                 object.add(shapeMeshContainer);
@@ -148,21 +148,21 @@ class ZBuild {
                   const targetPlaneMesh = (() => {
                     const geometry = (() => {
                       const planeGeometries = [
-                        new THREE.PlaneBufferGeometry(0.1, 0.1)
+                        new THREE.PlaneBufferGeometry(0.2, 0.2)
                           .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
-                          .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.1 / 2, 0)),
-                        new THREE.PlaneBufferGeometry(0.1, 0.1)
+                          .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.2 / 2, 0)),
+                        new THREE.PlaneBufferGeometry(0.2, 0.2)
                           .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
                           .applyMatrix(new THREE.Matrix4().makeRotationZ(-Math.PI / 2))
-                          .applyMatrix(new THREE.Matrix4().makeTranslation(0.1 / 2, 0, 0)),
-                        new THREE.PlaneBufferGeometry(0.1, 0.1)
+                          .applyMatrix(new THREE.Matrix4().makeTranslation(0.2 / 2, 0, 0)),
+                        new THREE.PlaneBufferGeometry(0.2, 0.2)
                           .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
                           .applyMatrix(new THREE.Matrix4().makeRotationZ(Math.PI))
-                          .applyMatrix(new THREE.Matrix4().makeTranslation(0, -0.1 / 2, 0)),
-                        new THREE.PlaneBufferGeometry(0.1, 0.1)
+                          .applyMatrix(new THREE.Matrix4().makeTranslation(0, -0.2 / 2, 0)),
+                        new THREE.PlaneBufferGeometry(0.2, 0.2)
                           .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
                           .applyMatrix(new THREE.Matrix4().makeRotationZ(Math.PI / 2))
-                          .applyMatrix(new THREE.Matrix4().makeTranslation(-0.1 / 2, 0, 0)),
+                          .applyMatrix(new THREE.Matrix4().makeTranslation(-0.2 / 2, 0, 0)),
                       ];
 
                       return geometryUtils.concatBufferGeometry(planeGeometries);
@@ -194,10 +194,10 @@ class ZBuild {
 
                   const shapeMesh = (() => {
                     const object = new THREE.Object3D();
-                    object.position.y = 0.05;
+                    object.position.y = 0.1;
 
                     const backgroundMesh = (() => {
-                      const geometry = new THREE.PlaneBufferGeometry(0.09, 0.09)
+                      const geometry = new THREE.PlaneBufferGeometry(0.18, 0.18)
                         .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
                       const material = new THREE.MeshPhongMaterial({
                         color: 0x808080,
@@ -209,7 +209,7 @@ class ZBuild {
                     object.add(backgroundMesh);
 
                     const boxMesh = (() => {
-                      const geometry = new THREE.BoxBufferGeometry(0.01, 0.01, 0.01)
+                      const geometry = new THREE.BoxBufferGeometry(0.02, 0.02, 0.02)
                         .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
                       const material = shapeMaterial;
                       const mesh = new THREE.Mesh(geometry, material);
@@ -217,7 +217,7 @@ class ZBuild {
                       return mesh;
                     })();
                     const rectangleMesh = (() => {
-                      const geometry = new THREE.BoxBufferGeometry(0.01, 0.02, 0.01)
+                      const geometry = new THREE.BoxBufferGeometry(0.02, 0.04, 0.02)
                         .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
                       const material = shapeMaterial;
                       const mesh = new THREE.Mesh(geometry, material);
@@ -225,7 +225,7 @@ class ZBuild {
                       return mesh;
                     })();
                     const triangularPyramidMesh = (() => {
-                      const geometry = new THREE.CylinderBufferGeometry(0, sq(0.005), 0.01, 3, 1)
+                      const geometry = new THREE.CylinderBufferGeometry(0, sq(0.01), 0.02, 3, 1)
                         .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
                       const material = shapeMaterial;
                       const mesh = new THREE.Mesh(geometry, material);
@@ -233,7 +233,7 @@ class ZBuild {
                       return mesh;
                     })();
                     const rectangularPyramidMesh = (() => {
-                      const geometry = new THREE.CylinderBufferGeometry(0, sq(0.005), 0.01, 4, 1)
+                      const geometry = new THREE.CylinderBufferGeometry(0, sq(0.01), 0.02, 4, 1)
                         .applyMatrix(new THREE.Matrix4().makeRotationY(-Math.PI * (3 / 12)))
                         .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
                       const material = shapeMaterial;
@@ -242,7 +242,7 @@ class ZBuild {
                       return mesh;
                     })();
                     const planeMesh = (() => {
-                      const geometry = new THREE.PlaneBufferGeometry(0.01, 0.01);
+                      const geometry = new THREE.PlaneBufferGeometry(0.02, 0.02);
                         // .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
                         // .applyMatrix(new THREE.Matrix4().makeRotationZ(-Math.PI / 2));
                       const material = shapeMaterial;
@@ -251,7 +251,7 @@ class ZBuild {
                       return mesh;
                     })();
                     const sphereMesh = (() => {
-                      const geometry = new THREE.SphereBufferGeometry(0.005, 8, 8)
+                      const geometry = new THREE.SphereBufferGeometry(0.01, 8, 8)
                         .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
                       const material = shapeMaterial;
                       const mesh = new THREE.Mesh(geometry, material);
@@ -259,7 +259,7 @@ class ZBuild {
                       return mesh;
                     })();
                     const cylinderMesh = (() => {
-                      const geometry = new THREE.CylinderBufferGeometry(0.005, 0.005, 0.01, 8, 1)
+                      const geometry = new THREE.CylinderBufferGeometry(0.01, 0.01, 0.02, 8, 1)
                         .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
                       const material = shapeMaterial;
                       const mesh = new THREE.Mesh(geometry, material);
@@ -267,7 +267,7 @@ class ZBuild {
                       return mesh;
                     })();
                     const torusMesh = (() => {
-                      const geometry = new THREE.TorusBufferGeometry(0.005, 0.005 / 4, 4, 8)
+                      const geometry = new THREE.TorusBufferGeometry(0.01, 0.01 / 4, 4, 8)
                         .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
                       const material = shapeMaterial;
                       const mesh = new THREE.Mesh(geometry, material);
@@ -285,17 +285,18 @@ class ZBuild {
                       torusMesh,
                     ];
 
-                    const width = 0.09;
-                    const height = 0.09;
+                    const width = 0.18;
+                    const height = 0.18;
                     const shapesPerRow = 4;
                     const shapesPerCol = 2;
                     const shapeWidth = width / shapesPerRow;
                     const shapeHeight = height / shapesPerCol;
+                    const shapeSize = 0.02;
                     shapeMeshes.forEach((shapeMesh, index) => {
                       const x = index % shapesPerRow;
                       const y = Math.floor(index / shapesPerRow);
                       shapeMesh.position.x = -(width / 2) + (shapeWidth / 2) + (x * (width / shapesPerRow));
-                      shapeMesh.position.y = 0.01 / 2;
+                      shapeMesh.position.y = shapeSize / 2;
                       shapeMesh.position.z = -(height / 2) + (shapeHeight / 2) + (y * (height / shapesPerCol));
 
                       object.add(shapeMesh);
@@ -309,12 +310,12 @@ class ZBuild {
 
                   const colorMesh = (() => {
                     const object = new THREE.Object3D();
-                    object.position.x = 0.05;
+                    object.position.x = 0.1;
                     object.rotation.z = -Math.PI / 2;
                     object.rotation.order = camera.rotation.order;
 
                     const colorWheelMesh = (() => {
-                      const size = 0.09;
+                      const size = 0.18;
 
                       const object = new THREE.Object3D();
                       object.size = size;
@@ -347,7 +348,7 @@ class ZBuild {
                       object.add(planeMesh);
 
                       const notchMesh = (() => {
-                        const geometry = new THREE.CylinderBufferGeometry(0, sq(0.002), 0.005, 4, 1)
+                        const geometry = new THREE.CylinderBufferGeometry(0, sq(0.004), 0.01, 4, 1)
                           .applyMatrix(new THREE.Matrix4().makeRotationY(-Math.PI * (3 / 12)))
                           .applyMatrix(new THREE.Matrix4().makeRotationX(Math.PI));
                         const material = new THREE.MeshPhongMaterial({
@@ -356,7 +357,7 @@ class ZBuild {
                         });
 
                         const mesh = new THREE.Mesh(geometry, material);
-                        mesh.position.y = 0.005 / 2;
+                        mesh.position.y = 0.01 / 2;
                         return mesh;
                       })();
                       object.add(notchMesh);
@@ -374,13 +375,13 @@ class ZBuild {
 
                   const rotateMesh = (() => {
                     const object = new THREE.Object3D();
-                    object.position.y = -0.05;
+                    object.position.y = -0.1;
                     object.rotation.x = -Math.PI / 2;
                     object.rotation.z = Math.PI;
                     object.rotation.order = camera.rotation.order;
 
                     const planeMesh = (() => {
-                      const geometry = new THREE.PlaneBufferGeometry(0.09, 0.09);
+                      const geometry = new THREE.PlaneBufferGeometry(0.18, 0.18);
                       const texture = new THREE.Texture(
                         rotateImg,
                         THREE.UVMapping,
@@ -413,13 +414,13 @@ class ZBuild {
 
                   const scaleMesh = (() => {
                     const object = new THREE.Object3D();
-                    object.position.x = -0.05;
+                    object.position.x = -0.1;
                     object.rotation.x = -Math.PI / 2;
                     object.rotation.z = Math.PI / 2;
                     object.rotation.order = 'ZYX';
 
                     const planeMesh = (() => {
-                      const geometry = new THREE.PlaneBufferGeometry(0.09, 0.09);
+                      const geometry = new THREE.PlaneBufferGeometry(0.18, 0.18);
                       const texture = new THREE.Texture(
                         resizeImg,
                         THREE.UVMapping,
