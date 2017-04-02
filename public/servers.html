@@ -55,6 +55,9 @@ const _makeServerElement = server => {
     <div class=users>${users.map(user =>
       `<div class=user>${user}</div>`
     ).join('')}</div>
+    <a href="https://${url}" class=server-arrow>
+      <img src="/img/arrow-right.svg" />
+    </a>
   </div>`;
   const serverElement = div.childNodes[0];
 

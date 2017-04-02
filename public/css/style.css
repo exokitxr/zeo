@@ -501,6 +501,17 @@ code {
   font-size: 13px;
   font-weight: 400;
 }
+.servers-body .server .server-arrow {
+  display: flex;
+  width: 80px;
+  height: 80px;
+  justify-content: center;
+  align-items: center;
+}
+.servers-body .server .server-arrow img {
+  width: 36px;
+  height: 36px;
+}
 
 .details-wrap {}
 .details-wrap h4 {
