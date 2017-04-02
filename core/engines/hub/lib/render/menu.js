@@ -14,6 +14,12 @@ const chipImg = require('../img/chip');
 const chipImgSrc = 'data:image/svg+xml;base64,' + btoa(chipImg);
 const earthImg = require('../img/earth');
 const earthImgSrc = 'data:image/svg+xml;base64,' + btoa(earthImg);
+const earthBoxImg = require('../img/earth-box');
+const earthBoxImgSrc = 'data:image/svg+xml;base64,' + btoa(earthBoxImg);
+const viewCarouselImg = require('../img/view-carousel');
+const viewCarouselImgSrc = 'data:image/svg+xml;base64,' + btoa(viewCarouselImg);
+const serverPlusImg = require('../img/server-plus');
+const serverPlusImgSrc = 'data:image/svg+xml;base64,' + btoa(serverPlusImg);
 
 const getHubMenuSrc = ({page, searchText, inputIndex, inputValue, loading, error, vrMode, focusType, imgs}) => {
   return `\
@@ -136,6 +142,22 @@ const getTutorialPageSrc = (page, searchText, inputIndex, inputValue, loading, e
       </div>
     `;
     case 4: return `\
+      <div style="display: flex; height: 500px; justify-content: center; align-items: center;">
+        <a style="display: flex; width: 200px; height: 200px; margin-right: 30px; border: 1px solid; border-radius: 5px; font-weight: 400; text-decoration: none; flex-direction: column; justify-content: center; align-items: center;" onclick="menu:remoteServers">
+          <div style="margin-bottom: 15px; font-size: 24px;">Remote servers</div>
+          <img src="${earthBoxImgSrc}" width="100" height="100" />
+        </a>
+        <a style="display: flex; width: 200px; height: 200px; margin-right: 30px; border: 1px solid; border-radius: 5px; font-weight: 400; text-decoration: none; flex-direction: column; justify-content: center; align-items: center;" onclick="menu:tutorial">
+          <div style="margin-bottom: 15px; font-size: 24px;">Tutorial</div>
+          <img src="${viewCarouselImgSrc}" width="100" height="100" />
+        </a>
+        <a style="display: flex; width: 200px; height: 200px; margin-right: 30px; border: 1px solid; border-radius: 5px; font-weight: 400; text-decoration: none; flex-direction: column; justify-content: center; align-items: center;" onclick="menu:localServers">
+          <div style="margin-bottom: 15px; font-size: 24px;">Local servers</div>
+          <img src="${serverPlusImgSrc}" width="100" height="100" />
+        </a>
+      </div>
+    `;
+    /* `\
       <div style="display: flex; height: 200px; justify-content: center; align-items: center;">
         <div style="font-size: 50px;">Choose a server</div>
       </div>
@@ -166,7 +188,7 @@ const getTutorialPageSrc = (page, searchText, inputIndex, inputValue, loading, e
       <div style="display: flex; margin-top: auto; padding: 100px; justify-content: center; align-items: center;">
         <a style="display: inline-block; padding: 10px 15px; border: 1px solid; border-radius: 5px; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="hub:tutorial">Start tutorial</a>
       </div>
-    `;
+    `; */
     default: return '';
   }
 };
