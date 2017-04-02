@@ -1,5 +1,5 @@
-const BULLET_SPEED = 0.001
-const BULLET_TTL = 10 * 1000;
+const BULLET_SPEED = 0.05;
+const BULLET_TTL = 5 * 1000;
 
 const DEFAULT_MATRIX = [
   0, 0, 0,
