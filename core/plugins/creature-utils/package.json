@@ -4,6 +4,6 @@
   "version": "0.0.1",
   "client": "client.js",
   "dependencies": {
-    "creaturejs": "0.0.3"
+    "creaturejs": "0.0.4"
   }
 }
