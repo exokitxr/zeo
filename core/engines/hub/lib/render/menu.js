@@ -244,7 +244,7 @@ const getServerSrc = (server, index, prefix) => {
 
   return `\
     <a style="display: flex; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid #EEE; text-decoration: none;" onclick="${prefix}:${index}">
-      <img src="${iconImgSrc}" style="display: flex; width: 80px; height: 80px; margin-right: 10px;" />
+      <img src="${iconImgSrc}" width="80" height="80" style="display: flex; width: 80px; height: 80px; margin-right: 10px;" />
       <div style="display: flex; margin-right: auto; padding: 5px; flex-direction: column;">
         <div style="font-size: 20px; font-weight: 600;">${worldname}</div>
         <div style="font-size: 13px; font-weight: 400;">

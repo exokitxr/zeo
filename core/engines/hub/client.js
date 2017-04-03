@@ -664,6 +664,11 @@ class Hub {
                           };
                         }))
                       )
+                      .catch(err => {
+                        console.warn(err);
+
+                        return Promise.resolve(transparentImg.src);
+                      });
                   });
                   return Promise.all(imgPromises)
                     .then(() => servers);
