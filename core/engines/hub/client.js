@@ -762,9 +762,18 @@ class Hub {
 
                   _updatePages();
 
+                  _removeServerMeshes();
+
                   const {cakeTagMesh} = menuMesh;
                   const pageIndex = parseInt(_parsePage(page).args[0], 10);
                   cakeTagMesh.visible = pageIndex === 2;
+                };
+                const _removeServerMeshes = () => {
+                  const {children} = serversMesh;
+                  for (let i = 0; i < children.length; i++) {
+                    const child = children[i];
+                    serversMesh.remove(child);
+                  }
                 };
 
                 let match;
@@ -822,11 +831,7 @@ class Hub {
                   const server = remoteServers[index];
 
                   // remove old server meshes
-                  const {children} = serversMesh;
-                  for (let i = 0; i < children.length; i++) {
-                    const child = children[i];
-                    serversMesh.remove(child);
-                  }
+                  _removeServerMeshes();
 
                   // add new server mesh
                   const serverMesh = _makeServerMesh(server);
@@ -844,11 +849,7 @@ class Hub {
                   const server = localServers[index];
 
                   // remove old server meshes
-                  const {children} = serversMesh;
-                  for (let i = 0; i < children.length; i++) {
-                    const child = children[i];
-                    serversMesh.remove(child);
-                  }
+                  _removeServerMeshes();
 
                   // add new server mesh
                   const serverMesh = _makeServerMesh(server);
