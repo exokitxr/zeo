@@ -14,6 +14,8 @@ const chipImg = require('../img/chip');
 const chipImgSrc = 'data:image/svg+xml;base64,' + btoa(chipImg);
 const earthImg = require('../img/earth');
 const earthImgSrc = 'data:image/svg+xml;base64,' + btoa(earthImg);
+const closeBoxImg = require('../img/close-box');
+const closeBoxImgSrc = 'data:image/svg+xml;base64,' + btoa(closeBoxImg);
 const earthBoxImg = require('../img/earth-box');
 const earthBoxImgSrc = 'data:image/svg+xml;base64,' + btoa(earthBoxImg);
 const viewCarouselImg = require('../img/view-carousel');
@@ -350,6 +352,9 @@ const getServerTagSrc = ({worldname, description, serverIcon}) => {
   return `\
     <div style="display: flex; width: ${SERVER_WIDTH}px; height: ${SERVER_HEIGHT}px; padding: 50px; background-color: #EEE; flex-direction: column; justify-content: center; align-items: center; box-sizing: border-box;">
       <div style="display: flex; width: 100%;">
+        <a style="display: flex; position: absolute; top: 0; right: 0; width: 100px; height: 100px; justify-content: center; align-items: center;" onclick="server:close:${worldname}">
+          <img src="${closeBoxImgSrc}" width="80" height="80" />
+        </a>
         <img src="${serverIcon}" width="${SERVER_HEIGHT}" height="${SERVER_HEIGHT}" style="margin: -50px; margin-right: 50px; image-rendering: pixelated;" />
         <div style="flex-grow: 1;">
           <div style="font-size: 60px; font-weight: 400;">${worldname}</div>

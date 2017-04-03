@@ -366,6 +366,18 @@ class Hub {
               left: biolumi.makeMenuHoverState(),
               right: biolumi.makeMenuHoverState(),
             };
+            const menuDotMeshes = {
+              left: biolumi.makeMenuDotMesh(),
+              right: biolumi.makeMenuDotMesh(),
+            };
+            scene.add(menuDotMeshes.left);
+            scene.add(menuDotMeshes.right);
+            const menuBoxMeshes = {
+              left: biolumi.makeMenuBoxMesh(),
+              right: biolumi.makeMenuBoxMesh(),
+            };
+            scene.add(menuBoxMeshes.left);
+            scene.add(menuBoxMeshes.right);
 
             const _makeGrabState = () => ({
               tagMesh: null,
@@ -431,19 +443,22 @@ class Hub {
               right: _makeEnvHoverState(),
             };
 
-            const menuDotMeshes = {
+            const serverHoverStates = {
+              left: biolumi.makeMenuHoverState(),
+              right: biolumi.makeMenuHoverState(),
+            };
+            const serverDotMeshes = {
               left: biolumi.makeMenuDotMesh(),
               right: biolumi.makeMenuDotMesh(),
             };
-            scene.add(menuDotMeshes.left);
-            scene.add(menuDotMeshes.right);
-
-            const menuBoxMeshes = {
+            scene.add(serverDotMeshes.left);
+            scene.add(serverDotMeshes.right);
+            const serverBoxMeshes = {
               left: biolumi.makeMenuBoxMesh(),
               right: biolumi.makeMenuBoxMesh(),
             };
-            scene.add(menuBoxMeshes.left);
-            scene.add(menuBoxMeshes.right);
+            scene.add(serverBoxMeshes.left);
+            scene.add(serverBoxMeshes.right);
 
             const envDotMeshes = {
               left: biolumi.makeMenuDotMesh(),
@@ -735,6 +750,78 @@ class Hub {
             const _trigger = e => {
               const {side} = e;
 
+              const _doTagMeshClick = () => {
+                const {side} = e;
+                const {gamepads} = webvr.getStatus();
+                const gamepad = gamepads[side];
+
+                if (gamepad) {
+                  const {buttons: {grip: {pressed: gripPressed}}} = gamepad;
+
+                  if (gripPressed) {
+                    const tagHoverState = tagHoverStates[side];
+                    const {intersectionPoint} = tagHoverState;
+                    const grabState = grabStates[side];
+                    const {tagMesh: grabMesh} = grabState;
+
+                    if (intersectionPoint && !grabMesh) {
+                      const {metadata: {tagMesh}} = tagHoverState;
+
+                      _addTag(side, tagMesh);
+
+                      return true;
+                    } else {
+                      return false;
+                    }
+                  } else {
+                    return false;
+                  }
+                } else {
+                  return false;
+                }
+              };
+              const _doServerMeshClick = () => {
+                const serverHoverState = serverHoverStates[side];
+                const {intersectionPoint} = serverHoverState;
+
+                if (intersectionPoint) {
+                  const {anchor} = serverHoverState;
+                  const onclick = (anchor && anchor.onclick) || '';
+
+                  let match;
+                  if (match = onclick.match(/^server:close:(.+)$/)) {
+                    const {metadata: {server, serverMesh}} = serverHoverState;
+
+                    serversMesh.remove(serverMesh);
+
+                    const {serverMeshes} = serversMesh;
+                    serverMeshes.splice(serverMeshes.indexOf(serverMesh), 1);
+                  }
+
+                  return true;
+                } else {
+                  return false;
+                }
+              };
+              const _doEnvMeshClick = () => {
+                const envHoverState = envHoverStates[side];
+                const {hoveredServerMesh} = envHoverState;
+
+                if (hoveredServerMesh) {
+                  const {server} = hoveredServerMesh;
+
+                  const {url} = server;
+                  const t = _getQueryVariable(bootstrap.getInitialUrl(), 't');
+                  window.parent.location = 'https://' + server.url + (t ? ('?t=' + encodeURIComponent(t)) : '');
+
+                  // can't happen
+                  e.stopImmediatePropagation();
+
+                  return true;
+                } else {
+                  return false;
+                }
+              };
               const _doMenuMeshClick = () => {
                 const menuHoverState = menuHoverStates[side];
                 const {anchor} = menuHoverState;
@@ -806,6 +893,7 @@ class Hub {
                   const serverMesh = _makeServerMesh(server);
                   serverMesh.position.y = 1.2;
                   serversMesh.add(serverMesh);
+                  serverMesh.updateMatrixWorld();
                   const {envMesh} = serverMesh;
                   envMesh.updateBoxTarget();
 
@@ -827,57 +915,8 @@ class Hub {
                   return false;
                 }
               };
-              const _doTagMeshClick = () => {
-                const {side} = e;
-                const {gamepads} = webvr.getStatus();
-                const gamepad = gamepads[side];
 
-                if (gamepad) {
-                  const {buttons: {grip: {pressed: gripPressed}}} = gamepad;
-
-                  if (gripPressed) {
-                    const tagHoverState = tagHoverStates[side];
-                    const {intersectionPoint} = tagHoverState;
-                    const grabState = grabStates[side];
-                    const {tagMesh: grabMesh} = grabState;
-
-                    if (intersectionPoint && !grabMesh) {
-                      const {metadata: pointMesh} = tagHoverState;
-
-                      _addTag(side, pointMesh);
-
-                      return true;
-                    } else {
-                      return false;
-                    }
-                  } else {
-                    return false;
-                  }
-                } else {
-                  return false;
-                }
-              };
-              const _doServerMeshClick = () => {
-                const envHoverState = envHoverStates[side];
-                const {hoveredServerMesh} = envHoverState;
-
-                if (hoveredServerMesh) {
-                  const {server} = hoveredServerMesh;
-
-                  const {url} = server;
-                  const t = _getQueryVariable(bootstrap.getInitialUrl(), 't');
-                  window.parent.location = 'https://' + server.url + (t ? ('?t=' + encodeURIComponent(t)) : '');
-
-                  // can't happen
-                  e.stopImmediatePropagation();
-
-                  return true;
-                } else {
-                  return false;
-                }
-              };
-
-              _doMenuMeshClick() || _doTagMeshClick() ||  _doServerMeshClick();
+              _doTagMeshClick() || _doServerMeshClick() || _doEnvMeshClick() || _doMenuMeshClick();
             };
             input.on('trigger', _trigger, {
               priority: 1,
@@ -1048,7 +1087,9 @@ class Hub {
                         worldWidth: TAGS_WORLD_WIDTH * initialScale.x,
                         worldHeight: TAGS_WORLD_HEIGHT * initialScale.y,
                         worldDepth: TAGS_WORLD_DEPTH * initialScale.z,
-                        metadata: cakeTagMesh,
+                        metadata: {
+                          tagMesh: cakeTagMesh,
+                        },
                       }],
                       hoverState: tagHoverState,
                       dotMesh: tagDotMesh,
@@ -1143,12 +1184,63 @@ class Hub {
                   );
                 }
               };
+              const _updateServerMeshAnchors = () => {
+                const {gamepads} = webvr.getStatus();
+
+                SIDES.forEach(side => {
+                  const gamepad = gamepads[side];
+
+                  if (gamepad) {
+                    const {position: controllerPosition, rotation: controllerRotation} = gamepad;
+
+                    const serverHoverState = serverHoverStates[side];
+                    const serverDotMesh = serverDotMeshes[side];
+                    const serverBoxMesh = serverBoxMeshes[side];
+
+                    const {serverMeshes} = serversMesh;
+                    const objects = serverMeshes.map(serverMesh => {
+                      const {menuMesh} = serverMesh;
+                      const {planeMesh} = menuMesh;
+
+                      if (planeMesh) {
+                        const matrixObject = _decomposeObjectMatrixWorld(planeMesh);
+                        const {page} = planeMesh;
+
+                        return {
+                          matrixObject: matrixObject,
+                          page: page,
+                          width: SERVER_WIDTH,
+                          height: SERVER_HEIGHT,
+                          worldWidth: SERVER_WORLD_WIDTH,
+                          worldHeight: SERVER_WORLD_HEIGHT,
+                          worldDepth: SERVER_WORLD_DEPTH,
+                          metadata: {
+                            serverMesh,
+                          },
+                        };
+                      } else {
+                        return null;
+                      }
+                    }).filter(object => object !== null);
+
+                    biolumi.updateAnchors({
+                      objects: objects,
+                      hoverState: serverHoverState,
+                      dotMesh: serverDotMesh,
+                      boxMesh: serverBoxMesh,
+                      controllerPosition,
+                      controllerRotation,
+                    });
+                  }
+                });
+              };
 
               _updateMenuAnchors();
               _updateTagGrabAnchors();
               _updateTagPointerAnchors();
               _updateEnvAnchors();
               _updateServerMeshes();
+              _updateServerMeshAnchors();
             };
             rend.on('update', _update);
 
@@ -1162,6 +1254,9 @@ class Hub {
               SIDES.forEach(side => {
                 scene.remove(menuDotMeshes[side]);
                 scene.remove(menuBoxMeshes[side]);
+
+                scene.remove(serverDotMeshes[side]);
+                scene.remove(serverBoxMeshes[side]);
 
                 scene.remove(grabBoxMeshes[side]);
                 scene.remove(tagDotMeshes[side]);
