@@ -25,6 +25,7 @@ const flags = {
   site: args.includes('site'),
   home: args.includes('home'),
   hub: args.includes('hub'),
+  newline: args.includes('newline'),
   install: args.includes('install'),
   makeToken: args.includes('makeToken'),
   host: _findArg('host'),
@@ -419,6 +420,7 @@ _checkArgs()
     .then(() => _listenArchae())
     .then(() => _boot({key}))
     .then(() => {
+      // NOTE: this output is imoportant; it's waited for in the startup scripts
       if (flags.site) {
         console.log('Site: https://' + config.metadata.site.url + '/');
       }
@@ -430,6 +432,9 @@ _checkArgs()
       }
       if (flags.server) {
         console.log('Server: https://' + config.metadata.server.url + '/');
+      }
+      if (flags.newline) {
+        console.log();
       }
     })
     .then(() => _launch())

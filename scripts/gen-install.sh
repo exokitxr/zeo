@@ -8,7 +8,7 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 pushd "$DIR"/../ >/dev/null;
 rm -Rf pkg && mkdir -p pkg;
 pushd pkg;
-aptitude download dpkg-dev g++ gcc libc6-dev make python;
+aptitude download dpkg-dev g++ gcc libc6-dev make python expect;
 wget https://nodejs.org/dist/v7.8.0/node-v7.8.0-linux-x64.tar.gz;
 tar -zxf node-v7.8.0-linux-x64.tar.gz && mv node-v7.8.0-linux-x64 node;
 PATH="$(pwd)/node/bin:$PATH";
