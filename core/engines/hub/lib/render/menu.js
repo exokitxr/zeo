@@ -227,12 +227,12 @@ const getTutorialPageSrc = (pageIndex, searchText, inputIndex, inputValue, loadi
   `;
 };
 
-const getServerSrc = server => {
-  const {worldname, url, users} = server;
+const getServerSrc = (server, index, prefix) => {
+  const {worldname, url, users, iconImgSrc} = server;
 
   return `\
-    <a style="display: flex; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid #EEE; text-decoration: none;">
-      <img src="${window.location.protocol + '//hub.' + window.location.hostname + (window.location.port ? (':' + window.location.port) : '') + '/servers/img/icon/' + url}" style="display: flex; width: 80px; height: 80px; margin-right: 10px;" />
+    <a style="display: flex; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid #EEE; text-decoration: none;" onclick="${prefix}:${index}">
+      <img src="${iconImgSrc}" style="display: flex; width: 80px; height: 80px; margin-right: 10px;" />
       <div style="display: flex; margin-right: auto; padding: 5px; flex-direction: column;">
         <div style="font-size: 20px; font-weight: 600;">${worldname}</div>
         <div style="font-size: 13px; font-weight: 400;">
@@ -245,10 +245,10 @@ const getServerSrc = server => {
     </a>
   `;
 };
-const getServersSrc = servers => {
+const getServersSrc = (servers, prefix) => {
   return `\
     <div style="display: flex; width: ${WIDTH - 250}px; height: ${HEIGHT - 100}px; padding: 0 30px; flex-direction: column; box-sizing: border-box;">
-      ${servers.map(getServerSrc).join('')}
+      ${servers.map((server, index) => getServerSrc(server, index, prefix)).join('')}
     </div>
   `;
 };
@@ -263,7 +263,7 @@ const getRemoteServersSrc = (servers, pageIndex) => {
           </a>
           <div style="margin-right: auto; font-size: 40px;">Remote servers</div>
         </div>
-        ${getServersSrc(servers)}
+        ${getServersSrc(servers, 'remoteServer')}
       </div>
     `;
   })();
@@ -314,7 +314,7 @@ const getLocalServersSrc = (servers, pageIndex) => {
           </a>
           <div style="margin-right: auto; font-size: 40px;">Local servers</div>
         </div>
-        ${getServersSrc(servers)}
+        ${getServersSrc(servers, 'localServer')}
       </div>
     `;
   })();
