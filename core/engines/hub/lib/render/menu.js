@@ -27,7 +27,7 @@ const chevronLeftIconSrc = 'data:image/svg+xml;base64,' + btoa(chevronLeftImg);
 const upImg = require('../img/up');
 const downImg = require('../img/down');
 
-const getHubMenuSrc = ({page, remoteServers, localServers, serverNameText, inputIndex, inputValue, loading, error, vrMode, focusType, imgs}) => {
+const getHubMenuSrc = ({page, remoteServers, localServers, inputText, inputIndex, inputValue, loading, error, vrMode, focusType, imgs}) => {
   const pageSpec = (() => {
     const split = page.split(':');
     const name = split[0];
@@ -53,7 +53,7 @@ const getHubMenuSrc = ({page, remoteServers, localServers, serverNameText, input
 
     return getLocalServersSrc(localServers, pageIndex);
   } else if (name === 'createServer') {
-    return getCreateServerSrc(serverNameText, inputIndex, inputValue, focusType);
+    return getCreateServerSrc(inputText, inputIndex, inputValue, focusType);
   } else {
     return '';
   }
@@ -321,7 +321,7 @@ const getLocalServersSrc = (servers, pageIndex) => {
 
     return `\
       <div style="display: flex; width: 250px; height: inherit; flex-direction: column; box-sizing: border-box;">
-        <a style="display: flex; margin: 30px; padding: 20px 0; border: 1px solid; border-radius: 5px; font-weight: 400; text-decoration: none; flex-direction: column; justify-content: center; align-items: center;" onclick="localServers:create">
+        <a style="display: flex; margin: 30px; padding: 20px 0; border: 1px solid; border-radius: 5px; font-weight: 400; text-decoration: none; flex-direction: column; justify-content: center; align-items: center;" onclick="localServers:createServer">
           <div style="font-size: 24px;">Create server</div>
           <img src="${serverPlusImgSrc}" width="80" height="80" />
         </a>
@@ -343,7 +343,7 @@ const getLocalServersSrc = (servers, pageIndex) => {
   `;
 };
 
-const getCreateServerSrc = (serverNameText, inputIndex, inputValue, focusType) => {
+const getCreateServerSrc = (inputText, inputIndex, inputValue, focusType) => {
   return `\
     <div>
       <div style="display: flex; height: 100px; justify-content: center; align-items: center;">
@@ -353,13 +353,13 @@ const getCreateServerSrc = (serverNameText, inputIndex, inputValue, focusType) =
         <div style="margin-right: auto; font-size: 40px;">Create server</div>
       </div>
       <div style="display: flex; width: ${WIDTH}px; height: ${HEIGHT - 100}px; flex-direction: column; justify-content: center; align-items: center;">
-        <a style="position: relative; display: block; width: 600px; margin-bottom: 20px; border-bottom: 3px solid #000; font-size: 40px; text-decoration: none; overflow: hidden;" onclick="createServer:focus:serverName">
-          ${focusType === 'search' ? `<div style="position: absolute; width: 2px; top: 2px; bottom: 2px; left: ${inputValue}px; background-color: #333;"></div>` : ''}
-          <div>${serverNameText}</div>
-          ${!serverNameText ? `<div style="color: #AAA;">Choose a name</div>` : ''}
+        <a style="position: relative; display: block; width: 600px; margin-bottom: 20px; border-bottom: 3px solid #000; font-size: 40px; line-height: 1.4; text-decoration: none; overflow: hidden;" onclick="createServer:focus">
+          ${focusType === 'createServer' ? `<div style="position: absolute; width: 2px; top: 2px; bottom: 2px; left: ${inputValue}px; background-color: #333;"></div>` : ''}
+          <div>${inputText}</div>
+          ${!inputText ? `<div style="color: #AAA;">Choose a name</div>` : ''}
         </a>
         <div style="display: flex; justify-content: center; align-items: center;">
-          <a style="display: flex; margin: 30px; padding: 20px; border: 1px solid; border-radius: 5px; font-weight: 400; text-decoration: none; flex-direction: column; justify-content: center; align-items: center;" onclick="createServer">
+          <a style="display: flex; margin: 30px; padding: 20px; border: 1px solid; border-radius: 5px; font-weight: 400; text-decoration: none; flex-direction: column; justify-content: center; align-items: center;" onclick="createServer:submit">
             <div style="font-size: 24px;">Create server</div>
             <img src="${serverPlusImgSrc}" width="80" height="80" />
           </a>

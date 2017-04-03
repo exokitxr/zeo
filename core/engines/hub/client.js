@@ -248,7 +248,6 @@ class Hub {
               page: 'tutorial:' + 0,
               remoteServers: [],
               localServers: [],
-              serverNameText: '',
               username: '',
               inputText: '',
               inputIndex: 0,
@@ -278,7 +277,7 @@ class Hub {
                     page,
                     remoteServers,
                     localServers,
-                    serverNameText,
+                    inputText,
                     inputIndex,
                     inputValue,
                     loading,
@@ -295,7 +294,7 @@ class Hub {
                     page,
                     remoteServers,
                     localServers,
-                    serverNameText,
+                    inputText,
                     inputIndex,
                     inputValue,
                     loading,
@@ -891,7 +890,7 @@ class Hub {
                     .then(servers => {
                       hubState.remoteServers = servers;
 
-                      menuUi.update();
+                      _updatePages();
                     })
                     .catch(err => {
                       console.warn(err);
@@ -905,15 +904,11 @@ class Hub {
                     .then(servers => {
                       hubState.localServers = servers;
 
-                      menuUi.update();
+                      _updatePages();
                     })
                     .catch(err => {
                       console.warn(err);
                     });
-
-                  return true;
-                } else if (onclick === 'localServers:create') {
-                  _setPage('createServer');
 
                   return true;
                 } else if (match = onclick.match(/^remoteServer:([0-9]+)$/)) {
@@ -950,12 +945,18 @@ class Hub {
                   serverMeshes.push(serverMesh);
 
                   return true;
-                } else if (onclick === 'createServer:focus:serverName') {
-                  console.log('focus create server name'); // XXX
+                } else if (onclick === 'localServers:createServer') {
+                  _setPage('createServer');
 
                   return true;
-                } else if (onclick === 'createServer') {
-                  const worldname = _makeId(); // XXX get the worldname from the input
+                } else if (onclick === 'createServer:focus') {
+                  focusState.type = 'createServer';
+
+                  _updatePages();
+
+                  return true;
+                } else if (onclick === 'createServer:submit') {
+                  const {inputText: worldname} = hubState;
 
                   fetch('https://' + hubUrl + '/servers/create', {
                     method: 'POST',
@@ -995,6 +996,7 @@ class Hub {
             input.on('trigger', _trigger, {
               priority: 1,
             });
+
             const _gripdown = e => {
               const {side} = e;
               const grabbableState = grabbableStates[side];
@@ -1038,6 +1040,34 @@ class Hub {
             input.on('gripup', _gripup, {
               priority: 1,
             });
+
+            const _keydown = e => {
+              const {type} = focusState;
+
+              if (type === 'createServer') {
+                const applySpec = biolumi.applyStateKeyEvent(hubState, mainFontSpec, e);
+
+                if (applySpec) {
+                  const {commit} = applySpec;
+
+                  if (commit) {
+                    focusState.type = '';
+                  }
+
+                  _updatePages();
+
+                  e.stopImmediatePropagation();
+                }
+              }
+            };
+            input.on('keydown', _keydown, {
+              priority: 1,
+            });
+            const _keyboarddown = _keydown;
+            input.on('keyboarddown', _keyboarddown, {
+              priority: 1,
+            });
+
             const _update = () => {
               const _updateMenuAnchors = () => {
                 const {gamepads} = webvr.getStatus();
@@ -1344,8 +1374,13 @@ class Hub {
               });
 
               input.removeListener('trigger', _trigger);
+
               input.removeListener('gripdown', _gripdown);
               input.removeListener('gripup', _gripup);
+
+              input.removeListener('keydown', _keydown);
+              input.removeListener('keyboarddown', _keyboarddown);
+
               rend.removeListener('update', _update);
             };
           }
