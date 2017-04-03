@@ -43,7 +43,7 @@ class Tags {
 
   mount() {
     const {_archae: archae} = this;
-    const {metadata: {hub: {enabled: hubEnabled}}} = archae;
+    const {metadata: {home: {enabled: homeEnabled}}} = archae;
 
     let live = true;
     this._cleanup = () => {
@@ -1613,7 +1613,7 @@ class Tags {
           const _update = () => {
             const _updateControllers = () => {
               const _updateElementAnchors = () => {
-                if (rend.isOpen() || hubEnabled) {
+                if (rend.isOpen() || homeEnabled) {
                   const {gamepads} = webvr.getStatus();
                   const controllers = cyborg.getControllers();
                   const controllerMeshes = SIDES.map(side => controllers[side].mesh);
@@ -1747,7 +1747,7 @@ class Tags {
                 }
               }
               const _updateDragStates = () => {
-                if (rend.isOpen() || hubEnabled) {
+                if (rend.isOpen() || homeEnabled) {
                   SIDES.forEach(side => {
                     const dragState = dragStates[side];
                     const {src} = dragState;
@@ -1787,7 +1787,7 @@ class Tags {
                 }
               };
               const _updateDragLines = () => {
-                if (rend.isOpen() || hubEnabled) {
+                if (rend.isOpen() || homeEnabled) {
                   const {gamepads} = webvr.getStatus();
                   const controllers = cyborg.getControllers();
                   const controllerMeshes = SIDES.map(side => controllers[side].mesh);

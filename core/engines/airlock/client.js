@@ -19,7 +19,7 @@ class Airlock {
 
   mount() {
     const {_archae: archae} = this;
-    const {metadata: {hub: {url: hubUrl, enabled: hubEnabled}, server: {url: serverUrl, enabled: serverEnabled}}} = archae;
+    const {metadata: {home: {url: homeUrl, enabled: homeEnabled}, server: {url: serverUrl, enabled: serverEnabled}}} = archae;
 
     let live = true;
     this._cleanup = () => {
@@ -29,8 +29,8 @@ class Airlock {
     const _requestImage = p => new Promise((accept, reject) => {
       const img = new Image();
       const url = (() => {
-        if (hubEnabled) {
-          return hubUrl;
+        if (homeEnabled) {
+          return homeUrl;
         } else if (serverEnabled) {
           return serverUrl;
         } else {

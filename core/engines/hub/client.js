@@ -42,14 +42,14 @@ class Hub {
 
   mount() {
     const {_archae: archae} = this;
-    const {metadata: {hub: {url: hubUrl, enabled: hubEnabled}, server: {url: serverUrl, enabled: serverEnabled}}} = archae;
+    const {metadata: {home: {url: homeUrl, enabled: homeEnabled}, server: {url: serverUrl, enabled: serverEnabled}}} = archae;
 
     let live = true;
     this._cleanup = () => {
       live = false;
     };
 
-    if (hubEnabled) {
+    if (homeEnabled) {
       const _requestBlobDataUrl = blob => new Promise((accept, reject) => {
         const reader = new FileReader();
         reader.onload = e => {
