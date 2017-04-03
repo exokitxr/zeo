@@ -496,6 +496,7 @@ class Hub {
                   reject(err);
                 };
               });
+              // XXX for local servers we should query the cubeMap from the server directly rather than going through the hub as we go here
               const _requestCubeMapImgs = server => Promise.all(FACES.map(face => _requestImageFile('/servers/img/cubemap/' + encodeURIComponent(server.url) + '/'+ face + '.png')))
                 .then(cubeMapImgs => {
                   const result = {};
@@ -902,7 +903,6 @@ class Hub {
 
                   _requestLocalServers()
                     .then(servers => {
-console.log('got local servers', servers);
                       hubState.localServers = servers;
 
                       menuUi.update();
@@ -932,7 +932,18 @@ console.log('got local servers', servers);
                 } else if (match = onclick.match(/^localServer:([0-9]+)$/)) {
                   const index = parseInt(match[1], 10);
 
-                  console.log('open local server', {index}); // XXX
+                  const {localServers} = hubState;
+                  const server = localServers[index];
+
+                  const serverMesh = _makeServerMesh(server);
+                  serverMesh.position.y = 1.2;
+                  serversMesh.add(serverMesh);
+                  serverMesh.updateMatrixWorld();
+                  const {envMesh} = serverMesh;
+                  envMesh.updateBoxTarget();
+
+                  const {serverMeshes} = serversMesh;
+                  serverMeshes.push(serverMesh);
 
                   return true;
                 } else if (onclick === 'hub:apiDocs') {
