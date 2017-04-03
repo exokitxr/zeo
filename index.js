@@ -117,7 +117,7 @@ const config = {
       enabled: flags.dns || false,
     },
     my: {
-      my: flags.my || false,
+      enabled: flags.my || false,
     },
   },
 };

@@ -29,7 +29,7 @@ const chevronLeftIconSrc = 'data:image/svg+xml;base64,' + btoa(chevronLeftImg);
 const upImg = require('../img/up');
 const downImg = require('../img/down');
 
-const getHubMenuSrc = ({page, remoteServers, localServers, inputText, inputIndex, inputValue, loading, error, vrMode, focusType, imgs}) => {
+const getHubMenuSrc = ({page, remoteServers, localServers, inputText, inputIndex, inputValue, loading, error, vrMode, focusType, flags, imgs}) => {
   const pageSpec = (() => {
     const split = page.split(':');
     const name = split[0];
@@ -45,7 +45,7 @@ const getHubMenuSrc = ({page, remoteServers, localServers, inputText, inputIndex
     const {args} = pageSpec;
     const pageIndex = parseInt(args[0], 10);
 
-    return getTutorialPageSrc(pageIndex, loading, error, vrMode, imgs);
+    return getTutorialPageSrc(pageIndex, loading, error, vrMode, flags, imgs);
   } else if (name === 'remoteServers') {
     const {args} = pageSpec;
     const pageIndex = parseInt(args[0], 10);
@@ -63,7 +63,7 @@ const getHubMenuSrc = ({page, remoteServers, localServers, inputText, inputIndex
   }
 };
 
-const getTutorialPageSrc = (pageIndex, loading, error, vrMode, imgs) => {
+const getTutorialPageSrc = (pageIndex, loading, error, vrMode, flags, imgs) => {
   const keyboardVrMode = vrMode === null || vrMode === 'keyboard';
 
   const content = (() => {
@@ -182,10 +182,14 @@ const getTutorialPageSrc = (pageIndex, loading, error, vrMode, imgs) => {
             <div style="margin-bottom: 15px; font-size: 24px;">Tutorial</div>
             <img src="${viewCarouselImgSrc}" width="100" height="100" />
           </a>
-          <a style="display: flex; width: 200px; height: 200px; margin-right: 30px; border: 1px solid; border-radius: 5px; font-weight: 400; text-decoration: none; flex-direction: column; justify-content: center; align-items: center;" onclick="hub:localServers">
-            <div style="margin-bottom: 15px; font-size: 24px;">Local servers</div>
-            <img src="${serverPlusImgSrc}" width="100" height="100" />
-          </a>
+          ${flags.localServers ?
+            `<a style="display: flex; width: 200px; height: 200px; margin-right: 30px; border: 1px solid; border-radius: 5px; font-weight: 400; text-decoration: none; flex-direction: column; justify-content: center; align-items: center;" onclick="hub:localServers">
+              <div style="margin-bottom: 15px; font-size: 24px;">Local servers</div>
+              <img src="${serverPlusImgSrc}" width="100" height="100" />
+            </a>`
+          :
+            ''
+          }
         </div>
       `;
       /* `\

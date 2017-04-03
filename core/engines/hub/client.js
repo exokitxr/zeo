@@ -42,7 +42,21 @@ class Hub {
 
   mount() {
     const {_archae: archae} = this;
-    const {metadata: {home: {url: homeUrl, enabled: homeEnabled}, server: {url: serverUrl, enabled: serverEnabled}}} = archae;
+    const {
+      metadata: {
+        home: {
+          url: homeUrl,
+          enabled: homeEnabled,
+        },
+        my: {
+          enabled: myEnabled,
+        },
+        server: {
+          url: serverUrl,
+          enabled: serverEnabled,
+        },
+      },
+    } = archae;
 
     let live = true;
     this._cleanup = () => {
@@ -179,6 +193,9 @@ class Hub {
               inputValue: 0,
               loading: false,
               error: null,
+              flags: {
+                localServers: myEnabled,
+              },
               vrMode: bootstrap.getVrMode(),
             };
             const focusState = {
@@ -207,6 +224,7 @@ class Hub {
                     inputValue,
                     loading,
                     error,
+                    flags,
                     vrMode,
                   },
                   focus: {
@@ -226,6 +244,7 @@ class Hub {
                     error,
                     vrMode,
                     focusType,
+                    flags,
                     imgs,
                   }),
                   x: 0,
