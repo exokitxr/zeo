@@ -955,7 +955,30 @@ class Hub {
 
                   return true;
                 } else if (onclick === 'createServer') {
-                  console.log('create server'); // XXX
+                  const worldname = _makeId(); // XXX get the worldname from the input
+
+                  fetch('https://' + hubUrl + '/servers/create', {
+                    method: 'POST',
+                    headers: (() => {
+                      const result = new Headers();
+                      result.append('Content-Type', 'application/json');
+                      return result;
+                    })(),
+                    body: JSON.stringify({
+                      worldname: worldname,
+                    }),
+                  })
+                    .then(res => res.json()
+                      .then(server => {
+                        const {localServers} = hubState;
+                        localServers.push(server);
+
+                        _setPage('localServers');
+                      })
+                    )
+                    .catch(err => {
+                      console.warn(err);
+                    });
 
                   return true;
                 } else if (onclick === 'hub:apiDocs') {

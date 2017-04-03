@@ -41,6 +41,7 @@
     "nedb": "^1.8.0",
     "node-fetch": "^1.6.3",
     "password-hash-and-salt": "^0.1.4",
+    "portastic": "^1.0.1",
     "ps-node": "^0.1.5",
     "rnd": "^1.0.10",
     "sharp": "^0.17.2",
