@@ -241,9 +241,15 @@ const getServerSrc = (server, index, prefix) => {
           <i>https://${url}</i>
         </div>
       </div>
-      <div style="width: 300px; padding: 5px; box-sizing: border-box;">${users.map(user =>
-        `<div style="display: inline-block; margin-right: 5px; padding: 2px 10px; background-color: #F7F7F7; font-size: 13px; font-weight: 400;">${user}</div>`
-      ).join('')}</div>
+      <div style="width: 300px; padding: 5px; box-sizing: border-box;">
+        ${users.length > 0 ?
+          users.map(user =>
+            `<div style="display: inline-block; margin-right: 5px; padding: 2px 10px; background-color: #F7F7F7; font-size: 13px; font-weight: 400;">${user}</div>`
+          ).join('')
+        :
+          'No users'
+        }
+      </div>
     </a>
   `;
 };
@@ -295,19 +301,6 @@ const getRemoteServersSrc = (servers, pageIndex) => {
 
 const getLocalServersSrc = (servers, pageIndex) => {
   const leftSrc = (() => {
-    const servers = [
-      {
-        worldname: 'Server One',
-        url: 'https://server1.zeovr.io:8001',
-        users: ['lol', 'zol', 'troll'],
-      },
-      {
-        worldname: 'Server Two',
-        url: 'https://server2.zeovr.io:8002',
-        users: ['lola', 'zola', 'trolla'],
-      },
-    ];
-
     return `\
       <div style="display: flex; margin-right: auto; flex-direction: column;">
         <div style="display: flex; height: 100px; justify-content: center; align-items: center;">

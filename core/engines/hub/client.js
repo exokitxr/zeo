@@ -247,18 +247,7 @@ class Hub {
             const hubState = {
               page: 'tutorial:' + 0,
               remoteServers: [],
-              localServers: [
-                {
-                  worldname: 'Server One',
-                  url: 'https://server1.zeovr.io:8001',
-                  users: ['lol', 'zol', 'troll'],
-                },
-                {
-                  worldname: 'Server Two',
-                  url: 'https://server2.zeovr.io:8002',
-                  users: ['lola', 'zola', 'trolla'],
-                },
-              ],
+              localServers: [],
               searchText: '',
               username: '',
               inputText: '',
@@ -745,7 +734,35 @@ class Hub {
                   return Promise.all(imgPromises)
                     .then(() => servers);
                 })
-              )
+              );
+            const _requestLocalServers = () => fetch('https://' + hubUrl + '/servers/local.json')
+              .then(res => res.json()
+                .then(j => {
+                  const {servers} = j;
+                  const imgPromises = servers.map(server => {
+                    const {url} = server;
+
+                    return fetch('https://' + url + '/servers/img/icon.png')
+                      .then(res => res.blob()
+                        .then(blob => new Promise((accept, reject) => {
+                          const reader = new FileReader();
+                          reader.readAsDataURL(blob);
+                          reader.onloadend = () => {
+                            const dataUrl = reader.result;
+                            server.iconImgSrc = dataUrl;
+
+                            accept();
+                          };
+                          reader.onerror = err => {
+                            reject(err);
+                          };
+                        }))
+                      )
+                  });
+                  return Promise.all(imgPromises)
+                    .then(() => servers);
+                })
+              );
 
             const _trigger = e => {
               const {side} = e;
@@ -882,6 +899,17 @@ class Hub {
                   return true;
                 } else if (onclick === 'hub:localServers') {
                   _setPage('localServers');
+
+                  _requestLocalServers()
+                    .then(servers => {
+console.log('got local servers', servers);
+                      hubState.localServers = servers;
+
+                      menuUi.update();
+                    })
+                    .catch(err => {
+                      console.warn(err);
+                    });
 
                   return true;
                 } else if (match = onclick.match(/^remoteServer:([0-9]+)$/)) {
