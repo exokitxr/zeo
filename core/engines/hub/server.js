@@ -3,9 +3,6 @@ const fs = require('fs');
 
 const psNode = require('ps-node');
 
-const _resolvePath = (file, directory) => path.normalize(/^\//.test(file) ? file : path.join(directory, file))
-const localIndexFilePath = _resolvePath(process.argv[1], process.cwd());
-
 class Hub {
   constructor(archae) {
     this._archae = archae;
