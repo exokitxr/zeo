@@ -38,6 +38,7 @@
     "markdown-toc": "^1.1.0",
     "marked": "^0.3.6",
     "mkdirp": "^0.5.1",
+    "native-dns": "^0.7.0",
     "nedb": "^1.8.0",
     "node-fetch": "^1.6.3",
     "password-hash-and-salt": "^0.1.4",
