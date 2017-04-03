@@ -27,7 +27,7 @@ const chevronLeftIconSrc = 'data:image/svg+xml;base64,' + btoa(chevronLeftImg);
 const upImg = require('../img/up');
 const downImg = require('../img/down');
 
-const getHubMenuSrc = ({page, remoteServers, localServers, searchText, inputIndex, inputValue, loading, error, vrMode, focusType, imgs}) => {
+const getHubMenuSrc = ({page, remoteServers, localServers, serverNameText, inputIndex, inputValue, loading, error, vrMode, focusType, imgs}) => {
   const pageSpec = (() => {
     const split = page.split(':');
     const name = split[0];
@@ -43,7 +43,7 @@ const getHubMenuSrc = ({page, remoteServers, localServers, searchText, inputInde
     const {args} = pageSpec;
     const pageIndex = parseInt(args[0], 10);
 
-    return getTutorialPageSrc(pageIndex, searchText, inputIndex, inputValue, loading, error, focusType, vrMode, imgs);
+    return getTutorialPageSrc(pageIndex, loading, error, vrMode, imgs);
   } else if (name === 'remoteServers') {
     const pageIndex = 0; // XXX actually derive the real page index here
 
@@ -52,12 +52,14 @@ const getHubMenuSrc = ({page, remoteServers, localServers, searchText, inputInde
     const pageIndex = 0; // XXX actually derive the real page index here
 
     return getLocalServersSrc(localServers, pageIndex);
+  } else if (name === 'createServer') {
+    return getCreateServerSrc(serverNameText, inputIndex, inputValue, focusType);
   } else {
     return '';
   }
 };
 
-const getTutorialPageSrc = (pageIndex, searchText, inputIndex, inputValue, loading, error, focusType, vrMode, imgs) => {
+const getTutorialPageSrc = (pageIndex, loading, error, vrMode, imgs) => {
   const keyboardVrMode = vrMode === null || vrMode === 'keyboard';
 
   const content = (() => {
@@ -337,6 +339,32 @@ const getLocalServersSrc = (servers, pageIndex) => {
     <div style="display: flex; height: ${HEIGHT}px;">
       ${leftSrc}
       ${rightSrc}
+    </div>
+  `;
+};
+
+const getCreateServerSrc = (serverNameText, inputIndex, inputValue, focusType) => {
+  return `\
+    <div>
+      <div style="display: flex; height: 100px; justify-content: center; align-items: center;">
+        <a style="display: block; width: 100px;" onclick="hub:menu">
+          <img src="${chevronLeftIconSrc}" width="80" height="80" />
+        </a>
+        <div style="margin-right: auto; font-size: 40px;">Create server</div>
+      </div>
+      <div style="display: flex; width: ${WIDTH}px; height: ${HEIGHT - 100}px; flex-direction: column; justify-content: center; align-items: center;">
+        <a style="position: relative; display: block; width: 600px; margin-bottom: 20px; border-bottom: 3px solid #000; font-size: 40px; text-decoration: none; overflow: hidden;" onclick="createServer:focus:serverName">
+          ${focusType === 'search' ? `<div style="position: absolute; width: 2px; top: 2px; bottom: 2px; left: ${inputValue}px; background-color: #333;"></div>` : ''}
+          <div>${serverNameText}</div>
+          ${!serverNameText ? `<div style="color: #AAA;">Choose a name</div>` : ''}
+        </a>
+        <div style="display: flex; justify-content: center; align-items: center;">
+          <a style="display: flex; margin: 30px; padding: 20px; border: 1px solid; border-radius: 5px; font-weight: 400; text-decoration: none; flex-direction: column; justify-content: center; align-items: center;" onclick="createServer">
+            <div style="font-size: 24px;">Create server</div>
+            <img src="${serverPlusImgSrc}" width="80" height="80" />
+          </a>
+        </div>
+      </div>
     </div>
   `;
 };

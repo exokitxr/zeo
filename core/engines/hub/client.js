@@ -248,7 +248,7 @@ class Hub {
               page: 'tutorial:' + 0,
               remoteServers: [],
               localServers: [],
-              searchText: '',
+              serverNameText: '',
               username: '',
               inputText: '',
               inputIndex: 0,
@@ -278,7 +278,7 @@ class Hub {
                     page,
                     remoteServers,
                     localServers,
-                    searchText,
+                    serverNameText,
                     inputIndex,
                     inputValue,
                     loading,
@@ -295,7 +295,7 @@ class Hub {
                     page,
                     remoteServers,
                     localServers,
-                    searchText,
+                    serverNameText,
                     inputIndex,
                     inputValue,
                     loading,
@@ -912,6 +912,10 @@ class Hub {
                     });
 
                   return true;
+                } else if (onclick === 'localServers:create') {
+                  _setPage('createServer');
+
+                  return true;
                 } else if (match = onclick.match(/^remoteServer:([0-9]+)$/)) {
                   const index = parseInt(match[1], 10);
 
@@ -944,6 +948,14 @@ class Hub {
 
                   const {serverMeshes} = serversMesh;
                   serverMeshes.push(serverMesh);
+
+                  return true;
+                } else if (onclick === 'createServer:focus:serverName') {
+                  console.log('focus create server name'); // XXX
+
+                  return true;
+                } else if (onclick === 'createServer') {
+                  console.log('create server'); // XXX
 
                   return true;
                 } else if (onclick === 'hub:apiDocs') {
