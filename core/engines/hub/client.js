@@ -51,6 +51,9 @@ class Hub {
         my: {
           enabled: myEnabled,
         },
+        hub: {
+          url: hubUrl,
+        },
         server: {
           url: serverUrl,
           enabled: serverEnabled,
