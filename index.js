@@ -23,6 +23,7 @@ const _findArg = name => {
 const flags = {
   server: args.includes('server'),
   site: args.includes('site'),
+  home: args.includes('home'),
   hub: args.includes('hub'),
   install: args.includes('install'),
   makeToken: args.includes('makeToken'),
@@ -41,6 +42,7 @@ const flags = {
   installDirectory: _findArg('installDirectory'),
   serverHost: _findArg('serverHost'),
   worldname: _findArg('worldname'),
+  homeUrl: _findArg('homeUrl'),
   hubUrl: _findArg('hubUrl'),
   dns: args.includes('dns'),
   dnsPort: (() => {
@@ -76,9 +78,10 @@ const port = flags.port || 8000;
 const dataDirectory = flags.dataDirectory || 'data';
 const cryptoDirectory = flags.cryptoDirectory || 'crypto';
 const installDirectory = flags.installDirectory || 'installed';
-const staticSite = flags.site && !(flags.hub || flags.server);
+const staticSite = flags.site && !(flags.home || flags.hub || flags.server);
 const serverHost = flags.serverHost || ('server.' + hostname);
 const worldname = flags.worldname || [_capitalize(rnd.adjective()), _capitalize(rnd.noun())].join(' ');
+const homeUrl = flags.homeUrl || ('home.' + hostname + ':' + port);
 const hubUrl = flags.hubUrl || ('hub.' + hostname + ':' + port);
 const config = {
   dirname: __dirname,
@@ -89,12 +92,16 @@ const config = {
   cryptoDirectory: cryptoDirectory,
   installDirectory: installDirectory,
   cors: !staticSite,
-  corsOrigin: hubUrl,
+  corsOrigin: 'https://' + homeUrl,
   staticSite: staticSite,
   metadata: {
     site: {
       url: hostname + ':' + port,
       enabled: flags.site,
+    },
+    home: {
+      url: homeUrl,
+      enabled: flags.home,
     },
     hub: {
       url: hubUrl,
@@ -115,11 +122,6 @@ const config = {
   },
 };
 const a = archae(config);
-a.app.getHostname = req => {
-  const hostHeader = req.get('Host') || '';
-  const match = hostHeader.match(/^([^:]+)(?::[\s\S]*)?$/);
-  return match && match[1];
-};
 
 const _install = () => {
   if (flags.install || flags.hub || flags.server) {
@@ -303,6 +305,10 @@ const _listenLibs = ({key, userDb}) => {
     const site = require('./lib/site');
     listenPromises.push(site.listen(a, config, {key, userDb}));
   }
+  if (flags.home) {
+    const home = require('./lib/home');
+    listenPromises.push(home.listen(a, config, {key, userDb}));
+  }
   if (flags.hub) {
     const hub = require('./lib/hub');
     listenPromises.push(hub.listen(a, config, {key, userDb}));
@@ -329,7 +335,7 @@ const _lockArchae = () => {
 };
 
 const _listenArchae = () => {
-  if (flags.site || flags.hub || flags.server) {
+  if (flags.site || flags.home || flags.hub || flags.server) {
     return new Promise((accept, reject) => {
       a.listen(err => {
         if (!err) {
@@ -414,13 +420,16 @@ _checkArgs()
     .then(() => _boot({key}))
     .then(() => {
       if (flags.site) {
-        console.log('https://' + config.metadata.site.url + '/');
+        console.log('Site: https://' + config.metadata.site.url + '/');
+      }
+      if (flags.home) {
+        console.log('Home: https://' + config.metadata.hub.url + '/');
       }
       if (flags.hub) {
-        console.log('https://' + config.metadata.hub.url + '/');
+        console.log('Hub: https://' + config.metadata.hub.url + '/');
       }
       if (flags.server) {
-        console.log('https://' + config.metadata.server.url + '/');
+        console.log('Server: https://' + config.metadata.server.url + '/');
       }
     })
     .then(() => _launch())
