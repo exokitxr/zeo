@@ -6,6 +6,8 @@ const {
   SERVER_HEIGHT,
 } = require('../constants/menu');
 
+const SERVERS_PER_PAGE = 8;
+
 const leftWhiteImg = require('../img/left-white');
 const leftWhiteImgSrc = 'data:image/svg+xml;base64,' + btoa(leftWhiteImg);
 const rightWhiteImg = require('../img/right-white');
@@ -45,11 +47,13 @@ const getHubMenuSrc = ({page, remoteServers, localServers, inputText, inputIndex
 
     return getTutorialPageSrc(pageIndex, loading, error, vrMode, imgs);
   } else if (name === 'remoteServers') {
-    const pageIndex = 0; // XXX actually derive the real page index here
+    const {args} = pageSpec;
+    const pageIndex = parseInt(args[0], 10);
 
     return getRemoteServersSrc(remoteServers, pageIndex);
   } else if (name === 'localServers') {
-    const pageIndex = 0; // XXX actually derive the real page index here
+    const {args} = pageSpec;
+    const pageIndex = parseInt(args[0], 10);
 
     return getLocalServersSrc(localServers, pageIndex);
   } else if (name === 'createServer') {
@@ -273,17 +277,17 @@ const getRemoteServersSrc = (servers, pageIndex) => {
           </a>
           <div style="margin-right: auto; font-size: 40px;">Remote servers</div>
         </div>
-        ${getServersSrc(servers, 'remoteServer')}
+        ${getServersSrc(servers.slice(pageIndex * SERVERS_PER_PAGE, (pageIndex + 1) * SERVERS_PER_PAGE), 'remoteServer')}
       </div>
     `;
   })();
   const rightSrc = (() => {
-    const showUp = pageIndex !== 0; // XXX really derive these
-    const showDown = pageIndex === 0;
+    const showUp = pageIndex > 0;
+    const showDown = servers.length >= ((pageIndex + 1) * SERVERS_PER_PAGE);
 
     return `\
       <div style="display: flex; width: 250px; height: inherit; flex-direction: column; box-sizing: border-box;">
-        <a style="position: relative; display: flex; margin: 0 30px; margin-bottom: auto; border: 1px solid; border-radius: 5px; text-decoration: none; justify-content: center; align-items: center; ${showUp ? '' : 'visibility: hidden;'}" onclick="servers:up">
+        <a style="position: relative; display: flex; margin: 0 30px; margin-top: 20px; margin-bottom: auto; border: 1px solid; border-radius: 5px; text-decoration: none; justify-content: center; align-items: center; ${showUp ? '' : 'visibility: hidden;'}" onclick="servers:up">
           ${upImg}
         </a>
         <a style="position: relative; display: flex; margin: 0 30px; margin-bottom: 20px; border: 1px solid; border-radius: 5px; text-decoration: none; justify-content: center; align-items: center; ${showDown ? '' : 'visibility: hidden;'}" onclick="servers:down">
@@ -311,13 +315,13 @@ const getLocalServersSrc = (servers, pageIndex) => {
           </a>
           <div style="margin-right: auto; font-size: 40px;">Local servers</div>
         </div>
-        ${getServersSrc(servers, 'localServer')}
+        ${getServersSrc(servers.slice(pageIndex * SERVERS_PER_PAGE, (pageIndex + 1) * SERVERS_PER_PAGE), 'localServer')}
       </div>
     `;
   })();
   const rightSrc = (() => {
-    const showUp = pageIndex !== 0; // XXX really derive these
-    const showDown = pageIndex === 0;
+    const showUp = pageIndex > 0;
+    const showDown = servers.length >= ((pageIndex + 1) * SERVERS_PER_PAGE);
 
     return `\
       <div style="display: flex; width: 250px; height: inherit; flex-direction: column; box-sizing: border-box;">

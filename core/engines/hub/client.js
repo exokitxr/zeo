@@ -768,7 +768,7 @@ class Hub {
 
                   return true;
                 } else if (onclick === 'hub:remoteServers') {
-                  _setPage('remoteServers');
+                  _setPage('remoteServers:' + 0);
 
                   _requestRemoteServers()
                     .then(servers => {
@@ -782,7 +782,7 @@ class Hub {
 
                   return true;
                 } else if (onclick === 'hub:localServers') {
-                  _setPage('localServers');
+                  _setPage('localServers:' + 0);
 
                   _requestLocalServers()
                     .then(servers => {
@@ -827,6 +827,18 @@ class Hub {
 
                   const {serverMeshes} = serversMesh;
                   serverMeshes.push(serverMesh);
+
+                  return true;
+                } else if (onclick === 'servers:up') {
+                  const {page} = hubState;
+                  const pageSpec = _parsePage(page);
+                  _setPage([pageSpec.name, parseInt(pageSpec.args[0], 10) - 1].join(':'));
+
+                  return true;
+                } else if (onclick === 'servers:down') {
+                  const {page} = hubState;
+                  const pageSpec = _parsePage(page);
+                  _setPage([pageSpec.name, parseInt(pageSpec.args[0], 10) + 1].join(':'));
 
                   return true;
                 } else if (onclick === 'localServers:createServer') {
