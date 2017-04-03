@@ -584,11 +584,7 @@ class Hub {
 
               return object;
             };
-            const serversMesh = (() => {
-              const object = new THREE.Object3D();
-              object.serverMeshes = [];
-              return object;
-            })();
+            const serversMesh = new THREE.Object3D();
             scene.add(serversMesh);
 
             const _updatePages = () => {
@@ -721,9 +717,6 @@ class Hub {
                     const {metadata: {server, serverMesh}} = serverHoverState;
 
                     serversMesh.remove(serverMesh);
-
-                    const {serverMeshes} = serversMesh;
-                    serverMeshes.splice(serverMeshes.indexOf(serverMesh), 1);
                   }
 
                   return true;
@@ -828,15 +821,20 @@ class Hub {
                   const {remoteServers} = hubState;
                   const server = remoteServers[index];
 
+                  // remove old server meshes
+                  const {children} = serversMesh;
+                  for (let i = 0; i < children.length; i++) {
+                    const child = children[i];
+                    serversMesh.remove(child);
+                  }
+
+                  // add new server mesh
                   const serverMesh = _makeServerMesh(server);
                   serverMesh.position.y = 1.2;
                   serversMesh.add(serverMesh);
                   serverMesh.updateMatrixWorld();
                   const {envMesh} = serverMesh;
                   envMesh.updateBoxTarget();
-
-                  const {serverMeshes} = serversMesh;
-                  serverMeshes.push(serverMesh);
 
                   return true;
                 } else if (match = onclick.match(/^localServer:([0-9]+)$/)) {
@@ -845,15 +843,20 @@ class Hub {
                   const {localServers} = hubState;
                   const server = localServers[index];
 
+                  // remove old server meshes
+                  const {children} = serversMesh;
+                  for (let i = 0; i < children.length; i++) {
+                    const child = children[i];
+                    serversMesh.remove(child);
+                  }
+
+                  // add new server mesh
                   const serverMesh = _makeServerMesh(server);
                   serverMesh.position.y = 1.2;
                   serversMesh.add(serverMesh);
                   serverMesh.updateMatrixWorld();
                   const {envMesh} = serverMesh;
                   envMesh.updateBoxTarget();
-
-                  const {serverMeshes} = serversMesh;
-                  serverMeshes.push(serverMesh);
 
                   return true;
                 } else if (onclick === 'servers:up') {
@@ -1133,7 +1136,7 @@ class Hub {
               };
               const _updateEnvAnchors = () => {
                 const {gamepads} = webvr.getStatus();
-                const {serverMeshes} = serversMesh;
+                const {children: serverMeshes} = serversMesh;
 
                 SIDES.forEach(side => {
                   const gamepad = gamepads[side];
@@ -1196,7 +1199,7 @@ class Hub {
               };
               const _updateServerMeshes = () => {
                 const {hmd} = webvr.getStatus();
-                const {serverMeshes} = serversMesh;
+                const {children: serverMeshes} = serversMesh;
 
                 for (let i = 0; i < serverMeshes.length; i++) {
                   const serverMesh = serverMeshes[i];
@@ -1224,7 +1227,7 @@ class Hub {
                     const serverDotMesh = serverDotMeshes[side];
                     const serverBoxMesh = serverBoxMeshes[side];
 
-                    const {serverMeshes} = serversMesh;
+                    const {children: serverMeshes} = serversMesh;
                     const objects = serverMeshes.map(serverMesh => {
                       const {menuMesh} = serverMesh;
                       const {planeMesh} = menuMesh;
@@ -1289,9 +1292,7 @@ class Hub {
                 scene.remove(envDotMeshes[side]);
                 scene.remove(envBoxMeshes[side]);
               });
-              serverMeshes.forEach(serverMesh => {
-                scene.remove(serverMesh);
-              });
+              scene.remove(serversMesh);
 
               input.removeListener('trigger', _trigger);
 
