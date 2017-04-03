@@ -215,6 +215,12 @@ class Hub {
             const serverTracker = new ServerTracker();
 
             const _serverTrackerUpdate = servers => {
+              const {page} = hubState;
+              if (page === 'remoteServers') {
+                hubState.remoteServers = servers; // XXX update server images here
+                menuUi.update();
+              }
+
               serversMesh.refreshServerMeshes(servers);
             };
             serverTracker.on('update', _serverTrackerUpdate);
@@ -246,6 +252,19 @@ class Hub {
             };
             const hubState = {
               page: 'tutorial:' + 0,
+              remoteServers: [],
+              localServers: [
+                {
+                  worldname: 'Server One',
+                  url: 'https://server1.zeovr.io:8001',
+                  users: ['lol', 'zol', 'troll'],
+                },
+                {
+                  worldname: 'Server Two',
+                  url: 'https://server2.zeovr.io:8002',
+                  users: ['lola', 'zola', 'trolla'],
+                },
+              ],
               searchText: '',
               username: '',
               inputText: '',
@@ -274,6 +293,8 @@ class Hub {
                 const mesh = menuUi.addPage(({
                   hub: {
                     page,
+                    remoteServers,
+                    localServers,
                     searchText,
                     inputIndex,
                     inputValue,
@@ -289,6 +310,8 @@ class Hub {
                   type: 'html',
                   src: menuRenderer.getHubMenuSrc({
                     page,
+                    remoteServers,
+                    localServers,
                     searchText,
                     inputIndex,
                     inputValue,
@@ -729,6 +752,8 @@ class Hub {
 
                   return true;
                 } else if (onclick === 'hub:remoteServers') {
+                  hubState.remoteServers = serverTracker.getServers(); // XXX update server images here
+
                   _setPage('remoteServers');
 
                   return true;
