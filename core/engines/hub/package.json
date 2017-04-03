@@ -5,6 +5,7 @@
   "client": "client.js",
   "server": "server.js",
   "dependencies": {
-    "dataurl-to-blob": "0.0.1"
+    "dataurl-to-blob": "0.0.1",
+    "ps-node": "^0.1.5"
   }
 }
