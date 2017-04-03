@@ -42,7 +42,7 @@ const flags = {
   serverHost: _findArg('serverHost'),
   worldname: _findArg('worldname'),
   hubUrl: _findArg('hubUrl'),
-  dns: _findArg('dns'),
+  dns: args.includes('dns'),
   dnsPort: (() => {
     const s = _findArg('dnsPort');
 
@@ -52,6 +52,7 @@ const flags = {
       return null;
     }
   })(),
+  my: args.includes('my'),
   launch: _findArg('launch'),
 };
 const hasSomeFlag = (() => {
@@ -107,6 +108,9 @@ const config = {
     dns: {
       dnsPort: flags.dnsPort || 53,
       enabled: flags.dns || false,
+    },
+    my: {
+      my: flags.my || false,
     },
   },
 };
