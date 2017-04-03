@@ -165,7 +165,7 @@ class Bootstrap {
               userState.inventory[index] = item;
             }
 
-            saveUserState() {
+            saveUserState() { // XXX rethink these
               const {username} = userState;
 
               if (hubEnabled && username) {
