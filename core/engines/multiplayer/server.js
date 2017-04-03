@@ -18,10 +18,16 @@ class Multiplayer {
       hmdModelStatic(req, res, next);
     }
     app.use('/archae/models/hmd', serveHmdModel);
-    function serveControllerModel(req, res, next) {
+    function serveMultiplayerControllerModel(req, res, next) {
       controllerModelStatic(req, res, next);
     }
-    app.use('/archae/models/controller', serveControllerModel);
+    app.use('/archae/models/controller', serveMultiplayerControllerModel);
+    function serverMultiplayerStatuses(req, res, next) {
+      res.json({
+        statuses: _getAllStatuses(),
+      });
+    }
+    app.use('/archae/multiplayer/statuses.json', serverMultiplayerStatuses);
 
     const _getAllStatuses = () => {
       const result = [];
@@ -128,7 +134,11 @@ class Multiplayer {
 
     this._cleanup = () => {
       function removeMiddlewares(route, i, routes) {
-        if (route.handle.name === 'serveHmdModel' || route.handle.name === 'serveControllerModel') {
+        if (
+          route.handle.name === 'serveMultiplayerHmdModel' ||
+          route.handle.name === 'serveMultiplayerControllerModel' ||
+          route.handle.name === 'serverMultiplayerStatuses'
+        ) {
           routes.splice(i, 1);
         }
         if (route.route) {
