@@ -144,81 +144,6 @@ class Hub {
               return {position, rotation, scale};
             };
 
-            class ServerTracker extends EventEmitter {
-              constructor() {
-                super();
-
-                this.connection = null;
-                this.servers = new Map();
-
-                this.listen();
-              }
-
-              getServers() {
-                const result = [];
-                const {servers} = this;
-                servers.forEach(server => {
-                  result.push(server);
-                });
-                return result.sort((a, b) => a.url.localeCompare(b.url));
-              }
-
-              listen() {
-                const connection = new WebSocket('wss://' + hubUrl + '/hubWs');
-                connection.onopen = () => {
-                  // nothing
-                };
-                connection.onclose = () => {
-                  console.warn('hub server tracker connection closed');
-                };
-                connection.onerror = err => {
-                  console.warn(err);
-                };
-                connection.onmessage = msg => {
-                  const m = JSON.parse(msg.data);
-                  const {type} = m;
-
-                  if (type === 'servers') {
-                    const {args: [servers]} = m;
-
-                    for (let i = 0; i < servers.length; i++) {
-                      const server = servers[i];
-                      const {url} = server;
-                      this.servers.set(url, server);
-                    }
-
-                    const serversJson = this.getServers();
-                    this.emit('update', serversJson);
-                  } else if (type === 'server') {
-                    const {args: [url, server]} = m;
-
-                    if (server) {
-                      this.servers.set(url, server);
-                    } else {
-                      this.servers.delete(url, server);
-                    }
-
-                    const serversJson = this.getServers();
-                    this.emit('update', serversJson);
-                  } else {
-                    console.warn('unknown hub server tracker message type:', JSON.stringify(type));
-                  }
-                };
-                this.connection = connection;
-              }
-
-              destroy() {
-                const {connection} = this;
-                connection.close();
-              }
-            }
-            const serverTracker = new ServerTracker();
-
-            const _serverTrackerUpdate = servers => {
-              serversMesh.refreshServerMeshes(servers);
-            };
-            serverTracker.on('update', _serverTrackerUpdate);
-
             const wireframeHighlightMaterial = new THREE.MeshBasicMaterial({
               color: 0x0000FF,
               wireframe: true,
@@ -640,47 +565,6 @@ class Hub {
             const serversMesh = (() => {
               const object = new THREE.Object3D();
               object.serverMeshes = [];
-
-              const _makeServerMeshes = servers => {
-                const result = Array(servers.length);
-
-                for (let i = 0; i < servers.length; i++) {
-                  const server = servers[i];
-
-                  const mesh = (() => {
-                    const mesh = _makeServerMesh(server);
-                    mesh.position.x = -2 + (i * 1);
-                    mesh.position.y = 1.2;
-                    return mesh;
-                  })();
-                  result[i] = mesh;
-                }
-
-                return result;
-              };
-              const _refreshServerMeshes = servers => {
-                const {serverMeshes: oldServerMeshes} = object;
-                for (let i = 0; i < oldServerMeshes.length; i++) {
-                  const oldServerMesh = oldServerMeshes[i];
-                  object.remove(oldServerMesh);
-                }
-
-                const newServerMeshes = _makeServerMeshes(servers);
-                for (let i = 0; i < newServerMeshes.length; i++) {
-                  const newServerMesh = newServerMeshes[i];
-                  object.add(newServerMesh);
-                }
-                object.serverMeshes = newServerMeshes;
-
-                object.updateMatrixWorld();
-                for (let i = 0; i < newServerMeshes.length; i++) {
-                  const newServerMesh = newServerMeshes[i];
-                  const {envMesh} = newServerMesh;
-                  envMesh.updateBoxTarget();
-                }
-              };
-              object.refreshServerMeshes = _refreshServerMeshes;
-
               return object;
             })();
             scene.add(serversMesh);
@@ -1349,9 +1233,6 @@ class Hub {
             rend.on('update', _update);
 
             this._cleanup = () => {
-              serverTracker.destroy();
-              serverTracker.removeListener('update', _serverTrackerUpdate);
-
               bootstrap.removeListener('vrModeChange', _vrModeChange);
 
               scene.remove(menuMesh);
