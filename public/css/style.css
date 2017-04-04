@@ -473,6 +473,8 @@ code {
   width: 80px;
   height: 80px;
   margin-right: 10px;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: pixelated;
 }
 .servers-body .server .server-wrap {
   display: flex;
