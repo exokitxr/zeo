@@ -31,7 +31,6 @@
     "archae": "0.0.50",
     "base128": "^0.2.1",
     "body-parser": "^1.16.1",
-    "busboy": "^0.2.14",
     "cli-spinner": "^0.2.6",
     "cookie": "^0.3.1",
     "lru-cache": "^4.0.2",
@@ -45,7 +44,6 @@
     "portastic": "^1.0.1",
     "ps-node": "^0.1.5",
     "rnd": "^1.0.10",
-    "sharp": "^0.17.2",
     "urlsafe-base64": "^1.0.0"
   }
 }
