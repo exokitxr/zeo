@@ -310,7 +310,7 @@ code {
 .modules-body .module-image {
   width: 100px;
   height: 100px;
-  image-rendering: -mox-crisp-edges;
+  image-rendering: -moz-crisp-edges;
   image-rendering: pixelated;
 }
 .modules-body .module-content {
@@ -426,7 +426,7 @@ code {
   width: 80px;
   height: 80px;
   margin-right: 15px;
-  image-rendering: -mox-crisp-edges;
+  image-rendering: -moz-crisp-edges;
   image-rendering: pixelated;
 }
 .readme-header .readme-header-wrap {
