@@ -869,8 +869,31 @@ class Hub {
                     const {url} = server;
                     const fullServerUrl = 'https://' + server.url;
 
-                    const _connect = token => {
+                    const _connect = (token = null) => {
                       window.parent.location = fullServerUrl + (token ? ('?t=' + token) : '');
+                    };
+                    const _proxyLogin = () => {
+                      const {worldname} = server;
+
+                      fetch('https://' + hubUrl + '/servers/proxyLogin', {
+                        method: 'POST',
+                        headers: (() => {
+                          const result = new Headers();
+                          result.append('Content-Type', 'application/json');
+                          return result;
+                        })(),
+                        body: JSON.stringify({
+                          worldname: worldname,
+                        }),
+                      })
+                        .then(res => res.json()
+                          .then(({token}) => {
+                            _connect(token);
+                          })
+                        )
+                        .catch(err => {
+                          console.warn(err);
+                        });
                     };
 
                     const {local} = server;
@@ -883,32 +906,14 @@ class Hub {
                             if (ok) {
                               _connect();
                             } else {
-                              const {worldname} = server;
-
-                              fetch('https://' + hubUrl + '/server/proxyLogin', {
-                                method: 'POST',
-                                headers: (() => {
-                                  const result = new Headers();
-                                  result.append('Content-Type', 'application/json');
-                                  return result;
-                                })(),
-                                body: JSON.stringify({
-                                  worldname: worldname,
-                                }),
-                              })
-                                .then(res => res.json()
-                                  .then(({token}) => {
-                                    _connect(token);
-                                  })
-                                )
-                                .catch(err => {
-                                  console.warn(err);
-                                });
+                              _proxyLogin();
                             }
                           })
                         )
                         .catch(err => {
                           console.warn(err);
+
+                          _proxyLogin();
                         });
                     } else {
                       _connect();
