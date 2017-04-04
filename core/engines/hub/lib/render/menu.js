@@ -405,16 +405,21 @@ const getServerTagSrc = ({worldname, url, running, local}) => {
         </a>
         <img src="${creatureUtils.makeStaticCreature('server:' + worldname)}" width="${SERVER_HEIGHT}" height="${SERVER_HEIGHT}" style="width: ${SERVER_HEIGHT}px; height: ${SERVER_HEIGHT}px; margin: -50px; margin-right: 50px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;" />
         <div style="display: flex; flex-grow: 1; flex-direction: column;">
-          <div style="margin-bottom: auto;">
+          <div style="flex-grow: 1;">
             <div style="font-size: 60px; font-weight: 400;">${worldname}</div>
             ${url ?
-              `<div style="min-height: 150px; font-size: 30px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${url}</div>`
+              `<div style="font-size: 30px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${url}</div>`
             :
               ''
             }
           </div>
-          ${local ?
-            `<a style="display: flex; align-items: center; text-decoration: none;" onclick="server:toggleRunning:${worldname}">
+          ${local ? `\
+            ${running ?
+              `<a style="display: flex; margin-bottom: 20px; padding: 10px; background-color: #4CAF50; color: #FFF; font-size: 40px; text-decoration: none; justify-content: center; align-items: center;" onclick="server:copyUrl:${worldname}">Copy URL</a>`
+            :
+              ''
+            }
+            <a style="display: flex; align-items: center; text-decoration: none;" onclick="server:toggleRunning:${worldname}">
               <div style="display: flex; margin-right: 30px; align-items: center;">
                 ${running ?
                   `<div style="display: flex; justify-content: center; align-items: center;">
@@ -431,7 +436,8 @@ const getServerTagSrc = ({worldname, url, running, local}) => {
                 }
               </div>
               <div style="font-size: 60px; font-weight: 400; ${running ? 'color: #000;' : 'color: #CCC;'}">${running ? 'Running' : 'Not running'}</div>
-            </a>`
+            </a>
+          `
           :
             ''
           }

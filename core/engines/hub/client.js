@@ -565,65 +565,79 @@ class Hub {
                   return servers;
                 })
               );
-              const _parsePage = page => {
-                const split = page.split(':');
-                const name = split[0];
-                const args = split.slice(1);
-                return {
-                  name,
-                  args,
-                };
+            const _parsePage = page => {
+              const split = page.split(':');
+              const name = split[0];
+              const args = split.slice(1);
+              return {
+                name,
+                args,
               };
-              const _setPage = page => {
-                hubState.page = page;
+            };
+            const _setPage = page => {
+              hubState.page = page;
 
-                _updatePages();
+              _updatePages();
 
-                _removeServerMeshes();
+              _removeServerMeshes();
 
-                const {cakeTagMesh} = menuMesh;
-                const pageIndex = parseInt(_parsePage(page).args[0], 10);
-                cakeTagMesh.visible = pageIndex === 2;
-              };
-              const _removeServerMeshes = () => {
-                const {children} = serversMesh;
-                for (let i = 0; i < children.length; i++) {
-                  const child = children[i];
-                  serversMesh.remove(child);
-                }
-              };
-              const _openRemoteServersPage = () => {
-                hubState.loading = true;
+              const {cakeTagMesh} = menuMesh;
+              const pageIndex = parseInt(_parsePage(page).args[0], 10);
+              cakeTagMesh.visible = pageIndex === 2;
+            };
+            const _removeServerMeshes = () => {
+              const {children} = serversMesh;
+              for (let i = 0; i < children.length; i++) {
+                const child = children[i];
+                serversMesh.remove(child);
+              }
+            };
+            const _openRemoteServersPage = () => {
+              hubState.loading = true;
 
-                _setPage('remoteServers:' + 0);
+              _setPage('remoteServers:' + 0);
 
-                _requestRemoteServers() // XXX cancel these when switching pages
-                  .then(servers => {
-                    hubState.remoteServers = servers;
-                    hubState.loading = false;
+              _requestRemoteServers() // XXX cancel these when switching pages
+                .then(servers => {
+                  hubState.remoteServers = servers;
+                  hubState.loading = false;
 
-                    _updatePages();
-                  })
-                  .catch(err => {
-                    console.warn(err);
-                  });
-              };
-              const _openLocalServersPage = () => {
-                hubState.loading = true;
+                  _updatePages();
+                })
+                .catch(err => {
+                  console.warn(err);
+                });
+            };
+            const _openLocalServersPage = () => {
+              hubState.loading = true;
 
-                _setPage('localServers:' + 0);
+              _setPage('localServers:' + 0);
 
-                _requestLocalServers()
-                  .then(servers => {
-                    hubState.localServers = servers;
-                    hubState.loading = false;
+              _requestLocalServers()
+                .then(servers => {
+                  hubState.localServers = servers;
+                  hubState.loading = false;
 
-                    _updatePages();
-                  })
-                  .catch(err => {
-                    console.warn(err);
-                  });
-              };
+                  _updatePages();
+                })
+                .catch(err => {
+                  console.warn(err);
+                });
+            };
+            const _proxyLoginServer = worldname => fetch('https://' + hubUrl + '/servers/proxyLogin', {
+              method: 'POST',
+              headers: (() => {
+                const result = new Headers();
+                result.append('Content-Type', 'application/json');
+                return result;
+              })(),
+              body: JSON.stringify({
+                worldname: worldname,
+              }),
+            })
+              .then(res => res.json()
+                .then(({token}) => token)
+              );
 
             const _trigger = e => {
               const {side} = e;
@@ -732,6 +746,17 @@ class Hub {
                           console.warn(err);
                         });
                     }
+                  } else if (match = onclick.match(/^server:copyUrl:(.+)$/)) {
+                    const {metadata: {serverMesh}} = serverHoverState;
+                    const {server} = serverMesh;
+                    const {worldname} = server;
+
+                    _proxyLoginServer(worldname)
+                      .then(token => {
+                        const {url} = server;
+
+                        _copyToClipboard('https://' + url + '?t=' + token);
+                      });
                   }
 
                   return true;
@@ -751,31 +776,8 @@ class Hub {
                     const {url} = server;
                     const fullServerUrl = 'https://' + server.url;
 
-                    const _connect = (token = null) => {
+                    const _connectServer = (token = null) => {
                       window.parent.location = fullServerUrl + (token ? ('?t=' + token) : '');
-                    };
-                    const _proxyLogin = () => {
-                      const {worldname} = server;
-
-                      fetch('https://' + hubUrl + '/servers/proxyLogin', {
-                        method: 'POST',
-                        headers: (() => {
-                          const result = new Headers();
-                          result.append('Content-Type', 'application/json');
-                          return result;
-                        })(),
-                        body: JSON.stringify({
-                          worldname: worldname,
-                        }),
-                      })
-                        .then(res => res.json()
-                          .then(({token}) => {
-                            _connect(token);
-                          })
-                        )
-                        .catch(err => {
-                          console.warn(err);
-                        });
                     };
 
                     const {local} = server;
@@ -786,16 +788,32 @@ class Hub {
                         .then(res => res.json()
                           .then(({ok}) => {
                             if (ok) {
-                              _connect();
+                              _connectServer();
                             } else {
-                              _proxyLogin();
+                              const {worldname} = server;
+
+                              _proxyLoginServer(worldname)
+                                .then(token => {
+                                  _connectServer(token);
+                                })
+                                .catch(err => {
+                                  console.warn(err);
+                                });
                             }
                           })
                         )
                         .catch(err => {
                           console.warn(err);
 
-                          _proxyLogin();
+                          const {worldname} = server;
+
+                          _proxyLoginServer(worldname)
+                            .then(token => {
+                              _connectServer(token);
+                            })
+                            .catch(err => {
+                              console.warn(err);
+                            });
                         });
                     } else {
                       _connect();
@@ -1348,5 +1366,35 @@ class Hub {
 
 const _clone = o => JSON.parse(JSON.stringify(o));
 const _makeId = () => Math.random().toString(36).substring(7);
+const _copyToClipboard = s => {
+  const mark = document.createElement('span');
+  mark.textContent = s;
+  mark.setAttribute('style', [
+    // reset user styles for span element
+    'all: unset',
+    // prevents scrolling to the end of the page
+    'position: fixed',
+    'top: 0',
+    'clip: rect(0, 0, 0, 0)',
+    // used to preserve spaces and line breaks
+    'white-space: pre',
+    // do not inherit user-select (it may be `none`)
+    '-webkit-user-select: text',
+    '-moz-user-select: text',
+    '-ms-user-select: text',
+    'user-select: text',
+  ].join(';'));
+  document.body.appendChild(mark);
+
+  const range = document.createRange();
+  range.selectNode(mark);
+
+  const selection = document.getSelection();
+  selection.removeAllRanges();
+  selection.addRange(range);
+
+  const successful = document.execCommand('copy');
+  return successful;
+};
 
 module.exports = Hub;
