@@ -685,6 +685,65 @@ class Hub {
                     .then(() => servers);
                 })
               );
+              const _parsePage = page => {
+                const split = page.split(':');
+                const name = split[0];
+                const args = split.slice(1);
+                return {
+                  name,
+                  args,
+                };
+              };
+              const _setPage = page => {
+                hubState.page = page;
+
+                _updatePages();
+
+                _removeServerMeshes();
+
+                const {cakeTagMesh} = menuMesh;
+                const pageIndex = parseInt(_parsePage(page).args[0], 10);
+                cakeTagMesh.visible = pageIndex === 2;
+              };
+              const _removeServerMeshes = () => {
+                const {children} = serversMesh;
+                for (let i = 0; i < children.length; i++) {
+                  const child = children[i];
+                  serversMesh.remove(child);
+                }
+              };
+              const _openRemoteServersPage = () => {
+                hubState.loading = true;
+
+                _setPage('remoteServers:' + 0);
+
+                _requestRemoteServers() // XXX cancel these when switching pages
+                  .then(servers => {
+                    hubState.remoteServers = servers;
+                    hubState.loading = false;
+
+                    _updatePages();
+                  })
+                  .catch(err => {
+                    console.warn(err);
+                  });
+              };
+              const _openLocalServersPage = () => {
+                hubState.loading = true;
+
+                _setPage('localServers:' + 0);
+
+                _requestLocalServers()
+                  .then(servers => {
+                    hubState.localServers = servers;
+                    hubState.loading = false;
+
+                    _updatePages();
+                  })
+                  .catch(err => {
+                    console.warn(err);
+                  });
+              };
 
             const _trigger = e => {
               const {side} = e;
@@ -734,12 +793,64 @@ class Hub {
                   } else if (match = onclick.match(/^server:toggleRunning:(.+)$/)) {
                     const {metadata: {serverMesh}} = serverHoverState;
                     const {server} = serverMesh;
-                    const {running} = server;
+                    const {worldname, running} = server;
 
                     if (!running) {
-                      console.log('start server', {server}); // XXX make the call here
+                      fetch('https://' + hubUrl + '/servers/start', {
+                        method: 'POST',
+                        headers: (() => {
+                          const result = new Headers();
+                          result.append('Content-Type', 'application/json');
+                          return result;
+                        })(),
+                        body: JSON.stringify({
+                          worldname: worldname,
+                        }),
+                      })
+                        .then(res => {
+                          const {status} = res;
+
+                          if (status >= 200 && status < 300) {
+                            return res.blob()
+                              .then(() => {
+                                 _openLocalServersPage();
+                              });
+                          } else {
+                            const err = new Error('hub returned invalid status code: ' + status);
+                            return Promise.reject(err);
+                          }
+                        })
+                        .catch(err => {
+                          console.warn(err);
+                        });
                     } else {
-                      console.log('stop server', {server}); // XXX make the call here
+                      fetch('https://' + hubUrl + '/servers/stop', {
+                        method: 'POST',
+                        headers: (() => {
+                          const result = new Headers();
+                          result.append('Content-Type', 'application/json');
+                          return result;
+                        })(),
+                        body: JSON.stringify({
+                          worldname: worldname,
+                        }),
+                      })
+                        .then(res => {
+                          const {status} = res;
+
+                          if (status >= 200 && status < 300) {
+                            return res.blob()
+                              .then(() => {
+                                 _openLocalServersPage();
+                              });
+                          } else {
+                            const err = new Error('hub returned invalid status code: ' + status);
+                            return Promise.reject(err);
+                          }
+                        })
+                        .catch(err => {
+                          console.warn(err);
+                        });
                     }
                   }
 
@@ -771,66 +882,6 @@ class Hub {
                 const menuHoverState = menuHoverStates[side];
                 const {anchor} = menuHoverState;
                 const onclick = (anchor && anchor.onclick) || '';
-
-                const _parsePage = page => {
-                  const split = page.split(':');
-                  const name = split[0];
-                  const args = split.slice(1);
-                  return {
-                    name,
-                    args,
-                  };
-                };
-                const _setPage = page => {
-                  hubState.page = page;
-
-                  _updatePages();
-
-                  _removeServerMeshes();
-
-                  const {cakeTagMesh} = menuMesh;
-                  const pageIndex = parseInt(_parsePage(page).args[0], 10);
-                  cakeTagMesh.visible = pageIndex === 2;
-                };
-                const _removeServerMeshes = () => {
-                  const {children} = serversMesh;
-                  for (let i = 0; i < children.length; i++) {
-                    const child = children[i];
-                    serversMesh.remove(child);
-                  }
-                };
-                const _openRemoteServersPage = () => {
-                  hubState.loading = true;
-
-                  _setPage('remoteServers:' + 0);
-
-                  _requestRemoteServers() // XXX cancel these when switching pages
-                    .then(servers => {
-                      hubState.remoteServers = servers;
-                      hubState.loading = false;
-
-                      _updatePages();
-                    })
-                    .catch(err => {
-                      console.warn(err);
-                    });
-                };
-                const _openLocalServersPage = () => {
-                  hubState.loading = true;
-
-                  _setPage('localServers:' + 0);
-
-                  _requestLocalServers()
-                    .then(servers => {
-                      hubState.localServers = servers;
-                      hubState.loading = false;
-
-                      _updatePages();
-                    })
-                    .catch(err => {
-                      console.warn(err);
-                    });
-                };
 
                 let match;
                 if (onclick === 'hub:next') {
