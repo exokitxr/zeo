@@ -2,6 +2,8 @@
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
+trap 'kill $(jobs -p)' EXIT;
+
 pushd "$DIR"/../;
 export NODE_TLS_REJECT_UNAUTHORIZED=0
 npm start -- site home my port=8080 homeUrl=test-home.zeovr.io:8080 hubUrl=test-hub.zeovr.io:8000 cryptoDirectory=crypto-test &
