@@ -1,18 +1,3 @@
-const karmaIcon = require('../img/karma');
-const karmaIconSrc = 'data:image/svg+xml;base64,' + btoa(karmaIcon);
-
-const landImg = require('../img/land');
-const landImgSrc = 'data:image/svg+xml;base64,' + btoa(landImg);
-
-const landIconImg = require('../img/land-icon');
-const landIconImgSrc = 'data:image/svg+xml;base64,' + btoa(landIconImg);
-
-const tagImg = require('../img/tag-white');
-const tagImgSrc = 'data:image/svg+xml;base64,' + btoa(tagImg);
-
-const fileImg = require('../img/file-white');
-const fileImgSrc = 'data:image/svg+xml;base64,' + btoa(fileImg);
-
 const makeRenderer = ({creatureUtils}) => {
 
 const {
