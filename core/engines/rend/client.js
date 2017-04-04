@@ -49,50 +49,26 @@ class Rend {
       }
     };
 
-    const _requestImageFileDataUrl = p => fetch('https://' + serverUrl + p)
-      .then(res => res.blob()
-        .then(blob => new Promise((accept, reject) => {
-          const reader = new FileReader();
-          reader.readAsDataURL(blob);
-          reader.onloadend = () => {
-            accept(reader.result);
-          };
-        }))
-      );
-    const _requestIconImg = () => {
-      if (serverEnabled) {
-        return _requestImageFileDataUrl('/servers/img/icon.png');
-      } else {
-        return Promise.resolve();
-      }
-    };
-
-    return Promise.all([
-      archae.requestPlugins([
-        '/core/engines/bootstrap',
-        '/core/engines/input',
-        '/core/engines/three',
-        '/core/engines/webvr',
-        '/core/engines/biolumi',
-        '/core/engines/anima',
-        '/core/plugins/js-utils',
-        '/core/plugins/geometry-utils',
-        '/core/plugins/creature-utils',
-      ]),
-      _requestIconImg(),
+    return archae.requestPlugins([
+      '/core/engines/bootstrap',
+      '/core/engines/input',
+      '/core/engines/three',
+      '/core/engines/webvr',
+      '/core/engines/biolumi',
+      '/core/engines/anima',
+      '/core/plugins/js-utils',
+      '/core/plugins/geometry-utils',
+      '/core/plugins/creature-utils',
     ]).then(([
-      [
-        bootstrap,
-        input,
-        three,
-        webvr,
-        biolumi,
-        anima,
-        jsUtils,
-        geometryUtils,
-        creatureUtils,
-      ],
-      iconImg,
+      bootstrap,
+      input,
+      three,
+      webvr,
+      biolumi,
+      anima,
+      jsUtils,
+      geometryUtils,
+      creatureUtils,
     ]) => {
       if (live) {
         const {THREE, scene, camera, renderer} = three;
@@ -198,10 +174,9 @@ class Rend {
               const statusMesh = (() => {
                 const mesh = menuUi.addPage(({
                   status,
-                  iconImg,
                 }) => ({
                   type: 'html',
-                  src: menuRenderer.getStatusSrc({status, iconImg}),
+                  src: menuRenderer.getStatusSrc({status}),
                   x: 0,
                   y: 0,
                   w: WIDTH,
@@ -210,7 +185,6 @@ class Rend {
                   type: 'status',
                   state: {
                     status: statusState,
-                    iconImg: iconImg,
                   },
                   worldWidth: WORLD_WIDTH,
                   worldHeight: WORLD_HEIGHT,
