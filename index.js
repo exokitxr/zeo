@@ -25,7 +25,6 @@ const flags = {
   site: args.includes('site'),
   home: args.includes('home'),
   hub: args.includes('hub'),
-  newline: args.includes('newline'),
   install: args.includes('install'),
   makeToken: args.includes('makeToken'),
   host: _findArg('host'),
@@ -432,9 +431,6 @@ _checkArgs()
       }
       if (flags.server) {
         console.log('Server: https://' + config.metadata.server.url + '/');
-      }
-      if (flags.newline) {
-        console.log();
       }
     })
     .then(() => _launch())
