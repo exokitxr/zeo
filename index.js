@@ -424,7 +424,7 @@ _checkArgs()
         console.log('Site: https://' + config.metadata.site.url + '/');
       }
       if (flags.home) {
-        console.log('Home: https://' + config.metadata.hub.url + '/');
+        console.log('Home: https://' + config.metadata.home.url + '/');
       }
       if (flags.hub) {
         console.log('Hub: https://' + config.metadata.hub.url + '/');
