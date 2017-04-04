@@ -25,10 +25,6 @@ import {
 import menuRender from './lib/render/menu';
 import dataUrlToBlob from 'dataurl-to-blob';
 
-const SERVER_CUBEMAP_INITIAL_ANNOUNCE_TIMEOUT = 2 * 1000;
-const SERVER_CUBEMAP_ANNOUNCE_INTERVAL = 5 * 60 * 1000;
-const SERVER_ENV_MAP_SIZE = 512;
-
 const SIDES = ['left', 'right'];
 const FACES = ['left', 'right', 'top', 'bottom', 'front', 'back']; // envMap order
 const CUBE_CAMERA_FACES = ['right', 'left', 'top', 'bottom', 'back', 'front']; // THREE.CubeCamera order
@@ -1346,109 +1342,6 @@ class Hub {
               input.removeListener('keyboarddown', _keyboarddown);
 
               rend.removeListener('update', _update);
-            };
-          }
-        });
-    }
-
-    if (serverEnabled) {
-      return archae.requestPlugins([
-        '/core/engines/three',
-        '/core/engines/world', // wait for the world to load before snapshotting the cubemap
-      ])
-        .then(([
-          three,
-          world,
-        ]) => {
-          if (live) {
-            const {THREE, scene, camera} = three;
-
-            const cubeCanvas = document.createElement('canvas');
-            cubeCanvas.width = SERVER_ENV_MAP_SIZE;
-            cubeCanvas.height = SERVER_ENV_MAP_SIZE;
-
-            const cubeRenderer = new THREE.WebGLRenderer({
-              canvas: cubeCanvas,
-            });
-            cubeRenderer.render(scene, camera);
-
-            const cubeCamera = new THREE.CubeCamera(0.001, SERVER_ENV_MAP_SIZE * 4, SERVER_ENV_MAP_SIZE);
-            cubeCamera.position.set(0, 1, 0);
-            scene.add(cubeCamera);
-
-            const _requestOriginCubeMap = () => {
-              const {children: cameras} = cubeCamera;
-
-              const _renderCamera = index => {
-                const camera = cameras[index];
-
-                cubeRenderer.render(scene, camera);
-                const src = cubeCanvas.toDataURL('image/png');
-
-                return Promise.resolve(src);
-              };
-
-              const renderPromises = (() => {
-                const result = [];
-                for (let i = 0; i < cameras.length; i++) {
-                  const promise = _renderCamera(i);
-                  result.push(promise);
-                }
-                return result;
-              })();
-
-              return Promise.all(renderPromises);
-            };
-
-            const _announceServerCubemap = () => _requestOriginCubeMap()
-              .then(imgSrcs => {
-                const formData = new FormData();
-                for (let i = 0; i < imgSrcs.length; i++) {
-                  const imgSrc = imgSrcs[i];
-                  const face = CUBE_CAMERA_FACES[i];
-                  const imgBlob = dataUrlToBlob(imgSrc);
-
-                  formData.append(face, imgBlob, face);
-                }
-
-                return fetch('https://' + hubUrl + '/servers/announceCubemap/' + serverUrl, {
-                  method: 'POST',
-                  body: formData,
-                });
-              });
-
-            const _makeTryAnnounce = announceFn => () => new Promise((accept, reject) => {
-              announceFn()
-                .then(() => {
-                  accept();
-                })
-                .catch(err => {
-                  console.warn('server announce cubemap failed:', err);
-
-                  accept();
-                });
-            });
-            const _tryServerCubemapAnnounce = _makeTryAnnounce(_announceServerCubemap);
-
-            const _makeQueueAnnounce = tryAnnounceFn => _debounce(next => {
-              tryAnnounceFn()
-                .then(() => {
-                  next();
-                });
-            });
-            const _queueServerCubemapAnnounce = _makeQueueAnnounce(_tryServerCubemapAnnounce);
-
-            const announceServerCubemapTimeout = setTimeout(() => {
-              _queueServerCubemapAnnounce();
-            }, SERVER_CUBEMAP_INITIAL_ANNOUNCE_TIMEOUT);
-
-            const announceServerCubemapInterval = setInterval(() => {
-              _queueServerCubemapAnnounce();
-            }, SERVER_CUBEMAP_ANNOUNCE_INTERVAL);
-
-            this._cleanup = () => {
-              clearTimeout(announceServerCubemapTimeout);
-              clearInterval(announceServerCubemapInterval);
             };
           }
         });
