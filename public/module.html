@@ -96,22 +96,11 @@ const _makeModuleElement = module => {
 
   return moduleElement;
 };
-const _getFakeImgUrl = () => fetch('https://www.reddit.com/r/wallpapers/.json')
-  .then(res => res.json()
-    .then(j => {
-      const urls = j.data.children.map(o => o.data.url);
-      const validUrls = urls
-        .filter(url => /\.(?:png|jpg)$/.test(url))
-        .map(url => url.replace(/^http:\/\//, 'https://'));
-      const url = validUrls[Math.floor(Math.random() * validUrls.length)];
-      return url;
-    })
-  );
 const _update = () => {
   const match = window.location.pathname.match(/^\/modules\/(.*)$/);
   const mod = match[1];
 
-  fetch('/archae/rend/mods?q=' + mod)
+  fetch('/modules/module.json?q=' + mod)
     .then(res =>
       res.json()
         .then(module => {

@@ -1,18 +1,3 @@
-const karmaIcon = require('../img/karma');
-const karmaIconSrc = 'data:image/svg+xml;base64,' + btoa(karmaIcon);
-
-const landImg = require('../img/land');
-const landImgSrc = 'data:image/svg+xml;base64,' + btoa(landImg);
-
-const landIconImg = require('../img/land-icon');
-const landIconImgSrc = 'data:image/svg+xml;base64,' + btoa(landIconImg);
-
-const tagImg = require('../img/tag-white');
-const tagImgSrc = 'data:image/svg+xml;base64,' + btoa(tagImg);
-
-const fileImg = require('../img/file-white');
-const fileImgSrc = 'data:image/svg+xml;base64,' + btoa(fileImg);
-
 const makeRenderer = ({creatureUtils}) => {
 
 const {
@@ -20,7 +5,7 @@ const {
   HEIGHT,
 } = require('../constants/menu');
 
-const getStatusSrc = ({status: {username, worldname, users, hasHub, loading}, iconImg}) => {
+const getStatusSrc = ({status: {username, worldname, users, hasHub, loading}}) => {
   const allUsers = !loading ? [username].concat(users).sort((a, b) => a.localeCompare(b)) : null;
 
   return `\
@@ -34,7 +19,7 @@ const getStatusSrc = ({status: {username, worldname, users, hasHub, loading}, ic
         <a style="display: flex; height: 46px; padding: 0 20px; border: 1px solid; border-radius: 10px; color: #2196F3; font-size: 24px; text-decoration: none; justify-content: center; align-items: center; box-sizing: border-box;" onclick="status:logOut">Log out</a>
       </div>
       <div style="display: flex; margin: 0 -30px; margin-bottom: 20px; padding: 30px; background-color: #000; color: #FFF;">
-        <img src="${iconImg}" width="100" height="100" style="margin-right: 20px; image-rendering: pixelated;" />
+        <img src="${creatureUtils.makeStaticCreature('server:' + worldname)}" width="100" height="100" style="margin-right: 20px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;" />
         <div style="margin-right: 30px;">
           <div style="font-size: 24px;">${worldname}</div>
           ${!loading ? `<div style="font-size: 24px;">${allUsers.length} User${allUsers.length !== 1 ? 's' : ''}</div>` : ''}

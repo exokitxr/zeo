@@ -70,7 +70,7 @@ const _update = () => {
     modulesBody.removeChild(modulesBody.lastChild);
   }
 
-  fetch('/archae/rend/search')
+  fetch('/modules/modules.json')
     .then(res =>
       res.json()
         .then(modules => {

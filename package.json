@@ -31,18 +31,19 @@
     "archae": "0.0.50",
     "base128": "^0.2.1",
     "body-parser": "^1.16.1",
-    "busboy": "^0.2.14",
     "cli-spinner": "^0.2.6",
     "cookie": "^0.3.1",
+    "http-proxy": "^1.16.2",
     "lru-cache": "^4.0.2",
     "markdown-toc": "^1.1.0",
     "marked": "^0.3.6",
     "mkdirp": "^0.5.1",
+    "native-dns": "^0.7.0",
     "nedb": "^1.8.0",
     "node-fetch": "^1.6.3",
     "password-hash-and-salt": "^0.1.4",
+    "portastic": "^1.0.1",
     "rnd": "^1.0.10",
-    "sharp": "^0.17.2",
     "urlsafe-base64": "^1.0.0"
   }
 }
