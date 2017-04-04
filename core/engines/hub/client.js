@@ -751,7 +751,7 @@ class Hub {
                     const {server} = serverMesh;
                     const {worldname} = server;
 
-                    _proxyLoginServer(worldname)
+                    _proxyLoginServer(worldname) // XXX this needs to be synchronous for the copy to go through
                       .then(token => {
                         const {url} = server;
 
