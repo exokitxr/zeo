@@ -888,28 +888,30 @@ class Hub {
                 } else if (onclick === 'createServer:submit') {
                   const {inputText: worldname} = hubState;
 
-                  fetch('https://' + hubUrl + '/servers/create', {
-                    method: 'POST',
-                    headers: (() => {
-                      const result = new Headers();
-                      result.append('Content-Type', 'application/json');
-                      return result;
-                    })(),
-                    body: JSON.stringify({
-                      worldname: worldname,
-                    }),
-                  })
-                    .then(res => res.json()
-                      .then(server => {
-                        const {localServers} = hubState;
-                        localServers.push(server);
+                  if (worldname) {
+                    fetch('https://' + hubUrl + '/servers/create', {
+                      method: 'POST',
+                      headers: (() => {
+                        const result = new Headers();
+                        result.append('Content-Type', 'application/json');
+                        return result;
+                      })(),
+                      body: JSON.stringify({
+                        worldname: worldname,
+                      }),
+                    })
+                      .then(res => res.json()
+                        .then(server => {
+                          const {localServers} = hubState;
+                          localServers.push(server);
 
-                        _setPage('localServers');
-                      })
-                    )
-                    .catch(err => {
-                      console.warn(err);
-                    });
+                          _setPage('localServers');
+                        })
+                      )
+                      .catch(err => {
+                        console.warn(err);
+                      });
+                  }
 
                   return true;
                 } else if (onclick === 'hub:apiDocs') {
