@@ -195,7 +195,6 @@ class Hub {
               inputIndex: 0,
               inputValue: 0,
               loading: false,
-              error: null,
               flags: {
                 localServers: myEnabled,
               },
@@ -226,7 +225,6 @@ class Hub {
                     inputIndex,
                     inputValue,
                     loading,
-                    error,
                     flags,
                     vrMode,
                   },
@@ -244,7 +242,6 @@ class Hub {
                     inputIndex,
                     inputValue,
                     loading,
-                    error,
                     vrMode,
                     focusType,
                     flags,
@@ -797,11 +794,14 @@ class Hub {
 
                   return true;
                 } else if (onclick === 'hub:remoteServers') {
+                  hubState.loading = true;
+
                   _setPage('remoteServers:' + 0);
 
-                  _requestRemoteServers()
+                  _requestRemoteServers() // XXX cancel these when switching pages
                     .then(servers => {
                       hubState.remoteServers = servers;
+                      hubState.loading = false;
 
                       _updatePages();
                     })
@@ -811,11 +811,14 @@ class Hub {
 
                   return true;
                 } else if (onclick === 'hub:localServers') {
+                  hubState.loading = true;
+
                   _setPage('localServers:' + 0);
 
                   _requestLocalServers()
                     .then(servers => {
                       hubState.localServers = servers;
+                      hubState.loading = false;
 
                       _updatePages();
                     })

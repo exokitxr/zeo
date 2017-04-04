@@ -33,7 +33,7 @@ const lanDisconnectImgSrc = 'data:image/svg+xml;base64,' + btoa(lanDisconnectImg
 const upImg = require('../img/up');
 const downImg = require('../img/down');
 
-const getHubMenuSrc = ({page, remoteServers, localServers, inputText, inputIndex, inputValue, loading, error, vrMode, focusType, flags, imgs}) => {
+const getHubMenuSrc = ({page, remoteServers, localServers, inputText, inputIndex, inputValue, loading, vrMode, focusType, flags, imgs}) => {
   const pageSpec = (() => {
     const split = page.split(':');
     const name = split[0];
@@ -49,17 +49,17 @@ const getHubMenuSrc = ({page, remoteServers, localServers, inputText, inputIndex
     const {args} = pageSpec;
     const pageIndex = parseInt(args[0], 10);
 
-    return getTutorialPageSrc(pageIndex, loading, error, vrMode, flags, imgs);
+    return getTutorialPageSrc(pageIndex, vrMode, flags, imgs);
   } else if (name === 'remoteServers') {
     const {args} = pageSpec;
     const pageIndex = parseInt(args[0], 10);
 
-    return getRemoteServersSrc(remoteServers, pageIndex);
+    return getRemoteServersSrc(remoteServers, pageIndex, loading);
   } else if (name === 'localServers') {
     const {args} = pageSpec;
     const pageIndex = parseInt(args[0], 10);
 
-    return getLocalServersSrc(localServers, pageIndex);
+    return getLocalServersSrc(localServers, pageIndex, loading);
   } else if (name === 'createServer') {
     return getCreateServerSrc(inputText, inputIndex, inputValue, focusType);
   } else {
@@ -67,7 +67,7 @@ const getHubMenuSrc = ({page, remoteServers, localServers, inputText, inputIndex
   }
 };
 
-const getTutorialPageSrc = (pageIndex, loading, error, vrMode, flags, imgs) => {
+const getTutorialPageSrc = (pageIndex, vrMode, flags, imgs) => {
   const keyboardVrMode = vrMode === null || vrMode === 'keyboard';
 
   const content = (() => {
@@ -274,19 +274,21 @@ const getServerSrc = (server, index, prefix) => {
     </a>
   `;
 };
-const getServersSrc = (servers, prefix) => {
-  return `\
-    ${servers.length > 0 ?
-      `<div style="display: flex; width: ${WIDTH - 250}px; height: ${HEIGHT - 100}px; padding: 0 30px; flex-direction: column; box-sizing: border-box;">
+const getServersSrc = (servers, loading, prefix) => {
+  if (!loading) {
+    if (servers.length > 0) {
+      return `<div style="display: flex; width: ${WIDTH - 250}px; height: ${HEIGHT - 100}px; padding: 0 30px; flex-direction: column; box-sizing: border-box;">
         ${servers.map((server, index) => getServerSrc(server, index, prefix)).join('')}
-      </div>`
-    :
-      `<div style="padding: 0 30px; font-size: 30px;">No servers</div>`
+      </div>`;
+    } else {
+      return `<div style="padding: 0 30px; font-size: 30px;">No servers</div>`;
     }
-  `;
+  } else {
+    return `<div style="padding: 0 30px; font-size: 30px;">Loading...</div>`;
+  }
 };
 
-const getRemoteServersSrc = (servers, pageIndex) => {
+const getRemoteServersSrc = (servers, pageIndex, loading) => {
   const leftSrc = (() => {
     return `\
       <div style="display: flex; margin-right: auto; flex-direction: column;">
@@ -296,7 +298,7 @@ const getRemoteServersSrc = (servers, pageIndex) => {
           </a>
           <div style="margin-right: auto; font-size: 40px;">Remote servers</div>
         </div>
-        ${getServersSrc(servers.slice(pageIndex * SERVERS_PER_PAGE, (pageIndex + 1) * SERVERS_PER_PAGE), 'remoteServer')}
+        ${getServersSrc(servers.slice(pageIndex * SERVERS_PER_PAGE, (pageIndex + 1) * SERVERS_PER_PAGE), loading, 'remoteServer')}
       </div>
     `;
   })();
@@ -324,7 +326,7 @@ const getRemoteServersSrc = (servers, pageIndex) => {
   `;
 };
 
-const getLocalServersSrc = (servers, pageIndex) => {
+const getLocalServersSrc = (servers, pageIndex, loading) => {
   const leftSrc = (() => {
     return `\
       <div style="display: flex; margin-right: auto; flex-direction: column;">
@@ -334,7 +336,7 @@ const getLocalServersSrc = (servers, pageIndex) => {
           </a>
           <div style="margin-right: auto; font-size: 40px;">Local servers</div>
         </div>
-        ${getServersSrc(servers.slice(pageIndex * SERVERS_PER_PAGE, (pageIndex + 1) * SERVERS_PER_PAGE), 'localServer')}
+        ${getServersSrc(servers.slice(pageIndex * SERVERS_PER_PAGE, (pageIndex + 1) * SERVERS_PER_PAGE), loading, 'localServer')}
       </div>
     `;
   })();
