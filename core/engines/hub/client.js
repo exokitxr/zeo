@@ -863,13 +863,16 @@ class Hub {
 
                 if (hoveredServerMesh) {
                   const {server} = hoveredServerMesh;
+                  const {running} = server;
 
-                  const {url} = server;
-                  const t = _getQueryVariable(bootstrap.getInitialUrl(), 't');
-                  window.parent.location = 'https://' + server.url + (t ? ('?t=' + encodeURIComponent(t)) : '');
+                  if (running) {
+                    const {url} = server;
+                    const t = _getQueryVariable(bootstrap.getInitialUrl(), 't');
+                    window.parent.location = 'https://' + server.url + (t ? ('?t=' + encodeURIComponent(t)) : '');
 
-                  // can't happen
-                  e.stopImmediatePropagation();
+                    // can't happen
+                    e.stopImmediatePropagation();
+                  }
 
                   return true;
                 } else {
