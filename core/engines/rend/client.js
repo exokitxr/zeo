@@ -731,17 +731,15 @@ class Rend {
         });
 
         let lastMenuStatusJsonString = '';
-        let lastMenuIconImg = '';
         const _updateMenuPage = () => {
           if (menuMesh) {
             const menuStatusJsonString = JSON.stringify(statusState);
 
-            if (menuStatusJsonString !== lastMenuStatusJsonString || iconImg !== lastMenuIconImg) {
+            if (menuStatusJsonString !== lastMenuStatusJsonString) {
               const {menuUi} = menuMesh;
               menuUi.update();
 
               lastMenuStatusJsonString = menuStatusJsonString;
-              lastMenuIconImg = iconImg;
             }
           };
         };
