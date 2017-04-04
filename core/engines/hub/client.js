@@ -749,14 +749,13 @@ class Hub {
                   } else if (match = onclick.match(/^server:copyUrl:(.+)$/)) {
                     const {metadata: {serverMesh}} = serverHoverState;
                     const {server} = serverMesh;
-                    const {worldname} = server;
+                    const {url, token} = server;
+                    const clipboardText = 'https://' + url + '?t=' + token;
 
-                    _proxyLoginServer(worldname) // XXX this needs to be synchronous for the copy to go through
-                      .then(token => {
-                        const {url} = server;
-
-                        _copyToClipboard('https://' + url + '?t=' + token);
-                      });
+                    const ok = _copyToClipboard(clipboardText);
+                    if (!ok) {
+                      console.warn('failed to copy URL:\n' + clipboardText);
+                    }
                   }
 
                   return true;
