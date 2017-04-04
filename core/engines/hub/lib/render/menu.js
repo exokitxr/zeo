@@ -33,6 +33,8 @@ const lanDisconnectImgSrc = 'data:image/svg+xml;base64,' + btoa(lanDisconnectImg
 const upImg = require('../img/up');
 const downImg = require('../img/down');
 
+const makeRenderer = ({creatureUtils}) => {
+
 const getHubMenuSrc = ({page, remoteServers, localServers, inputText, inputIndex, inputValue, loading, vrMode, focusType, flags, imgs}) => {
   const pageSpec = (() => {
     const split = page.split(':');
@@ -244,15 +246,11 @@ const getTutorialPageSrc = (pageIndex, vrMode, flags, imgs) => {
 };
 
 const getServerSrc = (server, index, prefix) => {
-  const {worldname, url, running, users, iconImgSrc} = server;
+  const {worldname, url, running, users} = server;
 
   return `\
     <a style="display: flex; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid #EEE; text-decoration: none;" onclick="${prefix}:${index}">
-      ${iconImgSrc ?
-        `<img src="${iconImgSrc}" width="80" height="80" style="display: flex; width: 80px; height: 80px; margin-right: 10px;" />`
-      :
-        `<div style="display: flex; width: 80px; height: 80px; margin-right: 10px;"></div>`
-      }
+      <img src="${creatureUtils.makeStaticCreature('server:' + worldname)}" width="80" height="80" style="display: flex; width: 80px; height: 80px; margin-right: 10px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;" />
       <div style="display: flex; margin-right: auto; padding: 5px; flex-direction: column;">
         <div style="font-size: 20px; font-weight: 600;">${worldname}</div>
         <div style="font-size: 13px; font-weight: 400;">
@@ -398,18 +396,14 @@ const getCreateServerSrc = (inputText, inputIndex, inputValue, focusType) => {
   `;
 };
 
-const getServerTagSrc = ({worldname, url, running, local, serverIcon}) => {
+const getServerTagSrc = ({worldname, url, running, local}) => {
   return `\
     <div style="display: flex; width: ${SERVER_WIDTH}px; height: ${SERVER_HEIGHT}px; padding: 50px; background-color: #EEE; flex-direction: column; justify-content: center; align-items: center; box-sizing: border-box;">
       <div style="display: flex; width: 100%;">
         <a style="display: flex; position: absolute; top: 0; right: 0; width: 100px; height: 100px; justify-content: center; align-items: center;" onclick="server:close:${worldname}">
           <img src="${closeBoxImgSrc}" width="80" height="80" />
         </a>
-        ${serverIcon ?
-          `<img src="${serverIcon}" width="${SERVER_HEIGHT}" height="${SERVER_HEIGHT}" style="width: ${SERVER_HEIGHT}px; height: ${SERVER_HEIGHT}px; margin: -50px; margin-right: 50px; image-rendering: pixelated;" />`
-        :
-          `<div style="width: ${SERVER_HEIGHT}px; height: ${SERVER_HEIGHT}px; margin: -50px; margin-right: 50px;"></div>`
-        }
+        <img src="${creatureUtils.makeStaticCreature('server:' + worldname)}" width="${SERVER_HEIGHT}" height="${SERVER_HEIGHT}" style="width: ${SERVER_HEIGHT}px; height: ${SERVER_HEIGHT}px; margin: -50px; margin-right: 50px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;" />
         <div style="display: flex; flex-grow: 1; flex-direction: column;">
           <div style="margin-bottom: auto;">
             <div style="font-size: 60px; font-weight: 400;">${worldname}</div>
@@ -447,7 +441,13 @@ const getServerTagSrc = ({worldname, url, running, local, serverIcon}) => {
   `;
 };
 
-module.exports = {
+return {
   getHubMenuSrc,
   getServerTagSrc,
+};
+
+};
+
+module.exports = {
+  makeRenderer,
 };

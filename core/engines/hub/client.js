@@ -22,7 +22,7 @@ import {
 
   DEFAULT_USER_HEIGHT,
 } from './lib/constants/menu';
-import menuRenderer from './lib/render/menu';
+import menuRender from './lib/render/menu';
 import dataUrlToBlob from 'dataurl-to-blob';
 
 const SERVER_CUBEMAP_INITIAL_ANNOUNCE_TIMEOUT = 2 * 1000;
@@ -123,6 +123,7 @@ class Hub {
           '/core/engines/tags',
           '/core/plugins/js-utils',
           '/core/plugins/geometry-utils',
+          '/core/plugins/creature-utils',
         ]),
         _requestImgs(),
         _requestZCakeModSpec(),
@@ -139,6 +140,7 @@ class Hub {
             tags,
             jsUtils,
             geometryUtils,
+            creatureUtils,
           ],
           imgs,
           zCakeItemSpec,
@@ -147,6 +149,10 @@ class Hub {
             const {THREE, scene, camera} = three;
             const {events} = jsUtils;
             const {EventEmitter} = events;
+
+            const menuRenderer = menuRender.makeRenderer({
+              creatureUtils,
+            });
 
             const transparentMaterial = biolumi.getTransparentMaterial();
             const transparentImg = biolumi.getTransparentImg();
@@ -510,67 +516,54 @@ class Hub {
             const _makeServerMenuMesh = server => {
               const object = new THREE.Object3D();
 
-              const _requestServerIcon = server => fetch('https://' + hubUrl + '/servers/img/icon/' + encodeURIComponent(server.url)) // XXX this needs to be announced to the hub and served from there
-                .then(res => res.blob()
-                  .then(blob => _requestBlobDataUrl(blob))
-                );
-              _requestServerIcon(server)
-                 .then(serverIcon => {
-                    const planeMesh = (() => {
-                      const serverUi = biolumi.makeUi({
-                        width: SERVER_WIDTH,
-                        height: SERVER_HEIGHT,
-                      });
+              const planeMesh = (() => {
+                const serverUi = biolumi.makeUi({
+                  width: SERVER_WIDTH,
+                  height: SERVER_HEIGHT,
+                });
 
-                      const mesh = serverUi.addPage(({
-                        server: {
-                          worldname,
-                          url,
-                          running,
-                          local,
-                        },
-                        serverIcon,
-                      }) => ({
-                        type: 'html',
-                        src: menuRenderer.getServerTagSrc({
-                          worldname,
-                          url,
-                          running,
-                          local,
-                          serverIcon,
-                        }),
-                        x: 0,
-                        y: 0,
-                        w: SERVER_WIDTH,
-                        h: SERVER_HEIGHT,
-                      }), {
-                        type: 'hub',
-                        state: {
-                          server: {
-                            worldname: server.worldname,
-                            url: server.url,
-                            running: server.running,
-                            local: server.local,
-                          },
-                          serverIcon,
-                        },
-                        worldWidth: SERVER_WORLD_WIDTH,
-                        worldHeight: SERVER_WORLD_HEIGHT,
-                      });
-                      mesh.position.y = 0.45;
-                      mesh.receiveShadow = true;
-                      mesh.ui = serverUi;
+                const mesh = serverUi.addPage(({
+                  server: {
+                    worldname,
+                    url,
+                    running,
+                    local,
+                  },
+                }) => ({
+                  type: 'html',
+                  src: menuRenderer.getServerTagSrc({
+                    worldname,
+                    url,
+                    running,
+                    local,
+                  }),
+                  x: 0,
+                  y: 0,
+                  w: SERVER_WIDTH,
+                  h: SERVER_HEIGHT,
+                }), {
+                  type: 'hub',
+                  state: {
+                    server: {
+                      worldname: server.worldname,
+                      url: server.url,
+                      running: server.running,
+                      local: server.local,
+                    },
+                  },
+                  worldWidth: SERVER_WORLD_WIDTH,
+                  worldHeight: SERVER_WORLD_HEIGHT,
+                });
+                mesh.position.y = 0.45;
+                mesh.receiveShadow = true;
+                mesh.ui = serverUi;
 
-                      serverUi.update();
+                serverUi.update();
 
-                      return mesh;
-                    })();
-                    object.add(planeMesh);
-                    object.planeMesh = planeMesh;
-                  })
-                  .catch(err => {
-                    console.warn(err);
-                  });
+                return mesh;
+              })();
+              object.add(planeMesh);
+              object.planeMesh = planeMesh;
 
               const shadowMesh = (() => {
                 const geometry = new THREE.BoxBufferGeometry(SERVER_WORLD_WIDTH, SERVER_WORLD_HEIGHT, 0.01);
@@ -620,28 +613,7 @@ class Hub {
                     server.local = false;
                   }
 
-                  const imgPromises = servers.map(server => {
-                    const {url} = server;
-
-                    return fetch('https://' + hubUrl + '/servers/img/icon/' + url)
-                      .then(res => res.blob()
-                        .then(blob => new Promise((accept, reject) => {
-                          const reader = new FileReader();
-                          reader.readAsDataURL(blob);
-                          reader.onloadend = () => {
-                            const dataUrl = reader.result;
-                            server.iconImgSrc = dataUrl;
-
-                            accept();
-                          };
-                          reader.onerror = err => {
-                            reject(err);
-                          };
-                        }))
-                      )
-                  });
-                  return Promise.all(imgPromises)
-                    .then(() => servers);
+                  return servers;
                 })
               );
             const _requestLocalServers = () => fetch('https://' + hubUrl + '/servers/local.json')
@@ -654,33 +626,7 @@ class Hub {
                     server.local = true;
                   }
 
-                  const imgPromises = servers.map(server => {
-                    const {url} = server;
-
-                    return fetch('https://' + url + '/servers/img/icon.png')
-                      .then(res => res.blob()
-                        .then(blob => new Promise((accept, reject) => {
-                          const reader = new FileReader();
-                          reader.readAsDataURL(blob);
-                          reader.onloadend = () => {
-                            const dataUrl = reader.result;
-                            server.iconImgSrc = dataUrl;
-
-                            accept();
-                          };
-                          reader.onerror = err => {
-                            reject(err);
-                          };
-                        }))
-                      )
-                      .catch(err => {
-                        console.warn(err);
-
-                        return Promise.resolve(null);
-                      });
-                  });
-                  return Promise.all(imgPromises)
-                    .then(() => servers);
+                  return servers;
                 })
               );
               const _parsePage = page => {
