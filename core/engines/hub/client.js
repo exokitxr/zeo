@@ -729,9 +729,18 @@ class Hub {
 
                   let match;
                   if (match = onclick.match(/^server:close:(.+)$/)) {
-                    const {metadata: {server, serverMesh}} = serverHoverState;
-
+                    const {metadata: {serverMesh}} = serverHoverState;
                     serversMesh.remove(serverMesh);
+                  } else if (match = onclick.match(/^server:toggleRunning:(.+)$/)) {
+                    const {metadata: {serverMesh}} = serverHoverState;
+                    const {server} = serverMesh;
+                    const {running} = server;
+
+                    if (!running) {
+                      console.log('start server', {server}); // XXX make the call here
+                    } else {
+                      console.log('stop server', {server}); // XXX make the call here
+                    }
                   }
 
                   return true;
@@ -924,7 +933,7 @@ class Hub {
                         worldname: worldname,
                       }),
                     })
-                      .then(res => res.json()
+                      .then(res => res.blob()
                         .then(() => {
                            _openLocalServersPage();
                         })
