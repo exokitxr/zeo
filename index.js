@@ -124,7 +124,7 @@ const config = {
 const a = archae(config);
 
 const _install = () => {
-  if (flags.install || flags.hub || flags.server) {
+  if (flags.install || flags.home || flags.hub || flags.server) {
     const spinner = (() => {
       if (flags.install) {
         console.log('Installing core modules...');
