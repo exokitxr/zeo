@@ -37,6 +37,7 @@ class Hub {
     const {
       metadata: {
         home: {
+          url: homeUrl,
           enabled: homeEnabled,
         },
         my: {
@@ -552,7 +553,7 @@ class Hub {
                   return servers;
                 })
               );
-            const _requestLocalServers = () => fetch('https://' + hubUrl + '/servers/local.json')
+            const _requestLocalServers = () => fetch('https://' + homeUrl + '/servers/local.json')
               .then(res => res.json()
                 .then(j => {
                   const {servers} = j;
@@ -624,7 +625,7 @@ class Hub {
                   console.warn(err);
                 });
             };
-            const _proxyLoginServer = worldname => fetch('https://' + hubUrl + '/servers/proxyLogin', {
+            const _proxyLoginServer = worldname => fetch('https://' + homeUrl + '/servers/proxyLogin', {
               method: 'POST',
               headers: (() => {
                 const result = new Headers();
@@ -690,7 +691,7 @@ class Hub {
                     const {worldname, running} = server;
 
                     if (!running) {
-                      fetch('https://' + hubUrl + '/servers/start', {
+                      fetch('https://' + homeUrl + '/servers/start', {
                         method: 'POST',
                         headers: (() => {
                           const result = new Headers();
@@ -718,7 +719,7 @@ class Hub {
                           console.warn(err);
                         });
                     } else {
-                      fetch('https://' + hubUrl + '/servers/stop', {
+                      fetch('https://' + homeUrl + '/servers/stop', {
                         method: 'POST',
                         headers: (() => {
                           const result = new Headers();
@@ -911,7 +912,7 @@ class Hub {
                   const {inputText: worldname} = hubState;
 
                   if (worldname) {
-                    fetch('https://' + hubUrl + '/servers/create', {
+                    fetch('https://' + homeUrl + '/servers/create', {
                       method: 'POST',
                       headers: (() => {
                         const result = new Headers();
