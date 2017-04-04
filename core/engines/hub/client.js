@@ -867,10 +867,53 @@ class Hub {
 
                   if (running) {
                     const {url} = server;
-                    const t = _getQueryVariable(bootstrap.getInitialUrl(), 't');
-                    window.parent.location = 'https://' + server.url + (t ? ('?t=' + encodeURIComponent(t)) : '');
+                    const fullServerUrl = 'https://' + server.url;
 
-                    // can't happen
+                    const _connect = token => {
+                      window.parent.location = fullServerUrl + (token ? ('?t=' + token) : '');
+                    };
+
+                    const {local} = server;
+                    if (local) {
+                      fetch(fullServerUrl + '/server/checkLogin', {
+                        method: 'POST',
+                      })
+                        .then(res => res.json()
+                          .then(({ok}) => {
+                            if (ok) {
+                              _connect();
+                            } else {
+                              const {worldname} = server;
+
+                              fetch('https://' + hubUrl + '/server/proxyLogin', {
+                                method: 'POST',
+                                headers: (() => {
+                                  const result = new Headers();
+                                  result.append('Content-Type', 'application/json');
+                                  return result;
+                                })(),
+                                body: JSON.stringify({
+                                  worldname: worldname,
+                                }),
+                              })
+                                .then(res => res.json()
+                                  .then(({token}) => {
+                                    _connect(token);
+                                  })
+                                )
+                                .catch(err => {
+                                  console.warn(err);
+                                });
+                            }
+                          })
+                        )
+                        .catch(err => {
+                          console.warn(err);
+                        });
+                    } else {
+                      _connect();
+                    }
+
                     e.stopImmediatePropagation();
                   }
 
