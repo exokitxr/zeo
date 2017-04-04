@@ -26,8 +26,6 @@ import menuRender from './lib/render/menu';
 import dataUrlToBlob from 'dataurl-to-blob';
 
 const SIDES = ['left', 'right'];
-const FACES = ['left', 'right', 'top', 'bottom', 'front', 'back']; // envMap order
-const CUBE_CAMERA_FACES = ['right', 'left', 'top', 'bottom', 'back', 'front']; // THREE.CubeCamera order
 
 class Hub {
   constructor(archae) {
@@ -39,7 +37,6 @@ class Hub {
     const {
       metadata: {
         home: {
-          url: homeUrl,
           enabled: homeEnabled,
         },
         my: {
@@ -47,10 +44,6 @@ class Hub {
         },
         hub: {
           url: hubUrl,
-        },
-        server: {
-          url: serverUrl,
-          enabled: serverEnabled,
         },
       },
     } = archae;
@@ -1355,42 +1348,5 @@ class Hub {
 
 const _clone = o => JSON.parse(JSON.stringify(o));
 const _makeId = () => Math.random().toString(36).substring(7);
-const _getQueryVariable = (url, variable) => {
-  const match = url.match(/\?(.+)$/);
-  const query = match ? match[1] : '';
-  const vars = query.split('&');
-
-  for (let i = 0; i < vars.length; i++) {
-    const pair = vars[i].split('=');
-
-    if (decodeURIComponent(pair[0]) === variable) {
-      return decodeURIComponent(pair[1]);
-    }
-  }
-  return null;
-};
-const _debounce = fn => {
-  let running = false;
-  let queued = false;
-
-  const _go = () => {
-    if (!running) {
-      running = true;
-
-      fn(() => {
-        running = false;
-
-        if (queued) {
-          queued = false;
-
-          _go();
-        }
-      });
-    } else {
-      queued = true;
-    }
-  };
-  return _go;
-};
 
 module.exports = Hub;
