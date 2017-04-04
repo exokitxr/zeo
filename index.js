@@ -113,7 +113,7 @@ const config = {
       enabled: flags.server,
     },
     dns: {
-      dnsPort: flags.dnsPort || 53,
+      port: flags.dnsPort || 53,
       enabled: flags.dns || false,
     },
     my: {
