@@ -966,7 +966,17 @@ class Hub {
                     const clipboardText = 'https://' + url + '?t=' + token;
 
                     const ok = _copyToClipboard(clipboardText);
-                    if (!ok) {
+                    if (ok) {
+                      const {worldname} = server;
+
+                      _proxyLoginServer(worldname)
+                        .then(token => {
+                          server.token = token;
+                        })
+                        .catch(err => {
+                          console.warn(err);
+                        });
+                    } else {
                       console.warn('failed to copy URL:\n' + clipboardText);
                     }
 
