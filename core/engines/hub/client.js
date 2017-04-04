@@ -746,16 +746,6 @@ class Hub {
                           console.warn(err);
                         });
                     }
-                  } else if (match = onclick.match(/^server:copyUrl:(.+)$/)) {
-                    const {metadata: {serverMesh}} = serverHoverState;
-                    const {server} = serverMesh;
-                    const {url, token} = server;
-                    const clipboardText = 'https://' + url + '?t=' + token;
-
-                    const ok = _copyToClipboard(clipboardText);
-                    if (!ok) {
-                      console.warn('failed to copy URL:\n' + clipboardText);
-                    }
                   }
 
                   return true;
@@ -957,6 +947,39 @@ class Hub {
             input.on('trigger', _trigger, {
               priority: 1,
             });
+
+            // this needs to be a native click event rather than a soft trigger click event due for clipboard copy security reasons
+            const _click = () => {
+              SIDES.some(side => {
+                const serverHoverState = serverHoverStates[side];
+                const {intersectionPoint} = serverHoverState;
+
+                if (intersectionPoint) {
+                  const {anchor} = serverHoverState;
+                  const onclick = (anchor && anchor.onclick) || '';
+
+                  let match;
+                  if (match = onclick.match(/^server:copyUrl:(.+)$/)) {
+                    const {metadata: {serverMesh}} = serverHoverState;
+                    const {server} = serverMesh;
+                    const {url, token} = server;
+                    const clipboardText = 'https://' + url + '?t=' + token;
+
+                    const ok = _copyToClipboard(clipboardText);
+                    if (!ok) {
+                      console.warn('failed to copy URL:\n' + clipboardText);
+                    }
+
+                    return true;
+                  } else {
+                    return false;
+                  }
+                } else {
+                  return false;
+                }
+              });
+            };
+            input.on('click', _click);
 
             const _gripdown = e => {
               const {side} = e;
@@ -1344,6 +1367,8 @@ class Hub {
               scene.remove(serversMesh);
 
               input.removeListener('trigger', _trigger);
+
+              input.removeListener('click', _click);
 
               input.removeListener('gripdown', _gripdown);
               input.removeListener('gripup', _gripup);
