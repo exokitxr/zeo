@@ -1,8 +1,6 @@
 const path = require('path');
 const fs = require('fs');
 
-const psNode = require('ps-node');
-
 class Hub {
   constructor(archae) {
     this._archae = archae;
