@@ -100,7 +100,7 @@ const _update = () => {
   const match = window.location.pathname.match(/^\/modules\/(.*)$/);
   const mod = match[1];
 
-  fetch('/archae/rend/mods?q=' + mod)
+  fetch('/modules/module.json?q=' + mod)
     .then(res =>
       res.json()
         .then(module => {

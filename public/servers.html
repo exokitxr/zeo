@@ -73,16 +73,15 @@ const _update = () => {
     serversBody.removeChild(serversBody.lastChild);
   }
 
-  fetch(window.location.protocol + '//hub.' + window.location.hostname + (window.location.port ? (':' + window.location.port) : '') + '/servers/servers.json')
-    .then(res =>
-      res.json()
-        .then(({servers}) => {
-          for (let i = 0; i < servers.length; i++) {
-            const server = servers[i];
-            const serverElement = _makeServerElement(server);
-            serversBody.appendChild(serverElement);
-          }
-        })
+  fetch('/servers/servers.json')
+    .then(res => res.json()
+      .then(({servers}) => {
+        for (let i = 0; i < servers.length; i++) {
+          const server = servers[i];
+          const serverElement = _makeServerElement(server);
+          serversBody.appendChild(serverElement);
+        }
+      })
     );
 };
 _update();
