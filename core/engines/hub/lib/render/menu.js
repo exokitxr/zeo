@@ -398,7 +398,7 @@ const getCreateServerSrc = (inputText, inputIndex, inputValue, focusType) => {
   `;
 };
 
-const getServerTagSrc = ({worldname, url, serverIcon}) => {
+const getServerTagSrc = ({worldname, url, running, local, serverIcon}) => {
   return `\
     <div style="display: flex; width: ${SERVER_WIDTH}px; height: ${SERVER_HEIGHT}px; padding: 50px; background-color: #EEE; flex-direction: column; justify-content: center; align-items: center; box-sizing: border-box;">
       <div style="display: flex; width: 100%;">
@@ -410,101 +410,39 @@ const getServerTagSrc = ({worldname, url, serverIcon}) => {
         :
           `<div style="width: ${SERVER_HEIGHT}px; height: ${SERVER_HEIGHT}px; margin: -50px; margin-right: 50px;"></div>`
         }
-        <div style="flex-grow: 1;">
-          <div style="font-size: 60px; font-weight: 400;">${worldname}</div>
-          ${url ?
-            `<div style="min-height: 150px; font-size: 40px;">${url}</div>`
-          :
-            ``
-          }
-        </div>
-      </div>
-    </div>
-  `;
-};
-
-const getServersPageSrc = ({page, servers, currentServerUrl}) => {
-  const leftSrc = (() => {
-    const headerSrc = (() => {
-      return `\
-        <div style="display: flex; margin-bottom: 20px; font-size: 16px; line-height: 1.4;">
-          <div style="display: flex; flex-grow: 1;">
-            <a style="display: flex; margin-right: 10px; padding: 5px 15px; background-color: #000; border: 1px solid transparent; color: #FFF;; border-radius: 100px; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="servers:list">Servers</a>
-          </div>
-          <a style="display: block; padding: 5px 15px; border: 1px solid #333; border-radius: 100px; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="servers:newServer">+ New server</a>
-        </div>
-      `;
-    })();
-    const serversSrc = (() => {
-      const _getServerSrc = server => {
-        const {username, worldname, url, users} = server;
-        const fullWorldname = username + '/' + worldname;
-        const ping = Math.floor(Math.random() * 1000); // XXX actually compute this
-        const selected = url === currentServerUrl;
-
-        const _getSelectedStyle = selected => {
-          if (selected) {
-            return 'background-color: #000; border: 1px solid transparent; color: #FFF;';
-          } else {
-            return 'background-color: #FFF; border: 1px solid #EEE;';
-          }
-        };
-
-        return `\
-          <div style="display: flex; height: 100px; margin-bottom: 10px; ${_getSelectedStyle(selected)}; box-sizing: border-box;">
-            ${!selected ?
-              `<a style="display: flex; width: 100px; height: 100px; margin: -1px 0 -1px -1px; background-color: #FFF; color: #000; font-size: 13px; text-decoration: none; justify-content: center; align-items: center;" onclick="servers:connect:${url}">
-                <div style="padding: 5px 15px; border: 1px solid #333; border-radius: 100px;">Connect</div>
-              </a>`
+        <div style="display: flex; flex-grow: 1; flex-direction: column;">
+          <div style="margin-bottom: auto;">
+            <div style="font-size: 60px; font-weight: 400;">${worldname}</div>
+            ${url ?
+              `<div style="min-height: 150px; font-size: 30px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${url}</div>`
             :
-              `<a style="display: flex; width: 100px; height: 100px; margin: -1px 0 -1px -1px; background-color: #FFF; color: #000; font-size: 13px; text-decoration: none; justify-content: center; align-items: center;" onclick="servers:disconnect">
-                <div style="padding: 5px 15px; border: 1px solid #333; border-radius: 100px;">Disconnect</div>
-              </a>`
+              ''
             }
-            <div style="display: flex; padding: 5px 20px; flex-grow: 1; flex-direction: column;">
-              <div style="display: flex; align-items: center;">
-                <div style="margin-right: auto; font-size: 16px; font-weight: 400;">${fullWorldname}</div>
-                <div style="display: flex; margin-right: 10px; color: #E91E63; font-size: 13px; font-weight: 400; align-items: center;">Official</div>
-                <div style="display: flex; margin-right: 10px; font-size: 13px; align-items: center;">
-                  <img src="${!selected ? pulseBlackIconSrc : pulseWhiteIconSrc}" width="18" height="18" style="margin-right: 5px;">
-                  <div>${prettyms(ping)}</div>
-                </div>
-              </div>
-              <div style="display: flex; margin-bottom: 5px; font-size: 13px; align-items: center;">${url}</div>
-              <div style="display: flex; margin-bottom: 5px;">
-                ${users.map(user => `\
-                  <div style="display: flex; margin-right: 10px; margin-bottom: 2px; padding: 2px 10px; background-color: ${selected ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)'}; border-radius: 100px; font-size: 13px; line-height: 1; align-items: center;">
-                    <img src="${creatureUtils.makeStaticCreature('user:' + user)}" width="18" height="18" style="margin-right: 10px; image-rendering: pixelated;" />
-                    <div>${user}</div>
-                  </div>
-                `).join('\n')}
-              </div>
-            </div>
           </div>
-        `;
-      };
-
-      let result = '';
-      for (let i = 0; i < servers.length; i++) {
-        const server = servers[i];
-        result += _getServerSrc(server);
-      }
-      return result;
-    })();
-
-    return `\
-      <div style="display: flex; padding: 20px 30px; flex-grow: 1; flex-direction: column;">
-        ${headerSrc}
-        ${serversSrc}
+          ${local ?
+            `<a style="display: flex; align-items: center; text-decoration: none;" onclick="server:toggleRunning:${worldname}">
+              <div style="display: flex; margin-right: 30px; align-items: center;">
+                ${running ?
+                  `<div style="display: flex; justify-content: center; align-items: center;">
+                    <div style="display: flex; width: ${(60 * 2) - (5 * 2)}px; height: 60px; padding: 5px; border: 5px solid #333; justify-content: flex-end; align-items: center; box-sizing: border-box;">
+                      <div style="width: ${60 - ((5 * 2) + (5 * 2))}px; height: ${60 - ((5 * 2) + (5 * 2))}px; background-color: #333;"></div>
+                    </div>
+                  </div>`
+                :
+                  `<div style="display: flex; justify-content: center; align-items: center;">
+                    <div style="display: flex; width: ${(60 * 2) - (5 * 2)}px; height: 60px; padding: 5px; border: 5px solid #CCC; justify-content: flex-start; align-items: center; box-sizing: border-box;">
+                      <div style="width: ${60 - ((5 * 2) + (5 * 2))}px; height: ${60 - ((5 * 2) + (5 * 2))}px; background-color: #CCC;"></div>
+                    </div>
+                  </div>`
+                }
+              </div>
+              <div style="font-size: 60px; font-weight: 400; ${running ? 'color: #000;' : 'color: #CCC;'}">${running ? 'Running' : 'Not running'}</div>
+            </a>`
+          :
+            ''
+          }
+        </div>
       </div>
-    `;
-  })();
-  const rightSrc = getThreadSidebarSrc();
-
-  return `\
-    <div style="display: flex; width: ${WIDTH}px; min-height: ${HEIGHT}px; font-size: 30px; line-height: 1.4;">
-      ${leftSrc}
-      ${rightSrc}
     </div>
   `;
 };
@@ -512,5 +450,4 @@ const getServersPageSrc = ({page, servers, currentServerUrl}) => {
 module.exports = {
   getHubMenuSrc,
   getServerTagSrc,
-  getServersPageSrc,
 };

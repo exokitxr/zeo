@@ -528,6 +528,8 @@ class Hub {
                         server: {
                           worldname,
                           url,
+                          running,
+                          local,
                         },
                         serverIcon,
                       }) => ({
@@ -535,6 +537,8 @@ class Hub {
                         src: menuRenderer.getServerTagSrc({
                           worldname,
                           url,
+                          running,
+                          local,
                           serverIcon,
                         }),
                         x: 0,
@@ -547,6 +551,8 @@ class Hub {
                           server: {
                             worldname: server.worldname,
                             url: server.url,
+                            running: server.running,
+                            local: server.local,
                           },
                           serverIcon,
                         },
@@ -610,6 +616,12 @@ class Hub {
               .then(res => res.json()
                 .then(j => {
                   const {servers} = j;
+
+                  for (let i = 0; i < servers.length; i++) {
+                    const server = servers[i];
+                    server.local = false;
+                  }
+
                   const imgPromises = servers.map(server => {
                     const {url} = server;
 
@@ -638,6 +650,12 @@ class Hub {
               .then(res => res.json()
                 .then(j => {
                   const {servers} = j;
+
+                  for (let i = 0; i < servers.length; i++) {
+                    const server = servers[i];
+                    server.local = true;
+                  }
+
                   const imgPromises = servers.map(server => {
                     const {url} = server;
 
