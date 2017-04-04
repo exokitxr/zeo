@@ -25,8 +25,6 @@ import {
 import menuRenderer from './lib/render/menu';
 import dataUrlToBlob from 'dataurl-to-blob';
 
-const DEFAULT_MATRIX = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
-const NUM_INVENTORY_ITEMS = 4;
 const SERVER_CUBEMAP_INITIAL_ANNOUNCE_TIMEOUT = 2 * 1000;
 const SERVER_CUBEMAP_ANNOUNCE_INTERVAL = 5 * 60 * 1000;
 const SERVER_ENV_MAP_SIZE = 512;
