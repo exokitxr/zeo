@@ -3,7 +3,6 @@ const fs = require('fs');
 const https = require('https');
 
 const SERVER_ANNOUNCE_INTERVAL = 30 * 1000;
-const SERVER_ICON_ANNOUNCE_INTERVAL = 5 * 60 * 1000;
 const SERVER_ANNOUNCE_RETRY_INTERVAL = 2 * 1000;
 
 class Bootstrap {
@@ -71,47 +70,6 @@ class Bootstrap {
         reject(err);
       });
     });
-    const _announceServerIcon = () => new Promise((accept, reject) => {
-      const options = {
-        method: 'POST',
-        host: hubSpec.host,
-        port: hubSpec.port,
-        path: '/servers/announceIcon/' + serverUrl,
-        headers: {
-          'Content-Type': 'image/png',
-        },
-      };
-      const req = https.request(options);
-
-      const serverImagePath = path.join(dirname, dataDirectory, 'img', 'server', 'icon', serverWorldname + '.png');
-      const rs = fs.createReadStream(serverImagePath);
-      rs.pipe(req);
-      rs.on('error', err => {
-        reject(err);
-      });
-
-      req.on('response', res => {
-        res.resume();
-
-        res.on('end', () => {
-          const {statusCode} = res;
-
-          if (statusCode >= 200 && statusCode < 300) {
-            accept();
-          } else {
-            const err = new Error('server announce image returned error status code: ' + statusCode);
-            err.code = 'EHHTP';
-            reject(err);
-          }
-        });
-        res.on('error', err => {
-          reject(err);
-        });
-      });
-      req.on('error', err => {
-        reject(err);
-      });
-    });
 
     const _makeTryAnnounce = announceFn => () => new Promise((accept, reject) => {
       announceFn()
@@ -125,7 +83,6 @@ class Bootstrap {
         });
     });
     const _tryServerAnnounce = _makeTryAnnounce(_announceServer);
-    const _tryServerIconAnnounce = _makeTryAnnounce(_announceServerIcon);
 
     const _makeQueueAnnounce = (tryAnnounceFn, retryAnnounceFn) => _debounce(next => {
       tryAnnounceFn()
@@ -140,21 +97,13 @@ class Bootstrap {
     const _queueServerAnnounce = _makeQueueAnnounce(_tryServerAnnounce, () => {
       _queueServerAnnounce();
     });
-    const _queueServerIconAnnounce = _makeQueueAnnounce(_tryServerIconAnnounce, () => {
-      _queueServerIconAnnounce();
-    });
 
     if (serverEnabled && hubSpec) {
       _queueServerAnnounce();
-      _queueServerIconAnnounce();
 
       const serverAnnounceInterval = setInterval(() => {
         _queueServerAnnounce();
       }, SERVER_ANNOUNCE_INTERVAL);
-
-      const serverIconAnnounceInterval = setInterval(() => {
-        _queueServerIconAnnounce();
-      }, SERVER_ICON_ANNOUNCE_INTERVAL);
 
       cleanups.push(() => {
         clearInterval(serverAnnounceInterval);
@@ -269,7 +218,7 @@ class Bootstrap {
   }
 }
 
-const _jsonParse = s => {
+/* const _jsonParse = s => {
   let error = null;
   let result;
   try {
@@ -282,7 +231,7 @@ const _jsonParse = s => {
   } else {
     return null;
   }
-};
+}; */
 const _debounce = fn => {
   let running = false;
   let queued = false;
