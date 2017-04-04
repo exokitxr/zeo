@@ -146,7 +146,7 @@ class Hub {
           zCakeItemSpec,
         ]) => {
           if (live) {
-            const {THREE, scene, camera} = three;
+            const {THREE, scene, camera, renderer} = three;
             const {events} = jsUtils;
             const {EventEmitter} = events;
 
@@ -433,75 +433,22 @@ class Hub {
               return object;
             };
             const _makeServerEnvMesh = server => {
-              const _requestImageFile = p => new Promise((accept, reject) => {
-                const img = new Image();
-                img.src = 'https://' + hubUrl + p;
-                img.onload = () => {
-                  accept(img);
-                };
-                img.onerror = err => {
-                  reject(err);
-                };
-              });
-              // XXX for local servers we should query the cubeMap from the server directly rather than going through the hub as we go here
-              const _requestCubeMapImgs = server => Promise.all(FACES.map(face => _requestImageFile('/servers/img/cubemap/' + encodeURIComponent(server.url) + '/'+ face + '.png')))
-                .then(cubeMapImgs => {
-                  const result = {};
-                  for (let i = 0; i < cubeMapImgs.length; i++) {
-                    const cubeMapImg = cubeMapImgs[i];
-                    const face = FACES[i];
-                    result[face] = cubeMapImg;
-                  }
-                  return result;
-                });
+              const cubeCamera = new THREE.CubeCamera(0.001, 1024, 256);
 
               const mesh = (() => {
                 const geometry = new THREE.SphereBufferGeometry(SPHERE_RADIUS, 64, 64);
-                const material = (() => {
-                  const texture = new THREE.CubeTexture(
-                    [
-                      transparentImg,
-                      transparentImg,
-                      transparentImg,
-                      transparentImg,
-                      transparentImg,
-                      transparentImg,
-                    ],
-                    THREE.UVMapping,
-                    THREE.ClampToEdgeWrapping,
-                    THREE.ClampToEdgeWrapping,
-                    THREE.NearestFilter,
-                    THREE.NearestFilter,
-                    THREE.RGBAFormat,
-                    THREE.UnsignedByteType,
-                    1
-                  );
-                  texture.needsUpdate = true;
-
-                  const material = new THREE.MeshLambertMaterial({
-                    envMap: texture,
-                    // shininess: 10,
-                  });
-                  return material;
-                })();
+                const material = new THREE.MeshLambertMaterial({
+                  color: 0xffffff,
+                  envMap: cubeCamera.renderTarget.texture,
+                });
 
                 const mesh = new THREE.Mesh(geometry, material);
                 mesh.castShadow = true;
 
                 return mesh;
               })();
-
-              _requestCubeMapImgs(server)
-                .then(faceImgs => {
-                  const images = FACES.map(face => faceImgs[face]);
-
-                  const {material: {envMap: texture}} = mesh;
-                  texture.images = images;
-                  texture.needsUpdate = true;
-                })
-                .catch(err => {
-                  console.warn(err);
-                });
+              mesh.add(cubeCamera);
+              mesh.cubeCamera = cubeCamera;
 
               mesh.boxTarget = null;
               const _updateBoxTarget = () => {
@@ -1346,6 +1293,19 @@ class Hub {
                   }
                 });
               };
+              const _updateEnvMaps = () => {
+                const {children: serverMeshes} = serversMesh;
+
+                for (let i = 0; i < serverMeshes.length; i++) {
+                  const serverMesh = serverMeshes[i];
+                  const {envMesh} = serverMesh;
+                  const {cubeCamera} = envMesh;
+
+                  envMesh.visible = false;
+                  cubeCamera.updateCubeMap(renderer, scene);
+                  envMesh.visible = true;
+                }
+              };
 
               _updateMenuAnchors();
               _updateTagGrabAnchors();
@@ -1353,6 +1313,7 @@ class Hub {
               _updateEnvAnchors();
               _updateServerMeshes();
               _updateServerMeshAnchors();
+              _updateEnvMaps();
             };
             rend.on('update', _update);
 
