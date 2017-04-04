@@ -26,6 +26,10 @@ const serverPlusImg = require('../img/server-plus');
 const serverPlusImgSrc = 'data:image/svg+xml;base64,' + btoa(serverPlusImg);
 const chevronLeftImg = require('../img/chevron-left');
 const chevronLeftIconSrc = 'data:image/svg+xml;base64,' + btoa(chevronLeftImg);
+const lanConnectImg = require('../img/lan-connect');
+const lanConnectImgSrc = 'data:image/svg+xml;base64,' + btoa(lanConnectImg);
+const lanDisconnectImg = require('../img/lan-disconnect');
+const lanDisconnectImgSrc = 'data:image/svg+xml;base64,' + btoa(lanDisconnectImg);
 const upImg = require('../img/up');
 const downImg = require('../img/down');
 
@@ -240,7 +244,7 @@ const getTutorialPageSrc = (pageIndex, loading, error, vrMode, flags, imgs) => {
 };
 
 const getServerSrc = (server, index, prefix) => {
-  const {worldname, url, users, iconImgSrc} = server;
+  const {worldname, url, running, users, iconImgSrc} = server;
 
   return `\
     <a style="display: flex; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid #EEE; text-decoration: none;" onclick="${prefix}:${index}">
@@ -259,6 +263,9 @@ const getServerSrc = (server, index, prefix) => {
         :
           'No users'
         }
+      </div>
+      <div style="display: flex; width: 80px; height: 80px; justify-content: center; align-items: center;">
+        <img src="${running ? lanConnectImgSrc : lanDisconnectImgSrc}" width="24px" height="24px" />
       </div>
     </a>
   `;
