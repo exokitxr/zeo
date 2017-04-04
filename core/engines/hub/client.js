@@ -772,6 +772,38 @@ class Hub {
                     serversMesh.remove(child);
                   }
                 };
+                const _openRemoteServersPage = () => {
+                  hubState.loading = true;
+
+                  _setPage('remoteServers:' + 0);
+
+                  _requestRemoteServers() // XXX cancel these when switching pages
+                    .then(servers => {
+                      hubState.remoteServers = servers;
+                      hubState.loading = false;
+
+                      _updatePages();
+                    })
+                    .catch(err => {
+                      console.warn(err);
+                    });
+                };
+                const _openLocalServersPage = () => {
+                  hubState.loading = true;
+
+                  _setPage('localServers:' + 0);
+
+                  _requestLocalServers()
+                    .then(servers => {
+                      hubState.localServers = servers;
+                      hubState.loading = false;
+
+                      _updatePages();
+                    })
+                    .catch(err => {
+                      console.warn(err);
+                    });
+                };
 
                 let match;
                 if (onclick === 'hub:next') {
@@ -794,37 +826,11 @@ class Hub {
 
                   return true;
                 } else if (onclick === 'hub:remoteServers') {
-                  hubState.loading = true;
-
-                  _setPage('remoteServers:' + 0);
-
-                  _requestRemoteServers() // XXX cancel these when switching pages
-                    .then(servers => {
-                      hubState.remoteServers = servers;
-                      hubState.loading = false;
-
-                      _updatePages();
-                    })
-                    .catch(err => {
-                      console.warn(err);
-                    });
+                  _openRemoteServersPage();
 
                   return true;
                 } else if (onclick === 'hub:localServers') {
-                  hubState.loading = true;
-
-                  _setPage('localServers:' + 0);
-
-                  _requestLocalServers()
-                    .then(servers => {
-                      hubState.localServers = servers;
-                      hubState.loading = false;
-
-                      _updatePages();
-                    })
-                    .catch(err => {
-                      console.warn(err);
-                    });
+                  _openLocalServersPage();
 
                   return true;
                 } else if (match = onclick.match(/^remoteServer:([0-9]+)$/)) {
@@ -901,11 +907,8 @@ class Hub {
                       }),
                     })
                       .then(res => res.json()
-                        .then(server => {
-                          const {localServers} = hubState;
-                          localServers.push(server);
-
-                          _setPage('localServers');
+                        .then(() => {
+                           _openLocalServersPage();
                         })
                       )
                       .catch(err => {
