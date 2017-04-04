@@ -248,7 +248,11 @@ const getServerSrc = (server, index, prefix) => {
 
   return `\
     <a style="display: flex; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid #EEE; text-decoration: none;" onclick="${prefix}:${index}">
-      <img src="${iconImgSrc}" width="80" height="80" style="display: flex; width: 80px; height: 80px; margin-right: 10px;" />
+      ${iconImgSrc ?
+        `<img src="${iconImgSrc}" width="80" height="80" style="display: flex; width: 80px; height: 80px; margin-right: 10px;" />`
+      :
+        `<div style="display: flex; width: 80px; height: 80px; margin-right: 10px;"></div>`
+      }
       <div style="display: flex; margin-right: auto; padding: 5px; flex-direction: column;">
         <div style="font-size: 20px; font-weight: 600;">${worldname}</div>
         <div style="font-size: 13px; font-weight: 400;">
@@ -272,9 +276,13 @@ const getServerSrc = (server, index, prefix) => {
 };
 const getServersSrc = (servers, prefix) => {
   return `\
-    <div style="display: flex; width: ${WIDTH - 250}px; height: ${HEIGHT - 100}px; padding: 0 30px; flex-direction: column; box-sizing: border-box;">
-      ${servers.map((server, index) => getServerSrc(server, index, prefix)).join('')}
-    </div>
+    ${servers.length > 0 ?
+      `<div style="display: flex; width: ${WIDTH - 250}px; height: ${HEIGHT - 100}px; padding: 0 30px; flex-direction: column; box-sizing: border-box;">
+        ${servers.map((server, index) => getServerSrc(server, index, prefix)).join('')}
+      </div>`
+    :
+      `<div style="padding: 0 30px; font-size: 30px;">No servers</div>`
+    }
   `;
 };
 
@@ -391,7 +399,11 @@ const getServerTagSrc = ({worldname, description, serverIcon}) => {
         <a style="display: flex; position: absolute; top: 0; right: 0; width: 100px; height: 100px; justify-content: center; align-items: center;" onclick="server:close:${worldname}">
           <img src="${closeBoxImgSrc}" width="80" height="80" />
         </a>
-        <img src="${serverIcon}" width="${SERVER_HEIGHT}" height="${SERVER_HEIGHT}" style="margin: -50px; margin-right: 50px; image-rendering: pixelated;" />
+        ${serverIcon ?
+          `<img src="${serverIcon}" width="${SERVER_HEIGHT}" height="${SERVER_HEIGHT}" style="width: ${SERVER_HEIGHT}px; height: ${SERVER_HEIGHT}px; margin: -50px; margin-right: 50px; image-rendering: pixelated;" />`
+        :
+          `<div style="width: ${SERVER_HEIGHT}px; height: ${SERVER_HEIGHT}px; margin: -50px; margin-right: 50px;"></div>`
+        }
         <div style="flex-grow: 1;">
           <div style="font-size: 60px; font-weight: 400;">${worldname}</div>
           <div style="min-height: 150px; font-size: 40px;">${description}</div>

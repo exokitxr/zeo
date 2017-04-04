@@ -663,7 +663,7 @@ class Hub {
                       .catch(err => {
                         console.warn(err);
 
-                        return Promise.resolve(transparentImg.src);
+                        return Promise.resolve(null);
                       });
                   });
                   return Promise.all(imgPromises)
