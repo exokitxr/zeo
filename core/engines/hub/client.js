@@ -527,14 +527,14 @@ class Hub {
                       const mesh = serverUi.addPage(({
                         server: {
                           worldname,
-                          description,
+                          url,
                         },
                         serverIcon,
                       }) => ({
                         type: 'html',
                         src: menuRenderer.getServerTagSrc({
                           worldname,
-                          description,
+                          url,
                           serverIcon,
                         }),
                         x: 0,
@@ -546,7 +546,7 @@ class Hub {
                         state: {
                           server: {
                             worldname: server.worldname,
-                            description: server.url,
+                            url: server.url,
                           },
                           serverIcon,
                         },

@@ -398,7 +398,7 @@ const getCreateServerSrc = (inputText, inputIndex, inputValue, focusType) => {
   `;
 };
 
-const getServerTagSrc = ({worldname, description, serverIcon}) => {
+const getServerTagSrc = ({worldname, url, serverIcon}) => {
   return `\
     <div style="display: flex; width: ${SERVER_WIDTH}px; height: ${SERVER_HEIGHT}px; padding: 50px; background-color: #EEE; flex-direction: column; justify-content: center; align-items: center; box-sizing: border-box;">
       <div style="display: flex; width: 100%;">
@@ -412,7 +412,11 @@ const getServerTagSrc = ({worldname, description, serverIcon}) => {
         }
         <div style="flex-grow: 1;">
           <div style="font-size: 60px; font-weight: 400;">${worldname}</div>
-          <div style="min-height: 150px; font-size: 40px;">${description}</div>
+          ${url ?
+            `<div style="min-height: 150px; font-size: 40px;">${url}</div>`
+          :
+            ``
+          }
         </div>
       </div>
     </div>

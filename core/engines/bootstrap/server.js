@@ -4,6 +4,7 @@ const https = require('https');
 
 const SERVER_ANNOUNCE_INTERVAL = 30 * 1000;
 const SERVER_ICON_ANNOUNCE_INTERVAL = 5 * 60 * 1000;
+const SERVER_ANNOUNCE_RETRY_INTERVAL = 2 * 1000;
 
 class Bootstrap {
   constructor(archae) {
@@ -23,17 +24,13 @@ class Bootstrap {
       };
     })();
 
-    let live = true;
+    const cleanups = [];
     this._cleanup = () => {
-      live = false;
+      for (let i = 0; i < cleanups.length; i++) {
+        const cleanup = cleanups[i];
+        cleanup();
+      }
     };
-
-    const users = [ // XXX send the actual multiplayer server users list
-      'allie',
-      'reede',
-      'fay',
-      'khromix',
-    ];
 
     const _announceServer = () => new Promise((accept, reject) => {
       const options = {
@@ -49,7 +46,7 @@ class Bootstrap {
       req.end(JSON.stringify({
         worldname: serverWorldname,
         url: serverUrl,
-        users: users,
+        users: [], // XXX announce the real users from the hub engine
       }));
 
       req.on('response', res => {
@@ -61,12 +58,8 @@ class Bootstrap {
           if (statusCode >= 200 && statusCode < 300) {
             accept();
           } else {
-            const err = 'server announce returned error status code: ' + JSON.stringify({
-              host: options.host,
-              port: options.port,
-              path: options.path,
-              statusCode: statusCode,
-            });
+            const err = new Error('server announce returned error status code: ' + statusCode);
+            err.code = 'EHTTP';
             reject(err);
           }
         });
@@ -93,6 +86,9 @@ class Bootstrap {
       const serverImagePath = path.join(dirname, dataDirectory, 'img', 'server', 'icon', serverWorldname + '.png');
       const rs = fs.createReadStream(serverImagePath);
       rs.pipe(req);
+      rs.on('error', err => {
+        reject(err);
+      });
 
       req.on('response', res => {
         res.resume();
@@ -103,12 +99,8 @@ class Bootstrap {
           if (statusCode >= 200 && statusCode < 300) {
             accept();
           } else {
-            const err = 'server announce image returned error status code: ' + JSON.stringify({
-              host: options.host,
-              port: options.port,
-              path: options.path,
-              statusCode: statusCode,
-            });
+            const err = new Error('server announce image returned error status code: ' + statusCode);
+            err.code = 'EHHTP';
             reject(err);
           }
         });
@@ -124,165 +116,152 @@ class Bootstrap {
     const _makeTryAnnounce = announceFn => () => new Promise((accept, reject) => {
       announceFn()
         .then(() => {
-          accept();
+          accept(true);
         })
         .catch(err => {
-          console.warn('server announce failed:', err);
+          console.warn('server announce failed: ', err.code);
 
-          accept();
+          accept(false);
         });
     });
     const _tryServerAnnounce = _makeTryAnnounce(_announceServer);
     const _tryServerIconAnnounce = _makeTryAnnounce(_announceServerIcon);
 
-    const _makeQueueAnnounce = tryAnnounceFn => _debounce(next => {
+    const _makeQueueAnnounce = (tryAnnounceFn, retryAnnounceFn) => _debounce(next => {
       tryAnnounceFn()
-        .then(() => {
+        .then(ok => {
+          if (!ok) {
+            setTimeout(retryAnnounceFn, SERVER_ANNOUNCE_RETRY_INTERVAL);
+          }
+
           next();
         });
     });
-    const _queueServerAnnounce = _makeQueueAnnounce(_tryServerAnnounce);
-    const _queueServerIconAnnounce = _makeQueueAnnounce(_tryServerIconAnnounce);
+    const _queueServerAnnounce = _makeQueueAnnounce(_tryServerAnnounce, () => {
+      _queueServerAnnounce();
+    });
+    const _queueServerIconAnnounce = _makeQueueAnnounce(_tryServerIconAnnounce, () => {
+      _queueServerIconAnnounce();
+    });
 
-    const _initialAnnounce = () => {
-      if (serverEnabled && hubSpec) {
-        return Promise.all([
-          _tryServerAnnounce(),
-          _tryServerIconAnnounce(),
-        ]);
+    if (serverEnabled && hubSpec) {
+      _queueServerAnnounce();
+      _queueServerIconAnnounce();
+
+      const serverAnnounceInterval = setInterval(() => {
+        _queueServerAnnounce();
+      }, SERVER_ANNOUNCE_INTERVAL);
+
+      const serverIconAnnounceInterval = setInterval(() => {
+        _queueServerIconAnnounce();
+      }, SERVER_ICON_ANNOUNCE_INTERVAL);
+
+      cleanups.push(() => {
+        clearInterval(serverAnnounceInterval);
+        clearInterval(serverIconAnnounceInterval);
+      });
+    }
+
+    /* const _proxyHub = (req, res, url) => { // XXX this authentication no longer works and needs to be rethought
+      const proxyReq = https.request({
+        method: req.method,
+        hostname: hubSpec.host,
+        port: hubSpec.port,
+        path: url,
+        headers: req.headers,
+      });
+      proxyReq.end();
+      proxyReq.on('error', err => {
+        res.status(500);
+        res.end(err.stack);
+      });
+      proxyReq.on('response', proxyResponse => {
+        res.status(proxyResponse.statusCode);
+        res.set(proxyResponse.headers);
+        proxyResponse.pipe(res);
+      });
+    };
+    const _authHub = (authentication, cb) => {
+      if (hubSpec) {
+        const proxyReq = https.request({
+          method: 'POST',
+          hostname: hubSpec.host,
+          port: hubSpec.port,
+          path: '/hub/auth',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        proxyReq.end(JSON.stringify({
+          authentication,
+        }));
+        proxyReq.on('error', err => {
+          cb(err);
+        });
+        proxyReq.on('response', proxyResponse => {
+          const bs = [];
+          proxyResponse.on('data', d => {
+            bs.push(d);
+          });
+          proxyResponse.on('end', () => {
+            const b = Buffer.concat(bs);
+            const s = b.toString('utf8');
+            const j = _jsonParse(s);
+            const username = j ? j.username : null;
+
+            if (username) {
+              cb(null, username);
+            } else {
+              cb({
+                code: 'EAUTH',
+              });
+            }
+          });
+        });
       } else {
-        return Promise.resolve();
+        const authenticationString = new Buffer(authentication, 'base64').toString('utf8');
+        const match = authenticationString.match(/^(.+?):(.+?)$/);
+
+        if (match) {
+          const username = match[1];
+          const password = match[2];
+
+          if (username === serverUsername && password === serverPassword) {
+            cb(null, username);
+          } else {
+            cb({
+              code: 'EAUTH',
+            });
+          }
+        } else {
+          cb({
+            code: 'EAUTH',
+          });
+        }
+      }
+    };
+    const _authHubRequest = (req, cb) => {
+      const authentication = (() => {
+        const authorization = req.get('Authorization') || '';
+        const match = authorization.match(/^Token (.+)$/);
+        return match && match[1];
+      })();
+      if (authentication) {
+        _authHub(authentication, cb);
+      } else {
+        process.nextTick(() => {
+          cb({
+            code: 'EAUTH',
+          });
+        });
       }
     };
 
-    return _initialAnnounce()
-      .then(() => {
-        if (live) {
-          const cleanups = [];
-          this._cleanup = () => {
-            for (let i = 0; i < cleanups.length; i++) {
-              const cleanup = cleanups[i];
-              cleanup();
-            }
-          };
-
-          if (serverEnabled && hubSpec) {
-            const serverAnnounceInterval = setInterval(() => {
-              _queueServerAnnounce();
-            }, SERVER_ANNOUNCE_INTERVAL);
-
-            const serverIconAnnounceInterval = setInterval(() => {
-              _queueServerIconAnnounce();
-            }, SERVER_ICON_ANNOUNCE_INTERVAL);
-
-            cleanups.push(() => {
-              clearInterval(serverAnnounceInterval);
-              clearInterval(serverIconAnnounceInterval);
-            });
-          }
-
-          /* const _proxyHub = (req, res, url) => { // XXX this authentication no longer works and needs to be rethought
-            const proxyReq = https.request({
-              method: req.method,
-              hostname: hubSpec.host,
-              port: hubSpec.port,
-              path: url,
-              headers: req.headers,
-            });
-            proxyReq.end();
-            proxyReq.on('error', err => {
-              res.status(500);
-              res.end(err.stack);
-            });
-            proxyReq.on('response', proxyResponse => {
-              res.status(proxyResponse.statusCode);
-              res.set(proxyResponse.headers);
-              proxyResponse.pipe(res);
-            });
-          };
-          const _authHub = (authentication, cb) => {
-            if (hubSpec) {
-              const proxyReq = https.request({
-                method: 'POST',
-                hostname: hubSpec.host,
-                port: hubSpec.port,
-                path: '/hub/auth',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-              });
-              proxyReq.end(JSON.stringify({
-                authentication,
-              }));
-              proxyReq.on('error', err => {
-                cb(err);
-              });
-              proxyReq.on('response', proxyResponse => {
-                const bs = [];
-                proxyResponse.on('data', d => {
-                  bs.push(d);
-                });
-                proxyResponse.on('end', () => {
-                  const b = Buffer.concat(bs);
-                  const s = b.toString('utf8');
-                  const j = _jsonParse(s);
-                  const username = j ? j.username : null;
-
-                  if (username) {
-                    cb(null, username);
-                  } else {
-                    cb({
-                      code: 'EAUTH',
-                    });
-                  }
-                });
-              });
-            } else {
-              const authenticationString = new Buffer(authentication, 'base64').toString('utf8');
-              const match = authenticationString.match(/^(.+?):(.+?)$/);
-
-              if (match) {
-                const username = match[1];
-                const password = match[2];
-
-                if (username === serverUsername && password === serverPassword) {
-                  cb(null, username);
-                } else {
-                  cb({
-                    code: 'EAUTH',
-                  });
-                }
-              } else {
-                cb({
-                  code: 'EAUTH',
-                });
-              }
-            }
-          };
-          const _authHubRequest = (req, cb) => {
-            const authentication = (() => {
-              const authorization = req.get('Authorization') || '';
-              const match = authorization.match(/^Token (.+)$/);
-              return match && match[1];
-            })();
-            if (authentication) {
-              _authHub(authentication, cb);
-            } else {
-              process.nextTick(() => {
-                cb({
-                  code: 'EAUTH',
-                });
-              });
-            }
-          };
-
-          return {
-            proxyHub: _proxyHub,
-            authHub: _authHub,
-            authHubRequest: _authHubRequest,
-          }; */
-        }
-      });
+    return {
+      proxyHub: _proxyHub,
+      authHub: _authHub,
+      authHubRequest: _authHubRequest,
+    }; */
   }
 
   unmount() {
