@@ -110,107 +110,6 @@ class Bootstrap {
         clearInterval(serverIconAnnounceInterval);
       });
     }
-
-    /* const _proxyHub = (req, res, url) => { // XXX this authentication no longer works and needs to be rethought
-      const proxyReq = https.request({
-        method: req.method,
-        hostname: hubSpec.host,
-        port: hubSpec.port,
-        path: url,
-        headers: req.headers,
-      });
-      proxyReq.end();
-      proxyReq.on('error', err => {
-        res.status(500);
-        res.end(err.stack);
-      });
-      proxyReq.on('response', proxyResponse => {
-        res.status(proxyResponse.statusCode);
-        res.set(proxyResponse.headers);
-        proxyResponse.pipe(res);
-      });
-    };
-    const _authHub = (authentication, cb) => {
-      if (hubSpec) {
-        const proxyReq = https.request({
-          method: 'POST',
-          hostname: hubSpec.host,
-          port: hubSpec.port,
-          path: '/hub/auth',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
-        proxyReq.end(JSON.stringify({
-          authentication,
-        }));
-        proxyReq.on('error', err => {
-          cb(err);
-        });
-        proxyReq.on('response', proxyResponse => {
-          const bs = [];
-          proxyResponse.on('data', d => {
-            bs.push(d);
-          });
-          proxyResponse.on('end', () => {
-            const b = Buffer.concat(bs);
-            const s = b.toString('utf8');
-            const j = _jsonParse(s);
-            const username = j ? j.username : null;
-
-            if (username) {
-              cb(null, username);
-            } else {
-              cb({
-                code: 'EAUTH',
-              });
-            }
-          });
-        });
-      } else {
-        const authenticationString = new Buffer(authentication, 'base64').toString('utf8');
-        const match = authenticationString.match(/^(.+?):(.+?)$/);
-
-        if (match) {
-          const username = match[1];
-          const password = match[2];
-
-          if (username === serverUsername && password === serverPassword) {
-            cb(null, username);
-          } else {
-            cb({
-              code: 'EAUTH',
-            });
-          }
-        } else {
-          cb({
-            code: 'EAUTH',
-          });
-        }
-      }
-    };
-    const _authHubRequest = (req, cb) => {
-      const authentication = (() => {
-        const authorization = req.get('Authorization') || '';
-        const match = authorization.match(/^Token (.+)$/);
-        return match && match[1];
-      })();
-      if (authentication) {
-        _authHub(authentication, cb);
-      } else {
-        process.nextTick(() => {
-          cb({
-            code: 'EAUTH',
-          });
-        });
-      }
-    };
-
-    return {
-      proxyHub: _proxyHub,
-      authHub: _authHub,
-      authHubRequest: _authHubRequest,
-    }; */
   }
 
   unmount() {
@@ -218,20 +117,6 @@ class Bootstrap {
   }
 }
 
-/* const _jsonParse = s => {
-  let error = null;
-  let result;
-  try {
-    result = JSON.parse(s);
-  } catch (err) {
-    error = err;
-  }
-  if (!error) {
-    return result;
-  } else {
-    return null;
-  }
-}; */
 const _debounce = fn => {
   let running = false;
   let queued = false;
