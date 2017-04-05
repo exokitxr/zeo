@@ -14,7 +14,7 @@ tar -zxf node-v7.8.0-linux-x64.tar.gz && mv node-v7.8.0-linux-x64 node;
 PATH="$(pwd)/node/bin:$PATH";
 popd;
 rm -Rf node_modules installed;
-npm i && npm start -- install;
+npm i --unsafe-perms && npm start -- install;
 rm -Rf data crypto .git;
 ./scripts/lib/install/symlink/pack-symlinks.sh >symlinks.txt;
 cp scripts/lib/install/bin/* .;
