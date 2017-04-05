@@ -13,10 +13,28 @@ class Bootstrap {
   mount() {
     const {_archae: archae} = this;
     const {app, dirname, dataDirectory} = archae.getCore();
-    const {metadata: {hub: {url: hubUrl}, server: {url: serverUrl, worldname: serverWorldname, enabled: serverEnabled}}} = archae;
+    const {
+      metadata: {
+        hub: {
+          url: hubUrl,
+        },
+        server: {
+          url: serverUrl,
+          worldname: serverWorldname,
+          enabled: serverEnabled,
+        },
+      },
+    } = archae;
 
     const hubSpec = (() => {
       const match = hubUrl.match(/^(.+\..+?)(?::([0-9]*?))?$/);
+      return match && {
+        host: match[1],
+        port: match[2] ? parseInt(match[2], 10) : 443,
+      };
+    })();
+    const serverSpec = (() => {
+      const match = serverUrl.match(/^(.+\..+?)(?::([0-9]*?))?$/);
       return match && {
         host: match[1],
         port: match[2] ? parseInt(match[2], 10) : 443,
@@ -44,7 +62,8 @@ class Bootstrap {
       const req = https.request(options);
       req.end(JSON.stringify({
         worldname: serverWorldname,
-        url: serverUrl,
+        serverHost: serverSpec.host,
+        port: serverSpec.port,
         users: [], // XXX announce the real users from the hub engine
       }));
 
