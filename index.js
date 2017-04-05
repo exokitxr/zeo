@@ -41,8 +41,8 @@ const flags = {
   cryptoDirectory: _findArg('cryptoDirectory'),
   installDirectory: _findArg('installDirectory'),
   serverHost: _findArg('serverHost'),
+  homeHost: _findArg('homeHost'),
   worldname: _findArg('worldname'),
-  homeUrl: _findArg('homeUrl'),
   hubUrl: _findArg('hubUrl'),
   dns: args.includes('dns'),
   dnsPort: (() => {
@@ -80,12 +80,17 @@ const cryptoDirectory = flags.cryptoDirectory || 'crypto';
 const installDirectory = flags.installDirectory || 'installed';
 const staticSite = flags.site && !(flags.home || flags.hub || flags.server);
 const serverHost = flags.serverHost || ('server.' + hostname);
+const homeHost = flags.homeHost || ('home.' + hostname);
 const worldname = flags.worldname || [_capitalize(rnd.adjective()), _capitalize(rnd.noun())].join(' ');
-const homeUrl = flags.homeUrl || ('home.' + hostname + ':' + port);
+const homeUrl = homeHost + ':' + port;
 const hubUrl = flags.hubUrl || ('hub.' + hostname + ':' + port);
 const config = {
   dirname: __dirname,
   hostname: hostname,
+  altHostnames: [
+    '*.' + hostname,
+    '*.' + homeHost,
+  ],
   port: port,
   publicDirectory: 'public',
   dataDirectory: dataDirectory,

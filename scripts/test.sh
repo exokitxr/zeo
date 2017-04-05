@@ -4,9 +4,9 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 pushd "$DIR"/../;
 export NODE_TLS_REJECT_UNAUTHORIZED=0
-npm start -- site home my host=test.zeovr.io port=8080 homeUrl=test-home.zeovr.io:8080 hubUrl=test-hub.zeovr.io:8000 cryptoDirectory=crypto-test installDirectory=installed-test &
-npm start -- hub my port=8000 homeUrl=test-home.zeovr.io:8080 hubUrl=test-hub.zeovr.io:8000 cryptoDirectory=crypto-test-hub installDirectory=installed-test-hub &
-npm start -- server port=8001 dataDirectory=data/hub/servers/server1/data cryptoDirectory=data/hub/servers/server1/crypto installDirectory=data/hub/servers/server1/installed serverHost=server1.test-home.zeovr.io worldname='Server One' homeUrl=test-home.zeovr.io:8080 hubUrl=test-hub.zeovr.io:8000 &
-npm start -- server port=8002 dataDirectory=data/hub/servers/server2/data cryptoDirectory=data/hub/servers/server2/crypto installDirectory=data/hub/servers/server2/installed serverHost=server2.test-home.zeovr.io worldname='Server Two' homeUrl=test-home.zeovr.io:8080 hubUrl=test-hub.zeovr.io:8000 &
+npm start -- site home my host=test.zeovr.io port=8080 homeHost=test-home.zeovr.io hubUrl=test-hub.zeovr.io:8000 cryptoDirectory=crypto-test installDirectory=installed-test &
+npm start -- hub my port=8000 homeHost=test-home.zeovr.io hubUrl=test-hub.zeovr.io:8000 cryptoDirectory=crypto-test-hub installDirectory=installed-test-hub &
+npm start -- server port=8001 dataDirectory=data/hub/servers/server1/data cryptoDirectory=data/hub/servers/server1/crypto installDirectory=data/hub/servers/server1/installed serverHost=server1.test-home.zeovr.io worldname='Server One' homeHost=test-home.zeovr.io hubUrl=test-hub.zeovr.io:8000 &
+npm start -- server port=8002 dataDirectory=data/hub/servers/server2/data cryptoDirectory=data/hub/servers/server2/crypto installDirectory=data/hub/servers/server2/installed serverHost=server2.test-home.zeovr.io worldname='Server Two' homeHost=test-home.zeovr.io hubUrl=test-hub.zeovr.io:8000 &
 sleep infinity;
 popd;
