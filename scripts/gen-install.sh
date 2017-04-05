@@ -9,7 +9,7 @@ pushd "$DIR"/../ >/dev/null;
 rm -Rf pkg && mkdir -p pkg;
 pushd pkg;
 apt-get update;
-apt-get install build-essential python aptitude;
+apt-get install -y build-essential python aptitude;
 aptitude clean;
 aptitude --download-only -y install build-essential python;
 cp /var/cache/apt/archives/*.deb .;
