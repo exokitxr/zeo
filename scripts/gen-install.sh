@@ -19,5 +19,3 @@ rm -Rf data crypto .git;
 ./scripts/lib/install/symlink/pack-symlinks.sh >symlinks.txt;
 cp scripts/lib/install/bin/* .;
 popd >/dev/null;
-
-
