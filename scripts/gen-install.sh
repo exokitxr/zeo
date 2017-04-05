@@ -15,8 +15,6 @@ PATH="$(pwd)/node/bin:$PATH";
 popd;
 rm -Rf node_modules installed;
 npm i && npm start -- install;
-cat prefs.js | node -e 'let dirname = process.cwd().replace(/^\/mnt\//, ""); dirname = dirname[0].toUpperCase() + ":" + dirname.slice(1) + "/"; dirname = dirname.replace(/\//g, "\\"); let s = ""; process.stdin.setEncoding("utf8"); process.stdin.on("data", d => { s += d; }); process.stdin.on("end", () => { s = s.replace(/DIRNAME/g, dirname); process.stdout.write(s); }); ' >Data/profile/prefs.js;
-popd;
 rm -Rf data crypto .git;
 ./scripts/lib/install/symlink/pack-symlinks.sh >symlinks.txt;
 cp scripts/lib/install/bin/* .;
