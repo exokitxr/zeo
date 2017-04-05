@@ -29,7 +29,16 @@ class Raptor {
     return _requestAudios()
       .then(audios => {
         if (live) {
-          const {three: {THREE}, elements, render, pose, input, utils: {geometry: geometryUtils}} = zeo;
+          const {three: {THREE, camera}, elements, render, pose, input, utils: {geometry: geometryUtils}} = zeo;
+
+          const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
+          const _decomposeMatrix = matrix => {
+            const position = new THREE.Vector3();
+            const rotation = new THREE.Quaternion();
+            const scale = new THREE.Vector3();
+            matrix.decompose(position, rotation, scale);
+            return {position, rotation, scale};
+          };
 
           const THREEConvexGeometry = ConvexGeometry(THREE);
 
@@ -121,6 +130,7 @@ class Raptor {
                   const mesh = new THREE.Mesh(geometry, material);
                   mesh.position.y = 1;
                   mesh.position.z = 0.4;
+                  mesh.rotation.order = camera.rotation.order;
                   mesh.scale.set(0.8, 0.8, 3);
                   return mesh;
                 })();
@@ -199,6 +209,9 @@ class Raptor {
               entityObject.add(mesh);
               entityApi.mesh = mesh;
 
+              const headProxy = new THREE.Object3D();
+              headProxy.rotation.order = camera.rotation.order;
+
               const _makeAvatarState = () => ({
                 targeted: false,
               });
@@ -263,26 +276,42 @@ class Raptor {
               const _update = () => {
                 const {gamepads} = pose.getStatus();
 
-                SIDES.forEach(side => {
-                  const avatarState = avatarStates[side];
+                const _updateTargets = () => {
+                  SIDES.forEach(side => {
+                    const avatarState = avatarStates[side];
 
-                  const targeted = (() => {
-                    const gamepad = gamepads[side];
+                    const targeted = (() => {
+                      const gamepad = gamepads[side];
 
-                    if (gamepad) {
-                      const {position: controllerPosition, rotation: controllerRotation} = gamepad;
-                      const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation);
+                      if (gamepad) {
+                        const {position: controllerPosition, rotation: controllerRotation} = gamepad;
+                        const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation);
 
-                      const intersectionPoint = boxTarget.intersectLine(controllerLine);
-                      return intersectionPoint !== null;
-                    } else {
-                      return false;
-                    }
-                  })();
-                  avatarState.targeted = targeted;
-                });
-                const targeted = SIDES.some(side => avatarStates[side].targeted);
-                boxMesh.visible = targeted;
+                        const intersectionPoint = boxTarget.intersectLine(controllerLine);
+                        return intersectionPoint !== null;
+                      } else {
+                        return false;
+                      }
+                    })();
+                    avatarState.targeted = targeted;
+                  });
+                  const targeted = SIDES.some(side => avatarStates[side].targeted);
+                  boxMesh.visible = targeted;
+                };
+                const _updateAvatar = () => {
+                  const {head} = mesh;
+                  const {position: headPosition} = _decomposeObjectMatrixWorld(head);
+                  headProxy.position.copy(headPosition);
+                  headProxy.lookAt(camera.position);
+
+                  headProxy.rotation.x = _clamp(headProxy.rotation.x, -Math.PI / 2, Math.PI / 2);
+                  headProxy.rotation.y = _clamp(headProxy.rotation.y, -Math.PI / 2, Math.PI / 2);
+
+                  head.rotation.copy(headProxy.rotation);
+                };
+
+                _updateTargets();
+                _updateAvatar();
               };
               render.on('update', _update);
 
@@ -330,5 +359,7 @@ class Raptor {
     this._cleanup();
   }
 }
+
+const _clamp = (v, min, max) => Math.min(Math.max(v, min), max);
 
 module.exports = Raptor;
