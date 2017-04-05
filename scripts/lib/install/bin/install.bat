@@ -10,6 +10,9 @@ FOR /F "tokens=3,* skip=2" %%L IN ('reg query "HKEY_LOCAL_MACHINE\SOFTWARE\Micro
 )
 lxrun /install /y
 
+REM install root certificate
+powershell -c 'Import-Certificate -FilePath scripts/lib/install/crypto/cert.pem -CertStoreLocation Cert:\LocalMachine\Root'
+
 REM install packages
 bash -c "dpkg -i pkg/*.deb"
 
