@@ -207,6 +207,34 @@ class Raptor {
                 right: _makeAvatarState(),
               };
 
+              let cancelAudio = null;
+              const _toggleAudio = () => {
+                if (!cancelAudio) {
+                  let audio = null;
+                  let timeout = null;
+                  const _recurse = () => {
+                    audio = audios[Math.floor(Math.random() * audios.length)];
+                    audio.currentTime = 0;
+                    audio.play();
+
+                    timeout = setTimeout(() => {
+                      _recurse();
+                    }, 50 + (Math.random() * (250 - 50)));
+                  };
+                  _recurse();
+
+                  cancelAudio = () => {
+                    audio.pause();
+
+                    clearTimeout(timeout);
+                  };
+                } else {
+                  cancelAudio();
+
+                  cancelAudio = null;
+                }
+              };
+
               const boxMesh = (() => {
                 const geometry = new THREE.BoxBufferGeometry(1, 1, 1);
                 const material = wireframeMaterial;
@@ -227,7 +255,7 @@ class Raptor {
                 const {targeted} = avatarState;
 
                 if (targeted) {
-                  console.log('clicked'); // XXX
+                  _toggleAudio();
                 }
               };
               input.on('trigger', _trigger);
