@@ -37,6 +37,15 @@ class Avatar {
       ];
       return new THREEConvexGeometry(points);
     })();
+    const longGeometry = (() => {
+      const points = [
+        new THREE.Vector3(-0.1, 0, 0),
+        new THREE.Vector3(0.1, 0, 0),
+        new THREE.Vector3(0, -0.05, 0.05),
+        new THREE.Vector3(0, 0, -0.2),
+      ];
+      return new THREEConvexGeometry(points);
+    })();
 
     const raptorComponent = {
       selector: 'raptor[position]',
@@ -70,7 +79,7 @@ class Avatar {
             const mesh = new THREE.Mesh(geometry, material);
             mesh.position.y = 1;
             mesh.position.z = 0.4;
-            mesh.scale.z = 3;
+            mesh.scale.set(0.8, 0.8, 3);
             return mesh;
           })();
           result.add(head);
@@ -96,7 +105,7 @@ class Avatar {
             return mesh;
           })();
           result.add(leftArm);
-          result.body = leftArm;
+          result.leftArm = leftArm;
 
           const rightArm = (() => {
             const geometry = triangleGeometry.clone();
@@ -107,7 +116,19 @@ class Avatar {
             return mesh;
           })();
           result.add(rightArm);
-          result.body = rightArm;
+          result.rightArm = rightArm;
+
+          const tail = (() => {
+            const geometry = longGeometry.clone();
+            const material = solidMaterial;
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.position.y = 0.9;
+            mesh.position.z = -0.6;
+            mesh.scale.set(1.5, 3, 5);
+            return mesh;
+          })();
+          result.add(tail);
+          result.tail = tail;
 
           /* const leftLeg = (() => {
             const geometry = tetrahedronGeometry.clone();
@@ -119,7 +140,7 @@ class Avatar {
             return mesh;
           })();
           result.add(leftLeg);
-          result.body = leftLeg;
+          result.leftLeg = leftLeg;
 
           const rightLeg = (() => {
             const geometry = tetrahedronGeometry.clone();
@@ -131,7 +152,7 @@ class Avatar {
             return mesh;
           })();
           result.add(rightLeg);
-          result.body = rightLeg; */
+          result.rightLeg = rightLeg; */
 
           return result;
         })();

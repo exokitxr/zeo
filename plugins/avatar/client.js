@@ -84,7 +84,7 @@ class Avatar {
             return mesh;
           })();
           result.add(leftArm);
-          result.body = leftArm;
+          result.leftArm = leftArm;
 
           const rightArm = (() => {
             const geometry = tetrahedronGeometry.clone();
@@ -96,7 +96,7 @@ class Avatar {
             return mesh;
           })();
           result.add(rightArm);
-          result.body = rightArm;
+          result.rightArm = rightArm;
 
           const leftLeg = (() => {
             const geometry = tetrahedronGeometry.clone();
@@ -108,7 +108,7 @@ class Avatar {
             return mesh;
           })();
           result.add(leftLeg);
-          result.body = leftLeg;
+          result.leftLeg = leftLeg;
 
           const rightLeg = (() => {
             const geometry = tetrahedronGeometry.clone();
@@ -120,7 +120,7 @@ class Avatar {
             return mesh;
           })();
           result.add(rightLeg);
-          result.body = rightLeg;
+          result.rightLeg = rightLeg;
 
           return result;
         })();
