@@ -30,7 +30,9 @@ class Bootstrap {
 
     const initialUrl = document.location.href;
     const hostUrl = serverEnabled ? serverUrl : hubUrl;
-    const _requestServer = hostUrl => fetch('https://' + hostUrl + '/servers/server.json')
+    const _requestServer = hostUrl => fetch('https://' + hostUrl + '/servers/server.json', {
+      mode: 'cors',
+    })
       .then(res => res.json());
 
     return Promise.all([
