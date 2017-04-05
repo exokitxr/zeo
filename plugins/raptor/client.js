@@ -46,6 +46,15 @@ class Avatar {
       ];
       return new THREEConvexGeometry(points);
     })();
+    const tallGeometry = (() => {
+      const points = [
+        new THREE.Vector3(0, 0.05, 0.1),
+        new THREE.Vector3(0, 0.1, -0.1),
+        new THREE.Vector3(-0.075, 0, 0),
+        new THREE.Vector3(0, -0.2, -0.1),
+      ];
+      return new THREEConvexGeometry(points);
+    })();
 
     const raptorComponent = {
       selector: 'raptor[position]',
@@ -123,36 +132,34 @@ class Avatar {
             const material = solidMaterial;
             const mesh = new THREE.Mesh(geometry, material);
             mesh.position.y = 0.9;
-            mesh.position.z = -0.6;
+            mesh.position.z = -0.55;
             mesh.scale.set(1.5, 3, 5);
             return mesh;
           })();
           result.add(tail);
           result.tail = tail;
 
-          /* const leftLeg = (() => {
-            const geometry = tetrahedronGeometry.clone();
+          const leftLeg = (() => {
+            const geometry = tallGeometry.clone();
             const material = solidMaterial;
             const mesh = new THREE.Mesh(geometry, material);
-            mesh.position.y = 0.3;
-            mesh.position.x = -0.1;
-            mesh.scale.set(0.75, 3, 0.75);
+            mesh.position.set(0.2, 0.6, -0.225);
+            mesh.scale.set(2, 3, 1);
             return mesh;
           })();
           result.add(leftLeg);
           result.leftLeg = leftLeg;
 
           const rightLeg = (() => {
-            const geometry = tetrahedronGeometry.clone();
+            const geometry = tallGeometry.clone();
             const material = solidMaterial;
             const mesh = new THREE.Mesh(geometry, material);
-            mesh.position.y = 0.3;
-            mesh.position.x = 0.1;
-            mesh.scale.set(0.75, 3, 0.75);
+            mesh.position.set(-0.2, 0.6, -0.225);
+            mesh.scale.set(-2, 3, 1);
             return mesh;
           })();
           result.add(rightLeg);
-          result.rightLeg = rightLeg; */
+          result.rightLeg = rightLeg;
 
           return result;
         })();
