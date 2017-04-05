@@ -1,8 +1,10 @@
 const ConvexGeometry = require('./lib/three-extra/ConvexGeometry');
 
+const SIDES = ['left', 'right'];
+
 class Avatar {
   mount() {
-    const {three: {THREE}, elements} = zeo;
+    const {three: {THREE}, elements, render, pose, input, utils: {geometry: geometryUtils}} = zeo;
 
     const THREEConvexGeometry = ConvexGeometry(THREE);
 
@@ -55,6 +57,12 @@ class Avatar {
       ];
       return new THREEConvexGeometry(points);
     })();
+    const wireframeMaterial = new THREE.MeshBasicMaterial({
+      color: 0x0000FF,
+      wireframe: true,
+      opacity: 0.5,
+      transparent: true,
+    });
 
     const raptorComponent = {
       selector: 'raptor[position]',
@@ -166,8 +174,69 @@ class Avatar {
         entityObject.add(mesh);
         entityApi.mesh = mesh;
 
+        const _makeAvatarState = () => ({
+          targeted: false,
+        });
+        const avatarStates = {
+          left: _makeAvatarState(),
+          right: _makeAvatarState(),
+        };
+
+        const boxMesh = (() => {
+          const geometry = new THREE.BoxBufferGeometry(1, 1, 1);
+          const material = wireframeMaterial;
+
+          const mesh = new THREE.Mesh(geometry, material);
+          mesh.position.x = -1;
+          mesh.position.y = 0.5;
+          mesh.visible = false;
+          return mesh;
+        })();
+        entityObject.add(boxMesh);
+
+        const boxTarget = geometryUtils.makeBoxTarget(new THREE.Vector3(-1, 0.5, 0), new THREE.Quaternion(), new THREE.Vector3(1, 1, 1), new THREE.Vector3(1, 1, 1));
+
+        const _trigger = e => {
+          const {side} = e;
+          const avatarState = avatarStates[side];
+          const {targeted} = avatarState;
+
+          if (targeted) {
+            console.log('clicked'); // XXX
+          }
+        };
+        input.on('trigger', _trigger);
+
+        const _update = () => {
+          const {gamepads} = pose.getStatus();
+
+          SIDES.forEach(side => {
+            const avatarState = avatarStates[side];
+
+            const targeted = (() => {
+              const gamepad = gamepads[side];
+
+              if (gamepad) {
+                const {position: controllerPosition, rotation: controllerRotation} = gamepad;
+                const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation);
+
+                const intersectionPoint = boxTarget.intersectLine(controllerLine);
+                return intersectionPoint !== null;
+              } else {
+                return false;
+              }
+            })();
+            avatarState.targeted = targeted;
+          });
+          const targeted = SIDES.some(side => avatarStates[side].targeted);
+          boxMesh.visible = targeted;
+        };
+        render.on('update', _update);
+
         entityApi._cleanup = () => {
           entityObject.remove(mesh);
+
+          render.removeListener('update', _update);
         };
       },
       entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
