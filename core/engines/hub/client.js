@@ -806,7 +806,7 @@ class Hub {
                             });
                         });
                     } else {
-                      _connect();
+                      _connectServer();
                     }
 
                     e.stopImmediatePropagation();
