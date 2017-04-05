@@ -1,6 +1,6 @@
 const path = require('path');
 
-class ZCake {
+class Raptor {
   constructor(archae) {
     this._archae = archae;
   }
@@ -9,15 +9,15 @@ class ZCake {
     const {_archae: archae} = this;
     const {express, app} = archae.getCore();
 
-    const zCakeAudioStatic = express.static(path.join(__dirname, 'lib/audio'));
-    function serveZCakeAudio(req, res, next) {
-      zCakeAudioStatic(req, res, next);
+    const raptorAudioStatic = express.static(path.join(__dirname, 'lib/audio'));
+    function serveRaptorAudio(req, res, next) {
+      raptorAudioStatic(req, res, next);
     }
-    app.use('/archae/z-cake/audio', serveZCakeAudio);
+    app.use('/archae/raptor/audio', serveRaptorAudio);
 
     this._cleanup = () => {
       function removeMiddlewares(route, i, routes) {
-        if (route.handle.name === 'serveZCakeAudio') {
+        if (route.handle.name === 'serveRaptorAudio') {
           routes.splice(i, 1);
         }
         if (route.route) {
@@ -33,4 +33,4 @@ class ZCake {
   }
 }
 
-module.exports = ZCake;
+module.exports = Raptor;
