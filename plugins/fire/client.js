@@ -1,8 +1,5 @@
 const ConvexGeometry = require('./lib/three-extra/ConvexGeometry');
 
-const AUDIO_FILES = [
-  // 'fire.ogg',
-];
 const SIDES = ['left', 'right'];
 
 class Fire {
@@ -12,19 +9,20 @@ class Fire {
       live = false;
     };
 
-    const _requestAudios = () => Promise.all(AUDIO_FILES.map(fileName => new Promise((accept, reject) => {
+    const _requestAudio = src => new Promise((accept, reject) => {
       const audio = document.createElement('audio');
-      audio.src = '/archae/egg/audio/' + fileName;
+      audio.src = src;
+      audio.loop = true;
       audio.oncanplaythrough = () => {
         accept(audio);
       };
       audio.onerror = err => {
         reject(err);
       };
-    })));
+    });
 
-    return _requestAudios()
-      .then(audios => {
+    return _requestAudio('/archae/fire/audio/fire.ogg')
+      .then(audio => {
         if (live) {
           const {three: {THREE, scene, camera}, elements, render, pose, input, world, ui, sound, utils: {geometry: geometryUtils}} = zeo;
 
@@ -204,12 +202,16 @@ class Fire {
               })();
               entityObject.add(fireMesh);
 
-              /* const soundBody = (() => {
+              const soundBody = (() => {
                 const result = sound.makeBody();
-                result.setInputElements(audios);
-                result.setObject(head);
+
+                result.setInputElement(audio);
+                audio.play();
+
+                result.setObject(fireMesh);
+
                 return result;
-              })(); */
+              })();
 
               const sparkMeshes = [];
               let sparkTimeout = null;
@@ -286,6 +288,8 @@ class Fire {
 
               entityApi._cleanup = () => {
                 entityObject.remove(fireMesh);
+
+                audio.pause();
 
                 for (let i = 0; i < sparkMeshes.length; i++) {
                   const sparkMesh = sparkMeshes[i];
