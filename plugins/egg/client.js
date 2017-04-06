@@ -51,15 +51,15 @@ class Egg {
               new THREE.Vector3(-0.1, -0.05, 0.1),
               new THREE.Vector3(0.1, -0.05, 0.1),
 
-              new THREE.Vector3(-0.05, 0.1, -0.05),
-              new THREE.Vector3(0.05, 0.1, -0.05),
-              new THREE.Vector3(-0.05, 0.1, 0.05),
-              new THREE.Vector3(0.05, 0.1, 0.05),
+              new THREE.Vector3(-0.05, 0.175, -0.05),
+              new THREE.Vector3(0.05, 0.175, -0.05),
+              new THREE.Vector3(-0.05, 0.175, 0.05),
+              new THREE.Vector3(0.05, 0.175, 0.05),
 
-              new THREE.Vector3(-0.05, -0.075, -0.05),
-              new THREE.Vector3(0.05, -0.075, -0.05),
-              new THREE.Vector3(-0.05, -0.075, 0.05),
-              new THREE.Vector3(0.05, -0.075, 0.05),
+              new THREE.Vector3(-0.05, -0.125, -0.05),
+              new THREE.Vector3(0.05, -0.125, -0.05),
+              new THREE.Vector3(-0.05, -0.125, 0.05),
+              new THREE.Vector3(0.05, -0.125, 0.05),
             ];
             return new THREEConvexGeometry(points);
           })();
