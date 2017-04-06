@@ -10,6 +10,7 @@ const menuRenderer = require('./lib/render/menu');
 
 const ConvexGeometry = require('./lib/three-extra/ConvexGeometry');
 
+const AVATAR_TEXT = `Welcome to Zeo! I'm Zee and I'll be your guide.`;
 const AUDIO_FILES = [
   '03.ogg',
   '08.ogg',
@@ -159,7 +160,7 @@ class Raptor {
                 right: _makeAvatarState(),
               };
               const avatarState = {
-                text: `Welcome to Zeo! I'm Zee and I'll be your guide.`,
+                text: '',
                 textIndex: 0,
               };
 
@@ -316,6 +317,7 @@ class Raptor {
                   worldHeight: WORLD_HEIGHT,
                 });
                 mesh.rotation.order = camera.rotation.order;
+                mesh.visible = false;
 
                 return mesh;
               })();
@@ -336,14 +338,16 @@ class Raptor {
               })();
 
               let cancelDialog = null;
+              const _setTextIndex = v => {
+                avatarState.textIndex = v;
+
+                const {page} = planeMesh;
+                page.update();
+              };
               const _toggleDialog = () => {
                 if (!cancelDialog) {
-                  const _setTextIndex = v => {
-                    avatarState.textIndex = v;
+                  avatarState.text = AVATAR_TEXT;
 
-                    const {page} = planeMesh;
-                    page.update();
-                  };
                   _setTextIndex(0);
 
                   let audio = null;
@@ -380,6 +384,9 @@ class Raptor {
                   cancelDialog();
 
                   cancelDialog = null;
+
+                  avatarState.text = '';
+                  _setTextIndex(0);
                 }
               };
 
@@ -399,12 +406,34 @@ class Raptor {
 
               const _trigger = e => {
                 const {side} = e;
-                const avatarState = avatarStates[side];
-                const {targeted} = avatarState;
 
-                if (targeted) {
-                  _toggleDialog();
-                }
+                const _doPlaneClick = () => {
+                  const avatarHoverState = avatarHoverStates[side];
+                  const {anchor} = avatarHoverState;
+                  const onclick = (anchor && anchor.onclick) || '';
+
+                  if (onclick === 'avatar:next') {
+                    avatarState.text = '';
+                    avatarState.textIndex = 0;
+
+                    const {page} = planeMesh;
+                    page.update();
+                  }
+                };
+                const _doAvatarClick = () => {
+                  const avatarState = avatarStates[side];
+                  const {targeted} = avatarState;
+
+                  if (targeted) {
+                    _toggleDialog();
+
+                    return true;
+                  } else {
+                    return false;
+                  }
+                };
+
+                _doPlaneClick() || _doAvatarClick();
               };
               input.on('trigger', _trigger);
 
@@ -452,45 +481,61 @@ class Raptor {
                   const {mouth} = head;
                   mouth.rotation.x = soundBody.getAmplitude() * Math.PI * 0.4;
                 };
-                const _updateAnchors = () => {
-                  const {gamepads} = pose.getStatus();
+                const _updatePlane = () => {
+                  const {text} = avatarState;
 
-                  const matrixObject = _decomposeObjectMatrixWorld(planeMesh);
-                  const {page} = planeMesh;
+                  if (text) {
+                    const {gamepads} = pose.getStatus();
 
-                  SIDES.forEach(side => {
-                    const gamepad = gamepads[side];
+                    const matrixObject = _decomposeObjectMatrixWorld(planeMesh);
+                    const {page} = planeMesh;
 
-                    if (gamepad) {
-                      const {position: controllerPosition, rotation: controllerRotation} = gamepad;
+                    SIDES.forEach(side => {
+                      const gamepad = gamepads[side];
 
-                      const avatarHoverState = avatarHoverStates[side];
+                      if (gamepad) {
+                        const {position: controllerPosition, rotation: controllerRotation} = gamepad;
+
+                        const avatarHoverState = avatarHoverStates[side];
+                        const avatarDotMesh = avatarDotMeshes[side];
+                        const avatarBoxMesh = avatarBoxMeshes[side];
+
+                        ui.updateAnchors({
+                          objects: [{
+                            matrixObject: matrixObject,
+                            page: page,
+                            width: WIDTH,
+                            height: HEIGHT,
+                            worldWidth: WORLD_WIDTH,
+                            worldHeight: WORLD_HEIGHT,
+                            worldDepth: WORLD_DEPTH,
+                          }],
+                          hoverState: avatarHoverState,
+                          dotMesh: avatarDotMesh,
+                          boxMesh: avatarBoxMesh,
+                          controllerPosition,
+                          controllerRotation,
+                        });
+                      }
+                    });
+
+                    planeMesh.visible = true;
+                  } else {
+                    SIDES.forEach(side => {
                       const avatarDotMesh = avatarDotMeshes[side];
-                      const avatarBoxMesh = avatarBoxMeshes[side];
+                      avatarDotMesh.visible = false;
 
-                      ui.updateAnchors({
-                        objects: [{
-                          matrixObject: matrixObject,
-                          page: page,
-                          width: WIDTH,
-                          height: HEIGHT,
-                          worldWidth: WORLD_WIDTH,
-                          worldHeight: WORLD_HEIGHT,
-                          worldDepth: WORLD_DEPTH,
-                        }],
-                        hoverState: avatarHoverState,
-                        dotMesh: avatarDotMesh,
-                        boxMesh: avatarBoxMesh,
-                        controllerPosition,
-                        controllerRotation,
-                      });
-                    }
-                  });
+                      const avatarBoxMesh = avatarBoxMeshes[side];
+                      avatarBoxMesh.visible = false;
+                    });
+
+                    planeMesh.visible = false;
+                  }
                 };
 
                 _updateTargets();
                 _updateAvatar();
-                _updateAnchors();
+                _updatePlane();
               };
               render.on('update', _update);
 
