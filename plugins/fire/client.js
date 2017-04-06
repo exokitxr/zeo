@@ -154,7 +154,7 @@ class Fire {
                     const worldTimeDiffSeconds = worldTimeDiff / 1000;
 
                     if (worldTimeDiffSeconds < 2) {
-                      mesh.position.y += 0.2 * worldTimeDiffSeconds;
+                      mesh.position.y += 0.02 * worldTimeDiffSeconds;
                     } else {
                       entityObject.remove(mesh);
                       sparkMeshes.splice(sparkMeshes.indexOf(mesh), 1);
