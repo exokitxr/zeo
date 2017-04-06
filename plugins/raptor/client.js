@@ -654,8 +654,8 @@ class Raptor {
 
           this._cleanup = () => {
             SIDES.forEach(side => {
-              scene.add(avatarDotMeshes[side]);
-              scene.add(avatarBoxMeshes[side]);
+              scene.remove(avatarDotMeshes[side]);
+              scene.remove(avatarBoxMeshes[side]);
             });
 
             elements.unregisterComponent(this, raptorComponent);
