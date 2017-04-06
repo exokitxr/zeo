@@ -168,6 +168,7 @@ class Raptor {
               const mesh = (() => {
                 const result = new THREE.Object3D();
                 result.position.x = MESH_OFFSET;
+                result.rotation.order = camera.rotation.order;
 
                 const solidMaterial = new THREE.MeshPhongMaterial({
                   color: 0x4CAF50,
@@ -497,14 +498,20 @@ class Raptor {
 
                     const moveAnimationTime = 5;
                     const moveAnimationScale = 2;
+                    const worldTimeDiffSecondsMod = worldTimeDiffSeconds % moveAnimationTime;
+                    const moveAnimationDirection = (worldTimeDiffSecondsMod < (moveAnimationTime / 2)) ? 'forward' : 'back'
                     const moveAnimationFactor = (() => {
-                      const worldTimeDiffSecondsMod = worldTimeDiffSeconds % moveAnimationTime;
-                      if (worldTimeDiffSecondsMod < (moveAnimationTime / 2)) {
+                      if (moveAnimationDirection === 'forward') {
                         return worldTimeDiffSecondsMod / (moveAnimationTime / 2);
-                      } else {
+                      } else if (moveAnimationDirection === 'back') {
                         return 1 -((worldTimeDiffSecondsMod - (moveAnimationTime / 2)) / (moveAnimationTime / 2));
                       }
                     })();
+                    if (moveAnimationDirection === 'forward') {
+                      mesh.rotation.y = Math.PI / 2;
+                    } else if (moveAnimationDirection === 'back') {
+                      mesh.rotation.y = -Math.PI / 2;
+                    }
                     mesh.position.x = MESH_OFFSET + (moveAnimationFactor * moveAnimationScale);
 
                     const legAnimationFactor = Math.sin(worldTimeDiffSeconds * (Math.PI * 2));
@@ -512,6 +519,7 @@ class Raptor {
                     rightLeg.rotation.x = -legAnimationFactor * Math.PI * 0.3;
                   } else {
                     mesh.position.x = MESH_OFFSET;
+                    mesh.rotation.y = 0;
 
                     leftLeg.rotation.x = 0;
                     rightLeg.rotation.x = 0;
