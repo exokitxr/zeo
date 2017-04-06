@@ -51,6 +51,13 @@ class Fire {
             new THREE.Vector3(-0.1, 0.1, 0.1),
             new THREE.Vector3(0.1, 0.1, 0.1),
           ]);
+          const flameGeometry = new THREEConvexGeometry([
+            new THREE.Vector3(-0.1, 0, -0.1),
+            new THREE.Vector3(0.1, 0, -0.1),
+            new THREE.Vector3(-0.1, 0, 0.1),
+            new THREE.Vector3(0.1, 0, 0.1),
+            new THREE.Vector3(0, 0.1, 0),
+          ]);
           const logMaterial = new THREE.MeshPhongMaterial({
             color: 0x795548,
             shininess: 10,
@@ -61,7 +68,7 @@ class Fire {
             shininess: 10,
             shading: THREE.FlatShading,
           });
-          const fireMaterial = new THREE.MeshPhongMaterial({
+          const flameMaterial = new THREE.MeshPhongMaterial({
             color: 0xF44336,
             shininess: 10,
             shading: THREE.FlatShading,
@@ -144,6 +151,49 @@ class Fire {
                   return mesh;
                 })();
                 result.add(ashMesh);
+
+                const flameMeshes = [
+                  (() => {
+                    const geometry = flameGeometry.clone();
+                    const material = flameGeometry;
+                    const mesh = new THREE.Mesh(geometry, material);
+                    mesh.position.set(0, 0, 0);
+                    mesh.initialScale = new THREE.Vector3(1, 2, 1);
+                    return mesh;
+                  })(),
+                  (() => {
+                    const geometry = flameGeometry.clone();
+                    const material = flameGeometry;
+                    const mesh = new THREE.Mesh(geometry, material);
+                    mesh.position.set(-0.1, 0, -0.1);
+                    return mesh;
+                  })(),
+                  (() => {
+                    const geometry = flameGeometry.clone();
+                    const material = flameGeometry;
+                    const mesh = new THREE.Mesh(geometry, material);
+                    mesh.position.set(0.1, 0, -0.1);
+                    return mesh;
+                  })(),
+                  (() => {
+                    const geometry = flameGeometry.clone();
+                    const material = flameGeometry;
+                    const mesh = new THREE.Mesh(geometry, material);
+                    mesh.position.set(-0.1, 0, 0.1);
+                    return mesh;
+                  })(),
+                  (() => {
+                    const geometry = flameGeometry.clone();
+                    const material = flameGeometry;
+                    const mesh = new THREE.Mesh(geometry, material);
+                    mesh.position.set(0.1, 0, 0.1);
+                    return mesh;
+                  })(),
+                ];
+                flameMeshes.forEach(flameMesh => {
+                  result.add(flameMesh);
+                });
+                result.flameMeshes = flameMeshes;
 
                 return result;
               })();
