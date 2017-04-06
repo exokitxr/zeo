@@ -131,7 +131,10 @@ class Raptor {
                 left: _makeAvatarState(),
                 right: _makeAvatarState(),
               };
-              const avatarState = {}; // XXX used for rendering
+              const avatarState = {
+                text: `Welcome to Zeo! I'm Zee and I'll be your guide.`,
+                textIndex: 0,
+              };
 
               const mesh = (() => {
                 const result = new THREE.Object3D();
@@ -144,56 +147,14 @@ class Raptor {
                 });
 
                 const head = (() => {
-                  const object = new THREE.Object3D();
-                  object.position.y = 1;
-                  object.position.z = 0.4;
-
-                  const solidMesh = (() => {
-                    const geometry = hexahedronGeometry.clone();
-                    const material = solidMaterial;
-                    const mesh = new THREE.Mesh(geometry, material);
-                    mesh.rotation.order = camera.rotation.order;
-                    mesh.scale.set(0.8, 0.8, 3);
-
-                    return mesh;
-                  })();
-                  object.add(solidMesh);
-                  object.solidMesh = solidMesh;
-
-                  const planeMesh = (() => {
-                    const menuUi = ui.makeUi({
-                      width: WIDTH,
-                      height: HEIGHT,
-                    });
-                    const mesh = menuUi.addPage(({
-                      avatar: avatarState,
-                    }) => ({
-                      type: 'html',
-                      src: menuRenderer.getAvatarSrc({
-                        avatar: avatarState,
-                      }),
-                      x: 0,
-                      y: 0,
-                      w: WIDTH,
-                      h: HEIGHT,
-                    }), {
-                      type: 'avatar',
-                      state: {
-                        avatar: avatarState,
-                      },
-                      worldWidth: WORLD_WIDTH,
-                      worldHeight: WORLD_HEIGHT,
-                    });
-                    mesh.position.y = 0.3;
-                    mesh.position.z = 0.2;
-                    mesh.rotation.order = camera.rotation.order;
-
-                    return mesh;
-                  })();
-                  object.add(planeMesh);
-                  object.planeMesh = planeMesh;
-
-                  return object;
+                  const geometry = hexahedronGeometry.clone();
+                  const material = solidMaterial;
+                  const mesh = new THREE.Mesh(geometry, material);
+                  mesh.position.y = 1;
+                  mesh.position.z = 0.4;
+                  mesh.rotation.order = camera.rotation.order;
+                  mesh.scale.set(0.8, 0.8, 3);
+                  return mesh;
                 })();
                 result.add(head);
                 result.head = head;
@@ -270,34 +231,83 @@ class Raptor {
               entityObject.add(mesh);
               entityApi.mesh = mesh;
 
+              const planeMesh = (() => {
+                const menuUi = ui.makeUi({
+                  width: WIDTH,
+                  height: HEIGHT,
+                  color: [1, 1, 1, 0],
+                });
+                const mesh = menuUi.addPage(({
+                  avatar: avatarState,
+                }) => ({
+                  type: 'html',
+                  src: menuRenderer.getAvatarSrc({
+                    avatar: avatarState,
+                  }),
+                  x: 0,
+                  y: 0,
+                  w: WIDTH,
+                  h: HEIGHT,
+                }), {
+                  type: 'avatar',
+                  state: {
+                    avatar: avatarState,
+                  },
+                  worldWidth: WORLD_WIDTH,
+                  worldHeight: WORLD_HEIGHT,
+                });
+                mesh.rotation.order = camera.rotation.order;
+
+                return mesh;
+              })();
+              entityObject.add(planeMesh);
+              entityObject.planeMesh = planeMesh;
+
               const headProxy = new THREE.Object3D();
               headProxy.rotation.order = camera.rotation.order;
 
-              let cancelAudio = null;
-              const _toggleAudio = () => {
-                if (!cancelAudio) {
+              let cancelDialog = null;
+              const _toggleDialog = () => {
+                if (!cancelDialog) {
+                  avatarState.textIndex = 0;
+
                   let audio = null;
                   let timeout = null;
                   const _recurse = () => {
-                    audio = audios[Math.floor(Math.random() * audios.length)];
-                    audio.currentTime = 0;
-                    audio.play();
+                    const {text, textIndex} = avatarState;
 
-                    timeout = setTimeout(() => {
-                      _recurse();
-                    }, 50 + (Math.random() * (250 - 50)));
+                    if (textIndex < text.length) {
+                      audio = audios[Math.floor(Math.random() * audios.length)];
+                      audio.currentTime = 0;
+                      audio.play();
+
+                      timeout = setTimeout(() => {
+                        avatarState.textIndex++;
+
+                        const {page} = planeMesh;
+                        page.update();
+
+                        _recurse();
+                      }, 20 + (Math.random() * (150 - 20)));
+                    } else {
+                      if (cancelDialog) {
+                        cancelDialog();
+
+                        cancelDialog = null;
+                      }
+                    }
                   };
                   _recurse();
 
-                  cancelAudio = () => {
+                  cancelDialog = () => {
                     audio.pause();
 
                     clearTimeout(timeout);
                   };
                 } else {
-                  cancelAudio();
+                  cancelDialog();
 
-                  cancelAudio = null;
+                  cancelDialog = null;
                 }
               };
 
@@ -321,7 +331,7 @@ class Raptor {
                 const {targeted} = avatarState;
 
                 if (targeted) {
-                  _toggleAudio();
+                  _toggleDialog();
                 }
               };
               input.on('trigger', _trigger);
@@ -353,7 +363,6 @@ class Raptor {
                 };
                 const _updateAvatar = () => {
                   const {head} = mesh;
-                  const {solidMesh, planeMesh} = head;
                   const {position: headPosition} = _decomposeObjectMatrixWorld(head);
                   headProxy.position.copy(headPosition);
                   headProxy.lookAt(camera.position);
@@ -361,7 +370,11 @@ class Raptor {
                   headProxy.rotation.x = _clamp(headProxy.rotation.x, -Math.PI / 2, Math.PI / 2);
                   headProxy.rotation.y = _clamp(headProxy.rotation.y, -Math.PI / 2, Math.PI / 2);
 
-                  solidMesh.rotation.copy(headProxy.rotation);
+                  head.rotation.copy(headProxy.rotation);
+
+                  planeMesh.position.copy(
+                    headProxy.position.clone().add(new THREE.Vector3(0, 0.3, 0.2).applyEuler(headProxy.rotation))
+                  );
                   planeMesh.rotation.y = headProxy.rotation.y;
                 };
 
