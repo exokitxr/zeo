@@ -338,7 +338,13 @@ class Raptor {
               let cancelDialog = null;
               const _toggleDialog = () => {
                 if (!cancelDialog) {
-                  avatarState.textIndex = 0;
+                  const _setTextIndex = v => {
+                    avatarState.textIndex = v;
+
+                    const {page} = planeMesh;
+                    page.update();
+                  };
+                  _setTextIndex(0);
 
                   let audio = null;
                   let timeout = null;
@@ -351,10 +357,7 @@ class Raptor {
                       audio.play();
 
                       timeout = setTimeout(() => {
-                        avatarState.textIndex++;
-
-                        const {page} = planeMesh;
-                        page.update();
+                        _setTextIndex(textIndex + 1);
 
                         _recurse();
                       }, 20 + (Math.random() * (150 - 20)));
