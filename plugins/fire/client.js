@@ -93,6 +93,10 @@ class Fire {
                   1, 1, 1,
                 ],
               },
+              audio: {
+                type: 'checkbox',
+                value: true,
+              },
             },
             entityAddedCallback(entityElement) {
               const entityApi = entityElement.getComponentApi();
@@ -205,13 +209,15 @@ class Fire {
               const soundBody = (() => {
                 const result = sound.makeBody();
 
-                result.setInputElement(audio);
-                audio.play();
+                const localAudio = audio.cloneNode();
+                result.setInputElement(localAudio);
+                result.audio = localAudio;
 
                 result.setObject(fireMesh);
 
                 return result;
               })();
+              entityApi.soundBody = soundBody;
 
               const sparkMeshes = [];
               let sparkTimeout = null;
@@ -289,7 +295,10 @@ class Fire {
               entityApi._cleanup = () => {
                 entityObject.remove(fireMesh);
 
-                audio.pause();
+                const {audio} = soundBody;
+                if (!audio.paused) {
+                  audio.pause();
+                }
 
                 for (let i = 0; i < sparkMeshes.length; i++) {
                   const sparkMesh = sparkMeshes[i];
@@ -317,6 +326,19 @@ class Fire {
 
                   break;
                 } */
+                case 'audio': {
+                  const {soundBody} = entityApi;
+                  const {audio} = soundBody;
+
+                  if (newValue && audio.paused) {
+                    audio.currentTime = 0;
+                    audio.play();
+                  } else if (!newValue && !audio.paused) {
+                    audio.pause();
+                  }
+
+                  break;
+                }
               }
             },
             entityRemovedCallback(entityElement) {
