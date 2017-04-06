@@ -173,6 +173,13 @@ class Fire {
                     const geometry = flameGeometry.clone();
                     const material = flameMaterial;
                     const mesh = new THREE.Mesh(geometry, material);
+                    mesh.position.set(0.1, 0, 0.1);
+                    return mesh;
+                  })(),
+                  (() => {
+                    const geometry = flameGeometry.clone();
+                    const material = flameMaterial;
+                    const mesh = new THREE.Mesh(geometry, material);
                     mesh.position.set(0.1, 0, -0.1);
                     return mesh;
                   })(),
@@ -181,13 +188,6 @@ class Fire {
                     const material = flameMaterial;
                     const mesh = new THREE.Mesh(geometry, material);
                     mesh.position.set(-0.1, 0, 0.1);
-                    return mesh;
-                  })(),
-                  (() => {
-                    const geometry = flameGeometry.clone();
-                    const material = flameMaterial;
-                    const mesh = new THREE.Mesh(geometry, material);
-                    mesh.position.set(0.1, 0, 0.1);
                     return mesh;
                   })(),
                 ];
