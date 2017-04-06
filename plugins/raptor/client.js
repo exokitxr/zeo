@@ -63,71 +63,50 @@ class Raptor {
           const THREEConvexGeometry = ConvexGeometry(THREE);
 
           const sqrt2 = Math.sqrt(2);
-          const quentahedronGeometry = (() => {
-            const points = [
-              new THREE.Vector3(0, 0.1, 0),
-              new THREE.Vector3(-0.1, 0, 0),
-              new THREE.Vector3(0.1, 0, 0),
-              new THREE.Vector3(0, 0, 0.1 / sqrt2),
-              new THREE.Vector3(0, 0, -0.1 / sqrt2),
-            ];
-            return new THREEConvexGeometry(points);
-          })();
-          const tetrahedronGeometry = (() => {
-            const points = [
-              new THREE.Vector3(-0.1, 0, 0),
-              new THREE.Vector3(0.1, 0, 0),
-              new THREE.Vector3(0, -0.1, 0),
-              new THREE.Vector3(0, 0, 0.1 / sqrt2),
-            ];
-            return new THREEConvexGeometry(points);
-          })();
-          const pyramidGeometry = (() => {
-            const points = [
-              new THREE.Vector3(-0.1, 0, -0.1),
-              new THREE.Vector3(0.1, 0, -0.1),
-              new THREE.Vector3(0, 0, 0.1 / sqrt2),
-              new THREE.Vector3(0, -0.1, 0),
-            ];
-            return new THREEConvexGeometry(points);
-          })();
-          const triangleGeometry = (() => {
-            const points = [
-              new THREE.Vector3(0, 0.1, 0),
-              new THREE.Vector3(-0.1, 0, 0),
-              new THREE.Vector3(0.1, 0, 0),
-              new THREE.Vector3(0, 0, 0.1 / sqrt2),
-              new THREE.Vector3(0, 0, -0.1 / sqrt2),
-            ];
-            return new THREEConvexGeometry(points);
-          })();
-          const longGeometry = (() => {
-            const points = [
-              new THREE.Vector3(-0.1, 0, 0),
-              new THREE.Vector3(0.1, 0, 0),
-              new THREE.Vector3(0, -0.05, 0.05),
-              new THREE.Vector3(0, 0, -0.2),
-            ];
-            return new THREEConvexGeometry(points);
-          })();
-          const tallGeometryLeft = (() => {
-            const points = [
-              new THREE.Vector3(0, 0.05, 0.1),
-              new THREE.Vector3(0, 0.1, -0.1),
-              new THREE.Vector3(-0.075, 0, 0),
-              new THREE.Vector3(0, -0.2, -0.1),
-            ];
-            return new THREEConvexGeometry(points);
-          })();
-          const tallGeometryRight = (() => {
-            const points = [
-              new THREE.Vector3(0, 0.05, 0.1),
-              new THREE.Vector3(0, 0.1, -0.1),
-              new THREE.Vector3(0.075, 0, 0),
-              new THREE.Vector3(0, -0.2, -0.1),
-            ];
-            return new THREEConvexGeometry(points);
-          })();
+          const quentahedronGeometry = new THREEConvexGeometry([
+            new THREE.Vector3(0, 0.1, 0),
+            new THREE.Vector3(-0.1, 0, 0),
+            new THREE.Vector3(0.1, 0, 0),
+            new THREE.Vector3(0, 0, 0.1 / sqrt2),
+            new THREE.Vector3(0, 0, -0.1 / sqrt2),
+          ]);
+          const tetrahedronGeometry = new THREEConvexGeometry([
+            new THREE.Vector3(-0.1, 0, 0),
+            new THREE.Vector3(0.1, 0, 0),
+            new THREE.Vector3(0, -0.1, 0),
+            new THREE.Vector3(0, 0, 0.1 / sqrt2),
+          ]);
+          const pyramidGeometry = new THREEConvexGeometry([
+            new THREE.Vector3(-0.1, 0, -0.1),
+            new THREE.Vector3(0.1, 0, -0.1),
+            new THREE.Vector3(0, 0, 0.1 / sqrt2),
+            new THREE.Vector3(0, -0.1, 0),
+          ]);
+          const triangleGeometry = new THREEConvexGeometry([
+            new THREE.Vector3(0, 0.1, 0),
+            new THREE.Vector3(-0.1, 0, 0),
+            new THREE.Vector3(0.1, 0, 0),
+            new THREE.Vector3(0, 0, 0.1 / sqrt2),
+            new THREE.Vector3(0, 0, -0.1 / sqrt2),
+          ]);
+          const longGeometry = new THREEConvexGeometry([
+            new THREE.Vector3(-0.1, 0, 0),
+            new THREE.Vector3(0.1, 0, 0),
+            new THREE.Vector3(0, -0.05, 0.05),
+            new THREE.Vector3(0, 0, -0.2),
+          ]);
+          const tallGeometryLeft = new THREEConvexGeometry([
+            new THREE.Vector3(0, 0.05, 0.1),
+            new THREE.Vector3(0, 0.1, -0.1),
+            new THREE.Vector3(-0.075, 0, 0),
+            new THREE.Vector3(0, -0.2, -0.1),
+          ]);
+          const tallGeometryRight = new THREEConvexGeometry([
+            new THREE.Vector3(0, 0.05, 0.1),
+            new THREE.Vector3(0, 0.1, -0.1),
+            new THREE.Vector3(0.075, 0, 0),
+            new THREE.Vector3(0, -0.2, -0.1),
+          ]);
           const wireframeMaterial = new THREE.MeshBasicMaterial({
             color: 0x0000FF,
             wireframe: true,
@@ -189,7 +168,7 @@ class Raptor {
                 done: true,
               };
 
-              const mesh = (() => {
+              const raptorMesh = (() => {
                 const result = new THREE.Object3D();
                 result.position.x = MESH_OFFSET;
                 result.rotation.order = camera.rotation.order;
@@ -273,8 +252,8 @@ class Raptor {
 
                 return result;
               })();
-              entityObject.add(mesh);
-              entityApi.mesh = mesh;
+              entityObject.add(raptorMesh);
+              entityApi.raptorMesh = raptorMesh;
 
               const head = (() => {
                 const object = new THREE.Object3D();
@@ -426,7 +405,7 @@ class Raptor {
                 const material = wireframeMaterial;
 
                 const result = new THREE.Mesh(geometry, material);
-                result.position.copy(mesh.position);
+                result.position.copy(raptorMesh.position);
                 result.position.y += 0.5;
                 result.visible = false;
                 return result;
@@ -502,7 +481,7 @@ class Raptor {
                   boxMesh.visible = targeted;
                 };
                 const _updateAvatarGaze = () => {
-                  const {headBase} = mesh;
+                  const {headBase} = raptorMesh;
                   const {position: headBasePosition, rotation: headBaseQuaternion} = _decomposeObjectMatrixWorld(headBase);
                   const headBaseRotation = new THREE.Euler().setFromQuaternion(headBaseQuaternion, camera.rotation.order);
 
@@ -520,7 +499,7 @@ class Raptor {
                   mouth.rotation.x = soundBody.getAmplitude() * Math.PI * 0.4;
                 };
                 const _updateAvatarAnimation = () => {
-                  const {leftLeg, rightLeg} = mesh;
+                  const {leftLeg, rightLeg} = raptorMesh;
 
                   if (animationStartWorldTime !== null) {
                     const currentWorldTime = world.getWorldTime();
@@ -539,19 +518,19 @@ class Raptor {
                       }
                     })();
                     if (moveAnimationDirection === 'forward') {
-                      mesh.rotation.y = Math.PI / 2;
+                      raptorMesh.rotation.y = Math.PI / 2;
                     } else if (moveAnimationDirection === 'back') {
-                      mesh.rotation.y = -Math.PI / 2;
+                      raptorMesh.rotation.y = -Math.PI / 2;
                     }
-                    mesh.position.x = MESH_OFFSET + (moveAnimationFactor * moveAnimationScale);
+                    raptorMesh.position.x = MESH_OFFSET + (moveAnimationFactor * moveAnimationScale);
 
                     const legAnimationTime = 3;
                     const legAnimationFactor = Math.sin((worldTimeDiffSeconds / legAnimationTime) * (Math.PI * 2));
                     leftLeg.rotation.x = legAnimationFactor * Math.PI * 0.3;
                     rightLeg.rotation.x = -legAnimationFactor * Math.PI * 0.3;
                   } else {
-                    mesh.position.x = MESH_OFFSET;
-                    mesh.rotation.y = 0;
+                    raptorMesh.position.x = MESH_OFFSET;
+                    raptorMesh.rotation.y = 0;
 
                     leftLeg.rotation.x = 0;
                     rightLeg.rotation.x = 0;
@@ -617,7 +596,7 @@ class Raptor {
               render.on('update', _update);
 
               entityApi._cleanup = () => {
-                entityObject.remove(mesh);
+                entityObject.remove(raptorMesh);
 
                 scene.remove(head);
                 scene.remove(planeMesh);
@@ -633,11 +612,11 @@ class Raptor {
                   const position = newValue;
 
                   if (position) {
-                    const {mesh} = entityApi;
+                    const {raptorMesh} = entityApi;
 
-                    mesh.position.set(position[0], position[1], position[2]);
-                    mesh.quaternion.set(position[3], position[4], position[5], position[6]);
-                    mesh.scale.set(position[7], position[8], position[9]);
+                    raptorMesh.position.set(position[0], position[1], position[2]);
+                    raptorMesh.quaternion.set(position[3], position[4], position[5], position[6]);
+                    raptorMesh.scale.set(position[7], position[8], position[9]);
                   }
 
                   break;
