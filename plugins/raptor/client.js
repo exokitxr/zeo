@@ -39,7 +39,7 @@ class Raptor {
     return _requestAudios()
       .then(audios => {
         if (live) {
-          const {three: {THREE, camera}, elements, render, pose, input, ui, utils: {geometry: geometryUtils}} = zeo;
+          const {three: {THREE, camera}, elements, render, pose, input, ui, sound, utils: {geometry: geometryUtils}} = zeo;
 
           const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
           const _decomposeMatrix = matrix => {
@@ -265,6 +265,16 @@ class Raptor {
 
               const headProxy = new THREE.Object3D();
               headProxy.rotation.order = camera.rotation.order;
+
+              const soundBody = (() => {
+                const result = sound.makeBody();
+
+                result.setInputElements(audios);
+                const {head} = mesh;
+                result.setObject(head);
+
+                return result;
+              })();
 
               let cancelDialog = null;
               const _toggleDialog = () => {

@@ -46,6 +46,25 @@ class Somnifer {
             sound.setNodeSource(source);
           }
 
+          setInputElements(els) {
+            const {sound} = this;
+
+            const sources = els.map(el => sound.context.createMediaElementSource(el));
+            const merger = sound.context.createChannelMerger(2);
+
+            let outputIndex = 0;
+            for (let i = 0; i < sources.length; i++) {
+              const source = sources[i];
+
+              for (let j = 0; j < source.numberOfOutputs; j++) {
+                source.connect(merger, j, 0);
+                source.connect(merger, j, 1);
+              }
+            }
+
+            sound.setNodeSource(merger);
+          }
+
           setInputMediaStream(mediaStream) {
             const {sound} = this;
 
