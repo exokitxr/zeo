@@ -73,11 +73,15 @@ class Fire {
             color: 0xF44336,
             shininess: 10,
             shading: THREE.FlatShading,
+            transparent: true,
+            opacity: 0.9,
           });
           const sparkMaterial = new THREE.MeshPhongMaterial({
             color: 0xFF5722,
             shininess: 10,
             shading: THREE.FlatShading,
+            transparent: true,
+            opacity: 0.9,
           });
 
           const fireComponent = {
