@@ -1,3 +1,13 @@
+const {
+  WIDTH,
+  HEIGHT,
+
+  WORLD_WIDTH,
+  WORLD_HEIGHT,
+  WORLD_DEPTH,
+} = require('./lib/constants/constants');
+const menuRenderer = require('./lib/render/menu');
+
 const ConvexGeometry = require('./lib/three-extra/ConvexGeometry');
 
 const AUDIO_FILES = [
@@ -29,7 +39,7 @@ class Raptor {
     return _requestAudios()
       .then(audios => {
         if (live) {
-          const {three: {THREE, camera}, elements, render, pose, input, utils: {geometry: geometryUtils}} = zeo;
+          const {three: {THREE, camera}, elements, render, pose, input, ui, utils: {geometry: geometryUtils}} = zeo;
 
           const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
           const _decomposeMatrix = matrix => {
@@ -114,6 +124,15 @@ class Raptor {
               const entityApi = entityElement.getComponentApi();
               const entityObject = entityElement.getObject();
 
+              const _makeAvatarState = () => ({
+                targeted: false,
+              });
+              const avatarStates = {
+                left: _makeAvatarState(),
+                right: _makeAvatarState(),
+              };
+              const avatarState = {}; // XXX used for rendering
+
               const mesh = (() => {
                 const result = new THREE.Object3D();
                 result.position.x = -1;
@@ -125,14 +144,56 @@ class Raptor {
                 });
 
                 const head = (() => {
-                  const geometry = hexahedronGeometry.clone();
-                  const material = solidMaterial;
-                  const mesh = new THREE.Mesh(geometry, material);
-                  mesh.position.y = 1;
-                  mesh.position.z = 0.4;
-                  mesh.rotation.order = camera.rotation.order;
-                  mesh.scale.set(0.8, 0.8, 3);
-                  return mesh;
+                  const object = new THREE.Object3D();
+                  object.position.y = 1;
+                  object.position.z = 0.4;
+
+                  const solidMesh = (() => {
+                    const geometry = hexahedronGeometry.clone();
+                    const material = solidMaterial;
+                    const mesh = new THREE.Mesh(geometry, material);
+                    mesh.rotation.order = camera.rotation.order;
+                    mesh.scale.set(0.8, 0.8, 3);
+
+                    return mesh;
+                  })();
+                  object.add(solidMesh);
+                  object.solidMesh = solidMesh;
+
+                  const planeMesh = (() => {
+                    const menuUi = ui.makeUi({
+                      width: WIDTH,
+                      height: HEIGHT,
+                    });
+                    const mesh = menuUi.addPage(({
+                      avatar: avatarState,
+                    }) => ({
+                      type: 'html',
+                      src: menuRenderer.getAvatarSrc({
+                        avatar: avatarState,
+                      }),
+                      x: 0,
+                      y: 0,
+                      w: WIDTH,
+                      h: HEIGHT,
+                    }), {
+                      type: 'avatar',
+                      state: {
+                        avatar: avatarState,
+                      },
+                      worldWidth: WORLD_WIDTH,
+                      worldHeight: WORLD_HEIGHT,
+                    });
+                    mesh.position.y = 0.3;
+                    mesh.position.z = 0.2;
+                    mesh.rotation.order = camera.rotation.order;
+
+                    return mesh;
+                  })();
+                  object.add(planeMesh);
+                  object.planeMesh = planeMesh;
+
+                  return object;
                 })();
                 result.add(head);
                 result.head = head;
@@ -211,14 +272,6 @@ class Raptor {
 
               const headProxy = new THREE.Object3D();
               headProxy.rotation.order = camera.rotation.order;
-
-              const _makeAvatarState = () => ({
-                targeted: false,
-              });
-              const avatarStates = {
-                left: _makeAvatarState(),
-                right: _makeAvatarState(),
-              };
 
               let cancelAudio = null;
               const _toggleAudio = () => {
@@ -300,6 +353,7 @@ class Raptor {
                 };
                 const _updateAvatar = () => {
                   const {head} = mesh;
+                  const {solidMesh, planeMesh} = head;
                   const {position: headPosition} = _decomposeObjectMatrixWorld(head);
                   headProxy.position.copy(headPosition);
                   headProxy.lookAt(camera.position);
@@ -307,7 +361,8 @@ class Raptor {
                   headProxy.rotation.x = _clamp(headProxy.rotation.x, -Math.PI / 2, Math.PI / 2);
                   headProxy.rotation.y = _clamp(headProxy.rotation.y, -Math.PI / 2, Math.PI / 2);
 
-                  head.rotation.copy(headProxy.rotation);
+                  solidMesh.rotation.copy(headProxy.rotation);
+                  planeMesh.rotation.y = headProxy.rotation.y;
                 };
 
                 _updateTargets();
