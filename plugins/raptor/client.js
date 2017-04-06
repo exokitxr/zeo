@@ -522,7 +522,8 @@ class Raptor {
                     }
                     mesh.position.x = MESH_OFFSET + (moveAnimationFactor * moveAnimationScale);
 
-                    const legAnimationFactor = Math.sin(worldTimeDiffSeconds * (Math.PI * 2));
+                    const legAnimationTime = 3;
+                    const legAnimationFactor = Math.sin((worldTimeDiffSeconds / legAnimationTime) * (Math.PI * 2));
                     leftLeg.rotation.x = legAnimationFactor * Math.PI * 0.3;
                     rightLeg.rotation.x = -legAnimationFactor * Math.PI * 0.3;
                   } else {
