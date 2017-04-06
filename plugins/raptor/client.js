@@ -53,14 +53,22 @@ class Raptor {
           const THREEConvexGeometry = ConvexGeometry(THREE);
 
           const sqrt2 = Math.sqrt(2);
-          const hexahedronGeometry = (() => {
+          const quentahedronGeometry = (() => {
             const points = [
               new THREE.Vector3(0, 0.1, 0),
               new THREE.Vector3(-0.1, 0, 0),
               new THREE.Vector3(0.1, 0, 0),
               new THREE.Vector3(0, 0, 0.1 / sqrt2),
               new THREE.Vector3(0, 0, -0.1 / sqrt2),
+            ];
+            return new THREEConvexGeometry(points);
+          })();
+          const tetrahedronGeometry = (() => {
+            const points = [
+              new THREE.Vector3(-0.1, 0, 0),
+              new THREE.Vector3(0.1, 0, 0),
               new THREE.Vector3(0, -0.1, 0),
+              new THREE.Vector3(0, 0, 0.1 / sqrt2),
             ];
             return new THREEConvexGeometry(points);
           })();
@@ -147,14 +155,46 @@ class Raptor {
                 });
 
                 const head = (() => {
-                  const geometry = hexahedronGeometry.clone();
-                  const material = solidMaterial;
-                  const mesh = new THREE.Mesh(geometry, material);
-                  mesh.position.y = 1;
-                  mesh.position.z = 0.4;
-                  mesh.rotation.order = camera.rotation.order;
-                  mesh.scale.set(0.8, 0.8, 3);
-                  return mesh;
+                  const object = new THREE.Object3D();
+                  object.position.y = 1;
+                  object.position.z = 0.4;
+                  object.rotation.order = camera.rotation.order;
+
+                  const top = (() => {
+                    const geometry = quentahedronGeometry.clone();
+                    const material = solidMaterial;
+                    const mesh = new THREE.Mesh(geometry, material);
+                    mesh.scale.set(0.8, 0.8, 3);
+                    return mesh;
+                  })();
+                  object.add(top);
+
+                  const mouth = (() => {
+                    const geometry = tetrahedronGeometry.clone();
+                    const material = solidMaterial;
+                    const mesh = new THREE.Mesh(geometry, material);
+                    // mesh.position.y = -0.01;
+                    // mesh.position.z = 0.01;
+                    // mesh.scale.set(0.75, 0.75, 2.5);
+                    mesh.scale.set(0.8, 0.8, 3);
+                    return mesh;
+                  })();
+                  object.add(mouth);
+                  object.mouth = mouth;
+
+                  const neck = (() => {
+                    const geometry = tetrahedronGeometry.clone();
+                    const material = solidMaterial;
+                    const mesh = new THREE.Mesh(geometry, material);
+                    // mesh.position.y = -0.02;
+                    // mesh.position.z = -0.1;
+                    mesh.rotation.order = camera.rotation.order;
+                    mesh.scale.set(0.8, 0.8, -3);
+                    return mesh;
+                  })();
+                  object.add(neck);
+
+                  return object;
                 })();
                 result.add(head);
                 result.head = head;
@@ -386,6 +426,9 @@ class Raptor {
                     headProxy.position.clone().add(new THREE.Vector3(0, 0.3, 0.2).applyEuler(headProxy.rotation))
                   );
                   planeMesh.rotation.y = headProxy.rotation.y;
+
+                  const {mouth} = head;
+                  mouth.rotation.x = soundBody.getAmplitude() * Math.PI * 0.4;
                 };
 
                 _updateTargets();
