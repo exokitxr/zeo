@@ -103,11 +103,20 @@ class Raptor {
             ];
             return new THREEConvexGeometry(points);
           })();
-          const tallGeometry = (() => {
+          const tallGeometryLeft = (() => {
             const points = [
               new THREE.Vector3(0, 0.05, 0.1),
               new THREE.Vector3(0, 0.1, -0.1),
               new THREE.Vector3(-0.075, 0, 0),
+              new THREE.Vector3(0, -0.2, -0.1),
+            ];
+            return new THREEConvexGeometry(points);
+          })();
+          const tallGeometryRight = (() => {
+            const points = [
+              new THREE.Vector3(0, 0.05, 0.1),
+              new THREE.Vector3(0, 0.1, -0.1),
+              new THREE.Vector3(0.075, 0, 0),
               new THREE.Vector3(0, -0.2, -0.1),
             ];
             return new THREEConvexGeometry(points);
@@ -232,7 +241,7 @@ class Raptor {
                 result.tail = tail;
 
                 const leftLeg = (() => {
-                  const geometry = tallGeometry.clone();
+                  const geometry = tallGeometryLeft.clone();
                   const material = solidMaterial;
                   const mesh = new THREE.Mesh(geometry, material);
                   mesh.position.set(0.2, 0.6, -0.225);
@@ -243,11 +252,11 @@ class Raptor {
                 result.leftLeg = leftLeg;
 
                 const rightLeg = (() => {
-                  const geometry = tallGeometry.clone();
+                  const geometry = tallGeometryRight.clone();
                   const material = solidMaterial;
                   const mesh = new THREE.Mesh(geometry, material);
                   mesh.position.set(-0.2, 0.6, -0.225);
-                  mesh.scale.set(-2, 3, 1);
+                  mesh.scale.set(2, 3, 1);
                   return mesh;
                 })();
                 result.add(rightLeg);
