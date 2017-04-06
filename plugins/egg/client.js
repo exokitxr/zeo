@@ -56,7 +56,7 @@ class Egg {
               new THREE.Vector3(-0.05, 0.1, 0.05),
               new THREE.Vector3(0.05, 0.1, 0.05),
 
-              new THREE.Vector3(-0.05, -0.705, -0.05),
+              new THREE.Vector3(-0.05, -0.075, -0.05),
               new THREE.Vector3(0.05, -0.075, -0.05),
               new THREE.Vector3(-0.05, -0.075, 0.05),
               new THREE.Vector3(0.05, -0.075, 0.05),
@@ -89,8 +89,7 @@ class Egg {
                 const geometry = eggGeometry.clone();
                 const material = solidMaterial;
                 const mesh = new THREE.Mesh(geometry, material);
-                mesh.position.y = 0.9;
-                mesh.scale.set(2, 3, 5);
+                mesh.position.y = 1;
                 return mesh;
               })();
               entityObject.add(mesh);
