@@ -35,6 +35,7 @@ class Fire {
             return {position, rotation, scale};
           };
 
+          const logGeometry = new THREE.BoxBufferGeometry(0.6, 0.04, 0.04);
           const logMaterial = new THREE.MeshPhongMaterial({
             color: 0x795548,
             shininess: 10,
@@ -70,17 +71,12 @@ class Fire {
               const fireMesh = (() => {
                 const result = new THREE.Object3D();
 
-                const logGeometry = new THREE.BoxBufferGeometry(0.1, 0.025, 0.025)
-                  // .applyMatrix(new THREE.Matrix4().makeRotationZ(-Math.PI / 2))
-                  // .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.1, 0));
-
                 const logMeshes = [
                   (() => {
                     const geometry = logGeometry.clone();
                     const material = logMaterial;
                     const mesh = new THREE.Mesh(geometry, material);
-                    mesh.position.x = 0.1;
-                    mesh.position.z = -0.1;
+                    mesh.position.set(0.1, 0.1, -0.1);
                     mesh.rotation.y = (Math.PI / 4) + (Math.PI / 2) * 0;
                     mesh.rotation.z = -Math.PI / 4;
                     mesh.rotation.order = camera.rotation.order;
@@ -90,8 +86,7 @@ class Fire {
                     const geometry = logGeometry.clone();
                     const material = logMaterial;
                     const mesh = new THREE.Mesh(geometry, material);
-                    mesh.position.x = -0.1;
-                    mesh.position.z = -0.1;
+                    mesh.position.set(-0.1, 0.1, -0.1);
                     mesh.rotation.y = (Math.PI / 4) + (Math.PI / 2) * 1;
                     mesh.rotation.z = -Math.PI / 4;
                     mesh.rotation.order = camera.rotation.order;
@@ -101,8 +96,7 @@ class Fire {
                     const geometry = logGeometry.clone();
                     const material = logMaterial;
                     const mesh = new THREE.Mesh(geometry, material);
-                    mesh.position.x = -0.1;
-                    mesh.position.z = 0.1;
+                    mesh.position.set(-0.1, 0.1, 0.1);
                     mesh.rotation.y = (Math.PI / 4) + (Math.PI / 2) * 2;
                     mesh.rotation.z = -Math.PI / 4;
                     mesh.rotation.order = camera.rotation.order;
@@ -112,8 +106,7 @@ class Fire {
                     const geometry = logGeometry.clone();
                     const material = logMaterial;
                     const mesh = new THREE.Mesh(geometry, material);
-                    mesh.position.x = 0.1;
-                    mesh.position.z = 0.1;
+                    mesh.position.set(0.1, 0.1, 0.1);
                     mesh.rotation.y = (Math.PI / 4) + (Math.PI / 2) * 3;
                     mesh.rotation.z = -Math.PI / 4;
                     mesh.rotation.order = camera.rotation.order;
@@ -143,8 +136,9 @@ class Fire {
                   const material = sparkMaterial;
 
                   const mesh = new THREE.Mesh(geometry, material);
-                  mesh.position.x = -0.1 + (Math.random() * (0.2 - 0.1));
-                  mesh.position.z = -0.1 + (Math.random() * (0.2 - 0.1));
+                  mesh.position.x = -0.25 + (Math.random() * 0.5);
+                  mesh.position.z = -0.25 + (Math.random() * 0.5);
+                  mesh.rotation.y = Math.random() * (Math.PI * 2);
                   mesh.rotation.order = camera.rotation.order;
 
                   const startWorldTime = world.getWorldTime();
@@ -154,7 +148,7 @@ class Fire {
                     const worldTimeDiffSeconds = worldTimeDiff / 1000;
 
                     if (worldTimeDiffSeconds < 2) {
-                      mesh.position.y += 0.02 * worldTimeDiffSeconds;
+                      mesh.position.y += 0.01 * worldTimeDiffSeconds;
                     } else {
                       entityObject.remove(mesh);
                       sparkMeshes.splice(sparkMeshes.indexOf(mesh), 1);
@@ -166,7 +160,7 @@ class Fire {
                 entityObject.add(sparkMesh);
                 sparkMeshes.push(sparkMesh);
 
-                sparkTimeout = setTimeout(_recurseSparks, 200);
+                sparkTimeout = setTimeout(_recurseSparks, 100);
               };
               _recurseSparks();
 
