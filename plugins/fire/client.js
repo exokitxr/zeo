@@ -82,7 +82,7 @@ class Fire {
                     mesh.position.x = 0.1;
                     mesh.position.z = -0.1;
                     mesh.rotation.y = (Math.PI / 4) + (Math.PI / 2) * 0;
-                    mesh.rotation.z = -Math.PI / 2;
+                    mesh.rotation.z = -Math.PI / 4;
                     mesh.rotation.order = camera.rotation.order;
                     return mesh;
                   })(),
@@ -93,7 +93,7 @@ class Fire {
                     mesh.position.x = -0.1;
                     mesh.position.z = -0.1;
                     mesh.rotation.y = (Math.PI / 4) + (Math.PI / 2) * 1;
-                    mesh.rotation.z = -Math.PI / 2;
+                    mesh.rotation.z = -Math.PI / 4;
                     mesh.rotation.order = camera.rotation.order;
                     return mesh;
                   })(),
@@ -104,7 +104,7 @@ class Fire {
                     mesh.position.x = -0.1;
                     mesh.position.z = 0.1;
                     mesh.rotation.y = (Math.PI / 4) + (Math.PI / 2) * 2;
-                    mesh.rotation.z = -Math.PI / 2;
+                    mesh.rotation.z = -Math.PI / 4;
                     mesh.rotation.order = camera.rotation.order;
                     return mesh;
                   })(),
@@ -115,7 +115,7 @@ class Fire {
                     mesh.position.x = 0.1;
                     mesh.position.z = 0.1;
                     mesh.rotation.y = (Math.PI / 4) + (Math.PI / 2) * 3;
-                    mesh.rotation.z = -Math.PI / 2;
+                    mesh.rotation.z = -Math.PI / 4;
                     mesh.rotation.order = camera.rotation.order;
                     return mesh;
                   })(),
