@@ -10,13 +10,14 @@ const menuRenderer = require('./lib/render/menu');
 
 const ConvexGeometry = require('./lib/three-extra/ConvexGeometry');
 
-const AVATAR_TEXT = `Welcome to Zeo! I'm Zee and I'll be your guide.`;
+const AVATAR_TEXT = `Welcome to Zeo! I'm Zee and I'll be your guide. Click the checkmark below to continue.`;
 const AUDIO_FILES = [
   '03.ogg',
   '08.ogg',
   '09.ogg',
   '65.ogg',
 ];
+const MESH_OFFSET = -1;
 const SIDES = ['left', 'right'];
 
 class Raptor {
@@ -166,7 +167,7 @@ class Raptor {
 
               const mesh = (() => {
                 const result = new THREE.Object3D();
-                result.position.x = -1;
+                result.position.x = MESH_OFFSET;
 
                 const solidMaterial = new THREE.MeshPhongMaterial({
                   color: 0x4CAF50,
@@ -492,11 +493,26 @@ class Raptor {
                   if (animationStartWorldTime !== null) {
                     const currentWorldTime = world.getWorldTime();
                     const worldTimeDiff = currentWorldTime - animationStartWorldTime;
-                    const legAnimationFactor = Math.sin((worldTimeDiff / 1000) * (Math.PI * 2));
+                    const worldTimeDiffSeconds = worldTimeDiff / 1000;
 
+                    const moveAnimationTime = 5;
+                    const moveAnimationScale = 2;
+                    const moveAnimationFactor = (() => {
+                      const worldTimeDiffSecondsMod = worldTimeDiffSeconds % moveAnimationTime;
+                      if (worldTimeDiffSecondsMod < (moveAnimationTime / 2)) {
+                        return worldTimeDiffSecondsMod / (moveAnimationTime / 2);
+                      } else {
+                        return 1 -((worldTimeDiffSecondsMod - (moveAnimationTime / 2)) / (moveAnimationTime / 2));
+                      }
+                    })();
+                    mesh.position.x = MESH_OFFSET + (moveAnimationFactor * moveAnimationScale);
+
+                    const legAnimationFactor = Math.sin(worldTimeDiffSeconds * (Math.PI * 2));
                     leftLeg.rotation.x = legAnimationFactor * Math.PI * 0.3;
                     rightLeg.rotation.x = -legAnimationFactor * Math.PI * 0.3;
                   } else {
+                    mesh.position.x = MESH_OFFSET;
+
                     leftLeg.rotation.x = 0;
                     rightLeg.rotation.x = 0;
                   }
