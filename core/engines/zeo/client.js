@@ -588,6 +588,22 @@ class Zeo {
                         return biolumi.makeUi(options);
                       }
 
+                      makeMenuHoverState() {
+                        return biolumi.makeMenuHoverState();
+                      }
+
+                      makeMenuDotMesh() {
+                        return biolumi.makeMenuDotMesh();
+                      }
+
+                      makeMenuBoxMesh() {
+                        return biolumi.makeMenuBoxMesh();
+                      }
+
+                      updateAnchors(spec) {
+                        return biolumi.updateAnchors(spec);
+                      }
+
                       getTransparentImg() {
                         return biolumi.getTransparentImg();
                       }

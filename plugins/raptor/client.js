@@ -39,7 +39,7 @@ class Raptor {
     return _requestAudios()
       .then(audios => {
         if (live) {
-          const {three: {THREE, camera}, elements, render, pose, input, ui, sound, utils: {geometry: geometryUtils}} = zeo;
+          const {three: {THREE, scene, camera}, elements, render, pose, input, ui, sound, utils: {geometry: geometryUtils}} = zeo;
 
           const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
           const _decomposeMatrix = matrix => {
@@ -115,6 +115,25 @@ class Raptor {
             opacity: 0.5,
             transparent: true,
           });
+
+          const avatarHoverStates = {
+            left: ui.makeMenuHoverState(),
+            right: ui.makeMenuHoverState(),
+          };
+
+          const avatarDotMeshes = {
+            left: ui.makeMenuDotMesh(),
+            right: ui.makeMenuDotMesh(),
+          };
+          scene.add(avatarDotMeshes.left);
+          scene.add(avatarDotMeshes.right);
+
+          const avatarBoxMeshes = {
+            left: ui.makeMenuBoxMesh(),
+            right: ui.makeMenuBoxMesh(),
+          };
+          scene.add(avatarBoxMeshes.left);
+          scene.add(avatarBoxMeshes.right);
 
           const raptorComponent = {
             selector: 'raptor[position]',
@@ -430,9 +449,45 @@ class Raptor {
                   const {mouth} = head;
                   mouth.rotation.x = soundBody.getAmplitude() * Math.PI * 0.4;
                 };
+                const _updateAnchors = () => {
+                  const {gamepads} = pose.getStatus();
+
+                  const matrixObject = _decomposeObjectMatrixWorld(planeMesh);
+                  const {page} = planeMesh;
+
+                  SIDES.forEach(side => {
+                    const gamepad = gamepads[side];
+
+                    if (gamepad) {
+                      const {position: controllerPosition, rotation: controllerRotation} = gamepad;
+
+                      const avatarHoverState = avatarHoverStates[side];
+                      const avatarDotMesh = avatarDotMeshes[side];
+                      const avatarBoxMesh = avatarBoxMeshes[side];
+
+                      ui.updateAnchors({
+                        objects: [{
+                          matrixObject: matrixObject,
+                          page: page,
+                          width: WIDTH,
+                          height: HEIGHT,
+                          worldWidth: WORLD_WIDTH,
+                          worldHeight: WORLD_HEIGHT,
+                          worldDepth: WORLD_DEPTH,
+                        }],
+                        hoverState: avatarHoverState,
+                        dotMesh: avatarDotMesh,
+                        boxMesh: avatarBoxMesh,
+                        controllerPosition,
+                        controllerRotation,
+                      });
+                    }
+                  });
+                };
 
                 _updateTargets();
                 _updateAvatar();
+                _updateAnchors();
               };
               render.on('update', _update);
 
@@ -470,6 +525,11 @@ class Raptor {
           elements.registerComponent(this, raptorComponent);
 
           this._cleanup = () => {
+            SIDES.forEach(side => {
+              scene.add(avatarDotMeshes[side]);
+              scene.add(avatarBoxMeshes[side]);
+            });
+
             elements.unregisterComponent(this, raptorComponent);
           };
         }
