@@ -11,7 +11,14 @@ const menuRenderer = require('./lib/render/menu');
 const mod = require('mod-loop');
 const ConvexGeometry = require('./lib/three-extra/ConvexGeometry');
 
-const AVATAR_TEXT = `Welcome to Zeo! I'm Zee and I'll be your guide. Click the checkmark below to continue.`;
+const HTMLS = (() => {
+  const _button = s => `<span style="display: inline-block; margin: 0 5px; padding: 0 5px; border: 1px solid; border-radius: 5px;">${s}</span>`;
+
+  return [
+    `Welcome to Zeo! I'm Zee and I'll be your guide. Click the checkmark below to continue.`,
+    `You're using a mouse and keyboard, so use ${_button('W')}${_button('A')}${_button('S')}${_button('D')} to move and ${_button('LMB')} to click.`,
+  ];
+})();
 const AUDIO_FILES = [
   '03.ogg',
   '08.ogg',
@@ -176,8 +183,10 @@ class Raptor {
                 right: _makeAvatarState(),
               };
               const avatarState = {
-                text: '',
                 textIndex: 0,
+                characterIndex: 0,
+                text: '',
+                done: true,
               };
 
               const mesh = (() => {
@@ -316,7 +325,10 @@ class Raptor {
                   color: [1, 1, 1, 0],
                 });
                 const mesh = menuUi.addPage(({
-                  avatar: avatarState,
+                  avatar: {
+                    textIndex,
+                    characterIndex,
+                  },
                 }) => ({
                   type: 'html',
                   src: menuRenderer.getAvatarSrc({
@@ -348,32 +360,36 @@ class Raptor {
                 return result;
               })();
 
-              let animationStartWorldTime = null;
-              let cancelDialog = null;
-              const _setTextIndex = v => {
-                avatarState.textIndex = v;
+              const _setText = (textIndex, characterIndex) => {
+                avatarState.textIndex = textIndex;
+                avatarState.characterIndex = characterIndex;
+
+                const html = HTMLS[textIndex];
+                const {text, done} = _sliceHtml(html, characterIndex);
+                avatarState.text = text;
+                avatarState.done = done;
 
                 const {page} = planeMesh;
                 page.update();
               };
+              _setText(0, 0);
+
+              let animationStartWorldTime = null;
+              let cancelDialog = null;
               const _toggleDialog = () => {
                 if (!cancelDialog) {
-                  avatarState.text = AVATAR_TEXT;
-
-                  _setTextIndex(0);
-
                   let audio = null;
                   let timeout = null;
                   const _recurse = () => {
-                    const {text, textIndex} = avatarState;
+                    const {textIndex, characterIndex, done} = avatarState;
 
-                    if (textIndex < text.length) {
+                    if (!done) {
                       audio = audios[Math.floor(Math.random() * audios.length)];
                       audio.currentTime = 0;
                       audio.play();
 
                       timeout = setTimeout(() => {
-                        _setTextIndex(textIndex + 1);
+                        _setText(textIndex, characterIndex + 1);
 
                         _recurse();
                       }, 20 + (Math.random() * (150 - 20)));
@@ -401,8 +417,7 @@ class Raptor {
 
                   cancelDialog = null;
 
-                  avatarState.text = '';
-                  _setTextIndex(0);
+                  _setText(0, 0);
                 }
               };
 
@@ -429,11 +444,15 @@ class Raptor {
                   const onclick = (anchor && anchor.onclick) || '';
 
                   if (onclick === 'avatar:next') {
-                    avatarState.text = '';
-                    avatarState.textIndex = 0;
+                    const {textIndex} = avatarState;
 
-                    const {page} = planeMesh;
-                    page.update();
+                    if ((textIndex + 1) < HTMLS.length) {
+                      _setText(textIndex + 1, 0);
+
+                      _toggleDialog();
+                    } else {
+                      _setText(0, 0);
+                    }
                   }
                 };
                 const _doAvatarClick = () => {
@@ -658,6 +677,36 @@ const _clampHalfSphereAngle = v => {
     v = Math.PI * 3 / 2;
   }
   return v;
+};
+const _sliceHtml = (html, characterIndex) => {
+  let result = '';
+  let numTextCharacters = 0;
+  let i = 0;
+  for (; i < html.length && numTextCharacters < characterIndex; i++) {
+    const c = html.charAt(i);
+
+    if (c !== '<') {
+      result += c;
+      numTextCharacters++;
+    } else {
+      for (; i < html.length; i++) {
+        const c = html.charAt(i);
+
+        result += c;
+
+        if (c === '>') {
+          break;
+        }
+      }
+    }
+  }
+
+  const done = !(i < html.length);
+
+  return {
+    text: result,
+    done: done,
+  };
 };
 
 module.exports = Raptor;
