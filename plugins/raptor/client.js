@@ -40,7 +40,7 @@ class Raptor {
     return _requestAudios()
       .then(audios => {
         if (live) {
-          const {three: {THREE, scene, camera}, elements, render, pose, input, ui, sound, utils: {geometry: geometryUtils}} = zeo;
+          const {three: {THREE, scene, camera}, elements, render, pose, input, world, ui, sound, utils: {geometry: geometryUtils}} = zeo;
 
           const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
           const _decomposeMatrix = matrix => {
@@ -337,6 +337,7 @@ class Raptor {
                 return result;
               })();
 
+              let animationStartWorldTime = null;
               let cancelDialog = null;
               const _setTextIndex = v => {
                 avatarState.textIndex = v;
@@ -375,10 +376,14 @@ class Raptor {
                   };
                   _recurse();
 
+                  animationStartWorldTime = world.getWorldTime();
+
                   cancelDialog = () => {
                     audio.pause();
 
                     clearTimeout(timeout);
+
+                    animationStartWorldTime = null;
                   };
                 } else {
                   cancelDialog();
@@ -462,7 +467,7 @@ class Raptor {
                   const targeted = SIDES.some(side => avatarStates[side].targeted);
                   boxMesh.visible = targeted;
                 };
-                const _updateAvatar = () => {
+                const _updateAvatarGaze = () => {
                   const {head} = mesh;
                   const {position: headPosition} = _decomposeObjectMatrixWorld(head);
                   headProxy.position.copy(headPosition);
@@ -480,6 +485,21 @@ class Raptor {
 
                   const {mouth} = head;
                   mouth.rotation.x = soundBody.getAmplitude() * Math.PI * 0.4;
+                };
+                const _updateAvatarAnimation = () => {
+                  const {leftLeg, rightLeg} = mesh;
+
+                  if (animationStartWorldTime !== null) {
+                    const currentWorldTime = world.getWorldTime();
+                    const worldTimeDiff = currentWorldTime - animationStartWorldTime;
+                    const legAnimationFactor = Math.sin((worldTimeDiff / 1000) * (Math.PI * 2));
+
+                    leftLeg.rotation.x = legAnimationFactor * Math.PI * 0.3;
+                    rightLeg.rotation.x = -legAnimationFactor * Math.PI * 0.3;
+                  } else {
+                    leftLeg.rotation.x = 0;
+                    rightLeg.rotation.x = 0;
+                  }
                 };
                 const _updatePlane = () => {
                   const {text} = avatarState;
@@ -534,7 +554,8 @@ class Raptor {
                 };
 
                 _updateTargets();
-                _updateAvatar();
+                _updateAvatarGaze();
+                _updateAvatarAnimation();
                 _updatePlane();
               };
               render.on('update', _update);
