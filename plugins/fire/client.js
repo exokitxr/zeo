@@ -40,6 +40,16 @@ class Fire {
             shininess: 10,
             shading: THREE.FlatShading,
           });
+          const fireMaterial = new THREE.MeshPhongMaterial({
+            color: 0xF44336,
+            shininess: 10,
+            shading: THREE.FlatShading,
+          });
+          const sparkMaterial = new THREE.MeshPhongMaterial({
+            color: 0xFF5722,
+            shininess: 10,
+            shading: THREE.FlatShading,
+          });
 
           const fireComponent = {
             selector: 'fire[position]',
@@ -125,8 +135,59 @@ class Fire {
                 return result;
               })(); */
 
+              const sparkMeshes = [];
+              let sparkTimeout = null;
+              const _recurseSparks = () => {
+                const sparkMesh = (() => {
+                  const geometry = new THREE.BoxBufferGeometry(0.02, 0.02, 0.02);
+                  const material = sparkMaterial;
+
+                  const mesh = new THREE.Mesh(geometry, material);
+                  mesh.position.x = -0.1 + (Math.random() * (0.2 - 0.1));
+                  mesh.position.z = -0.1 + (Math.random() * (0.2 - 0.1));
+                  mesh.rotation.order = camera.rotation.order;
+
+                  const startWorldTime = world.getWorldTime();
+                  mesh.update = () => {
+                    const currentWorldTime = world.getWorldTime();
+                    const worldTimeDiff = currentWorldTime - startWorldTime;
+                    const worldTimeDiffSeconds = worldTimeDiff / 1000;
+
+                    if (worldTimeDiffSeconds < 2) {
+                      mesh.position.y += 0.2 * worldTimeDiffSeconds;
+                    } else {
+                      entityObject.remove(mesh);
+                      sparkMeshes.splice(sparkMeshes.indexOf(mesh), 1);
+                    }
+                  };
+
+                  return mesh;
+                })();
+                entityObject.add(sparkMesh);
+                sparkMeshes.push(sparkMesh);
+
+                sparkTimeout = setTimeout(_recurseSparks, 200);
+              };
+              _recurseSparks();
+
+              const _update = () => {
+                for (let i = 0; i < sparkMeshes.length; i++) {
+                  const sparkMesh = sparkMeshes[i];
+                  sparkMesh.update();
+                }
+              };
+              render.on('update', _update);
+
               entityApi._cleanup = () => {
                 entityObject.remove(fireMesh);
+
+                for (let i = 0; i < sparkMeshes.length; i++) {
+                  const sparkMesh = sparkMeshes[i];
+                  entityObject.remove(sparkMesh);
+                }
+                clearTimeout(sparkTimeout);
+
+                render.removeListener('update', _update);
               };
             },
             entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
