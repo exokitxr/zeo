@@ -5,5 +5,7 @@
   "keywords": [],
   "client": "client.js",
   "server": "server.js",
-  "dependencies": {}
+  "dependencies": {
+    "mod-loop": "0.0.2"
+  }
 }

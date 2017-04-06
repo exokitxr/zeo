@@ -8,6 +8,7 @@ const {
 } = require('./lib/constants/constants');
 const menuRenderer = require('./lib/render/menu');
 
+const mod = require('mod-loop');
 const ConvexGeometry = require('./lib/three-extra/ConvexGeometry');
 
 const AVATAR_TEXT = `Welcome to Zeo! I'm Zee and I'll be your guide. Click the checkmark below to continue.`;
@@ -470,12 +471,13 @@ class Raptor {
                 };
                 const _updateAvatarGaze = () => {
                   const {headBase} = mesh;
-                  const {position: headBasePosition} = _decomposeObjectMatrixWorld(headBase);
+                  const {position: headBasePosition, rotation: headBaseQuaternion} = _decomposeObjectMatrixWorld(headBase);
+                  const headBaseRotation = new THREE.Euler().setFromQuaternion(headBaseQuaternion, camera.rotation.order);
 
                   head.position.copy(headBasePosition);
                   head.lookAt(camera.position);
-                  head.rotation.x = _clamp(head.rotation.x, -Math.PI / 2, Math.PI / 2);
-                  head.rotation.y = _clamp(head.rotation.y, -Math.PI / 2, Math.PI / 2);
+                  head.rotation.x = _clampHalfSphereAngle(head.rotation.x - headBaseRotation.x) + headBaseRotation.x;
+                  head.rotation.y = _clampHalfSphereAngle(head.rotation.y - headBaseRotation.y) + headBaseRotation.y;
 
                   planeMesh.position.copy(
                     head.position.clone().add(new THREE.Vector3(0, 0.3, 0.2).applyEuler(head.rotation))
@@ -634,6 +636,14 @@ class Raptor {
   }
 }
 
-const _clamp = (v, min, max) => Math.min(Math.max(v, min), max);
+const _clampHalfSphereAngle = v => {
+  v = mod(v, Math.PI * 2);
+  if (v > (Math.PI / 2) && v <= Math.PI) {
+    v = Math.PI / 2;
+  } else if (v > Math.PI && v < (Math.PI * 3 / 2)) {
+    v = Math.PI * 3 / 2;
+  }
+  return v;
+};
 
 module.exports = Raptor;
