@@ -1,0 +1,9 @@
+{
+  "name": "fire",
+  "description": "A simple 3D fire.",
+  "version": "0.0.1",
+  "keywords": [],
+  "client": "client.js",
+  "server": "server.js",
+  "dependencies": {}
+}

@@ -156,7 +156,7 @@ class Egg {
           });
 
           const eggComponent = {
-            selector: 'egg[position]',
+            selector: 'egg[position][bites]',
             attributes: {
               position: {
                 type: 'matrix',
