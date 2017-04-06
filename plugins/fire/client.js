@@ -1,3 +1,5 @@
+const ConvexGeometry = require('./lib/three-extra/ConvexGeometry');
+
 const AUDIO_FILES = [
   // 'fire.ogg',
 ];
@@ -35,9 +37,27 @@ class Fire {
             return {position, rotation, scale};
           };
 
+          const THREEConvexGeometry = ConvexGeometry(THREE);
+
           const logGeometry = new THREE.BoxBufferGeometry(0.6, 0.04, 0.04);
+          const ashGeometry = new THREEConvexGeometry([
+            new THREE.Vector3(-0.2, 0, -0.2),
+            new THREE.Vector3(0.2, 0, -0.2),
+            new THREE.Vector3(-0.2, 0, 0.2),
+            new THREE.Vector3(0.2, 0, 0.2),
+
+            new THREE.Vector3(-0.1, 0.1, -0.1),
+            new THREE.Vector3(0.1, 0.1, -0.1),
+            new THREE.Vector3(-0.1, 0.1, 0.1),
+            new THREE.Vector3(0.1, 0.1, 0.1),
+          ]);
           const logMaterial = new THREE.MeshPhongMaterial({
             color: 0x795548,
+            shininess: 10,
+            shading: THREE.FlatShading,
+          });
+          const ashMaterial = new THREE.MeshPhongMaterial({
+            color: 0x808080,
             shininess: 10,
             shading: THREE.FlatShading,
           });
@@ -76,7 +96,7 @@ class Fire {
                     const geometry = logGeometry.clone();
                     const material = logMaterial;
                     const mesh = new THREE.Mesh(geometry, material);
-                    mesh.position.set(0.1, 0.1, -0.1);
+                    mesh.position.set(0.1, 0.2, -0.1);
                     mesh.rotation.y = (Math.PI / 4) + (Math.PI / 2) * 0;
                     mesh.rotation.z = -Math.PI / 4;
                     mesh.rotation.order = camera.rotation.order;
@@ -86,7 +106,7 @@ class Fire {
                     const geometry = logGeometry.clone();
                     const material = logMaterial;
                     const mesh = new THREE.Mesh(geometry, material);
-                    mesh.position.set(-0.1, 0.1, -0.1);
+                    mesh.position.set(-0.1, 0.2, -0.1);
                     mesh.rotation.y = (Math.PI / 4) + (Math.PI / 2) * 1;
                     mesh.rotation.z = -Math.PI / 4;
                     mesh.rotation.order = camera.rotation.order;
@@ -96,7 +116,7 @@ class Fire {
                     const geometry = logGeometry.clone();
                     const material = logMaterial;
                     const mesh = new THREE.Mesh(geometry, material);
-                    mesh.position.set(-0.1, 0.1, 0.1);
+                    mesh.position.set(-0.1, 0.2, 0.1);
                     mesh.rotation.y = (Math.PI / 4) + (Math.PI / 2) * 2;
                     mesh.rotation.z = -Math.PI / 4;
                     mesh.rotation.order = camera.rotation.order;
@@ -106,7 +126,7 @@ class Fire {
                     const geometry = logGeometry.clone();
                     const material = logMaterial;
                     const mesh = new THREE.Mesh(geometry, material);
-                    mesh.position.set(0.1, 0.1, 0.1);
+                    mesh.position.set(0.1, 0.2, 0.1);
                     mesh.rotation.y = (Math.PI / 4) + (Math.PI / 2) * 3;
                     mesh.rotation.z = -Math.PI / 4;
                     mesh.rotation.order = camera.rotation.order;
@@ -116,6 +136,14 @@ class Fire {
                 logMeshes.forEach(logMesh => {
                   result.add(logMesh);
                 });
+                
+                const ashMesh = (() => {
+                  const geometry = ashGeometry.clone();
+                  const material = ashMaterial;
+                  const mesh = new THREE.Mesh(geometry, material);
+                  return mesh;
+                })();
+                result.add(ashMesh);
 
                 return result;
               })();
