@@ -410,11 +410,11 @@ class Raptor {
                 const geometry = new THREE.BoxBufferGeometry(1, 1, 1);
                 const material = wireframeMaterial;
 
-                const mesh = new THREE.Mesh(geometry, material);
-                mesh.position.x = -1;
-                mesh.position.y = 0.5;
-                mesh.visible = false;
-                return mesh;
+                const result = new THREE.Mesh(geometry, material);
+                result.position.copy(mesh.position);
+                result.position.y += 0.5;
+                result.visible = false;
+                return result;
               })();
               entityObject.add(boxMesh);
 
@@ -461,14 +461,18 @@ class Raptor {
                     const avatarState = avatarStates[side];
 
                     const targeted = (() => {
-                      const gamepad = gamepads[side];
+                      if (animationStartWorldTime === null) {
+                        const gamepad = gamepads[side];
 
-                      if (gamepad) {
-                        const {position: controllerPosition, rotation: controllerRotation} = gamepad;
-                        const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation);
+                        if (gamepad) {
+                          const {position: controllerPosition, rotation: controllerRotation} = gamepad;
+                          const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation);
 
-                        const intersectionPoint = boxTarget.intersectLine(controllerLine);
-                        return intersectionPoint !== null;
+                          const intersectionPoint = boxTarget.intersectLine(controllerLine);
+                          return intersectionPoint !== null;
+                        } else {
+                          return false;
+                        }
                       } else {
                         return false;
                       }
