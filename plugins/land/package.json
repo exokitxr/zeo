@@ -5,6 +5,6 @@
   "keywords": [],
   "client": "client.js",
   "dependencies": {
-    "indev": "^3.0.9"
+    "indev": "^3.0.10"
   }
 }

@@ -5,7 +5,7 @@
   "client": "client.js",
   "worker": "worker.js",
   "dependencies": {
-    "indev": "^3.0.9",
+    "indev": "^3.0.10",
     "isosurface": "^1.0.0"
   }
 }

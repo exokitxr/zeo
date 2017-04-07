@@ -4,7 +4,7 @@
   "version": "0.0.1",
   "client": "client.js",
   "dependencies": {
-    "indev": "^3.0.9",
+    "indev": "^3.0.10",
     "kruskal": "0.0.4"
   }
 }
