@@ -1,8 +1,6 @@
 const LRUMap = require('./lib/lru');
 const functionutils = require('functionutils');
 
-const VOXEL_SIZE = 0.1;
-const NUM_PIXELS = 12;
 const BOX_TARGET_CACHE_SIZE = 128;
 
 const geometryUtils = archae => ({
@@ -230,66 +228,6 @@ const geometryUtils = archae => ({
             }
           }
         }
-
-        /* const VOXEL_VERTICES = (() => {
-          const cubeGeometry = new THREE.CubeGeometry(VOXEL_SIZE, VOXEL_SIZE, VOXEL_SIZE);
-          for (let i = 0; i < cubeGeometry.vertices.length; i++) {
-            cubeGeometry.vertices[i].x -= (NUM_PIXELS * VOXEL_SIZE) / 2;
-            cubeGeometry.vertices[i].y += NUM_PIXELS * VOXEL_SIZE;
-            // cubeGeometry.vertices[i].z -= (NUM_PIXELS * VOXEL_SIZE) / 2;
-          }
-          const bufferGeometry = new THREE.BufferGeometry().fromGeometry(cubeGeometry);
-          const positions = bufferGeometry.getAttribute('position').array;
-          return positions;
-        })();
-
-        function getVoxelVertices(x, y) {
-          const voxelVertices = VOXEL_VERTICES.slice();
-          for (let i = 0; i < VOXEL_VERTICES.length; i += 3) {
-            voxelVertices[i] += x * VOXEL_SIZE;
-          }
-          for (let i = 1; i < VOXEL_VERTICES.length; i += 3) {
-            voxelVertices[i] -= y * VOXEL_SIZE;
-          }
-          return voxelVertices;
-        }
-
-        function makeVoxelGeometry(imageData) {
-          const {data, width, height} = imageData;
-
-          function getPixelColorArray(x, y) {
-            const index = (x + y * width) * 4;
-            return data.slice(index, index + 4);
-          }
-
-          const vertices = [];
-          const colors = [];
-          for (let y = 0; y < height; y++) {
-            for (let x = 0; x < width; x++) {
-              const pixelColorArray = getPixelColorArray(x, y);
-              const [r, g, b, a] = pixelColorArray;
-
-              if (a > 0) {
-                const rFloat = (r * 2) / 255;
-                const gFloat = (g * 2) / 255;
-                const bFloat = (b * 2) / 255;
-
-                const voxelVertices = getVoxelVertices(x, y);
-                for (let i = 0; i < VOXEL_VERTICES.length; i += 3) {
-                  vertices.push(voxelVertices[i + 0], voxelVertices[i + 1], voxelVertices[i + 2]);
-                  colors.push(rFloat, gFloat, bFloat);
-                }
-              }
-            }
-          }
-
-          const geometry = new THREE.BufferGeometry();
-          geometry.addAttribute('position', new THREE.BufferAttribute(new Float32Array(vertices), 3));
-          geometry.addAttribute('color', new THREE.BufferAttribute(new Float32Array(colors), 3));
-          geometry.computeVertexNormals();
-
-          return geometry;
-        } */
 
         function unindexBufferGeometry(geometry) {
           if (geometry.index) {
@@ -878,7 +816,6 @@ const geometryUtils = archae => ({
         const makePlaneTarget = (position, quaternion, width, height) => new PlaneTarget(position, quaternion, width, height);
 
         return {
-          // makeVoxelGeometry,
           unindexBufferGeometry,
           mergeBufferGeometry,
           concatBufferGeometry,
