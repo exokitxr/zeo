@@ -271,13 +271,15 @@ class ZAnimate {
             }
 
             return result;
-          })();]
+          })();
           controllerMeshes.forEach(controllerMesh => {
             result.add(controllerMesh);
           });
+          result.controllerMeshes = controllerMeshes;
 
           const hmdMesh = _makeAnimateLimbMesh();
           result.add(hmdMesh);
+          result.hmdMesh = hmdMesh;
 
           result.load = (meshesJson = {}) => {
             const _loadControllers = meshesJson => {
@@ -318,7 +320,7 @@ class ZAnimate {
             const _loadHmd = meshesJson => {
               const meshJson = (() => {
                 const {
-                  hmd: hmdJson = {
+                  hmd: {
                     positions = [],
                     rotations = [],
                   },
@@ -342,22 +344,113 @@ class ZAnimate {
 
           return result;
         };
+        const _getFrame = t => Math.floor(t / POINT_FRAME_RATE);
 
         let mesh = null;
         let committedMesh = null;
 
         const playMesh = (() => {
-          const geometry = new THREE.CylinderBufferGeometry(0, sq(0.005), 0.02, 4, 1)
-            .applyMatrix(new THREE.Matrix4().makeRotationY(-Math.PI * (3 / 12)))
-            .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
-          const material = new THREE.MeshPhongMaterial({
-            color: 0xFFFF00,
-            shading: THREE.FlatShading,
+          const result = new THREE.Object3D();
+
+          const _makePlayLimbMesh = () => {
+            const geometry = new THREE.CylinderBufferGeometry(0, sq(0.005), 0.02, 4, 1)
+              .applyMatrix(new THREE.Matrix4().makeRotationY(-Math.PI * (3 / 12)))
+              .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
+            const material = new THREE.MeshPhongMaterial({
+              color: 0xFFFF00,
+              shading: THREE.FlatShading,
+            });
+
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.visible = false;
+            return mesh;
+          };
+
+          const controllerPlayMeshes = (() => {
+            const result = Array(2);
+
+            for (let i = 0; i < 2; i++) {
+              const controllerPlayMesh = _makePlayLimbMesh();
+              result[i] = controllerPlayMesh;
+            }
+
+            return result;
+          })();
+          controllerPlayMeshes.forEach(controllerMesh => {
+            result.add(controllerMesh);
           });
 
-          const mesh = new THREE.Mesh(geometry, material);
-          mesh.visible = false;
-          return mesh;
+          const hmdPlayMesh = _makePlayLimbMesh();
+          result.add(hmdPlayMesh);
+
+          result.load = committedMesh => {
+            const _loadControllers = committedMesh => {
+              const {controllerMeshes} = committedMesh;
+
+              for (let i = 0; i < controllerMeshes.length; i++) {
+                const controllerMesh = controllerMeshes[i];
+                const controllerPlayMesh = controllerPlayMeshes[i];
+
+                const {lastPoint} = controllerMesh;
+
+                if (lastPoint > 0) {
+                  const currentFrame = mod(_getFrame(worldTime - playStartTime), lastPoint);
+
+                  const {geometry} = controllerMesh;
+                  const {array: positions} = geometry.getAttribute('position');
+                  const positionBaseIndex = currentFrame * 3;
+                  const positionArray = positions.slice(positionBaseIndex, positionBaseIndex + 3);
+                  controllerPlayMesh.position.fromArray(positionArray);
+
+                  const {rotations} = geometry;
+                  const rotationBaseIndex = currentFrame * 4;
+                  const rotationArray = rotations.slice(rotationBaseIndex, rotationBaseIndex + 4);
+                  controllerPlayMesh.quaternion.fromArray(rotationArray);
+
+                  if (!controllerPlayMesh.visible) {
+                    controllerPlayMesh.visible = true;
+                  }
+                } else {
+                  if (controllerPlayMesh.visible) {
+                    controllerPlayMesh.visible = false;
+                  }
+                }
+              }
+            };
+            const _loadHmd = committedMesh => {
+              const {hmdMesh} = committedMesh;
+
+              const {lastPoint} = hmdMesh;
+
+              if (lastPoint > 0) {
+                const currentFrame = mod(_getFrame(worldTime - playStartTime), lastPoint);
+
+                const {geometry} = hmdMesh;
+                const {array: positions} = geometry.getAttribute('position');
+                const positionBaseIndex = currentFrame * 3;
+                const positionArray = positions.slice(positionBaseIndex, positionBaseIndex + 3);
+                hmdPlayMesh.position.fromArray(positionArray);
+
+                const {rotations} = geometry;
+                const rotationBaseIndex = currentFrame * 4;
+                const rotationArray = rotations.slice(rotationBaseIndex, rotationBaseIndex + 4);
+                hmdPlayMesh.quaternion.fromArray(rotationArray);
+
+                if (!hmdPlayMesh.visible) {
+                  hmdPlayMesh.visible = true;
+                }
+              } else {
+                if (hmdPlayMesh.visible) {
+                  hmdPlayMesh.visible = false;
+                }
+              }
+            };
+
+            _loadControllers(committedMesh);
+            _loadHmd(committedMesh);
+          };
+
+          return result;
         })();
         scene.add(playMesh);
 
@@ -436,98 +529,84 @@ class ZAnimate {
         input.on('triggerup', _triggerup);
 
         const _update = () => {
-          const {gamepads} = pose.getStatus();
-          const worldTime = world.getWorldTime();
+          const _updateDraw = () => {
+            const {gamepads} = pose.getStatus();
+            const worldTime = world.getWorldTime();
 
-          const _getFrame = t => Math.floor(t / POINT_FRAME_RATE);
+            SIDES.forEach(side => {
+              const animateState = animateStates[side];
+              const {drawing} = animateState;
 
-          SIDES.forEach(side => {
-            const animateState = animateStates[side];
-            const {drawing} = animateState;
+              if (drawing) {
+                let {lastPoint} = mesh;
 
-            if (drawing) {
-              let {lastPoint} = mesh;
+                if (lastPoint < MAX_NUM_POINTS) {
+                  const {lastPointTime} = animateState;
+                  const startFrame = _getFrame(lastPointTime);
+                  const endFrame = _getFrame(worldTime);
 
-              if (lastPoint < MAX_NUM_POINTS) {
-                const {lastPointTime} = animateState;
-                const startFrame = _getFrame(lastPointTime);
-                const endFrame = _getFrame(worldTime);
+                  if (endFrame > startFrame) {
+                    const {
+                      controllerMeshes: [
+                        leftControllerMesh, // XXX expand this to both controllers and HMD
+                      ],
+                    } = mesh;
+                    const {geometry} = leftControllerMesh;
+                    const positionsAttribute = geometry.getAttribute('position');
+                    const {array: positions} = positionsAttribute;
+                    const {rotations} = geometry;
 
-                if (endFrame > startFrame) {
-                  const {geometry} = mesh;
-                  const positionsAttribute = geometry.getAttribute('position');
-                  const positions = positionsAttribute.array;
-                  const {rotations} = geometry;
+                    const gamepad = gamepads[side];
+                    const {position: controllerPosition, rotation: controllerRotation} = gamepad;
 
-                  const gamepad = gamepads[side];
-                  const {position: controllerPosition, rotation: controllerRotation} = gamepad;
+                    const toolTipPosition = controllerPosition.clone()
+                      .add(new THREE.Vector3(0, 0, -0.05 - (0.02 / 2)).applyQuaternion(controllerRotation));
+                    const toolTipRotation = controllerRotation;
 
-                  const toolTipPosition = controllerPosition.clone()
-                    .add(new THREE.Vector3(0, 0, -0.05 - (0.02 / 2)).applyQuaternion(controllerRotation));
-                  const toolTipRotation = controllerRotation;
+                    for (let currentFrame = startFrame; currentFrame < endFrame; currentFrame++) {
+                      // positions
+                      const basePositionIndex = lastPoint * 3;
+                      positions[basePositionIndex + 0] = toolTipPosition.x;
+                      positions[basePositionIndex + 1] = toolTipPosition.y;
+                      positions[basePositionIndex + 2] = toolTipPosition.z;
 
-                  for (let currentFrame = startFrame; currentFrame < endFrame; currentFrame++) {
-                    // positions
-                    const basePositionIndex = lastPoint * 3;
-                    positions[basePositionIndex + 0] = toolTipPosition.x;
-                    positions[basePositionIndex + 1] = toolTipPosition.y;
-                    positions[basePositionIndex + 2] = toolTipPosition.z;
+                      // rotations
+                      const baseRotationIndex = lastPoint * 4;
+                      rotations[baseRotationIndex + 0] = toolTipRotation.x;
+                      rotations[baseRotationIndex + 1] = toolTipRotation.y;
+                      rotations[baseRotationIndex + 2] = toolTipRotation.z;
+                      rotations[baseRotationIndex + 3] = toolTipRotation.w;
 
-                    // rotations
-                    const baseRotationIndex = lastPoint * 4;
-                    rotations[baseRotationIndex + 0] = toolTipRotation.x;
-                    rotations[baseRotationIndex + 1] = toolTipRotation.y;
-                    rotations[baseRotationIndex + 2] = toolTipRotation.z;
-                    rotations[baseRotationIndex + 3] = toolTipRotation.w;
+                      lastPoint++;
+                    }
 
-                    lastPoint++;
+                    positionsAttribute.needsUpdate = true;
+
+                    leftControllerMesh.lastPoint = lastPoint;
+                    if (!leftControllerMesh.visible) {
+                      leftControllerMesh.visible = true;
+                    }
+
+                    geometry.setDrawRange(0, lastPoint);
+
+                    animateState.lastPointTime = worldTime;
+
+                    entityApi.save();
                   }
-
-                  positionsAttribute.needsUpdate = true;
-
-                  mesh.lastPoint = lastPoint;
-                  if (!mesh.visible) {
-                    mesh.visible = true;
-                  }
-
-                  geometry.setDrawRange(0, lastPoint);
-
-                  animateState.lastPointTime = worldTime;
-
-                  entityApi.save();
                 }
               }
+            });
+          };
+          const _updatePlayMesh = () => {
+            if (playing && committedMesh) {
+              playMesh.load(committedMesh);
+            } else {
+              playMesh.load(null);
             }
-          });
+          };
 
-          if (playing) {
-            if (committedMesh) {
-              const {lastPoint} = committedMesh;
-
-              if (lastPoint > 0) {
-                const currentFrame = mod(_getFrame(worldTime - playStartTime), lastPoint);
-
-                const {geometry} = committedMesh;
-                const positions = geometry.getAttribute('position').array;
-                const positionBaseIndex = currentFrame * 3;
-                const positionArray = positions.slice(positionBaseIndex, positionBaseIndex + 3);
-                playMesh.position.fromArray(positionArray);
-
-                const {rotations} = geometry;
-                const rotationBaseIndex = currentFrame * 4;
-                const rotationArray = rotations.slice(rotationBaseIndex, rotationBaseIndex + 4);
-                playMesh.quaternion.fromArray(rotationArray);
-
-                if (!playMesh.visible) {
-                  playMesh.visible = true;
-                }
-              }
-            }
-          } else {
-            if (playMesh.visible) {
-              playMesh.visible = false;
-            }
-          }
+          _updateDraw();
+          _updatePlayMesh();
         };
         render.on('update', _update);
 
