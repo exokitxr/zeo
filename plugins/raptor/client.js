@@ -125,6 +125,13 @@ class Raptor {
                 html: `You're using a mouse and keyboard, so use ${_button('W')}${_button('A')}${_button('S')}${_button('D')} to move and ${_button('LMB')} to click.`,
                 endPosition: new THREE.Vector3(1, 0, 1),
               },
+              {
+                html: `<div style="position: relative; width: ${WIDTH}; height: ${HEIGHT}px;">
+                  <div style="display: flex; position: absolute; top: 0; left: 0; width: 100px; height: 100px; font-size: 100px; font-weight: 600; line-height: 1; justify-content: center; align-items: center;">!</div>
+                  <div style="position: absolute; top: 0; left: 100px; right: 30px;">Whoa, the floor is gone! See if you can add a new floor to the world.</div>
+                </div>`,
+                gazeTarget: new THREE.Vector3(0, -10, 0),
+              },
             ];
           })();
 
@@ -394,11 +401,12 @@ class Raptor {
 
                 const {scriptIndex} = avatarState;
                 const script = scripts[scriptIndex];
-                const {endPosition = null} = script;
+                const {gazeTarget = null, endPosition = null} = script;
                 let refcount = 2;
                 animationSpec = {
                   startTime: world.getWorldTime(),
                   startPosition: raptorMesh.position.clone(),
+                  gazeTarget: gazeTarget,
                   endPosition: endPosition,
                   unref: () => {
                     if (--refcount === 0) {
@@ -508,7 +516,8 @@ class Raptor {
                   const headBaseRotation = new THREE.Euler().setFromQuaternion(headBaseQuaternion, camera.rotation.order);
 
                   head.position.copy(headBasePosition);
-                  head.lookAt(camera.position);
+                  const gazeTarget = ((animationSpec !== null) ? animationSpec.gazeTarget : null) || camera.position;
+                  head.lookAt(gazeTarget);
                   head.rotation.x = _clampHalfSphereAngle(head.rotation.x - headBaseRotation.x) + headBaseRotation.x;
                   head.rotation.y = _clampHalfSphereAngle(head.rotation.y - headBaseRotation.y) + headBaseRotation.y;
 
@@ -682,6 +691,8 @@ const _clampHalfSphereAngle = v => {
   return v;
 };
 const _sliceHtml = (html, characterIndex) => {
+  html = html.replace(/(\s)\s+/g, '$1');
+
   let result = '';
   let numTextCharacters = 0;
   let i = 0;
