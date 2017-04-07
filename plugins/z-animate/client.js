@@ -265,7 +265,7 @@ class ZAnimate {
           const controllerMeshes = (() => {
             const result = Array(2);
 
-            for (let i = 0; i < controllerMeshes.length; i++) {
+            for (let i = 0; i < 2; i++) {
               const controllerMesh = controllerMeshes[i];
               result[i] = controllerMesh;
             }
@@ -385,32 +385,42 @@ class ZAnimate {
 
           result.load = committedMesh => {
             const _loadControllers = committedMesh => {
-              const {controllerMeshes} = committedMesh;
+              if (committedMesh) {
+                const {controllerMeshes} = committedMesh;
 
-              for (let i = 0; i < controllerMeshes.length; i++) {
-                const controllerMesh = controllerMeshes[i];
-                const controllerPlayMesh = controllerPlayMeshes[i];
+                for (let i = 0; i < controllerMeshes.length; i++) {
+                  const controllerMesh = controllerMeshes[i];
+                  const controllerPlayMesh = controllerPlayMeshes[i];
 
-                const {lastPoint} = controllerMesh;
+                  const {lastPoint} = controllerMesh;
 
-                if (lastPoint > 0) {
-                  const currentFrame = mod(_getFrame(worldTime - playStartTime), lastPoint);
+                  if (lastPoint > 0) {
+                    const currentFrame = mod(_getFrame(worldTime - playStartTime), lastPoint);
 
-                  const {geometry} = controllerMesh;
-                  const {array: positions} = geometry.getAttribute('position');
-                  const positionBaseIndex = currentFrame * 3;
-                  const positionArray = positions.slice(positionBaseIndex, positionBaseIndex + 3);
-                  controllerPlayMesh.position.fromArray(positionArray);
+                    const {geometry} = controllerMesh;
+                    const {array: positions} = geometry.getAttribute('position');
+                    const positionBaseIndex = currentFrame * 3;
+                    const positionArray = positions.slice(positionBaseIndex, positionBaseIndex + 3);
+                    controllerPlayMesh.position.fromArray(positionArray);
 
-                  const {rotations} = geometry;
-                  const rotationBaseIndex = currentFrame * 4;
-                  const rotationArray = rotations.slice(rotationBaseIndex, rotationBaseIndex + 4);
-                  controllerPlayMesh.quaternion.fromArray(rotationArray);
+                    const {rotations} = geometry;
+                    const rotationBaseIndex = currentFrame * 4;
+                    const rotationArray = rotations.slice(rotationBaseIndex, rotationBaseIndex + 4);
+                    controllerPlayMesh.quaternion.fromArray(rotationArray);
 
-                  if (!controllerPlayMesh.visible) {
-                    controllerPlayMesh.visible = true;
+                    if (!controllerPlayMesh.visible) {
+                      controllerPlayMesh.visible = true;
+                    }
+                  } else {
+                    if (controllerPlayMesh.visible) {
+                      controllerPlayMesh.visible = false;
+                    }
                   }
-                } else {
+                }
+              } else {
+                for (let i = 0; i < controllerPlayMeshes.length; i++) {
+                  const controllerPlayMesh = controllerPlayMeshes[i];
+
                   if (controllerPlayMesh.visible) {
                     controllerPlayMesh.visible = false;
                   }
@@ -418,26 +428,32 @@ class ZAnimate {
               }
             };
             const _loadHmd = committedMesh => {
-              const {hmdMesh} = committedMesh;
+              if (committedMesh) {
+                const {hmdMesh} = committedMesh;
 
-              const {lastPoint} = hmdMesh;
+                const {lastPoint} = hmdMesh;
 
-              if (lastPoint > 0) {
-                const currentFrame = mod(_getFrame(worldTime - playStartTime), lastPoint);
+                if (lastPoint > 0) {
+                  const currentFrame = mod(_getFrame(worldTime - playStartTime), lastPoint);
 
-                const {geometry} = hmdMesh;
-                const {array: positions} = geometry.getAttribute('position');
-                const positionBaseIndex = currentFrame * 3;
-                const positionArray = positions.slice(positionBaseIndex, positionBaseIndex + 3);
-                hmdPlayMesh.position.fromArray(positionArray);
+                  const {geometry} = hmdMesh;
+                  const {array: positions} = geometry.getAttribute('position');
+                  const positionBaseIndex = currentFrame * 3;
+                  const positionArray = positions.slice(positionBaseIndex, positionBaseIndex + 3);
+                  hmdPlayMesh.position.fromArray(positionArray);
 
-                const {rotations} = geometry;
-                const rotationBaseIndex = currentFrame * 4;
-                const rotationArray = rotations.slice(rotationBaseIndex, rotationBaseIndex + 4);
-                hmdPlayMesh.quaternion.fromArray(rotationArray);
+                  const {rotations} = geometry;
+                  const rotationBaseIndex = currentFrame * 4;
+                  const rotationArray = rotations.slice(rotationBaseIndex, rotationBaseIndex + 4);
+                  hmdPlayMesh.quaternion.fromArray(rotationArray);
 
-                if (!hmdPlayMesh.visible) {
-                  hmdPlayMesh.visible = true;
+                  if (!hmdPlayMesh.visible) {
+                    hmdPlayMesh.visible = true;
+                  }
+                } else {
+                  if (hmdPlayMesh.visible) {
+                    hmdPlayMesh.visible = false;
+                  }
                 }
               } else {
                 if (hmdPlayMesh.visible) {
