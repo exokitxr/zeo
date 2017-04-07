@@ -107,26 +107,16 @@ class ZAnimate {
           const {file} = entityApi;
 
           if (file) {
-            file.read({ // XXX handle the no-file case
-              type: 'arrayBuffer',
+            file.read({
+              type: 'json',
             })
-              .then(arrayBuffer => {
-                const array = new Float32Array(arrayBuffer);
-                const numPoints = Math.floor(array[0]);
-                const positionSize = numPoints * 3;
-                const rotationSizeSize = numPoints * 4;
-
-                const positions = array.slice(1, 1 + positionSize);
-                const rotations = array.slice(1 + positionSize, 1 + positionSize + rotationSizeSize);
-
+              .then(j => {
                 if (committedMesh) {
                   scene.remove(committedMesh);
                 }
-                committedMesh = _makeAnimateMesh({
-                  positions,
-                  rotations,
-                  numPoints,
-                });
+
+                committedMesh = _makeAnimateMesh();
+                committedMesh.load(j);
                 scene.add(committedMesh);
               });
           } else {
@@ -150,7 +140,12 @@ class ZAnimate {
             const timeout = setTimeout(() => {
               const {file} = entityApi;
 
-              const b = committedMesh.getBuffer();
+              const j = committedMesh.save();
+              const b = new Blob([
+                JSON.stringify(j),
+              ], {
+                type: 'application/json',
+              });
 
               const _cleanup = () => {
                 entityApi.cancelSave = null;
@@ -206,40 +201,146 @@ class ZAnimate {
           playing = false;
         };
 
-        const _makeAnimateMesh = ({
-          positions = new Float32Array(MAX_NUM_POINTS * 3),
-          rotations = new Float32Array(MAX_NUM_POINTS * 4),
-          numPoints = 0,
-        } = {}) => {
-          const geometry = new THREE.BufferGeometry();
-          geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
-          geometry.rotations = rotations;
-          geometry.setDrawRange(0, numPoints);
-
+        const _makeAnimateLimbMesh = () => {
+          const geometry = (() => {
+            const geometry = new THREE.BufferGeometry();
+            const positions = new Float32Array(MAX_NUM_POINTS * 3);
+            geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+            const rotations = new Float32Array(MAX_NUM_POINTS * 4);
+            geometry.rotations = rotations;
+            geometry.setDrawRange(0, 0);
+          })();
           const material = new THREE.LineBasicMaterial({
             color: 0x0000FF,
           });
 
           const mesh = new THREE.Line(geometry, material);
-          mesh.visible = numPoints > 0;
-          mesh.lastPoint = numPoints;
-          mesh.getBuffer = () => {
-            const {lastPoint} = mesh;
-            const positionSize = lastPoint * 3;
-            const rotationSize = lastPoint * 4;
-            const array = new Float32Array(
-              1 + // length
-              positionSize + // position
-              rotationSize // rotation
-            );
-            array[0] = lastPoint; // length
-            array.set(positions.slice(0, positionSize), 1); // position
-            array.set(rotations.slice(0, rotationSize), 1 + positionSize); // rotation
+          mesh.visible = false;
+          mesh.lastPoint = 0;
+          mesh.load = json => {
+            const {positions: positionsJson, rotations: rotationsJson} = json;
+            const numPoints = Math.floor(positionsJson.length / 3);
 
-            return new Uint8Array(array.buffer);
+            const positionsAttribute = geometry.getAttribute('position');
+            const {array: positions} = positionsAttribute;
+            const {rotations} = geometry;
+
+            for (let i = 0; i < numPoints; i++) {
+              const basePositionIndex = i * 3;
+              positions[basePositionIndex + 0] = positions[positionsbasePositionIndex + 0];
+              positions[basePositionIndex + 1] = positions[positionsbasePositionIndex + 1];
+              positions[basePositionIndex + 2] = positions[positionsbasePositionIndex + 2];
+
+              const baseRotationIndex = i * 4;
+              rotations[baseRotationIndex + 0] = rotations[positionsbasePositionIndex + 0];
+              rotations[baseRotationIndex + 1] = rotations[positionsbasePositionIndex + 1];
+              rotations[baseRotationIndex + 2] = rotations[positionsbasePositionIndex + 2];
+              rotations[baseRotationIndex + 3] = rotations[positionsbasePositionIndex + 3];
+            }
+            positionsAttribute.needsUpdate = true;
+            geometry.setDrawRange(0, numPoints);
+
+            mesh.visible = numPoints > 0;
+            mesh.lastPoint = numPoints;
+          };
+          mesh.save = () => {
+            const {array: positions} = geometry.getAttribute('position');
+            const {rotations} = geometry;
+            const {lastPoint: numPoints} = mesh;
+
+            const positionsJson = Array.from(positions.slice(0, numPoints * 3));
+            const rotationsJson = Array.from(rotations.slice(0, numPoints * 4));
+
+            return {
+              positions: positionsJson,
+              rotations: rotationsJson,
+            };
           };
 
           return mesh;
+        };
+        const _makeAnimateMesh = (meshesJson = {}) => {
+          const result = new THREE.Object3D();
+
+          const controllerMeshes = (() => {
+            const result = Array(2);
+
+            for (let i = 0; i < controllerMeshes.length; i++) {
+              const controllerMesh = controllerMeshes[i];
+              result[i] = controllerMesh;
+            }
+
+            return result;
+          })();]
+          controllerMeshes.forEach(controllerMesh => {
+            result.add(controllerMesh);
+          });
+
+          const hmdMesh = _makeAnimateLimbMesh();
+          result.add(hmdMesh);
+
+          result.load = (meshesJson = {}) => {
+            const _loadControllers = meshesJson => {
+              for (let i = 0; i < controllerMeshes.length; i++) {
+                const controllerMesh = controllerMeshes[i];
+
+                const meshJson = (() => {
+                  let positions;
+                  let rotations;
+
+                  const {
+                    controllers: controllersJson = [],
+                  } = meshesJson;
+                  const controllerJson = controllersJson[i];
+                  if (controllerJson !== undefined) {
+                    if (controllerJson.positions !== undefined) {
+                      positions = controllerJson.positions;
+                    }
+                    if (controllerJson.rotations !== undefined) {
+                      rotations = controllerJson.rotations;
+                    }
+                  }
+                  if (positions === undefined) {
+                    positions = [];
+                  }
+                  if (rotations === undefined) {
+                    rotations = [];
+                  }
+
+                  return {
+                    positions,
+                    rotations,
+                  };
+                })();
+                controllerMesh.load(meshJson);
+              }
+            };
+            const _loadHmd = meshesJson => {
+              const meshJson = (() => {
+                const {
+                  hmd: hmdJson = {
+                    positions = [],
+                    rotations = [],
+                  },
+                } = meshesJson;
+
+                return {
+                  positions,
+                  rotations,
+                };
+              })();
+              hmdMesh.load(meshJson);
+            };
+
+            _loadControllers(meshesJson);
+            _loadHmd(meshesJson);
+          };
+          result.save = () => ({
+            controllers: controllerMeshes.map(controllerMesh => controllerMesh.save()),
+            hmd: hmdMesh.save(),
+          });
+
+          return result;
         };
 
         let mesh = null;
