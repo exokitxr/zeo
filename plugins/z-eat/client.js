@@ -1,3 +1,5 @@
+const EAT_RADIUS = 0.2;
+
 const SIDES = ['left', 'right'];
 
 class ZEat {
@@ -8,7 +10,7 @@ class ZEat {
   mount() {
     const {_archae: archae} = this;
 
-    const {three: {THREE}, elements, pose, input, utils: {js: {events: {EventEmitter}}}} = zeo;
+    const {three: {THREE, camera}, elements, pose, input, render, utils: {js: {events: {EventEmitter}}}} = zeo;
 
     const worldElement = elements.getWorldElement();
 
@@ -21,6 +23,46 @@ class ZEat {
       return {position, rotation, scale};
     };
 
+    class Edible {
+      constructor(entityElement, entityObject) {
+        this.entityElement = entityElement;
+        this.entityObject = entityObject;
+      }
+
+      setEnabled(enabled) {
+        this.enabled = enabled;
+      }
+
+      update() {
+        const {entityObject} = this;
+        const position = entityObject.getWorldPosition();
+
+        for (let i = 0; i < eaters.length; i++) {
+          const eater = eaters[i];
+
+          if (eater.getWorldPosition().distanceTo(position) < EAT_RADIUS) {
+            const {entityElement: edibleElement} = this;
+            const {entityElement: eaterElement} = eater;
+
+            const eatEvent = new CustomEvent('eat', {
+              detail: {
+                edible: edibleElement,
+                eater: eaterElement,
+              },
+            });
+            edibleElement.dispatchEvent(eatEvent);
+            eaterElement.dispatchEvent(eatEvent);
+
+            return true;
+          }
+        }
+
+        return false;
+      }
+
+      destroy() {}
+    }
+
     const edibles = [];
     const edibleComponent = {
       selector: '[edible]',
@@ -31,19 +73,21 @@ class ZEat {
         },
       },
       entityAddedCallback(entityElement) {
-        const grabbable = new Grabbable(entityElement, entityElement.getObject());
-        entityElement.setComponentApi(grabbable);
+        const edible = new Edible(entityElement, entityElement.getObject());
+        entityElement.setComponentApi(edible);
       },
       entityRemovedCallback(entityElement) {
-        const grabbable = entityElement.getComponentApi();
-        grabbable.destroy();
+        const edible = entityElement.getComponentApi();
+        edible.destroy();
+
+        edibles.splice(edibles.indexOf(edible), 1);
       },
       entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-        const entityApi = entityElement.getComponentApi();
+        const edible = entityElement.getComponentApi();
 
         switch (name) {
           case 'edible': {
-            entityApi.setEdible(newValue);
+            edible.setEnabled(newValue);
 
             break;
           }
@@ -51,6 +95,48 @@ class ZEat {
       }
     };
     elements.registerComponent(this, edibleComponent);
+
+    class Eater {
+      constructor(entityElement, entityObject) {
+        this.entityElement = entityElement;
+        this.entityObject = entityObject;
+
+        this.enabled = false;
+      }
+
+      setEnabled(enabled) {
+        this.enabled = enabled;
+      }
+
+      /* update() {
+        const {entityObject} = this;
+        const position = entityObject.getWorldPosition();
+
+        for (let i = 0; i < edibles.length; i++) {
+          const edible = edibles[i];
+
+          if (edible.getWorldPosition().distanceTo(position) < EAT_RADIUS) {
+            const {entityElement: eaterElement} = this;
+            const {entityElement: edibleElement} = edible;
+
+            const eatEvent = new CustomEvent('eat', {
+              detail: {
+                eater: eaterElement,
+                edible: edibleElement,
+              },
+            });
+            eaterElement.dispatchEvent(eatEvent);
+            edibleElement.dispatchEvent(eatEvent);
+
+            return true;
+          }
+        }
+
+        return false;
+      } */
+
+      destroy() {}
+    }
 
     const eaters = [];
     const eaterComponent = {
@@ -62,19 +148,21 @@ class ZEat {
         },
       },
       entityAddedCallback(entityElement) {
-        const grabbable = new Grabbable(entityElement, entityElement.getObject());
-        entityElement.setComponentApi(grabbable);
+        const eater = new Eater(entityElement, entityElement.getObject());
+        entityElement.setComponentApi(eater);
       },
       entityRemovedCallback(entityElement) {
-        const grabbable = entityElement.getComponentApi();
-        grabbable.destroy();
+        const eater = new Eater(entityElement, entityElement.getObject());
+        eater.destroy();
+
+        eaters.splice(eaters.indexOf(eater), 1);
       },
       entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-        const entityApi = entityElement.getComponentApi();
+        const eater = entityElement.getComponentApi();
 
         switch (name) {
           case 'eater': {
-            entityApi.setEater(newValue);
+            eater.setEnabled(newValue);
 
             break;
           }
@@ -84,12 +172,34 @@ class ZEat {
     elements.registerComponent(this, eaterComponent);
 
     const _update = () => {
-      // XXX
+      for (let i = 0; i < edibles.length i++) {
+        const edible = edibles[i];
+        const eaten = edible.update();
+
+        if (!eaten) {
+          const {position} = camera;
+
+          if (edible.getWorldPosition().distanceTo(position) < EAT_RADIUS) {
+            const {entityElement: edibleElement} = edible;
+
+            const eatEvent = new CustomEvent('eat', {
+              detail: {
+                edible: edibleElement,
+                eater: null,
+              },
+            });
+            edibleElement.dispatchEvent(eatEvent);
+
+            return true;
+          }
+        }
+      }
     };
     render.addListener('update', _update);
 
     this._cleanup = () => {
       elements.unregisterComponent(this, edibleComponent);
+      elements.unregisterComponent(this, eaterComponent);
 
       render.removeListener('update', _update);
     };
