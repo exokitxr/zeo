@@ -11,12 +11,16 @@ const menuRenderer = require('./lib/render/menu');
 const mod = require('mod-loop');
 const ConvexGeometry = require('./lib/three-extra/ConvexGeometry');
 
-const HTMLS = (() => {
+const scripts = (() => {
   const _button = s => `<span style="display: inline-block; margin: 0 5px; padding: 0 5px; border: 1px solid; border-radius: 5px;">${s}</span>`;
 
   return [
-    `Welcome to Zeo! I'm Zee and I'll be your guide. Click the checkmark below to continue.`,
-    `You're using a mouse and keyboard, so use ${_button('W')}${_button('A')}${_button('S')}${_button('D')} to move and ${_button('LMB')} to click.`,
+    {
+      html: `Welcome to Zeo! I'm Zee and I'll be your guide. Click the checkmark below to continue.`,
+    },
+    {
+      html: `You're using a mouse and keyboard, so use ${_button('W')}${_button('A')}${_button('S')}${_button('D')} to move and ${_button('LMB')} to click.`,
+    },
   ];
 })();
 const AUDIO_FILES = [
@@ -162,7 +166,7 @@ class Raptor {
                 right: _makeAvatarState(),
               };
               const avatarState = {
-                textIndex: 0,
+                scriptIndex: 0,
                 characterIndex: 0,
                 text: '',
                 done: true,
@@ -304,10 +308,7 @@ class Raptor {
                   color: [1, 1, 1, 0],
                 });
                 const mesh = menuUi.addPage(({
-                  avatar: {
-                    textIndex,
-                    characterIndex,
-                  },
+                  avatar: avatarState,
                 }) => ({
                   type: 'html',
                   src: menuRenderer.getAvatarSrc({
@@ -339,11 +340,11 @@ class Raptor {
                 return result;
               })();
 
-              const _setText = (textIndex, characterIndex) => {
-                avatarState.textIndex = textIndex;
-                avatarState.characterIndex = characterIndex;
+              const _updateText = () => {
+                const {scriptIndex, characterIndex} = avatarState;
 
-                const html = HTMLS[textIndex];
+                const script = scripts[scriptIndex];
+                const {html} = script;
                 const {text, done} = _sliceHtml(html, characterIndex);
                 avatarState.text = text;
                 avatarState.done = done;
@@ -351,15 +352,18 @@ class Raptor {
                 const {page} = planeMesh;
                 page.update();
               };
-              _setText(0, 0);
+              _updateText();
 
               let animationStartWorldTime = null;
               let cancelDialog = null;
-              const _toggleDialog = () => {
+              const _playScript = () => {
+                avatarState.characterIndex = 0;
+                _updateText();
+
                 let audio = null;
                 let timeout = null;
                 const _recurse = () => {
-                  const {textIndex, characterIndex, done} = avatarState;
+                  const {done} = avatarState;
 
                   if (!done) {
                     audio = audios[Math.floor(Math.random() * audios.length)];
@@ -367,7 +371,8 @@ class Raptor {
                     audio.play();
 
                     timeout = setTimeout(() => {
-                      _setText(textIndex, characterIndex + 1);
+                      avatarState.characterIndex++;
+                      _updateText();
 
                       _recurse();
                     }, 20 + (Math.random() * (150 - 20)));
@@ -415,14 +420,16 @@ class Raptor {
                   const onclick = (anchor && anchor.onclick) || '';
 
                   if (onclick === 'avatar:next') {
-                    const {textIndex} = avatarState;
+                    const {scriptIndex} = avatarState;
 
-                    if ((textIndex + 1) < HTMLS.length) {
-                      _setText(textIndex + 1, 0);
+                    if ((scriptIndex + 1) < scripts.length) {
+                      avatarState.scriptIndex = scriptIndex + 1;
 
-                      _toggleDialog();
+                      _playScript();
                     } else {
-                      _setText(0, 0);
+                      avatarState.scriptIndex = 0;
+                      avatarState.characterIndex = 0;
+                      _updateText();
                     }
                   }
                 };
@@ -431,9 +438,9 @@ class Raptor {
                   const {targeted} = avatarState;
 
                   if (targeted) {
-                    _setText(0, 0);
+                    avatarState.scriptIndex = 0;
 
-                    _toggleDialog();
+                    _playScript();
 
                     return true;
                   } else {
