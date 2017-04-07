@@ -27,20 +27,31 @@ class ZEat {
       constructor(entityElement, entityObject) {
         this.entityElement = entityElement;
         this.entityObject = entityObject;
+
+        this.enabled = false;
+        this.size = null;
       }
 
       setEnabled(enabled) {
         this.enabled = enabled;
       }
 
+      setSize(size) {
+        this.size = size;
+      }
+
       update() {
         const {entityObject} = this;
         const position = entityObject.getWorldPosition();
+        const {size} = entityObject;
+        const edibleSize = Math.max(size[0], size[1], size[2]);
 
         for (let i = 0; i < eaters.length; i++) {
           const eater = eaters[i];
+          const {size} = eater;
+          const eaterSize = Math.max(size[0], size[1], size[2]);
 
-          if (eater.getWorldPosition().distanceTo(position) < EAT_RADIUS) {
+          if (eater.getWorldPosition().distanceTo(position) < ((edibleSize / 2) + (eaterSize / 2))) {
             const {entityElement: edibleElement} = this;
             const {entityElement: eaterElement} = eater;
 
@@ -65,11 +76,15 @@ class ZEat {
 
     const edibles = [];
     const edibleComponent = {
-      selector: '[edible]',
+      selector: '[edible][size]',
       attributes: {
         edible: {
           type: 'checkbox',
           value: true,
+        },
+        size: {
+          type: 'vector',
+          value: [0.2, 0.2, 0.2],
         },
       },
       entityAddedCallback(entityElement) {
@@ -91,6 +106,11 @@ class ZEat {
 
             break;
           }
+          case 'size': {
+            edible.setSize(newValue);
+
+            break;
+          }
         }
       }
     };
@@ -102,49 +122,31 @@ class ZEat {
         this.entityObject = entityObject;
 
         this.enabled = false;
+        this.size = null;
       }
 
       setEnabled(enabled) {
         this.enabled = enabled;
       }
 
-      /* update() {
-        const {entityObject} = this;
-        const position = entityObject.getWorldPosition();
-
-        for (let i = 0; i < edibles.length; i++) {
-          const edible = edibles[i];
-
-          if (edible.getWorldPosition().distanceTo(position) < EAT_RADIUS) {
-            const {entityElement: eaterElement} = this;
-            const {entityElement: edibleElement} = edible;
-
-            const eatEvent = new CustomEvent('eat', {
-              detail: {
-                eater: eaterElement,
-                edible: edibleElement,
-              },
-            });
-            eaterElement.dispatchEvent(eatEvent);
-            edibleElement.dispatchEvent(eatEvent);
-
-            return true;
-          }
-        }
-
-        return false;
-      } */
+      setSize(size) {
+        this.size = size;
+      }
 
       destroy() {}
     }
 
     const eaters = [];
     const eaterComponent = {
-      selector: '[eater]',
+      selector: '[eater][size]',
       attributes: {
         eater: {
           type: 'checkbox',
           value: true,
+        },
+        size: {
+          type: 'vector',
+          value: [1, 1, 1],
         },
       },
       entityAddedCallback(entityElement) {
@@ -166,6 +168,11 @@ class ZEat {
 
             break;
           }
+          case 'size': {
+            eater.setSize(newValue);
+
+            break;
+          }
         }
       }
     };
@@ -178,8 +185,10 @@ class ZEat {
 
         if (!eaten) {
           const {position} = camera;
+          const {size} = edible;
+          const edibleSize = Math.max(size[0], size[1], size[2]);
 
-          if (edible.getWorldPosition().distanceTo(position) < EAT_RADIUS) {
+          if (edible.getWorldPosition().distanceTo(position) < (edibleSize / 2)) {
             const {entityElement: edibleElement} = edible;
 
             const eatEvent = new CustomEvent('eat', {

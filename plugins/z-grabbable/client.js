@@ -349,7 +349,6 @@ class ZGrabbable {
               })()
             ])
             .filter(spec => spec !== null);
-console.log('check grabbables', {grabbables});
 
           if (grabbableDistanceSpecs.length > 0) {
             const {side: bestGrabbableSide, grabbable: bestGrabbable} = grabbableDistanceSpecs.sort((a, b) => a.distance - b.distance)[0];
