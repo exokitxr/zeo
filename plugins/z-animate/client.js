@@ -116,7 +116,9 @@ class ZAnimate {
                 }
 
                 committedMesh = _makeAnimateMesh();
-                committedMesh.load(j);
+                if (j !== undefined) {
+                  committedMesh.load(j);
+                }
                 scene.add(committedMesh);
               });
           } else {
@@ -204,11 +206,16 @@ class ZAnimate {
         const _makeAnimateLimbMesh = () => {
           const geometry = (() => {
             const geometry = new THREE.BufferGeometry();
+
             const positions = new Float32Array(MAX_NUM_POINTS * 3);
             geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+
             const rotations = new Float32Array(MAX_NUM_POINTS * 4);
             geometry.rotations = rotations;
+
             geometry.setDrawRange(0, 0);
+
+            return geometry;
           })();
           const material = new THREE.LineBasicMaterial({
             color: 0x0000FF,
@@ -227,15 +234,15 @@ class ZAnimate {
 
             for (let i = 0; i < numPoints; i++) {
               const basePositionIndex = i * 3;
-              positions[basePositionIndex + 0] = positions[positionsbasePositionIndex + 0];
-              positions[basePositionIndex + 1] = positions[positionsbasePositionIndex + 1];
-              positions[basePositionIndex + 2] = positions[positionsbasePositionIndex + 2];
+              positions[basePositionIndex + 0] = positionsJson[basePositionIndex + 0];
+              positions[basePositionIndex + 1] = positionsJson[basePositionIndex + 1];
+              positions[basePositionIndex + 2] = positionsJson[basePositionIndex + 2];
 
               const baseRotationIndex = i * 4;
-              rotations[baseRotationIndex + 0] = rotations[positionsbasePositionIndex + 0];
-              rotations[baseRotationIndex + 1] = rotations[positionsbasePositionIndex + 1];
-              rotations[baseRotationIndex + 2] = rotations[positionsbasePositionIndex + 2];
-              rotations[baseRotationIndex + 3] = rotations[positionsbasePositionIndex + 3];
+              rotations[baseRotationIndex + 0] = rotationsJson[baseRotationIndex + 0];
+              rotations[baseRotationIndex + 1] = rotationsJson[baseRotationIndex + 1];
+              rotations[baseRotationIndex + 2] = rotationsJson[baseRotationIndex + 2];
+              rotations[baseRotationIndex + 3] = rotationsJson[baseRotationIndex + 3];
             }
             positionsAttribute.needsUpdate = true;
             geometry.setDrawRange(0, numPoints);
