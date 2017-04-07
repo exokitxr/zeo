@@ -11,18 +11,6 @@ const menuRenderer = require('./lib/render/menu');
 const mod = require('mod-loop');
 const ConvexGeometry = require('./lib/three-extra/ConvexGeometry');
 
-const scripts = (() => {
-  const _button = s => `<span style="display: inline-block; margin: 0 5px; padding: 0 5px; border: 1px solid; border-radius: 5px;">${s}</span>`;
-
-  return [
-    {
-      html: `Welcome to Zeo! I'm Zee and I'll be your guide. Click the checkmark below to continue.`,
-    },
-    {
-      html: `You're using a mouse and keyboard, so use ${_button('W')}${_button('A')}${_button('S')}${_button('D')} to move and ${_button('LMB')} to click.`,
-    },
-  ];
-})();
 const AUDIO_FILES = [
   '03.ogg',
   '08.ogg',
@@ -65,6 +53,8 @@ class Raptor {
           };
 
           const THREEConvexGeometry = ConvexGeometry(THREE);
+
+          const forwardVector = new THREE.Vector3(0, 0, 1);
 
           const sqrt2 = Math.sqrt(2);
           const quentahedronGeometry = new THREEConvexGeometry([
@@ -123,6 +113,21 @@ class Raptor {
             shading: THREE.FlatShading,
           });
 
+          const scripts = (() => {
+            const _button = s => `<span style="display: inline-block; margin: 0 5px; padding: 0 5px; border: 1px solid; border-radius: 5px;">${s}</span>`;
+
+            return [
+              {
+                html: `Welcome to Zeo! I'm Zee and I'll be your guide. Click the checkmark below to continue.`,
+                endPosition: new THREE.Vector3(1, 0, 0),
+              },
+              {
+                html: `You're using a mouse and keyboard, so use ${_button('W')}${_button('A')}${_button('S')}${_button('D')} to move and ${_button('LMB')} to click.`,
+                endPosition: new THREE.Vector3(1, 0, 1),
+              },
+            ];
+          })();
+
           const avatarHoverStates = {
             left: ui.makeMenuHoverState(),
             right: ui.makeMenuHoverState(),
@@ -158,12 +163,12 @@ class Raptor {
               const entityApi = entityElement.getComponentApi();
               const entityObject = entityElement.getObject();
 
-              const _makeAvatarState = () => ({
+              const _makeAvatarSideState = () => ({
                 targeted: false,
               });
-              const avatarStates = {
-                left: _makeAvatarState(),
-                right: _makeAvatarState(),
+              const avatarSideStates = {
+                left: _makeAvatarSideState(),
+                right: _makeAvatarSideState(),
               };
               const avatarState = {
                 scriptIndex: 0,
@@ -354,9 +359,10 @@ class Raptor {
               };
               _updateText();
 
-              let animationStartWorldTime = null;
-              let cancelDialog = null;
+              let animationSpec = null;
               const _playScript = () => {
+                const {scriptIndex: scriptIndex2} = avatarState;
+
                 avatarState.characterIndex = 0;
                 _updateText();
 
@@ -377,23 +383,38 @@ class Raptor {
                       _recurse();
                     }, 20 + (Math.random() * (150 - 20)));
                   } else {
-                    if (cancelDialog) {
-                      cancelDialog();
-
-                      cancelDialog = null;
+                    if (timeout) {
+                      timeout = null;
                     }
+
+                    animationSpec.unref();
                   }
                 };
                 _recurse();
 
-                animationStartWorldTime = world.getWorldTime();
+                const {scriptIndex} = avatarState;
+                const script = scripts[scriptIndex];
+                const {endPosition = null} = script;
+                let refcount = 2;
+                animationSpec = {
+                  startTime: world.getWorldTime(),
+                  startPosition: raptorMesh.position.clone(),
+                  endPosition: endPosition,
+                  unref: () => {
+                    if (--refcount === 0) {
+                      animationSpec = null;
+                    }
+                  },
+                  /* cancel: () => {
+                    if (!audio.paused) {
+                      audio.pause();
+                    }
+                    if (timeout) {
+                      clearTimeout(timeout);
+                    }
 
-                cancelDialog = () => {
-                  audio.pause();
-
-                  clearTimeout(timeout);
-
-                  animationStartWorldTime = null;
+                    animationSpec = null;
+                  }, */
                 };
               };
 
@@ -434,8 +455,8 @@ class Raptor {
                   }
                 };
                 const _doAvatarClick = () => {
-                  const avatarState = avatarStates[side];
-                  const {targeted} = avatarState;
+                  const avatarSideState = avatarSideStates[side];
+                  const {targeted} = avatarSideState;
 
                   if (targeted) {
                     avatarState.scriptIndex = 0;
@@ -457,10 +478,10 @@ class Raptor {
 
                 const _updateTargets = () => {
                   SIDES.forEach(side => {
-                    const avatarState = avatarStates[side];
+                    const avatarSideState = avatarSideStates[side];
 
                     const targeted = (() => {
-                      if (animationStartWorldTime === null) {
+                      if (animationSpec === null) {
                         const gamepad = gamepads[side];
 
                         if (gamepad) {
@@ -476,9 +497,9 @@ class Raptor {
                         return false;
                       }
                     })();
-                    avatarState.targeted = targeted;
+                    avatarSideState.targeted = targeted;
                   });
-                  const targeted = SIDES.some(side => avatarStates[side].targeted);
+                  const targeted = SIDES.some(side => avatarSideStates[side].targeted);
                   boxMesh.visible = targeted;
                 };
                 const _updateAvatarGaze = () => {
@@ -500,41 +521,43 @@ class Raptor {
                   mouth.rotation.x = soundBody.getAmplitude() * Math.PI * 0.4;
                 };
                 const _updateAvatarAnimation = () => {
-                  const {leftLeg, rightLeg} = raptorMesh;
+                  const moveSpeed = 0.001;
+                  const legAnimationTime = 3 * 1000;
 
-                  if (animationStartWorldTime !== null) {
+                  if (animationSpec !== null) {
                     const currentWorldTime = world.getWorldTime();
-                    const worldTimeDiff = currentWorldTime - animationStartWorldTime;
-                    const worldTimeDiffSeconds = worldTimeDiff / 1000;
+                    const {startTime} = animationSpec;
+                    const worldTimeDiff = currentWorldTime - startTime;
+                    // const worldTimeDiffSeconds = worldTimeDiff / 1000;
 
-                    const moveAnimationTime = 5;
-                    const moveAnimationScale = 2;
-                    const worldTimeDiffSecondsMod = worldTimeDiffSeconds % moveAnimationTime;
-                    const moveAnimationDirection = (worldTimeDiffSecondsMod < (moveAnimationTime / 2)) ? 'forward' : 'back'
-                    const moveAnimationFactor = (() => {
-                      if (moveAnimationDirection === 'forward') {
-                        return worldTimeDiffSecondsMod / (moveAnimationTime / 2);
-                      } else if (moveAnimationDirection === 'back') {
-                        return 1 -((worldTimeDiffSecondsMod - (moveAnimationTime / 2)) / (moveAnimationTime / 2));
+                    const {startPosition, endPosition} = animationSpec;
+                    if (endPosition !== null) {
+                      const moveVector = endPosition.clone().sub(startPosition);
+                      const moveTime = moveVector.length() / moveSpeed;
+                      const moveFactor = worldTimeDiff / moveTime;
+
+                      const {leftLeg, rightLeg} = raptorMesh;
+
+                      if (moveFactor < 1) {
+                        raptorMesh.position.copy(
+                          startPosition.clone().add(moveVector.multiplyScalar(moveFactor))
+                        );
+                        raptorMesh.quaternion.setFromUnitVectors(forwardVector, moveVector.clone().normalize());
+
+                        const legAnimationFactor = Math.sin((worldTimeDiff / legAnimationTime) * (Math.PI * 2));
+                        leftLeg.rotation.x = legAnimationFactor * Math.PI * 0.3;
+                        rightLeg.rotation.x = -legAnimationFactor * Math.PI * 0.3;
+                      } else {
+                        raptorMesh.position.copy(endPosition);
+                        raptorMesh.quaternion.setFromUnitVectors(forwardVector, moveVector.clone().normalize());
+
+                        leftLeg.rotation.x = 0;
+                        rightLeg.rotation.x = 0;
+
+                        animationSpec.endPosition = null;
+                        animationSpec.unref();
                       }
-                    })();
-                    if (moveAnimationDirection === 'forward') {
-                      raptorMesh.rotation.y = Math.PI / 2;
-                    } else if (moveAnimationDirection === 'back') {
-                      raptorMesh.rotation.y = -Math.PI / 2;
                     }
-                    raptorMesh.position.x = MESH_OFFSET + (moveAnimationFactor * moveAnimationScale);
-
-                    const legAnimationTime = 3;
-                    const legAnimationFactor = Math.sin((worldTimeDiffSeconds / legAnimationTime) * (Math.PI * 2));
-                    leftLeg.rotation.x = legAnimationFactor * Math.PI * 0.3;
-                    rightLeg.rotation.x = -legAnimationFactor * Math.PI * 0.3;
-                  } else {
-                    raptorMesh.position.x = MESH_OFFSET;
-                    raptorMesh.rotation.y = 0;
-
-                    leftLeg.rotation.x = 0;
-                    rightLeg.rotation.x = 0;
                   }
                 };
                 const _updatePlane = () => {
