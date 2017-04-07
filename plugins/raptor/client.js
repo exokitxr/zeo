@@ -108,7 +108,7 @@ class Raptor {
             transparent: true,
           });
           const solidMaterial = new THREE.MeshPhongMaterial({
-            color: 0x4CAF50,
+            color: 0xF44336,
             shininess: 10,
             shading: THREE.FlatShading,
           });
