@@ -74,16 +74,18 @@ class ZAnimate {
 
         const toolMesh = (() => {
           const geometry = (() => {
-            const coreGeometries = [
+            const coreGeometry = new THREE.BoxBufferGeometry(0.02, 0.02, 0.05)
+              .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -(0.05 / 2)));
+            const sideGeometries = [
               new THREE.BoxBufferGeometry(0.02, 0.1, 0.02),
               new THREE.BoxBufferGeometry(0.1, 0.02, 0.02),
             ];
-            const tipGeometry = new THREE.CylinderBufferGeometry(0, sq(0.005), 0.02, 4, 1)
+            const tipGeometry = new THREE.CylinderBufferGeometry(0, sq(0.01), 0.02, 4, 1)
               .applyMatrix(new THREE.Matrix4().makeRotationY(-Math.PI * (3 / 12)))
               .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
               .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -0.05 - (0.02 / 2)));
 
-            return geometryUtils.concatBufferGeometry(coreGeometries.concat(tipGeometry));
+            return geometryUtils.concatBufferGeometry([coreGeometry].concat(sideGeometries).concat(tipGeometry));
           })();
           const material = new THREE.MeshPhongMaterial({
             color: 0x808080,
