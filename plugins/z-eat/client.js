@@ -1,5 +1,3 @@
-const EAT_RADIUS = 0.2;
-
 const SIDES = ['left', 'right'];
 
 class ZEat {
@@ -41,17 +39,17 @@ class ZEat {
       }
 
       update() {
-        const {entityObject} = this;
-        const position = entityObject.getWorldPosition();
-        const {size} = entityObject;
+        const {entityObject: edibleEntityObject, size} = this;
+        const ediblePosition = edibleEntityObject.getWorldPosition();
         const edibleSize = Math.max(size[0], size[1], size[2]);
 
         for (let i = 0; i < eaters.length; i++) {
           const eater = eaters[i];
-          const {size} = eater;
+          const {entityObject: eaterEntityObject, size} = eater;
+          const eaterPosition = eaterEntityObject.getWorldPosition();
           const eaterSize = Math.max(size[0], size[1], size[2]);
 
-          if (eater.getWorldPosition().distanceTo(position) < ((edibleSize / 2) + (eaterSize / 2))) {
+          if (eaterPosition.distanceTo(ediblePosition) < (edibleSize + eaterSize)) {
             const {entityElement: edibleElement} = this;
             const {entityElement: eaterElement} = eater;
 
@@ -90,6 +88,7 @@ class ZEat {
       entityAddedCallback(entityElement) {
         const edible = new Edible(entityElement, entityElement.getObject());
         entityElement.setComponentApi(edible);
+        edibles.push(edible);
       },
       entityRemovedCallback(entityElement) {
         const edible = entityElement.getComponentApi();
@@ -152,6 +151,7 @@ class ZEat {
       entityAddedCallback(entityElement) {
         const eater = new Eater(entityElement, entityElement.getObject());
         entityElement.setComponentApi(eater);
+        eaters.push(eater);
       },
       entityRemovedCallback(entityElement) {
         const eater = new Eater(entityElement, entityElement.getObject());
@@ -179,16 +179,17 @@ class ZEat {
     elements.registerComponent(this, eaterComponent);
 
     const _update = () => {
-      for (let i = 0; i < edibles.length i++) {
+      for (let i = 0; i < edibles.length; i++) {
         const edible = edibles[i];
         const eaten = edible.update();
 
         if (!eaten) {
           const {position} = camera;
-          const {size} = edible;
+          const {entityObject: edibleEntityObject, size} = edible;
+          const edibleWorldPosition = edibleEntityObject.getWorldPosition();
           const edibleSize = Math.max(size[0], size[1], size[2]);
 
-          if (edible.getWorldPosition().distanceTo(position) < (edibleSize / 2)) {
+          if (edibleWorldPosition.distanceTo(position) < edibleSize) {
             const {entityElement: edibleElement} = edible;
 
             const eatEvent = new CustomEvent('eat', {
@@ -198,13 +199,11 @@ class ZEat {
               },
             });
             edibleElement.dispatchEvent(eatEvent);
-
-            return true;
           }
         }
       }
     };
-    render.addListener('update', _update);
+    render.on('update', _update);
 
     this._cleanup = () => {
       elements.unregisterComponent(this, edibleComponent);

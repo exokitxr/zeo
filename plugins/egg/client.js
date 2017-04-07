@@ -163,6 +163,10 @@ class Egg {
           type: 'checkbox',
           value: true,
         },
+        edible: {
+          type: 'checkbox',
+          value: true,
+        },
       },
       entityAddedCallback(entityElement) {
         const entityApi = entityElement.getComponentApi();
@@ -323,11 +327,18 @@ class Egg {
           return result;
         })(); */
 
-        const _eat = e => {
+        let lastEatTime = null;
+        const _eat = () => {
           const {bites} = entityApi;
 
           if (bites > 0) {
-            entityElement.setAttribute('bites', JSON.stringify(bites));
+            const currentTime = Date.now();
+
+            if (lastEatTime === null || ((currentTime - lastEatTime) > (1 * 1000)) {
+              entityElement.setAttribute('bites', JSON.stringify(bites - 1));
+
+              lastEatTime = currentTime;
+            }
           }
         };
         entityElement.addEventListener('eat', _eat);
