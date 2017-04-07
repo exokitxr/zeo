@@ -89,7 +89,13 @@ const config = {
   hostname: hostname,
   altHostnames: [
     '*.' + hostname,
+    'test-' + hostname,
+    '*.test-' + hostname,
+
+    homeHost,
     '*.' + homeHost,
+    'test-' + homeHost,
+    '*.test-' + homeHost,
   ],
   port: port,
   publicDirectory: 'public',
