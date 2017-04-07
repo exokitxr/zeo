@@ -356,48 +356,40 @@ class Raptor {
               let animationStartWorldTime = null;
               let cancelDialog = null;
               const _toggleDialog = () => {
-                if (!cancelDialog) {
-                  let audio = null;
-                  let timeout = null;
-                  const _recurse = () => {
-                    const {textIndex, characterIndex, done} = avatarState;
+                let audio = null;
+                let timeout = null;
+                const _recurse = () => {
+                  const {textIndex, characterIndex, done} = avatarState;
 
-                    if (!done) {
-                      audio = audios[Math.floor(Math.random() * audios.length)];
-                      audio.currentTime = 0;
-                      audio.play();
+                  if (!done) {
+                    audio = audios[Math.floor(Math.random() * audios.length)];
+                    audio.currentTime = 0;
+                    audio.play();
 
-                      timeout = setTimeout(() => {
-                        _setText(textIndex, characterIndex + 1);
+                    timeout = setTimeout(() => {
+                      _setText(textIndex, characterIndex + 1);
 
-                        _recurse();
-                      }, 20 + (Math.random() * (150 - 20)));
-                    } else {
-                      if (cancelDialog) {
-                        cancelDialog();
+                      _recurse();
+                    }, 20 + (Math.random() * (150 - 20)));
+                  } else {
+                    if (cancelDialog) {
+                      cancelDialog();
 
-                        cancelDialog = null;
-                      }
+                      cancelDialog = null;
                     }
-                  };
-                  _recurse();
+                  }
+                };
+                _recurse();
 
-                  animationStartWorldTime = world.getWorldTime();
+                animationStartWorldTime = world.getWorldTime();
 
-                  cancelDialog = () => {
-                    audio.pause();
+                cancelDialog = () => {
+                  audio.pause();
 
-                    clearTimeout(timeout);
+                  clearTimeout(timeout);
 
-                    animationStartWorldTime = null;
-                  };
-                } else {
-                  cancelDialog();
-
-                  cancelDialog = null;
-
-                  _setText(0, 0);
-                }
+                  animationStartWorldTime = null;
+                };
               };
 
               const boxMesh = (() => {
@@ -439,6 +431,8 @@ class Raptor {
                   const {targeted} = avatarState;
 
                   if (targeted) {
+                    _setText(0, 0);
+
                     _toggleDialog();
 
                     return true;
