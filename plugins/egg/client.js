@@ -134,7 +134,7 @@ class Egg {
     });
 
     const eggComponent = {
-      selector: 'egg[position][bites]',
+      selector: 'egg[position][bites][size]',
       attributes: {
         position: {
           type: 'matrix',
@@ -150,6 +150,10 @@ class Egg {
           min: 0,
           max: 2,
           step: 1,
+        },
+        size: {
+          type: 'vector',
+          value: [0.2, 0.2, 0.2],
         },
         grabbable: {
           type: 'checkbox',
