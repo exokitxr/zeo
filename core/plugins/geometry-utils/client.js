@@ -1,4 +1,5 @@
 const LRUMap = require('./lib/lru');
+const functionutils = require('functionutils');
 
 const VOXEL_SIZE = 0.1;
 const NUM_PIXELS = 12;
@@ -13,10 +14,8 @@ const geometryUtils = archae => ({
 
     return archae.requestPlugins([
       '/core/engines/three',
-      '/core/plugins/function-utils',
     ]).then(([
       three,
-      functionUtils,
     ]) => {
       if (live) {
         const {THREE} = three;
@@ -390,7 +389,7 @@ const geometryUtils = archae => ({
 
           const positions = (() => {
             const geometryPositions = geometries.map(geometry => geometry.getAttribute('position').array);
-            const numPositions = functionUtils.sum(geometryPositions.map(geometryPosition => geometryPosition.length));
+            const numPositions = functionutils.sum(geometryPositions.map(geometryPosition => geometryPosition.length));
 
             const result = new Float32Array(numPositions);
             let i = 0;
@@ -402,7 +401,7 @@ const geometryUtils = archae => ({
           })();
           const normals = (() => {
             const geometryNormals = geometries.map(geometry => geometry.getAttribute('normal').array);
-            const numNormals = functionUtils.sum(geometryNormals.map(geometryNormal => geometryNormal.length));
+            const numNormals = functionutils.sum(geometryNormals.map(geometryNormal => geometryNormal.length));
 
             const result = new Float32Array(numNormals);
             let i = 0;
@@ -414,7 +413,7 @@ const geometryUtils = archae => ({
           })();
           const uvs = (() => {
             const geometryUvs = geometries.map(geometry => geometry.getAttribute('uv').array);
-            const numUvs = functionUtils.sum(geometryUvs.map(geometryUv => geometryUv.length));
+            const numUvs = functionutils.sum(geometryUvs.map(geometryUv => geometryUv.length));
 
             const result = new Float32Array(numUvs);
             let i = 0;

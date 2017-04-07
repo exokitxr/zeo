@@ -97,7 +97,6 @@ class Zeo {
             '/core/engines/fs',
             '/core/engines/somnifer',
             '/core/plugins/js-utils',
-            '/core/plugins/function-utils',
             '/core/plugins/geometry-utils',
             '/core/plugins/random-utils',
             '/core/plugins/text-utils',
@@ -128,7 +127,6 @@ class Zeo {
             fs,
             somnifer,
             jsUtils,
-            functionUtils,
             geometryUtils,
             randomUtils,
             textUtils,
@@ -630,7 +628,6 @@ class Zeo {
                     class ZeoUtilsApi {
                       constructor() {
                         this.js = jsUtils;
-                        this.function = functionUtils;
                         this.geometry = geometryUtils;
                         this.random = randomUtils;
                         this.text = textUtils;

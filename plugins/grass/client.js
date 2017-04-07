@@ -1,6 +1,8 @@
+import functionutils from 'functionutils';
+
 export default class Grass {
   mount() {
-    const {three: {THREE}, elements, utils: {function: functionUtils, random: {alea}}} = zeo;
+    const {three: {THREE}, elements, utils: {random: {alea}}} = zeo;
 
     const grassComponent = {
       selector: 'grass[position]',
@@ -362,7 +364,7 @@ export default class Grass {
                     }
                     return result;
                   })();
-                  const totalNumBladeParts = functionUtils.sum(bladePartsSpec);
+                  const totalNumBladeParts = functionutils.sum(bladePartsSpec);
                   const numTriangles = totalNumBladeParts * 3 * 2 * 2;
                   positions = (() => {
                     const result = new Float32Array(numTriangles * 3);
@@ -430,7 +432,7 @@ export default class Grass {
                     }
                     return result;
                   })();
-                  const totalNumBladeParts = functionUtils.sum(bladePartsSpec);
+                  const totalNumBladeParts = functionutils.sum(bladePartsSpec);
                   const numTriangles = totalNumBladeParts * 3 * 2 * 2;
                   positions = (() => {
                     const result = new Float32Array(numTriangles * 3);
@@ -532,7 +534,7 @@ export default class Grass {
                     }
                     return result;
                   })();
-                  const totalNumBladeParts = functionUtils.sum(bladePartsSpec);
+                  const totalNumBladeParts = functionutils.sum(bladePartsSpec);
                   const numTriangles = totalNumBladeParts * 3 * 2 * 2;
                   positions = (() => {
                     const result = new Float32Array(numTriangles * 3);
@@ -739,7 +741,7 @@ export default class Grass {
                     }
                     return result;
                   })();
-                  const totalNumBladeParts = functionUtils.sum(bladePartsSpec);
+                  const totalNumBladeParts = functionutils.sum(bladePartsSpec);
                   const numTriangles = totalNumBladeParts * 3 * 2 * 2;
                   positions = (() => {
                     const result = new Float32Array(numTriangles * 3);
