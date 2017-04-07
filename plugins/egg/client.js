@@ -165,6 +165,7 @@ class Egg {
         const entityObject = entityElement.getObject();
 
         entityApi.mesh = null;
+        entityApi.position = null;
         entityApi.bites = 2;
 
         const _render = () => {
@@ -175,10 +176,8 @@ class Egg {
 
           const newMesh = (() => {
             const result = new THREE.Object3D();
-            result.position.y = 1;
 
             const {bites} = entityApi;
-
             const shellMesh = (() => {
               const geometry = shellGeometries[bites].clone();
               const material = shellMaterial;
@@ -301,6 +300,18 @@ class Egg {
         entityApi.render = _render;
         _render();
 
+        const _resize = () => {
+          const {mesh, position} = entityApi;
+
+          if (mesh && position) {
+            mesh.position.set(position[0], position[1], position[2]);
+            mesh.quaternion.set(position[3], position[4], position[5], position[6]);
+            mesh.scale.set(position[7], position[8], position[9]);
+          }
+        };
+        entityApi.resize = _resize;
+        _resize();
+
         /* const soundBody = (() => {
           const result = sound.makeBody();
           result.setInputElements(audios);
@@ -331,15 +342,9 @@ class Egg {
 
         switch (name) {
           case 'position': {
-            const position = newValue;
+            entityApi.position = newValue;
 
-            if (position) {
-              const {mesh} = entityApi;
-
-              mesh.position.set(position[0], position[1], position[2]);
-              mesh.quaternion.set(position[3], position[4], position[5], position[6]);
-              mesh.scale.set(position[7], position[8], position[9]);
-            }
+            entityApi.resize();
 
             break;
           }
@@ -347,6 +352,7 @@ class Egg {
             entityApi.bites = newValue;
 
             entityApi.render();
+            entityApi.resize();
 
             break;
           }
