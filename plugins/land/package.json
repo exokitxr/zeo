@@ -1,0 +1,10 @@
+{
+  "name": "land",
+  "description": "A simple 3D land.",
+  "version": "0.0.1",
+  "keywords": [],
+  "client": "client.js",
+  "dependencies": {
+    "indev": "^3.0.9"
+  }
+}
