@@ -35,8 +35,13 @@ class Land {
       });
       callbacks.set(id, (err, result) => {
         if (!err) {
-          const array = new Float32Array(result);
-          accept(array);
+          const {positions, normals} = result;
+
+          const geometry = new THREE.BufferGeometry();
+          geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+          geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
+
+          accept(geometry);
         } else {
           reject(err);
         }
@@ -44,7 +49,7 @@ class Land {
     });
 
     return _requestHeightmap()
-      .then(heightmap => {
+      .then(landGeometry => {
         if (live) {
         const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
         const _decomposeMatrix = matrix => {
@@ -78,30 +83,7 @@ class Land {
             const entityObject = entityElement.getObject();
 
             const landMesh = (() => {
-              const geometry = (() => {
-                const size = 32;
-                const geometry = geometryUtils.unindexBufferGeometry(
-                  new THREE.PlaneBufferGeometry(size, size, size * 2, size * 2)
-                    .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
-                );
-
-                const positionsAttribute = geometry.getAttribute('position');
-                const {array: positions} = positionsAttribute;
-                const numPoints = positions.length / 3;
-                for (let i = 0; i < numPoints; i++) {
-                  const baseIndex = i * 3;
-                  const ax = positions[baseIndex + 0] + (size / 2);
-                  const ay = positions[baseIndex + 2] + (size / 2);
-                  const x = Math.floor(ax);
-                  const y = Math.floor(ay);
-                  const xr = Math.floor(ax / 0.5) % 2;
-                  const yr = Math.floor(ay / 0.5) % 2;
-                  positions[baseIndex + 1] = -0.25 + (heightmap[((y * (size * resolution * resolution))) + (yr * (size * resolution)) + (x * resolution) + xr] * 0.5);
-                }
-                positionsAttribute.needsUpdate = true;
-
-                return geometry;
-              })();
+              const geometry = landGeometry.clone();
               const material = landMaterial;
 
               const mesh = new THREE.Mesh(geometry, material);

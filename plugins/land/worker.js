@@ -1,3 +1,5 @@
+const THREE = require('three');
+const geometryutils = require('geometryutils')({THREE});
 const alea = require('alea');
 const indev = require('indev');
 
@@ -20,30 +22,39 @@ self.onmessage = e => {
       octaves: octaves,
     });
 
-    const array = new Float32Array((size + 1) * resolution * (size + 1) * resolution);
-    for (let y = 0; y <= size; y++) {
-      for (let yr = 0; yr < resolution; yr++) {
-        for (let x = 0; x <= size; x++) {
-          for (let xr = 0; xr < resolution; xr++) {
-            array[
-              ((y * (size * resolution * resolution))) + (yr * (size * resolution)) + (x * resolution) + xr
-            ] =
-              heightmapNoise.in2D(
-                -(size / 2) + x + (xr / resolution),
-                -(size / 2) + y + (yr / resolution)
-              );
-          }
-        }
-      }
+    const geometry = geometryutils.unindexBufferGeometry(
+      new THREE.PlaneBufferGeometry(size, size, size * 2, size * 2)
+        .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
+    );
+    const positions = geometry.getAttribute('position').array;
+    const normals = geometry.getAttribute('normal').array;
+
+    const numPoints = positions.length / 3;
+    for (let i = 0; i < numPoints; i++) {
+      const baseIndex = i * 3;
+      const ax = positions[baseIndex + 0] + (size / 2);
+      const ay = positions[baseIndex + 2] + (size / 2);
+      const x = Math.floor(ax);
+      const y = Math.floor(ay);
+      const xr = Math.floor(ax / 0.5) % 2;
+      const yr = Math.floor(ay / 0.5) % 2;
+      positions[baseIndex + 1] = -0.25 +
+        (heightmapNoise.in2D(
+          -(size / 2) + x + (xr / resolution),
+          -(size / 2) + y + (yr / resolution)
+        ) * 0.5);
     }
-    const {buffer: result} = array;
 
     self.postMessage({
       id: id,
       error: null,
-      result: result,
+      result: {
+        positions,
+        normals,
+      },
     }, [
-      result,
+      positions.buffer,
+      normals.buffer,
     ]);
   } else {
     console.warn('unknown method: ' + method);
