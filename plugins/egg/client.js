@@ -334,7 +334,7 @@ class Egg {
           if (bites > 0) {
             const currentTime = Date.now();
 
-            if (lastEatTime === null || ((currentTime - lastEatTime) > (1 * 1000)) {
+            if (lastEatTime === null || ((currentTime - lastEatTime) > (1 * 1000))) {
               entityElement.setAttribute('bites', JSON.stringify(bites - 1));
 
               lastEatTime = currentTime;
