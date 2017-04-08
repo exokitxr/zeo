@@ -1,0 +1,8 @@
+{
+  "name": "highlight",
+  "description": "Provides a drag box for highlighting a volume.",
+  "version": "0.0.1",
+  "keywords": [],
+  "client": "client.js",
+  "dependencies": {}
+}

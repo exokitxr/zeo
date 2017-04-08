@@ -105,10 +105,6 @@ class World {
             side: THREE.DoubleSide,
           });
 
-          const wireframeMaterial = new THREE.MeshBasicMaterial({
-            color: 0x808080,
-            wireframe: true,
-          });
           const wireframeHighlightMaterial = new THREE.MeshBasicMaterial({
             color: 0x0000FF,
             wireframe: true,
@@ -697,13 +693,6 @@ class World {
             tagMeshes: [],
             loaded: false,
           };
-          const _makeHighlightState = () => ({
-            startPoint: null,
-          });
-          const highlightStates = {
-            left: _makeHighlightState(),
-            right: _makeHighlightState(),
-          };
           const focusState = {
             type: '',
           };
@@ -822,22 +811,6 @@ class World {
             return result;
           })();
           rend.registerMenuMesh('worldMesh', worldMesh);
-
-          const _makeHighlightBoxMesh = () => {
-            const geometry = new THREE.BoxBufferGeometry(1, 1, 1);
-            const material = wireframeMaterial;
-
-            const mesh = new THREE.Mesh(geometry, material);
-            mesh.rotation.order = camera.rotation.order;
-            mesh.visible = false;
-            return mesh;
-          };
-          const highlightBoxMeshes = {
-            left: _makeHighlightBoxMesh(),
-            right: _makeHighlightBoxMesh(),
-          };
-          scene.add(highlightBoxMeshes.left);
-          scene.add(highlightBoxMeshes.right);
 
           const trashMesh = (() => {
             const geometry = trashGeometry;
@@ -1138,55 +1111,11 @@ class World {
                 return hovered || pointed;
               });
             };
-            const _updateHighlight = () => {
-              const {gamepads} = webvr.getStatus();
-
-              SIDES.forEach(side => {
-                const gamepad = gamepads[side];
-
-                if (gamepad) {
-                  const highlightState = highlightStates[side];
-                  const {startPoint} = highlightState;
-
-                  const highlightBoxMesh = highlightBoxMeshes[side];
-                  if (startPoint) {
-                    const {position: currentPoint} = gamepad;
-
-                    const size = currentPoint.clone()
-                      .sub(startPoint);
-                    size.x = Math.abs(size.x);
-                    size.y = Math.abs(size.y);
-                    size.z = Math.abs(size.z);
-
-                    if (size.x > 0.001 && size.y > 0.001 && size.z > 0.001) {
-                      const midPoint = startPoint.clone()
-                        .add(currentPoint)
-                        .divideScalar(2);
-
-                      highlightBoxMesh.position.copy(midPoint);
-                      highlightBoxMesh.scale.copy(size);
-                      if (!highlightBoxMesh.visible) {
-                        highlightBoxMesh.visible = true;
-                      }
-                    } else {
-                      if (highlightBoxMesh.visible) {
-                        highlightBoxMesh.visible = false;
-                      }
-                    }
-                  } else {
-                    if (highlightBoxMesh.visible) {
-                      highlightBoxMesh.visible = false;
-                    }
-                  }
-                }
-              });
-            };
 
             _updateMenuAnchors();
             _updateGrabbers();
             _updateNpmAnchors();
             _updateTrashAnchor();
-            _updateHighlight();
           };
           rend.on('update', _update);
 
@@ -1382,36 +1311,12 @@ class World {
                 return false;
               }
             };
-            const _startHighlight = () => {
-              const {gamepads} = webvr.getStatus();
-              const gamepad = gamepads[side];
 
-              if (gamepad) {
-                const {position: controllerPosition} = gamepad;
-
-                const highlightState = highlightStates[side];
-                highlightState.startPoint = controllerPosition.clone();
-
-                return true;
-              } else {
-                return false;
-              }
-            };
-
-            _grabWorldTagMesh() || _startHighlight();
+            _grabWorldTagMesh();
           };
           input.on('gripdown', _gripdown, {
             priority: -1,
           });
-
-          const _endHighlight = side => {
-            const highlightState = highlightStates[side];
-            highlightState.startPoint = null;
-
-            const highlightBoxMesh = highlightBoxMeshes[side];
-            highlightBoxMesh.visible = false;
-          };
-
           const _gripup = e => {
             const {side} = e;
 
@@ -1445,8 +1350,6 @@ class World {
                 _releaseTrashTag() || _releaseWorldTag();
               }
             }
-
-            _endHighlight(side);
           };
           input.on('gripup', _gripup, {
             priority: -1,
@@ -1516,9 +1419,6 @@ class World {
               item.id = _makeId();
               item.metadata.isStatic = false;
               _addTag(item, 'hand:' + side);
-
-              const highlightState = highlightStates[side];
-              highlightState.startPoint = null;
             }
           };
           tags.on('grabNpmTag', _grabNpmTag);
@@ -1530,8 +1430,6 @@ class World {
               const {id} = item;
 
               _moveTag('world:' + id, 'hand:' + side);
-
-              _endHighlight(side);
             }
           };
           tags.on('grabWorldTag', _grabWorldTag);
