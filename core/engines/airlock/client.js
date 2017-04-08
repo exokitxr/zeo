@@ -74,7 +74,6 @@ class Airlock {
 
     return Promise.all([
       archae.requestPlugins([
-        '/core/engines/bootstrap',
         '/core/engines/three',
         '/core/engines/config',
         '/core/utils/geometry-utils',
@@ -82,7 +81,6 @@ class Airlock {
       _requestCubeMapImgs(),
     ]).then(([
       [
-        bootstrap,
         three,
         config,
         geometryUtils,
