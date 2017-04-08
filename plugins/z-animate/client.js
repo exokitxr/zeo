@@ -142,11 +142,12 @@ class ZAnimate {
             mesh.position.y = 0.075;
             mesh.rotation.x = -Math.PI / 2;
             mesh.rotation.order = camera.rotation.order;
-            // mesh.visible = false;
+            mesh.visible = false;
 
             return mesh;
           })();
           result.add(planeMesh);
+          result.planeMesh = planeMesh;
 
           return result;
         })();
@@ -536,6 +537,7 @@ class ZAnimate {
         const _makeAnimateState = () => ({
           grabbed: false,
           drawing: false,
+          pressed: false,
           lastPointTime: 0,
         });
         const animateStates = {
@@ -556,6 +558,10 @@ class ZAnimate {
 
           animateState.grabbed = false;
           animateState.drawing = false;
+          animateState.pressed = false;
+
+          const {planeMesh} = toolMesh;
+          planeMesh.visible = false;
         };
         entityElement.addEventListener('release', _release);
         const _triggerdown = e => {
@@ -606,6 +612,40 @@ class ZAnimate {
           }
         };
         input.on('triggerup', _triggerup);
+        const _paddown = e => {
+          const {side} = e;
+          const animateState = animateStates[side];
+          const {grabbed} = animateState;
+
+          if (grabbed) {
+            animateState.pressed = true;
+
+            const {planeMesh} = toolMesh;
+            planeMesh.visible = true;
+
+            e.stopImmediatePropagation();
+          }
+        };
+        input.on('paddown', _paddown, {
+          priority: 1,
+        });
+        const _padup = e => {
+          const {side} = e;
+          const animateState = animateStates[side];
+          const {grabbed} = animateState;
+
+          if (grabbed) {
+            animateState.pressed = false;
+
+            const {planeMesh} = toolMesh;
+            planeMesh.visible = false;
+
+            e.stopImmediatePropagation();
+          }
+        };
+        input.on('padup', _padup, {
+          priority: 1,
+        });
 
         const _update = () => {
           const _updateDraw = () => {
@@ -676,6 +716,32 @@ class ZAnimate {
               }
             });
           };
+          const _updateMenu = () => {
+            const {gamepads} = pose.getStatus();
+
+            SIDES.forEach(side => {
+              const animateState = animateStates[side];
+              const {pressed} = animateState;
+
+              if (pressed) {
+                const gamepad = gamepads[side];
+
+                if (gamepad) {
+                  const {mode: oldMode} = toolState;
+                  const {axes} = gamepad;
+                  const newMode = axes[0] < 0 ? 'hmd' : 'controller';
+
+                  if (newMode !== oldMode) {
+                    toolState.mode = newMode;
+
+                    const {planeMesh} = toolMesh;
+                    const {page} = planeMesh;
+                    page.update();
+                  }
+                }
+              }
+            });
+          };
           const _updatePlayMesh = () => {
             if (playing && committedMesh) {
               playMesh.load(committedMesh);
@@ -685,6 +751,7 @@ class ZAnimate {
           };
 
           _updateDraw();
+          _updateMenu();
           _updatePlayMesh();
         };
         render.on('update', _update);
@@ -705,6 +772,8 @@ class ZAnimate {
 
           input.removeListener('triggerdown', _triggerdown);
           input.removeListener('triggerup', _triggerup);
+          input.removeListener('paddown', _paddown);
+          input.removeListener('padup', _padup);
 
           const {cancelSave} = entityApi;
           if (cancelSave) {
