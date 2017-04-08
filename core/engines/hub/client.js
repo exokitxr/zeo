@@ -27,7 +27,7 @@ import dataUrlToBlob from 'dataurl-to-blob';
 
 const SIDES = ['left', 'right'];
 
-class Hub {
+class Home {
   constructor(archae) {
     this._archae = archae;
   }
@@ -68,12 +68,12 @@ class Hub {
        );
       const _requestImgs = () => Promise.all([
         '/img/logo-large.png',
-        '/archae/hub/img/keyboard.png',
-        '/archae/hub/img/controller.png',
-        '/archae/hub/img/menu.png',
-        '/archae/hub/img/teleport.png',
-        '/archae/hub/img/cake.png',
-        '/archae/hub/img/server.png',
+        '/archae/home/img/keyboard.png',
+        '/archae/home/img/controller.png',
+        '/archae/home/img/menu.png',
+        '/archae/home/img/teleport.png',
+        '/archae/home/img/cake.png',
+        '/archae/home/img/server.png',
       ].map(_requestFileBlobData))
         .then(([
           logo,
@@ -180,7 +180,7 @@ class Hub {
               fontWeight: biolumi.getFontWeight(),
               fontStyle: biolumi.getFontStyle(),
             };
-            const hubState = {
+            const homeState = {
               page: 'tutorial:' + 0,
               remoteServers: [],
               localServers: [],
@@ -199,7 +199,7 @@ class Hub {
             };
 
             const _vrModeChange = vrMode => {
-              hubState.vrMode = vrMode;
+              homeState.vrMode = vrMode;
 
               _updatePages();
             };
@@ -211,7 +211,7 @@ class Hub {
 
               const planeMesh = (() => {
                 const mesh = menuUi.addPage(({
-                  hub: {
+                  home: {
                     page,
                     remoteServers,
                     localServers,
@@ -246,9 +246,9 @@ class Hub {
                   w: WIDTH,
                   h: HEIGHT,
                 }), {
-                  type: 'hub',
+                  type: 'home',
                   state: {
-                    hub: hubState,
+                    home: homeState,
                     focus: focusState,
                     imgs: imgs,
                   },
@@ -479,7 +479,7 @@ class Hub {
                   w: SERVER_WIDTH,
                   h: SERVER_HEIGHT,
                 }), {
-                  type: 'hub',
+                  type: 'home',
                   state: {
                     server: {
                       worldname: server.worldname,
@@ -576,7 +576,7 @@ class Hub {
               };
             };
             const _setPage = page => {
-              hubState.page = page;
+              homeState.page = page;
 
               _updatePages();
 
@@ -594,14 +594,14 @@ class Hub {
               }
             };
             const _openRemoteServersPage = () => {
-              hubState.loading = true;
+              homeState.loading = true;
 
               _setPage('remoteServers:' + 0);
 
               _requestRemoteServers() // XXX cancel these when switching pages
                 .then(servers => {
-                  hubState.remoteServers = servers;
-                  hubState.loading = false;
+                  homeState.remoteServers = servers;
+                  homeState.loading = false;
 
                   _updatePages();
                 })
@@ -610,14 +610,14 @@ class Hub {
                 });
             };
             const _openLocalServersPage = () => {
-              hubState.loading = true;
+              homeState.loading = true;
 
               _setPage('localServers:' + 0);
 
               _requestLocalServers()
                 .then(servers => {
-                  hubState.localServers = servers;
-                  hubState.loading = false;
+                  homeState.localServers = servers;
+                  homeState.loading = false;
 
                   _updatePages();
                 })
@@ -711,7 +711,7 @@ class Hub {
                                  _openLocalServersPage();
                               });
                           } else {
-                            const err = new Error('hub returned invalid status code: ' + status);
+                            const err = new Error('home backend returned invalid status code: ' + status);
                             return Promise.reject(err);
                           }
                         })
@@ -739,7 +739,7 @@ class Hub {
                                  _openLocalServersPage();
                               });
                           } else {
-                            const err = new Error('hub returned invalid status code: ' + status);
+                            const err = new Error('home backend returned invalid status code: ' + status);
                             return Promise.reject(err);
                           }
                         })
@@ -823,37 +823,37 @@ class Hub {
                 const onclick = (anchor && anchor.onclick) || '';
 
                 let match;
-                if (onclick === 'hub:next') {
-                  const {page} = hubState;
+                if (onclick === 'home:next') {
+                  const {page} = homeState;
                   const pageSpec = _parsePage(page);
                   _setPage([pageSpec.name, parseInt(pageSpec.args[0], 10) + 1].join(':'));
 
                   return true;
-                } else if (onclick === 'hub:back') {
-                  const {page} = hubState;
+                } else if (onclick === 'home:back') {
+                  const {page} = homeState;
                   _setPage([pageSpec.name, parseInt(pageSpec.args[0], 10) - 1].join(':'));
 
                   return true;
-                } else if (onclick === 'hub:tutorial') {
+                } else if (onclick === 'home:tutorial') {
                   _setPage('tutorial:' + 0);
 
                   return true;
-                } else if (onclick === 'hub:menu') {
+                } else if (onclick === 'home:menu') {
                   _setPage('tutorial:' + 4);
 
                   return true;
-                } else if (onclick === 'hub:remoteServers') {
+                } else if (onclick === 'home:remoteServers') {
                   _openRemoteServersPage();
 
                   return true;
-                } else if (onclick === 'hub:localServers') {
+                } else if (onclick === 'home:localServers') {
                   _openLocalServersPage();
 
                   return true;
                 } else if (match = onclick.match(/^remoteServer:([0-9]+)$/)) {
                   const index = parseInt(match[1], 10);
 
-                  const {remoteServers} = hubState;
+                  const {remoteServers} = homeState;
                   const server = remoteServers[index];
 
                   // remove old server meshes
@@ -871,7 +871,7 @@ class Hub {
                 } else if (match = onclick.match(/^localServer:([0-9]+)$/)) {
                   const index = parseInt(match[1], 10);
 
-                  const {localServers} = hubState;
+                  const {localServers} = homeState;
                   const server = localServers[index];
 
                   // remove old server meshes
@@ -887,13 +887,13 @@ class Hub {
 
                   return true;
                 } else if (onclick === 'servers:up') {
-                  const {page} = hubState;
+                  const {page} = homeState;
                   const pageSpec = _parsePage(page);
                   _setPage([pageSpec.name, parseInt(pageSpec.args[0], 10) - 1].join(':'));
 
                   return true;
                 } else if (onclick === 'servers:down') {
-                  const {page} = hubState;
+                  const {page} = homeState;
                   const pageSpec = _parsePage(page);
                   _setPage([pageSpec.name, parseInt(pageSpec.args[0], 10) + 1].join(':'));
 
@@ -909,7 +909,7 @@ class Hub {
 
                   return true;
                 } else if (onclick === 'createServer:submit') {
-                  const {inputText: worldname} = hubState;
+                  const {inputText: worldname} = homeState;
 
                   if (worldname) {
                     fetch('https://' + homeUrl + '/servers/create', {
@@ -934,7 +934,7 @@ class Hub {
                   }
 
                   return true;
-                } else if (onclick === 'hub:apiDocs') {
+                } else if (onclick === 'home:apiDocs') {
                   bootstrap.navigate('https://zeovr.io/docs');
 
                   return true; // can't happen
@@ -1040,7 +1040,7 @@ class Hub {
               const {type} = focusState;
 
               if (type === 'createServer') {
-                const applySpec = biolumi.applyStateKeyEvent(hubState, mainFontSpec, e);
+                const applySpec = biolumi.applyStateKeyEvent(homeState, mainFontSpec, e);
 
                 if (applySpec) {
                   const {commit} = applySpec;
@@ -1432,4 +1432,4 @@ const _copyToClipboard = s => {
   return successful;
 };
 
-module.exports = Hub;
+module.exports = Home;

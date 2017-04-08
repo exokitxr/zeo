@@ -1,7 +1,7 @@
 const path = require('path');
 const fs = require('fs');
 
-class Hub {
+class Home {
   constructor(archae) {
     this._archae = archae;
   }
@@ -10,15 +10,15 @@ class Hub {
     const {_archae: archae} = this;
     const {express, app} = archae.getCore();
 
-    const hubImgStatic = express.static(path.join(__dirname, 'lib', 'img'));
-    function serveHubImg(req, res, next) {
-      hubImgStatic(req, res, next);
+    const homeImgStatic = express.static(path.join(__dirname, 'lib', 'img'));
+    function serveHomeImg(req, res, next) {
+      homeImgStatic(req, res, next);
     }
-    app.use('/archae/hub/img', serveHubImg);
+    app.use('/archae/home/img', serveHomeImg);
 
     this._cleanup = () => {
       function removeMiddlewares(route, i, routes) {
-        if (route.handle.name === 'serveHubImg') {
+        if (route.handle.name === 'serveHomeImg') {
           routes.splice(i, 1);
         }
         if (route.route) {
@@ -34,4 +34,4 @@ class Hub {
   }
 }
 
-module.exports = Hub;
+module.exports = Home;

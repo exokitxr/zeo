@@ -108,7 +108,7 @@ const getTutorialPageSrc = (pageIndex, vrMode, flags, imgs) => {
             `}
           </div>
           <div style="display: flex; width: 100%;">
-            <a style="margin-left: auto; padding: 10px 15px; border: 1px solid; border-radius: 5px; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="hub:next">Next: Modules &gt;</a>
+            <a style="margin-left: auto; padding: 10px 15px; border: 1px solid; border-radius: 5px; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:next">Next: Modules &gt;</a>
           </div>
         </div>
       `;
@@ -131,8 +131,8 @@ const getTutorialPageSrc = (pageIndex, vrMode, flags, imgs) => {
             </p>
           </div>
           <div style="display: flex; width: 100%;">
-            <a style="padding: 10px 15px; border: 1px solid; border-radius: 5px; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="hub:back">&lt; Back</a>
-            <a style="margin-left: auto; padding: 10px 15px; border: 1px solid; border-radius: 5px; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="hub:next">Next: Servers &gt;</a>
+            <a style="padding: 10px 15px; border: 1px solid; border-radius: 5px; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:back">&lt; Back</a>
+            <a style="margin-left: auto; padding: 10px 15px; border: 1px solid; border-radius: 5px; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:next">Next: Servers &gt;</a>
           </div>
         </div>
       `;
@@ -152,8 +152,8 @@ const getTutorialPageSrc = (pageIndex, vrMode, flags, imgs) => {
             </p>
           </div>
           <div style="display: flex; width: 100%;">
-            <a style="padding: 10px 15px; border: 1px solid; border-radius: 5px; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="hub:back">&lt; Back</a>
-            <a style="margin-left: auto; padding: 10px 15px; border: 1px solid; border-radius: 5px; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="hub:next">Next: Servers &gt;</a>
+            <a style="padding: 10px 15px; border: 1px solid; border-radius: 5px; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:back">&lt; Back</a>
+            <a style="margin-left: auto; padding: 10px 15px; border: 1px solid; border-radius: 5px; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:next">Next: Servers &gt;</a>
           </div>
         </div>
       `;
@@ -167,29 +167,29 @@ const getTutorialPageSrc = (pageIndex, vrMode, flags, imgs) => {
             <p>Some servers are <b>LOCKED</b> until you get permission from the owner. Contact info for each server is written above the server, but you can <i>sneak a peek</i> through the orb.</p>
             <p style="margin-bottom: 0; font-size: 18px;">
               <i>
-                To <b>LEARN</b> how to code your own worlds, read the <a onclick="hub:apiDocs"><b>API Docs</b></a>.<br/>
+                To <b>LEARN</b> how to code your own worlds, read the <a onclick="home:apiDocs"><b>API Docs</b></a>.<br/>
                 To <b>HIDE</b> the tutorial, click the <b>NEXT BUTTON</b>.<br/>
               </i>
             </p>
           </div>
           <div style="display: flex; width: 100%;">
-            <a style="padding: 10px 15px; border: 1px solid; border-radius: 5px; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="hub:back">&lt; Back</a>
-            <a style="margin-left: auto; padding: 10px 15px; border: 1px solid; border-radius: 5px; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="hub:next">Next: Finish Tutorial &gt;</a>
+            <a style="padding: 10px 15px; border: 1px solid; border-radius: 5px; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:back">&lt; Back</a>
+            <a style="margin-left: auto; padding: 10px 15px; border: 1px solid; border-radius: 5px; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:next">Next: Finish Tutorial &gt;</a>
           </div>
         </div>
       `;
       case 4: return `\
         <div style="display: flex; height: 500px; justify-content: center; align-items: center;">
-          <a style="display: flex; width: 200px; height: 200px; margin-right: 30px; border: 1px solid; border-radius: 5px; font-weight: 400; text-decoration: none; flex-direction: column; justify-content: center; align-items: center;" onclick="hub:remoteServers">
+          <a style="display: flex; width: 200px; height: 200px; margin-right: 30px; border: 1px solid; border-radius: 5px; font-weight: 400; text-decoration: none; flex-direction: column; justify-content: center; align-items: center;" onclick="home:remoteServers">
             <div style="margin-bottom: 15px; font-size: 24px;">Remote servers</div>
             <img src="${earthBoxImgSrc}" width="100" height="100" />
           </a>
-          <a style="display: flex; width: 200px; height: 200px; margin-right: 30px; border: 1px solid; border-radius: 5px; font-weight: 400; text-decoration: none; flex-direction: column; justify-content: center; align-items: center;" onclick="hub:tutorial">
+          <a style="display: flex; width: 200px; height: 200px; margin-right: 30px; border: 1px solid; border-radius: 5px; font-weight: 400; text-decoration: none; flex-direction: column; justify-content: center; align-items: center;" onclick="home:tutorial">
             <div style="margin-bottom: 15px; font-size: 24px;">Tutorial</div>
             <img src="${viewCarouselImgSrc}" width="100" height="100" />
           </a>
           ${flags.localServers ?
-            `<a style="display: flex; width: 200px; height: 200px; margin-right: 30px; border: 1px solid; border-radius: 5px; font-weight: 400; text-decoration: none; flex-direction: column; justify-content: center; align-items: center;" onclick="hub:localServers">
+            `<a style="display: flex; width: 200px; height: 200px; margin-right: 30px; border: 1px solid; border-radius: 5px; font-weight: 400; text-decoration: none; flex-direction: column; justify-content: center; align-items: center;" onclick="home:localServers">
               <div style="margin-bottom: 15px; font-size: 24px;">Local servers</div>
               <img src="${serverPlusImgSrc}" width="100" height="100" />
             </a>`
@@ -216,7 +216,7 @@ const getTutorialPageSrc = (pageIndex, vrMode, flags, imgs) => {
                   </div>
                 </div>
               ` : ''}
-              <a style="position: relative; display: block; margin-bottom: 30px; background-color: #EEE; font-size: 40px; text-decoration: none; overflow: hidden;" onclick="hub:focus:search">
+              <a style="position: relative; display: block; margin-bottom: 30px; background-color: #EEE; font-size: 40px; text-decoration: none; overflow: hidden;" onclick="home:focus:search">
                 ${focusType === 'search' ? `<div style="position: absolute; width: 2px; top: 2px; bottom: 2px; left: ${inputValue}px; background-color: #333;"></div>` : ''}
                 <div>${searchText}</div>
                 ${!searchText ? `<div style="color: #AAA;">Search servers</div>` : ''}
@@ -227,7 +227,7 @@ const getTutorialPageSrc = (pageIndex, vrMode, flags, imgs) => {
           </div>
         </div>
         <div style="display: flex; margin-top: auto; padding: 100px; justify-content: center; align-items: center;">
-          <a style="display: inline-block; padding: 10px 15px; border: 1px solid; border-radius: 5px; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="hub:tutorial">Start tutorial</a>
+          <a style="display: inline-block; padding: 10px 15px; border: 1px solid; border-radius: 5px; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:tutorial">Start tutorial</a>
         </div>
       `; */
       default: return '';
@@ -295,7 +295,7 @@ const getRemoteServersSrc = (servers, pageIndex, loading) => {
     return `\
       <div style="display: flex; margin-right: auto; flex-direction: column;">
         <div style="display: flex; height: 100px; justify-content: center; align-items: center;">
-          <a style="display: block; width: 100px;" onclick="hub:menu">
+          <a style="display: block; width: 100px;" onclick="home:menu">
             <img src="${chevronLeftIconSrc}" width="80" height="80" />
           </a>
           <div style="margin-right: auto; font-size: 40px;">Remote servers</div>
@@ -333,7 +333,7 @@ const getLocalServersSrc = (servers, pageIndex, loading) => {
     return `\
       <div style="display: flex; margin-right: auto; flex-direction: column;">
         <div style="display: flex; height: 100px; justify-content: center; align-items: center;">
-          <a style="display: block; width: 100px;" onclick="hub:menu">
+          <a style="display: block; width: 100px;" onclick="home:menu">
             <img src="${chevronLeftIconSrc}" width="80" height="80" />
           </a>
           <div style="margin-right: auto; font-size: 40px;">Local servers</div>
@@ -374,7 +374,7 @@ const getCreateServerSrc = (inputText, inputIndex, inputValue, focusType) => {
   return `\
     <div>
       <div style="display: flex; height: 100px; justify-content: center; align-items: center;">
-        <a style="display: block; width: 100px;" onclick="hub:menu">
+        <a style="display: block; width: 100px;" onclick="home:menu">
           <img src="${chevronLeftIconSrc}" width="80" height="80" />
         </a>
         <div style="margin-right: auto; font-size: 40px;">Create server</div>
