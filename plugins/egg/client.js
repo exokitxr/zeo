@@ -176,7 +176,7 @@ class Egg {
         entityApi.position = null;
         entityApi.bites = 2;
 
-        const _render = () => {
+        const _render = () => { // XXX this mesh add/remove needs to handle the currently being grabbed case
           const {mesh: oldMesh} = entityApi;
           if (oldMesh) {
             entityObject.remove(oldMesh);
