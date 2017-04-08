@@ -37,7 +37,7 @@ class World {
 
   mount() {
     const {_archae: archae} = this;
-    const {metadata: {server: {enabled: serverEnabled}}} = archae;
+    const {metadata: {server: {url: serverUrl, enabled: serverEnabled}}} = archae;
 
     let live = true;
     this._cleanup = () => {
@@ -243,7 +243,7 @@ class World {
               reject(err);
             };
           });
-          const _requestStartTime = () => fetch('https://' + bootstrap.getCurrentServer().url + '/archae/world/start-time.json')
+          const _requestStartTime = () => fetch('https://' + serverUrl + '/archae/world/start-time.json')
             .then(res => res.json()
               .then(({startTime}) => startTime)
             );
@@ -620,7 +620,7 @@ class World {
             tags.message(detail);
           };
 
-          const _searchNpm = (q = '') => fetch('https://' + bootstrap.getCurrentServer().url + '/archae/rend/search?q=' + encodeURIComponent(q))
+          const _searchNpm = (q = '') => fetch('https://' + serverUrl + '/archae/rend/search?q=' + encodeURIComponent(q))
             .then(res => res.json());
           const _updateNpm = menuUtils.debounce(next => {
             const {inputText} = npmState;
