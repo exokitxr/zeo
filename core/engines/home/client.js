@@ -523,7 +523,7 @@ class Home {
             };
             _updatePages();
 
-            const _addTag = (side, srcTagMesh) => {
+            /* const _addTag = (side, srcTagMesh) => { // XXX needs to be broken up into module and entity cases
               const itemSpec = _clone(srcTagMesh.item);
               itemSpec.id = _makeId();
               const tagMesh = tags.makeTag(itemSpec);
@@ -538,6 +538,24 @@ class Home {
               tagMesh.quaternion.copy(controllerMeshQuaternion);
               tagMesh.scale.copy(oneVector);
               controllerMesh.add(tagMesh);
+            }; */
+            const _addModule = (side, srcTagMesh) => {
+              const itemSpec = _clone(srcTagMesh.item);
+              itemSpec.id = _makeId();
+              const tagMesh = tags.makeTag(itemSpec);
+
+              const grabState = grabStates[side];
+              grabState.tagMesh = tagMesh;
+
+              const controllers = cyborg.getControllers();
+              const controller = controllers[side];
+              const {mesh: controllerMesh} = controller;
+              tagMesh.position.copy(controllerMeshOffset);
+              tagMesh.quaternion.copy(controllerMeshQuaternion);
+              tagMesh.scale.copy(oneVector);
+              controllerMesh.add(tagMesh);
+
+              tags.reifyModule(tagMesh);
             };
 
             const _requestRemoteServers = () => fetch('https://' + hubUrl + '/servers/servers.json')
@@ -660,7 +678,7 @@ class Home {
                     if (intersectionPoint && !grabMesh) {
                       const {metadata: {tagMesh}} = tagHoverState;
 
-                      _addTag(side, tagMesh);
+                      _addModule(side, tagMesh); // XXX make this handle both tag and module cases
 
                       return true;
                     } else {
@@ -1007,7 +1025,8 @@ class Home {
               const {hoverMesh} = grabbableState;
 
               if (hoverMesh) {
-                _addTag(side, hoverMesh);
+                // XXX this needs to handle regular entity cases as well
+                _addModule(side, hoverMesh);
 
                 e.stopImmediatePropagation();
               }
@@ -1026,15 +1045,6 @@ class Home {
                 tagMesh.position.copy(position);
                 tagMesh.quaternion.copy(rotation);
                 tagMesh.scale.copy(scale);
-
-                const {item} = tagMesh;
-                const {attributes} = item;
-                if (attributes.position) {
-                  const matrixArray = position.toArray().concat(rotation.toArray()).concat(scale.toArray());
-                  item.setAttribute('position', matrixArray);
-                }
-
-                tags.reifyTag(tagMesh); // XXX make this work with the ECS
 
                 grabState.tagMesh = null;
 

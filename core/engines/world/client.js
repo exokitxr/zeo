@@ -189,11 +189,11 @@ class World {
 
                 tags.loadTags(itemSpecs);
 
-                /* for (let i = 0; i < itemSpecs.length; i++) {
+                for (let i = 0; i < itemSpecs.length; i++) { // XXX load via the above tags.loadTags() instead of this
                   const itemSpec = itemSpecs[i];
 
                   _handleAddTag(localUserId, itemSpec, 'world');
-                } */
+                }
               } else if (type === 'addTag') {
                 const {args: [userId, itemSpec, dst]} = m;
 
