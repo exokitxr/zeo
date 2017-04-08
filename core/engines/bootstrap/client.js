@@ -81,22 +81,6 @@ class Bootstrap {
               return serverJson;
             }
 
-            changeServer(serverUrl) {
-              if (serverUrl !== null) {
-                return _requestServer(serverUrl)
-                  .then(serverJsonData => {
-                    serverJson = serverJsonData;
-                  });
-              } else {
-                serverJson = {
-                  type: 'hub',
-                  url: null,
-                };
-
-                return Promise.resolve();
-              }
-            }
-
             isInIframe() {
               return isInIframe;
             }
