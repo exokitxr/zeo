@@ -1,6 +1,6 @@
 const SkyShader = require('./lib/three-extra/SkyShader');
 
-class Skybox {
+class DayNightSkybox {
   mount() {
     const {three: {THREE}, elements, render, world, utils: {geometry: geometryUtils}} = zeo;
 
@@ -250,4 +250,4 @@ class Skybox {
   }
 }
 
-module.exports = Skybox;
+module.exports = DayNightSkybox;
