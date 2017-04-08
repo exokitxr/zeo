@@ -45,22 +45,6 @@ class Airlock {
         reject(err);
       };
     });
-    /* const _requestCubeMapImgs = () => {
-      if (serverEnabled) {
-        return Promise.all(FACES.map(face => _requestImage('/servers/img/cubemap-' + face + '.png')))
-          .then(cubeMapImgs => {
-            const result = {};
-            for (let i = 0; i < cubeMapImgs.length; i++) {
-              const cubeMapImg = cubeMapImgs[i];
-              const face = FACES[i];
-              result[face] = cubeMapImg;
-            }
-            return result;
-          });
-      } else {
-        return Promise.resolve();
-      }
-    }; */
     const _requestCubeMapImgs = () => Promise.all(FACES.map((face, index) => _requestImage('/archae/airlock/img/skybox-' + (index + 1) + '.png')))
       .then(cubeMapImgs => {
         const result = {};
@@ -224,19 +208,6 @@ class Airlock {
           })();
           object.add(targetMesh);
 
-          /* const domeMesh = (() => {
-            const geometry = new THREE.SphereBufferGeometry(10 * 1024, 8, 3, 0, Math.PI * 2, 0, Math.PI / 2);
-            const material = new THREE.MeshBasicMaterial({
-              color: 0x808080,
-              wireframe: true,
-              transparent: true,
-            });
-
-            const mesh = new THREE.Mesh(geometry, material);
-            return mesh;
-          })();
-          object.add(domeMesh); */
-
           const skyboxMesh = (() => {
             const geometry = new THREE.BoxBufferGeometry(200000, 200000, 200000)
             geometry.applyMatrix(new THREE.Matrix4().makeRotationY(Math.PI));
@@ -276,44 +247,6 @@ class Airlock {
             return mesh;
           })();
           object.add(skyboxMesh);
-
-          /* const starsMesh = (() => {
-            const numStars = 128;
-
-            const geometry = (() => {
-              const result = new THREE.BufferGeometry();
-              const vertices = new Float32Array(numStars * 3);
-
-              const upVector = new THREE.Vector3(0, 1, 0);
-
-              for (let i = 0; i < numStars; i++) {
-                const radius = 10000 + (Math.random() * (20000 - 10000));
-                const magnitudeVector = new THREE.Vector3(0, radius, 0);
-                const directionVector = new THREE.Vector3(-0.5 + Math.random(), -0.5 + Math.random(), -0.5 + Math.random()).normalize();
-                const quaternion = new THREE.Quaternion().setFromUnitVectors(upVector, directionVector);
-
-                const position = magnitudeVector.clone().applyQuaternion(quaternion);
-
-                vertices[(i * 3) + 0] = position.x;
-                vertices[(i * 3) + 1] = position.y;
-                vertices[(i * 3) + 2] = position.z;
-              }
-              result.addAttribute('position', new THREE.BufferAttribute(vertices, 3));
-              return result;
-            })();
-            const material = new THREE.PointsMaterial({
-              color: 0xCCCCCC,
-              size: 50,
-              fog: false,
-              // opacity: 1,
-              // transparent: true,
-            });
-            const mesh = new THREE.Points(geometry, material);
-            // mesh.frustumCulled = false;
-            // mesh.renderOrder = 1;
-            return mesh;
-          })();
-          object.add(starsMesh); */
 
           return object;
         })();
