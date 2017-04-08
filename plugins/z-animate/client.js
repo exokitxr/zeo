@@ -363,7 +363,7 @@ class ZAnimate {
           const result = new THREE.Object3D();
 
           const _makePlayLimbMesh = () => {
-            const geometry = new THREE.CylinderBufferGeometry(0, sq(0.005), 0.02, 4, 1)
+            const geometry = new THREE.CylinderBufferGeometry(0, sq(0.01), 0.02, 4, 1)
               .applyMatrix(new THREE.Matrix4().makeRotationY(-Math.PI * (3 / 12)))
               .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
             const material = new THREE.MeshPhongMaterial({
@@ -394,6 +394,8 @@ class ZAnimate {
           result.add(hmdPlayMesh);
 
           result.load = committedMesh => {
+            const worldTime = world.getWorldTime();
+
             const _loadControllers = committedMesh => {
               if (committedMesh) {
                 const {controllerMeshes} = committedMesh;
@@ -564,7 +566,12 @@ class ZAnimate {
               const {drawing} = animateState;
 
               if (drawing) {
-                let {lastPoint} = mesh;
+                const {
+                  controllerMeshes: [
+                    leftControllerMesh, // XXX expand this to both controllers and HMD
+                  ],
+                } = mesh;
+                let {lastPoint} = leftControllerMesh;
 
                 if (lastPoint < MAX_NUM_POINTS) {
                   const {lastPointTime} = animateState;
@@ -572,11 +579,6 @@ class ZAnimate {
                   const endFrame = _getFrame(worldTime);
 
                   if (endFrame > startFrame) {
-                    const {
-                      controllerMeshes: [
-                        leftControllerMesh, // XXX expand this to both controllers and HMD
-                      ],
-                    } = mesh;
                     const {geometry} = leftControllerMesh;
                     const positionsAttribute = geometry.getAttribute('position');
                     const {array: positions} = positionsAttribute;
