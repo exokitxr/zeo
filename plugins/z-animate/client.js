@@ -1,3 +1,13 @@
+const {
+  WIDTH,
+  HEIGHT,
+
+  WORLD_WIDTH,
+  WORLD_HEIGHT,
+  WORLD_DEPTH,
+} = require('./lib/constants/constants');
+const menuRenderer = require('./lib/render/menu');
+
 const mod = require('mod-loop');
 const functionutils = require('functionutils');
 
@@ -15,7 +25,7 @@ const SIDES = ['left', 'right'];
 
 class ZAnimate {
   mount() {
-    const {three: {THREE, scene}, input, elements, render, pose, world, utils: {geometry: geometryUtils}} = zeo;
+    const {three: {THREE, scene, camera}, input, elements, render, pose, world, ui, utils: {geometry: geometryUtils}} = zeo;
 
     const worldElement = elements.getWorldElement();
 
@@ -73,27 +83,72 @@ class ZAnimate {
 
         entityApi.entityElement = entityElement;
 
+        const toolState = {
+          mode: 'controller',
+        };
+
         const toolMesh = (() => {
-          const geometry = (() => {
-            const coreGeometry = new THREE.BoxBufferGeometry(0.02, 0.02, 0.05)
-              .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -(0.05 / 2)));
-            const sideGeometries = [
-              new THREE.BoxBufferGeometry(0.02, 0.1, 0.02),
-              new THREE.BoxBufferGeometry(0.1, 0.02, 0.02),
-            ];
-            const tipGeometry = new THREE.CylinderBufferGeometry(0, sq(0.01), 0.02, 4, 1)
-              .applyMatrix(new THREE.Matrix4().makeRotationY(-Math.PI * (3 / 12)))
-              .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
-              .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -0.05 - (0.02 / 2)));
+          const result = new THREE.Object3D();
 
-            return geometryUtils.concatBufferGeometry([coreGeometry].concat(sideGeometries).concat(tipGeometry));
+          const solidMesh = (() => {
+            const geometry = (() => {
+              const coreGeometry = new THREE.BoxBufferGeometry(0.02, 0.02, 0.05)
+                .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -(0.05 / 2)));
+              const sideGeometries = [
+                new THREE.BoxBufferGeometry(0.02, 0.1, 0.02),
+                new THREE.BoxBufferGeometry(0.1, 0.02, 0.02),
+              ];
+              const tipGeometry = new THREE.CylinderBufferGeometry(0, sq(0.01), 0.02, 4, 1)
+                .applyMatrix(new THREE.Matrix4().makeRotationY(-Math.PI * (3 / 12)))
+                .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
+                .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -0.05 - (0.02 / 2)));
+
+              return geometryUtils.concatBufferGeometry([coreGeometry].concat(sideGeometries).concat(tipGeometry));
+            })();
+            const material = new THREE.MeshPhongMaterial({
+              color: 0x808080,
+            });
+
+            const mesh = new THREE.Mesh(geometry, material);
+            return mesh;
           })();
-          const material = new THREE.MeshPhongMaterial({
-            color: 0x808080,
-          });
+          result.add(solidMesh);
 
-          const mesh = new THREE.Mesh(geometry, material);
-          return mesh;
+          const planeMesh = (() => {
+            const menuUi = ui.makeUi({
+              width: WIDTH,
+              height: HEIGHT,
+              // color: [1, 1, 1, 0],
+            });
+            const mesh = menuUi.addPage(({
+              tool: toolState,
+            }) => ({
+              type: 'html',
+              src: menuRenderer.getToolMenuSrc({
+                tool: toolState,
+              }),
+              x: 0,
+              y: 0,
+              w: WIDTH,
+              h: HEIGHT,
+            }), {
+              type: 'tool',
+              state: {
+                tool: toolState,
+              },
+              worldWidth: WORLD_WIDTH,
+              worldHeight: WORLD_HEIGHT,
+            });
+            mesh.position.y = 0.075;
+            mesh.rotation.x = -Math.PI / 2;
+            mesh.rotation.order = camera.rotation.order;
+            // mesh.visible = false;
+
+            return mesh;
+          })();
+          result.add(planeMesh);
+
+          return result;
         })();
         entityObject.add(toolMesh);
 
