@@ -297,7 +297,7 @@ const _getAllPlugins = () => {
 
   return Promise.all([
     path.join(config.dirname, '/core/engines'),
-    path.join(config.dirname, '/core/plugins'),
+    path.join(config.dirname, '/core/utils'),
   ].map(_readdir))
     .then(files => _filterDirectories(_flatten(files))
       .then(directories =>

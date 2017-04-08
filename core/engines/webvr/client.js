@@ -81,7 +81,7 @@ class WebVR {
         '/core/engines/bootstrap',
         '/core/engines/input',
         '/core/engines/three',
-        '/core/plugins/js-utils',
+        '/core/utils/js-utils',
       ]),
       navigator.getVRDisplays(),
     ]).then(([

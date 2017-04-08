@@ -41,8 +41,8 @@ class Universe {
         '/core/engines/webvr',
         '/core/engines/biolumi',
         '/core/engines/rend',
-        '/core/plugins/geometry-utils',
-        '/core/plugins/random-utils',
+        '/core/utils/geometry-utils',
+        '/core/utils/random-utils',
       ]).then(([
         three,
         webvr,

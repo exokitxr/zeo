@@ -96,13 +96,13 @@ class Zeo {
             '/core/engines/npm',
             '/core/engines/fs',
             '/core/engines/somnifer',
-            '/core/plugins/js-utils',
-            '/core/plugins/geometry-utils',
-            '/core/plugins/random-utils',
-            '/core/plugins/text-utils',
-            '/core/plugins/menu-utils',
-            '/core/plugins/creature-utils',
-            '/core/plugins/sprite-utils',
+            '/core/utils/js-utils',
+            '/core/utils/geometry-utils',
+            '/core/utils/random-utils',
+            '/core/utils/text-utils',
+            '/core/utils/menu-utils',
+            '/core/utils/creature-utils',
+            '/core/utils/sprite-utils',
           ]);
 
           return _requestPlugins().then(([

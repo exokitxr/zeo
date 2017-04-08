@@ -7,7 +7,7 @@ class Nedb {
     const {_archae: archae} = this;
 
     return archae.requestPlugins([
-      '/core/plugins/js-utils',
+      '/core/utils/js-utils',
     ]).then(([
       jsUtils,
     ]) => {

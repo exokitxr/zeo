@@ -127,7 +127,7 @@ class Biolumi {
       archae.requestPlugins([
         '/core/engines/three',
         '/core/engines/anima',
-        '/core/plugins/geometry-utils',
+        '/core/utils/geometry-utils',
       ]),
       _requestTransparentImg(),
       _requestUiWorker(),

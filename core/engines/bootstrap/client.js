@@ -37,7 +37,7 @@ class Bootstrap {
 
     return Promise.all([
       archae.requestPlugins([
-        '/core/plugins/js-utils',
+        '/core/utils/js-utils',
       ]),
       _requestServer(hostUrl),
     ])

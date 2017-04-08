@@ -56,9 +56,9 @@ class Rend {
       '/core/engines/webvr',
       '/core/engines/biolumi',
       '/core/engines/anima',
-      '/core/plugins/js-utils',
-      '/core/plugins/geometry-utils',
-      '/core/plugins/creature-utils',
+      '/core/utils/js-utils',
+      '/core/utils/geometry-utils',
+      '/core/utils/creature-utils',
     ]).then(([
       bootstrap,
       input,

@@ -25,7 +25,7 @@ export default class VoiceChat {
         '/core/engines/rend',
         '/core/engines/config',
         '/core/engines/multiplayer',
-        '/core/plugins/js-utils',
+        '/core/utils/js-utils',
       ])
         .then(([
           bootstrap,

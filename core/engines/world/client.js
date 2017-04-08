@@ -57,7 +57,7 @@ class World {
         '/core/engines/rend',
         '/core/engines/tags',
         '/core/engines/fs',
-        '/core/plugins/geometry-utils',
+        '/core/utils/geometry-utils',
       ]).then(([
         bootstrap,
         three,

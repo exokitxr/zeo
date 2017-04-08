@@ -19,8 +19,8 @@ class Fs {
       '/core/engines/webvr',
       '/core/engines/biolumi',
       '/core/engines/rend',
-      '/core/plugins/js-utils',
-      '/core/plugins/creature-utils',
+      '/core/utils/js-utils',
+      '/core/utils/creature-utils',
     ]).then(([
       three,
       input,

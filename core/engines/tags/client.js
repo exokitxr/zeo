@@ -59,9 +59,9 @@ class Tags {
       '/core/engines/fs',
       '/core/engines/somnifer',
       '/core/engines/rend',
-      '/core/plugins/js-utils',
-      '/core/plugins/image-utils',
-      '/core/plugins/creature-utils',
+      '/core/utils/js-utils',
+      '/core/utils/image-utils',
+      '/core/utils/creature-utils',
     ])
       .then(([
         three,

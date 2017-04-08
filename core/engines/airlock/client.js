@@ -77,7 +77,7 @@ class Airlock {
         '/core/engines/bootstrap',
         '/core/engines/three',
         '/core/engines/config',
-        '/core/plugins/geometry-utils',
+        '/core/utils/geometry-utils',
       ]),
       _requestCubeMapImgs(),
     ]).then(([

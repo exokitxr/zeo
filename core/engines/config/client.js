@@ -71,7 +71,7 @@ class Config {
         '/core/engines/webvr',
         '/core/engines/biolumi',
         '/core/engines/rend',
-        '/core/plugins/js-utils',
+        '/core/utils/js-utils',
       ]).then(([
         bootstrap,
         input,
@@ -499,7 +499,7 @@ class Config {
       });
     } else {
       return archae.requestPlugins([
-        '/core/plugins/js-utils',
+        '/core/utils/js-utils',
       ]).then(([
         jsUtils,
       ]) => {

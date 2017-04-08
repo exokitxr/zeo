@@ -30,8 +30,8 @@ class Cyborg {
       '/core/engines/webvr',
       '/core/engines/rend',
       '/core/engines/multiplayer',
-      '/core/plugins/js-utils',
-      '/core/plugins/geometry-utils',
+      '/core/utils/js-utils',
+      '/core/utils/geometry-utils',
     ])
       .then(([
         three,

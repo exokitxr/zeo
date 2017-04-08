@@ -6,7 +6,7 @@ const textUtils = archae => ({
     };
 
     return archae.requestPlugins([
-      '/core/plugins/random-utils',
+      '/core/utils/random-utils',
     ]).then(([
       randomUtils,
     ]) => {

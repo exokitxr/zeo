@@ -24,7 +24,7 @@ class Multiplayer {
         '/core/engines/webvr',
         '/core/engines/login',
         '/core/engines/rend',
-        '/core/plugins/js-utils',
+        '/core/utils/js-utils',
       ]).then(([
         bootstrap,
         three,
