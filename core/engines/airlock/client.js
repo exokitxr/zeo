@@ -376,8 +376,6 @@ class Airlock {
 
           config.removeListener('config', _config);
         };
-
-        return {};
       }
     });
   }
