@@ -1,11 +1,15 @@
+const geometryutils = require('geometryutils');
+
 const SHADOW_MAP_SIZE = 2048;
 
-class Light {
+class DirectionalLight {
   mount() {
     const {three: {THREE}, elements} = zeo;
 
-    const lightComponent = {
-      selector: 'light[position][lookat][shadow]',
+    const geometryUtils = geometryutils({THREE});
+
+    const directionalLightComponent = {
+      selector: 'directional-light[position][lookat][color][intensity][shadow]',
       attributes: {
         position: {
           type: 'matrix',
@@ -23,6 +27,17 @@ class Light {
             1, 1, 1,
           ],
         },
+        color: {
+          type: 'color',
+          value: '#FFFFFF',
+        },
+        intensity: {
+          type: 'number',
+          value: 0.2,
+          min: 0,
+          max: 2,
+          step: 0.1,
+        },
         shadow: {
           type: 'checkbox',
           value: false,
@@ -33,15 +48,28 @@ class Light {
         const entityObject = entityElement.getObject();
 
         const mesh = (() => {
-          const geometry = new THREE.OctahedronBufferGeometry(0.1, 0);
+          const geometry = (() => {
+            const coreSize = 0.1;
+            const arrowSize = 0.05;
+            const offsetSize = coreSize + (arrowSize / 2);
+            const coreGeometry = new THREE.SphereBufferGeometry(coreSize, 0);
+            const arrowGeometry = new THREE.CylinderBufferGeometry(0, sq(arrowSize / 2), arrowSize, 4, 1)
+              .applyMatrix(new THREE.Matrix4().makeRotationY(-Math.PI * (3 / 12)))
+              .applyMatrix(new THREE.Matrix4().makeRotationX(Math.PI / 2))
+              .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, offsetSize));
+
+            return geometryUtils.concatBufferGeometry([coreGeometry, arrowGeometry]);
+          })();
           const material = new THREE.MeshPhongMaterial({
-            color: 0xFFC107,
-            shininess: 0,
+            color: 0xFFEB3B,
+            shininess: 10,
+            shading: THREE.FlatShading,
           });
 
           return new THREE.Mesh(geometry, material);
         })();
         entityObject.add(mesh);
+        entityApi.mesh = mesh;
 
         const light = (() => {
           const light = new THREE.DirectionalLight(0xFFFFFF, 2);
@@ -51,6 +79,7 @@ class Light {
           return light;
         })();
         entityObject.add(light);
+        entityApi.light = light;
 
         entityApi._cleanup = () => {
           entityObject.remove(mesh);
@@ -83,6 +112,20 @@ class Light {
 
             break;
           }
+          case 'color': {
+            const {light} = entityApi;
+
+            light.color.setStyle(newValue);
+
+            break;
+          }
+          case 'intensity': {
+            const {light} = entityApi;
+
+            light.intensity = newValue;
+
+            break;
+          }
           case 'shadow': {
             const {light} = entityApi;
 
@@ -93,10 +136,10 @@ class Light {
         }
       }
     }
-    elements.registerComponent(this, lightComponent);
+    elements.registerComponent(this, directionalLightComponent);
 
     this._cleanup = () => {
-      elements.unregisterComponent(this, lightComponent);
+      elements.unregisterComponent(this, directionalLightComponent);
     };
   }
 
@@ -105,4 +148,6 @@ class Light {
   }
 }
 
-module.exports = Light;
+const sq = n => Math.sqrt((n * n) + (n * n));
+
+module.exports = DirectionalLight;
