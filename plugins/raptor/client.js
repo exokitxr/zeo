@@ -70,6 +70,12 @@ class Raptor {
             new THREE.Vector3(0, -0.1, 0),
             new THREE.Vector3(0, 0, 0.1 / sqrt2),
           ]);
+          const tetrahedronInverseGeometry = new THREEConvexGeometry([
+            new THREE.Vector3(-0.1, 0, 0),
+            new THREE.Vector3(0.1, 0, 0),
+            new THREE.Vector3(0, -0.1, 0),
+            new THREE.Vector3(0, 0, -0.1 / sqrt2),
+          ]);
           const pyramidGeometry = new THREEConvexGeometry([
             new THREE.Vector3(-0.1, 0, -0.1),
             new THREE.Vector3(0.1, 0, -0.1),
@@ -298,13 +304,13 @@ class Raptor {
                 object.mouth = mouth;
 
                 const neck = (() => {
-                  const geometry = tetrahedronGeometry.clone();
+                  const geometry = tetrahedronInverseGeometry.clone();
                   const material = solidMaterial;
                   const mesh = new THREE.Mesh(geometry, material);
                   // mesh.position.y = -0.02;
                   // mesh.position.z = -0.1;
                   mesh.rotation.order = camera.rotation.order;
-                  mesh.scale.set(0.8, 0.8, -3);
+                  mesh.scale.set(0.8, 0.8, 3);
                   return mesh;
                 })();
                 object.add(neck);
