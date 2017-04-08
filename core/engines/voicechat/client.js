@@ -9,7 +9,7 @@ export default class VoiceChat {
 
   mount() {
     const {_archae: archae} = this;
-    const {metadata: {server: {enabled: serverEnabled}}} = archae;
+    const {metadata: {server: {url: serverUrl, enabled: serverEnabled}}} = archae;
 
     let live = true;
     this._cleanup = () => {
@@ -18,7 +18,6 @@ export default class VoiceChat {
 
     if (serverEnabled) {
       return archae.requestPlugins([
-        '/core/engines/bootstrap',
         '/core/engines/three',
         '/core/engines/somnifer',
         '/core/engines/login',
@@ -28,7 +27,6 @@ export default class VoiceChat {
         '/core/utils/js-utils',
       ])
         .then(([
-          bootstrap,
           three,
           somnifer,
           login,
@@ -62,7 +60,7 @@ export default class VoiceChat {
               const _requestCallInterface = () => new Promise((accept, reject) => {
                 let remotePeerId = null;
 
-                const connection = new WebSocket('wss://' + bootstrap.getCurrentServer().url + '/archae/voicechatWs?id=' + multiplayer.getId());
+                const connection = new WebSocket('wss://' + serverUrl + '/archae/voicechatWs?id=' + multiplayer.getId());
                 connection.binaryType = 'arraybuffer';
                 connection.onopen = () => {
                   accept(callInterface);

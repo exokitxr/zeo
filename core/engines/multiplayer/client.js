@@ -10,7 +10,7 @@ class Multiplayer {
 
   mount() {
     const {_archae: archae} = this;
-    const {metadata: {server: {enabled: serverEnabled}}} = archae;
+    const {metadata: {server: {url: serverUrl, enabled: serverEnabled}}} = archae;
 
     let live = true;
     this._cleanup = () => {
@@ -19,14 +19,12 @@ class Multiplayer {
 
     if (serverEnabled) {
       return archae.requestPlugins([
-        '/core/engines/bootstrap',
         '/core/engines/three',
         '/core/engines/webvr',
         '/core/engines/login',
         '/core/engines/rend',
         '/core/utils/js-utils',
       ]).then(([
-        bootstrap,
         three,
         webvr,
         login,
@@ -297,7 +295,7 @@ class Multiplayer {
                   enabled = false;
                 });
 
-                const connection = new WebSocket('wss://' + bootstrap.getCurrentServer().url + '/archae/multiplayerWs?id=' + encodeURIComponent(multiplayerApi.getId()) + '&username=' + encodeURIComponent(login.getUsername()));
+                const connection = new WebSocket('wss://' + serverUrl + '/archae/multiplayerWs?id=' + encodeURIComponent(multiplayerApi.getId()) + '&username=' + encodeURIComponent(login.getUsername()));
                 const queue = [];
                 connection.onopen = () => {
                   if (queue.length > 0) {

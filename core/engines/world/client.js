@@ -46,7 +46,6 @@ class World {
 
     if (serverEnabled) {
       return archae.requestPlugins([
-        '/core/engines/bootstrap',
         '/core/engines/three',
         '/core/engines/input',
         '/core/engines/webvr',
@@ -59,7 +58,6 @@ class World {
         '/core/engines/fs',
         '/core/utils/geometry-utils',
       ]).then(([
-        bootstrap,
         three,
         input,
         webvr,
@@ -179,7 +177,7 @@ class World {
           };
 
           const _requestConnection = () => new Promise((accept, reject) => {
-            const connection = new WebSocket('wss://' + bootstrap.getCurrentServer().url + '/archae/worldWs?id=' + localUserId);
+            const connection = new WebSocket('wss://' + serverUrl + '/archae/worldWs?id=' + localUserId);
             connection.onmessage = msg => {
               const m = JSON.parse(msg.data);
               const {type} = m;
