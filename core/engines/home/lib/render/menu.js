@@ -35,7 +35,7 @@ const downImg = require('../img/down');
 
 const makeRenderer = ({creatureUtils}) => {
 
-const getHubMenuSrc = ({page, remoteServers, localServers, inputText, inputIndex, inputValue, loading, vrMode, focusType, flags, imgs}) => {
+const getHomeMenuSrc = ({page, remoteServers, localServers, inputText, inputIndex, inputValue, loading, vrMode, focusType, flags, imgs}) => {
   const pageSpec = (() => {
     const split = page.split(':');
     const name = split[0];
@@ -52,6 +52,8 @@ const getHubMenuSrc = ({page, remoteServers, localServers, inputText, inputIndex
     const pageIndex = parseInt(args[0], 10);
 
     return getTutorialPageSrc(pageIndex, vrMode, flags, imgs);
+  } else if (name === 'menu') {
+    return getMenuPageSrc(flags, imgs);
   } else if (name === 'remoteServers') {
     const {args} = pageSpec;
     const pageIndex = parseInt(args[0], 10);
@@ -174,28 +176,8 @@ const getTutorialPageSrc = (pageIndex, vrMode, flags, imgs) => {
           </div>
           <div style="display: flex; width: 100%;">
             <a style="padding: 10px 15px; border: 1px solid; border-radius: 5px; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:back">&lt; Back</a>
-            <a style="margin-left: auto; padding: 10px 15px; border: 1px solid; border-radius: 5px; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:next">Next: Finish Tutorial &gt;</a>
+            <a style="margin-left: auto; padding: 10px 15px; border: 1px solid; border-radius: 5px; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:finishTutorial">Next: Finish Tutorial &gt;</a>
           </div>
-        </div>
-      `;
-      case 4: return `\
-        <div style="display: flex; height: 500px; justify-content: center; align-items: center;">
-          <a style="display: flex; width: 200px; height: 200px; margin-right: 30px; border: 1px solid; border-radius: 5px; font-weight: 400; text-decoration: none; flex-direction: column; justify-content: center; align-items: center;" onclick="home:remoteServers">
-            <div style="margin-bottom: 15px; font-size: 24px;">Remote servers</div>
-            <img src="${earthBoxImgSrc}" width="100" height="100" />
-          </a>
-          <a style="display: flex; width: 200px; height: 200px; margin-right: 30px; border: 1px solid; border-radius: 5px; font-weight: 400; text-decoration: none; flex-direction: column; justify-content: center; align-items: center;" onclick="home:tutorial">
-            <div style="margin-bottom: 15px; font-size: 24px;">Tutorial</div>
-            <img src="${viewCarouselImgSrc}" width="100" height="100" />
-          </a>
-          ${flags.localServers ?
-            `<a style="display: flex; width: 200px; height: 200px; margin-right: 30px; border: 1px solid; border-radius: 5px; font-weight: 400; text-decoration: none; flex-direction: column; justify-content: center; align-items: center;" onclick="home:localServers">
-              <div style="margin-bottom: 15px; font-size: 24px;">Local servers</div>
-              <img src="${serverPlusImgSrc}" width="100" height="100" />
-            </a>`
-          :
-            ''
-          }
         </div>
       `;
       /* `\
@@ -227,23 +209,46 @@ const getTutorialPageSrc = (pageIndex, vrMode, flags, imgs) => {
           </div>
         </div>
         <div style="display: flex; margin-top: auto; padding: 100px; justify-content: center; align-items: center;">
-          <a style="display: inline-block; padding: 10px 15px; border: 1px solid; border-radius: 5px; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:tutorial">Start tutorial</a>
+          <a style="display: inline-block; padding: 10px 15px; border: 1px solid; border-radius: 5px; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:unfinishTutorial">Start tutorial</a>
         </div>
       `; */
       default: return '';
     }
   })();
 
-  return `\
-    <div style="display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; flex-direction: column;">
-      <div style="display: flex; height: 100px; padding: 20px; background-color: #000; font-size: 40px; color: #FFF; box-sizing: border-box; align-items: center;">
-        <img src="${imgs.logo}" width="${100 / 2}" height="${158 / 2}" style="margin-right: 30px;" />
-        <div>zeo vr</div>
-      </div>
-      ${content}
-    </div>
-  `;
+  return getWrappedSrc(content, imgs);
 };
+
+const getMenuPageSrc = (flags, imgs) => getWrappedSrc(`\
+  <div style="display: flex; height: 500px; justify-content: center; align-items: center;">
+    <a style="display: flex; width: 200px; height: 200px; margin-right: 30px; border: 1px solid; border-radius: 5px; font-weight: 400; text-decoration: none; flex-direction: column; justify-content: center; align-items: center;" onclick="home:remoteServers">
+      <div style="margin-bottom: 15px; font-size: 24px;">Remote servers</div>
+      <img src="${earthBoxImgSrc}" width="100" height="100" />
+    </a>
+    <a style="display: flex; width: 200px; height: 200px; margin-right: 30px; border: 1px solid; border-radius: 5px; font-weight: 400; text-decoration: none; flex-direction: column; justify-content: center; align-items: center;" onclick="home:unfinishTutorial">
+      <div style="margin-bottom: 15px; font-size: 24px;">Tutorial</div>
+      <img src="${viewCarouselImgSrc}" width="100" height="100" />
+    </a>
+    ${flags.localServers ?
+      `<a style="display: flex; width: 200px; height: 200px; margin-right: 30px; border: 1px solid; border-radius: 5px; font-weight: 400; text-decoration: none; flex-direction: column; justify-content: center; align-items: center;" onclick="home:localServers">
+        <div style="margin-bottom: 15px; font-size: 24px;">Local servers</div>
+        <img src="${serverPlusImgSrc}" width="100" height="100" />
+      </a>`
+    :
+      ''
+    }
+  </div>
+`, imgs);
+
+const getWrappedSrc = (content, imgs) => `\
+  <div style="display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; flex-direction: column;">
+    <div style="display: flex; height: 100px; padding: 20px; background-color: #000; font-size: 40px; color: #FFF; box-sizing: border-box; align-items: center;">
+      <img src="${imgs.logo}" width="${100 / 2}" height="${158 / 2}" style="margin-right: 30px;" />
+      <div>zeo vr</div>
+    </div>
+    ${content}
+  </div>
+`;
 
 const getServerSrc = (server, index, prefix) => {
   const {worldname, url, running, users} = server;
@@ -448,7 +453,7 @@ const getServerTagSrc = ({worldname, url, running, local}) => {
 };
 
 return {
-  getHubMenuSrc,
+  getHomeMenuSrc,
   getServerTagSrc,
 };
 

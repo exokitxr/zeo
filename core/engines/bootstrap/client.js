@@ -49,6 +49,7 @@ class Bootstrap {
             }
           })();
           let vrMode = null;
+          let tutorialFlag = localStorage.getItem('tutorial') !== JSON.stringify(false);
           const userState = {
             username: null,
             world: null,
@@ -79,6 +80,15 @@ class Bootstrap {
               vrMode = newVrMode;
 
               this.emit('vrModeChange', vrMode);
+            }
+
+            getTutorialFlag() {
+              return tutorialFlag;
+            }
+
+            setTutorialFlag(newTutorialFlag) {
+              tutorialFlag = newTutorialFlag;
+              localStorage.setItem('tutorial', JSON.stringify(tutorialFlag));
             }
 
             navigate(url) {

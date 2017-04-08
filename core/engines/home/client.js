@@ -181,7 +181,7 @@ class Home {
               fontStyle: biolumi.getFontStyle(),
             };
             const homeState = {
-              page: 'tutorial:' + 0,
+              page: bootstrap.getTutorialFlag() ? ('tutorial:' + 0) : 'menu',
               remoteServers: [],
               localServers: [],
               username: '',
@@ -228,7 +228,7 @@ class Home {
                   imgs,
                 }) => ({
                   type: 'html',
-                  src: menuRenderer.getHubMenuSrc({
+                  src: menuRenderer.getHomeMenuSrc({
                     page,
                     remoteServers,
                     localServers,
@@ -834,12 +834,20 @@ class Home {
                   _setPage([pageSpec.name, parseInt(pageSpec.args[0], 10) - 1].join(':'));
 
                   return true;
-                } else if (onclick === 'home:tutorial') {
+                } if (onclick === 'home:finishTutorial') {
+                  bootstrap.setTutorialFlag(false);
+
+                  _setPage('menu');
+
+                  return true;
+                } else if (onclick === 'home:unfinishTutorial') {
+                  bootstrap.setTutorialFlag(true);
+
                   _setPage('tutorial:' + 0);
 
                   return true;
                 } else if (onclick === 'home:menu') {
-                  _setPage('tutorial:' + 4);
+                  _setPage('menu');
 
                   return true;
                 } else if (onclick === 'home:remoteServers') {
