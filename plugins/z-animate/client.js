@@ -1,4 +1,5 @@
 const mod = require('mod-loop');
+const functionutils = require('functionutils');
 
 const MAX_NUM_POINTS = 4 * 1024;
 const POINT_FRAME_RATE = 30;
@@ -14,7 +15,7 @@ const SIDES = ['left', 'right'];
 
 class ZAnimate {
   mount() {
-    const {three: {THREE, scene}, input, elements, render, pose, world, utils: {function: funUtils, geometry: geometryUtils}} = zeo;
+    const {three: {THREE, scene}, input, elements, render, pose, world, utils: {geometry: geometryUtils}} = zeo;
 
     const worldElement = elements.getWorldElement();
 
@@ -516,7 +517,7 @@ class ZAnimate {
               animateState.drawing = true;
               animateState.lastPointTime = world.getWorldTime() - POINT_FRAME_TIME;
 
-              const numDrawing = funUtils.sum(SIDES.map(side => Number(animateStates[side].drawing)));
+              const numDrawing = functionutils.sum(SIDES.map(side => Number(animateStates[side].drawing)));
               if (numDrawing === 1) {
                 mesh = _makeAnimateMesh();
 
@@ -537,7 +538,7 @@ class ZAnimate {
             if (grabbed) {
               animateState.drawing = false;
 
-              const numDrawing = funUtils.sum(SIDES.map(side => Number(animateStates[side].drawing)));
+              const numDrawing = functionutils.sum(SIDES.map(side => Number(animateStates[side].drawing)));
               if (numDrawing === 0) {
                 if (committedMesh) {
                   scene.remove(committedMesh);
