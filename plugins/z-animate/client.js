@@ -85,6 +85,7 @@ class ZAnimate {
 
         const toolState = {
           mode: 'controller',
+          lastPointTime: 0,
         };
 
         const toolMesh = (() => {
@@ -538,7 +539,6 @@ class ZAnimate {
           grabbed: false,
           drawing: false,
           pressed: false,
-          lastPointTime: 0,
         });
         const animateStates = {
           left: _makeAnimateState(),
@@ -574,7 +574,7 @@ class ZAnimate {
 
             if (grabbed) {
               animateState.drawing = true;
-              animateState.lastPointTime = world.getWorldTime() - POINT_FRAME_TIME;
+              toolState.lastPointTime = world.getWorldTime() - POINT_FRAME_TIME;
 
               const numDrawing = functionutils.sum(SIDES.map(side => Number(animateStates[side].drawing)));
               if (numDrawing === 1) {
@@ -647,74 +647,103 @@ class ZAnimate {
           priority: 1,
         });
 
+        const _draw = ({position, rotation, mesh, numFrames}) => {
+          let {lastPoint} = mesh;
+
+          if (lastPoint < MAX_NUM_POINTS) {
+            const {geometry} = mesh;
+            const positionsAttribute = geometry.getAttribute('position');
+            const {array: positions} = positionsAttribute;
+            const {rotations} = geometry;
+
+            for (let i = 0; i < numFrames; i++) {
+              // positions
+              const basePositionIndex = lastPoint * 3;
+              positions[basePositionIndex + 0] = position.x;
+              positions[basePositionIndex + 1] = position.y;
+              positions[basePositionIndex + 2] = position.z;
+
+              // rotations
+              const baseRotationIndex = lastPoint * 4;
+              rotations[baseRotationIndex + 0] = rotation.x;
+              rotations[baseRotationIndex + 1] = rotation.y;
+              rotations[baseRotationIndex + 2] = rotation.z;
+              rotations[baseRotationIndex + 3] = rotation.w;
+
+              lastPoint++;
+            }
+
+            positionsAttribute.needsUpdate = true;
+
+            mesh.lastPoint = lastPoint;
+            if (!mesh.visible) {
+              mesh.visible = true;
+            }
+
+            geometry.setDrawRange(0, lastPoint);
+          }
+        };
         const _update = () => {
           const _updateDraw = () => {
-            const {gamepads} = pose.getStatus();
-            const worldTime = world.getWorldTime();
+            if (mesh) {
+              const worldTime = world.getWorldTime();
+              const {lastPointTime} = toolState;
+              const startFrame = _getFrame(lastPointTime);
+              const endFrame = _getFrame(worldTime);
+              const numFrames = endFrame - startFrame;
 
-            SIDES.forEach(side => {
-              const animateState = animateStates[side];
-              const {drawing} = animateState;
-
-              if (drawing) {
+              if (numFrames > 0) {
+                const {hmd, gamepads} = pose.getStatus();
                 const {
-                  controllerMeshes: [
-                    leftControllerMesh, // XXX expand this to both controllers and HMD
-                  ],
+                  controllerMeshes,
+                  hmdMesh,
                 } = mesh;
-                let {lastPoint} = leftControllerMesh;
+                const {mode} = toolState;
 
-                if (lastPoint < MAX_NUM_POINTS) {
-                  const {lastPointTime} = animateState;
-                  const startFrame = _getFrame(lastPointTime);
-                  const endFrame = _getFrame(worldTime);
+                let drew = false;
+                SIDES.forEach((side, index) => {
+                  const animateState = animateStates[side];
+                  const {drawing} = animateState;
 
-                  if (endFrame > startFrame) {
-                    const {geometry} = leftControllerMesh;
-                    const positionsAttribute = geometry.getAttribute('position');
-                    const {array: positions} = positionsAttribute;
-                    const {rotations} = geometry;
+                  if (drawing || mode === 'hmd') {
+                    const controllerMesh = controllerMeshes[index];
 
                     const gamepad = gamepads[side];
                     const {position: controllerPosition, rotation: controllerRotation} = gamepad;
-
                     const toolTipPosition = controllerPosition.clone()
                       .add(new THREE.Vector3(0, 0, -0.05 - (0.02 / 2)).applyQuaternion(controllerRotation));
                     const toolTipRotation = controllerRotation;
 
-                    for (let currentFrame = startFrame; currentFrame < endFrame; currentFrame++) {
-                      // positions
-                      const basePositionIndex = lastPoint * 3;
-                      positions[basePositionIndex + 0] = toolTipPosition.x;
-                      positions[basePositionIndex + 1] = toolTipPosition.y;
-                      positions[basePositionIndex + 2] = toolTipPosition.z;
+                    _draw({
+                      position: toolTipPosition,
+                      rotation: toolTipRotation,
+                      mesh: controllerMesh,
+                      numFrames: numFrames,
+                    });
 
-                      // rotations
-                      const baseRotationIndex = lastPoint * 4;
-                      rotations[baseRotationIndex + 0] = toolTipRotation.x;
-                      rotations[baseRotationIndex + 1] = toolTipRotation.y;
-                      rotations[baseRotationIndex + 2] = toolTipRotation.z;
-                      rotations[baseRotationIndex + 3] = toolTipRotation.w;
-
-                      lastPoint++;
-                    }
-
-                    positionsAttribute.needsUpdate = true;
-
-                    leftControllerMesh.lastPoint = lastPoint;
-                    if (!leftControllerMesh.visible) {
-                      leftControllerMesh.visible = true;
-                    }
-
-                    geometry.setDrawRange(0, lastPoint);
-
-                    animateState.lastPointTime = worldTime;
-
-                    entityApi.save();
+                    drew = true;
                   }
+                });
+
+                if (mode === 'hmd') {
+                  const {position: hmdPosition, rotation: hmdRotation} = hmd;
+                  _draw({
+                    position: hmdPosition,
+                    rotation: hmdRotation,
+                    mesh: hmdMesh,
+                    numFrames: numFrames,
+                  });
+
+                  drew = true;
+                }
+
+                if (drew) {
+                  toolState.lastPointTime = worldTime;
+
+                  entityApi.save();
                 }
               }
-            });
+            }
           };
           const _updateMenu = () => {
             const {gamepads} = pose.getStatus();
