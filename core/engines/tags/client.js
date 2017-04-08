@@ -2802,6 +2802,15 @@ class Tags {
               return tagComponentApis[tag];
             }
 
+            loadTags(tagSpecs) {
+              for (let i = 0; i < tagSpecs.length; i++) {
+                const tagSpec = tagSpecs[i];
+                const {type} = tagSpec;
+
+                console.log('load tag', {type, tagSpec});
+              }
+            }
+
             getPointedTagMesh(side) {
               const hoverState = hoverStates[side];
               const {metadata} = hoverState;
@@ -2821,7 +2830,8 @@ class Tags {
 
             listen() {
               this.on('setAttribute', setAttrbuteSpec => {
-                if (this.listeners('setAttribute').length === 1) { // if this is the only listener, we need to set the attribute on ourselves
+                // if this is the only listener (i.e. a home with no world engine rather than a server), we need to set the attribute on ourselves
+                if (this.listeners('setAttribute').length === 1) {
                   const {id, name, value} = setAttrbuteSpec;
                   const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
                   const {item} = tagMesh;

@@ -176,6 +176,8 @@ class World {
             right: _makeTrashState(),
           };
 
+          // XXX
+
           const _requestConnection = () => new Promise((accept, reject) => {
             const connection = new WebSocket('wss://' + serverUrl + '/archae/worldWs?id=' + localUserId);
             connection.onmessage = msg => {
@@ -185,11 +187,13 @@ class World {
               if (type === 'init') {
                 const {args: [itemSpecs]} = m;
 
-                for (let i = 0; i < itemSpecs.length; i++) {
+                tags.loadTags(itemSpecs);
+
+                /* for (let i = 0; i < itemSpecs.length; i++) {
                   const itemSpec = itemSpecs[i];
 
                   _handleAddTag(localUserId, itemSpec, 'world');
-                }
+                } */
               } else if (type === 'addTag') {
                 const {args: [userId, itemSpec, dst]} = m;
 
