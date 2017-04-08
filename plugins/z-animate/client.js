@@ -146,11 +146,7 @@ class ZAnimate {
               const {file} = entityApi;
 
               const j = committedMesh.save();
-              const b = new Blob([
-                JSON.stringify(j),
-              ], {
-                type: 'application/json',
-              });
+              const s = JSON.stringify(j);
 
               const _cleanup = () => {
                 entityApi.cancelSave = null;
@@ -163,7 +159,7 @@ class ZAnimate {
               };
 
               let live = true;
-              file.write(b)
+              file.write(s)
                 .then(() => {
                   if (live) {
                     const broadcastEvent = new CustomEvent('broadcast', {
