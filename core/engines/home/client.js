@@ -539,6 +539,12 @@ class Home {
 
               scene.add(tagMesh);
             };
+            const _loadEntity = itemSpec => {
+              const tagMesh = tags.makeTag(itemSpec);
+              tags.reifyEntity(tagMesh);
+
+              scene.add(tagMesh);
+            };
             const _addNpmModule = (side, srcTagMesh) => {
               const itemSpec = _clone(srcTagMesh.item);
               itemSpec.id = _makeId();
@@ -1132,7 +1138,7 @@ class Home {
                 if (type === 'module') {
                   _loadModule(itemSpec);
                 } else if (type === 'entity') {
-                  // XXX add support for this
+                  _loadEntity(itemSpec);
                 }
               }
             };
