@@ -23,7 +23,6 @@ import {
   DEFAULT_USER_HEIGHT,
 } from './lib/constants/menu';
 import menuRender from './lib/render/menu';
-import dataUrlToBlob from 'dataurl-to-blob';
 
 const SIDES = ['left', 'right'];
 
