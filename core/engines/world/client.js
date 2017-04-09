@@ -1513,35 +1513,6 @@ class World {
                 console.warn(err);
               });
           };
-          /* const _disconnect = () => {
-            const _unintializeConnection = () => {
-              if (connection) {
-                connection.close();
-              }
-            };
-            const _uninitializeTags = () => {
-              const _uninitializeElements = () => {
-                const elementTagMeshes = elementManager.getTagMeshes().slice();
-
-                for (let i = 0; i < elementTagMeshes.length; i++) {
-                  const tagMesh = elementTagMeshes[i];
-
-                  elementManager.remove(tagMesh);
-
-                  tags.destroyTag(tagMesh);
-                }
-              };
-
-              _uninitializeElements();
-            };
-            const _uninitializeTimer = () => {
-              worldTimer.setStartTime(0);
-            };
-
-            _unintializeConnection();
-            _uninitializeTags();
-            _uninitializeTimer();
-          }; */
 
           _connect();
 
