@@ -314,6 +314,7 @@ class Home {
             };
 
             const _makeGrabbableState = () => ({
+              pointerMesh: null,
               hoverMesh: null,
             });
             const grabbableStates = {
@@ -670,15 +671,13 @@ class Home {
                   const {buttons: {grip: {pressed: gripPressed}}} = gamepad;
 
                   if (gripPressed) {
-                    const tagHoverState = tagHoverStates[side];
-                    const {intersectionPoint} = tagHoverState;
+                    const grabbableState = grabbableStates[side];
                     const grabState = grabStates[side];
+                    const {pointerMesh} = grabbableState;
                     const {tagMesh: grabMesh} = grabState;
 
-                    if (intersectionPoint && !grabMesh) {
-                      const {metadata: {tagMesh}} = tagHoverState;
-
-                      _addModule(side, tagMesh); // XXX make this handle both tag and module cases
+                    if (pointerMesh && !grabMesh) {
+                      _addModule(side, pointerMesh); // XXX make this handle both tag and module cases
 
                       return true;
                     } else {
@@ -1119,112 +1118,30 @@ class Home {
                   }
                 });
               };
-              /* const _updateTagGrabAnchors = () => { // XXX delegate this to the tags engine
-                const {cakeTagMesh} = menuMesh;
-                const {visible} = menuMesh;
-
-                if (visible) {
-                  const _getHoverGrabbable = (side) => {
-                    const grabState = grabStates[side];
-                    const {tagMesh: grabMesh} = grabState;
-
-                    if (!grabMesh) {
-                      const {gamepads} = webvr.getStatus();
-                      const gamepad = gamepads[side];
-
-                      if (gamepad) {
-                        const {position: controllerPosition} = gamepad;
-                        const tagMeshDistanceSpecs = tagMeshes.map(tagMesh => {
-                          const {position: tagMeshPosition} = _decomposeObjectMatrixWorld(tagMesh);
-                          const distance = controllerPosition.distanceTo(tagMeshPosition);
-
-                          if (distance <= 0.2) {
-                            return {
-                              tagMesh,
-                              distance,
-                            };
-                          } else {
-                            return null;
-                          }
-                        });
-                      } else {
-                        return null;
-                      }
-                    } else {
-                      return null;
-                    }
-                  };
-
-                  SIDES.forEach(side => {
-                    const grabbableState = grabbableStates[side];
-                    const grabBoxMesh = grabBoxMeshes[side];
-
-                    const hoverMesh = _getHoverGrabbable(side);
-
-                    grabbableState.hoverMesh = hoverMesh;
-
-                    if (hoverMesh) {
-                      const {position: tagMeshPosition, rotation: tagMeshRotation, scale: tagMeshScale} = _decomposeObjectMatrixWorld(hoverMesh);
-                      grabBoxMesh.position.copy(tagMeshPosition);
-                      grabBoxMesh.quaternion.copy(tagMeshRotation);
-                      grabBoxMesh.scale.copy(tagMeshScale);
-                      grabBoxMesh.visible = true;
-                    } else {
-                      grabbableState.hoverMesh = null;
-                      grabBoxMesh.visible = false;
-                    }
-                  });
-                } else {
-                  SIDES.forEach(side => {
-                    const grabbableState = grabbableStates[side];
-                    const grabBoxMesh = grabBoxMeshes[side];
-
-                    grabbableState.hoverMesh = null;
-                    grabBoxMesh.visible = false;
-                  });
-                }
-              }; */
               const _updateTagPointerAnchors = () => {
-                const {gamepads} = webvr.getStatus();
-                const {cakeTagMesh} = menuMesh;
-
                 SIDES.forEach(side => {
-                  const {visible} = cakeTagMesh;
-                  const gamepad = gamepads[side];
-                  const tagHoverState = tagHoverStates[side];
-                  const tagDotMesh = tagDotMeshes[side];
-                  const tagBoxMesh = tagBoxMeshes[side];
+                  const grabbableState = grabbableStates[side];
 
-                  if (visible && gamepad) {
-                    const {position: controllerPosition, rotation: controllerRotation} = gamepad;
+                  const pointerMesh = tags.getPointedTagMesh(side);
+                  grabbableState.pointerMesh = pointerMesh;
+                });
+              };
+              const _updateTagGrabAnchors = () => {
+                SIDES.forEach(side => {
+                  const grabbableState = grabbableStates[side];
+                  const grabBoxMesh = grabBoxMeshes[side];
 
-                    const {planeMesh, initialScale} = cakeTagMesh;
-                    const matrixObject = _decomposeObjectMatrixWorld(planeMesh);
-                    const {page} = planeMesh;
+                  const hoverMesh = tags.getHoveredTagMesh(side);
+                  grabbableState.hoverMesh = hoverMesh;
 
-                    biolumi.updateAnchors({
-                      objects: [{
-                        matrixObject: matrixObject,
-                        page: page,
-                        width: TAGS_WIDTH,
-                        height: TAGS_HEIGHT,
-                        worldWidth: TAGS_WORLD_WIDTH * initialScale.x,
-                        worldHeight: TAGS_WORLD_HEIGHT * initialScale.y,
-                        worldDepth: TAGS_WORLD_DEPTH * initialScale.z,
-                        metadata: {
-                          tagMesh: cakeTagMesh,
-                        },
-                      }],
-                      hoverState: tagHoverState,
-                      dotMesh: tagDotMesh,
-                      boxMesh: tagBoxMesh,
-                      controllerPosition,
-                      controllerRotation,
-                    });
+                  if (hoverMesh) {
+                    const {position: tagMeshPosition, rotation: tagMeshRotation, scale: tagMeshScale} = _decomposeObjectMatrixWorld(hoverMesh);
+                    grabBoxMesh.position.copy(tagMeshPosition);
+                    grabBoxMesh.quaternion.copy(tagMeshRotation);
+                    grabBoxMesh.scale.copy(tagMeshScale);
+                    grabBoxMesh.visible = true;
                   } else {
-                    tagHoverState.intersectionPoint = null;
-                    tagDotMesh.visible = false;
-                    tagBoxMesh.visible = false;
+                    grabBoxMesh.visible = false;
                   }
                 });
               };
@@ -1373,8 +1290,8 @@ class Home {
               };
 
               _updateMenuAnchors();
-              // _updateTagGrabAnchors();
               _updateTagPointerAnchors();
+              _updateTagGrabAnchors();
               _updateEnvAnchors();
               _updateServerMeshes();
               _updateServerMeshAnchors();
