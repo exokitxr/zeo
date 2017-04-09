@@ -31,11 +31,22 @@ class Bootstrap {
     const initialUrl = document.location.href;
     const hostUrl = serverEnabled ? serverUrl : hubUrl;
 
-    return archae.requestPlugins([
-      '/core/utils/js-utils',
+    const _requestStartTime = () => fetch('/archae/bootstrap/start-time.json')
+      .then(res => res.json()
+        .then(({startTime}) => startTime)
+      );
+
+    return Promise.all([
+      archae.requestPlugins([
+        '/core/utils/js-utils',
+      ]),
+      _requestStartTime(),
     ])
       .then(([
-        jsUtils
+        [
+          jsUtils,
+        ],
+        startTime,
       ]) => {
         if (live) {
           const {events} = jsUtils;
@@ -50,6 +61,19 @@ class Bootstrap {
           })();
           let vrMode = null;
           let tutorialFlag = localStorage.getItem('tutorial') !== JSON.stringify(false);
+          class WorldTimer {
+            constructor(startTime = 0) {
+              this.startTime = startTime;
+            }
+
+            getWorldTime() {
+              const {startTime} = this;
+              const now = Date.now();
+              const worldTime = now - startTime;
+              return worldTime;
+            }
+          }
+          const worldTimer = new WorldTimer(startTime);
           const userState = {
             username: null,
             world: null,
@@ -89,6 +113,10 @@ class Bootstrap {
             setTutorialFlag(newTutorialFlag) {
               tutorialFlag = newTutorialFlag;
               localStorage.setItem('tutorial', JSON.stringify(tutorialFlag));
+            }
+
+            getWorldTime() {
+              return worldTimer.getWorldTime();
             }
 
             navigate(url) {

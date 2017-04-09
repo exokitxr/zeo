@@ -213,10 +213,6 @@ class World {
               reject(err);
             };
           });
-          const _requestStartTime = () => fetch('https://' + serverUrl + '/archae/world/start-time.json')
-            .then(res => res.json()
-              .then(({startTime}) => startTime)
-            );
           const _getInFrontOfCameraMatrix = () => {
             const {hmd} = webvr.getStatus();
             const {position, rotation} = hmd;
@@ -346,24 +342,6 @@ class World {
             }
           }
           const remoteGrabManager = new RemoteGrabManager();
-
-          class WorldTimer {
-            constructor(startTime = 0) {
-              this.startTime = startTime;
-            }
-
-            getWorldTime() {
-              const {startTime} = this;
-              const now = Date.now();
-              const worldTime = now - startTime;
-              return worldTime;
-            }
-
-            setStartTime(startTime) {
-              this.startTime = startTime;
-            }
-          }
-          const worldTimer = new WorldTimer();
 
           const requestHandlers = new Map();
           const _request = (method, args, cb) => {
@@ -1524,20 +1502,12 @@ class World {
 
           let connection = null;
           const _connect = () => {
-            Promise.all([
-              _requestConnection(),
-              _requestStartTime(),
-            ])
-              .then(([
-                newConnection,
-                startTime,
-              ]) => {
+            _requestConnection()
+              .then(newConnection => {
                 connection = newConnection;
                 connection.onclose = () => {
                   connection = null;
                 };
-
-                worldTimer.setStartTime(startTime);
               })
               .catch(err => {
                 console.warn(err);
@@ -1614,10 +1584,6 @@ class World {
           };
 
           class WorldApi {
-            getWorldTime() {
-              return worldTimer.getWorldTime();
-            }
-
             makeFile({ext = 'txt'} = {}) {
               const id = _makeId();
               const name = id + '.' + ext;
