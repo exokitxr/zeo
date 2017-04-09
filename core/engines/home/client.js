@@ -92,10 +92,10 @@ class Home {
           cake,
           server,
         }));
-      const _requestZCakeModSpec = () => fetch('/archae/rend/mods?q=' + encodeURIComponent('/plugins/z-cake'))
+      const _requestZCakeNpmItemSpec = () => fetch('/archae/rend/mods?q=' + encodeURIComponent('/plugins/z-cake'))
         .then(res => res.json()
           .then(itemSpec => {
-            itemSpec.isStatic = true;
+            itemSpec.metadata.isStatic = true;
 
             return itemSpec;
           })
@@ -116,7 +116,7 @@ class Home {
           '/core/utils/creature-utils',
         ]),
         _requestImgs(),
-        _requestZCakeModSpec(),
+        _requestZCakeNpmItemSpec(),
       ])
         .then(([
           [
@@ -133,7 +133,7 @@ class Home {
             creatureUtils,
           ],
           imgs,
-          zCakeItemSpec,
+          zCakeNpmItemSpec,
         ]) => {
           if (live) {
             const {THREE, scene, camera, renderer} = three;
@@ -264,7 +264,7 @@ class Home {
               object.planeMesh = planeMesh;
 
               const scale = 2;
-              const cakeTagMesh = tags.makeTag(zCakeItemSpec);
+              const cakeTagMesh = tags.makeTag(zCakeNpmItemSpec);
               cakeTagMesh.position.y = -0.26;
               cakeTagMesh.position.z = -1 + 0.01;
               cakeTagMesh.planeMesh.scale.set(scale, scale, 1);
@@ -543,6 +543,7 @@ class Home {
             const _addModule = (side, srcTagMesh) => {
               const itemSpec = _clone(srcTagMesh.item);
               itemSpec.id = _makeId();
+              itemSpec.metadata.isStatic = false;
               const tagMesh = tags.makeTag(itemSpec);
 
               const grabState = grabStates[side];
