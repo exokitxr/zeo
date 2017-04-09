@@ -267,8 +267,8 @@ class Home {
               const cakeTagMesh = tags.makeTag(zCakeItemSpec);
               cakeTagMesh.position.y = -0.26;
               cakeTagMesh.position.z = -1 + 0.01;
-              cakeTagMesh.scale.set(scale, scale, 1);
-              cakeTagMesh.initialScale = cakeTagMesh.scale.clone();
+              cakeTagMesh.planeMesh.scale.set(scale, scale, 1);
+              cakeTagMesh.initialScale = cakeTagMesh.planeMesh.scale.clone();
               cakeTagMesh.visible = false;
               object.add(cakeTagMesh);
               object.cakeTagMesh = cakeTagMesh;
