@@ -124,7 +124,9 @@ class Fs {
               return _recurseEntries(entries)
                 .then(() => result);
             };
-            const entries = Array.from(items).map(item => item.webkitGetAsEntry());
+            const entries = Array.from(items)
+              .map(item => item.webkitGetAsEntry())
+              .filter(entry => entry !== null);
             _getFiles(entries)
               .then(files => {
                 fsApi.emit('upload', files);
