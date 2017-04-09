@@ -1556,13 +1556,9 @@ class Tags {
                 } else if (type === 'attribute') {
                   const {tagMesh: srcTagMesh, attributeName} = src;
                   const {tagMesh: dstTagMesh} = dst;
+                  const {item: {id, name}} = dstTagMesh;
 
-                  tagsApi.emit('linkAttribute', {
-                    side,
-                    srcTagMesh,
-                    attributeName,
-                    dstTagMesh,
-                  });
+                  srcTagMesh.setAttribute(attributeName, '/fs/' + id + name);
 
                   dragState.src = null;
                   dragState.dst = null;

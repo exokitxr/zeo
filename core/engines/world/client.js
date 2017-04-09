@@ -1498,13 +1498,6 @@ class World {
             }
           };
           tags.on('linkModule', _linkModule);
-          const _linkAttribute = linkSpec => {
-            const {srcTagMesh, attributeName, dstTagMesh} = linkSpec;
-            const {item: {id, name}} = dstTagMesh;
-
-            srcTagMesh.setAttribute(attributeName, '/fs/' + id + name);
-          };
-          tags.on('linkAttribute', _linkAttribute);
 
           const _makeFileTagFromSpec = fileSpec => {
             const {
@@ -1715,7 +1708,6 @@ class World {
 
             tags.removeListener('download', _download);
             tags.removeListener('linkModule', _linkModule);
-            tags.removeListener('linkAttribute', _linkAttribute);
             tags.removeListener('grabNpmTag', _grabNpmTag);
             tags.removeListener('grabWorldTag', _grabWorldTag);
             tags.removeListener('mutateAddModule', _mutateAddModule);
