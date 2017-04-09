@@ -104,13 +104,15 @@ const config = {
   dataDirectory: dataDirectory,
   cryptoDirectory: cryptoDirectory,
   installDirectory: installDirectory,
-  dataDirectorySrc: flags.dataDirectorySrc || null,
-  cryptoDirectorySrc: flags.cryptoDirectorySrc || null,
-  installDirectorySrc: flags.installDirectorySrc || null,
   cors: !staticSite,
   corsOrigin: 'https://' + homeUrl,
   staticSite: staticSite,
   metadata: {
+    config: {
+      dataDirectorySrc: flags.dataDirectorySrc || null,
+      cryptoDirectorySrc: flags.cryptoDirectorySrc || null,
+      installDirectorySrc: flags.installDirectorySrc || null,
+    },
     site: {
       url: hostname + ':' + port,
       enabled: flags.site,
