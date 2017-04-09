@@ -99,6 +99,8 @@ class Home {
             return itemSpec;
           })
         );
+      const _requestDefaultTagsJson = () => fetch('/archae/home/defaults/world/tags.json')
+        .then(res => res.json());
 
       return Promise.all([
         archae.requestPlugins([
@@ -116,6 +118,7 @@ class Home {
         ]),
         _requestImgs(),
         _requestZCakeNpmItemSpec(),
+        _requestDefaultTagsJson(),
       ])
         .then(([
           [
@@ -133,6 +136,7 @@ class Home {
           ],
           imgs,
           zCakeNpmItemSpec,
+          defaultTagsJson, // XXX load this via tags.loadTags()
         ]) => {
           if (live) {
             const {THREE, scene, camera, renderer} = three;
