@@ -1017,7 +1017,9 @@ class Home {
                 const {cakeTagMesh} = menuMesh;
 
                 if (hoverMesh === cakeTagMesh) {
-                  _addModule(side, hoverMesh);
+                  if (!hoverMesh.item.metadata.exists) {
+                    _addModule(side, hoverMesh);
+                  }
                 } else {
                   const controllers = cyborg.getControllers();
                   const controller = controllers[side];
