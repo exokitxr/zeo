@@ -681,12 +681,6 @@ class Tags {
             mesh.visible = false;
             return mesh;
           };
-          const grabBoxMeshes = {
-            left: _makeGrabBoxMesh(),
-            right: _makeGrabBoxMesh(),
-          };
-          scene.add(grabBoxMeshes.left);
-          scene.add(grabBoxMeshes.right);
 
           const boxMeshes = {
             left: biolumi.makeMenuBoxMesh(),
@@ -1931,8 +1925,6 @@ class Tags {
               scene.remove(dotMeshes[side]);
               scene.remove(boxMeshes[side]);
               scene.remove(dragLines[side]);
-
-              scene.remove(grabBoxMeshes[side]);
 
               scene.remove(positioningMesh);
               scene.remove(oldPositioningMesh);
