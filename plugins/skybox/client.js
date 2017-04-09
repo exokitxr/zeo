@@ -14,18 +14,9 @@ class Skybox {
       live = false;
     };
 
-    const _requestImage = p => new Promise((accept, reject) => {
+    const _requestImage = src => new Promise((accept, reject) => {
       const img = new Image();
-      const url = (() => {
-        if (homeEnabled) {
-          return homeUrl;
-        } else if (serverEnabled) {
-          return serverUrl;
-        } else {
-          return null;
-        }
-      })();
-      img.src = 'https://' + url + p;
+      img.src = src;
       img.onload = () => {
         accept(img);
       };
@@ -33,7 +24,7 @@ class Skybox {
         reject(err);
       };
     });
-    const _requestCubeMapImgs = () => Promise.all(FACES.map((face, index) => _requestImage('/archae/airlock/img/skybox-' + (index + 1) + '.png')))
+    const _requestCubeMapImgs = () => Promise.all(FACES.map((face, index) => _requestImage('/archae/skybox/img/skybox-' + (index + 1) + '.png')))
       .then(cubeMapImgs => {
         const result = {};
         for (let i = 0; i < cubeMapImgs.length; i++) {
@@ -47,8 +38,6 @@ class Skybox {
     return _requestCubeMapImgs()
       .then(cubeMapImgs => {
         if (live) {
-          const {THREE, scene} = three;
-
           const skyboxComponent = {
             selector: 'skybox[position]',
             attributes: {
