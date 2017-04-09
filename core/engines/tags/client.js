@@ -1927,7 +1927,6 @@ class Tags {
               scene.remove(dragLines[side]);
 
               scene.remove(positioningMesh);
-              scene.remove(oldPositioningMesh);
             });
 
             input.removeListener('trigger', _trigger);
