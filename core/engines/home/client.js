@@ -1081,10 +1081,14 @@ class Home {
               priority: 1,
             });
 
-            const _linkModule = linkSpec => {
-              console.log('link module', {linkSpec}); // XXX
+            const _tagsAddTag = ({itemSpec, dst}) => {
+              console.log('tags add tag', {itemSpec, dst}); // XXX
             };
-            tags.on('linkModule', _linkModule);
+            tags.on('addTag', _tagsAddTag);
+            const _tagsSetAttribute = ({id, name, value}) => {
+              console.log('tags set attribute', {id, name, value}); // XXX
+            };
+            tags.on('setAttribute', _tagsSetAttribute);
 
             const _update = () => {
               const _updateMenuAnchors = () => {
@@ -1319,7 +1323,8 @@ class Home {
               input.removeListener('keydown', _keydown);
               input.removeListener('keyboarddown', _keyboarddown);
 
-              tags.removeListener('linkModule', _linkModule);
+              tags.on('addTag', _tagsAddTag);
+              tags.on('setAttribute', _tagsSetAttribute);
 
               rend.removeListener('update', _update);
             };
