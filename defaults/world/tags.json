@@ -171,7 +171,7 @@
         "position": {
           "value": [
             0,
-            1,
+            0,
             0,
             0,
             0,
@@ -290,7 +290,7 @@
           "value": "#FFFFFF"
         },
         "intensity": {
-          "value": 0.2
+          "value": 2
         },
         "shadow": {
           "value": false
