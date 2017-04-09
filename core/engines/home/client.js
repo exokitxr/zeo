@@ -1050,6 +1050,10 @@ class Home {
                 grabTagMesh.quaternion.copy(rotation);
                 grabTagMesh.scale.copy(scale);
 
+                const {item} = grabTagMesh;
+                const matrixArray = position.toArray().concat(rotation.toArray()).concat(scale.toArray());
+                item.matrix = matrixArray;
+
                 grabState.tagMesh = null;
 
                 e.stopImmediatePropagation();
