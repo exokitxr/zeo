@@ -1359,6 +1359,12 @@ class World {
             _removeTag(src);
           };
           tags.on('mutateRemoveEntity', _mutateRemoveEntity);
+          const _mutateSetAttribute = ({id, name, value}) => {
+            const src = _getTagIdSrc(id);
+
+            _request('setTagAttribute', [localUserId, src, {name, value}], _warnError);
+          };
+          tags.on('mutateSetAttribute', _mutateSetAttribute);
           const _tagsAddTag = ({itemSpec, dst}) => {
             _addTag(itemSpec, dst);
           };
@@ -1369,12 +1375,6 @@ class World {
             _handleSetTagAttribute(localUserId, src, {name, value});
           };
           tags.on('setAttribute', _tagsSetAttribute);
-          const _mutateSetAttribute = ({id, name, value}) => {
-            const src = _getTagIdSrc(id);
-
-            _request('setTagAttribute', [localUserId, src, {name, value}], _warnError);
-          };
-          tags.on('mutateSetAttribute', _mutateSetAttribute);
           const _broadcast = detail => {
             _request('broadcast', [detail], _warnError);
           };
@@ -1604,9 +1604,9 @@ class World {
             tags.removeListener('mutateRemoveModule', _mutateRemoveModule);
             tags.removeListener('mutateAddEntity', _mutateAddEntity);
             tags.removeListener('mutateRemoveEntity', _mutateRemoveEntity);
+            tags.removeListener('mutateSetAttribute', _mutateSetAttribute);
             tags.removeListener('addTag', _tagsAddTag);
             tags.removeListener('setAttribute', _tagsSetAttribute);
-            tags.removeListener('mutateSetAttribute', _mutateSetAttribute);
             tags.removeListener('broadcast', _broadcast);
 
             fs.removeListener('upload', _upload);
