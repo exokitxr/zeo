@@ -33,7 +33,7 @@ class DirectionalLight {
         },
         intensity: {
           type: 'number',
-          value: 0.2,
+          value: 2,
           min: 0,
           max: 2,
           step: 0.1,
