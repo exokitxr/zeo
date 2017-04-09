@@ -144,29 +144,6 @@ class World {
             right: _makeGrabbableState(),
           };
 
-          const _makeGrabBoxMesh = () => {
-            const width = TAGS_WORLD_WIDTH;
-            const height = TAGS_WORLD_HEIGHT;
-            const depth = TAGS_WORLD_DEPTH;
-
-            const geometry = new THREE.BoxBufferGeometry(width, height, depth);
-            const material = wireframeHighlightMaterial;
-
-            const mesh = new THREE.Mesh(geometry, material);
-            mesh.position.y = 1.2;
-            mesh.rotation.order = camera.rotation.order;
-            mesh.rotation.y = Math.PI / 2;
-            mesh.depthWrite = false;
-            mesh.visible = false;
-            return mesh;
-          };
-          const grabBoxMeshes = {
-            left: _makeGrabBoxMesh(),
-            right: _makeGrabBoxMesh(),
-          };
-          scene.add(grabBoxMeshes.left);
-          scene.add(grabBoxMeshes.right);
-
           const _makeTrashState = () => ({
             hovered: false,
             pointed: false,
@@ -960,31 +937,12 @@ class World {
 
                 SIDES.forEach(side => {
                   const grabbableState = grabbableStates[side];
-                  const grabBoxMesh = grabBoxMeshes[side];
 
                   const hoverMesh = _getHoverGrabbable(side);
                   const pointerMesh = _getPointerGrabbable(side);
 
                   grabbableState.hoverMesh = hoverMesh;
                   grabbableState.pointerMesh = pointerMesh;
-
-                  if (hoverMesh) {
-                    const {planeMesh} = hoverMesh;
-                    const {position: tagMeshPosition, rotation: tagMeshRotation, scale: tagMeshScale} = _decomposeObjectMatrixWorld(planeMesh);
-                    grabBoxMesh.position.copy(tagMeshPosition);
-                    grabBoxMesh.quaternion.copy(tagMeshRotation);
-                    grabBoxMesh.scale.copy(tagMeshScale);
-
-                    if (!grabBoxMesh.visible) {
-                      grabBoxMesh.visible = true;
-                    }
-                  } else {
-                    grabbableState.hoverMesh = null;
-
-                    if (grabBoxMesh.visible) {
-                      grabBoxMesh.visible = false;
-                    }
-                  }
                 });
               } else {
                 SIDES.forEach(side => {

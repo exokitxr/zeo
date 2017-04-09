@@ -338,12 +338,6 @@ class Home {
               mesh.visible = false;
               return mesh;
             };
-            const grabBoxMeshes = {
-              left: _makeGrabBoxMesh(),
-              right: _makeGrabBoxMesh(),
-            };
-            scene.add(grabBoxMeshes.left);
-            scene.add(grabBoxMeshes.right);
 
             const tagHoverStates = {
               left: biolumi.makeMenuHoverState(),
@@ -1124,20 +1118,9 @@ class Home {
               const _updateTagGrabAnchors = () => {
                 SIDES.forEach(side => {
                   const grabbableState = grabbableStates[side];
-                  const grabBoxMesh = grabBoxMeshes[side];
 
                   const hoverMesh = tags.getHoveredTagMesh(side);
                   grabbableState.hoverMesh = hoverMesh;
-
-                  if (hoverMesh) {
-                    const {position: tagMeshPosition, rotation: tagMeshRotation, scale: tagMeshScale} = _decomposeObjectMatrixWorld(hoverMesh);
-                    grabBoxMesh.position.copy(tagMeshPosition);
-                    grabBoxMesh.quaternion.copy(tagMeshRotation);
-                    grabBoxMesh.scale.copy(tagMeshScale);
-                    grabBoxMesh.visible = true;
-                  } else {
-                    grabBoxMesh.visible = false;
-                  }
                 });
               };
               const _updateEnvAnchors = () => {
@@ -1304,8 +1287,6 @@ class Home {
 
                 scene.remove(serverDotMeshes[side]);
                 scene.remove(serverBoxMeshes[side]);
-
-                scene.remove(grabBoxMeshes[side]);
 
                 scene.remove(envDotMeshes[side]);
                 scene.remove(envBoxMeshes[side]);

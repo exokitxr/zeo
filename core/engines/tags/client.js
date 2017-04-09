@@ -665,6 +665,13 @@ class Tags {
           scene.add(dragLines.left);
           scene.add(dragLines.right);
 
+          const boxMeshes = {
+            left: biolumi.makeMenuBoxMesh(),
+            right: biolumi.makeMenuBoxMesh(),
+          };
+          scene.add(boxMeshes.left);
+          scene.add(boxMeshes.right);
+
           const _makeGrabBoxMesh = () => {
             const width = WORLD_WIDTH;
             const height = WORLD_HEIGHT;
@@ -681,13 +688,12 @@ class Tags {
             mesh.visible = false;
             return mesh;
           };
-
-          const boxMeshes = {
-            left: biolumi.makeMenuBoxMesh(),
-            right: biolumi.makeMenuBoxMesh(),
+          const grabBoxMeshes = {
+            left: _makeGrabBoxMesh(),
+            right: _makeGrabBoxMesh(),
           };
-          scene.add(boxMeshes.left);
-          scene.add(boxMeshes.right);
+          scene.add(grabBoxMeshes.left);
+          scene.add(grabBoxMeshes.right);
 
           const positioningMesh = (() => {
             const geometry = (() => {
@@ -1754,25 +1760,45 @@ class Tags {
                   SIDES.forEach(side => {
                     const hoverState = hoverStates[side];
                     const gamepad = gamepads[side];
+                    const grabBoxMesh = grabBoxMeshes[side];
 
-                    if (gamepad) {
-                      const {position: controllerPosition} = gamepad;
+                    const hoverMesh = (() => {
+                      if (gamepad) {
+                        const {position: controllerPosition} = gamepad;
 
-                      const tagMeshDistanceSpecs = tagMeshes.map(tagMesh => {
-                        const distance = controllerPosition.distanceTo(tagMesh.getWorldPosition());
-                        return {
-                          tagMesh,
-                          distance,
-                        };
-                      }).filter(({distance}) => distance <= 0.2);
+                        const tagMeshDistanceSpecs = tagMeshes.map(tagMesh => {
+                          const distance = controllerPosition.distanceTo(tagMesh.getWorldPosition());
+                          return {
+                            tagMesh,
+                            distance,
+                          };
+                        }).filter(({distance}) => distance <= 0.2);
 
-                      if (tagMeshDistanceSpecs.length > 0) {
-                        hoverState.tagMesh = tagMeshDistanceSpecs.sort((a, b) => a.distance - b.distance)[0].tagMesh;
+                        if (tagMeshDistanceSpecs.length > 0) {
+                          return tagMeshDistanceSpecs.sort((a, b) => a.distance - b.distance)[0].tagMesh;
+                        } else {
+                          return null;
+                        }
                       } else {
-                        hoverState.tagMesh = null;
+                        return null;
+                      }
+                    })();
+                    hoverState.tagMesh = hoverMesh;
+
+                    if (hoverMesh) {
+                      const {planeMesh} = hoverMesh;
+                      const {position: tagMeshPosition, rotation: tagMeshRotation, scale: tagMeshScale} = _decomposeObjectMatrixWorld(planeMesh);
+                      grabBoxMesh.position.copy(tagMeshPosition);
+                      grabBoxMesh.quaternion.copy(tagMeshRotation);
+                      grabBoxMesh.scale.copy(tagMeshScale);
+
+                      if (!grabBoxMesh.visible) {
+                        grabBoxMesh.visible = true;
                       }
                     } else {
-                      hoverState.tagMesh = null;
+                      if (grabBoxMesh.visible) {
+                        grabBoxMesh.visible = false;
+                      }
                     }
                   });
                 }
@@ -1924,6 +1950,7 @@ class Tags {
             SIDES.forEach(side => {
               scene.remove(dotMeshes[side]);
               scene.remove(boxMeshes[side]);
+              scene.remove(grabBoxMeshes[side]);
               scene.remove(dragLines[side]);
 
               scene.remove(positioningMesh);
