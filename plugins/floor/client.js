@@ -10,7 +10,7 @@ const LINE_COLOR = 0xCCCCCC;
 const DOT_COLOR = 0x808080;
 
 const DEFAULT_MATRIX = [
-  0, 1, 0,
+  0, 0, 0,
   0, 0, 0, 1,
   1, 1, 1,
 ];
