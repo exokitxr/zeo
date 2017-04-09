@@ -2836,7 +2836,7 @@ class Tags {
                 const tagSpec = tagSpecs[i];
                 const {type} = tagSpec;
 
-                console.log('load tag', {type, tagSpec});
+                console.log('load tag', {type, tagSpec}); // XXX implement this
               }
             }
 
