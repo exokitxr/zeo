@@ -704,11 +704,6 @@ class World {
             right: biolumi.makeMenuHoverState(),
           };
 
-          const npmHoverStates = {
-            left: biolumi.makeMenuHoverState(),
-            right: biolumi.makeMenuHoverState(),
-          };
-
           const worldUi = biolumi.makeUi({
             width: WIDTH,
             height: HEIGHT,
@@ -1005,47 +1000,6 @@ class World {
                 });
               }
             };
-            const _updateNpmAnchors = () => {
-              const isOpen = rend.isOpen();
-              const tab = rend.getTab();
-
-              if (isOpen && tab === 'world') {
-                const {gamepads} = webvr.getStatus();
-
-                SIDES.forEach(side => {
-                  const gamepad = gamepads[side];
-
-                  if (gamepad) {
-                    const {position: controllerPosition, rotation: controllerRotation} = gamepad;
-                    const npmHoverState = npmHoverStates[side];
-
-                    const {npmMesh} = worldMesh;
-                    const {newEntityTagMesh} = npmMesh;
-
-                    biolumi.updateAnchors({
-                      objects: npmManager.getTagMeshes().concat([newEntityTagMesh]).map(tagMesh => {
-                        const {planeMesh, initialScale = oneVector} = tagMesh;
-                        const matrixObject = _decomposeObjectMatrixWorld(planeMesh);
-                        const {page} = planeMesh;
-
-                        return {
-                          matrixObject: matrixObject,
-                          page: page,
-                          width: TAGS_WIDTH,
-                          height: TAGS_HEIGHT,
-                          worldWidth: TAGS_WORLD_WIDTH * initialScale.x,
-                          worldHeight: TAGS_WORLD_HEIGHT * initialScale.y,
-                          worldDepth: TAGS_WORLD_DEPTH * initialScale.z,
-                        };
-                      }),
-                      hoverState: npmHoverState,
-                      controllerPosition,
-                      controllerRotation,
-                    });
-                  }
-                });
-              }
-            };
             const _updateTrashAnchor = () => {
               const {gamepads} = webvr.getStatus();
               const {position: trashPosition, rotation: trashRotation, scale: trashScale} = _decomposeObjectMatrixWorld(trashMesh);
@@ -1089,7 +1043,6 @@ class World {
 
             _updateMenuAnchors();
             _updateGrabbers();
-            _updateNpmAnchors();
             _updateTrashAnchor();
           };
           rend.on('update', _update);
