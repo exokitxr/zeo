@@ -322,6 +322,8 @@ class Cyborg {
               const {axes} = gamepadStatus;
               mesh.padMesh.position.x = axes[0] * 0.02;
               mesh.padMesh.position.z = -axes[1] * 0.02;
+
+              mesh.updateMatrixWorld();
             }
           }
 
