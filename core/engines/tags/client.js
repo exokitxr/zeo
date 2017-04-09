@@ -1620,7 +1620,7 @@ class Tags {
                   const controllerMeshes = SIDES.map(side => controllers[side].mesh);
 
                   const isWorldTab = rend.getTab() === 'world';
-                  const _isGlobalTagMesh = tagMesh =>
+                  const _isFreeTagMesh = tagMesh =>
                     (tagMesh.parent === scene) ||
                     controllerMeshes.some(controllerMesh => tagMesh.parent === controllerMesh);
 
@@ -1631,7 +1631,7 @@ class Tags {
                       const tagMesh = tagMeshes[i];
                       const {visible} = tagMesh;
 
-                      if (visible && (isWorldTab || homeEnabled || _isGlobalTagMesh(tagMesh))) {
+                      if (visible && (isWorldTab || homeEnabled || _isFreeTagMesh(tagMesh))) {
                         const {item} = tagMesh;
                         const {type} = item;
 
