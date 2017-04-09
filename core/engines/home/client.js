@@ -1113,6 +1113,19 @@ class Home {
               tagMesh.setAttribute(name, value);
             };
             tags.on('setAttribute', _tagsSetAttribute);
+            const _loadTags = ({itemSpecs}) => {
+              for (let i = 0; i < itemSpecs.length; i++) {
+                const itemSpec = itemSpecs[i];
+                const {type} = itemSpec;
+
+                if (type === 'module') {
+                  _addModule(itemSpec);
+                } else if (type === 'entity') {
+                  // XXX add support for this
+                }
+              }
+            };
+            tags.on('loadTags', _loadTags);
 
             const _update = () => {
               const _updateMenuAnchors = () => {
@@ -1349,6 +1362,7 @@ class Home {
 
               tags.on('addTag', _tagsAddTag);
               tags.on('setAttribute', _tagsSetAttribute);
+              tags.on('loadTags', _loadTags);
 
               rend.removeListener('update', _update);
             };

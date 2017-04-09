@@ -150,8 +150,6 @@ class World {
             right: _makeTrashState(),
           };
 
-          // XXX
-
           const _requestConnection = () => new Promise((accept, reject) => {
             const connection = new WebSocket('wss://' + serverUrl + '/archae/worldWs?id=' + localUserId);
             connection.onmessage = msg => {
@@ -162,12 +160,6 @@ class World {
                 const {args: [itemSpecs]} = m;
 
                 tags.loadTags(itemSpecs);
-
-                for (let i = 0; i < itemSpecs.length; i++) { // XXX load via the above tags.loadTags() instead of this
-                  const itemSpec = itemSpecs[i];
-
-                  _handleAddTag(localUserId, itemSpec, 'world');
-                }
               } else if (type === 'addTag') {
                 const {args: [userId, itemSpec, dst]} = m;
 
@@ -1375,6 +1367,14 @@ class World {
             _handleSetTagAttribute(localUserId, src, {name, value});
           };
           tags.on('setAttribute', _tagsSetAttribute);
+          const _loadTags = ({itemSpecs}) => {
+            for (let i = 0; i < itemSpecs.length; i++) {
+              const itemSpec = itemSpecs[i];
+
+              _handleAddTag(localUserId, itemSpec, 'world');
+            }
+          };
+          tags.on('loadTags', _loadTags);
           const _broadcast = detail => {
             _request('broadcast', [detail], _warnError);
           };
@@ -1607,6 +1607,7 @@ class World {
             tags.removeListener('mutateSetAttribute', _mutateSetAttribute);
             tags.removeListener('addTag', _tagsAddTag);
             tags.removeListener('setAttribute', _tagsSetAttribute);
+            tags.removeListener('loadTags', _loadTags);
             tags.removeListener('broadcast', _broadcast);
 
             fs.removeListener('upload', _upload);

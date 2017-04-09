@@ -2954,13 +2954,10 @@ class Tags {
               return tagComponentApis[tag];
             }
 
-            loadTags(tagSpecs) {
-              for (let i = 0; i < tagSpecs.length; i++) {
-                const tagSpec = tagSpecs[i];
-                const {type} = tagSpec;
-
-                console.log('load tag', {type, tagSpec}); // XXX implement this
-              }
+            loadTags(itemSpecs) {
+              this.emit('loadTags', {
+                itemSpecs,
+              });
             }
 
             getPointedTagMesh(side) {
