@@ -103,19 +103,24 @@ class Bootstrap {
     });
     const _tryServerAnnounce = _makeTryAnnounce(_announceServer);
 
-    const _makeQueueAnnounce = (tryAnnounceFn, retryAnnounceFn) => _debounce(next => {
-      tryAnnounceFn()
-        .then(ok => {
-          if (!ok) {
-            setTimeout(retryAnnounceFn, SERVER_ANNOUNCE_RETRY_INTERVAL);
-          }
+    const _makeQueueAnnounce = tryAnnounceFn => {
+      const recurse = _debounce(next => {
+        tryAnnounceFn()
+          .then(ok => {
+            if (ok) {
+              next();
+            } else {
+              setTimeout(() => {
+                recurse();
 
-          next();
-        });
-    });
-    const _queueServerAnnounce = _makeQueueAnnounce(_tryServerAnnounce, () => {
-      _queueServerAnnounce();
-    });
+                next();
+              }, SERVER_ANNOUNCE_RETRY_INTERVAL);
+            }
+          });
+      });
+      return recurse;
+    };
+    const _queueServerAnnounce = _makeQueueAnnounce(_tryServerAnnounce);
 
     if (serverEnabled && hubSpec) {
       _queueServerAnnounce();
