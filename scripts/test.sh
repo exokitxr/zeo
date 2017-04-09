@@ -7,7 +7,7 @@ export NODE_TLS_REJECT_UNAUTHORIZED=0
 npm start -- site home my \
   host=test.zeovr.io port=8080 \
   homeHost=test-home.zeovr.io \
-  hubUrl=test-hub.zeovr.io:8000
+  hubUrl=test-hub.zeovr.io:8000 \
   cryptoDirectory=crypto-test installDirectory=installed-test &
 npm start -- hub my \
   port=8000 \
