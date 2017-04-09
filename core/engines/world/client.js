@@ -1362,12 +1362,16 @@ class World {
             _removeTag(src);
           };
           tags.on('mutateRemoveEntity', _mutateRemoveEntity);
-          const _setAttribute = ({id, name, value}) => {
+          const _tagsAddTag = ({itemSpec, dst}) => {
+            _addTag(itemSpec, dst);
+          };
+          tags.on('addTag', _tagsAddTag);
+          const _tagsSetAttribute = ({id, name, value}) => {
             const src = _getTagIdSrc(id);
 
             _handleSetTagAttribute(localUserId, src, {name, value});
           };
-          tags.on('setAttribute', _setAttribute);
+          tags.on('setAttribute', _tagsSetAttribute);
           const _mutateSetAttribute = ({id, name, value}) => {
             const src = _getTagIdSrc(id);
 
@@ -1388,116 +1392,6 @@ class World {
             document.body.removeChild(a);
           };
           tags.on('download', _download);
-
-          const _linkModule = linkSpec => {
-            const {srcTagMesh, dstTagMesh} = linkSpec;
-            const {item: srcItem} = srcTagMesh;
-            const {name: srcName} = srcItem;
-            const componentApis = tags.getTagComponentApis(srcName);
-
-            for (let i = 0; i < componentApis.length; i++) {
-              const componentApi = componentApis[i];
-
-              const _requestSrcTagAttributes = fn => new Promise((accept, reject) => {
-                const componentApi = componentApis[i];
-                const {attributes: componentAttributes = {}} = componentApi;
-                const componentAttributeKeys = Object.keys(componentAttributes);
-
-                const _recurse = i => {
-                  if (i < componentAttributeKeys.length) {
-                    const attributeName = componentAttributeKeys[i];
-                    const attribute = componentAttributes[attributeName];
-                    const _requestAttributeValue = () => {
-                      let {value: attributeValue} = attribute;
-                      if (typeof attributeValue === 'function') {
-                        attributeValue = attributeValue();
-                      }
-                      return Promise.resolve(attributeValue);
-                    };
-
-                    const result = fn(attributeName, _requestAttributeValue);
-                    Promise.resolve(result)
-                      .then(() => {
-                        _recurse(i + 1);
-                      });
-                  } else {
-                    accept();
-                  }
-                };
-                _recurse(0);
-              });
-
-              if (!dstTagMesh) {
-                const {item} = srcTagMesh;
-
-                const _requestAttributes = () => {
-                  const result = {};
-                  return _requestSrcTagAttributes((attributeName, getAttributeValue) =>
-                    getAttributeValue()
-                      .then(attributeValue => {
-                        result[attributeName] = {
-                          value: attributeValue,
-                        };
-                      })
-                  ).then(() => result);
-                };
-
-                _requestAttributes()
-                  .then(attributes => {
-                    const itemSpec = _clone(item);
-                    itemSpec.id = _makeId();
-                    itemSpec.type = 'entity';
-                    const tagName = (() => {
-                      const {selector: componentSelector = 'div'} = componentApi;
-                      const {rule: {tagName}} = cssSelectorParser.parse(componentSelector);
-
-                      if (tagName) {
-                        return tagName;
-                      } else {
-                        return 'entity';
-                      }
-                    })();
-                    itemSpec.name = tagName;
-                    itemSpec.displayName = tagName;
-                    itemSpec.tagName = tagName;
-                    itemSpec.attributes = attributes;
-                    const matrix = (() => { // XXX we should offset multiple tags here so they don't overlap
-                      const {matrix: oldMatrix} = itemSpec;
-                      const position = new THREE.Vector3().fromArray(oldMatrix.slice(0, 3));
-                      const rotation = new THREE.Quaternion().fromArray(oldMatrix.slice(3, 3 + 4));
-                      const scale = new THREE.Vector3().fromArray(oldMatrix.slice(3 + 4, 3 + 4 + 3));
-
-                      position.add(new THREE.Vector3(0, 0, 0.1).applyQuaternion(rotation));
-
-                      return position.toArray().concat(rotation.toArray()).concat(scale.toArray());
-                    })();
-                    itemSpec.matrix = matrix;
-
-                    _addTag(itemSpec, 'world');
-                  })
-                  .catch(err => {
-                    console.warn(err);
-                  });
-              } else {
-                const {item: dstItem} = dstTagMesh;
-                const {id: dstId, instance: dstElement} = dstItem;
-
-                _requestSrcTagAttributes((attributeName, requestAttributeValue) => {
-                  if (!dstElement.hasAttribute(attributeName)) {
-                    return requestAttributeValue()
-                      .then(attributeValue => {
-                        _setAttribute({
-                          id: dstId,
-                          name: attributeName,
-                          value: attributeValue,
-                        });
-                      });
-                  }
-                });
-              }
-            }
-          };
-          tags.on('linkModule', _linkModule);
 
           const _makeFileTagFromSpec = fileSpec => {
             const {
@@ -1707,14 +1601,14 @@ class World {
             input.removeListener('keyboarddown', _keyboarddown);
 
             tags.removeListener('download', _download);
-            tags.removeListener('linkModule', _linkModule);
             tags.removeListener('grabNpmTag', _grabNpmTag);
             tags.removeListener('grabWorldTag', _grabWorldTag);
             tags.removeListener('mutateAddModule', _mutateAddModule);
             tags.removeListener('mutateRemoveModule', _mutateRemoveModule);
             tags.removeListener('mutateAddEntity', _mutateAddEntity);
             tags.removeListener('mutateRemoveEntity', _mutateRemoveEntity);
-            tags.removeListener('setAttribute', _setAttribute);
+            tags.removeListener('addTag', _tagsAddTag);
+            tags.removeListener('setAttribute', _tagsSetAttribute);
             tags.removeListener('mutateSetAttribute', _mutateSetAttribute);
             tags.removeListener('broadcast', _broadcast);
 
