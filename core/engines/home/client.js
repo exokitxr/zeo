@@ -1014,17 +1014,22 @@ class Home {
               const {hoverMesh} = grabbableState;
 
               if (hoverMesh) {
-                if (hoverMesh === cakeTagMesh) { // XXX this needs to handle regular entity cases as well
+                const {cakeTagMesh} = menuMesh;
+
+                if (hoverMesh === cakeTagMesh) {
                   _addModule(side, hoverMesh);
                 } else {
                   const controllers = cyborg.getControllers();
                   const controller = controllers[side];
                   const {mesh: controllerMesh} = controller;
-                  tagMesh.position.copy(controllerMeshOffset);
-                  tagMesh.quaternion.copy(controllerMeshQuaternion);
-                  tagMesh.scale.copy(oneVector);
+                  hoverMesh.position.copy(controllerMeshOffset);
+                  hoverMesh.quaternion.copy(controllerMeshQuaternion);
+                  hoverMesh.scale.copy(oneVector);
 
                   controllerMesh.add(hoverMesh);
+
+                  const grabState = grabStates[side];
+                  grabState.tagMesh = hoverMesh;
                 }
 
                 e.stopImmediatePropagation();
@@ -1083,6 +1088,17 @@ class Home {
 
             const _tagsAddTag = ({itemSpec, dst}) => {
               console.log('tags add tag', {itemSpec, dst}); // XXX
+
+              if (dst === 'world') {
+                const {type} = itemSpec;
+
+                if (type === 'entity') {
+                  const tagMesh = tags.makeTag(itemSpec);
+                  tags.reifyEntity(tagMesh);
+
+                  scene.add(tagMesh);
+                }
+              }
             };
             tags.on('addTag', _tagsAddTag);
             const _tagsSetAttribute = ({id, name, value}) => {
