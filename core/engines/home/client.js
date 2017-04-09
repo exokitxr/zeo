@@ -543,6 +543,7 @@ class Home {
               tagMesh.position.copy(controllerMeshOffset);
               tagMesh.quaternion.copy(controllerMeshQuaternion);
               tagMesh.scale.copy(oneVector);
+
               controllerMesh.add(tagMesh);
 
               tags.reifyModule(tagMesh);
@@ -1013,8 +1014,18 @@ class Home {
               const {hoverMesh} = grabbableState;
 
               if (hoverMesh) {
-                // XXX this needs to handle regular entity cases as well
-                _addModule(side, hoverMesh);
+                if (hoverMesh === cakeTagMesh) { // XXX this needs to handle regular entity cases as well
+                  _addModule(side, hoverMesh);
+                } else {
+                  const controllers = cyborg.getControllers();
+                  const controller = controllers[side];
+                  const {mesh: controllerMesh} = controller;
+                  tagMesh.position.copy(controllerMeshOffset);
+                  tagMesh.quaternion.copy(controllerMeshQuaternion);
+                  tagMesh.scale.copy(oneVector);
+
+                  controllerMesh.add(hoverMesh);
+                }
 
                 e.stopImmediatePropagation();
               }
@@ -1025,14 +1036,14 @@ class Home {
             const _gripup = e => {
               const {side} = e;
               const grabState = grabStates[side];
-              const {tagMesh} = grabState;
+              const {tagMesh: grabTagMesh} = grabState;
 
-              if (tagMesh) {
-                const {position, rotation, scale} = _decomposeObjectMatrixWorld(tagMesh);
-                scene.add(tagMesh);
-                tagMesh.position.copy(position);
-                tagMesh.quaternion.copy(rotation);
-                tagMesh.scale.copy(scale);
+              if (grabTagMesh) {
+                const {position, rotation, scale} = _decomposeObjectMatrixWorld(grabTagMesh);
+                scene.add(grabTagMesh);
+                grabTagMesh.position.copy(position);
+                grabTagMesh.quaternion.copy(rotation);
+                grabTagMesh.scale.copy(scale);
 
                 grabState.tagMesh = null;
 
@@ -1069,6 +1080,11 @@ class Home {
             input.on('keyboarddown', _keyboarddown, {
               priority: 1,
             });
+
+            const _linkModule = linkSpec => {
+              console.log('link module', {linkSpec}); // XXX
+            };
+            tags.on('linkModule', _linkModule);
 
             const _update = () => {
               const _updateMenuAnchors = () => {
@@ -1302,6 +1318,8 @@ class Home {
 
               input.removeListener('keydown', _keydown);
               input.removeListener('keyboarddown', _keyboarddown);
+
+              tags.removeListener('linkModule', _linkModule);
 
               rend.removeListener('update', _update);
             };
