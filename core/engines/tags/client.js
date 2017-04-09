@@ -1631,7 +1631,7 @@ class Tags {
                       const tagMesh = tagMeshes[i];
                       const {visible} = tagMesh;
 
-                      if (visible && (isWorldTab || _isGlobalTagMesh(tagMesh))) {
+                      if (visible && (isWorldTab || homeEnabled || _isGlobalTagMesh(tagMesh))) {
                         const {item} = tagMesh;
                         const {type} = item;
 
