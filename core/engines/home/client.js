@@ -1360,9 +1360,9 @@ class Home {
               input.removeListener('keydown', _keydown);
               input.removeListener('keyboarddown', _keyboarddown);
 
-              tags.on('addTag', _tagsAddTag);
-              tags.on('setAttribute', _tagsSetAttribute);
-              tags.on('loadTags', _loadTags);
+              tags.removeListener('addTag', _tagsAddTag);
+              tags.removeListener('setAttribute', _tagsSetAttribute);
+              tags.removeListener('loadTags', _loadTags);
 
               rend.removeListener('update', _update);
             };
