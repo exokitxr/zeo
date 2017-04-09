@@ -5,7 +5,6 @@ const child_process = require('child_process');
 const mkdirp = require('mkdirp');
 const Spinner = require('cli-spinner').Spinner;
 const archae = require('archae');
-const cryptoutils = require('cryptoutils');
 const rnd = require('rnd');
 rnd.setSeed(process.env.USER + ';' + process.cwd());
 
@@ -40,6 +39,9 @@ const flags = {
   dataDirectory: _findArg('dataDirectory'),
   cryptoDirectory: _findArg('cryptoDirectory'),
   installDirectory: _findArg('installDirectory'),
+  dataDirectorySrc: _findArg('dataDirectorySrc'),
+  cryptoDirectorySrc: _findArg('cryptoDirectorySrc'),
+  installDirectorySrc: _findArg('installDirectorySrc'),
   serverHost: _findArg('serverHost'),
   homeHost: _findArg('homeHost'),
   worldname: _findArg('worldname'),
@@ -102,6 +104,9 @@ const config = {
   dataDirectory: dataDirectory,
   cryptoDirectory: cryptoDirectory,
   installDirectory: installDirectory,
+  dataDirectorySrc: flags.dataDirectorySrc || null,
+  cryptoDirectorySrc: flags.cryptoDirectorySrc || null,
+  installDirectorySrc: flags.installDirectorySrc || null,
   cors: !staticSite,
   corsOrigin: 'https://' + homeUrl,
   staticSite: staticSite,

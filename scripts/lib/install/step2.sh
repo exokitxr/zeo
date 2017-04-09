@@ -13,4 +13,3 @@ npm i modulesio/zeo
 cd node_modules/zeo
 mkdir -p crypto
 cp defaults/crypto/certs/*.pem crypto/
-npm start -- install
