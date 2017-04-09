@@ -1092,9 +1092,8 @@ class Home {
               priority: 1,
             });
 
+            const tagMeshes = [];
             const _tagsAddTag = ({itemSpec, dst}) => {
-              console.log('tags add tag', {itemSpec, dst}); // XXX
-
               if (dst === 'world') {
                 const {type} = itemSpec;
 
@@ -1102,13 +1101,16 @@ class Home {
                   const tagMesh = tags.makeTag(itemSpec);
                   tags.reifyEntity(tagMesh);
 
+                  tagMeshes.push(tagMesh);
+
                   scene.add(tagMesh);
                 }
               }
             };
             tags.on('addTag', _tagsAddTag);
             const _tagsSetAttribute = ({id, name, value}) => {
-              console.log('tags set attribute', {id, name, value}); // XXX
+              const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
+              tagMesh.setAttribute(name, value);
             };
             tags.on('setAttribute', _tagsSetAttribute);
 
