@@ -296,6 +296,73 @@
           "value": false
         }
       }
+    },
+    "o9xgylo": {
+      "type": "module",
+      "id": "o9xgylo",
+      "name": "/plugins/skybox",
+      "displayName": "skybox",
+      "description": "Provides a basic skybox.",
+      "version": "0.0.1",
+      "readme": null,
+      "matrix": [
+        -1.835066318511963,
+        1.3898385763168335,
+        0.7548525333404541,
+        -1.0251127338681592e-8,
+        0.7708196512555041,
+        4.832894811669915e-9,
+        0.637053404664432,
+        0.9999999784317952,
+        1,
+        0.9999999812380703
+      ],
+      "metadata": {
+        "isStatic": false,
+        "exists": false
+      }
+    },
+    "17brpe": {
+      "type": "entity",
+      "id": "17brpe",
+      "name": "skybox",
+      "displayName": "skybox",
+      "description": "Provides a basic skybox.",
+      "version": "0.0.1",
+      "readme": null,
+      "matrix": [
+        -1.7368556618690492,
+        1.3898385783679947,
+        0.7360199439037428,
+        -1.0251127338681592e-8,
+        0.7708196512555041,
+        4.832894811669915e-9,
+        0.637053404664432,
+        0.9999999784317952,
+        1,
+        0.9999999812380703
+      ],
+      "metadata": {
+        "isStatic": false,
+        "exists": false
+      },
+      "tagName": "skybox",
+      "attributes": {
+        "position": {
+          "value": [
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            1,
+            1,
+            1
+          ]
+        }
+      }
     }
   }
 }
