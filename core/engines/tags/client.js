@@ -3035,6 +3035,7 @@ const _shallowClone = o => {
   return result;
 };
 const _makeId = () => Math.random().toString(36).substring(7);
+const _clone = o => JSON.parse(JSON.stringify(o));
 const _roundToDecimals = (value, decimals) => Number(Math.round(value+'e'+decimals)+'e-'+decimals);
 
 module.exports = Tags;

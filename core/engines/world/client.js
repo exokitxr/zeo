@@ -1,6 +1,3 @@
-import CssSelectorParser from 'css-selector-parser';
-const cssSelectorParser = new CssSelectorParser.CssSelectorParser();
-
 import {
   WIDTH,
   HEIGHT,
