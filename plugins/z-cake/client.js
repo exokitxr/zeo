@@ -50,7 +50,7 @@ class ZCake {
               this.slices = 8;
               this.holdable = false;
 
-              this.alignable = false;
+              this.alignable = true;
 
               this.mesh = null;
 
