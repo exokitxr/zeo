@@ -355,12 +355,6 @@ class Home {
             };
             scene.add(tagDotMeshes.left);
             scene.add(tagDotMeshes.right);
-            const tagBoxMeshes = {
-              left: biolumi.makeMenuBoxMesh(),
-              right: biolumi.makeMenuBoxMesh(),
-            };
-            scene.add(tagBoxMeshes.left);
-            scene.add(tagBoxMeshes.right);
 
             const _makeEnvHoverState = () => ({
               hoveredServerMesh: null,
@@ -1312,8 +1306,6 @@ class Home {
                 scene.remove(serverBoxMeshes[side]);
 
                 scene.remove(grabBoxMeshes[side]);
-                scene.remove(tagDotMeshes[side]);
-                scene.remove(tagBoxMeshes[side]);
 
                 scene.remove(envDotMeshes[side]);
                 scene.remove(envBoxMeshes[side]);
