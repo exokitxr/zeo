@@ -1119,7 +1119,7 @@ class Home {
                   }
                 });
               };
-              const _updateTagGrabAnchors = () => {
+              /* const _updateTagGrabAnchors = () => { // XXX delegate this to the tags engine
                 const {cakeTagMesh} = menuMesh;
                 const {visible} = menuMesh;
 
@@ -1134,13 +1134,19 @@ class Home {
 
                       if (gamepad) {
                         const {position: controllerPosition} = gamepad;
-                        const {position: cakeTagMeshPosition} = _decomposeObjectMatrixWorld(cakeTagMesh);
+                        const tagMeshDistanceSpecs = tagMeshes.map(tagMesh => {
+                          const {position: tagMeshPosition} = _decomposeObjectMatrixWorld(tagMesh);
+                          const distance = controllerPosition.distanceTo(tagMeshPosition);
 
-                        if (controllerPosition.distanceTo(cakeTagMeshPosition) <= 0.2) {
-                          return cakeTagMesh;
-                        } else {
-                          return null;
-                        }
+                          if (distance <= 0.2) {
+                            return {
+                              tagMesh,
+                              distance,
+                            };
+                          } else {
+                            return null;
+                          }
+                        });
                       } else {
                         return null;
                       }
@@ -1177,7 +1183,7 @@ class Home {
                     grabBoxMesh.visible = false;
                   });
                 }
-              };
+              }; */
               const _updateTagPointerAnchors = () => {
                 const {gamepads} = webvr.getStatus();
                 const {cakeTagMesh} = menuMesh;
@@ -1367,7 +1373,7 @@ class Home {
               };
 
               _updateMenuAnchors();
-              _updateTagGrabAnchors();
+              // _updateTagGrabAnchors();
               _updateTagPointerAnchors();
               _updateEnvAnchors();
               _updateServerMeshes();

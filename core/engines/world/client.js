@@ -944,33 +944,11 @@ class World {
               const isOpen = rend.isOpen();
 
               if (isOpen) {
-                const _getBestHoverGrabbable = (side, objects) => {
+                const _getHoverGrabbable = side => {
                   const grabMesh = grabManager.getMesh(side);
 
                   if (!grabMesh) {
-                    const {gamepads} = webvr.getStatus();
-                    const gamepad = gamepads[side];
-
-                    if (gamepad) {
-                      const {position: controllerPosition} = gamepad;
-
-                      const objectDistanceSpecs = objects.map(object => {
-                        const {position: objectPosition} = _decomposeObjectMatrixWorld(object);
-                        const distance = controllerPosition.distanceTo(objectPosition);
-                        return {
-                          object,
-                          distance,
-                        };
-                      }).filter(({distance}) => distance <= 0.2);
-
-                      if (objectDistanceSpecs.length > 0) {
-                        return objectDistanceSpecs.sort((a, b) => a.distance - b.distance)[0].object;
-                      } else {
-                        return null;
-                      }
-                    } else {
-                      return null;
-                    }
+                    return tags.getHoveredTagMesh(side);
                   } else {
                     return null;
                   }
@@ -985,16 +963,11 @@ class World {
                   }
                 };
 
-                const {npmMesh} = worldMesh;
-                const {newEntityTagMesh} = npmMesh;
-                const tagMeshes = elementManager.getTagMeshes()
-                  .concat(npmManager.getTagMeshes())
-                  .concat([newEntityTagMesh]);
                 SIDES.forEach(side => {
                   const grabbableState = grabbableStates[side];
                   const grabBoxMesh = grabBoxMeshes[side];
 
-                  const hoverMesh = _getBestHoverGrabbable(side, tagMeshes);
+                  const hoverMesh = _getHoverGrabbable(side);
                   const pointerMesh = _getPointerGrabbable(side);
 
                   grabbableState.hoverMesh = hoverMesh;

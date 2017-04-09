@@ -621,9 +621,16 @@ class Tags {
             color: [1, 1, 1, 1],
           });
 
-          const hoverStates = {
+          const pointerStates = {
             left: biolumi.makeMenuHoverState(),
             right: biolumi.makeMenuHoverState(),
+          };
+          const _makeHoverState = () => ({
+            tagMesh: null,
+          });
+          const hoverStates = {
+            left: _makeHoverState(),
+            right: _makeHoverState(),
           };
 
           const dotMeshes = {
@@ -927,8 +934,8 @@ class Tags {
             const {side} = e;
 
             const _doClickDetails = () => {
-              const hoverState = hoverStates[side];
-              const {intersectionPoint} = hoverState;
+              const pointerState = pointerStates[side];
+              const {intersectionPoint} = pointerState;
 
               if (intersectionPoint) {
                 const {gamepads} = webvr.getStatus();
@@ -938,7 +945,7 @@ class Tags {
                   const {buttons: {grip: {pressed: gripPressed}}} = gamepad;
 
                   if (!gripPressed) {
-                    const {anchor} = hoverState;
+                    const {anchor} = pointerState;
                     const onclick = (anchor && anchor.onclick) || '';
 
                     let match;
@@ -1003,11 +1010,11 @@ class Tags {
                 const {buttons: {grip: {pressed: gripPressed}}} = gamepad;
 
                 if (gripPressed) {
-                  const hoverState = hoverStates[side];
-                  const {intersectionPoint} = hoverState;
+                  const pointerState = pointerStates[side];
+                  const {intersectionPoint} = pointerState;
 
                   if (intersectionPoint) {
-                    const {anchor} = hoverState;
+                    const {anchor} = pointerState;
                     const onclick = (anchor && anchor.onclick) || '';
 
                     let match;
@@ -1051,11 +1058,11 @@ class Tags {
                 const {buttons: {grip: {pressed: gripPressed}}} = gamepad;
 
                 if (gripPressed) {
-                  const hoverState = hoverStates[side];
-                  const {intersectionPoint} = hoverState;
+                  const pointerState = pointerStates[side];
+                  const {intersectionPoint} = pointerState;
 
                   if (intersectionPoint) {
-                    const {metadata} = hoverState;
+                    const {metadata} = pointerState;
                     const {type} = metadata;
 
                     if (type === 'module' || type === 'entity' || type === 'file') {
@@ -1091,11 +1098,11 @@ class Tags {
               }
             };
             const _doClickAux = () => {
-              const hoverState = hoverStates[side];
-              const {intersectionPoint} = hoverState;
+              const pointerState = pointerStates[side];
+              const {intersectionPoint} = pointerState;
 
               if (intersectionPoint) {
-                const {anchor} = hoverState;
+                const {anchor} = pointerState;
                 const onclick = (anchor && anchor.onclick) || '';
 
                 let match;
@@ -1256,7 +1263,7 @@ class Tags {
                   const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
                   const {item, planeOpenMesh: {page: openPage}} = tagMesh;
 
-                  const {value} = hoverState;
+                  const {value} = pointerState;
                   item.seek(value);
 
                   openPage.update();
@@ -1295,11 +1302,11 @@ class Tags {
               }
             };
             const _doClickAttribute = () => {
-              const hoverState = hoverStates[side];
-              const {intersectionPoint} = hoverState;
+              const pointerState = pointerStates[side];
+              const {intersectionPoint} = pointerState;
 
               if (intersectionPoint) {
-                const {anchor} = hoverState;
+                const {anchor} = pointerState;
                 const onclick = (anchor && anchor.onclick) || '';
 
                 let match;
@@ -1329,7 +1336,7 @@ class Tags {
 
                     focusState.type = '';
                   } else if (action === 'focus') {
-                    const {value: hoverValue} = hoverState;
+                    const {value: hoverValue} = pointerState;
                     const {type} = _getAttributeSpec(attributeName);
 
                     const textProperties = (() => {
@@ -1371,7 +1378,7 @@ class Tags {
 
                     if (type === 'number') {
                       const newValue = (() => {
-                        const {value} = hoverState;
+                        const {value} = pointerState;
                         const {min, max, step} = _getAttributeSpec(attributeName);
 
                         let n = min + (value * (max - min));
@@ -1392,7 +1399,7 @@ class Tags {
                       // _updateAttributes();
                     } else if (type ==='vector') {
                       const newKeyValue = (() => {
-                        const {value} = hoverState;
+                        const {value} = pointerState;
                         const {min, max, step} = _getAttributeSpec(attributeName);
 
                         let n = min + (value * (max - min));
@@ -1435,8 +1442,8 @@ class Tags {
 
             _doClickDetails() || _doClickGrabNpmTag() || _doClickGrabWorldTag() || _doClickAux() || _doSetPosition() || _doClickAttribute();
 
-            const hoverState = hoverStates[side];
-            const {intersectionPoint} = hoverState;
+            const pointerState = pointerStates[side];
+            const {intersectionPoint} = pointerState;
             if (intersectionPoint) {
               e.stopImmediatePropagation();
             }
@@ -1446,11 +1453,11 @@ class Tags {
             const {side} = e;
 
             const _doClickTag = () => {
-              const hoverState = hoverStates[side];
-              const {intersectionPoint} = hoverState;
+              const pointerState = pointerStates[side];
+              const {intersectionPoint} = pointerState;
 
               if (intersectionPoint) {
-                const {anchor} = hoverState;
+                const {anchor} = pointerState;
                 const onclick = (anchor && anchor.onclick) || '';
 
                 let match;
@@ -1729,14 +1736,14 @@ class Tags {
 
                     if (gamepad) {
                       const {position: controllerPosition, rotation: controllerRotation} = gamepad;
-                      const hoverState = hoverStates[side];
+                      const pointerState = pointerStates[side];
                       const dotMesh = dotMeshes[side];
                       const boxMesh = boxMeshes[side];
 
                       biolumi.updateAnchors({
                         objects: objects,
                         side,
-                        hoverState: hoverState,
+                        hoverState: pointerState,
                         dotMesh: dotMesh,
                         boxMesh: boxMesh,
                         controllerPosition,
@@ -1745,7 +1752,37 @@ class Tags {
                     }
                   });
                 }
-              }
+              };
+              const _updateElementGrabbables = () => {
+                if (rend.isOpen() || homeEnabled) {
+                  const {gamepads} = webvr.getStatus();
+
+                  SIDES.forEach(side => {
+                    const hoverState = hoverStates[side];
+                    const gamepad = gamepads[side];
+
+                    if (gamepad) {
+                      const {position: controllerPosition} = gamepad;
+
+                      const tagMeshDistanceSpecs = tagMeshes.map(tagMesh => {
+                        const distance = controllerPosition.distanceTo(tagMesh.getWorldPosition());
+                        return {
+                          tagMesh,
+                          distance,
+                        };
+                      }).filter(({distance}) => distance <= 0.2);
+
+                      if (tagMeshDistanceSpecs.length > 0) {
+                        hoverState.tagMesh = tagMeshDistanceSpecs.sort((a, b) => a.distance - b.distance)[0].tagMesh;
+                      } else {
+                        hoverState.tagMesh = null;
+                      }
+                    } else {
+                      hoverState.tagMesh = null;
+                    }
+                  });
+                }
+              };
               const _updateDragStates = () => {
                 if (rend.isOpen() || homeEnabled) {
                   SIDES.forEach(side => {
@@ -1753,12 +1790,12 @@ class Tags {
                     const {src} = dragState;
 
                     if (src) {
-                      const hoverState = hoverStates[side];
-                      const {intersectionPoint} = hoverState;
+                      const pointerState = pointerStates[side];
+                      const {intersectionPoint} = pointerState;
 
                       if (intersectionPoint) {
                         const {type: srcType, tagMesh: srcTagMesh} = src;
-                        const {metadata} = hoverState;
+                        const {metadata} = pointerState;
                         const {type: hoverType, tagMesh: hoverTagMesh} = metadata;
 
                         if (srcType === 'module' && hoverType === 'module' && srcTagMesh === hoverTagMesh) {
@@ -1868,6 +1905,7 @@ class Tags {
               };
 
               _updateElementAnchors();
+              _updateElementGrabbables();
               _updateDragStates();
               _updateDragLines();
               _updatePositioningMesh();
@@ -2812,9 +2850,15 @@ class Tags {
             }
 
             getPointedTagMesh(side) {
-              const hoverState = hoverStates[side];
-              const {metadata} = hoverState;
+              const pointerState = pointerStates[side];
+              const {metadata} = pointerState;
               return metadata ? metadata.tagMesh : null;
+            }
+
+            getHoveredTagMesh(side) {
+              const hoverState = hoverStates[side];
+              const {tagMesh} = hoverState;
+              return tagMesh;
             }
 
             message(detail) {
