@@ -99,8 +99,10 @@ class Home {
             return itemSpec;
           })
         );
-      const _requestDefaultTagsJson = () => fetch('/archae/home/defaults/world/tags.json')
-        .then(res => res.json());
+      const _requestDefaultTags = () => fetch('/archae/home/defaults/world/tags.json')
+        .then(res => res.json()
+          .then(({tags}) => Object.keys(tags).map(id => tags[id]))
+        );
 
       return Promise.all([
         archae.requestPlugins([
@@ -118,7 +120,7 @@ class Home {
         ]),
         _requestImgs(),
         _requestZCakeNpmItemSpec(),
-        _requestDefaultTagsJson(),
+        _requestDefaultTags(),
       ])
         .then(([
           [
@@ -136,7 +138,7 @@ class Home {
           ],
           imgs,
           zCakeNpmItemSpec,
-          defaultTagsJson, // XXX load this via tags.loadTags()
+          defaultTags,
         ]) => {
           if (live) {
             const {THREE, scene, camera, renderer} = three;
@@ -531,7 +533,13 @@ class Home {
               tagMesh.scale.copy(oneVector);
               controllerMesh.add(tagMesh);
             }; */
-            const _addModule = (side, srcTagMesh) => {
+            const _loadModule = itemSpec => {
+              const tagMesh = tags.makeTag(itemSpec);
+              tags.reifyModule(tagMesh);
+
+              scene.add(tagMesh);
+            };
+            const _addNpmModule = (side, srcTagMesh) => {
               const itemSpec = _clone(srcTagMesh.item);
               itemSpec.id = _makeId();
               itemSpec.metadata.isStatic = false;
@@ -670,7 +678,7 @@ class Home {
                     const {tagMesh: grabMesh} = grabState;
 
                     if (pointerMesh && !grabMesh) {
-                      _addModule(side, pointerMesh); // XXX make this handle both tag and module cases
+                      _addNpmModule(side, pointerMesh); // XXX make this handle both tag and module cases
 
                       return true;
                     } else {
@@ -1021,7 +1029,7 @@ class Home {
 
                 if (hoverMesh === cakeTagMesh) {
                   if (!hoverMesh.item.metadata.exists) {
-                    _addModule(side, hoverMesh);
+                    _addNpmModule(side, hoverMesh);
                   }
                 } else {
                   const controllers = cyborg.getControllers();
@@ -1122,7 +1130,7 @@ class Home {
                 const {type} = itemSpec;
 
                 if (type === 'module') {
-                  _addModule(itemSpec);
+                  _loadModule(itemSpec);
                 } else if (type === 'entity') {
                   // XXX add support for this
                 }
@@ -1336,6 +1344,8 @@ class Home {
               _updateEnvMaps();
             };
             rend.on('update', _update);
+
+            tags.loadTags(defaultTags);
 
             this._cleanup = () => {
               bootstrap.removeListener('vrModeChange', _vrModeChange);
