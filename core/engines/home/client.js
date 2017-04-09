@@ -831,6 +831,7 @@ class Home {
                   return true;
                 } else if (onclick === 'home:back') {
                   const {page} = homeState;
+                  const pageSpec = _parsePage(page);
                   _setPage([pageSpec.name, parseInt(pageSpec.args[0], 10) - 1].join(':'));
 
                   return true;
