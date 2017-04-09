@@ -23,7 +23,6 @@ import {
   DEFAULT_USER_HEIGHT,
 } from './lib/constants/menu';
 import menuRender from './lib/render/menu';
-import dataUrlToBlob from 'dataurl-to-blob';
 
 const SIDES = ['left', 'right'];
 
@@ -92,13 +91,17 @@ class Home {
           cake,
           server,
         }));
-      const _requestZCakeModSpec = () => fetch('/archae/rend/mods?q=' + encodeURIComponent('/plugins/z-cake'))
+      const _requestZCakeNpmItemSpec = () => fetch('/archae/rend/mods?q=' + encodeURIComponent('/plugins/z-cake'))
         .then(res => res.json()
           .then(itemSpec => {
-            itemSpec.isStatic = true;
+            itemSpec.metadata.isStatic = true;
 
             return itemSpec;
           })
+        );
+      const _requestDefaultTags = () => fetch('/archae/home/defaults/world/tags.json')
+        .then(res => res.json()
+          .then(({tags}) => Object.keys(tags).map(id => tags[id]))
         );
 
       return Promise.all([
@@ -116,7 +119,8 @@ class Home {
           '/core/utils/creature-utils',
         ]),
         _requestImgs(),
-        _requestZCakeModSpec(),
+        _requestZCakeNpmItemSpec(),
+        _requestDefaultTags(),
       ])
         .then(([
           [
@@ -133,7 +137,8 @@ class Home {
             creatureUtils,
           ],
           imgs,
-          zCakeItemSpec,
+          zCakeNpmItemSpec,
+          defaultTags,
         ]) => {
           if (live) {
             const {THREE, scene, camera, renderer} = three;
@@ -264,11 +269,11 @@ class Home {
               object.planeMesh = planeMesh;
 
               const scale = 2;
-              const cakeTagMesh = tags.makeTag(zCakeItemSpec);
+              const cakeTagMesh = tags.makeTag(zCakeNpmItemSpec);
               cakeTagMesh.position.y = -0.26;
               cakeTagMesh.position.z = -1 + 0.01;
-              cakeTagMesh.scale.set(scale, scale, 1);
-              cakeTagMesh.initialScale = cakeTagMesh.scale.clone();
+              cakeTagMesh.planeMesh.scale.set(scale, scale, 1);
+              cakeTagMesh.initialScale = cakeTagMesh.planeMesh.scale.clone();
               cakeTagMesh.visible = false;
               object.add(cakeTagMesh);
               object.cakeTagMesh = cakeTagMesh;
@@ -314,6 +319,7 @@ class Home {
             };
 
             const _makeGrabbableState = () => ({
+              pointerMesh: null,
               hoverMesh: null,
             });
             const grabbableStates = {
@@ -337,12 +343,6 @@ class Home {
               mesh.visible = false;
               return mesh;
             };
-            const grabBoxMeshes = {
-              left: _makeGrabBoxMesh(),
-              right: _makeGrabBoxMesh(),
-            };
-            scene.add(grabBoxMeshes.left);
-            scene.add(grabBoxMeshes.right);
 
             const tagHoverStates = {
               left: biolumi.makeMenuHoverState(),
@@ -354,12 +354,6 @@ class Home {
             };
             scene.add(tagDotMeshes.left);
             scene.add(tagDotMeshes.right);
-            const tagBoxMeshes = {
-              left: biolumi.makeMenuBoxMesh(),
-              right: biolumi.makeMenuBoxMesh(),
-            };
-            scene.add(tagBoxMeshes.left);
-            scene.add(tagBoxMeshes.right);
 
             const _makeEnvHoverState = () => ({
               hoveredServerMesh: null,
@@ -523,7 +517,7 @@ class Home {
             };
             _updatePages();
 
-            const _addTag = (side, srcTagMesh) => {
+            /* const _addTag = (side, srcTagMesh) => { // XXX needs to be broken up into module and entity cases
               const itemSpec = _clone(srcTagMesh.item);
               itemSpec.id = _makeId();
               const tagMesh = tags.makeTag(itemSpec);
@@ -538,6 +532,38 @@ class Home {
               tagMesh.quaternion.copy(controllerMeshQuaternion);
               tagMesh.scale.copy(oneVector);
               controllerMesh.add(tagMesh);
+            }; */
+            const _loadModule = itemSpec => {
+              const tagMesh = tags.makeTag(itemSpec);
+              tags.reifyModule(tagMesh);
+
+              scene.add(tagMesh);
+            };
+            const _loadEntity = itemSpec => {
+              const tagMesh = tags.makeTag(itemSpec);
+              tags.reifyEntity(tagMesh);
+
+              scene.add(tagMesh);
+            };
+            const _addNpmModule = (side, srcTagMesh) => {
+              const itemSpec = _clone(srcTagMesh.item);
+              itemSpec.id = _makeId();
+              itemSpec.metadata.isStatic = false;
+              const tagMesh = tags.makeTag(itemSpec);
+
+              const grabState = grabStates[side];
+              grabState.tagMesh = tagMesh;
+
+              const controllers = cyborg.getControllers();
+              const controller = controllers[side];
+              const {mesh: controllerMesh} = controller;
+              tagMesh.position.copy(controllerMeshOffset);
+              tagMesh.quaternion.copy(controllerMeshQuaternion);
+              tagMesh.scale.copy(oneVector);
+
+              controllerMesh.add(tagMesh);
+
+              tags.reifyModule(tagMesh);
             };
 
             const _requestRemoteServers = () => fetch('https://' + hubUrl + '/servers/servers.json')
@@ -652,15 +678,13 @@ class Home {
                   const {buttons: {grip: {pressed: gripPressed}}} = gamepad;
 
                   if (gripPressed) {
-                    const tagHoverState = tagHoverStates[side];
-                    const {intersectionPoint} = tagHoverState;
+                    const grabbableState = grabbableStates[side];
                     const grabState = grabStates[side];
+                    const {pointerMesh} = grabbableState;
                     const {tagMesh: grabMesh} = grabState;
 
-                    if (intersectionPoint && !grabMesh) {
-                      const {metadata: {tagMesh}} = tagHoverState;
-
-                      _addTag(side, tagMesh);
+                    if (pointerMesh && !grabMesh) {
+                      _addNpmModule(side, pointerMesh); // XXX make this handle both tag and module cases
 
                       return true;
                     } else {
@@ -1007,7 +1031,25 @@ class Home {
               const {hoverMesh} = grabbableState;
 
               if (hoverMesh) {
-                _addTag(side, hoverMesh);
+                const {cakeTagMesh} = menuMesh;
+
+                if (hoverMesh === cakeTagMesh) {
+                  if (!hoverMesh.item.metadata.exists) {
+                    _addNpmModule(side, hoverMesh);
+                  }
+                } else {
+                  const controllers = cyborg.getControllers();
+                  const controller = controllers[side];
+                  const {mesh: controllerMesh} = controller;
+                  hoverMesh.position.copy(controllerMeshOffset);
+                  hoverMesh.quaternion.copy(controllerMeshQuaternion);
+                  hoverMesh.scale.copy(oneVector);
+
+                  controllerMesh.add(hoverMesh);
+
+                  const grabState = grabStates[side];
+                  grabState.tagMesh = hoverMesh;
+                }
 
                 e.stopImmediatePropagation();
               }
@@ -1018,23 +1060,18 @@ class Home {
             const _gripup = e => {
               const {side} = e;
               const grabState = grabStates[side];
-              const {tagMesh} = grabState;
+              const {tagMesh: grabTagMesh} = grabState;
 
-              if (tagMesh) {
-                const {position, rotation, scale} = _decomposeObjectMatrixWorld(tagMesh);
-                scene.add(tagMesh);
-                tagMesh.position.copy(position);
-                tagMesh.quaternion.copy(rotation);
-                tagMesh.scale.copy(scale);
+              if (grabTagMesh) {
+                const {position, rotation, scale} = _decomposeObjectMatrixWorld(grabTagMesh);
+                scene.add(grabTagMesh);
+                grabTagMesh.position.copy(position);
+                grabTagMesh.quaternion.copy(rotation);
+                grabTagMesh.scale.copy(scale);
 
-                const {item} = tagMesh;
-                const {attributes} = item;
-                if (attributes.position) {
-                  const matrixArray = position.toArray().concat(rotation.toArray()).concat(scale.toArray());
-                  item.setAttribute('position', matrixArray);
-                }
-
-                tags.reifyTag(tagMesh); // XXX make this work with the ECS
+                const {item} = grabTagMesh;
+                const matrixArray = position.toArray().concat(rotation.toArray()).concat(scale.toArray());
+                item.matrix = matrixArray;
 
                 grabState.tagMesh = null;
 
@@ -1071,6 +1108,41 @@ class Home {
             input.on('keyboarddown', _keyboarddown, {
               priority: 1,
             });
+
+            const tagMeshes = [];
+            const _tagsAddTag = ({itemSpec, dst}) => {
+              if (dst === 'world') {
+                const {type} = itemSpec;
+
+                if (type === 'entity') {
+                  const tagMesh = tags.makeTag(itemSpec);
+                  tags.reifyEntity(tagMesh);
+
+                  tagMeshes.push(tagMesh);
+
+                  scene.add(tagMesh);
+                }
+              }
+            };
+            tags.on('addTag', _tagsAddTag);
+            const _tagsSetAttribute = ({id, name, value}) => {
+              const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
+              tagMesh.setAttribute(name, value);
+            };
+            tags.on('setAttribute', _tagsSetAttribute);
+            const _loadTags = ({itemSpecs}) => {
+              for (let i = 0; i < itemSpecs.length; i++) {
+                const itemSpec = itemSpecs[i];
+                const {type} = itemSpec;
+
+                if (type === 'module') {
+                  _loadModule(itemSpec);
+                } else if (type === 'entity') {
+                  _loadEntity(itemSpec);
+                }
+              }
+            };
+            tags.on('loadTags', _loadTags);
 
             const _update = () => {
               const _updateMenuAnchors = () => {
@@ -1109,107 +1181,20 @@ class Home {
                   }
                 });
               };
-              const _updateTagGrabAnchors = () => {
-                const {cakeTagMesh} = menuMesh;
-                const {visible} = menuMesh;
-
-                if (visible) {
-                  const _getHoverGrabbable = (side) => {
-                    const grabState = grabStates[side];
-                    const {tagMesh: grabMesh} = grabState;
-
-                    if (!grabMesh) {
-                      const {gamepads} = webvr.getStatus();
-                      const gamepad = gamepads[side];
-
-                      if (gamepad) {
-                        const {position: controllerPosition} = gamepad;
-                        const {position: cakeTagMeshPosition} = _decomposeObjectMatrixWorld(cakeTagMesh);
-
-                        if (controllerPosition.distanceTo(cakeTagMeshPosition) <= 0.2) {
-                          return cakeTagMesh;
-                        } else {
-                          return null;
-                        }
-                      } else {
-                        return null;
-                      }
-                    } else {
-                      return null;
-                    }
-                  };
-
-                  SIDES.forEach(side => {
-                    const grabbableState = grabbableStates[side];
-                    const grabBoxMesh = grabBoxMeshes[side];
-
-                    const hoverMesh = _getHoverGrabbable(side);
-
-                    grabbableState.hoverMesh = hoverMesh;
-
-                    if (hoverMesh) {
-                      const {position: tagMeshPosition, rotation: tagMeshRotation, scale: tagMeshScale} = _decomposeObjectMatrixWorld(hoverMesh);
-                      grabBoxMesh.position.copy(tagMeshPosition);
-                      grabBoxMesh.quaternion.copy(tagMeshRotation);
-                      grabBoxMesh.scale.copy(tagMeshScale);
-                      grabBoxMesh.visible = true;
-                    } else {
-                      grabbableState.hoverMesh = null;
-                      grabBoxMesh.visible = false;
-                    }
-                  });
-                } else {
-                  SIDES.forEach(side => {
-                    const grabbableState = grabbableStates[side];
-                    const grabBoxMesh = grabBoxMeshes[side];
-
-                    grabbableState.hoverMesh = null;
-                    grabBoxMesh.visible = false;
-                  });
-                }
-              };
               const _updateTagPointerAnchors = () => {
-                const {gamepads} = webvr.getStatus();
-                const {cakeTagMesh} = menuMesh;
-
                 SIDES.forEach(side => {
-                  const {visible} = cakeTagMesh;
-                  const gamepad = gamepads[side];
-                  const tagHoverState = tagHoverStates[side];
-                  const tagDotMesh = tagDotMeshes[side];
-                  const tagBoxMesh = tagBoxMeshes[side];
+                  const grabbableState = grabbableStates[side];
 
-                  if (visible && gamepad) {
-                    const {position: controllerPosition, rotation: controllerRotation} = gamepad;
+                  const pointerMesh = tags.getPointedTagMesh(side);
+                  grabbableState.pointerMesh = pointerMesh;
+                });
+              };
+              const _updateTagGrabAnchors = () => {
+                SIDES.forEach(side => {
+                  const grabbableState = grabbableStates[side];
 
-                    const {planeMesh, initialScale} = cakeTagMesh;
-                    const matrixObject = _decomposeObjectMatrixWorld(planeMesh);
-                    const {page} = planeMesh;
-
-                    biolumi.updateAnchors({
-                      objects: [{
-                        matrixObject: matrixObject,
-                        page: page,
-                        width: TAGS_WIDTH,
-                        height: TAGS_HEIGHT,
-                        worldWidth: TAGS_WORLD_WIDTH * initialScale.x,
-                        worldHeight: TAGS_WORLD_HEIGHT * initialScale.y,
-                        worldDepth: TAGS_WORLD_DEPTH * initialScale.z,
-                        metadata: {
-                          tagMesh: cakeTagMesh,
-                        },
-                      }],
-                      hoverState: tagHoverState,
-                      dotMesh: tagDotMesh,
-                      boxMesh: tagBoxMesh,
-                      controllerPosition,
-                      controllerRotation,
-                    });
-                  } else {
-                    tagHoverState.intersectionPoint = null;
-                    tagDotMesh.visible = false;
-                    tagBoxMesh.visible = false;
-                  }
+                  const hoverMesh = tags.getHoveredTagMesh(side);
+                  grabbableState.hoverMesh = hoverMesh;
                 });
               };
               const _updateEnvAnchors = () => {
@@ -1357,14 +1342,16 @@ class Home {
               };
 
               _updateMenuAnchors();
-              _updateTagGrabAnchors();
               _updateTagPointerAnchors();
+              _updateTagGrabAnchors();
               _updateEnvAnchors();
               _updateServerMeshes();
               _updateServerMeshAnchors();
               _updateEnvMaps();
             };
             rend.on('update', _update);
+
+            tags.loadTags(defaultTags);
 
             this._cleanup = () => {
               bootstrap.removeListener('vrModeChange', _vrModeChange);
@@ -1376,10 +1363,6 @@ class Home {
 
                 scene.remove(serverDotMeshes[side]);
                 scene.remove(serverBoxMeshes[side]);
-
-                scene.remove(grabBoxMeshes[side]);
-                scene.remove(tagDotMeshes[side]);
-                scene.remove(tagBoxMeshes[side]);
 
                 scene.remove(envDotMeshes[side]);
                 scene.remove(envBoxMeshes[side]);
@@ -1395,6 +1378,10 @@ class Home {
 
               input.removeListener('keydown', _keydown);
               input.removeListener('keyboarddown', _keyboarddown);
+
+              tags.removeListener('addTag', _tagsAddTag);
+              tags.removeListener('setAttribute', _tagsSetAttribute);
+              tags.removeListener('loadTags', _loadTags);
 
               rend.removeListener('update', _update);
             };

@@ -549,7 +549,7 @@ class Zeo {
 
                     class ZeoWorldApi {
                       getWorldTime() {
-                        return world.getWorldTime();
+                        return bootstrap.getWorldTime();
                       }
                     }
 

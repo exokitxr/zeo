@@ -621,9 +621,16 @@ class Tags {
             color: [1, 1, 1, 1],
           });
 
-          const hoverStates = {
+          const pointerStates = {
             left: biolumi.makeMenuHoverState(),
             right: biolumi.makeMenuHoverState(),
+          };
+          const _makeHoverState = () => ({
+            tagMesh: null,
+          });
+          const hoverStates = {
+            left: _makeHoverState(),
+            right: _makeHoverState(),
           };
 
           const dotMeshes = {
@@ -658,6 +665,13 @@ class Tags {
           scene.add(dragLines.left);
           scene.add(dragLines.right);
 
+          const boxMeshes = {
+            left: biolumi.makeMenuBoxMesh(),
+            right: biolumi.makeMenuBoxMesh(),
+          };
+          scene.add(boxMeshes.left);
+          scene.add(boxMeshes.right);
+
           const _makeGrabBoxMesh = () => {
             const width = WORLD_WIDTH;
             const height = WORLD_HEIGHT;
@@ -680,13 +694,6 @@ class Tags {
           };
           scene.add(grabBoxMeshes.left);
           scene.add(grabBoxMeshes.right);
-
-          const boxMeshes = {
-            left: biolumi.makeMenuBoxMesh(),
-            right: biolumi.makeMenuBoxMesh(),
-          };
-          scene.add(boxMeshes.left);
-          scene.add(boxMeshes.right);
 
           const positioningMesh = (() => {
             const geometry = (() => {
@@ -927,8 +934,8 @@ class Tags {
             const {side} = e;
 
             const _doClickDetails = () => {
-              const hoverState = hoverStates[side];
-              const {intersectionPoint} = hoverState;
+              const pointerState = pointerStates[side];
+              const {intersectionPoint} = pointerState;
 
               if (intersectionPoint) {
                 const {gamepads} = webvr.getStatus();
@@ -938,7 +945,7 @@ class Tags {
                   const {buttons: {grip: {pressed: gripPressed}}} = gamepad;
 
                   if (!gripPressed) {
-                    const {anchor} = hoverState;
+                    const {anchor} = pointerState;
                     const onclick = (anchor && anchor.onclick) || '';
 
                     let match;
@@ -1003,11 +1010,11 @@ class Tags {
                 const {buttons: {grip: {pressed: gripPressed}}} = gamepad;
 
                 if (gripPressed) {
-                  const hoverState = hoverStates[side];
-                  const {intersectionPoint} = hoverState;
+                  const pointerState = pointerStates[side];
+                  const {intersectionPoint} = pointerState;
 
                   if (intersectionPoint) {
-                    const {anchor} = hoverState;
+                    const {anchor} = pointerState;
                     const onclick = (anchor && anchor.onclick) || '';
 
                     let match;
@@ -1051,11 +1058,11 @@ class Tags {
                 const {buttons: {grip: {pressed: gripPressed}}} = gamepad;
 
                 if (gripPressed) {
-                  const hoverState = hoverStates[side];
-                  const {intersectionPoint} = hoverState;
+                  const pointerState = pointerStates[side];
+                  const {intersectionPoint} = pointerState;
 
                   if (intersectionPoint) {
-                    const {metadata} = hoverState;
+                    const {metadata} = pointerState;
                     const {type} = metadata;
 
                     if (type === 'module' || type === 'entity' || type === 'file') {
@@ -1091,11 +1098,11 @@ class Tags {
               }
             };
             const _doClickAux = () => {
-              const hoverState = hoverStates[side];
-              const {intersectionPoint} = hoverState;
+              const pointerState = pointerStates[side];
+              const {intersectionPoint} = pointerState;
 
               if (intersectionPoint) {
-                const {anchor} = hoverState;
+                const {anchor} = pointerState;
                 const onclick = (anchor && anchor.onclick) || '';
 
                 let match;
@@ -1256,7 +1263,7 @@ class Tags {
                   const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
                   const {item, planeOpenMesh: {page: openPage}} = tagMesh;
 
-                  const {value} = hoverState;
+                  const {value} = pointerState;
                   item.seek(value);
 
                   openPage.update();
@@ -1295,11 +1302,11 @@ class Tags {
               }
             };
             const _doClickAttribute = () => {
-              const hoverState = hoverStates[side];
-              const {intersectionPoint} = hoverState;
+              const pointerState = pointerStates[side];
+              const {intersectionPoint} = pointerState;
 
               if (intersectionPoint) {
-                const {anchor} = hoverState;
+                const {anchor} = pointerState;
                 const onclick = (anchor && anchor.onclick) || '';
 
                 let match;
@@ -1329,7 +1336,7 @@ class Tags {
 
                     focusState.type = '';
                   } else if (action === 'focus') {
-                    const {value: hoverValue} = hoverState;
+                    const {value: hoverValue} = pointerState;
                     const {type} = _getAttributeSpec(attributeName);
 
                     const textProperties = (() => {
@@ -1371,7 +1378,7 @@ class Tags {
 
                     if (type === 'number') {
                       const newValue = (() => {
-                        const {value} = hoverState;
+                        const {value} = pointerState;
                         const {min, max, step} = _getAttributeSpec(attributeName);
 
                         let n = min + (value * (max - min));
@@ -1392,7 +1399,7 @@ class Tags {
                       // _updateAttributes();
                     } else if (type ==='vector') {
                       const newKeyValue = (() => {
-                        const {value} = hoverState;
+                        const {value} = pointerState;
                         const {min, max, step} = _getAttributeSpec(attributeName);
 
                         let n = min + (value * (max - min));
@@ -1435,8 +1442,8 @@ class Tags {
 
             _doClickDetails() || _doClickGrabNpmTag() || _doClickGrabWorldTag() || _doClickAux() || _doSetPosition() || _doClickAttribute();
 
-            const hoverState = hoverStates[side];
-            const {intersectionPoint} = hoverState;
+            const pointerState = pointerStates[side];
+            const {intersectionPoint} = pointerState;
             if (intersectionPoint) {
               e.stopImmediatePropagation();
             }
@@ -1446,11 +1453,11 @@ class Tags {
             const {side} = e;
 
             const _doClickTag = () => {
-              const hoverState = hoverStates[side];
-              const {intersectionPoint} = hoverState;
+              const pointerState = pointerStates[side];
+              const {intersectionPoint} = pointerState;
 
               if (intersectionPoint) {
-                const {anchor} = hoverState;
+                const {anchor} = pointerState;
                 const onclick = (anchor && anchor.onclick) || '';
 
                 let match;
@@ -1514,29 +1521,122 @@ class Tags {
                       if (!item.instancing) {
                         const {tagMesh: dstTagMesh} = dst;
 
-                        if (srcTagMesh === dstTagMesh) {
-                          tagsApi.emit('linkModule', {
-                            side,
-                            srcTagMesh,
-                            dstTagMesh: null,
-                          });
+                        const _linkModule = (srcTagMesh, dstTagMesh) => {
+                          const {item: srcItem} = srcTagMesh;
+                          const {name: srcName} = srcItem;
+                          const componentApis = tagComponentApis[srcName];
 
-                          dragState.src = null;
-                          dragState.dst = null;
+                          for (let i = 0; i < componentApis.length; i++) {
+                            const componentApi = componentApis[i];
 
-                          return true;
-                        } else {
-                          tagsApi.emit('linkModule', {
-                            side,
-                            srcTagMesh,
-                            dstTagMesh,
-                          });
+                            const _requestSrcTagAttributes = fn => new Promise((accept, reject) => {
+                              const componentApi = componentApis[i];
+                              const {attributes: componentAttributes = {}} = componentApi;
+                              const componentAttributeKeys = Object.keys(componentAttributes);
 
-                          dragState.src = null;
-                          dragState.dst = null;
+                              const _recurse = i => {
+                                if (i < componentAttributeKeys.length) {
+                                  const attributeName = componentAttributeKeys[i];
+                                  const attribute = componentAttributes[attributeName];
+                                  const _requestAttributeValue = () => {
+                                    let {value: attributeValue} = attribute;
+                                    if (typeof attributeValue === 'function') {
+                                      attributeValue = attributeValue();
+                                    }
+                                    return Promise.resolve(attributeValue);
+                                  };
 
-                          return true;
-                        }
+                                  const result = fn(attributeName, _requestAttributeValue);
+                                  Promise.resolve(result)
+                                    .then(() => {
+                                      _recurse(i + 1);
+                                    });
+                                } else {
+                                  accept();
+                                }
+                              };
+                              _recurse(0);
+                            });
+
+                            if (!dstTagMesh) {
+                              const {item} = srcTagMesh;
+
+                              const _requestAttributes = () => {
+                                const result = {};
+                                return _requestSrcTagAttributes((attributeName, getAttributeValue) =>
+                                  getAttributeValue()
+                                    .then(attributeValue => {
+                                      result[attributeName] = {
+                                        value: attributeValue,
+                                      };
+                                    })
+                                ).then(() => result);
+                              };
+
+                              _requestAttributes()
+                                .then(attributes => {
+                                  const itemSpec = _clone(item);
+                                  itemSpec.id = _makeId();
+                                  itemSpec.type = 'entity';
+                                  const tagName = (() => {
+                                    const {selector: componentSelector = 'div'} = componentApi;
+                                    const {rule: {tagName}} = cssSelectorParser.parse(componentSelector);
+
+                                    if (tagName) {
+                                      return tagName;
+                                    } else {
+                                      return 'entity';
+                                    }
+                                  })();
+                                  itemSpec.name = tagName;
+                                  itemSpec.displayName = tagName;
+                                  itemSpec.tagName = tagName;
+                                  itemSpec.attributes = attributes;
+                                  const matrix = (() => { // XXX we should offset multiple tags here so they don't overlap
+                                    const {matrix: oldMatrix} = itemSpec;
+                                    const position = new THREE.Vector3().fromArray(oldMatrix.slice(0, 3));
+                                    const rotation = new THREE.Quaternion().fromArray(oldMatrix.slice(3, 3 + 4));
+                                    const scale = new THREE.Vector3().fromArray(oldMatrix.slice(3 + 4, 3 + 4 + 3));
+
+                                    position.add(new THREE.Vector3(0, 0, 0.1).applyQuaternion(rotation));
+
+                                    return position.toArray().concat(rotation.toArray()).concat(scale.toArray());
+                                  })();
+                                  itemSpec.matrix = matrix;
+
+                                  tagsApi.emit('addTag', {
+                                    itemSpec: itemSpec,
+                                    dst: 'world',
+                                  });
+                                })
+                                .catch(err => {
+                                  console.warn(err);
+                                });
+                            } else {
+                              const {item: dstItem} = dstTagMesh;
+                              const {id: dstId, instance: dstElement} = dstItem;
+
+                              _requestSrcTagAttributes((attributeName, requestAttributeValue) => {
+                                if (!dstElement.hasAttribute(attributeName)) {
+                                  return requestAttributeValue()
+                                    .then(attributeValue => {
+                                      tagsApi.emit('setAttribute', {
+                                        id: dstId,
+                                        name: attributeName,
+                                        value: attributeValue,
+                                      });
+                                    });
+                                }
+                              });
+                            }
+                          }
+                        };
+                        _linkModule(srcTagMesh, (srcTagMesh === dstTagMesh) ? null : dstTagMesh);
+
+                        dragState.src = null;
+                        dragState.dst = null;
+
+                        return true;
                       } else {
                         return false;
                       }
@@ -1550,8 +1650,11 @@ class Tags {
                   const {tagMesh: srcTagMesh, attributeName} = src;
                   const {tagMesh: dstTagMesh} = dst;
 
-                  tagsApi.emit('linkAttribute', {
-                    side,
+                  const _linkAttribute = ({srcTagMesh, attributeName, dstTagMesh}) => {
+                    const {item: {id, name}} = dstTagMesh;
+                    srcTagMesh.setAttribute(attributeName, '/fs/' + id + name);
+                  };
+                  _linkAttribute({
                     srcTagMesh,
                     attributeName,
                     dstTagMesh,
@@ -1619,7 +1722,7 @@ class Tags {
                   const controllerMeshes = SIDES.map(side => controllers[side].mesh);
 
                   const isWorldTab = rend.getTab() === 'world';
-                  const _isGlobalTagMesh = tagMesh =>
+                  const _isFreeTagMesh = tagMesh =>
                     (tagMesh.parent === scene) ||
                     controllerMeshes.some(controllerMesh => tagMesh.parent === controllerMesh);
 
@@ -1630,7 +1733,7 @@ class Tags {
                       const tagMesh = tagMeshes[i];
                       const {visible} = tagMesh;
 
-                      if (visible && (isWorldTab || _isGlobalTagMesh(tagMesh))) {
+                      if (visible && (isWorldTab || homeEnabled || _isFreeTagMesh(tagMesh))) {
                         const {item} = tagMesh;
                         const {type} = item;
 
@@ -1729,14 +1832,14 @@ class Tags {
 
                     if (gamepad) {
                       const {position: controllerPosition, rotation: controllerRotation} = gamepad;
-                      const hoverState = hoverStates[side];
+                      const pointerState = pointerStates[side];
                       const dotMesh = dotMeshes[side];
                       const boxMesh = boxMeshes[side];
 
                       biolumi.updateAnchors({
                         objects: objects,
                         side,
-                        hoverState: hoverState,
+                        hoverState: pointerState,
                         dotMesh: dotMesh,
                         boxMesh: boxMesh,
                         controllerPosition,
@@ -1745,7 +1848,57 @@ class Tags {
                     }
                   });
                 }
-              }
+              };
+              const _updateElementGrabbables = () => {
+                if (rend.isOpen() || homeEnabled) {
+                  const {gamepads} = webvr.getStatus();
+
+                  SIDES.forEach(side => {
+                    const hoverState = hoverStates[side];
+                    const gamepad = gamepads[side];
+                    const grabBoxMesh = grabBoxMeshes[side];
+
+                    const hoverMesh = (() => {
+                      if (gamepad) {
+                        const {position: controllerPosition} = gamepad;
+
+                        const tagMeshDistanceSpecs = tagMeshes.map(tagMesh => {
+                          const distance = controllerPosition.distanceTo(tagMesh.getWorldPosition());
+                          return {
+                            tagMesh,
+                            distance,
+                          };
+                        }).filter(({distance}) => distance <= 0.2);
+
+                        if (tagMeshDistanceSpecs.length > 0) {
+                          return tagMeshDistanceSpecs.sort((a, b) => a.distance - b.distance)[0].tagMesh;
+                        } else {
+                          return null;
+                        }
+                      } else {
+                        return null;
+                      }
+                    })();
+                    hoverState.tagMesh = hoverMesh;
+
+                    if (hoverMesh) {
+                      const {planeMesh} = hoverMesh;
+                      const {position: tagMeshPosition, rotation: tagMeshRotation, scale: tagMeshScale} = _decomposeObjectMatrixWorld(planeMesh);
+                      grabBoxMesh.position.copy(tagMeshPosition);
+                      grabBoxMesh.quaternion.copy(tagMeshRotation);
+                      grabBoxMesh.scale.copy(tagMeshScale);
+
+                      if (!grabBoxMesh.visible) {
+                        grabBoxMesh.visible = true;
+                      }
+                    } else {
+                      if (grabBoxMesh.visible) {
+                        grabBoxMesh.visible = false;
+                      }
+                    }
+                  });
+                }
+              };
               const _updateDragStates = () => {
                 if (rend.isOpen() || homeEnabled) {
                   SIDES.forEach(side => {
@@ -1753,12 +1906,12 @@ class Tags {
                     const {src} = dragState;
 
                     if (src) {
-                      const hoverState = hoverStates[side];
-                      const {intersectionPoint} = hoverState;
+                      const pointerState = pointerStates[side];
+                      const {intersectionPoint} = pointerState;
 
                       if (intersectionPoint) {
                         const {type: srcType, tagMesh: srcTagMesh} = src;
-                        const {metadata} = hoverState;
+                        const {metadata} = pointerState;
                         const {type: hoverType, tagMesh: hoverTagMesh} = metadata;
 
                         if (srcType === 'module' && hoverType === 'module' && srcTagMesh === hoverTagMesh) {
@@ -1868,6 +2021,7 @@ class Tags {
               };
 
               _updateElementAnchors();
+              _updateElementGrabbables();
               _updateDragStates();
               _updateDragLines();
               _updatePositioningMesh();
@@ -1892,12 +2046,10 @@ class Tags {
             SIDES.forEach(side => {
               scene.remove(dotMeshes[side]);
               scene.remove(boxMeshes[side]);
+              scene.remove(grabBoxMeshes[side]);
               scene.remove(dragLines[side]);
 
-              scene.remove(grabBoxMeshes[side]);
-
               scene.remove(positioningMesh);
-              scene.remove(oldPositioningMesh);
             });
 
             input.removeListener('trigger', _trigger);
@@ -2802,10 +2954,22 @@ class Tags {
               return tagComponentApis[tag];
             }
 
+            loadTags(itemSpecs) {
+              this.emit('loadTags', {
+                itemSpecs,
+              });
+            }
+
             getPointedTagMesh(side) {
-              const hoverState = hoverStates[side];
-              const {metadata} = hoverState;
+              const pointerState = pointerStates[side];
+              const {metadata} = pointerState;
               return metadata ? metadata.tagMesh : null;
+            }
+
+            getHoveredTagMesh(side) {
+              const hoverState = hoverStates[side];
+              const {tagMesh} = hoverState;
+              return tagMesh;
             }
 
             message(detail) {
@@ -2821,7 +2985,8 @@ class Tags {
 
             listen() {
               this.on('setAttribute', setAttrbuteSpec => {
-                if (this.listeners('setAttribute').length === 1) { // if this is the only listener, we need to set the attribute on ourselves
+                // if this is the only listener (i.e. a home with no world engine rather than a server), we need to set the attribute on ourselves
+                if (this.listeners('setAttribute').length === 1) {
                   const {id, name, value} = setAttrbuteSpec;
                   const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
                   const {item} = tagMesh;
@@ -2867,6 +3032,7 @@ const _shallowClone = o => {
   return result;
 };
 const _makeId = () => Math.random().toString(36).substring(7);
+const _clone = o => JSON.parse(JSON.stringify(o));
 const _roundToDecimals = (value, decimals) => Number(Math.round(value+'e'+decimals)+'e-'+decimals);
 
 module.exports = Tags;

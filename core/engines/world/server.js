@@ -520,27 +520,7 @@ class World {
               });
           });
 
-          const startTime = Date.now();
-          function serveStartTime(req, res, next) {
-            res.json({
-              startTime,
-            });
-          }
-          app.get('/archae/world/start-time.json', serveStartTime);
-
           this._cleanup = () => {
-            function removeMiddlewares(route, i, routes) {
-              if (
-                route.handle.name === 'serveStartTime'
-              ) {
-                routes.splice(i, 1);
-              }
-              if (route.route) {
-                route.route.stack.forEach(removeMiddlewares);
-              }
-            }
-            app._router.stack.forEach(removeMiddlewares);
-
             for (let i = 0; i < connections.length; i++) {
               const connection = connections[i];
               connection.close();
