@@ -2,14 +2,14 @@ class Particle {
   mount() {
     const {three: {THREE, scene, camera}, elements, render, pose, input, world, ui, sound, utils: {geometry: geometryUtils}} = zeo;
 
-    const patricleMaterial = new THREE.LineBasicMaterial({
+    const particleMaterial = new THREE.LineBasicMaterial({
       color: 0x000000,
       transparent: true,
       opacity: 0.5,
     });
 
     const particleComponent = {
-      selector: 'patricle[position]',
+      selector: 'particle[position]',
       attributes: {
         position: {
           type: 'matrix',
@@ -79,7 +79,7 @@ class Particle {
             geometry.addAttribute('position', new THREE.BufferAttribute(new Float32Array(numParticles * 3 * 6), 3));
             return geometry;
           })();
-          const material = patricleMaterial;
+          const material = particleMaterial;
 
           const mesh = new THREE.LineSegments(geometry, material);
           mesh.rotation.order = camera.rotation.order;
