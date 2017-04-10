@@ -1,5 +1,3 @@
-const SIDES = ['left', 'right'];
-
 class Particle {
   mount() {
     const {three: {THREE, scene, camera}, elements, render, pose, input, world, ui, sound, utils: {geometry: geometryUtils}} = zeo;
