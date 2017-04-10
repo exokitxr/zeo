@@ -640,30 +640,77 @@ class Tags {
           scene.add(dotMeshes.left);
           scene.add(dotMeshes.right);
 
+          const linesMesh = (() => {
+            const maxNumLines = 256;
+
+            const geometry = (() => {
+              const geometry = new THREE.BufferGeometry();
+              geometry.addAttribute('position', new THREE.BufferAttribute(new Float32Array(maxNumLines * 3 * 2), 3));
+              geometry.setDrawRange(0, 0);
+              return geometry;
+            })();
+            const material = lineMaterial;
+
+            const mesh = new THREE.LineSegments(geometry, material);
+            // mesh.rotation.order = camera.rotation.order;
+            mesh.frustumCulled = false;
+
+            class Line {
+              constructor() {
+                this.start = null;
+                this.end = null;
+              }
+
+              set(start, end) {
+                this.start = start;
+                this.end = end;
+              }
+            }
+
+            const lines = [];
+            mesh.addLine = () => {
+              const line = new Line();
+              lines.push(line);
+              return line;
+            };
+            mesh.removeLine = line => {
+              lines.splice(lines.indexOf(line), 1);
+            };
+            mesh.render = () => {
+              const positionsAttribute = geometry.getAttribute('position');
+              const {array: positions} = positionsAttribute;
+
+              for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+                const {start, end} = line;
+
+                const baseIndex = i * 3 * 2;
+                positions[i + 0] = start.x;
+                positions[i + 1] = start.y;
+                positions[i + 2] = start.z;
+                positions[i + 3] = end.x;
+                positions[i + 4] = end.y;
+                positions[i + 5] = end.z;
+              }
+
+              positionsAttribute.needsUpdate = true;
+
+              geometry.setDrawRange(0, lines.length * 2);
+            };
+
+            return mesh;
+          })();
+          scene.add(linesMesh);
+
           const _makeDragState = () => ({
             src: null,
             dst: null,
+            line: null,
           });
           const dragStates = {
             left: _makeDragState(),
             right: _makeDragState(),
           };
-
-          const _makeDragLine = () => {
-            const geometry = new THREE.BufferGeometry();
-            geometry.addAttribute('position', new THREE.BufferAttribute(new Float32Array(3 * 2), 3));
-            const material = lineMaterial;
-
-            const line = new THREE.Line(geometry, material);
-            line.visible = false;
-            return line;
-          };
-          const dragLines = {
-            left: _makeDragLine(),
-            right: _makeDragLine(),
-          };
-          scene.add(dragLines.left);
-          scene.add(dragLines.right);
 
           const boxMeshes = {
             left: biolumi.makeMenuBoxMesh(),
@@ -1948,17 +1995,21 @@ class Tags {
                   SIDES.forEach(side => {
                     const gamepad = gamepads[side];
                     const dragState = dragStates[side];
-                    const {src} = dragState;
-                    const dragLine = dragLines[side];
+                    const {src, line} = dragState;
 
                     if (gamepad && src) {
-                      const {geometry} = dragLine;
-                      const positionsAttribute = geometry.getAttribute('position');
-                      const {array: positions} = positionsAttribute;
+                      const localLine = (() => {
+                        if (line) {
+                          return line;
+                        } else {
+                          const newLine = linesMesh.addLine();
+                          dragState.line = newLine;
+                          return newLine;
+                        }
+                      })();
 
                       const {tagMesh: srcTagMesh} = src;
                       const {position: srcPosition} = srcTagMesh;
-
                       const dstPosition = (() => {
                         const {dst} = dragState;
 
@@ -1976,20 +2027,14 @@ class Tags {
                           return _getControllerPosition();
                         }
                       })();
-
-                      positions.set(Float32Array.from([
-                        srcPosition.x, srcPosition.y, srcPosition.z,
-                        dstPosition.x, dstPosition.y, dstPosition.z,
-                      ]));
-
-                      positionsAttribute.needsUpdate = true;
-
-                      if (!dragLine.visible) {
-                        dragLine.visible = true;
-                      }
+                      localLine.set(srcPosition, dstPosition);
+                      linesMesh.render();
                     } else {
-                      if (dragLine.visible) {
-                        dragLine.visible = false;
+                      if (line) {
+                        linesMesh.removeLine(line);
+                        linesMesh.render();
+
+                        dragState.line = null;
                       }
                     }
                   });
@@ -2047,10 +2092,10 @@ class Tags {
               scene.remove(dotMeshes[side]);
               scene.remove(boxMeshes[side]);
               scene.remove(grabBoxMeshes[side]);
-              scene.remove(dragLines[side]);
 
               scene.remove(positioningMesh);
             });
+            scene.remove(linesMesh);
 
             input.removeListener('trigger', _trigger);
             input.removeListener('triggerdown', _triggerdown);
