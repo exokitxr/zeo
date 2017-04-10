@@ -64,7 +64,7 @@ class Particle {
             }
           }
 
-          const numParticles = 100;
+          const numParticles = 50;
           const particles = (() => {
             const result = Array(numParticles);
 
