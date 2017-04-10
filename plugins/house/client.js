@@ -147,7 +147,7 @@ class House {
         const entityApi = entityElement.getComponentApi();
 
         switch (name) {
-          /* case 'position': { // XXX re-enable this
+          case 'position': {
             const position = newValue;
 
             if (position) {
@@ -159,7 +159,7 @@ class House {
             }
 
             break;
-          } */
+          }
         }
       },
       entityRemovedCallback(entityElement) {
