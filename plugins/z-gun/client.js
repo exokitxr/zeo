@@ -12,8 +12,6 @@ class ZGun {
   mount() {
     const {three: {THREE, scene}, input, elements, render, pose, utils: {geometry: geometryUtils}} = zeo;
 
-    const worldElement = elements.getWorldElement();
-
     let live = true;
     this._cleanup = () => {
       live = false;
@@ -48,7 +46,6 @@ class ZGun {
             color: 0x808080,
             shading: THREE.FlatShading,
           });
-
           const bulletMaterial = new THREE.MeshPhongMaterial({
             color: 0xFF0000,
             shading: THREE.FlatShading,
