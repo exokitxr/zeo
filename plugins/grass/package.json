@@ -6,6 +6,6 @@
   "client": "client.js",
   "dependencies": {
     "alea": "0.0.9",
-    "functionutils": "0.0.1"
+    "functionutils": "0.0.2"
   }
 }

@@ -5,7 +5,7 @@
   "keywords": [],
   "client": "client.js",
   "dependencies": {
-    "functionutils": "0.0.1",
+    "functionutils": "0.0.2",
     "mod-loop": "0.0.2"
   }
 }
