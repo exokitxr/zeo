@@ -78,14 +78,19 @@ class Bootstrap {
           } else {
             const err = new Error('server announce returned error status code: ' + statusCode);
             err.code = 'EHTTP';
+            err.options = options;
             reject(err);
           }
         });
         res.on('error', err => {
+          err.options = options;
+
           reject(err);
         });
       });
       req.on('error', err => {
+        err.options = options;
+
         reject(err);
       });
     });
@@ -96,7 +101,7 @@ class Bootstrap {
           accept(true);
         })
         .catch(err => {
-          console.warn('server announce failed: ', err.code);
+          console.warn('server announce failed: ', err.code, JSON.stringify(err.options));
 
           accept(false);
         });

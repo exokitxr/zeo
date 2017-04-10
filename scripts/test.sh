@@ -8,7 +8,9 @@ npm start -- site home my \
   host=test.zeovr.io port=8080 \
   homeHost=test-home.zeovr.io \
   hubUrl=test-hub.zeovr.io:8000 \
-  cryptoDirectory=crypto-test installDirectory=installed-test &
+  dataDirectory=data dataDirectorySrc='defaults/data' \
+  cryptoDirectory='crypto-test' cryptoDirectorySrc='crypto-test' \
+  installDirectory='installed-test' installDirectorySrc='installed-test' &
 npm start -- hub my \
   port=8000 \
   homeHost=test-home.zeovr.io \
@@ -19,14 +21,14 @@ npm start -- server \
   homeHost=test-home.zeovr.io hubUrl=test-hub.zeovr.io:8000 \
   serverHost=server1.test-home.zeovr.io worldname='Server One' \
   dataDirectory='data/hub/servers/Server One/data' dataDirectorySrc='defaults/data' \
-  cryptoDirectory='data/hub/servers/Server One/crypto' cryptoDirectorySrc='crypto' \
-  installDirectory='data/hub/servers/Server One/installed' installDirectorySrc='installed' &
+  cryptoDirectory='data/hub/servers/Server One/crypto' cryptoDirectorySrc='crypto-test' \
+  installDirectory='data/hub/servers/Server One/installed' installDirectorySrc='installed-test' &
 npm start -- server \
   port=8002 \
   homeHost=test-home.zeovr.io hubUrl=test-hub.zeovr.io:8000 \
   serverHost=server2.test-home.zeovr.io worldname='Server Two' \
   dataDirectory='data/hub/servers/Server Two/data' dataDirectorySrc='defaults/data' \
-  cryptoDirectory='data/hub/servers/Server Two/crypto' cryptoDirectorySrc='crypto' \
-  installDirectory='data/hub/servers/Server Two/installed' installDirectorySrc='installed' &
+  cryptoDirectory='data/hub/servers/Server Two/crypto' cryptoDirectorySrc='crypto-test' \
+  installDirectory='data/hub/servers/Server Two/installed' installDirectorySrc='installed-test' &
 sleep infinity;
 popd;

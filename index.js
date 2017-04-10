@@ -80,6 +80,9 @@ const port = flags.port || 8000;
 const dataDirectory = flags.dataDirectory || 'data';
 const cryptoDirectory = flags.cryptoDirectory || 'crypto';
 const installDirectory = flags.installDirectory || 'installed';
+const dataDirectorySrc = flags.dataDirectorySrc || dataDirectory;
+const cryptoDirectorySrc = flags.cryptoDirectorySrc || cryptoDirectory;
+const installDirectorySrc = flags.installDirectorySrc || installDirectory;
 const staticSite = flags.site && !(flags.home || flags.hub || flags.server);
 const serverHost = flags.serverHost || ('server.' + hostname);
 const homeHost = flags.homeHost || ('home.' + hostname);
@@ -109,9 +112,9 @@ const config = {
   staticSite: staticSite,
   metadata: {
     config: {
-      dataDirectorySrc: flags.dataDirectorySrc || null,
-      cryptoDirectorySrc: flags.cryptoDirectorySrc || null,
-      installDirectorySrc: flags.installDirectorySrc || null,
+      dataDirectorySrc: dataDirectorySrc,
+      cryptoDirectorySrc: cryptoDirectorySrc,
+      installDirectorySrc: installDirectorySrc,
     },
     site: {
       url: hostname + ':' + port,
@@ -186,6 +189,15 @@ const _checkArgs = () => new Promise((accept, reject) => {
     accept();
   }
 });
+
+const _preload = () => {
+  if (flags.server) {
+    const server = require('./lib/server');
+    return server.preload(a, config);
+  } else {
+    return Promise.resolve();
+  }
+};
 
 const _loadSign = () => new Promise((accept, reject) => {
   if (flags.hub || flags.server || flags.makeToken) {
@@ -428,6 +440,7 @@ const _launch = () => {
 };
 
 _checkArgs()
+  .then(() => _preload())
   .then(() => _load())
   .then(({
     key,
