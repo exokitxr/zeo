@@ -105,8 +105,10 @@ class Tags {
             transparent: true,
           });
           const lineMaterial = new THREE.LineBasicMaterial({
-            color: 0x808080,
-            linewidth: 1,
+            color: 0x000000,
+            // linewidth: 1,
+            transparent: true,
+            opacity: 0.5,
           });
 
           const subcontentFontSpec = {
@@ -333,28 +335,70 @@ class Tags {
           });
 
           const _addEntityCallback = (componentElement, entityElement) => {
-            let {_numComponents: numComponents = 0} = entityElement;
-            numComponents++;
-            entityElement._numComponents = numComponents;
+            const _updateObject = () => {
+              let {_numComponents: numComponents = 0} = entityElement;
+              numComponents++;
+              entityElement._numComponents = numComponents;
 
-            if (numComponents === 1) {
-              const object = new THREE.Object3D();
-              scene.add(object);
-              entityElement._object = object;
-            }
+              if (numComponents === 1) {
+                const object = new THREE.Object3D();
+                scene.add(object);
+                entityElement._object = object;
+              }
+            };
+            const _updateLine = () => {
+              let {_lines: componentLines} = componentElement;
+              if (!componentLines) {
+                componentLines = new Map();
+                componentElement._lines = componentLines;
+              }
+              const line = (() => {
+                const line = linesMesh.addLine();
+                const {_baseObject: componentApi} = componentElement;
+                const componentApiTagName = componentApiTags.get(componentApi);
+                const moduleTagMesh = tagMeshes.find(tagMesh =>
+                  tagMesh.item.type === 'module' &&
+                  tagMesh.item.name === componentApiTagName &&
+                  !(tagMesh.item.metadata && tagMesh.item.metadata.isStatic)
+                );
+                const entityId = entityElement.item.id;
+                const entityTagMesh = tagMeshes.find(tagMesh => tagMesh.item.type === 'entity' && tagMesh.item.id === entityId);
+                line.set(
+                  moduleTagMesh.position.clone(),
+                  entityTagMesh.position.clone()
+                );
+                return line;
+              })();
+              linesMesh.render();
+              componentLines.set(entityElement, line);
+            };
+
+            _updateObject();
+            _updateLine();
 
             componentElement.entityAddedCallback(entityElement);
           };
           const _removeEntityCallback = (componentElement, entityElement) => {
-            let {_numComponents: numComponents = 0} = entityElement;
-            numComponents--;
-            entityElement._numComponents = numComponents;
+            const _updateLine = () => {
+              /* const {_lines: componentLines} = componentElement; // XXX re-enabled this
+              const line = componentLines.get(entityElement);
+              linesMesh.removeLine(line);
+              linesMesh.render();
+              componentLines.delete(line); */
+            };
+            const _updateObject = () => {
+              let {_numComponents: numComponents = 0} = entityElement;
+              numComponents--;
+              entityElement._numComponents = numComponents;
 
-            if (numComponents === 0) {
-              const {_object: oldObject} = entityElement;
-              scene.remove(oldObject);
-              entityElement._object = null;
-            }
+              if (numComponents === 0) {
+                const {_object: oldObject} = entityElement;
+                scene.remove(oldObject);
+                entityElement._object = null;
+              }
+            };
+            _updateLine();
+            _updateObject();
 
             componentElement.entityRemovedCallback(entityElement);
           };
@@ -2426,6 +2470,7 @@ class Tags {
           let componentApis = []; // [ component api ]
           let componentApiInstances = []; // [ component element ]
           const tagComponentApis = {}; // plugin name -> [ component api ]
+          const componentApiTags = new Map(); // component api -> plugin name
 
           const _getElementSelector = element => {
             const {tagName, attributes, classList} = element;
@@ -2571,6 +2616,7 @@ class Tags {
                 tagComponentApis[name] = tagComponentApiComponents;
               }
               tagComponentApiComponents.push(componentApi);
+              componentApiTags.set(componentApi, name);
 
               // bind entities
               const {selector: componentSelector = 'div', attributes: componentAttributes = {}} = componentApi;
@@ -2622,6 +2668,7 @@ class Tags {
               if (tagComponentApiComponents.length === 0) {
                 tagComponentApis[name] = null;
               }
+              componentApiTags.delete(componentApiToRemove);
 
               // unbind entities
               const componentElement = removedComponentApiInstance;
