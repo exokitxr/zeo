@@ -745,6 +745,7 @@ class Tags {
             return mesh;
           })();
           scene.add(linesMesh);
+          rend.registerAuxObject('tagsLinesMesh', linesMesh);
 
           const _makeDragState = () => ({
             src: null,

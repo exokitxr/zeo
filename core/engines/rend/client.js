@@ -106,6 +106,7 @@ class Rend {
         // main state
         const auxObjects = {
           tagMeshes: null,
+          tagsLinesMesh: null,
         };
 
         const menuState = {
@@ -398,9 +399,15 @@ class Rend {
                     navbarBoxMeshes[side].visible = false;
                     navbarDotMeshes[side].visible = false;
                   });
+
+                  const {tagsLinesMesh} = auxObjects;
+                  tagsLinesMesh.visible = false;
                 } else {
                   menuState.open = true;
                   menuState.animation = anima.makeAnimation(TRANSITION_TIME);
+
+                  const {tagsLinesMesh} = auxObjects;
+                  tagsLinesMesh.visible = true;
 
                   const newPosition = camera.position;
                   const newRotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(
