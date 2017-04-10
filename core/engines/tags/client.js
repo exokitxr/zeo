@@ -685,12 +685,12 @@ class Tags {
                 const {start, end} = line;
 
                 const baseIndex = i * 3 * 2;
-                positions[i + 0] = start.x;
-                positions[i + 1] = start.y;
-                positions[i + 2] = start.z;
-                positions[i + 3] = end.x;
-                positions[i + 4] = end.y;
-                positions[i + 5] = end.z;
+                positions[baseIndex + 0] = start.x;
+                positions[baseIndex + 1] = start.y;
+                positions[baseIndex + 2] = start.z;
+                positions[baseIndex + 3] = end.x;
+                positions[baseIndex + 4] = end.y;
+                positions[baseIndex + 5] = end.z;
               }
 
               positionsAttribute.needsUpdate = true;
