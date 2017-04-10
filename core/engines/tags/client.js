@@ -363,10 +363,7 @@ class Tags {
                 );
                 const entityId = entityElement.item.id;
                 const entityTagMesh = tagMeshes.find(tagMesh => tagMesh.item.type === 'entity' && tagMesh.item.id === entityId);
-                line.set(
-                  moduleTagMesh.position.clone(),
-                  entityTagMesh.position.clone()
-                );
+                line.set(moduleTagMesh, entityTagMesh);
                 return line;
               })();
               linesMesh.render();
@@ -727,14 +724,16 @@ class Tags {
               for (let i = 0; i < lines.length; i++) {
                 const line = lines[i];
                 const {start, end} = line;
+                const startPosition = start.getWorldPosition();
+                const endPosition = end.getWorldPosition();
 
                 const baseIndex = i * 3 * 2;
-                positions[baseIndex + 0] = start.x;
-                positions[baseIndex + 1] = start.y;
-                positions[baseIndex + 2] = start.z;
-                positions[baseIndex + 3] = end.x;
-                positions[baseIndex + 4] = end.y;
-                positions[baseIndex + 5] = end.z;
+                positions[baseIndex + 0] = startPosition.x;
+                positions[baseIndex + 1] = startPosition.y;
+                positions[baseIndex + 2] = startPosition.z;
+                positions[baseIndex + 3] = endPosition.x;
+                positions[baseIndex + 4] = endPosition.y;
+                positions[baseIndex + 5] = endPosition.z;
               }
 
               positionsAttribute.needsUpdate = true;
@@ -2053,26 +2052,23 @@ class Tags {
                         }
                       })();
 
-                      const {tagMesh: srcTagMesh} = src;
-                      const {position: srcPosition} = srcTagMesh;
-                      const dstPosition = (() => {
+                      const {tagMesh: srcObject} = src;
+                      const dstObject = (() => {
                         const {dst} = dragState;
-
-                        const _getControllerPosition = () => gamepad.position;
 
                         if (dst) {
                           const {tagMesh: dstTagMesh} = dst;
 
-                          if (dstTagMesh !== srcTagMesh) {
-                            return _decomposeObjectMatrixWorld(dstTagMesh).position;
+                          if (dstTagMesh !== srcObject) {
+                            return dstTagMesh;
                           } else {
-                            return _getControllerPosition();
+                            return gamepad;
                           }
                         } else {
-                          return _getControllerPosition();
+                          return gamepad;
                         }
                       })();
-                      localLine.set(srcPosition, dstPosition);
+                      localLine.set(srcObject, dstObject);
                       linesMesh.render();
                     } else {
                       if (line) {
