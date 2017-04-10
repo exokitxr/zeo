@@ -292,6 +292,10 @@ class World {
             setMesh(side, mesh) {
               this[side] = mesh;
             }
+
+            isGrabbed() {
+              return SIDES.some(side => this[side] !== null);
+            }
           }
           const grabManager = new GrabManager();
 
@@ -335,6 +339,20 @@ class World {
 
             removeManager(userId) {
               delete this.managers[userId];
+            }
+
+            isGrabbed() {
+              const {managers} = this;
+
+              for (const userId in managers) {
+                const manager = managers[userId];
+
+                if (manager.isGrabbed()) {
+                  return true;
+                }
+              }
+
+              return false;
             }
 
             destroy() {
@@ -920,6 +938,11 @@ class World {
                 });
               }
             };
+            const _updateTagsLinesMesh = () => {
+              if (grabManager.isGrabbed() || remoteGrabManager.isGrabbed()) {
+                tags.updateLinesMesh();
+              }
+            };
             const _updateTrashAnchor = () => {
               const {gamepads} = webvr.getStatus();
               const {position: trashPosition, rotation: trashRotation, scale: trashScale} = _decomposeObjectMatrixWorld(trashMesh);
@@ -963,6 +986,7 @@ class World {
 
             _updateMenuAnchors();
             _updateGrabbers();
+            _updateTagsLinesMesh();
             _updateTrashAnchor();
           };
           rend.on('update', _update);

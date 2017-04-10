@@ -3076,6 +3076,11 @@ class Tags {
               entityMutationIgnores.push(entityMutationIgnoreSpec);
             }
 
+            updateLinesMesh() {
+              // XXX this needs to actually sync to the object positions
+              linesMesh.render();
+            }
+
             listen() {
               this.on('setAttribute', setAttrbuteSpec => {
                 // if this is the only listener (i.e. a home with no world engine rather than a server), we need to set the attribute on ourselves
