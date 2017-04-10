@@ -78,14 +78,19 @@ class Bootstrap {
           } else {
             const err = new Error('server announce returned error status code: ' + statusCode);
             err.code = 'EHTTP';
+            err.options = options;
             reject(err);
           }
         });
         res.on('error', err => {
+          err.options = options;
+
           reject(err);
         });
       });
       req.on('error', err => {
+        err.options = options;
+
         reject(err);
       });
     });
@@ -96,26 +101,31 @@ class Bootstrap {
           accept(true);
         })
         .catch(err => {
-          console.warn('server announce failed: ', err.code);
+          console.warn('server announce failed: ', err.code, JSON.stringify(err.options));
 
           accept(false);
         });
     });
     const _tryServerAnnounce = _makeTryAnnounce(_announceServer);
 
-    const _makeQueueAnnounce = (tryAnnounceFn, retryAnnounceFn) => _debounce(next => {
-      tryAnnounceFn()
-        .then(ok => {
-          if (!ok) {
-            setTimeout(retryAnnounceFn, SERVER_ANNOUNCE_RETRY_INTERVAL);
-          }
+    const _makeQueueAnnounce = tryAnnounceFn => {
+      const recurse = _debounce(next => {
+        tryAnnounceFn()
+          .then(ok => {
+            if (ok) {
+              next();
+            } else {
+              setTimeout(() => {
+                recurse();
 
-          next();
-        });
-    });
-    const _queueServerAnnounce = _makeQueueAnnounce(_tryServerAnnounce, () => {
-      _queueServerAnnounce();
-    });
+                next();
+              }, SERVER_ANNOUNCE_RETRY_INTERVAL);
+            }
+          });
+      });
+      return recurse;
+    };
+    const _queueServerAnnounce = _makeQueueAnnounce(_tryServerAnnounce);
 
     if (serverEnabled && hubSpec) {
       _queueServerAnnounce();

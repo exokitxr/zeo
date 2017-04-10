@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "start": "node ./index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "postinstall" : "scripts/postinstall.sh"
   },
   "repository": {
     "type": "git",
@@ -26,7 +27,7 @@
   },
   "homepage": "https://github.com/modulesio/zeo#readme",
   "dependencies": {
-    "archae": "0.0.54",
+    "archae": "0.0.56",
     "base128": "^0.2.1",
     "body-parser": "^1.16.1",
     "cli-spinner": "^0.2.6",

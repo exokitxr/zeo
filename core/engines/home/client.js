@@ -99,7 +99,7 @@ class Home {
             return itemSpec;
           })
         );
-      const _requestDefaultTags = () => fetch('/archae/home/defaults/world/tags.json')
+      const _requestDefaultTags = () => fetch('/archae/home/defaults/data/world/tags.json')
         .then(res => res.json()
           .then(({tags}) => Object.keys(tags).map(id => tags[id]))
         );

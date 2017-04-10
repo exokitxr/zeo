@@ -5,7 +5,6 @@ const child_process = require('child_process');
 const mkdirp = require('mkdirp');
 const Spinner = require('cli-spinner').Spinner;
 const archae = require('archae');
-const cryptoutils = require('cryptoutils');
 const rnd = require('rnd');
 rnd.setSeed(process.env.USER + ';' + process.cwd());
 
@@ -26,7 +25,6 @@ const flags = {
   home: args.includes('home'),
   hub: args.includes('hub'),
   install: args.includes('install'),
-  makeToken: args.includes('makeToken'),
   host: _findArg('host'),
   port: (() => {
     const s = _findArg('port');
@@ -40,6 +38,9 @@ const flags = {
   dataDirectory: _findArg('dataDirectory'),
   cryptoDirectory: _findArg('cryptoDirectory'),
   installDirectory: _findArg('installDirectory'),
+  dataDirectorySrc: _findArg('dataDirectorySrc'),
+  cryptoDirectorySrc: _findArg('cryptoDirectorySrc'),
+  installDirectorySrc: _findArg('installDirectorySrc'),
   serverHost: _findArg('serverHost'),
   homeHost: _findArg('homeHost'),
   worldname: _findArg('worldname'),
@@ -78,6 +79,9 @@ const port = flags.port || 8000;
 const dataDirectory = flags.dataDirectory || 'data';
 const cryptoDirectory = flags.cryptoDirectory || 'crypto';
 const installDirectory = flags.installDirectory || 'installed';
+const dataDirectorySrc = flags.dataDirectorySrc || dataDirectory;
+const cryptoDirectorySrc = flags.cryptoDirectorySrc || cryptoDirectory;
+const installDirectorySrc = flags.installDirectorySrc || installDirectory;
 const staticSite = flags.site && !(flags.home || flags.hub || flags.server);
 const serverHost = flags.serverHost || ('server.' + hostname);
 const homeHost = flags.homeHost || ('home.' + hostname);
@@ -87,16 +91,6 @@ const hubUrl = flags.hubUrl || ('hub.' + hostname + ':' + port);
 const config = {
   dirname: __dirname,
   hostname: hostname,
-  altHostnames: [
-    '*.' + hostname,
-    'test-' + hostname,
-    '*.test-' + hostname,
-
-    homeHost,
-    '*.' + homeHost,
-    'test-' + homeHost,
-    '*.test-' + homeHost,
-  ],
   port: port,
   publicDirectory: 'public',
   dataDirectory: dataDirectory,
@@ -106,6 +100,11 @@ const config = {
   corsOrigin: 'https://' + homeUrl,
   staticSite: staticSite,
   metadata: {
+    config: {
+      dataDirectorySrc: dataDirectorySrc,
+      cryptoDirectorySrc: cryptoDirectorySrc,
+      installDirectorySrc: installDirectorySrc,
+    },
     site: {
       url: hostname + ':' + port,
       enabled: flags.site,
@@ -180,8 +179,17 @@ const _checkArgs = () => new Promise((accept, reject) => {
   }
 });
 
+const _preload = () => {
+  if (flags.hub || flags.home || flags.server) {
+    const crypto = require('./lib/crypto');
+    return crypto.preload(a, config);
+  } else {
+    return Promise.resolve();
+  }
+};
+
 const _loadSign = () => new Promise((accept, reject) => {
-  if (flags.hub || flags.server || flags.makeToken) {
+  if (flags.hub || flags.server) {
     const signDirectory = path.join(__dirname, cryptoDirectory, 'sign');
     const keyPath = path.join(signDirectory, 'key.pem');
 
@@ -370,17 +378,6 @@ const _boot = ({key}) => {
         .then(plugins => a.requestPlugins(plugins))
     );
   }
-  if (flags.makeToken) {
-    const auth = require('./lib/auth');
-    bootPromises.push(new Promise((accept, reject) => {
-      const token = auth.makeToken({
-        key,
-      });
-      console.log('https://' + config.metadata.server.url + '?t=' + token);
-
-      accept();
-    }));
-  }
 
   return Promise.all(bootPromises);
 };
@@ -421,6 +418,7 @@ const _launch = () => {
 };
 
 _checkArgs()
+  .then(() => _preload())
   .then(() => _load())
   .then(({
     key,

@@ -15,17 +15,17 @@ class Home {
       homeImgStatic(req, res, next);
     }
     app.use('/archae/home/img', serveHomeImg);
-    const homeDefaultsWorld = express.static(path.join(dirname, 'defaults', 'world'));
-    function serveHomeDefaultsWorld(req, res, next) {
-      homeDefaultsWorld(req, res, next);
+    const homeDefaultsData = express.static(path.join(dirname, 'defaults', 'data'));
+    function serveHomeDefaultsData(req, res, next) {
+      homeDefaultsData(req, res, next);
     }
-    app.use('/archae/home/defaults/world', serveHomeDefaultsWorld);
+    app.use('/archae/home/defaults/data', serveHomeDefaultsData);
 
     this._cleanup = () => {
       function removeMiddlewares(route, i, routes) {
         if (
           route.handle.name === 'serveHomeImg' ||
-          route.handle.name === 'serveHomeDefaultsWorld'
+          route.handle.name === 'serveHomeDefaultsData'
         ) {
           routes.splice(i, 1);
         }
