@@ -914,14 +914,9 @@ class World {
               } else {
                 SIDES.forEach(side => {
                   const grabbableState = grabbableStates[side];
-                  const grabBoxMesh = grabBoxMeshes[side];
 
                   grabbableState.hoverMesh = null;
                   grabbableState.pointerMesh = null;
-
-                  if (grabBoxMesh.visible) {
-                    grabBoxMesh.visible = false;
-                  }
                 });
               }
             };
@@ -1522,8 +1517,6 @@ class World {
             SIDES.forEach(side => {
               scene.remove(menuDotMeshes[side]);
               scene.remove(menuBoxMeshes[side]);
-
-              scene.remove(grabBoxMeshes[side]);
             });
 
             scene.remove(positioningMesh);
