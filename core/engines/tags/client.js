@@ -717,6 +717,13 @@ class Tags {
             mesh.removeLine = line => {
               lines.splice(lines.indexOf(line), 1);
             };
+            const _getWorldPosition = object => { // the object might not be a THREE.Object3D; it could be a gamepad or something
+              if (object.getWorldPosition) {
+                return object.getWorldPosition();
+              } else {
+                return object.position;
+              }
+            };
             mesh.render = () => {
               const positionsAttribute = geometry.getAttribute('position');
               const {array: positions} = positionsAttribute;
@@ -724,8 +731,8 @@ class Tags {
               for (let i = 0; i < lines.length; i++) {
                 const line = lines[i];
                 const {start, end} = line;
-                const startPosition = start.getWorldPosition();
-                const endPosition = end.getWorldPosition();
+                const startPosition = _getWorldPosition(start);
+                const endPosition = _getWorldPosition(end);
 
                 const baseIndex = i * 3 * 2;
                 positions[baseIndex + 0] = startPosition.x;
