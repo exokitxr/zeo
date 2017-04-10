@@ -1,5 +1,4 @@
 const TELEPORT_DISTANCE = 15;
-const DEFAULT_USER_HEIGHT = 1.5;
 
 const SIDES = ['left', 'right'];
 
@@ -115,7 +114,7 @@ class Teleport {
         };
         input.on('padup', _padup);
 
-        const _update = options => {
+        const _update = () => {
           const status = webvr.getStatus();
           const {gamepads} = status;
 
