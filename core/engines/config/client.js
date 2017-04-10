@@ -41,7 +41,6 @@ class Config {
       inputIndex: 0,
       inputValue: 0,
       sliderValue: 0.5,
-      airlockCheckboxValue: true,
       voiceChatCheckboxValue: false,
       statsCheckboxValue: false,
     };
@@ -49,7 +48,6 @@ class Config {
       class ConfigApi extends EventEmitter {
         getConfig() {
           return {
-            airlock: configState.airlockCheckboxValue,
             voiceChat: configState.voiceChatCheckboxValue,
             stats: configState.statsCheckboxValue,
           };
@@ -160,7 +158,6 @@ class Config {
                   height: STATS_HEIGHT,
                 });
 
-                configState.airlockCheckboxValue = configSpec.airlock;
                 configState.voiceChatCheckboxValue = configSpec.voiceChat;
                 configState.statsCheckboxValue = configSpec.stats;
 
@@ -175,7 +172,6 @@ class Config {
                         inputText,
                         inputValue,
                         sliderValue,
-                        airlockCheckboxValue,
                         voiceChatCheckboxValue,
                         statsCheckboxValue,
                       },
@@ -189,7 +185,6 @@ class Config {
                         inputValue,
                         focus: focusType === 'config',
                         sliderValue,
-                        airlockCheckboxValue,
                         voiceChatCheckboxValue,
                         statsCheckboxValue,
                       }),
@@ -338,15 +333,6 @@ class Config {
                         const {value} = configHoverState;
 
                         configState.sliderValue = value;
-
-                        configUi.update();
-                      } else if (onclick === 'config:airlock') {
-                        const {airlockCheckboxValue} = configState;
-
-                        configState.airlockCheckboxValue = !airlockCheckboxValue;
-
-                        _saveConfig();
-                        configApi.updateConfig();
 
                         configUi.update();
                       } else if (onclick === 'config:voiceChat') {

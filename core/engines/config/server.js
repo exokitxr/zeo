@@ -6,7 +6,6 @@ const bodyParser = require('body-parser');
 const bodyParserJson = bodyParser.json();
 
 const DEFAULT_CONFIG = {
-  airlock: true,
   voiceChat: false,
   stats: false,
 };
