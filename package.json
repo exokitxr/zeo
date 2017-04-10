@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node ./index.js",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "postinstall" : "scripts/postinstall.sh"
+    "postinstall": "scripts/postinstall.sh"
   },
   "repository": {
     "type": "git",
@@ -27,11 +27,12 @@
   },
   "homepage": "https://github.com/modulesio/zeo#readme",
   "dependencies": {
-    "archae": "0.0.56",
+    "archae": "0.0.57",
     "base128": "^0.2.1",
     "body-parser": "^1.16.1",
     "cli-spinner": "^0.2.6",
     "cookie": "^0.3.1",
+    "cryptoutils": "0.0.7",
     "fs-extra": "^2.1.2",
     "functionutils": "0.0.1",
     "http-proxy": "^1.16.2",
