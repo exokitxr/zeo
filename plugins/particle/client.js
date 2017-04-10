@@ -29,19 +29,33 @@ class Particle {
             const geometry = new THREE.BufferGeometry();
             const halfSq = sq(0.1) / 2;
             const positions = Float32Array.from([
-              -0.1, 1.5 + halfSq, 0,
-              0.1, 1.5 + halfSq, 0,
-              0, 1.5 - halfSq, 0,
-              -0.1, 1.5 + halfSq, 0,
+              -0.1, halfSq, 0,
+              0.1, halfSq, 0,
+              0, -halfSq, 0,
+              -0.1, halfSq, 0,
             ]);
             geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
             return geometry;
           })();
           const material = patricleMaterial;
 
+          const angle = new THREE.Vector3(Math.random(), Math.random(), Math.random()).normalize();
+          const speed = 0.001 * Math.PI * 2;
+          let lastUpdateTime = Date.now();
+
           const mesh = new THREE.Line(geometry, material);
+          mesh.position.y = 1.5;
+          mesh.rotation.order = camera.rotation.order;
           mesh.update = () => {
-            // XXX
+            const now = Date.now();
+            const timeDiff = now - lastUpdateTime;
+            const updateFactor = speed * timeDiff;
+
+            mesh.rotation.x = (mesh.rotation.x + (angle.x * updateFactor)) % (Math.PI * 2);
+            mesh.rotation.y = (mesh.rotation.y + (angle.y * updateFactor)) % (Math.PI * 2);
+            mesh.rotation.z = (mesh.rotation.z + (angle.z * updateFactor)) % (Math.PI * 2);
+
+            lastUpdateTime = now;
           };
 
           return mesh;
@@ -64,7 +78,7 @@ class Particle {
         const entityApi = entityElement.getComponentApi();
 
         switch (name) {
-          case 'position': {
+          /* case 'position': { // XXX re-enable this
             const position = newValue;
 
             if (position) {
@@ -76,7 +90,7 @@ class Particle {
             }
 
             break;
-          }
+          } */
         }
       },
       entityRemovedCallback(entityElement) {
