@@ -1,0 +1,8 @@
+{
+  "name": "house",
+  "description": "A simple 3D house.",
+  "version": "0.0.1",
+  "keywords": [],
+  "client": "client.js",
+  "dependencies": {}
+}
