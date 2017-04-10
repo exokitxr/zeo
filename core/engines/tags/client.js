@@ -380,11 +380,11 @@ class Tags {
           };
           const _removeEntityCallback = (componentElement, entityElement) => {
             const _updateLine = () => {
-              /* const {_lines: componentLines} = componentElement; // XXX re-enabled this
+              const {_lines: componentLines} = componentElement;
               const line = componentLines.get(entityElement);
               linesMesh.removeLine(line);
               linesMesh.render();
-              componentLines.delete(line); */
+              componentLines.delete(line);
             };
             const _updateObject = () => {
               let {_numComponents: numComponents = 0} = entityElement;
