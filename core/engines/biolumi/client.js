@@ -800,7 +800,7 @@ class Biolumi {
                 return null;
               }
             }).filter(intersectionSpec => intersectionSpec !== null);
-            const intersectionSpec = intersectionSpecs.length > 0 ? intersectionSpecs.sort((a, b) => a.disance - b.distance)[0] : null;
+            const intersectionSpec = intersectionSpecs.length > 0 ? intersectionSpecs.sort((a, b) => a.distance - b.distance)[0] : null;
 
             if (intersectionSpec) {
               const {
