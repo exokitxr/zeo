@@ -12,7 +12,7 @@ if ([bool](([System.Security.Principal.WindowsIdentity]::GetCurrent()).groups -m
   $shortcut.IconLocation = "$env:ProgramData\Microsoft\Windows\Start Menu\Programs\Zeo VR\favicon.ico"
   $shortcut.Save()
 
-  Invoke-WebRequest -Uri "https://raw.githubusercontent.com/modulesio/zeo/master/defaults/crypto/certs/cert.pem" -OutFile $env:temp\cert.pem
+  Invoke-WebRequest -Uri "https://raw.githubusercontent.com/modulesio/zeo/master/defaults/crypto/cert/cert.pem" -OutFile $env:temp\cert.pem
   Import-Certificate -FilePath $env:temp\cert.pem -CertStoreLocation Cert:\LocalMachine\Root;
 } else {
   echo "This script needs to be run as administrator."

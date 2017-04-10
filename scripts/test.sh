@@ -9,13 +9,14 @@ npm start -- site home my \
   homeHost=test-home.zeovr.io \
   hubUrl=test-hub.zeovr.io:8000 \
   dataDirectory=data dataDirectorySrc='defaults/data' \
-  cryptoDirectory='crypto-test' cryptoDirectorySrc='crypto-test' \
+  cryptoDirectory='crypto-test' cryptoDirectorySrc='defaults/crypto' \
   installDirectory='installed-test' installDirectorySrc='installed-test' &
 npm start -- hub my \
   port=8000 \
   homeHost=test-home.zeovr.io \
   hubUrl=test-hub.zeovr.io:8000 \
-  cryptoDirectory=crypto-test-hub installDirectory=installed-test-hub &
+  cryptoDirectory='crypto-test-hub' cryptoDirectorySrc='defaults/crypto' \
+  installDirectory='installed-test-hub' installDirectorySrc='installed-test' &
 npm start -- server \
   port=8001 \
   homeHost=test-home.zeovr.io hubUrl=test-hub.zeovr.io:8000 \

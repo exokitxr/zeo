@@ -25,7 +25,6 @@ const flags = {
   home: args.includes('home'),
   hub: args.includes('hub'),
   install: args.includes('install'),
-  makeToken: args.includes('makeToken'),
   host: _findArg('host'),
   port: (() => {
     const s = _findArg('port');
@@ -92,16 +91,6 @@ const hubUrl = flags.hubUrl || ('hub.' + hostname + ':' + port);
 const config = {
   dirname: __dirname,
   hostname: hostname,
-  altHostnames: [
-    '*.' + hostname,
-    'test-' + hostname,
-    '*.test-' + hostname,
-
-    homeHost,
-    '*.' + homeHost,
-    'test-' + homeHost,
-    '*.test-' + homeHost,
-  ],
   port: port,
   publicDirectory: 'public',
   dataDirectory: dataDirectory,
@@ -191,16 +180,16 @@ const _checkArgs = () => new Promise((accept, reject) => {
 });
 
 const _preload = () => {
-  if (flags.server) {
-    const server = require('./lib/server');
-    return server.preload(a, config);
+  if (flags.hub || flags.home || flags.server) {
+    const crypto = require('./lib/crypto');
+    return crypto.preload(a, config);
   } else {
     return Promise.resolve();
   }
 };
 
 const _loadSign = () => new Promise((accept, reject) => {
-  if (flags.hub || flags.server || flags.makeToken) {
+  if (flags.hub || flags.server) {
     const signDirectory = path.join(__dirname, cryptoDirectory, 'sign');
     const keyPath = path.join(signDirectory, 'key.pem');
 
@@ -388,17 +377,6 @@ const _boot = ({key}) => {
       _getAllPlugins()
         .then(plugins => a.requestPlugins(plugins))
     );
-  }
-  if (flags.makeToken) {
-    const auth = require('./lib/auth');
-    bootPromises.push(new Promise((accept, reject) => {
-      const token = auth.makeToken({
-        key,
-      });
-      console.log('https://' + config.metadata.server.url + '?t=' + token);
-
-      accept();
-    }));
   }
 
   return Promise.all(bootPromises);
