@@ -1,3 +1,5 @@
+const ConvexGeometry = require('./lib/three-extra/ConvexGeometry');
+
 const DEFAULT_MATRIX = [
   0, 0, 0,
   0, 0, 0, 1,
@@ -24,6 +26,8 @@ class ZSword {
       color: 0x808080,
       shading: THREE.FlatShading,
     });
+
+    const THREEConvexGeometry = ConvexGeometry(THREE);
 
     const swordComponent = {
       selector: 'sword[position]',
@@ -54,31 +58,39 @@ class ZSword {
         const entityObject = entityElement.getObject();
 
         const mesh = (() => {
-          const geometry = (() => {
-            const coreGeometry = new THREE.PlaneBufferGeometry(0.1, 0.9, 1, 9)
-              .applyMatrix(new THREE.Matrix4().makeRotationX(-(Math.PI / 2)))
-              .applyMatrix(new THREE.Matrix4().makeRotationZ(Math.PI / 2))
-              .applyMatrix(new THREE.Matrix4().makeTranslation(0, -(0.1 / 2), -(0.9 / 2)));
-            const tipGeometry = (() => {
-              const geometry = new THREE.BufferGeometry(0.1, 1, 1, 9);
-              geometry.addAttribute('position', new THREE.BufferAttribute(new Float32Array([
-                0, 0, -0.9,
-                0, 0, -1.0,
-                0, -0.1, -0.9,
-              ]), 3));
-              geometry.computeVertexNormals();
-              return geometry;
-            })();
-            const handleGeometry = new THREE.SphereBufferGeometry(0.1, 3, 3)
+          const object = new THREE.Object3D();
+
+          const bladeMesh = (() => {
+            const geometry = new THREEConvexGeometry([
+              new THREE.Vector3(0, 0, -0.9),
+              new THREE.Vector3(0, -0.1, -0.8),
+              new THREE.Vector3(-0.01, -0.05, -0.8),
+              new THREE.Vector3(0.01, -0.05, -0.8),
+
+              new THREE.Vector3(0, -0.1, 0),
+              new THREE.Vector3(0, 0, 0),
+              new THREE.Vector3(-0.01, -0.05, 0),
+              new THREE.Vector3(0.01, -0.05, 0),
+            ]);
+            const material = weaponMaterial;
+
+            const mesh = new THREE.Mesh(geometry, material);
+            return mesh;
+          })();
+          object.add(bladeMesh);
+
+          const handleMesh = (() => {
+            const geometry = new THREE.SphereBufferGeometry(0.1, 3, 3)
               .applyMatrix(new THREE.Matrix4().makeRotationX(-(Math.PI / 2)))
               .applyMatrix(new THREE.Matrix4().makeRotationZ(-(Math.PI / 4) + (Math.PI / 16)))
               .applyMatrix(new THREE.Matrix4().makeTranslation(0, -0.04, 0));
 
-            return geometryUtils.concatBufferGeometry([coreGeometry, /* tipGeometry, */ handleGeometry]);
+            const mesh = new THREE.Mesh(geometry, weaponMaterial);
+            return mesh;
           })();
+          object.add(handleMesh);
 
-          const mesh = new THREE.Mesh(geometry, weaponMaterial);
-          return mesh;
+          return object;
         })();
         entityObject.add(mesh);
 
