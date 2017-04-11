@@ -1929,7 +1929,7 @@ class Tags {
                     const gamepad = gamepads[side];
 
                     if (gamepad) {
-                      const {position: controllerPosition, rotation: controllerRotation} = gamepad;
+                      const {position: controllerPosition, rotation: controllerRotation, scale: controllerScale} = gamepad;
                       const pointerState = pointerStates[side];
                       const dotMesh = dotMeshes[side];
                       const boxMesh = boxMeshes[side];
@@ -1942,6 +1942,7 @@ class Tags {
                         boxMesh: boxMesh,
                         controllerPosition,
                         controllerRotation,
+                        controllerScale,
                       });
                     }
                   });

@@ -304,7 +304,7 @@ class Universe {
                     const gamepad = gamepads[side];
 
                     if (gamepad) {
-                      const {position: controllerPosition, rotation: controllerRotation} = gamepad;
+                      const {position: controllerPosition, rotation: controllerRotation, scale: controllerScale} = gamepad;
 
                       const backgroundHoverState = backgroundHoverStates[side];
                       const backgroundDotMesh = backgroundDotMeshes[side];
@@ -325,6 +325,7 @@ class Universe {
                         boxMesh: backgroundBoxMesh,
                         controllerPosition,
                         controllerRotation,
+                        controllerScale,
                       })
                     }
                   });

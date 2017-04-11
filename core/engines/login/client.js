@@ -377,7 +377,7 @@ class Login {
                         const gamepad = gamepads[side];
 
                         if (gamepad) {
-                          const {position: controllerPosition, rotation: controllerRotation} = gamepad;
+                          const {position: controllerPosition, rotation: controllerRotation, scale: controllerScale} = gamepad;
 
                           const menuHoverState = menuHoverStates[side];
                           const menuDotMesh = menuDotMeshes[side];
@@ -398,6 +398,7 @@ class Login {
                             boxMesh: menuBoxMesh,
                             controllerPosition,
                             controllerRotation,
+                            controllerScale,
                           });
                         }
                       });

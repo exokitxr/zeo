@@ -871,7 +871,7 @@ class World {
                   const gamepad = gamepads[side];
 
                   if (gamepad) {
-                    const {position: controllerPosition, rotation: controllerRotation} = gamepad;
+                    const {position: controllerPosition, rotation: controllerRotation, scale: controllerScale} = gamepad;
 
                     const menuHoverState = menuHoverStates[side];
                     const menuDotMesh = menuDotMeshes[side];
@@ -892,6 +892,7 @@ class World {
                       boxMesh: menuBoxMesh,
                       controllerPosition,
                       controllerRotation,
+                      controllerScale,
                     })
                   }
                 });
@@ -965,8 +966,8 @@ class World {
 
                 const pointed = (() => {
                   if (gamepad) {
-                    const {position: controllerPosition, rotation: controllerRotation} = gamepad;
-                    const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation);
+                    const {position: controllerPosition, rotation: controllerRotation, scale: controllerScale} = gamepad;
+                    const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation, controllerScale);
 
                     return trashBoxTarget.intersectLine(controllerLine);
                   } else {

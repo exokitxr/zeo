@@ -424,7 +424,7 @@ class Config {
                         const gamepad = gamepads[side];
 
                         if (gamepad) {
-                          const {position: controllerPosition, rotation: controllerRotation} = gamepad;
+                          const {position: controllerPosition, rotation: controllerRotation, scale: controllerScale} = gamepad;
 
                           const configHoverState = configHoverStates[side];
                           const configDotMesh = configDotMeshes[side];
@@ -445,6 +445,7 @@ class Config {
                             boxMesh: configBoxMesh,
                             controllerPosition,
                             controllerRotation,
+                            controllerScale,
                           });
                         }
                       });
