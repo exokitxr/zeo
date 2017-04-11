@@ -705,7 +705,7 @@ class Biolumi {
             const geometry = new THREE.BufferGeometry();
             geometry.addAttribute('position', new THREE.BufferAttribute(Float32Array.from([0, 0, 0]), 3));
             geometry.addAttribute('color', new THREE.BufferAttribute(Float32Array.from([0, 0, 0]), 3));
-            const material = (color === pointsHighlightMaterial.color && size === pointsHighlightMaterial.size) ? pointsHighlightMaterial : new THREE.PointsMaterial({
+            const material = new THREE.PointsMaterial({
               color: color,
               size: size,
             });
@@ -795,6 +795,7 @@ class Biolumi {
                   object,
                   intersectionPoint,
                   controllerLine,
+                  controllerScale,
                   distance,
                 };
               } else {
@@ -821,6 +822,7 @@ class Biolumi {
                 },
                 intersectionPoint,
                 controllerLine,
+                controllerScale,
               } = intersectionSpec;
 
               if (hoverState) {
@@ -917,6 +919,7 @@ class Biolumi {
 
               if (dotMesh) {
                 dotMesh.position.copy(intersectionPoint);
+                dotMesh.material.size = pointsHighlightMaterial.size / ((controllerScale.x + controllerScale.y + controllerScale.z) / 3);
 
                 if (!dotMesh.visible) {
                   dotMesh.visible = true;
