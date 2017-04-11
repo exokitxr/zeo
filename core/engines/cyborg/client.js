@@ -362,7 +362,7 @@ class Cyborg {
             const {hmd} = status;
             camera.position.copy(hmd.position);
             camera.quaternion.copy(hmd.rotation);
-            camera.scale.copy(hmd.scale);
+            camera.parent.scale.copy(hmd.scale);
             camera.updateMatrixWorld();
 
             // update controllers
