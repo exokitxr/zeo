@@ -50,17 +50,18 @@ class Cyborg {
             constructor() {
               super();
 
-              const _makePositionRotation = () => ({
+              const _makePositionRotationScale = () => ({
                 position: new THREE.Vector3(),
                 rotation: new THREE.Quaternion(),
+                scale: new THREE.Vector3(1, 1, 1),
               });
               this.prevStatuses = [
                 {
                   status: {
-                    hmd: _makePositionRotation(),
+                    hmd: _makePositionRotationScale(),
                     controllers: {
-                      left: _makePositionRotation(),
-                      right: _makePositionRotation(),
+                      left: _makePositionRotationScale(),
+                      right: _makePositionRotationScale(),
                     },
                   },
                   timestamp: Date.now(),
@@ -73,15 +74,18 @@ class Cyborg {
                 hmd: {
                   position: camera.position.clone(),
                   rotation: camera.quaternion.clone(),
+                  scale: camera.scale.clone(),
                 },
                 controllers: {
                   left: {
                     position: controllers.left.mesh.position.clone(),
                     rotation: controllers.left.mesh.quaternion.clone(),
+                    scale: controllers.left.mesh.scale.clone(),
                   },
                   right: {
                     position: controllers.right.mesh.position.clone(),
                     rotation: controllers.right.mesh.quaternion.clone(),
+                    scale: controllers.right.mesh.scale.clone(),
                   },
                 },
               };
@@ -170,32 +174,37 @@ class Cyborg {
               }
             }
 
-            updateHmd({position, rotation}) {
+            updateHmd({position, rotation, scale}) {
               const {prevStatuses} = this;
               const lastStatus = prevStatuses[prevStatuses.length - 1];
 
-              if (!position.equals(lastStatus.status.hmd.position) || !rotation.equals(lastStatus.status.hmd.rotation)) {
+              if (
+                !position.equals(lastStatus.status.hmd.position) ||
+                !rotation.equals(lastStatus.status.hmd.rotation) ||
+                !scale.equals(lastStatus.status.hmd.scale)
+              ) {
                 this.emit('hmdUpdate', {
                   position,
                   rotation,
+                  scale,
                 });
               }
             }
 
-            updateController({side, position, rotation}) {
+            updateController({side, position, rotation, scale}) {
               const {prevStatuses} = this;
               const lastStatus = prevStatuses[prevStatuses.length - 1];
 
-              if (!position.equals(lastStatus.status.controllers[side].position) || !rotation.equals(lastStatus.status.controllers[side].rotation)) {
-                /* const controllerPhysicsBody = controllerPhysicsBodies[side];
-                if (controllerPhysicsBody) {
-                  controllerPhysicsBody.syncUpstream();
-                } */
-
+              if (
+                !position.equals(lastStatus.status.controllers[side].position) ||
+                !rotation.equals(lastStatus.status.controllers[side].rotation) ||
+                !scale.equals(lastStatus.status.controllers[side].scale)
+              ) {
                 this.emit('controllerUpdate', {
                   side,
                   position,
                   rotation,
+                  scale,
                 });
               }
             }
@@ -371,6 +380,7 @@ class Cyborg {
             player.updateHmd({
               position: hmd.position.clone(),
               rotation: hmd.rotation.clone(),
+              scale: hmd.scale.clone(),
             });
             SIDES.forEach(side => {
               const controller = controllers[side];
@@ -380,6 +390,7 @@ class Cyborg {
                 side,
                 position: mesh.position.clone(),
                 rotation: mesh.quaternion.clone(),
+                scale: mesh.scale.clone(),
               });
             });
 
