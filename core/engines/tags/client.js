@@ -1959,10 +1959,11 @@ class Tags {
 
                     const hoverMesh = (() => {
                       if (gamepad) {
-                        const {position: controllerPosition} = gamepad;
+                        const {position: controllerPosition, scale: controllerScale} = gamepad;
+                        const absPosition = controllerPosition.clone().multiply(controllerScale);
 
                         const tagMeshDistanceSpecs = tagMeshes.map(tagMesh => {
-                          const distance = controllerPosition.distanceTo(tagMesh.getWorldPosition());
+                          const distance = absPosition.distanceTo(tagMesh.getWorldPosition());
                           return {
                             tagMesh,
                             distance,
