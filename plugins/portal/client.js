@@ -142,6 +142,7 @@ class Portal {
                 })();
                 object.add(inner);
                 object.inner = inner;
+
                 const outer = (() => {
                   if (border > 0) {
                     const geometry = (() => {
@@ -178,6 +179,7 @@ class Portal {
                 })();
                 object.add(outer);
                 object.outer = outer;
+
                 const back = (() => {
                   const geometry = (() => {
                     const {geometry: innerGeometry} = inner;
