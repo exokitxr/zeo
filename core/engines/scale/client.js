@@ -71,7 +71,7 @@ class Scale {
 
           if (gamepad) {
             const scaleState = scaleStates[side];
-            scaleState.gripStart = gamepad.position.clone();
+            scaleState.gripStart = new THREE.Vector3().fromArray(gamepad.pose.position);
           }
         };
         input.on('gripdown', _gripdown);
@@ -91,7 +91,7 @@ class Scale {
             const haveGamepads = SIDES.every(side => Boolean(gamepads[side]));
 
             if (haveGamepads) {
-              const scaleMid = _avgVectors(SIDES.map(side => gamepads[side].position));
+              const scaleMid = _avgVectors(SIDES.map(side => new THREE.Vector3().fromArray(gamepads[side].pose.position)));
 
               let {startScaleMid, startStageMatrix} = scaleState;
               if (!startScaleMid) {
@@ -105,7 +105,7 @@ class Scale {
 
               const scaleMidDiff = scaleMid.clone().sub(startScaleMid);
               const {position, rotation, scale} = startStageMatrix;
-              const newPosition = position.clone().sub(scaleMidDiff);
+              const newPosition = position.clone().sub(scaleMidDiff.clone().applyQuaternion(rotation));
               const newStageMatrix = new THREE.Matrix4().compose(newPosition, rotation, scale);
               webvr.setStageMatrix(newStageMatrix);
 
