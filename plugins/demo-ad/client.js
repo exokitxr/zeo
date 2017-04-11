@@ -427,8 +427,10 @@ module.exports = archae => ({
                         const gamepad = gamepads[side];
 
                         if (gamepad) {
-                          const {position: controllerPosition} = gamepad;
-                          return controllerPosition.distanceTo(mesh.position) < 0.1;
+                          const {position: controllerPosition, scale: controllerScale} = gamepad;
+                          const absPosition = controllerPosition.clone().multiply(controllerScale);
+
+                          return absPosition.distanceTo(mesh.position) < 0.1;
                         } else {
                           return false;
                         }

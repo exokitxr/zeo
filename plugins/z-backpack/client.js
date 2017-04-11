@@ -109,10 +109,11 @@ class ZBackpack {
               return closestItemBoxMeshIndex;
             };
 
-            const {position: controllerPosition} = gamepad;
-            const hovered = _isBehindCamera(controllerPosition);
+            const {position: controllerPosition, scale: controllerScale} = gamepad;
+            const absPosition = controllerPosition.clone().multiply(controllerScale);
+            const hovered = _isBehindCamera(absPosition);
             hoverState.hovered = hovered;
-            const targetItemIndex = hovered ? _getClosestItemMeshIndex(controllerPosition) : -1;
+            const targetItemIndex = hovered ? _getClosestItemMeshIndex(absPosition) : -1;
             hoverState.targetItemIndex = targetItemIndex;
           }
         });

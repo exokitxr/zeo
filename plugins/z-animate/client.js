@@ -709,8 +709,9 @@ class ZAnimate {
                     const controllerMesh = controllerMeshes[index];
 
                     const gamepad = gamepads[side];
-                    const {position: controllerPosition, rotation: controllerRotation} = gamepad;
-                    const toolTipPosition = controllerPosition.clone()
+                    const {position: controllerPosition, rotation: controllerRotation, scale: controllerScale} = gamepad;
+                    const absPosition = controllerPosition.clone().multiply(controllerScale);
+                    const toolTipPosition = absPosition.clone()
                       .add(new THREE.Vector3(0, 0, -0.05 - (0.02 / 2)).applyQuaternion(controllerRotation));
                     const toolTipRotation = controllerRotation;
 

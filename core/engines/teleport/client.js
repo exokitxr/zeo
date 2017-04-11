@@ -128,14 +128,15 @@ class Teleport {
               const teleportAirMesh = teleportAirMeshes[side];
 
               if (teleporting) {
-                const {position: controllerPosition, rotation: controllerRotation, axes} = gamepad;
+                const {position: controllerPosition, rotation: controllerRotation, scale: controllerScale, axes} = gamepad;
 
+                const absPosition = controllerPosition.clone().multiply(controllerScale);
                 const ray = new THREE.Vector3(0, 0, -1)
                   .applyQuaternion(controllerRotation);
                 const axisFactor = (axes[1] - (-1)) / 2;
                 const controllerLine = new THREE.Line3(
-                  controllerPosition.clone(),
-                  controllerPosition.clone().add(ray.clone().multiplyScalar(axisFactor * TELEPORT_DISTANCE))
+                  absPosition.clone(),
+                  absPosition.clone().add(ray.clone().multiplyScalar(axisFactor * TELEPORT_DISTANCE))
                 );
                 const intersectionPoint = floorPlane.intersectLine(controllerLine);
 

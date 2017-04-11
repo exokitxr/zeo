@@ -54,12 +54,15 @@ module.exports = archae => ({ // `archae` is the Zeo plugin loader
           sphere.rotation.y = (currentTime * 0.002) % (Math.PI * 2);
 
           // detect hits
-          const {gamepads: gamepadsStatus} = pose.getStatus();
+          const {gamepads} = pose.getStatus();
           const lines = ['left', 'right'].map(side => {
-            const gamepadStatus = gamepadsStatus[side];
-            if (gamepadStatus) {
-              const {position: controllerPosition} = gamepadStatus;
-              return new THREE.Line3(controllerPosition.clone(), sphere.position.clone());
+            const gamepad = gamepads[side];
+
+            if (gamepad) {
+              const {position: controllerPosition, scale: controllerScale} = gamepad;
+              const absPosition = controllerPosition.clone().multiply(controllerScale);
+
+              return new THREE.Line3(absPosition.clone(), sphere.position.clone());
             } else {
               return null;
             }

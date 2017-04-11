@@ -198,6 +198,7 @@ class Weapons {
 
             weaponMesh.position.copy(controller.mesh.position);
             weaponMesh.quaternion.copy(controller.mesh.quaternion);
+            weaponMesh.scale.copy(controller.mesh.scale);
 
             const {physicsBody} = weaponMesh;
             physicsBody.sync();

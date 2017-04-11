@@ -586,7 +586,7 @@ class Raptor {
                       const gamepad = gamepads[side];
 
                       if (gamepad) {
-                        const {position: controllerPosition, rotation: controllerRotation} = gamepad;
+                        const {position: controllerPosition, rotation: controllerRotation, scale: controllerScale} = gamepad;
 
                         const avatarHoverState = avatarHoverStates[side];
                         const avatarDotMesh = avatarDotMeshes[side];
@@ -607,6 +607,7 @@ class Raptor {
                           boxMesh: avatarBoxMesh,
                           controllerPosition,
                           controllerRotation,
+                          controllerScale,
                         });
                       }
                     });

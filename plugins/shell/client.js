@@ -399,12 +399,13 @@ class Shell {
               const hoverState = hoverStates[side];
 
               if (gamepad) {
-                const {position: controllerPosition, quaternion: controllerQuaternion} = gamepad;
+                const {position: controllerPosition, rotation: controllerRotation, scale: controllerScale} = gamepad;
+                const absPosition = controllerPosition.clone().multiply(controllerScale);
                 const ray = new THREE.Vector3(0, 0, -10)
-                  .applyQuaternion(controllerQuaternion);
+                  .applyQuaternion(controllerRotation);
                 const controllerLine = new THREE.Line3(
-                  controllerPosition.clone(),
-                  controllerPosition.clone().add(ray.clone().multiplyScalar(15))
+                  absPosition.clone(),
+                  absPosition.clone().add(ray.clone().multiplyScalar(15))
                 );
                 const shellIntersectionPoint = shellPlane.intersectLine(controllerLine);
                 if (shellIntersectionPoint) {
