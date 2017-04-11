@@ -124,6 +124,7 @@ class Raptor {
             return [
               {
                 html: `Welcome to Zeo! I'm Zee and I'll be your guide. Click the checkmark below to continue.`,
+                startPosition: new THREE.Vector3(-1, 0, 0),
                 endPosition: new THREE.Vector3(1, 0, 0),
               },
               {
@@ -191,6 +192,7 @@ class Raptor {
 
               const raptorMesh = (() => {
                 const result = new THREE.Object3D();
+                result.position.copy(scripts[0].startPosition);
                 result.rotation.order = camera.rotation.order;
 
                 const headBase = (() => {
@@ -442,7 +444,12 @@ class Raptor {
               })();
               entityObject.add(boxMesh);
 
-              const boxTarget = geometryUtils.makeBoxTarget(new THREE.Vector3(-1, 0.5, 0), new THREE.Quaternion(), new THREE.Vector3(1, 1, 1), new THREE.Vector3(1, 1, 1));
+              const boxTarget = geometryUtils.makeBoxTarget(
+                scripts[0].startPosition.clone().add(new THREE.Vector3(0, 0.5, 0)),
+                new THREE.Quaternion(),
+                new THREE.Vector3(1, 1, 1),
+                new THREE.Vector3(1, 1, 1)
+              );
 
               const _trigger = e => {
                 const {side} = e;
