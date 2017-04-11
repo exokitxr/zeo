@@ -40,10 +40,11 @@ class Highlight {
       const gamepad = gamepads[side];
 
       if (gamepad) {
-        const {position: controllerPosition} = gamepad;
+        const {position: controllerPosition, scale: controllerScale} = gamepad;
+        const absPosition = controllerPosition.clone().multiply(controllerScale);
 
         const highlightState = highlightStates[side];
-        highlightState.startPoint = controllerPosition.clone();
+        highlightState.startPoint = absPosition.clone();
       }
     };
     input.on('gripdown', _gripdown, {

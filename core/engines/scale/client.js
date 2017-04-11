@@ -111,10 +111,6 @@ class Scale {
                 startStageMatrix = _decomposeMatrix(webvr.getStageMatrix());
                 scaleState.startStageMatrix = startStageMatrix;
               }
-              if (!startScale) {
-                startScale = camera.parent.scale.clone();
-                scaleState.startScale = startScale;
-              }
               if (!startStageMatrix) {
                 startStageMatrix = _decomposeMatrix(webvr.getStageMatrix());
                 scaleState.startStageMatrix = startStageMatrix;
@@ -124,10 +120,10 @@ class Scale {
               const scaleDistanceFactor = scaleDistance / startScaleDistance;
               const {position, rotation, scale} = startStageMatrix;
               const newPosition = position.clone().sub(scaleMidDiff.clone().applyQuaternion(rotation));
-              const newStageMatrix = new THREE.Matrix4().compose(newPosition, rotation, scale);
+              const newRotation = rotation;
+              const newScale = scale.clone().divideScalar(scaleDistanceFactor);
+              const newStageMatrix = new THREE.Matrix4().compose(newPosition, newRotation, newScale);
               webvr.setStageMatrix(newStageMatrix);
-              const newScale = startScale.clone().divideScalar(scaleDistanceFactor);
-              camera.parent.scale.copy(newScale);
 
               // webvr.updateStatus();
               // webvr.updateUserStageMatrix();
@@ -135,13 +131,11 @@ class Scale {
             } else {
               scaleState.startScaleMid = null;
               scaleState.startScaleDistance = null;
-              scaleState.startScale = null;
               scaleState.startStageMatrix = null;
             }
           } else {
             scaleState.startScaleMid = null;
             scaleState.startScaleDistance = null;
-            scaleState.startScale = null;
             scaleState.startStageMatrix = null;
           }
         };

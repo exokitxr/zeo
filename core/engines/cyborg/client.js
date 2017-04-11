@@ -319,7 +319,7 @@ class Cyborg {
 
               mesh.position.copy(gamepadStatus.position);
               mesh.quaternion.copy(gamepadStatus.rotation);
-              mesh.scale.copy(gamepadStatus.scale);
+              // mesh.scale.copy(gamepadStatus.scale);
 
               const {buttons} = gamepadStatus;
               mesh.padMesh.visible = buttons.pad.touched;
@@ -362,7 +362,7 @@ class Cyborg {
             const {hmd} = status;
             camera.position.copy(hmd.position);
             camera.quaternion.copy(hmd.rotation);
-            camera.scale.copy(hmd.scale);
+            camera.parent.scale.copy(hmd.scale);
             camera.updateMatrixWorld();
 
             // update controllers
