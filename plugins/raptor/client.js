@@ -17,7 +17,6 @@ const AUDIO_FILES = [
   '09.ogg',
   '65.ogg',
 ];
-const MESH_OFFSET = -1;
 const SIDES = ['left', 'right'];
 
 class Raptor {
@@ -192,7 +191,6 @@ class Raptor {
 
               const raptorMesh = (() => {
                 const result = new THREE.Object3D();
-                result.position.x = MESH_OFFSET;
                 result.rotation.order = camera.rotation.order;
 
                 const headBase = (() => {
