@@ -23,6 +23,9 @@ class Three {
 
       return result;
     })();
+    const cameraParent = new THREE.Object3D();
+    cameraParent.add(camera);
+    scene.add(cameraParent);
 
     const canvas = document.querySelector('#canvas');
     const renderer = new THREE.WebGLRenderer({
@@ -37,10 +40,10 @@ class Three {
     window.document.body.appendChild(renderer.domElement);
 
     window.addEventListener('resize', () => {
-       camera.aspect = window.innerWidth / window.innerHeight;
-       camera.updateProjectionMatrix();
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
 
-       renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setSize(window.innerWidth, window.innerHeight);
     });
 
     return {

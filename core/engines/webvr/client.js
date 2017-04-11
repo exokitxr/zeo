@@ -361,6 +361,7 @@ class WebVR {
                       update(); // update plugins
 
                       if (effect) {
+                        effect.scale = (camera.parent.scale.x + camera.parent.scale.y + camera.parent.scale.z) / 3;
                         effect.render(scene, camera); // perform binocular render
                       } else {
                         updateEye(camera); // perform monocular eye render

@@ -61,6 +61,7 @@ class Scale {
 
         const scaleState = {
           startScaleMid: null,
+          startScaleDistance: null,
           startStageMatrix: null,
         };
 
@@ -91,12 +92,28 @@ class Scale {
             const haveGamepads = SIDES.every(side => Boolean(gamepads[side]));
 
             if (haveGamepads) {
-              const scaleMid = _avgVectors(SIDES.map(side => new THREE.Vector3().fromArray(gamepads[side].pose.position)));
+              const scaleMid = new THREE.Vector3().fromArray(gamepads.left.pose.position)
+                .add(new THREE.Vector3().fromArray(gamepads.right.pose.position))
+                .divideScalar(2);
+              const scaleDistance = new THREE.Vector3().fromArray(gamepads.left.pose.position)
+                .distanceTo(new THREE.Vector3().fromArray(gamepads.right.pose.position));
 
-              let {startScaleMid, startStageMatrix} = scaleState;
+              let {startScaleMid, startScaleDistance, startScale, startStageMatrix} = scaleState;
               if (!startScaleMid) {
                 startScaleMid = scaleMid;
                 scaleState.startScaleMid = scaleMid;
+              }
+              if (!startScaleDistance) {
+                startScaleDistance = scaleDistance;
+                scaleState.startScaleDistance = scaleDistance;
+              }
+              if (!startStageMatrix) {
+                startStageMatrix = _decomposeMatrix(webvr.getStageMatrix());
+                scaleState.startStageMatrix = startStageMatrix;
+              }
+              if (!startScale) {
+                startScale = camera.parent.scale.clone();
+                scaleState.startScale = startScale;
               }
               if (!startStageMatrix) {
                 startStageMatrix = _decomposeMatrix(webvr.getStageMatrix());
@@ -104,20 +121,27 @@ class Scale {
               }
 
               const scaleMidDiff = scaleMid.clone().sub(startScaleMid);
+              const scaleDistanceFactor = scaleDistance / startScaleDistance;
               const {position, rotation, scale} = startStageMatrix;
               const newPosition = position.clone().sub(scaleMidDiff.clone().applyQuaternion(rotation));
               const newStageMatrix = new THREE.Matrix4().compose(newPosition, rotation, scale);
               webvr.setStageMatrix(newStageMatrix);
+              const newScale = startScale.clone().divideScalar(scaleDistanceFactor);
+              camera.parent.scale.copy(newScale);
 
               // webvr.updateStatus();
               // webvr.updateUserStageMatrix();
               // cyborg.update();
             } else {
               scaleState.startScaleMid = null;
+              scaleState.startScaleDistance = null;
+              scaleState.startScale = null;
               scaleState.startStageMatrix = null;
             }
           } else {
             scaleState.startScaleMid = null;
+            scaleState.startScaleDistance = null;
+            scaleState.startScale = null;
             scaleState.startStageMatrix = null;
           }
         };

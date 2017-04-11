@@ -336,7 +336,7 @@ class Cyborg {
           SIDES.forEach(side => {
             const controller = controllers[side];
             const {mesh} = controller;
-            scene.add(mesh);
+            camera.parent.add(mesh);
           });
 
           const  controllerPhysicsBodies = {
@@ -403,7 +403,7 @@ class Cyborg {
             SIDES.forEach(side => {
               const controller = controllers[side];
               const {mesh} = controller;
-              scene.remove(mesh);
+              camera.parent.remove(mesh);
             });
 
             rend.removeListener('update', _update);
