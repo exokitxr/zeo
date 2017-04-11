@@ -319,7 +319,7 @@ class Cyborg {
 
               mesh.position.copy(gamepadStatus.position);
               mesh.quaternion.copy(gamepadStatus.rotation);
-              mesh.scale.copy(gamepadStatus.scale);
+              // mesh.scale.copy(gamepadStatus.scale);
 
               const {buttons} = gamepadStatus;
               mesh.padMesh.visible = buttons.pad.touched;
