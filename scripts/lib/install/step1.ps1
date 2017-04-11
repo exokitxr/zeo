@@ -1,5 +1,8 @@
 if ([bool](([System.Security.Principal.WindowsIdentity]::GetCurrent()).groups -match "S-1-5-32-544")) {
   Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Windows-Subsystem-Linux
+
+  reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\AppModelUnlock" /v "AllowDevelopmentWithoutDevLicense" /t REG_DWORD /d "0x1" /f
+
   LxRun /install
 
   bash -c "curl https://raw.githubusercontent.com/modulesio/zeo/master/scripts/lib/install/step2.sh | bash"
