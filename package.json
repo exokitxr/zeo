@@ -26,6 +26,9 @@
     "url": "https://github.com/modulesio/zeo/issues"
   },
   "homepage": "https://github.com/modulesio/zeo#readme",
+  "engines": {
+    "node": "7.9.0"
+  },
   "dependencies": {
     "archae": "0.0.57",
     "base128": "^0.2.1",
