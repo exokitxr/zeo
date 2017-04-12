@@ -72,8 +72,8 @@ class Multiplayer {
             _requestHmdMesh(),
             _requestControllerMesh(),
           ]).then(([
-            hmdMesh,
-            controllerMesh,
+            hmdModelMesh,
+            controllerModelMesh,
           ]) => {
             if (live) {
               class MutiplayerInterface extends EventEmitter {
@@ -142,11 +142,11 @@ class Multiplayer {
               const _makeRemotePlayerMesh = status => {
                 const object = new THREE.Object3D();
 
-                const hmd = hmdMesh.clone();
+                const hmd = hmdModelMesh.clone();
                 object.add(hmd);
                 object.hmd = hmd;
 
-                const _makeControllerMesh = () => controllerMesh.clone();
+                const _makeControllerMesh = () => controllerModelMesh.clone();
                 const controllers = {
                   left: _makeControllerMesh(),
                   right: _makeControllerMesh(),

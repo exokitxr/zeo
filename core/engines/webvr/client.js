@@ -253,7 +253,16 @@ class WebVR {
             return _canPresent(bestDisplay);
           }
 
-          requestRenderLoop({display = null, stereoscopic = false, update = () => {}, updateEye = () => {}, updateStart = () => {}, updateEnd = () => {}}) {
+          requestRenderLoop({
+            display = null,
+            stereoscopic = false,
+            update = () => {},
+            updateEye = () => {},
+            updateStart = () => {},
+            updateEnd = () => {},
+            frameStart = () => {},
+            frameEnd = () => {},
+          }) {
             let cleanups = [];
             const _destroy = () => {
               for (let i = 0; i < cleanups.length; i++) {
@@ -286,6 +295,12 @@ class WebVR {
                     effect.setVRDisplay(display);
                     effect.onEye = camera => {
                       updateEye(camera);
+                    };
+                    effect.onFrameStart = () => {
+                      frameStart();
+                    };
+                    effect.onFrameEnd = () => {
+                      frameEnd();
                     };
                     effect.isPresenting = true;
                     effect.autoSubmitFrame = false;
@@ -369,8 +384,11 @@ class WebVR {
                         effect.scale = (camera.parent.scale.x + camera.parent.scale.y + camera.parent.scale.z) / 3;
                         effect.render(scene, camera); // perform binocular render
                       } else {
-                        updateEye(camera); // perform monocular eye render
-                        renderer.render(scene, camera); // perform final render
+                        // manual events since the effect won't call them
+                        updateEye(camera);
+                        frameStart();
+                        renderer.render(scene, camera); // perform monocular eye render
+                        frameEnd();
                       }
 
                       updateEnd(); // notify frame end
@@ -430,7 +448,16 @@ class WebVR {
             return result;
           };
 
-          requestEnterVR({stereoscopic = true, update = () => {}, updateEye = () => {}, updateStart = () => {}, updateEnd = () => {}, onExit = () => {}}) {
+          requestEnterVR({
+            stereoscopic = true,
+            update = () => {},
+            updateEye = () => {},
+            updateStart = () => {},
+            updateEnd = () => {},
+            frameStart = () => {},
+            frameEnd = () => {},
+            onExit = () => {},
+          }) {
             // NOTE: these promises *need* to be synchronous because the WebVR api can only be triggered in the same tick as a user action
             const _checkNotOpening = () => new SynchronousPromise((accept, reject) => {
               const {isOpening} = this;
@@ -541,6 +568,8 @@ class WebVR {
                         updateEye,
                         updateStart,
                         updateEnd,
+                        frameStart,
+                        frameEnd,
                       });
 
                       cleanups.push(() => {

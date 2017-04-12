@@ -80,8 +80,8 @@ class Cyborg {
             _requestHmdMesh(),
             _requestControllerMesh(),
           ]).then(([
-            hmdMesh,
-            controllerMesh,
+            hmdModelMesh,
+            controllerModelMesh,
           ]) => {
             if (live) {
               class Player extends EventEmitter {
@@ -211,40 +211,22 @@ class Cyborg {
                     return new THREE.Vector3(0, 0, 0);
                   }
                 }
+              }
 
-                updateHmd({position, rotation, scale}) {
-                  const {prevStatuses} = this;
-                  const lastStatus = prevStatuses[prevStatuses.length - 1];
-
-                  if (
-                    !position.equals(lastStatus.status.hmd.position) ||
-                    !rotation.equals(lastStatus.status.hmd.rotation) ||
-                    !scale.equals(lastStatus.status.hmd.scale)
-                  ) {
-                    this.emit('hmdUpdate', {
-                      position,
-                      rotation,
-                      scale,
-                    });
-                  }
+              class Hmd {
+                constructor() {
+                  const mesh = hmdModelMesh.clone(true);
+                  this.mesh = mesh;
                 }
 
-                updateController({side, position, rotation, scale}) {
-                  const {prevStatuses} = this;
-                  const lastStatus = prevStatuses[prevStatuses.length - 1];
+                update(hmdStatus) {
+                  const {mesh} = this;
 
-                  if (
-                    !position.equals(lastStatus.status.controllers[side].position) ||
-                    !rotation.equals(lastStatus.status.controllers[side].rotation) ||
-                    !scale.equals(lastStatus.status.controllers[side].scale)
-                  ) {
-                    this.emit('controllerUpdate', {
-                      side,
-                      position,
-                      rotation,
-                      scale,
-                    });
-                  }
+                  mesh.position.copy(hmdStatus.position);
+                  mesh.quaternion.copy(hmdStatus.rotation);
+                  // mesh.scale.copy(gamepadStatus.scale);
+
+                  mesh.updateMatrixWorld();
                 }
               }
 
@@ -253,12 +235,12 @@ class Cyborg {
                   const mesh = (() => {
                     const object = new THREE.Object3D();
 
-                    const controllerMeshClone = controllerMesh.clone(true);
-                    // const controllerMeshClone = mesh.children[0];
-                    // controllerMeshClone.material.color.setHex(0xFFFFFF);
-                    // controllerMeshClone.material.map = loader.load(texturePath);
-                    // controllerMeshClone.material.specularMap = loader.load(specularMapPath);
-                    object.add(controllerMeshClone);
+                    const controllerMesh = controllerModelMesh.clone(true);
+                    // const controllerMesh = mesh.children[0];
+                    // controllerMesh.material.color.setHex(0xFFFFFF);
+                    // controllerMesh.material.map = loader.load(texturePath);
+                    // controllerMesh.material.specularMap = loader.load(specularMapPath);
+                    object.add(controllerMesh);
 
                     /* const tip = (() => {
                       const result = new THREE.Object3D();
@@ -372,66 +354,60 @@ class Cyborg {
 
               const player = new Player();
 
+              const hmd = new Hmd();
+              const {mesh: hmdMesh} = hmd;
+              camera.parent.add(hmdMesh);
+
               const controllers = {
                 left: new Controller(),
                 right: new Controller(),
               };
               SIDES.forEach(side => {
                 const controller = controllers[side];
-                const {mesh} = controller;
-                camera.parent.add(mesh);
+                const {mesh: controllerMesh} = controller;
+                camera.parent.add(controllerMesh);
               });
 
-              const  controllerPhysicsBodies = {
-                left: null,
-                right: null,
-              };
-
               const _getPlayer = () => player;
+              const _getHmd = () => hmd;
               const _getControllers = () => controllers;
-              const _getControllerPhysicsBodies = () => controllerPhysicsBodies;
               const _update = () => {
                 // update camera
                 const status = webvr.getStatus();
-                const {hmd} = status;
-                camera.position.copy(hmd.position);
-                camera.quaternion.copy(hmd.rotation);
-                camera.parent.scale.copy(hmd.scale);
+                const {hmd: hmdStatus} = status;
+                camera.position.copy(hmdStatus.position);
+                camera.quaternion.copy(hmdStatus.rotation);
+                camera.parent.scale.copy(hmdStatus.scale);
                 camera.updateMatrixWorld();
 
+                // update hmd
+                hmd.update(hmdStatus);
+
                 // update controllers
-                const {gamepads} = status;
+                const {gamepads: gamepadsStatus} = status;
                 SIDES.forEach(side => {
                   const controller = controllers[side];
-                  const gamepad = gamepads[side];
+                  const gamepadStatus = gamepadsStatus[side];
 
-                  if (gamepad) {
-                    controller.update(gamepad);
+                  if (gamepadStatus) {
+                    controller.update(gamepadStatus);
                   }
-                });
-
-                // emit updates
-                player.updateHmd({
-                  position: hmd.position.clone(),
-                  rotation: hmd.rotation.clone(),
-                  scale: hmd.scale.clone(),
-                });
-                SIDES.forEach(side => {
-                  const controller = controllers[side];
-                  const {mesh} = controller;
-
-                  player.updateController({
-                    side,
-                    position: mesh.position.clone(),
-                    rotation: mesh.quaternion.clone(),
-                    scale: mesh.scale.clone(),
-                  });
                 });
 
                 // snapshot current status
                 player.snapshotStatus();
               };
               rend.on('update', _update);
+              const _frameStart = () => {
+                const {mesh: hmdMesh} = hmd;
+                hmdMesh.visible = false;
+              };
+              rend.on('frameStart', _frameStart);
+              const _frameEnd = () => {
+                const {mesh: hmdMesh} = hmd;
+                hmdMesh.visible = true;
+              };
+              rend.on('frameEnd', _frameEnd);
 
               const cleanups = [];
               const cleanup = () => {
@@ -452,12 +428,14 @@ class Cyborg {
                 });
 
                 rend.removeListener('update', _update);
+                rend.removeListener('frameStart', _frameStart);
+                rend.removeListener('frameEnd', _frameEnd);
               };
 
               return {
                 getPlayer: _getPlayer,
+                getHmd: _getHmd,
                 getControllers: _getControllers,
-                getControllerPhysicsBodies: _getControllerPhysicsBodies,
                 update: _update,
               };
             }

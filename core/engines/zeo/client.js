@@ -167,6 +167,12 @@ class Zeo {
               const _updateEnd = () => {
                 rend.updateEnd();
               };
+              const _frameStart = () => {
+                rend.frameStart();
+              };
+              const _frameEnd = () => {
+                rend.frameEnd();
+              };
 
               const _enterNormal = () => {
                 _stopRenderLoop();
@@ -176,6 +182,8 @@ class Zeo {
                   updateEye: _updateEye,
                   updateStart: _updateStart,
                   updateEnd: _updateEnd,
+                  frameStart: _frameStart,
+                  frameEnd: _frameEnd,
                 });
 
                 return renderLoop;
@@ -195,6 +203,8 @@ class Zeo {
                   updateEye: _updateEye,
                   updateStart: _updateStart,
                   updateEnd: _updateEnd,
+                  frameStart: _frameStart,
+                  frameEnd: _frameEnd,
                   onExit: _onExit,
                 });
 

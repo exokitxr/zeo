@@ -922,6 +922,14 @@ class Rend {
             this.emit('updateEnd');
           }
 
+          frameStart() {
+            this.emit('frameStart');
+          }
+
+          frameEnd() {
+            this.emit('frameEnd');
+          }
+
           registerElement(pluginInstance, elementApi) {
             const tag = archae.getName(pluginInstance);
 

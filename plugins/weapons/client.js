@@ -146,7 +146,7 @@ class Weapons {
           const {side} = update;
           _syncWeaponSide(side);
         };
-        player.on('hmdUpdate', hmdUpdate);
+        player.on('hmdUpdate', hmdUpdate); // XXX these are no longer emitted; need to listen for render 'update' event instead
         player.on('controllerUpdate', controllerUpdate);
 
         const weaponMeshes = {
