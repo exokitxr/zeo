@@ -91,7 +91,7 @@ class Skybox {
               entityObject.add(skyboxMesh);
 
               entityApi._cleanup = () => {
-                entityObject.remove(mesh);
+                entityObject.remove(skyboxMesh);
               };
             },
             entityRemovedCallback(entityElement) {
