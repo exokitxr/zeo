@@ -19,6 +19,9 @@ class Bootstrap {
         hub: {
           url: hubUrl,
         },
+        home: {
+          url: homeUrl,
+        },
         server: {
           url: serverUrl,
           worldname: serverWorldname,
@@ -27,22 +30,17 @@ class Bootstrap {
       },
     } = archae;
 
-    const hubSpec = (() => {
-      const match = hubUrl.match(/^(?:([^:]+):\/\/)([^:]+)(?::([0-9]*?))?$/);
+    const _parseUrlSpec = url => {
+      const match = url.match(/^(?:([^:]+):\/\/)([^:]+)(?::([0-9]*?))?$/);
       return match && {
         protocol: match[1],
         host: match[2],
-        port: match[3] ? parseInt(match[3], 10) : 443,
+        port: match[3] ? parseInt(match[3], 10) : null,
       };
-    })();
-    const serverSpec = (() => {
-      const match = serverUrl.match(/^(?:([^:]+):\/\/)([^:]+)(?::([0-9]*?))?$/);
-      return match && {
-        protocol: match[1],
-        host: match[2],
-        port: match[3] ? parseInt(match[3], 10) : 443,
-      };
-    })();
+    };
+    const hubSpec = _parseUrlSpec(hubUrl);
+    const homeSpec = _parseUrlSpec(homeUrl);
+    const serverSpec = _parseUrlSpec(serverUrl);
 
     const cleanups = [];
     this._cleanup = () => {
@@ -66,7 +64,8 @@ class Bootstrap {
       req.end(JSON.stringify({
         worldname: serverWorldname,
         protocol: serverSpec.protocol,
-        port: serverSpec.port,
+        serverPort: serverSpec.port,
+        homePort: homeSpec.port,
         users: [], // XXX announce the real users from the hub engine
       }));
 

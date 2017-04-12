@@ -54,6 +54,7 @@ const flags = {
   installDirectorySrc: _findArg('installDirectorySrc'),
   worldname: _findArg('worldname'),
   hubUrl: _findArg('hubUrl'),
+  homeUrl: _findArg('homeUrl'),
   dns: args.includes('dns'),
   dnsPort: (() => {
     const s = _findArg('dnsPort');
@@ -95,8 +96,8 @@ const installDirectorySrc = flags.installDirectorySrc || installDirectory;
 const staticSite = flags.site && !(flags.home || flags.hub || flags.server);
 const worldname = flags.worldname || [_capitalize(rnd.adjective()), _capitalize(rnd.noun())].join(' ');
 const protocolString = !secure ? 'http' : 'https';
-const homeUrl = protocolString + '://127.0.0.1:' + port;
 const hubUrl = flags.hubUrl || (protocolString + '://hub.' + hostname + ':' + port);
+const homeUrl = flags.homeUrl || (protocolString + '://127.0.0.1:' + port);
 const config = {
   dirname: __dirname,
   hostname: hostname,

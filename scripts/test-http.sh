@@ -18,6 +18,7 @@ npm start -- hub my \
 npm start -- server \
   port=8001 \
   hubUrl='http://test.zeovr.io:8000' \
+  homeUrl='http://test.zeovr.io:8080' \
   worldname='Server One' \
   dataDirectory='data/hub/servers/Server One/data' dataDirectorySrc='defaults/data' \
   cryptoDirectory='data/hub/servers/Server One/crypto' cryptoDirectorySrc='crypto-test' \
@@ -25,6 +26,7 @@ npm start -- server \
 npm start -- server \
   port=8002 \
   hubUrl='http://test.zeovr.io:8000' \
+  homeUrl='http://test.zeovr.io:8080' \
   worldname='Server Two' \
   dataDirectory='data/hub/servers/Server Two/data' dataDirectorySrc='defaults/data' \
   cryptoDirectory='data/hub/servers/Server Two/crypto' cryptoDirectorySrc='crypto-test' \
