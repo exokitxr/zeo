@@ -742,7 +742,7 @@ class Biolumi {
                   z
                 )
               )
-              // .multiply(scale)
+              .multiply(scale)
               .applyQuaternion(rotation)
             );
           /* const _makeMeshCoordinateGetter = ({position, rotation, scale, width, height, worldWidth, worldHeight}) => {
@@ -902,7 +902,11 @@ class Biolumi {
                 if (boxMesh) {
                   boxMesh.position.copy(anchorBoxTarget.position);
                   boxMesh.quaternion.copy(anchorBoxTarget.quaternion);
-                  boxMesh.scale.set(Math.max(anchorBoxTarget.size.x, 0.001), Math.max(anchorBoxTarget.size.y, 0.001), Math.max(anchorBoxTarget.size.z, 0.001));
+                  boxMesh.scale.set(
+                    Math.max(anchorBoxTarget.size.x * anchorBoxTarget.scale.x, 0.001),
+                    Math.max(anchorBoxTarget.size.y * anchorBoxTarget.scale.y, 0.001),
+                    Math.max(anchorBoxTarget.size.z * anchorBoxTarget.scale.z, 0.001)
+                  );
                   if (!boxMesh.visible) {
                     boxMesh.visible = true;
                   }
