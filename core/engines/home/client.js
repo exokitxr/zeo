@@ -1285,7 +1285,7 @@ class Home {
                   const gamepad = gamepads[side];
 
                   if (gamepad) {
-                    const {position: controllerPosition, rotation: controllerRotation} = gamepad;
+                    const {position: controllerPosition, rotation: controllerRotation, scale: controllerScale} = gamepad;
 
                     const serverHoverState = serverHoverStates[side];
                     const serverDotMesh = serverDotMeshes[side];
@@ -1324,6 +1324,7 @@ class Home {
                       boxMesh: serverBoxMesh,
                       controllerPosition,
                       controllerRotation,
+                      controllerScale,
                     });
                   }
                 });
