@@ -9,16 +9,15 @@ class Cyborg {
     const {_archae: archae} = this;
     const {express, app} = archae.getCore();
 
-    const controllerModelStatic = express.static(path.join(__dirname, 'models', 'controller'));
-    function serveControllerModel(req, res, next) {
-      controllerModelStatic(req, res, next);
+    const cyborgModelsStatic = express.static(path.join(__dirname, 'models'));
+    function serveCyborgModels(req, res, next) {
+      cyborgModelsStatic(req, res, next);
     }
-    app.use('/archae/models/controller', serveControllerModel);
-    app.use('/archae/models/hmd', express.static(path.join(__dirname, 'models', 'hmd')));
+    app.use('/archae/cyborg/models', serveCyborgModels);
 
     this._cleanup = () => {
       function removeMiddlewares(route, i, routes) {
-        if (route.handle.name === 'serveControllerModel') {
+        if (route.handle.name === 'serveCyborgModels') {
           routes.splice(i, 1);
         }
         if (route.route) {

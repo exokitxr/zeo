@@ -1,5 +1,5 @@
-const hmdModelPath = '/archae/models/hmd/hmd.json';
-const controllerModelPath = '/archae/models/controller/controller.json';
+const hmdModelPath = '/archae/multiplayer/models/hmd/hmd.json';
+const controllerModelPath = '/archae/multiplayer/models/controller/controller.json';
 
 const SIDES = ['left', 'right'];
 
@@ -18,18 +18,29 @@ class Multiplayer {
     };
 
     if (serverEnabled) {
-      return archae.requestPlugins([
-        '/core/engines/three',
-        '/core/engines/webvr',
-        '/core/engines/login',
-        '/core/engines/rend',
-        '/core/utils/js-utils',
+      const _requestJson = url => fetch(url)
+        .then(res => res.json());
+
+      return Promise.all([
+        archae.requestPlugins([
+          '/core/engines/three',
+          '/core/engines/webvr',
+          '/core/engines/login',
+          '/core/engines/rend',
+          '/core/utils/js-utils',
+        ]),
+        _requestJson(hmdModelPath),
+        _requestJson(controllerModelPath),
       ]).then(([
-        three,
-        webvr,
-        login,
-        rend,
-        jsUtils,
+        [
+          three,
+          webvr,
+          login,
+          rend,
+          jsUtils,
+        ],
+        hmdModelJson,
+        controllerModelJson,
       ]) => {
         if (live) {
           const {THREE, scene, camera} = three;
@@ -39,19 +50,11 @@ class Multiplayer {
           const zeroVector = new THREE.Vector3();
           const zeroQuaternion = new THREE.Quaternion();
 
-          const _requestMesh = modelPath => new Promise((accept, reject) => {
-            fetch(modelPath)
-              .then(res =>
-                res.json()
-                  .then(modelJson => new Promise((accept, reject) => {
-                    const loader = new THREE.ObjectLoader();
-                    loader.parse(modelJson, accept);
-                  }))
-              )
-              .then(accept)
-              .catch(reject);
+          const _requestModelMesh = modelJson => new Promise((accept, reject) => {
+            const loader = new THREE.ObjectLoader();
+            loader.parse(modelJson, accept);
           });
-          const _requestHmdMesh = () => _requestMesh(hmdModelPath)
+          const _requestHmdMesh = () => _requestModelMesh(hmdModelJson)
             .then(mesh => {
               const object = new THREE.Object3D();
 
@@ -63,7 +66,7 @@ class Multiplayer {
 
               return object;
             });
-          const _requestControllerMesh = () => _requestMesh(controllerModelPath);
+          const _requestControllerMesh = () => _requestModelMesh(controllerModelJson);
 
           return Promise.all([
             _requestHmdMesh(),

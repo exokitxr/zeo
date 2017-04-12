@@ -1,4 +1,5 @@
-const controllerModelPath = '/archae/models/controller/controller.json';
+const hmdModelPath = '/archae/cyborg/models/hmd/hmd.json';
+const controllerModelPath = '/archae/cyborg/models/controller/controller.json';
 
 const POSITION_SPEED = 0.05;
 const POSITION_SPEED_FAST = POSITION_SPEED * 5;
@@ -25,407 +26,442 @@ class Cyborg {
       live = false;
     };
 
-    return archae.requestPlugins([
-      '/core/engines/three',
-      '/core/engines/webvr',
-      '/core/engines/rend',
-      '/core/engines/multiplayer',
-      '/core/utils/js-utils',
-      '/core/utils/geometry-utils',
+    const _requestJson = url => fetch(url)
+      .then(res => res.json());
+
+    return Promise.all([
+      archae.requestPlugins([
+        '/core/engines/three',
+        '/core/engines/webvr',
+        '/core/engines/rend',
+        '/core/engines/multiplayer',
+        '/core/utils/js-utils',
+        '/core/utils/geometry-utils',
+      ]),
+      _requestJson(hmdModelPath),
+      _requestJson(controllerModelPath),
     ])
       .then(([
-        three,
-        webvr,
-        rend,
-        multiplayer,
-        jsUtils,
-        geometryUtils,
+        [
+          three,
+          webvr,
+          rend,
+          multiplayer,
+          jsUtils,
+          geometryUtils,
+        ],
+        hmdModelJson,
+        controllerModelJson,
       ]) => {
         if (live) {
           const {THREE, scene, camera} = three;
           const {events} = jsUtils;
           const {EventEmitter} = events;
 
-          class Player extends EventEmitter {
-            constructor() {
-              super();
+          const _requestModelMesh = modelJson => new Promise((accept, reject) => {
+            const loader = new THREE.ObjectLoader();
+            loader.parse(modelJson, accept);
+          });
+          const _requestHmdMesh = () => _requestModelMesh(hmdModelJson)
+            .then(mesh => {
+              const object = new THREE.Object3D();
 
-              const _makePositionRotationScale = () => ({
-                position: new THREE.Vector3(),
-                rotation: new THREE.Quaternion(),
-                scale: new THREE.Vector3(1, 1, 1),
-              });
-              this.prevStatuses = [
-                {
-                  status: {
-                    hmd: _makePositionRotationScale(),
-                    controllers: {
-                      left: _makePositionRotationScale(),
-                      right: _makePositionRotationScale(),
-                    },
-                  },
-                  timestamp: Date.now(),
-                }
-              ];
-            }
+              mesh.scale.set(0.045, 0.045, 0.045);
+              mesh.rotation.order = camera.rotation.order;
+              mesh.rotation.y = Math.PI;
 
-            getStatus() {
-              return {
-                hmd: {
-                  position: camera.position.clone(),
-                  rotation: camera.quaternion.clone(),
-                  scale: camera.scale.clone(),
-                },
-                controllers: {
-                  left: {
-                    position: controllers.left.mesh.position.clone(),
-                    rotation: controllers.left.mesh.quaternion.clone(),
-                    scale: controllers.left.mesh.scale.clone(),
-                  },
-                  right: {
-                    position: controllers.right.mesh.position.clone(),
-                    rotation: controllers.right.mesh.quaternion.clone(),
-                    scale: controllers.right.mesh.scale.clone(),
-                  },
-                },
-              };
-            }
+              object.add(mesh);
 
-            snapshotStatus() {
-              const snapshot = {
-                status: this.getStatus(),
-                timestamp: Date.now(),
-              };
+              return object;
+            });
+          const _requestControllerMesh = () => _requestModelMesh(controllerModelJson);
 
-              this.prevStatuses.push(snapshot);
+          return Promise.all([
+            _requestHmdMesh(),
+            _requestControllerMesh(),
+          ]).then(([
+            hmdMesh,
+            controllerMesh,
+          ]) => {
+            if (live) {
+              class Player extends EventEmitter {
+                constructor() {
+                  super();
 
-              while (this.prevStatuses.length > NUM_PREV_STATUSES) {
-                this.prevStatuses.shift();
-              }
-            }
-
-            getControllerLinearVelocity(side) {
-              const {prevStatuses} = this;
-
-              if (prevStatuses.length > 1) {
-                const positionDiffs = (() => {
-                  const result = Array(prevStatuses.length - 1);
-                  for (let i = 0; i < prevStatuses.length - 1; i++) {
-                    const prevStatus = prevStatuses[i];
-                    const nextStatus = prevStatuses[i + 1];
-                    const positionDiff = nextStatus.status.controllers[side].position.clone()
-                      .sub(prevStatus.status.controllers[side].position);
-                    result[i] = positionDiff;
-                  }
-                  return result;
-                })();
-                const positionDiffAcc = new THREE.Vector3(0, 0, 0);
-                for (let i = 0; i < positionDiffs.length; i++) {
-                  const positionDiff = positionDiffs[positionDiffs.length - 1 - i];
-                  positionDiffAcc.add(positionDiff.clone().divideScalar(Math.pow(2, i)));
-                }
-
-                const firstStatus = prevStatuses[0];
-                const lastStatus = prevStatuses[prevStatuses.length - 1];
-                return positionDiffAcc.divideScalar((lastStatus.timestamp - firstStatus.timestamp) / 1000);
-              } else {
-                return new THREE.Vector3(0, 0, 0);
-              }
-            }
-
-            getControllerAngularVelocity(side) {
-              const {prevStatuses} = this;
-
-              if (prevStatuses.length > 1) {
-                const angleDiffs = (() => {
-                  const result = Array(prevStatuses.length - 1);
-                  for (let i = 0; i < prevStatuses.length - 1; i++) {
-                    const prevStatus = prevStatuses[i];
-                    const nextStatus = prevStatuses[i + 1];
-                    const quaternionDiff = nextStatus.status.controllers[side].rotation.clone()
-                      .multiply(prevStatus.status.controllers[side].rotation.clone().inverse());
-                    const axisAngle = (() => {
-                      const x = quaternionDiff.x / Math.sqrt(1 - (quaternionDiff.w * quaternionDiff.w));
-                      const y = quaternionDiff.y / Math.sqrt(1 - (quaternionDiff.w * quaternionDiff.w));
-                      const z = quaternionDiff.y / Math.sqrt(1 - (quaternionDiff.w * quaternionDiff.w));
-                      const angle = 2 * Math.acos(quaternionDiff.w);
-
-                      return {
-                        axis: new THREE.Vector3(x, y, z),
-                        angle: angle,
-                      };
-                    })();
-                    const angleDiff = axisAngle.axis.clone().multiplyScalar(axisAngle.angle);
-                    result[i] = angleDiff;
-                  }
-                  return result;
-                })();
-                const angleDiffAcc = new THREE.Vector3(0, 0, 0);
-                for (let i = 0; i < angleDiffs.length; i++) {
-                  const angleDiff = angleDiffs[angleDiffs.length - 1 - i];
-                  angleDiffAcc.add(angleDiff.clone().divideScalar(Math.pow(2, i)));
-                }
-
-                const firstStatus = prevStatuses[0];
-                const lastStatus = prevStatuses[prevStatuses.length - 1];
-                return angleDiffAcc.divideScalar((lastStatus.timestamp - firstStatus.timestamp) / 1000);
-              } else {
-                return new THREE.Vector3(0, 0, 0);
-              }
-            }
-
-            updateHmd({position, rotation, scale}) {
-              const {prevStatuses} = this;
-              const lastStatus = prevStatuses[prevStatuses.length - 1];
-
-              if (
-                !position.equals(lastStatus.status.hmd.position) ||
-                !rotation.equals(lastStatus.status.hmd.rotation) ||
-                !scale.equals(lastStatus.status.hmd.scale)
-              ) {
-                this.emit('hmdUpdate', {
-                  position,
-                  rotation,
-                  scale,
-                });
-              }
-            }
-
-            updateController({side, position, rotation, scale}) {
-              const {prevStatuses} = this;
-              const lastStatus = prevStatuses[prevStatuses.length - 1];
-
-              if (
-                !position.equals(lastStatus.status.controllers[side].position) ||
-                !rotation.equals(lastStatus.status.controllers[side].rotation) ||
-                !scale.equals(lastStatus.status.controllers[side].scale)
-              ) {
-                this.emit('controllerUpdate', {
-                  side,
-                  position,
-                  rotation,
-                  scale,
-                });
-              }
-            }
-          }
-
-          class Controller {
-            constructor() {
-              const mesh = (() => {
-                const object = new THREE.Object3D();
-
-                const loader = new THREE.ObjectLoader();
-                loader.load(controllerModelPath, mesh => {
-                  // const loader = new THREE.TextureLoader();
-                  // const model = mesh.children[0];
-                  // model.material.color.setHex(0xFFFFFF);
-                  // model.material.map = loader.load(texturePath);
-                  // model.material.specularMap = loader.load(specularMapPath);
-
-                  object.add(mesh);
-                });
-
-                /* const tip = (() => {
-                  const result = new THREE.Object3D();
-                  result.position.z = -1;
-                  return result;
-                })();
-                object.add(tip);
-                object.tip = tip; */
-
-                const buttonSolidMaterial = new THREE.MeshPhongMaterial({
-                  color: BUTTON_COLOR_HIGHLIGHT,
-                  shininess: 0,
-                  // opacity: 0.75,
-                  // transparent: true,
-                });
-                const buttonWireframeMaterial = new THREE.MeshBasicMaterial({
-                  color: 0x333333,
-                  wireframe: true,
-                  opacity: 0.5,
-                  transparent: true,
-                });
-
-                const padMesh = (() => {
-                  const geometry = new THREE.BoxBufferGeometry(0.005, 0.005, 0.005);
-                  geometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.0075, 0.05));
-                  const padMeshSolidMaterial = new THREE.MeshPhongMaterial({
-                    color: BUTTON_COLOR,
-                    shininess: 0,
-                    // opacity: 0.75,
-                    // transparent: true,
+                  const _makePositionRotationScale = () => ({
+                    position: new THREE.Vector3(),
+                    rotation: new THREE.Quaternion(),
+                    scale: new THREE.Vector3(1, 1, 1),
                   });
-                  const materials = [padMeshSolidMaterial, buttonWireframeMaterial];
+                  this.prevStatuses = [
+                    {
+                      status: {
+                        hmd: _makePositionRotationScale(),
+                        controllers: {
+                          left: _makePositionRotationScale(),
+                          right: _makePositionRotationScale(),
+                        },
+                      },
+                      timestamp: Date.now(),
+                    }
+                  ];
+                }
 
-                  const mesh = new THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
-                  mesh.visible = false;
-                  return mesh;
-                })();
-                object.add(padMesh);
-                object.padMesh = padMesh;
+                getStatus() {
+                  return {
+                    hmd: {
+                      position: camera.position.clone(),
+                      rotation: camera.quaternion.clone(),
+                      scale: camera.scale.clone(),
+                    },
+                    controllers: {
+                      left: {
+                        position: controllers.left.mesh.position.clone(),
+                        rotation: controllers.left.mesh.quaternion.clone(),
+                        scale: controllers.left.mesh.scale.clone(),
+                      },
+                      right: {
+                        position: controllers.right.mesh.position.clone(),
+                        rotation: controllers.right.mesh.quaternion.clone(),
+                        scale: controllers.right.mesh.scale.clone(),
+                      },
+                    },
+                  };
+                }
 
-                const menuMesh = (() => {
-                  const geometry = new THREE.BoxBufferGeometry(0.01, 0.01, 0.01);
-                  geometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.01 / 2, 0.02));
-                  const materials = [buttonSolidMaterial, buttonWireframeMaterial];
-
-                  const mesh = new THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
-                  mesh.visible = false;
-                  return mesh;
-                })();
-                object.add(menuMesh);
-                object.menuMesh = menuMesh;
-
-                const triggerMesh = (() => {
-                  const geometry = new THREE.BoxBufferGeometry(0.02, 0.02, 0.02);
-                  geometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, -0.029, 0.0475));
-                  const materials = [buttonSolidMaterial, buttonWireframeMaterial];
-
-                  const mesh = new THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
-                  mesh.visible = false;
-                  return mesh;
-                })();
-                object.add(triggerMesh);
-                object.triggerMesh = triggerMesh;
-
-                const gripMesh = (() => {
-                  const _makeGripSideGeometry = index => {
-                    const geometry = new THREE.BoxBufferGeometry(0.01, 0.0125, 0.0275);
-                    geometry.applyMatrix(new THREE.Matrix4().makeTranslation(0.0175 * ((index === 0) ? 1 : -1), -0.015, 0.0875));
-                    return geometry;
+                snapshotStatus() {
+                  const snapshot = {
+                    status: this.getStatus(),
+                    timestamp: Date.now(),
                   };
 
-                  const geometry = geometryUtils.mergeBufferGeometry(
-                    _makeGripSideGeometry(0),
-                    _makeGripSideGeometry(1)
-                  );
-                  const materials = [buttonSolidMaterial, buttonWireframeMaterial];
+                  this.prevStatuses.push(snapshot);
 
-                  const mesh = new THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
-                  mesh.visible = false;
-                  return mesh;
-                })();
-                object.add(gripMesh);
-                object.gripMesh = gripMesh;
+                  while (this.prevStatuses.length > NUM_PREV_STATUSES) {
+                    this.prevStatuses.shift();
+                  }
+                }
 
-                return object;
-              })();
-              this.mesh = mesh;
-            }
+                getControllerLinearVelocity(side) {
+                  const {prevStatuses} = this;
 
-            update(gamepadStatus) {
-              const {mesh} = this;
+                  if (prevStatuses.length > 1) {
+                    const positionDiffs = (() => {
+                      const result = Array(prevStatuses.length - 1);
+                      for (let i = 0; i < prevStatuses.length - 1; i++) {
+                        const prevStatus = prevStatuses[i];
+                        const nextStatus = prevStatuses[i + 1];
+                        const positionDiff = nextStatus.status.controllers[side].position.clone()
+                          .sub(prevStatus.status.controllers[side].position);
+                        result[i] = positionDiff;
+                      }
+                      return result;
+                    })();
+                    const positionDiffAcc = new THREE.Vector3(0, 0, 0);
+                    for (let i = 0; i < positionDiffs.length; i++) {
+                      const positionDiff = positionDiffs[positionDiffs.length - 1 - i];
+                      positionDiffAcc.add(positionDiff.clone().divideScalar(Math.pow(2, i)));
+                    }
 
-              mesh.position.copy(gamepadStatus.position);
-              mesh.quaternion.copy(gamepadStatus.rotation);
-              // mesh.scale.copy(gamepadStatus.scale);
+                    const firstStatus = prevStatuses[0];
+                    const lastStatus = prevStatuses[prevStatuses.length - 1];
+                    return positionDiffAcc.divideScalar((lastStatus.timestamp - firstStatus.timestamp) / 1000);
+                  } else {
+                    return new THREE.Vector3(0, 0, 0);
+                  }
+                }
 
-              const {buttons} = gamepadStatus;
-              mesh.padMesh.visible = buttons.pad.touched;
-              mesh.padMesh.position.y = buttons.pad.pressed ? -0.0025 : 0;
-              mesh.padMesh.children[0].material.color.setHex(buttons.pad.pressed ? BUTTON_COLOR_HIGHLIGHT : BUTTON_COLOR);
-              mesh.triggerMesh.visible = buttons.trigger.pressed;
-              mesh.gripMesh.visible = buttons.grip.pressed;
-              mesh.menuMesh.visible = buttons.menu.pressed;
-              const {axes} = gamepadStatus;
-              mesh.padMesh.position.x = axes[0] * 0.02;
-              mesh.padMesh.position.z = -axes[1] * 0.02;
+                getControllerAngularVelocity(side) {
+                  const {prevStatuses} = this;
 
-              mesh.updateMatrixWorld();
-            }
-          }
+                  if (prevStatuses.length > 1) {
+                    const angleDiffs = (() => {
+                      const result = Array(prevStatuses.length - 1);
+                      for (let i = 0; i < prevStatuses.length - 1; i++) {
+                        const prevStatus = prevStatuses[i];
+                        const nextStatus = prevStatuses[i + 1];
+                        const quaternionDiff = nextStatus.status.controllers[side].rotation.clone()
+                          .multiply(prevStatus.status.controllers[side].rotation.clone().inverse());
+                        const axisAngle = (() => {
+                          const x = quaternionDiff.x / Math.sqrt(1 - (quaternionDiff.w * quaternionDiff.w));
+                          const y = quaternionDiff.y / Math.sqrt(1 - (quaternionDiff.w * quaternionDiff.w));
+                          const z = quaternionDiff.y / Math.sqrt(1 - (quaternionDiff.w * quaternionDiff.w));
+                          const angle = 2 * Math.acos(quaternionDiff.w);
 
-          const player = new Player();
+                          return {
+                            axis: new THREE.Vector3(x, y, z),
+                            angle: angle,
+                          };
+                        })();
+                        const angleDiff = axisAngle.axis.clone().multiplyScalar(axisAngle.angle);
+                        result[i] = angleDiff;
+                      }
+                      return result;
+                    })();
+                    const angleDiffAcc = new THREE.Vector3(0, 0, 0);
+                    for (let i = 0; i < angleDiffs.length; i++) {
+                      const angleDiff = angleDiffs[angleDiffs.length - 1 - i];
+                      angleDiffAcc.add(angleDiff.clone().divideScalar(Math.pow(2, i)));
+                    }
 
-          const controllers = {
-            left: new Controller(),
-            right: new Controller(),
-          };
-          SIDES.forEach(side => {
-            const controller = controllers[side];
-            const {mesh} = controller;
-            camera.parent.add(mesh);
-          });
+                    const firstStatus = prevStatuses[0];
+                    const lastStatus = prevStatuses[prevStatuses.length - 1];
+                    return angleDiffAcc.divideScalar((lastStatus.timestamp - firstStatus.timestamp) / 1000);
+                  } else {
+                    return new THREE.Vector3(0, 0, 0);
+                  }
+                }
 
-          const  controllerPhysicsBodies = {
-            left: null,
-            right: null,
-          };
+                updateHmd({position, rotation, scale}) {
+                  const {prevStatuses} = this;
+                  const lastStatus = prevStatuses[prevStatuses.length - 1];
 
-          const _getPlayer = () => player;
-          const _getControllers = () => controllers;
-          const _getControllerPhysicsBodies = () => controllerPhysicsBodies;
-          const _update = () => {
-            // update camera
-            const status = webvr.getStatus();
-            const {hmd} = status;
-            camera.position.copy(hmd.position);
-            camera.quaternion.copy(hmd.rotation);
-            camera.parent.scale.copy(hmd.scale);
-            camera.updateMatrixWorld();
+                  if (
+                    !position.equals(lastStatus.status.hmd.position) ||
+                    !rotation.equals(lastStatus.status.hmd.rotation) ||
+                    !scale.equals(lastStatus.status.hmd.scale)
+                  ) {
+                    this.emit('hmdUpdate', {
+                      position,
+                      rotation,
+                      scale,
+                    });
+                  }
+                }
 
-            // update controllers
-            const {gamepads} = status;
-            SIDES.forEach(side => {
-              const controller = controllers[side];
-              const gamepad = gamepads[side];
+                updateController({side, position, rotation, scale}) {
+                  const {prevStatuses} = this;
+                  const lastStatus = prevStatuses[prevStatuses.length - 1];
 
-              if (gamepad) {
-                controller.update(gamepad);
+                  if (
+                    !position.equals(lastStatus.status.controllers[side].position) ||
+                    !rotation.equals(lastStatus.status.controllers[side].rotation) ||
+                    !scale.equals(lastStatus.status.controllers[side].scale)
+                  ) {
+                    this.emit('controllerUpdate', {
+                      side,
+                      position,
+                      rotation,
+                      scale,
+                    });
+                  }
+                }
               }
-            });
 
-            // emit updates
-            player.updateHmd({
-              position: hmd.position.clone(),
-              rotation: hmd.rotation.clone(),
-              scale: hmd.scale.clone(),
-            });
-            SIDES.forEach(side => {
-              const controller = controllers[side];
-              const {mesh} = controller;
+              class Controller {
+                constructor() {
+                  const mesh = (() => {
+                    const object = new THREE.Object3D();
 
-              player.updateController({
-                side,
-                position: mesh.position.clone(),
-                rotation: mesh.quaternion.clone(),
-                scale: mesh.scale.clone(),
+                    const controllerMeshClone = controllerMesh.clone(true);
+                    // const controllerMeshClone = mesh.children[0];
+                    // controllerMeshClone.material.color.setHex(0xFFFFFF);
+                    // controllerMeshClone.material.map = loader.load(texturePath);
+                    // controllerMeshClone.material.specularMap = loader.load(specularMapPath);
+                    object.add(controllerMeshClone);
+
+                    /* const tip = (() => {
+                      const result = new THREE.Object3D();
+                      result.position.z = -1;
+                      return result;
+                    })();
+                    object.add(tip);
+                    object.tip = tip; */
+
+                    const buttonSolidMaterial = new THREE.MeshPhongMaterial({
+                      color: BUTTON_COLOR_HIGHLIGHT,
+                      shininess: 0,
+                      // opacity: 0.75,
+                      // transparent: true,
+                    });
+                    const buttonWireframeMaterial = new THREE.MeshBasicMaterial({
+                      color: 0x333333,
+                      wireframe: true,
+                      opacity: 0.5,
+                      transparent: true,
+                    });
+
+                    const padMesh = (() => {
+                      const geometry = new THREE.BoxBufferGeometry(0.005, 0.005, 0.005);
+                      geometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.0075, 0.05));
+                      const padMeshSolidMaterial = new THREE.MeshPhongMaterial({
+                        color: BUTTON_COLOR,
+                        shininess: 0,
+                        // opacity: 0.75,
+                        // transparent: true,
+                      });
+                      const materials = [padMeshSolidMaterial, buttonWireframeMaterial];
+
+                      const mesh = new THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
+                      mesh.visible = false;
+                      return mesh;
+                    })();
+                    object.add(padMesh);
+                    object.padMesh = padMesh;
+
+                    const menuMesh = (() => {
+                      const geometry = new THREE.BoxBufferGeometry(0.01, 0.01, 0.01);
+                      geometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.01 / 2, 0.02));
+                      const materials = [buttonSolidMaterial, buttonWireframeMaterial];
+
+                      const mesh = new THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
+                      mesh.visible = false;
+                      return mesh;
+                    })();
+                    object.add(menuMesh);
+                    object.menuMesh = menuMesh;
+
+                    const triggerMesh = (() => {
+                      const geometry = new THREE.BoxBufferGeometry(0.02, 0.02, 0.02);
+                      geometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, -0.029, 0.0475));
+                      const materials = [buttonSolidMaterial, buttonWireframeMaterial];
+
+                      const mesh = new THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
+                      mesh.visible = false;
+                      return mesh;
+                    })();
+                    object.add(triggerMesh);
+                    object.triggerMesh = triggerMesh;
+
+                    const gripMesh = (() => {
+                      const _makeGripSideGeometry = index => {
+                        const geometry = new THREE.BoxBufferGeometry(0.01, 0.0125, 0.0275);
+                        geometry.applyMatrix(new THREE.Matrix4().makeTranslation(0.0175 * ((index === 0) ? 1 : -1), -0.015, 0.0875));
+                        return geometry;
+                      };
+
+                      const geometry = geometryUtils.mergeBufferGeometry(
+                        _makeGripSideGeometry(0),
+                        _makeGripSideGeometry(1)
+                      );
+                      const materials = [buttonSolidMaterial, buttonWireframeMaterial];
+
+                      const mesh = new THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
+                      mesh.visible = false;
+                      return mesh;
+                    })();
+                    object.add(gripMesh);
+                    object.gripMesh = gripMesh;
+
+                    return object;
+                  })();
+                  this.mesh = mesh;
+                }
+
+                update(gamepadStatus) {
+                  const {mesh} = this;
+
+                  mesh.position.copy(gamepadStatus.position);
+                  mesh.quaternion.copy(gamepadStatus.rotation);
+                  // mesh.scale.copy(gamepadStatus.scale);
+
+                  const {buttons} = gamepadStatus;
+                  mesh.padMesh.visible = buttons.pad.touched;
+                  mesh.padMesh.position.y = buttons.pad.pressed ? -0.0025 : 0;
+                  mesh.padMesh.children[0].material.color.setHex(buttons.pad.pressed ? BUTTON_COLOR_HIGHLIGHT : BUTTON_COLOR);
+                  mesh.triggerMesh.visible = buttons.trigger.pressed;
+                  mesh.gripMesh.visible = buttons.grip.pressed;
+                  mesh.menuMesh.visible = buttons.menu.pressed;
+                  const {axes} = gamepadStatus;
+                  mesh.padMesh.position.x = axes[0] * 0.02;
+                  mesh.padMesh.position.z = -axes[1] * 0.02;
+
+                  mesh.updateMatrixWorld();
+                }
+              }
+
+              const player = new Player();
+
+              const controllers = {
+                left: new Controller(),
+                right: new Controller(),
+              };
+              SIDES.forEach(side => {
+                const controller = controllers[side];
+                const {mesh} = controller;
+                camera.parent.add(mesh);
               });
-            });
 
-            // snapshot current status
-            player.snapshotStatus();
-          };
-          rend.on('update', _update);
+              const  controllerPhysicsBodies = {
+                left: null,
+                right: null,
+              };
 
-          const cleanups = [];
-          const cleanup = () => {
-            for (let i = 0; i < cleanups.length; i++) {
-              const cleanup = cleanups[i];
-              cleanup();
+              const _getPlayer = () => player;
+              const _getControllers = () => controllers;
+              const _getControllerPhysicsBodies = () => controllerPhysicsBodies;
+              const _update = () => {
+                // update camera
+                const status = webvr.getStatus();
+                const {hmd} = status;
+                camera.position.copy(hmd.position);
+                camera.quaternion.copy(hmd.rotation);
+                camera.parent.scale.copy(hmd.scale);
+                camera.updateMatrixWorld();
+
+                // update controllers
+                const {gamepads} = status;
+                SIDES.forEach(side => {
+                  const controller = controllers[side];
+                  const gamepad = gamepads[side];
+
+                  if (gamepad) {
+                    controller.update(gamepad);
+                  }
+                });
+
+                // emit updates
+                player.updateHmd({
+                  position: hmd.position.clone(),
+                  rotation: hmd.rotation.clone(),
+                  scale: hmd.scale.clone(),
+                });
+                SIDES.forEach(side => {
+                  const controller = controllers[side];
+                  const {mesh} = controller;
+
+                  player.updateController({
+                    side,
+                    position: mesh.position.clone(),
+                    rotation: mesh.quaternion.clone(),
+                    scale: mesh.scale.clone(),
+                  });
+                });
+
+                // snapshot current status
+                player.snapshotStatus();
+              };
+              rend.on('update', _update);
+
+              const cleanups = [];
+              const cleanup = () => {
+                for (let i = 0; i < cleanups.length; i++) {
+                  const cleanup = cleanups[i];
+                  cleanup();
+                }
+                cleanups.length = 0;
+              };
+
+              this._cleanup = () => {
+                cleanup();
+
+                SIDES.forEach(side => {
+                  const controller = controllers[side];
+                  const {mesh} = controller;
+                  camera.parent.remove(mesh);
+                });
+
+                rend.removeListener('update', _update);
+              };
+
+              return {
+                getPlayer: _getPlayer,
+                getControllers: _getControllers,
+                getControllerPhysicsBodies: _getControllerPhysicsBodies,
+                update: _update,
+              };
             }
-            cleanups.length = 0;
-          };
-
-          this._cleanup = () => {
-            cleanup();
-
-            SIDES.forEach(side => {
-              const controller = controllers[side];
-              const {mesh} = controller;
-              camera.parent.remove(mesh);
-            });
-
-            rend.removeListener('update', _update);
-          };
-
-          return {
-            getPlayer: _getPlayer,
-            getControllers: _getControllers,
-            getControllerPhysicsBodies: _getControllerPhysicsBodies,
-            update: _update,
-          };
+          });
         }
       });
   }

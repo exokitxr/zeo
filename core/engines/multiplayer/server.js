@@ -12,16 +12,11 @@ class Multiplayer {
     const connections = [];
     const statuses = new Map();
 
-    const hmdModelStatic = express.static(path.join(__dirname, 'models', 'hmd'));
-    const controllerModelStatic = express.static(path.join(__dirname, 'models', 'controller'));
-    function serveHmdModel(req, res, next) {
-      hmdModelStatic(req, res, next);
+    const multiplayerModelsStatic = express.static(path.join(__dirname, 'models'));
+    function serveMultiplayerModels(req, res, next) {
+      multiplayerModelsStatic(req, res, next);
     }
-    app.use('/archae/models/hmd', serveHmdModel);
-    function serveMultiplayerControllerModel(req, res, next) {
-      controllerModelStatic(req, res, next);
-    }
-    app.use('/archae/models/controller', serveMultiplayerControllerModel);
+    app.use('/archae/multiplayer/models', serveMultiplayerModels);
     function serverMultiplayerStatuses(req, res, next) {
       res.json({
         statuses: _getAllStatuses(),
@@ -135,8 +130,7 @@ class Multiplayer {
     this._cleanup = () => {
       function removeMiddlewares(route, i, routes) {
         if (
-          route.handle.name === 'serveMultiplayerHmdModel' ||
-          route.handle.name === 'serveMultiplayerControllerModel' ||
+          route.handle.name === 'serveMultiplayerModels' ||
           route.handle.name === 'serverMultiplayerStatuses'
         ) {
           routes.splice(i, 1);
