@@ -107,10 +107,16 @@ function THREEMirror( width, height, options ) {
 	scope.material = material;
 
 	function updateTextureMatrix( camera ) {
-
 		camera.updateMatrixWorld();
 
-		mirrorCamera.copy( camera );
+		mirrorCamera.position.copy( camera.position );
+		mirrorCamera.quaternion.copy( camera.quaternion );
+		mirrorCamera.scale.copy( camera.scale );
+		mirrorCamera.matrix.copy( camera.matrix );
+		mirrorCamera.fov = camera.fov;
+		mirrorCamera.aspect = camera.aspect;
+		mirrorCamera.near = camera.near;
+		mirrorCamera.far = camera.far;
 		mirrorCamera.updateProjectionMatrix();
 
 		scope.updateMatrixWorld();
