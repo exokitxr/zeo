@@ -859,7 +859,7 @@ class ZAnimate {
     elements.registerComponent(this, animateComponent);
 
     this._cleanup = () => {
-      elements.unregisterComponent(this, paperComponent);
+      elements.unregisterComponent(this, animateComponent);
     };
   }
 
