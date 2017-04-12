@@ -728,7 +728,7 @@ class Biolumi {
             mesh.visible = false;
             return mesh;
           };
-          const _makeMeshPointGetter = ({position, rotation, width, height, worldWidth, worldHeight}) => (x, y, z) => position.clone()
+          const _makeMeshPointGetter = ({position, rotation, scale, width, height, worldWidth, worldHeight}) => (x, y, z) => position.clone()
             .add(
               new THREE.Vector3(
                 -worldWidth / 2,
@@ -741,10 +741,12 @@ class Biolumi {
                   (-y / height) * worldHeight,
                   z
                 )
-              ).applyQuaternion(rotation)
+              )
+              // .multiply(scale)
+              .applyQuaternion(rotation)
             );
-          const _makeMeshCoordinateGetter = ({position, rotation, width, height, worldWidth, worldHeight}) => {
-            const _getMenuMeshPoint = _makeMeshPointGetter({position, rotation, width, height, worldWidth, worldHeight});
+          /* const _makeMeshCoordinateGetter = ({position, rotation, scale, width, height, worldWidth, worldHeight}) => {
+            const _getMenuMeshPoint = _makeMeshPointGetter({position, rotation, scale, width, height, worldWidth, worldHeight});
 
             return intersectionPoint => {
               const x = (() => {
@@ -765,7 +767,7 @@ class Biolumi {
               })();
               return new THREE.Vector2(x, y);
             };
-          };
+          }; */
           const _updateAnchors = ({
             objects,
             hoverState,
@@ -810,7 +812,7 @@ class Biolumi {
                   matrixObject: {
                     position,
                     rotation,
-                    scale
+                    scale,
                   },
                   page,
                   width,
@@ -818,7 +820,7 @@ class Biolumi {
                   worldWidth,
                   worldHeight,
                   worldDepth,
-                  metadata
+                  metadata,
                 },
                 intersectionPoint,
                 controllerLine,
@@ -833,6 +835,7 @@ class Biolumi {
               const _getMenuMeshPoint = _makeMeshPointGetter({
                 position,
                 rotation,
+                scale,
                 width,
                 height,
                 worldWidth,
@@ -968,8 +971,8 @@ class Biolumi {
             makeMenuHoverState: _makeMenuHoverState,
             makeMenuDotMesh: _makeMenuDotMesh,
             makeMenuBoxMesh: _makeMenuBoxMesh,
-            makeMeshPointGetter: _makeMeshPointGetter,
-            makeMeshCoordinateGetter: _makeMeshCoordinateGetter,
+            // makeMeshPointGetter: _makeMeshPointGetter,
+            // makeMeshCoordinateGetter: _makeMeshCoordinateGetter,
 
             updateAnchors: _updateAnchors,
           };
