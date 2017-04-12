@@ -16,6 +16,7 @@ class Three {
       result.position.z = 0;
       result.rotation.order = CAMERA_ROTATION_ORDER;
       result.up = new THREE.Vector3(0, 1, 0);
+      result.side = 'left'; // for webvr updateEye()
 
       const target = new THREE.Vector3(0, DEFAULT_USER_HEIGHT, -1);
       result.lookAt(target);

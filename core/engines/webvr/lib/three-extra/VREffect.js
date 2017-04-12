@@ -231,9 +231,11 @@ return function THREEVREffect( renderer, onError ) {
 
 	var cameraL = new THREE.PerspectiveCamera();
 	cameraL.layers.enable( 1 );
+	cameraL.side = 'left';
 
 	var cameraR = new THREE.PerspectiveCamera();
 	cameraR.layers.enable( 2 );
+	cameraR.side = 'right';
 
   this.onEye = null;
 
