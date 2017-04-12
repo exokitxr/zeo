@@ -181,14 +181,16 @@ const _install = () => {
   }
 };
 
-const _checkArgs = () => new Promise((accept, reject) => {
+const worldnameRegexp = /^[a-z][a-z0-9_-]*/i;
+const _checkArgs = () => {
   if ((Boolean(flags.hub) + Boolean(flags.server)) > 1) {
-    const err = new Error('hub, server, and site arguments are mutually exclusive');
-    reject(err);
+    return Promise.reject(new Error('hub, server, and site arguments are mutually exclusive'));
+  } else if (flags.worldname && !worldnameRegexp.test(flags.worldname)) {
+    return Promise.reject(new Error('worldname must match ' + String(worldnameRegexp)));
   } else {
-    accept();
+    return Promise.resolve();
   }
-});
+};
 
 const _preload = () => {
   if (flags.hub || flags.home || flags.server) {

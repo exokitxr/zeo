@@ -944,7 +944,7 @@ class Home {
                 } else if (onclick === 'createServer:submit') {
                   const {inputText: worldname} = homeState;
 
-                  if (worldname) {
+                  if (/^[a-z][a-z0-9_-]*$/i.test(worldname)) {
                     fetch(homeUrl + '/home/servers/create', {
                       method: 'POST',
                       headers: (() => {
