@@ -674,8 +674,8 @@ class ZDraw {
                     } = paperMesh;
                     const {image: canvas} = texture;
 
-                    const {position: paperPosition, rotation: paperRotation} = _decomposeObjectMatrixWorld(paperMesh);
-                    const planeTarget = geometryUtils.makePlaneTarget(paperPosition, paperRotation, WORLD_WIDTH, WORLD_HEIGHT);
+                    const {position: paperPosition, rotation: paperRotation, scale: paperScale} = _decomposeObjectMatrixWorld(paperMesh);
+                    const planeTarget = geometryUtils.makePlaneTarget(paperPosition, paperRotation, paperScale, WORLD_WIDTH, WORLD_HEIGHT);
 
                     SIDES.forEach(side => {
                       const pencilState = pencilStates[side];
