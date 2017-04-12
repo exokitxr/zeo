@@ -1,5 +1,6 @@
 const path = require('path');
 const fs = require('fs');
+const http = require('http');
 const https = require('https');
 
 const SERVER_ANNOUNCE_INTERVAL = 30 * 1000;
@@ -27,17 +28,19 @@ class Bootstrap {
     } = archae;
 
     const hubSpec = (() => {
-      const match = hubUrl.match(/^(.+\..+?)(?::([0-9]*?))?$/);
+      const match = hubUrl.match(/^(?:([^:]+):\/\/)([^:]+)(?::([0-9]*?))?$/);
       return match && {
-        host: match[1],
-        port: match[2] ? parseInt(match[2], 10) : 443,
+        protocol: match[1],
+        host: match[2],
+        port: match[3] ? parseInt(match[3], 10) : 443,
       };
     })();
     const serverSpec = (() => {
-      const match = serverUrl.match(/^(.+\..+?)(?::([0-9]*?))?$/);
+      const match = serverUrl.match(/^(?:([^:]+):\/\/)([^:]+)(?::([0-9]*?))?$/);
       return match && {
-        host: match[1],
-        port: match[2] ? parseInt(match[2], 10) : 443,
+        protocol: match[1],
+        host: match[2],
+        port: match[3] ? parseInt(match[3], 10) : 443,
       };
     })();
 
@@ -54,15 +57,15 @@ class Bootstrap {
         method: 'POST',
         host: hubSpec.host,
         port: hubSpec.port,
-        path: '/servers/announce',
+        path: '/hub/servers/announce',
         headers: {
           'Content-Type': 'application/json',
         },
       };
-      const req = https.request(options);
+      const req = (hubSpec.protocol === 'http' ? http : https).request(options);
       req.end(JSON.stringify({
         worldname: serverWorldname,
-        serverHost: serverSpec.host,
+        protocol: serverSpec.protocol,
         port: serverSpec.port,
         users: [], // XXX announce the real users from the hub engine
       }));

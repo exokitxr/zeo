@@ -35,14 +35,23 @@ const flags = {
       return null;
     }
   })(),
+  secure: (() => {
+    const secure = _findArg('secure');
+
+    if (secure === String(true)) {
+      return true;
+    } else if (secure === String(false)) {
+      return false;
+    } else {
+      return null;
+    }
+  })(),
   dataDirectory: _findArg('dataDirectory'),
   cryptoDirectory: _findArg('cryptoDirectory'),
   installDirectory: _findArg('installDirectory'),
   dataDirectorySrc: _findArg('dataDirectorySrc'),
   cryptoDirectorySrc: _findArg('cryptoDirectorySrc'),
   installDirectorySrc: _findArg('installDirectorySrc'),
-  serverHost: _findArg('serverHost'),
-  homeHost: _findArg('homeHost'),
   worldname: _findArg('worldname'),
   hubUrl: _findArg('hubUrl'),
   dns: args.includes('dns'),
@@ -76,6 +85,7 @@ const _capitalize = s => {
 
 const hostname = flags.host || 'zeovr.io';
 const port = flags.port || 8000;
+const secure = (typeof flags.secure === 'boolean') ? flags.secure : false;
 const dataDirectory = flags.dataDirectory || 'data';
 const cryptoDirectory = flags.cryptoDirectory || 'crypto';
 const installDirectory = flags.installDirectory || 'installed';
@@ -83,21 +93,21 @@ const dataDirectorySrc = flags.dataDirectorySrc || dataDirectory;
 const cryptoDirectorySrc = flags.cryptoDirectorySrc || cryptoDirectory;
 const installDirectorySrc = flags.installDirectorySrc || installDirectory;
 const staticSite = flags.site && !(flags.home || flags.hub || flags.server);
-const serverHost = flags.serverHost || ('server.' + hostname);
-const homeHost = flags.homeHost || ('home.' + hostname);
 const worldname = flags.worldname || [_capitalize(rnd.adjective()), _capitalize(rnd.noun())].join(' ');
-const homeUrl = homeHost + ':' + port;
-const hubUrl = flags.hubUrl || ('hub.' + hostname + ':' + port);
+const protocolString = !secure ? 'http' : 'https';
+const homeUrl = protocolString + '://127.0.0.1:' + port;
+const hubUrl = flags.hubUrl || (protocolString + '://hub.' + hostname + ':' + port);
 const config = {
   dirname: __dirname,
   hostname: hostname,
   port: port,
+  secure: secure,
   publicDirectory: 'public',
   dataDirectory: dataDirectory,
   cryptoDirectory: cryptoDirectory,
   installDirectory: installDirectory,
   cors: !staticSite,
-  corsOrigin: 'https://' + homeUrl,
+  corsOrigin: homeUrl,
   staticSite: staticSite,
   metadata: {
     config: {
@@ -118,7 +128,7 @@ const config = {
       enabled: flags.hub,
     },
     server: {
-      url: serverHost + ':' + port,
+      url: homeUrl,
       worldname: worldname,
       enabled: flags.server,
     },

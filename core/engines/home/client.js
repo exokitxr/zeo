@@ -566,7 +566,7 @@ class Home {
               tags.reifyModule(tagMesh);
             };
 
-            const _requestRemoteServers = () => fetch('https://' + hubUrl + '/servers/servers.json')
+            const _requestRemoteServers = () => fetch(hubUrl + '/hub/servers/servers.json')
               .then(res => res.json()
                 .then(j => {
                   const {servers} = j;
@@ -579,7 +579,7 @@ class Home {
                   return servers;
                 })
               );
-            const _requestLocalServers = () => fetch('https://' + homeUrl + '/servers/local.json')
+            const _requestLocalServers = () => fetch(homeUrl + '/home/servers/local.json')
               .then(res => res.json()
                 .then(j => {
                   const {servers} = j;
@@ -651,7 +651,7 @@ class Home {
                   console.warn(err);
                 });
             };
-            const _proxyLoginServer = worldname => fetch('https://' + homeUrl + '/servers/proxyLogin', {
+            const _proxyLoginServer = worldname => fetch(homeUrl + '/home/servers/proxyLogin', {
               method: 'POST',
               headers: (() => {
                 const result = new Headers();
@@ -715,7 +715,7 @@ class Home {
                     const {worldname, running} = server;
 
                     if (!running) {
-                      fetch('https://' + homeUrl + '/servers/start', {
+                      fetch(homeUrl + '/home/servers/start', {
                         method: 'POST',
                         headers: (() => {
                           const result = new Headers();
@@ -743,7 +743,7 @@ class Home {
                           console.warn(err);
                         });
                     } else {
-                      fetch('https://' + homeUrl + '/servers/stop', {
+                      fetch(homeUrl + '/home/servers/stop', {
                         method: 'POST',
                         headers: (() => {
                           const result = new Headers();
@@ -945,7 +945,7 @@ class Home {
                   const {inputText: worldname} = homeState;
 
                   if (worldname) {
-                    fetch('https://' + homeUrl + '/servers/create', {
+                    fetch(homeUrl + '/home/servers/create', {
                       method: 'POST',
                       headers: (() => {
                         const result = new Headers();
