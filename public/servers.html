@@ -48,15 +48,15 @@ const _makeServerElement = server => {
   div.innerHTML = `<div class=server>
     <img class=server-image />
     <div class=server-wrap>
-      <a href="https://${url}" class=name>${worldname}</a>
-      <a href="https://${url}" class=url>
-        <i>https://${url}</i>
+      <a href="${url}" class=name>${worldname}</a>
+      <a href="${url}" class=url>
+        <i>${url}</i>
       </a>
     </div>
     <div class=users>${users.map(user =>
       `<div class=user>${user}</div>`
     ).join('')}</div>
-    <a href="https://${url}" class=server-arrow>
+    <a href="${url}" class=server-arrow>
       <img src="/img/arrow-right.svg" />
     </a>
   </div>`;
