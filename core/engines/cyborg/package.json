@@ -3,6 +3,5 @@
   "description": "Provides a central hub for managing and subscribing to player HMD/controller state.",
   "version": "0.0.1",
   "client": "client.js",
-  "server": "server.js",
   "dependencies": {}
 }

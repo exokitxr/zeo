@@ -1,6 +1,3 @@
-const hmdModelPath = '/archae/multiplayer/models/hmd/hmd.json';
-const controllerModelPath = '/archae/multiplayer/models/controller/controller.json';
-
 const SIDES = ['left', 'right'];
 
 class Multiplayer {
@@ -18,414 +15,378 @@ class Multiplayer {
     };
 
     if (serverEnabled) {
-      const _requestJson = url => fetch(url)
-        .then(res => res.json());
-
-      return Promise.all([
-        archae.requestPlugins([
-          '/core/engines/three',
-          '/core/engines/webvr',
-          '/core/engines/login',
-          '/core/engines/rend',
-          '/core/utils/js-utils',
-        ]),
-        _requestJson(hmdModelPath),
-        _requestJson(controllerModelPath),
+      return archae.requestPlugins([
+        '/core/engines/three',
+        '/core/engines/webvr',
+        '/core/engines/login',
+        '/core/engines/assets',
+        '/core/engines/rend',
+        '/core/utils/js-utils',
       ]).then(([
-        [
-          three,
-          webvr,
-          login,
-          rend,
-          jsUtils,
-        ],
-        hmdModelJson,
-        controllerModelJson,
+        three,
+        webvr,
+        login,
+        assets,
+        rend,
+        jsUtils,
       ]) => {
         if (live) {
           const {THREE, scene, camera} = three;
+          const {hmdModelMesh, controllerModelMesh} = assets;
           const {events} = jsUtils;
           const {EventEmitter} = events;
 
           const zeroVector = new THREE.Vector3();
           const zeroQuaternion = new THREE.Quaternion();
 
-          const _requestModelMesh = modelJson => new Promise((accept, reject) => {
-            const loader = new THREE.ObjectLoader();
-            loader.parse(modelJson, accept);
-          });
-          const _requestHmdMesh = () => _requestModelMesh(hmdModelJson)
-            .then(mesh => {
-              const object = new THREE.Object3D();
+          class MutiplayerInterface extends EventEmitter {
+            constructor(id) {
+              super();
 
-              mesh.scale.set(0.045, 0.045, 0.045);
-              mesh.rotation.order = camera.rotation.order;
-              mesh.rotation.y = Math.PI;
+              this.id = id;
 
-              object.add(mesh);
+              this.playerStatuses = new Map();
+              this.remotePlayerMeshes = new Map();
+            }
 
-              return object;
-            });
-          const _requestControllerMesh = () => _requestModelMesh(controllerModelJson);
+            getId() {
+              return this.id;
+            }
 
-          return Promise.all([
-            _requestHmdMesh(),
-            _requestControllerMesh(),
-          ]).then(([
-            hmdModelMesh,
-            controllerModelMesh,
-          ]) => {
-            if (live) {
-              class MutiplayerInterface extends EventEmitter {
-                constructor(id) {
-                  super();
+            getPlayerStatuses() {
+              return this.playerStatuses;
+            }
 
-                  this.id = id;
+            getUsers() {
+              const {playerStatuses} = this;
 
-                  this.playerStatuses = new Map();
-                  this.remotePlayerMeshes = new Map();
-                }
+              const result = Array(playerStatuses.size);
+              let i = 0;
+              playerStatuses.forEach(playerStatus => {
+                result[i++] = playerStatus.username;
+              });
+              return result.sort((a, b) => a.localeCompare(b));
+            }
 
-                getId() {
-                  return this.id;
-                }
+            updateStatus(status) {
+              this.emit('status', status);
+            }
 
-                getPlayerStatuses() {
-                  return this.playerStatuses;
-                }
+            getRemotePlayerMesh(id) {
+              const {remotePlayerMeshes} = this;
+              return remotePlayerMeshes.get(id) || null;
+            }
 
-                getUsers() {
-                  const {playerStatuses} = this;
+            addRemotePlayerMesh(id, mesh) {
+              const {remotePlayerMeshes} = this;
+              remotePlayerMeshes.set(id, mesh);
+            }
 
-                  const result = Array(playerStatuses.size);
-                  let i = 0;
-                  playerStatuses.forEach(playerStatus => {
-                    result[i++] = playerStatus.username;
-                  });
-                  return result.sort((a, b) => a.localeCompare(b));
-                }
+            removeRemotePlayerMesh(id) {
+              const {remotePlayerMeshes} = this;
+              remotePlayerMeshes.delete(id);
+            }
 
-                updateStatus(status) {
-                  this.emit('status', status);
-                }
+            reset() {
+              const {remotePlayerMeshes: oldRemotePlayerMeshes} = this;
 
-                getRemotePlayerMesh(id) {
-                  const {remotePlayerMeshes} = this;
-                  return remotePlayerMeshes.get(id) || null;
-                }
+              this.playerStatuses = new Map();
+              this.remotePlayerMeshes = new Map();
 
-                addRemotePlayerMesh(id, mesh) {
-                  const {remotePlayerMeshes} = this;
-                  remotePlayerMeshes.set(id, mesh);
-                }
-
-                removeRemotePlayerMesh(id) {
-                  const {remotePlayerMeshes} = this;
-                  remotePlayerMeshes.delete(id);
-                }
-
-                reset() {
-                  const {remotePlayerMeshes: oldRemotePlayerMeshes} = this;
-
-                  this.playerStatuses = new Map();
-                  this.remotePlayerMeshes = new Map();
-
-                  oldRemotePlayerMeshes.forEach(mesh => {
-                    scene.remove(mesh);
-                  });
-
-                  rend.setStatus('users', multiplayerApi.getUsers());
-                }
-              }
-              const multiplayerApi = new MutiplayerInterface(_makeId());
-
-              const _makeRemotePlayerMesh = status => {
-                const object = new THREE.Object3D();
-
-                const hmd = hmdModelMesh.clone();
-                object.add(hmd);
-                object.hmd = hmd;
-
-                const _makeControllerMesh = () => controllerModelMesh.clone();
-                const controllers = {
-                  left: _makeControllerMesh(),
-                  right: _makeControllerMesh(),
-                };
-                object.add(controllers.left);
-                object.add(controllers.right);
-                object.controllers = controllers;
-
-                _updateRemotePlayerMesh(object, status);
-
-                return object;
-              };
-              const _updateRemotePlayerMesh = (remotePlayerMesh, status) => {
-                const _updateHmd = () => {
-                  const {hmd} = remotePlayerMesh;
-
-                  const {hmd: hmdStatus} = status;
-
-                  hmd.position.fromArray(hmdStatus.position);
-                  hmd.quaternion.fromArray(hmdStatus.rotation);
-                };
-                const _updateControllers = () => {
-                  const {controllers} = remotePlayerMesh;
-                  const {left: leftController, right: rightController} = controllers;
-
-                  const {controllers: controllersStatus} = status;
-                  const {left: leftControllerStatus, right: rightControllerStatus} = controllersStatus;
-
-                  leftController.position.fromArray(leftControllerStatus.position);
-                  leftController.quaternion.fromArray(leftControllerStatus.rotation);
-
-                  rightController.position.fromArray(rightControllerStatus.position);
-                  rightController.quaternion.fromArray(rightControllerStatus.rotation);
-                };
-
-                _updateHmd();
-                _updateControllers();
-              };
-
-              const playerStatuses = multiplayerApi.getPlayerStatuses();
-              playerStatuses.forEach((status, id) => {
-                const remotePlayerMesh = _makeRemotePlayerMesh(status);
-                scene.add(remotePlayerMesh);
-                multiplayerApi.addRemotePlayerMesh(id, remotePlayerMesh);
+              oldRemotePlayerMeshes.forEach(mesh => {
+                scene.remove(mesh);
               });
 
-              const playerStatusUpdate = update => {
-                const {id, status} = update;
-                const remotePlayerMesh = multiplayerApi.getRemotePlayerMesh(id);
-                _updateRemotePlayerMesh(remotePlayerMesh, status);
-              };
-              const playerEnter = update => {
-                const {id, status} = update;
-                const remotePlayerMesh = _makeRemotePlayerMesh(status);
-                scene.add(remotePlayerMesh);
-                multiplayerApi.addRemotePlayerMesh(id, remotePlayerMesh);
-              };
-              const playerLeave = update => {
-                const {id} = update;
-                const remotePlayerMesh = multiplayerApi.getRemotePlayerMesh(id);
-                scene.remove(remotePlayerMesh);
-                multiplayerApi.removeRemotePlayerMesh(id);
-              };
-              multiplayerApi.on('playerStatusUpdate', playerStatusUpdate);
-              multiplayerApi.on('playerEnter', playerEnter);
-              multiplayerApi.on('playerLeave', playerLeave);
+              rend.setStatus('users', multiplayerApi.getUsers());
+            }
+          }
+          const multiplayerApi = new MutiplayerInterface(_makeId());
 
-              const localStatus = {
-                hmd: {
-                  position: zeroVector.toArray(),
-                  rotation: zeroQuaternion.toArray(),
-                },
-                controllers: {
-                  left: {
-                    position: zeroVector.toArray(),
-                    rotation: zeroQuaternion.toArray(),
-                  },
-                  right: {
-                    position: zeroVector.toArray(),
-                    rotation: zeroQuaternion.toArray(),
-                  },
-                },
-              };
+          const _makeRemotePlayerMesh = status => {
+            const object = new THREE.Object3D();
 
-              const _update = () => {
-                const status = webvr.getStatus();
+            const hmd = hmdModelMesh.clone();
+            object.add(hmd);
+            object.hmd = hmd;
 
-                let lastStatus = null;
-                const _updateHmd = () => {
-                  const {hmd} = status;
-                  const {position, rotation} = hmd;
+            const _makeControllerMesh = () => controllerModelMesh.clone();
+            const controllers = {
+              left: _makeControllerMesh(),
+              right: _makeControllerMesh(),
+            };
+            object.add(controllers.left);
+            object.add(controllers.right);
+            object.controllers = controllers;
 
-                  if (!lastStatus || !lastStatus.hmd.position.equals(position) || !lastStatus.hmd.rotation.equals(rotation)) {
-                    localStatus.hmd.position = position.toArray();
-                    localStatus.hmd.rotation = rotation.toArray();
+            _updateRemotePlayerMesh(object, status);
+
+            return object;
+          };
+          const _updateRemotePlayerMesh = (remotePlayerMesh, status) => {
+            const _updateHmd = () => {
+              const {hmd} = remotePlayerMesh;
+
+              const {hmd: hmdStatus} = status;
+
+              hmd.position.fromArray(hmdStatus.position);
+              hmd.quaternion.fromArray(hmdStatus.rotation);
+            };
+            const _updateControllers = () => {
+              const {controllers} = remotePlayerMesh;
+              const {left: leftController, right: rightController} = controllers;
+
+              const {controllers: controllersStatus} = status;
+              const {left: leftControllerStatus, right: rightControllerStatus} = controllersStatus;
+
+              leftController.position.fromArray(leftControllerStatus.position);
+              leftController.quaternion.fromArray(leftControllerStatus.rotation);
+
+              rightController.position.fromArray(rightControllerStatus.position);
+              rightController.quaternion.fromArray(rightControllerStatus.rotation);
+            };
+
+            _updateHmd();
+            _updateControllers();
+          };
+
+          const playerStatuses = multiplayerApi.getPlayerStatuses();
+          playerStatuses.forEach((status, id) => {
+            const remotePlayerMesh = _makeRemotePlayerMesh(status);
+            scene.add(remotePlayerMesh);
+            multiplayerApi.addRemotePlayerMesh(id, remotePlayerMesh);
+          });
+
+          const playerStatusUpdate = update => {
+            const {id, status} = update;
+            const remotePlayerMesh = multiplayerApi.getRemotePlayerMesh(id);
+            _updateRemotePlayerMesh(remotePlayerMesh, status);
+          };
+          const playerEnter = update => {
+            const {id, status} = update;
+            const remotePlayerMesh = _makeRemotePlayerMesh(status);
+            scene.add(remotePlayerMesh);
+            multiplayerApi.addRemotePlayerMesh(id, remotePlayerMesh);
+          };
+          const playerLeave = update => {
+            const {id} = update;
+            const remotePlayerMesh = multiplayerApi.getRemotePlayerMesh(id);
+            scene.remove(remotePlayerMesh);
+            multiplayerApi.removeRemotePlayerMesh(id);
+          };
+          multiplayerApi.on('playerStatusUpdate', playerStatusUpdate);
+          multiplayerApi.on('playerEnter', playerEnter);
+          multiplayerApi.on('playerLeave', playerLeave);
+
+          const localStatus = {
+            hmd: {
+              position: zeroVector.toArray(),
+              rotation: zeroQuaternion.toArray(),
+            },
+            controllers: {
+              left: {
+                position: zeroVector.toArray(),
+                rotation: zeroQuaternion.toArray(),
+              },
+              right: {
+                position: zeroVector.toArray(),
+                rotation: zeroQuaternion.toArray(),
+              },
+            },
+          };
+
+          const _update = () => {
+            const status = webvr.getStatus();
+
+            let lastStatus = null;
+            const _updateHmd = () => {
+              const {hmd} = status;
+              const {position, rotation} = hmd;
+
+              if (!lastStatus || !lastStatus.hmd.position.equals(position) || !lastStatus.hmd.rotation.equals(rotation)) {
+                localStatus.hmd.position = position.toArray();
+                localStatus.hmd.rotation = rotation.toArray();
+
+                multiplayerApi.updateStatus(localStatus);
+              }
+            };
+            const _updateControllers = () => {
+              const {gamepads} = status;
+
+              SIDES.forEach(side => {
+                const gamepad = gamepads[side];
+
+                if (gamepad) {
+                  const {position, rotation} = gamepad;
+
+                  const _update = () => {
+                    localStatus.controllers[side].position = position.toArray();
+                    localStatus.controllers[side].rotation = rotation.toArray();
 
                     multiplayerApi.updateStatus(localStatus);
-                  }
-                };
-                const _updateControllers = () => {
-                  const {gamepads} = status;
-
-                  SIDES.forEach(side => {
-                    const gamepad = gamepads[side];
-
-                    if (gamepad) {
-                      const {position, rotation} = gamepad;
-
-                      const _update = () => {
-                        localStatus.controllers[side].position = position.toArray();
-                        localStatus.controllers[side].rotation = rotation.toArray();
-
-                        multiplayerApi.updateStatus(localStatus);
-                      };
-
-                      if (!lastStatus) {
-                        _update();
-                      } else {
-                        const lastGamepadStatus = lastStatus.controllers[side];
-
-                        if (!lastGamepadStatus || !lastGamepadStatus.position.equals(position) || !lastGamepadStatus.rotation.equals(rotation)) {
-                          _update();
-                        }
-                      }
-                    }
-                  });
-                };
-
-                _updateHmd();
-                _updateControllers();
-
-                lastStatus = status;
-              };
-              rend.on('update', _update);
-
-              const cleanups = [];
-              const cleanup = () => {
-                for (let i = 0; i < cleanups.length; i++) {
-                  const cleanup = cleanups[i];
-                  cleanup();
-                }
-                cleanups.length = 0;
-              };
-
-              let enabled = false;
-              const _enable = () => { // XXX handle race conditions here
-                enabled = true;
-                cleanups.push(() => {
-                  enabled = false;
-                });
-
-                const connection = new WebSocket('wss://' + serverUrl + '/archae/multiplayerWs?id=' + encodeURIComponent(multiplayerApi.getId()) + '&username=' + encodeURIComponent(login.getUsername()));
-                const queue = [];
-                connection.onopen = () => {
-                  if (queue.length > 0) {
-                    for (let i = 0; i < queue.length; i++) {
-                      const e = queue[i];
-                      const es = JSON.stringify(e);
-                      connection.send(es);
-                    }
-                    queue.length = 0;
-                  }
-                };
-                connection.onerror = err => {
-                  console.warn(err);
-                };
-                connection.onmessage = msg => {
-                  const m = JSON.parse(msg.data);
-                  const {type} = m;
-
-                  if (type === 'init') {
-                    const {statuses} = m;
-
-                    for (let i = 0; i < statuses.length; i++) {
-                      const statusEntry = statuses[i];
-                      _handleStatusEntry(statusEntry);
-                    }
-
-                    rend.setStatus('users', multiplayerApi.getUsers());
-                  } else if (type === 'status') {
-                    const statusEntry = m;
-                    _handleStatusEntry(statusEntry);
-
-                    rend.setStatus('users', multiplayerApi.getUsers());
-                  } else {
-                    console.log('unknown message type', JSON.stringify(type));
-                  }
-                };
-
-                const _handleStatusEntry = statusEntry => {
-                  const {id, status} = statusEntry;
-
-                  const playerStatuses = multiplayerApi.getPlayerStatuses();
-                  if (status) {
-                    const playerStatus = playerStatuses.get(id);
-
-                    if (!playerStatus) {
-                      multiplayerApi.emit('playerEnter', {id, status});
-
-                      playerStatuses.set(id, status);
-                    } else {
-                      multiplayerApi.emit('playerStatusUpdate', {id, status});
-
-                      if ('username' in status) {
-                        playerStatus.username = status.username;
-                      }
-                      if ('hmd' in status) {
-                        playerStatus.hmd = status.hmd;
-                      }
-                      if ('controllers' in status) {
-                        playerStatus.controllers = status.controllers;
-                      }
-                    }
-                  } else {
-                    multiplayerApi.emit('playerLeave', {id});
-
-                    playerStatuses.delete(id);
-                  }
-                };
-                const _status = status => {
-                  const e = {
-                    type: 'status',
-                    status,
                   };
 
-                  if (connection.readyState === WebSocket.OPEN) {
-                    const es = JSON.stringify(e);
-                    connection.send(es);
+                  if (!lastStatus) {
+                    _update();
                   } else {
-                    queue.push(e);
+                    const lastGamepadStatus = lastStatus.controllers[side];
+
+                    if (!lastGamepadStatus || !lastGamepadStatus.position.equals(position) || !lastGamepadStatus.rotation.equals(rotation)) {
+                      _update();
+                    }
                   }
-                };
-                multiplayerApi.on('status', _status);
-                connection.onclose = () => {
-                  multiplayerApi.removeListener('status', _status);
-                };
+                }
+              });
+            };
 
-                cleanups.push(() => {
-                  multiplayerApi.reset();
+            _updateHmd();
+            _updateControllers();
 
-                  connection.close();
-                });
-              };
-              const _disable = () => {
-                cleanup();
-              };
+            lastStatus = status;
+          };
+          rend.on('update', _update);
 
-              const _updateEnabled = () => {
-                const loggedIn = !login.isOpen();
-                const shouldBeEnabled = loggedIn;
-
-                if (loggedIn && !enabled) {
-                  _enable();
-                } else if (!loggedIn && enabled) {
-                  _disable();
-                };
-              };
-              const _login = _updateEnabled;
-              rend.on('login', _login);
-              const _logout = _updateEnabled;
-              rend.on('logout', _logout);
-
-              _updateEnabled();
-
-              this._cleanup = () => {
-                cleanup();
-
-                multiplayerApi.removeListener('playerStatusUpdate', playerStatusUpdate);
-                multiplayerApi.removeListener('playerEnter', playerEnter);
-                multiplayerApi.removeListener('playerLeave', playerLeave);
-
-                rend.removeListener('update', _update);
-                rend.removeListener('login', _login);
-                rend.removeListener('logout', _logout);
-              };
-
-              return multiplayerApi;
+          const cleanups = [];
+          const cleanup = () => {
+            for (let i = 0; i < cleanups.length; i++) {
+              const cleanup = cleanups[i];
+              cleanup();
             }
-          });
+            cleanups.length = 0;
+          };
+
+          let enabled = false;
+          const _enable = () => { // XXX handle race conditions here
+            enabled = true;
+            cleanups.push(() => {
+              enabled = false;
+            });
+
+            const connection = new WebSocket('wss://' + serverUrl + '/archae/multiplayerWs?id=' + encodeURIComponent(multiplayerApi.getId()) + '&username=' + encodeURIComponent(login.getUsername()));
+            const queue = [];
+            connection.onopen = () => {
+              if (queue.length > 0) {
+                for (let i = 0; i < queue.length; i++) {
+                  const e = queue[i];
+                  const es = JSON.stringify(e);
+                  connection.send(es);
+                }
+                queue.length = 0;
+              }
+            };
+            connection.onerror = err => {
+              console.warn(err);
+            };
+            connection.onmessage = msg => {
+              const m = JSON.parse(msg.data);
+              const {type} = m;
+
+              if (type === 'init') {
+                const {statuses} = m;
+
+                for (let i = 0; i < statuses.length; i++) {
+                  const statusEntry = statuses[i];
+                  _handleStatusEntry(statusEntry);
+                }
+
+                rend.setStatus('users', multiplayerApi.getUsers());
+              } else if (type === 'status') {
+                const statusEntry = m;
+                _handleStatusEntry(statusEntry);
+
+                rend.setStatus('users', multiplayerApi.getUsers());
+              } else {
+                console.log('unknown message type', JSON.stringify(type));
+              }
+            };
+
+            const _handleStatusEntry = statusEntry => {
+              const {id, status} = statusEntry;
+
+              const playerStatuses = multiplayerApi.getPlayerStatuses();
+              if (status) {
+                const playerStatus = playerStatuses.get(id);
+
+                if (!playerStatus) {
+                  multiplayerApi.emit('playerEnter', {id, status});
+
+                  playerStatuses.set(id, status);
+                } else {
+                  multiplayerApi.emit('playerStatusUpdate', {id, status});
+
+                  if ('username' in status) {
+                    playerStatus.username = status.username;
+                  }
+                  if ('hmd' in status) {
+                    playerStatus.hmd = status.hmd;
+                  }
+                  if ('controllers' in status) {
+                    playerStatus.controllers = status.controllers;
+                  }
+                }
+              } else {
+                multiplayerApi.emit('playerLeave', {id});
+
+                playerStatuses.delete(id);
+              }
+            };
+            const _status = status => {
+              const e = {
+                type: 'status',
+                status,
+              };
+
+              if (connection.readyState === WebSocket.OPEN) {
+                const es = JSON.stringify(e);
+                connection.send(es);
+              } else {
+                queue.push(e);
+              }
+            };
+            multiplayerApi.on('status', _status);
+            connection.onclose = () => {
+              multiplayerApi.removeListener('status', _status);
+            };
+
+            cleanups.push(() => {
+              multiplayerApi.reset();
+
+              connection.close();
+            });
+          };
+          const _disable = () => {
+            cleanup();
+          };
+
+          const _updateEnabled = () => {
+            const loggedIn = !login.isOpen();
+            const shouldBeEnabled = loggedIn;
+
+            if (loggedIn && !enabled) {
+              _enable();
+            } else if (!loggedIn && enabled) {
+              _disable();
+            };
+          };
+          const _login = _updateEnabled;
+          rend.on('login', _login);
+          const _logout = _updateEnabled;
+          rend.on('logout', _logout);
+
+          _updateEnabled();
+
+          this._cleanup = () => {
+            cleanup();
+
+            multiplayerApi.removeListener('playerStatusUpdate', playerStatusUpdate);
+            multiplayerApi.removeListener('playerEnter', playerEnter);
+            multiplayerApi.removeListener('playerLeave', playerLeave);
+
+            rend.removeListener('update', _update);
+            rend.removeListener('login', _login);
+            rend.removeListener('logout', _logout);
+          };
+
+          return multiplayerApi;
         }
       });
     }

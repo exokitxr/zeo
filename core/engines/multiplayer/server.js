@@ -12,11 +12,6 @@ class Multiplayer {
     const connections = [];
     const statuses = new Map();
 
-    const multiplayerModelsStatic = express.static(path.join(__dirname, 'models'));
-    function serveMultiplayerModels(req, res, next) {
-      multiplayerModelsStatic(req, res, next);
-    }
-    app.use('/archae/multiplayer/models', serveMultiplayerModels);
     function serverMultiplayerStatuses(req, res, next) {
       res.json({
         statuses: _getAllStatuses(),
@@ -128,19 +123,6 @@ class Multiplayer {
     });
 
     this._cleanup = () => {
-      function removeMiddlewares(route, i, routes) {
-        if (
-          route.handle.name === 'serveMultiplayerModels' ||
-          route.handle.name === 'serverMultiplayerStatuses'
-        ) {
-          routes.splice(i, 1);
-        }
-        if (route.route) {
-          route.route.stack.forEach(removeMiddlewares);
-        }
-      }
-      app._router.stack.forEach(removeMiddlewares);
-
       for (let i = 0; i < connections.length; i++) {
         const connection = connections[i];
         connection.close();
