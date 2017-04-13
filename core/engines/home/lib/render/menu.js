@@ -260,7 +260,7 @@ const getServerSrc = (server, index, prefix) => {
         <div style="font-size: 20px; font-weight: 600;">${worldname}</div>
         <div style="font-size: 13px; font-weight: 400;">
           ${url ?
-            `<i>https://${url}</i>`
+            `<i>${url}</i>`
           :
             ''
           }
