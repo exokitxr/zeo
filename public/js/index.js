@@ -1,7 +1,7 @@
 (() => {
 
 const base = document.getElementById('base');
-base.href = document.location.href + '/';
+base.href = document.location.href + (!/\/$/.test(document.location.href) ? '/' : '');
 
 archae.requestPlugin('/core/engines/zeo')
   .then(() => {
