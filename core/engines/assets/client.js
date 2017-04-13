@@ -1,5 +1,5 @@
-const hmdModelPath = '/archae/assets/models/hmd/hmd.json';
-const controllerModelPath = '/archae/assets/models/controller/controller.json';
+const hmdModelPath = 'archae/assets/models/hmd/hmd.json';
+const controllerModelPath = 'archae/assets/models/controller/controller.json';
 
 class Assets {
   mount() {

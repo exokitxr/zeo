@@ -9,7 +9,7 @@ class Agent {
       live = false;
     };
 
-    const _requestTokens = () => fetch('/archae/agent/tokens')
+    const _requestTokens = () => fetch('archae/agent/tokens')
       .then(res => res.json());
 
     return _requestTokens()

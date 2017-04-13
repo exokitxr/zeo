@@ -43,7 +43,7 @@ class Fs {
               window.module = {};
 
               const script = document.createElement('script');
-              script.src = '/archae/fs/lib/' + libPath;
+              script.src = 'archae/fs/lib/' + libPath;
               script.onload = () => {
                 const {exports} = window.module;
                 window.module = {};
@@ -319,9 +319,9 @@ class Fs {
 
           getFileUrl(id, path) {
             if (path) {
-              return '/fs/' + id + path;
+              return 'fs/' + id + path;
             } else {
-              return '/fs/' + id;
+              return 'fs/' + id;
             }
           }
 

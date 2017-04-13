@@ -53,12 +53,12 @@ class Youtube {
 
             const material = (() => {
               const videoTexture = (() => {
-                fetch('/archae/youtube/' + videoUrl)
+                fetch('archae/youtube/' + videoUrl)
                   .then(res => {
                     res.text()
                       .then(src => {
                         const video = document.createElement('video');
-                        video.src = '/archae/cors/' + src;
+                        video.src = 'archae/cors/' + src;
                         video.loop = true;
                         // video.muted = true;
                         video.oncanplay = () => {

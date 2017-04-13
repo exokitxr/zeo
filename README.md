@@ -4,6 +4,8 @@ Multiplayer WebVR worlds made out of `npm` modules. Both frontend and backend.
 
 Runs in your browser, using either headset or mouse + keyboard. The goal is to _let anyone build anything out of Javascript_ and share it with the world. Virtually, of course.
 
+[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
+
 :warning: Alpha software, not documented yet. If you want updates, [add your email here](http://eepurl.com/cDEnID). :warning:
 
 ## Features

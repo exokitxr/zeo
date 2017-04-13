@@ -1,5 +1,5 @@
 importScripts(
-  '/archae/three/three.js'
+  'archae/three/three.js'
 );
 
 const workerUtils = require('./lib/utils/worker-utils');

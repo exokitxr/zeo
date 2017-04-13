@@ -1,0 +1,11 @@
+{
+  "stack": "heroku-16",
+  "buildpacks": [
+    {
+      "url": "https://github.com/heroku/heroku-buildpack-apt"
+    },
+    {
+      "url": "heroku/nodejs"
+    }
+  ]
+}

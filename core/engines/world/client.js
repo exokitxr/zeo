@@ -34,7 +34,7 @@ class World {
 
   mount() {
     const {_archae: archae} = this;
-    const {metadata: {server: {url: serverUrl, enabled: serverEnabled}}} = archae;
+    const {metadata: {server: {enabled: serverEnabled}}} = archae;
 
     let live = true;
     this._cleanup = () => {
@@ -151,7 +151,7 @@ class World {
           };
 
           const _requestConnection = () => new Promise((accept, reject) => {
-            const connection = new WebSocket('wss://' + serverUrl + '/archae/worldWs?id=' + localUserId);
+            const connection = new WebSocket(_relativeWsUrl('archae/worldWs?id=' + localUserId));
             connection.onmessage = msg => {
               const m = JSON.parse(msg.data);
               const {type} = m;
@@ -586,7 +586,7 @@ class World {
             tags.message(detail);
           };
 
-          const _searchNpm = (q = '') => fetch('https://' + serverUrl + '/archae/rend/search?q=' + encodeURIComponent(q))
+          const _searchNpm = (q = '') => fetch('archae/rend/search?q=' + encodeURIComponent(q))
             .then(res => res.json());
           const _updateNpm = menuUtils.debounce(next => {
             const {inputText} = npmState;
@@ -1593,7 +1593,7 @@ class World {
                 const {item} = tagMesh;
                 const {id, name} = item;
 
-                return fs.makeFile('/fs/' + id + '/' + name);
+                return fs.makeFile('fs/' + id + '/' + name);
               });
             }
           }
@@ -1611,6 +1611,10 @@ class World {
 }
 
 const _clone = o => JSON.parse(JSON.stringify(o));
+const _relativeWsUrl = s => {
+  const l = window.location;
+  return ((l.protocol === 'https:') ? 'wss://' : 'ws://') + l.host + l.pathname + (!/\/$/.test(l.pathname) ? '/' : '') + s;
+};
 const _makeId = () => Math.random().toString(36).substring(7);
 const _padNumber = (n, width) => {
   n = n + '';

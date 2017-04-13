@@ -103,7 +103,7 @@ class ZDraw {
       return entry;
     };
 
-    return _requestImage('/archae/draw/brushes/brush.png')
+    return _requestImage('archae/draw/brushes/brush.png')
       .then(brushImg => {
         brushImg = _getScaledImg(brushImg, BRUSH_SIZE, BRUSH_SIZE);
 

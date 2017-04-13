@@ -24,7 +24,7 @@ class Skybox {
         reject(err);
       };
     });
-    const _requestCubeMapImgs = () => Promise.all(FACES.map((face, index) => _requestImage('/archae/skybox/img/skybox-' + (index + 1) + '.png')))
+    const _requestCubeMapImgs = () => Promise.all(FACES.map((face, index) => _requestImage('archae/skybox/img/skybox-' + (index + 1) + '.png')))
       .then(cubeMapImgs => {
         const result = {};
         for (let i = 0; i < cubeMapImgs.length; i++) {

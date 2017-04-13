@@ -28,7 +28,7 @@ class Raptor {
 
     const _requestAudios = () => Promise.all(AUDIO_FILES.map(fileName => new Promise((accept, reject) => {
       const audio = document.createElement('audio');
-      audio.src = '/archae/raptor/audio/' + fileName;
+      audio.src = 'archae/raptor/audio/' + fileName;
       audio.oncanplaythrough = () => {
         accept(audio);
       };

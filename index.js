@@ -35,26 +35,26 @@ const flags = {
       return null;
     }
   })(),
+  secure: (() => {
+    const secure = _findArg('secure');
+
+    if (secure === String(true)) {
+      return true;
+    } else if (secure === String(false)) {
+      return false;
+    } else {
+      return null;
+    }
+  })(),
   dataDirectory: _findArg('dataDirectory'),
   cryptoDirectory: _findArg('cryptoDirectory'),
   installDirectory: _findArg('installDirectory'),
   dataDirectorySrc: _findArg('dataDirectorySrc'),
   cryptoDirectorySrc: _findArg('cryptoDirectorySrc'),
   installDirectorySrc: _findArg('installDirectorySrc'),
-  serverHost: _findArg('serverHost'),
-  homeHost: _findArg('homeHost'),
   worldname: _findArg('worldname'),
   hubUrl: _findArg('hubUrl'),
-  dns: args.includes('dns'),
-  dnsPort: (() => {
-    const s = _findArg('dnsPort');
-
-    if (s && /^[0-9]+$/.test(s)) {
-      return parseInt(s, 10);
-    } else {
-      return null;
-    }
-  })(),
+  homeUrl: _findArg('homeUrl'),
   my: args.includes('my'),
   launch: _findArg('launch'),
 };
@@ -76,6 +76,7 @@ const _capitalize = s => {
 
 const hostname = flags.host || 'zeovr.io';
 const port = flags.port || 8000;
+const secure = (typeof flags.secure === 'boolean') ? flags.secure : false;
 const dataDirectory = flags.dataDirectory || 'data';
 const cryptoDirectory = flags.cryptoDirectory || 'crypto';
 const installDirectory = flags.installDirectory || 'installed';
@@ -83,21 +84,21 @@ const dataDirectorySrc = flags.dataDirectorySrc || dataDirectory;
 const cryptoDirectorySrc = flags.cryptoDirectorySrc || cryptoDirectory;
 const installDirectorySrc = flags.installDirectorySrc || installDirectory;
 const staticSite = flags.site && !(flags.home || flags.hub || flags.server);
-const serverHost = flags.serverHost || ('server.' + hostname);
-const homeHost = flags.homeHost || ('home.' + hostname);
 const worldname = flags.worldname || [_capitalize(rnd.adjective()), _capitalize(rnd.noun())].join(' ');
-const homeUrl = homeHost + ':' + port;
-const hubUrl = flags.hubUrl || ('hub.' + hostname + ':' + port);
+const protocolString = !secure ? 'http' : 'https';
+const hubUrl = flags.hubUrl || (protocolString + '://hub.' + hostname + ':' + port);
+const homeUrl = flags.homeUrl || (protocolString + '://127.0.0.1:' + port);
 const config = {
   dirname: __dirname,
   hostname: hostname,
   port: port,
+  secure: secure,
   publicDirectory: 'public',
   dataDirectory: dataDirectory,
   cryptoDirectory: cryptoDirectory,
   installDirectory: installDirectory,
   cors: !staticSite,
-  corsOrigin: 'https://' + homeUrl,
+  corsOrigin: homeUrl,
   staticSite: staticSite,
   metadata: {
     config: {
@@ -106,7 +107,7 @@ const config = {
       installDirectorySrc: installDirectorySrc,
     },
     site: {
-      url: hostname + ':' + port,
+      url: protocolString + '://' + hostname + ':' + port,
       enabled: flags.site,
     },
     home: {
@@ -118,13 +119,9 @@ const config = {
       enabled: flags.hub,
     },
     server: {
-      url: serverHost + ':' + port,
+      url: homeUrl,
       worldname: worldname,
       enabled: flags.server,
-    },
-    dns: {
-      port: flags.dnsPort || 53,
-      enabled: flags.dns || false,
     },
     my: {
       enabled: flags.my || false,
@@ -170,14 +167,16 @@ const _install = () => {
   }
 };
 
-const _checkArgs = () => new Promise((accept, reject) => {
-  if ((Boolean(flags.hub) + Boolean(flags.server)) > 1) {
-    const err = new Error('hub, server, and site arguments are mutually exclusive');
-    reject(err);
+const worldnameRegexp = /^[a-z][a-z0-9_-]*/i;
+const _checkArgs = () => {
+  if ((Number(Boolean(flags.hub)) + Number(Boolean(flags.home)) + Number(Boolean(flags.server))) > 1) {
+    return Promise.reject(new Error('hub, server, and site arguments are mutually exclusive'));
+  } else if (flags.worldname && !worldnameRegexp.test(flags.worldname)) {
+    return Promise.reject(new Error('worldname must match ' + String(worldnameRegexp)));
   } else {
-    accept();
+    return Promise.resolve();
   }
-});
+};
 
 const _preload = () => {
   if (flags.hub || flags.home || flags.server) {
@@ -428,18 +427,17 @@ _checkArgs()
     .then(() => _listenArchae())
     .then(() => _boot({key}))
     .then(() => {
-      // NOTE: this output is imoportant; it's waited for in the startup scripts
       if (flags.site) {
-        console.log('Site: https://' + config.metadata.site.url + '/');
+        console.log('Site: ' + config.metadata.site.url + '/');
       }
       if (flags.home) {
-        console.log('Home: https://' + config.metadata.home.url + '/');
+        console.log('Home: ' + config.metadata.home.url + '/');
       }
       if (flags.hub) {
-        console.log('Hub: https://' + config.metadata.hub.url + '/');
+        console.log('Hub: ' + config.metadata.hub.url + '/');
       }
       if (flags.server) {
-        console.log('Server: https://' + config.metadata.server.url + '/');
+        console.log('Server: ' + config.metadata.server.url + '/');
       }
     })
     .then(() => _launch())

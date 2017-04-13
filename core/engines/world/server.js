@@ -51,13 +51,15 @@ class World {
       live = false;
     };
 
-    const hubSpec = (() => {
-      const match = hubUrl.match(/^(.+\..+?)(?::([0-9]*?))?$/);
+    const _parseUrlSpec = url => {
+      const match = url.match(/^(?:([^:]+):\/\/)([^:]+)(?::([0-9]*?))?$/);
       return match && {
-        host: match[1],
-        port: match[2] ? parseInt(match[2], 10) : 443,
+        protocol: match[1],
+        host: match[2],
+        port: match[3] ? parseInt(match[3], 10) : null,
       };
-    })();
+    };
+    const hubSpec = _parseUrlSpec(hubUrl);
 
     const worldPath = path.join(dirname, dataDirectory, 'world');
     const worldTagsJsonPath = path.join(worldPath, 'tags.json');

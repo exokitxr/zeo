@@ -191,7 +191,7 @@ class Shell {
           });
 
           const socket = io(window.location.origin, {
-            path: '/archae/shell/socket.io',
+            path: 'archae/shell/socket.io',
           })
           let buf = '';
 

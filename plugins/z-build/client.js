@@ -29,8 +29,8 @@ class ZBuild {
       };
     });
     const _requestImgs = () => Promise.all([
-      _requestImg('/archae/z-build/icons/rotate.svg'),
-      _requestImg('/archae/z-build/icons/resize.svg'),
+      _requestImg('archae/z-build/icons/rotate.svg'),
+      _requestImg('archae/z-build/icons/resize.svg'),
     ])
       .then(([
         rotateImg,

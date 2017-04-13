@@ -39,7 +39,7 @@ class ZGun {
       };
     });
 
-    return _requestAudio('/archae/gun/sfx/gun.ogg')
+    return _requestAudio('archae/gun/sfx/gun.ogg')
       .then(gunAudio => {
         if (live) {
           const weaponMaterial = new THREE.MeshPhongMaterial({

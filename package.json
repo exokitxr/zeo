@@ -26,8 +26,11 @@
     "url": "https://github.com/modulesio/zeo/issues"
   },
   "homepage": "https://github.com/modulesio/zeo#readme",
+  "engines": {
+    "node": "7.9.0"
+  },
   "dependencies": {
-    "archae": "0.0.57",
+    "archae": "0.0.61",
     "base128": "^0.2.1",
     "body-parser": "^1.16.1",
     "cli-spinner": "^0.2.6",
@@ -41,7 +44,6 @@
     "markdown-toc": "^1.1.0",
     "marked": "^0.3.6",
     "mkdirp": "^0.5.1",
-    "native-dns": "^0.7.0",
     "nedb": "^1.8.0",
     "node-fetch": "^1.6.3",
     "password-hash-and-salt": "^0.1.4",
