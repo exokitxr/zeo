@@ -786,16 +786,15 @@ class Home {
                   const {running} = server;
 
                   if (running) {
-                    const {url} = server;
-                    const fullServerUrl = 'https://' + server.url;
+                    const {url: serverUrl} = server;
 
                     const _connectServer = (token = null) => {
-                      window.parent.location = fullServerUrl + (token ? ('?t=' + token) : '');
+                      window.parent.location = serverUrl + (token ? ('?t=' + token) : '');
                     };
 
                     const {local} = server;
                     if (local) {
-                      fetch(fullServerUrl + '/server/checkLogin', {
+                      fetch(serverUrl + '/server/checkLogin', {
                         method: 'POST',
                       })
                         .then(res => res.json()
