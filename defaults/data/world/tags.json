@@ -363,6 +363,73 @@
           ]
         }
       }
+    },
+    "rog4o": {
+      "type": "module",
+      "id": "rog4o",
+      "name": "/plugins/particle",
+      "displayName": "particle",
+      "description": "A simple 3D particle field.",
+      "version": "0.0.1",
+      "readme": null,
+      "matrix": [
+        -1.9266105890274048,
+        1.515516757965088,
+        0.4431394040584564,
+        4.018268172339853e-9,
+        0.7828451659112331,
+        2.3018885010376285e-18,
+        0.6222165652929272,
+        1.0000000061290368,
+        1,
+        1.0000000061290368
+      ],
+      "metadata": {
+        "isStatic": false,
+        "exists": false
+      }
+    },
+    "9bc7pu": {
+      "type": "entity",
+      "id": "9bc7pu",
+      "name": "particle",
+      "displayName": "particle",
+      "description": "A simple 3D particle field.",
+      "version": "0.0.1",
+      "readme": null,
+      "matrix": [
+        -1.829190742969513,
+        1.5155167574650412,
+        0.42057009409189056,
+        4.018268172339853e-9,
+        0.7828451659112331,
+        2.3018885010376285e-18,
+        0.6222165652929272,
+        1.0000000061290368,
+        1,
+        1.0000000061290368
+      ],
+      "metadata": {
+        "isStatic": false,
+        "exists": false
+      },
+      "tagName": "particle",
+      "attributes": {
+        "position": {
+          "value": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            1,
+            1,
+            1
+          ]
+        }
+      }
     }
   }
 }
