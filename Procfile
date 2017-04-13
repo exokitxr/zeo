@@ -1,1 +1,1 @@
-web: node scripts/sample.js
+web: scripts/heroku.sh
