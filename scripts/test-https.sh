@@ -5,10 +5,10 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 pushd "$DIR"/../;
 export NODE_TLS_REJECT_UNAUTHORIZED=0
 npm start -- site my \
-  port=8080 \
-  hubUrl='http://test.zeovr.io:8000' &
+  port=8080 secure=true \
+  hubUrl='https://test.zeovr.io:8000' &
 npm start -- home my \
-  port=8081 \
+  port=8081 secure=true \
   hubUrl='https://test.zeovr.io:8000' \
   dataDirectory=data dataDirectorySrc='defaults/data' \
   cryptoDirectory='crypto-test' cryptoDirectorySrc='defaults/crypto' \
