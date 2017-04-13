@@ -4,8 +4,11 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 pushd "$DIR"/../;
 export NODE_TLS_REJECT_UNAUTHORIZED=0
-npm start -- site home my \
-  port=8080 secure=true \
+npm start -- site my \
+  port=8080 \
+  hubUrl='http://test.zeovr.io:8000' &
+npm start -- home my \
+  port=8081 \
   hubUrl='https://test.zeovr.io:8000' \
   dataDirectory=data dataDirectorySrc='defaults/data' \
   cryptoDirectory='crypto-test' cryptoDirectorySrc='defaults/crypto' \
@@ -16,7 +19,7 @@ npm start -- hub my \
   cryptoDirectory='crypto-test-hub' cryptoDirectorySrc='defaults/crypto' \
   installDirectory='installed-test-hub' installDirectorySrc='installed-test' &
 npm start -- server \
-  port=8001 secure=true \
+  port=7777 secure=true \
   hubUrl='https://test.zeovr.io:8000' \
   homeUrl='https://test.zeovr.io:8080' \
   worldname='server_one' \
@@ -24,7 +27,7 @@ npm start -- server \
   cryptoDirectory='data/hub/servers/server_one/crypto' cryptoDirectorySrc='crypto-test' \
   installDirectory='data/hub/servers/server_one/installed' installDirectorySrc='installed-test' &
 npm start -- server \
-  port=8002 secure=true \
+  port=7778 secure=true \
   hubUrl='https://test.zeovr.io:8000' \
   homeUrl='https://test.zeovr.io:8080' \
   worldname='server_two' \

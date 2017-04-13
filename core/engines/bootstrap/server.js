@@ -55,7 +55,7 @@ class Bootstrap {
         method: 'POST',
         host: hubSpec.host,
         port: hubSpec.port,
-        path: '/hub/servers/announce',
+        path: '/servers/announce',
         headers: {
           'Content-Type': 'application/json',
         },

@@ -117,7 +117,7 @@ const config = {
       installDirectorySrc: installDirectorySrc,
     },
     site: {
-      url: hostname + ':' + port,
+      url: protocolString + '://' + hostname + ':' + port,
       enabled: flags.site,
     },
     home: {
@@ -183,7 +183,7 @@ const _install = () => {
 
 const worldnameRegexp = /^[a-z][a-z0-9_-]*/i;
 const _checkArgs = () => {
-  if ((Boolean(flags.hub) + Boolean(flags.server)) > 1) {
+  if ((Number(Boolean(flags.hub)) + Number(Boolean(flags.home)) + Number(Boolean(flags.server))) > 1) {
     return Promise.reject(new Error('hub, server, and site arguments are mutually exclusive'));
   } else if (flags.worldname && !worldnameRegexp.test(flags.worldname)) {
     return Promise.reject(new Error('worldname must match ' + String(worldnameRegexp)));
@@ -441,18 +441,17 @@ _checkArgs()
     .then(() => _listenArchae())
     .then(() => _boot({key}))
     .then(() => {
-      // NOTE: this output is imoportant; it's waited for in the startup scripts
       if (flags.site) {
-        console.log('Site: https://' + config.metadata.site.url + '/');
+        console.log('Site: ' + config.metadata.site.url + '/');
       }
       if (flags.home) {
-        console.log('Home: https://' + config.metadata.home.url + '/');
+        console.log('Home: ' + config.metadata.home.url + '/');
       }
       if (flags.hub) {
-        console.log('Hub: https://' + config.metadata.hub.url + '/');
+        console.log('Hub: ' + config.metadata.hub.url + '/');
       }
       if (flags.server) {
-        console.log('Server: https://' + config.metadata.server.url + '/');
+        console.log('Server: ' + config.metadata.server.url + '/');
       }
     })
     .then(() => _launch())

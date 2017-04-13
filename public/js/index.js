@@ -1,3 +1,9 @@
+(() => {
+
+const base = document.createElement('base');
+base.href = document.location.href + '/';
+document.head.appendChild(base);
+
 archae.requestPlugin('/core/engines/zeo')
   .then(() => {
     console.log('app started');
@@ -18,3 +24,5 @@ window.onvrdisplayactivate = e => {
     },
   ]);
 };
+
+})();
