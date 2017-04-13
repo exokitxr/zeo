@@ -36,7 +36,6 @@ class Home {
     const {
       metadata: {
         home: {
-          url: homeUrl,
           enabled: homeEnabled,
         },
         my: {
@@ -579,7 +578,7 @@ class Home {
                   return servers;
                 })
               );
-            const _requestLocalServers = () => fetch(homeUrl + '/servers/local.json')
+            const _requestLocalServers = () => fetch('servers/local.json')
               .then(res => res.json()
                 .then(j => {
                   const {servers} = j;
@@ -651,7 +650,7 @@ class Home {
                   console.warn(err);
                 });
             };
-            const _proxyLoginServer = worldname => fetch(homeUrl + '/home/servers/proxyLogin', {
+            const _proxyLoginServer = worldname => fetch('servers/proxyLogin', {
               method: 'POST',
               headers: (() => {
                 const result = new Headers();
@@ -715,7 +714,7 @@ class Home {
                     const {worldname, running} = server;
 
                     if (!running) {
-                      fetch(homeUrl + '/home/servers/start', {
+                      fetch('servers/start', {
                         method: 'POST',
                         headers: (() => {
                           const result = new Headers();
@@ -743,7 +742,7 @@ class Home {
                           console.warn(err);
                         });
                     } else {
-                      fetch(homeUrl + '/home/servers/stop', {
+                      fetch('servers/stop', {
                         method: 'POST',
                         headers: (() => {
                           const result = new Headers();
@@ -945,7 +944,7 @@ class Home {
                   const {inputText: worldname} = homeState;
 
                   if (/^[a-z][a-z0-9_-]*$/i.test(worldname)) {
-                    fetch(homeUrl + '/home/servers/create', {
+                    fetch('servers/create', {
                       method: 'POST',
                       headers: (() => {
                         const result = new Headers();
