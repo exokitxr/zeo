@@ -18,7 +18,7 @@ class Login {
 
   mount() {
     const {_archae: archae} = this;
-    const {metadata: {hub: {url: hubUrl}, server: {url: serverUrl, enabled: serverEnabled}}} = archae;
+    const {metadata: {hub: {url: hubUrl}, server: {enabled: serverEnabled}}} = archae;
 
    let live = true;
     this._cleanup = () => {
@@ -225,7 +225,7 @@ class Login {
             }
           };
           const _requestLogin = ({token = null} = {}) => new Promise((accept, reject) => {
-            fetch('https://' + serverUrl + '/server/login', {
+            fetch('server/login', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
