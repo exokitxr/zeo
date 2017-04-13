@@ -34,7 +34,7 @@ class World {
 
   mount() {
     const {_archae: archae} = this;
-    const {metadata: {server: {url: serverUrl, enabled: serverEnabled}}} = archae;
+    const {metadata: {server: {enabled: serverEnabled}}} = archae;
 
     let live = true;
     this._cleanup = () => {
@@ -586,7 +586,7 @@ class World {
             tags.message(detail);
           };
 
-          const _searchNpm = (q = '') => fetch('https://' + serverUrl + '/archae/rend/search?q=' + encodeURIComponent(q))
+          const _searchNpm = (q = '') => fetch('archae/rend/search?q=' + encodeURIComponent(q))
             .then(res => res.json());
           const _updateNpm = menuUtils.debounce(next => {
             const {inputText} = npmState;
