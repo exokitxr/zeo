@@ -924,12 +924,12 @@ class Rend {
             this.emit('updateEnd');
           }
 
-          frameStart() {
-            this.emit('frameStart');
+          renderStart() {
+            this.emit('renderStart');
           }
 
-          frameEnd() {
-            this.emit('frameEnd');
+          renderEnd() {
+            this.emit('renderEnd');
           }
 
           registerElement(pluginInstance, elementApi) {

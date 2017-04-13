@@ -361,16 +361,16 @@ class Cyborg {
             player.snapshotStatus();
           };
           rend.on('update', _update);
-          const _frameStart = () => {
+          const _renderStart = () => {
             const {mesh: hmdMesh} = hmd;
             hmdMesh.visible = false;
           };
-          rend.on('frameStart', _frameStart);
-          const _frameEnd = () => {
+          rend.on('renderStart', _renderStart);
+          const _renderEnd = () => {
             const {mesh: hmdMesh} = hmd;
             hmdMesh.visible = true;
           };
-          rend.on('frameEnd', _frameEnd);
+          rend.on('renderEnd', _renderEnd);
 
           const cleanups = [];
           const cleanup = () => {
@@ -391,8 +391,8 @@ class Cyborg {
             });
 
             rend.removeListener('update', _update);
-            rend.removeListener('frameStart', _frameStart);
-            rend.removeListener('frameEnd', _frameEnd);
+            rend.removeListener('renderStart', _renderStart);
+            rend.removeListener('renderEnd', _renderEnd);
           };
 
           return {

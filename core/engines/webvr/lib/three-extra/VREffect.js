@@ -238,8 +238,8 @@ return function THREEVREffect( renderer, onError ) {
 	cameraR.side = 'right';
 
   this.onEye = null;
-  this.onFrameStart = null;
-  this.onFrameEnd = null;
+  this.onRenderStart = null;
+  this.onRenderEnd = null;
 
 	this.render = function ( scene, camera, renderTarget, forceClear ) {
 
@@ -356,9 +356,9 @@ return function THREEVREffect( renderer, onError ) {
 
       cameraL.rotation.order = camera.rotation.order;
       this.onEye && this.onEye(cameraL);
-      this.onFrameStart && this.onFrameStart();
+      this.onRenderStart && this.onRenderStart();
 			renderer.render( scene, cameraL, renderTarget, forceClear );
-      this.onFrameEnd && this.onFrameEnd();
+      this.onRenderEnd && this.onRenderEnd();
 
 			// render right eye
 			if ( renderTarget ) {
@@ -375,9 +375,9 @@ return function THREEVREffect( renderer, onError ) {
 
       cameraR.rotation.order = camera.rotation.order;
       this.onEye && this.onEye(cameraR);
-      this.onFrameStart && this.onFrameStart();
+      this.onRenderStart && this.onRenderStart();
 			renderer.render( scene, cameraR, renderTarget, forceClear );
-      this.onFrameEnd && this.onFrameEnd();
+      this.onRenderEnd && this.onRenderEnd();
 
 			if ( renderTarget ) {
 

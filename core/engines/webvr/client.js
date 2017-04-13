@@ -261,8 +261,8 @@ class WebVR {
             updateEye = () => {},
             updateStart = () => {},
             updateEnd = () => {},
-            frameStart = () => {},
-            frameEnd = () => {},
+            renderStart = () => {},
+            renderEnd = () => {},
           }) {
             let cleanups = [];
             const _destroy = () => {
@@ -298,10 +298,10 @@ class WebVR {
                       updateEye(camera);
                     };
                     effect.onFrameStart = () => {
-                      frameStart();
+                      renderStart();
                     };
                     effect.onFrameEnd = () => {
-                      frameEnd();
+                      renderEnd();
                     };
                     effect.isPresenting = true;
                     effect.autoSubmitFrame = false;
@@ -387,9 +387,9 @@ class WebVR {
                       } else {
                         // manual events since the effect won't call them
                         updateEye(camera);
-                        frameStart();
+                        renderStart();
                         renderer.render(scene, camera); // perform monocular eye render
-                        frameEnd();
+                        renderEnd();
                       }
 
                       updateEnd(); // notify frame end
@@ -455,8 +455,8 @@ class WebVR {
             updateEye = () => {},
             updateStart = () => {},
             updateEnd = () => {},
-            frameStart = () => {},
-            frameEnd = () => {},
+            renderStart = () => {},
+            renderEnd = () => {},
             onExit = () => {},
           }) {
             // NOTE: these promises *need* to be synchronous because the WebVR api can only be triggered in the same tick as a user action
@@ -569,8 +569,8 @@ class WebVR {
                         updateEye,
                         updateStart,
                         updateEnd,
-                        frameStart,
-                        frameEnd,
+                        renderStart,
+                        renderEnd,
                       });
 
                       cleanups.push(() => {

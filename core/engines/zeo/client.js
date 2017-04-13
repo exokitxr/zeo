@@ -169,11 +169,11 @@ class Zeo {
               const _updateEnd = () => {
                 rend.updateEnd();
               };
-              const _frameStart = () => {
-                rend.frameStart();
+              const _renderStart = () => {
+                rend.renderStart();
               };
-              const _frameEnd = () => {
-                rend.frameEnd();
+              const _renderEnd = () => {
+                rend.renderEnd();
               };
 
               const _enterNormal = () => {
@@ -184,8 +184,8 @@ class Zeo {
                   updateEye: _updateEye,
                   updateStart: _updateStart,
                   updateEnd: _updateEnd,
-                  frameStart: _frameStart,
-                  frameEnd: _frameEnd,
+                  renderStart: _renderStart,
+                  renderEnd: _renderEnd,
                 });
 
                 return renderLoop;
@@ -205,8 +205,8 @@ class Zeo {
                   updateEye: _updateEye,
                   updateStart: _updateStart,
                   updateEnd: _updateEnd,
-                  frameStart: _frameStart,
-                  frameEnd: _frameEnd,
+                  renderStart: _renderStart,
+                  renderEnd: _renderEnd,
                   onExit: _onExit,
                 });
 
