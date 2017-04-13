@@ -7,7 +7,7 @@ class Multiplayer {
 
   mount() {
     const {_archae: archae} = this;
-    const {metadata: {server: {url: serverUrl, enabled: serverEnabled}}} = archae;
+    const {metadata: {server: {enabled: serverEnabled}}} = archae;
 
     let live = true;
     this._cleanup = () => {
@@ -261,7 +261,7 @@ class Multiplayer {
               enabled = false;
             });
 
-            const connection = new WebSocket('wss://' + serverUrl + '/archae/multiplayerWs?id=' + encodeURIComponent(multiplayerApi.getId()) + '&username=' + encodeURIComponent(login.getUsername()));
+            const connection = new WebSocket(_relativeWsUrl('archae/multiplayerWs?id=' + encodeURIComponent(multiplayerApi.getId()) + '&username=' + encodeURIComponent(login.getUsername())));
             const queue = [];
             connection.onopen = () => {
               if (queue.length > 0) {
@@ -396,6 +396,11 @@ class Multiplayer {
     this._cleanup();
   }
 }
+
+const _relativeWsUrl = s => {
+  const l = window.location;
+  return ((l.protocol === 'https:') ? 'wss://' : 'ws://') + l.host + l.pathname + s;
+};
 
 const _makeId = () => Math.random().toString(36).substring(7);
 

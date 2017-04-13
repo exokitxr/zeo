@@ -151,7 +151,7 @@ class World {
           };
 
           const _requestConnection = () => new Promise((accept, reject) => {
-            const connection = new WebSocket('wss://' + serverUrl + '/archae/worldWs?id=' + localUserId);
+            const connection = new WebSocket(_relativeWsUrl('archae/worldWs?id=' + localUserId));
             connection.onmessage = msg => {
               const m = JSON.parse(msg.data);
               const {type} = m;
@@ -1611,6 +1611,10 @@ class World {
 }
 
 const _clone = o => JSON.parse(JSON.stringify(o));
+const _relativeWsUrl = s => {
+  const l = window.location;
+  return ((l.protocol === 'https:') ? 'wss://' : 'ws://') + l.host + l.pathname + s;
+};
 const _makeId = () => Math.random().toString(36).substring(7);
 const _padNumber = (n, width) => {
   n = n + '';

@@ -9,7 +9,7 @@ export default class VoiceChat {
 
   mount() {
     const {_archae: archae} = this;
-    const {metadata: {server: {url: serverUrl, enabled: serverEnabled}}} = archae;
+    const {metadata: {server: {enabled: serverEnabled}}} = archae;
 
     let live = true;
     this._cleanup = () => {
@@ -60,7 +60,7 @@ export default class VoiceChat {
               const _requestCallInterface = () => new Promise((accept, reject) => {
                 let remotePeerId = null;
 
-                const connection = new WebSocket('wss://' + serverUrl + '/archae/voicechatWs?id=' + multiplayer.getId());
+                const connection = new WebSocket(_relativeWsUrl('archae/voicechatWs?id=' + multiplayer.getId()));
                 connection.binaryType = 'arraybuffer';
                 connection.onopen = () => {
                   accept(callInterface);
@@ -280,6 +280,11 @@ export default class VoiceChat {
     this._cleanup();
   }
 }
+
+const _relativeWsUrl = s => {
+  const l = window.location;
+  return ((l.protocol === 'https:') ? 'wss://' : 'ws://') + l.host + l.pathname + s;
+};
 
 const _closeMediaStream = mediaStream => {
   mediaStream.getTracks()[0].stop();
