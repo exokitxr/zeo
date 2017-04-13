@@ -23,7 +23,7 @@ class ZCake {
 
     const _requestAudios = () => new Promise((accept, reject) => {
       const eatAudio = document.createElement('audio');
-      eatAudio.src = '/archae/z-cake/audio/eat.ogg';
+      eatAudio.src = 'archae/z-cake/audio/eat.ogg';
       eatAudio.oncanplaythrough = () => {
         accept({
           eatAudio,

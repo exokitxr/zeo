@@ -12,7 +12,7 @@ class Land {
     };
 
     const callbacks = new Map();
-    const worker = new Worker('/archae/plugins/land/build/worker.js');
+    const worker = new Worker('archae/plugins/land/build/worker.js');
     worker.onmessage = e => {
       const {data} = e;
       const {id, error, result} = data;

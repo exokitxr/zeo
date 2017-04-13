@@ -1,5 +1,3 @@
-const modelsPath = '/archae/models/models/';
-
 class Model {
   mount() {
     const {three: {THREE}, elements} = zeo;

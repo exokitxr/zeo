@@ -21,7 +21,7 @@ class Fire {
       };
     });
 
-    return _requestAudio('/archae/fire/audio/fire.ogg')
+    return _requestAudio('archae/fire/audio/fire.ogg')
       .then(audio => {
         if (live) {
           const {three: {THREE, scene, camera}, elements, render, pose, input, world, ui, sound, utils: {geometry: geometryUtils}} = zeo;

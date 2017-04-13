@@ -8,8 +8,6 @@ const SIDES = ['left', 'right'];
 
 class ZSpPhysics {
   mount() {
-    const {_archae: archae} = this;
-
     const cleanups = [];
     this._cleanup = () => {
       for (let i = 0; i < cleanups.length; i++) {
@@ -25,7 +23,7 @@ class ZSpPhysics {
 
     const _requestAmmo = () => new Promise((accept, reject) => {
       const script = document.createElement('script');
-      script.src = '/archae/sp-physics/lib/ammo.js';
+      script.src = 'archae/sp-physics/lib/ammo.js';
       script.onload = () => {
         document.body.removeChild(script);
 

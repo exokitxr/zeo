@@ -7,14 +7,7 @@ const DISABLE_DEACTIVATION = 4;
 const SIDES = ['left', 'right'];
 
 class ZMpPhysics {
-  constructor(archae) {
-    this._archae = archae;
-  }
-
   mount() {
-    const {_archae: archae} = this;
-    const {metadata: {server: {url: serverUrl}}} = archae;
-
     const cleanups = [];
     this._cleanup = () => {
       for (let i = 0; i < cleanups.length; i++) {
@@ -48,7 +41,7 @@ class ZMpPhysics {
     });
 
     const _requestConnection = () => new Promise((accept, reject) => {
-      const connection = new WebSocket('wss://' + serverUrl + '/archae/bulletWs');
+      const connection = new WebSocket(_relativeWsUrl('archae/bulletWs'));
       connection.onopen = () => {
         accept(connection);
       };
@@ -1518,6 +1511,10 @@ class ZMpPhysics {
 }
 
 const _makeId = () => Math.random().toString(36).substring(7);
+const _relativeWsUrl = s => {
+  const l = window.location;
+  return ((l.protocol === 'https:') ? 'wss://' : 'ws://') + l.host + l.pathname + (!/\/$/.test(l.pathname) ? '/' : '') + s;
+};
 const _except = (o, excepts) => {
   const result = {};
 
