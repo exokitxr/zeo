@@ -1613,7 +1613,7 @@ class World {
 const _clone = o => JSON.parse(JSON.stringify(o));
 const _relativeWsUrl = s => {
   const l = window.location;
-  return ((l.protocol === 'https:') ? 'wss://' : 'ws://') + l.host + l.pathname + s;
+  return ((l.protocol === 'https:') ? 'wss://' : 'ws://') + l.host + l.pathname + (!/\/$/.test(l.pathname) ? '/' : '') + s;
 };
 const _makeId = () => Math.random().toString(36).substring(7);
 const _padNumber = (n, width) => {

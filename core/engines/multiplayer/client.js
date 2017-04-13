@@ -399,7 +399,7 @@ class Multiplayer {
 
 const _relativeWsUrl = s => {
   const l = window.location;
-  return ((l.protocol === 'https:') ? 'wss://' : 'ws://') + l.host + l.pathname + s;
+  return ((l.protocol === 'https:') ? 'wss://' : 'ws://') + l.host + l.pathname + (!/\/$/.test(l.pathname) ? '/' : '') + s;
 };
 
 const _makeId = () => Math.random().toString(36).substring(7);
