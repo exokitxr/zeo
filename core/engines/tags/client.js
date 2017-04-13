@@ -1837,7 +1837,6 @@ class Tags {
 
                         const {planeMesh} = tagMesh;
                         if (planeMesh.visible) {
-                          const {initialScale = oneVector} = tagMesh;
                           const matrixObject = _decomposeObjectMatrixWorld(planeMesh);
                           const {page} = planeMesh;
 
@@ -1846,9 +1845,9 @@ class Tags {
                             page: page,
                             width: WIDTH,
                             height: HEIGHT,
-                            worldWidth: WORLD_WIDTH * initialScale.x,
-                            worldHeight: WORLD_HEIGHT * initialScale.y,
-                            worldDepth: WORLD_DEPTH * initialScale.z,
+                            worldWidth: WORLD_WIDTH,
+                            worldHeight: WORLD_HEIGHT,
+                            worldDepth: WORLD_DEPTH,
                             metadata: {
                               type,
                               tagMesh,

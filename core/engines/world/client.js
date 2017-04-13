@@ -602,7 +602,6 @@ class World {
 
                 const npmTagMesh = tags.makeTag(itemSpec);
                 npmTagMesh.planeMesh.scale.set(NPM_TAG_MESH_SCALE, NPM_TAG_MESH_SCALE, 1);
-                npmTagMesh.initialScale = npmTagMesh.planeMesh.scale.clone();
 
                 return npmTagMesh;
               }))
@@ -755,7 +754,6 @@ class World {
                   0
                 );
                 newEntityTagMesh.planeMesh.scale.set(NPM_TAG_MESH_SCALE, NPM_TAG_MESH_SCALE, 1);
-                newEntityTagMesh.initialScale = newEntityTagMesh.planeMesh.scale.clone();
 
                 return newEntityTagMesh;
               })();
