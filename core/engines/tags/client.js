@@ -861,7 +861,7 @@ class Tags {
                 16
               );
 
-              fs.makeFile('/fs/' + item.id + item.name)
+              fs.makeFile('fs/' + item.id + item.name)
                 .read({type: 'image'})
                 .then(img => {
                   const boxImg = imageUtils.boxizeImage(img);
@@ -890,7 +890,7 @@ class Tags {
 
             const mesh = new THREE.Object3D();
 
-            fs.makeFile('/fs/' + item.id + item.name)
+            fs.makeFile('fs/' + item.id + item.name)
               .read({type: 'audio'})
               .then(audio => {
                 soundBody.setInputElement(audio);
@@ -965,7 +965,7 @@ class Tags {
             })();
             const mesh = new THREE.Mesh(geometry, material);
 
-            fs.makeFile('/fs/' + item.id + item.name)
+            fs.makeFile('fs/' + item.id + item.name)
               .read({type: 'video'})
               .then(video => {
                 video.width = OPEN_WIDTH;
@@ -1025,7 +1025,7 @@ class Tags {
 
             accept(mesh);
           });
-          const _requestFileItemModelMesh = tagMesh => fs.makeFile('/fs/' + tagMesh.item.id + tagMesh.item.name)
+          const _requestFileItemModelMesh = tagMesh => fs.makeFile('fs/' + tagMesh.item.id + tagMesh.item.name)
             .read({type: 'model'});
 
           const _trigger = e => {
@@ -1750,7 +1750,7 @@ class Tags {
 
                   const _linkAttribute = ({srcTagMesh, attributeName, dstTagMesh}) => {
                     const {item: {id, name}} = dstTagMesh;
-                    srcTagMesh.setAttribute(attributeName, '/fs/' + id + name);
+                    srcTagMesh.setAttribute(attributeName, 'fs/' + id + name);
                   };
                   _linkAttribute({
                     srcTagMesh,
@@ -2439,7 +2439,7 @@ class Tags {
 
               const {type, temp} = this;
               if (type === 'file' && !temp) {
-                const itemAttributeValue = '/fs/' + this.id + '/' + this.name;
+                const itemAttributeValue = 'fs/' + this.id + '/' + this.name;
 
                 for (let i = 0; i < tagMeshes.length; i++) {
                   const tagMesh = tagMeshes[i];

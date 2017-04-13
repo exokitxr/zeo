@@ -1593,7 +1593,7 @@ class World {
                 const {item} = tagMesh;
                 const {id, name} = item;
 
-                return fs.makeFile('/fs/' + id + '/' + name);
+                return fs.makeFile('fs/' + id + '/' + name);
               });
             }
           }
