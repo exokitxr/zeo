@@ -7,6 +7,8 @@ export NODE_TLS_REJECT_UNAUTHORIZED=0
 npm start -- home my \
   port=8080 \
   hubUrl='https://hub.zeovr.io:8000' \
-  cryptoDirectorySrc='defaults/crypto' &
+  dataDirectorySrc='defaults/data' \
+  cryptoDirectorySrc='defaults/crypto' \
+  installDirectorySrc='installed' &
 sleep infinity;
 popd;
