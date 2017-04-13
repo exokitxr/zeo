@@ -585,6 +585,9 @@ class Home {
 
                   for (let i = 0; i < servers.length; i++) {
                     const server = servers[i];
+                    if (server.url) {
+                      server.url = document.location.protocol + '//' + document.location.hostname + (document.location.port ? (':' + document.location.port) : '') + '/' + server.url;
+                    }
                     server.local = true;
                   }
 
