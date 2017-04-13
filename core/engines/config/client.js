@@ -118,9 +118,9 @@ class Config {
             right: biolumi.makeMenuHoverState(),
           };
 
-          const _requestGetConfig = world => fetch('/archae/config/config.json')
+          const _requestGetConfig = world => fetch('archae/config/config.json')
             .then(res => res.json());
-          const _requestSetConfig = config => fetch('/archae/config/config.json', {
+          const _requestSetConfig = config => fetch('archae/config/config.json', {
             method: 'PUT',
             headers: {
               'Content-Type': 'application/json',

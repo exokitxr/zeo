@@ -21,7 +21,7 @@ class Bootstrap {
 
   mount() {
     const {_archae: archae} = this;
-    const {metadata: {site: {url: siteUrl}, hub: {url: hubUrl, enabled: hubEnabled}, server: {url: serverUrl, enabled: serverEnabled}}} = archae;
+    const {metadata: {site: {url: siteUrl}, hub: {url: hubUrl, enabled: hubEnabled}, server: {enabled: serverEnabled}}} = archae;
 
     let live = true;
     this._cleanup = () => {
@@ -29,9 +29,8 @@ class Bootstrap {
     };
 
     const initialUrl = document.location.href;
-    const hostUrl = serverEnabled ? serverUrl : hubUrl;
 
-    const _requestStartTime = () => fetch('/archae/bootstrap/start-time.json')
+    const _requestStartTime = () => fetch('archae/bootstrap/start-time.json')
       .then(res => res.json()
         .then(({startTime}) => startTime)
       );
@@ -131,7 +130,7 @@ class Bootstrap {
             }
 
             requestLogout() {
-              return fetch('https://' + serverUrl + '/server/logout', {
+              return fetch('server/logout', {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
