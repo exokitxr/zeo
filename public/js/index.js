@@ -1,8 +1,7 @@
 (() => {
 
-const base = document.createElement('base');
+const base = document.getElementById('base');
 base.href = document.location.href + '/';
-document.head.appendChild(base);
 
 archae.requestPlugin('/core/engines/zeo')
   .then(() => {
