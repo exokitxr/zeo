@@ -566,7 +566,7 @@ class Home {
               tags.reifyModule(tagMesh);
             };
 
-            const _requestRemoteServers = () => fetch(hubUrl + '/hub/servers/servers.json')
+            const _requestRemoteServers = () => fetch(hubUrl + '/servers/servers.json')
               .then(res => res.json()
                 .then(j => {
                   const {servers} = j;
@@ -579,7 +579,7 @@ class Home {
                   return servers;
                 })
               );
-            const _requestLocalServers = () => fetch(homeUrl + '/home/servers/local.json')
+            const _requestLocalServers = () => fetch(homeUrl + '/servers/local.json')
               .then(res => res.json()
                 .then(j => {
                   const {servers} = j;
