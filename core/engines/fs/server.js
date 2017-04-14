@@ -224,6 +224,10 @@ class Fs {
               return fs.createReadStream(this.getPath());
             }
 
+            createWriteStream(opts) {
+              return fs.createWriteStream(this.getPath(), opts);
+            }
+
             read(opts) {
               return new Promise((accept, reject) => {
                 fs.readFile(this.getPath(), opts, (err, result) => {

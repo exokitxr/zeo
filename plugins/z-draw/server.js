@@ -1,5 +1,7 @@
 const path = require('path');
 
+const MultiMutex = require('multimutex');
+
 class Draw {
   constructor(archae) {
     this._archae = archae;
@@ -12,11 +14,63 @@ class Draw {
 
     const tagsJson = world.getTags();
 
+    const filesMutex = new MultiMutex();
+
     const drawBrushesStatic = express.static(path.join(__dirname, 'brushes'));
     function serveDrawBrushes(req, res, next) {
       drawBrushesStatic(req, res, next);
     }
     app.use('/archae/draw/brushes', serveDrawBrushes);
+
+    const _requestDrawIdFile = drawId => new Promise((accept, reject) => {
+      const paperEntityTag = (() => {
+        const tagIds = Object.keys(tagsJson);
+
+        for (let i = 0; i < tagIds.length; i++) {
+          const tagId = tagIds[i];
+          const tagJson = tagsJson[tagId];
+          const {type, name} = tagJson;
+
+          if (type === 'entity' && name === 'paper') {
+            const {attributes} = tagJson;
+            const {'paper-id': paperId} = attributes;
+
+            if (paperId) {
+              const {value: paperIdValue} = paperId;
+
+              if (paperIdValue === drawId) {
+                return tagJson;
+              }
+            }
+          }
+        }
+
+        return null;
+      })();
+      if (paperEntityTag) {
+        const {attributes} = paperEntityTag;
+        const {file: fileAttribute} = attributes;
+
+        if (fileAttribute) {
+          const {value} = fileAttribute;
+          const match = (value || '').match(/^fs\/([^\/]+)(\/.*)$/)
+
+          if (match) {
+            const id = match[1];
+            const path = match[2];
+
+            const file = fs.makeFile(id, path);
+            accept(file);
+          } else {
+            accept(null); // non-local files cannot be served
+          }
+        } else {
+          accept(null);
+        }
+      } else {
+        accept(null);
+      }
+    });
 
     const connections = [];
 
@@ -39,6 +93,39 @@ class Draw {
         // }
       }
     };
+    const _saveUpdate = ({drawId, x, y, width, height, data}) => {
+      filesMutex.lock(drawId)
+        .then(unlock => {
+          _requestDrawIdFile(drawId)
+            .then(file => {
+              if (file) {
+                const start = ((y * width) + x) * 4;
+
+                const ws = file.createWriteStream({
+                  flags: 'r+',
+                  start: start,
+                });
+                ws.end(data);
+                /* ws.on('finish', () => {
+                  // write ok
+                }); */
+                ws.on('error', err => {
+                  console.warn(err);
+                });
+              } else {
+                console.warn('draw server could not find file for saving for draw id', {drawId});
+              }
+            })
+            .then(() => {
+              unlock();
+            })
+            .catch(err => {
+              console.warn(err);
+
+              unlock();
+            });
+        });
+    };
 
     wss.on('connection', c => {
       const {url} = c.upgradeReq;
@@ -49,46 +136,12 @@ class Draw {
         const drawId = decodeURIComponent(match[2]);
 
         const _sendInit = () => {
-          const paperEntityTag = (() => {
-            const tagIds = Object.keys(tagsJson);
-
-            for (let i = 0; i < tagIds.length; i++) {
-              const tagId = tagIds[i];
-              const tagJson = tagsJson[tagId];
-              const {type, name} = tagJson;
-
-              if (type === 'entity' && name === 'paper') {
-                const {attributes} = tagJson;
-                const {'paper-id': paperId} = attributes;
-
-                if (paperId) {
-                  const {value: paperIdValue} = paperId;
-
-                  if (paperIdValue === drawId) {
-                    return tagJson;
-                  }
-                }
-              }
-            }
-
-            return null;
-          })();
-          if (paperEntityTag) {
-            const {attributes} = paperEntityTag;
-            const {file: fileAttribute} = attributes;
-
-            if (fileAttribute) {
-              const {value} = fileAttribute;
-              const match = (value || '').match(/^fs\/([^\/]+)(\/.*)$/)
-
-              if (match) {
-                const id = match[1];
-                const path = match[2];
-
-                const file = fs.makeFile(id, path);
-                file.read()
+          _requestDrawIdFile(drawId)
+            .then(file => {
+              if (file) {
+                return file.read()
                   .then(data => {
-                    const numPixels = data.length / 4
+                    const numPixels = data.length / 4;
                     const width = Math.sqrt(numPixels);
 
                     if (width === Math.floor(width)) {
@@ -106,19 +159,14 @@ class Draw {
                     } else {
                       console.warn('draw server read paper file with illegal length', {drawId, dataLength: data.length});
                     }
-                  })
-                  .catch(err => {
-                    console.warn(err);
                   });
               } else {
-                // non-local files cannot be served
+                console.warn('draw server could not find file for loading for draw id', {drawId});
               }
-            } else {
-              console.warn('draw server no paper file to send', {paperEntityTag});
-            }
-          } else {
-            console.warn('draw server no paper entity tag to send', {drawId});
-          }
+            })
+            .catch(err => {
+              console.warn(err);
+            });
         };
         _sendInit();
 
@@ -133,6 +181,15 @@ class Draw {
 
               _broadcastUpdate({
                 peerId,
+                drawId,
+                x,
+                y,
+                width,
+                height,
+                data,
+              });
+
+              _saveUpdate({
                 drawId,
                 x,
                 y,
