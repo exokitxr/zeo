@@ -642,6 +642,7 @@ class Zeo {
                     class ZeoUtilsApi {
                       constructor() {
                         this.js = jsUtils;
+                        this.network = networkUtils;
                         this.geometry = geometryUtils;
                         this.random = randomUtils;
                         this.text = textUtils;
