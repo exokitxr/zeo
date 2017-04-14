@@ -53,6 +53,7 @@ class World {
         '/core/engines/rend',
         '/core/engines/tags',
         '/core/engines/fs',
+        '/core/utils/network-utils',
         '/core/utils/geometry-utils',
       ]).then(([
         three,
@@ -65,10 +66,12 @@ class World {
         rend,
         tags,
         fs,
+        networkUtils,
         geometryUtils,
       ]) => {
         if (live) {
           const {THREE, scene, camera} = three;
+          const {AutoWs} = networkUtils;
 
           // constants
           const transparentMaterial = biolumi.getTransparentMaterial();
@@ -150,69 +153,6 @@ class World {
             right: _makeTrashState(),
           };
 
-          const _requestConnection = () => new Promise((accept, reject) => {
-            const connection = new WebSocket(_relativeWsUrl('archae/worldWs?id=' + localUserId));
-            connection.onmessage = msg => {
-              const m = JSON.parse(msg.data);
-              const {type} = m;
-
-              if (type === 'init') {
-                const {args: [itemSpecs]} = m;
-
-                tags.loadTags(itemSpecs);
-              } else if (type === 'addTag') {
-                const {args: [userId, itemSpec, dst]} = m;
-
-                _handleAddTag(userId, itemSpec, dst);
-              } else if (type === 'removeTag') {
-                const {args: [userId, src]} = m;
-
-                _handleRemoveTag(userId, src);
-              } else if (type === 'moveTag') {
-                const {args: [userId, src, dst]} = m;
-
-                _handleMoveTag(userId, src, dst);
-              } else if (type === 'setTagAttribute') {
-                const {args: [userId, src, {name, value}]} = m;
-
-                const tagMesh = _handleSetTagAttribute(userId, src, {name, value});
-
-                // this prevents this mutation from triggering an infinite recursion multiplayer update
-                // we simply ignore this mutation during the next enmtity mutation tick
-                if (tagMesh) {
-                  const {item} = tagMesh;
-                  const {id} = item;
-
-                  tags.ignoreEntityMutation({
-                    type: 'setAttribute',
-                    args: [id, name, value],
-                  });
-                }
-              } else if (type === 'message') {
-                const {args: [detail]} = m;
-
-                _handleMessage(detail);
-              } else if (type === 'response') {
-                const {id} = m;
-
-                const requestHandler = requestHandlers.get(id);
-                if (requestHandler) {
-                  const {error, result} = m;
-                  requestHandler(error, result);
-                } else {
-                  console.warn('unregistered handler:', JSON.stringify(id));
-                }
-              } else {
-                console.log('unknown message', m);
-              }
-            };
-            connection.onopen = () => {
-              accept(connection);
-            };
-            connection.onerror = err => {
-              reject(err);
-            };
-          });
           const _getInFrontOfCameraMatrix = () => {
             const {hmd} = webvr.getStatus();
             const {position, rotation} = hmd;
@@ -1518,21 +1458,61 @@ class World {
           };
           fs.on('upload', _upload);
 
-          let connection = null;
-          const _connect = () => {
-            _requestConnection()
-              .then(newConnection => {
-                connection = newConnection;
-                connection.onclose = () => {
-                  connection = null;
-                };
-              })
-              .catch(err => {
-                console.warn(err);
-              });
-          };
+          const connection = new AutoWs(_relativeWsUrl('archae/worldWs?id=' + localUserId));
+          connection.on('message', msg => {
+            const m = JSON.parse(msg.data);
+            const {type} = m;
 
-          _connect();
+            if (type === 'init') {
+              const {args: [itemSpecs]} = m;
+
+              tags.loadTags(itemSpecs);
+            } else if (type === 'addTag') {
+              const {args: [userId, itemSpec, dst]} = m;
+
+              _handleAddTag(userId, itemSpec, dst);
+            } else if (type === 'removeTag') {
+              const {args: [userId, src]} = m;
+
+              _handleRemoveTag(userId, src);
+            } else if (type === 'moveTag') {
+              const {args: [userId, src, dst]} = m;
+
+              _handleMoveTag(userId, src, dst);
+            } else if (type === 'setTagAttribute') {
+              const {args: [userId, src, {name, value}]} = m;
+
+              const tagMesh = _handleSetTagAttribute(userId, src, {name, value});
+
+              // this prevents this mutation from triggering an infinite recursion multiplayer update
+              // we simply ignore this mutation during the next enmtity mutation tick
+              if (tagMesh) {
+                const {item} = tagMesh;
+                const {id} = item;
+
+                tags.ignoreEntityMutation({
+                  type: 'setAttribute',
+                  args: [id, name, value],
+                });
+              }
+            } else if (type === 'message') {
+              const {args: [detail]} = m;
+
+              _handleMessage(detail);
+            } else if (type === 'response') {
+              const {id} = m;
+
+              const requestHandler = requestHandlers.get(id);
+              if (requestHandler) {
+                const {error, result} = m;
+                requestHandler(error, result);
+              } else {
+                console.warn('unregistered handler:', JSON.stringify(id));
+              }
+            } else {
+              console.log('unknown message', m);
+            }
+          });
 
           this._cleanup = () => {
             remoteGrabManager.destroy();
@@ -1568,6 +1548,8 @@ class World {
             tags.removeListener('broadcast', _broadcast);
 
             fs.removeListener('upload', _upload);
+
+            connection.destroy();
           };
 
           class WorldApi {

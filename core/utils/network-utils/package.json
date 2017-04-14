@@ -1,0 +1,9 @@
+{
+  "name": "network-utils",
+  "description": "Provides network utilities for the zeo core.",
+  "version": "0.0.1",
+  "client": "client.js",
+  "dependencies": {
+    "autows": "0.0.1"
+  }
+}
