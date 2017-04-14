@@ -93,27 +93,43 @@ class Draw {
         // }
       }
     };
-    const _saveUpdate = ({drawId, x, y, width, height, data}) => {
+    const _updateFileChunk = ({file, x, y, width, height, canvasWidth, canvasHeight, data}) => new Promise((accept, reject) => {
+      const _recurse = i => {
+        if (i < height) {
+          const fileY = y + i;
+          const fileStart = ((fileY * canvasWidth) + x) * 4;
+          // const fileEnd = (((fileY + 1) * canvasWidth) + x) * 4;
+          const dataStart = i * width * 4;
+          const dataEnd = (i + 1) * width * 4;
+
+          const ws = file.createWriteStream({
+            flags: 'r+',
+            start: fileStart,
+          });
+          ws.end(data.slice(dataStart, dataEnd));
+          ws.on('finish', () => {
+            _recurse(i + 1);
+          });
+          ws.on('error', err => {
+            reject(err);
+          });
+        } else {
+          accept();
+        }
+      };
+      _recurse(0);
+    });
+    const _saveUpdate = ({drawId, x, y, width, height, canvasWidth, canvasHeight, data}) => {
       filesMutex.lock(drawId)
         .then(unlock => {
           _requestDrawIdFile(drawId)
             .then(file => {
               if (file) {
-                const start = ((y * width) + x) * 4;
-
-                const ws = file.createWriteStream({
-                  flags: 'r+',
-                  start: start,
-                });
-                ws.end(data);
-                /* ws.on('finish', () => {
-                  // write ok
-                }); */
-                ws.on('error', err => {
-                  console.warn(err);
-                });
+                return _updateFileChunk({file, x, y, width, height, canvasWidth, canvasHeight, data});
               } else {
                 console.warn('draw server could not find file for saving for draw id', {drawId});
+
+                return Promise.resolve();
               }
             })
             .then(() => {
@@ -176,7 +192,7 @@ class Draw {
         c.on('message', (msg, flags) => {
           if (flags.binary) {
             if (currentDrawSpec !== null) {
-              const {x, y, width, height} = currentDrawSpec;
+              const {x, y, width, height, canvasWidth, canvasHeight} = currentDrawSpec;
               const data = msg;
 
               _broadcastUpdate({
@@ -186,6 +202,8 @@ class Draw {
                 y,
                 width,
                 height,
+                canvasWidth,
+                canvasHeight,
                 data,
               });
 
@@ -195,6 +213,8 @@ class Draw {
                 y,
                 width,
                 height,
+                canvasWidth,
+                canvasHeight,
                 data,
               });
             } else {
@@ -207,13 +227,15 @@ class Draw {
               const {type} = m;
 
               if (type === 'drawSpec') {
-                const {x, y, width, height} = m;
+                const {x, y, width, height, canvasWidth, canvasHeight} = m;
 
                 currentDrawSpec = {
                   x,
                   y,
                   width,
                   height,
+                  canvasWidth,
+                  canvasHeight,
                 };
               } else {
                 console.warn('draw invalid message type', {type});

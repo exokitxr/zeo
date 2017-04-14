@@ -382,22 +382,24 @@ class ZDraw {
                       const {type} = e;
 
                       if (type === 'drawSpec') {
-                        const {x, y, width, height} = e;
+                        const {x, y, width, height, canvasWidth, canvasHeight} = e;
                         currentRemoteDrawSpec = {
                           x,
                           y,
                           width,
                           height,
+                          canvasWidth,
+                          canvasHeight,
                         };
                       } else {
                         console.warn('unknown message type', JSON.stringify(type));
                       }
                     } else {
                       if (currentRemoteDrawSpec !== null) {
-                        const {x, y, width, height} = currentRemoteDrawSpec;
+                        const {x, y, width, height, canvasWidth, canvasHeight} = currentRemoteDrawSpec;
                         const {data} = msg;
 
-                        _draw(x, y, width, height, data);
+                        _draw({x, y, width, height, canvasWidth, canvasHeight, data});
                       } else {
                         console.warn('buffer data before remote peer id', msg);
                       }
@@ -410,7 +412,7 @@ class ZDraw {
               };
               entityApi.ensureConnect = _ensureConnect;
 
-              const _draw = (x, y, width, height, data) => {
+              const _draw = ({x, y, width, height, canvasWidth, canvasHeight, data}) => {
                 const {
                   planeMesh: {
                     material: {
@@ -428,13 +430,15 @@ class ZDraw {
                 texture.needsUpdate = true;
               };
 
-              const _broadcastUpdate = ({x, y, width, height, data}) => {
+              const _broadcastUpdate = ({x, y, width, height, canvasWidth, canvasHeight, data}) => {
                 const e = {
                   type: 'drawSpec',
                   x,
                   y,
                   width,
                   height,
+                  canvasWidth,
+                  canvasHeight,
                 };
                 const es = JSON.stringify(e);
 
@@ -829,10 +833,10 @@ class ZDraw {
                                     const y = lastPoint.y + (Math.sin(angle) * z) - halfBrushH;
                                     canvas.ctx.drawImage(colorBrushImg, x, y);
 
-                                    const localMinX = x;
-                                    const localMaxX = Math.min(x + colorBrushImg.width, canvas.width);
-                                    const localMinY = y;
-                                    const localMaxY = Math.min(y + colorBrushImg.height, canvas.height);
+                                    const localMinX = Math.floor(x);
+                                    const localMaxX = Math.min(localMinX + colorBrushImg.width, canvas.width);
+                                    const localMinY = Math.floor(y);
+                                    const localMaxY = Math.min(localMinY + colorBrushImg.height, canvas.height);
                                     minX = Math.min(minX, localMinX);
                                     maxX = Math.max(maxX, localMaxX);
                                     minY = Math.min(minY, localMinY);
@@ -848,6 +852,8 @@ class ZDraw {
                                     y: minY,
                                     width: width,
                                     height: height,
+                                    canvasWidth: canvas.width,
+                                    canvasHeight: canvas.height,
                                     data: data,
                                   });
 
