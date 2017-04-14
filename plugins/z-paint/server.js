@@ -192,8 +192,8 @@ class ZPaint {
         const _sendInit = () => {
           _requestPaintMeshFiles({paintId})
             .then(meshFiles => {
-              const _recurse = i => {
-                if (i < meshFiles.length) {
+              for (let i = 0; i < meshFiles.length; i+++) {
+                (() => {
                   const meshFile = meshFiles[i];
 
                   meshFile.read()
@@ -207,12 +207,9 @@ class ZPaint {
                         data,
                         thisPeerOnly: true,
                       });
-
-                      _recurse(i + 1);
                     });
-                }
-              };
-              _recurse(0);
+                })();
+              }
             })
             .catch(err => {
               console.warn(err);
