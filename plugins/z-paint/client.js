@@ -39,7 +39,7 @@ class ZPaint {
           const worldElement = elements.getWorldElement();
 
           const paintbrushComponent = {
-            selector: 'paintbrush[position][color]',
+            selector: 'paintbrush[position][paint-id][color]',
             attributes: {
               position: {
                 type: 'matrix',
@@ -48,6 +48,10 @@ class ZPaint {
                   0, 0, 0, 1,
                   1, 1, 1,
                 ],
+              },
+              'paint-id': {
+                type: 'text',
+                value: _makeId,
               },
               color: {
                 type: 'color',
@@ -733,6 +737,7 @@ class ZPaint {
   }
 }
 
+const _makeId = () => Math.random().toString(36).substring(7);
 const sq = n => Math.sqrt((n * n) + (n * n));
 const _concatArrayBuffers = as => {
   let length = 0;
