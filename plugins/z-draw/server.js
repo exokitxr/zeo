@@ -77,7 +77,6 @@ class Draw {
     const _broadcastUpdate = ({peerId, drawId, x, y, width, height, data, force = false}) => {
       const e = {
         type: 'drawSpec',
-        drawId: drawId,
         x: x,
         y: y,
         width: width,
@@ -87,7 +86,7 @@ class Draw {
 
       for (let i = 0; i < connections.length; i++) {
         const connection = connections[i];
-        if (connection.peerId !== peerId || force) {
+        if ((connection.peerId !== peerId || force) && connection.drawId === drawId) {
           connection.send(es);
           connection.send(data);
         }
@@ -151,6 +150,9 @@ class Draw {
         const peerId = decodeURIComponent(match[1]);
         const drawId = decodeURIComponent(match[2]);
 
+        c.peerId = peerId;
+        c.drawId = drawId;
+
         const _sendInit = () => {
           _requestDrawIdFile(drawId)
             .then(file => {
@@ -186,8 +188,6 @@ class Draw {
             });
         };
         _sendInit();
-
-        c.peerId = peerId;
 
         let currentDrawSpec = null;
         c.on('message', (msg, flags) => {
