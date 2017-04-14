@@ -437,8 +437,21 @@ class ZDraw {
                       if (currentRemoteDrawSpec !== null) {
                         const {x, y, width, height, canvasWidth, canvasHeight} = currentRemoteDrawSpec;
                         const {data} = msg;
+                        const {
+                          planeMesh: {
+                            material: {
+                              map: texture,
+                            },
+                          },
+                        } = mesh;
+                        const {image: canvas} = texture;
 
-                        _draw({x, y, width, height, canvasWidth, canvasHeight, data});
+                        const imageData = canvas.ctx.createImageData(width, height);
+                        const {data: imageDataData} = imageData;
+                        imageDataData.set(new Uint8Array(data));
+                        canvas.ctx.putImageData(imageData, x, y);
+
+                        texture.needsUpdate = true;
                       } else {
                         console.warn('buffer data before remote peer id', msg);
                       }
@@ -450,24 +463,6 @@ class ZDraw {
                 }
               };
               entityApi.ensureConnect = _ensureConnect;
-
-              const _draw = ({x, y, width, height, canvasWidth, canvasHeight, data}) => {
-                const {
-                  planeMesh: {
-                    material: {
-                      map: texture,
-                    },
-                  },
-                } = mesh;
-                const {image: canvas} = texture;
-
-                const imageData = canvas.ctx.createImageData(width, height);
-                const {data: imageDataData} = imageData;
-                imageDataData.set(new Uint8Array(data));
-                canvas.ctx.putImageData(imageData, x, y);
-
-                texture.needsUpdate = true;
-              };
 
               const _broadcastUpdate = ({x, y, width, height, canvasWidth, canvasHeight, data}) => {
                 const e = {
@@ -998,6 +993,8 @@ class ZDraw {
                                     maxY = Math.max(maxY, localMaxY);
                                   }
 
+                                  texture.needsUpdate = true;
+
                                   const {paperId} = paper;
                                   const width = maxX - minX;
                                   const height = maxY - minY;
@@ -1011,8 +1008,6 @@ class ZDraw {
                                     canvasHeight: canvas.height,
                                     data: data,
                                   });
-
-                                  // texture.needsUpdate = true;
 
                                   // paper.save(); // XXX re-enable this
 

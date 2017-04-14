@@ -74,7 +74,7 @@ class Draw {
 
     const connections = [];
 
-    const _broadcastUpdate = ({peerId, drawId, x, y, width, height, data}) => {
+    const _broadcastUpdate = ({peerId, drawId, x, y, width, height, data, force = false}) => {
       const e = {
         type: 'drawSpec',
         drawId: drawId,
@@ -87,10 +87,10 @@ class Draw {
 
       for (let i = 0; i < connections.length; i++) {
         const connection = connections[i];
-        // if (connection.peerId !== peerId) { // XXX block this to only go through for non-same peers
+        if (connection.peerId !== peerId || force) {
           connection.send(es);
           connection.send(data);
-        // }
+        }
       }
     };
     const _updateFileChunk = ({file, x, y, width, height, canvasWidth, canvasHeight, data}) => new Promise((accept, reject) => {
@@ -171,6 +171,7 @@ class Draw {
                         width,
                         height,
                         data,
+                        force: true,
                       });
                     } else {
                       console.warn('draw server read paper file with illegal length', {drawId, dataLength: data.length});
