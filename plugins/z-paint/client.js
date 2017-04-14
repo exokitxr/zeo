@@ -198,39 +198,20 @@ class ZPaint {
                       const e = JSON.parse(msg.data) ;
                       const {type} = e;
 
-                      if (type === 'drawSpec') {
-                        const {x, y, width, height, canvasWidth, canvasHeight} = e;
+                      if (type === 'paintSpec') {
+                        const {meshId} = e;
                         currentRemotePaintSpec = {
-
-                          x,
-                          y,
-                          width,
-                          height,
-                          canvasWidth,
-                          canvasHeight,
+                          meshId,
                         };
                       } else {
                         console.warn('unknown message type', JSON.stringify(type));
                       }
                     } else {
-                      if (currentRemoteDrawSpec !== null) {
-                        const {x, y, width, height, canvasWidth, canvasHeight} = currentRemoteDrawSpec;
+                      if (currentRemotePaintSpec !== null) {
+                        const {meshId} = currentRemotePaintSpec;
                         const {data} = msg;
-                        const {
-                          planeMesh: {
-                            material: {
-                              map: texture,
-                            },
-                          },
-                        } = mesh;
-                        const {image: canvas} = texture;
 
-                        const imageData = canvas.ctx.createImageData(width, height);
-                        const {data: imageDataData} = imageData;
-                        imageDataData.set(new Uint8Array(data));
-                        canvas.ctx.putImageData(imageData, x, y);
-
-                        texture.needsUpdate = true;
+                        // XXX load the data into the mesh with this meshId
                       } else {
                         console.warn('buffer data before paint spec', msg);
                       }

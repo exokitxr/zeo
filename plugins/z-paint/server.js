@@ -1,5 +1,7 @@
 const path = require('path');
 
+const MultiMutex = require('multimutex');
+
 class ZPaint {
   constructor(archae) {
     this._archae = archae;
@@ -8,6 +10,11 @@ class ZPaint {
   mount() {
     const {_archae: archae} = this;
     const {express, app, wss} = archae.getCore();
+    const {world, fs} = zeo;
+
+    const tagsJson = world.getTags();
+
+    const filesMutex = new MultiMutex();
 
     const zPaintBrushesStatic = express.static(path.join(__dirname, 'brushes'));
     function serveZPaintBrushes(req, res, next) {
@@ -15,26 +22,108 @@ class ZPaint {
     }
     app.use('/archae/z-paint/brushes', serveZPaintBrushes);
 
+    const _requestPaintMeshFile = ({paintId, meshId}) => new Promise((accept, reject) => { // XXX request the meshId file
+      const paintbrushEntityTag = (() => {
+        const tagIds = Object.keys(tagsJson);
+
+        for (let i = 0; i < tagIds.length; i++) {
+          const tagId = tagIds[i];
+          const tagJson = tagsJson[tagId];
+          const {type, name} = tagJson;
+
+          if (type === 'entity' && name === 'paintbrush') {
+            const {attributes} = tagJson;
+            const {'paint-id': paintId} = attributes;
+
+            if (paintId) {
+              const {value: paintIdValue} = paintId;
+
+              if (paintIdValue === paintId) {
+                return tagJson;
+              }
+            }
+          }
+        }
+
+        return null;
+      })();
+      if (paintbrushEntityTag) {
+        const {attributes} = paintbrushEntityTag;
+        const {file: fileAttribute} = attributes;
+
+        if (fileAttribute) {
+          const {value} = fileAttribute;
+          const match = (value || '').match(/^fs\/([^\/]+)(\/.*)$/)
+
+          if (match) {
+            const id = match[1];
+            const pathname = match[2];
+
+            const file = fs.makeFile(id, pathname);
+            accept(file);
+          } else {
+            accept(null); // non-local file
+          }
+        } else {
+          accept(null);
+        }
+      } else {
+        accept(null);
+      }
+    });
+
     const connections = [];
 
-    const _broadcastUpdate = ({peerId, paintId, x, y, width, height, data, force = false}) => {
+    const _broadcastUpdate = ({peerId, paintId, meshId, data, force = false}) => {
       const e = {
         type: 'paintSpec',
         paintId: paintId,
-        x: x,
-        y: y,
-        width: width,
-        height: height,
+        meshId: meshId,
       };
       const es = JSON.stringify(e);
 
       for (let i = 0; i < connections.length; i++) {
         const connection = connections[i];
-        if (connection.peerId !== peerId || force) {
+        if ((connection.peerId !== peerId || force) && connection.paintId === paintId) {
           connection.send(es);
           connection.send(data);
         }
       }
+    };
+    const _appendFileChunk = ({file, data}) => new Promise((accept, reject) => {
+      const ws = file.createWriteStream({
+        flags: 'a',
+      });
+      ws.end(data);
+      ws.on('finish', () => {
+        accept();
+      });
+      ws.on('error', err => {
+        reject(err);
+      });
+    });
+    const _saveUpdate = ({paintId, meshId, data}) => { // XXX register the meshId file in the root file index json in addition to appending to the paint mesh file
+      filesMutex.lock(paintId)
+        .then(unlock => {
+          _requestPaintMeshFile({paintId, meshId})
+            .then(file => {
+              if (file) {
+                return _appendFileChunk({file, data});
+              } else {
+                console.warn('paint server could not find file for saving for draw id', {paintId});
+
+                return Promise.resolve();
+              }
+            })
+            .then(() => {
+              unlock();
+            })
+            .catch(err => {
+              console.warn(err);
+
+              unlock();
+            });
+        });
     };
 
     wss.on('connection', c => {
@@ -45,39 +134,31 @@ class ZPaint {
         const peerId = decodeURIComponent(match[1]);
         const paintId = decodeURIComponent(match[2]);
 
+        c.peerId = peerId;
+        c.paintId = paintId;
+
         const _sendInit = () => {
+          //
         };
         _sendInit();
 
-        c.peerId = peerId;
-
-        let currentDrawSpec = null;
+        let currentPaintSpec = null;
         c.on('message', (msg, flags) => {
           if (flags.binary) {
-            if (currentDrawSpec !== null) {
-              const {x, y, width, height, canvasWidth, canvasHeight} = currentDrawSpec;
+            if (currentPaintSpec !== null) {
+              const {meshId} = currentPaintSpec;
               const data = msg;
 
               _broadcastUpdate({
                 peerId,
                 paintId,
-                x,
-                y,
-                width,
-                height,
-                canvasWidth,
-                canvasHeight,
+                meshId,
                 data,
               });
 
               _saveUpdate({
                 paintId,
-                x,
-                y,
-                width,
-                height,
-                canvasWidth,
-                canvasHeight,
+                meshId,
                 data,
               });
             } else {
@@ -90,15 +171,10 @@ class ZPaint {
               const {type} = m;
 
               if (type === 'paintSpec') {
-                const {x, y, width, height, canvasWidth, canvasHeight} = m;
+                const {meshId} = m;
 
-                currentDrawSpec = {
-                  x,
-                  y,
-                  width,
-                  height,
-                  canvasWidth,
-                  canvasHeight,
+                currentPaintSpec = {
+                  meshId,
                 };
               } else {
                 console.warn('paint invalid message type', {type});
