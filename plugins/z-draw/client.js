@@ -116,8 +116,6 @@ class ZDraw {
         brushImg = _getScaledImg(brushImg, BRUSH_SIZE, BRUSH_SIZE);
 
         if (live) {
-          const worldElement = elements.getWorldElement();
-
           const papers = [];
 
           const paperComponent = {
@@ -298,112 +296,6 @@ class ZDraw {
                   placeholderMesh.visible = true;
                 }
               };
-
-              /* entityApi.load = () => {
-                const {file} = entityApi;
-
-                if (file) {
-                  file.read({ // XXX handle the no-file case
-                    type: 'arrayBuffer',
-                  })
-                    .then(arrayBuffer => {
-                      const arrayValue = new Uint8ClampedArray(arrayBuffer);
-
-                      if (arrayValue.length > 0) {
-                        const {
-                          planeMesh: {
-                            material: {
-                              map: texture,
-                            },
-                          },
-                        } = mesh;
-                        const {
-                          image: canvas,
-                        } = texture;
-                        const {ctx} = canvas;
-                        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                        const {data: imageDataData} = imageData;
-
-                        if (arrayValue.length === imageDataData.length) {
-                          imageDataData.set(arrayValue);
-                          ctx.putImageData(imageData, 0, 0);
-                          texture.needsUpdate = true;
-                        } else {
-                          console.warn('draw paper tried to load invalid file data', {data: arrayValue});
-                        }
-                      }
-                    });
-                } else {
-                  SIDES.forEach(side => {
-                    const pencilState = pencilStates[side];
-                    pencilState.drawing = false;
-                  });
-                }
-              };
-              let dirtyFlag = false;
-              entityApi.cancelSave = null;
-              entityApi.save = () => {
-                const {cancelSave} = entityApi;
-
-                if (!cancelSave) {
-                  const timeout = setTimeout(() => {
-                    const {file} = entityApi;
-
-                    const {
-                      planeMesh: {
-                        material: {
-                          map: {
-                            image: canvas,
-                          },
-                        },
-                      },
-                    } = mesh;
-                    const imageData = canvas.ctx.getImageData(0, 0, canvas.width, canvas.height);
-                    const {data: imageDataData} = imageData;
-
-                    const _cleanup = () => {
-                      entityApi.cancelSave = null;
-
-                      if (dirtyFlag) {
-                        dirtyFlag = false;
-
-                        entityApi.save();
-                      }
-                    };
-
-                    let live = true;
-                    file.write(imageDataData)
-                      .then(() => {
-                        if (live) {
-                          const broadcastEvent = new CustomEvent('broadcast', {
-                            detail: {
-                              type: 'paper.update',
-                              id: entityElement.getId(),
-                            },
-                          });
-                          worldElement.dispatchEvent(broadcastEvent);
-
-                          _cleanup();
-                        }
-                      })
-                      .catch(err => {
-                        console.warn(err);
-
-                        _cleanup();
-                      });
-
-                    entityApi.cancelSave = () => {
-                      live = false;
-                    };
-
-                    dirtyFlag = false;
-                  }, DIRTY_TIME);
-
-                  entityApi.cancelSave = () => {
-                    cancelTimeout(timeout);
-                  };
-                }
-              }; */
 
               let connection = null;
               const _ensureConnect = () => {
@@ -603,11 +495,6 @@ class ZDraw {
               entityApi._cleanup = () => {
                 entityObject.remove(mesh);
 
-                /* const {cancelSave} = entityApi;
-                if (cancelSave) {
-                  cancelSave();
-                } */
-
                 SIDES.forEach(side => {
                   scene.remove(clearDotMeshes[side]);
                   scene.remove(clearBoxMeshes[side]);
@@ -645,17 +532,6 @@ class ZDraw {
 
                   entityApi.render();
                   entityApi.ensureConnect();
-
-                  /* if (newValue) {
-                    entityApi.load();
-                  } else {
-                    const {cancelSave} = entityApi;
-
-                    if (cancelSave) {
-                      cancelSave();
-                      entityApi.cancelSave = null;
-                    }
-                  } */
 
                   break;
                 }
@@ -1009,8 +885,6 @@ class ZDraw {
                                     data: data,
                                   });
 
-                                  // paper.save(); // XXX re-enable this
-
                                   paperState.lastPoint = currentPoint;
                                 }
                               }
@@ -1088,33 +962,9 @@ class ZDraw {
           };
           elements.registerComponent(this, pencilComponent);
 
-          const _worldMessage = e => {
-            const {detail: {type}} = e;
-
-            if (type === 'paper') {
-              const {id} = detail;
-
-              for (let i = 0; i < papers.length; i++) {
-                const paper = papers[i];
-                const {entityElement} = paper;
-
-                if (entityElement.getId() === id) {
-                  const {file} = entityElement;
-
-                  if (file) {
-                    entityElement.load();
-                  }
-                }
-              }
-            }
-          };
-          worldElement.addEventListener('message', _worldMessage);
-
           this._cleanup = () => {
             elements.unregisterComponent(this, paperComponent);
             elements.unregisterComponent(this, pencilComponent);
-
-            worldElement.removeEventListener('message', _worldMessage);
           };
         }
       });
