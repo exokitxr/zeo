@@ -19,7 +19,7 @@ const SIDES = ['left', 'right'];
 
 class ZDraw {
   mount() {
-    const {three: {THREE}, input, elements, render, pose, player, utils: {network: networkUtils, geometry: geometryUtils, menu: menuUtils}} = zeo;
+    const {three: {THREE}, input, elements, render, pose, player, ui, utils: {network: networkUtils, geometry: geometryUtils, menu: menuUtils}} = zeo;
     const {AutoWs} = networkUtils;
 
     const colorWheelImg = menuUtils.getColorWheelImg();
@@ -230,6 +230,46 @@ class ZDraw {
                 })();
                 object.add(lineMesh);
                 object.lineMesh = lineMesh;
+
+                const clearMesh = (() => {
+                  const worldWidth = 0.1;
+                  const worldHeight = worldWidth / 3;
+                  const width = 600;
+                  const height = width / 3;
+
+                  const menuUi = ui.makeUi({
+                    width: worldWidth,
+                    height: worldHeight,
+                    // color: [1, 1, 1, 0],
+                  });
+                  const mesh = menuUi.addPage(({
+                    avatar: avatarState,
+                  }) => ({
+                    type: 'html',
+                    src: `<div style="display: flex; width: ${width}px; height: ${height}px; background-color: #EEE; justify-content: center; align-items: center;">
+                      <a style="display: flex; margin: 0 50px; padding: 0 30px; width: 100%; border: 3px solid; border-radius: 20px; justify-content: center; align-items: center; font-size: 100px; text-decoration: none;" onclick="clear">Clear</a>
+                    </div>`,
+                    x: 0,
+                    y: 0,
+                    w: width,
+                    h: height,
+                  }), {
+                    type: 'paper',
+                    state: {},
+                    worldWidth: worldWidth,
+                    worldHeight: worldHeight,
+                  });
+                  mesh.position.x = (WORLD_WIDTH / 2) - (worldWidth / 2);
+                  mesh.position.y = (WORLD_HEIGHT / 2) + (worldHeight / 2);
+
+                  const {page} = mesh;
+                  page.update();
+
+                  return mesh;
+                })();
+                object.add(clearMesh);
+                object.clearMesh = clearMesh;
+                
 
                 return object;
               })();
