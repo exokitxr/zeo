@@ -86,9 +86,26 @@ class Draw {
                 const path = match[2];
 
                 const file = fs.makeFile(id, path);
-                file.read('utf8')
+                file.read()
                   .then(data => {
-                    console.log('initial read draw file', data.length); // XXX actually serve this to the frontend
+                    const numPixels = data.length / 4
+                    const width = Math.sqrt(numPixels);
+
+                    if (width === Math.floor(width)) {
+                      const height = width;
+
+                      _broadcastUpdate({
+                        peerId,
+                        drawId,
+                        x: 0,
+                        y: 0,
+                        width,
+                        height,
+                        data,
+                      });
+                    } else {
+                      console.warn('draw server read paper file with illegal length', {drawId, dataLength: data.length});
+                    }
                   })
                   .catch(err => {
                     console.warn(err);
