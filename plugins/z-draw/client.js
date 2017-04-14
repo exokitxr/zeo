@@ -6,6 +6,12 @@ const HEIGHT = Math.round(WIDTH / ASPECT_RATIO);
 const WORLD_WIDTH = 0.3;
 const WORLD_HEIGHT = WORLD_WIDTH / ASPECT_RATIO;
 
+const CLEAR_WIDTH = 600;
+const CLEAR_HEIGHT = CLEAR_WIDTH / 3;
+const WORLD_CLEAR_WIDTH = 0.1;
+const WORLD_CLEAR_HEIGHT = WORLD_CLEAR_WIDTH / 3;
+const WORLD_CLEAR_DEPTH = 0.01;
+
 const PAPER_DRAW_DISTANCE = 0.2;
 const BRUSH_SIZE = 8;
 const DIRTY_TIME = 1000;
@@ -19,7 +25,7 @@ const SIDES = ['left', 'right'];
 
 class ZDraw {
   mount() {
-    const {three: {THREE}, input, elements, render, pose, player, ui, utils: {network: networkUtils, geometry: geometryUtils, menu: menuUtils}} = zeo;
+    const {three: {THREE, scene}, input, elements, render, pose, player, ui, utils: {network: networkUtils, geometry: geometryUtils, menu: menuUtils}} = zeo;
     const {AutoWs} = networkUtils;
 
     const colorWheelImg = menuUtils.getColorWheelImg();
@@ -232,35 +238,28 @@ class ZDraw {
                 object.lineMesh = lineMesh;
 
                 const clearMesh = (() => {
-                  const worldWidth = 0.1;
-                  const worldHeight = worldWidth / 3;
-                  const width = 600;
-                  const height = width / 3;
-
                   const menuUi = ui.makeUi({
-                    width: worldWidth,
-                    height: worldHeight,
+                    width: WORLD_CLEAR_WIDTH,
+                    height: WORLD_CLEAR_HEIGHT,
                     // color: [1, 1, 1, 0],
                   });
-                  const mesh = menuUi.addPage(({
-                    avatar: avatarState,
-                  }) => ({
+                  const mesh = menuUi.addPage(() => ({
                     type: 'html',
-                    src: `<div style="display: flex; width: ${width}px; height: ${height}px; background-color: #EEE; justify-content: center; align-items: center;">
+                    src: `<div style="display: flex; width: ${CLEAR_WIDTH}px; height: ${CLEAR_HEIGHT}px; background-color: #EEE; justify-content: center; align-items: center;">
                       <a style="display: flex; margin: 0 50px; padding: 0 30px; width: 100%; border: 3px solid; border-radius: 20px; justify-content: center; align-items: center; font-size: 100px; text-decoration: none;" onclick="clear">Clear</a>
                     </div>`,
                     x: 0,
                     y: 0,
-                    w: width,
-                    h: height,
+                    w: CLEAR_WIDTH,
+                    h: CLEAR_HEIGHT,
                   }), {
                     type: 'paper',
                     state: {},
-                    worldWidth: worldWidth,
-                    worldHeight: worldHeight,
+                    worldWidth: WORLD_CLEAR_WIDTH,
+                    worldHeight: WORLD_CLEAR_HEIGHT,
                   });
-                  mesh.position.x = (WORLD_WIDTH / 2) - (worldWidth / 2);
-                  mesh.position.y = (WORLD_HEIGHT / 2) + (worldHeight / 2);
+                  mesh.position.x = (WORLD_WIDTH / 2) - (WORLD_CLEAR_WIDTH / 2);
+                  mesh.position.y = (WORLD_HEIGHT / 2) + (WORLD_CLEAR_HEIGHT / 2);
 
                   const {page} = mesh;
                   page.update();
@@ -269,7 +268,6 @@ class ZDraw {
                 })();
                 object.add(clearMesh);
                 object.clearMesh = clearMesh;
-                
 
                 return object;
               })();
@@ -496,15 +494,118 @@ class ZDraw {
               };
               entityApi.paperStates = paperStates;
 
+              const clearHoverStates = {
+                left: ui.makeMenuHoverState(),
+                right: ui.makeMenuHoverState(),
+              };
+
+              const clearDotMeshes = {
+                left: ui.makeMenuDotMesh(),
+                right: ui.makeMenuDotMesh(),
+              };
+              scene.add(clearDotMeshes.left);
+              scene.add(clearDotMeshes.right);
+
+              const clearBoxMeshes = {
+                left: ui.makeMenuBoxMesh(),
+                right: ui.makeMenuBoxMesh(),
+              };
+              scene.add(clearBoxMeshes.left);
+              scene.add(clearBoxMeshes.right);
+
+              const _triggerdown = e => {
+                const {side} = e;
+                const clearHoverState = clearHoverStates[side];
+                const {anchor} = clearHoverState;
+                const onclick = (anchor && anchor.onclick) || '';
+
+                if (onclick === 'clear') {
+                  const {
+                    planeMesh: {
+                      material: {
+                        map: texture,
+                      },
+                    },
+                  } = mesh;
+                  const {image: canvas} = texture;
+
+                  canvas.ctx.fillStyle = '#FFF';
+                  canvas.ctx.fillRect(0, 0, canvas.width, canvas.height);
+                  texture.needsUpdate = true;
+
+                  const {width, height} = canvas;
+                  const data = canvas.ctx.getImageData(0, 0, width, height).data.buffer;
+                  _broadcastUpdate({
+                    x: 0,
+                    y: 0,
+                    width: width,
+                    height: height,
+                    canvasWidth: width,
+                    canvasHeight: height,
+                    data: data,
+                  });
+
+                  e.stopImmediatePropagation();
+                }
+              };
+              input.on('triggerdown', _triggerdown);
+
+              const _update = () => {
+                const {gamepads} = pose.getStatus();
+
+                const {clearMesh} = mesh;
+                const matrixObject = _decomposeObjectMatrixWorld(clearMesh);
+                const {page} = clearMesh;
+
+                SIDES.forEach(side => {
+                  const gamepad = gamepads[side];
+
+                  if (gamepad) {
+                    const {position: controllerPosition, rotation: controllerRotation, scale: controllerScale} = gamepad;
+
+                    const clearHoverState = clearHoverStates[side];
+                    const clearDotMesh = clearDotMeshes[side];
+                    const clearBoxMesh = clearBoxMeshes[side];
+
+                    ui.updateAnchors({
+                      objects: [{
+                        matrixObject: matrixObject,
+                        page: page,
+                        width: CLEAR_WIDTH,
+                        height: CLEAR_HEIGHT,
+                        worldWidth: WORLD_CLEAR_WIDTH,
+                        worldHeight: WORLD_CLEAR_HEIGHT,
+                        worldDepth: WORLD_CLEAR_DEPTH,
+                      }],
+                      hoverState: clearHoverState,
+                      dotMesh: clearDotMesh,
+                      boxMesh: clearBoxMesh,
+                      controllerPosition,
+                      controllerRotation,
+                      controllerScale,
+                    });
+                  }
+                });
+              };
+              render.on('update', _update);
+
               papers.push(entityApi);
 
               entityApi._cleanup = () => {
                 entityObject.remove(mesh);
 
-                const {cancelSave} = entityApi;
+                /* const {cancelSave} = entityApi;
                 if (cancelSave) {
                   cancelSave();
-                }
+                } */
+
+                SIDES.forEach(side => {
+                  scene.remove(clearDotMeshes[side]);
+                  scene.remove(clearBoxMeshes[side]);
+                });
+
+                input.removeListener('triggerdown', _triggerdown);
+                render.removeListener('update', _update);
 
                 papers.splice(papers.indexOf(entityApi), 1);
               };

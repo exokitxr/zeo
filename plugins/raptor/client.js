@@ -337,7 +337,7 @@ class Raptor {
                   w: WIDTH,
                   h: HEIGHT,
                 }), {
-                  type: 'avatar',
+                  type: 'raptor',
                   state: {
                     avatar: avatarState,
                   },
