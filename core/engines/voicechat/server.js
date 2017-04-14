@@ -105,7 +105,7 @@ class VoiceChat {
 
       let match;
       if (match = url.match(/\/archae\/voicechatWs\?id=(.+)$/)) {
-        const peerId = match[1];
+        const peerId = decodeURIComponent(match[1]);
 
         c.peerId = peerId;
         c.on('message', (msg, flags) => {
@@ -113,7 +113,7 @@ class VoiceChat {
             const audioBuffer = _getAudioBuffer(c.peerId);
             audioBuffer.write(msg);
           } else {
-            console.warn('voicechat inalid message', {msg, flags});
+            console.warn('voicechat invalid message', {msg, flags});
           }
         });
         c.on('close', () => {
