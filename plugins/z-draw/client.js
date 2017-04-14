@@ -114,7 +114,7 @@ class ZDraw {
           const papers = [];
 
           const paperComponent = {
-            selector: 'paper[position]',
+            selector: 'paper[position][paper-id]',
             attributes: {
               position: {
                 type: 'matrix',
@@ -123,6 +123,10 @@ class ZDraw {
                   0, 0, 0, 1,
                   1, 1, 1,
                 ],
+              },
+              'paper-id': {
+                type: 'text',
+                value: _makeId,
               },
               file: {
                 type: 'file',
@@ -240,6 +244,8 @@ class ZDraw {
                 entityObject.quaternion.set(position[3], position[4], position[5], position[6]);
                 entityObject.scale.set(position[7], position[8], position[9]);
               };
+
+              entityApi.paperId = null;
 
               entityApi.render = () => {
                 const {file} = entityApi;
@@ -414,6 +420,11 @@ class ZDraw {
                   entityApi.position = newValue;
 
                   entityApi.align();
+
+                  break;
+                }
+                case 'paper-id': {
+                  entityApi.paperId = newValue;
 
                   break;
                 }
@@ -769,11 +780,12 @@ class ZDraw {
                                     maxY = Math.max(maxY, localMaxY);
                                   }
 
+                                  const {paperId} = paper;
                                   const width = maxX - minX;
                                   const height = maxY - minY;
                                   const data = canvas.ctx.getImageData(minX, minY, width, height).data.buffer;
                                   _broadcastUpdate({
-                                    drawId: 'lol', // XXX
+                                    drawId: paperId,
                                     x: minX,
                                     y: minY,
                                     width: width,
@@ -908,7 +920,7 @@ class ZDraw {
                 const {drawId, x, y, width, height} = currentRemoteDrawSpec;
                 const {data} = msg;
 
-                const paper = papers[0]; // XXX need to find the right paper by drawId
+                const paper = papers.find(paper => paper.paperId === drawId);
                 paper.draw(x, y, width, height, data);
               } else {
                 console.warn('buffer data before remote peer id', msg);
@@ -950,6 +962,7 @@ const _relativeWsUrl = s => {
   const l = window.location;
   return ((l.protocol === 'https:') ? 'wss://' : 'ws://') + l.host + l.pathname + (!/\/$/.test(l.pathname) ? '/' : '') + s;
 };
+const _makeId = () => Math.random().toString(36).substring(7);
 const sq = n => Math.sqrt((n * n) + (n * n));
 
 module.exports = ZDraw;
