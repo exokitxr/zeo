@@ -298,7 +298,7 @@ class Fs {
 
           write(data) {
             const {url} = this;
-            const match = url.match(/^\/fs\/([^\/]+)(\/.*)$/);
+            const match = url.match(/^fs\/([^\/]+)(\/.*)$/);
 
             if (match) {
               const id = match[1];
