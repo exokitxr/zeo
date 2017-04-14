@@ -11,7 +11,7 @@ class Fs {
 
   mount() {
     const {_archae: archae} = this;
-    const {express, app, dirname} = archae.getCore();
+    const {express, app, dirname, dataDirectory} = archae.getCore();
 
     const cleanups = [];
     this._cleanup = () => {
@@ -25,7 +25,7 @@ class Fs {
       live = false;
     });
 
-    const fsPath = path.join(dirname, 'data', 'fs');
+    const fsPath = path.join(dirname, dataDirectory, 'fs');
     const _ensureFsDirectory = () => new Promise((accept, reject) => {
       mkdirp(fsPath, err => {
         if (!err) {
@@ -210,14 +210,14 @@ class Fs {
           });
 
           class FsFile {
-            constructor(id, pathname) {
-              this.id = id;
+            constructor(dirname, pathname) {
+              this.dirname = dirname;
               this.pathname = pathname;
             }
 
             getPath() {
-              const {id, pathname} = this;
-              return path.join(fsPath, id, pathname);
+              const {dirname, pathname} = this;
+              return path.join(fsPath, dirname, pathname);
             }
 
             createReadStream() {
@@ -237,7 +237,7 @@ class Fs {
             }
           }
 
-          const _makeFile = (id, pathname) => new FsFile(id, pathname);
+          const _makeFile = (dirname, pathname) => new FsFile(dirname, pathname);
 
           return {
             makeFile: _makeFile,

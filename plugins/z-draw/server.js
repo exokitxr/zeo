@@ -33,7 +33,7 @@ class Draw {
 
       for (let i = 0; i < connections.length; i++) {
         const connection = connections[i];
-        // if (connection.peerId !== peerId) { // XXX block this to only go through
+        // if (connection.peerId !== peerId) { // XXX block this to only go through for non-same peers
           connection.send(es);
           connection.send(data);
         // }
@@ -102,13 +102,6 @@ class Draw {
           } else {
             console.warn('draw server no paper entity tag to send', {drawId});
           }
-
-          /* const e = {
-            type: 'init',
-            statuses: _getAllStatuses(),
-          };
-          const es = JSON.stringify(e);
-          c.send(es); */
         };
         _sendInit();
 
