@@ -30,7 +30,7 @@
     "node": "7.9.0"
   },
   "dependencies": {
-    "archae": "0.0.61",
+    "archae": "0.0.62",
     "base128": "^0.2.1",
     "body-parser": "^1.16.1",
     "cli-spinner": "^0.2.6",
