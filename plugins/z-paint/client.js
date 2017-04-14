@@ -13,7 +13,8 @@ const SIDES = ['left', 'right'];
 
 class ZPaint {
   mount() {
-    const {three: {THREE, scene}, elements, input, pose, world, render, utils: {function: funUtils, geometry: geometryUtils, menu: menuUtils}} = zeo;
+    const {three: {THREE, scene}, elements, input, pose, world, render, utils: {function: funUtils, networkUtils, geometry: geometryUtils, menu: menuUtils}} = zeo;
+    const {AutoWs} = networkUtils;
 
     const colorWheelImg = menuUtils.getColorWheelImg();
 
@@ -182,6 +183,66 @@ class ZPaint {
                 coreMesh.material.color.copy(color);
               };
 
+              let connection = null;
+              const _ensureConnect = () => {
+                const {file} = entityApi;
+
+                if (file && !connection) {
+                  const peerId = player.getId();
+                  const {paintId} = entityApi;
+                  connection = new AutoWs(_relativeWsUrl('archae/paintWs?peerId=' + encodeURIComponent(peerId) + '&paintId=' + encodeURIComponent(paintId)));
+
+                  let currentRemotePaintSpec = null;
+                  connection.on('message', msg => {
+                    if (typeof msg.data === 'string') {
+                      const e = JSON.parse(msg.data) ;
+                      const {type} = e;
+
+                      if (type === 'drawSpec') {
+                        const {x, y, width, height, canvasWidth, canvasHeight} = e;
+                        currentRemotePaintSpec = {
+
+                          x,
+                          y,
+                          width,
+                          height,
+                          canvasWidth,
+                          canvasHeight,
+                        };
+                      } else {
+                        console.warn('unknown message type', JSON.stringify(type));
+                      }
+                    } else {
+                      if (currentRemoteDrawSpec !== null) {
+                        const {x, y, width, height, canvasWidth, canvasHeight} = currentRemoteDrawSpec;
+                        const {data} = msg;
+                        const {
+                          planeMesh: {
+                            material: {
+                              map: texture,
+                            },
+                          },
+                        } = mesh;
+                        const {image: canvas} = texture;
+
+                        const imageData = canvas.ctx.createImageData(width, height);
+                        const {data: imageDataData} = imageData;
+                        imageDataData.set(new Uint8Array(data));
+                        canvas.ctx.putImageData(imageData, x, y);
+
+                        texture.needsUpdate = true;
+                      } else {
+                        console.warn('buffer data before paint spec', msg);
+                      }
+                    }
+                  });
+                } else if (!file && connection) {
+                  connection.destroy();
+                  connection = null;
+                }
+              };
+              entityApi.ensureConnect = _ensureConnect;
+
               const _makePaintMesh = ({
                 positions = new Float32Array(MAX_NUM_POINTS * 2 * 3),
                 normals = new Float32Array(MAX_NUM_POINTS * 2 * 3),
@@ -249,7 +310,7 @@ class ZPaint {
 
               const meshes = [];
 
-              entityApi.load = () => {
+              /* entityApi.load = () => {
                 const {file} = entityApi;
 
                 if (file) {
@@ -355,7 +416,7 @@ class ZPaint {
                     cancelTimeout(timeout);
                   };
                 }
-              };
+              }; */
 
               const _makePaintState = () => ({
                 grabbed: false,
@@ -626,7 +687,7 @@ class ZPaint {
 
                         paintState.lastPointTime = worldTime;
 
-                        entityApi.save();
+                        // entityApi.save();
                       }
                     }
                   }
@@ -697,10 +758,17 @@ class ZPaint {
 
                   break;
                 }
+                case 'paint-id': {
+                  entityApi.paintId = newValue;
+
+                  entityApi.ensureConnect();
+
+                  break;
+                }
                 case 'file': {
                   entityApi.file = newValue;
 
-                  entityApi.load();
+                  /* entityApi.load();
 
                   if (!newValue) {
                     const {cancelSave} = entityApi;
@@ -709,7 +777,7 @@ class ZPaint {
                       cancelSave();
                       entityApi.cancelSave = null;
                     }
-                  }
+                  } */
 
                   break;
                 }
