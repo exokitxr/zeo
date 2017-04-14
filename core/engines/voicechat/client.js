@@ -25,6 +25,7 @@ export default class VoiceChat {
         '/core/engines/config',
         '/core/engines/multiplayer',
         '/core/utils/js-utils',
+        '/core/utils/network-utils',
       ])
         .then(([
           three,
@@ -34,12 +35,14 @@ export default class VoiceChat {
           config,
           multiplayer,
           jsUtils,
+          networkUtils,
         ]) => {
           if (live) {
             const {THREE} = three;
             const {sound} = somnifer;
             const {events} = jsUtils;
             const {EventEmitter} = events;
+            const {AutoWs} = networkUtils;
 
             const cleanups = [];
             const cleanup = () => {
@@ -57,42 +60,35 @@ export default class VoiceChat {
                 enabled = false;
               });
 
-              const _requestCallInterface = () => new Promise((accept, reject) => {
-                let remotePeerId = null;
+              const _requestCallInterface = () => {
+                let currentRemotePeerId = null;
 
-                const connection = new WebSocket(_relativeWsUrl('archae/voicechatWs?id=' + multiplayer.getId()));
-                connection.binaryType = 'arraybuffer';
-                connection.onopen = () => {
-                  accept(callInterface);
-                };
-                connection.onerror = err => {
-                  reject(err);
-                };
-                connection.onmessage = msg => {
+                const connection = new AutoWs(_relativeWsUrl('archae/voicechatWs?id=' + multiplayer.getId()));
+                connection.on('message', msg => {
                   if (typeof msg.data === 'string') {
                     const e = JSON.parse(msg.data) ;
                     const {type} = e;
 
                     if (type === 'id') {
                       const {id: messageId} = e;
-                      remotePeerId = messageId;
+                      currentRemotePeerId = messageId;
                     } else {
                       console.warn('unknown message type', JSON.stringify(type));
                     }
                   } else {
-                    if (remotePeerId !== null) {
+                    if (currentRemotePeerId !== null) {
                       callInterface.emit('buffer', {
-                        id: remotePeerId,
+                        id: currentRemotePeerId,
                         data: new Int16Array(msg.data),
                       });
                     } else {
                       console.warn('buffer data before remote peer id', msg);
                     }
                   }
-                };
-                connection.onclose = () => {
-                  callInterface.close();
-                };
+                });
+                connection.on('disconnect', () => {
+                  currentRemotePeerId = null;
+                });
 
                 class CallInterface extends EventEmitter {
                   constructor() {
@@ -102,9 +98,9 @@ export default class VoiceChat {
                   }
 
                   write(d) {
-                    if (connection.readyState === WebSocket.OPEN) {
-                      connection.send(d);
-                    }
+                    // XXX implment this; we want to drop data sent while we're not connected instead of queueing it up
+                    // connection.sendUnbuffered(d);
+                    connection.send(d);
                   }
 
                   close() {
@@ -117,15 +113,12 @@ export default class VoiceChat {
                     connection.close();
                   }
                 }
-
                 const callInterface = new CallInterface();
-
                 cleanups.push(() => {
                   callInterface.destroy();
                 });
-
-                return callInterface;
-              });
+                return Promise.resolve(callInterface);
+              };
               const _requestMicrophoneMediaStream = () => navigator.mediaDevices.getUserMedia({
                 audio: true,
               }).then(mediaStream => {
@@ -153,88 +146,83 @@ export default class VoiceChat {
                   callInterface,
                   mediaStream,
                 ]) => {
-                  if (callInterface.open) {
-                    const audioContext = THREE.AudioContext.getContext();
+                  const audioContext = THREE.AudioContext.getContext();
 
-                    const _makeSoundBody = id => {
-                      const remotePlayerMesh = multiplayer.getRemotePlayerMesh(id).children[0];
+                  const _makeSoundBody = id => {
+                    const remotePlayerMesh = multiplayer.getRemotePlayerMesh(id).children[0];
 
-                      const inputNode = new WebAudioBufferQueue({
-                        audioContext,
-                        // channels: 2,
-                        channels: 1,
-                        // bufferSize: 16384,
-                        objectMode: true,
-                      });
-
-                      const result = new sound.Body();
-                      result.setInputSource(inputNode);
-                      result.inputNode = inputNode;
-                      result.setObject(remotePlayerMesh);
-
-                      inputNode.write(new Int16Array(64 * 1024));
-
-                      return result;
-                    };
-
-                    const soundBodies = (() => {
-                      const playerStatuses = multiplayer.getPlayerStatuses();
-
-                      const result = new Map();
-                      playerStatuses.forEach((status, id) => {
-                        result.set(id, _makeSoundBody(id));
-                      });
-                      return result;
-                    })();
-
-                    const _playerEnter = ({id}) => {
-                      soundBodies.set(id, _makeSoundBody(id));
-                    };
-                    multiplayer.on('playerEnter', _playerEnter);
-                    const _playerLeave = ({id}) => {
-                      const soundBody = soundBodies.get(id);
-                      soundBody.destroy();
-
-                      soundBodies.delete(id);
-                    };
-                    multiplayer.on('playerLeave', _playerLeave);
-                    cleanups.push(() => {
-                      multiplayer.removeListener('playerEnter', _playerEnter);
-                      multiplayer.removeListener('playerLeave', _playerLeave);
+                    const inputNode = new WebAudioBufferQueue({
+                      audioContext,
+                      // channels: 2,
+                      channels: 1,
+                      // bufferSize: 16384,
+                      objectMode: true,
                     });
 
-                    callInterface.on('buffer', ({id, data}) => {
-                      const soundBody = soundBodies.get(id);
+                    const result = new sound.Body();
+                    result.setInputSource(inputNode);
+                    result.inputNode = inputNode;
+                    result.setObject(remotePlayerMesh);
 
-                      if (soundBody) {
-                        const {inputNode} = soundBody;
-                        inputNode.write(data);
-                      }
-                    });
+                    inputNode.write(new Int16Array(64 * 1024));
 
-                    callInterface.on('close', () => {
-                      mediaRecorder.stop();
-                    });
+                    return result;
+                  };
 
-                    const mediaRecorder = new MediaRecorder(mediaStream, {
-                      mimeType: 'audio/webm;codecs=opus',
+                  const soundBodies = (() => {
+                    const playerStatuses = multiplayer.getPlayerStatuses();
+
+                    const result = new Map();
+                    playerStatuses.forEach((status, id) => {
+                      result.set(id, _makeSoundBody(id));
                     });
-                    mediaRecorder.ondataavailable = e => {
-                      const {data: blob} = e;
-                      callInterface.write(blob);
-                    };
-                    const interval = setInterval(() => {
-                      if (mediaRecorder.state === 'recording') {
-                        mediaRecorder.requestData();
-                      }
-                    }, DATA_RATE);
-                    mediaRecorder.onstop = () => {
-                      clearInterval(interval);
-                    };
-                    mediaRecorder.start();
-                  } else {
-                    _closeMediaStream(mediaStream);
-                  }
+                    return result;
+                  })();
+
+                  const _playerEnter = ({id}) => {
+                    soundBodies.set(id, _makeSoundBody(id));
+                  };
+                  multiplayer.on('playerEnter', _playerEnter);
+                  const _playerLeave = ({id}) => {
+                    const soundBody = soundBodies.get(id);
+                    soundBody.destroy();
+
+                    soundBodies.delete(id);
+                  };
+                  multiplayer.on('playerLeave', _playerLeave);
+                  cleanups.push(() => {
+                    multiplayer.removeListener('playerEnter', _playerEnter);
+                    multiplayer.removeListener('playerLeave', _playerLeave);
+                  });
+
+                  callInterface.on('buffer', ({id, data}) => {
+                    const soundBody = soundBodies.get(id);
+
+                    if (soundBody) {
+                      const {inputNode} = soundBody;
+                      inputNode.write(data);
+                    }
+                  });
+
+                  const mediaRecorder = new MediaRecorder(mediaStream, {
+                    mimeType: 'audio/webm;codecs=opus',
+                  });
+                  mediaRecorder.ondataavailable = e => {
+                    const {data: blob} = e;
+                    callInterface.write(blob);
+                  };
+                  const interval = setInterval(() => {
+                    if (mediaRecorder.state === 'recording') {
+                      mediaRecorder.requestData();
+                    }
+                  }, DATA_RATE);
+                  mediaRecorder.start();
+
+                  cleanups.push(() => {
+                    mediaRecorder.stop();
+
+                    clearInterval(interval);
+                  });
                 });
             };
             const _disable = () => {

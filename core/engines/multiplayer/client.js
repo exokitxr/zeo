@@ -22,6 +22,7 @@ class Multiplayer {
         '/core/engines/assets',
         '/core/engines/rend',
         '/core/utils/js-utils',
+        '/core/utils/network-utils',
       ]).then(([
         three,
         webvr,
@@ -29,12 +30,14 @@ class Multiplayer {
         assets,
         rend,
         jsUtils,
+        networkUtils,
       ]) => {
         if (live) {
           const {THREE, scene, camera} = three;
           const {hmdModelMesh, controllerModelMesh} = assets;
           const {events} = jsUtils;
           const {EventEmitter} = events;
+          const {AutoWs} = networkUtils;
 
           const zeroVector = new THREE.Vector3();
           const zeroQuaternion = new THREE.Quaternion();
@@ -255,28 +258,14 @@ class Multiplayer {
           };
 
           let enabled = false;
-          const _enable = () => { // XXX handle race conditions here
+          const _enable = () => {
             enabled = true;
             cleanups.push(() => {
               enabled = false;
             });
 
-            const connection = new WebSocket(_relativeWsUrl('archae/multiplayerWs?id=' + encodeURIComponent(multiplayerApi.getId()) + '&username=' + encodeURIComponent(login.getUsername())));
-            const queue = [];
-            connection.onopen = () => {
-              if (queue.length > 0) {
-                for (let i = 0; i < queue.length; i++) {
-                  const e = queue[i];
-                  const es = JSON.stringify(e);
-                  connection.send(es);
-                }
-                queue.length = 0;
-              }
-            };
-            connection.onerror = err => {
-              console.warn(err);
-            };
-            connection.onmessage = msg => {
+            const connection = new AutoWs(_relativeWsUrl('archae/multiplayerWs?id=' + encodeURIComponent(multiplayerApi.getId()) + '&username=' + encodeURIComponent(login.getUsername())));
+            connection.on('message', msg => {
               const m = JSON.parse(msg.data);
               const {type} = m;
 
@@ -297,7 +286,7 @@ class Multiplayer {
               } else {
                 console.log('unknown message type', JSON.stringify(type));
               }
-            };
+            });
 
             const _handleStatusEntry = statusEntry => {
               const {id, status} = statusEntry;
@@ -334,23 +323,18 @@ class Multiplayer {
                 type: 'status',
                 status,
               };
+              const es = JSON.stringify(e);
 
-              if (connection.readyState === WebSocket.OPEN) {
-                const es = JSON.stringify(e);
-                connection.send(es);
-              } else {
-                queue.push(e);
-              }
+              connection.send(es);
             };
             multiplayerApi.on('status', _status);
-            connection.onclose = () => {
-              multiplayerApi.removeListener('status', _status);
-            };
 
             cleanups.push(() => {
               multiplayerApi.reset();
 
-              connection.close();
+              connection.destroy();
+
+              multiplayerApi.removeListener('status', _status);
             });
           };
           const _disable = () => {
