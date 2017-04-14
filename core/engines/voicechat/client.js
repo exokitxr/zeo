@@ -98,9 +98,7 @@ export default class VoiceChat {
                   }
 
                   write(d) {
-                    // XXX implment this; we want to drop data sent while we're not connected instead of queueing it up
-                    // connection.sendUnbuffered(d);
-                    connection.send(d);
+                    connection.sendUnbuffered(d);
                   }
 
                   close() {
