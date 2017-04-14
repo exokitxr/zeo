@@ -19,7 +19,8 @@ const SIDES = ['left', 'right'];
 
 class ZDraw {
   mount() {
-    const {three: {THREE}, input, elements, render, pose, utils: {geometry: geometryUtils, menu: menuUtils}} = zeo;
+    const {three: {THREE}, input, elements, render, pose, player, utils: {network: networkUtils, geometry: geometryUtils, menu: menuUtils}} = zeo;
+    const {AutoWs} = networkUtils;
 
     const colorWheelImg = menuUtils.getColorWheelImg();
 
@@ -735,6 +736,15 @@ class ZDraw {
                                     const x = lastPoint.x + (Math.cos(angle) * z) - halfBrushW;
                                     const y = lastPoint.y + (Math.sin(angle) * z) - halfBrushH;
                                     canvas.ctx.drawImage(colorBrushImg, x, y);
+
+                                    _broadcastUpdate({
+                                      drawId: 'lol', // XXX
+                                      x: x,
+                                      y: y,
+                                      width: colorBrushImg.width,
+                                      height: colorBrushImg.height,
+                                      data: Uint8Array.from([0, 1, 2]).buffer,
+                                    });
                                   }
 
                                   texture.needsUpdate = true;
@@ -840,6 +850,52 @@ class ZDraw {
           };
           worldElement.addEventListener('message', _message);
 
+          let currentRemoteDrawSpec = null;
+          const connection = new AutoWs(_relativeWsUrl('archae/drawWs?peerId=' + encodeURIComponent(player.getId())));
+          connection.on('message', msg => {
+            if (typeof msg.data === 'string') {
+              const e = JSON.parse(msg.data) ;
+              const {type} = e;
+
+              if (type === 'drawSpec') {
+                const {drawId, x, y, width, height} = e;
+                currentRemoteDrawSpec = {
+                  drawId,
+                  x,
+                  y,
+                  width,
+                  height,
+                };
+              } else {
+                console.warn('unknown message type', JSON.stringify(type));
+              }
+            } else {
+              if (currentRemoteDrawSpec !== null) {
+                console.log('got remote draw', { // XXX actually handle this
+                  drawSpec: currentRemoteDrawSpec,
+                  data: new Uint8Array(msg.data),
+                });
+              } else {
+                console.warn('buffer data before remote peer id', msg);
+              }
+            }
+          });
+
+          const _broadcastUpdate = ({drawId, x, y, width, height, data}) => {
+            const e = {
+              type: 'drawSpec',
+              drawId,
+              x,
+              y,
+              width,
+              height,
+            };
+            const es = JSON.stringify(e);
+
+            connection.send(es);
+            connection.send(data);
+          };
+
           this._cleanup = () => {
             elements.unregisterComponent(this, paperComponent);
             elements.unregisterComponent(this, pencilComponent);
@@ -855,6 +911,10 @@ class ZDraw {
   }
 }
 
+const _relativeWsUrl = s => {
+  const l = window.location;
+  return ((l.protocol === 'https:') ? 'wss://' : 'ws://') + l.host + l.pathname + (!/\/$/.test(l.pathname) ? '/' : '') + s;
+};
 const sq = n => Math.sqrt((n * n) + (n * n));
 
 module.exports = ZDraw;
