@@ -6,9 +6,16 @@ const HEIGHT = Math.round(WIDTH / ASPECT_RATIO);
 const WORLD_WIDTH = 0.3;
 const WORLD_HEIGHT = WORLD_WIDTH / ASPECT_RATIO;
 
+const CLEAR_WIDTH = 600;
+const CLEAR_HEIGHT = CLEAR_WIDTH / 3;
+const WORLD_CLEAR_WIDTH = 0.1;
+const WORLD_CLEAR_HEIGHT = WORLD_CLEAR_WIDTH / 3;
+const WORLD_CLEAR_DEPTH = 0.01;
+
 const PAPER_DRAW_DISTANCE = 0.2;
 const BRUSH_SIZE = 8;
 const DIRTY_TIME = 1000;
+const CHUNK_SIZE = 32 * 1024;
 
 const DEFAULT_MATRIX = [
   0, 0, 0,
@@ -19,7 +26,8 @@ const SIDES = ['left', 'right'];
 
 class ZDraw {
   mount() {
-    const {three: {THREE}, input, elements, render, pose, utils: {geometry: geometryUtils, menu: menuUtils}} = zeo;
+    const {three: {THREE, scene}, input, elements, render, pose, player, ui, utils: {network: networkUtils, geometry: geometryUtils, menu: menuUtils}} = zeo;
+    const {AutoWs} = networkUtils;
 
     const colorWheelImg = menuUtils.getColorWheelImg();
 
@@ -108,12 +116,10 @@ class ZDraw {
         brushImg = _getScaledImg(brushImg, BRUSH_SIZE, BRUSH_SIZE);
 
         if (live) {
-          const worldElement = elements.getWorldElement();
-
           const papers = [];
 
           const paperComponent = {
-            selector: 'paper[position]',
+            selector: 'paper[position][paper-id]',
             attributes: {
               position: {
                 type: 'matrix',
@@ -122,6 +128,10 @@ class ZDraw {
                   0, 0, 0, 1,
                   1, 1, 1,
                 ],
+              },
+              'paper-id': {
+                type: 'text',
+                value: _makeId,
               },
               file: {
                 type: 'file',
@@ -226,6 +236,38 @@ class ZDraw {
                 object.add(lineMesh);
                 object.lineMesh = lineMesh;
 
+                const clearMesh = (() => {
+                  const menuUi = ui.makeUi({
+                    width: WORLD_CLEAR_WIDTH,
+                    height: WORLD_CLEAR_HEIGHT,
+                    // color: [1, 1, 1, 0],
+                  });
+                  const mesh = menuUi.addPage(() => ({
+                    type: 'html',
+                    src: `<div style="display: flex; width: ${CLEAR_WIDTH}px; height: ${CLEAR_HEIGHT}px; background-color: #EEE; justify-content: center; align-items: center;">
+                      <a style="display: flex; margin: 0 50px; padding: 0 30px; width: 100%; border: 3px solid; border-radius: 20px; justify-content: center; align-items: center; font-size: 100px; text-decoration: none;" onclick="clear">Clear</a>
+                    </div>`,
+                    x: 0,
+                    y: 0,
+                    w: CLEAR_WIDTH,
+                    h: CLEAR_HEIGHT,
+                  }), {
+                    type: 'paper',
+                    state: {},
+                    worldWidth: WORLD_CLEAR_WIDTH,
+                    worldHeight: WORLD_CLEAR_HEIGHT,
+                  });
+                  mesh.position.x = (WORLD_WIDTH / 2) - (WORLD_CLEAR_WIDTH / 2);
+                  mesh.position.y = (WORLD_HEIGHT / 2) + (WORLD_CLEAR_HEIGHT / 2);
+
+                  const {page} = mesh;
+                  page.update();
+
+                  return mesh;
+                })();
+                object.add(clearMesh);
+                object.clearMesh = clearMesh;
+
                 return object;
               })();
               entityObject.add(mesh);
@@ -240,6 +282,8 @@ class ZDraw {
                 entityObject.scale.set(position[7], position[8], position[9]);
               };
 
+              entityApi.paperId = null;
+
               entityApi.render = () => {
                 const {file} = entityApi;
                 const {planeMesh, placeholderMesh} = mesh;
@@ -253,17 +297,38 @@ class ZDraw {
                 }
               };
 
-              entityApi.load = () => {
+              let connection = null;
+              const _ensureConnect = () => {
                 const {file} = entityApi;
 
-                if (file) {
-                  file.read({ // XXX handle the no-file case
-                    type: 'arrayBuffer',
-                  })
-                    .then(arrayBuffer => {
-                      const arrayValue = new Uint8ClampedArray(arrayBuffer);
+                if (file && !connection) {
+                  const peerId = player.getId();
+                  const {paperId: drawId} = entityApi;
+                  connection = new AutoWs(_relativeWsUrl('archae/drawWs?peerId=' + encodeURIComponent(peerId) + '&drawId=' + encodeURIComponent(drawId)));
 
-                      if (arrayValue.length > 0) {
+                  let currentRemoteDrawSpec = null;
+                  connection.on('message', msg => {
+                    if (typeof msg.data === 'string') {
+                      const e = JSON.parse(msg.data) ;
+                      const {type} = e;
+
+                      if (type === 'drawSpec') {
+                        const {x, y, width, height, canvasWidth, canvasHeight} = e;
+                        currentRemoteDrawSpec = {
+                          x,
+                          y,
+                          width,
+                          height,
+                          canvasWidth,
+                          canvasHeight,
+                        };
+                      } else {
+                        console.warn('unknown message type', JSON.stringify(type));
+                      }
+                    } else {
+                      if (currentRemoteDrawSpec !== null) {
+                        const {x, y, width, height, canvasWidth, canvasHeight} = currentRemoteDrawSpec;
+                        const {data} = msg;
                         const {
                           planeMesh: {
                             material: {
@@ -271,93 +336,42 @@ class ZDraw {
                             },
                           },
                         } = mesh;
-                        const {
-                          image: canvas,
-                        } = texture;
-                        const {ctx} = canvas;
-                        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                        const {image: canvas} = texture;
+
+                        const imageData = canvas.ctx.createImageData(width, height);
                         const {data: imageDataData} = imageData;
+                        imageDataData.set(new Uint8Array(data));
+                        canvas.ctx.putImageData(imageData, x, y);
 
-                        if (arrayValue.length === imageDataData.length) {
-                          imageDataData.set(arrayValue);
-                          ctx.putImageData(imageData, 0, 0);
-                          texture.needsUpdate = true;
-                        } else {
-                          console.warn('draw paper tried to load invalid file data', {data: arrayValue});
-                        }
+                        texture.needsUpdate = true;
+                      } else {
+                        console.warn('buffer data before remote peer id', msg);
                       }
-                    });
-                } else {
-                  SIDES.forEach(side => {
-                    const pencilState = pencilStates[side];
-                    pencilState.drawing = false;
+                    }
                   });
+                } else if (!file && connection) {
+                  connection.destroy();
+                  connection = null;
                 }
               };
-              let dirtyFlag = false;
-              entityApi.cancelSave = null;
-              entityApi.save = () => {
-                const {cancelSave} = entityApi;
+              entityApi.ensureConnect = _ensureConnect;
 
-                if (!cancelSave) {
-                  const timeout = setTimeout(() => {
-                    const {file} = entityApi;
+              const _broadcastUpdate = ({x, y, width, height, canvasWidth, canvasHeight, data}) => {
+                const e = {
+                  type: 'drawSpec',
+                  x,
+                  y,
+                  width,
+                  height,
+                  canvasWidth,
+                  canvasHeight,
+                };
+                const es = JSON.stringify(e);
 
-                    const {
-                      planeMesh: {
-                        material: {
-                          map: {
-                            image: canvas,
-                          },
-                        },
-                      },
-                    } = mesh;
-                    const imageData = canvas.ctx.getImageData(0, 0, canvas.width, canvas.height);
-                    const {data: imageDataData} = imageData;
-
-                    const _cleanup = () => {
-                      entityApi.cancelSave = null;
-
-                      if (dirtyFlag) {
-                        dirtyFlag = false;
-
-                        entityApi.save();
-                      }
-                    };
-
-                    let live = true;
-                    file.write(imageDataData)
-                      .then(() => {
-                        if (live) {
-                          const broadcastEvent = new CustomEvent('broadcast', {
-                            detail: {
-                              type: 'paper.update',
-                              id: entityElement.getId(),
-                            },
-                          });
-                          worldElement.dispatchEvent(broadcastEvent);
-
-                          _cleanup();
-                        }
-                      })
-                      .catch(err => {
-                        console.warn(err);
-
-                        _cleanup();
-                      });
-
-                    entityApi.cancelSave = () => {
-                      live = false;
-                    };
-
-                    dirtyFlag = false;
-                  }, DIRTY_TIME);
-
-                  entityApi.cancelSave = () => {
-                    cancelTimeout(timeout);
-                  };
-                }
+                connection.send(es);
+                connection.send(data);
               };
+              entityApi.broadcastUpdate = _broadcastUpdate;
 
               const _makePaperState = () => ({
                 lastPoint: null,
@@ -368,15 +382,126 @@ class ZDraw {
               };
               entityApi.paperStates = paperStates;
 
+              const clearHoverStates = {
+                left: ui.makeMenuHoverState(),
+                right: ui.makeMenuHoverState(),
+              };
+
+              const clearDotMeshes = {
+                left: ui.makeMenuDotMesh(),
+                right: ui.makeMenuDotMesh(),
+              };
+              scene.add(clearDotMeshes.left);
+              scene.add(clearDotMeshes.right);
+
+              const clearBoxMeshes = {
+                left: ui.makeMenuBoxMesh(),
+                right: ui.makeMenuBoxMesh(),
+              };
+              scene.add(clearBoxMeshes.left);
+              scene.add(clearBoxMeshes.right);
+
+              const _triggerdown = e => {
+                const {side} = e;
+                const clearHoverState = clearHoverStates[side];
+                const {anchor} = clearHoverState;
+                const onclick = (anchor && anchor.onclick) || '';
+
+                if (onclick === 'clear') {
+                  const {
+                    planeMesh: {
+                      material: {
+                        map: texture,
+                      },
+                    },
+                  } = mesh;
+                  const {image: canvas} = texture;
+                  const {width, height} = canvas;
+
+                  canvas.ctx.fillStyle = '#FFF';
+                  canvas.ctx.fillRect(0, 0, width, height);
+                  texture.needsUpdate = true;
+
+                  const data = canvas.ctx.getImageData(0, 0, width, height).data.buffer;
+                  const rowsPerChunk = Math.floor(CHUNK_SIZE / height);
+                  const _recurse = i => {
+                    const x = 0;
+                    const y = i * rowsPerChunk;
+
+                    if (y < height) {
+                      _broadcastUpdate({
+                        x: x,
+                        y: y,
+                        width: width,
+                        height: rowsPerChunk,
+                        canvasWidth: width,
+                        canvasHeight: height,
+                        data: data.slice(y * width * 4, (y + rowsPerChunk) * width * 4),
+                      });
+
+                      requestAnimationFrame(() => {
+                        _recurse(i + 1);
+                      });
+                    }
+                  };
+                  _recurse(0);
+
+                  e.stopImmediatePropagation();
+                }
+              };
+              input.on('triggerdown', _triggerdown);
+
+              const _update = () => {
+                const {gamepads} = pose.getStatus();
+
+                const {clearMesh} = mesh;
+                const matrixObject = _decomposeObjectMatrixWorld(clearMesh);
+                const {page} = clearMesh;
+
+                SIDES.forEach(side => {
+                  const gamepad = gamepads[side];
+
+                  if (gamepad) {
+                    const {position: controllerPosition, rotation: controllerRotation, scale: controllerScale} = gamepad;
+
+                    const clearHoverState = clearHoverStates[side];
+                    const clearDotMesh = clearDotMeshes[side];
+                    const clearBoxMesh = clearBoxMeshes[side];
+
+                    ui.updateAnchors({
+                      objects: [{
+                        matrixObject: matrixObject,
+                        page: page,
+                        width: CLEAR_WIDTH,
+                        height: CLEAR_HEIGHT,
+                        worldWidth: WORLD_CLEAR_WIDTH,
+                        worldHeight: WORLD_CLEAR_HEIGHT,
+                        worldDepth: WORLD_CLEAR_DEPTH,
+                      }],
+                      hoverState: clearHoverState,
+                      dotMesh: clearDotMesh,
+                      boxMesh: clearBoxMesh,
+                      controllerPosition,
+                      controllerRotation,
+                      controllerScale,
+                    });
+                  }
+                });
+              };
+              render.on('update', _update);
+
               papers.push(entityApi);
 
               entityApi._cleanup = () => {
                 entityObject.remove(mesh);
 
-                const {cancelSave} = entityApi;
-                if (cancelSave) {
-                  cancelSave();
-                }
+                SIDES.forEach(side => {
+                  scene.remove(clearDotMeshes[side]);
+                  scene.remove(clearBoxMeshes[side]);
+                });
+
+                input.removeListener('triggerdown', _triggerdown);
+                render.removeListener('update', _update);
 
                 papers.splice(papers.indexOf(entityApi), 1);
               };
@@ -397,21 +522,16 @@ class ZDraw {
 
                   break;
                 }
+                case 'paper-id': {
+                  entityApi.paperId = newValue;
+
+                  break;
+                }
                 case 'file': {
                   entityApi.file = newValue;
 
                   entityApi.render();
-
-                  if (newValue) {
-                    entityApi.load();
-                  } else {
-                    const {cancelSave} = entityApi;
-
-                    if (cancelSave) {
-                      cancelSave();
-                      entityApi.cancelSave = null;
-                    }
-                  }
+                  entityApi.ensureConnect();
 
                   break;
                 }
@@ -730,16 +850,40 @@ class ZDraw {
                                     return mod(Math.atan2(dy, dx), Math.PI * 2);
                                   })();
 
-
+                                  let minX = Infinity;
+                                  let maxX = -Infinity;
+                                  let minY = Infinity;
+                                  let maxY = -Infinity;
                                   for (let z = 0; z <= distance || z === 0; z++) {
                                     const x = lastPoint.x + (Math.cos(angle) * z) - halfBrushW;
                                     const y = lastPoint.y + (Math.sin(angle) * z) - halfBrushH;
                                     canvas.ctx.drawImage(colorBrushImg, x, y);
+
+                                    const localMinX = Math.floor(x);
+                                    const localMaxX = Math.min(localMinX + colorBrushImg.width, canvas.width);
+                                    const localMinY = Math.floor(y);
+                                    const localMaxY = Math.min(localMinY + colorBrushImg.height, canvas.height);
+                                    minX = Math.min(minX, localMinX);
+                                    maxX = Math.max(maxX, localMaxX);
+                                    minY = Math.min(minY, localMinY);
+                                    maxY = Math.max(maxY, localMaxY);
                                   }
 
                                   texture.needsUpdate = true;
 
-                                  paper.save();
+                                  const {paperId} = paper;
+                                  const width = maxX - minX;
+                                  const height = maxY - minY;
+                                  const data = canvas.ctx.getImageData(minX, minY, width, height).data.buffer;
+                                  paper.broadcastUpdate({
+                                    x: minX,
+                                    y: minY,
+                                    width: width,
+                                    height: height,
+                                    canvasWidth: canvas.width,
+                                    canvasHeight: canvas.height,
+                                    data: data,
+                                  });
 
                                   paperState.lastPoint = currentPoint;
                                 }
@@ -818,33 +962,9 @@ class ZDraw {
           };
           elements.registerComponent(this, pencilComponent);
 
-          const _message = e => {
-            const {detail: {type}} = e;
-
-            if (type === 'paper') {
-              const {id} = detail;
-
-              for (let i = 0; i < papers.length; i++) {
-                const paper = papers[i];
-                const {entityElement} = paper;
-
-                if (entityElement.getId() === id) {
-                  const {file} = entityElement;
-
-                  if (file) {
-                    entityElement.load();
-                  }
-                }
-              }
-            }
-          };
-          worldElement.addEventListener('message', _message);
-
           this._cleanup = () => {
             elements.unregisterComponent(this, paperComponent);
             elements.unregisterComponent(this, pencilComponent);
-
-            worldElement.removeEventListener('message', _message);
           };
         }
       });
@@ -855,6 +975,11 @@ class ZDraw {
   }
 }
 
+const _relativeWsUrl = s => {
+  const l = window.location;
+  return ((l.protocol === 'https:') ? 'wss://' : 'ws://') + l.host + l.pathname + (!/\/$/.test(l.pathname) ? '/' : '') + s;
+};
+const _makeId = () => Math.random().toString(36).substring(7);
 const sq = n => Math.sqrt((n * n) + (n * n));
 
 module.exports = ZDraw;

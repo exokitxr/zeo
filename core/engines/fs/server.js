@@ -11,7 +11,7 @@ class Fs {
 
   mount() {
     const {_archae: archae} = this;
-    const {express, app, dirname} = archae.getCore();
+    const {express, app, dirname, dataDirectory} = archae.getCore();
 
     const cleanups = [];
     this._cleanup = () => {
@@ -25,7 +25,7 @@ class Fs {
       live = false;
     });
 
-    const fsPath = path.join(dirname, 'data', 'fs');
+    const fsPath = path.join(dirname, dataDirectory, 'fs');
     const _ensureFsDirectory = () => new Promise((accept, reject) => {
       mkdirp(fsPath, err => {
         if (!err) {
@@ -208,6 +208,44 @@ class Fs {
             }
             app._router.stack.forEach(removeMiddlewares);
           });
+
+          class FsFile {
+            constructor(dirname, pathname) {
+              this.dirname = dirname;
+              this.pathname = pathname;
+            }
+
+            getPath() {
+              const {dirname, pathname} = this;
+              return path.join(fsPath, dirname, pathname);
+            }
+
+            createReadStream() {
+              return fs.createReadStream(this.getPath());
+            }
+
+            createWriteStream(opts) {
+              return fs.createWriteStream(this.getPath(), opts);
+            }
+
+            read(opts) {
+              return new Promise((accept, reject) => {
+                fs.readFile(this.getPath(), opts, (err, result) => {
+                  if (!err) {
+                    accept(result);
+                  } else {
+                    reject(err);
+                  }
+                });
+              });
+            }
+          }
+
+          const _makeFile = (dirname, pathname) => new FsFile(dirname, pathname);
+
+          return {
+            makeFile: _makeFile,
+          };
         }
       });
   }

@@ -528,6 +528,12 @@ class World {
               connection.close();
             }
           };
+
+          const _getTags = () => tagsJson.tags;
+
+          return {
+            getTags: _getTags,
+          };
         }
       });
   }

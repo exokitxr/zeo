@@ -565,6 +565,10 @@ class Zeo {
                       getWorldTime() {
                         return bootstrap.getWorldTime();
                       }
+
+                      getTags() {
+                        return bootstrap.getWorldTime();
+                      }
                     }
 
                     const controllerMeshes = (() => {
