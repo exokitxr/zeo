@@ -360,6 +360,25 @@ class ZDraw {
                 }
               };
 
+              const _draw = (x, y, width, height, data) => {
+                const {
+                  planeMesh: {
+                    material: {
+                      map: texture,
+                    },
+                  },
+                } = mesh;
+                const {image: canvas} = texture;
+
+                const imageData = canvas.ctx.createImageData(width, height);
+                const {data: imageDataData} = imageData;
+                imageDataData.set(new Uint8Array(data));
+                canvas.ctx.putImageData(imageData, x, y);
+
+                texture.needsUpdate = true;
+              };
+              entityApi.draw = _draw;
+
               const _makePaperState = () => ({
                 lastPoint: null,
               });
@@ -731,25 +750,40 @@ class ZDraw {
                                     return mod(Math.atan2(dy, dx), Math.PI * 2);
                                   })();
 
-
+                                  let minX = Infinity;
+                                  let maxX = -Infinity;
+                                  let minY = Infinity;
+                                  let maxY = -Infinity;
                                   for (let z = 0; z <= distance || z === 0; z++) {
                                     const x = lastPoint.x + (Math.cos(angle) * z) - halfBrushW;
                                     const y = lastPoint.y + (Math.sin(angle) * z) - halfBrushH;
                                     canvas.ctx.drawImage(colorBrushImg, x, y);
 
-                                    _broadcastUpdate({
-                                      drawId: 'lol', // XXX
-                                      x: x,
-                                      y: y,
-                                      width: colorBrushImg.width,
-                                      height: colorBrushImg.height,
-                                      data: Uint8Array.from([0, 1, 2]).buffer,
-                                    });
+                                    const localMinX = x;
+                                    const localMaxX = Math.min(x + colorBrushImg.width, canvas.width);
+                                    const localMinY = y;
+                                    const localMaxY = Math.min(y + colorBrushImg.height, canvas.height);
+                                    minX = Math.min(minX, localMinX);
+                                    maxX = Math.max(maxX, localMaxX);
+                                    minY = Math.min(minY, localMinY);
+                                    maxY = Math.max(maxY, localMaxY);
                                   }
 
-                                  texture.needsUpdate = true;
+                                  const width = maxX - minX;
+                                  const height = maxY - minY;
+                                  const data = canvas.ctx.getImageData(minX, minY, width, height).data.buffer;
+                                  _broadcastUpdate({
+                                    drawId: 'lol', // XXX
+                                    x: minX,
+                                    y: minY,
+                                    width: width,
+                                    height: height,
+                                    data: data,
+                                  });
 
-                                  paper.save();
+                                  // texture.needsUpdate = true;
+
+                                  // paper.save(); // XXX re-enable this
 
                                   paperState.lastPoint = currentPoint;
                                 }
@@ -828,7 +862,7 @@ class ZDraw {
           };
           elements.registerComponent(this, pencilComponent);
 
-          const _message = e => {
+          const _worldMessage = e => {
             const {detail: {type}} = e;
 
             if (type === 'paper') {
@@ -848,7 +882,7 @@ class ZDraw {
               }
             }
           };
-          worldElement.addEventListener('message', _message);
+          worldElement.addEventListener('message', _worldMessage);
 
           let currentRemoteDrawSpec = null;
           const connection = new AutoWs(_relativeWsUrl('archae/drawWs?peerId=' + encodeURIComponent(player.getId())));
@@ -871,10 +905,11 @@ class ZDraw {
               }
             } else {
               if (currentRemoteDrawSpec !== null) {
-                console.log('got remote draw', { // XXX actually handle this
-                  drawSpec: currentRemoteDrawSpec,
-                  data: new Uint8Array(msg.data),
-                });
+                const {drawId, x, y, width, height} = currentRemoteDrawSpec;
+                const {data} = msg;
+
+                const paper = papers[0]; // XXX need to find the right paper by drawId
+                paper.draw(x, y, width, height, data);
               } else {
                 console.warn('buffer data before remote peer id', msg);
               }
@@ -900,7 +935,7 @@ class ZDraw {
             elements.unregisterComponent(this, paperComponent);
             elements.unregisterComponent(this, pencilComponent);
 
-            worldElement.removeEventListener('message', _message);
+            worldElement.removeEventListener('message', _worldMessage);
           };
         }
       });
