@@ -208,6 +208,40 @@ class Fs {
             }
             app._router.stack.forEach(removeMiddlewares);
           });
+
+          class FsFile {
+            constructor(id, pathname) {
+              this.id = id;
+              this.pathname = pathname;
+            }
+
+            getPath() {
+              const {id, pathname} = this;
+              return path.join(fsPath, id, pathname);
+            }
+
+            createReadStream() {
+              return fs.createReadStream(this.getPath());
+            }
+
+            read(opts) {
+              return new Promise((accept, reject) => {
+                fs.readFile(this.getPath(), opts, (err, result) => {
+                  if (!err) {
+                    accept(result);
+                  } else {
+                    reject(err);
+                  }
+                });
+              });
+            }
+          }
+
+          const _makeFile = (id, pathname) => new FsFile(id, pathname);
+
+          return {
+            makeFile: _makeFile,
+          };
         }
       });
   }

@@ -8,6 +8,9 @@ class Draw {
   mount() {
     const {_archae: archae} = this;
     const {express, app, wss} = archae.getCore();
+    const {world, fs} = zeo;
+
+    const tagsJson = world.getTags();
 
     const drawBrushesStatic = express.static(path.join(__dirname, 'brushes'));
     function serveDrawBrushes(req, res, next) {
@@ -41,18 +44,73 @@ class Draw {
       const {url} = c.upgradeReq;
 
       let match;
-      if (match = url.match(/^\/archae\/drawWs\?peerId=(.+?)/)) {
+      if (match = url.match(/^\/archae\/drawWs\?peerId=(.+?)&drawId=(.+?)$/)) {
         const peerId = decodeURIComponent(match[1]);
+        const drawId = decodeURIComponent(match[2]);
 
-        /* const _sendInit = () => {
-          const e = {
+        const _sendInit = () => {
+          const paperEntityTag = (() => {
+            const tagIds = Object.keys(tagsJson);
+
+            for (let i = 0; i < tagIds.length; i++) {
+              const tagId = tagIds[i];
+              const tagJson = tagsJson[tagId];
+              const {type, name} = tagJson;
+
+              if (type === 'entity' && name === 'paper') {
+                const {attributes} = tagJson;
+                const {'paper-id': paperId} = attributes;
+
+                if (paperId) {
+                  const {value: paperIdValue} = paperId;
+
+                  if (paperIdValue === drawId) {
+                    return tagJson;
+                  }
+                }
+              }
+            }
+
+            return null;
+          })();
+          if (paperEntityTag) {
+            const {attributes} = paperEntityTag;
+            const {file: fileAttribute} = attributes;
+
+            if (fileAttribute) {
+              const {value} = fileAttribute;
+              const match = (value || '').match(/^fs\/([^\/]+)(\/.*)$/)
+
+              if (match) {
+                const id = match[1];
+                const path = match[2];
+
+                const file = fs.makeFile(id, path);
+                file.read('utf8')
+                  .then(data => {
+                    console.log('initial read draw file', data.length); // XXX actually serve this to the frontend
+                  })
+                  .catch(err => {
+                    console.warn(err);
+                  });
+              } else {
+                // non-local files cannot be served
+              }
+            } else {
+              console.warn('draw server no paper file to send', {paperEntityTag});
+            }
+          } else {
+            console.warn('draw server no paper entity tag to send', {drawId});
+          }
+
+          /* const e = {
             type: 'init',
             statuses: _getAllStatuses(),
           };
           const es = JSON.stringify(e);
-          c.send(es);
+          c.send(es); */
         };
-        _sendInit(); */
+        _sendInit();
 
         c.peerId = peerId;
 
@@ -60,7 +118,7 @@ class Draw {
         c.on('message', (msg, flags) => {
           if (flags.binary) {
             if (currentDrawSpec !== null) {
-              const {drawId, x, y, width, height} = currentDrawSpec;
+              const {x, y, width, height} = currentDrawSpec;
               const data = msg;
 
               _broadcastUpdate({
@@ -82,10 +140,9 @@ class Draw {
               const {type} = m;
 
               if (type === 'drawSpec') {
-                const {drawId, x, y, width, height} = m;
+                const {x, y, width, height} = m;
 
                 currentDrawSpec = {
-                  drawId,
                   x,
                   y,
                   width,

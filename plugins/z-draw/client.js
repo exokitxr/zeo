@@ -260,7 +260,7 @@ class ZDraw {
                 }
               };
 
-              entityApi.load = () => {
+              /* entityApi.load = () => {
                 const {file} = entityApi;
 
                 if (file) {
@@ -364,7 +364,51 @@ class ZDraw {
                     cancelTimeout(timeout);
                   };
                 }
+              }; */
+
+              let connection = null;
+              const _ensureConnect = () => {
+                const {file} = entityApi;
+
+                if (file && !connection) {
+                  const peerId = player.getId();
+                  const {paperId: drawId} = entityApi;
+                  connection = new AutoWs(_relativeWsUrl('archae/drawWs?peerId=' + encodeURIComponent(peerId) + '&drawId=' + encodeURIComponent(drawId)));
+
+                  let currentRemoteDrawSpec = null;
+                  connection.on('message', msg => {
+                    if (typeof msg.data === 'string') {
+                      const e = JSON.parse(msg.data) ;
+                      const {type} = e;
+
+                      if (type === 'drawSpec') {
+                        const {x, y, width, height} = e;
+                        currentRemoteDrawSpec = {
+                          x,
+                          y,
+                          width,
+                          height,
+                        };
+                      } else {
+                        console.warn('unknown message type', JSON.stringify(type));
+                      }
+                    } else {
+                      if (currentRemoteDrawSpec !== null) {
+                        const {x, y, width, height} = currentRemoteDrawSpec;
+                        const {data} = msg;
+
+                        _draw(x, y, width, height, data);
+                      } else {
+                        console.warn('buffer data before remote peer id', msg);
+                      }
+                    }
+                  });
+                } else if (!file && connection) {
+                  connection.destroy();
+                  connection = null;
+                }
               };
+              entityApi.ensureConnect = _ensureConnect;
 
               const _draw = (x, y, width, height, data) => {
                 const {
@@ -383,7 +427,21 @@ class ZDraw {
 
                 texture.needsUpdate = true;
               };
-              entityApi.draw = _draw;
+
+              const _broadcastUpdate = ({x, y, width, height, data}) => {
+                const e = {
+                  type: 'drawSpec',
+                  x,
+                  y,
+                  width,
+                  height,
+                };
+                const es = JSON.stringify(e);
+
+                connection.send(es);
+                connection.send(data);
+              };
+              entityApi.broadcastUpdate = _broadcastUpdate;
 
               const _makePaperState = () => ({
                 lastPoint: null,
@@ -432,8 +490,9 @@ class ZDraw {
                   entityApi.file = newValue;
 
                   entityApi.render();
+                  entityApi.ensureConnect();
 
-                  if (newValue) {
+                  /* if (newValue) {
                     entityApi.load();
                   } else {
                     const {cancelSave} = entityApi;
@@ -442,7 +501,7 @@ class ZDraw {
                       cancelSave();
                       entityApi.cancelSave = null;
                     }
-                  }
+                  } */
 
                   break;
                 }
@@ -784,8 +843,7 @@ class ZDraw {
                                   const width = maxX - minX;
                                   const height = maxY - minY;
                                   const data = canvas.ctx.getImageData(minX, minY, width, height).data.buffer;
-                                  _broadcastUpdate({
-                                    drawId: paperId,
+                                  paper.broadcastUpdate({
                                     x: minX,
                                     y: minY,
                                     width: width,
@@ -895,53 +953,6 @@ class ZDraw {
             }
           };
           worldElement.addEventListener('message', _worldMessage);
-
-          let currentRemoteDrawSpec = null;
-          const connection = new AutoWs(_relativeWsUrl('archae/drawWs?peerId=' + encodeURIComponent(player.getId())));
-          connection.on('message', msg => {
-            if (typeof msg.data === 'string') {
-              const e = JSON.parse(msg.data) ;
-              const {type} = e;
-
-              if (type === 'drawSpec') {
-                const {drawId, x, y, width, height} = e;
-                currentRemoteDrawSpec = {
-                  drawId,
-                  x,
-                  y,
-                  width,
-                  height,
-                };
-              } else {
-                console.warn('unknown message type', JSON.stringify(type));
-              }
-            } else {
-              if (currentRemoteDrawSpec !== null) {
-                const {drawId, x, y, width, height} = currentRemoteDrawSpec;
-                const {data} = msg;
-
-                const paper = papers.find(paper => paper.paperId === drawId);
-                paper.draw(x, y, width, height, data);
-              } else {
-                console.warn('buffer data before remote peer id', msg);
-              }
-            }
-          });
-
-          const _broadcastUpdate = ({drawId, x, y, width, height, data}) => {
-            const e = {
-              type: 'drawSpec',
-              drawId,
-              x,
-              y,
-              width,
-              height,
-            };
-            const es = JSON.stringify(e);
-
-            connection.send(es);
-            connection.send(data);
-          };
 
           this._cleanup = () => {
             elements.unregisterComponent(this, paperComponent);
