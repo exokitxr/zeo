@@ -15,6 +15,7 @@ const WORLD_CLEAR_DEPTH = 0.01;
 const PAPER_DRAW_DISTANCE = 0.2;
 const BRUSH_SIZE = 8;
 const DIRTY_TIME = 1000;
+const CHUNK_SIZE = 32 * 1024;
 
 const DEFAULT_MATRIX = [
   0, 0, 0,
@@ -528,22 +529,35 @@ class ZDraw {
                     },
                   } = mesh;
                   const {image: canvas} = texture;
+                  const {width, height} = canvas;
 
                   canvas.ctx.fillStyle = '#FFF';
-                  canvas.ctx.fillRect(0, 0, canvas.width, canvas.height);
+                  canvas.ctx.fillRect(0, 0, width, height);
                   texture.needsUpdate = true;
 
-                  const {width, height} = canvas;
                   const data = canvas.ctx.getImageData(0, 0, width, height).data.buffer;
-                  _broadcastUpdate({
-                    x: 0,
-                    y: 0,
-                    width: width,
-                    height: height,
-                    canvasWidth: width,
-                    canvasHeight: height,
-                    data: data,
-                  });
+                  const rowsPerChunk = Math.floor(CHUNK_SIZE / height);
+                  const _recurse = i => {
+                    const x = 0;
+                    const y = i * rowsPerChunk;
+
+                    if (y < height) {
+                      _broadcastUpdate({
+                        x: x,
+                        y: y,
+                        width: width,
+                        height: rowsPerChunk,
+                        canvasWidth: width,
+                        canvasHeight: height,
+                        data: data.slice(y * width * 4, (y + rowsPerChunk) * width * 4),
+                      });
+
+                      requestAnimationFrame(() => {
+                        _recurse(i + 1);
+                      });
+                    }
+                  };
+                  _recurse(0);
 
                   e.stopImmediatePropagation();
                 }
