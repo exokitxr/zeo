@@ -345,7 +345,7 @@ class ZDraw {
 
                         texture.needsUpdate = true;
                       } else {
-                        console.warn('buffer data before remote peer id', msg);
+                        console.warn('buffer data before draw spec', msg);
                       }
                     }
                   });
