@@ -1393,7 +1393,7 @@ class World {
 
                       if (match) {
                         const ext = match[1];
-                        const fakeMimeType = 'mime/' + ext;
+                        const fakeMimeType = 'mime/' + ext.toLowerCase();
 
                         return fs.getFileMode(fakeMimeType);
                       } else {
@@ -1429,9 +1429,14 @@ class World {
                     return mimeType;
                   } else {
                     const match = name.match(/\.([^.]+)$/);
-                    const suffix = match ? match[1] : 'blank';
 
-                    return 'mime/' + suffix;
+                    if (match) {
+                      const ext = match[1];
+
+                      return 'mime/' + ext.toLowerCase();
+                    } else {
+                      return 'mime/blank';
+                    }
                   }
                 })();
 
@@ -1551,7 +1556,7 @@ class World {
             makeFile({ext = 'txt'} = {}) {
               const id = _makeId();
               const name = id + '.' + ext;
-              const mimeType = 'mime/' + ext;
+              const mimeType = 'mime/' + ext.toLowerCase();
               const path = '/' + name;
               const file = new Blob([], {
                 type: mimeType,
