@@ -5,5 +5,8 @@
   "keywords": [],
   "client": "client.js",
   "server": "server.js",
-  "dependencies": {}
+  "dependencies": {
+    "functionutils": "0.0.2",
+    "multimutex": "0.0.2"
+  }
 }

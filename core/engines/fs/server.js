@@ -239,6 +239,18 @@ class Fs {
                 });
               });
             }
+
+            write(data, opts) {
+              return new Promise((accept, reject) => {
+                fs.writeFile(this.getPath(), data, opts, (err, result) => {
+                  if (!err) {
+                    accept(result);
+                  } else {
+                    reject(err);
+                  }
+                });
+              });
+            }
           }
 
           const _makeFile = (dirname, pathname) => new FsFile(dirname, pathname);

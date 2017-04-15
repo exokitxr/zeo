@@ -57,12 +57,12 @@ class Draw {
 
           if (match) {
             const id = match[1];
-            const path = match[2];
+            const pathname = match[2];
 
-            const file = fs.makeFile(id, path);
+            const file = fs.makeFile(id, pathname);
             accept(file);
           } else {
-            accept(null); // non-local files cannot be served
+            accept(null); // non-local file
           }
         } else {
           accept(null);

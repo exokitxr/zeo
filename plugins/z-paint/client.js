@@ -1,4 +1,6 @@
-const MAX_NUM_POINTS = 4 * 1024;
+const functionutils = require('functionutils');
+
+const MAX_NUM_POINTS = 1024;
 const POINT_FRAME_RATE = 20;
 const POINT_FRAME_TIME = 1000 / POINT_FRAME_RATE;
 const SIZE = 0.02;
@@ -13,7 +15,8 @@ const SIDES = ['left', 'right'];
 
 class ZPaint {
   mount() {
-    const {three: {THREE, scene}, elements, input, pose, world, render, utils: {function: funUtils, geometry: geometryUtils, menu: menuUtils}} = zeo;
+    const {three: {THREE, scene}, elements, input, pose, world, render, player, utils: {network: networkUtils, geometry: geometryUtils, menu: menuUtils}} = zeo;
+    const {AutoWs} = networkUtils;
 
     const colorWheelImg = menuUtils.getColorWheelImg();
 
@@ -36,10 +39,8 @@ class ZPaint {
     return _requestImage('archae/z-paint/brushes/brush.png')
       .then(brushImg => {
         if (live) {
-          const worldElement = elements.getWorldElement();
-
           const paintbrushComponent = {
-            selector: 'paintbrush[position][color]',
+            selector: 'paintbrush[position][paint-id][color]',
             attributes: {
               position: {
                 type: 'matrix',
@@ -49,6 +50,10 @@ class ZPaint {
                   1, 1, 1,
                 ],
               },
+              'paint-id': {
+                type: 'text',
+                value: _makeId,
+              },
               color: {
                 type: 'color',
                 value: '#F44336',
@@ -56,7 +61,7 @@ class ZPaint {
               file: {
                 type: 'file',
                 value: () => elements.makeFile({
-                  ext: 'raw',
+                  ext: 'json',
                 }).then(file => file.url),
               },
               grabbable: {
@@ -178,19 +183,77 @@ class ZPaint {
                 coreMesh.material.color.copy(color);
               };
 
-              const _makePaintMesh = ({
-                positions = new Float32Array(MAX_NUM_POINTS * 2 * 3),
-                normals = new Float32Array(MAX_NUM_POINTS * 2 * 3),
-                colors = new Float32Array(MAX_NUM_POINTS * 2 * 3),
-                uvs = new Float32Array(MAX_NUM_POINTS * 2 * 2),
-                numPoints = 0,
-              } = {}) => {
+              let connection = null;
+              const _ensureConnect = () => {
+                const {file} = entityApi;
+
+                if (file && !connection) {
+                  const peerId = player.getId();
+                  const {paintId} = entityApi;
+                  connection = new AutoWs(_relativeWsUrl('archae/paintWs?peerId=' + encodeURIComponent(peerId) + '&paintId=' + encodeURIComponent(paintId)));
+
+                  let currentRemotePaintSpec = null;
+                  connection.on('message', msg => {
+                    if (typeof msg.data === 'string') {
+                      const e = JSON.parse(msg.data) ;
+                      const {type} = e;
+
+                      if (type === 'paintSpec') {
+                        const {meshId} = e;
+                        currentRemotePaintSpec = {
+                          meshId,
+                        };
+                      } else {
+                        console.warn('unknown message type', JSON.stringify(type));
+                      }
+                    } else {
+                      if (currentRemotePaintSpec !== null) {
+                        const {meshId} = currentRemotePaintSpec;
+                        const {data} = msg;
+
+                        _loadMesh({meshId, data});
+                      } else {
+                        console.warn('buffer data before paint spec', msg);
+                      }
+                    }
+                  });
+                } else if (!file && connection) {
+                  _clearMeshes();
+
+                  SIDES.forEach(side => {
+                    const paintState = paintStates[side];
+                    paintState.painting = false;
+                  });
+
+                  connection.destroy();
+                  connection = null;
+                }
+              };
+              entityApi.ensureConnect = _ensureConnect;
+
+              const _broadcastUpdate = ({meshId, data}) => {
+                const e = {
+                  type: 'paintSpec',
+                  meshId: meshId,
+                };
+                const es = JSON.stringify(e);
+
+                connection.send(es);
+                connection.send(data);
+              };
+              entityApi.broadcastUpdate = _broadcastUpdate;
+
+              const _makePaintMesh = () => {
                 const geometry = new THREE.BufferGeometry();
+                const positions = new Float32Array(MAX_NUM_POINTS * 2 * 3);
                 geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+                const normals = new Float32Array(MAX_NUM_POINTS * 2 * 3);
                 geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
+                const colors = new Float32Array(MAX_NUM_POINTS * 2 * 3);
                 geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
+                const uvs = new Float32Array(MAX_NUM_POINTS * 2 * 2);
                 geometry.addAttribute('uv', new THREE.BufferAttribute(uvs, 2));
-                geometry.setDrawRange(0, numPoints * 2);
+                geometry.setDrawRange(0, 0);
 
                 const texture = new THREE.Texture(
                   brushImg,
@@ -216,141 +279,85 @@ class ZPaint {
 
                 const mesh = new THREE.Mesh(geometry, material);
                 mesh.drawMode = THREE.TriangleStripDrawMode;
+                mesh.visible = false;
                 mesh.frustumCulled = false;
-                mesh.visible = numPoints > 0;
-                mesh.lastPoint = numPoints;
-                mesh.getBuffer = () => {
-                  const {lastPoint} = mesh;
-                  const positionSize = lastPoint * 2 * 3;
-                  const uvSize = lastPoint * 2 * 2;
+                mesh.lastPoint = 0;
+                mesh.getBuffer = endPoint => {
+                  const positionSize = endPoint * 2 * 3;
+                  const uvSize = endPoint * 2 * 2;
                   const array = new Float32Array(
-                    1 + // length
                     positionSize + // position
                     positionSize + // normal
                     positionSize + // color
                     uvSize // uv
                   );
-                  array[0] = lastPoint; // length
-                  array.set(positions.slice(0, positionSize), 1); // position
-                  array.set(normals.slice(0, positionSize), 1 + positionSize); // normal
-                  array.set(colors.slice(0, positionSize), 1 + (positionSize * 2)); // color
-                  array.set(uvs.slice(0, uvSize), 1 + (positionSize * 3)); // uv
+                  array.set(positions.slice(0, positionSize), 0); // position
+                  array.set(normals.slice(0, positionSize), positionSize); // normal
+                  array.set(colors.slice(0, positionSize), positionSize * 2); // color
+                  array.set(uvs.slice(0, uvSize), positionSize * 3); // uv
 
-                  return new Uint8Array(array.buffer);
+                  return array.buffer;
                 };
 
                 return mesh;
               };
-              let mesh = null;
 
-              const meshes = [];
+              let currentMeshId = null;
+              let meshes = {};
 
-              entityApi.load = () => {
-                const {file} = entityApi;
+              const _loadMesh = ({meshId, data}) => {
+                let mesh = meshes[meshId];
+                if (!mesh) {
+                  mesh = _makePaintMesh();
+                  meshes[meshId] = mesh;
 
-                if (file) {
-                  file.read({
-                    type: 'arrayBuffer',
-                  })
-                    .then(arrayBuffer => {
-                      const array = new Float32Array(arrayBuffer);
-                      let frameIndex = 0;
-                      while (frameIndex < array.length) {
-                        const numPoints = Math.floor(array[frameIndex]);
-                        const positionSize = numPoints * 2 * 3;
-                        const uvSize = numPoints * 2 * 2;
-
-                        const positions = array.slice(frameIndex + 1, frameIndex + 1 + positionSize);
-                        const normals = array.slice(frameIndex + 1 + positionSize, frameIndex + 1 + (positionSize * 2));
-                        const colors = array.slice(frameIndex + 1 + (positionSize * 2), frameIndex + 1 + (positionSize * 3));
-                        const uvs = array.slice(frameIndex + 1 + (positionSize * 3), frameIndex + 1 + (positionSize * 3) + uvSize);
-
-                        const mesh = _makePaintMesh({
-                          positions,
-                          normals,
-                          colors,
-                          uvs,
-                          numPoints,
-                        });
-                        scene.add(mesh);
-                        meshes.push(mesh);
-
-                        frameIndex += 1 + (positionSize * 3) + uvSize;
-                      }
-                    });
-                } else {
-                  if (mesh) {
-                    scene.remove(mesh);
-                    mesh = null;
-                  }
-
-                  for (let i = 0; i < meshes.length; i++) {
-                    const mesh = meshes[i];
-                    scene.remove(mesh);
-                  }
-                  meshes.length = 0;
-
-                  SIDES.forEach(side => {
-                    const paintState = paintStates[side];
-                    paintState.painting = false;
-                  });
+                  scene.add(mesh);
                 }
+                const {geometry} = mesh;
+                const positionsAttribute = geometry.getAttribute('position');
+                const {array: positions} = positionsAttribute;
+                const normalsAttribute = geometry.getAttribute('normal');
+                const {array: normals} = normalsAttribute;
+                const colorsAttribute = geometry.getAttribute('color');
+                const {array: colors} = colorsAttribute;
+                const uvsAttribute = geometry.getAttribute('uv');
+                const {array: uvs} = uvsAttribute;
+                const {lastPoint: oldNumPoints} = mesh;
+
+                const array = new Float32Array(data);
+                const numPoints = array.length / ((2 * 3) + (2 * 3) + (2 * 3) + (2 * 2));
+                const dataPositionSize = numPoints * 2 * 3;
+                const dataUvSize = numPoints * 2 * 2;
+
+                const newPositions = array.slice(0, dataPositionSize);
+                const newNormals = array.slice(dataPositionSize, dataPositionSize * 2);
+                const newColors = array.slice(dataPositionSize * 2, dataPositionSize * 3);
+                const newUvs = array.slice(dataPositionSize * 3, (dataPositionSize * 3) + dataUvSize);
+
+                positions.set(newPositions);
+                normals.set(newNormals);
+                colors.set(newColors);
+                uvs.set(newUvs);
+                mesh.lastPoint = numPoints;
+
+                positionsAttribute.needsUpdate = true;
+                normalsAttribute.needsUpdate = true;
+                colorsAttribute.needsUpdate = true;
+                uvsAttribute.needsUpdate = true;
+                geometry.setDrawRange(0, numPoints * 2);
+
+                if (numPoints > 0 && !mesh.visible) {
+                  mesh.visible = true;
+                }
+
+                return mesh;
               };
-
-              let dirtyFlag = false;
-              entityApi.cancelSave = null;
-              entityApi.save = () => {
-                const {cancelSave} = entityApi;
-
-                if (!cancelSave) {
-                  const timeout = setTimeout(() => {
-                    const {file} = entityApi;
-
-                    const allMeshes = meshes.concat(mesh ? [mesh] : []);
-                    const b = _concatArrayBuffers(allMeshes.map(mesh => mesh.getBuffer()));
-
-                    const _cleanup = () => {
-                      entityApi.cancelSave = null;
-
-                      if (dirtyFlag) {
-                        dirtyFlag = false;
-
-                        entityApi.save();
-                      }
-                    };
-
-                    let live = true;
-                    file.write(b)
-                      .then(() => {
-                        if (live) {
-                          const broadcastEvent = new CustomEvent('broadcast', { // XXX handle this for multiplayer
-                            detail: {
-                              type: 'paintbrush.update',
-                              id: entityElement.getId(),
-                            },
-                          });
-                          worldElement.dispatchEvent(broadcastEvent);
-
-                          _cleanup();
-                        }
-                      })
-                      .catch(err => {
-                        console.warn(err);
-
-                        _cleanup();
-                      });
-
-                    entityApi.cancelSave = () => {
-                      live = false;
-                    };
-
-                    dirtyFlag = false;
-                  }, DIRTY_TIME);
-
-                  entityApi.cancelSave = () => {
-                    cancelTimeout(timeout);
-                  };
+              const _clearMeshes = () => {
+                for (const meshId in meshes) {
+                  const mesh = meshes[meshId];
+                  scene.remove(mesh);
                 }
+                meshes = {};
               };
 
               const _makePaintState = () => ({
@@ -392,11 +399,14 @@ class ZPaint {
                     paintState.painting = true;
                     paintState.lastPointTime = world.getWorldTime() - POINT_FRAME_TIME;
 
-                    const numPainting = funUtils.sum(SIDES.map(side => Number(paintStates[side].painting)));
+                    const numPainting = functionutils.sum(SIDES.map(side => Number(paintStates[side].painting)));
                     if (numPainting === 1) {
-                      mesh = _makePaintMesh();
+                      currentMeshId = _makeId();
 
-                      scene.add(mesh);
+                      const mesh = _loadMesh({
+                        meshId: currentMeshId,
+                        data: new ArrayBuffer(0),
+                      });
                     }
                   }
                 }
@@ -413,11 +423,9 @@ class ZPaint {
                   if (grabbed) {
                     paintState.painting = false;
 
-                    const numPainting = funUtils.sum(SIDES.map(side => Number(paintStates[side].painting)));
+                    const numPainting = functionutils.sum(SIDES.map(side => Number(paintStates[side].painting)));
                     if (numPainting === 0) {
-                      meshes.push(mesh);
-
-                      mesh = null;
+                      currentMeshId = null;
                     }
                   }
                 }
@@ -472,6 +480,7 @@ class ZPaint {
                   const {painting} = paintState;
 
                   if (painting) {
+                    const mesh = meshes[currentMeshId];
                     let {lastPoint} = mesh;
 
                     if (lastPoint < MAX_NUM_POINTS) {
@@ -613,6 +622,12 @@ class ZPaint {
                         uvsAttribute.needsUpdate = true;
 
                         lastPoint++;
+
+                        _broadcastUpdate({
+                          meshId: currentMeshId,
+                          data: mesh.getBuffer(lastPoint),
+                        });
+
                         mesh.lastPoint = lastPoint;
                         if (!mesh.visible) {
                           mesh.visible = true;
@@ -621,8 +636,6 @@ class ZPaint {
                         geometry.setDrawRange(0, lastPoint * 2);
 
                         paintState.lastPointTime = worldTime;
-
-                        entityApi.save();
                       }
                     }
                   }
@@ -653,18 +666,12 @@ class ZPaint {
               entityApi._cleanup = () => {
                 entityObject.remove(paintbrushMesh);
 
-                if (mesh) {
-                  scene.remove(mesh);
-                }
-                for (let i = 0; i < meshes.length; i++) {
-                  const mesh = meshes[i];
-                  scene.remove(mesh);
-                }
+                _clearMeshes();
 
-                const {cancelSave} = entityApi;
+                /* const {cancelSave} = entityApi;
                 if (cancelSave) {
                   cancelSave();
-                }
+                } */
 
                 entityElement.removeEventListener('grab', _grab);
                 entityElement.removeEventListener('release', _release);
@@ -693,19 +700,15 @@ class ZPaint {
 
                   break;
                 }
+                case 'paint-id': {
+                  entityApi.paintId = newValue;
+
+                  break;
+                }
                 case 'file': {
                   entityApi.file = newValue;
 
-                  entityApi.load();
-
-                  if (!newValue) {
-                    const {cancelSave} = entityApi;
-
-                    if (cancelSave) {
-                      cancelSave();
-                      entityApi.cancelSave = null;
-                    }
-                  }
+                  entityApi.ensureConnect();
 
                   break;
                 }
@@ -733,6 +736,11 @@ class ZPaint {
   }
 }
 
+const _relativeWsUrl = s => {
+  const l = window.location;
+  return ((l.protocol === 'https:') ? 'wss://' : 'ws://') + l.host + l.pathname + (!/\/$/.test(l.pathname) ? '/' : '') + s;
+};
+const _makeId = () => Math.random().toString(36).substring(7);
 const sq = n => Math.sqrt((n * n) + (n * n));
 const _concatArrayBuffers = as => {
   let length = 0;
