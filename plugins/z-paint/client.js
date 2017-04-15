@@ -15,7 +15,7 @@ const SIDES = ['left', 'right'];
 
 class ZPaint {
   mount() {
-    const {three: {THREE, scene}, elements, input, pose, world, render, utils: {network: networkUtils, geometry: geometryUtils, menu: menuUtils}} = zeo;
+    const {three: {THREE, scene}, elements, input, pose, world, render, player, utils: {network: networkUtils, geometry: geometryUtils, menu: menuUtils}} = zeo;
     const {AutoWs} = networkUtils;
 
     const colorWheelImg = menuUtils.getColorWheelImg();
@@ -245,19 +245,17 @@ class ZPaint {
               };
               entityApi.broadcastUpdate = _broadcastUpdate;
 
-              const _makePaintMesh = ({
-                positions = new Float32Array(MAX_NUM_POINTS * 2 * 3),
-                normals = new Float32Array(MAX_NUM_POINTS * 2 * 3),
-                colors = new Float32Array(MAX_NUM_POINTS * 2 * 3),
-                uvs = new Float32Array(MAX_NUM_POINTS * 2 * 2),
-                numPoints = 0,
-              } = {}) => {
+              const _makePaintMesh = () => {
                 const geometry = new THREE.BufferGeometry();
+                const positions = new Float32Array(MAX_NUM_POINTS * 2 * 3);
                 geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+                const normals = new Float32Array(MAX_NUM_POINTS * 2 * 3);
                 geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
+                const colors = new Float32Array(MAX_NUM_POINTS * 2 * 3);
                 geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
+                const uvs = new Float32Array(MAX_NUM_POINTS * 2 * 2);
                 geometry.addAttribute('uv', new THREE.BufferAttribute(uvs, 2));
-                geometry.setDrawRange(0, numPoints * 2);
+                geometry.setDrawRange(0, 0);
 
                 const texture = new THREE.Texture(
                   brushImg,
@@ -284,8 +282,7 @@ class ZPaint {
                 const mesh = new THREE.Mesh(geometry, material);
                 mesh.drawMode = THREE.TriangleStripDrawMode;
                 mesh.frustumCulled = false;
-                mesh.visible = numPoints > 0;
-                mesh.lastPoint = numPoints;
+                mesh.lastPoint = 0;
                 mesh.getBuffer = (startPoint, endPoint) => {
                   const positionOffset = startPoint * 2 * 3;
                   const uvOffset = startPoint * 2 * 2;
@@ -316,16 +313,10 @@ class ZPaint {
               const _loadMesh = ({meshId, data}) => {
                 let mesh = meshes[meshId];
                 if (!mesh) {
-                  mesh = _makePaintMesh({
-                    positions,
-                    normals,
-                    colors,
-                    uvs,
-                    numPoints,
-                  });
-                  scene.add(mesh);
+                  mesh = _makePaintMesh();
+                  meshes[meshId] = mesh;
 
-                  meshes[meshId] = meshId;
+                  scene.add(mesh);
                 }
                 const {geometry} = mesh;
                 const positionsAttribute = geometry.getAttribute('position');
@@ -352,7 +343,7 @@ class ZPaint {
 
                 positions.set(newPositions, oldPositionsSize);
                 normals.set(newNormals, oldPositionsSize);
-                colors.set(newColors, oldColorsSize);
+                colors.set(newColors, oldPositionsSize);
                 uvs.set(newUvs, oldUvsSize);
                 const newNumPoints = oldNumPoints + dataNumPoints;
                 mesh.lastPoint = newNumPoints;
@@ -615,6 +606,7 @@ class ZPaint {
                       const currentFrame = _getFrame(currentPointTime);
 
                       if (currentFrame > lastFrame) {
+console.log('loading mesh', {mesh});
                         const {geometry} = mesh;
                         const positionsAttribute = geometry.getAttribute('position');
                         const normalsAttribute = geometry.getAttribute('normal');
@@ -830,12 +822,12 @@ class ZPaint {
                 case 'paint-id': {
                   entityApi.paintId = newValue;
 
-                  entityApi.ensureConnect();
-
                   break;
                 }
                 case 'file': {
                   entityApi.file = newValue;
+
+                  entityApi.ensureConnect();
 
                   /* entityApi.load();
 
@@ -874,6 +866,10 @@ class ZPaint {
   }
 }
 
+const _relativeWsUrl = s => {
+  const l = window.location;
+  return ((l.protocol === 'https:') ? 'wss://' : 'ws://') + l.host + l.pathname + (!/\/$/.test(l.pathname) ? '/' : '') + s;
+};
 const _makeId = () => Math.random().toString(36).substring(7);
 const sq = n => Math.sqrt((n * n) + (n * n));
 const _concatArrayBuffers = as => {
