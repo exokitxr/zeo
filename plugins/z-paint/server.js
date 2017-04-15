@@ -152,7 +152,7 @@ class ZPaint {
 
         return file.write(JSON.stringify(j, null, 2));
       });
-    const _appendFileChunk = ({file, data}) => new Promise((accept, reject) => {
+    const _writeFile = ({file, data}) => new Promise((accept, reject) => {
       const ws = file.createWriteStream();
       ws.end(data);
       ws.on('finish', () => {
@@ -162,7 +162,7 @@ class ZPaint {
         reject(err);
       });
     });
-    const _appendFileChunks = ({files, data}) => {
+    const _writeFiles = ({files, data}) => {
       const {position, normal, color, uv} = files;
 
       const dataNumPoints = data.length / (((2 * 3) + (2 * 3) + (2 * 3) + (2 * 2)) * 4);
@@ -170,10 +170,10 @@ class ZPaint {
       const dataUvSize = dataNumPoints * 2 * 2 * 4;
 
       return Promise.all([
-        _appendFileChunk({file: position, data: data.slice(0, dataPositionSize)}),
-        _appendFileChunk({file: normal, data: data.slice(dataPositionSize, dataPositionSize * 2)}),
-        _appendFileChunk({file: color, data: data.slice(dataPositionSize * 2, dataPositionSize * 3)}),
-        _appendFileChunk({file: uv, data: data.slice(dataPositionSize * 3, (dataPositionSize * 3) + dataUvSize)}),
+        _writeFile({file: position, data: data.slice(0, dataPositionSize)}),
+        _writeFile({file: normal, data: data.slice(dataPositionSize, dataPositionSize * 2)}),
+        _writeFile({file: color, data: data.slice(dataPositionSize * 2, dataPositionSize * 3)}),
+        _writeFile({file: uv, data: data.slice(dataPositionSize * 3, (dataPositionSize * 3) + dataUvSize)}),
       ]);
     };
     const _saveUpdate = ({paintId, meshId, data}) => {
@@ -189,7 +189,7 @@ class ZPaint {
                     file: indexFile,
                     entry: meshId,
                   }),
-                  _appendFileChunks({
+                  _writeFiles({
                     files: meshFileSet,
                     data: data,
                   }),
