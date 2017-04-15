@@ -1485,7 +1485,7 @@ class World {
               const tagMesh = _handleSetTagAttribute(userId, src, {name, value});
 
               // this prevents this mutation from triggering an infinite recursion multiplayer update
-              // we simply ignore this mutation during the next enmtity mutation tick
+              // we simply ignore this mutation during the next entity mutation tick
               if (tagMesh) {
                 const {item} = tagMesh;
                 const {id} = item;
