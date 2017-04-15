@@ -9,7 +9,7 @@ class ZBuild {
 
   mount() {
     const {_archae: archae} = this;
-    const {express, app} = archae.getCore();
+    const {express, app, wss} = archae.getCore();
     const {world, fs} = zeo;
 
     const tagsJson = world.getTags();
@@ -47,6 +47,32 @@ class ZBuild {
 
         return null;
       })();
+      if (buildEntityTag) {
+        const {attributes} = buildEntityTag;
+        const {file: fileAttribute} = attributes;
+
+        if (fileAttribute) {
+          const {value} = fileAttribute;
+          const match = (value || '').match(/^fs\/([^\/]+)(\/.*)$/)
+
+          if (match) {
+            const id = match[1];
+            const pathname = match[2];
+
+            accept({
+              id,
+              pathname,
+            });
+          } else {
+            accept(null); // non-local file
+          }
+        } else {
+          accept(null);
+        }
+      } else {
+        accept(null);
+      }
+    });
     const _ensureFileArrayIncludesEntry = ({file, entry}) => file.read('utf8')
       .then(s => {
         let j = _jsonParse(s);
@@ -122,10 +148,10 @@ class ZBuild {
 
       for (let i = 0; i < connections.length; i++) {
         const connection = connections[i];
-        if ((!thisPeerOnly ? (connection.peerId !== peerId) : (connection.peerId === peerId)) && connection.buildId === buildId) {
+        // if ((!thisPeerOnly ? (connection.peerId !== peerId) : (connection.peerId === peerId)) && connection.buildId === buildId) { // XXX unlock this
           connection.send(es);
           connection.send(data);
-        }
+        // }
       }
     };
     const _saveUpdate = ({paintId, meshId, data}) => {

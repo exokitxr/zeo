@@ -1148,9 +1148,10 @@ const _relativeWsUrl = s => {
   const l = window.location;
   return ((l.protocol === 'https:') ? 'wss://' : 'ws://') + l.host + l.pathname + (!/\/$/.test(l.pathname) ? '/' : '') + s;
 };
+const _makeId = () => Math.random().toString(36).substring(7);
 const sq = n => Math.sqrt((n * n) + (n * n));
-const _arrayBufferToString = b => String.fromCharCode.apply(null, new Uint16Array(b));
-/* const _stringToArrayBuffer = str => {
+/* const _arrayBufferToString = b => String.fromCharCode.apply(null, new Uint16Array(b));
+const _stringToArrayBuffer = str => {
   var buf = new ArrayBuffer(str.length*2); // 2 bytes for each char
   var bufView = new Uint16Array(buf);
   for (var i=0, strLen=str.length; i<strLen; i++) {
