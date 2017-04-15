@@ -200,7 +200,7 @@ class Fs {
               case 'model': {
                 const ext = (() => {
                   const match = url.match(/\.([^\/]*)$/);
-                  return match ? match[1] : '';
+                  return match ? match[1].toLowerCase() : '';
                 })();
 
                 return fetch(url)
