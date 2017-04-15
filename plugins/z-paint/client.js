@@ -211,6 +211,8 @@ class ZPaint {
                         const {meshId} = currentRemotePaintSpec;
                         const {data} = msg;
 
+                        _loadMesh({meshId, data});
+
                         // XXX load the data into the mesh with this meshId
                       } else {
                         console.warn('buffer data before paint spec', msg);
@@ -218,6 +220,13 @@ class ZPaint {
                     }
                   });
                 } else if (!file && connection) {
+                  _clearMeshes();
+
+                  SIDES.forEach(side => {
+                    const paintState = paintStates[side];
+                    paintState.painting = false;
+                  });
+
                   connection.destroy();
                   connection = null;
                 }
@@ -287,9 +296,48 @@ class ZPaint {
 
                 return mesh;
               };
-              let mesh = null;
 
+              let mesh = null;
               const meshes = [];
+
+              const _loadMesh = ({meshId, data}) => { // XXX load to the correct mesh here
+                const array = new Float32Array(data);
+                let frameIndex = 0;
+                while (frameIndex < array.length) {
+                  const numPoints = Math.floor(array[frameIndex]);
+                  const positionSize = numPoints * 2 * 3;
+                  const uvSize = numPoints * 2 * 2;
+
+                  const positions = array.slice(frameIndex + 1, frameIndex + 1 + positionSize);
+                  const normals = array.slice(frameIndex + 1 + positionSize, frameIndex + 1 + (positionSize * 2));
+                  const colors = array.slice(frameIndex + 1 + (positionSize * 2), frameIndex + 1 + (positionSize * 3));
+                  const uvs = array.slice(frameIndex + 1 + (positionSize * 3), frameIndex + 1 + (positionSize * 3) + uvSize);
+
+                  const mesh = _makePaintMesh({
+                    positions,
+                    normals,
+                    colors,
+                    uvs,
+                    numPoints,
+                  });
+                  scene.add(mesh);
+                  meshes.push(mesh);
+
+                  frameIndex += 1 + (positionSize * 3) + uvSize;
+                }
+              };
+              const _clearMeshes = () => {
+                if (mesh) {
+                  scene.remove(mesh);
+                  mesh = null;
+                }
+
+                for (let i = 0; i < meshes.length; i++) {
+                  const mesh = meshes[i];
+                  scene.remove(mesh);
+                }
+                meshes.length = 0;
+              };
 
               /* entityApi.load = () => {
                 const {file} = entityApi;
