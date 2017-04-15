@@ -17,8 +17,6 @@ class ZBuild {
       live = false;
     };
 
-    // const worldElement = elements.getWorldElement();
-
     const _requestImg = url => new Promise((accept, reject) => {
       const img = new Image();
       img.src = url;
@@ -648,96 +646,6 @@ class ZBuild {
                 meshes = {};
               };
 
-              /* entityApi.load = () => {
-                const {file} = entityApi;
-
-                if (file) {
-                  file.read({
-                    type: 'model',
-                  })
-                    .then(newMeshesContainer => {
-                      if (newMeshesContainer) {
-                        const {children} = newMeshesContainer;
-
-                        for (let i = 0; i < children.length; i++) {
-                          const child = children[i];
-                          meshesContainer.add(child);
-                        }
-                      }
-                    });
-                } else {
-                  if (mesh) {
-                    scene.remove(mesh);
-                    mesh = null;
-                  }
-
-                  for (let i = 0; i < meshes.length; i++) {
-                    const mesh = meshes[i];
-                    scene.remove(mesh);
-                  }
-                  meshes.length = 0;
-
-                  SIDES.forEach(side => {
-                    const buildState = buildStates[side];
-                    buildState.building = false;
-                  });
-                }
-              };
-
-              let dirtyFlag = false;
-              entityApi.cancelSave = null;
-              entityApi.save = () => {
-                const {cancelSave} = entityApi;
-
-                if (!cancelSave) {
-                  const timeout = setTimeout(() => {
-                    const {file} = entityApi;
-
-                    const s = JSON.stringify(meshesContainer.toJSON(), null, 2);
-
-                    const _cleanup = () => {
-                      entityApi.cancelSave = null;
-
-                      if (dirtyFlag) {
-                        dirtyFlag = false;
-
-                        entityApi.save();
-                      }
-                    };
-
-                    file.write(s)
-                      .then(() => {
-                        if (live) {
-                          const broadcastEvent = new CustomEvent('broadcast', { // XXX support multiplayer here
-                            detail: {
-                              type: 'build.update',
-                              id: entityElement.getId(),
-                            },
-                          });
-                          worldElement.dispatchEvent(broadcastEvent);
-
-                          _cleanup();
-                        }
-                      })
-                      .catch(err => {
-                        console.warn(err);
-
-                        _cleanup();
-                      });
-
-                    entityApi.cancelSave = () => {
-                      live = false;
-                    };
-
-                    dirtyFlag = false;
-                  }, DIRTY_TIME);
-
-                  entityApi.cancelSave = () => {
-                    cancelTimeout(timeout);
-                  };
-                }
-              }; */
-
               const _makeBuildState = () => ({
                 grabbed: false,
                 building: false,
@@ -836,8 +744,6 @@ class ZBuild {
                       meshId: currentMeshId,
                       data: mesh.getJson(),
                     });
-
-                    // entityApi.save();
 
                     currentMeshId = null;
                   }
@@ -1088,11 +994,6 @@ class ZBuild {
                   mesh.parent.remove(mesh);
                 }
 
-                /* const {cancelSave} = entityApi;
-                if (cancelSave) {
-                  cancelSave();
-                } */
-
                 entityElement.removeEventListener('grab', _grab);
                 entityElement.removeEventListener('release', _release);
 
@@ -1128,17 +1029,6 @@ class ZBuild {
                   entityApi.file = newValue;
 
                   entityApi.ensureConnect();
-
-                  /* entityApi.load();
-
-                  if (!newValue) {
-                    const {cancelSave} = entityApi;
-
-                    if (cancelSave) {
-                      cancelSave();
-                      entityApi.cancelSave = null;
-                    }
-                  } */
 
                   break;
                 }

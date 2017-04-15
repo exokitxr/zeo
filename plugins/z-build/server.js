@@ -148,9 +148,9 @@ class ZBuild {
 
       for (let i = 0; i < connections.length; i++) {
         const connection = connections[i];
-        // if ((!thisPeerOnly ? (connection.peerId !== peerId) : (connection.peerId === peerId)) && connection.buildId === buildId) { // XXX unlock this
+        if ((!thisPeerOnly ? (connection.peerId !== peerId) : (connection.peerId === peerId)) && connection.buildId === buildId) {
           connection.send(es);
-        // }
+        }
       }
     };
     const _saveUpdate = ({buildId, meshId, data}) => {
