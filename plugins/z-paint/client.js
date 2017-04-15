@@ -284,23 +284,19 @@ class ZPaint {
                 mesh.visible = false;
                 mesh.frustumCulled = false;
                 mesh.lastPoint = 0;
-                mesh.getBuffer = (startPoint, endPoint) => {
-                  const positionOffset = startPoint * 2 * 3;
-                  const uvOffset = startPoint * 2 * 2;
-                  const numPoints = endPoint - startPoint;
-                  const positionSize = numPoints * 2 * 3;
-                  const uvSize = numPoints * 2 * 2;
-
+                mesh.getBuffer = endPoint => {
+                  const positionSize = endPoint * 2 * 3;
+                  const uvSize = endPoint * 2 * 2;
                   const array = new Float32Array(
                     positionSize + // position
                     positionSize + // normal
                     positionSize + // color
                     uvSize // uv
                   );
-                  array.set(positions.slice(positionOffset, positionOffset + positionSize), 0); // position
-                  array.set(normals.slice(positionOffset, positionOffset + positionSize), positionSize); // normal
-                  array.set(colors.slice(positionOffset, positionOffset + positionSize), positionSize * 2); // color
-                  array.set(uvs.slice(uvOffset, uvOffset + uvSize), positionSize * 3); // uv
+                  array.set(positions.slice(0, positionSize), 0); // position
+                  array.set(normals.slice(0, positionSize), positionSize); // normal
+                  array.set(colors.slice(0, positionSize), positionSize * 2); // color
+                  array.set(uvs.slice(0, uvSize), positionSize * 3); // uv
 
                   return array.buffer;
                 };
@@ -329,33 +325,30 @@ class ZPaint {
                 const uvsAttribute = geometry.getAttribute('uv');
                 const {array: uvs} = uvsAttribute;
                 const {lastPoint: oldNumPoints} = mesh;
-                const oldPositionsOffset = oldNumPoints * 2 * 3;
-                const oldUvsOffset = oldNumPoints * 2 * 2;
 
                 const array = new Float32Array(data);
-                const dataNumPoints = array.length / ((2 * 3) + (2 * 3) + (2 * 3) + (2 * 2));
-                const dataPositionSize = dataNumPoints * 2 * 3;
-                const dataUvSize = dataNumPoints * 2 * 2;
+                const numPoints = array.length / ((2 * 3) + (2 * 3) + (2 * 3) + (2 * 2));
+                const dataPositionSize = numPoints * 2 * 3;
+                const dataUvSize = numPoints * 2 * 2;
 
                 const newPositions = array.slice(0, dataPositionSize);
                 const newNormals = array.slice(dataPositionSize, dataPositionSize * 2);
                 const newColors = array.slice(dataPositionSize * 2, dataPositionSize * 3);
                 const newUvs = array.slice(dataPositionSize * 3, (dataPositionSize * 3) + dataUvSize);
 
-                positions.set(newPositions, oldPositionsOffset);
-                normals.set(newNormals, oldPositionsOffset);
-                colors.set(newColors, oldPositionsOffset);
-                uvs.set(newUvs, oldUvsOffset);
-                const newNumPoints = oldNumPoints + dataNumPoints;
-                mesh.lastPoint = newNumPoints;
+                positions.set(newPositions);
+                normals.set(newNormals);
+                colors.set(newColors);
+                uvs.set(newUvs);
+                mesh.lastPoint = numPoints;
 
                 positionsAttribute.needsUpdate = true;
                 normalsAttribute.needsUpdate = true;
                 colorsAttribute.needsUpdate = true;
                 uvsAttribute.needsUpdate = true;
-                geometry.setDrawRange(0, newNumPoints * 2);
+                geometry.setDrawRange(0, numPoints * 2);
 
-                if (newNumPoints > 0 && !mesh.visible) {
+                if (numPoints > 0 && !mesh.visible) {
                   mesh.visible = true;
                 }
 
@@ -741,12 +734,13 @@ class ZPaint {
                         colorsAttribute.needsUpdate = true;
                         uvsAttribute.needsUpdate = true;
 
+                        lastPoint++;
+
                         _broadcastUpdate({
                           meshId: currentMeshId,
-                          data: mesh.getBuffer(lastPoint, lastPoint + 1),
+                          data: mesh.getBuffer(lastPoint),
                         });
 
-                        lastPoint++;
                         /* mesh.lastPoint = lastPoint; // XXX unlock this once backend proxying works
                         if (!mesh.visible) {
                           mesh.visible = true;

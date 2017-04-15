@@ -153,9 +153,7 @@ class ZPaint {
         return file.write(JSON.stringify(j, null, 2));
       });
     const _appendFileChunk = ({file, data}) => new Promise((accept, reject) => {
-      const ws = file.createWriteStream({
-        flags: 'a',
-      });
+      const ws = file.createWriteStream();
       ws.end(data);
       ws.on('finish', () => {
         accept();
