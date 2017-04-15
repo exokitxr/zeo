@@ -479,12 +479,19 @@ class ZBuild {
                 entityObject.scale.set(position[7], position[8], position[9]);
               };
 
-              entityApi.color = new THREE.Color(0x000000);
-              entityApi.render = () => {
-                if (mesh) {
-                  const {color} = entityApi;
-                  mesh.material.color.copy(color);
-                };
+              entityApi.color = null;
+              entityApi.setColor = color => {
+                entityApi.color = color;
+
+                if (currentMeshId) {
+                  const mesh = meshes[currentMeshId];
+                  mesh.setColor(color);
+
+                  _broadcastUpdate({
+                    meshId: currentMeshId,
+                    data: mesh.getJson(),
+                  });
+                }
               };
 
               let connection = null;
@@ -788,7 +795,7 @@ class ZBuild {
                     const {color} = entityApi;
 
                     currentMeshId = _makeId();
-                    const mesh = _loadMesh({
+                    _loadMesh({
                       meshId: currentMeshId,
                       data: {
                         shape,
@@ -1027,7 +1034,8 @@ class ZBuild {
                           const pressCurrent = new THREE.Vector2().fromArray(axes);
                           buildState.pressCurrent = pressCurrent;
 
-                          if (mesh) {
+                          if (currentMeshId) {
+                            const mesh = meshes[currentMeshId];
                             const pressDiff = pressCurrent.clone().sub(pressStart);
                             const xAngle = _padDiffToAngle(-pressDiff.x);
                             const yAngle = _padDiffToAngle(-pressDiff.y);
@@ -1047,7 +1055,8 @@ class ZBuild {
                           const pressCurrent = new THREE.Vector2().fromArray(axes);
                           buildState.pressCurrent = pressCurrent;
 
-                          if (mesh) {
+                          if (currentMeshId) {
+                            const mesh = meshes[currentMeshId];
                             const pressDiff = pressCurrent.clone().sub(pressStart);
                             const yValue = pressDiff.y;
 
@@ -1121,9 +1130,7 @@ class ZBuild {
                   break;
                 }
                 case 'color': {
-                  entityApi.color = new THREE.Color(newValue);
-
-                  entityApi.render();
+                  entityApi.setColor(newValue);
 
                   break;
                 }
