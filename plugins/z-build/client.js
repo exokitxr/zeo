@@ -471,9 +471,6 @@ class ZBuild {
               })();
               entityObject.add(toolMesh);
 
-              const meshesContainer = new THREE.Object3D();
-              scene.add(meshesContainer);
-
               entityApi.align = () => {
                 const {position} = entityApi;
 
@@ -518,14 +515,14 @@ class ZBuild {
                         const {meshId} = currentRemoteBuildSpec;
                         const {data} = msg;
 
-                        _loadMesh({meshId, data}); // XXX implement this
+                        _loadMesh({meshId, data});
                       } else {
                         console.warn('buffer data before paint spec', msg);
                       }
                     }
                   });
                 } else if (!file && connection) {
-                  _clearMeshes(); // XXX implement this
+                  _clearMeshes();
 
                   SIDES.forEach(side => {
                     const buildState = buildStates[side];
@@ -538,34 +535,98 @@ class ZBuild {
               };
               entityApi.ensureConnect = _ensureConnect;
 
-              const _makeShapeMesh = ({
-                shapeType = 'box',
-                rotation = zeroQuaternion,
-                scaleValue = 0,
-                color = new THREE.Color(0x808080),
-              }) => {
-                const {
-                  menuMesh: {
-                    shapeMesh: {
-                      shapeMeshes,
+              const _makeBuildMesh = () => {
+                const object = new THREE.Object3D();
+
+                let mesh = null;
+                object.setShape = shape => {
+                  const {
+                    menuMesh: {
+                      shapeMesh: {
+                        shapeMeshes,
+                      },
                     },
-                  },
-                } = toolMesh;
-                const shapeMesh = shapeMeshes.find(shapeMesh => shapeMesh.shapeType === shapeType);
-                const shapeMeshClone = shapeMesh.clone();
-                shapeMeshClone.position.copy(zeroVector);
-                shapeMeshClone.quaternion.copy(rotation);
-                const scaleValueExp = Math.pow(2, scaleValue);
-                const scaleVector = oneVector.clone().multiplyScalar(scaleValueExp);
-                shapeMeshClone.scale.copy(scaleVector);
-                shapeMeshClone.material = _makeShapeMaterial({
-                  color,
-                });
-                return shapeMeshClone;
+                  } = toolMesh;
+                  const shapeMesh = shapeMeshes.find(shapeMesh => shapeMesh.shapeType === shape);
+
+                  const oldMesh = mesh;
+                  if (oldMesh) {
+                    object.remove(oldMesh);
+                  }
+
+                  const newMesh = shapeMesh.clone();
+                  newMesh.position.copy(zeroVector);
+                  newMesh.quaternion.copy(zeroQuaternion);
+                  newMesh.scale.copy(oneVector);
+                  object.add(newMwesh);
+
+                  mesh = newMesh;
+                };
+                object.setRotation = rotation => {
+                  mesh.quaternion.copy(rotation); // XXX this should be an array
+                };
+                object.setScaleValue = scaleValue => {
+                  const scaleValueExp = Math.pow(2, scaleValue);
+                  const scaleVector = oneVector.clone().multiplyScalar(scaleValueExp);
+                  mesh.scale.copy(scaleVector);
+                };
+                object.setColor = color => {
+                  mesh.material.color = new THREE.Color(color);
+                };
+                object.setTarget = target => {
+                  switch (target) {
+                    case 'tool': {
+                      shapeMeshContainer.add(mesh);
+
+                      break;
+                    }
+                    case 'scene': {
+                      scene.add(mesh);
+
+                      break;
+                    }
+                  }
+                };
+
+                return object;
               };
 
-              let mesh = null; // XXX rewrite this to be a string key + meshes object map
-              const meshes = [];
+              let currentMeshId = null;
+              let meshes = {};
+
+              const _loadMesh = ({meshId, data}) => {
+                let mesh = meshes[meshId];
+                if (!mesh) {
+                  mesh = _makeBuildMesh();
+                  meshes[meshId] = mesh;
+                }
+
+                const j = (() => {
+                  if (data instanceof ArrayBuffer) {
+                    return _jsonParse(_arrayBufferToString(data));
+                  } else if (data && typeof data === 'object') {
+                    return data;
+                  } else {
+                    return undefined;
+                  }
+                })();
+
+                const {shape, rotation, scaleValue, color, target} = data;
+                mesh.setShape(shape);
+                mesh.setRotation(rotation);
+                mesh.setScaleValue(scaleValue);
+                mesh.setColor(color);
+                mesh.setTarget(target);
+
+                return mesh;
+              };
+              const _clearMeshes = () => {
+                for (const meshId in meshes) {
+                  const mesh = meshes[meshId];
+                  mesh.parent.remove(mesh);
+                }
+                meshes = {};
+              };
 
               /* entityApi.load = () => {
                 const {file} = entityApi;
@@ -704,14 +765,18 @@ class ZBuild {
 
                     const {shape, rotation, scaleValue} = buildState;
                     const {color} = entityApi;
-                    mesh = _makeShapeMesh({
-                      shapeType: shape,
-                      rotation,
-                      scaleValue,
-                      color,
+
+                    currentMeshId = _makeId();
+                    const mesh = _loadMesh({
+                      meshId: currentMeshId,
+                      data: {
+                        shape,
+                        rotation: rotation.toArray(),
+                        scaleValue,
+                        color,
+                        target: 'tool',
+                      },
                     });
-                    const {shapeMeshContainer} = toolMesh;
-                    shapeMeshContainer.add(mesh);
                   }
                 }
               };
@@ -727,15 +792,17 @@ class ZBuild {
                   if (grabbed) {
                     buildState.building = false;
 
+                    const mesh = meshes[currentMeshId];
                     const {position, rotation, scale} = _decomposeObjectMatrixWorld(mesh);
-                    meshesContainer.add(mesh);
                     mesh.position.copy(position);
                     mesh.quaternion.copy(rotation);
                     mesh.scale.copy(scale);
 
-                    mesh = null;
+                    currentMeshId = null;
 
-                    entityApi.save();
+                    // XXX broadcast update here
+
+                    // entityApi.save();
                   }
                 }
               };
@@ -976,10 +1043,9 @@ class ZBuild {
 
               entityApi._cleanup = () => {
                 entityObject.remove(toolMesh);
-                scene.remove(meshesContainer);
 
-                for (let i = 0; i < meshes.length; i++) {
-                  const mesh = meshes[i];
+                for (const meshId in meshes) {
+                  const mesh = meshes[meshId];
                   scene.remove(mesh);
                 }
 
@@ -1059,6 +1125,15 @@ const _relativeWsUrl = s => {
   return ((l.protocol === 'https:') ? 'wss://' : 'ws://') + l.host + l.pathname + (!/\/$/.test(l.pathname) ? '/' : '') + s;
 };
 const sq = n => Math.sqrt((n * n) + (n * n));
+const _arrayBufferToString = b => String.fromCharCode.apply(null, new Uint16Array(b));
+/* const _stringToArrayBuffer = str => {
+  var buf = new ArrayBuffer(str.length*2); // 2 bytes for each char
+  var bufView = new Uint16Array(buf);
+  for (var i=0, strLen=str.length; i<strLen; i++) {
+    bufView[i] = str.charCodeAt(i);
+  }
+  return buf;
+}; */
 const _concatArrayBuffers = as => {
   let length = 0;
   for (let i = 0; i < as.length; i++) {
