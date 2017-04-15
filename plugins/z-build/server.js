@@ -136,13 +136,13 @@ class ZBuild {
         }
       });
 
-    const connection = [];
+    const connections = [];
 
     const _broadcastUpdate = ({peerId, buildId, meshId, data, thisPeerOnly = false}) => {
       const e = {
         type: 'buildSpec',
-        buildId: buildId,
         meshId: meshId,
+        data: data,
       };
       const es = JSON.stringify(e);
 
@@ -150,7 +150,6 @@ class ZBuild {
         const connection = connections[i];
         // if ((!thisPeerOnly ? (connection.peerId !== peerId) : (connection.peerId === peerId)) && connection.buildId === buildId) { // XXX unlock this
           connection.send(es);
-          connection.send(data);
         // }
       }
     };
@@ -244,11 +243,11 @@ class ZBuild {
                   data,
                 });
 
-                _saveUpdate({
+                /* _saveUpdate({ // XXX unlock this
                   buildId,
                   meshId,
                   data,
-                });
+                }); */
               } else {
                 console.warn('build invalid message type', {type});
               }

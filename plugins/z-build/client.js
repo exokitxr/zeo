@@ -501,7 +501,7 @@ class ZBuild {
                 if (file && !connection) {
                   const peerId = player.getId();
                   const {buildId} = entityApi;
-                  connection = new AutoWs(_relativeWsUrl('archae/buildws?peerId=' + encodeURIComponent(peerId) + '&buildId=' + encodeURIComponent(buildId)));
+                  connection = new AutoWs(_relativeWsUrl('archae/buildWs?peerId=' + encodeURIComponent(peerId) + '&buildId=' + encodeURIComponent(buildId)));
 
                   connection.on('message', msg => {
                     if (typeof msg.data === 'string') {
@@ -551,8 +551,7 @@ class ZBuild {
                 let mesh = null;
                 const state = {
                   shape: null,
-                  rotation: null,
-                  scaleValue: null,
+                  matrix: null,
                   color: null,
                   target: null,
                 };
@@ -583,20 +582,13 @@ class ZBuild {
                     mesh = newMesh;
                   }
                 };
-                object.setRotation = rotation => {
-                  if (rotation !== state.rotation) {
-                    state.rotation = rotation;
+                object.setMatrix = matrix => {
+                  if (!_arrayEquals(matrix, state.matrix)) {
+                    state.matrix = matrix;
 
-                    mesh.quaternion.fromArray(rotation);
-                  }
-                };
-                object.setScaleValue = scaleValue => {
-                  if (scaleValue !== state.scaleValue) {
-                    state.scaleValue = scaleValue;
-
-                    const scaleValueExp = Math.pow(2, scaleValue);
-                    const scaleVector = oneVector.clone().multiplyScalar(scaleValueExp);
-                    mesh.scale.copy(scaleVector);
+                    object.position.set(matrix[0], matrix[1], matrix[2]);
+                    object.quaternion.set(matrix[3], matrix[4], matrix[5], matrix[6]);
+                    object.scale.set(matrix[7], matrix[8], matrix[9]);
                   }
                 };
                 object.setColor = color => {
@@ -613,12 +605,12 @@ class ZBuild {
                     switch (target) {
                       case 'tool': {
                         const {shapeMeshContainer} = toolMesh;
-                        shapeMeshContainer.add(mesh);
+                        shapeMeshContainer.add(object);
 
                         break;
                       }
                       case 'scene': {
-                        scene.add(mesh);
+                        scene.add(object);
 
                         break;
                       }
@@ -640,10 +632,9 @@ class ZBuild {
                   meshes[meshId] = mesh;
                 }
 
-                const {shape, rotation, scaleValue, color, target} = data;
+                const {shape, matrix, scaleValue, color, target} = data;
                 mesh.setShape(shape);
-                mesh.setRotation(rotation);
-                mesh.setScaleValue(scaleValue);
+                mesh.setMatrix(matrix);
                 mesh.setColor(color);
                 mesh.setTarget(target);
 
@@ -796,15 +787,30 @@ class ZBuild {
                     const {color} = entityApi;
 
                     currentMeshId = _makeId();
+
+                    const meshId = currentMeshId;
+                    const data = {
+                      shape,
+                      matrix: (() => {
+                        const matrixPosition = zeroVector;
+                        const matrixRotation = rotation;
+                        const matrixScale = (() => {
+                          const scaleValueExp = Math.pow(2, scaleValue);
+                          return oneVector.clone().multiplyScalar(scaleValueExp);
+                        })();
+
+                        return matrixPosition.toArray().concat(matrixRotation.toArray()).concat(matrixScale.toArray());
+                      })(),
+                      color,
+                      target: 'tool',
+                    };
                     _loadMesh({
-                      meshId: currentMeshId,
-                      data: {
-                        shape,
-                        rotation: rotation.toArray(),
-                        scaleValue,
-                        color,
-                        target: 'tool',
-                      },
+                      meshId: meshId,
+                      data: data,
+                    });
+                    _broadcastUpdate({
+                      meshId: meshId,
+                      data: data,
                     });
                   }
                 }
@@ -823,11 +829,8 @@ class ZBuild {
 
                     const mesh = meshes[currentMeshId];
                     const {position, rotation, scale} = _decomposeObjectMatrixWorld(mesh);
-                    mesh.position.copy(position);
-                    mesh.quaternion.copy(rotation);
-                    mesh.scale.copy(scale);
-
-                    currentMeshId = null;
+                    mesh.setMatrix(position.toArray().concat(rotation.toArray()).concat(scale.toArray()));
+                    mesh.setTarget('scene');
 
                     _broadcastUpdate({
                       meshId: currentMeshId,
@@ -835,6 +838,8 @@ class ZBuild {
                     });
 
                     // entityApi.save();
+
+                    currentMeshId = null;
                   }
                 }
               };
@@ -1080,13 +1085,13 @@ class ZBuild {
 
                 for (const meshId in meshes) {
                   const mesh = meshes[meshId];
-                  scene.remove(mesh);
+                  mesh.parent.remove(mesh);
                 }
 
-                const {cancelSave} = entityApi;
+                /* const {cancelSave} = entityApi;
                 if (cancelSave) {
                   cancelSave();
-                }
+                } */
 
                 entityElement.removeEventListener('grab', _grab);
                 entityElement.removeEventListener('release', _release);
@@ -1111,6 +1116,11 @@ class ZBuild {
                   entityApi.position = newValue;
 
                   entityApi.align();
+
+                  break;
+                }
+                case 'build-id': {
+                  entityApi.buildId = newValue;
 
                   break;
                 }
@@ -1160,6 +1170,7 @@ const _relativeWsUrl = s => {
 };
 const _makeId = () => Math.random().toString(36).substring(7);
 const sq = n => Math.sqrt((n * n) + (n * n));
+const _arrayEquals = (a, b) => Array.isArray(a) && Array.isArray(b) && a.length === b.length && a.every((ae, i) => b[i] === ae);
 /* const _arrayBufferToString = b => String.fromCharCode.apply(null, new Uint16Array(b));
 const _stringToArrayBuffer = str => {
   var buf = new ArrayBuffer(str.length*2); // 2 bytes for each char

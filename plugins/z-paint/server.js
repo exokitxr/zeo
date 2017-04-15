@@ -126,7 +126,6 @@ class ZPaint {
     const _broadcastUpdate = ({peerId, paintId, meshId, data, thisPeerOnly = false}) => {
       const e = {
         type: 'paintSpec',
-        paintId: paintId,
         meshId: meshId,
       };
       const es = JSON.stringify(e);
