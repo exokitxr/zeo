@@ -496,29 +496,20 @@ class ZBuild {
                   const {buildId} = entityApi;
                   connection = new AutoWs(_relativeWsUrl('archae/buildws?peerId=' + encodeURIComponent(peerId) + '&buildId=' + encodeURIComponent(buildId)));
 
-                  let currentRemoteBuildSpec = null;
                   connection.on('message', msg => {
                     if (typeof msg.data === 'string') {
                       const e = JSON.parse(msg.data) ;
                       const {type} = e;
 
                       if (type === 'buildSpec') {
-                        const {meshId} = e;
-                        currentRemoteBuildSpec = {
-                          meshId,
-                        };
-                      } else {
-                        console.warn('unknown message type', JSON.stringify(type));
-                      }
-                    } else {
-                      if (currentRemoteBuildSpec !== null) {
-                        const {meshId} = currentRemoteBuildSpec;
-                        const {data} = msg;
+                        const {meshId, data} = e;
 
                         _loadMesh({meshId, data});
                       } else {
-                        console.warn('buffer data before paint spec', msg);
+                        console.warn('build unknown message type', JSON.stringify(type));
                       }
+                    } else {
+                      console.warn('build got non-string message', msg);
                     }
                   });
                 } else if (!file && connection) {
@@ -535,11 +526,32 @@ class ZBuild {
               };
               entityApi.ensureConnect = _ensureConnect;
 
+              const _broadcastUpdate = ({meshId, data}) => {
+                const e = {
+                  type: 'buildSpec',
+                  meshId: meshId,
+                  data: data,
+                };
+                const es = JSON.stringify(e);
+
+                connection.send(es);
+              };
+              entityApi.broadcastUpdate = _broadcastUpdate;
+
               const _makeBuildMesh = () => {
                 const object = new THREE.Object3D();
 
                 let mesh = null;
+                const state = {
+                  shape: null,
+                  rotation: null,
+                  scaleValue: null,
+                  color: null,
+                  target: null,
+                };
                 object.setShape = shape => {
+                  state.shape = shape;
+
                   const {
                     menuMesh: {
                       shapeMesh: {
@@ -563,17 +575,25 @@ class ZBuild {
                   mesh = newMesh;
                 };
                 object.setRotation = rotation => {
-                  mesh.quaternion.copy(rotation); // XXX this should be an array
+                  state.rotation = rotation;
+
+                  mesh.quaternion.fromArray(rotation);
                 };
                 object.setScaleValue = scaleValue => {
+                  state.scaleValue = scaleValue;
+
                   const scaleValueExp = Math.pow(2, scaleValue);
                   const scaleVector = oneVector.clone().multiplyScalar(scaleValueExp);
                   mesh.scale.copy(scaleVector);
                 };
                 object.setColor = color => {
+                  state.color = color;
+
                   mesh.material.color = new THREE.Color(color);
                 };
                 object.setTarget = target => {
+                  state.target = target;
+
                   switch (target) {
                     case 'tool': {
                       shapeMeshContainer.add(mesh);
@@ -587,6 +607,7 @@ class ZBuild {
                     }
                   }
                 };
+                object.getJson = () => state;
 
                 return object;
               };
@@ -600,16 +621,6 @@ class ZBuild {
                   mesh = _makeBuildMesh();
                   meshes[meshId] = mesh;
                 }
-
-                const j = (() => {
-                  if (data instanceof ArrayBuffer) {
-                    return _jsonParse(_arrayBufferToString(data));
-                  } else if (data && typeof data === 'object') {
-                    return data;
-                  } else {
-                    return undefined;
-                  }
-                })();
 
                 const {shape, rotation, scaleValue, color, target} = data;
                 mesh.setShape(shape);
@@ -800,7 +811,10 @@ class ZBuild {
 
                     currentMeshId = null;
 
-                    // XXX broadcast update here
+                    _broadcastUpdate({
+                      meshId: currentMeshId,
+                      data: mesh.getJson(),
+                    });
 
                     // entityApi.save();
                   }
