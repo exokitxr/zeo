@@ -63,7 +63,7 @@ class ZPaint {
               file: {
                 type: 'file',
                 value: () => elements.makeFile({
-                  ext: 'raw',
+                  ext: 'json',
                 }).then(file => file.url),
               },
               grabbable: {
