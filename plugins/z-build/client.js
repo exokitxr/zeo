@@ -6,7 +6,8 @@ const SIDES = ['left', 'right'];
 
 class ZBuild {
   mount() {
-    const {three: {THREE, scene, camera}, elements, input, pose, world, render, utils: {function: funUtils, geometry: geometryUtils, menu: menuUtils}} = zeo;
+    const {three: {THREE, scene, camera}, elements, input, pose, world, render, player, utils: {network: networkUtils, geometry: geometryUtils, menu: menuUtils}} = zeo;
+    const {AutoWs} = networkUtils;
 
     const targetPlaneImg = menuUtils.getTargetPlaneImg();
     const colorWheelImg = menuUtils.getColorWheelImg();
@@ -16,7 +17,7 @@ class ZBuild {
       live = false;
     };
 
-    const worldElement = elements.getWorldElement();
+    // const worldElement = elements.getWorldElement();
 
     const _requestImg = url => new Promise((accept, reject) => {
       const img = new Image();
@@ -69,7 +70,7 @@ class ZBuild {
           });
 
           const buildComponent = {
-            selector: 'build[position][color]',
+            selector: 'build[position][build-id][color]',
             attributes: {
               position: {
                 type: 'matrix',
@@ -78,6 +79,10 @@ class ZBuild {
                   0, 0, 0, 1,
                   1, 1, 1,
                 ],
+              },
+              'build-id': {
+                type: 'text',
+                value: _makeId,
               },
               color: {
                 type: 'color',
@@ -485,6 +490,54 @@ class ZBuild {
                 };
               };
 
+              let connection = null;
+              const _ensureConnect = () => {
+                const {file} = entityApi;
+
+                if (file && !connection) {
+                  const peerId = player.getId();
+                  const {buildId} = entityApi;
+                  connection = new AutoWs(_relativeWsUrl('archae/buildws?peerId=' + encodeURIComponent(peerId) + '&buildId=' + encodeURIComponent(buildId)));
+
+                  let currentRemoteBuildSpec = null;
+                  connection.on('message', msg => {
+                    if (typeof msg.data === 'string') {
+                      const e = JSON.parse(msg.data) ;
+                      const {type} = e;
+
+                      if (type === 'buildSpec') {
+                        const {meshId} = e;
+                        currentRemoteBuildSpec = {
+                          meshId,
+                        };
+                      } else {
+                        console.warn('unknown message type', JSON.stringify(type));
+                      }
+                    } else {
+                      if (currentRemoteBuildSpec !== null) {
+                        const {meshId} = currentRemoteBuildSpec;
+                        const {data} = msg;
+
+                        _loadMesh({meshId, data}); // XXX implement this
+                      } else {
+                        console.warn('buffer data before paint spec', msg);
+                      }
+                    }
+                  });
+                } else if (!file && connection) {
+                  _clearMeshes(); // XXX implement this
+
+                  SIDES.forEach(side => {
+                    const buildState = buildStates[side];
+                    buildState.building = false;
+                  });
+
+                  connection.destroy();
+                  connection = null;
+                }
+              };
+              entityApi.ensureConnect = _ensureConnect;
+
               const _makeShapeMesh = ({
                 shapeType = 'box',
                 rotation = zeroQuaternion,
@@ -510,11 +563,11 @@ class ZBuild {
                 });
                 return shapeMeshClone;
               };
-              let mesh = null;
 
+              let mesh = null; // XXX rewrite this to be a string key + meshes object map
               const meshes = [];
 
-              entityApi.load = () => {
+              /* entityApi.load = () => {
                 const {file} = entityApi;
 
                 if (file) {
@@ -602,7 +655,7 @@ class ZBuild {
                     cancelTimeout(timeout);
                   };
                 }
-              };
+              }; */
 
               const _makeBuildState = () => ({
                 grabbed: false,
@@ -964,7 +1017,7 @@ class ZBuild {
                 case 'file': {
                   entityApi.file = newValue;
 
-                  entityApi.load();
+                  /* entityApi.load();
 
                   if (!newValue) {
                     const {cancelSave} = entityApi;
@@ -973,7 +1026,7 @@ class ZBuild {
                       cancelSave();
                       entityApi.cancelSave = null;
                     }
-                  }
+                  } */
 
                   break;
                 }
@@ -1001,6 +1054,10 @@ class ZBuild {
   }
 }
 
+const _relativeWsUrl = s => {
+  const l = window.location;
+  return ((l.protocol === 'https:') ? 'wss://' : 'ws://') + l.host + l.pathname + (!/\/$/.test(l.pathname) ? '/' : '') + s;
+};
 const sq = n => Math.sqrt((n * n) + (n * n));
 const _concatArrayBuffers = as => {
   let length = 0;
