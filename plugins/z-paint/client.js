@@ -338,7 +338,7 @@ class ZPaint {
                 colors.set(newColors, oldColorsSize);
                 uvs.set(newUvs, oldUvsSize);
                 const newNumPoints = oldNumPoints + dataNumPoints;
-                mesh.numPoints = newNumPoints;
+                mesh.lastPoint = newNumPoints;
 
                 positionsAttribute.needsUpdate = true;
                 normalsAttribute.needsUpdate = true;
