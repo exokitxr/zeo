@@ -13,7 +13,7 @@ const SIDES = ['left', 'right'];
 
 class ZPaint {
   mount() {
-    const {three: {THREE, scene}, elements, input, pose, world, render, utils: {function: funUtils, networkUtils, geometry: geometryUtils, menu: menuUtils}} = zeo;
+    const {three: {THREE, scene}, elements, input, pose, world, render, utils: {function: funUtils, network: networkUtils, geometry: geometryUtils, menu: menuUtils}} = zeo;
     const {AutoWs} = networkUtils;
 
     const colorWheelImg = menuUtils.getColorWheelImg();
@@ -746,7 +746,7 @@ class ZPaint {
 
                         _broadcastUpdate({
                           meshId: currentMeshId,
-                          data: mesh.getBuffer(lastPoint, lastPoint + 1);
+                          data: mesh.getBuffer(lastPoint, lastPoint + 1),
                         });
 
                         lastPoint++;

@@ -90,7 +90,7 @@ class ZPaint {
               return file;
             }));
           });
-      );
+      });
     const _requestPaintIndexAndMeshFile = ({paintId, meshId}) => _requestPaintMeshFileSpec({paintId})
       .then(({id, pathname}) => {
         const indexFile = fs.makeFile(id, pathname);
@@ -192,7 +192,7 @@ class ZPaint {
         const _sendInit = () => {
           _requestPaintMeshFiles({paintId})
             .then(meshFiles => {
-              for (let i = 0; i < meshFiles.length; i+++) {
+              for (let i = 0; i < meshFiles.length; i++) {
                 (() => {
                   const meshFile = meshFiles[i];
 
