@@ -87,7 +87,7 @@ class ZPaint {
               }
 
               return Promise.resolve(j.map(meshId => {
-                const file = fs.makeFile(id, path.join(pathname, meshId + '.bin'));
+                const file = fs.makeFile(id, meshId + '.bin');
                 file.meshId = meshId;
                 return file;
               }));
@@ -101,7 +101,7 @@ class ZPaint {
         if (fileSpec) {
           const {id, pathname} = fileSpec;
           const indexFile = fs.makeFile(id, pathname);
-          const meshFile = fs.makeFile(id, path.join(pathname, meshId + '.bin'));
+          const meshFile = fs.makeFile(id, meshId + '.bin');
 
           return Promise.resolve({
             indexFile,
@@ -130,19 +130,21 @@ class ZPaint {
         // }
       }
     };
-    const _ensureFileArray = ({file, entry}) => file.read('utf8')
+    const _ensureFileArrayIncludesEntry = ({file, entry}) => file.read('utf8')
       .then(s => {
         let j = _jsonParse(s);
         if (!Array.isArray(j)) {
           j = [];
         }
 
-        j.push(entry);
+        if (!j.includes(entry)) {
+          j.push(entry);
+        }
 
         return file.write(JSON.stringify(j, null, 2));
       });
     const _appendFileChunk = ({file, data}) => new Promise((accept, reject) => {
-      /* const ws = file.createWriteStream({ // XXX unlock this
+      const ws = file.createWriteStream({
         flags: 'a',
       });
       ws.end(data);
@@ -151,9 +153,7 @@ class ZPaint {
       });
       ws.on('error', err => {
         reject(err);
-      }); */
-
-      accept();
+      });
     });
     const _saveUpdate = ({paintId, meshId, data}) => {
       filesMutex.lock(paintId)
@@ -164,7 +164,7 @@ class ZPaint {
                 const {indexFile, meshFile} = files;
 
                 return Promise.all([
-                  _ensureFileArray({
+                  _ensureFileArrayIncludesEntry({
                     file: indexFile,
                     entry: meshId,
                   }),
