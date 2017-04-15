@@ -133,10 +133,10 @@ class ZPaint {
 
       for (let i = 0; i < connections.length; i++) {
         const connection = connections[i];
-        // if ((!thisPeerOnly ? (connection.peerId !== peerId) : (connection.peerId === peerId)) && connection.paintId === paintId) { // XXX unlock this
+        if ((!thisPeerOnly ? (connection.peerId !== peerId) : (connection.peerId === peerId)) && connection.paintId === paintId) {
           connection.send(es);
           connection.send(data);
-        // }
+        }
       }
     };
     const _ensureFileArrayIncludesEntry = ({file, entry}) => file.read('utf8')

@@ -1,6 +1,6 @@
 const functionutils = require('functionutils');
 
-const MAX_NUM_POINTS = 4 * 1024;
+const MAX_NUM_POINTS = 1024;
 const POINT_FRAME_RATE = 20;
 const POINT_FRAME_TIME = 1000 / POINT_FRAME_RATE;
 const SIZE = 0.02;
@@ -362,118 +362,9 @@ class ZPaint {
                 meshes = {};
               };
 
-              /* entityApi.load = () => {
-                const {file} = entityApi;
-
-                if (file) {
-                  file.read({
-                    type: 'arrayBuffer',
-                  })
-                    .then(arrayBuffer => {
-                      const array = new Float32Array(arrayBuffer);
-                      let frameIndex = 0;
-                      while (frameIndex < array.length) {
-                        const numPoints = Math.floor(array[frameIndex]);
-                        const positionSize = numPoints * 2 * 3;
-                        const uvSize = numPoints * 2 * 2;
-
-                        const positions = array.slice(frameIndex + 1, frameIndex + 1 + positionSize);
-                        const normals = array.slice(frameIndex + 1 + positionSize, frameIndex + 1 + (positionSize * 2));
-                        const colors = array.slice(frameIndex + 1 + (positionSize * 2), frameIndex + 1 + (positionSize * 3));
-                        const uvs = array.slice(frameIndex + 1 + (positionSize * 3), frameIndex + 1 + (positionSize * 3) + uvSize);
-
-                        const mesh = _makePaintMesh({
-                          positions,
-                          normals,
-                          colors,
-                          uvs,
-                          numPoints,
-                        });
-                        scene.add(mesh);
-                        meshes.push(mesh);
-
-                        frameIndex += 1 + (positionSize * 3) + uvSize;
-                      }
-                    });
-                } else {
-                  if (mesh) {
-                    scene.remove(mesh);
-                    mesh = null;
-                  }
-
-                  for (let i = 0; i < meshes.length; i++) {
-                    const mesh = meshes[i];
-                    scene.remove(mesh);
-                  }
-                  meshes.length = 0;
-
-                  SIDES.forEach(side => {
-                    const paintState = paintStates[side];
-                    paintState.painting = false;
-                  });
-                }
-              };
-
-              let dirtyFlag = false;
-              entityApi.cancelSave = null;
-              entityApi.save = () => {
-                const {cancelSave} = entityApi;
-
-                if (!cancelSave) {
-                  const timeout = setTimeout(() => {
-                    const {file} = entityApi;
-
-                    const allMeshes = meshes.concat(mesh ? [mesh] : []);
-                    const b = _concatArrayBuffers(allMeshes.map(mesh => mesh.getBuffer()));
-
-                    const _cleanup = () => {
-                      entityApi.cancelSave = null;
-
-                      if (dirtyFlag) {
-                        dirtyFlag = false;
-
-                        entityApi.save();
-                      }
-                    };
-
-                    let live = true;
-                    file.write(b)
-                      .then(() => {
-                        if (live) {
-                          const broadcastEvent = new CustomEvent('broadcast', { // XXX handle this for multiplayer
-                            detail: {
-                              type: 'paintbrush.update',
-                              id: entityElement.getId(),
-                            },
-                          });
-                          worldElement.dispatchEvent(broadcastEvent);
-
-                          _cleanup();
-                        }
-                      })
-                      .catch(err => {
-                        console.warn(err);
-
-                        _cleanup();
-                      });
-
-                    entityApi.cancelSave = () => {
-                      live = false;
-                    };
-
-                    dirtyFlag = false;
-                  }, DIRTY_TIME);
-
-                  entityApi.cancelSave = () => {
-                    cancelTimeout(timeout);
-                  };
-                }
-              }; */
-
               const _makePaintState = () => ({
                 grabbed: false,
                 painting: false,
-                lastPoint: 0, // XXX don't need this once we get it from the mesh
                 lastPointTime: 0,
                 pressed: false,
                 color: '',
@@ -508,7 +399,6 @@ class ZPaint {
 
                   if (grabbed) {
                     paintState.painting = true;
-                    paintState.lastPoint = 0;
                     paintState.lastPointTime = world.getWorldTime() - POINT_FRAME_TIME;
 
                     const numPainting = functionutils.sum(SIDES.map(side => Number(paintStates[side].painting)));
@@ -593,8 +483,7 @@ class ZPaint {
 
                   if (painting) {
                     const mesh = meshes[currentMeshId];
-                    // let {lastPoint} = mesh; // XXX should really use the last point from the mesh here
-                    let {lastPoint} = paintState;
+                    let {lastPoint} = mesh;
 
                     if (lastPoint < MAX_NUM_POINTS) {
                       const {lastPointTime} = paintState;
@@ -741,17 +630,14 @@ class ZPaint {
                           data: mesh.getBuffer(lastPoint),
                         });
 
-                        /* mesh.lastPoint = lastPoint; // XXX unlock this once backend proxying works
+                        mesh.lastPoint = lastPoint;
                         if (!mesh.visible) {
                           mesh.visible = true;
                         }
 
-                        geometry.setDrawRange(0, lastPoint * 2); */
+                        geometry.setDrawRange(0, lastPoint * 2);
 
-                        paintState.lastPoint = lastPoint; // XXX use the per-mesh start point instead
                         paintState.lastPointTime = worldTime;
-
-                        // entityApi.save(); // XXX remove these
                       }
                     }
                   }
@@ -825,17 +711,6 @@ class ZPaint {
                   entityApi.file = newValue;
 
                   entityApi.ensureConnect();
-
-                  /* entityApi.load();
-
-                  if (!newValue) {
-                    const {cancelSave} = entityApi;
-
-                    if (cancelSave) {
-                      cancelSave();
-                      entityApi.cancelSave = null;
-                    }
-                  } */
 
                   break;
                 }
