@@ -1276,15 +1276,19 @@ class Tags {
                         } else if (mode === 'model') {
                           _requestFileItemModelMesh(tagMesh)
                             .then(modelMesh => {
+                              const modelMeshWrap = new THREE.Object3D();
+                              modelMeshWrap.add(modelMesh);
+
+                              object.add(modelMeshWrap);
+
                               const boundingBox = new THREE.Box3().setFromObject(modelMesh);
                               const boundingBoxSize = boundingBox.getSize();
                               const meshCurrentScale = Math.max(boundingBoxSize.x, boundingBoxSize.y, boundingBoxSize.z);
-                              const meshScaleFactor = (1 / meshCurrentScale) * 0.1125;
-                              modelMesh.position.y = -(WORLD_HEIGHT / 2) - ((WORLD_OPEN_HEIGHT - WORLD_HEIGHT) / 2);
-                              // XXX offset the model to center it based on its bounding box
-                              modelMesh.scale.set(meshScaleFactor, meshScaleFactor, meshScaleFactor);
+                              const meshScaleFactor = (1 / meshCurrentScale) * (WORLD_OPEN_HEIGHT - WORLD_HEIGHT);
+                              modelMeshWrap.scale.set(meshScaleFactor, meshScaleFactor, meshScaleFactor);
 
-                              object.add(modelMesh);
+                              const boundingBoxCenter = boundingBox.getCenter();
+                              modelMeshWrap.position.y = -(WORLD_HEIGHT / 2) - ((WORLD_OPEN_HEIGHT - WORLD_HEIGHT) / 2) - (boundingBoxCenter.y * meshScaleFactor);
                             })
                             .catch(err => {
                               console.warn(err);
