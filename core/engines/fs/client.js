@@ -211,7 +211,13 @@ class Fs {
                     } else if (ext === 'gltf') {
                       return res.arrayBuffer();
                     } else if (ext === 'json') {
-                      return res.json();
+                      const contentLength = parseInt(res.headers.get('Content-Length'), 10);
+
+                      if (!isNaN(contentLength) && contentLength > 0) {
+                        return res.json();
+                      } else {
+                        return Promise.resolve(undefined);
+                      }
                     } else {
                       return Promise.resolve(null);
                     }
@@ -268,7 +274,11 @@ class Fs {
                           accept(scene);
                         });
                       } else if (loaderType === 'json') {
-                        loader.parse(modelData, accept);
+                        if (modelData !== undefined) {
+                          loader.parse(modelData, accept);
+                        } else {
+                          accept(undefined);
+                        }
                       } else {
                         const err = new Error('unknown model type: ' + JSON.stringify(ext));
                         reject(err);

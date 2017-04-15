@@ -522,10 +522,13 @@ class ZBuild {
                     type: 'model',
                   })
                     .then(newMeshesContainer => {
-                      const {children} = newMeshesContainer;
-                      for (let i = 0; i < children.length; i++) {
-                        const child = children[i];
-                        meshesContainer.add(child);
+                      if (newMeshesContainer) {
+                        const {children} = newMeshesContainer;
+
+                        for (let i = 0; i < children.length; i++) {
+                          const child = children[i];
+                          meshesContainer.add(child);
+                        }
                       }
                     });
                 } else {
