@@ -1404,28 +1404,23 @@ class World {
                   const _isRecognizedMimeType = f => _getFileMode(f) !== null;
                   const _isModelMimeType = f => _getFileMode(f) === 'model';
 
-                  return files.sort((a, b) => {
-                    const isRootDiff = +_isRoot(b) - +_isRoot(a);
+                  return files.sort((a, b) => a.path.localeCompare(b.path))
+                    .sort((a, b) => {
+                      const isRootDiff = +_isRoot(b) - +_isRoot(a);
 
-                    if (isRootDiff !== 0) {
-                      return isRootDiff;
-                    } else {
-                      const isRecognizedMimeTypeDiff = +_isRecognizedMimeType(b) - +_isRecognizedMimeType(a);
-
-                      if (isRecognizedMimeTypeDiff !== 0) {
-                        return isRecognizedMimeTypeDiff;
+                      if (isRootDiff !== 0) {
+                        return isRootDiff;
                       } else {
-                        const isModelMimeTypeDiff = _isModelMimeType(b) - +_isModelMimeType(a);
+                        const isRecognizedMimeTypeDiff = +_isRecognizedMimeType(b) - +_isRecognizedMimeType(a);
 
-                        if (isModelMimeTypeDiff !== 0) {
-                          return isModelMimeTypeDiff;
+                        if (isRecognizedMimeTypeDiff !== 0) {
+                          return isRecognizedMimeTypeDiff;
                         } else {
-                          return a.path.localeCompare(b.path);
+                          return _isModelMimeType(b) - +_isModelMimeType(a);
                         }
                       }
-                    }
-                  })[0];
-                })();
+                    })[0];
+                  })();
                 const {path: name} = mainFile;
                 const mimeType = (() => {
                   const {type: mimeType} = mainFile;
