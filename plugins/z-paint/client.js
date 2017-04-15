@@ -212,8 +212,6 @@ class ZPaint {
                         const {data} = msg;
 
                         _loadMesh({meshId, data});
-
-                        // XXX load the data into the mesh with this meshId
                       } else {
                         console.warn('buffer data before paint spec', msg);
                       }
@@ -279,17 +277,15 @@ class ZPaint {
                   const positionSize = lastPoint * 2 * 3;
                   const uvSize = lastPoint * 2 * 2;
                   const array = new Float32Array(
-                    1 + // length
                     positionSize + // position
                     positionSize + // normal
                     positionSize + // color
                     uvSize // uv
                   );
-                  array[0] = lastPoint; // length
-                  array.set(positions.slice(0, positionSize), 1); // position
-                  array.set(normals.slice(0, positionSize), 1 + positionSize); // normal
-                  array.set(colors.slice(0, positionSize), 1 + (positionSize * 2)); // color
-                  array.set(uvs.slice(0, uvSize), 1 + (positionSize * 3)); // uv
+                  array.set(positions.slice(0, positionSize), 0); // position
+                  array.set(normals.slice(0, positionSize), positionSize); // normal
+                  array.set(colors.slice(0, positionSize), positionSize * 2); // color
+                  array.set(uvs.slice(0, uvSize), positionSize * 3); // uv
 
                   return new Uint8Array(array.buffer);
                 };
@@ -297,23 +293,13 @@ class ZPaint {
                 return mesh;
               };
 
-              let mesh = null;
-              const meshes = [];
+              let currentMeshId = null;
+              let meshes = {};
 
-              const _loadMesh = ({meshId, data}) => { // XXX load to the correct mesh here
-                const array = new Float32Array(data);
-                let frameIndex = 0;
-                while (frameIndex < array.length) {
-                  const numPoints = Math.floor(array[frameIndex]);
-                  const positionSize = numPoints * 2 * 3;
-                  const uvSize = numPoints * 2 * 2;
-
-                  const positions = array.slice(frameIndex + 1, frameIndex + 1 + positionSize);
-                  const normals = array.slice(frameIndex + 1 + positionSize, frameIndex + 1 + (positionSize * 2));
-                  const colors = array.slice(frameIndex + 1 + (positionSize * 2), frameIndex + 1 + (positionSize * 3));
-                  const uvs = array.slice(frameIndex + 1 + (positionSize * 3), frameIndex + 1 + (positionSize * 3) + uvSize);
-
-                  const mesh = _makePaintMesh({
+              const _loadMesh = ({meshId, data}) => {
+                let mesh = meshes[meshId];
+                if (!mesh) {
+                  mesh = _makePaintMesh({
                     positions,
                     normals,
                     colors,
@@ -321,22 +307,51 @@ class ZPaint {
                     numPoints,
                   });
                   scene.add(mesh);
-                  meshes.push(mesh);
 
-                  frameIndex += 1 + (positionSize * 3) + uvSize;
+                  meshes[meshId] = meshId;
                 }
+                const {geometry} = mesh;
+                const positionsAttribute = geometry.getAttribute('position');
+                const {array: positions} = positionsAttribute;
+                const normalsAttribute = geometry.getAttribute('normal');
+                const {array: normals} = normalsAttribute;
+                const colorsAttribute = geometry.getAttribute('color');
+                const {array: colors} = colorsAttribute;
+                const uvsAttribute = geometry.getAttribute('uv');
+                const {array: uvs} = uvsAttribute;
+                const {numPoints: oldNumPoints} = mesh;
+                const oldPositionsSize = oldNumPoints * 2 * 3;
+                const oldUvsSize = oldNumPoints * 2 * 2;
+
+                const array = new Float32Array(data);
+                const dataNumPoints = array.length / ((2 * 3) + (2 * 2));
+                const dataPositionSize = dataNumPoints * 2 * 3;
+                const dataUvSize = dataNumPoints * 2 * 2;
+
+                const newPositions = array.slice(0, dataPositionSize);
+                const newNormals = array.slice(dataPositionSize, dataPositionSize * 2);
+                const newColors = array.slice(dataPositionSize * 2, dataPositionSize * 3);
+                const newUvs = array.slice(dataPositionSize * 3, (dataPositionSize * 3) + dataUvSize);
+
+                positions.set(newPositions, oldPositionsSize);
+                normals.set(newNormals, oldPositionsSize);
+                colors.set(newColors, oldColorsSize);
+                uvs.set(newUvs, oldUvsSize);
+                const newNumPoints = oldNumPoints + dataNumPoints;
+                mesh.numPoints = newNumPoints;
+
+                positionsAttribute.needsUpdate = true;
+                normalsAttribute.needsUpdate = true;
+                colorsAttribute.needsUpdate = true;
+                uvsAttribute.needsUpdate = true;
+                geometry.setDrawRange(0, newNumPoints * 2);
               };
               const _clearMeshes = () => {
-                if (mesh) {
-                  scene.remove(mesh);
-                  mesh = null;
-                }
-
-                for (let i = 0; i < meshes.length; i++) {
-                  const mesh = meshes[i];
+                for (const meshId in meshes) {
+                  const mesh = meshes[meshId];
                   scene.remove(mesh);
                 }
-                meshes.length = 0;
+                meshes = {};
               };
 
               /* entityApi.load = () => {
@@ -488,9 +503,12 @@ class ZPaint {
 
                     const numPainting = funUtils.sum(SIDES.map(side => Number(paintStates[side].painting)));
                     if (numPainting === 1) {
-                      mesh = _makePaintMesh();
+                      currentMeshId = _makeId();
 
-                      scene.add(mesh);
+                      _loadMesh({
+                        meshId: currentMeshId,
+                        data: new ArrayBuffer(0),
+                      });
                     }
                   }
                 }
@@ -509,9 +527,7 @@ class ZPaint {
 
                     const numPainting = funUtils.sum(SIDES.map(side => Number(paintStates[side].painting)));
                     if (numPainting === 0) {
-                      meshes.push(mesh);
-
-                      mesh = null;
+                      currentMeshId = null;
                     }
                   }
                 }
@@ -747,18 +763,12 @@ class ZPaint {
               entityApi._cleanup = () => {
                 entityObject.remove(paintbrushMesh);
 
-                if (mesh) {
-                  scene.remove(mesh);
-                }
-                for (let i = 0; i < meshes.length; i++) {
-                  const mesh = meshes[i];
-                  scene.remove(mesh);
-                }
+                _clearMeshes();
 
-                const {cancelSave} = entityApi;
+                /* const {cancelSave} = entityApi;
                 if (cancelSave) {
                   cancelSave();
-                }
+                } */
 
                 entityElement.removeEventListener('grab', _grab);
                 entityElement.removeEventListener('release', _release);
