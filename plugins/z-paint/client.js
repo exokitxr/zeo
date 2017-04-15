@@ -403,7 +403,7 @@ class ZPaint {
                     if (numPainting === 1) {
                       currentMeshId = _makeId();
 
-                      const mesh = _loadMesh({
+                      _loadMesh({
                         meshId: currentMeshId,
                         data: new ArrayBuffer(0),
                       });
