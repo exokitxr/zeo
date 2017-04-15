@@ -1,3 +1,5 @@
+const functionutils = require('functionutils');
+
 const MAX_NUM_POINTS = 4 * 1024;
 const POINT_FRAME_RATE = 20;
 const POINT_FRAME_TIME = 1000 / POINT_FRAME_RATE;
@@ -13,7 +15,7 @@ const SIDES = ['left', 'right'];
 
 class ZPaint {
   mount() {
-    const {three: {THREE, scene}, elements, input, pose, world, render, utils: {function: funUtils, network: networkUtils, geometry: geometryUtils, menu: menuUtils}} = zeo;
+    const {three: {THREE, scene}, elements, input, pose, world, render, utils: {network: networkUtils, geometry: geometryUtils, menu: menuUtils}} = zeo;
     const {AutoWs} = networkUtils;
 
     const colorWheelImg = menuUtils.getColorWheelImg();
@@ -520,7 +522,7 @@ class ZPaint {
                     paintState.lastPoint = 0;
                     paintState.lastPointTime = world.getWorldTime() - POINT_FRAME_TIME;
 
-                    const numPainting = funUtils.sum(SIDES.map(side => Number(paintStates[side].painting)));
+                    const numPainting = functionutils.sum(SIDES.map(side => Number(paintStates[side].painting)));
                     if (numPainting === 1) {
                       currentMeshId = _makeId();
 
@@ -545,7 +547,7 @@ class ZPaint {
                   if (grabbed) {
                     paintState.painting = false;
 
-                    const numPainting = funUtils.sum(SIDES.map(side => Number(paintStates[side].painting)));
+                    const numPainting = functionutils.sum(SIDES.map(side => Number(paintStates[side].painting)));
                     if (numPainting === 0) {
                       currentMeshId = null;
                     }
