@@ -204,7 +204,7 @@ class ZPaint {
                           meshId,
                         };
                       } else {
-                        console.warn('unknown message type', JSON.stringify(type));
+                        console.warn('paint unknown message type', JSON.stringify(type));
                       }
                     } else {
                       if (currentRemotePaintSpec !== null) {

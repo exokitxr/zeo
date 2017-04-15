@@ -323,7 +323,7 @@ class ZDraw {
                           canvasHeight,
                         };
                       } else {
-                        console.warn('unknown message type', JSON.stringify(type));
+                        console.warn('draw unknown message type', JSON.stringify(type));
                       }
                     } else {
                       if (currentRemoteDrawSpec !== null) {
