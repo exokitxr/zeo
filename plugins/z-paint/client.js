@@ -231,6 +231,18 @@ class ZPaint {
               };
               entityApi.ensureConnect = _ensureConnect;
 
+              const _broadcastUpdate = ({meshId, data}) => {
+                const e = {
+                  type: 'paintSpec',
+                  meshId: meshId,
+                };
+                const es = JSON.stringify(e);
+
+                connection.send(es);
+                connection.send(data);
+              };
+              entityApi.broadcastUpdate = _broadcastUpdate;
+
               const _makePaintMesh = ({
                 positions = new Float32Array(MAX_NUM_POINTS * 2 * 3),
                 normals = new Float32Array(MAX_NUM_POINTS * 2 * 3),
@@ -272,20 +284,23 @@ class ZPaint {
                 mesh.frustumCulled = false;
                 mesh.visible = numPoints > 0;
                 mesh.lastPoint = numPoints;
-                mesh.getBuffer = () => {
-                  const {lastPoint} = mesh;
-                  const positionSize = lastPoint * 2 * 3;
-                  const uvSize = lastPoint * 2 * 2;
+                mesh.getBuffer = (startPoint, endPoint) => {
+                  const positionOffset = startPoint * 2 * 3;
+                  const uvOffset = startPoint * 2 * 2;
+                  const numPoints = endPoint - startPoint;
+                  const positionSize = numPoints * 2 * 3;
+                  const uvSize = numPoints * 2 * 2;
+
                   const array = new Float32Array(
                     positionSize + // position
                     positionSize + // normal
                     positionSize + // color
                     uvSize // uv
                   );
-                  array.set(positions.slice(0, positionSize), 0); // position
-                  array.set(normals.slice(0, positionSize), positionSize); // normal
-                  array.set(colors.slice(0, positionSize), positionSize * 2); // color
-                  array.set(uvs.slice(0, uvSize), positionSize * 3); // uv
+                  array.set(positions.slice(positionOffset, positionOffset + positionSize), 0); // position
+                  array.set(normals.slice(positionOffset, positionOffset + positionSize), positionSize); // normal
+                  array.set(colors.slice(positionOffset, positionOffset + positionSize), positionSize * 2); // color
+                  array.set(uvs.slice(uvOffset, uvOffset + uvSize), positionSize * 3); // uv
 
                   return new Uint8Array(array.buffer);
                 };
@@ -345,6 +360,8 @@ class ZPaint {
                 colorsAttribute.needsUpdate = true;
                 uvsAttribute.needsUpdate = true;
                 geometry.setDrawRange(0, newNumPoints * 2);
+
+                return mesh;
               };
               const _clearMeshes = () => {
                 for (const meshId in meshes) {
@@ -465,6 +482,7 @@ class ZPaint {
               const _makePaintState = () => ({
                 grabbed: false,
                 painting: false,
+                lastPoint: 0, // XXX don't need this once we get it from the mesh
                 lastPointTime: 0,
                 pressed: false,
                 color: '',
@@ -499,16 +517,18 @@ class ZPaint {
 
                   if (grabbed) {
                     paintState.painting = true;
+                    paintState.lastPoint = 0;
                     paintState.lastPointTime = world.getWorldTime() - POINT_FRAME_TIME;
 
                     const numPainting = funUtils.sum(SIDES.map(side => Number(paintStates[side].painting)));
                     if (numPainting === 1) {
                       currentMeshId = _makeId();
 
-                      _loadMesh({
+                      const mesh = _loadMesh({
                         meshId: currentMeshId,
                         data: new ArrayBuffer(0),
                       });
+                      mesh.visible = false;
                     }
                   }
                 }
@@ -582,7 +602,9 @@ class ZPaint {
                   const {painting} = paintState;
 
                   if (painting) {
-                    let {lastPoint} = mesh;
+                    const mesh = meshes[currentMeshId];
+                    // let {lastPoint} = mesh; // XXX should really use the last point from the mesh here
+                    let {lastPoint} = paintState;
 
                     if (lastPoint < MAX_NUM_POINTS) {
                       const {lastPointTime} = paintState;
@@ -722,17 +744,23 @@ class ZPaint {
                         colorsAttribute.needsUpdate = true;
                         uvsAttribute.needsUpdate = true;
 
+                        _broadcastUpdate({
+                          meshId: currentMeshId,
+                          data: mesh.getBuffer(lastPoint, lastPoint + 1);
+                        });
+
                         lastPoint++;
-                        mesh.lastPoint = lastPoint;
+                        /* mesh.lastPoint = lastPoint; // XXX unlock this once backend proxying works
                         if (!mesh.visible) {
                           mesh.visible = true;
                         }
 
-                        geometry.setDrawRange(0, lastPoint * 2);
+                        geometry.setDrawRange(0, lastPoint * 2); */
 
+                        paintState.lastPoint = lastPoint; // XXX use the per-mesh start point instead
                         paintState.lastPointTime = worldTime;
 
-                        // entityApi.save();
+                        // entityApi.save(); // XXX remove these
                       }
                     }
                   }
