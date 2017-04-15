@@ -33,10 +33,10 @@ class ZPaint {
 
           if (type === 'entity' && name === 'paintbrush') {
             const {attributes} = tagJson;
-            const {'paint-id': paintId} = attributes;
+            const {'paint-id': paintIdAttribute} = attributes;
 
-            if (paintId) {
-              const {value: paintIdValue} = paintId;
+            if (paintIdAttribute) {
+              const {value: paintIdValue} = paintIdAttribute;
 
               if (paintIdValue === paintId) {
                 return tagJson;
@@ -74,32 +74,42 @@ class ZPaint {
       }
     });
     const _requestPaintMeshFiles = ({paintId}) => _requestPaintMeshFileSpec({paintId})
-      .then(({id, pathname}) => {
-        const indexFile = fs.makeFile(id, pathname);
+      .then(fileSpec => {
+        if (fileSpec) {
+          const {id, pathname} = fileSpec;
+          const indexFile = fs.makeFile(id, pathname);
 
-        return indexFile.read('utf8')
-          .then(s => {
-            let j = _jsonParse(s);
-            if (!Array.isArray(j)) {
-              j = [];
-            }
+          return indexFile.read('utf8')
+            .then(s => {
+              let j = _jsonParse(s);
+              if (!Array.isArray(j)) {
+                j = [];
+              }
 
-            return Promise.resolve(j.map(meshId => {
-              const file = fs.makeFile(id, path.join(pathname, meshId + '.bin'));
-              file.meshId = meshId;
-              return file;
-            }));
-          });
+              return Promise.resolve(j.map(meshId => {
+                const file = fs.makeFile(id, path.join(pathname, meshId + '.bin'));
+                file.meshId = meshId;
+                return file;
+              }));
+            });
+        } else {
+          return Promise.resolve([]);
+        }
       });
     const _requestPaintIndexAndMeshFile = ({paintId, meshId}) => _requestPaintMeshFileSpec({paintId})
-      .then(({id, pathname}) => {
-        const indexFile = fs.makeFile(id, pathname);
-        const meshFile = fs.makeFile(id, path.join(pathname, meshId + '.bin'));
+      .then(fileSpec => {
+        if (fileSpec) {
+          const {id, pathname} = fileSpec;
+          const indexFile = fs.makeFile(id, pathname);
+          const meshFile = fs.makeFile(id, path.join(pathname, meshId + '.bin'));
 
-        return Promise.resolve({
-          indexFile,
-          meshFile,
-        });
+          return Promise.resolve({
+            indexFile,
+            meshFile,
+          });
+        } else {
+          return Promise.resolve(null);
+        }
       });
 
     const connections = [];
