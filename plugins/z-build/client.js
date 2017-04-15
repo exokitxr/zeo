@@ -550,61 +550,71 @@ class ZBuild {
                   target: null,
                 };
                 object.setShape = shape => {
-                  state.shape = shape;
+                  if (shape !== state.shape) {
+                    state.shape = shape;
 
-                  const {
-                    menuMesh: {
-                      shapeMesh: {
-                        shapeMeshes,
+                    const {
+                      menuMesh: {
+                        shapeMesh: {
+                          shapeMeshes,
+                        },
                       },
-                    },
-                  } = toolMesh;
-                  const shapeMesh = shapeMeshes.find(shapeMesh => shapeMesh.shapeType === shape);
+                    } = toolMesh;
+                    const shapeMesh = shapeMeshes.find(shapeMesh => shapeMesh.shapeType === shape);
 
-                  const oldMesh = mesh;
-                  if (oldMesh) {
-                    object.remove(oldMesh);
+                    const oldMesh = mesh;
+                    if (oldMesh) {
+                      object.remove(oldMesh);
+                    }
+
+                    const newMesh = shapeMesh.clone();
+                    newMesh.position.copy(zeroVector);
+                    newMesh.quaternion.copy(zeroQuaternion);
+                    newMesh.scale.copy(oneVector);
+                    object.add(newMwesh);
+
+                    mesh = newMesh;
                   }
-
-                  const newMesh = shapeMesh.clone();
-                  newMesh.position.copy(zeroVector);
-                  newMesh.quaternion.copy(zeroQuaternion);
-                  newMesh.scale.copy(oneVector);
-                  object.add(newMwesh);
-
-                  mesh = newMesh;
                 };
                 object.setRotation = rotation => {
-                  state.rotation = rotation;
+                  if (rotation !== state.rotation) {
+                    state.rotation = rotation;
 
-                  mesh.quaternion.fromArray(rotation);
+                    mesh.quaternion.fromArray(rotation);
+                  }
                 };
                 object.setScaleValue = scaleValue => {
-                  state.scaleValue = scaleValue;
+                  if (scaleValue !== state.scaleValue) {
+                    state.scaleValue = scaleValue;
 
-                  const scaleValueExp = Math.pow(2, scaleValue);
-                  const scaleVector = oneVector.clone().multiplyScalar(scaleValueExp);
-                  mesh.scale.copy(scaleVector);
+                    const scaleValueExp = Math.pow(2, scaleValue);
+                    const scaleVector = oneVector.clone().multiplyScalar(scaleValueExp);
+                    mesh.scale.copy(scaleVector);
+                  }
                 };
                 object.setColor = color => {
-                  state.color = color;
+                  if (color !== state.color) {
+                    state.color = color;
 
-                  mesh.material.color = new THREE.Color(color);
+                    mesh.material.color = new THREE.Color(color);
+                  }
                 };
                 object.setTarget = target => {
-                  state.target = target;
+                  if (target !== state.target) {
+                    state.target = target;
 
-                  switch (target) {
-                    case 'tool': {
-                      shapeMeshContainer.add(mesh);
+                    switch (target) {
+                      case 'tool': {
+                        shapeMeshContainer.add(mesh);
 
-                      break;
-                    }
-                    case 'scene': {
-                      scene.add(mesh);
+                        break;
+                      }
+                      case 'scene': {
+                        scene.add(mesh);
 
-                      break;
-                    }
+                        break;
+                      }
+                   }
                   }
                 };
                 object.getJson = () => state;
