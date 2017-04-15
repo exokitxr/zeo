@@ -124,10 +124,10 @@ class ZPaint {
 
       for (let i = 0; i < connections.length; i++) {
         const connection = connections[i];
-        if ((!thisPeerOnly ? (connection.peerId !== peerId) : (connection.peerId === peerId)) && connection.paintId === paintId) {
+        // if ((!thisPeerOnly ? (connection.peerId !== peerId) : (connection.peerId === peerId)) && connection.paintId === paintId) { // XXX unlock this
           connection.send(es);
           connection.send(data);
-        }
+        // }
       }
     };
     const _ensureFileArray = ({file, entry}) => file.read('utf8')
@@ -142,7 +142,7 @@ class ZPaint {
         return file.write(JSON.stringify(j, null, 2));
       });
     const _appendFileChunk = ({file, data}) => new Promise((accept, reject) => {
-      const ws = file.createWriteStream({
+      /* const ws = file.createWriteStream({ // XXX unlock this
         flags: 'a',
       });
       ws.end(data);
@@ -151,7 +151,9 @@ class ZPaint {
       });
       ws.on('error', err => {
         reject(err);
-      });
+      }); */
+
+      accept();
     });
     const _saveUpdate = ({paintId, meshId, data}) => {
       filesMutex.lock(paintId)

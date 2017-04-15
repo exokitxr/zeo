@@ -281,6 +281,7 @@ class ZPaint {
 
                 const mesh = new THREE.Mesh(geometry, material);
                 mesh.drawMode = THREE.TriangleStripDrawMode;
+                mesh.visible = false;
                 mesh.frustumCulled = false;
                 mesh.lastPoint = 0;
                 mesh.getBuffer = (startPoint, endPoint) => {
@@ -327,12 +328,12 @@ class ZPaint {
                 const {array: colors} = colorsAttribute;
                 const uvsAttribute = geometry.getAttribute('uv');
                 const {array: uvs} = uvsAttribute;
-                const {numPoints: oldNumPoints} = mesh;
+                const {lastPoint: oldNumPoints} = mesh;
                 const oldPositionsSize = oldNumPoints * 2 * 3;
                 const oldUvsSize = oldNumPoints * 2 * 2;
 
                 const array = new Float32Array(data);
-                const dataNumPoints = array.length / ((2 * 3) + (2 * 2));
+                const dataNumPoints = array.length / ((2 * 3) + (2 * 3) + (2 * 3) + (2 * 2));
                 const dataPositionSize = dataNumPoints * 2 * 3;
                 const dataUvSize = dataNumPoints * 2 * 2;
 
@@ -353,6 +354,10 @@ class ZPaint {
                 colorsAttribute.needsUpdate = true;
                 uvsAttribute.needsUpdate = true;
                 geometry.setDrawRange(0, newNumPoints * 2);
+
+                if (newNumPoints > 0 && !mesh.visible) {
+                  mesh.visible = true;
+                }
 
                 return mesh;
               };
@@ -521,7 +526,6 @@ class ZPaint {
                         meshId: currentMeshId,
                         data: new ArrayBuffer(0),
                       });
-                      mesh.visible = false;
                     }
                   }
                 }
@@ -606,7 +610,6 @@ class ZPaint {
                       const currentFrame = _getFrame(currentPointTime);
 
                       if (currentFrame > lastFrame) {
-console.log('loading mesh', {mesh});
                         const {geometry} = mesh;
                         const positionsAttribute = geometry.getAttribute('position');
                         const normalsAttribute = geometry.getAttribute('normal');
