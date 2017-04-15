@@ -578,7 +578,7 @@ class ZBuild {
                     newMesh.position.copy(zeroVector);
                     newMesh.quaternion.copy(zeroQuaternion);
                     newMesh.scale.copy(oneVector);
-                    object.add(newMwesh);
+                    object.add(newMesh);
 
                     mesh = newMesh;
                   }
@@ -612,6 +612,7 @@ class ZBuild {
 
                     switch (target) {
                       case 'tool': {
+                        const {shapeMeshContainer} = toolMesh;
                         shapeMeshContainer.add(mesh);
 
                         break;
@@ -1115,6 +1116,8 @@ class ZBuild {
                 }
                 case 'file': {
                   entityApi.file = newValue;
+
+                  entityApi.ensureConnect();
 
                   /* entityApi.load();
 
