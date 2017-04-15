@@ -143,7 +143,7 @@ class ZBuild {
                   }),
                   _writeFile({
                     file: meshFile,
-                    data: data,
+                    data: JSON.stringify(data, null, 2),
                   }),
                 ]);
               } else {
@@ -201,46 +201,36 @@ class ZBuild {
         };
         _sendInit();
 
-        let currentBuildSpec = null;
         c.on('message', (msg, flags) => {
-          if (flags.binary) {
-            if (currentBuildSpec !== null) {
-              const {meshId} = currentBuildSpec;
-              const data = msg;
-
-              _broadcastUpdate({
-                peerId,
-                buildId,
-                meshId,
-                data,
-              });
-
-              _saveUpdate({
-                buildId,
-                meshId,
-                data,
-              });
-            } else {
-              console.warn('build received data before build spec');
-            }
-          } else {
+          if (!flags.binary) {
             const m = JSON.parse(msg);
 
             if (m && typeof m === 'object' && ('type' in m)) {
               const {type} = m;
 
               if (type === 'buildSpec') {
-                const {meshId} = m;
+                const {meshId, data} = m;
 
-                currentBuildSpec = {
+                _broadcastUpdate({
+                  peerId,
+                  buildId,
                   meshId,
-                };
+                  data,
+                });
+
+                _saveUpdate({
+                  buildId,
+                  meshId,
+                  data,
+                });
               } else {
                 console.warn('build invalid message type', {type});
               }
             } else {
               console.warn('build invalid message', {msg});
             }
+          } else {
+            console.warn('build got binary data', {msg});
           }
         });
         c.on('close', () => {
