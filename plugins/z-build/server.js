@@ -31,7 +31,7 @@ class ZBuild {
           const tagJson = tagsJson[tagId];
           const {type, name} = tagJson;
 
-          if (type === 'entity' && name === 'buildbrush') {
+          if (type === 'entity' && name === 'build') {
             const {attributes} = tagJson;
             const {'build-id': buildIdAttribute} = attributes;
 
@@ -119,7 +119,7 @@ class ZBuild {
           return Promise.resolve([]);
         }
       });
-    const _requestBuildIndexAndMeshFile = ({paintId, meshId}) => _requestBuildMeshFileSpec({paintId})
+    const _requestBuildIndexAndMeshFile = ({buildId, meshId}) => _requestBuildMeshFileSpec({buildId})
       .then(fileSpec => {
         if (fileSpec) {
           const {id, pathname} = fileSpec;
@@ -153,10 +153,10 @@ class ZBuild {
         // }
       }
     };
-    const _saveUpdate = ({paintId, meshId, data}) => {
-      filesMutex.lock(paintId)
+    const _saveUpdate = ({buildId, meshId, data}) => {
+      filesMutex.lock(buildId)
         .then(unlock => {
-          _requestBuildIndexAndMeshFile({paintId, meshId})
+          _requestBuildIndexAndMeshFile({buildId, meshId})
             .then(files => {
               if (files) {
                 const {indexFile, meshFile} = files;
@@ -172,7 +172,7 @@ class ZBuild {
                   }),
                 ]);
               } else {
-                console.warn('paint server could not find file for saving for draw id', {paintId});
+                console.warn('build server could not find file for saving for build id', {buildId});
 
                 return Promise.resolve();
               }
@@ -207,13 +207,13 @@ class ZBuild {
                   const meshFile = meshFiles[i];
                   const {meshId} = meshFile;
 
-                  meshFile.read()
-                    .then(data => {
+                  meshFile.read('utf8')
+                    .then(s => {
                       _broadcastUpdate({
                         peerId,
                         buildId,
                         meshId,
-                        data,
+                        data: _jsonParse(s),
                         thisPeerOnly: true,
                       });
                     })
@@ -243,11 +243,11 @@ class ZBuild {
                   data,
                 });
 
-                /* _saveUpdate({ // XXX unlock this
+                _saveUpdate({
                   buildId,
                   meshId,
                   data,
-                }); */
+                });
               } else {
                 console.warn('build invalid message type', {type});
               }

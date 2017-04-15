@@ -194,7 +194,7 @@ class ZPaint {
                   }),
                 ]);
               } else {
-                console.warn('paint server could not find file for saving for draw id', {paintId});
+                console.warn('paint server could not find file for saving for paint id', {paintId});
 
                 return Promise.resolve();
               }
