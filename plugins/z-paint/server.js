@@ -86,26 +86,35 @@ class ZPaint {
                 j = [];
               }
 
-              return Promise.resolve(j.map(meshId => {
-                const file = fs.makeFile(id, meshId + '.bin');
-                file.meshId = meshId;
-                return file;
-              }));
+              return Promise.resolve(j.map(meshId => ({
+                meshId,
+                files: {
+                  position: fs.makeFile(id, meshId + '.position.bin'),
+                  normal: fs.makeFile(id, meshId + '.normal.bin'),
+                  color: fs.makeFile(id, meshId + '.color.bin'),
+                  uv: fs.makeFile(id, meshId + '.uv.bin'),
+                },
+              })));
             });
         } else {
           return Promise.resolve([]);
         }
       });
-    const _requestPaintIndexAndMeshFile = ({paintId, meshId}) => _requestPaintMeshFileSpec({paintId})
+    const _requestPaintIndexAndMeshFiles = ({paintId, meshId}) => _requestPaintMeshFileSpec({paintId})
       .then(fileSpec => {
         if (fileSpec) {
           const {id, pathname} = fileSpec;
           const indexFile = fs.makeFile(id, pathname);
-          const meshFile = fs.makeFile(id, meshId + '.bin');
+          const meshFileSet = {
+            position: fs.makeFile(id, meshId + '.position.bin'),
+            normal: fs.makeFile(id, meshId + '.normal.bin'),
+            color: fs.makeFile(id, meshId + '.color.bin'),
+            uv: fs.makeFile(id, meshId + '.uv.bin'),
+          };
 
           return Promise.resolve({
-            indexFile,
-            meshFile,
+            indexFile: indexFile,
+            meshFiles: meshFileSet,
           });
         } else {
           return Promise.resolve(null);
@@ -155,21 +164,35 @@ class ZPaint {
         reject(err);
       });
     });
+    const _appendFileChunks = ({files, data}) => {
+      const {position, normal, color, uv} = files;
+
+      const dataNumPoints = data.length / (((2 * 3) + (2 * 3) + (2 * 3) + (2 * 2)) * 4);
+      const dataPositionSize = dataNumPoints * 2 * 3 * 4;
+      const dataUvSize = dataNumPoints * 2 * 2 * 4;
+
+      return Promise.all([
+        _appendFileChunk({file: position, data: data.slice(0, dataPositionSize)}),
+        _appendFileChunk({file: normal, data: data.slice(dataPositionSize, dataPositionSize * 2)}),
+        _appendFileChunk({file: color, data: data.slice(dataPositionSize * 2, dataPositionSize * 3)}),
+        _appendFileChunk({file: uv, data: data.slice(dataPositionSize * 3, (dataPositionSize * 3) + dataUvSize)}),
+      ]);
+    };
     const _saveUpdate = ({paintId, meshId, data}) => {
       filesMutex.lock(paintId)
         .then(unlock => {
-          _requestPaintIndexAndMeshFile({paintId, meshId})
+          _requestPaintIndexAndMeshFiles({paintId, meshId})
             .then(files => {
               if (files) {
-                const {indexFile, meshFile} = files;
+                const {indexFile, meshFiles: meshFileSet} = files;
 
                 return Promise.all([
                   _ensureFileArrayIncludesEntry({
                     file: indexFile,
                     entry: meshId,
                   }),
-                  _appendFileChunk({
-                    file: meshFile,
+                  _appendFileChunks({
+                    files: meshFileSet,
                     data: data,
                   }),
                 ]);
@@ -206,17 +229,26 @@ class ZPaint {
             .then(meshFiles => {
               for (let i = 0; i < meshFiles.length; i++) {
                 (() => {
-                  const meshFile = meshFiles[i];
+                  const meshFileSet = meshFiles[i];
+                  const {meshId, files: {position, normal, color, uv}} = meshFileSet;
 
-                  meshFile.read()
-                    .then(data => {
-                      const {meshId} = meshFile;
-
+                  Promise.all([
+                    position.read(),
+                    normal.read(),
+                    color.read(),
+                    uv.read(),
+                  ])
+                    .then(([
+                      positions,
+                      normals,
+                      colors,
+                      uvs,
+                    ]) => {
                       _broadcastUpdate({
                         peerId,
                         paintId,
                         meshId,
-                        data,
+                        data: Buffer.concat([positions, normals, colors, uvs]),
                         thisPeerOnly: true,
                       });
                     });

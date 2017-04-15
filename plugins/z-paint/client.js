@@ -302,7 +302,7 @@ class ZPaint {
                   array.set(colors.slice(positionOffset, positionOffset + positionSize), positionSize * 2); // color
                   array.set(uvs.slice(uvOffset, uvOffset + uvSize), positionSize * 3); // uv
 
-                  return new Uint8Array(array.buffer);
+                  return array.buffer;
                 };
 
                 return mesh;
@@ -329,8 +329,8 @@ class ZPaint {
                 const uvsAttribute = geometry.getAttribute('uv');
                 const {array: uvs} = uvsAttribute;
                 const {lastPoint: oldNumPoints} = mesh;
-                const oldPositionsSize = oldNumPoints * 2 * 3;
-                const oldUvsSize = oldNumPoints * 2 * 2;
+                const oldPositionsOffset = oldNumPoints * 2 * 3;
+                const oldUvsOffset = oldNumPoints * 2 * 2;
 
                 const array = new Float32Array(data);
                 const dataNumPoints = array.length / ((2 * 3) + (2 * 3) + (2 * 3) + (2 * 2));
@@ -342,10 +342,10 @@ class ZPaint {
                 const newColors = array.slice(dataPositionSize * 2, dataPositionSize * 3);
                 const newUvs = array.slice(dataPositionSize * 3, (dataPositionSize * 3) + dataUvSize);
 
-                positions.set(newPositions, oldPositionsSize);
-                normals.set(newNormals, oldPositionsSize);
-                colors.set(newColors, oldPositionsSize);
-                uvs.set(newUvs, oldUvsSize);
+                positions.set(newPositions, oldPositionsOffset);
+                normals.set(newNormals, oldPositionsOffset);
+                colors.set(newColors, oldPositionsOffset);
+                uvs.set(newUvs, oldUvsOffset);
                 const newNumPoints = oldNumPoints + dataNumPoints;
                 mesh.lastPoint = newNumPoints;
 
