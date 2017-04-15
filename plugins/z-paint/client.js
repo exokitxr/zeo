@@ -39,8 +39,6 @@ class ZPaint {
     return _requestImage('archae/z-paint/brushes/brush.png')
       .then(brushImg => {
         if (live) {
-          const worldElement = elements.getWorldElement();
-
           const paintbrushComponent = {
             selector: 'paintbrush[position][paint-id][color]',
             attributes: {
