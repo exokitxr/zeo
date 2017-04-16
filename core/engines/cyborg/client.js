@@ -1,17 +1,3 @@
-import {
-  WIDTH,
-  HEIGHT,
-  WORLD_WIDTH,
-  WORLD_HEIGHT,
-} from './lib/constants/menu';
-import menuRender from './lib/render/menu';
-window.opts = {
-  WIDTH,
-  HEIGHT,
-  WORLD_WIDTH,
-  WORLD_HEIGHT,
-};
-
 const POSITION_SPEED = 0.05;
 const POSITION_SPEED_FAST = POSITION_SPEED * 5;
 const ROTATION_SPEED = 0.02 / (Math.PI * 2);
@@ -46,7 +32,6 @@ class Cyborg {
       '/core/engines/multiplayer',
       '/core/utils/js-utils',
       '/core/utils/geometry-utils',
-      '/core/utils/creature-utils',
     ])
       .then(([
         three,
@@ -57,17 +42,12 @@ class Cyborg {
         multiplayer,
         jsUtils,
         geometryUtils,
-        creatureUtils,
       ]) => {
         if (live) {
           const {THREE, scene, camera} = three;
           const {hmdModelMesh, controllerModelMesh} = assets;
           const {events} = jsUtils;
           const {EventEmitter} = events;
-
-          const menuRenderer = menuRender.makeRenderer({
-            creatureUtils,
-          });
 
           class Player extends EventEmitter {
             constructor() {
@@ -198,63 +178,12 @@ class Cyborg {
             }
           }
 
-          const _makeLabelMesh = ({username}) => {
-            const labelState = {
-              username: username,
-            };
-
-            const menuUi = biolumi.makeUi({
-              width: WIDTH,
-              height: HEIGHT,
-              color: [1, 1, 1, 0],
-            });
-            const mesh = menuUi.addPage(({
-              label: labelState,
-            }) => ({
-              type: 'html',
-              src: menuRenderer.getLabelSrc({
-                label: labelState,
-              }),
-              x: 0,
-              y: 0,
-              w: WIDTH,
-              h: HEIGHT,
-            }), {
-              type: 'label',
-              state: {
-                label: labelState,
-              },
-              worldWidth: WORLD_WIDTH,
-              worldHeight: WORLD_HEIGHT,
-            });
-            mesh.rotation.order = camera.rotation.order;
-
-            mesh.update = ({hmdStatus, username}) => {
-              const labelPosition = hmdStatus.position.clone().add(new THREE.Vector3(0, WORLD_HEIGHT, 0));
-              mesh.position.copy(labelPosition);
-              const labelRotation = new THREE.Euler().setFromQuaternion(hmdStatus.rotation, camera.rotation.order);
-              labelRotation.x = 0;
-              labelRotation.z = 0;
-              const labelQuaternion = new THREE.Quaternion().setFromEuler(labelRotation);
-              mesh.quaternion.copy(labelQuaternion);
-              // mesh.scale.copy(gamepadStatus.scale);
-
-              if (username !== labelState.username) {
-                labelState.username = username;
-
-                menuUi.update();
-              }
-            };
-
-            return mesh;
-          };
-
           class Hmd {
             constructor() {
               const mesh = hmdModelMesh.clone(true)
               this.mesh = mesh;
 
-              const labelMesh = _makeLabelMesh({
+              const labelMesh = multiplayer.makePlayerLabelMesh({
                 username: rend.getStatus('username'),
               });
               this.labelMesh = labelMesh;
@@ -486,7 +415,6 @@ class Cyborg {
             getPlayer: _getPlayer,
             getHmd: _getHmd,
             getControllers: _getControllers,
-            makeLabelMesh: _makeLabelMesh,
             update: _update,
           };
         }

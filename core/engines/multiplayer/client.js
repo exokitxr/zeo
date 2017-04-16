@@ -1,3 +1,12 @@
+import {
+  WIDTH,
+  HEIGHT,
+
+  WORLD_WIDTH,
+  WORLD_HEIGHT,
+} from './lib/constants/menu';
+import menuRender from './lib/render/menu';
+
 const SIDES = ['left', 'right'];
 
 class Multiplayer {
@@ -20,19 +29,21 @@ class Multiplayer {
         '/core/engines/webvr',
         '/core/engines/login',
         '/core/engines/assets',
+        '/core/engines/biolumi',
         '/core/engines/rend',
-        '/core/engines/cyborg', // XXX fix the cyborg.makeLabelMesh circular dependency by moving the method to the rend engine
         '/core/utils/js-utils',
         '/core/utils/network-utils',
+        '/core/utils/creature-utils',
       ]).then(([
         three,
         webvr,
         login,
         assets,
+        biolumi,
         rend,
-        cyborg,
         jsUtils,
         networkUtils,
+        creatureUtils,
       ]) => {
         if (live) {
           const {THREE, scene, camera} = three;
@@ -40,6 +51,10 @@ class Multiplayer {
           const {events} = jsUtils;
           const {EventEmitter} = events;
           const {AutoWs} = networkUtils;
+
+          const menuRenderer = menuRender.makeRenderer({
+            creatureUtils,
+          });
 
           const zeroVector = new THREE.Vector3();
           const zeroQuaternion = new THREE.Quaternion();
@@ -92,6 +107,57 @@ class Multiplayer {
               remotePlayerMeshes.delete(id);
             }
 
+            makePlayerLabelMesh({username}) {
+              const labelState = {
+                username: username,
+              };
+
+              const menuUi = biolumi.makeUi({
+                width: WIDTH,
+                height: HEIGHT,
+                color: [1, 1, 1, 0],
+              });
+              const mesh = menuUi.addPage(({
+                label: labelState,
+              }) => ({
+                type: 'html',
+                src: menuRenderer.getLabelSrc({
+                  label: labelState,
+                }),
+                x: 0,
+                y: 0,
+                w: WIDTH,
+                h: HEIGHT,
+              }), {
+                type: 'label',
+                state: {
+                  label: labelState,
+                },
+                worldWidth: WORLD_WIDTH,
+                worldHeight: WORLD_HEIGHT,
+              });
+              mesh.rotation.order = camera.rotation.order;
+
+              mesh.update = ({hmdStatus, username}) => {
+                const labelPosition = hmdStatus.position.clone().add(new THREE.Vector3(0, WORLD_HEIGHT, 0));
+                mesh.position.copy(labelPosition);
+                const labelRotation = new THREE.Euler().setFromQuaternion(hmdStatus.rotation, camera.rotation.order);
+                labelRotation.x = 0;
+                labelRotation.z = 0;
+                const labelQuaternion = new THREE.Quaternion().setFromEuler(labelRotation);
+                mesh.quaternion.copy(labelQuaternion);
+                // mesh.scale.copy(gamepadStatus.scale);
+
+                if (username !== labelState.username) {
+                  labelState.username = username;
+
+                  menuUi.update();
+                }
+              };
+
+              return mesh;
+            }
+
             reset() {
               const {remotePlayerMeshes: oldRemotePlayerMeshes} = this;
 
@@ -114,7 +180,7 @@ class Multiplayer {
             object.add(hmd);
             // object.hmd = hmd;
 
-            const hmdLabel = cyborg.makeLabelMesh({
+            const hmdLabel = multiplayerApi.makePlayerLabelMesh({
               username: status.username,
             });
             object.add(hmdLabel);
@@ -411,7 +477,6 @@ const _relativeWsUrl = s => {
   const l = window.location;
   return ((l.protocol === 'https:') ? 'wss://' : 'ws://') + l.host + l.pathname + (!/\/$/.test(l.pathname) ? '/' : '') + s;
 };
-
 const _makeId = () => Math.random().toString(36).substring(7);
 
-module.exports = Multiplayer;
+export default Multiplayer;
