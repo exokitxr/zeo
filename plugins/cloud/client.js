@@ -51,6 +51,7 @@ class Cloud {
           return result;
         })();
         entityObject.add(cloudsMesh);
+        entityApi.cloudsMesh = cloudsMesh;
 
         const _getWorldTime = () => world.getWorldTime();
         const _getPosition = () => {
