@@ -179,13 +179,13 @@ class Multiplayer {
 
             const hmd = hmdModelMesh.clone();
             object.add(hmd);
-            // object.hmd = hmd;
+            object.hmd = hmd;
 
-            const hmdLabel = multiplayerApi.makePlayerLabelMesh({
+            const label = multiplayerApi.makePlayerLabelMesh({
               username: status.username,
             });
-            object.add(hmdLabel);
-            // object.hmdLabel = hmdLabel;
+            object.add(label);
+            object.label = label;
 
             const _makeControllerMesh = () => controllerModelMesh.clone();
             const controllers = {
@@ -194,7 +194,7 @@ class Multiplayer {
             };
             object.add(controllers.left);
             object.add(controllers.right);
-            // object.controllers = controllers;
+            object.controllers = controllers;
 
             object.update = status => {
               const _updateHmd = () => {
@@ -218,7 +218,7 @@ class Multiplayer {
               const _updateLabel = () => {
                 const {hmd: hmdStatus, username} = status;
 
-                hmdLabel.update({
+                label.update({
                   hmdStatus: hmdStatus,
                   username: username,
                 });
@@ -229,7 +229,7 @@ class Multiplayer {
               _updateLabel();
             };
             object.destroy = () => {
-              hmdLabel.destroy();
+              label.destroy();
             };
 
             return object;
