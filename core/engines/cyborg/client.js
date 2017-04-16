@@ -45,7 +45,7 @@ class Cyborg {
       ]) => {
         if (live) {
           const {THREE, scene, camera} = three;
-          const {hmdModelMesh, controllerModelMesh} = assets;
+          const {models: {hmdModelMesh, controllerModelMesh}} = assets;
           const {events} = jsUtils;
           const {EventEmitter} = events;
 
@@ -183,7 +183,7 @@ class Cyborg {
               const mesh = hmdModelMesh.clone(true)
               this.mesh = mesh;
 
-              const labelMesh = multiplayer.makePlayerLabelMesh({
+              const labelMesh = assets.makePlayerLabelMesh({
                 username: rend.getStatus('username'),
               });
               this.labelMesh = labelMesh;

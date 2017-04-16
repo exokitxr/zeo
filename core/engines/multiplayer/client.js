@@ -1,12 +1,3 @@
-import {
-  WIDTH,
-  HEIGHT,
-
-  WORLD_WIDTH,
-  WORLD_HEIGHT,
-} from './lib/constants/menu';
-import menuRender from './lib/render/menu';
-
 const SIDES = ['left', 'right'];
 
 class Multiplayer {
@@ -33,7 +24,6 @@ class Multiplayer {
         '/core/engines/rend',
         '/core/utils/js-utils',
         '/core/utils/network-utils',
-        '/core/utils/creature-utils',
       ]).then(([
         three,
         webvr,
@@ -43,18 +33,13 @@ class Multiplayer {
         rend,
         jsUtils,
         networkUtils,
-        creatureUtils,
       ]) => {
         if (live) {
           const {THREE, scene, camera} = three;
-          const {hmdModelMesh, controllerModelMesh} = assets;
+          const {models: {hmdModelMesh, controllerModelMesh}} = assets;
           const {events} = jsUtils;
           const {EventEmitter} = events;
           const {AutoWs} = networkUtils;
-
-          const menuRenderer = menuRender.makeRenderer({
-            creatureUtils,
-          });
 
           const zeroVector = new THREE.Vector3();
           const zeroQuaternion = new THREE.Quaternion();
@@ -107,58 +92,6 @@ class Multiplayer {
               remotePlayerMeshes.delete(id);
             }
 
-            makePlayerLabelMesh({username}) {
-              const labelState = {
-                username: username,
-              };
-
-              const menuUi = biolumi.makeUi({
-                width: WIDTH,
-                height: HEIGHT,
-                color: [1, 1, 1, 0],
-              });
-              const mesh = menuUi.addPage(({
-                label: labelState,
-              }) => ({
-                type: 'html',
-                src: menuRenderer.getLabelSrc({
-                  label: labelState,
-                }),
-                x: 0,
-                y: 0,
-                w: WIDTH,
-                h: HEIGHT,
-              }), {
-                type: 'label',
-                state: {
-                  label: labelState,
-                },
-                worldWidth: WORLD_WIDTH,
-                worldHeight: WORLD_HEIGHT,
-              });
-              mesh.geometry.applyMatrix(new THREE.Matrix4().makeRotationY(Math.PI));
-              mesh.rotation.order = camera.rotation.order;
-
-              mesh.update = ({hmdStatus, username}) => {
-                const labelPosition = new THREE.Vector3().fromArray(hmdStatus.position).add(new THREE.Vector3(0, WORLD_HEIGHT, 0));
-                mesh.position.copy(labelPosition);
-                const labelRotation = new THREE.Euler().setFromQuaternion(new THREE.Quaternion().fromArray(hmdStatus.rotation), camera.rotation.order);
-                labelRotation.x = 0;
-                labelRotation.z = 0;
-                const labelQuaternion = new THREE.Quaternion().setFromEuler(labelRotation);
-                mesh.quaternion.copy(labelQuaternion);
-                // mesh.scale.copy(gamepadStatus.scale);
-
-                if (username !== labelState.username) {
-                  labelState.username = username;
-
-                  menuUi.update();
-                }
-              };
-
-              return mesh;
-            }
-
             reset() {
               const {remotePlayerMeshes: oldRemotePlayerMeshes} = this;
 
@@ -181,7 +114,7 @@ class Multiplayer {
             object.add(hmd);
             object.hmd = hmd;
 
-            const label = multiplayerApi.makePlayerLabelMesh({
+            const label = assets.makePlayerLabelMesh({
               username: status.username,
             });
             object.add(label);
@@ -480,4 +413,4 @@ const _relativeWsUrl = s => {
 };
 const _makeId = () => Math.random().toString(36).substring(7);
 
-export default Multiplayer;
+module.exports = Multiplayer;
