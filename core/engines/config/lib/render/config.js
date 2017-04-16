@@ -2,18 +2,21 @@ const {
   WIDTH,
 } = require('../constants/config');
 
-const getConfigPageSrc = ({inputText, inputValue, focus, sliderValue, voiceChatCheckboxValue, statsCheckboxValue}) => `\
+const getConfigPageSrc = ({focus, sliderValue, voiceChatCheckboxValue, statsCheckboxValue, lockedCheckboxValue}) => `\
   <div style="width: ${WIDTH}px;">
-    <div style="width: 640px; padding: 30px; box-sizing: border-box;">
-      ${getInputSrc(inputText, '', inputValue, focus, 'config:input')}
-      ${getSliderSrc(sliderValue)}
+    <div style="display: flex; width: 640px; padding: 0 30px; box-sizing: border-box; flex-direction: column;">
+      <h1 style="margin: 15px 0; font-size: 40px; font-weight: 400;">Browser settings</h1>
+      ${/*getInputSrc(inputText, '', inputValue, focus, 'config:input') */''}
+      ${getSliderSrc('Resolution', sliderValue)}
       ${getCheckboxSrc('Voice chat', voiceChatCheckboxValue, 'config:voiceChat')}
       ${getCheckboxSrc('Stats', statsCheckboxValue, 'config:stats')}
+      <h1 style="margin: 15px 0; font-size: 40px; font-weight: 400;">Server settings</h1>
+      ${getCheckboxSrc('Lock mode', lockedCheckboxValue, 'config:lock')}
     </div>
   </div>
 `;
 
-const getInputSrc = (inputText, inputPlaceholder, inputValue, focus, onclick) => `\
+/* const getInputSrc = (inputText, inputPlaceholder, inputValue, focus, onclick) => `\
   <div style='position: relative; margin-bottom: 5px; font-size: 30px; line-height: 1.4;'>
     <a style='display: block; background-color: #EEE; border-radius: 5px; text-decoration: none;' onclick="${onclick}">
       ${focus ? `<div style="position: absolute; width: 2px; top: 0; bottom: 20px; left: ${inputValue}px; background-color: #333;"></div>` : ''}
@@ -21,15 +24,18 @@ const getInputSrc = (inputText, inputPlaceholder, inputValue, focus, onclick) =>
       ${!inputText ? `<div style="color: #CCC;">${inputPlaceholder}</div>` : ''}
     </a>
   </div>
-`;
+`; */
 
-const getSliderSrc = sliderValue => `\
-  <div style="position: relative; height: 50px; margin-bottom: 5px;">
-    <a style="display: block; position: absolute; top: 0; bottom: 0; left: 0; right: 0;" onclick="config:resolution">
-      <div style="position: absolute; top: ${(50 - 6) / 2}px; left: 0; right: 0; height: 6px; background-color: #CCC;">
-        <div style="position: absolute; top: -${(50 - 6) / 2}px; bottom: -${(50 - 6) / 2}px; left: ${sliderValue * (640 - (30 * 2))}px; margin-left: -${6 / 2}px; width: 6px; background-color: #F00;"></div>
-      </div>
-    </a>
+const getSliderSrc = (label, sliderValue) => `\
+  <div style="display: flex; height: 50px; margin-bottom: 5px; justify-content: center; align-items: center;">
+    <h1 style="margin: 0; margin-right: 30px; font-size: 30px; font-weight: 300;">${label}</h1>
+    <div style="position: relative; height: 100%; flex-grow: 1;">
+      <a style="display: block; position: absolute; top: 0; bottom: 0; left: 0; right: 0;" onclick="config:resolution">
+        <div style="position: absolute; top: ${(50 - 6) / 2}px; left: 0; right: 0; height: 6px; background-color: #CCC;">
+          <div style="position: absolute; top: -${(50 - 6) / 2}px; bottom: -${(50 - 6) / 2}px; left: ${sliderValue * 100}%; margin-left: -${6 / 2}px; width: 6px; background-color: #F00;"></div>
+        </div>
+      </a>
+    </div>
   </div>
 `;
 
@@ -60,8 +66,8 @@ const getButtonSrc = (label, onclick) => `\
 
 module.exports = {
   getConfigPageSrc,
-  getInputSrc,
+  /* getInputSrc,
   getSliderSrc,
   getCheckboxSrc,
-  getButtonSrc,
+  getButtonSrc, */
 };

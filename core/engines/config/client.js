@@ -37,12 +37,10 @@ class Config {
     };
 
     const configState = {
-      inputText: 'Hello, world! This is some text!',
-      inputIndex: 0,
-      inputValue: 0,
       sliderValue: 0.5,
       voiceChatCheckboxValue: false,
       statsCheckboxValue: false,
+      lockedCheckboxValue: false,
     };
     const _makeConfigApi = ({EventEmitter}) => {
       class ConfigApi extends EventEmitter {
@@ -50,6 +48,7 @@ class Config {
           return {
             voiceChat: configState.voiceChatCheckboxValue,
             stats: configState.statsCheckboxValue,
+            locked: configState.lockedCheckboxValue,
           };
         }
 
@@ -160,6 +159,7 @@ class Config {
 
                 configState.voiceChatCheckboxValue = configSpec.voiceChat;
                 configState.statsCheckboxValue = configSpec.stats;
+                configState.lockedCheckboxValue = configSpec.locked;
 
                 const configMesh = (() => {
                   const object = new THREE.Object3D();
@@ -169,11 +169,10 @@ class Config {
                   const planeMesh = (() => {
                     const mesh = configUi.addPage(({
                       config: {
-                        inputText,
-                        inputValue,
                         sliderValue,
                         voiceChatCheckboxValue,
                         statsCheckboxValue,
+                        lockedCheckboxValue,
                       },
                       focus: {
                         type: focusType,
@@ -181,12 +180,11 @@ class Config {
                     }) => ({
                       type: 'html',
                       src: configRenderer.getConfigPageSrc({
-                        inputText,
-                        inputValue,
                         focus: focusType === 'config',
                         sliderValue,
                         voiceChatCheckboxValue,
                         statsCheckboxValue,
+                        lockedCheckboxValue,
                       }),
                       x: 0,
                       y: 0,
@@ -318,18 +316,7 @@ class Config {
 
                       focusState.type = '';
 
-                      if (onclick === 'config:input') {
-                        const {value} = configHoverState;
-                        const valuePx = value * (640 - (30 * 2));
-
-                        const {index, px} = biolumi.getTextPropertiesFromCoord(configState.inputText, mainFontSpec, valuePx);
-
-                        configState.inputIndex = index;
-                        configState.inputValue = px;
-                        focusState.type = 'config';
-
-                        configUi.update();
-                      } else if (onclick === 'config:resolution') {
+                      if (onclick === 'config:resolution') {
                         const {value} = configHoverState;
 
                         configState.sliderValue = value;
@@ -352,6 +339,21 @@ class Config {
                           statsMesh.visible = true;
                         } else {
                           configState.statsCheckboxValue = false;
+                          statsMesh.visible = false;
+                        }
+
+                        _saveConfig();
+                        configApi.updateConfig();
+
+                        configUi.update();
+                      } else if (onclick === 'config:lock') {
+                        const {lockedCheckboxValue} = configState;
+
+                        if (!lockedCheckboxValue) {
+                          configState.lockedCheckboxValue = true;
+                          statsMesh.visible = true;
+                        } else {
+                          configState.lockedCheckboxValue = false;
                           statsMesh.visible = false;
                         }
 
