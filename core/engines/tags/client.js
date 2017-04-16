@@ -2971,10 +2971,10 @@ class Tags {
               }
 
               object.destroy = () => {
-                const {item} = tagMesh;
+                const {item} = object;
                 item.destroy();
 
-                const {planeMesh, planeOpenMesh = null, planeDetailsMesh = null, attributesMesh = null} = tagMesh;
+                const {planeMesh, planeOpenMesh = null, planeDetailsMesh = null, attributesMesh = null} = object;
                 [planeMesh, planeOpenMesh, planeDetailsMesh, attributesMesh].forEach(tagSubMesh => {
                   if (tagSubMesh !== null) {
                     tagSubMesh.destroy();
