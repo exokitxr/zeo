@@ -2946,12 +2946,21 @@ class Tags {
                   attributesMesh.update = _update;
                   _update();
 
+                  attributesMesh.destroy = () => {
+                    const {attributeMeshes} = attributesMesh;
+
+                    for (let i = 0; i < attributeMeshes; i++) {
+                      const attributeMesh = attributeMeshes[i];
+                      attributeMesh.destroy();
+                    }
+                  };
+
                   return attributesMesh;
                 })();
                 object.add(attributesMesh);
                 object.attributesMesh = attributesMesh;
 
-                const _setAttribute = (attribute, value) => {
+                object.setAttribute = (attribute, value) => {
                   item.setAttribute(attribute, value);
 
                   attributesMesh.update();
@@ -2959,8 +2968,19 @@ class Tags {
                   const {planeMesh: {page}} = object;
                   page.update();
                 };
-                object.setAttribute = _setAttribute;
               }
+
+              object.destroy = () => {
+                const {item} = tagMesh;
+                item.destroy();
+
+                const {planeMesh, planeOpenMesh = null, planeDetailsMesh = null, attributesMesh = null} = tagMesh;
+                [planeMesh, planeOpenMesh, planeDetailsMesh, attributesMesh].forEach(tagSubMesh => {
+                  if (tagSubMesh !== null) {
+                    tagSubMesh.destroy();
+                  }
+                });
+              };
 
               tagMeshes.push(object);
 
@@ -2971,8 +2991,7 @@ class Tags {
               const index = tagMeshes.indexOf(tagMesh);
 
               if (index !== -1) {
-                const {item} = tagMesh;
-                item.destroy();
+                tagMesh.destroy();
 
                 tagMeshes.splice(index, 1);
               }
