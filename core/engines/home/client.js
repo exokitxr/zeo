@@ -997,7 +997,7 @@ class Home {
                     const {metadata: {serverMesh}} = serverHoverState;
                     const {server} = serverMesh;
                     const {url, token} = server;
-                    const clipboardText = 'https://' + url + '?t=' + token;
+                    const clipboardText = url + '?t=' + token;
 
                     const ok = _copyToClipboard(clipboardText);
                     if (ok) {
