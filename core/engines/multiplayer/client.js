@@ -197,8 +197,6 @@ class Multiplayer {
             // object.controllers = controllers;
 
             object.update = status => {
-              console.log('update', {status});
-
               const _updateHmd = () => {
                 const {hmd: hmdStatus} = status;
 
