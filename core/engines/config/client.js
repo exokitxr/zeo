@@ -18,6 +18,12 @@ import {
 import configUtils from './lib/utils/config';
 import configRenderer from './lib/render/config';
 
+const DEFAULT_BROWSER_CONFIG = {
+  resolution: 0.5,
+  voiceChat: false,
+  stats: false,
+};
+
 const STATS_REFRESH_RATE = 1000;
 
 const SIDES = ['left', 'right'];
@@ -37,7 +43,7 @@ class Config {
     };
 
     const configState = {
-      sliderValue: 0.5,
+      resolutionValue: 0.5,
       voiceChatCheckboxValue: false,
       statsCheckboxValue: false,
       lockedCheckboxValue: false,
@@ -48,6 +54,20 @@ class Config {
           return {
             voiceChat: configState.voiceChatCheckboxValue,
             stats: configState.statsCheckboxValue,
+            locked: configState.lockedCheckboxValue,
+          };
+        }
+
+        getBrowserConfig() {
+          return {
+            resolution: configState.resolutionValue,
+            voiceChat: configState.voiceChatCheckboxValue,
+            stats: configState.statsCheckboxValue,
+          };
+        }
+
+        getServerConfig() {
+          return {
             locked: configState.lockedCheckboxValue,
           };
         }
@@ -117,9 +137,25 @@ class Config {
             right: biolumi.makeMenuHoverState(),
           };
 
-          const _requestGetConfig = world => fetch('archae/config/config.json')
+          const _requestGetBrowserConfig = () => new Promise((accept, reject) => {
+            const configString = localStorage.getItem('config');
+            const config = configString ? JSON.parse(configString) : DEFAULT_BROWSER_CONFIG;
+
+            accept(config);
+          });
+          const _requestSetBrowserConfig = config => new Promise((accept, reject) => {
+            const configString = JSON.stringify(config);
+            localStorage.setItem('config', configString);
+
+            accept();
+          });
+          const _saveBrowserConfig = () => {
+            const config = configApi.getBrowserConfig();
+            _requestSetBrowserConfig(config);
+          };
+          const _requestGetServerConfig = world => fetch('archae/config/config.json')
             .then(res => res.json());
-          const _requestSetConfig = config => fetch('archae/config/config.json', {
+          const _requestSetServerConfig = config => fetch('archae/config/config.json', {
             method: 'PUT',
             headers: {
               'Content-Type': 'application/json',
@@ -128,9 +164,9 @@ class Config {
           })
             .then(res => res.blob())
             .then(() => {})
-          const _saveConfig = configUtils.debounce(next => {
-            const config = configApi.getConfig();
-            _requestSetConfig(config)
+          const _saveServerConfig = configUtils.debounce(next => {
+            const config = configApi.getServerConfig();
+            _requestSetServerConfig(config)
               .then(() => {
                 next();
               })
@@ -145,8 +181,14 @@ class Config {
           stats.render = () => {}; // overridden below
           const statsDom = stats.dom.childNodes[0];
 
-          return _requestGetConfig()
-            .then(configSpec => {
+          return Promise.all([
+            _requestGetBrowserConfig(),
+            _requestGetServerConfig(),
+          ])
+            .then(([
+              browserConfigSpec,
+              serverConfigSpec,
+            ]) => {
               if (live) {
                 const configUi = biolumi.makeUi({
                   width: WIDTH,
@@ -157,9 +199,10 @@ class Config {
                   height: STATS_HEIGHT,
                 });
 
-                configState.voiceChatCheckboxValue = configSpec.voiceChat;
-                configState.statsCheckboxValue = configSpec.stats;
-                configState.lockedCheckboxValue = configSpec.locked;
+                configState.resolutionValue = browserConfigSpec.resolution;
+                configState.voiceChatCheckboxValue = browserConfigSpec.voiceChat;
+                configState.statsCheckboxValue = browserConfigSpec.stats;
+                configState.lockedCheckboxValue = serverConfigSpec.locked;
 
                 const configMesh = (() => {
                   const object = new THREE.Object3D();
@@ -169,7 +212,7 @@ class Config {
                   const planeMesh = (() => {
                     const mesh = configUi.addPage(({
                       config: {
-                        sliderValue,
+                        resolutionValue,
                         voiceChatCheckboxValue,
                         statsCheckboxValue,
                         lockedCheckboxValue,
@@ -181,7 +224,7 @@ class Config {
                       type: 'html',
                       src: configRenderer.getConfigPageSrc({
                         focus: focusType === 'config',
-                        sliderValue,
+                        resolutionValue,
                         voiceChatCheckboxValue,
                         statsCheckboxValue,
                         lockedCheckboxValue,
@@ -319,7 +362,10 @@ class Config {
                       if (onclick === 'config:resolution') {
                         const {value} = configHoverState;
 
-                        configState.sliderValue = value;
+                        configState.resolutionValue = value;
+
+                        _saveBrowserConfig();
+                        configApi.updateConfig();
 
                         configUi.update();
                       } else if (onclick === 'config:voiceChat') {
@@ -327,37 +373,27 @@ class Config {
 
                         configState.voiceChatCheckboxValue = !voiceChatCheckboxValue;
 
-                        _saveConfig();
+                        _saveBrowserConfig();
                         configApi.updateConfig();
 
                         configUi.update();
                       } else if (onclick === 'config:stats') {
-                        const {statsCheckboxValue} = configState;
+                        const {statsCheckboxValue: oldStatsCheckboxValue} = configState;
 
-                        if (!statsCheckboxValue) {
-                          configState.statsCheckboxValue = true;
-                          statsMesh.visible = true;
-                        } else {
-                          configState.statsCheckboxValue = false;
-                          statsMesh.visible = false;
-                        }
+                        const newStatsCheckboxValue = !oldStatsCheckboxValue;
+                        configState.statsCheckboxValue = newStatsCheckboxValue;
+                        statsMesh.visible = newStatsCheckboxValue;
 
-                        _saveConfig();
+                        _saveBrowserConfig();
                         configApi.updateConfig();
 
                         configUi.update();
                       } else if (onclick === 'config:lock') {
                         const {lockedCheckboxValue} = configState;
 
-                        if (!lockedCheckboxValue) {
-                          configState.lockedCheckboxValue = true;
-                          statsMesh.visible = true;
-                        } else {
-                          configState.lockedCheckboxValue = false;
-                          statsMesh.visible = false;
-                        }
+                        configState.lockedCheckboxValue = !lockedCheckboxValue;
 
-                        _saveConfig();
+                        _saveServerConfig();
                         configApi.updateConfig();
 
                         configUi.update();
