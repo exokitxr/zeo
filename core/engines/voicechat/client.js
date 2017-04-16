@@ -17,7 +17,7 @@ export default class VoiceChat {
     };
 
     if (serverEnabled) {
-      return archae.requestPlugins([
+      archae.requestPlugins([
         '/core/engines/three',
         '/core/engines/somnifer',
         '/core/engines/login',
@@ -43,6 +43,49 @@ export default class VoiceChat {
             const {EventEmitter} = events;
             const {AutoWs} = networkUtils;
 
+            const callInterface = (() => {
+              let currentRemotePeerId = null;
+
+              const connection = new AutoWs(_relativeWsUrl('archae/voicechatWs?id=' + multiplayer.getId()));
+              connection.on('message', msg => {
+                if (typeof msg.data === 'string') {
+                  const e = JSON.parse(msg.data) ;
+                  const {type} = e;
+
+                  if (type === 'id') {
+                    const {id: messageId} = e;
+                    currentRemotePeerId = messageId;
+                  } else {
+                    console.warn('unknown message type', JSON.stringify(type));
+                  }
+                } else {
+                  if (currentRemotePeerId !== null) {
+                    callInterface.emit('buffer', {
+                      id: currentRemotePeerId,
+                      data: new Int16Array(msg.data),
+                    });
+                  } else {
+                    console.warn('buffer data before remote peer id', msg);
+                  }
+                }
+              });
+              connection.on('disconnect', () => {
+                currentRemotePeerId = null;
+              });
+
+              class CallInterface extends EventEmitter {
+                write(d) {
+                  connection.sendUnbuffered(d);
+                }
+
+                destroy() {
+                  connection.destroy();
+                }
+              }
+              const callInterface = new CallInterface();
+              return callInterface;
+            })();
+
             const cleanups = [];
             const cleanup = () => {
               for (let i = 0; i < cleanups.length; i++) {
@@ -59,63 +102,6 @@ export default class VoiceChat {
                 enabled = false;
               });
 
-              const _requestCallInterface = () => {
-                let currentRemotePeerId = null;
-
-                const connection = new AutoWs(_relativeWsUrl('archae/voicechatWs?id=' + multiplayer.getId()));
-                connection.on('message', msg => {
-                  if (typeof msg.data === 'string') {
-                    const e = JSON.parse(msg.data) ;
-                    const {type} = e;
-
-                    if (type === 'id') {
-                      const {id: messageId} = e;
-                      currentRemotePeerId = messageId;
-                    } else {
-                      console.warn('unknown message type', JSON.stringify(type));
-                    }
-                  } else {
-                    if (currentRemotePeerId !== null) {
-                      callInterface.emit('buffer', {
-                        id: currentRemotePeerId,
-                        data: new Int16Array(msg.data),
-                      });
-                    } else {
-                      console.warn('buffer data before remote peer id', msg);
-                    }
-                  }
-                });
-                connection.on('disconnect', () => {
-                  currentRemotePeerId = null;
-                });
-
-                class CallInterface extends EventEmitter {
-                  constructor() {
-                    super();
-
-                    this.open = true;
-                  }
-
-                  write(d) {
-                    connection.sendUnbuffered(d);
-                  }
-
-                  close() {
-                    this.open = false;
-
-                    this.emit('close');
-                  }
-
-                  destroy() {
-                    connection.close();
-                  }
-                }
-                const callInterface = new CallInterface();
-                cleanups.push(() => {
-                  callInterface.destroy();
-                });
-                return Promise.resolve(callInterface);
-              };
               const _requestMicrophoneMediaStream = () => navigator.mediaDevices.getUserMedia({
                 audio: true,
               }).then(mediaStream => {
@@ -135,14 +121,8 @@ export default class VoiceChat {
                 return mediaStream;
               }); */
 
-              Promise.all([
-                _requestCallInterface(),
-                _requestMicrophoneMediaStream(),
-              ])
-                .then(([
-                  callInterface,
-                  mediaStream,
-                ]) => {
+              _requestMicrophoneMediaStream()
+                .then(mediaStream => {
                   const audioContext = THREE.AudioContext.getContext();
 
                   const _makeSoundBody = id => {
@@ -248,6 +228,8 @@ export default class VoiceChat {
 
             this._cleanup = () => {
               cleanup();
+
+              callInterface.destroy();
 
               rend.removeListener('login', _login);
               rend.removeListener('logout', _logout);
