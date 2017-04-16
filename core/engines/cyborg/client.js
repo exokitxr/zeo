@@ -198,7 +198,15 @@ class Cyborg {
 
               const {labelMesh} = this;
               labelMesh.update({
-                hmdStatus: hmdStatus,
+                hmdStatus: {
+                  position: hmdStatus.position.toArray(),
+                  rotation: (() => { // flip our own label so it appears to face the right direction in the mirror
+                    const euler = new THREE.Euler().setFromQuaternion(hmdStatus.rotation, camera.rotation.order);
+                    euler.y += Math.PI;
+                    return new THREE.Quaternion().setFromEuler(euler).toArray();
+                  })(),
+                  // scale: hmdStatus.scale.toArray(),
+                },
                 username: rend.getStatus('username'),
               });
             }

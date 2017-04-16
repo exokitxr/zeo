@@ -136,12 +136,13 @@ class Multiplayer {
                 worldWidth: WORLD_WIDTH,
                 worldHeight: WORLD_HEIGHT,
               });
+              mesh.geometry.applyMatrix(new THREE.Matrix4().makeRotationY(Math.PI));
               mesh.rotation.order = camera.rotation.order;
 
               mesh.update = ({hmdStatus, username}) => {
-                const labelPosition = hmdStatus.position.clone().add(new THREE.Vector3(0, WORLD_HEIGHT, 0));
+                const labelPosition = new THREE.Vector3().fromArray(hmdStatus.position).add(new THREE.Vector3(0, WORLD_HEIGHT, 0));
                 mesh.position.copy(labelPosition);
-                const labelRotation = new THREE.Euler().setFromQuaternion(hmdStatus.rotation, camera.rotation.order);
+                const labelRotation = new THREE.Euler().setFromQuaternion(new THREE.Quaternion().fromArray(hmdStatus.rotation), camera.rotation.order);
                 labelRotation.x = 0;
                 labelRotation.z = 0;
                 const labelQuaternion = new THREE.Quaternion().setFromEuler(labelRotation);
@@ -173,7 +174,7 @@ class Multiplayer {
           }
           const multiplayerApi = new MutiplayerInterface(_makeId());
 
-          const _makeRemotePlayerMesh = status => {
+          const _makeRemotePlayerMesh = () => {
             const object = new THREE.Object3D();
 
             const hmd = hmdModelMesh.clone();
@@ -196,6 +197,8 @@ class Multiplayer {
             // object.controllers = controllers;
 
             object.update = status => {
+              console.log('update', {status});
+
               const _updateHmd = () => {
                 const {hmd: hmdStatus} = status;
 
@@ -215,7 +218,7 @@ class Multiplayer {
                 rightController.quaternion.fromArray(rightControllerStatus.rotation);
               };
               const _updateLabel = () => {
-                const {hdm: hmdStatus, username} = status;
+                const {hmd: hmdStatus, username} = status;
 
                 hmdLabel.update({
                   hmdStatus: hmdStatus,
@@ -231,14 +234,13 @@ class Multiplayer {
               hmdLabel.destroy();
             };
 
-            _updateRemotePlayerMesh(object, status);
-
             return object;
           };
 
           const playerStatuses = multiplayerApi.getPlayerStatuses();
           playerStatuses.forEach((status, id) => {
-            const remotePlayerMesh = _makeRemotePlayerMesh(status);
+            const remotePlayerMesh = _makeRemotePlayerMesh();
+            remotePlayerMesh.update(status);
 
             scene.add(remotePlayerMesh);
 
@@ -253,7 +255,8 @@ class Multiplayer {
           };
           const playerEnter = update => {
             const {id, status} = update;
-            const remotePlayerMesh = _makeRemotePlayerMesh(status);
+            const remotePlayerMesh = _makeRemotePlayerMesh();
+            remotePlayerMesh.update(status);
 
             scene.add(remotePlayerMesh);
 
