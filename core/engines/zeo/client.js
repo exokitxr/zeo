@@ -142,7 +142,6 @@ class Zeo {
               const {THREE, scene, camera, renderer} = three;
               const {domElement} = renderer;
               const {EVENTS: INPUT_EVENTS} = input;
-              const {sound} = somnifer;
               const {events} = jsUtils;
               const {EventEmitter} = events;
 

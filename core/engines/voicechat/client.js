@@ -39,7 +39,6 @@ export default class VoiceChat {
         ]) => {
           if (live) {
             const {THREE} = three;
-            const {sound} = somnifer;
             const {events} = jsUtils;
             const {EventEmitter} = events;
             const {AutoWs} = networkUtils;
@@ -157,7 +156,7 @@ export default class VoiceChat {
                       objectMode: true,
                     });
 
-                    const result = new sound.Body();
+                    const result = somnifer.makeBody();
                     result.setInputSource(inputNode);
                     result.inputNode = inputNode;
                     result.setObject(remotePlayerMesh);
