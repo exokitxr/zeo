@@ -8,7 +8,7 @@ const child_process = require('child_process');
 const MIN_BUFFER_LENGTH = 64 * 1024;
 const MAX_BUFFER_LENGTH = MIN_BUFFER_LENGTH * 2;
 
-const ffmpegBinPath = path.join(__dirname, 'lib', 'bin', 'ffmpeg');
+const ffmpegBinPath = path.join(__dirname, 'lib', 'bin', 'ffmpeg', 'ffmpeg');
 
 class VoiceChat {
   constructor(archae) {
