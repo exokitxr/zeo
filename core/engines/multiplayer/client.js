@@ -162,7 +162,7 @@ class Multiplayer {
               _updateLabel();
             };
             object.destroy = () => {
-              hmdLabel.destroy(); // XXX implement this in the biolumi engine
+              hmdLabel.destroy();
             };
 
             _updateRemotePlayerMesh(object, status);
@@ -173,7 +173,9 @@ class Multiplayer {
           const playerStatuses = multiplayerApi.getPlayerStatuses();
           playerStatuses.forEach((status, id) => {
             const remotePlayerMesh = _makeRemotePlayerMesh(status);
+
             scene.add(remotePlayerMesh);
+
             multiplayerApi.addRemotePlayerMesh(id, remotePlayerMesh);
           });
 

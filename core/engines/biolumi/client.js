@@ -517,6 +517,13 @@ class Biolumi {
                   const mesh = new THREE.Mesh(geometry, material);
                   mesh.page = page;
 
+                  mesh.destroy = () => {
+                    geometry.dispose();
+
+                    material.uniforms.texture.value.dispose();
+                    material.dispose();
+                  };
+
                   return mesh;
                 })();
 
