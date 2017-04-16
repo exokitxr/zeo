@@ -21,6 +21,7 @@ class Multiplayer {
         '/core/engines/login',
         '/core/engines/assets',
         '/core/engines/rend',
+        '/core/engines/cyborg',
         '/core/utils/js-utils',
         '/core/utils/network-utils',
       ]).then(([
@@ -29,6 +30,7 @@ class Multiplayer {
         login,
         assets,
         rend,
+        cyborg,
         jsUtils,
         networkUtils,
       ]) => {
@@ -110,7 +112,13 @@ class Multiplayer {
 
             const hmd = hmdModelMesh.clone();
             object.add(hmd);
-            object.hmd = hmd;
+            // object.hmd = hmd;
+
+            const hmdLabel = _makeLabelMesh({
+              username: status.username,
+            });
+            object.add(hmdLabel);
+            // object.hmdLabel = hmdLabel;
 
             const _makeControllerMesh = () => controllerModelMesh.clone();
             const controllers = {
@@ -119,37 +127,47 @@ class Multiplayer {
             };
             object.add(controllers.left);
             object.add(controllers.right);
-            object.controllers = controllers;
+            // object.controllers = controllers;
+
+            object.update = status => {
+              const _updateHmd = () => {
+                const {hmd: hmdStatus} = status;
+
+                hmd.position.fromArray(hmdStatus.position);
+                hmd.quaternion.fromArray(hmdStatus.rotation);
+              };
+              const _updateControllers = () => {
+                const {left: leftController, right: rightController} = controllers;
+
+                const {controllers: controllersStatus} = status;
+                const {left: leftControllerStatus, right: rightControllerStatus} = controllersStatus;
+
+                leftController.position.fromArray(leftControllerStatus.position);
+                leftController.quaternion.fromArray(leftControllerStatus.rotation);
+
+                rightController.position.fromArray(rightControllerStatus.position);
+                rightController.quaternion.fromArray(rightControllerStatus.rotation);
+              };
+              const _updateLabel = () => {
+                const {hdm: hmdStatus, username} = status;
+
+                hmdLabel.update({
+                  hmdStatus: hmdStatus,
+                  username: username,
+                });
+              };
+
+              _updateHmd();
+              _updateControllers();
+              _updateLabel();
+            };
+            object.destroy = () => {
+              hmdLabel.destroy(); // XXX implement this in the biolumi engine
+            };
 
             _updateRemotePlayerMesh(object, status);
 
             return object;
-          };
-          const _updateRemotePlayerMesh = (remotePlayerMesh, status) => {
-            const _updateHmd = () => {
-              const {hmd} = remotePlayerMesh;
-
-              const {hmd: hmdStatus} = status;
-
-              hmd.position.fromArray(hmdStatus.position);
-              hmd.quaternion.fromArray(hmdStatus.rotation);
-            };
-            const _updateControllers = () => {
-              const {controllers} = remotePlayerMesh;
-              const {left: leftController, right: rightController} = controllers;
-
-              const {controllers: controllersStatus} = status;
-              const {left: leftControllerStatus, right: rightControllerStatus} = controllersStatus;
-
-              leftController.position.fromArray(leftControllerStatus.position);
-              leftController.quaternion.fromArray(leftControllerStatus.rotation);
-
-              rightController.position.fromArray(rightControllerStatus.position);
-              rightController.quaternion.fromArray(rightControllerStatus.rotation);
-            };
-
-            _updateHmd();
-            _updateControllers();
           };
 
           const playerStatuses = multiplayerApi.getPlayerStatuses();
@@ -162,18 +180,24 @@ class Multiplayer {
           const playerStatusUpdate = update => {
             const {id, status} = update;
             const remotePlayerMesh = multiplayerApi.getRemotePlayerMesh(id);
-            _updateRemotePlayerMesh(remotePlayerMesh, status);
+
+            remotePlayerMesh.update(status);
           };
           const playerEnter = update => {
             const {id, status} = update;
             const remotePlayerMesh = _makeRemotePlayerMesh(status);
+
             scene.add(remotePlayerMesh);
+
             multiplayerApi.addRemotePlayerMesh(id, remotePlayerMesh);
           };
           const playerLeave = update => {
             const {id} = update;
             const remotePlayerMesh = multiplayerApi.getRemotePlayerMesh(id);
+
             scene.remove(remotePlayerMesh);
+            remotePlayerMesh.destroy();
+
             multiplayerApi.removeRemotePlayerMesh(id);
           };
           multiplayerApi.on('playerStatusUpdate', playerStatusUpdate);

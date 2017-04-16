@@ -229,16 +229,20 @@ class Cyborg {
             });
             mesh.rotation.order = camera.rotation.order;
 
-            const _update = () => {
-              menuUi.update();
-            };
-            _update();
+            mesh.update = ({hmdStatus, username}) => {
+              const labelPosition = hmdStatus.position.clone().add(new THREE.Vector3(0, WORLD_HEIGHT, 0));
+              mesh.position.copy(labelPosition);
+              const labelRotation = new THREE.Euler().setFromQuaternion(hmdStatus.rotation, camera.rotation.order);
+              labelRotation.x = 0;
+              labelRotation.z = 0;
+              const labelQuaternion = new THREE.Quaternion().setFromEuler(labelRotation);
+              mesh.quaternion.copy(labelQuaternion);
+              // mesh.scale.copy(gamepadStatus.scale);
 
-            mesh.update = ({username}) => {
               if (username !== labelState.username) {
                 labelState.username = username;
 
-                _update();
+                menuUi.update();
               }
             };
 
@@ -264,15 +268,8 @@ class Cyborg {
               mesh.updateMatrixWorld();
 
               const {labelMesh} = this;
-              const labelPosition = hmdStatus.position.clone().add(new THREE.Vector3(0, WORLD_HEIGHT, 0));
-              labelMesh.position.copy(labelPosition);
-              const labelRotation = new THREE.Euler().setFromQuaternion(hmdStatus.rotation, camera.rotation.order);
-              labelRotation.x = 0;
-              labelRotation.z = 0;
-              const labelQuaternion = new THREE.Quaternion().setFromEuler(labelRotation);
-              labelMesh.quaternion.copy(labelQuaternion);
-              // labelMesh.scale.copy(gamepadStatus.scale);
               labelMesh.update({
+                hmdStatus: hmdStatus,
                 username: rend.getStatus('username'),
               });
             }
@@ -489,6 +486,7 @@ class Cyborg {
             getPlayer: _getPlayer,
             getHmd: _getHmd,
             getControllers: _getControllers,
+            makeLabelMesh: _makeLabelMesh,
             update: _update,
           };
         }
