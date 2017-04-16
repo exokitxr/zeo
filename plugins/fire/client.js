@@ -202,6 +202,16 @@ class Fire {
                 });
                 result.flameMeshes = flameMeshes;
 
+                result.destroy = () => {
+                  logMeshes.forEach(logMesh => {
+                    logMesh.geometry.dispose();
+                  });
+                  ashMesh.geometry.dispose();
+                  flameMeshes.forEach(flameMesh => {
+                    flameMesh.geometry.dispose();
+                  });
+                };
+
                 return result;
               })();
               entityObject.add(fireMesh);
@@ -241,9 +251,15 @@ class Fire {
                     if (worldTimeDiffSeconds < 2) {
                       mesh.position.y += 0.01 * worldTimeDiffSeconds;
                     } else {
-                      entityObject.remove(mesh);
-                      sparkMeshes.splice(sparkMeshes.indexOf(mesh), 1);
+                      entityObject.remove(sparkMesh);
+
+                      mesh.destroy();
+
+                      sparkMeshes.splice(sparkMeshes.indexOf(sparkMesh), 1);
                     }
+                  };
+                  mesh.destroy = () => {
+                    geometry.dispose();
                   };
 
                   return mesh;
@@ -294,6 +310,7 @@ class Fire {
 
               entityApi._cleanup = () => {
                 entityObject.remove(fireMesh);
+                fireMesh.destroy();
 
                 const {audio} = soundBody;
                 if (!audio.paused) {
@@ -303,6 +320,7 @@ class Fire {
                 for (let i = 0; i < sparkMeshes.length; i++) {
                   const sparkMesh = sparkMeshes[i];
                   entityObject.remove(sparkMesh);
+                  sparkMesh.destroy();
                 }
                 clearTimeout(sparkTimeout);
 
@@ -350,6 +368,14 @@ class Fire {
           elements.registerComponent(this, fireComponent);
 
           this._cleanup = () => {
+            logGeometry.dispose();
+            ashGeometry.dispose();
+            flameGeometry.dispose();
+            logMaterial.dispose();
+            ashMaterial.dispose();
+            flameMaterial.dispose();
+            sparkMaterial.dispose();
+
             elements.unregisterComponent(this, fireComponent);
           };
         }
