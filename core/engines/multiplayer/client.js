@@ -21,7 +21,7 @@ class Multiplayer {
         '/core/engines/login',
         '/core/engines/assets',
         '/core/engines/rend',
-        '/core/engines/cyborg',
+        '/core/engines/cyborg', // XXX fix the cyborg.makeLabelMesh circular dependency by moving the method to the rend engine
         '/core/utils/js-utils',
         '/core/utils/network-utils',
       ]).then(([
@@ -114,7 +114,7 @@ class Multiplayer {
             object.add(hmd);
             // object.hmd = hmd;
 
-            const hmdLabel = _makeLabelMesh({
+            const hmdLabel = cyborg.makeLabelMesh({
               username: status.username,
             });
             object.add(hmdLabel);
