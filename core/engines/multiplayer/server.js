@@ -77,10 +77,7 @@ class Multiplayer {
               statuses.set(id, newStatus);
             }
 
-            const statusUpdate = hadStatus ? {
-              hmd: newStatus.hmd,
-              controllers: newStatus.controllers,
-            } : {
+            const statusUpdate = {
               hmd: newStatus.hmd,
               controllers: newStatus.controllers,
               username: newStatus.username,
