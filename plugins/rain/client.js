@@ -148,7 +148,7 @@ class Rain {
       }
     };
 
-    class RainElement extends HTMLElement {
+    const rainComponent = {
       selector: 'rain[position][type][drops][range][length][color][enabled]',
       attributes: {
         position: {
@@ -193,8 +193,8 @@ class Rain {
         },
         enabled: {
           type: 'checkbox',
-          value: true.
-        }
+          value: true,
+        },
       },
       entityAddedCallback(entityElement) {
         const entityApi = entityElement.getComponentApi();
