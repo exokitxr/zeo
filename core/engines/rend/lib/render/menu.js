@@ -1,9 +1,9 @@
-const makeRenderer = ({creatureUtils}) => {
-
 const {
   WIDTH,
   HEIGHT,
 } = require('../constants/menu');
+
+const makeRenderer = ({creatureUtils}) => {
 
 const getStatusSrc = ({status: {username, worldname, users, hasHub, loading}}) => {
   const allUsers = !loading ? [username].concat(users).sort((a, b) => a.localeCompare(b)) : null;

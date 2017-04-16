@@ -1,3 +1,17 @@
+import {
+  WIDTH,
+  HEIGHT,
+  WORLD_WIDTH,
+  WORLD_HEIGHT,
+} from './lib/constants/menu';
+import menuRender from './lib/render/menu';
+window.opts = {
+  WIDTH,
+  HEIGHT,
+  WORLD_WIDTH,
+  WORLD_HEIGHT,
+};
+
 const POSITION_SPEED = 0.05;
 const POSITION_SPEED_FAST = POSITION_SPEED * 5;
 const ROTATION_SPEED = 0.02 / (Math.PI * 2);
@@ -27,25 +41,33 @@ class Cyborg {
       '/core/engines/three',
       '/core/engines/webvr',
       '/core/engines/assets',
+      '/core/engines/biolumi',
       '/core/engines/rend',
       '/core/engines/multiplayer',
       '/core/utils/js-utils',
       '/core/utils/geometry-utils',
+      '/core/utils/creature-utils',
     ])
       .then(([
         three,
         webvr,
         assets,
+        biolumi,
         rend,
         multiplayer,
         jsUtils,
         geometryUtils,
+        creatureUtils,
       ]) => {
         if (live) {
           const {THREE, scene, camera} = three;
           const {hmdModelMesh, controllerModelMesh} = assets;
           const {events} = jsUtils;
           const {EventEmitter} = events;
+
+          const menuRenderer = menuRender.makeRenderer({
+            creatureUtils,
+          });
 
           class Player extends EventEmitter {
             constructor() {
@@ -176,22 +198,86 @@ class Cyborg {
             }
           }
 
+          const _makeLabelMesh = ({username}) => {
+            const labelState = {
+              username: username,
+            };
+
+            const menuUi = biolumi.makeUi({
+              width: WIDTH,
+              height: HEIGHT,
+              color: [1, 1, 1, 0],
+            });
+            const mesh = menuUi.addPage(({
+              label: labelState,
+            }) => ({
+              type: 'html',
+              src: menuRenderer.getLabelSrc({
+                label: labelState,
+              }),
+              x: 0,
+              y: 0,
+              w: WIDTH,
+              h: HEIGHT,
+            }), {
+              type: 'label',
+              state: {
+                label: labelState,
+              },
+              worldWidth: WORLD_WIDTH,
+              worldHeight: WORLD_HEIGHT,
+            });
+            mesh.rotation.order = camera.rotation.order;
+
+            const _update = () => {
+              menuUi.update();
+            };
+            _update();
+
+            mesh.update = ({username}) => {
+              if (username !== labelState.username) {
+                labelState.username = username;
+
+                _update();
+              }
+            };
+
+            return mesh;
+          };
+
           class Hmd {
             constructor() {
-              const mesh = hmdModelMesh.clone(true);
+              const mesh = hmdModelMesh.clone(true)
               this.mesh = mesh;
+
+              const labelMesh = _makeLabelMesh({
+                username: rend.getStatus('username'),
+              });
+              this.labelMesh = labelMesh;
             }
 
             update(hmdStatus) {
               const {mesh} = this;
-
               mesh.position.copy(hmdStatus.position);
               mesh.quaternion.copy(hmdStatus.rotation);
               // mesh.scale.copy(gamepadStatus.scale);
-
               mesh.updateMatrixWorld();
+
+              const {labelMesh} = this;
+              const labelPosition = hmdStatus.position.clone().add(new THREE.Vector3(0, WORLD_HEIGHT, 0));
+              labelMesh.position.copy(labelPosition);
+              const labelRotation = new THREE.Euler().setFromQuaternion(hmdStatus.rotation, camera.rotation.order);
+              labelRotation.x = 0;
+              labelRotation.z = 0;
+              const labelQuaternion = new THREE.Quaternion().setFromEuler(labelRotation);
+              labelMesh.quaternion.copy(labelQuaternion);
+              // labelMesh.scale.copy(gamepadStatus.scale);
+              labelMesh.update({
+                username: rend.getStatus('username'),
+              });
             }
           }
+
 
           class Controller {
             constructor() {
@@ -318,8 +404,9 @@ class Cyborg {
           const player = new Player();
 
           const hmd = new Hmd();
-          const {mesh: hmdMesh} = hmd;
+          const {mesh: hmdMesh, labelMesh: hmdLabelMesh} = hmd;
           camera.parent.add(hmdMesh);
+          camera.parent.add(hmdLabelMesh);
 
           const controllers = {
             left: new Controller(),
@@ -384,10 +471,13 @@ class Cyborg {
           this._cleanup = () => {
             cleanup();
 
+            const {mesh: hmdMesh, labelMesh: hmdLabelMesh} = hmd;
+            camera.parent.remove(hmdMesh);
+            camera.parent.remove(hmdLabelMesh);
             SIDES.forEach(side => {
               const controller = controllers[side];
-              const {mesh} = controller;
-              camera.parent.remove(mesh);
+              const {mesh: controllerMesh} = controller;
+              camera.parent.remove(controllerMesh);
             });
 
             rend.removeListener('update', _update);

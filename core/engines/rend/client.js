@@ -897,6 +897,10 @@ class Rend {
             auxObjects[name] = object;
           }
 
+          getStatus(name) {
+            return statusState[name];
+          }
+
           setStatus(name, value) {
             statusState[name] = value;
 
@@ -904,6 +908,8 @@ class Rend {
             if (loading && username !== null && users !== null) {
               statusState.loading = false;
             }
+
+            this.emit('statusUpdate');
 
             _updateMenuPage();
           }
