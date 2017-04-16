@@ -1459,14 +1459,19 @@ class World {
           fs.on('upload', _upload);
 
           const connection = new AutoWs(_relativeWsUrl('archae/worldWs?id=' + localUserId));
+          let initialized = false;
           connection.on('message', msg => {
             const m = JSON.parse(msg.data);
             const {type} = m;
 
             if (type === 'init') {
-              const {args: [itemSpecs]} = m;
+              if (!initialized) { // XXX temporary hack until we correctly unload tags on disconnect
+                const {args: [itemSpecs]} = m;
 
-              tags.loadTags(itemSpecs);
+                tags.loadTags(itemSpecs);
+
+                initialized = true;
+              }
             } else if (type === 'addTag') {
               const {args: [userId, itemSpec, dst]} = m;
 
