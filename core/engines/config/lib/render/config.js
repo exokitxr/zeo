@@ -9,7 +9,6 @@ const getConfigPageSrc = ({inputText, inputValue, focus, sliderValue, voiceChatC
       ${getSliderSrc(sliderValue)}
       ${getCheckboxSrc('Voice chat', voiceChatCheckboxValue, 'config:voiceChat')}
       ${getCheckboxSrc('Stats', statsCheckboxValue, 'config:stats')}
-      ${getButtonSrc('Log out', 'config:logOut')}
     </div>
   </div>
 `;

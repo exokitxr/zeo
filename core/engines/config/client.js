@@ -359,16 +359,6 @@ class Config {
                         configApi.updateConfig();
 
                         configUi.update();
-                      } else if (onclick === 'config:logOut') {
-                        _requestLogout()
-                          .then(() => {
-                            rend.logout();
-
-                            SIDES.forEach(side => {
-                              configDotMeshes[side].visible = false;
-                              configBoxMeshes[side].visible = false;
-                            });
-                          });
                       } else {
                         configUi.update();
                       }

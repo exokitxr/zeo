@@ -5,7 +5,7 @@ const mkdirp = require('mkdirp');
 const bodyParser = require('body-parser');
 const bodyParserJson = bodyParser.json();
 
-const DEFAULT_CONFIG = {
+const DEFAULT_SERVER_CONFIG = {
   voiceChat: false,
   stats: false,
 };
@@ -40,7 +40,7 @@ class Config {
         }
       });
     });
-    const _requestConfigJson = () => _requestFile(worldConfigJsonPath, DEFAULT_CONFIG);
+    const _requestConfigJson = () => _requestFile(worldConfigJsonPath, DEFAULT_SERVER_CONFIG);
     const _ensureWorldPath = () => new Promise((accept, reject) => {
       const worldPath = path.join(dirname, dataDirectory, 'world');
 
