@@ -2699,13 +2699,14 @@ class Tags {
 
               if (itemSpec.type === 'file') { 
                 const planeMesh = _addUiManagerPage(uiManager);
+                planeMesh.visible = !item.open;
                 object.add(planeMesh);
                 object.planeMesh = planeMesh;
 
                 const planeOpenMesh = _addUiManagerPage(uiOpenManager);
                 planeOpenMesh.position.x = (WORLD_OPEN_WIDTH - WORLD_WIDTH) / 2;
                 planeOpenMesh.position.y = -(WORLD_OPEN_HEIGHT - WORLD_HEIGHT) / 2;
-                planeOpenMesh.visible = false;
+                planeOpenMesh.visible = Boolean(item.open);
                 object.add(planeOpenMesh);
                 object.planeOpenMesh = planeOpenMesh;
               } else if (itemSpec.type === 'module') {
@@ -2970,6 +2971,10 @@ class Tags {
                     }
                   }
                 };
+
+                if (item.open) {
+                  object.open();
+                }
               }
 
               object.destroy = () => {
