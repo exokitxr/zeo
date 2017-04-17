@@ -965,6 +965,8 @@ class Rend {
 
           login() {
             menuState.open = true;
+            menuState.position = [0, DEFAULT_USER_HEIGHT, -1.5];
+            menuState.rotation = [0, 0, 0, 1];
             menuState.loggedIn = true;
 
             _updateMenuPage();
@@ -977,6 +979,8 @@ class Rend {
 
           logout() {
             menuState.open = false;
+            menuState.position = null;
+            menuState.rotation = null;
             menuState.loggedIn = false;
 
             _updateMenuPage();
