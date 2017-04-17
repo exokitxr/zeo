@@ -2891,6 +2891,8 @@ class Tags {
                   const {planeMesh: {page}} = object;
                   page.update();
                 };
+              }
+              if (itemSpec.type === 'file') {
                 object.open = () => {
                   const tagMesh = object;
                   const {planeMesh, planeOpenMesh, item} = tagMesh;
