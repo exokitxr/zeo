@@ -174,7 +174,6 @@ class Universe {
 
           const menuMesh = (() => {
             const object = new THREE.Object3D();
-            object.position.z = -1.5;
             object.visible = false;
 
             const backgroundMesh = (() => {

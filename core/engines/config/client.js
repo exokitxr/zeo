@@ -206,7 +206,6 @@ class Config {
 
                 const configMesh = (() => {
                   const object = new THREE.Object3D();
-                  // object.position.y = -0.25;
                   object.visible = false;
 
                   const planeMesh = (() => {
@@ -242,8 +241,6 @@ class Config {
                       worldWidth: WORLD_WIDTH,
                       worldHeight: WORLD_HEIGHT,
                     });
-                    // mesh.position.y = 1.5;
-                    mesh.position.z = -1.5;
                     mesh.receiveShadow = true;
 
                     return mesh;
@@ -259,7 +256,6 @@ class Config {
                   const object = new THREE.Object3D();
                   object.position.x = -(2 / 2) + (STATS_WORLD_WIDTH / 2);
                   object.position.y = -((2 / 1.5) / 2) + (STATS_WORLD_HEIGHT / 2);
-                  object.position.z = -1.5;
                   object.visible = configState.statsCheckboxValue;
 
                   const planeMesh = (() => {
@@ -288,7 +284,6 @@ class Config {
                       worldWidth: STATS_WORLD_WIDTH,
                       worldHeight: STATS_WORLD_HEIGHT,
                     });
-                    // mesh.position.y = 1.5;
                     mesh.position.z = 0.03;
                     mesh.receiveShadow = true;
 
