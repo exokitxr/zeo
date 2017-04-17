@@ -30,11 +30,6 @@ const DEFAULT_INVENTORY = (() => {
   }
   return result;
 })();
-const DEFAULT_MATRIX = [
-  0, 0, 0,
-  0, 0, 0, 1,
-  1, 1, 1,
-];
 
 class World {
   constructor(archae) {
@@ -463,15 +458,51 @@ class World {
                       } else if (method === 'tagOpen') {
                         const [userId, src] = args;
 
-                        _broadcast('tagOpen', [userId, src]);
+                        cb = (cb => err => {
+                          if (!err) {
+                            _broadcast('tagOpen', [userId, src]);
+                          }
 
-                        cb();
+                          cb(err);
+                        })(cb);
+
+                        let match;
+                        if (match = src.match(/^world:(.+)$/)) {
+                          const id = match[1];
+
+                          const itemSpec = tagsJson.tags[id];
+                          itemSpec.open = true;
+
+                          _saveTags();
+
+                          cb();
+                        } else {
+                          cb(_makeInvalidArgsError());
+                        }
                       } else if (method === 'tagClose') {
                         const [userId, src] = args;
 
-                        _broadcast('tagClose', [userId, src]);
+                        cb = (cb => err => {
+                          if (!err) {
+                            _broadcast('tagClose', [userId, src]);
+                          }
 
-                        cb();
+                          cb(err);
+                        })(cb);
+
+                        let match;
+                        if (match = src.match(/^world:(.+)$/)) {
+                          const id = match[1];
+
+                          const itemSpec = tagsJson.tags[id];
+                          itemSpec.open = false;
+
+                          _saveTags();
+
+                          cb();
+                        } else {
+                          cb(_makeInvalidArgsError());
+                        }
                       } else if (method === 'broadcast') {
                         const [detail] = args;
 
