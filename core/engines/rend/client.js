@@ -113,6 +113,8 @@ class Rend {
 
         const menuState = {
           open: false,
+          position: null,
+          rotation: null,
           loggedIn: false,
           animation: null,
         };
@@ -391,9 +393,6 @@ class Rend {
                 const {open, animation} = menuState;
 
                 if (open) {
-                  menuState.open = false; // XXX need to cancel other menu states as well
-                  menuState.animation = anima.makeAnimation(TRANSITION_TIME);
-
                   SIDES.forEach(side => {
                     menuBoxMeshes[side].visible = false;
                     menuDotMeshes[side].visible = false;
@@ -402,15 +401,14 @@ class Rend {
                     navbarDotMeshes[side].visible = false;
                   });
 
-                  const {tagsLinesMesh} = auxObjects;
-                  tagsLinesMesh.visible = false;
-                } else {
-                  menuState.open = true;
+                  menuState.open = false; // XXX need to cancel other menu states as well
+                  menuState.position = null;
+                  menuState.rotation = null;
                   menuState.animation = anima.makeAnimation(TRANSITION_TIME);
 
                   const {tagsLinesMesh} = auxObjects;
-                  tagsLinesMesh.visible = true;
-
+                  tagsLinesMesh.visible = false;
+                } else {
                   const newPosition = camera.position;
                   const newRotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(
                     0,
@@ -424,8 +422,15 @@ class Rend {
 
                   keyboardMesh.position.copy(newPosition);
                   keyboardMesh.quaternion.copy(newRotation);
-
                   keyboardMesh.updateKeySpecAnchorBoxTargets();
+
+                  menuState.open = true;
+                  menuState.position = newPosition.toArray();
+                  menuState.rotation = newRotation.toArray();
+                  menuState.animation = anima.makeAnimation(TRANSITION_TIME);
+
+                  const {tagsLinesMesh} = auxObjects;
+                  tagsLinesMesh.visible = true;
                 }
               }
             };
@@ -878,6 +883,16 @@ class Rend {
 
           isOpen() {
             return menuState.open;
+          }
+
+          getMenuState() {
+            const {open, position, rotation} = menuState;
+
+            return {
+              open,
+              position,
+              rotation
+            };
           }
 
           getTab() {
