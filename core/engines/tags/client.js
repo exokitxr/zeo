@@ -2711,6 +2711,7 @@ class Tags {
                 object.planeOpenMesh = planeOpenMesh;
               } else if (itemSpec.type === 'module') {
                 const planeMesh = _addUiManagerPage(uiStaticManager);
+                planeMesh.visible = !item.details;
                 object.add(planeMesh);
                 object.planeMesh = planeMesh;
 
@@ -2725,7 +2726,7 @@ class Tags {
                   planeDetailsMesh.position.x = -(WORLD_DETAILS_WIDTH - WORLD_WIDTH) / 2;
                   planeDetailsMesh.position.y = (WORLD_DETAILS_HEIGHT - WORLD_HEIGHT) / 2;
                 } */
-                planeDetailsMesh.visible = false;
+                planeDetailsMesh.visible = Boolean(item.details);
                 object.add(planeDetailsMesh);
                 object.planeDetailsMesh = planeDetailsMesh;
               } else {
