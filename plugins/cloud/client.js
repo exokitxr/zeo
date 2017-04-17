@@ -74,11 +74,12 @@ class Cloud {
           const _setCloudMeshFrame = worldTime => {
             const {cloudMeshes} = cloudsMesh;
 
-            cloudMeshes.forEach(cloudMesh => {
+            for (let i = 0; i < cloudMeshes.length; i++) {
+              const cloudMesh = cloudMeshes[i];
               const {basePosition, startTime} = cloudMesh;
               const timeDiff = worldTime - startTime;
               cloudMesh.position.x = basePosition[0] - ((timeDiff / 1000) * CLOUD_SPEED);
-            });
+            }
           };
           const _setCloudMesh = (position, worldTime) => {
             const clouds = (() => {
@@ -109,19 +110,23 @@ class Cloud {
             const addedClouds = clouds.filter(cloud => !cloudMeshes.some(cloudMesh => cloudMesh.cloudId === cloud.cloudId));
             const removedCloudMeshes = cloudMeshes.filter(cloudMesh => !clouds.some(cloud => cloud.cloudId === cloudMesh.cloudId));
 
-            removedCloudMeshes.forEach(cloudMesh => {
+            for (let i = 0; i < removedCloudMeshes.length; i++) {
+              const cloudMesh = removedCloudMeshes[i];
+
               cloudsMesh.remove(cloudMesh);
-            });
+              cloudMesh.destroy();
+            }
             const newCloudMeshes = cloudMeshes.filter(cloudMesh => !removedCloudMeshes.some(removedCloudMesh => removedCloudMesh === cloudMesh));
 
             addedClouds.forEach(cloud => {
               const {basePosition, cloudId} = cloud;
 
               const cloudMesh = (() => {
-                const result = new THREE.Object3D();
+                const object = new THREE.Object3D();
 
                 const cloudRng = new alea(cloudId);
                 const numCloudMeshChunks = 2 + Math.floor(cloudRng() * 8);
+                const cloudMeshChunks = Array(numCloudMeshChunks);
                 for (let j = 0; j < numCloudMeshChunks; j++) {
                   const geometry = (() => {
                     const points = (() => {
@@ -145,20 +150,30 @@ class Cloud {
                   cloudMeshChunk.position.x = -12 + (cloudRng() * 12);
                   cloudMeshChunk.position.z = -12 + (cloudRng() * 12);
 
-                  result.add(cloudMeshChunk);
+                  object.add(cloudMeshChunk);
+
+                  cloudMeshChunks[j] = cloudMeshChunk;
                 }
 
-                result.position.x = basePosition[0];
-                result.position.y = 30 + (cloudRng() * 10);
-                result.position.z = basePosition[1];
+                object.position.x = basePosition[0];
+                object.position.y = 30 + (cloudRng() * 10);
+                object.position.z = basePosition[1];
 
-                // result.receiveShadow = false;
-                // result.castShadow = true;
-                result.cloudId = cloudId;
-                result.basePosition = basePosition;
-                result.startTime = worldTime;
+                // object.receiveShadow = false;
+                // object.castShadow = true;
+                object.cloudId = cloudId;
+                object.basePosition = basePosition;
+                object.startTime = worldTime;
 
-                return result;
+                object.destroy = () => {
+                  for (let i = 0; i < cloudMeshChunks.length; i++) {
+                    const cloudMeshChunk = cloudMeshChunks[i];
+                    const {geometry} = cloudMeshChunk;
+                    geometry.dispose();
+                  }
+                };
+
+                return object;
               })();
 
               cloudsMesh.add(cloudMesh);
@@ -225,6 +240,8 @@ class Cloud {
     render.on('update', _update);
 
     this._cleanup = () => {
+      cloudsMaterial.dispose();
+
       elements.unregisterComponent(this, cloudComponent);
 
       render.removeListener('update', _update);
