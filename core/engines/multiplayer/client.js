@@ -292,9 +292,6 @@ class Multiplayer {
             const _updateMetadata = () => {
               const menuState = rend.getMenuState();
 
-              const currentOpen = Boolean(menuState) && menuState.open;
-              const lastOpen = Boolean(lastStatus.metadata.menu) && lastStatus.metadata.menu;
-
               const _updateMetadata = () => {
                 localStatus.metadata.menuState = menuState;
 
