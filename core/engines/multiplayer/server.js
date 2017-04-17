@@ -80,6 +80,7 @@ class Multiplayer {
             }
 
             const statusUpdate = {
+              username: username,
               hmd: newStatus.hmd,
               controllers: newStatus.controllers,
               metadata: newStatus.metadata,
