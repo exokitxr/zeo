@@ -1266,7 +1266,7 @@ class Tags {
                   });
 
                   return true;
-                } else if (match = onclick.match(/^media:(play|pause):(.+)$/)) {
+                } else if (match = onclick.match(/^media:(play|pause|seek):(.+)$/)) {
                   const action = match[1];
                   const id = match[2];
                   const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
@@ -1276,18 +1276,10 @@ class Tags {
                     item.play();
                   } else if (action === 'pause') {
                     item.pause();
+                  } else if (action === 'seek') {
+                    const {value} = pointerState;
+                    item.seek(value);
                   }
-
-                  openPage.update();
-
-                  return true;
-                } else if (match = onclick.match(/^media:seek:(.+)$/)) {
-                  const id = match[1];
-                  const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
-                  const {item, planeOpenMesh: {page: openPage}} = tagMesh;
-
-                  const {value} = pointerState;
-                  item.seek(value);
 
                   openPage.update();
 
