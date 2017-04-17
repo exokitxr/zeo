@@ -735,47 +735,6 @@ class World {
           })();
           rend.registerMenuMesh('trashMesh', trashMesh);
 
-          const _makePositioningMesh = ({opacity = 1} = {}) => {
-            const geometry = (() => {
-              const result = new THREE.BufferGeometry();
-              const positions = Float32Array.from([
-                0, 0, 0,
-                0.1, 0, 0,
-                0, 0, 0,
-                0, 0.1, 0,
-                0, 0, 0,
-                0, 0, 0.1,
-              ]);
-              result.addAttribute('position', new THREE.BufferAttribute(positions, 3));
-              const colors = Float32Array.from([
-                1, 0, 0,
-                1, 0, 0,
-                0, 1, 0,
-                0, 1, 0,
-                0, 0, 1,
-                0, 0, 1,
-              ]);
-              result.addAttribute('color', new THREE.BufferAttribute(colors, 3));
-              return result;
-            })();
-            const material = new THREE.LineBasicMaterial({
-              // color: 0xFFFFFF,
-              // color: 0x333333,
-              vertexColors: THREE.VertexColors,
-              opacity: opacity,
-            });
-
-            const mesh = new THREE.LineSegments(geometry, material);
-            mesh.visible = false;
-            return mesh;
-          };
-          const positioningMesh = _makePositioningMesh();
-          scene.add(positioningMesh);
-          const oldPositioningMesh = _makePositioningMesh({
-            opacity: 0.5,
-          });
-          scene.add(oldPositioningMesh);
-
           const menuDotMeshes = {
             left: biolumi.makeMenuDotMesh(),
             right: biolumi.makeMenuDotMesh(),
@@ -1526,9 +1485,6 @@ class World {
               scene.remove(menuDotMeshes[side]);
               scene.remove(menuBoxMeshes[side]);
             });
-
-            scene.remove(positioningMesh);
-            scene.remove(oldPositioningMesh);
 
             rend.removeListener('update', _update);
             rend.removeListener('tabchange', _tabchange);
