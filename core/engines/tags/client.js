@@ -798,11 +798,11 @@ class Tags {
               const result = new THREE.BufferGeometry();
               const positions = Float32Array.from([
                 0, 0, 0,
-                0.1, 0, 0,
+                1, 0, 0,
                 0, 0, 0,
-                0, 0.1, 0,
+                0, 1, 0,
                 0, 0, 0,
-                0, 0, 0.1,
+                0, 0, 1,
               ]);
               result.addAttribute('position', new THREE.BufferAttribute(positions, 3));
               const colors = Float32Array.from([
