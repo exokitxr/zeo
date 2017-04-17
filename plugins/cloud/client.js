@@ -20,6 +20,8 @@ class Cloud {
       fog: false,
     });
 
+    const updates = [];
+
     const cloudComponent = {
       selector: 'cloud[position]',
       attributes: {
@@ -214,7 +216,6 @@ class Cloud {
     };
     elements.registerComponent(this, cloudComponent);
 
-    const updates = [];
     const _update = () => {
       for (let i = 0; i < updates.length; i++) {
         const update = updates[i];
