@@ -533,7 +533,7 @@ class World {
 
               return tagMesh;
             } else {
-              console.warn('invalid tag open arguments', {src, name, value});
+              console.warn('invalid tag open arguments', {src});
 
               return null;
             }
@@ -549,7 +549,39 @@ class World {
 
               return tagMesh;
             } else {
-              console.warn('invalid tag open arguments', {src, name, value});
+              console.warn('invalid tag open arguments', {src});
+
+              return null;
+            }
+          };
+          const _handleTagOpenDetails = (userId, src) => {
+            // same for local and remote user ids
+            let match;
+            if (match = src.match(/^world:(.+)$/)) {
+              const id = match[1];
+
+              const tagMesh = elementManager.getTagMesh(id);
+              tagMesh.openDetails();
+
+              return tagMesh;
+            } else {
+              console.warn('invalid tag open details arguments', {src});
+
+              return null;
+            }
+          };
+          const _handleTagCloseDetails = (userId, src) => {
+            // same for local and remote user ids
+            let match;
+            if (match = src.match(/^world:(.+)$/)) {
+              const id = match[1];
+
+              const tagMesh = elementManager.getTagMesh(id);
+              tagMesh.closeDetails();
+
+              return tagMesh;
+            } else {
+              console.warn('invalid tag open details arguments', {src});
 
               return null;
             }
@@ -1310,6 +1342,22 @@ class World {
             _handleTagClose(localUserId, src);
           };
           tags.on('close', _tagsClose);
+          const _openDetails = ({id}) => {
+            const src = _getTagIdSrc(id);
+
+            _request('tagOpenDetails', [localUserId, src], _warnError);
+
+            _handleTagOpenDetails(localUserId, src);
+          };
+          tags.on('openDetails', _openDetails);
+          const _closeDetails = ({id}) => {
+            const src = _getTagIdSrc(id);
+
+            _request('tagCloseDetails', [localUserId, src], _warnError);
+
+            _handleTagCloseDetails(localUserId, src);
+          };
+          tags.on('closeDetails', _closeDetails);
           const _loadTags = ({itemSpecs}) => {
             for (let i = 0; i < itemSpecs.length; i++) {
               const itemSpec = itemSpecs[i];
@@ -1515,6 +1563,14 @@ class World {
               const {args: [userId, src]} = m;
 
               _handleTagClose(userId, src);
+            } else if (type === 'tagOpenDetails') {
+              const {args: [userId, src]} = m;
+
+              _handleTagOpenDetails(userId, src);
+            } else if (type === 'tagCloseDetails') {
+              const {args: [userId, src]} = m;
+
+              _handleTagCloseDetails(userId, src);
             } else if (type === 'message') {
               const {args: [detail]} = m;
 

@@ -1049,19 +1049,17 @@ class Tags {
                     if (match = onclick.match(/^module:main:(.+)$/)) {
                       const id = match[1];
 
-                      const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
-                      const {planeMesh, planeDetailsMesh} = tagMesh;
-                      planeMesh.visible = false;
-                      planeDetailsMesh.visible = true;
+                      tagsApi.emit('openDetails', {
+                        id: id,
+                      });
 
                       return true;
                     } else if (match = onclick.match(/^module:close:(.+)$/)) {
                       const id = match[1];
 
-                      const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
-                      const {planeMesh, planeDetailsMesh} = tagMesh;
-                      planeMesh.visible = true;
-                      planeDetailsMesh.visible = false;
+                      tagsApi.emit('closeDetails', {
+                        id: id,
+                      });
 
                       return true;
                     } else if (match = onclick.match(/^module:up:(.+)$/)) {
@@ -2735,6 +2733,24 @@ class Tags {
                 object.planeMesh = planeMesh;
               }
 
+              if (itemSpec.type === 'module') {
+                object.openDetails = () => {
+                  const tagMesh = object;
+                  const {planeMesh, planeDetailsMesh} = tagMesh;
+                  planeMesh.visible = false;
+                  planeDetailsMesh.visible = true;
+                };
+                object.closeDetails = () => {
+                  const tagMesh = object;
+                  const {planeMesh, planeDetailsMesh} = tagMesh;
+                  planeMesh.visible = true;
+                  planeDetailsMesh.visible = false;
+                };
+
+                if (item.details) {
+                  object.openDetails();
+                }
+              }
               if (itemSpec.type === 'entity') {
                 const attributesMesh = (() => {
                   const attributesMesh = new THREE.Object3D();

@@ -503,6 +503,54 @@ class World {
                         } else {
                           cb(_makeInvalidArgsError());
                         }
+                      } else if (method === 'tagOpenDetails') {
+                        const [userId, src] = args;
+
+                        cb = (cb => err => {
+                          if (!err) {
+                            _broadcast('tagOpenDetails', [userId, src]);
+                          }
+
+                          cb(err);
+                        })(cb);
+
+                        let match;
+                        if (match = src.match(/^world:(.+)$/)) {
+                          const id = match[1];
+
+                          const itemSpec = tagsJson.tags[id];
+                          itemSpec.details = true;
+
+                          _saveTags();
+
+                          cb();
+                        } else {
+                          cb(_makeInvalidArgsError());
+                        }
+                      } else if (method === 'tagCloseDetails') {
+                        const [userId, src] = args;
+
+                        cb = (cb => err => {
+                          if (!err) {
+                            _broadcast('tagCloseDetails', [userId, src]);
+                          }
+
+                          cb(err);
+                        })(cb);
+
+                        let match;
+                        if (match = src.match(/^world:(.+)$/)) {
+                          const id = match[1];
+
+                          const itemSpec = tagsJson.tags[id];
+                          itemSpec.details = false;
+
+                          _saveTags();
+
+                          cb();
+                        } else {
+                          cb(_makeInvalidArgsError());
+                        }
                       } else if (method === 'broadcast') {
                         const [detail] = args;
 
