@@ -618,18 +618,18 @@ class World {
               return null;
             }
           };
-          const _handleTagSeek = (userId, src, value) => {
+          const _handleTagSeek = (userId, src, startTime) => {
             // same for local and remote user ids
             let match;
             if (match = src.match(/^world:(.+)$/)) {
               const id = match[1];
 
               const tagMesh = elementManager.getTagMesh(id);
-              tagMesh.seek(value);
+              tagMesh.seek(startTime);
 
               return tagMesh;
             } else {
-              console.warn('invalid tag seek arguments', {src, value});
+              console.warn('invalid tag seek arguments', {src, startTime});
 
               return null;
             }
@@ -1421,12 +1421,12 @@ class World {
             _handleTagPause(localUserId, src);
           };
           tags.on('pause', _tagsPause);
-          const _tagsSeek = ({id, value}) => {
+          const _tagsSeek = ({id, startTime}) => {
             const src = _getTagIdSrc(id);
 
-            _request('tagSeek', [localUserId, src, value], _warnError);
+            _request('tagSeek', [localUserId, src, startTime], _warnError);
 
-            _handleTagSeek(localUserId, src, value);
+            _handleTagSeek(localUserId, src, startTime);
           };
           tags.on('seek', _tagsSeek);
           const _loadTags = ({itemSpecs}) => {

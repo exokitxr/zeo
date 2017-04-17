@@ -50,6 +50,7 @@ class Tags {
     };
 
     return archae.requestPlugins([
+      '/core/engines/bootstrap',
       '/core/engines/three',
       '/core/engines/input',
       '/core/engines/webvr',
@@ -63,6 +64,7 @@ class Tags {
       '/core/utils/creature-utils',
     ])
       .then(([
+        bootstrap,
         three,
         input,
         webvr,
@@ -1279,12 +1281,19 @@ class Tags {
                       id: id,
                     });
                   } else if (action === 'seek') {
-                    const {value} = pointerState;
+                    const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === tagId);
+                    const media = tagMesh.getMedia();
 
-                    tagsApi.emit('seek', {
-                      id: id,
-                      value: value,
-                    });
+                    if (media) {
+                      const {value} = pointerState;
+                      const worldTime = bootstrap.getWorldTime();
+                      const startTime = worldTime - (value * media.duration);
+
+                      tagsApi.emit('seek', {
+                        id: id,
+                        startTime: startTime,
+                      });
+                    }
                   }
 
                   return true;
@@ -2303,9 +2312,7 @@ class Tags {
               }
             }
 
-            seek(value) {
-              this.value = value;
-
+            getMedia() {
               const {preview} = this;
               if (preview) {
                 const mode = _getItemPreviewMode(this);
@@ -2318,7 +2325,7 @@ class Tags {
                       },
                     ],
                   } = preview;
-                  audio.currentTime = value * audio.duration;
+                  return audio;
                 } else if (mode === 'video') {
                   const {
                     children: [
@@ -2331,9 +2338,26 @@ class Tags {
                       },
                     ],
                   } = preview;
-                  video.currentTime = value * video.duration;
+                  return video;
                 }
               }
+            }
+
+            seek(startTime) {
+              const media = this.getMedia();
+              const value = (() => {
+                if (media) {
+                  const worldTime = bootstrap.getWorlTime();
+                  return Math.max(Math.min(startTime - worldTime), 0);
+                } else {
+                  return 0;
+                }
+              })();
+              if (media) {
+                media.currentTime = value * media.duration;
+              }
+
+              this.value = value;
             }
 
             destroy() {
@@ -2999,17 +3023,23 @@ class Tags {
 
                   openPage.update();
                 };
-                object.seek = value => {
+                object.seek = startTime => {
                   const tagMesh = object;
                   const {item, planeOpenMesh: {page: openPage}} = tagMesh;
 
-                  item.seek(value);
+                  item.seek(startTime);
 
                   openPage.update();
                 };
 
                 if (item.open) {
                   object.open();
+                }
+                if (item.startTime !== undefined) { // XXX track these in the Item class and save them to the backend
+                  object.seek(item.startTime);
+                }
+                if (item.playing) {
+                  object.play();
                 }
               }
 
