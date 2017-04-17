@@ -163,7 +163,7 @@ class Multiplayer {
                 });
               };
               const _updateMetadata = () => {
-                const {metadata: {menuState}, username} = status;
+                const {metadata: {menu: menuState}, username} = status;
 
                 menu.update({
                   menuState,
@@ -201,6 +201,7 @@ class Multiplayer {
           };
           const playerEnter = update => {
             const {id, status} = update;
+
             const remotePlayerMesh = _makeRemotePlayerMesh();
             remotePlayerMesh.update(status);
 
@@ -238,9 +239,9 @@ class Multiplayer {
             },
             metadata: {
               menu: {
+                open: false,
                 position: null,
                 rotation: null,
-                open: false,
               },
             },
           };
@@ -293,12 +294,12 @@ class Multiplayer {
             };
             const _updateMetadata = () => {
               const _updateMetadata = () => {
-                localStatus.metadata.menuState = menuState;
+                localStatus.metadata.menu = menuState;
 
                 updated = true;
               };
 
-              if (!lastStatus) {
+              if (!lastMenuState) {
                 _updateMetadata();
               } else {
                 if (menuState.open !== lastMenuState.open || !_arrayEquals(menuState.position, lastMenuState.position) || !_arrayEquals(menuState.rotation, lastMenuState.rotation)) {
