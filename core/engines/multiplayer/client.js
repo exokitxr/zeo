@@ -163,10 +163,10 @@ class Multiplayer {
                 });
               };
               const _updateMetadata = () => {
-                const {metadata: {menu: menuState}, username} = status;
+                const {metadata: {menu: menuStatus}, username} = status;
 
                 menu.update({
-                  menuState,
+                  menuStatus,
                   username,
                 });
               };

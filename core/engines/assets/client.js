@@ -156,18 +156,18 @@ class Assets {
               });
               mesh.rotation.order = camera.rotation.order;
 
-              mesh.update = ({menuState, username}) => {
-                const {open} = menuState;
+              mesh.update = ({menuStatus, username}) => {
+                const {open} = menuStatus;
 
                 if (open) {
-                  const {position, rotation} = menuState;
+                  const {position, rotation} = menuStatus;
 
                   mesh.position.fromArray(position);
-                  mesh.quaternion.copy(rotation);
-                  // mesh.scale.copy(scale);
+                  mesh.quaternion.fromArray(rotation);
+                  // mesh.scale.fromArray(scale);
 
-                  if (username !== labelState.username) {
-                    labelState.username = username;
+                  if (username !== menuState.username) {
+                    menuState.username = username;
 
                     menuUi.update();
                   }
