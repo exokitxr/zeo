@@ -600,6 +600,7 @@ class Rend {
 
         const keyboardMesh = (() => {
           const object = new THREE.Object3D();
+          object.position.set(0, DEFAULT_USER_HEIGHT, 0);
           object.visible = menuState.open;
 
           const planeMesh = (() => {
@@ -646,7 +647,7 @@ class Rend {
               return material;
             })();
             const mesh = new THREE.Mesh(geometry, material);
-            mesh.position.y = 1;
+            mesh.position.y = 1 - DEFAULT_USER_HEIGHT;
             mesh.position.z = -0.4;
             mesh.rotation.x = -Math.PI * (3 / 8);
 
