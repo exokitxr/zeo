@@ -1,9 +1,13 @@
 import {
-  WIDTH,
-  HEIGHT,
+  LABEL_WIDTH,
+  LABEL_HEIGHT,
+  WORLD_LABEL_WIDTH,
+  WORLD_LABEL_HEIGHT,
 
-  WORLD_WIDTH,
-  WORLD_HEIGHT,
+  MENU_WIDTH,
+  MENU_HEIGHT,
+  WORLD_MENU_WIDTH,
+  WORLD_MENU_HEIGHT,
 } from './lib/constants/menu';
 import menuRender from './lib/render/menu';
 
@@ -76,8 +80,8 @@ class Assets {
               };
 
               const menuUi = biolumi.makeUi({
-                width: WIDTH,
-                height: HEIGHT,
+                width: LABEL_WIDTH,
+                height: LABEL_HEIGHT,
                 color: [1, 1, 1, 0],
               });
               const mesh = menuUi.addPage(({
@@ -89,33 +93,92 @@ class Assets {
                 }),
                 x: 0,
                 y: 0,
-                w: WIDTH,
-                h: HEIGHT,
+                w: LABEL_WIDTH,
+                h: LABEL_HEIGHT,
               }), {
                 type: 'label',
                 state: {
                   label: labelState,
                 },
-                worldWidth: WORLD_WIDTH,
-                worldHeight: WORLD_HEIGHT,
+                worldWidth: WORLD_LABEL_WIDTH,
+                worldHeight: WORLD_LABEL_HEIGHT,
               });
               mesh.geometry.applyMatrix(new THREE.Matrix4().makeRotationY(Math.PI));
               mesh.rotation.order = camera.rotation.order;
 
               mesh.update = ({hmdStatus, username}) => {
-                const labelPosition = new THREE.Vector3().fromArray(hmdStatus.position).add(new THREE.Vector3(0, WORLD_HEIGHT, 0));
+                const labelPosition = new THREE.Vector3().fromArray(hmdStatus.position).add(new THREE.Vector3(0, WORLD_LABEL_HEIGHT, 0));
                 mesh.position.copy(labelPosition);
                 const labelRotation = new THREE.Euler().setFromQuaternion(new THREE.Quaternion().fromArray(hmdStatus.rotation), camera.rotation.order);
                 labelRotation.x = 0;
                 labelRotation.z = 0;
                 const labelQuaternion = new THREE.Quaternion().setFromEuler(labelRotation);
                 mesh.quaternion.copy(labelQuaternion);
-                // mesh.scale.copy(gamepadStatus.scale);
+                // mesh.scale.copy(labelScale);
 
                 if (username !== labelState.username) {
                   labelState.username = username;
 
                   menuUi.update();
+                }
+              };
+
+              return mesh;
+            };
+            const _makePlayerMenuMesh = ({username}) => {
+              const menuState = {
+                username: username,
+              };
+
+              const menuUi = biolumi.makeUi({
+                width: MENU_WIDTH,
+                height: MENU_HEIGHT,
+                color: [1, 1, 1, 0],
+              });
+              const mesh = menuUi.addPage(({
+                menu: menuState,
+              }) => ({
+                type: 'html',
+                src: menuRenderer.getMenuSrc({
+                  menu: menuState,
+                }),
+                x: 0,
+                y: 0,
+                w: MENU_WIDTH,
+                h: MENU_HEIGHT,
+              }), {
+                type: 'menu',
+                state: {
+                  menu: menuState,
+                },
+                worldWidth: WORLD_MENU_WIDTH,
+                worldHeight: WORLD_MENU_HEIGHT,
+              });
+              mesh.rotation.order = camera.rotation.order;
+
+              mesh.update = ({menuStatus, username}) => {
+                const {open} = menuStatus;
+
+                if (open) {
+                  const {position, rotation} = menuStatus;
+
+                  mesh.position.fromArray(position);
+                  mesh.quaternion.fromArray(rotation);
+                  // mesh.scale.fromArray(scale);
+
+                  if (username !== menuState.username) {
+                    menuState.username = username;
+
+                    menuUi.update();
+                  }
+
+                  if (!mesh.visible) {
+                    mesh.visible = true;
+                  }
+                } else {
+                  if (mesh.visible) {
+                    mesh.visible = false;
+                  }
                 }
               };
 
@@ -128,6 +191,7 @@ class Assets {
                 controllerModelMesh,
               },
               makePlayerLabelMesh: _makePlayerLabelMesh,
+              makePlayerMenuMesh: _makePlayerMenuMesh,
             };
           });
         }

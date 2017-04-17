@@ -33,10 +33,11 @@ class Multiplayer {
     };
 
     class Status {
-      constructor(username, hmd, controllers) {
+      constructor(username, hmd, controllers, metadata) {
         this.username = username;
         this.hmd = hmd;
         this.controllers = controllers;
+        this.metadata = metadata;
       }
     }
 
@@ -65,22 +66,24 @@ class Multiplayer {
           const m = JSON.parse(s);
           if (typeof m === 'object' && m && m.type === 'status' && ('status' in m)) {
             const {status} = m;
-            const {hmd, controllers} = status;
+            const {hmd, controllers, metadata} = status;
 
             let newStatus = statuses.get(id);
             const hadStatus = Boolean(newStatus);
             if (hadStatus) {
               newStatus.hmd = hmd;
               newStatus.controllers = controllers;
+              newStatus.metadata = metadata;
             } else {
-              newStatus = new Status(username, hmd, controllers);
+              newStatus = new Status(username, hmd, controllers, metadata);
               statuses.set(id, newStatus);
             }
 
             const statusUpdate = {
+              username: username,
               hmd: newStatus.hmd,
               controllers: newStatus.controllers,
-              username: newStatus.username,
+              metadata: newStatus.metadata,
             };
             const e = {
               type: 'status',

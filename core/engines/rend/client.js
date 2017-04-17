@@ -113,6 +113,8 @@ class Rend {
 
         const menuState = {
           open: false,
+          position: null,
+          rotation: null,
           loggedIn: false,
           animation: null,
         };
@@ -169,7 +171,7 @@ class Rend {
 
             const menuMesh = (() => {
               const object = new THREE.Object3D();
-              object.position.y = DEFAULT_USER_HEIGHT;
+              object.position.set(0, DEFAULT_USER_HEIGHT, -1.5);
               object.visible = menuState.open;
               object.menuUi = menuUi;
               object.navbarUi = navbarUi;
@@ -192,7 +194,6 @@ class Rend {
                   worldWidth: WORLD_WIDTH,
                   worldHeight: WORLD_HEIGHT,
                 });
-                mesh.position.z = -1.5;
                 mesh.receiveShadow = true;
 
                 return mesh;
@@ -227,7 +228,6 @@ class Rend {
                   worldHeight: NAVBAR_WORLD_HEIGHT,
                 });
                 mesh.position.y = (WORLD_HEIGHT / 2) + (NAVBAR_WORLD_HEIGHT / 2);
-                mesh.position.z = -1.5;
                 mesh.receiveShadow = true;
 
                 return mesh;
@@ -391,9 +391,6 @@ class Rend {
                 const {open, animation} = menuState;
 
                 if (open) {
-                  menuState.open = false; // XXX need to cancel other menu states as well
-                  menuState.animation = anima.makeAnimation(TRANSITION_TIME);
-
                   SIDES.forEach(side => {
                     menuBoxMeshes[side].visible = false;
                     menuDotMeshes[side].visible = false;
@@ -402,30 +399,37 @@ class Rend {
                     navbarDotMeshes[side].visible = false;
                   });
 
-                  const {tagsLinesMesh} = auxObjects;
-                  tagsLinesMesh.visible = false;
-                } else {
-                  menuState.open = true;
+                  menuState.open = false; // XXX need to cancel other menu states as well
+                  menuState.position = null;
+                  menuState.rotation = null;
                   menuState.animation = anima.makeAnimation(TRANSITION_TIME);
 
                   const {tagsLinesMesh} = auxObjects;
-                  tagsLinesMesh.visible = true;
-
-                  const newPosition = camera.position;
-                  const newRotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(
+                  tagsLinesMesh.visible = false;
+                } else {
+                  const newMenuRotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(
                     0,
                     camera.rotation.y,
                     0,
                     camera.rotation.order
                   ));
+                  const newMenuPosition = camera.position.clone()
+                    .add(new THREE.Vector3(0, 0, -1.5).applyQuaternion(newMenuRotation));
+                  menuMesh.position.copy(newMenuPosition);
+                  menuMesh.quaternion.copy(newMenuRotation);
 
-                  menuMesh.position.copy(newPosition);
-                  menuMesh.quaternion.copy(newRotation);
-
-                  keyboardMesh.position.copy(newPosition);
-                  keyboardMesh.quaternion.copy(newRotation);
-
+                  const newKeyboardPosition = camera.position;
+                  keyboardMesh.position.copy(newKeyboardPosition);
+                  keyboardMesh.quaternion.copy(newMenuRotation);
                   keyboardMesh.updateKeySpecAnchorBoxTargets();
+
+                  menuState.open = true;
+                  menuState.position = newMenuPosition.toArray();
+                  menuState.rotation = newMenuRotation.toArray();
+                  menuState.animation = anima.makeAnimation(TRANSITION_TIME);
+
+                  const {tagsLinesMesh} = auxObjects;
+                  tagsLinesMesh.visible = true;
                 }
               }
             };
@@ -596,7 +600,7 @@ class Rend {
 
         const keyboardMesh = (() => {
           const object = new THREE.Object3D();
-          object.position.y = DEFAULT_USER_HEIGHT;
+          object.position.set(0, DEFAULT_USER_HEIGHT, 0);
           object.visible = menuState.open;
 
           const planeMesh = (() => {
@@ -880,6 +884,16 @@ class Rend {
             return menuState.open;
           }
 
+          getMenuState() {
+            const {open, position, rotation} = menuState;
+
+            return {
+              open,
+              position,
+              rotation
+            };
+          }
+
           getTab() {
             return navbarState.tab;
           }
@@ -952,6 +966,8 @@ class Rend {
 
           login() {
             menuState.open = true;
+            menuState.position = [0, DEFAULT_USER_HEIGHT, -1.5];
+            menuState.rotation = [0, 0, 0, 1];
             menuState.loggedIn = true;
 
             _updateMenuPage();
@@ -964,6 +980,8 @@ class Rend {
 
           logout() {
             menuState.open = false;
+            menuState.position = null;
+            menuState.rotation = null;
             menuState.loggedIn = false;
 
             _updateMenuPage();

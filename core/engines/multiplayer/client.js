@@ -120,6 +120,12 @@ class Multiplayer {
             object.add(label);
             object.label = label;
 
+            const menu = assets.makePlayerMenuMesh({
+              username: status.username,
+            });
+            object.add(menu);
+            object.menu = menu;
+
             const _makeControllerMesh = () => controllerModelMesh.clone();
             const controllers = {
               left: _makeControllerMesh(),
@@ -152,14 +158,23 @@ class Multiplayer {
                 const {hmd: hmdStatus, username} = status;
 
                 label.update({
-                  hmdStatus: hmdStatus,
-                  username: username,
+                  hmdStatus,
+                  username,
+                });
+              };
+              const _updateMetadata = () => {
+                const {metadata: {menu: menuStatus}, username} = status;
+
+                menu.update({
+                  menuStatus,
+                  username,
                 });
               };
 
               _updateHmd();
               _updateControllers();
               _updateLabel();
+              _updateMetadata();
             };
             object.destroy = () => {
               label.destroy();
@@ -186,6 +201,7 @@ class Multiplayer {
           };
           const playerEnter = update => {
             const {id, status} = update;
+
             const remotePlayerMesh = _makeRemotePlayerMesh();
             remotePlayerMesh.update(status);
 
@@ -221,12 +237,22 @@ class Multiplayer {
                 rotation: zeroQuaternion.toArray(),
               },
             },
+            metadata: {
+              menu: {
+                open: false,
+                position: null,
+                rotation: null,
+              },
+            },
           };
 
+          let lastStatus = null;
+          let lastMenuState = null;
           const _update = () => {
             const status = webvr.getStatus();
+            const menuState = rend.getMenuState();
 
-            let lastStatus = null;
+            let updated = false;
             const _updateHmd = () => {
               const {hmd} = status;
               const {position, rotation} = hmd;
@@ -235,7 +261,7 @@ class Multiplayer {
                 localStatus.hmd.position = position.toArray();
                 localStatus.hmd.rotation = rotation.toArray();
 
-                multiplayerApi.updateStatus(localStatus);
+                updated = true;
               }
             };
             const _updateControllers = () => {
@@ -247,30 +273,53 @@ class Multiplayer {
                 if (gamepad) {
                   const {position, rotation} = gamepad;
 
-                  const _update = () => {
+                  const _updateGamepad = () => {
                     localStatus.controllers[side].position = position.toArray();
                     localStatus.controllers[side].rotation = rotation.toArray();
 
-                    multiplayerApi.updateStatus(localStatus);
+                    updated = true;
                   };
 
                   if (!lastStatus) {
-                    _update();
+                    _updateGamepad();
                   } else {
-                    const lastGamepadStatus = lastStatus.controllers[side];
+                    const lastGamepadStatus = lastStatus.gamepads[side];
 
                     if (!lastGamepadStatus || !lastGamepadStatus.position.equals(position) || !lastGamepadStatus.rotation.equals(rotation)) {
-                      _update();
+                      _updateGamepad();
                     }
                   }
                 }
               });
             };
+            const _updateMetadata = () => {
+              const _updateMetadata = () => {
+                localStatus.metadata.menu = menuState;
+
+                updated = true;
+              };
+
+              if (!lastMenuState) {
+                _updateMetadata();
+              } else {
+                if (menuState.open !== lastMenuState.open || !_arrayEquals(menuState.position, lastMenuState.position) || !_arrayEquals(menuState.rotation, lastMenuState.rotation)) {
+                  _updateMetadata();
+                }
+              }
+            };
+            const _emitUpdate = () => {
+              if (updated) {
+                multiplayerApi.updateStatus(localStatus);
+              }
+            };
 
             _updateHmd();
             _updateControllers();
+            _updateMetadata();
+            _emitUpdate();
 
             lastStatus = status;
+            lastMenuState = menuState;
           };
           rend.on('update', _update);
 
@@ -412,5 +461,6 @@ const _relativeWsUrl = s => {
   return ((l.protocol === 'https:') ? 'wss://' : 'ws://') + l.host + l.pathname + (!/\/$/.test(l.pathname) ? '/' : '') + s;
 };
 const _makeId = () => Math.random().toString(36).substring(7);
+const _arrayEquals = (a, b) => Array.isArray(a) && Array.isArray(b) && a.length === b.length && a.every((ae, i) => b[i] === ae);
 
 module.exports = Multiplayer;
