@@ -164,6 +164,7 @@ class Fs {
               case 'image': {
                 return new Promise((accept, reject) => {
                   const img = new Image();
+                  img.crossOrigin = 'Anonymous';
                   img.src = url;
                   img.onload = () => {
                     accept(img);
@@ -176,6 +177,7 @@ class Fs {
               case 'audio': {
                 return new Promise((accept, reject) => {
                   const audio = document.createElement('audio');
+                  audio.crossOrigin = 'Anonymous';
                   audio.src = url;
                   audio.oncanplay = () => {
                     accept(audio);
@@ -203,7 +205,9 @@ class Fs {
                   return match ? match[1].toLowerCase() : '';
                 })();
 
-                return fetch(url)
+                return fetch(url, {
+                  mode: 'cors',
+                })
                   .then(_validateResponse)
                   .then(res => {
                     if (ext === 'obj' || ext === 'dae' || ext === 'fbx') {
@@ -287,19 +291,25 @@ class Fs {
                   );
               }
               case 'json': {
-                return fetch(url)
+                return fetch(url, {
+                  mode: 'cors',
+                })
                   .then(_validateResponse)
                   .then(res => res.json()
                     .catch(err => Promise.resolve())
                   );
               }
               case 'arrayBuffer': {
-                return fetch(url)
+                return fetch(url, {
+                  mode: 'cors',
+                })
                   .then(_validateResponse)
                   .then(res => res.arrayBuffer());
               }
               default: {
-                return fetch(url)
+                return fetch(url, {
+                  mode: 'cors',
+                })
                   .then(_validateResponse)
                   .then(res => res.blob());
               }
