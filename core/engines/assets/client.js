@@ -1,9 +1,13 @@
 import {
-  WIDTH,
-  HEIGHT,
+  LABEL_WIDTH,
+  LABEL_HEIGHT,
+  WORLD_LABEL_WIDTH,
+  WORLD_LABEL_HEIGHT,
 
-  WORLD_WIDTH,
-  WORLD_HEIGHT,
+  MENU_WIDTH,
+  MENU_HEIGHT,
+  WORLD_MENU_WIDTH,
+  WORLD_MENU_HEIGHT,
 } from './lib/constants/menu';
 import menuRender from './lib/render/menu';
 
@@ -121,6 +125,39 @@ class Assets {
 
               return mesh;
             };
+            const _makePlayerMenuMesh = ({username}) => {
+              const menuState = {
+                username: username,
+              };
+
+              const menuUi = biolumi.makeUi({
+                width: MENU_WIDTH,
+                height: MENU_HEIGHT,
+                color: [1, 1, 1, 0],
+              });
+              const mesh = menuUi.addPage(({
+                menu: menuState,
+              }) => ({
+                type: 'html',
+                src: menuRenderer.getMenuSrc({
+                  menu: menuState,
+                }),
+                x: 0,
+                y: 0,
+                w: MENU_WIDTH,
+                h: MENU_HEIGHT,
+              }), {
+                type: 'menu',
+                state: {
+                  menu: menuState,
+                },
+                worldWidth: WORLD_MENU_WIDTH,
+                worldHeight: WORLD_MENU_HEIGHT,
+              });
+              mesh.rotation.order = camera.rotation.order;
+
+              return mesh;
+            };
 
             return {
               models: {
@@ -128,6 +165,7 @@ class Assets {
                 controllerModelMesh,
               },
               makePlayerLabelMesh: _makePlayerLabelMesh,
+              makePlayerMenuMesh: _makePlayerMenuMesh,
             };
           });
         }

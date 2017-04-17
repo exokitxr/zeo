@@ -120,8 +120,8 @@ class Multiplayer {
             object.add(label);
             object.label = label;
 
-            const menu = assets.makePlayerMenuMesh({ // XXX implement this
-              
+            const menu = assets.makePlayerMenuMesh({
+              username: status.username,
             });
             object.add(menu);
             object.menu = menu;

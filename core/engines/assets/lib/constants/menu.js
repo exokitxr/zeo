@@ -1,8 +1,15 @@
-export const WIDTH = 1024;
-export const HEIGHT = Math.round(WIDTH / 8);
-export const ASPECT_RATIO = WIDTH / HEIGHT;
-export const WORLD_WIDTH = 0.75;
-export const WORLD_HEIGHT = WORLD_WIDTH / ASPECT_RATIO;
-export const WORLD_DEPTH = WORLD_WIDTH / 50;
+export const LABEL_WIDTH = 1024;
+export const LABEL_HEIGHT = Math.round(WIDTH / 8);
+export const LABEL_ASPECT_RATIO = LABEL_WIDTH / LABEL_HEIGHT;
+export const WORLD_LABEL_WIDTH = 0.75;
+export const WORLD_LABEL_HEIGHT = WORLD_LABEL_WIDTH / ASPECT_LABEL_RATIO;
+export const WORLD_LABEL_DEPTH = WORLD_LABEL_WIDTH / 50;
+
+export const MENU_WIDTH = 1024;
+export const MENU_HEIGHT = Math.round(MENU_WIDTH / 1.5);
+export const MENU_ASPECT_RATIO = MENU_WIDTH / MENU_HEIGHT;
+export const WORLD_MENU_WIDTH = 2;
+export const WORLD_MENU_HEIGHT = WORLD_MENU_WIDTH / MENU_ASPECT_RATIO;
+export const WORLD_MENU_DEPTH = WORLD_MENU_WIDTH / 50;
 
 export default {};
