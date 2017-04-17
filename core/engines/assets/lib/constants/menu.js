@@ -1,8 +1,8 @@
 export const LABEL_WIDTH = 1024;
-export const LABEL_HEIGHT = Math.round(WIDTH / 8);
+export const LABEL_HEIGHT = Math.round(LABEL_WIDTH / 8);
 export const LABEL_ASPECT_RATIO = LABEL_WIDTH / LABEL_HEIGHT;
 export const WORLD_LABEL_WIDTH = 0.75;
-export const WORLD_LABEL_HEIGHT = WORLD_LABEL_WIDTH / ASPECT_LABEL_RATIO;
+export const WORLD_LABEL_HEIGHT = WORLD_LABEL_WIDTH / LABEL_ASPECT_RATIO;
 export const WORLD_LABEL_DEPTH = WORLD_LABEL_WIDTH / 50;
 
 export const MENU_WIDTH = 1024;

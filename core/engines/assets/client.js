@@ -80,8 +80,8 @@ class Assets {
               };
 
               const menuUi = biolumi.makeUi({
-                width: WIDTH,
-                height: HEIGHT,
+                width: LABEL_WIDTH,
+                height: LABEL_HEIGHT,
                 color: [1, 1, 1, 0],
               });
               const mesh = menuUi.addPage(({
@@ -93,15 +93,15 @@ class Assets {
                 }),
                 x: 0,
                 y: 0,
-                w: WIDTH,
-                h: HEIGHT,
+                w: LABEL_WIDTH,
+                h: LABEL_HEIGHT,
               }), {
                 type: 'label',
                 state: {
                   label: labelState,
                 },
-                worldWidth: WORLD_WIDTH,
-                worldHeight: WORLD_HEIGHT,
+                worldWidth: WORLD_LABEL_WIDTH,
+                worldHeight: WORLD_LABEL_HEIGHT,
               });
               mesh.geometry.applyMatrix(new THREE.Matrix4().makeRotationY(Math.PI));
               mesh.rotation.order = camera.rotation.order;
@@ -114,7 +114,7 @@ class Assets {
                 labelRotation.z = 0;
                 const labelQuaternion = new THREE.Quaternion().setFromEuler(labelRotation);
                 mesh.quaternion.copy(labelQuaternion);
-                // mesh.scale.copy(gamepadStatus.scale);
+                // mesh.scale.copy(labelScale);
 
                 if (username !== labelState.username) {
                   labelState.username = username;
@@ -155,6 +155,32 @@ class Assets {
                 worldHeight: WORLD_MENU_HEIGHT,
               });
               mesh.rotation.order = camera.rotation.order;
+
+              mesh.update = ({menuState, username}) => {
+                const {open} = menuState;
+
+                if (open) {
+                  const {position, rotation} = menuState;
+
+                  mesh.position.fromArray(position);
+                  mesh.quaternion.copy(rotation);
+                  // mesh.scale.copy(scale);
+
+                  if (username !== labelState.username) {
+                    labelState.username = username;
+
+                    menuUi.update();
+                  }
+
+                  if (!mesh.visible) {
+                    mesh.visible = true;
+                  }
+                } else {
+                  if (mesh.visible) {
+                    mesh.visible = false;
+                  }
+                }
+              };
 
               return mesh;
             };

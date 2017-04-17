@@ -158,14 +158,17 @@ class Multiplayer {
                 const {hmd: hmdStatus, username} = status;
 
                 label.update({
-                  hmdStatus: hmdStatus,
-                  username: username,
+                  hmdStatus,
+                  username,
                 });
               };
               const _updateMetadata = () => {
                 const {metadata: {menuState}} = status;
 
-                menu.update(menuState);
+                menu.update({
+                  menuState,
+                  username,
+                });
               };
 
               _updateHmd();
