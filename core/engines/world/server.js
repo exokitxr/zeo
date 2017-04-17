@@ -551,6 +551,78 @@ class World {
                         } else {
                           cb(_makeInvalidArgsError());
                         }
+                      } else if (method === 'tagPlay') {
+                        const [userId, src] = args;
+
+                        cb = (cb => err => {
+                          if (!err) {
+                            _broadcast('tagPlay', [userId, src]);
+                          }
+
+                          cb(err);
+                        })(cb);
+
+                        let match;
+                        if (match = src.match(/^world:(.+)$/)) {
+                          const id = match[1];
+
+                          const itemSpec = tagsJson.tags[id];
+                          itemSpec.playing = true;
+
+                          _saveTags();
+
+                          cb();
+                        } else {
+                          cb(_makeInvalidArgsError());
+                        }
+                      } else if (method === 'tagPause') {
+                        const [userId, src] = args;
+
+                        cb = (cb => err => {
+                          if (!err) {
+                            _broadcast('tagPause', [userId, src]);
+                          }
+
+                          cb(err);
+                        })(cb);
+
+                        let match;
+                        if (match = src.match(/^world:(.+)$/)) {
+                          const id = match[1];
+
+                          const itemSpec = tagsJson.tags[id];
+                          itemSpec.playing = false;
+
+                          _saveTags();
+
+                          cb();
+                        } else {
+                          cb(_makeInvalidArgsError());
+                        }
+                      } else if (method === 'tagSeek') {
+                        const [userId, src, startTime] = args;
+
+                        cb = (cb => err => {
+                          if (!err) {
+                            _broadcast('tagSeek', [userId, src, startTime]);
+                          }
+
+                          cb(err);
+                        })(cb);
+
+                        let match;
+                        if (match = src.match(/^world:(.+)$/)) {
+                          const id = match[1];
+
+                          const itemSpec = tagsJson.tags[id];
+                          itemSpec.startTime = startTime;
+
+                          _saveTags();
+
+                          cb();
+                        } else {
+                          cb(_makeInvalidArgsError());
+                        }
                       } else if (method === 'broadcast') {
                         const [detail] = args;
 
