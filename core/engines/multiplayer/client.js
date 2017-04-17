@@ -163,7 +163,7 @@ class Multiplayer {
                 });
               };
               const _updateMetadata = () => {
-                const {metadata: {menuState}} = status;
+                const {metadata: {menuState}, username} = status;
 
                 menu.update({
                   menuState,
@@ -246,8 +246,10 @@ class Multiplayer {
           };
 
           let lastStatus = null;
+          let lastMenuState = null;
           const _update = () => {
             const status = webvr.getStatus();
+            const menuState = rend.getMenuState();
 
             let updated = false;
             const _updateHmd = () => {
@@ -280,7 +282,7 @@ class Multiplayer {
                   if (!lastStatus) {
                     _updateGamepad();
                   } else {
-                    const lastGamepadStatus = lastStatus.controllers[side];
+                    const lastGamepadStatus = lastStatus.gamepads[side];
 
                     if (!lastGamepadStatus || !lastGamepadStatus.position.equals(position) || !lastGamepadStatus.rotation.equals(rotation)) {
                       _updateGamepad();
@@ -290,8 +292,6 @@ class Multiplayer {
               });
             };
             const _updateMetadata = () => {
-              const menuState = rend.getMenuState();
-
               const _updateMetadata = () => {
                 localStatus.metadata.menuState = menuState;
 
@@ -301,8 +301,6 @@ class Multiplayer {
               if (!lastStatus) {
                 _updateMetadata();
               } else {
-                const {metadata: {menuState: lastMenuState}} = lastStatus;
-
                 if (menuState.open !== lastMenuState.open || !_arrayEquals(menuState.position, lastMenuState.position) || !_arrayEquals(menuState.rotation, lastMenuState.rotation)) {
                   _updateMetadata();
                 }
@@ -320,6 +318,7 @@ class Multiplayer {
             _emitUpdate();
 
             lastStatus = status;
+            lastMenuState = menuState;
           };
           rend.on('update', _update);
 

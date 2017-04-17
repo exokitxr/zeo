@@ -12,8 +12,8 @@ const getLabelSrc = ({label: {username}}) => {
   return `\
     <div style="display: flex; width: ${LABEL_WIDTH}px; height: ${LABEL_HEIGHT}px; justify-content: center; align-items: center;">
       <div style="display: flex; justify-content: center; align-items: center;">
-        <img src="${creatureUtils.makeStaticCreature('user:' + username)}" width="${HEIGHT}" height="${HEIGHT}" style="margin-left: -${HEIGHT}px; margin-right: 20px; image-rendering: pixelated;" />
-        <span style="font-size: ${HEIGHT * 0.6}px; white-space: nowrap; text-overflow: ellipsis;">${username}</span>
+        <img src="${creatureUtils.makeStaticCreature('user:' + username)}" width="${LABEL_HEIGHT}" height="${LABEL_HEIGHT}" style="margin-left: ${-LABEL_HEIGHT}px; margin-right: 20px; image-rendering: pixelated;" />
+        <span style="font-size: ${LABEL_HEIGHT * 0.6}px; white-space: nowrap; text-overflow: ellipsis;">${username}</span>
       </div>
     </div>
   `;

@@ -107,7 +107,7 @@ class Assets {
               mesh.rotation.order = camera.rotation.order;
 
               mesh.update = ({hmdStatus, username}) => {
-                const labelPosition = new THREE.Vector3().fromArray(hmdStatus.position).add(new THREE.Vector3(0, WORLD_HEIGHT, 0));
+                const labelPosition = new THREE.Vector3().fromArray(hmdStatus.position).add(new THREE.Vector3(0, WORLD_LABEL_HEIGHT, 0));
                 mesh.position.copy(labelPosition);
                 const labelRotation = new THREE.Euler().setFromQuaternion(new THREE.Quaternion().fromArray(hmdStatus.rotation), camera.rotation.order);
                 labelRotation.x = 0;
