@@ -215,13 +215,8 @@ class Fs {
                     } else if (ext === 'gltf') {
                       return res.arrayBuffer();
                     } else if (ext === 'json') {
-                      const contentLength = parseInt(res.headers.get('Content-Length'), 10);
-
-                      if (!isNaN(contentLength) && contentLength > 0) {
-                        return res.json();
-                      } else {
-                        return Promise.resolve(undefined);
-                      }
+                      return res.json()
+                        .catch(err => Promise.resolve(undefined));
                     } else {
                       return Promise.resolve(null);
                     }
