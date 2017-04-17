@@ -28,7 +28,6 @@ const AXES = ['x', 'y', 'z'];
 const tagFlagSymbol = Symbol();
 const itemInstanceSymbol = Symbol();
 const itemInstancingSymbol = Symbol();
-const itemOpenSymbol = Symbol();
 const itemPageSymbol = Symbol();
 const itemPausedSymbol = Symbol();
 const itemValueSymbol = Symbol();
@@ -2167,7 +2166,6 @@ class Tags {
               // we use symbols so these keys don't show up in the JSON.stringify
               this[itemInstanceSymbol] = null;
               this[itemInstancingSymbol] = false;
-              this[itemOpenSymbol] = false;
               this[itemPageSymbol] = 0;
               this[itemPausedSymbol] = true;
               this[itemValueSymbol] = 0;
@@ -2186,12 +2184,6 @@ class Tags {
             }
             set instancing(instancing) {
               this[itemInstancingSymbol] = instancing;
-            }
-            get open() {
-              return this[itemOpenSymbol];
-            }
-            set open(open) {
-              this[itemOpenSymbol] = open;
             }
             get page() {
               return this[itemPageSymbol];
