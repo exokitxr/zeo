@@ -2220,6 +2220,8 @@ class Tags {
               matrix,
               attributes,
               mimeType,
+              open,
+              details,
               metadata // transient state: isStatic, exists
             ) {
               this.type = type;
@@ -2233,6 +2235,8 @@ class Tags {
               this.matrix = matrix;
               this.attributes = attributes;
               this.mimeType = mimeType;
+              this.open = open;
+              this.details = details;
               this.metadata = metadata;
 
               // we use symbols so these keys don't show up in the JSON.stringify
@@ -2700,6 +2704,8 @@ class Tags {
                 itemSpec.matrix,
                 itemSpec.attributes,
                 itemSpec.mimeType,
+                itemSpec.open,
+                itemSpec.details,
                 itemSpec.metadata
               );
               object.item = item;
