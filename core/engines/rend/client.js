@@ -407,25 +407,25 @@ class Rend {
                   const {tagsLinesMesh} = auxObjects;
                   tagsLinesMesh.visible = false;
                 } else {
-                  const newRotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(
+                  const newMenuRotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(
                     0,
                     camera.rotation.y,
                     0,
                     camera.rotation.order
                   ));
-                  const newCameraPosition = camera.position.clone()
-                    .add(new THREE.Vector3(0, 0, -1.5).applyQuaternion(newRotation));
-                  menuMesh.position.copy(newCameraPosition);
-                  menuMesh.quaternion.copy(newRotation);
+                  const newMenuPosition = camera.position.clone()
+                    .add(new THREE.Vector3(0, 0, -1.5).applyQuaternion(newMenuRotation));
+                  menuMesh.position.copy(newMenuPosition);
+                  menuMesh.quaternion.copy(newMenuRotation);
 
                   const newKeyboardPosition = camera.position;
                   keyboardMesh.position.copy(newKeyboardPosition);
-                  keyboardMesh.quaternion.copy(newRotation);
+                  keyboardMesh.quaternion.copy(newMenuRotation);
                   keyboardMesh.updateKeySpecAnchorBoxTargets();
 
                   menuState.open = true;
-                  menuState.position = newPosition.toArray();
-                  menuState.rotation = newRotation.toArray();
+                  menuState.position = newMenuPosition.toArray();
+                  menuState.rotation = newMenuRotation.toArray();
                   menuState.animation = anima.makeAnimation(TRANSITION_TIME);
 
                   const {tagsLinesMesh} = auxObjects;
