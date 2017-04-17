@@ -522,6 +522,38 @@ class World {
               return null;
             }
           };
+          const _handleTagOpen = (userId, src) => {
+            // same for local and remote user ids
+            let match;
+            if (match = src.match(/^world:(.+)$/)) {
+              const id = match[1];
+
+              const tagMesh = elementManager.getTagMesh(id);
+              tagMesh.open();
+
+              return tagMesh;
+            } else {
+              console.warn('invalid tag open arguments', {src, name, value});
+
+              return null;
+            }
+          };
+          const _handleTagClose = (userId, src) => {
+            // same for local and remote user ids
+            let match;
+            if (match = src.match(/^world:(.+)$/)) {
+              const id = match[1];
+
+              const tagMesh = elementManager.getTagMesh(id);
+              tagMesh.close();
+
+              return tagMesh;
+            } else {
+              console.warn('invalid tag open arguments', {src, name, value});
+
+              return null;
+            }
+          };
           const _handleMessage = detail => {
             tags.message(detail);
           };
@@ -1262,6 +1294,22 @@ class World {
             _handleSetTagAttribute(localUserId, src, {name, value});
           };
           tags.on('setAttribute', _tagsSetAttribute);
+          const _tagsOpen = ({id}) => {
+            const src = _getTagIdSrc(id);
+
+            _request('tagOpen', [localUserId, src], _warnError);
+
+            _handleTagOpen(localUserId, src);
+          };
+          tags.on('open', _tagsOpen);
+          const _tagsClose = ({id}) => {
+            const src = _getTagIdSrc(id);
+
+            _request('tagClose', [localUserId, src], _warnError);
+
+            _handleTagClose(localUserId, src);
+          };
+          tags.on('close', _tagsClose);
           const _loadTags = ({itemSpecs}) => {
             for (let i = 0; i < itemSpecs.length; i++) {
               const itemSpec = itemSpecs[i];
@@ -1459,6 +1507,14 @@ class World {
                   args: [id, name, value],
                 });
               }
+            } else if (type === 'tagOpen') {
+              const {args: [userId, src]} = m;
+
+              _handleTagOpen(userId, src);
+            } else if (type === 'tagClose') {
+              const {args: [userId, src]} = m;
+
+              _handleTagClose(userId, src);
             } else if (type === 'message') {
               const {args: [detail]} = m;
 

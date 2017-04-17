@@ -460,6 +460,18 @@ class World {
                         } else {
                           cb(_makeInvalidArgsError());
                         }
+                      } else if (method === 'tagOpen') {
+                        const [userId, src] = args;
+
+                        _broadcast('tagOpen', [userId, src]);
+
+                        cb();
+                      } else if (method === 'tagClose') {
+                        const [userId, src] = args;
+
+                        _broadcast('tagClose', [userId, src]);
+
+                        cb();
                       } else if (method === 'broadcast') {
                         const [detail] = args;
 

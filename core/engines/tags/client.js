@@ -1233,94 +1233,19 @@ class Tags {
                 } else if (match = onclick.match(/^tag:open:(.+)$/)) {
                   const id = match[1];
 
-                  const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
-                  const {planeMesh, planeOpenMesh, item} = tagMesh;
-                  item.open = true;
-                  planeMesh.visible = false;
-                  planeOpenMesh.visible = true;
-
-                  if (item.type === 'file') {
-                    if (!item.preview) {
-                      const previewMesh = (() => {
-                        const object = new THREE.Object3D();
-
-                        const mode = _getItemPreviewMode(item);
-                        if (mode === 'image') {
-                          _requestFileItemImageMesh(tagMesh)
-                            .then(imageMesh => {
-                              imageMesh.position.y = -(WORLD_HEIGHT / 2) - ((WORLD_OPEN_HEIGHT - WORLD_HEIGHT) / 2);
-
-                              object.add(imageMesh);
-                            })
-                            .catch(err => {
-                              console.warn(err);
-                            });
-                        } else if (mode === 'audio') {
-                          _requestFileItemAudioMesh(tagMesh)
-                            .then(audioMesh => {
-                              object.add(audioMesh);
-                            })
-                            .catch(err => {
-                              console.warn(err);
-                            });
-                        } else if (mode === 'video') {
-                          _requestFileItemVideoMesh(tagMesh)
-                            .then(videoMesh => {
-                              videoMesh.position.y = -(WORLD_HEIGHT / 2) - ((WORLD_OPEN_HEIGHT - WORLD_HEIGHT) / 2) + ((100 / OPEN_HEIGHT * WORLD_OPEN_HEIGHT) / 2);
-
-                              object.add(videoMesh);
-                            })
-                            .catch(err => {
-                              console.warn(err);
-                            });
-                        } else if (mode === 'model') {
-                          _requestFileItemModelMesh(tagMesh)
-                            .then(modelMesh => {
-                              const modelMeshWrap = new THREE.Object3D();
-                              modelMeshWrap.add(modelMesh);
-
-                              object.add(modelMeshWrap);
-
-                              const boundingBox = new THREE.Box3().setFromObject(modelMesh);
-                              const boundingBoxSize = boundingBox.getSize();
-                              const meshCurrentScale = Math.max(boundingBoxSize.x, boundingBoxSize.y, boundingBoxSize.z);
-                              const meshScaleFactor = (1 / meshCurrentScale) * (WORLD_OPEN_HEIGHT - WORLD_HEIGHT);
-                              modelMeshWrap.scale.set(meshScaleFactor, meshScaleFactor, meshScaleFactor);
-
-                              const boundingBoxCenter = boundingBox.getCenter();
-                              modelMeshWrap.position.y = -(WORLD_HEIGHT / 2) - ((WORLD_OPEN_HEIGHT - WORLD_HEIGHT) / 2) - (boundingBoxCenter.y * meshScaleFactor);
-                            })
-                            .catch(err => {
-                              console.warn(err);
-                            });
-                        }
-
-                        return object;
-                      })();
-                      tagMesh.add(previewMesh);
-                      item.preview = previewMesh;
-                    } else {
-                      item.preview.visible = true;
-                    }
-                  }
+                  tagsApi.emit('open', {
+                    id: id,
+                  });
 
                   e.stopImmediatePropagation();
 
                   return true;
                 } else if (match = onclick.match(/^tag:close:(.+)$/)) {
                   const id = match[1];
-                  const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
 
-                  const {planeMesh, planeOpenMesh, item} = tagMesh;
-                  item.open = false;
-                  planeMesh.visible = true;
-                  planeOpenMesh.visible = false;
-
-                  if (item.type === 'file') {
-                    if (item.preview && item.preview.visible) {
-                      item.preview.visible = false;
-                    }
-                  }
+                  tagsApi.emit('close', {
+                    id: id,
+                  });
 
                   e.stopImmediatePropagation();
 
@@ -2965,6 +2890,91 @@ class Tags {
 
                   const {planeMesh: {page}} = object;
                   page.update();
+                };
+                object.open = () => {
+                  const tagMesh = object;
+                  const {planeMesh, planeOpenMesh, item} = tagMesh;
+                  item.open = true;
+                  planeMesh.visible = false;
+                  planeOpenMesh.visible = true;
+
+                  if (item.type === 'file') {
+                    if (!item.preview) {
+                      const previewMesh = (() => {
+                        const object = new THREE.Object3D();
+
+                        const mode = _getItemPreviewMode(item);
+                        if (mode === 'image') {
+                          _requestFileItemImageMesh(tagMesh)
+                            .then(imageMesh => {
+                              imageMesh.position.y = -(WORLD_HEIGHT / 2) - ((WORLD_OPEN_HEIGHT - WORLD_HEIGHT) / 2);
+
+                              object.add(imageMesh);
+                            })
+                            .catch(err => {
+                              console.warn(err);
+                            });
+                        } else if (mode === 'audio') {
+                          _requestFileItemAudioMesh(tagMesh)
+                            .then(audioMesh => {
+                              object.add(audioMesh);
+                            })
+                            .catch(err => {
+                              console.warn(err);
+                            });
+                        } else if (mode === 'video') {
+                          _requestFileItemVideoMesh(tagMesh)
+                            .then(videoMesh => {
+                              videoMesh.position.y = -(WORLD_HEIGHT / 2) - ((WORLD_OPEN_HEIGHT - WORLD_HEIGHT) / 2) + ((100 / OPEN_HEIGHT * WORLD_OPEN_HEIGHT) / 2);
+
+                              object.add(videoMesh);
+                            })
+                            .catch(err => {
+                              console.warn(err);
+                            });
+                        } else if (mode === 'model') {
+                          _requestFileItemModelMesh(tagMesh)
+                            .then(modelMesh => {
+                              const modelMeshWrap = new THREE.Object3D();
+                              modelMeshWrap.add(modelMesh);
+
+                              object.add(modelMeshWrap);
+
+                              const boundingBox = new THREE.Box3().setFromObject(modelMesh);
+                              const boundingBoxSize = boundingBox.getSize();
+                              const meshCurrentScale = Math.max(boundingBoxSize.x, boundingBoxSize.y, boundingBoxSize.z);
+                              const meshScaleFactor = (1 / meshCurrentScale) * (WORLD_OPEN_HEIGHT - WORLD_HEIGHT);
+                              modelMeshWrap.scale.set(meshScaleFactor, meshScaleFactor, meshScaleFactor);
+
+                              const boundingBoxCenter = boundingBox.getCenter();
+                              modelMeshWrap.position.y = -(WORLD_HEIGHT / 2) - ((WORLD_OPEN_HEIGHT - WORLD_HEIGHT) / 2) - (boundingBoxCenter.y * meshScaleFactor);
+                            })
+                            .catch(err => {
+                              console.warn(err);
+                            });
+                        }
+
+                        return object;
+                      })();
+                      tagMesh.add(previewMesh);
+                      item.preview = previewMesh;
+                    } else {
+                      item.preview.visible = true;
+                    }
+                  }
+                };
+                object.close = () => {
+                  const tagMesh = object;
+                  const {planeMesh, planeOpenMesh, item} = tagMesh;
+                  item.open = false;
+                  planeMesh.visible = true;
+                  planeOpenMesh.visible = false;
+
+                  if (item.type === 'file') {
+                    if (item.preview && item.preview.visible) {
+                      item.preview.visible = false;
+                    }
+                  }
                 };
               }
 
