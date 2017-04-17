@@ -21,10 +21,10 @@ const getLabelSrc = ({label: {username}}) => {
 
 const getMenuSrc = ({menu: {username}}) => {
   return `\
-    <div style="display: flex; width: ${MENU_WIDTH}px; height: ${MENU_HEIGHT}px; justify-content: center; align-items: center;">
+    <div style="display: flex; width: ${MENU_WIDTH}px; height: ${MENU_HEIGHT}px; background-color: #FFF; justify-content: center; align-items: center;">
       <div style="display: flex; justify-content: center; align-items: center;">
-        <img src="${creatureUtils.makeStaticCreature('user:' + username)}" width="${MENU_HEIGHT}" height="${MENU_HEIGHT}" style="margin-right: 50px; image-rendering: pixelated;" />
-        <span style="font-size: ${200 * 0.6}px; white-space: nowrap; text-overflow: ellipsis;">${username}'s Menu</span>
+        <img src="${creatureUtils.makeStaticCreature('user:' + username)}" width="150" height="150" style="margin-right: 30px; image-rendering: pixelated;" />
+        <span style="font-size: ${150 * 0.5}px; white-space: nowrap; text-overflow: ellipsis;">${username}'s Menu</span>
       </div>
     </div>
   `;
