@@ -1269,19 +1269,23 @@ class Tags {
                 } else if (match = onclick.match(/^media:(play|pause|seek):(.+)$/)) {
                   const action = match[1];
                   const id = match[2];
-                  const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
-                  const {item, planeOpenMesh: {page: openPage}} = tagMesh;
 
                   if (action === 'play') {
-                    item.play();
+                    tagsApi.emit('play', {
+                      id: id,
+                    });
                   } else if (action === 'pause') {
-                    item.pause();
+                    tagsApi.emit('pause', {
+                      id: id,
+                    });
                   } else if (action === 'seek') {
                     const {value} = pointerState;
-                    item.seek(value);
-                  }
 
-                  openPage.update();
+                    tagsApi.emit('seek', {
+                      id: id,
+                      value: value,
+                    });
+                  }
 
                   return true;
                 } else {
@@ -2978,6 +2982,30 @@ class Tags {
                       item.preview.visible = false;
                     }
                   }
+                };
+                object.play = () => {
+                  const tagMesh = object;
+                  const {item, planeOpenMesh: {page: openPage}} = tagMesh;
+
+                  item.play();
+
+                  openPage.update();
+                };
+                object.pause = () => {
+                  const tagMesh = object;
+                  const {item, planeOpenMesh: {page: openPage}} = tagMesh;
+
+                  item.pause();
+
+                  openPage.update();
+                };
+                object.seek = value => {
+                  const tagMesh = object;
+                  const {item, planeOpenMesh: {page: openPage}} = tagMesh;
+
+                  item.seek(value);
+
+                  openPage.update();
                 };
 
                 if (item.open) {
