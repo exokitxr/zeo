@@ -9,7 +9,7 @@ const NUM_CELLS = 64;
 
 class Cloud {
   mount() {
-    const {three: {THREE}, elements, pose, render, world, utils: {random: {alea}}} = zeo;
+    const {three: {THREE}, elements, render, world, utils: {random: {alea}}} = zeo;
 
     const THREEConvexGeometry = ConvexGeometry(THREE);
 
@@ -56,20 +56,10 @@ class Cloud {
         entityApi.cloudsMesh = cloudsMesh;
 
         const _getWorldTime = () => world.getWorldTime();
-        const _getPosition = () => {
-          const {hmd: {position}} = pose.getStatus();
-          return position;
-        };
 
         let lastWorldTime = _getWorldTime();
-        let lastPosition = _getPosition();
         const update = () => {
           const _getSnappedWorldTime = worldTime => Math.floor(worldTime / 1000) * 1000;
-          const _getSnappedPosition = position => new THREE.Vector3(
-            Math.floor(position.x / 8) * 8,
-            Math.floor(position.y / 8) * 8,
-            Math.floor(position.z / 8) * 8
-          );
 
           const _setCloudMeshFrame = worldTime => {
             const {cloudMeshes} = cloudsMesh;
@@ -81,19 +71,17 @@ class Cloud {
               cloudMesh.position.x = basePosition[0] - ((timeDiff / 1000) * CLOUD_SPEED);
             }
           };
-          const _setCloudMesh = (position, worldTime) => {
+          const _setCloudMesh = worldTime => {
             const clouds = (() => {
               const result = [];
 
               for (let y = -NUM_CELLS; y < NUM_CELLS; y++) {
                 for (let x = -NUM_CELLS; x < NUM_CELLS; x++) {
-                  const bx = position.x + x;
-                  const by = position.y + y;
-                  const ax = bx + Math.floor((worldTime / 1000) * CLOUD_SPEED);
-                  const ay = by;
+                  const ax = x + Math.floor((worldTime / 1000) * CLOUD_SPEED);
+                  const ay = y;
                   const cloudNoiseN = cloudNoise.in2D(ax, ay);
                   if (cloudNoiseN < CLOUD_RATE) {
-                    const basePosition = [bx, by];
+                    const basePosition = [x, y];
                     const cloudId = ax + ':' + ay;
                     result.push({
                       basePosition,
@@ -184,9 +172,7 @@ class Cloud {
           };
 
           const nextWorldTime = _getWorldTime();
-          const nextPosition = _getPosition();
           const prevWorldTime = lastWorldTime;
-          const prevPosition = lastPosition;
 
           if (nextWorldTime !== prevWorldTime) {
             _setCloudMeshFrame(nextWorldTime);
@@ -194,10 +180,8 @@ class Cloud {
 
           const nextWorldTimeSnapped = _getSnappedWorldTime(nextWorldTime);
           const prevWorldTimeSnapped = _getSnappedWorldTime(prevWorldTime);
-          const nextPositionSnapped = _getSnappedPosition(nextPosition);
-          const prevPositionSnapped = _getSnappedPosition(prevPosition);
-          if (nextWorldTimeSnapped !== prevWorldTimeSnapped || !nextPositionSnapped.equals(prevPositionSnapped)) {
-            _setCloudMesh(nextPositionSnapped, nextWorldTimeSnapped);
+          if (nextWorldTimeSnapped !== prevWorldTimeSnapped) {
+            _setCloudMesh(nextWorldTimeSnapped);
           }
         };
         updates.push(update);
