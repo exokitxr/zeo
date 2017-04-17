@@ -215,6 +215,7 @@ class Fire {
                 return result;
               })();
               entityObject.add(fireMesh);
+              entityApi.fireMesh = fireMesh;
 
               const soundBody = (() => {
                 const result = sound.makeBody();
@@ -331,19 +332,19 @@ class Fire {
               const entityApi = entityElement.getComponentApi();
 
               switch (name) {
-                /* case 'position': { // XXX re-enable this
+                case 'position': {
                   const position = newValue;
 
                   if (position) {
-                    const {mesh} = entityApi;
+                    const {fireMesh} = entityApi;
 
-                    mesh.position.set(position[0], position[1], position[2]);
-                    mesh.quaternion.set(position[3], position[4], position[5], position[6]);
-                    mesh.scale.set(position[7], position[8], position[9]);
+                    fireMesh.position.set(position[0], position[1], position[2]);
+                    fireMesh.quaternion.set(position[3], position[4], position[5], position[6]);
+                    fireMesh.scale.set(position[7], position[8], position[9]);
                   }
 
                   break;
-                } */
+                }
                 case 'audio': {
                   const {soundBody} = entityApi;
                   const {audio} = soundBody;
