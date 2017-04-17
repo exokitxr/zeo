@@ -1560,10 +1560,10 @@ class Tags {
 
               if (intersectionPoint) {
                 const {anchor} = pointerState;
-                const onclick = (anchor && anchor.onclick) || '';
+                const onmousedown = (anchor && anchor.onmousedown) || '';
 
                 let match;
-                if (match = onclick.match(/^module:link:(.+)$/)) {
+                if (match = onmousedown.match(/^module:link:(.+)$/)) {
                   const id = match[1];
                   const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
 
@@ -1574,7 +1574,7 @@ class Tags {
                   };
 
                   return true;
-                } else if (match = onclick.match(/^attribute:(.+?):(.+?):link$/)) {
+                } else if (match = onmousedown.match(/^attribute:(.+?):(.+?):link$/)) {
                   const id = match[1];
                   const attributeName = match[2];
 
@@ -1585,6 +1585,18 @@ class Tags {
                     type: 'attribute',
                     tagMesh: tagMesh,
                     attributeName: attributeName,
+                  };
+
+                  return true;
+                } else if (match = onmousedown.match(/^file:link:(.+?)$/)) {
+                  const id = match[1];
+
+                  const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
+
+                  const dragState = dragStates[side];
+                  dragState.src = {
+                    type: 'file',
+                    tagMesh: tagMesh,
                   };
 
                   return true;
@@ -1607,9 +1619,10 @@ class Tags {
               const {src, dst} = dragState;
 
               if (src && dst) {
-                const {type} = src;
+                const {type: srcType} = src;
+                const {type: dstType} = dst;
 
-                if (type === 'module') {
+                if (srcType === 'module' && dstType === 'module') {
                   const {gamepads} = webvr.getStatus();
                   const gamepad = gamepads[side];
 
@@ -1748,7 +1761,7 @@ class Tags {
                   } else {
                     return false;
                   }
-                } else if (type === 'attribute') {
+                } else if (srcType === 'attribute' && dstType === 'file') {
                   const {tagMesh: srcTagMesh, attributeName} = src;
                   const {tagMesh: dstTagMesh} = dst;
 
@@ -1757,6 +1770,25 @@ class Tags {
                     srcTagMesh.setAttribute(attributeName, 'fs/' + id + name);
                   };
                   _linkAttribute({
+                    srcTagMesh,
+                    attributeName,
+                    dstTagMesh,
+                  });
+
+                  dragState.src = null;
+                  dragState.dst = null;
+
+                  return true;
+                } else if (srcType === 'file' && dstType === 'attribute') {
+                  const {tagMesh: srcTagMesh} = src;
+                  const {itemId, attributeName} = dst;
+                  const dstTagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === itemId);
+
+                  const _linkFile = ({srcTagMesh, attributeName, dstTagMesh}) => {
+                    const {item: {id, name}} = srcTagMesh;
+                    dstTagMesh.setAttribute(attributeName, 'fs/' + id + name);
+                  };
+                  _linkFile({
                     srcTagMesh,
                     attributeName,
                     dstTagMesh,
@@ -2032,6 +2064,22 @@ class Tags {
                             type: 'file',
                             tagMesh: hoverTagMesh,
                           };
+                        } else if (srcType === 'file' && hoverType === 'attribute') {
+                          const {attributeName} = hoverTagMesh;
+                          const attributeSpec = _getAttributeSpec(attributeName);
+                          const attributeType = attributeSpec && attributeSpec.type;
+                          if (attributeType === 'file') {
+                            const {itemId} = hoverTagMesh;
+
+                            dragState.dst = {
+                              type: 'attribute',
+                              tagMesh: hoverTagMesh,
+                              itemId: itemId,
+                              attributeName: attributeName,
+                            };
+                          } else {
+                            dragState.dst = null;
+                          }
                         } else {
                           dragState.dst = null;
                         }
@@ -2928,7 +2976,10 @@ class Tags {
                           });
                           newAttributeMesh.receiveShadow = true;
 
+                          // used by trigger handler lookups
+                          newAttributeMesh.itemId = item.id;
                           newAttributeMesh.attributeName = attributeName;
+
                           newAttributeMesh.lastStateJson = JSON.stringify(state);
 
                           attributesMesh.add(newAttributeMesh);

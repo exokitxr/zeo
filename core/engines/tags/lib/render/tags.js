@@ -68,7 +68,7 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
             </div>
           </div>
         </${linkTagName}>
-        <${linkTagName} style="display: flex; width: 80px; justify-content: center; align-items: center;" onclick="module:link:${id}">
+        <${linkTagName} style="display: flex; width: 80px; justify-content: center; align-items: center;" onclick="module:link:${id}" mousedown="module:link:${id}">
           <img src="${imgSrc}" width="50" height="50">
         </${linkTagName}>
         }
@@ -102,7 +102,7 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
             <div style="font-size: 20px; font-weight: 300;">${description}</div>
           </div>
         </div>
-        <a style="display: flex; width: 80px; justify-content: center; align-items: center;" onclick="module:link:${id}">
+        <a style="display: flex; width: 80px; justify-content: center; align-items: center;" onclick="module:link:${id}" mousedown="module:link:${id}">
           <img src="${imgSrc}" width="40" height="40">
         </a>
         <a style="display: flex; width: 80px; justify-content: center; align-items: center;" onclick="module:close:${id}">
@@ -354,7 +354,7 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
         return `\
           <div style="display: flex; width: ${WIDTH}px;">
             <div style="display: flex; position: relative; margin: 20px; font-size: 24px; align-items: center; flex-grow: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">${focusValue}</div>
-            <a style="display: flex; width: 80px; justify-content: center; align-items: center;" onclick="attribute:${id}:${name}:link" onmousedown="attribute:${id}:${name}:link">
+            <a style="display: flex; width: 80px; justify-content: center; align-items: center;" onmousedown="attribute:${id}:${name}:link">
               <img src="${linkImgSrc}" width="50" height="50" style="margin: 10px; image-rendering: pixelated;" />
             </a>
           </div>
@@ -381,11 +381,11 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
           </div>
         </div>
         ${!open ?
-          `<a style="display: flex; width: 80px; justify-content: center; align-items: center;" onclick="tag:open:${id}">
+          `<a style="display: flex; width: 80px; justify-content: center; align-items: center;" onclick="tag:open:${id}" onmousedown="file:link:${id}">
             <img src="${playBlackImgSrc}" width="50" height="50">
           </a>`
         :
-          `<a style="display: flex; width: 80px; background-color: #000; justify-content: center; align-items: center;" onclick="tag:close:${id}">
+          `<a style="display: flex; width: 80px; background-color: #000; justify-content: center; align-items: center;" onclick="tag:close:${id}" onmousedown="file:link:${id}">
             <img src="${playWhiteImgSrc}" width="50" height="50">
           </a>`
         }
