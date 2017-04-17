@@ -586,6 +586,54 @@ class World {
               return null;
             }
           };
+          const _handleTagPlay = (userId, src) => {
+            // same for local and remote user ids
+            let match;
+            if (match = src.match(/^world:(.+)$/)) {
+              const id = match[1];
+
+              const tagMesh = elementManager.getTagMesh(id);
+              tagMesh.play();
+
+              return tagMesh;
+            } else {
+              console.warn('invalid tag play arguments', {src});
+
+              return null;
+            }
+          };
+          const _handleTagPause = (userId, src) => {
+            // same for local and remote user ids
+            let match;
+            if (match = src.match(/^world:(.+)$/)) {
+              const id = match[1];
+
+              const tagMesh = elementManager.getTagMesh(id);
+              tagMesh.pause();
+
+              return tagMesh;
+            } else {
+              console.warn('invalid tag pause arguments', {src});
+
+              return null;
+            }
+          };
+          const _handleTagSeek = (userId, src, value) => {
+            // same for local and remote user ids
+            let match;
+            if (match = src.match(/^world:(.+)$/)) {
+              const id = match[1];
+
+              const tagMesh = elementManager.getTagMesh(id);
+              tagMesh.seek(value);
+
+              return tagMesh;
+            } else {
+              console.warn('invalid tag seek arguments', {src, value});
+
+              return null;
+            }
+          };
           const _handleMessage = detail => {
             tags.message(detail);
           };
@@ -1341,22 +1389,46 @@ class World {
             _handleTagClose(localUserId, src);
           };
           tags.on('close', _tagsClose);
-          const _openDetails = ({id}) => {
+          const _tagsOpenDetails = ({id}) => {
             const src = _getTagIdSrc(id);
 
             _request('tagOpenDetails', [localUserId, src], _warnError);
 
             _handleTagOpenDetails(localUserId, src);
           };
-          tags.on('openDetails', _openDetails);
-          const _closeDetails = ({id}) => {
+          tags.on('openDetails', _tagsOpenDetails);
+          const _tagsCloseDetails = ({id}) => {
             const src = _getTagIdSrc(id);
 
             _request('tagCloseDetails', [localUserId, src], _warnError);
 
             _handleTagCloseDetails(localUserId, src);
           };
-          tags.on('closeDetails', _closeDetails);
+          tags.on('closeDetails', _tagsCloseDetails);
+          const _tagsPlay = ({id}) => {
+            const src = _getTagIdSrc(id);
+
+            _request('tagPlay', [localUserId, src], _warnError);
+
+            _handleTagPlay(localUserId, src);
+          };
+          tags.on('play', _tagsPlay);
+          const _tagsPause = ({id}) => {
+            const src = _getTagIdSrc(id);
+
+            _request('tagPause', [localUserId, src], _warnError);
+
+            _handleTagPause(localUserId, src);
+          };
+          tags.on('pause', _tagsPause);
+          const _tagsSeek = ({id, value}) => {
+            const src = _getTagIdSrc(id);
+
+            _request('tagSeek', [localUserId, src, value], _warnError);
+
+            _handleTagSeek(localUserId, src, value);
+          };
+          tags.on('seek', _tagsSeek);
           const _loadTags = ({itemSpecs}) => {
             for (let i = 0; i < itemSpecs.length; i++) {
               const itemSpec = itemSpecs[i];
@@ -1616,6 +1688,13 @@ class World {
             tags.removeListener('mutateSetAttribute', _mutateSetAttribute);
             tags.removeListener('addTag', _tagsAddTag);
             tags.removeListener('setAttribute', _tagsSetAttribute);
+            tags.removeListener('open', _tagsOpen);
+            tags.removeListener('close', _tagsClose);
+            tags.removeListener('openDetails', _tagsOpenDetails);
+            tags.removeListener('closeDetails', _tagsCloseDetails);
+            tags.removeListener('play', _tagsPlay);
+            tags.removeListener('pause', _tagsPause);
+            tags.removeListener('seek', _tagsSeek);
             tags.removeListener('loadTags', _loadTags);
             tags.removeListener('broadcast', _broadcast);
 
