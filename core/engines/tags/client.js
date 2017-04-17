@@ -2217,10 +2217,10 @@ class Tags {
               version,
               readme,
               tagName,
+              matrix,
               attributes,
               mimeType,
-              matrix,
-              metadata
+              metadata // transient state: isStatic, exists
             ) {
               this.type = type;
               this.id = id;
@@ -2230,71 +2230,12 @@ class Tags {
               this.version = version;
               this.readme = readme;
               this.tagName = tagName;
-              this.attributes = attributes;
-              /* this.attributes = (() => {
-                const result = {};
-
-                for (const k in attributes) {
-                  const attribute = attributes[k];
-
-                  const v = (() => {
-                    const {type} = attribute;
-                    
-                    switch (type) {
-                      case 'matrix':
-                        return {
-                          type: 'matrix',
-                          value: attribute.value,
-                        };
-                      case 'text':
-                        return {
-                          type: 'text',
-                          value: attribute.value,
-                        };
-                      case 'color':
-                        return {
-                          type: 'color',
-                          value: attribute.value,
-                        };
-                      case 'select':
-                        return {
-                          type: 'select',
-                          value: attribute.value,
-                          options: Array.isArray(attribute.options) ? attribute.options : [],
-                        };
-                      case 'number':
-                        return {
-                          type: 'number',
-                          value: attribute.value,
-                          min: typeof attribute.min === 'number' ? attribute.min : 1,
-                          max: typeof attribute.max === 'number' ? attribute.max : 10,
-                          step: typeof attribute.step === 'number' ? attribute.step : 1,
-                        };
-                      case 'checkbox':
-                        return {
-                          type: 'checkbox',
-                          value: attribute.value,
-                        };
-                      case 'file':
-                        return {
-                          type: 'file',
-                          value: attribute.value,
-                        };
-                      default:
-                        return null;
-                    }
-                  })();
-                  if (v !== null) {
-                    result[k] = v;
-                  }
-                }
-
-                return result;
-              })(); */
-              this.mimeType = mimeType;
               this.matrix = matrix;
+              this.attributes = attributes;
+              this.mimeType = mimeType;
               this.metadata = metadata;
 
+              // we use symbols so these keys don't show up in the JSON.stringify
               this[itemInstanceSymbol] = null;
               this[itemInstancingSymbol] = false;
               this[itemOpenSymbol] = false;
@@ -2756,9 +2697,9 @@ class Tags {
                 itemSpec.version,
                 itemSpec.readme,
                 itemSpec.tagName, // XXX get rid of these
+                itemSpec.matrix,
                 itemSpec.attributes,
                 itemSpec.mimeType,
-                itemSpec.matrix,
                 itemSpec.metadata
               );
               object.item = item;
