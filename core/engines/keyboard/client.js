@@ -166,7 +166,7 @@ class Keyboard {
         })();
         scene.add(keyboardMesh);
 
-        const keyMesh = (() => {
+        const _makeKeyMesh = () => {
           const geometry = new THREE.PlaneBufferGeometry(1, 1);
           const material = (() => {
             const texture = new THREE.Texture(
@@ -195,8 +195,13 @@ class Keyboard {
           mesh.visible = false;
           mesh.key = null;
           return mesh;
-        })();
-        scene.add(keyMesh);
+        };
+        const keyMeshes = {
+          left: _makeKeyMesh(),
+          right: _makeKeyMesh(),
+        };
+        scene.add(keyMeshes.left);
+        scene.add(keyMeshes.right);
 
         const dotMeshes = {
           left: biolumi.makeMenuDotMesh(),
@@ -255,6 +260,7 @@ class Keyboard {
                   });
 
                   const dotMesh = dotMeshes[side];
+                  const keyMesh = keyMeshes[side];
                   if (matchingKeySpecs.length > 0) {
                     dotMesh.position.copy(intersectionPoint);
 
@@ -361,11 +367,11 @@ class Keyboard {
 
         this._cleanup = () => {
           scene.remove(keyboardMesh);
-          scene.remove(keyMesh);
 
           SIDES.forEach(side => {
-            scene.remove(dotMesh.right);
-            scene.remove(boxMesh.right);
+            scene.remove(keyMeshes[side]);
+            scene.remove(dotMeshes[side]);
+            scene.remove(boxMeshes[side]);
           });
 
           SIDES.forEach(side => {
