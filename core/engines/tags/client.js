@@ -913,16 +913,18 @@ class Tags {
             soundBody.setObject(mesh);
 
             const localUpdate = () => {
-              const {audio} = mesh;
-              const {value: prevValue} = item;
-              const worldTime = bootstrap.getWorldTime();
-              const {startTime} = item;
-              const nextValue = Math.max(Math.min((worldTime - startTime) / audio.duration, 1), 0);
+              const {paused} = item;
 
-              if (Math.abs(nextValue - prevValue) >= (1 / 1000)) { // to reduce the frequency of texture updates
-                item.value = nextValue;
+              if (!paused) {
+                const {value: prevValue} = item;
+                const {audio} = mesh;
+                const nextValue = audio.currentTime / audio.duration;
 
-                item.emit('update');
+                if (Math.abs(nextValue - prevValue) >= (1 / 1000)) { // to reduce the frequency of texture updates
+                  item.value = nextValue;
+
+                  item.emit('update');
+                }
               }
             };
 
@@ -993,20 +995,22 @@ class Tags {
             soundBody.setObject(mesh);
 
             const localUpdate = () => {
-              const {map: texture} = material;
-              const {image: video} = texture;
-              const {value: prevValue} = item;
-              const worldTime = bootstrap.getWorldTime();
-              const {startTime} = item;
-              const nextValue = Math.max(Math.min((worldTime - startTime) / video.duration, 1), 0);
+              const {paused} = item;
 
-              if (Math.abs(nextValue - prevValue) >= (1 / 1000)) { // to reduce the frequency of texture updates
-                item.value = nextValue;
+              if (!paused) {
+                const {value: prevValue} = item;
+                const {map: texture} = material;
+                const {image: video} = texture;
+                const nextValue = video.currentTime / video.duration;
 
-                item.emit('update');
+                if (Math.abs(nextValue - prevValue) >= (1 / 1000)) { // to reduce the frequency of texture updates
+                  item.value = nextValue;
+
+                  item.emit('update');
+                }
+
+                texture.needsUpdate = true;
               }
-
-              texture.needsUpdate = true;
             };
 
             mesh.destroy = () => {
@@ -2354,6 +2358,8 @@ class Tags {
               this.getMedia()
                 .then(({media}) => {
                   media.play();
+
+                  this.emit('update');
                 })
                 .catch(err => {
                   console.warn(err);
@@ -2366,6 +2372,8 @@ class Tags {
               this.getMedia()
                 .then(({media}) => {
                   media.pause();
+
+                  this.emit('update');
                 })
                 .catch(err => {
                   console.warn(err);
@@ -2373,13 +2381,19 @@ class Tags {
             }
 
             seek(startTime) {
+              this.startTime = startTime;
+
               this.getMedia()
                 .then(({media}) => {
                   const worldTime = bootstrap.getWorldTime();
-                  const value = Math.max(Math.min(startTime - worldTime), 0);
+                  const value = Math.max(Math.min((worldTime - startTime) / media.duration, 1), 0);
                   this.value = value;
 
                   media.currentTime = value * media.duration;
+
+                  console.log('seek', {startTime, value, duration: media.duration, currentTime: media.currentTime});
+
+                  this.emit('update');
                 })
                 .catch(err => {
                   console.warn(err);
@@ -2982,27 +2996,21 @@ class Tags {
                 };
                 object.play = () => {
                   const tagMesh = object;
-                  const {item, planeOpenMesh: {page: openPage}} = tagMesh;
+                  const {item} = tagMesh;
 
                   item.play();
-
-                  openPage.update();
                 };
                 object.pause = () => {
                   const tagMesh = object;
-                  const {item, planeOpenMesh: {page: openPage}} = tagMesh;
+                  const {item} = tagMesh;
 
                   item.pause();
-
-                  openPage.update();
                 };
                 object.seek = startTime => {
                   const tagMesh = object;
-                  const {item, planeOpenMesh: {page: openPage}} = tagMesh;
+                  const {item} = tagMesh;
 
                   item.seek(startTime);
-
-                  openPage.update();
                 };
 
                 if (item.open) {
