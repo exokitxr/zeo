@@ -2256,9 +2256,12 @@ class Tags {
                   } else if (mode === 'audio') {
                     _requestFileItemAudioMesh(this)
                       .then(audioMesh => {
-                        // audioMesh.position.y = -(WORLD_HEIGHT / 2) - ((WORLD_OPEN_HEIGHT - WORLD_HEIGHT) / 2);
-
                         previewMesh.add(audioMesh);
+
+                        const {audio} = audioMesh;
+                        audio.addEventListener('ended', () => {
+                          this.pause();
+                        });
 
                         return Promise.resolve(audioMesh);
                       })
@@ -2272,9 +2275,14 @@ class Tags {
                   } else if (mode === 'video') {
                     _requestFileItemVideoMesh(this)
                       .then(videoMesh => {
-                        videoMesh.position.y = - ((100 / OPEN_HEIGHT * WORLD_OPEN_HEIGHT) / 4);
+                        videoMesh.position.y = -((100 / OPEN_HEIGHT * WORLD_OPEN_HEIGHT) / 4);
 
                         previewMesh.add(videoMesh);
+
+                        const {video} = videoMesh;
+                        video.addEventListener('ended', () => {
+                          this.pause();
+                        });
 
                         return Promise.resolve(videoMesh);
                       })
@@ -2339,7 +2347,9 @@ class Tags {
 
               this.getMedia()
                 .then(({media}) => {
-                  media.play();
+                  if (media.paused) {
+                    media.play();
+                  }
 
                   this.emit('update');
                 })
@@ -2353,7 +2363,9 @@ class Tags {
 
               this.getMedia()
                 .then(({media}) => {
-                  media.pause();
+                  if (!media.paused) {
+                    media.pause();
+                  }
 
                   this.emit('update');
                 })
