@@ -77,7 +77,6 @@ class Rend {
 
         const transparentImg = biolumi.getTransparentImg();
         const transparentMaterial = biolumi.getTransparentMaterial();
-        const solidMaterial = biolumi.getSolidMaterial();
 
         const _parseUrlSpec = url => {
           const match = url.match(/^(?:([^:]+):\/\/)([^:]+)(?::([0-9]*?))?$/);
@@ -105,7 +104,6 @@ class Rend {
 
         const localUpdates = [];
 
-        // main state
         const auxObjects = {
           tagMeshes: null,
           tagsLinesMesh: null,
@@ -127,29 +125,6 @@ class Rend {
         };
         const navbarState = {
           tab: 'status',
-        };
-
-        // api functions
-        const mainFontSpec = {
-          fonts: biolumi.getFonts(),
-          fontSize: 72,
-          lineHeight: 1.4,
-          fontWeight: biolumi.getFontWeight(),
-          fontStyle: biolumi.getFontStyle(),
-        };
-        const itemsFontSpec = {
-          fonts: biolumi.getFonts(),
-          fontSize: 32,
-          lineHeight: 1.4,
-          fontWeight: biolumi.getFontWeight(),
-          fontStyle: biolumi.getFontStyle(),
-        };
-        const subcontentFontSpec = {
-          fonts: biolumi.getFonts(),
-          fontSize: 28,
-          lineHeight: 1.4,
-          fontWeight: biolumi.getFontWeight(),
-          fontStyle: biolumi.getFontStyle(),
         };
 
         const {matrix: matrixArray} = bootstrap.getUserState();
