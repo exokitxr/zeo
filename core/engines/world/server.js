@@ -567,7 +567,7 @@ class World {
                           const id = match[1];
 
                           const itemSpec = tagsJson.tags[id];
-                          itemSpec.playing = true;
+                          itemSpec.paused = false;
 
                           _saveTags();
 
@@ -591,7 +591,7 @@ class World {
                           const id = match[1];
 
                           const itemSpec = tagsJson.tags[id];
-                          itemSpec.playing = false;
+                          itemSpec.paused = true;
 
                           _saveTags();
 

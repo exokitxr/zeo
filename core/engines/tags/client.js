@@ -29,7 +29,6 @@ const tagFlagSymbol = Symbol();
 const itemInstanceSymbol = Symbol();
 const itemInstancingSymbol = Symbol();
 const itemPageSymbol = Symbol();
-const itemPausedSymbol = Symbol();
 const itemValueSymbol = Symbol();
 const itemPreviewSymbol = Symbol();
 const itemTempSymbol = Symbol();
@@ -2148,6 +2147,8 @@ class Tags {
               mimeType,
               open,
               details,
+              paused,
+              startTime,
               metadata // transient state: isStatic, exists
             ) {
               this.type = type;
@@ -2163,13 +2164,14 @@ class Tags {
               this.mimeType = mimeType;
               this.open = open;
               this.details = details;
+              this.paused = paused;
+              this.startTime = startTime;
               this.metadata = metadata;
 
               // we use symbols so these keys don't show up in the JSON.stringify
               this[itemInstanceSymbol] = null;
               this[itemInstancingSymbol] = false;
               this[itemPageSymbol] = 0;
-              this[itemPausedSymbol] = true;
               this[itemValueSymbol] = 0;
               this[itemPreviewSymbol] = false;
               this[itemTempSymbol] = false;
@@ -2192,12 +2194,6 @@ class Tags {
             }
             set page(page) {
               this[itemPageSymbol] = page;
-            }
-            get paused() {
-              return this[itemPausedSymbol];
-            }
-            set paused(paused) {
-              this[itemPausedSymbol] = paused;
             }
             get value() {
               return this[itemValueSymbol];
@@ -2640,6 +2636,8 @@ class Tags {
                 itemSpec.mimeType,
                 itemSpec.open,
                 itemSpec.details,
+                itemSpec.paused,
+                itemSpec.startTime,
                 itemSpec.metadata
               );
               object.item = item;
@@ -3035,10 +3033,10 @@ class Tags {
                 if (item.open) {
                   object.open();
                 }
-                if (item.startTime !== undefined) { // XXX track these in the Item class and save them to the backend
+                if (item.startTime !== undefined) {
                   object.seek(item.startTime);
                 }
-                if (item.playing) {
+                if (item.paused === false) {
                   object.play();
                 }
               }
