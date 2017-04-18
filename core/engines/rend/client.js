@@ -14,17 +14,8 @@ import {
   DEFAULT_USER_HEIGHT,
   TRANSITION_TIME,
 } from './lib/constants/menu';
-import {
-  KEYBOARD_WIDTH,
-  KEYBOARD_HEIGHT,
-  KEYBOARD_WORLD_WIDTH,
-  KEYBOARD_WORLD_HEIGHT,
-} from './lib/constants/keyboard';
 import menuUtils from './lib/utils/menu';
-import keyboardImg from './lib/img/keyboard';
 import menuRender from './lib/render/menu';
-
-const keyboardImgSrc = 'data:image/svg+xml;base64,' + btoa(keyboardImg);
 
 const SIDES = ['left', 'right'];
 
@@ -382,26 +373,28 @@ class Rend {
                   const {tagsLinesMesh} = auxObjects;
                   tagsLinesMesh.visible = false;
                 } else {
-                  const newMenuRotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(
+                  const newCameraPosition = camera.position.clone();
+                  const newCameraRotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(
                     0,
                     camera.rotation.y,
                     0,
                     camera.rotation.order
                   ));
-                  const newMenuPosition = camera.position.clone()
-                    .add(new THREE.Vector3(0, 0, -1.5).applyQuaternion(newMenuRotation));
+                  const newMenuPosition = newCameraPosition.clone()
+                    .add(new THREE.Vector3(0, 0, -1.5).applyQuaternion(newCameraPosition));
+                  const newMenuRotation = newCameraPosition;
                   menuMesh.position.copy(newMenuPosition);
                   menuMesh.quaternion.copy(newMenuRotation);
-
-                  const newKeyboardPosition = camera.position;
-                  keyboardMesh.position.copy(newKeyboardPosition);
-                  keyboardMesh.quaternion.copy(newMenuRotation);
-                  keyboardMesh.updateKeySpecAnchorBoxTargets();
 
                   menuState.open = true;
                   menuState.position = newMenuPosition.toArray();
                   menuState.rotation = newMenuRotation.toArray();
                   menuState.animation = anima.makeAnimation(TRANSITION_TIME);
+
+                  rendApi.emit('open', {
+                    position: newCameraPosition,
+                    rotation: newCameraRotation,
+                  });
 
                   const {tagsLinesMesh} = auxObjects;
                   tagsLinesMesh.visible = true;
@@ -428,10 +421,10 @@ class Rend {
                       mesh: menuMesh,
                       direction: 'y',
                     },
-                    {
+                    /* {
                       mesh: keyboardMesh,
                       direction: 'x',
-                    },
+                    }, */
                   ].concat(tagMeshes.map(tagMesh => ({
                     mesh: tagMesh,
                     direction: 'y',
@@ -573,153 +566,6 @@ class Rend {
           }
         })();
 
-        const keyboardMesh = (() => {
-          const object = new THREE.Object3D();
-          object.position.set(0, DEFAULT_USER_HEIGHT, 0);
-          object.visible = menuState.open;
-
-          const planeMesh = (() => {
-            const _requestKeyboardImage = () => new Promise((accept, reject) => {
-              const img = new Image();
-              img.src = keyboardImgSrc;
-              img.onload = () => {
-                accept(img);
-              };
-              img.onerror = err => {
-                reject(err);
-              };
-            });
-
-            const geometry = new THREE.PlaneBufferGeometry(KEYBOARD_WORLD_WIDTH, KEYBOARD_WORLD_HEIGHT);
-            const material = (() => {
-              const texture = new THREE.Texture(
-                transparentImg,
-                THREE.UVMapping,
-                THREE.ClampToEdgeWrapping,
-                THREE.ClampToEdgeWrapping,
-                THREE.LinearFilter,
-                THREE.LinearFilter,
-                THREE.RGBAFormat,
-                THREE.UnsignedByteType,
-                16
-              );
-
-              _requestKeyboardImage()
-                .then(img => {
-                  texture.image = img;
-                  texture.needsUpdate = true;
-                })
-                .catch(err => {
-                  console.warn(err);
-                });
-
-              const material = new THREE.MeshBasicMaterial({
-                map: texture,
-                side: THREE.DoubleSide,
-                transparent: true,
-                alphaTest: 0.5,
-              });
-              return material;
-            })();
-            const mesh = new THREE.Mesh(geometry, material);
-            mesh.position.y = 1 - DEFAULT_USER_HEIGHT;
-            mesh.position.z = -0.4;
-            mesh.rotation.x = -Math.PI * (3 / 8);
-
-            const shadowMesh = (() => {
-              const geometry = new THREE.BoxBufferGeometry(KEYBOARD_WORLD_WIDTH, KEYBOARD_WORLD_HEIGHT, 0.01);
-              const material = transparentMaterial;
-              const mesh = new THREE.Mesh(geometry, material);
-              mesh.castShadow = true;
-              return mesh;
-            })();
-            mesh.add(shadowMesh);
-
-            return mesh;
-          })();
-          object.add(planeMesh);
-          object.planeMesh = planeMesh;
-
-          const keySpecs = (() => {
-            class KeySpec {
-              constructor(key, rect) {
-                this.key = key;
-                this.rect = rect;
-
-                this.anchorBoxTarget = null;
-              }
-            }
-
-            const div = document.createElement('div');
-            div.style.cssText = 'position: absolute; top: 0; left: 0; width: ' + KEYBOARD_WIDTH + 'px; height: ' + KEYBOARD_HEIGHT + 'px;';
-            div.innerHTML = keyboardImg;
-
-            document.body.appendChild(div);
-
-            const keyEls = div.querySelectorAll(':scope > svg > g[key]');
-            const result = Array(keyEls.length);
-            for (let i = 0; i < keyEls.length; i++) {
-              const keyEl = keyEls[i];
-              const key = keyEl.getAttribute('key');
-              const rect = keyEl.getBoundingClientRect();
-
-              const keySpec = new KeySpec(key, rect);
-              result[i] = keySpec;
-            }
-
-            document.body.removeChild(div);
-
-            return result;
-          })();
-          object.keySpecs = keySpecs;
-
-          const _updateKeySpecAnchorBoxTargets = () => {
-            object.updateMatrixWorld();
-            const {position: keyboardPosition, rotation: keyboardRotation} = _decomposeObjectMatrixWorld(planeMesh);
-
-            for (let i = 0; i < keySpecs.length; i++) {
-              const keySpec = keySpecs[i];
-              const {key, rect} = keySpec;
-
-              const anchorBoxTarget = geometryUtils.makeBoxTargetOffset(
-                keyboardPosition,
-                keyboardRotation,
-                oneVector,
-                new THREE.Vector3(
-                  -(KEYBOARD_WORLD_WIDTH / 2) + (rect.left / KEYBOARD_WIDTH) * KEYBOARD_WORLD_WIDTH,
-                  (KEYBOARD_WORLD_HEIGHT / 2) + (-rect.top / KEYBOARD_HEIGHT) * KEYBOARD_WORLD_HEIGHT,
-                  -WORLD_DEPTH
-                ),
-                new THREE.Vector3(
-                  -(KEYBOARD_WORLD_WIDTH / 2) + (rect.right / KEYBOARD_WIDTH) * KEYBOARD_WORLD_WIDTH,
-                  (KEYBOARD_WORLD_HEIGHT / 2) + (-rect.bottom / KEYBOARD_HEIGHT) * KEYBOARD_WORLD_HEIGHT,
-                  WORLD_DEPTH
-                )
-              );
-              keySpec.anchorBoxTarget = anchorBoxTarget;
-            }
-          };
-          _updateKeySpecAnchorBoxTargets();
-          object.updateKeySpecAnchorBoxTargets = _updateKeySpecAnchorBoxTargets;
-
-          return object;
-        })();
-        scene.add(keyboardMesh);
-
-        const keyboardBoxMeshes = {
-          left: biolumi.makeMenuBoxMesh(),
-          right: biolumi.makeMenuBoxMesh(),
-        };
-        scene.add(keyboardBoxMeshes.left);
-        scene.add(keyboardBoxMeshes.right);
-
-        cleanups.push(() => {
-          scene.remove(keyboardMesh);
-          SIDES.forEach(side => {
-            scene.remove(keyboardBoxMeshes[side]);
-          });
-        });
-
         let lastMenuStatusJsonString = '';
         const _updateMenuPage = () => {
           if (menuMesh) {
@@ -745,14 +591,6 @@ class Rend {
         };
         _updatePages();
 
-        const _makeKeyboardHoverState = () => ({
-          key: null,
-        });
-        const keyboardHoverStates = {
-          left: _makeKeyboardHoverState(),
-          right: _makeKeyboardHoverState(),
-        };
-
         localUpdates.push(() => {
           const _updateRenderer = () => {
             renderer.shadowMap.needsUpdate = true;
@@ -760,84 +598,9 @@ class Rend {
           const _updateUiTimer = () => {
             biolumi.updateUiTimer();
           };
-          const _updateKeyboardAnchors = () => {
-            const {open} = menuState;
-
-            if (open) {
-              const {gamepads} = webvr.getStatus();
-
-              const {statusMesh, navbarMesh} = menuMesh;
-              const menuMatrixObject = _decomposeObjectMatrixWorld(statusMesh);
-              const {page: statusPage} = statusMesh;
-              const navbarMatrixObject = _decomposeObjectMatrixWorld(navbarMesh);
-              const {page: navbarPage} = navbarMesh;
-
-              SIDES.forEach(side => {
-                const gamepad = gamepads[side];
-
-                if (gamepad) {
-                  const {position: controllerPosition} = gamepad;
-
-                  const keyboardHoverState = keyboardHoverStates[side];
-                  const keyboardBoxMesh = keyboardBoxMeshes[side];
-
-                  // NOTE: there should be at most one intersecting anchor box since keys do not overlap
-                  const {keySpecs} = keyboardMesh;
-                  const newKeySpec = keySpecs.find(keySpec => keySpec.anchorBoxTarget.containsPoint(controllerPosition));
-
-                  const {key: oldKey} = keyboardHoverState;
-                  const newKey = newKeySpec ? newKeySpec.key : null;
-                  keyboardHoverState.key = newKey;
-
-                  if (oldKey && newKey !== oldKey) {
-                    const key = oldKey;
-                    const keyCode = biolumi.getKeyCode(key);
-
-                    input.triggerEvent('keyboardup', {
-                      key,
-                      keyCode,
-                      side,
-                    });
-                  }
-                  if (newKey && newKey !== oldKey) {
-                    const key = newKey;
-                    const keyCode = biolumi.getKeyCode(key);
-
-                    input.triggerEvent('keyboarddown', {
-                      key,
-                      keyCode,
-                      side,
-                    });
-                    input.triggerEvent('keyboardpress', {
-                      key,
-                      keyCode,
-                      side,
-                    });
-                  }
-
-                  if (newKeySpec) {
-                    const {anchorBoxTarget} = newKeySpec;
-
-                    keyboardBoxMesh.position.copy(anchorBoxTarget.position);
-                    keyboardBoxMesh.quaternion.copy(anchorBoxTarget.quaternion);
-                    keyboardBoxMesh.scale.copy(anchorBoxTarget.size);
-
-                    if (!keyboardBoxMesh.visible) {
-                      keyboardBoxMesh.visible = true;
-                    }
-                  } else {
-                    if (keyboardBoxMesh.visible) {
-                      keyboardBoxMesh.visible = false;
-                    }
-                  }
-                }
-              });
-            }
-          };
 
           _updateRenderer();
           _updateUiTimer();
-          _updateKeyboardAnchors();
         });
 
         const unload = e => {
@@ -903,7 +666,7 @@ class Rend {
             _updateMenuPage();
           }
 
-          update() { // XXX move this
+          update() {
             this.emit('update');
           }
 
@@ -948,7 +711,6 @@ class Rend {
             _updateMenuPage();
 
             menuMesh.visible = true;
-            keyboardMesh.visible = true;
 
             this.emit('login');
           }
@@ -962,7 +724,6 @@ class Rend {
             _updateMenuPage();
 
             menuMesh.visible = false;
-            keyboardMesh.visible = false;
 
             this.emit('logout');
           }
