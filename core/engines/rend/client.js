@@ -381,8 +381,8 @@ class Rend {
                     camera.rotation.order
                   ));
                   const newMenuPosition = newCameraPosition.clone()
-                    .add(new THREE.Vector3(0, 0, -1.5).applyQuaternion(newCameraPosition));
-                  const newMenuRotation = newCameraPosition;
+                    .add(new THREE.Vector3(0, 0, -1.5).applyQuaternion(newCameraRotation));
+                  const newMenuRotation = newCameraRotation;
                   menuMesh.position.copy(newMenuPosition);
                   menuMesh.quaternion.copy(newMenuRotation);
 
