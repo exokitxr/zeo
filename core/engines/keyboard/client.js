@@ -228,13 +228,6 @@ class Keyboard {
         scene.add(dotMeshes.left);
         scene.add(dotMeshes.right);
 
-        const boxMeshes = {
-          left: biolumi.makeMenuBoxMesh(),
-          right: biolumi.makeMenuBoxMesh(),
-        };
-        scene.add(boxMeshes.left);
-        scene.add(boxMeshes.right);
-
         const _makeKeyboardHoverState = () => ({
           key: null,
         });
@@ -396,59 +389,6 @@ class Keyboard {
                       keyMesh.visible = false;
                     }
                   }
-
-                  /* const keyboardHoverState = keyboardHoverStates[side];
-                  const keyboardBoxMesh = keyboardBoxMeshes[side];
-
-                  // NOTE: there should be at most one intersecting anchor box since keys do not overlap
-
-                  const newKeySpec = keySpecs.find(keySpec => keySpec.anchorBoxTarget.containsPoint(controllerPosition));
-
-                  const {key: oldKey} = keyboardHoverState;
-                  const newKey = newKeySpec ? newKeySpec.key : null;
-                  keyboardHoverState.key = newKey;
-
-                  if (oldKey && newKey !== oldKey) {
-                    const key = oldKey;
-                    const keyCode = biolumi.getKeyCode(key);
-
-                    input.triggerEvent('keyboardup', {
-                      key,
-                      keyCode,
-                      side,
-                    });
-                  }
-                  if (newKey && newKey !== oldKey) {
-                    const key = newKey;
-                    const keyCode = biolumi.getKeyCode(key);
-
-                    input.triggerEvent('keyboarddown', {
-                      key,
-                      keyCode,
-                      side,
-                    });
-                    input.triggerEvent('keyboardpress', {
-                      key,
-                      keyCode,
-                      side,
-                    });
-                  }
-
-                  if (newKeySpec) {
-                    const {anchorBoxTarget} = newKeySpec;
-
-                    keyboardBoxMesh.position.copy(anchorBoxTarget.position);
-                    keyboardBoxMesh.quaternion.copy(anchorBoxTarget.quaternion);
-                    keyboardBoxMesh.scale.copy(anchorBoxTarget.size);
-
-                    if (!keyboardBoxMesh.visible) {
-                      keyboardBoxMesh.visible = true;
-                    }
-                  } else {
-                    if (keyboardBoxMesh.visible) {
-                      keyboardBoxMesh.visible = false;
-                    }
-                  } */
                 }
               }
             });
@@ -462,7 +402,6 @@ class Keyboard {
           SIDES.forEach(side => {
             scene.remove(keyMeshes[side]);
             scene.remove(dotMeshes[side]);
-            scene.remove(boxMeshes[side]);
           });
 
           SIDES.forEach(side => {
