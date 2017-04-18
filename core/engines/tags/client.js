@@ -81,7 +81,6 @@ class Tags {
           const {EventEmitter} = events;
 
           const transparentImg = biolumi.getTransparentImg();
-          const {sound} = somnifer;
 
           const menuUtils = menuUtilser.makeUtils({fs});
           const tagsRenderer = tagsRender.makeRenderer({menuUtils, creatureUtils});
@@ -908,7 +907,7 @@ class Tags {
                 console.warn(err);
               });
 
-            const soundBody = new sound.Body();
+            const soundBody = somnifer.makeBody();
             soundBody.setObject(mesh);
 
             const localUpdate = () => {
@@ -991,7 +990,7 @@ class Tags {
                 console.warn(err);
               });
 
-            const soundBody = new sound.Body();
+            const soundBody = somnifer.makeBody();
             soundBody.setObject(mesh);
 
             const localUpdate = () => {
