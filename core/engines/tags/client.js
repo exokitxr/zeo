@@ -869,9 +869,7 @@ class Tags {
 
                   accept(mesh);
                 })
-                .catch(err => {
-                  console.warn(err);
-                });
+                .catch(reject);
 
               const material = new THREE.MeshBasicMaterial({
                 map: texture,
@@ -898,9 +896,7 @@ class Tags {
 
                 accept(mesh);
               })
-              .catch(err => {
-                console.warn(err);
-              });
+              .catch(reject);
 
             const soundBody = somnifer.makeBody();
             soundBody.setObject(mesh);
@@ -980,9 +976,7 @@ class Tags {
 
                 accept(mesh);
               })
-              .catch(err => {
-                console.warn(err);
-              });
+              .catch(reject);
 
             const soundBody = somnifer.makeBody();
             soundBody.setObject(mesh);
@@ -2274,9 +2268,7 @@ class Tags {
                           media: audioMesh.audio,
                         });
                       })
-                      .catch(err => {
-                        console.warn(err);
-                      });
+                      .catch(reject);
                   } else if (mode === 'video') {
                     _requestFileItemVideoMesh(this)
                       .then(videoMesh => {
