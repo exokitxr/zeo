@@ -166,6 +166,37 @@ class Keyboard {
         })();
         scene.add(keyboardMesh);
 
+        const keyMesh = (() => {
+          const geometry = new THREE.PlaneBufferGeometry(1, 1);
+          const material = (() => {
+            const texture = new THREE.Texture(
+              transparentImg,
+              THREE.UVMapping,
+              THREE.ClampToEdgeWrapping,
+              THREE.ClampToEdgeWrapping,
+              THREE.LinearFilter,
+              THREE.LinearFilter,
+              THREE.RGBAFormat,
+              THREE.UnsignedByteType,
+              16
+            );
+            texture.needsUpdate = true;
+
+            const material = new THREE.MeshBasicMaterial({
+              map: texture,
+              side: THREE.DoubleSide,
+              transparent: true,
+              alphaTest: 0.5,
+            });
+            return material;
+          })();
+
+          const mesh = new THREE.Mesh(geometry, matrerial);
+          mesh.visible = false;
+          return mesh;
+        })();
+        scene.add(keyMesh);
+
         const dotMeshes = {
           left: biolumi.makeMenuDotMesh(),
           right: biolumi.makeMenuDotMesh(),
@@ -299,6 +330,7 @@ class Keyboard {
 
         this._cleanup = () => {
           scene.remove(keyboardMesh);
+          scene.remove(keyMesh);
 
           SIDES.forEach(side => {
             scene.remove(dotMesh.right);
