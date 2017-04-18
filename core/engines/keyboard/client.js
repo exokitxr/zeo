@@ -191,8 +191,9 @@ class Keyboard {
             return material;
           })();
 
-          const mesh = new THREE.Mesh(geometry, matrerial);
+          const mesh = new THREE.Mesh(geometry, material);
           mesh.visible = false;
+          mesh.key = null;
           return mesh;
         })();
         scene.add(keyMesh);
@@ -259,13 +260,43 @@ class Keyboard {
 
                     const matchingKeySpec = matchingKeySpecs[0];
                     const {key} = matchingKeySpec;
+                    if (key !== keyMesh.key) {
+                      const {rect: {top, bottom, left, right}} = matchingKeySpec;
+                      const width = right - left;
+                      const height = bottom - top;
+                      const imageData = keyboardCanvas.ctx.getImageData(left, top, width, height);
+                      const {material: {map: texture}} = keyMesh;
+                      texture.image = imageData;
+                      texture.needsUpdate = true;
+
+                      keyMesh.position.copy(
+                        keyboardTopLeftPoint.clone()
+                          .add(xAxis.clone().multiplyScalar((left + (width / 2)) / KEYBOARD_WIDTH * KEYBOARD_WORLD_WIDTH))
+                          .add(negativeYAxis.clone().multiplyScalar((top + (height / 2)) / KEYBOARD_HEIGHT * KEYBOARD_WORLD_HEIGHT))
+                          .add(new THREE.Vector3(0, 0, 0.01).applyQuaternion(keyboardRotation))
+                      );
+                      keyMesh.quaternion.copy(keyboardRotation);
+                      keyMesh.scale.set(
+                        width / KEYBOARD_WIDTH * KEYBOARD_WORLD_WIDTH * 1.5,
+                        height / KEYBOARD_HEIGHT * KEYBOARD_WORLD_HEIGHT * 1.5,
+                        1
+                      );
+
+                      keyMesh.key = key;
+                    }
 
                     if (!dotMesh.visible) {
                       dotMesh.visible = true;
                     }
+                    if (!keyMesh.visible) {
+                      keyMesh.visible = true;
+                    }
                   } else {
                     if (dotMesh.visible) {
                       dotMesh.visible = false;
+                    }
+                    if (keyMesh.visible) {
+                      keyMesh.visible = false;
                     }
                   }
 
