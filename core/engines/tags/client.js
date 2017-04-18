@@ -2365,7 +2365,7 @@ class Tags {
 
               this.getMedia()
                 .then(({media}) => {
-                  media.play();
+                  media.pause();
                 })
                 .catch(err => {
                   console.warn(err);
