@@ -35,7 +35,7 @@ class Rend {
 
   mount() {
     const {_archae: archae} = this;
-    const {metadata: {server: {url: serverUrl, worldname: serverWorldname, enabled: serverEnabled}, hub: {url: hubUrl}}} = archae;
+    const {metadata: {server: {worldname: serverWorldname, enabled: serverEnabled}, hub: {url: hubUrl}}} = archae;
 
     let live = true;
     const cleanups = [];
