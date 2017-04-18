@@ -25,13 +25,13 @@ import tagsRender from './lib/render/tags';
 const SIDES = ['left', 'right'];
 const AXES = ['x', 'y', 'z'];
 
-const tagFlagSymbol = Symbol();
 const itemInstanceSymbol = Symbol();
 const itemInstancingSymbol = Symbol();
 const itemPageSymbol = Symbol();
 const itemValueSymbol = Symbol();
 const itemPreviewSymbol = Symbol();
 const itemTempSymbol = Symbol();
+const itemMediaPromiseSymbol = Symbol();
 const MODULE_TAG_NAME = 'module'.toUpperCase();
 
 class Tags {
@@ -843,9 +843,7 @@ class Tags {
           const localUpdates = [];
 
           const _getItemPreviewMode = item => fs.getFileMode(item.mimeType);
-          const _requestFileItemImageMesh = tagMesh => new Promise((accept, reject) => {
-            const {item} = tagMesh;
-
+          const _requestFileItemImageMesh = item => new Promise((accept, reject) => {
             const geometry = new THREE.PlaneBufferGeometry(0.2, 0.2);
             const material = (() => {
               const texture = new THREE.Texture(
@@ -867,6 +865,10 @@ class Tags {
 
                   texture.image = boxImg;
                   texture.needsUpdate = true;
+
+                  mesh.image = boxImg;
+
+                  accept(mesh);
                 })
                 .catch(err => {
                   console.warn(err);
@@ -882,11 +884,8 @@ class Tags {
             })();
 
             const mesh = new THREE.Mesh(geometry, material);
-            accept(mesh);
           });
-          const _requestFileItemAudioMesh = tagMesh => new Promise((accept, reject) => {
-            const {item} = tagMesh;
-
+          const _requestFileItemAudioMesh = item => new Promise((accept, reject) => {
             const mesh = new THREE.Object3D();
 
             fs.makeFile('fs/' + item.id + item.name)
@@ -894,15 +893,17 @@ class Tags {
               .then(audio => {
                 soundBody.setInputElement(audio);
 
-                audio.currentTime = item.value * audio.duration;
+                /* audio.currentTime = item.value * audio.duration;
 
                 if (!item.paused) {
                   audio.play();
-                }
+                } */
 
                 mesh.audio = audio;
 
                 localUpdates.push(localUpdate);
+
+                accept(mesh);
               })
               .catch(err => {
                 console.warn(err);
@@ -914,12 +915,14 @@ class Tags {
             const localUpdate = () => {
               const {audio} = mesh;
               const {value: prevValue} = item;
-              const nextValue = audio.currentTime / audio.duration;
+              const worldTime = bootstrap.getWorldTime();
+              const {startTime} = item;
+              const nextValue = Math.max(Math.min((worldTime - startTime) / audio.duration, 1), 0);
+
               if (Math.abs(nextValue - prevValue) >= (1 / 1000)) { // to reduce the frequency of texture updates
                 item.value = nextValue;
 
-                const {page} = tagMesh;
-                page.update();
+                item.emit('update');
               }
             };
 
@@ -929,17 +932,10 @@ class Tags {
                 audio.pause();
               }
 
-              const index = localUpdates.indexOf(localUpdate);
-              if (index !== -1) {
-                localUpdates.splice(index, 1);
-              }
+              localUpdates.splice(localUpdates.indexOf(localUpdate), 1);
             };
-
-            accept(mesh);
           });
-          const _requestFileItemVideoMesh = tagMesh => new Promise((accept, reject) => {
-            const {item} = tagMesh;
-
+          const _requestFileItemVideoMesh = item => new Promise((accept, reject) => {
             const geometry = new THREE.PlaneBufferGeometry(WORLD_OPEN_WIDTH, (OPEN_HEIGHT - HEIGHT - 100) / OPEN_HEIGHT * WORLD_OPEN_HEIGHT);
             const material = (() => {
               const texture = new THREE.Texture(
@@ -977,15 +973,17 @@ class Tags {
 
                 soundBody.setInputElement(video);
 
-                video.currentTime = item.value * video.duration;
+                /* video.currentTime = item.value * video.duration;
 
                 if (!item.paused) {
                   video.play();
-                }
+                } */
 
                 mesh.video = video;
 
                 localUpdates.push(localUpdate);
+
+                accept(mesh);
               })
               .catch(err => {
                 console.warn(err);
@@ -997,14 +995,15 @@ class Tags {
             const localUpdate = () => {
               const {map: texture} = material;
               const {image: video} = texture;
-
               const {value: prevValue} = item;
-              const nextValue = video.currentTime / video.duration;
+              const worldTime = bootstrap.getWorldTime();
+              const {startTime} = item;
+              const nextValue = Math.max(Math.min((worldTime - startTime) / video.duration, 1), 0);
+
               if (Math.abs(nextValue - prevValue) >= (1 / 1000)) { // to reduce the frequency of texture updates
                 item.value = nextValue;
 
-                const {planeOpenMesh: {page: openPage}} = tagMesh;
-                openPage.update();
+                item.emit('update');
               }
 
               texture.needsUpdate = true;
@@ -1016,15 +1015,10 @@ class Tags {
                 video.pause();
               }
 
-              const index = localUpdates.indexOf(localUpdate);
-              if (index !== -1) {
-                localUpdates.splice(index, 1);
-              }
+              localUpdates.splice(localUpdates.indexOf(localUpdate), 1);
             };
-
-            accept(mesh);
           });
-          const _requestFileItemModelMesh = tagMesh => fs.makeFile('fs/' + tagMesh.item.id + tagMesh.item.name)
+          const _requestFileItemModelMesh = item => fs.makeFile('fs/' + item.id + item.name)
             .read({type: 'model'});
 
           const _trigger = e => {
@@ -1282,18 +1276,21 @@ class Tags {
                   } else if (action === 'seek') {
                     const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
                     const {item} = tagMesh;
-                    const media = item.getMedia();
 
-                    if (media) {
-                      const {value} = pointerState;
-                      const worldTime = bootstrap.getWorldTime();
-                      const startTime = worldTime - (value * media.duration);
+                    item.getMedia()
+                      .then(({media}) => {
+                        const {value} = pointerState;
+                        const worldTime = bootstrap.getWorldTime();
+                        const startTime = worldTime - (value * media.duration);
 
-                      tagsApi.emit('seek', {
-                        id: id,
-                        startTime: startTime,
+                        tagsApi.emit('seek', {
+                          id: id,
+                          startTime: startTime,
+                        });
+                      })
+                      .catch(err => {
+                        console.warn(err);
                       });
-                    }
                   }
 
                   return true;
@@ -2133,7 +2130,7 @@ class Tags {
             rend.removeListener('update', _update);
           };
 
-          class Item {
+          class Item extends EventEmitter {
             constructor(
               type,
               id,
@@ -2152,6 +2149,8 @@ class Tags {
               startTime,
               metadata // transient state: isStatic, exists
             ) {
+              super();
+
               this.type = type;
               this.id = id;
               this.name = name;
@@ -2176,6 +2175,7 @@ class Tags {
               this[itemValueSymbol] = 0;
               this[itemPreviewSymbol] = false;
               this[itemTempSymbol] = false;
+              this[itemMediaPromiseSymbol] = null;
             }
 
             get instance() {
@@ -2243,130 +2243,151 @@ class Tags {
               }
             }
 
-            getMedia() { // XXX make this promise-based
-              const {preview} = this;
+            getMedia() {
+              if (!this[itemMediaPromiseSymbol]) {
+                this[itemMediaPromiseSymbol] = new Promise((accept, reject) => {
+                  const previewMesh = new THREE.Object3D();
 
-              if (preview) {
-                const {children} = preview;
-
-                if (children.length > 0) {
                   const mode = _getItemPreviewMode(this);
+                  if (mode === 'image') {
+                    _requestFileItemImageMesh(this)
+                      .then(imageMesh => {
+                        imageMesh.position.y = -(WORLD_HEIGHT / 2);
 
-                  if (mode === 'audio') {
-                    const {
-                      children: [
-                        {
-                          audio,
-                        },
-                      ],
-                    } = preview;
-                    return audio;
+                        previewMesh.add(imageMesh);
+
+                        return Promise.resolve(imageMesh);
+                      })
+                      .then(imageMesh => {
+                        accept({
+                          previewMesh: previewMesh,
+                          media: imageMesh.image,
+                        });
+                      })
+                      .catch(reject);
+                  } else if (mode === 'audio') {
+                    _requestFileItemAudioMesh(this)
+                      .then(audioMesh => {
+                        // audioMesh.position.y = -(WORLD_HEIGHT / 2) - ((WORLD_OPEN_HEIGHT - WORLD_HEIGHT) / 2);
+
+                        previewMesh.add(audioMesh);
+
+                        return Promise.resolve(audioMesh);
+                      })
+                      .then(audioMesh => {
+                        accept({
+                          previewMesh: previewMesh,
+                          media: audioMesh.audio,
+                        });
+                      })
+                      .catch(err => {
+                        console.warn(err);
+                      });
                   } else if (mode === 'video') {
-                    const {
-                      children: [
-                        {
-                          material: {
-                            map: {
-                              image: video,
-                            },
-                          },
-                        },
-                      ],
-                    } = preview;
-                    return video;
+                    _requestFileItemVideoMesh(this)
+                      .then(videoMesh => {
+                        videoMesh.position.y = - ((100 / OPEN_HEIGHT * WORLD_OPEN_HEIGHT) / 4);
+
+                        previewMesh.add(videoMesh);
+
+                        return Promise.resolve(videoMesh);
+                      })
+                      .then(videoMesh => {
+                        accept({
+                          previewMesh: previewMesh,
+                          media: videoMesh.video,
+                        });
+                      })
+                      .catch(reject);
+                  } else if (mode === 'model') {
+                    _requestFileItemModelMesh(this)
+                      .then(modelMesh => {
+                        const modelMeshWrap = new THREE.Object3D();
+                        modelMeshWrap.add(modelMesh);
+
+                        previewMesh.add(modelMeshWrap);
+
+                        const boundingBox = new THREE.Box3().setFromObject(modelMesh);
+                        const boundingBoxSize = boundingBox.getSize();
+                        const meshCurrentScale = Math.max(boundingBoxSize.x, boundingBoxSize.y, boundingBoxSize.z);
+                        const meshScaleFactor = (1 / meshCurrentScale) * (WORLD_OPEN_HEIGHT - WORLD_HEIGHT);
+                        modelMeshWrap.scale.set(meshScaleFactor, meshScaleFactor, meshScaleFactor);
+
+                        const boundingBoxCenter = boundingBox.getCenter();
+                        modelMeshWrap.position.y = -(WORLD_HEIGHT / 2) - (boundingBoxCenter.y * meshScaleFactor);
+
+                        return Promise.resolve(modelMesh);
+                      })
+                      .then(modelMesh => {
+                        accept({
+                          previewMesh: previewMesh,
+                          modelMesh: modelMesh,
+                        });
+                      })
+                      .catch(reject);
+                  } else {
+                    accept({
+                      previewMesh: previewMesh,
+                      media: null,
+                    });
                   }
-                } else {
-                  return null;
-                }
-              } else {
-                return null;
+                });
+              }
+
+              return this[itemMediaPromiseSymbol];
+            }
+
+            destroyMedia() {
+              if (this[itemMediaPromiseSymbol]) {
+                this[itemMediaPromiseSymbol].then(({previewMesh}) => {
+                  previewMesh.destroy();
+                })
+                .catch(err => {
+                  console.warn(err);
+                });
               }
             }
 
             play() {
               this.paused = false;
 
-              const {preview} = this;
-              if (preview) {
-                const mode = _getItemPreviewMode(this);
-
-                if (mode === 'audio') {
-                  const {
-                    children: [
-                      {
-                        audio,
-                      },
-                    ],
-                  } = preview;
-                  audio.play();
-                } else if (mode === 'video') {
-                  const {
-                    children: [
-                      {
-                        material: {
-                          map: {
-                            image: video,
-                          },
-                        },
-                      },
-                    ],
-                  } = preview;
-                  video.play();
-                }
-              }
+              this.getMedia()
+                .then(({media}) => {
+                  media.play();
+                })
+                .catch(err => {
+                  console.warn(err);
+                });
             }
 
             pause() {
               this.paused = true;
 
-              const {preview} = this;
-              if (preview) {
-                const mode = _getItemPreviewMode(this);
-
-                if (mode === 'audio') {
-                  const {
-                    children: [
-                      {
-                        audio,
-                      },
-                    ],
-                  } = preview;
-                  audio.pause();
-                } else if (mode === 'video') {
-                  const {
-                    children: [
-                      {
-                        material: {
-                          map: {
-                            image: video,
-                          },
-                        },
-                      },
-                    ],
-                  } = preview;
-                  video.pause();
-                }
-              }
+              this.getMedia()
+                .then(({media}) => {
+                  media.play();
+                })
+                .catch(err => {
+                  console.warn(err);
+                });
             }
 
             seek(startTime) {
-              const media = this.getMedia();
+              this.getMedia()
+                .then(({media}) => {
+                  const worldTime = bootstrap.getWorldTime();
+                  const value = Math.max(Math.min(startTime - worldTime), 0);
+                  this.value = value;
 
-              if (media) {
-                const worldTime = bootstrap.getWorldTime();
-                const value = Math.max(Math.min(startTime - worldTime), 0);
-                media.currentTime = value * media.duration;
-
-                this.value = value; // XXX derive value from the locally set startTime to get rid of the dependency on async getMedia() promise resolution
-              }
+                  media.currentTime = value * media.duration;
+                })
+                .catch(err => {
+                  console.warn(err);
+                });
             }
 
             destroy() {
-              const {preview} = this;
-
-              if (preview && preview.destroy) {
-                preview.destroy();
-              }
+              this.destroyMedia();
 
               const {type, temp} = this;
               if (type === 'file' && !temp) {
@@ -2625,7 +2646,6 @@ class Tags {
 
             makeTag(itemSpec) {
               const object = new THREE.Object3D();
-              object[tagFlagSymbol] = true;
 
               const item = new Item(
                 itemSpec.type,
@@ -2729,6 +2749,11 @@ class Tags {
                 planeOpenMesh.visible = Boolean(item.open);
                 object.add(planeOpenMesh);
                 object.planeOpenMesh = planeOpenMesh;
+
+                item.on('update', () => {
+                  const {page: openPage} = planeOpenMesh;
+                  openPage.update();
+                });
               } else if (itemSpec.type === 'module') {
                 const planeMesh = _addUiManagerPage(uiStaticManager);
                 planeMesh.visible = !item.details;
@@ -2933,68 +2958,13 @@ class Tags {
                   planeOpenMesh.visible = true;
 
                   if (item.type === 'file') {
-                    if (!item.preview) {
-                      const previewMesh = (() => {
-                        const object = new THREE.Object3D();
-
-                        const mode = _getItemPreviewMode(item);
-                        if (mode === 'image') {
-                          _requestFileItemImageMesh(tagMesh)
-                            .then(imageMesh => {
-                              imageMesh.position.y = -(WORLD_HEIGHT / 2) - ((WORLD_OPEN_HEIGHT - WORLD_HEIGHT) / 2);
-
-                              object.add(imageMesh);
-                            })
-                            .catch(err => {
-                              console.warn(err);
-                            });
-                        } else if (mode === 'audio') {
-                          _requestFileItemAudioMesh(tagMesh)
-                            .then(audioMesh => {
-                              object.add(audioMesh);
-                            })
-                            .catch(err => {
-                              console.warn(err);
-                            });
-                        } else if (mode === 'video') {
-                          _requestFileItemVideoMesh(tagMesh)
-                            .then(videoMesh => {
-                              videoMesh.position.y = -(WORLD_HEIGHT / 2) - ((WORLD_OPEN_HEIGHT - WORLD_HEIGHT) / 2) + ((100 / OPEN_HEIGHT * WORLD_OPEN_HEIGHT) / 2);
-
-                              object.add(videoMesh);
-                            })
-                            .catch(err => {
-                              console.warn(err);
-                            });
-                        } else if (mode === 'model') {
-                          _requestFileItemModelMesh(tagMesh)
-                            .then(modelMesh => {
-                              const modelMeshWrap = new THREE.Object3D();
-                              modelMeshWrap.add(modelMesh);
-
-                              object.add(modelMeshWrap);
-
-                              const boundingBox = new THREE.Box3().setFromObject(modelMesh);
-                              const boundingBoxSize = boundingBox.getSize();
-                              const meshCurrentScale = Math.max(boundingBoxSize.x, boundingBoxSize.y, boundingBoxSize.z);
-                              const meshScaleFactor = (1 / meshCurrentScale) * (WORLD_OPEN_HEIGHT - WORLD_HEIGHT);
-                              modelMeshWrap.scale.set(meshScaleFactor, meshScaleFactor, meshScaleFactor);
-
-                              const boundingBoxCenter = boundingBox.getCenter();
-                              modelMeshWrap.position.y = -(WORLD_HEIGHT / 2) - ((WORLD_OPEN_HEIGHT - WORLD_HEIGHT) / 2) - (boundingBoxCenter.y * meshScaleFactor);
-                            })
-                            .catch(err => {
-                              console.warn(err);
-                            });
-                        }
-
-                        return object;
-                      })();
-                      tagMesh.add(previewMesh);
-                      item.preview = previewMesh;
-                    } else {
-                      item.preview.visible = true;
-                    }
+                    item.getMedia()
+                      .then(({previewMesh}) => {
+                        planeOpenMesh.add(previewMesh);
+                      })
+                      .catch(err => {
+                        console.warn(err);
+                      });
                   }
                 };
                 object.close = () => {
