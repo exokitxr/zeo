@@ -530,12 +530,8 @@ class World {
 
               const tagMesh = elementManager.getTagMesh(id);
               tagMesh.open();
-
-              return tagMesh;
             } else {
               console.warn('invalid tag open arguments', {src});
-
-              return null;
             }
           };
           const _handleTagClose = (userId, src) => {
@@ -546,12 +542,8 @@ class World {
 
               const tagMesh = elementManager.getTagMesh(id);
               tagMesh.close();
-
-              return tagMesh;
             } else {
               console.warn('invalid tag open arguments', {src});
-
-              return null;
             }
           };
           const _handleTagOpenDetails = (userId, src) => {
@@ -562,12 +554,8 @@ class World {
 
               const tagMesh = elementManager.getTagMesh(id);
               tagMesh.openDetails();
-
-              return tagMesh;
             } else {
               console.warn('invalid tag open details arguments', {src});
-
-              return null;
             }
           };
           const _handleTagCloseDetails = (userId, src) => {
@@ -578,12 +566,8 @@ class World {
 
               const tagMesh = elementManager.getTagMesh(id);
               tagMesh.closeDetails();
-
-              return tagMesh;
             } else {
               console.warn('invalid tag open details arguments', {src});
-
-              return null;
             }
           };
           const _handleTagPlay = (userId, src) => {
@@ -594,12 +578,8 @@ class World {
 
               const tagMesh = elementManager.getTagMesh(id);
               tagMesh.play();
-
-              return tagMesh;
             } else {
               console.warn('invalid tag play arguments', {src});
-
-              return null;
             }
           };
           const _handleTagPause = (userId, src) => {
@@ -610,12 +590,8 @@ class World {
 
               const tagMesh = elementManager.getTagMesh(id);
               tagMesh.pause();
-
-              return tagMesh;
             } else {
               console.warn('invalid tag pause arguments', {src});
-
-              return null;
             }
           };
           const _handleTagSeek = (userId, src, startTime) => {
@@ -626,12 +602,8 @@ class World {
 
               const tagMesh = elementManager.getTagMesh(id);
               tagMesh.seek(startTime);
-
-              return tagMesh;
             } else {
               console.warn('invalid tag seek arguments', {src, startTime});
-
-              return null;
             }
           };
           const _handleMessage = detail => {

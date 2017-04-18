@@ -2243,6 +2243,46 @@ class Tags {
               }
             }
 
+            getMedia() { // XXX make this promise-based
+              const {preview} = this;
+
+              if (preview) {
+                const {children} = preview;
+
+                if (children.length > 0) {
+                  const mode = _getItemPreviewMode(this);
+
+                  if (mode === 'audio') {
+                    const {
+                      children: [
+                        {
+                          audio,
+                        },
+                      ],
+                    } = preview;
+                    return audio;
+                  } else if (mode === 'video') {
+                    const {
+                      children: [
+                        {
+                          material: {
+                            map: {
+                              image: video,
+                            },
+                          },
+                        },
+                      ],
+                    } = preview;
+                    return video;
+                  }
+                } else {
+                  return null;
+                }
+              } else {
+                return null;
+              }
+            }
+
             play() {
               this.paused = false;
 
@@ -2309,52 +2349,16 @@ class Tags {
               }
             }
 
-            getMedia() {
-              const {preview} = this;
-              if (preview) {
-                const mode = _getItemPreviewMode(this);
-
-                if (mode === 'audio') {
-                  const {
-                    children: [
-                      {
-                        audio,
-                      },
-                    ],
-                  } = preview;
-                  return audio;
-                } else if (mode === 'video') {
-                  const {
-                    children: [
-                      {
-                        material: {
-                          map: {
-                            image: video,
-                          },
-                        },
-                      },
-                    ],
-                  } = preview;
-                  return video;
-                }
-              }
-            }
-
             seek(startTime) {
               const media = this.getMedia();
-              const value = (() => {
-                if (media) {
-                  const worldTime = bootstrap.getWorldTime();
-                  return Math.max(Math.min(startTime - worldTime), 0);
-                } else {
-                  return 0;
-                }
-              })();
-              if (media) {
-                media.currentTime = value * media.duration;
-              }
 
-              this.value = value;
+              if (media) {
+                const worldTime = bootstrap.getWorldTime();
+                const value = Math.max(Math.min(startTime - worldTime), 0);
+                media.currentTime = value * media.duration;
+
+                this.value = value; // XXX derive value from the locally set startTime to get rid of the dependency on async getMedia() promise resolution
+              }
             }
 
             destroy() {
