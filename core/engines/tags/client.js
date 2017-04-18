@@ -1281,7 +1281,8 @@ class Tags {
                     });
                   } else if (action === 'seek') {
                     const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
-                    const media = tagMesh.getMedia();
+                    const {item} = tagMesh;
+                    const media = item.getMedia();
 
                     if (media) {
                       const {value} = pointerState;
@@ -2343,7 +2344,7 @@ class Tags {
               const media = this.getMedia();
               const value = (() => {
                 if (media) {
-                  const worldTime = bootstrap.getWorlTime();
+                  const worldTime = bootstrap.getWorldTime();
                   return Math.max(Math.min(startTime - worldTime), 0);
                 } else {
                   return 0;
