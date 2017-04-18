@@ -141,9 +141,10 @@ class Keyboard {
 
           const keySpecs = (() => {
             class KeySpec {
-              constructor(key, rect) {
+              constructor(key, rect, imageData) {
                 this.key = key;
                 this.rect = rect;
+                this.imageData = imageData;
               }
             }
 
@@ -159,8 +160,26 @@ class Keyboard {
               const keyEl = keyEls[i];
               const key = keyEl.getAttribute('key');
               const rect = keyEl.getBoundingClientRect();
+              const imageData = (() => {
+                const {top, bottom, left, right} = rect;
+                const width = right - left;
+                const height = bottom - top;
+                let imageData = keyboardHighlightCanvas.ctx.getImageData(left, top, width, height);
+                if (key === 'enter') { // special case the enter key; it has a non-rectangular shape
+                  const canvas = document.createElement('canvas');
+                  canvas.width = imageData.width;
+                  canvas.height = imageData.height;
 
-              const keySpec = new KeySpec(key, rect);
+                  const ctx = canvas.getContext('2d');
+                  ctx.putImageData(imageData, 0, 0);
+                  ctx.clearRect(0, 0, 80, 140);
+
+                  imageData = ctx.getImageData(0, 0, imageData.width, imageData.height);
+                }
+                return imageData;
+              })();
+
+              const keySpec = new KeySpec(key, rect, imageData);
               result[i] = keySpec;
             }
 
@@ -235,21 +254,6 @@ class Keyboard {
           left: _makeKeyboardHoverState(),
           right: _makeKeyboardHoverState(),
         };
-
-        const _cleanupEnterImageData = (() => {
-          const canvas = document.createElement('canvas');
-          canvas.width = 512;
-          canvas.height = 512;
-
-          const ctx = canvas.getContext('2d');
-
-          return imageData => {
-            ctx.putImageData(imageData, 0, 0);
-            ctx.clearRect(0, 0, 80, 140);
-
-            return ctx.getImageData(0, 0, imageData.width, imageData.height);
-          };
-        })();
 
         const _triggerdown = e => {
           const {side} = e;
@@ -345,9 +349,7 @@ class Keyboard {
                       if (x >= 0 && x < KEYBOARD_WIDTH && y >= 0 && y < KEYBOARD_HEIGHT) {
                         const intersectionPointVector = new THREE.Vector2(x, y);
                         const keySpecDistanceSpecs = keySpecs.map(keySpec => {
-                          const {rect: {top, bottom, left, right}} = keySpec;
-                          const width = right - left;
-                          const height = bottom - top;
+                          const {rect: {top, bottom, left, right, width, height}} = keySpec;
                           const center = new THREE.Vector2(left + (width / 2), top + (height / 2));
                           const distance = center.distanceTo(intersectionPointVector);
 
@@ -370,13 +372,7 @@ class Keyboard {
 
                     const {key} = matchingKeySpec;
                     if (key !== keyMesh.key) {
-                      const {rect: {top, bottom, left, right}} = matchingKeySpec;
-                      const width = right - left;
-                      const height = bottom - top;
-                      let imageData = keyboardHighlightCanvas.ctx.getImageData(left, top, width, height);
-                      if (key === 'enter') {
-                        imageData = _cleanupEnterImageData(imageData);
-                      }
+                      const {rect: {top, bottom, left, right, width, height}, imageData} = matchingKeySpec;
                       const {subMesh: {material: {map: texture}}} = keyMesh;
                       texture.image = imageData;
                       texture.needsUpdate = true;
