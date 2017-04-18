@@ -175,34 +175,44 @@ class Keyboard {
         scene.add(keyboardMesh);
 
         const _makeKeyMesh = () => {
-          const geometry = new THREE.PlaneBufferGeometry(1, 1);
-          const material = (() => {
-            const texture = new THREE.Texture(
-              transparentImg,
-              THREE.UVMapping,
-              THREE.ClampToEdgeWrapping,
-              THREE.ClampToEdgeWrapping,
-              THREE.LinearFilter,
-              THREE.LinearFilter,
-              THREE.RGBAFormat,
-              THREE.UnsignedByteType,
-              16
-            );
-            texture.needsUpdate = true;
+          const object = new THREE.Object3D();
 
-            const material = new THREE.MeshBasicMaterial({
-              map: texture,
-              side: THREE.DoubleSide,
-              transparent: true,
-              alphaTest: 0.5,
-            });
-            return material;
+          const subMesh = (() => {
+            const geometry = new THREE.PlaneBufferGeometry(1, 1);
+            const material = (() => {
+              const texture = new THREE.Texture(
+                transparentImg,
+                THREE.UVMapping,
+                THREE.ClampToEdgeWrapping,
+                THREE.ClampToEdgeWrapping,
+                THREE.LinearFilter,
+                THREE.LinearFilter,
+                THREE.RGBAFormat,
+                THREE.UnsignedByteType,
+                16
+              );
+              texture.needsUpdate = true;
+
+              const material = new THREE.MeshBasicMaterial({
+                map: texture,
+                side: THREE.DoubleSide,
+                transparent: true,
+                alphaTest: 0.5,
+              });
+              return material;
+            })();
+
+            const mesh = new THREE.Mesh(geometry, material);
+            return mesh;
           })();
+          object.add(subMesh);
+          object.subMesh = subMesh;
 
-          const mesh = new THREE.Mesh(geometry, material);
-          mesh.visible = false;
-          mesh.key = null;
-          return mesh;
+          object.visible = false;
+          object.key = null;
+          object.keydown = null;
+
+          return object;
         };
         const keyMeshes = {
           left: _makeKeyMesh(),
@@ -247,6 +257,59 @@ class Keyboard {
             return ctx.getImageData(0, 0, imageData.width, imageData.height);
           };
         })();
+
+        const _triggerdown = e => {
+          const {side} = e;
+          const keyMesh = keyMeshes[side];
+          const {key} = keyMesh;
+
+          if (key) {
+            const keyCode = biolumi.getKeyCode(key);
+
+            const {subMesh} = keyMesh;
+            subMesh.position.z = -0.01 / 2;
+
+            keyMesh.keydown = keyMesh;
+
+            input.triggerEvent('keyboarddown', {
+              key,
+              keyCode,
+              side,
+            });
+            input.triggerEvent('keyboardpress', {
+              key,
+              keyCode,
+              side,
+            });
+
+            e.stopImmediatePropagation();
+          }
+        };
+        input.on('triggerdown', _triggerdown);
+        const _triggerup = e => {
+          const {side} = e;
+          const keyMesh = keyMeshes[side];
+          const {keydown} = keyMesh;
+
+          if (keydown) {
+            const key = keydown;
+            const keyCode = biolumi.getKeyCode(key);
+
+            const {subMesh} = keyMesh;
+            subMesh.position.z = 0;
+
+            keyMesh.keydown = null;
+
+            input.triggerEvent('keyboardup', {
+              key,
+              keyCode,
+              side,
+            });
+
+            e.stopImmediatePropagation();
+          }
+        };
+        input.on('triggerup', _triggerup);
 
         const _update = () => {
           if (rend.isOpen()) {
@@ -297,7 +360,7 @@ class Keyboard {
                       if (key === 'enter') {
                         imageData = _cleanupEnterImageData(imageData);
                       }
-                      const {material: {map: texture}} = keyMesh;
+                      const {subMesh: {material: {map: texture}}} = keyMesh;
                       texture.image = imageData;
                       texture.needsUpdate = true;
 
@@ -324,6 +387,8 @@ class Keyboard {
                       keyMesh.visible = true;
                     }
                   } else {
+                    keyMesh.key = null;
+
                     if (dotMesh.visible) {
                       dotMesh.visible = false;
                     }
