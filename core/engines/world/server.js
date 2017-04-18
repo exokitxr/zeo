@@ -600,11 +600,11 @@ class World {
                           cb(_makeInvalidArgsError());
                         }
                       } else if (method === 'tagSeek') {
-                        const [userId, src, startTime] = args;
+                        const [userId, src, value] = args;
 
                         cb = (cb => err => {
                           if (!err) {
-                            _broadcast('tagSeek', [userId, src, startTime]);
+                            _broadcast('tagSeek', [userId, src, value]);
                           }
 
                           cb(err);
@@ -615,7 +615,23 @@ class World {
                           const id = match[1];
 
                           const itemSpec = tagsJson.tags[id];
-                          itemSpec.startTime = startTime;
+                          itemSpec.value = value;
+
+                          _saveTags();
+
+                          cb();
+                        } else {
+                          cb(_makeInvalidArgsError());
+                        }
+                      } else if (method === 'tagSeekUpdate') {
+                        const [userId, src, value] = args;
+
+                        let match;
+                        if (match = src.match(/^world:(.+)$/)) {
+                          const id = match[1];
+
+                          const itemSpec = tagsJson.tags[id];
+                          itemSpec.value = value;
 
                           _saveTags();
 

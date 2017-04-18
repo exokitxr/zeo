@@ -594,16 +594,16 @@ class World {
               console.warn('invalid tag pause arguments', {src});
             }
           };
-          const _handleTagSeek = (userId, src, startTime) => {
+          const _handleTagSeek = (userId, src, value) => {
             // same for local and remote user ids
             let match;
             if (match = src.match(/^world:(.+)$/)) {
               const id = match[1];
 
               const tagMesh = elementManager.getTagMesh(id);
-              tagMesh.seek(startTime);
+              tagMesh.seek(value);
             } else {
-              console.warn('invalid tag seek arguments', {src, startTime});
+              console.warn('invalid tag seek arguments', {src, value});
             }
           };
           const _handleMessage = detail => {
@@ -1393,14 +1393,20 @@ class World {
             _handleTagPause(localUserId, src);
           };
           tags.on('pause', _tagsPause);
-          const _tagsSeek = ({id, startTime}) => {
+          const _tagsSeek = ({id, value}) => {
             const src = _getTagIdSrc(id);
 
-            _request('tagSeek', [localUserId, src, startTime], _warnError);
+            _request('tagSeek', [localUserId, src, value], _warnError);
 
-            _handleTagSeek(localUserId, src, startTime);
+            _handleTagSeek(localUserId, src, value);
           };
           tags.on('seek', _tagsSeek);
+          const _tagsSeekUpdate = ({id, value}) => {
+            const src = _getTagIdSrc(id);
+
+            _request('tagSeekUpdate', [localUserId, src, value], _warnError);
+          };
+          tags.on('seekUpdate', _tagsSeekUpdate);
           const _loadTags = ({itemSpecs}) => {
             for (let i = 0; i < itemSpecs.length; i++) {
               const itemSpec = itemSpecs[i];
@@ -1667,6 +1673,7 @@ class World {
             tags.removeListener('play', _tagsPlay);
             tags.removeListener('pause', _tagsPause);
             tags.removeListener('seek', _tagsSeek);
+            tags.removeListener('seekUpdate', _tagsSeekUpdate);
             tags.removeListener('loadTags', _loadTags);
             tags.removeListener('broadcast', _broadcast);
 

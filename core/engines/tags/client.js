@@ -28,7 +28,6 @@ const AXES = ['x', 'y', 'z'];
 const itemInstanceSymbol = Symbol();
 const itemInstancingSymbol = Symbol();
 const itemPageSymbol = Symbol();
-const itemValueSymbol = Symbol();
 const itemPreviewSymbol = Symbol();
 const itemTempSymbol = Symbol();
 const itemMediaPromiseSymbol = Symbol();
@@ -924,6 +923,12 @@ class Tags {
                   item.value = nextValue;
 
                   item.emit('update');
+
+                  const {id} = item;
+                  tagsApi.emit('seekUpdate', {
+                    id: id,
+                    value: nextValue,
+                  });
                 }
               }
             };
@@ -1007,6 +1012,12 @@ class Tags {
                   item.value = nextValue;
 
                   item.emit('update');
+
+                  const {id} = item;
+                  tagsApi.emit('seekUpdate', {
+                    id: id,
+                    value: nextValue,
+                  });
                 }
 
                 texture.needsUpdate = true;
@@ -1284,12 +1295,10 @@ class Tags {
                     item.getMedia()
                       .then(({media}) => {
                         const {value} = pointerState;
-                        const worldTime = bootstrap.getWorldTime();
-                        const startTime = worldTime - (value * media.duration);
 
                         tagsApi.emit('seek', {
                           id: id,
-                          startTime: startTime,
+                          value: value,
                         });
                       })
                       .catch(err => {
@@ -2150,7 +2159,7 @@ class Tags {
               open,
               details,
               paused,
-              startTime,
+              value,
               metadata // transient state: isStatic, exists
             ) {
               super();
@@ -2169,14 +2178,13 @@ class Tags {
               this.open = open;
               this.details = details;
               this.paused = paused;
-              this.startTime = startTime;
+              this.value = value;
               this.metadata = metadata;
 
               // we use symbols so these keys don't show up in the JSON.stringify
               this[itemInstanceSymbol] = null;
               this[itemInstancingSymbol] = false;
               this[itemPageSymbol] = 0;
-              this[itemValueSymbol] = 0;
               this[itemPreviewSymbol] = false;
               this[itemTempSymbol] = false;
               this[itemMediaPromiseSymbol] = null;
@@ -2199,12 +2207,6 @@ class Tags {
             }
             set page(page) {
               this[itemPageSymbol] = page;
-            }
-            get value() {
-              return this[itemValueSymbol];
-            }
-            set value(value) {
-              this[itemValueSymbol] = value;
             }
             get preview() {
               return this[itemPreviewSymbol];
@@ -2380,24 +2382,18 @@ class Tags {
                 });
             }
 
-            seek(startTime) {
-              this.startTime = startTime;
+            seek(value) {
+              this.value = value;
 
               this.getMedia()
                 .then(({media}) => {
-                  const worldTime = bootstrap.getWorldTime();
-                  const value = Math.max(Math.min((worldTime - startTime) / media.duration, 1), 0);
-                  this.value = value;
-
                   media.currentTime = value * media.duration;
-
-                  console.log('seek', {startTime, value, duration: media.duration, currentTime: media.currentTime});
-
-                  this.emit('update');
                 })
                 .catch(err => {
                   console.warn(err);
                 });
+
+              this.emit('update');
             }
 
             destroy() {
@@ -2676,7 +2672,7 @@ class Tags {
                 itemSpec.open,
                 itemSpec.details,
                 itemSpec.paused,
-                itemSpec.startTime,
+                itemSpec.value,
                 itemSpec.metadata
               );
               object.item = item;
@@ -3006,18 +3002,18 @@ class Tags {
 
                   item.pause();
                 };
-                object.seek = startTime => {
+                object.seek = value => {
                   const tagMesh = object;
                   const {item} = tagMesh;
 
-                  item.seek(startTime);
+                  item.seek(value);
                 };
 
                 if (item.open) {
                   object.open();
                 }
-                if (item.startTime !== undefined) {
-                  object.seek(item.startTime);
+                if (item.value !== undefined) {
+                  object.seek(item.value);
                 }
                 if (item.paused === false) {
                   object.play();
