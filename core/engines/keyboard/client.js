@@ -8,9 +8,11 @@ import {
 
   DEFAULT_USER_HEIGHT,
 } from './lib/constants/keyboard';
-import keyboardImg from './lib/img/keyboard';
+import keyboardImgString from './lib/img/keyboard';
+import keyboardHighlightImgString from './lib/img/keyboard-highlight';
 
-const keyboardImgSrc = 'data:image/svg+xml;base64,' + btoa(keyboardImg);
+const keyboardImgSrc = 'data:image/svg+xml;base64,' + btoa(keyboardImgString);
+const keyboardHighlightImgSrc = 'data:image/svg+xml;base64,' + btoa(keyboardHighlightImgString);
 
 const SIDES = ['left', 'right'];
 
@@ -27,9 +29,18 @@ class Keyboard {
       live = false;
     };
 
-    const _requestKeyboardCanvas = () => new Promise((accept, reject) => {
+    const _requestImage = src => new Promise((accept, reject) => {
       const img = new Image();
       img.onload = () => {
+        accept(img);
+      };
+      img.onerror = err => {
+        reject(err);
+      };
+      img.src = src;
+    });
+    const _requestImageCanvas = src => _requestImage(src)
+      .then(img => {
         const canvas = document.createElement('canvas');
         canvas.width = img.width;
         canvas.height = img.height;
@@ -38,13 +49,8 @@ class Keyboard {
         ctx.drawImage(img, 0, 0);
         canvas.ctx = ctx;
 
-        accept(canvas);
-      };
-      img.onerror = err => {
-        reject(err);
-      };
-      img.src = keyboardImgSrc;
-    });
+        return Promise.resolve(canvas);
+      });
 
     return Promise.all([
       archae.requestPlugins([
@@ -56,7 +62,8 @@ class Keyboard {
         '/core/utils/geometry-utils',
         '/core/utils/creature-utils',
       ]),
-      _requestKeyboardCanvas(),
+      _requestImage(keyboardImgSrc),
+      _requestImageCanvas(keyboardHighlightImgSrc),
     ]).then(([
       [
         input,
@@ -66,7 +73,8 @@ class Keyboard {
         rend,
         geometryUtils,
       ],
-      keyboardCanvas,
+      keyboardImg,
+      keyboardHighlightCanvas,
     ]) => {
       if (live) {
         const {THREE, scene} = three;
@@ -92,7 +100,7 @@ class Keyboard {
             const geometry = new THREE.PlaneBufferGeometry(KEYBOARD_WORLD_WIDTH, KEYBOARD_WORLD_HEIGHT);
             const material = (() => {
               const texture = new THREE.Texture(
-                keyboardCanvas,
+                keyboardImg,
                 THREE.UVMapping,
                 THREE.ClampToEdgeWrapping,
                 THREE.ClampToEdgeWrapping,
@@ -141,7 +149,7 @@ class Keyboard {
 
             const div = document.createElement('div');
             div.style.cssText = 'position: absolute; top: 0; left: 0; width: ' + KEYBOARD_WIDTH + 'px; height: ' + KEYBOARD_HEIGHT + 'px;';
-            div.innerHTML = keyboardImg;
+            div.innerHTML = keyboardImgString;
 
             document.body.appendChild(div);
 
@@ -270,7 +278,7 @@ class Keyboard {
                       const {rect: {top, bottom, left, right}} = matchingKeySpec;
                       const width = right - left;
                       const height = bottom - top;
-                      const imageData = keyboardCanvas.ctx.getImageData(left, top, width, height);
+                      const imageData = keyboardHighlightCanvas.ctx.getImageData(left, top, width, height);
                       const {material: {map: texture}} = keyMesh;
                       texture.image = imageData;
                       texture.needsUpdate = true;
