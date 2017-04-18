@@ -3,6 +3,7 @@ import {
   KEYBOARD_HEIGHT,
   KEYBOARD_WORLD_WIDTH,
   KEYBOARD_WORLD_HEIGHT,
+  KEYBOARD_WORLD_DEPTH,
 
   DEFAULT_USER_HEIGHT,
 } from './lib/constants/keyboard';
@@ -58,8 +59,6 @@ class Keyboard {
         };
 
         const localUpdates = [];
-
-        // api functions
 
         const keyboardMesh = (() => {
           const object = new THREE.Object3D();
@@ -175,12 +174,12 @@ class Keyboard {
                 new THREE.Vector3(
                   -(KEYBOARD_WORLD_WIDTH / 2) + (rect.left / KEYBOARD_WIDTH) * KEYBOARD_WORLD_WIDTH,
                   (KEYBOARD_WORLD_HEIGHT / 2) + (-rect.top / KEYBOARD_HEIGHT) * KEYBOARD_WORLD_HEIGHT,
-                  -WORLD_DEPTH
+                  -KEYBOARD_WORLD_DEPTH
                 ),
                 new THREE.Vector3(
                   -(KEYBOARD_WORLD_WIDTH / 2) + (rect.right / KEYBOARD_WIDTH) * KEYBOARD_WORLD_WIDTH,
                   (KEYBOARD_WORLD_HEIGHT / 2) + (-rect.bottom / KEYBOARD_HEIGHT) * KEYBOARD_WORLD_HEIGHT,
-                  WORLD_DEPTH
+                  KEYBOARD_WORLD_DEPTH
                 )
               );
               keySpec.anchorBoxTarget = anchorBoxTarget;
@@ -211,12 +210,6 @@ class Keyboard {
         const _update = () => {
           if (rend.isOpen()) {
             const {gamepads} = webvr.getStatus();
-
-            const {statusMesh, navbarMesh} = menuMesh;
-            const menuMatrixObject = _decomposeObjectMatrixWorld(statusMesh);
-            const {page: statusPage} = statusMesh;
-            const navbarMatrixObject = _decomposeObjectMatrixWorld(navbarMesh);
-            const {page: navbarPage} = navbarMesh;
 
             SIDES.forEach(side => {
               const gamepad = gamepads[side];
