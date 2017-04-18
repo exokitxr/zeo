@@ -233,6 +233,21 @@ class Keyboard {
           right: _makeKeyboardHoverState(),
         };
 
+        const _cleanupEnterImageData = (() => {
+          const canvas = document.createElement('canvas');
+          canvas.width = 512;
+          canvas.height = 512;
+
+          const ctx = canvas.getContext('2d');
+
+          return imageData => {
+            ctx.putImageData(imageData, 0, 0);
+            ctx.clearRect(0, 0, 80, 140);
+
+            return ctx.getImageData(0, 0, imageData.width, imageData.height);
+          };
+        })();
+
         const _update = () => {
           if (rend.isOpen()) {
             const {gamepads} = webvr.getStatus();
@@ -278,7 +293,10 @@ class Keyboard {
                       const {rect: {top, bottom, left, right}} = matchingKeySpec;
                       const width = right - left;
                       const height = bottom - top;
-                      const imageData = keyboardHighlightCanvas.ctx.getImageData(left, top, width, height);
+                      let imageData = keyboardHighlightCanvas.ctx.getImageData(left, top, width, height);
+                      if (key === 'enter') {
+                        imageData = _cleanupEnterImageData(imageData);
+                      }
                       const {material: {map: texture}} = keyMesh;
                       texture.image = imageData;
                       texture.needsUpdate = true;
