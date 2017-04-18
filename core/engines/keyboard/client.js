@@ -27,21 +27,46 @@ class Keyboard {
       live = false;
     };
 
-    return archae.requestPlugins([
-      '/core/engines/input',
-      '/core/engines/three',
-      '/core/engines/webvr',
-      '/core/engines/biolumi',
-      '/core/engines/rend',
-      '/core/utils/geometry-utils',
-      '/core/utils/creature-utils',
+    const _requestKeyboardCanvas = () => new Promise((accept, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        canvas.ctx = ctx;
+
+        accept(canvas);
+      };
+      img.onerror = err => {
+        reject(err);
+      };
+      img.src = keyboardImgSrc;
+    });
+
+    return Promise.all([
+      archae.requestPlugins([
+        '/core/engines/input',
+        '/core/engines/three',
+        '/core/engines/webvr',
+        '/core/engines/biolumi',
+        '/core/engines/rend',
+        '/core/utils/geometry-utils',
+        '/core/utils/creature-utils',
+      ]),
+      _requestKeyboardCanvas(),
     ]).then(([
-      input,
-      three,
-      webvr,
-      biolumi,
-      rend,
-      geometryUtils,
+      [
+        input,
+        three,
+        webvr,
+        biolumi,
+        rend,
+        geometryUtils,
+      ],
+      keyboardCanvas,
     ]) => {
       if (live) {
         const {THREE, scene} = three;
@@ -59,28 +84,15 @@ class Keyboard {
           return {position, rotation, scale};
         };
 
-        const localUpdates = [];
-
         const keyboardMesh = (() => {
           const object = new THREE.Object3D();
           object.position.set(0, DEFAULT_USER_HEIGHT, 0);
 
           const planeMesh = (() => {
-            const _requestKeyboardImage = () => new Promise((accept, reject) => {
-              const img = new Image();
-              img.src = keyboardImgSrc;
-              img.onload = () => {
-                accept(img);
-              };
-              img.onerror = err => {
-                reject(err);
-              };
-            });
-
             const geometry = new THREE.PlaneBufferGeometry(KEYBOARD_WORLD_WIDTH, KEYBOARD_WORLD_HEIGHT);
             const material = (() => {
               const texture = new THREE.Texture(
-                transparentImg,
+                keyboardCanvas,
                 THREE.UVMapping,
                 THREE.ClampToEdgeWrapping,
                 THREE.ClampToEdgeWrapping,
@@ -90,15 +102,7 @@ class Keyboard {
                 THREE.UnsignedByteType,
                 16
               );
-
-              _requestKeyboardImage()
-                .then(img => {
-                  texture.image = img;
-                  texture.needsUpdate = true;
-                })
-                .catch(err => {
-                  console.warn(err);
-                });
+              texture.needsUpdate = true;
 
               const material = new THREE.MeshBasicMaterial({
                 map: texture,
