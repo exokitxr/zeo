@@ -1280,7 +1280,7 @@ class Tags {
                       id: id,
                     });
                   } else if (action === 'seek') {
-                    const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === tagId);
+                    const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
                     const media = tagMesh.getMedia();
 
                     if (media) {
