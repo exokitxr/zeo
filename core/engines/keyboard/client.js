@@ -1,6 +1,7 @@
 import {
   KEYBOARD_WIDTH,
   KEYBOARD_HEIGHT,
+
   KEYBOARD_WORLD_WIDTH,
   KEYBOARD_WORLD_HEIGHT,
   KEYBOARD_WORLD_DEPTH,
@@ -131,8 +132,6 @@ class Keyboard {
               constructor(key, rect) {
                 this.key = key;
                 this.rect = rect;
-
-                this.anchorBoxTarget = null;
               }
             }
 
@@ -159,45 +158,23 @@ class Keyboard {
           })();
           object.keySpecs = keySpecs;
 
-          const _updateKeySpecAnchorBoxTargets = () => {
-            object.updateMatrixWorld();
-            const {position: keyboardPosition, rotation: keyboardRotation} = _decomposeObjectMatrixWorld(planeMesh);
-
-            for (let i = 0; i < keySpecs.length; i++) {
-              const keySpec = keySpecs[i];
-              const {key, rect} = keySpec;
-
-              const anchorBoxTarget = geometryUtils.makeBoxTargetOffset(
-                keyboardPosition,
-                keyboardRotation,
-                oneVector,
-                new THREE.Vector3(
-                  -(KEYBOARD_WORLD_WIDTH / 2) + (rect.left / KEYBOARD_WIDTH) * KEYBOARD_WORLD_WIDTH,
-                  (KEYBOARD_WORLD_HEIGHT / 2) + (-rect.top / KEYBOARD_HEIGHT) * KEYBOARD_WORLD_HEIGHT,
-                  -KEYBOARD_WORLD_DEPTH
-                ),
-                new THREE.Vector3(
-                  -(KEYBOARD_WORLD_WIDTH / 2) + (rect.right / KEYBOARD_WIDTH) * KEYBOARD_WORLD_WIDTH,
-                  (KEYBOARD_WORLD_HEIGHT / 2) + (-rect.bottom / KEYBOARD_HEIGHT) * KEYBOARD_WORLD_HEIGHT,
-                  KEYBOARD_WORLD_DEPTH
-                )
-              );
-              keySpec.anchorBoxTarget = anchorBoxTarget;
-            }
-          };
-          _updateKeySpecAnchorBoxTargets();
-          object.updateKeySpecAnchorBoxTargets = _updateKeySpecAnchorBoxTargets;
-
           return object;
         })();
         scene.add(keyboardMesh);
 
-        const keyboardBoxMeshes = {
+        const dotMeshes = {
+          left: biolumi.makeMenuDotMesh(),
+          right: biolumi.makeMenuDotMesh(),
+        };
+        scene.add(dotMeshes.left);
+        scene.add(dotMeshes.right);
+
+        const boxMeshes = {
           left: biolumi.makeMenuBoxMesh(),
           right: biolumi.makeMenuBoxMesh(),
         };
-        scene.add(keyboardBoxMeshes.left);
-        scene.add(keyboardBoxMeshes.right);
+        scene.add(boxMeshes.left);
+        scene.add(boxMeshes.right);
 
         const _makeKeyboardHoverState = () => ({
           key: null,
@@ -215,59 +192,100 @@ class Keyboard {
               const gamepad = gamepads[side];
 
               if (gamepad) {
-                const {position: controllerPosition} = gamepad;
+                const {position: controllerPosition, rotation: controllerRotation, scale: controllerScale} = gamepad;
 
-                const keyboardHoverState = keyboardHoverStates[side];
-                const keyboardBoxMesh = keyboardBoxMeshes[side];
+                const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation, controllerScale);
+                const {planeMesh} = keyboardMesh;
+                const {position: keyboardPosition, rotation: keyboardRotation} = _decomposeObjectMatrixWorld(planeMesh);
+                const xAxis = new THREE.Vector3(1, 0, 0).applyQuaternion(keyboardRotation);
+                const negativeYAxis = new THREE.Vector3(0, -1, 0).applyQuaternion(keyboardRotation);
+                const keyboardTopLeftPoint = keyboardPosition.clone()
+                  .add(xAxis.clone().multiplyScalar(-KEYBOARD_WORLD_WIDTH / 2))
+                  .add(negativeYAxis.clone().multiplyScalar(-KEYBOARD_WORLD_HEIGHT / 2));
+                const keyboardPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(
+                  new THREE.Vector3(0, 0, -1).applyQuaternion(keyboardRotation),
+                  keyboardTopLeftPoint
+                );
+                const intersectionPoint = keyboardPlane.intersectLine(controllerLine);
 
-                // NOTE: there should be at most one intersecting anchor box since keys do not overlap
-                const {keySpecs} = keyboardMesh;
-                const newKeySpec = keySpecs.find(keySpec => keySpec.anchorBoxTarget.containsPoint(controllerPosition));
-
-                const {key: oldKey} = keyboardHoverState;
-                const newKey = newKeySpec ? newKeySpec.key : null;
-                keyboardHoverState.key = newKey;
-
-                if (oldKey && newKey !== oldKey) {
-                  const key = oldKey;
-                  const keyCode = biolumi.getKeyCode(key);
-
-                  input.triggerEvent('keyboardup', {
-                    key,
-                    keyCode,
-                    side,
+                if (intersectionPoint) {
+                  const intersectionRay = intersectionPoint.clone().sub(keyboardTopLeftPoint);
+                  const x = intersectionRay.clone().projectOnVector(xAxis).dot(xAxis) / KEYBOARD_WORLD_WIDTH * KEYBOARD_WIDTH;
+                  const y = intersectionRay.clone().projectOnVector(negativeYAxis).dot(negativeYAxis) / KEYBOARD_WORLD_HEIGHT * KEYBOARD_HEIGHT;
+                  const {keySpecs} = keyboardMesh;
+                  const matchingKeySpecs = keySpecs.filter(keySpec => {
+                    const {rect: {top, bottom, left, right}} = keySpec;
+                    return x >= left && x < right && y >= top && y < bottom;
                   });
-                }
-                if (newKey && newKey !== oldKey) {
-                  const key = newKey;
-                  const keyCode = biolumi.getKeyCode(key);
 
-                  input.triggerEvent('keyboarddown', {
-                    key,
-                    keyCode,
-                    side,
-                  });
-                  input.triggerEvent('keyboardpress', {
-                    key,
-                    keyCode,
-                    side,
-                  });
-                }
+                  const dotMesh = dotMeshes[side];
+                  if (matchingKeySpecs.length > 0) {
+                    dotMesh.position.copy(intersectionPoint);
 
-                if (newKeySpec) {
-                  const {anchorBoxTarget} = newKeySpec;
+                    const matchingKeySpec = matchingKeySpecs[0];
+                    const {key} = matchingKeySpec;
 
-                  keyboardBoxMesh.position.copy(anchorBoxTarget.position);
-                  keyboardBoxMesh.quaternion.copy(anchorBoxTarget.quaternion);
-                  keyboardBoxMesh.scale.copy(anchorBoxTarget.size);
-
-                  if (!keyboardBoxMesh.visible) {
-                    keyboardBoxMesh.visible = true;
+                    if (!dotMesh.visible) {
+                      dotMesh.visible = true;
+                    }
+                  } else {
+                    if (dotMesh.visible) {
+                      dotMesh.visible = false;
+                    }
                   }
-                } else {
-                  if (keyboardBoxMesh.visible) {
-                    keyboardBoxMesh.visible = false;
+
+                  /* const keyboardHoverState = keyboardHoverStates[side];
+                  const keyboardBoxMesh = keyboardBoxMeshes[side];
+
+                  // NOTE: there should be at most one intersecting anchor box since keys do not overlap
+
+                  const newKeySpec = keySpecs.find(keySpec => keySpec.anchorBoxTarget.containsPoint(controllerPosition));
+
+                  const {key: oldKey} = keyboardHoverState;
+                  const newKey = newKeySpec ? newKeySpec.key : null;
+                  keyboardHoverState.key = newKey;
+
+                  if (oldKey && newKey !== oldKey) {
+                    const key = oldKey;
+                    const keyCode = biolumi.getKeyCode(key);
+
+                    input.triggerEvent('keyboardup', {
+                      key,
+                      keyCode,
+                      side,
+                    });
                   }
+                  if (newKey && newKey !== oldKey) {
+                    const key = newKey;
+                    const keyCode = biolumi.getKeyCode(key);
+
+                    input.triggerEvent('keyboarddown', {
+                      key,
+                      keyCode,
+                      side,
+                    });
+                    input.triggerEvent('keyboardpress', {
+                      key,
+                      keyCode,
+                      side,
+                    });
+                  }
+
+                  if (newKeySpec) {
+                    const {anchorBoxTarget} = newKeySpec;
+
+                    keyboardBoxMesh.position.copy(anchorBoxTarget.position);
+                    keyboardBoxMesh.quaternion.copy(anchorBoxTarget.quaternion);
+                    keyboardBoxMesh.scale.copy(anchorBoxTarget.size);
+
+                    if (!keyboardBoxMesh.visible) {
+                      keyboardBoxMesh.visible = true;
+                    }
+                  } else {
+                    if (keyboardBoxMesh.visible) {
+                      keyboardBoxMesh.visible = false;
+                    }
+                  } */
                 }
               }
             });
@@ -276,7 +294,12 @@ class Keyboard {
         rend.on('update', _update);
 
         this._cleanup = () => {
-           scene.remove(keyboardMesh);
+          scene.remove(keyboardMesh);
+
+          SIDES.forEach(side => {
+            scene.remove(dotMesh.right);
+            scene.remove(boxMesh.right);
+          });
 
           SIDES.forEach(side => {
             scene.remove(keyboardBoxMeshes[side]);
