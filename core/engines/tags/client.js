@@ -892,12 +892,6 @@ class Tags {
               .then(audio => {
                 soundBody.setInputElement(audio);
 
-                /* audio.currentTime = item.value * audio.duration;
-
-                if (!item.paused) {
-                  audio.play();
-                } */
-
                 mesh.audio = audio;
 
                 localUpdates.push(localUpdate);
@@ -979,12 +973,6 @@ class Tags {
                 texture.needsUpdate = true;
 
                 soundBody.setInputElement(video);
-
-                /* video.currentTime = item.value * video.duration;
-
-                if (!item.paused) {
-                  video.play();
-                } */
 
                 mesh.video = video;
 
