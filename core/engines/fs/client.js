@@ -164,39 +164,40 @@ class Fs {
               case 'image': {
                 return new Promise((accept, reject) => {
                   const img = new Image();
-                  img.crossOrigin = 'Anonymous';
-                  img.src = url;
                   img.onload = () => {
                     accept(img);
                   };
                   img.onerror = err => {
                     reject(err);
                   };
+                  img.crossOrigin = 'Anonymous';
+                  img.src = url;
                 });
               }
               case 'audio': {
                 return new Promise((accept, reject) => {
                   const audio = document.createElement('audio');
-                  audio.crossOrigin = 'Anonymous';
-                  audio.src = url;
                   audio.oncanplay = () => {
                     accept(audio);
                   };
                   audio.onerror = err => {
                     reject(err);
                   };
+                  audio.crossOrigin = 'Anonymous';
+                  audio.src = url;
                 });
               }
               case 'video': {
                 return new Promise((accept, reject) => {
                   const video = document.createElement('video');
-                  video.src = url;
                   video.oncanplay = () => {
                     accept(video);
                   };
                   video.onerror = err => {
                     reject(err);
                   };
+                  video.crossOrigin = 'Anonymous';
+                  video.src = url;
                 });
               }
               case 'model': {
