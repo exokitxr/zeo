@@ -1089,6 +1089,11 @@ class World {
 
                         _updatePages();
                       });
+                      keyboardFocusState.on('blur', () => {
+                        focusState.keyboardFocusState = null;
+
+                        _updatePages();
+                      });
                     }
 
                     return true;

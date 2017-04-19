@@ -688,7 +688,7 @@ class Keyboard {
               );
               keyboardMesh.visible = true;
 
-              newFocusState.once('blur', () => {
+              newFocusState.on('blur', () => {
                 keyboardState.focusState = null;
 
                 keyboardMesh.visible = false;
