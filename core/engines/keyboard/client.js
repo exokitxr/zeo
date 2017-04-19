@@ -10,9 +10,11 @@ import {
 } from './lib/constants/keyboard';
 import keyboardImgString from './lib/img/keyboard';
 import keyboardHighlightImgString from './lib/img/keyboard-highlight';
+import dotsImgString from './lib/img/dots';
 
 const keyboardImgSrc = 'data:image/svg+xml;base64,' + btoa(keyboardImgString);
 const keyboardHighlightImgSrc = 'data:image/svg+xml;base64,' + btoa(keyboardHighlightImgString);
+const dotsImgSrc = 'data:image/svg+xml;base64,' + btoa(dotsImgString);
 
 const SIDES = ['left', 'right'];
 
@@ -64,6 +66,7 @@ class Keyboard {
       ]),
       _requestImage(keyboardImgSrc),
       _requestImageCanvas(keyboardHighlightImgSrc),
+      _requestImage(dotsImgSrc),
     ]).then(([
       [
         input,
@@ -75,6 +78,7 @@ class Keyboard {
       ],
       keyboardImg,
       keyboardHighlightCanvas,
+      dotImg,
     ]) => {
       if (live) {
         const {THREE, scene} = three;
@@ -124,6 +128,37 @@ class Keyboard {
             mesh.position.y = 1 - DEFAULT_USER_HEIGHT;
             mesh.position.z = -0.4;
             mesh.rotation.x = -Math.PI * (3 / 8);
+
+            const headerMesh = (() => {
+              const worldWidth = KEYBOARD_WORLD_WIDTH;
+              const worldHeight = KEYBOARD_WORLD_WIDTH * (1 / 24);
+              const geometry = new THREE.PlaneBufferGeometry(worldWidth, worldHeight);
+              const material = (() => {
+                const texture = new THREE.Texture(
+                  dotImg,
+                  THREE.UVMapping,
+                  THREE.ClampToEdgeWrapping,
+                  THREE.ClampToEdgeWrapping,
+                  THREE.LinearFilter,
+                  THREE.LinearFilter,
+                  THREE.RGBAFormat,
+                  THREE.UnsignedByteType,
+                  16
+                );
+                texture.needsUpdate = true;
+
+                const material = new THREE.MeshBasicMaterial({
+                  map: texture,
+                  side: THREE.DoubleSide,
+                });
+                return material;
+              })();
+
+              const mesh = new THREE.Mesh(geometry, material);
+              mesh.position.y = (KEYBOARD_WORLD_HEIGHT / 2) + (worldHeight / 2) + 0.0075;
+              return mesh;
+            })();
+            mesh.add(headerMesh);
 
             const shadowMesh = (() => {
               const geometry = new THREE.BoxBufferGeometry(KEYBOARD_WORLD_WIDTH, KEYBOARD_WORLD_HEIGHT, 0.01);
