@@ -38,9 +38,6 @@ class Login {
       hasHub: Boolean(hubSpec),
       token: '',
       username: '',
-      inputText: '',
-      inputIndex: 0,
-      inputValue: 0,
       loading: false,
       error: null,
     };
@@ -60,6 +57,7 @@ class Login {
         '/core/engines/three',
         '/core/engines/webvr',
         '/core/engines/biolumi',
+        '/core/engines/keyboard',
         '/core/engines/rend',
         '/core/engines/fs',
       ]).then(([
@@ -68,6 +66,7 @@ class Login {
         three,
         webvr,
         biolumi,
+        keyboard,
         rend,
         fs,
       ]) => {
@@ -93,7 +92,7 @@ class Login {
             fontStyle: biolumi.getFontStyle(),
           };
           const focusState = {
-            type: '',
+            keyboardFocusState: null,
           };
 
           const menuHoverStates = {
@@ -115,30 +114,32 @@ class Login {
                 login: {
                   hasHub,
                   token,
-                  inputIndex,
-                  inputValue,
                   loading,
                   error,
                 },
                 focus: {
-                  type: focusType,
+                  keyboardFocusState,
                 }
-              }) => ({
-                type: 'html',
-                src: menuRenderer.getLoginSrc({
-                  hasHub,
-                  token,
-                  inputIndex,
-                  inputValue,
-                  loading,
-                  error,
-                  focusType,
-                }),
-                x: 0,
-                y: 0,
-                w: WIDTH,
-                h: HEIGHT,
-              }), {
+              }) => {
+                const {type: focusType = '', inputValue = 0} = keyboardFocusState || {};
+
+                return {
+                  type: 'html',
+                  src: menuRenderer.getLoginSrc({
+                    hasHub,
+                    token,
+                    inputIndex,
+                    inputValue,
+                    loading,
+                    error,
+                    focusType,
+                  }),
+                  x: 0,
+                  y: 0,
+                  w: WIDTH,
+                  h: HEIGHT,
+                };
+              }, {
                 type: 'login',
                 state: {
                   login: loginState,
@@ -305,21 +306,36 @@ class Login {
                     const {anchor} = menuHoverState;
                     const onclick = (anchor && anchor.onclick) || '';
 
-                    focusState.type = '';
-
                     if (onclick === 'login:back') {
                       bootstrap.navigate('https://' + hubUrl);
                     } else if (onclick === 'login:focus:token') {
+                      const {token: inputText} = loginState;
                       const {value} = menuHoverState;
                       const valuePx = value * 640;
+                      const {index, px} = biolumi.getTextPropertiesFromCoord(loginState.inputText, mainFontSpec, valuePx); // XXX this can be folded into the keyboard engine
+                      const {hmd: {position: hmdPosition, rotation: hmdRotation}} = webvr.getStatus();
+                      const keyboardFocusState = keyboard.focus({
+                        type: 'token',
+                        position: hmdPosition,
+                        rotation: hmdRotation,
+                        inputText: inputText,
+                        inputIndex: index,
+                        inputValue: px,
+                        fontSpec: mainFontSpec,
+                      });
+                      focusState.keyboardFocusState = keyboardFocusState;
 
-                      loginState.inputText = loginState.token;
+                      keyboardFocusState.on('update', () => {
+                        const {inputText} = keyboardFocusState;
+                        loginState.token = inputText;
 
-                      const {index, px} = biolumi.getTextPropertiesFromCoord(loginState.inputText, mainFontSpec, valuePx);
+                        _updatePages();
+                      });
+                      keyboardFocusState.on('blur', () => {
+                        focusState.keyboardFocusState = null;
 
-                      loginState.inputIndex = index;
-                      loginState.inputValue = px;
-                      focusState.type = 'token';
+                        _updatePages();
+                      });
 
                       _updatePages();
                     } else if (onclick === 'login:submit') {
@@ -331,38 +347,6 @@ class Login {
                   }
                 };
                 input.on('trigger', _trigger);
-
-                const _keydown = e => {
-                  const {type} = focusState;
-
-                  if (type === 'token') {
-                    const applySpec = biolumi.applyStateKeyEvent(loginState, mainFontSpec, e);
-
-                    if (applySpec) {
-                      loginState.token = loginState.inputText;
-
-                      const {commit} = applySpec;
-                      if (commit) {
-                        focusState.type = '';
-                      }
-
-                      _updatePages();
-
-                      e.stopImmediatePropagation();
-                    }
-                  }
-                };
-                input.on('keydown', _keydown, {
-                  priority: 1,
-                });
-                const _keyboarddown = _keydown;
-                input.on('keyboarddown', _keyboarddown, {
-                  priority: 1,
-                });
-                const _paste = _keydown;
-                input.on('paste', _paste, {
-                  priority: 1,
-                });
 
                 const _update = () => {
                   const {open} = loginState;
@@ -432,9 +416,6 @@ class Login {
                   });
 
                   input.removeListener('trigger', _trigger);
-                  input.removeListener('keydown', _keydown);
-                  input.removeListener('keyboarddown', _keyboarddown);
-                  input.removeListener('paste', _paste);
 
                   rend.removeListener('update', _update);
                   rend.removeListener('login', _login);
