@@ -799,7 +799,7 @@ class World {
             const mesh = new THREE.Mesh(geometry, material);
             mesh.position.x = (WORLD_WIDTH / 2) - (((250 / WIDTH) * WORLD_WIDTH) / 2);
             mesh.position.y = -DEFAULT_USER_HEIGHT + 1.2;
-            mesh.position.z = -1.5 + (0.2 / 2) + 0.02;
+            mesh.position.z = (0.2 / 2) + 0.02;
             mesh.visible = false;
 
             const highlightMesh = (() => {
