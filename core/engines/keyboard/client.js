@@ -156,12 +156,14 @@ class Keyboard {
                 const material = new THREE.MeshBasicMaterial({
                   map: texture,
                   side: THREE.DoubleSide,
+                  transparent: true,
+                  alphaTest: 0.5,
                 });
                 return material;
               })();
 
               const mesh = new THREE.Mesh(geometry, material);
-              mesh.position.y = (KEYBOARD_WORLD_HEIGHT / 2) + (KEYBOARD_HEADER_WORLD_HEIGHT / 2) + 0.0075;
+              mesh.position.y = (KEYBOARD_WORLD_HEIGHT / 2) + (KEYBOARD_HEADER_WORLD_HEIGHT / 2);
               return mesh;
             })();
             mesh.add(headerMesh);
@@ -182,7 +184,7 @@ class Keyboard {
 
           const keySpecs = (() => {
             class KeySpec {
-              constructor(key, rect, imageData, width, height, worldWidth, worldHeight, highlightOffset, highlightScale) {
+              constructor(key, rect, imageData, width, height, worldWidth, worldHeight, highlightScale) {
                 this.key = key;
                 this.rect = rect;
                 this.imageData = imageData;
@@ -190,7 +192,6 @@ class Keyboard {
                 this.height = height;
                 this.worldWidth = worldWidth;
                 this.worldHeight = worldHeight;
-                this.highlightOffset = highlightOffset;
                 this.highlightScale = highlightScale;
               }
             }
@@ -226,7 +227,7 @@ class Keyboard {
                 return imageData;
               })();
 
-              const keySpec = new KeySpec(key, rect, imageData, KEYBOARD_WIDTH, KEYBOARD_HEIGHT, KEYBOARD_WORLD_WIDTH, KEYBOARD_WORLD_HEIGHT, {x: 0, y: 0}, 1.5);
+              const keySpec = new KeySpec(key, rect, imageData, KEYBOARD_WIDTH, KEYBOARD_HEIGHT, KEYBOARD_WORLD_WIDTH, KEYBOARD_WORLD_HEIGHT, 1.5);
               result[i] = keySpec;
             }
             document.body.removeChild(div);
@@ -246,10 +247,6 @@ class Keyboard {
               KEYBOARD_HEADER_HEIGHT,
               KEYBOARD_HEADER_WORLD_WIDTH,
               KEYBOARD_HEADER_WORLD_HEIGHT,
-              {
-                x: 0,
-                y: 0.0075 * 2,
-              },
               1,
             );
 
@@ -454,10 +451,6 @@ class Keyboard {
                         height: fullHeight,
                         worldWidth,
                         worldHeight,
-                        highlightOffset: {
-                          x: highlightOffsetX,
-                          y: highlightOffsetY,
-                        },
                         highlightScale,
                       } = matchingKeySpec;
                       const {subMesh: {material: {map: texture}}} = keyMesh;
@@ -466,8 +459,8 @@ class Keyboard {
 
                       keyMesh.position.copy(
                         keyboardTopLeftPoint.clone()
-                          .add(xAxis.clone().multiplyScalar((left + (width / 2)) / fullWidth * (worldWidth + highlightOffsetX)))
-                          .add(negativeYAxis.clone().multiplyScalar((top + (height / 2)) / fullHeight * (worldHeight + highlightOffsetY)))
+                          .add(xAxis.clone().multiplyScalar((left + (width / 2)) / fullWidth * worldWidth))
+                          .add(negativeYAxis.clone().multiplyScalar((top + (height / 2)) / fullHeight * worldHeight))
                           .add(new THREE.Vector3(0, 0, 0.01).applyQuaternion(keyboardRotation))
                       );
                       keyMesh.quaternion.copy(keyboardRotation);
