@@ -68,7 +68,7 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
             </div>
           </div>
         </${linkTagName}>
-        <${linkTagName} style="display: flex; width: 80px; justify-content: center; align-items: center;" onclick="module:link:${id}" mousedown="module:link:${id}">
+        <${linkTagName} style="display: flex; width: 80px; justify-content: center; align-items: center;" onclick="module:link:${id}" onmousedown="module:link:${id}">
           <img src="${imgSrc}" width="50" height="50">
         </${linkTagName}>
         }
@@ -102,7 +102,7 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
             <div style="font-size: 20px; font-weight: 300;">${description}</div>
           </div>
         </div>
-        <a style="display: flex; width: 80px; justify-content: center; align-items: center;" onclick="module:link:${id}" mousedown="module:link:${id}">
+        <a style="display: flex; width: 80px; justify-content: center; align-items: center;" onclick="module:link:${id}" onmousedown="module:link:${id}">
           <img src="${imgSrc}" width="40" height="40">
         </a>
         <a style="display: flex; width: 80px; justify-content: center; align-items: center;" onclick="module:close:${id}">
