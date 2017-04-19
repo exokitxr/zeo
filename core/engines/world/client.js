@@ -992,6 +992,7 @@ class World {
           };
           rend.on('update', _update);
 
+          const npmCancels = [];
           const _updateNpmTagMeshContainer = () => {
             // hide old
             const oldTagMeshes = npmManager.getTagMeshes();
@@ -1000,6 +1001,13 @@ class World {
               oldTagMesh.visible = false;
               oldTagMesh.initialVisible = false;
             }
+
+            // cancel old rendering
+            for (let i = 0; i < npmCancels.length; i++) {
+              const npmCancel = npmCancels[i];
+              npmCancel();
+            }
+            npmCancels.length = 0;
 
             // show new
             const {npmMesh} = worldMesh;
@@ -1033,9 +1041,10 @@ class World {
 
               const {planeMesh: newTagMeshPlaneMesh} = newTagMesh;
               const {page: newTagMeshPage} = newTagMeshPlaneMesh;
-              newTagMeshPage.initialUpdate();
+              const npmCancel = newTagMeshPage.initialUpdate();
 
               newTagMeshes.push(newTagMesh);
+              npmCancels.push(npmCancel);
             }
             npmManager.setTagMeshes(newTagMeshes);
           };

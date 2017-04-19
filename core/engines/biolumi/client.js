@@ -50,11 +50,13 @@ class Biolumi {
           threads.push(thread);
 
           this.work();
-        }
 
-        remove(thread) {
-          const {threads} = this;
-          threads.splice(thread);
+          return () => {
+            const index = threads.indexOf(thread);
+            if (index !== -1) {
+              threads.splice(index, 1);
+            }
+          };
         }
 
         work(next) {
@@ -392,25 +394,20 @@ class Biolumi {
 
                 return Promise.resolve();
               };
-              const works = [
+              const cancels = [
                 _requestLayerSpec,
                 _requestHtmlSrc,
                 _requestInnerSrc,
                 _requestImage,
                 _requestTexture,
                 _requestLayer,
-              ];
-              works.forEach(work => {
-                uiWorker.add(work);
-              });
+              ].map(work => uiWorker.add(work));
 
-              const _cancel = () => {
-                works.forEach(work => {
-                  remove.remove(work);
-                });
-              };
-              return {
-                cancel: _cancel,
+              return () => { // return a cancel function
+                for (let i = 0; i < cancels.length; i++) {
+                  const cancel = cancels[i];
+                  cancel();
+                }
               };
             }
 
@@ -420,7 +417,7 @@ class Biolumi {
 
                 return this.update();
               } else {
-                return null;
+                return nop;
               }
             }
           }
@@ -1049,5 +1046,6 @@ const debounce = fn => {
   return _go;
 };
 const clamp = (n, min, max) => Math.min(Math.max(n, min), max);
+const nop = () => {};
 
 module.exports = Biolumi;
