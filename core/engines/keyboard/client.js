@@ -435,6 +435,10 @@ class Keyboard {
         input.on('keyboarddown', _keyboarddown, {
           priority: 1,
         });
+        const _paste = _keydown;
+        input.on('paste', _paste, {
+          priority: 1,
+        });
 
         const _update = () => {
           const {focusState} = keyboardState;
@@ -619,14 +623,14 @@ class Keyboard {
 
         this._cleanup = () => {
           scene.remove(keyboardMesh);
-
           SIDES.forEach(side => {
             scene.remove(dotMeshes[side]);
-          });
-
-          SIDES.forEach(side => {
             scene.remove(keyboardBoxMeshes[side]);
           });
+
+          input.removeListener('keydown', _keydown);
+          input.removeListener('keyboarddown', _keyboarddown);
+          input.removeListener('paste', _paste);
 
           rend.removeListener('update', _update);
         };
