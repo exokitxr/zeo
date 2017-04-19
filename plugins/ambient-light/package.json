@@ -4,6 +4,6 @@
   "version": "0.0.1",
   "client": "client.js",
   "dependencies": {
-    "geometryutils": "0.0.5"
+    "geometryutils": "0.0.6"
   }
 }
