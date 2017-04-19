@@ -119,7 +119,8 @@ class Assets {
                 if (username !== labelState.username) {
                   labelState.username = username;
 
-                  menuUi.update();
+                  const {page} = mesh;
+                  page.update();
                 }
               };
 
@@ -169,7 +170,8 @@ class Assets {
                   if (username !== menuState.username) {
                     menuState.username = username;
 
-                    menuUi.update();
+                    const {page} = mesh;
+                    page.update();
                   }
 
                   if (!mesh.visible) {
