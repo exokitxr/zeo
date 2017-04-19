@@ -2914,6 +2914,9 @@ class Tags {
                           });
                           newAttributeMesh.receiveShadow = true;
 
+                          const {page} = newAttributeMesh;
+                          page.update();
+
                           // used by trigger handler lookups
                           newAttributeMesh.itemId = item.id;
                           newAttributeMesh.attributeName = attributeName;
