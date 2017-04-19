@@ -2110,8 +2110,6 @@ class Tags {
             input.removeListener('trigger', _trigger);
             input.removeListener('triggerdown', _triggerdown);
             input.removeListener('triggerup', _triggerup);
-            input.removeListener('keydown', _keydown);
-            input.removeListener('keyboarddown', _keyboarddown);
 
             rend.removeListener('update', _update);
           };
