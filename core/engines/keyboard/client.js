@@ -666,6 +666,26 @@ class Keyboard {
           }
         }
 
+        class FakeKeyboardFocusState extends EventEmitter {
+          constructor({type}) {
+            super();
+
+            this.type = type;
+          }
+
+          handleEvent(e) {
+            if (e.keyCode === 13) { // enter
+              this.blur();
+
+              e.stopImmediatePropagation();
+            }
+          }
+
+          blur() {
+            this.emit('blur');
+          }
+        }
+
         class KeyboardApi {
           getFocusState() {
             return keyboardState.focusState;
@@ -705,6 +725,22 @@ class Keyboard {
 
             if (focusState) {
               focusState.blur();
+
+              keyboardState.focusState = null;
+            }
+          }
+
+          tryFakeFocus({type}) {
+            const {focusState: oldFocusState} = keyboardState;
+
+            if (!oldFocusState) {
+              const newFocusState = new FakeKeyboardFocusState({type});
+
+              keyboardState.focusState = newFocusState;
+
+              return newFocusState;
+            } else {
+              return null;
             }
           }
         }

@@ -54,6 +54,7 @@ class Tags {
       '/core/engines/webvr',
       '/core/engines/cyborg',
       '/core/engines/biolumi',
+      '/core/engines/keyboard',
       '/core/engines/fs',
       '/core/engines/somnifer',
       '/core/engines/rend',
@@ -68,6 +69,7 @@ class Tags {
         webvr,
         cyborg,
         biolumi,
+        keyboard,
         fs,
         somnifer,
         rend,
@@ -836,7 +838,7 @@ class Tags {
             page: 0,
           };
           const focusState = {
-            type: '',
+            keyboardFocusState: null,
           };
 
           const localUpdates = [];
@@ -1344,7 +1346,6 @@ class Tags {
                   const {value: attributeValue} = attribute;
 
                   const _updateAttributes = () => {
-                    const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === tagId);
                     const {attributesMesh} = tagMesh;
                     attributesMesh.update();
                   };
@@ -1354,14 +1355,14 @@ class Tags {
                     detailsState.positioningName = attributeName;
                     detailsState.positioningSide = side;
 
-                    focusState.type = '';
+                    keyboard.tryBlur();
                   } else if (action === 'focus') {
                     const {value: hoverValue} = pointerState;
                     const {type} = _getAttributeSpec(attributeName);
 
                     const textProperties = (() => {
                       if (type === 'text') {
-                        const hoverValuePx = hoverValue * 400; // XXX update these
+                        const hoverValuePx = hoverValue * 400;
                         return biolumi.getTextPropertiesFromCoord(menuUtils.castValueValueToString(attributeValue, type), subcontentFontSpec, hoverValuePx);
                       } else if (type === 'number') {
                         const hoverValuePx = hoverValue * 100;
@@ -1373,26 +1374,50 @@ class Tags {
                         return null;
                       }
                     })();
-                    if (textProperties) {
-                      detailsState.inputText = menuUtils.castValueValueToString(attributeValue, type);
-                      const {index, px} = textProperties;
-                      detailsState.inputIndex = index;
-                      detailsState.inputValue = px;
+                    const keyboardFocusState = (() => {
+                      if (textProperties) {
+                        const {hmd: {position: hmdPosition, rotation: hmdRotation}} = webvr.getStatus();
+                        const inputText = menuUtils.castValueValueToString(attributeValue, type);
+                        const {index, px} = textProperties;
+                        return keyboard.tryFocus({
+                          type: 'attribute:' + tagId + ':' + attributeName,
+                          position: hmdPosition,
+                          rotation: hmdRotation,
+                          inputText: inputText,
+                          inputIndex: index,
+                          inputValue: px,
+                          fontSpec: subcontentFontSpec,
+                        });
+                      } else {
+                        return keyboard.tryFakeFocus({
+                          type: 'attribute:' + tagId + ':' + attributeName,
+                        });
+                      }
+                    })();
+                    if (keyboardFocusState) {
+                      focusState.keyboardFocusState = keyboardFocusState;
+
+                      keyboardFocusState.on('update', () => {
+                        const {inputText} = keyboardFocusState;
+
+                        tagMesh.setAttribute(attributeName, inputText);
+                      });
+                      keyboardFocusState.on('blur', () => {
+                        focusState.keyboardFocusState = null;
+
+                        _updateAttributes();
+                      });
+
+                      _updateAttributes();
                     }
-
-                    focusState.type = 'attribute:' + tagId + ':' + attributeName;
-
-                    _updateAttributes();
                   } else if (action === 'set') {
-                    focusState.type = '';
-
                     tagsApi.emit('setAttribute', {
                       id: tagId,
                       name: attributeName,
                       value: value,
                     });
 
-                    // _updateAttributes();
+                    keyboard.tryBlur();
                   } else if (action === 'tweak') {
                     const {type} = _getAttributeSpec(attributeName);
 
@@ -1408,15 +1433,13 @@ class Tags {
                         return n;
                       })();
 
-                      focusState.type = '';
-
                       tagsApi.emit('setAttribute', {
                         id: tagId,
                         name: attributeName,
                         value: newValue,
                       });
 
-                      // _updateAttributes();
+                      keyboard.tryBlur();
                     } else if (type ==='vector') {
                       const newKeyValue = (() => {
                         const {value} = pointerState;
@@ -1431,13 +1454,13 @@ class Tags {
                       const newValue = attributeValue.slice();
                       newValue[AXES.indexOf(key)] = newKeyValue;
 
-                      focusState.type = '';
-
                       tagsApi.emit('setAttribute', {
                         id: tagId,
                         name: attributeName,
                         value: newValue,
                       });
+
+                      keyboard.tryBlur();
                     }
                   } else if (action === 'toggle') {
                     const newValue = !attributeValue;
@@ -1733,37 +1756,6 @@ class Tags {
             _doClickTag();
           };
           input.on('triggerup', _triggerup);
-
-          const _keydown = e => {
-            const {type} = focusState;
-
-            let match;
-            if (match = focusState.type.match(/^attribute:(.+?):(.+?)$/)) {
-              const tagId = match[1];
-              const attributeName = match[2];
-
-              const applySpec = biolumi.applyStateKeyEvent(detailsState, subcontentFontSpec, e);
-              if (applySpec) {
-                const {commit} = applySpec;
-                if (commit) {
-                  focusState.type = '';
-                }
-
-                const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === tagId);
-                const {inputText} = detailsState;
-                tagMesh.setAttribute(attributeName, inputText);
-
-                e.stopImmediatePropagation();
-              }
-            }
-          };
-          input.on('keydown', _keydown, {
-            priority: 1,
-          });
-          const _keyboarddown = _keydown;
-          input.on('keyboarddown', _keyboarddown, {
-            priority: 1,
-          });
 
           const _update = () => {
             const _updateControllers = () => {
@@ -2680,16 +2672,14 @@ class Tags {
                 const mesh = uiManager.addPage(({
                   item,
                   details: {
-                    inputText,
-                    inputValue,
                     positioningId,
                     positioningName,
                   },
                   focus: {
-                    type: focusType,
-                  }
+                    keyboardFocusState,
+                  },
                 }) => {
-                  const {type} = item;
+                  const {type: focusType = '', inputText = '', inputValue = 0} = keyboardFocusState || {};
                   const focusAttributeSpec = (() => {
                     const match = focusType.match(/^attribute:(.+?):(.+?)$/);
                     return match && {
@@ -2697,8 +2687,9 @@ class Tags {
                       attributeName: match[2],
                     };
                   })();
-                  const mode = _getItemPreviewMode(item);
                   const src = (() => {
+                    const {type} = item;
+
                     switch (type) {
                       case 'module': {
                         if (!details) {
@@ -2711,6 +2702,8 @@ class Tags {
                         return tagsRenderer.getEntitySrc({item});
                       }
                       case 'file': {
+                        const mode = _getItemPreviewMode(item);
+
                         return tagsRenderer.getFileSrc({item, mode, open});
                       }
                       default: {
@@ -2891,18 +2884,14 @@ class Tags {
                           const state = {
                             attribute: attribute,
                             focus: focusState,
-                            details: detailsState,
                           };
                           const newAttributeMesh = uiAttributeManager.addPage(({
                             attribute,
                             focus: {
-                              type: focusType,
-                            },
-                            details: {
-                              inputText,
-                              inputValue,
+                              keyboardFocusState,
                             },
                           }) => {
+                            const {type: focusType = '', inputText = '', inputValue = 0} = keyboardFocusState || {};
                             const focusAttributeSpec = (() => {
                               const match = focusType.match(/^attribute:(.+?):(.+?)$/);
                               return match && {
