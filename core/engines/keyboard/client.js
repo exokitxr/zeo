@@ -104,6 +104,8 @@ class Keyboard {
           return {position, rotation, scale};
         };
 
+        const nop = () => {};
+
         const keyboardMesh = (() => {
           const object = new THREE.Object3D();
           object.position.set(0, DEFAULT_USER_HEIGHT, 0);
@@ -167,6 +169,7 @@ class Keyboard {
               return mesh;
             })();
             mesh.add(headerMesh);
+            mesh.headerMesh = headerMesh;
 
             const shadowMesh = (() => {
               const geometry = new THREE.BoxBufferGeometry(KEYBOARD_WORLD_WIDTH, KEYBOARD_WORLD_HEIGHT, 0.01);
@@ -184,7 +187,7 @@ class Keyboard {
 
           const keySpecs = (() => {
             class KeySpec {
-              constructor(key, rect, imageData, width, height, worldWidth, worldHeight, highlightScale) {
+              constructor(key, rect, imageData, width, height, worldWidth, worldHeight, highlightOffset, highlightScale, onmouseover, onmouseout) {
                 this.key = key;
                 this.rect = rect;
                 this.imageData = imageData;
@@ -192,7 +195,10 @@ class Keyboard {
                 this.height = height;
                 this.worldWidth = worldWidth;
                 this.worldHeight = worldHeight;
+                this.highlightOffset = highlightOffset;
                 this.highlightScale = highlightScale;
+                this.onmouseover = onmouseover;
+                this.onmouseout = onmouseout;
               }
             }
 
@@ -227,11 +233,24 @@ class Keyboard {
                 return imageData;
               })();
 
-              const keySpec = new KeySpec(key, rect, imageData, KEYBOARD_WIDTH, KEYBOARD_HEIGHT, KEYBOARD_WORLD_WIDTH, KEYBOARD_WORLD_HEIGHT, 1.5);
+              const keySpec = new KeySpec(
+                key,
+                rect,
+                imageData,
+                KEYBOARD_WIDTH,
+                KEYBOARD_HEIGHT,
+                KEYBOARD_WORLD_WIDTH,
+                KEYBOARD_WORLD_HEIGHT,
+                0.01,
+                1.5,
+                nop,
+                nop
+              );
               result[i] = keySpec;
             }
             document.body.removeChild(div);
 
+            let numHeaderHovers = 0;
             result[keyEls.length] = new KeySpec(
               'header',
               {
@@ -247,7 +266,24 @@ class Keyboard {
               KEYBOARD_HEADER_HEIGHT,
               KEYBOARD_HEADER_WORLD_WIDTH,
               KEYBOARD_HEADER_WORLD_HEIGHT,
+              0,
               1,
+              () => { // mouseover
+                numHeaderHovers++;
+
+                if (numHeaderHovers === 1) {
+                  const {headerMesh} = planeMesh;
+                  headerMesh.visible = false;
+                }
+              },
+              () => { // mouseout
+                numHeaderHovers--;
+
+                if (numHeaderHovers === 0) {
+                  const {headerMesh} = planeMesh;
+                  headerMesh.visible = true;
+                }
+              }
             );
 
             return result;
@@ -455,7 +491,10 @@ class Keyboard {
                         height: fullHeight,
                         worldWidth,
                         worldHeight,
+                        highlightOffset,
                         highlightScale,
+                        onmouseover,
+                        onmouseout,
                       } = matchingKeySpec;
                       const {subMesh: {material: {map: texture}}} = keyMesh;
                       texture.image = imageData;
@@ -465,7 +504,7 @@ class Keyboard {
                         keyboardTopLeftPoint.clone()
                           .add(xAxis.clone().multiplyScalar((left + (width / 2)) / fullWidth * worldWidth))
                           .add(negativeYAxis.clone().multiplyScalar((top + (height / 2)) / fullHeight * worldHeight))
-                          .add(new THREE.Vector3(0, 0, 0.01).applyQuaternion(keyboardRotation))
+                          .add(new THREE.Vector3(0, 0, highlightOffset).applyQuaternion(keyboardRotation))
                       );
                       keyMesh.quaternion.copy(keyboardRotation);
                       keyMesh.scale.set(
@@ -474,7 +513,17 @@ class Keyboard {
                         1
                       );
 
+                      const {key: oldKey} = keyMesh;
+                      if (oldKey) {
+                        const {keySpecs} = keyboardMesh;
+                        const oldKeySpec = keySpecs.find(keySpec => keySpec.key === oldKey);
+                        const {onmouseout} = oldKeySpec;
+                        onmouseout();
+                      }
+
                       keyMesh.key = key;
+
+                      onmouseover();
                     }
 
                     if (!dotMesh.visible) {
@@ -484,6 +533,14 @@ class Keyboard {
                       keyMesh.visible = true;
                     }
                   } else {
+                    const {key: oldKey} = keyMesh;
+                    if (oldKey) {
+                      const {keySpecs} = keyboardMesh;
+                      const oldKeySpec = keySpecs.find(keySpec => keySpec.key === oldKey);
+                      const {onmouseout} = oldKeySpec;
+                      onmouseout();
+                    }
+
                     keyMesh.key = null;
 
                     if (dotMesh.visible) {
