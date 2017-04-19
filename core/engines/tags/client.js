@@ -1915,19 +1915,20 @@ class Tags {
                         const {position: controllerPosition, scale: controllerScale} = gamepad;
                         const absPosition = controllerPosition.clone().multiply(controllerScale);
 
-                        const tagMeshDistanceSpecs = tagMeshes.map(tagMesh => {
+                        let closestTagMesh = null;
+                        let closestTagMeshDistance = Infinity;
+                        for (let i = 0; i < tagMeshes.length; i++) {
+                          const tagMesh = tagMeshes[i];
                           const distance = absPosition.distanceTo(tagMesh.getWorldPosition());
-                          return {
-                            tagMesh,
-                            distance,
-                          };
-                        }).filter(({distance}) => distance <= 0.2);
 
-                        if (tagMeshDistanceSpecs.length > 0) {
-                          return tagMeshDistanceSpecs.sort((a, b) => a.distance - b.distance)[0].tagMesh;
-                        } else {
-                          return null;
+                          if (distance <= 0.2) {
+                            if (distance < closestTagMeshDistance) {
+                              closestTagMesh = tagMesh;
+                              closestTagMeshDistance = distance;
+                            }
+                          }
                         }
+                        return closestTagMesh;
                       } else {
                         return null;
                       }
