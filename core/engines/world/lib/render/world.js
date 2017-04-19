@@ -5,13 +5,13 @@ const {
 const upWhiteImg = require('../img/up-white');
 const downWhiteImg = require('../img/down-white');
 
-const getWorldPageSrc = ({loading, inputText, inputPlaceholder, inputValue, numTags, page, focus, onclick}) => {
+const getWorldPageSrc = ({loading, inputText, inputValue, numTags, page, focus}) => {
   const leftSrc = `\
     <div style="display: flex; padding: 20px 30px; font-size: 36px; line-height: 1.4; flex-grow: 1; flex-direction: column;">
-      <a style="position: relative; display: block; background-color: #EEE; border-radius; 5px; text-decoration: none;" onclick="${onclick}">
+      <a style="position: relative; display: block; background-color: #EEE; border-radius; 5px; text-decoration: none;" onclick="npm:focus">
         ${focus ? `<div style="position: absolute; width: 2px; top: 2px; bottom: 2px; left: ${inputValue}px; background-color: #333;"></div>` : ''}
         <div>${inputText}</div>
-        ${!inputText ? `<div style="color: #AAA;">${inputPlaceholder}</div>` : ''}
+        ${!inputText ? `<div style="color: #AAA;">Search npm modules</div>` : ''}
       </a>
       ${loading ? `<div style="display: flex; margin-bottom: 100px; font-size: 30px; align-items: center; justify-content: center; flex-grow: 1;">Loading...</div>` : ''}
     </div>

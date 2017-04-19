@@ -67,8 +67,8 @@ class Keyboard {
         '/core/engines/webvr',
         '/core/engines/biolumi',
         '/core/engines/rend',
+        '/core/utils/js-utils',
         '/core/utils/geometry-utils',
-        '/core/utils/creature-utils',
       ]),
       _requestImage(keyboardImgSrc),
       _requestImageCanvas(keyboardHighlightImgSrc),
@@ -81,6 +81,7 @@ class Keyboard {
         webvr,
         biolumi,
         rend,
+        jsUtils,
         geometryUtils,
       ],
       keyboardImg,
@@ -90,6 +91,8 @@ class Keyboard {
     ]) => {
       if (live) {
         const {THREE, scene, camera} = three;
+        const {events} = jsUtils;
+        const {EventEmitter} = events;
 
         const transparentImg = biolumi.getTransparentImg();
         const transparentMaterial = biolumi.getTransparentMaterial();
@@ -106,12 +109,14 @@ class Keyboard {
 
         const nop = () => {};
 
+        const keyboardState = {
+          focusSpec: null,
+        };
+
         const keyboardMesh = (() => {
           const object = new THREE.Object3D();
-          object.position.y = 1;
-          object.position.z = -0.4;
-          object.rotation.x = -Math.PI * (3 / 8);
           object.rotation.order = camera.rotation.order;
+          object.visible = false;
 
           const planeMesh = (() => {
             const geometry = new THREE.PlaneBufferGeometry(KEYBOARD_WORLD_WIDTH, KEYBOARD_WORLD_HEIGHT);
@@ -416,8 +421,25 @@ class Keyboard {
         };
         input.on('triggerup', _triggerup);
 
+        const _keydown = e => {
+          const {focusState} = keyboardState;
+
+          if (focusState) {
+            focusState.handleEvent(e);
+          }
+        };
+        input.on('keydown', _keydown, {
+          priority: 1,
+        });
+        const _keyboarddown = _keydown;
+        input.on('keyboarddown', _keyboarddown, {
+          priority: 1,
+        });
+
         const _update = () => {
-          if (rend.isOpen()) {
+          const {focusState} = keyboardState;
+
+          if (focusState) {
             const _updateDrag = () => {
               const {gamepads} = webvr.getStatus();
 
@@ -604,6 +626,83 @@ class Keyboard {
 
           rend.removeListener('update', _update);
         };
+
+        class KeyboardFocusState extends EventEmitter {
+          constructor({type, inputText, inputIndex, inputValue, fontSpec}) {
+            super();
+
+            this.type = type;
+            this.inputText = inputText;
+            this.inputIndex = inputIndex;
+            this.inputValue = inputValue;
+            this.fontSpec = fontSpec;
+          }
+
+          handleEvent(e) {
+            const applySpec = biolumi.applyStateKeyEvent(this, e);
+
+            if (applySpec) {
+              const {commit} = applySpec;
+              if (commit) {
+                this.blur();
+              }
+
+              this.update();
+
+              e.stopImmediatePropagation();
+            }
+          }
+
+          update() {
+            this.emit('update');
+          }
+
+          blur() {
+            this.emit('blur');
+          }
+        }
+
+        class KeyboardApi {
+          getFocusState() {
+            return keyboardState.focusState;
+          }
+
+          tryFocus({type, position, rotation, inputText, inputIndex, inputValue, fontSpec}) {
+            const {focusState: oldFocusState} = keyboardState;
+
+            if (!oldFocusState) {
+              const newFocusState = new KeyboardFocusState({type, inputText, inputIndex, inputValue, fontSpec});
+
+              keyboardState.focusState = newFocusState;
+
+              keyboardMesh.position.copy(
+                position.clone().add(new THREE.Vector3(0, -0.6, -0.4).applyQuaternion(rotation)),
+              );
+              keyboardMesh.rotation.x = rotation.clone().premultiply(new THREE.Quaternion().setFromEuler(-Math.PI * (3 / 8), 0, 0, camera.rotation.order));
+              keyboardMesh.visible = true;
+
+              newFocusState.once('blur', () => {
+                keyboardState.focusState = null;
+
+                keyboardMesh.visible = false;
+              });
+
+              return newFocusState;
+            } else {
+              return null;
+            }
+          }
+
+          tryBlur() {
+            const {focusState} = keyboardState;
+
+            if (focusState) {
+              focusState.blur();
+            }
+          }
+        }
+        const keyboardApi = new KeyboardApi();
+        return keyboardApi;
       }
     });
   }

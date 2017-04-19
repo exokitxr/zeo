@@ -51,6 +51,7 @@ class World {
         '/core/engines/login',
         '/core/engines/biolumi',
         '/core/engines/rend',
+        '/core/engines/keyboard',
         '/core/engines/tags',
         '/core/engines/fs',
         '/core/utils/network-utils',
@@ -64,6 +65,7 @@ class World {
         login,
         biolumi,
         rend,
+        keyboard,
         tags,
         fs,
         networkUtils,
@@ -670,18 +672,15 @@ class World {
           const npmState = {
             loading: false,
             inputText: '',
-            inputPlaceholder: 'Search npm modules',
-            inputIndex: 0,
-            inputValue: 0,
             numTags: 0,
             page: 0,
+          };
+          const focusState = {
+            keyboardFocusState: null,
           };
           const npmCacheState = {
             tagMeshes: [],
             loaded: false,
-          };
-          const focusState = {
-            type: '',
           };
 
           const menuHoverStates = {
@@ -706,20 +705,19 @@ class World {
                   npm: {
                     loading,
                     inputText,
-                    inputPlaceholder,
-                    inputValue,
                     numTags,
                     page,
                   },
                   focus: {
-                    type,
-                  }
+                    keyboardFocusState,
+                  },
                 }) => {
+                  const {type = '', inputValue = 0} = keyboardFocusState || {};
                   const focus = type === 'npm';
 
                   return {
                     type: 'html',
-                    src: worldRenderer.getWorldPageSrc({loading, inputText, inputPlaceholder, inputValue, numTags, page, focus, onclick: 'npm:focus'}),
+                    src: worldRenderer.getWorldPageSrc({loading, inputText, inputValue, numTags, page, focus}),
                     x: 0,
                     y: 0,
                     w: WIDTH,
@@ -1018,9 +1016,7 @@ class World {
 
           const _tabchange = tab => {
             if (tab === 'world') {
-              npmState.inputText = '';
-              npmState.inputIndex = 0;
-              npmState.inputValue = 0;
+              keyboard.tryBlur();
 
               const {loaded} = npmCacheState;
               if (!loaded) {
@@ -1068,13 +1064,32 @@ class World {
                     const {value} = menuHoverState;
                     const valuePx = value * (WIDTH - (500 + 40));
 
-                    const {index, px} = biolumi.getTextPropertiesFromCoord(npmState.inputText, mainFontSpec, valuePx);
+                    const {inputText} = npmState;
+                    const {index, px} = biolumi.getTextPropertiesFromCoord(inputText, mainFontSpec, valuePx); // XXX this can be folded into the keyboard engine
+                    const {hmd: {position: hmdPosition, rotation: hmdRotation}} = webvr.getStatus();
+                    const keyboardFocusState = keyboard.tryFocus({
+                      type: 'npm',
+                      position: hmdPosition,
+                      rotation: hmdRotation,
+                      inputText: inputText,
+                      inputIndex: index,
+                      inputValue: px,
+                      fontSpec: mainFontSpec,
+                    });
+                    if (keyboardFocusState) {
+                      focusState.keyboardFocusState = keyboardFocusState;
 
-                    npmState.inputIndex = index;
-                    npmState.inputValue = px;
-                    focusState.type = 'npm';
+                      _updatePages();
 
-                    _updatePages();
+                      keyboardFocusState.on('update', () => {
+                        const {inputText} = keyboardFocusState;
+                        npmState.inputText = inputText;
+
+                        _updateNpm();
+
+                        _updatePages();
+                      });
+                    }
 
                     return true;
 
@@ -1206,38 +1221,6 @@ class World {
           };
           input.on('gripup', _gripup, {
             priority: -1,
-          });
-
-          const _keydown = e => {
-            const tab = rend.getTab();
-
-            if (tab === 'world') {
-              const {type} = focusState;
-
-              if (type === 'npm') {
-                const applySpec = biolumi.applyStateKeyEvent(npmState, mainFontSpec, e);
-
-                if (applySpec) {
-                  _updateNpm();
-
-                  const {commit} = applySpec;
-                  if (commit) {
-                    focusState.type = '';
-                  }
-
-                  _updatePages();
-
-                  e.stopImmediatePropagation();
-                }
-              }
-            }
-          };
-          input.on('keydown', _keydown, {
-            priority: 1,
-          });
-          const _keyboarddown = _keydown;
-          input.on('keyboarddown', _keyboarddown, {
-            priority: 1,
           });
 
           const _getTagIdSrc = id => {

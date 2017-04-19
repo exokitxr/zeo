@@ -631,8 +631,8 @@ class Biolumi {
             (keyCode > 95 && keyCode < 112) || // numpad keys
             (keyCode > 185 && keyCode < 193) || // ;=,-./` (in order)
             (keyCode > 218 && keyCode < 223); // [\]' (in order)\
-          const _applyStateKeyEvent = (state, fontSpec, e) => {
-            const {inputText, inputIndex} = state;
+          const _applyStateKeyEvent = (state, e) => {
+            const {inputText, inputIndex, fontSpec} = state;
 
             let change = false;
             let commit = false;
