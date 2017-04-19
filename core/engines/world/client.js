@@ -551,10 +551,19 @@ class World {
           const _handleTagOpenDetails = (userId, src) => {
             // same for local and remote user ids
             let match;
-            if (match = src.match(/^world:(.+)$/)) {
-              const id = match[1];
+            if (match = src.match(/^(world|npm):(.+)$/)) {
+              const type = match[1];
+              const id = match[2];
 
-              const tagMesh = elementManager.getTagMesh(id);
+              const tagMesh = (() => {
+                if (type === 'world') {
+                  return elementManager.getTagMesh(id);
+                } else if (type === 'npm') {
+                  return npmManager.getTagMeshes().find(tagMesh => tagMesh.item.id === id);
+                } else {
+                  return null;
+                }
+              })();
               tagMesh.openDetails();
             } else {
               console.warn('invalid tag open details arguments', {src});
@@ -563,10 +572,19 @@ class World {
           const _handleTagCloseDetails = (userId, src) => {
             // same for local and remote user ids
             let match;
-            if (match = src.match(/^world:(.+)$/)) {
-              const id = match[1];
+            if (match = src.match(/^(world|npm):(.+)$/)) {
+              const type = match[1];
+              const id = match[2];
 
-              const tagMesh = elementManager.getTagMesh(id);
+              const tagMesh = (() => {
+                if (type === 'world') {
+                  return elementManager.getTagMesh(id);
+                } else if (type === 'npm') {
+                  return npmManager.getTagMeshes().find(tagMesh => tagMesh.item.id === id);
+                } else {
+                  return null;
+                }
+              })();
               tagMesh.closeDetails();
             } else {
               console.warn('invalid tag open details arguments', {src});
@@ -1234,6 +1252,8 @@ class World {
             const _getWorldSrc = () => {
               if (elementManager.getTagMeshes().some(tagMesh => tagMesh.item.id === id)) {
                 return 'world:' + id;
+              } else if (npmManager.getTagMeshes().some(tagMesh => tagMesh.item.id === id)) {
+                return 'npm:' + id;
               } else {
                 return null;
               }

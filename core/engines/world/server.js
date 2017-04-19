@@ -515,13 +515,16 @@ class World {
                         })(cb);
 
                         let match;
-                        if (match = src.match(/^world:(.+)$/)) {
-                          const id = match[1];
+                        if (match = src.match(/^(world|npm):(.+)$/)) {
+                          const type = match[1];
+                          const id = match[2];
 
-                          const itemSpec = tagsJson.tags[id];
-                          itemSpec.details = true;
+                          if (type === 'world') {
+                            const itemSpec = tagsJson.tags[id];
+                            itemSpec.details = true;
 
-                          _saveTags();
+                            _saveTags();
+                          }
 
                           cb();
                         } else {
@@ -539,13 +542,16 @@ class World {
                         })(cb);
 
                         let match;
-                        if (match = src.match(/^world:(.+)$/)) {
-                          const id = match[1];
+                        if (match = src.match(/^(world|npm):(.+)$/)) {
+                          const type = match[1];
+                          const id = match[2];
 
-                          const itemSpec = tagsJson.tags[id];
-                          itemSpec.details = false;
+                          if (type === 'world') {
+                            const itemSpec = tagsJson.tags[id];
+                            itemSpec.details = false;
 
-                          _saveTags();
+                            _saveTags();
+                          }
 
                           cb();
                         } else {
