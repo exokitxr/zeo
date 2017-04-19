@@ -1111,28 +1111,25 @@ class World {
                       inputValue: px,
                       fontSpec: mainFontSpec,
                     });
-                    if (keyboardFocusState) {
-                      focusState.keyboardFocusState = keyboardFocusState;
+                    focusState.keyboardFocusState = keyboardFocusState;
+
+                    keyboardFocusState.on('update', () => {
+                      const {inputText} = keyboardFocusState;
+                      npmState.inputText = inputText;
+
+                      _updateNpm();
 
                       _updatePages();
+                    });
+                    keyboardFocusState.on('blur', () => {
+                      focusState.keyboardFocusState = null;
 
-                      keyboardFocusState.on('update', () => {
-                        const {inputText} = keyboardFocusState;
-                        npmState.inputText = inputText;
+                      _updatePages();
+                    });
 
-                        _updateNpm();
-
-                        _updatePages();
-                      });
-                      keyboardFocusState.on('blur', () => {
-                        focusState.keyboardFocusState = null;
-
-                        _updatePages();
-                      });
-                    }
+                    _updatePages();
 
                     return true;
-
                   } else if (match = onclick.match(/^npm:(up|down)$/)) {
                     const direction = match[1];
 
@@ -1678,8 +1675,6 @@ class World {
             input.removeListener('trigger', _trigger);
             input.removeListener('gripdown', _gripdown);
             input.removeListener('gripup', _gripup);
-            input.removeListener('keydown', _keydown);
-            input.removeListener('keyboarddown', _keyboarddown);
 
             tags.removeListener('download', _download);
             tags.removeListener('grabNpmTag', _grabNpmTag);
