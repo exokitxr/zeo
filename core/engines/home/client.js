@@ -112,6 +112,7 @@ class Home {
           '/core/engines/biolumi',
           '/core/engines/cyborg',
           '/core/engines/rend',
+          '/core/engines/keyboard',
           '/core/engines/tags',
           '/core/utils/js-utils',
           '/core/utils/geometry-utils',
@@ -130,6 +131,7 @@ class Home {
             biolumi,
             cyborg,
             rend,
+            keyboard,
             tags,
             jsUtils,
             geometryUtils,
@@ -172,11 +174,6 @@ class Home {
             const backVector = new THREE.Vector3(0, 0, 1);
             const sphereDiameterVector = new THREE.Vector3(SPHERE_RADIUS * 2, SPHERE_RADIUS * 2, SPHERE_RADIUS * 2);
 
-            const menuUi = biolumi.makeUi({
-              width: WIDTH,
-              height: HEIGHT,
-            });
-
             const mainFontSpec = {
               fonts: biolumi.getFonts(),
               fontSize: 40,
@@ -190,8 +187,6 @@ class Home {
               localServers: [],
               username: '',
               inputText: '',
-              inputIndex: 0,
-              inputValue: 0,
               loading: false,
               flags: {
                 localServers: myEnabled,
@@ -199,7 +194,7 @@ class Home {
               vrMode: bootstrap.getVrMode(),
             };
             const focusState = {
-              type: '',
+              keyboardFocusState: null,
             };
 
             const _vrModeChange = vrMode => {
@@ -214,42 +209,48 @@ class Home {
               object.position.y = DEFAULT_USER_HEIGHT;
 
               const planeMesh = (() => {
+                const menuUi = biolumi.makeUi({
+                  width: WIDTH,
+                  height: HEIGHT,
+                });
                 const mesh = menuUi.addPage(({
                   home: {
                     page,
                     remoteServers,
                     localServers,
                     inputText,
-                    inputIndex,
-                    inputValue,
                     loading,
                     flags,
                     vrMode,
                   },
                   focus: {
-                    type: focusType,
-                  },
+                    keyboardFocusState,
+                  } ,
                   imgs,
-                }) => ({
-                  type: 'html',
-                  src: menuRenderer.getHomeMenuSrc({
-                    page,
-                    remoteServers,
-                    localServers,
-                    inputText,
-                    inputIndex,
-                    inputValue,
-                    loading,
-                    vrMode,
-                    focusType,
-                    flags,
-                    imgs,
-                  }),
-                  x: 0,
-                  y: 0,
-                  w: WIDTH,
-                  h: HEIGHT,
-                }), {
+                }) => {
+                  const {type: focusType = '', inputIndex = 0, inputValue = 0} = keyboardFocusState || {};
+
+                  return {
+                    type: 'html',
+                    src: menuRenderer.getHomeMenuSrc({
+                      page,
+                      remoteServers,
+                      localServers,
+                      inputText,
+                      inputIndex,
+                      inputValue,
+                      loading,
+                      vrMode,
+                      focusType,
+                      flags,
+                      imgs,
+                    }),
+                    x: 0,
+                    y: 0,
+                    w: WIDTH,
+                    h: HEIGHT,
+                  };
+                }, {
                   type: 'home',
                   state: {
                     home: homeState,
@@ -450,7 +451,6 @@ class Home {
                   width: SERVER_WIDTH,
                   height: SERVER_HEIGHT,
                 });
-
                 const mesh = serverUi.addPage(({
                   server: {
                     worldname,
@@ -485,9 +485,9 @@ class Home {
                 });
                 mesh.position.y = 0.45;
                 mesh.receiveShadow = true;
-                mesh.ui = serverUi;
 
-                serverUi.update();
+                const {page} = mesh;
+                page.update();
 
                 return mesh;
               })();
@@ -511,7 +511,9 @@ class Home {
             scene.add(serversMesh);
 
             const _updatePages = () => {
-              menuUi.update();
+              const {planeMesh} = menuMesh;
+              const {page} = planeMesh;
+              page.update();
             };
             _updatePages();
 
@@ -936,7 +938,33 @@ class Home {
 
                   return true;
                 } else if (onclick === 'createServer:focus') {
-                  focusState.type = 'createServer';
+                  const {inputText} = homeState;
+                  const {value} = menuHoverState;
+                  const valuePx = value * 600;
+                  const {index, px} = biolumi.getTextPropertiesFromCoord(inputText, mainFontSpec, valuePx); // XXX this can be folded into the keyboard engine
+                  const {hmd: {position: hmdPosition, rotation: hmdRotation}} = webvr.getStatus();
+                  const keyboardFocusState = keyboard.focus({
+                    type: 'createServer',
+                    position: hmdPosition,
+                    rotation: hmdRotation,
+                    inputText: inputText,
+                    inputIndex: index,
+                    inputValue: px,
+                    fontSpec: mainFontSpec,
+                  });
+                  focusState.keyboardFocusState = keyboardFocusState;
+
+                  keyboardFocusState.on('update', () => {
+                    const {inputText} = keyboardFocusState;
+                    homeState.inputText = inputText;
+
+                    _updatePages();
+                  });
+                  keyboardFocusState.on('blur', () => {
+                    focusState.keyboardFocusState = null;
+
+                    _updatePages();
+                  });
 
                   _updatePages();
 
@@ -1079,33 +1107,6 @@ class Home {
               }
             };
             input.on('gripup', _gripup, {
-              priority: 1,
-            });
-
-            const _keydown = e => {
-              const {type} = focusState;
-
-              if (type === 'createServer') {
-                const applySpec = biolumi.applyStateKeyEvent(homeState, mainFontSpec, e);
-
-                if (applySpec) {
-                  const {commit} = applySpec;
-
-                  if (commit) {
-                    focusState.type = '';
-                  }
-
-                  _updatePages();
-
-                  e.stopImmediatePropagation();
-                }
-              }
-            };
-            input.on('keydown', _keydown, {
-              priority: 1,
-            });
-            const _keyboarddown = _keydown;
-            input.on('keyboarddown', _keyboarddown, {
               priority: 1,
             });
 
@@ -1377,9 +1378,6 @@ class Home {
 
               input.removeListener('gripdown', _gripdown);
               input.removeListener('gripup', _gripup);
-
-              input.removeListener('keydown', _keydown);
-              input.removeListener('keyboarddown', _keyboarddown);
 
               tags.removeListener('addTag', _tagsAddTag);
               tags.removeListener('setAttribute', _tagsSetAttribute);
