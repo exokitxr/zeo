@@ -128,9 +128,6 @@ class Config {
           const statsState = {
             frame: 0,
           };
-          const focusState = {
-            type: '',
-          };
 
           const configHoverStates = {
             left: biolumi.makeMenuHoverState(),
@@ -211,13 +208,9 @@ class Config {
                         statsCheckboxValue,
                         lockedCheckboxValue,
                       },
-                      focus: {
-                        type: focusType,
-                      }
                     }) => ({
                       type: 'html',
                       src: configRenderer.getConfigPageSrc({
-                        focus: focusType === 'config',
                         resolutionValue,
                         voiceChatCheckboxValue,
                         statsCheckboxValue,
@@ -231,7 +224,6 @@ class Config {
                       type: 'config',
                       state: {
                         config: configState,
-                        focus: focusState,
                       },
                       worldWidth: WORLD_WIDTH,
                       worldHeight: WORLD_HEIGHT,
@@ -356,8 +348,6 @@ class Config {
                       const {anchor} = configHoverState;
                       const onclick = (anchor && anchor.onclick) || '';
 
-                      focusState.type = '';
-
                       if (onclick === 'config:resolution') {
                         const {value} = configHoverState;
 
@@ -403,37 +393,6 @@ class Config {
                   }
                 };
                 input.on('trigger', trigger);
-
-                const keydown = e => {
-                  const isOpen = rend.isOpen();
-                  const tab = rend.getTab();
-
-                  if (isOpen && tab === 'config') {
-                    const {type} = focusState;
-
-                    if (type === 'config') {
-                      const applySpec = biolumi.applyStateKeyEvent(configState, mainFontSpec, e);
-
-                      if (applySpec) {
-                        const {commit} = applySpec;
-                        if (commit) {
-                          focusState.type = '';
-                        }
-
-                        configUi.update();
-
-                        e.stopImmediatePropagation();
-                      }
-                    }
-                  }
-                };
-                input.on('keydown', keydown, {
-                  priority: 1,
-                });
-                const keyboarddown = keydown;
-                input.on('keyboarddown', keyboarddown, {
-                  priority: 1,
-                });
 
                 const _update = () => {
                   const _updateAnchors = () => {
