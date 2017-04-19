@@ -1379,7 +1379,7 @@ class Tags {
                         const {hmd: {position: hmdPosition, rotation: hmdRotation}} = webvr.getStatus();
                         const inputText = menuUtils.castValueValueToString(attributeValue, type);
                         const {index, px} = textProperties;
-                        return keyboard.tryFocus({
+                        return keyboard.focus({
                           type: 'attribute:' + tagId + ':' + attributeName,
                           position: hmdPosition,
                           rotation: hmdRotation,
@@ -1389,27 +1389,25 @@ class Tags {
                           fontSpec: subcontentFontSpec,
                         });
                       } else {
-                        return keyboard.tryFakeFocus({
+                        return keyboard.fakeFocus({
                           type: 'attribute:' + tagId + ':' + attributeName,
                         });
                       }
                     })();
-                    if (keyboardFocusState) {
-                      focusState.keyboardFocusState = keyboardFocusState;
+                    focusState.keyboardFocusState = keyboardFocusState;
 
-                      keyboardFocusState.on('update', () => {
-                        const {inputText} = keyboardFocusState;
+                    keyboardFocusState.on('update', () => {
+                      const {inputText} = keyboardFocusState;
 
-                        tagMesh.setAttribute(attributeName, inputText);
-                      });
-                      keyboardFocusState.on('blur', () => {
-                        focusState.keyboardFocusState = null;
-
-                        _updateAttributes();
-                      });
+                      tagMesh.setAttribute(attributeName, inputText);
+                    });
+                    keyboardFocusState.on('blur', () => {
+                      focusState.keyboardFocusState = null;
 
                       _updateAttributes();
-                    }
+                    });
+
+                    _updateAttributes();
                   } else if (action === 'set') {
                     tagsApi.emit('setAttribute', {
                       id: tagId,

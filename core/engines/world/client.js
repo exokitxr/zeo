@@ -1102,7 +1102,7 @@ class World {
                     const {inputText} = npmState;
                     const {index, px} = biolumi.getTextPropertiesFromCoord(inputText, mainFontSpec, valuePx); // XXX this can be folded into the keyboard engine
                     const {hmd: {position: hmdPosition, rotation: hmdRotation}} = webvr.getStatus();
-                    const keyboardFocusState = keyboard.tryFocus({
+                    const keyboardFocusState = keyboard.focus({
                       type: 'npm',
                       position: hmdPosition,
                       rotation: hmdRotation,

@@ -691,33 +691,32 @@ class Keyboard {
             return keyboardState.focusState;
           }
 
-          tryFocus({type, position, rotation, inputText, inputIndex, inputValue, fontSpec}) {
+          focus({type, position, rotation, inputText, inputIndex, inputValue, fontSpec}) {
             const {focusState: oldFocusState} = keyboardState;
-
-            if (!oldFocusState) {
-              const newFocusState = new KeyboardFocusState({type, inputText, inputIndex, inputValue, fontSpec});
-
-              keyboardState.focusState = newFocusState;
-
-              keyboardMesh.position.copy(
-                position.clone().add(new THREE.Vector3(0, -0.6, -0.4).applyQuaternion(rotation))
-              );
-              const euler = new THREE.Euler().setFromQuaternion(rotation, camera.rotation.order);
-              keyboardMesh.quaternion.copy(
-                new THREE.Quaternion().setFromEuler(new THREE.Euler(euler.x - Math.atan2(0.6, 0.4), euler.y, 0, camera.rotation.order))
-              );
-              keyboardMesh.visible = true;
-
-              newFocusState.on('blur', () => {
-                keyboardState.focusState = null;
-
-                keyboardMesh.visible = false;
-              });
-
-              return newFocusState;
-            } else {
-              return null;
+            if (oldFocusState) {
+              oldFocusState.blur();
             }
+
+            const newFocusState = new KeyboardFocusState({type, inputText, inputIndex, inputValue, fontSpec});
+
+            keyboardState.focusState = newFocusState;
+
+            keyboardMesh.position.copy(
+              position.clone().add(new THREE.Vector3(0, -0.6, -0.4).applyQuaternion(rotation))
+            );
+            const euler = new THREE.Euler().setFromQuaternion(rotation, camera.rotation.order);
+            keyboardMesh.quaternion.copy(
+              new THREE.Quaternion().setFromEuler(new THREE.Euler(euler.x - Math.atan2(0.6, 0.4), euler.y, 0, camera.rotation.order))
+            );
+            keyboardMesh.visible = true;
+
+            newFocusState.on('blur', () => {
+              keyboardState.focusState = null;
+
+              keyboardMesh.visible = false;
+            });
+
+            return newFocusState;
           }
 
           tryBlur() {
@@ -730,18 +729,17 @@ class Keyboard {
             }
           }
 
-          tryFakeFocus({type}) {
+          fakeFocus({type}) {
             const {focusState: oldFocusState} = keyboardState;
-
-            if (!oldFocusState) {
-              const newFocusState = new FakeKeyboardFocusState({type});
-
-              keyboardState.focusState = newFocusState;
-
-              return newFocusState;
-            } else {
-              return null;
+            if (oldFocusState) {
+              oldFocusState.blur();
             }
+
+            const newFocusState = new FakeKeyboardFocusState({type});
+
+            keyboardState.focusState = newFocusState;
+
+            return newFocusState;
           }
         }
         const keyboardApi = new KeyboardApi();
