@@ -139,8 +139,6 @@ class Rend {
               const object = new THREE.Object3D();
               object.position.set(0, DEFAULT_USER_HEIGHT, -1.5);
               object.visible = menuState.open;
-              object.menuUi = menuUi;
-              object.navbarUi = navbarUi;
 
               const statusMesh = (() => {
                 const mesh = menuUi.addPage(({
@@ -572,8 +570,9 @@ class Rend {
             const menuStatusJsonString = JSON.stringify(statusState);
 
             if (menuStatusJsonString !== lastMenuStatusJsonString) {
-              const {menuUi} = menuMesh;
-              menuUi.update();
+              const {statusMesh} = menuMesh;
+              const {page} = statusMesh;
+              page.update();
 
               lastMenuStatusJsonString = menuStatusJsonString;
             }
@@ -581,8 +580,9 @@ class Rend {
         };
         const _updateNavbarPage = () => {
           if (menuMesh) {
-            const {navbarUi} = menuMesh;
-            navbarUi.update()
+            const {navbarMesh} = menuMesh;
+            const {page} = navbarMesh;
+            page.update();
           };
         };
         const _updatePages = () => {

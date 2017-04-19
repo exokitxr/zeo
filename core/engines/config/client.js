@@ -190,15 +190,6 @@ class Config {
               serverConfigSpec,
             ]) => {
               if (live) {
-                const configUi = biolumi.makeUi({
-                  width: WIDTH,
-                  height: HEIGHT,
-                });
-                const statsUi = biolumi.makeUi({
-                  width: STATS_WIDTH,
-                  height: STATS_HEIGHT,
-                });
-
                 configState.resolutionValue = browserConfigSpec.resolution;
                 configState.voiceChatCheckboxValue = browserConfigSpec.voiceChat;
                 configState.statsCheckboxValue = browserConfigSpec.stats;
@@ -209,6 +200,10 @@ class Config {
                   object.visible = false;
 
                   const planeMesh = (() => {
+                    const configUi = biolumi.makeUi({
+                      width: WIDTH,
+                      height: HEIGHT,
+                    });
                     const mesh = configUi.addPage(({
                       config: {
                         resolutionValue,
@@ -243,6 +238,9 @@ class Config {
                     });
                     mesh.receiveShadow = true;
 
+                    const {page} = mesh;
+                    page.initialUpdate();
+
                     return mesh;
                   })();
                   object.add(planeMesh);
@@ -259,6 +257,10 @@ class Config {
                   object.visible = configState.statsCheckboxValue;
 
                   const planeMesh = (() => {
+                    const statsUi = biolumi.makeUi({
+                      width: STATS_WIDTH,
+                      height: STATS_HEIGHT,
+                    });
                     const mesh = statsUi.addPage(({
                       config: {
                         statsCheckboxValue,
@@ -317,17 +319,19 @@ class Config {
                   if (newFrame !== oldFrame) {
                     statsState.frame = newFrame;
 
-                    statsUi.update();
+                    const {planeMesh} = statsMesh;
+                    const {page} = planeMesh;
+                    page.update();
                   }
                 };
 
                 const _updatePages = () => {
-                  configUi.update();
-                  statsUi.update();
+                  const {planeMesh} = configMesh;
+                  const {page} = planeMesh;
+                  page.update();
                 };
-                _updatePages();
 
-               const _requestLogout = () => new Promise((accept, reject) => {
+                const _requestLogout = () => new Promise((accept, reject) => {
                   bootstrap.requestLogout()
                     .then(() => {
                       accept();
@@ -362,7 +366,7 @@ class Config {
                         _saveBrowserConfig();
                         configApi.updateConfig();
 
-                        configUi.update();
+                        _updatePages();
                       } else if (onclick === 'config:voiceChat') {
                         const {voiceChatCheckboxValue} = configState;
 
@@ -371,7 +375,7 @@ class Config {
                         _saveBrowserConfig();
                         configApi.updateConfig();
 
-                        configUi.update();
+                        _updatePages();
                       } else if (onclick === 'config:stats') {
                         const {statsCheckboxValue: oldStatsCheckboxValue} = configState;
 
@@ -382,7 +386,7 @@ class Config {
                         _saveBrowserConfig();
                         configApi.updateConfig();
 
-                        configUi.update();
+                        _updatePages();
                       } else if (onclick === 'config:lock') {
                         const {lockedCheckboxValue} = configState;
 
@@ -391,9 +395,9 @@ class Config {
                         _saveServerConfig();
                         configApi.updateConfig();
 
-                        configUi.update();
+                        _updatePages();
                       } else {
-                        configUi.update();
+                        _updatePages();
                       }
                     }
                   }

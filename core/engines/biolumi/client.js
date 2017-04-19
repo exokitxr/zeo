@@ -180,6 +180,7 @@ class Biolumi {
               })();
               this.material = material;
               this.layer = null;
+              this.rendered = false;
             }
 
             update() {
@@ -393,6 +394,16 @@ class Biolumi {
               uiWorker.add(_requestTexture);
               uiWorker.add(_requestLayer);
             }
+
+            initialUpdate() {
+              const {rendered} = this;
+
+              if (!rendered) {
+                this.update();
+
+                this.rendered = true;
+              }
+            }
           }
 
           class Layer {
@@ -507,7 +518,6 @@ class Biolumi {
 
               if (!page) {
                 const page = new Page(this, spec, type, state);
-                page.update();
                 this.page = page;
 
                 const planeMesh = (() => {
@@ -530,13 +540,6 @@ class Biolumi {
                 return planeMesh;
               } else {
                 return null;
-              }
-            }
-
-            update() {
-              const {page} = this;
-              if (page) {
-                page.update();
               }
             }
           }

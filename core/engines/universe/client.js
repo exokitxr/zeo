@@ -163,14 +163,10 @@ class Universe {
             mapChunks: mapState.mapChunks.map(_renderMapChunk),
           };
 
-          const backgroundUi = biolumi.makeUi({
-            width: WIDTH,
-            height: HEIGHT,
-          });
-          const foregroundUi = biolumi.makeUi({
+          /* const foregroundUi = biolumi.makeUi({
             width: FOREGROUND_WIDTH,
             height: FOREGROUND_HEIGHT,
-          });
+          }); */
 
           const menuMesh = (() => {
             const object = new THREE.Object3D();
@@ -180,6 +176,10 @@ class Universe {
               const object = new THREE.Object3D();
 
               const planeMesh = (() => {
+                const backgroundUi = biolumi.makeUi({
+                  width: WIDTH,
+                  height: HEIGHT,
+                });
                 const mesh = backgroundUi.addPage(({backgroundImage}) => ({
                   type: 'html',
                   src: universeRenderer.getBackgroundImageSrc(backgroundImage),
@@ -282,7 +282,11 @@ class Universe {
           scene.add(foregroundDotMeshes.right);
 
           const _updatePages = () => {
-            backgroundUi.update();
+            const {backgroundMesh} = menuMesh;
+            const {planeMesh} = backgroundMesh;
+            const {page} = planeMesh;
+            page.update();
+
             // foregroundUi.update();
           };
           _updatePages();

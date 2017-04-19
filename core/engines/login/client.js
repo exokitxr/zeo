@@ -186,7 +186,9 @@ class Login {
           scene.add(menuBoxMeshes.right);
 
           const _updatePages = () => {
-            menuUi.update();
+            const {planeMesh} = menuMesh;
+            const {page} = planeMesh;
+            page.update();
           };
           _updatePages();
 

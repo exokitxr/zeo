@@ -688,11 +688,6 @@ class World {
             right: biolumi.makeMenuHoverState(),
           };
 
-          const worldUi = biolumi.makeUi({
-            width: WIDTH,
-            height: HEIGHT,
-          });
-
           const worldMesh = (() => {
             const result = new THREE.Object3D();
             result.visible = false;
@@ -701,6 +696,10 @@ class World {
               const object = new THREE.Object3D();
 
               const planeMesh = (() => {
+                const worldUi = biolumi.makeUi({
+                  width: WIDTH,
+                  height: HEIGHT,
+                });
                 const mesh = worldUi.addPage(({
                   npm: {
                     loading,
@@ -830,7 +829,10 @@ class World {
           scene.add(menuBoxMeshes.right);
 
           const _updatePages = () => {
-            worldUi.update();
+            const {menuMesh} = worldMesh;
+            const {planeMesh} = menuMesh;
+            const {page} = planeMesh;
+            page.update();
           };
           _updatePages();
 
