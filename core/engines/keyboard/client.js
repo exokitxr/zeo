@@ -1,20 +1,26 @@
 import {
   KEYBOARD_WIDTH,
   KEYBOARD_HEIGHT,
-
   KEYBOARD_WORLD_WIDTH,
   KEYBOARD_WORLD_HEIGHT,
   KEYBOARD_WORLD_DEPTH,
+
+  KEYBOARD_HEADER_WIDTH,
+  KEYBOARD_HEADER_HEIGHT,
+  KEYBOARD_HEADER_WORLD_WIDTH,
+  KEYBOARD_HEADER_WORLD_HEIGHT,
 
   DEFAULT_USER_HEIGHT,
 } from './lib/constants/keyboard';
 import keyboardImgString from './lib/img/keyboard';
 import keyboardHighlightImgString from './lib/img/keyboard-highlight';
 import dotsImgString from './lib/img/dots';
+import dotsHighlightImgString from './lib/img/dots-highlight';
 
 const keyboardImgSrc = 'data:image/svg+xml;base64,' + btoa(keyboardImgString);
 const keyboardHighlightImgSrc = 'data:image/svg+xml;base64,' + btoa(keyboardHighlightImgString);
 const dotsImgSrc = 'data:image/svg+xml;base64,' + btoa(dotsImgString);
+const dotsHighlightImgSrc = 'data:image/svg+xml;base64,' + btoa(dotsHighlightImgString);
 
 const SIDES = ['left', 'right'];
 
@@ -67,6 +73,7 @@ class Keyboard {
       _requestImage(keyboardImgSrc),
       _requestImageCanvas(keyboardHighlightImgSrc),
       _requestImage(dotsImgSrc),
+      _requestImage(dotsHighlightImgSrc),
     ]).then(([
       [
         input,
@@ -79,6 +86,7 @@ class Keyboard {
       keyboardImg,
       keyboardHighlightCanvas,
       dotImg,
+      dotHighlightImg,
     ]) => {
       if (live) {
         const {THREE, scene} = three;
@@ -130,9 +138,7 @@ class Keyboard {
             mesh.rotation.x = -Math.PI * (3 / 8);
 
             const headerMesh = (() => {
-              const worldWidth = KEYBOARD_WORLD_WIDTH;
-              const worldHeight = KEYBOARD_WORLD_WIDTH * (1 / 24);
-              const geometry = new THREE.PlaneBufferGeometry(worldWidth, worldHeight);
+              const geometry = new THREE.PlaneBufferGeometry(KEYBOARD_HEADER_WORLD_WIDTH, KEYBOARD_HEADER_WORLD_HEIGHT);
               const material = (() => {
                 const texture = new THREE.Texture(
                   dotImg,
@@ -155,7 +161,7 @@ class Keyboard {
               })();
 
               const mesh = new THREE.Mesh(geometry, material);
-              mesh.position.y = (KEYBOARD_WORLD_HEIGHT / 2) + (worldHeight / 2) + 0.0075;
+              mesh.position.y = (KEYBOARD_WORLD_HEIGHT / 2) + (KEYBOARD_HEADER_WORLD_HEIGHT / 2) + 0.0075;
               return mesh;
             })();
             mesh.add(headerMesh);
@@ -176,10 +182,16 @@ class Keyboard {
 
           const keySpecs = (() => {
             class KeySpec {
-              constructor(key, rect, imageData) {
+              constructor(key, rect, imageData, width, height, worldWidth, worldHeight, highlightOffset, highlightScale) {
                 this.key = key;
                 this.rect = rect;
                 this.imageData = imageData;
+                this.width = width;
+                this.height = height;
+                this.worldWidth = worldWidth;
+                this.worldHeight = worldHeight;
+                this.highlightOffset = highlightOffset;
+                this.highlightScale = highlightScale;
               }
             }
 
@@ -190,7 +202,7 @@ class Keyboard {
             document.body.appendChild(div);
 
             const keyEls = div.querySelectorAll(':scope > svg > g[key]');
-            const result = Array(keyEls.length);
+            const result = Array(keyEls.length + 1);
             for (let i = 0; i < keyEls.length; i++) {
               const keyEl = keyEls[i];
               const key = keyEl.getAttribute('key');
@@ -214,11 +226,32 @@ class Keyboard {
                 return imageData;
               })();
 
-              const keySpec = new KeySpec(key, rect, imageData);
+              const keySpec = new KeySpec(key, rect, imageData, KEYBOARD_WIDTH, KEYBOARD_HEIGHT, KEYBOARD_WORLD_WIDTH, KEYBOARD_WORLD_HEIGHT, {x: 0, y: 0}, 1.5);
               result[i] = keySpec;
             }
-
             document.body.removeChild(div);
+
+            result[keyEls.length] = new KeySpec(
+              'header',
+              {
+                top: -KEYBOARD_HEADER_HEIGHT,
+                bottom: 0,
+                left: 0,
+                right: KEYBOARD_HEADER_WIDTH,
+                width: KEYBOARD_HEADER_WIDTH,
+                height: KEYBOARD_HEADER_HEIGHT,
+              },
+              dotHighlightImg,
+              KEYBOARD_HEADER_WIDTH,
+              KEYBOARD_HEADER_HEIGHT,
+              KEYBOARD_HEADER_WORLD_WIDTH,
+              KEYBOARD_HEADER_WORLD_HEIGHT,
+              {
+                x: 0,
+                y: 0.0075 * 2,
+              },
+              1,
+            );
 
             return result;
           })();
@@ -407,21 +440,40 @@ class Keyboard {
 
                     const {key} = matchingKeySpec;
                     if (key !== keyMesh.key) {
-                      const {rect: {top, bottom, left, right, width, height}, imageData} = matchingKeySpec;
+                      const {
+                        rect: {
+                          top,
+                          bottom,
+                          left,
+                          right,
+                          width,
+                          height,
+                        },
+                        imageData,
+                        width: fullWidth,
+                        height: fullHeight,
+                        worldWidth,
+                        worldHeight,
+                        highlightOffset: {
+                          x: highlightOffsetX,
+                          y: highlightOffsetY,
+                        },
+                        highlightScale,
+                      } = matchingKeySpec;
                       const {subMesh: {material: {map: texture}}} = keyMesh;
                       texture.image = imageData;
                       texture.needsUpdate = true;
 
                       keyMesh.position.copy(
                         keyboardTopLeftPoint.clone()
-                          .add(xAxis.clone().multiplyScalar((left + (width / 2)) / KEYBOARD_WIDTH * KEYBOARD_WORLD_WIDTH))
-                          .add(negativeYAxis.clone().multiplyScalar((top + (height / 2)) / KEYBOARD_HEIGHT * KEYBOARD_WORLD_HEIGHT))
+                          .add(xAxis.clone().multiplyScalar((left + (width / 2)) / fullWidth * (worldWidth + highlightOffsetX)))
+                          .add(negativeYAxis.clone().multiplyScalar((top + (height / 2)) / fullHeight * (worldHeight + highlightOffsetY)))
                           .add(new THREE.Vector3(0, 0, 0.01).applyQuaternion(keyboardRotation))
                       );
                       keyMesh.quaternion.copy(keyboardRotation);
                       keyMesh.scale.set(
-                        width / KEYBOARD_WIDTH * KEYBOARD_WORLD_WIDTH * 1.5,
-                        height / KEYBOARD_HEIGHT * KEYBOARD_WORLD_HEIGHT * 1.5,
+                        width / fullWidth * worldWidth * highlightScale,
+                        height / fullHeight * worldHeight * highlightScale,
                         1
                       );
 
