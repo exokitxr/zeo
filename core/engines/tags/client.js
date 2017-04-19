@@ -2753,8 +2753,10 @@ class Tags {
                 object.planeOpenMesh = planeOpenMesh;
 
                 item.on('update', () => {
-                  const {page: openPage} = planeOpenMesh;
-                  openPage.update();
+                  if (planeOpenMesh.visible) {
+                    const {page: openPage} = planeOpenMesh;
+                    openPage.update();
+                  }
                 });
               } else if (itemSpec.type === 'module') {
                 const planeMesh = _addUiManagerPage(uiStaticManager);
