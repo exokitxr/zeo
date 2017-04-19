@@ -571,22 +571,22 @@ class Tags {
                             componentElement.entityAttributeValueChangedCallback(entityElement, attributeName, oldAttributeValue, newAttributeValue);
                           }
                         }
-
-                        const {attributes: entityAttributes} = entityItem;
-                        if (newValueString !== null) {
-                          entityAttributes[attributeName] = {
-                            value: newValueJson,
-                          };
-                        } else {
-                          delete entityAttributes[attributeName];
-                        }
                       }
                     }
-
-                    const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === entityId);
-                    const {attributesMesh} = tagMesh;
-                    attributesMesh.update();
                   }
+
+                  const {attributes: entityAttributes} = entityItem;
+                  if (newValueString !== null) {
+                    entityAttributes[attributeName] = {
+                      value: newValueJson,
+                    };
+                  } else {
+                    delete entityAttributes[attributeName];
+                  }
+
+                  const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === entityId);
+                  const {attributesMesh} = tagMesh;
+                  attributesMesh.update();
                 }
               }
             }
@@ -1200,7 +1200,7 @@ class Tags {
                   const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
                   const {item} = tagMesh;
                   const {attributes} = item;
-                  const newAtrributeName = (() => {
+                  const newAttributeName = (() => {
                     for (let i = 1;; i++) {
                       const attributeName = 'attribute-' + i;
                       if (!(attributeName in attributes)) {
@@ -1213,7 +1213,7 @@ class Tags {
 
                   tagsApi.emit('setAttribute', {
                     id: id,
-                    name: newAtrributeName,
+                    name: newAttributeName,
                     value: 'value',
                   });
 
