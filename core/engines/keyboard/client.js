@@ -453,7 +453,11 @@ class Keyboard {
                   const {position: controllerPosition, rotation: controllerRotation} = gamepad;
                   const controllerEnd = controllerPosition.clone()
                     .add(
-                      new THREE.Vector3(0, -(KEYBOARD_WORLD_HEIGHT + KEYBOARD_HEADER_WORLD_HEIGHT) / 2, -1).applyQuaternion(controllerRotation)
+                      new THREE.Vector3(
+                        0,
+                        -(KEYBOARD_WORLD_HEIGHT + KEYBOARD_HEADER_WORLD_HEIGHT) / 2,
+                        -Math.sqrt(Math.pow(0.6, 2) + Math.pow(0.4, 2))
+                      ).applyQuaternion(controllerRotation)
                     );
                   keyboardMesh.position.copy(controllerEnd);
                   keyboardMesh.quaternion.copy(controllerRotation);
@@ -676,9 +680,12 @@ class Keyboard {
               keyboardState.focusState = newFocusState;
 
               keyboardMesh.position.copy(
-                position.clone().add(new THREE.Vector3(0, -0.6, -0.4).applyQuaternion(rotation)),
+                position.clone().add(new THREE.Vector3(0, -0.6, -0.4).applyQuaternion(rotation))
               );
-              keyboardMesh.rotation.x = rotation.clone().premultiply(new THREE.Quaternion().setFromEuler(-Math.PI * (3 / 8), 0, 0, camera.rotation.order));
+              const euler = new THREE.Euler().setFromQuaternion(rotation, camera.rotation.order);
+              keyboardMesh.quaternion.copy(
+                new THREE.Quaternion().setFromEuler(new THREE.Euler(euler.x - Math.atan2(0.6, 0.4), 0, 0, camera.rotation.order))
+              );
               keyboardMesh.visible = true;
 
               newFocusState.once('blur', () => {
