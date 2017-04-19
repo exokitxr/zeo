@@ -2646,7 +2646,7 @@ class Tags {
               }
             }
 
-            makeTag(itemSpec) {
+            makeTag(itemSpec, {initialUpdate = true} = {}) {
               const object = new THREE.Object3D();
 
               const item = new Item(
@@ -2741,8 +2741,10 @@ class Tags {
 
               if (itemSpec.type === 'file') { 
                 const planeMesh = _addUiManagerPage(uiManager);
-                const {page} = planeMesh;
-                page.initialUpdate();
+                if (initialUpdate) {
+                  const {page} = planeMesh;
+                  page.initialUpdate();
+                }
                 planeMesh.visible = !item.open;
                 object.add(planeMesh);
                 object.planeMesh = planeMesh;
@@ -2762,8 +2764,10 @@ class Tags {
                 });
               } else if (itemSpec.type === 'module') {
                 const planeMesh = _addUiManagerPage(uiStaticManager);
-                const {page} = planeMesh;
-                page.initialUpdate();
+                if (initialUpdate) {
+                  const {page} = planeMesh;
+                  page.initialUpdate();
+                }
                 planeMesh.visible = !item.details;
                 object.add(planeMesh);
                 object.planeMesh = planeMesh;
@@ -2784,8 +2788,10 @@ class Tags {
                 object.planeDetailsMesh = planeDetailsMesh;
               } else {
                 const planeMesh = _addUiManagerPage(uiStaticManager);
-                const {page} = planeMesh;
-                page.initialUpdate();
+                if (initialUpdate) {
+                  const {page} = planeMesh;
+                  page.initialUpdate();
+                }
                 object.add(planeMesh);
                 object.planeMesh = planeMesh;
               }

@@ -52,6 +52,11 @@ class Biolumi {
           this.work();
         }
 
+        remove(thread) {
+          const {threads} = this;
+          threads.splice(thread);
+        }
+
         work(next) {
           const {frameTime, threads} = this;
 
@@ -387,21 +392,35 @@ class Biolumi {
 
                 return Promise.resolve();
               };
-              uiWorker.add(_requestLayerSpec);
-              uiWorker.add(_requestHtmlSrc);
-              uiWorker.add(_requestInnerSrc);
-              uiWorker.add(_requestImage);
-              uiWorker.add(_requestTexture);
-              uiWorker.add(_requestLayer);
+              const works = [
+                _requestLayerSpec,
+                _requestHtmlSrc,
+                _requestInnerSrc,
+                _requestImage,
+                _requestTexture,
+                _requestLayer,
+              ];
+              works.forEach(work => {
+                uiWorker.add(work);
+              });
+
+              const _cancel = () => {
+                works.forEach(work => {
+                  remove.remove(work);
+                });
+              };
+              return {
+                cancel: _cancel,
+              };
             }
 
             initialUpdate() {
-              const {rendered} = this;
-
-              if (!rendered) {
-                this.update();
-
+              if (!this.rendered) {
                 this.rendered = true;
+
+                return this.update();
+              } else {
+                return null;
               }
             }
           }

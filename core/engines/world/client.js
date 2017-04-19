@@ -644,7 +644,9 @@ class World {
                     tagMesh.item.name === itemSpec.name
                   );
 
-                const npmTagMesh = tags.makeTag(itemSpec);
+                const npmTagMesh = tags.makeTag(itemSpec, {
+                  initialUpdate: false,
+                });
                 npmTagMesh.planeMesh.scale.set(NPM_TAG_MESH_SCALE, NPM_TAG_MESH_SCALE, 1);
 
                 return npmTagMesh;
@@ -1028,6 +1030,10 @@ class World {
               );
               newTagMesh.visible = true;
               newTagMesh.initialVisible = true;
+
+              const {planeMesh: newTagMeshPlaneMesh} = newTagMesh;
+              const {page: newTagMeshPage} = newTagMeshPlaneMesh;
+              newTagMeshPage.initialUpdate();
 
               newTagMeshes.push(newTagMesh);
             }
