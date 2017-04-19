@@ -400,17 +400,21 @@ class Keyboard {
                 if (intersectionPoint) {
                   const matchingKeySpec = (() => {
                     const intersectionRay = intersectionPoint.clone().sub(keyboardTopLeftPoint);
-                    const x = intersectionRay.clone().projectOnVector(xAxis).dot(xAxis) / KEYBOARD_WORLD_WIDTH * KEYBOARD_WIDTH;
-                    const y = intersectionRay.clone().projectOnVector(negativeYAxis).dot(negativeYAxis) / KEYBOARD_WORLD_HEIGHT * KEYBOARD_HEIGHT;
+                    const ax = intersectionRay.clone().projectOnVector(xAxis).dot(xAxis);
+                    const ay = intersectionRay.clone().projectOnVector(negativeYAxis).dot(negativeYAxis);
                     const {keySpecs} = keyboardMesh;
                     const matchingKeySpecs = keySpecs.filter(keySpec => {
-                      const {rect: {top, bottom, left, right}} = keySpec;
+                      const {rect: {top, bottom, left, right}, width, height, worldWidth, worldHeight} = keySpec;
+                      const x = ax / worldWidth * width;
+                      const y = ay / worldHeight * height;
                       return x >= left && x < right && y >= top && y < bottom;
                     });
 
                     if (matchingKeySpecs.length > 0) {
                       return matchingKeySpecs[0];
                     } else {
+                      const x = ax / KEYBOARD_WORLD_WIDTH * KEYBOARD_WIDTH;
+                      const y = ay / KEYBOARD_WORLD_HEIGHT * KEYBOARD_HEIGHT;
                       if (x >= 0 && x < KEYBOARD_WIDTH && y >= 0 && y < KEYBOARD_HEIGHT) {
                         const intersectionPointVector = new THREE.Vector2(x, y);
                         const keySpecDistanceSpecs = keySpecs.map(keySpec => {
