@@ -287,7 +287,7 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
           return `\
             <a style="display: flex; height: 40px; margin: 20px; padding: 5px; border: 2px solid #333; font-size: 20px; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="attribute:${id}:${name}:focus" onmousedown="attribute:${id}:${name}:focus">
               <div style="text-overflow: ellipsis; flex-grow: 1; overflow: hidden;">${focusValue}</div>
-              <div style="display: flex; padding: 0 10px; font-size: 16px; justify-content: center;">${unescape(encodeURIComponent('▼'))}</div>
+              <div style="display: flex; padding: 0 10px; font-size: 16px; justify-content: center;">▼</div>
             </a>
           `;
         } else {
