@@ -684,7 +684,7 @@ class Keyboard {
               );
               const euler = new THREE.Euler().setFromQuaternion(rotation, camera.rotation.order);
               keyboardMesh.quaternion.copy(
-                new THREE.Quaternion().setFromEuler(new THREE.Euler(euler.x - Math.atan2(0.6, 0.4), 0, 0, camera.rotation.order))
+                new THREE.Quaternion().setFromEuler(new THREE.Euler(euler.x - Math.atan2(0.6, 0.4), euler.y, 0, camera.rotation.order))
               );
               keyboardMesh.visible = true;
 
