@@ -635,7 +635,7 @@ class Biolumi {
               return this.hoverStates[side];
             }
 
-            update({pose}) {
+            update({pose, controllerMeshes}) {
               const {gamepads} = pose;
               const {pages, hoverStates, dotMeshes, boxMeshes} = this;
 
@@ -647,6 +647,8 @@ class Biolumi {
                   const hoverState = hoverStates[side];
                   const dotMesh = dotMeshes[side];
                   const boxMesh = boxMeshes[side];
+                  const controllerMesh = controllerMeshes[side];
+                  const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation, controllerScale);
 
                   const objects = pages.map(page => {
                     const {mesh} = page;
@@ -671,7 +673,6 @@ class Biolumi {
                   const intersectionSpecs = objects.map(object => {
                     const {matrixObject, worldWidth, worldHeight, worldDepth} = object;
                     const {position, rotation, scale} = matrixObject;
-                    const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation, controllerScale);
 
                     const menuBoxTarget = geometryUtils.makeBoxTarget(
                       position,
@@ -807,10 +808,12 @@ class Biolumi {
                     dotMesh.position.copy(intersectionPoint);
                     dotMesh.quaternion.copy(rotation);
                     // dotMesh.material.size = pointsHighlightMaterial.size / ((controllerScale.x + controllerScale.y + controllerScale.z) / 3);
-
                     if (!dotMesh.visible) {
                       dotMesh.visible = true;
                     }
+
+                    const {rayMesh} = controllerMesh;
+                    rayMesh.scale.z = intersectionPoint.distanceTo(controllerLine.start);
                   } else {
                     hoverState.intersectionPoint = null;
                     hoverState.page = null;
@@ -823,6 +826,9 @@ class Biolumi {
                     if (dotMesh.visible) {
                       dotMesh.visible = false;
                     }
+
+                    const {rayMesh} = controllerMesh;
+                    rayMesh.scale.z = controllerLine.distance();
                   }
                 }
               });

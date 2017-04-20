@@ -105,6 +105,7 @@ class Rend {
         const auxObjects = {
           tagMeshes: null,
           tagsLinesMesh: null,
+          controllerMeshes: null,
         };
 
         const menuState = {
@@ -440,6 +441,7 @@ class Rend {
               const _updateUiTracker = () => {
                 uiTracker.update({
                   pose: webvr.getStatus(),
+                  controllerMeshes: auxObjects.controllerMeshes,
                 });
               };
 

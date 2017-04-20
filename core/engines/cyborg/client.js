@@ -234,9 +234,9 @@ class Cyborg {
                 object.tip = tip; */
 
                 const rayMesh = (() => {
-                  const geometry = new THREE.CylinderBufferGeometry(0.001, 0.001, 15, 32, 1)
+                  const geometry = new THREE.CylinderBufferGeometry(0.001, 0.001, 1, 32, 1)
                     .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
-                    .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -15 / 2));
+                    .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -0.5));
                   const material = new THREE.MeshBasicMaterial({
                     // color: 0x2196F3,
                     color: 0x44c2ff,
@@ -246,6 +246,7 @@ class Cyborg {
                   return mesh;
                 })();
                 object.add(rayMesh);
+                object.rayMesh = rayMesh;
 
                 const buttonSolidMaterial = new THREE.MeshPhongMaterial({
                   color: BUTTON_COLOR_HIGHLIGHT,
@@ -365,6 +366,12 @@ class Cyborg {
             const {mesh: controllerMesh} = controller;
             camera.parent.add(controllerMesh);
           });
+
+          const controllerMeshes = {
+            left: controllers.left.mesh,
+            right: controllers.right.mesh,
+          };
+          rend.registerAuxObject('controllerMeshes', controllerMeshes);
 
           const _getPlayer = () => player;
           const _getHmd = () => hmd;
