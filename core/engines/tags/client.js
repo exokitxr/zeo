@@ -2767,6 +2767,7 @@ class Tags {
                           newAttributeMesh.receiveShadow = true;
 
                           const {page} = newAttributeMesh;
+                          rend.addPage(page);
                           page.update();
 
                           // used by trigger handler lookups
