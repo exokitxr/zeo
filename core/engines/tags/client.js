@@ -2582,6 +2582,12 @@ class Tags {
                 const {page} = mesh;
                 rend.addPage(page);
 
+                mesh.destroy = (destroy => function() {
+                  destroy.apply(this, arguments);
+
+                  rend.removePage(page);
+                })(mesh.destroy);
+
                 return mesh;
               };
 
@@ -2707,8 +2713,7 @@ class Tags {
                         if (!attribute) {
                           attributesMesh.remove(attributeMesh);
 
-                          const {page} = attributeMesh;
-                          rend.removePage(page);
+                          attributeMesh.destroy();
                         } else {
                           index[attributeName] = attributeMesh;
                         }
@@ -2770,7 +2775,6 @@ class Tags {
                           newAttributeMesh.receiveShadow = true;
 
                           const {page} = newAttributeMesh;
-                          rend.addPage(page);
                           page.update();
 
                           // used by trigger handler lookups
@@ -2786,6 +2790,15 @@ class Tags {
                       })();
                       mesh.position.x = WORLD_WIDTH;
                       mesh.position.y = (attributesArray.length * WORLD_HEIGHT / 2) - (0.5 * WORLD_HEIGHT) - (i * WORLD_HEIGHT);
+
+                      const {page} = mesh;
+                      rend.addPage(page);
+
+                      mesh.destroy = (destroy => function() {
+                        destroy.apply(this, arguments);
+
+                        rend.removePage(page);
+                      })(mesh.destroy);
 
                       return mesh;
                     });
