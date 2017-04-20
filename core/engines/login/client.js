@@ -121,7 +121,7 @@ class Login {
                   keyboardFocusState,
                 }
               }) => {
-                const {type: focusType = '', inputValue = 0} = keyboardFocusState || {};
+                const {type: focusType = '', inputIndex = 0, inputValue = 0} = keyboardFocusState || {};
 
                 return {
                   type: 'html',
