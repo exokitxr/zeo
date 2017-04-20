@@ -718,6 +718,11 @@ class Keyboard {
               keyboardState.focusState = null;
 
               keyboardMesh.visible = false;
+
+              SIDES.forEach(side => {
+                const dotMesh = dotMeshes[side];
+                dotMesh.visible = false;
+              });
             });
 
             return newFocusState;
