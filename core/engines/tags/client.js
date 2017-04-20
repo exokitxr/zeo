@@ -662,16 +662,12 @@ class Tags {
             color: [1, 1, 1, 1],
           });
 
-          const pointerStates = {
-            left: biolumi.makeMenuHoverState(),
-            right: biolumi.makeMenuHoverState(),
-          };
-          const _makeHoverState = () => ({
+          const _makeGrabHoverState = () => ({
             tagMesh: null,
           });
-          const hoverStates = {
-            left: _makeHoverState(),
-            right: _makeHoverState(),
+          const grabHoverStates = {
+            left: _makeGrabHoverState(),
+            right: _makeGrabHoverState(),
           };
 
           const dotMeshes = {
@@ -1024,8 +1020,8 @@ class Tags {
             const {side} = e;
 
             const _doClickDetails = () => {
-              const pointerState = pointerStates[side];
-              const {intersectionPoint} = pointerState;
+              const hoverState = rend.getHoverState(side);
+              const {intersectionPoint} = hoverState;
 
               if (intersectionPoint) {
                 const {gamepads} = webvr.getStatus();
@@ -1035,7 +1031,7 @@ class Tags {
                   const {buttons: {grip: {pressed: gripPressed}}} = gamepad;
 
                   if (!gripPressed) {
-                    const {anchor} = pointerState;
+                    const {anchor} = hoverState;
                     const onclick = (anchor && anchor.onclick) || '';
 
                     let match;
@@ -1098,11 +1094,11 @@ class Tags {
                 const {buttons: {grip: {pressed: gripPressed}}} = gamepad;
 
                 if (gripPressed) {
-                  const pointerState = pointerStates[side];
-                  const {intersectionPoint} = pointerState;
+                  const hoverState = rend.getHoverState(side);
+                  const {intersectionPoint} = hoverState;
 
                   if (intersectionPoint) {
-                    const {anchor} = pointerState;
+                    const {anchor} = hoverState;
                     const onclick = (anchor && anchor.onclick) || '';
 
                     let match;
@@ -1146,11 +1142,11 @@ class Tags {
                 const {buttons: {grip: {pressed: gripPressed}}} = gamepad;
 
                 if (gripPressed) {
-                  const pointerState = pointerStates[side];
-                  const {intersectionPoint} = pointerState;
+                  const hoverState = rend.getHoverState(side);
+                  const {intersectionPoint} = hoverState;
 
                   if (intersectionPoint) {
-                    const {metadata} = pointerState;
+                    const {metadata} = hoverState;
                     const {type} = metadata;
 
                     if (type === 'module' || type === 'entity' || type === 'file') {
@@ -1186,11 +1182,11 @@ class Tags {
               }
             };
             const _doClickAux = () => {
-              const pointerState = pointerStates[side];
-              const {intersectionPoint} = pointerState;
+              const hoverState = rend.getHoverState(side);
+              const {intersectionPoint} = hoverState;
 
               if (intersectionPoint) {
-                const {anchor} = pointerState;
+                const {anchor} = hoverState;
                 const onclick = (anchor && anchor.onclick) || '';
 
                 let match;
@@ -1278,7 +1274,7 @@ class Tags {
 
                     item.getMedia()
                       .then(({media}) => {
-                        const {value} = pointerState;
+                        const {value} = hoverState;
 
                         tagsApi.emit('seek', {
                           id: id,
@@ -1324,11 +1320,11 @@ class Tags {
               }
             };
             const _doClickAttribute = () => {
-              const pointerState = pointerStates[side];
-              const {intersectionPoint} = pointerState;
+              const hoverState = rend.getHoverState(side);
+              const {intersectionPoint} = hoverState;
 
               if (intersectionPoint) {
-                const {anchor} = pointerState;
+                const {anchor} = hoverState;
                 const onclick = (anchor && anchor.onclick) || '';
 
                 let match;
@@ -1357,7 +1353,7 @@ class Tags {
 
                     keyboard.tryBlur();
                   } else if (action === 'focus') {
-                    const {value: hoverValue} = pointerState;
+                    const {value: hoverValue} = hoverState;
                     const {type} = _getAttributeSpec(attributeName);
 
                     const textProperties = (() => {
@@ -1421,7 +1417,7 @@ class Tags {
 
                     if (type === 'number') {
                       const newValue = (() => {
-                        const {value} = pointerState;
+                        const {value} = hoverState;
                         const {min, max, step} = _getAttributeSpec(attributeName);
 
                         let n = min + (value * (max - min));
@@ -1440,7 +1436,7 @@ class Tags {
                       keyboard.tryBlur();
                     } else if (type ==='vector') {
                       const newKeyValue = (() => {
-                        const {value} = pointerState;
+                        const {value} = hoverState;
                         const {min, max, step} = _getAttributeSpec(attributeName);
 
                         let n = min + (value * (max - min));
@@ -1483,8 +1479,8 @@ class Tags {
 
             _doClickDetails() || _doClickGrabNpmTag() || _doClickGrabWorldTag() || _doClickAux() || _doSetPosition() || _doClickAttribute();
 
-            const pointerState = pointerStates[side];
-            const {intersectionPoint} = pointerState;
+            const hoverState = rend.getHoverState(side);
+            const {intersectionPoint} = hoverState;
             if (intersectionPoint) {
               e.stopImmediatePropagation();
             }
@@ -1494,11 +1490,11 @@ class Tags {
             const {side} = e;
 
             const _doClickTag = () => {
-              const pointerState = pointerStates[side];
-              const {intersectionPoint} = pointerState;
+              const hoverState = rend.getHoverState(side);
+              const {intersectionPoint} = hoverState;
 
               if (intersectionPoint) {
-                const {anchor} = pointerState;
+                const {anchor} = hoverState;
                 const onmousedown = (anchor && anchor.onmousedown) || '';
 
                 let match;
@@ -1757,146 +1753,12 @@ class Tags {
 
           const _update = () => {
             const _updateControllers = () => {
-              const _updateElementAnchors = () => {
-                if (rend.isOpen() || homeEnabled) {
-                  const {gamepads} = webvr.getStatus();
-                  const controllers = cyborg.getControllers();
-                  const controllerMeshes = SIDES.map(side => controllers[side].mesh);
-
-                  const isWorldTab = rend.getTab() === 'world';
-                  const _isFreeTagMesh = tagMesh =>
-                    (tagMesh.parent === scene) ||
-                    controllerMeshes.some(controllerMesh => tagMesh.parent === controllerMesh);
-
-                  const objects = (() => {
-                    const result = [];
-
-                    for (let i = 0; i < tagMeshes.length; i++) {
-                      const tagMesh = tagMeshes[i];
-                      const {visible} = tagMesh;
-
-                      if (visible && (isWorldTab || homeEnabled || _isFreeTagMesh(tagMesh))) {
-                        const {item} = tagMesh;
-                        const {type} = item;
-
-                        const {planeMesh} = tagMesh;
-                        if (planeMesh.visible) {
-                          const matrixObject = _decomposeObjectMatrixWorld(planeMesh);
-                          const {page} = planeMesh;
-
-                          result.push({
-                            matrixObject: matrixObject,
-                            page: page,
-                            width: WIDTH,
-                            height: HEIGHT,
-                            worldWidth: WORLD_WIDTH,
-                            worldHeight: WORLD_HEIGHT,
-                            worldDepth: WORLD_DEPTH,
-                            metadata: {
-                              type,
-                              tagMesh,
-                            },
-                          });
-                        }
-
-                        const {planeOpenMesh} = tagMesh;
-                        if (planeOpenMesh && planeOpenMesh.visible) {
-                          const matrixObject = _decomposeObjectMatrixWorld(planeOpenMesh);
-                          const {page} = planeOpenMesh;
-
-                          result.push({
-                            matrixObject: matrixObject,
-                            page: page,
-                            width: OPEN_WIDTH,
-                            height: OPEN_HEIGHT,
-                            worldWidth: WORLD_OPEN_WIDTH,
-                            worldHeight: WORLD_OPEN_HEIGHT,
-                            worldDepth: WORLD_DEPTH,
-                            metadata: {
-                              type,
-                              tagMesh,
-                            },
-                          });
-                        }
-
-                        const {planeDetailsMesh} = tagMesh;
-                        if (planeDetailsMesh && planeDetailsMesh.visible) {
-                          const matrixObject = _decomposeObjectMatrixWorld(planeDetailsMesh);
-                          const {page} = planeDetailsMesh;
-
-                          result.push({
-                            matrixObject: matrixObject,
-                            page: page,
-                            width: DETAILS_WIDTH,
-                            height: DETAILS_HEIGHT,
-                            worldWidth: WORLD_DETAILS_WIDTH,
-                            worldHeight: WORLD_DETAILS_HEIGHT,
-                            worldDepth: WORLD_DEPTH,
-                            metadata: {
-                              type: 'details',
-                              tagMesh: planeDetailsMesh,
-                            },
-                          });
-                        }
-
-                        if (type === 'entity') {
-                          const {attributesMesh} = tagMesh;
-                          const {attributeMeshes} = attributesMesh;
-
-                          for (let j = 0; j < attributeMeshes.length; j++) {
-                            const attributeMesh = attributeMeshes[j];
-                            const matrixObject = _decomposeObjectMatrixWorld(attributeMesh);
-                            const {page} = attributeMesh;
-
-                            result.push({
-                              matrixObject: matrixObject,
-                              page: page,
-                              width: WIDTH,
-                              height: HEIGHT,
-                              worldWidth: WORLD_WIDTH,
-                              worldHeight: WORLD_HEIGHT,
-                              worldDepth: WORLD_DEPTH,
-                              metadata: {
-                                type: 'attribute',
-                                tagMesh: attributeMesh,
-                              },
-                            });
-                          }
-                        }
-                      }
-                    }
-
-                    return result;
-                  })();
-                  SIDES.forEach(side => {
-                    const gamepad = gamepads[side];
-
-                    if (gamepad) {
-                      const {position: controllerPosition, rotation: controllerRotation, scale: controllerScale} = gamepad;
-                      const pointerState = pointerStates[side];
-                      const dotMesh = dotMeshes[side];
-                      const boxMesh = boxMeshes[side];
-
-                      biolumi.updateAnchors({
-                        objects: objects,
-                        side,
-                        hoverState: pointerState,
-                        dotMesh: dotMesh,
-                        boxMesh: boxMesh,
-                        controllerPosition,
-                        controllerRotation,
-                        controllerScale,
-                      });
-                    }
-                  });
-                }
-              };
               const _updateElementGrabbables = () => {
                 if (rend.isOpen() || homeEnabled) {
                   const {gamepads} = webvr.getStatus();
 
                   SIDES.forEach(side => {
-                    const hoverState = hoverStates[side];
+                    const grabHoverState = grabHoverStates[side];
                     const gamepad = gamepads[side];
                     const grabBoxMesh = grabBoxMeshes[side];
 
@@ -1923,7 +1785,7 @@ class Tags {
                         return null;
                       }
                     })();
-                    hoverState.tagMesh = hoverMesh;
+                    grabHoverState.tagMesh = hoverMesh;
 
                     if (hoverMesh) {
                       const {planeMesh} = hoverMesh;
@@ -1950,12 +1812,12 @@ class Tags {
                     const {src} = dragState;
 
                     if (src) {
-                      const pointerState = pointerStates[side];
-                      const {intersectionPoint} = pointerState;
+                      const hoverState = rend.getHoverState(side);
+                      const {intersectionPoint} = hoverState;
 
                       if (intersectionPoint) {
                         const {type: srcType, tagMesh: srcTagMesh} = src;
-                        const {metadata} = pointerState;
+                        const {metadata} = hoverState;
                         const {type: hoverType, tagMesh: hoverTagMesh} = metadata;
 
                         if (srcType === 'module' && hoverType === 'module' && srcTagMesh === hoverTagMesh) {
@@ -2075,7 +1937,6 @@ class Tags {
                 }
               };
 
-              _updateElementAnchors();
               _updateElementGrabbables();
               _updateDragStates();
               _updateDragLines();
@@ -3132,14 +2993,14 @@ class Tags {
             }
 
             getPointedTagMesh(side) {
-              const pointerState = pointerStates[side];
-              const {metadata} = pointerState;
+              const hoverState = rend.getHoverState(side);
+              const {metadata} = hoverState; // XXX flag the metadata as pointing to a tag mesh before returning it here
               return metadata ? metadata.tagMesh : null;
             }
 
-            getHoveredTagMesh(side) {
-              const hoverState = hoverStates[side];
-              const {tagMesh} = hoverState;
+            getGrabTagMesh(side) {
+              const grabHoverState = grabHoverStates[side];
+              const {tagMesh} = grabHoverState;
               return tagMesh;
             }
 

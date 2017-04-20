@@ -305,7 +305,7 @@ class Home {
 
             const _makeGrabbableState = () => ({
               pointerMesh: null,
-              hoverMesh: null,
+              grabMesh: null,
             });
             const grabbableStates = {
               left: _makeGrabbableState(),
@@ -1027,27 +1027,27 @@ class Home {
             const _gripdown = e => {
               const {side} = e;
               const grabbableState = grabbableStates[side];
-              const {hoverMesh} = grabbableState;
+              const {grabMesh} = grabbableState;
 
-              if (hoverMesh) {
+              if (grabMesh) {
                 const {cakeTagMesh} = menuMesh;
 
-                if (hoverMesh === cakeTagMesh) {
-                  if (!hoverMesh.item.metadata.exists) {
-                    _addNpmModule(side, hoverMesh);
+                if (grabMesh === cakeTagMesh) {
+                  if (!grabMesh.item.metadata.exists) {
+                    _addNpmModule(side, grabMesh);
                   }
                 } else {
                   const controllers = cyborg.getControllers();
                   const controller = controllers[side];
                   const {mesh: controllerMesh} = controller;
-                  hoverMesh.position.copy(controllerMeshOffset);
-                  hoverMesh.quaternion.copy(controllerMeshQuaternion);
-                  hoverMesh.scale.copy(oneVector);
+                  grabMesh.position.copy(controllerMeshOffset);
+                  grabMesh.quaternion.copy(controllerMeshQuaternion);
+                  grabMesh.scale.copy(oneVector);
 
-                  controllerMesh.add(hoverMesh);
+                  controllerMesh.add(grabMesh);
 
                   const grabState = grabStates[side];
-                  grabState.tagMesh = hoverMesh;
+                  grabState.tagMesh = grabMesh;
                 }
 
                 e.stopImmediatePropagation();
@@ -1129,8 +1129,8 @@ class Home {
                 SIDES.forEach(side => {
                   const grabbableState = grabbableStates[side];
 
-                  const hoverMesh = tags.getHoveredTagMesh(side);
-                  grabbableState.hoverMesh = hoverMesh;
+                  const grabMesh = tags.getGrabTagMesh(side);
+                  grabbableState.grabMesh = grabMesh;
                 });
               };
               const _updateEnvAnchors = () => {
