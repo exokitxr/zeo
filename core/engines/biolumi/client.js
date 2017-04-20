@@ -178,6 +178,15 @@ class Biolumi {
             size: 0.01,
           }); */
 
+          const _isWorldVisible = mesh => {
+            for (; mesh; mesh = mesh.parent) {
+              if (!mesh.visible) {
+                return false;
+              }
+            }
+            return true;
+          };
+
           class Page {
             constructor(parent, spec, type, state, color, width, height, worldWidth, worldHeight) {
               this.parent = parent;
@@ -641,19 +650,25 @@ class Biolumi {
                   const boxMesh = boxMeshes[side];
 
                   const objects = pages.map(page => {
-                    const {mesh, width, height, worldWidth, worldHeight} = page;
-                    const matrixObject = _decomposeObjectMatrixWorld(mesh);
+                    const {mesh} = page;
 
-                    return {
-                      matrixObject,
-                      page,
-                      width,
-                      height,
-                      worldWidth,
-                      worldHeight,
-                      worldDepth: worldWidth / 50,
-                    };
-                  });
+                    if (_isWorldVisible(mesh)) {
+                      const {width, height, worldWidth, worldHeight} = page;
+                      const matrixObject = _decomposeObjectMatrixWorld(mesh);
+
+                      return {
+                        matrixObject,
+                        page,
+                        width,
+                        height,
+                        worldWidth,
+                        worldHeight,
+                        worldDepth: worldWidth / 50,
+                      };
+                    } else {
+                      return null;
+                    }
+                  }).filter(object => object !== null);
                   const intersectionSpecs = objects.map(object => {
                     const {matrixObject, worldWidth, worldHeight, worldDepth} = object;
                     const {position, rotation, scale} = matrixObject;
