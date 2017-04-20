@@ -703,11 +703,6 @@ class World {
             loaded: false,
           };
 
-          const menuHoverStates = {
-            left: biolumi.makeMenuHoverState(),
-            right: biolumi.makeMenuHoverState(),
-          };
-
           const worldMesh = (() => {
             const result = new THREE.Object3D();
             result.visible = false;
@@ -752,6 +747,9 @@ class World {
                   worldHeight: WORLD_HEIGHT,
                 });
                 mesh.receiveShadow = true;
+
+                const {page} = mesh;
+                rend.addPage(page);
 
                 return mesh;
               })();
@@ -835,19 +833,6 @@ class World {
           })();
           rend.registerMenuMesh('trashMesh', trashMesh);
 
-          const menuDotMeshes = {
-            left: biolumi.makeMenuDotMesh(),
-            right: biolumi.makeMenuDotMesh(),
-          };
-          scene.add(menuDotMeshes.left);
-          scene.add(menuDotMeshes.right);
-          const menuBoxMeshes = {
-            left: biolumi.makeMenuBoxMesh(),
-            right: biolumi.makeMenuBoxMesh(),
-          };
-          scene.add(menuBoxMeshes.left);
-          scene.add(menuBoxMeshes.right);
-
           const _updatePages = () => {
             const {menuMesh} = worldMesh;
             const {planeMesh} = menuMesh;
@@ -857,47 +842,6 @@ class World {
           _updatePages();
 
           const _update = e => {
-            const _updateMenuAnchors = () => {
-              const tab = rend.getTab();
-
-              if (tab === 'world') {
-                const {gamepads} = webvr.getStatus();
-                const {menuMesh} = worldMesh;
-                const {planeMesh} = menuMesh;
-                const menuMatrixObject = _decomposeObjectMatrixWorld(planeMesh);
-                const {page} = planeMesh;
-
-                SIDES.forEach(side => {
-                  const gamepad = gamepads[side];
-
-                  if (gamepad) {
-                    const {position: controllerPosition, rotation: controllerRotation, scale: controllerScale} = gamepad;
-
-                    const menuHoverState = menuHoverStates[side];
-                    const menuDotMesh = menuDotMeshes[side];
-                    const menuBoxMesh = menuBoxMeshes[side];
-
-                    biolumi.updateAnchors({
-                      objects: [{
-                        matrixObject: menuMatrixObject,
-                        page: page,
-                        width: WIDTH,
-                        height: HEIGHT,
-                        worldWidth: WORLD_WIDTH,
-                        worldHeight: WORLD_HEIGHT,
-                        worldDepth: WORLD_DEPTH,
-                      }],
-                      hoverState: menuHoverState,
-                      dotMesh: menuDotMesh,
-                      boxMesh: menuBoxMesh,
-                      controllerPosition,
-                      controllerRotation,
-                      controllerScale,
-                    })
-                  }
-                });
-              }
-            };
             const _updateGrabbers = () => {
               const isOpen = rend.isOpen();
 
@@ -985,7 +929,6 @@ class World {
               });
             };
 
-            _updateMenuAnchors();
             _updateGrabbers();
             _updateTagsLinesMesh();
             _updateTrashAnchor();
@@ -1087,17 +1030,17 @@ class World {
               const tab = rend.getTab();
 
               if (tab === 'world') {
-                const menuHoverState = menuHoverStates[side];
-                const {intersectionPoint} = menuHoverState;
+                const hoverState = rend.getHoverState(side);
+                const {intersectionPoint} = hoverState;
 
                 if (intersectionPoint) {
-                  const {anchor} = menuHoverState;
+                  const {anchor} = hoverState;
                   const onclick = (anchor && anchor.onclick) || '';
 
                   let match;
                   if (onclick === 'npm:focus') {
                     const {inputText} = npmState;
-                    const {value} = menuHoverState;
+                    const {value} = hoverState;
                     const valuePx = value * (WIDTH - (250 + (30 * 2)));
                     const {index, px} = biolumi.getTextPropertiesFromCoord(inputText, mainFontSpec, valuePx); // XXX this can be folded into the keyboard engine
                     const {hmd: {position: hmdPosition, rotation: hmdRotation}} = webvr.getStatus();
@@ -1662,11 +1605,6 @@ class World {
 
           this._cleanup = () => {
             remoteGrabManager.destroy();
-
-            SIDES.forEach(side => {
-              scene.remove(menuDotMeshes[side]);
-              scene.remove(menuBoxMeshes[side]);
-            });
 
             rend.removeListener('update', _update);
             rend.removeListener('tabchange', _tabchange);
