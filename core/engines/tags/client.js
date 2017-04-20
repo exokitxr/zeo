@@ -1136,7 +1136,7 @@ class Tags {
                     const {mesh} = page;
 
                     if (mesh[tagMeshSymbol]) {
-                      const tagMesh = mesh;
+                      const {tagMesh} = mesh;
                       const {item} = tagMesh;
                       const {type} = item;
 
@@ -1805,7 +1805,7 @@ class Tags {
                         const {mesh} = page;
 
                         if (mesh[tagMeshSymbol]) {
-                          const hoverTagMesh = mesh;
+                          const {tagMesh: hoverTagMesh} = mesh;
                           const {type: srcType, tagMesh: srcTagMesh} = src;
                           const {item: hoverItem} = hoverTagMesh;
                           const {type: hoverType} = hoverItem;
@@ -2577,7 +2577,7 @@ class Tags {
                 });
                 mesh.receiveShadow = true;
                 mesh[tagMeshSymbol] = true;
-                mesh.item = item;
+                mesh.tagMesh = object;
 
                 const {page} = mesh;
                 rend.addPage(page);
@@ -2995,7 +2995,7 @@ class Tags {
                 const {mesh} = page;
 
                 if (mesh[tagMeshSymbol]) {
-                  const tagMesh = mesh;
+                  const {tagMesh} = mesh;
                   return tagMesh;
                 }
               }
