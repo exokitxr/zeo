@@ -263,6 +263,9 @@ class Home {
                 mesh.position.z = -1;
                 mesh.receiveShadow = true;
 
+                const {page} = mesh;
+                rend.addPage(page);
+
                 return mesh;
               })();
               object.add(planeMesh);
@@ -291,23 +294,6 @@ class Home {
               return object;
             })();
             scene.add(menuMesh);
-
-            const menuHoverStates = {
-              left: biolumi.makeMenuHoverState(),
-              right: biolumi.makeMenuHoverState(),
-            };
-            const menuDotMeshes = {
-              left: biolumi.makeMenuDotMesh(),
-              right: biolumi.makeMenuDotMesh(),
-            };
-            scene.add(menuDotMeshes.left);
-            scene.add(menuDotMeshes.right);
-            const menuBoxMeshes = {
-              left: biolumi.makeMenuBoxMesh(),
-              right: biolumi.makeMenuBoxMesh(),
-            };
-            scene.add(menuBoxMeshes.left);
-            scene.add(menuBoxMeshes.right);
 
             const _makeGrabState = () => ({
               tagMesh: null,
@@ -343,17 +329,6 @@ class Home {
               return mesh;
             };
 
-            const tagHoverStates = {
-              left: biolumi.makeMenuHoverState(),
-              right: biolumi.makeMenuHoverState(),
-            };
-            const tagDotMeshes = {
-              left: biolumi.makeMenuDotMesh(),
-              right: biolumi.makeMenuDotMesh(),
-            };
-            scene.add(tagDotMeshes.left);
-            scene.add(tagDotMeshes.right);
-
             const _makeEnvHoverState = () => ({
               hoveredServerMesh: null,
             });
@@ -362,26 +337,21 @@ class Home {
               right: _makeEnvHoverState(),
             };
 
-            const serverHoverStates = {
-              left: biolumi.makeMenuHoverState(),
-              right: biolumi.makeMenuHoverState(),
-            };
-            const serverDotMeshes = {
-              left: biolumi.makeMenuDotMesh(),
-              right: biolumi.makeMenuDotMesh(),
-            };
-            scene.add(serverDotMeshes.left);
-            scene.add(serverDotMeshes.right);
-            const serverBoxMeshes = {
-              left: biolumi.makeMenuBoxMesh(),
-              right: biolumi.makeMenuBoxMesh(),
-            };
-            scene.add(serverBoxMeshes.left);
-            scene.add(serverBoxMeshes.right);
+            const _makeEnvDotMesh = () => {
+              const geometry = new THREE.BufferGeometry();
+              geometry.addAttribute('position', new THREE.BufferAttribute(Float32Array.from([0, 0, 0]), 3));
+              const material = new THREE.PointsMaterial({
+                color: 0xFF0000,
+                size: 0.01,
+              });
 
+              const mesh = new THREE.Points(geometry, material);
+              mesh.visible = false;
+              return mesh;
+            };
             const envDotMeshes = {
-              left: biolumi.makeMenuDotMesh(),
-              right: biolumi.makeMenuDotMesh(),
+              left: _makeEnvDotMesh(),
+              right: _makeEnvDotMesh(),
             };
             scene.add(envDotMeshes.left);
             scene.add(envDotMeshes.right);
@@ -487,6 +457,7 @@ class Home {
                 mesh.receiveShadow = true;
 
                 const {page} = mesh;
+                rend.addPage(page);
                 page.update();
 
                 return mesh;
@@ -701,19 +672,19 @@ class Home {
                 }
               };
               const _doServerMeshClick = () => {
-                const serverHoverState = serverHoverStates[side];
-                const {intersectionPoint} = serverHoverState;
+                const hoverState = rend.getHoverState(side);
+                const {intersectionPoint} = hoverState;
 
                 if (intersectionPoint) {
-                  const {anchor} = serverHoverState;
+                  const {anchor} = hoverState;
                   const onclick = (anchor && anchor.onclick) || '';
 
                   let match;
                   if (match = onclick.match(/^server:close:(.+)$/)) {
-                    const {metadata: {serverMesh}} = serverHoverState;
+                    const {metadata: {serverMesh}} = hoverState;
                     serversMesh.remove(serverMesh);
                   } else if (match = onclick.match(/^server:toggleRunning:(.+)$/)) {
-                    const {metadata: {serverMesh}} = serverHoverState;
+                    const {metadata: {serverMesh}} = hoverState;
                     const {server} = serverMesh;
                     const {worldname, running} = server;
 
@@ -844,8 +815,8 @@ class Home {
                 }
               };
               const _doMenuMeshClick = () => {
-                const menuHoverState = menuHoverStates[side];
-                const {anchor} = menuHoverState;
+                const hoverState = rend.getHoverState(side);
+                const {anchor} = hoverState;
                 const onclick = (anchor && anchor.onclick) || '';
 
                 let match;
@@ -939,7 +910,7 @@ class Home {
                   return true;
                 } else if (onclick === 'createServer:focus') {
                   const {inputText} = homeState;
-                  const {value} = menuHoverState;
+                  const {value} = hoverState;
                   const valuePx = value * 600;
                   const {index, px} = biolumi.getTextPropertiesFromCoord(inputText, mainFontSpec, valuePx); // XXX this can be folded into the keyboard engine
                   const {hmd: {position: hmdPosition, rotation: hmdRotation}} = webvr.getStatus();
@@ -1013,16 +984,16 @@ class Home {
             // this needs to be a native click event rather than a soft trigger click event due for clipboard copy security reasons
             const _click = () => {
               SIDES.some(side => {
-                const serverHoverState = serverHoverStates[side];
-                const {intersectionPoint} = serverHoverState;
+                const hoverState = rend.getHoverState(side);
+                const {intersectionPoint} = hoverState;
 
                 if (intersectionPoint) {
-                  const {anchor} = serverHoverState;
+                  const {anchor} = hoverState;
                   const onclick = (anchor && anchor.onclick) || '';
 
                   let match;
                   if (match = onclick.match(/^server:copyUrl:(.+)$/)) {
-                    const {metadata: {serverMesh}} = serverHoverState;
+                    const {metadata: {serverMesh}} = hoverState;
                     const {server} = serverMesh;
                     const {url, token} = server;
                     const clipboardText = url + '?t=' + token;
@@ -1146,43 +1117,6 @@ class Home {
             tags.on('loadTags', _loadTags);
 
             const _update = () => {
-              const _updateMenuAnchors = () => {
-                const {gamepads} = webvr.getStatus();
-
-                const {planeMesh} = menuMesh;
-                const menuMatrixObject = _decomposeObjectMatrixWorld(planeMesh);
-                const {page} = planeMesh;
-
-                SIDES.forEach(side => {
-                  const gamepad = gamepads[side];
-
-                  if (gamepad) {
-                    const {position: controllerPosition, rotation: controllerRotation, scale: controllerScale} = gamepad;
-
-                    const menuHoverState = menuHoverStates[side];
-                    const menuDotMesh = menuDotMeshes[side];
-                    const menuBoxMesh = menuBoxMeshes[side];
-
-                    biolumi.updateAnchors({
-                      objects: [{
-                        matrixObject: menuMatrixObject,
-                        page: page,
-                        width: WIDTH,
-                        height: HEIGHT,
-                        worldWidth: WORLD_WIDTH,
-                        worldHeight: WORLD_HEIGHT,
-                        worldDepth: WORLD_DEPTH,
-                      }],
-                      hoverState: menuHoverState,
-                      dotMesh: menuDotMesh,
-                      boxMesh: menuBoxMesh,
-                      controllerPosition,
-                      controllerRotation,
-                      controllerScale,
-                    });
-                  }
-                });
-              };
               const _updateTagPointerAnchors = () => {
                 SIDES.forEach(side => {
                   const grabbableState = grabbableStates[side];
@@ -1279,57 +1213,6 @@ class Home {
                   );
                 }
               };
-              const _updateServerMeshAnchors = () => {
-                const {gamepads} = webvr.getStatus();
-
-                SIDES.forEach(side => {
-                  const gamepad = gamepads[side];
-
-                  if (gamepad) {
-                    const {position: controllerPosition, rotation: controllerRotation, scale: controllerScale} = gamepad;
-
-                    const serverHoverState = serverHoverStates[side];
-                    const serverDotMesh = serverDotMeshes[side];
-                    const serverBoxMesh = serverBoxMeshes[side];
-
-                    const {children: serverMeshes} = serversMesh;
-                    const objects = serverMeshes.map(serverMesh => {
-                      const {menuMesh} = serverMesh;
-                      const {planeMesh} = menuMesh;
-
-                      if (planeMesh) {
-                        const matrixObject = _decomposeObjectMatrixWorld(planeMesh);
-                        const {page} = planeMesh;
-
-                        return {
-                          matrixObject: matrixObject,
-                          page: page,
-                          width: SERVER_WIDTH,
-                          height: SERVER_HEIGHT,
-                          worldWidth: SERVER_WORLD_WIDTH,
-                          worldHeight: SERVER_WORLD_HEIGHT,
-                          worldDepth: SERVER_WORLD_DEPTH,
-                          metadata: {
-                            serverMesh,
-                          },
-                        };
-                      } else {
-                        return null;
-                      }
-                    }).filter(object => object !== null);
-
-                    biolumi.updateAnchors({
-                      objects: objects,
-                      hoverState: serverHoverState,
-                      dotMesh: serverDotMesh,
-                      boxMesh: serverBoxMesh,
-                      controllerPosition,
-                      controllerRotation,
-                      controllerScale,
-                    });
-                  }
-                });
-              };
               const _updateEnvMaps = () => {
                 const {children: serverMeshes} = serversMesh;
 
@@ -1344,12 +1227,10 @@ class Home {
                 }
               };
 
-              _updateMenuAnchors();
               _updateTagPointerAnchors();
               _updateTagGrabAnchors();
               _updateEnvAnchors();
               _updateServerMeshes();
-              _updateServerMeshAnchors();
               _updateEnvMaps();
             };
             rend.on('update', _update);
