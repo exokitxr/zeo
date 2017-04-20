@@ -1,7 +1,6 @@
 import keycode from 'keycode';
 
 import menuShader from './lib/shaders/menu';
-// import circleImg from './lib/img/circle';
 
 const DEFAULT_FRAME_TIME = 1000 / (60 * 2)
 
@@ -35,7 +34,6 @@ class Biolumi {
       };
     });
     const _requestTransparentImg = () => _requestImg(transparentImgUrl);
-    // const _requestDotImg = () => _requestImg(circleImgUrl);
     const _requestUiWorker = () => {
       class UiWorker {
         constructor({frameTime = DEFAULT_FRAME_TIME} = {}) {
@@ -140,7 +138,6 @@ class Biolumi {
         '/core/utils/geometry-utils',
       ]),
       _requestTransparentImg(),
-      // _requestDotImg(),
       _requestUiWorker(),
       _requestUiTimer(),
     ])
@@ -151,7 +148,6 @@ class Biolumi {
           geometryUtils,
         ],
         transparentImg,
-        // dotImg,
         uiWorker,
         uiTimer,
       ]) => {
@@ -1043,7 +1039,6 @@ const monospaceFonts = `Consolas, "Liberation Mono", Menlo, Courier, monospace`;
 const fontWeight = 300;
 const fontStyle = 'normal';
 const transparentImgUrl = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
-// const circleImgUrl = 'data:image/svg+xml;base64,' + btoa(circleImg);
 const rootCss = `margin: 0px; padding: 0px; height: 100%; width: 100%; font-family: ${fonts}; font-weight: ${fontWeight}; overflow: visible; user-select: none;`;
 
 const debounce = fn => {
