@@ -2706,6 +2706,9 @@ class Tags {
 
                         if (!attribute) {
                           attributesMesh.remove(attributeMesh);
+
+                          const {page} = attributeMesh;
+                          rend.removePage(page);
                         } else {
                           index[attributeName] = attributeMesh;
                         }

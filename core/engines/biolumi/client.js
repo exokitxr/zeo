@@ -628,8 +628,7 @@ class Biolumi {
             }
 
             removePage(page) {
-              const {pages} = this;
-              pages.splice(pages.indexOf(page), pages);
+              this.pages.splice(this.pages.indexOf(page), 1);
             }
 
             getHoverState(side) {
