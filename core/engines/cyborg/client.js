@@ -233,6 +233,18 @@ class Cyborg {
                 object.add(tip);
                 object.tip = tip; */
 
+                const rayMesh = (() => {
+                  const geometry = new THREE.CylinderBufferGeometry(0.001, 0.001, 15, 32, 1);
+                  geometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -15 / 2));
+                  const material = new THREE.MeshPhongMaterial({
+                    color: 0x2196F3,
+                  });
+
+                  const mesh = new THREE.Mesh(geometry, material);
+                  return mesh;
+                })();
+                object.add(rayMesh);
+
                 const buttonSolidMaterial = new THREE.MeshPhongMaterial({
                   color: BUTTON_COLOR_HIGHLIGHT,
                   shininess: 0,
