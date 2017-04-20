@@ -605,26 +605,9 @@ class Biolumi {
                 right: _makeMenuHoverState(),
               };
 
-              const _makeDotMesh = () => {
-                const geometry = new THREE.CylinderBufferGeometry(0.0, 0.01, 0.001, 32)
-                  .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
-                const material = dotMeshMaterial;
-
-                const mesh = new THREE.Mesh(geometry, material);
-                mesh.visible = false;
-                return mesh;
-              };
               this.dotMeshes = {
                 left: _makeDotMesh(),
                 right: _makeDotMesh(),
-              };
-
-              const _makeBoxMesh = () => {
-                const geometry = new THREE.BoxBufferGeometry(1, 1, 1);
-
-                const mesh = new THREE.Mesh(geometry, boxMeshMaterial);
-                mesh.visible = false;
-                return mesh;
               };
               this.boxMeshes = {
                 left: _makeBoxMesh(),
@@ -1007,7 +990,25 @@ class Biolumi {
               .multiply(scale)
               .applyQuaternion(rotation)
             );
+
           const _makeUiTracker = () => new UiTracker();
+
+          const _makeDotMesh = () => {
+            const geometry = new THREE.CylinderBufferGeometry(0.0, 0.01, 0.001, 32)
+              .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
+            const material = dotMeshMaterial;
+
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.visible = false;
+            return mesh;
+          };
+          const _makeBoxMesh = () => {
+            const geometry = new THREE.BoxBufferGeometry(1, 1, 1);
+
+            const mesh = new THREE.Mesh(geometry, boxMeshMaterial);
+            mesh.visible = false;
+            return mesh;
+          };
 
           return {
             makeUi: _makeUi,
@@ -1029,6 +1030,8 @@ class Biolumi {
             applyStateKeyEvent: _applyStateKeyEvent,
 
             makeUiTracker: _makeUiTracker,
+            makeDotMesh: _makeDotMesh,
+            makeBoxMesh: _makeBoxMesh,
           };
         }
       });

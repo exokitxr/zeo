@@ -348,8 +348,8 @@ class Keyboard {
         scene.add(keyboardMesh);
 
         const dotMeshes = {
-          left: biolumi.makeMenuDotMesh(),
-          right: biolumi.makeMenuDotMesh(),
+          left: biolumi.makeDotMesh(),
+          right: biolumi.makeDotMesh(),
         };
         scene.add(dotMeshes.left);
         scene.add(dotMeshes.right);
@@ -533,6 +533,7 @@ class Keyboard {
                     const keyMesh = keyMeshes[side];
                     if (matchingKeySpec) {
                       dotMesh.position.copy(intersectionPoint);
+                      dotMesh.quaternion.copy(keyboardRotation);
 
                       const {key} = matchingKeySpec;
                       if (key !== keyMesh.key) {
@@ -625,7 +626,6 @@ class Keyboard {
           scene.remove(keyboardMesh);
           SIDES.forEach(side => {
             scene.remove(dotMeshes[side]);
-            scene.remove(keyboardBoxMeshes[side]);
           });
 
           input.removeListener('keydown', _keydown);
