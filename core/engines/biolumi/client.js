@@ -4,6 +4,8 @@ import menuShader from './lib/shaders/menu';
 
 const DEFAULT_FRAME_TIME = 1000 / (60 * 2)
 
+const SIDES = ['left', 'right'];
+
 class Biolumi {
   constructor(archae) {
     this._archae = archae;
@@ -154,39 +156,81 @@ class Biolumi {
         if (live) {
           const {THREE, renderer} = three;
 
+          const _decomposeObjectMatrixWorld = object => {
+            const position = new THREE.Vector3();
+            const rotation = new THREE.Quaternion();
+            const scale = new THREE.Vector3();
+            object.matrixWorld.decompose(position, rotation, scale);
+            return {position, rotation, scale};
+          };
+
+          const dotMeshMaterial = new THREE.MeshBasicMaterial({
+            color: 0x44c2ff,
+          });
+          const boxMeshMaterial = new THREE.MeshBasicMaterial({
+            color: 0x44c2ff,
+            wireframe: true,
+            // opacity: 0.5,
+            // transparent: true,
+          });
+          /* const pointsHighlightMaterial = new THREE.PointsMaterial({
+            color: 0x44c2ff,
+            size: 0.01,
+          }); */
+
           class Page {
-            constructor(parent, spec, type, state) {
+            constructor(parent, spec, type, state, color, world, height, worldWidth, worldHeight, metadata) {
               this.parent = parent;
               this.spec = spec;
               this.type = type;
               this.state = state;
+              this.color = color;
+              this.width = width;
+              this.height = height;
+              this.worldWidth = worldWidth;
+              this.worldHeight = worldHeight;
+              this.metadata = metadata;
 
-              const material = (() => {
-                const shaderUniforms = THREE.UniformsUtils.clone(menuShader.uniforms);
-                shaderUniforms.texture.value = new THREE.Texture(
-                  transparentImg,
-                  THREE.UVMapping,
-                  THREE.ClampToEdgeWrapping,
-                  THREE.ClampToEdgeWrapping,
-                  THREE.LinearFilter,
-                  THREE.LinearFilter,
-                  THREE.RGBAFormat,
-                  THREE.UnsignedByteType,
-                  16
-                );
-                shaderUniforms.backgroundColor.value = Float32Array.from(parent.color);
-                const shaderMaterial = new THREE.ShaderMaterial({
-                  uniforms: shaderUniforms,
-                  vertexShader: menuShader.vertexShader,
-                  fragmentShader: menuShader.fragmentShader,
-                  side: THREE.DoubleSide,
-                  transparent: true,
-                });
-                // shaderMaterial.polygonOffset = true;
-                // shaderMaterial.polygonOffsetFactor = 1;
-                return shaderMaterial;
-              })();
-              this.material = material;
+              const mesh = () => {
+                const geometry = new THREE.PlaneBufferGeometry(worldWidth, worldHeight);
+                const material = (() => {
+                  const shaderUniforms = THREE.UniformsUtils.clone(menuShader.uniforms);
+                  shaderUniforms.texture.value = new THREE.Texture(
+                    transparentImg,
+                    THREE.UVMapping,
+                    THREE.ClampToEdgeWrapping,
+                    THREE.ClampToEdgeWrapping,
+                    THREE.LinearFilter,
+                    THREE.LinearFilter,
+                    THREE.RGBAFormat,
+                    THREE.UnsignedByteType,
+                    16
+                  );
+                  shaderUniforms.backgroundColor.value = Float32Array.from(color);
+                  const shaderMaterial = new THREE.ShaderMaterial({
+                    uniforms: shaderUniforms,
+                    vertexShader: menuShader.vertexShader,
+                    fragmentShader: menuShader.fragmentShader,
+                    side: THREE.DoubleSide,
+                    transparent: true,
+                  });
+                  // shaderMaterial.polygonOffset = true;
+                  // shaderMaterial.polygonOffsetFactor = 1;
+                  return shaderMaterial;
+                })();
+
+                const mesh = new THREE.Mesh(geometry, material);
+                mesh.page = this;
+                mesh.destroy = () => {
+                  geometry.dispose();
+
+                  material.uniforms.texture.value.dispose();
+                  material.dispose();
+                };
+
+                return mesh;
+              };
+              this.mesh = mesh;
               this.layer = null;
               this.rendered = false;
             }
@@ -530,35 +574,255 @@ class Biolumi {
               this.page = null;
             }
 
-            addPage(spec, {type = null, state = null, worldWidth, worldHeight} = {}) {
+            addPage(spec, {type = null, state = null, worldWidth, worldHeight, metadata} = {}) {
               const {page} = this;
 
               if (!page) {
-                const page = new Page(this, spec, type, state);
+                const {width, height, color} = this;
+                const page = new Page(this, spec, type, state, color, width, height, worldWidth, worldHeight, metadata);
                 this.page = page;
 
-                const planeMesh = (() => {
-                  const geometry = new THREE.PlaneBufferGeometry(worldWidth, worldHeight);
-                  const {material} = page;
-
-                  const mesh = new THREE.Mesh(geometry, material);
-                  mesh.page = page;
-
-                  mesh.destroy = () => {
-                    geometry.dispose();
-
-                    material.uniforms.texture.value.dispose();
-                    material.dispose();
-                  };
-
-                  return mesh;
-                })();
-
-                return planeMesh;
+                const {mesh} = page;
+                return mesh;
               } else {
                 return null;
               }
             }
+          }
+
+          class UiTracker {
+            constructor() {
+              this.pages = [];
+
+              const _makeMenuHoverState = () => ({
+                intersectionPoint: null,
+                metadata: null,
+                anchor: null,
+                value: 0,
+              });
+              this.hoverStates = {
+                left: _makeMenuHoverState(),
+                right: _makeMenuHoverState(),
+              };
+
+              const _makeDotMesh = () => {
+                const geometry = new THREE.CylinderBufferGeometry(0.0, 0.01, 0.001, 32)
+                  .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
+                const material = dotMeshMaterial;
+
+                const mesh = new THREE.Mesh(geometry, material);
+                mesh.visible = false;
+                return mesh;
+              };
+              this.dotMeshes = {
+                left: _makeDotMesh(),
+                right: _makeDotMesh(),
+              };
+
+              const _makeBoxMesh = () => {
+                const geometry = new THREE.BoxBufferGeometry(1, 1, 1);
+
+                const mesh = new THREE.Mesh(geometry, boxMeshMaterial);
+                mesh.visible = false;
+                return mesh;
+              };
+              this.boxMeshes = {
+                left: _makeBoxMesh(),
+                right: _makeBoxMesh(),
+              };
+            }
+
+            addPage(page) {
+              this.pages.push(page);
+            }
+
+            update({pose}) {
+              const {gamepads} = pose;
+              const {pages, hoverStates, dotMeshes, boxMeshes} = this;
+
+              SIDES.forEach(side => {
+                const gamepad = gamepads[side];
+                const {position: controllerPosition, rotation: controllerRotation, scale: controllerScale} = gamepad;
+                const hoverState = hoverStates[side];
+                const dotMesh = dotMeshes[side];
+                const boxMesh = boxMeshes[side];
+
+                const objects = pages.map(page => {
+                  const {mesh, width, height, worldWidth, worldHeight, metadata} = page;
+                  const matrixObject = _decomposeObjectMatrixWorld(mesh);
+
+                  return {
+                    matrixObject,
+                    page,
+                    width,
+                    height,
+                    worldWidth,
+                    worldHeight,
+                    worldDepth: worldWidth / 50,
+                    metadata,
+                  };
+                });
+                const intersectionSpecs = objects.map(object => {
+                  const {matrixObject, worldWidth, worldHeight, worldDepth} = object;
+                  const {position, rotation, scale} = matrixObject;
+                  const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation, controllerScale);
+
+                  const menuBoxTarget = geometryUtils.makeBoxTarget(
+                    position,
+                    rotation,
+                    scale,
+                    new THREE.Vector3(worldWidth, worldHeight, 0)
+                  );
+                  const intersectionPoint = menuBoxTarget.intersectLine(controllerLine);
+
+                  if (intersectionPoint) {
+                    const distance = controllerPosition.distanceTo(intersectionPoint);
+
+                    return {
+                      object,
+                      intersectionPoint,
+                      controllerLine,
+                      controllerScale,
+                      distance,
+                    };
+                  } else {
+                    return null;
+                  }
+                }).filter(intersectionSpec => intersectionSpec !== null);
+                const intersectionSpec = intersectionSpecs.length > 0 ? intersectionSpecs.sort((a, b) => a.distance - b.distance)[0] : null;
+
+                if (intersectionSpec) {
+                  const {
+                    object: {
+                      matrixObject: {
+                        position,
+                        rotation,
+                        scale,
+                      },
+                      page,
+                      width,
+                      height,
+                      worldWidth,
+                      worldHeight,
+                      worldDepth,
+                      metadata,
+                    },
+                    intersectionPoint,
+                    controllerLine,
+                    controllerScale,
+                  } = intersectionSpec;
+
+                  hoverState.intersectionPoint = intersectionPoint;
+                  hoverState.metadata = metadata || null;
+
+                  const _getMenuMeshPoint = _makeMeshPointGetter({
+                    position,
+                    rotation,
+                    scale,
+                    width,
+                    height,
+                    worldWidth,
+                    worldHeight,
+                    worldDepth,
+                  });
+
+                  const anchorBoxTargets = (() => {
+                    const {layer} = page;
+
+                    if (layer) {
+                      const anchors = layer.getAnchors();
+
+                      return anchors.map(anchor => {
+                        const {rect} = anchor;
+
+                        const anchorBoxTarget = geometryUtils.makeBoxTargetOffset(
+                          position,
+                          rotation,
+                          scale,
+                          new THREE.Vector3(
+                            -(worldWidth / 2) + (rect.left / width) * worldWidth,
+                            (worldHeight / 2) + (-rect.top / height) * worldHeight,
+                            -worldDepth
+                          ),
+                          new THREE.Vector3(
+                            -(worldWidth / 2) + (rect.right / width) * worldWidth,
+                            (worldHeight / 2) + (-rect.bottom / height) * worldHeight,
+                            worldDepth
+                          )
+                        );
+                        anchorBoxTarget.anchor = anchor;
+
+                        return anchorBoxTarget;
+                      });
+                    } else {
+                      return [];
+                    }
+                  })();
+                  const anchorBoxTarget = (() => {
+                    const interstectedAnchorBoxTargets = anchorBoxTargets.filter(anchorBoxTarget => anchorBoxTarget.intersectLine(controllerLine));
+
+                    if (interstectedAnchorBoxTargets.length > 0) {
+                      return interstectedAnchorBoxTargets[0];
+                    } else {
+                      return null;
+                    }
+                  })();
+                  if (anchorBoxTarget) {
+                    const {anchor} = anchorBoxTarget;
+                    hoverState.anchor = anchor;
+                    hoverState.value = (() => {
+                      const {rect} = anchor;
+                      const horizontalLine = new THREE.Line3(
+                        _getMenuMeshPoint(rect.left, (rect.top + rect.bottom) / 2, 0),
+                        _getMenuMeshPoint(rect.right, (rect.top + rect.bottom) / 2, 0)
+                      );
+                      const closestHorizontalPoint = horizontalLine.closestPointToPoint(intersectionPoint, true);
+                      return new THREE.Line3(horizontalLine.start.clone(), closestHorizontalPoint.clone()).distance() / horizontalLine.distance();
+                    })();
+
+                    boxMesh.position.copy(anchorBoxTarget.position);
+                    boxMesh.quaternion.copy(anchorBoxTarget.quaternion);
+                    boxMesh.scale.set(
+                      Math.max(anchorBoxTarget.size.x * anchorBoxTarget.scale.x, 0.001),
+                      Math.max(anchorBoxTarget.size.y * anchorBoxTarget.scale.y, 0.001),
+                      Math.max(anchorBoxTarget.size.z * anchorBoxTarget.scale.z, 0.001)
+                    );
+                    if (!boxMesh.visible) {
+                      boxMesh.visible = true;
+                    }
+                  } else {
+                    hoverState.anchor = null;
+                    hoverState.value = 0;
+
+                    if (boxMesh.visible) {
+                      boxMesh.visible = false;
+                    }
+                  }
+
+                  if (dotMesh) {
+                    dotMesh.position.copy(intersectionPoint);
+                    dotMesh.quaternion.copy(rotation);
+                    // dotMesh.material.size = pointsHighlightMaterial.size / ((controllerScale.x + controllerScale.y + controllerScale.z) / 3);
+
+                    if (!dotMesh.visible) {
+                      dotMesh.visible = true;
+                    }
+                  }
+                } else {
+                  hoverState.intersectionPoint = null;
+                  hoverState.metadata = null;
+                  hoverState.anchor = null;
+                  hoverState.value = 0;
+
+                  if (boxMesh.visible) {
+                    boxMesh.visible = false;
+                  }
+                  if (dotMesh.visible) {
+                    dotMesh.visible = false;
+                  }
+                }
+              };
+            });
           }
 
           const _makeUi = ({width, height, color = [1, 1, 1, 1]}) => new Ui(width, height, color);
@@ -717,61 +981,6 @@ class Biolumi {
             }
           };
 
-          const _makeMenuHoverState = () => ({
-            intersectionPoint: null,
-            metadata: null,
-            anchor: null,
-            value: 0,
-          });
-
-          const pointsHighlightMaterial = new THREE.PointsMaterial({
-            color: 0x44c2ff,
-            size: 0.01,
-          });
-          const _makeMenuDotMesh = ({color = pointsHighlightMaterial.color, size = pointsHighlightMaterial.size} = {}) => {
-            const geometry = new THREE.CylinderBufferGeometry(0.0, 0.01, 0.001, 32)
-              .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
-            /* const texture = new THREE.Texture(
-              dotImg,
-              THREE.UVMapping,
-              THREE.ClampToEdgeWrapping,
-              THREE.ClampToEdgeWrapping,
-              THREE.LinearFilter,
-              THREE.LinearFilter,
-              THREE.RGBAFormat,
-              THREE.UnsignedByteType,
-              16
-            );
-            texture.needsUpdate = true; */
-            const material = new THREE.MeshBasicMaterial({
-              color: 0x44c2ff,
-              // map: texture,
-              // transparent: true,
-              // alphaTest: 0.5,
-              // side: THREE.DoubleSide,
-
-              // depthTest: false,
-              // depthWrite: false,
-            });
-
-            const mesh = new THREE.Mesh(geometry, material);
-            mesh.visible = false;
-            return mesh;
-          };
-
-          const wireframeHighlightMaterial = new THREE.MeshBasicMaterial({
-            color: 0x0000FF,
-            wireframe: true,
-            opacity: 0.5,
-            transparent: true,
-          });
-          const _makeMenuBoxMesh = () => {
-            const geometry = new THREE.BoxBufferGeometry(1, 1, 1);
-
-            const mesh = new THREE.Mesh(geometry, wireframeHighlightMaterial);
-            mesh.visible = false;
-            return mesh;
-          };
           const _makeMeshPointGetter = ({position, rotation, scale, width, height, worldWidth, worldHeight}) => (x, y, z) => position.clone()
             .add(
               new THREE.Vector3(
@@ -789,214 +998,7 @@ class Biolumi {
               .multiply(scale)
               .applyQuaternion(rotation)
             );
-          /* const _makeMeshCoordinateGetter = ({position, rotation, scale, width, height, worldWidth, worldHeight}) => {
-            const _getMenuMeshPoint = _makeMeshPointGetter({position, rotation, scale, width, height, worldWidth, worldHeight});
-
-            return intersectionPoint => {
-              const x = (() => {
-                const horizontalLine = new THREE.Line3(
-                  _getMenuMeshPoint(0, 0, 0),
-                  _getMenuMeshPoint(width, 0, 0)
-                );
-                const closestHorizontalPoint = horizontalLine.closestPointToPoint(intersectionPoint, true);
-                return horizontalLine.start.distanceTo(closestHorizontalPoint);
-              })();
-              const y = (() => {
-                const verticalLine = new THREE.Line3(
-                  _getMenuMeshPoint(0, 0, 0),
-                  _getMenuMeshPoint(0, height, 0)
-                );
-                const closestVerticalPoint = verticalLine.closestPointToPoint(intersectionPoint, true);
-                return verticalLine.start.distanceTo(closestVerticalPoint);
-              })();
-              return new THREE.Vector2(x, y);
-            };
-          }; */
-          const _updateAnchors = ({
-            objects,
-            hoverState,
-            dotMesh,
-            boxMesh,
-            controllerPosition,
-            controllerRotation,
-            controllerScale,
-          }) => {
-            const intersectionSpecs = objects.map(object => {
-              const {matrixObject, worldWidth, worldHeight, worldDepth} = object;
-              const {position, rotation, scale} = matrixObject;
-              const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation, controllerScale);
-
-              const menuBoxTarget = geometryUtils.makeBoxTarget(
-                position,
-                rotation,
-                scale,
-                new THREE.Vector3(worldWidth, worldHeight, 0)
-              );
-              const intersectionPoint = menuBoxTarget.intersectLine(controllerLine);
-
-              if (intersectionPoint) {
-                const distance = controllerPosition.distanceTo(intersectionPoint);
-
-                return {
-                  object,
-                  intersectionPoint,
-                  controllerLine,
-                  controllerScale,
-                  distance,
-                };
-              } else {
-                return null;
-              }
-            }).filter(intersectionSpec => intersectionSpec !== null);
-            const intersectionSpec = intersectionSpecs.length > 0 ? intersectionSpecs.sort((a, b) => a.distance - b.distance)[0] : null;
-
-            if (intersectionSpec) {
-              const {
-                object: {
-                  matrixObject: {
-                    position,
-                    rotation,
-                    scale,
-                  },
-                  page,
-                  width,
-                  height,
-                  worldWidth,
-                  worldHeight,
-                  worldDepth,
-                  metadata,
-                },
-                intersectionPoint,
-                controllerLine,
-                controllerScale,
-              } = intersectionSpec;
-
-              if (hoverState) {
-                hoverState.intersectionPoint = intersectionPoint;
-                hoverState.metadata = metadata || null;
-              }
-
-              const _getMenuMeshPoint = _makeMeshPointGetter({
-                position,
-                rotation,
-                scale,
-                width,
-                height,
-                worldWidth,
-                worldHeight,
-                worldDepth,
-              });
-
-              const anchorBoxTargets = (() => {
-                const {layer} = page;
-
-                if (layer) {
-                  const anchors = layer.getAnchors();
-
-                  return anchors.map(anchor => {
-                    const {rect} = anchor;
-
-                    const anchorBoxTarget = geometryUtils.makeBoxTargetOffset(
-                      position,
-                      rotation,
-                      scale,
-                      new THREE.Vector3(
-                        -(worldWidth / 2) + (rect.left / width) * worldWidth,
-                        (worldHeight / 2) + (-rect.top / height) * worldHeight,
-                        -worldDepth
-                      ),
-                      new THREE.Vector3(
-                        -(worldWidth / 2) + (rect.right / width) * worldWidth,
-                        (worldHeight / 2) + (-rect.bottom / height) * worldHeight,
-                        worldDepth
-                      )
-                    );
-                    anchorBoxTarget.anchor = anchor;
-
-                    return anchorBoxTarget;
-                  });
-                } else {
-                  return [];
-                }
-              })();
-              const anchorBoxTarget = (() => {
-                const interstectedAnchorBoxTargets = anchorBoxTargets.filter(anchorBoxTarget => anchorBoxTarget.intersectLine(controllerLine));
-
-                if (interstectedAnchorBoxTargets.length > 0) {
-                  return interstectedAnchorBoxTargets[0];
-                } else {
-                  return null;
-                }
-              })();
-              if (anchorBoxTarget) {
-                if (hoverState) {
-                  const {anchor} = anchorBoxTarget;
-                  hoverState.anchor = anchor;
-                  hoverState.value = (() => {
-                    const {rect} = anchor;
-                    const horizontalLine = new THREE.Line3(
-                      _getMenuMeshPoint(rect.left, (rect.top + rect.bottom) / 2, 0),
-                      _getMenuMeshPoint(rect.right, (rect.top + rect.bottom) / 2, 0)
-                    );
-                    const closestHorizontalPoint = horizontalLine.closestPointToPoint(intersectionPoint, true);
-                    return new THREE.Line3(horizontalLine.start.clone(), closestHorizontalPoint.clone()).distance() / horizontalLine.distance();
-                  })();
-                }
-
-                if (boxMesh) {
-                  boxMesh.position.copy(anchorBoxTarget.position);
-                  boxMesh.quaternion.copy(anchorBoxTarget.quaternion);
-                  boxMesh.scale.set(
-                    Math.max(anchorBoxTarget.size.x * anchorBoxTarget.scale.x, 0.001),
-                    Math.max(anchorBoxTarget.size.y * anchorBoxTarget.scale.y, 0.001),
-                    Math.max(anchorBoxTarget.size.z * anchorBoxTarget.scale.z, 0.001)
-                  );
-                  if (!boxMesh.visible) {
-                    boxMesh.visible = true;
-                  }
-                }
-              } else {
-                if (hoverState) {
-                  hoverState.anchor = null;
-                  hoverState.value = 0;
-                }
-
-                if (boxMesh) {
-                  if (boxMesh.visible) {
-                    boxMesh.visible = false;
-                  }
-                }
-              }
-
-              if (dotMesh) {
-                dotMesh.position.copy(intersectionPoint);
-                dotMesh.quaternion.copy(rotation);
-                dotMesh.material.size = pointsHighlightMaterial.size / ((controllerScale.x + controllerScale.y + controllerScale.z) / 3);
-
-                if (!dotMesh.visible) {
-                  dotMesh.visible = true;
-                }
-              }
-            } else {
-              if (hoverState) {
-                hoverState.intersectionPoint = null;
-                hoverState.metadata = null;
-                hoverState.anchor = null;
-                hoverState.value = 0;
-              }
-
-              if (boxMesh) {
-                if (boxMesh.visible) {
-                  boxMesh.visible = false;
-                }
-              }
-              if (dotMesh) {
-                if (dotMesh.visible) {
-                  dotMesh.visible = false;
-                }
-              }
-            }
-          };
+          const _makeUiTracker = () => new UiTracker();
 
           return {
             makeUi: _makeUi,
@@ -1017,13 +1019,7 @@ class Biolumi {
             getKeyCode: _getKeyCode,
             applyStateKeyEvent: _applyStateKeyEvent,
 
-            makeMenuHoverState: _makeMenuHoverState,
-            makeMenuDotMesh: _makeMenuDotMesh,
-            makeMenuBoxMesh: _makeMenuBoxMesh,
-            // makeMeshPointGetter: _makeMeshPointGetter,
-            // makeMeshCoordinateGetter: _makeMeshCoordinateGetter,
-
-            updateAnchors: _updateAnchors,
+            makeUiTracker: _makeUiTracker,
           };
         }
       });
