@@ -633,181 +633,184 @@ class Biolumi {
 
               SIDES.forEach(side => {
                 const gamepad = gamepads[side];
-                const {position: controllerPosition, rotation: controllerRotation, scale: controllerScale} = gamepad;
-                const hoverState = hoverStates[side];
-                const dotMesh = dotMeshes[side];
-                const boxMesh = boxMeshes[side];
 
-                const objects = pages.map(page => {
-                  const {mesh, width, height, worldWidth, worldHeight} = page;
-                  const matrixObject = _decomposeObjectMatrixWorld(mesh);
+                if (gamepad) {
+                  const {position: controllerPosition, rotation: controllerRotation, scale: controllerScale} = gamepad;
+                  const hoverState = hoverStates[side];
+                  const dotMesh = dotMeshes[side];
+                  const boxMesh = boxMeshes[side];
 
-                  return {
-                    matrixObject,
-                    page,
-                    width,
-                    height,
-                    worldWidth,
-                    worldHeight,
-                    worldDepth: worldWidth / 50,
-                  };
-                });
-                const intersectionSpecs = objects.map(object => {
-                  const {matrixObject, worldWidth, worldHeight, worldDepth} = object;
-                  const {position, rotation, scale} = matrixObject;
-                  const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation, controllerScale);
-
-                  const menuBoxTarget = geometryUtils.makeBoxTarget(
-                    position,
-                    rotation,
-                    scale,
-                    new THREE.Vector3(worldWidth, worldHeight, 0)
-                  );
-                  const intersectionPoint = menuBoxTarget.intersectLine(controllerLine);
-
-                  if (intersectionPoint) {
-                    const distance = controllerPosition.distanceTo(intersectionPoint);
+                  const objects = pages.map(page => {
+                    const {mesh, width, height, worldWidth, worldHeight} = page;
+                    const matrixObject = _decomposeObjectMatrixWorld(mesh);
 
                     return {
-                      object,
-                      intersectionPoint,
-                      controllerLine,
-                      controllerScale,
-                      distance,
-                    };
-                  } else {
-                    return null;
-                  }
-                }).filter(intersectionSpec => intersectionSpec !== null);
-                const intersectionSpec = intersectionSpecs.length > 0 ? intersectionSpecs.sort((a, b) => a.distance - b.distance)[0] : null;
-
-                if (intersectionSpec) {
-                  const {
-                    object: {
-                      matrixObject: {
-                        position,
-                        rotation,
-                        scale,
-                      },
+                      matrixObject,
                       page,
                       width,
                       height,
                       worldWidth,
                       worldHeight,
-                      worldDepth,
-                    },
-                    intersectionPoint,
-                    controllerLine,
-                    controllerScale,
-                  } = intersectionSpec;
-
-                  hoverState.intersectionPoint = intersectionPoint;
-                  hoverState.page = page;
-
-                  const _getMenuMeshPoint = _makeMeshPointGetter({
-                    position,
-                    rotation,
-                    scale,
-                    width,
-                    height,
-                    worldWidth,
-                    worldHeight,
-                    worldDepth,
+                      worldDepth: worldWidth / 50,
+                    };
                   });
+                  const intersectionSpecs = objects.map(object => {
+                    const {matrixObject, worldWidth, worldHeight, worldDepth} = object;
+                    const {position, rotation, scale} = matrixObject;
+                    const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation, controllerScale);
 
-                  const anchorBoxTargets = (() => {
-                    const {layer} = page;
+                    const menuBoxTarget = geometryUtils.makeBoxTarget(
+                      position,
+                      rotation,
+                      scale,
+                      new THREE.Vector3(worldWidth, worldHeight, 0)
+                    );
+                    const intersectionPoint = menuBoxTarget.intersectLine(controllerLine);
 
-                    if (layer) {
-                      const anchors = layer.getAnchors();
+                    if (intersectionPoint) {
+                      const distance = controllerPosition.distanceTo(intersectionPoint);
 
-                      return anchors.map(anchor => {
-                        const {rect} = anchor;
-
-                        const anchorBoxTarget = geometryUtils.makeBoxTargetOffset(
-                          position,
-                          rotation,
-                          scale,
-                          new THREE.Vector3(
-                            -(worldWidth / 2) + (rect.left / width) * worldWidth,
-                            (worldHeight / 2) + (-rect.top / height) * worldHeight,
-                            -worldDepth
-                          ),
-                          new THREE.Vector3(
-                            -(worldWidth / 2) + (rect.right / width) * worldWidth,
-                            (worldHeight / 2) + (-rect.bottom / height) * worldHeight,
-                            worldDepth
-                          )
-                        );
-                        anchorBoxTarget.anchor = anchor;
-
-                        return anchorBoxTarget;
-                      });
-                    } else {
-                      return [];
-                    }
-                  })();
-                  const anchorBoxTarget = (() => {
-                    const interstectedAnchorBoxTargets = anchorBoxTargets.filter(anchorBoxTarget => anchorBoxTarget.intersectLine(controllerLine));
-
-                    if (interstectedAnchorBoxTargets.length > 0) {
-                      return interstectedAnchorBoxTargets[0];
+                      return {
+                        object,
+                        intersectionPoint,
+                        controllerLine,
+                        controllerScale,
+                        distance,
+                      };
                     } else {
                       return null;
                     }
-                  })();
-                  if (anchorBoxTarget) {
-                    const {anchor} = anchorBoxTarget;
-                    hoverState.anchor = anchor;
-                    hoverState.value = (() => {
-                      const {rect} = anchor;
-                      const horizontalLine = new THREE.Line3(
-                        _getMenuMeshPoint(rect.left, (rect.top + rect.bottom) / 2, 0),
-                        _getMenuMeshPoint(rect.right, (rect.top + rect.bottom) / 2, 0)
-                      );
-                      const closestHorizontalPoint = horizontalLine.closestPointToPoint(intersectionPoint, true);
-                      return new THREE.Line3(horizontalLine.start.clone(), closestHorizontalPoint.clone()).distance() / horizontalLine.distance();
-                    })();
+                  }).filter(intersectionSpec => intersectionSpec !== null);
+                  const intersectionSpec = intersectionSpecs.length > 0 ? intersectionSpecs.sort((a, b) => a.distance - b.distance)[0] : null;
 
-                    boxMesh.position.copy(anchorBoxTarget.position);
-                    boxMesh.quaternion.copy(anchorBoxTarget.quaternion);
-                    boxMesh.scale.set(
-                      Math.max(anchorBoxTarget.size.x * anchorBoxTarget.scale.x, 0.001),
-                      Math.max(anchorBoxTarget.size.y * anchorBoxTarget.scale.y, 0.001),
-                      Math.max(anchorBoxTarget.size.z * anchorBoxTarget.scale.z, 0.001)
-                    );
-                    if (!boxMesh.visible) {
-                      boxMesh.visible = true;
+                  if (intersectionSpec) {
+                    const {
+                      object: {
+                        matrixObject: {
+                          position,
+                          rotation,
+                          scale,
+                        },
+                        page,
+                        width,
+                        height,
+                        worldWidth,
+                        worldHeight,
+                        worldDepth,
+                      },
+                      intersectionPoint,
+                      controllerLine,
+                      controllerScale,
+                    } = intersectionSpec;
+
+                    hoverState.intersectionPoint = intersectionPoint;
+                    hoverState.page = page;
+
+                    const _getMenuMeshPoint = _makeMeshPointGetter({
+                      position,
+                      rotation,
+                      scale,
+                      width,
+                      height,
+                      worldWidth,
+                      worldHeight,
+                      worldDepth,
+                    });
+
+                    const anchorBoxTargets = (() => {
+                      const {layer} = page;
+
+                      if (layer) {
+                        const anchors = layer.getAnchors();
+
+                        return anchors.map(anchor => {
+                          const {rect} = anchor;
+
+                          const anchorBoxTarget = geometryUtils.makeBoxTargetOffset(
+                            position,
+                            rotation,
+                            scale,
+                            new THREE.Vector3(
+                              -(worldWidth / 2) + (rect.left / width) * worldWidth,
+                              (worldHeight / 2) + (-rect.top / height) * worldHeight,
+                              -worldDepth
+                            ),
+                            new THREE.Vector3(
+                              -(worldWidth / 2) + (rect.right / width) * worldWidth,
+                              (worldHeight / 2) + (-rect.bottom / height) * worldHeight,
+                              worldDepth
+                            )
+                          );
+                          anchorBoxTarget.anchor = anchor;
+
+                          return anchorBoxTarget;
+                        });
+                      } else {
+                        return [];
+                      }
+                    })();
+                    const anchorBoxTarget = (() => {
+                      const interstectedAnchorBoxTargets = anchorBoxTargets.filter(anchorBoxTarget => anchorBoxTarget.intersectLine(controllerLine));
+
+                      if (interstectedAnchorBoxTargets.length > 0) {
+                        return interstectedAnchorBoxTargets[0];
+                      } else {
+                        return null;
+                      }
+                    })();
+                    if (anchorBoxTarget) {
+                      const {anchor} = anchorBoxTarget;
+                      hoverState.anchor = anchor;
+                      hoverState.value = (() => {
+                        const {rect} = anchor;
+                        const horizontalLine = new THREE.Line3(
+                          _getMenuMeshPoint(rect.left, (rect.top + rect.bottom) / 2, 0),
+                          _getMenuMeshPoint(rect.right, (rect.top + rect.bottom) / 2, 0)
+                        );
+                        const closestHorizontalPoint = horizontalLine.closestPointToPoint(intersectionPoint, true);
+                        return new THREE.Line3(horizontalLine.start.clone(), closestHorizontalPoint.clone()).distance() / horizontalLine.distance();
+                      })();
+
+                      boxMesh.position.copy(anchorBoxTarget.position);
+                      boxMesh.quaternion.copy(anchorBoxTarget.quaternion);
+                      boxMesh.scale.set(
+                        Math.max(anchorBoxTarget.size.x * anchorBoxTarget.scale.x, 0.001),
+                        Math.max(anchorBoxTarget.size.y * anchorBoxTarget.scale.y, 0.001),
+                        Math.max(anchorBoxTarget.size.z * anchorBoxTarget.scale.z, 0.001)
+                      );
+                      if (!boxMesh.visible) {
+                        boxMesh.visible = true;
+                      }
+                    } else {
+                      hoverState.anchor = null;
+                      hoverState.value = 0;
+
+                      if (boxMesh.visible) {
+                        boxMesh.visible = false;
+                      }
+                    }
+
+                    if (dotMesh) {
+                      dotMesh.position.copy(intersectionPoint);
+                      dotMesh.quaternion.copy(rotation);
+                      // dotMesh.material.size = pointsHighlightMaterial.size / ((controllerScale.x + controllerScale.y + controllerScale.z) / 3);
+
+                      if (!dotMesh.visible) {
+                        dotMesh.visible = true;
+                      }
                     }
                   } else {
+                    hoverState.intersectionPoint = null;
+                    hoverState.page = null;
                     hoverState.anchor = null;
                     hoverState.value = 0;
 
                     if (boxMesh.visible) {
                       boxMesh.visible = false;
                     }
-                  }
-
-                  if (dotMesh) {
-                    dotMesh.position.copy(intersectionPoint);
-                    dotMesh.quaternion.copy(rotation);
-                    // dotMesh.material.size = pointsHighlightMaterial.size / ((controllerScale.x + controllerScale.y + controllerScale.z) / 3);
-
-                    if (!dotMesh.visible) {
-                      dotMesh.visible = true;
+                    if (dotMesh.visible) {
+                      dotMesh.visible = false;
                     }
-                  }
-                } else {
-                  hoverState.intersectionPoint = null;
-                  hoverState.page = null;
-                  hoverState.anchor = null;
-                  hoverState.value = 0;
-
-                  if (boxMesh.visible) {
-                    boxMesh.visible = false;
-                  }
-                  if (dotMesh.visible) {
-                    dotMesh.visible = false;
                   }
                 }
               });

@@ -850,7 +850,7 @@ class World {
                   const grabMesh = grabManager.getMesh(side);
 
                   if (!grabMesh) {
-                    return tags.getHoveredTagMesh(side);
+                    return tags.getGrabTagMesh(side);
                   } else {
                     return null;
                   }

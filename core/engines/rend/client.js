@@ -598,6 +598,14 @@ class Rend {
             uiTracker.addPage(page);
           }
 
+          removePage(page) {
+            uiTracker.removePage(page);
+          }
+
+          getHoverState(side) {
+            return uiTracker.getHoverState(side);
+          }
+
           login() {
             menuState.open = true;
             menuState.position = [0, DEFAULT_USER_HEIGHT, -1.5];
