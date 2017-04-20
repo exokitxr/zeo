@@ -128,21 +128,16 @@ class Rend {
 
         const menuMesh = (() => {
           if (serverEnabled) {
-            const menuUi = biolumi.makeUi({
-              width: WIDTH,
-              height: HEIGHT,
-            });
-            const navbarUi = biolumi.makeUi({
-              width: NAVBAR_WIDTH,
-              height: NAVBAR_HEIGHT,
-            });
-
             const menuMesh = (() => {
               const object = new THREE.Object3D();
               object.position.set(0, DEFAULT_USER_HEIGHT, -1.5);
               object.visible = menuState.open;
 
               const statusMesh = (() => {
+                const menuUi = biolumi.makeUi({
+                  width: WIDTH,
+                  height: HEIGHT,
+                });
                 const mesh = menuUi.makePage(({
                   status,
                 }) => ({
@@ -176,6 +171,10 @@ class Rend {
               object.trashMesh = null;
 
               const navbarMesh = (() => {
+                const navbarUi = biolumi.makeUi({
+                  width: NAVBAR_WIDTH,
+                  height: NAVBAR_HEIGHT,
+                });
                 const mesh = navbarUi.makePage(({
                   navbar: {
                     tab,

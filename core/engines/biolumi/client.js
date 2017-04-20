@@ -179,7 +179,7 @@ class Biolumi {
           }); */
 
           class Page {
-            constructor(parent, spec, type, state, color, world, height, worldWidth, worldHeight) {
+            constructor(parent, spec, type, state, color, width, height, worldWidth, worldHeight) {
               this.parent = parent;
               this.spec = spec;
               this.type = type;
@@ -190,7 +190,7 @@ class Biolumi {
               this.worldWidth = worldWidth;
               this.worldHeight = worldHeight;
 
-              const mesh = () => {
+              const mesh = (() => {
                 const geometry = new THREE.PlaneBufferGeometry(worldWidth, worldHeight);
                 const material = (() => {
                   const shaderUniforms = THREE.UniformsUtils.clone(menuShader.uniforms);
@@ -228,7 +228,7 @@ class Biolumi {
                 };
 
                 return mesh;
-              };
+              })();
               this.mesh = mesh;
               this.layer = null;
               this.rendered = false;
@@ -337,7 +337,7 @@ class Biolumi {
                 const {layerSpec, img} = cache;
                 const {pixelated = false} = layerSpec;
 
-                const {material: {uniforms: {texture: {value: texture}}}} = this;
+                const {mesh: {material: {uniforms: {texture: {value: texture}}}}} = this;
                 texture.image = img;
                 if (!pixelated) {
                   texture.minFilter = THREE.LinearFilter;
@@ -810,8 +810,8 @@ class Biolumi {
                     dotMesh.visible = false;
                   }
                 }
-              };
-            });
+              });
+            }
           }
 
           const _makeUi = ({width, height, color = [1, 1, 1, 1]}) => new Ui(width, height, color);
