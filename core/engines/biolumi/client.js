@@ -790,14 +790,12 @@ class Biolumi {
                       }
                     }
 
-                    if (dotMesh) {
-                      dotMesh.position.copy(intersectionPoint);
-                      dotMesh.quaternion.copy(rotation);
-                      // dotMesh.material.size = pointsHighlightMaterial.size / ((controllerScale.x + controllerScale.y + controllerScale.z) / 3);
+                    dotMesh.position.copy(intersectionPoint);
+                    dotMesh.quaternion.copy(rotation);
+                    // dotMesh.material.size = pointsHighlightMaterial.size / ((controllerScale.x + controllerScale.y + controllerScale.z) / 3);
 
-                      if (!dotMesh.visible) {
-                        dotMesh.visible = true;
-                      }
+                    if (!dotMesh.visible) {
+                      dotMesh.visible = true;
                     }
                   } else {
                     hoverState.intersectionPoint = null;

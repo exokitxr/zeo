@@ -94,6 +94,11 @@ class Rend {
         };
 
         const uiTracker = biolumi.makeUiTracker();
+        const {dotMeshes, boxMeshes} = uiTracker;
+        SIDES.forEach(side => {
+          scene.add(dotMeshes[side]);
+          scene.add(boxMeshes[side]);
+        });
 
         const localUpdates = [];
 
@@ -445,6 +450,13 @@ class Rend {
 
             cleanups.push(() => {
               scene.remove(menuMesh);
+
+              SIDES.forEach(side => {
+                const {dotMeshes, boxMeshes} = uiTracker;
+
+                scene.remove(dotMeshes[side]);
+                scene.remove(boxMeshes[side]);
+              });
 
               input.removeListener('trigger', trigger);
               input.removeListener('menudown', menudown);
