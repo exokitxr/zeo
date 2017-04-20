@@ -672,13 +672,6 @@ class Tags {
             right: _makeGrabHoverState(),
           };
 
-          const dotMeshes = {
-            left: biolumi.makeMenuDotMesh(),
-            right: biolumi.makeMenuDotMesh(),
-          };
-          scene.add(dotMeshes.left);
-          scene.add(dotMeshes.right);
-
           const linesMesh = (() => {
             const maxNumLines = 256;
 
@@ -760,13 +753,6 @@ class Tags {
             left: _makeDragState(),
             right: _makeDragState(),
           };
-
-          const boxMeshes = {
-            left: biolumi.makeMenuBoxMesh(),
-            right: biolumi.makeMenuBoxMesh(),
-          };
-          scene.add(boxMeshes.left);
-          scene.add(boxMeshes.right);
 
           const _makeGrabBoxMesh = () => {
             const width = WORLD_WIDTH;
@@ -1965,12 +1951,9 @@ class Tags {
               tagMesh.parent.remove(tagMesh);
             }
             SIDES.forEach(side => {
-              scene.remove(dotMeshes[side]);
-              scene.remove(boxMeshes[side]);
               scene.remove(grabBoxMeshes[side]);
-
-              scene.remove(positioningMesh);
             });
+            scene.remove(positioningMesh);
             scene.remove(linesMesh);
 
             input.removeListener('trigger', _trigger);
