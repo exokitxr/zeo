@@ -720,7 +720,7 @@ class World {
                   width: WIDTH,
                   height: HEIGHT,
                 });
-                const mesh = worldUi.addPage(({
+                const mesh = worldUi.makePage(({
                   npm: {
                     loading,
                     inputText,

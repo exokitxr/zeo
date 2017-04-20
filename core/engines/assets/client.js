@@ -84,7 +84,7 @@ class Assets {
                 height: LABEL_HEIGHT,
                 color: [1, 1, 1, 0],
               });
-              const mesh = menuUi.addPage(({
+              const mesh = menuUi.makePage(({
                 label: labelState,
               }) => ({
                 type: 'html',
@@ -136,7 +136,7 @@ class Assets {
                 height: MENU_HEIGHT,
                 color: [1, 1, 1, 0],
               });
-              const mesh = menuUi.addPage(({
+              const mesh = menuUi.makePage(({
                 menu: menuState,
               }) => ({
                 type: 'html',

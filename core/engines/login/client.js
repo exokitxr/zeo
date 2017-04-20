@@ -110,7 +110,7 @@ class Login {
             object.position.y = DEFAULT_USER_HEIGHT;
 
             const planeMesh = (() => {
-              const mesh = menuUi.addPage(({
+              const mesh = menuUi.makePage(({
                 login: {
                   hasHub,
                   token,

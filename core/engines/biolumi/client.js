@@ -574,7 +574,7 @@ class Biolumi {
               this.page = null;
             }
 
-            addPage(spec, {type = null, state = null, worldWidth, worldHeight, metadata} = {}) {
+            makePage(spec, {type = null, state = null, worldWidth, worldHeight, metadata} = {}) {
               const {page} = this;
 
               if (!page) {
@@ -634,6 +634,15 @@ class Biolumi {
 
             addPage(page) {
               this.pages.push(page);
+            }
+
+            removePage(page) {
+              const {pages} = this;
+              pages.splice(pages.indexOf(page), pages);
+            }
+
+            getHoverState(side) {
+              return this.hoverStates[side];
             }
 
             update({pose}) {

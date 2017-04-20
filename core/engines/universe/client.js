@@ -180,7 +180,7 @@ class Universe {
                   width: WIDTH,
                   height: HEIGHT,
                 });
-                const mesh = backgroundUi.addPage(({backgroundImage}) => ({
+                const mesh = backgroundUi.makePage(({backgroundImage}) => ({
                   type: 'html',
                   src: universeRenderer.getBackgroundImageSrc(backgroundImage),
                   x: 0,

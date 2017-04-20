@@ -213,7 +213,7 @@ class Home {
                   width: WIDTH,
                   height: HEIGHT,
                 });
-                const mesh = menuUi.addPage(({
+                const mesh = menuUi.makePage(({
                   home: {
                     page,
                     remoteServers,
@@ -451,7 +451,7 @@ class Home {
                   width: SERVER_WIDTH,
                   height: SERVER_HEIGHT,
                 });
-                const mesh = serverUi.addPage(({
+                const mesh = serverUi.makePage(({
                   server: {
                     worldname,
                     url,

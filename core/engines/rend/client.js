@@ -93,6 +93,8 @@ class Rend {
           return {position, rotation, scale};
         };
 
+        const uiTracker = biolumi.makeUiTracker();
+
         const localUpdates = [];
 
         const auxObjects = {
@@ -141,7 +143,7 @@ class Rend {
               object.visible = menuState.open;
 
               const statusMesh = (() => {
-                const mesh = menuUi.addPage(({
+                const mesh = menuUi.makePage(({
                   status,
                 }) => ({
                   type: 'html',
@@ -160,6 +162,9 @@ class Rend {
                 });
                 mesh.receiveShadow = true;
 
+                const {page} = mesh;
+                uiTracker.addPage(page);
+
                 return mesh;
               })();
               object.add(statusMesh);
@@ -171,7 +176,7 @@ class Rend {
               object.trashMesh = null;
 
               const navbarMesh = (() => {
-                const mesh = navbarUi.addPage(({
+                const mesh = navbarUi.makePage(({
                   navbar: {
                     tab,
                   },
@@ -192,6 +197,9 @@ class Rend {
                 });
                 mesh.position.y = (WORLD_HEIGHT / 2) + (NAVBAR_WORLD_HEIGHT / 2);
                 mesh.receiveShadow = true;
+
+                const {page} = mesh;
+                uiTracker.addPage(page);
 
                 return mesh;
               })();
@@ -214,43 +222,6 @@ class Rend {
             })();
             scene.add(menuMesh);
 
-            const menuHoverStates = {
-              left: biolumi.makeMenuHoverState(),
-              right: biolumi.makeMenuHoverState(),
-            };
-            const navbarHoverStates = {
-              left: biolumi.makeMenuHoverState(),
-              right: biolumi.makeMenuHoverState(),
-            };
-
-            const menuDotMeshes = {
-              left: biolumi.makeMenuDotMesh(),
-              right: biolumi.makeMenuDotMesh(),
-            };
-            scene.add(menuDotMeshes.left);
-            scene.add(menuDotMeshes.right);
-
-            const menuBoxMeshes = {
-              left: biolumi.makeMenuBoxMesh(),
-              right: biolumi.makeMenuBoxMesh(),
-            };
-            scene.add(menuBoxMeshes.left);
-            scene.add(menuBoxMeshes.right);
-
-            const navbarDotMeshes = {
-              left: biolumi.makeMenuDotMesh(),
-              right: biolumi.makeMenuDotMesh(),
-            };
-            scene.add(navbarDotMeshes.left);
-            scene.add(navbarDotMeshes.right);
-
-            const navbarBoxMeshes = {
-              left: biolumi.makeMenuBoxMesh(),
-              right: biolumi.makeMenuBoxMesh(),
-            };
-            scene.add(navbarBoxMeshes.left);
-            scene.add(navbarBoxMeshes.right);
-
             const trigger = e => {
               const {open} = menuState;
 
@@ -258,8 +229,8 @@ class Rend {
                 const {side} = e;
 
                 const _doClickNavbar = () => {
-                  const navbarHoverState = navbarHoverStates[side];
-                  const {anchor} = navbarHoverState;
+                  const hoverState = uiTracker.getHoverState(side);
+                  const {anchor} = hoverState;
                   const onclick = (anchor && anchor.onclick) || '';
 
                   let match;
@@ -294,8 +265,8 @@ class Rend {
                   }
                 };
                 const _doClickMenu = () => {
-                  const menuHoverState = menuHoverStates[side];
-                  const {anchor} = menuHoverState;
+                  const hoverState = uiTracker.getHoverState(side);
+                  const {anchor} = hoverState;
                   const onclick = (anchor && anchor.onclick) || '';
 
                   if (onclick === 'status:downloadLoginToken') {
@@ -353,14 +324,6 @@ class Rend {
                 const {open, animation} = menuState;
 
                 if (open) {
-                  SIDES.forEach(side => {
-                    menuBoxMeshes[side].visible = false;
-                    menuDotMeshes[side].visible = false;
-
-                    navbarBoxMeshes[side].visible = false;
-                    navbarDotMeshes[side].visible = false;
-                  });
-
                   menuState.open = false; // XXX need to cancel other menu states as well
                   menuState.position = null;
                   menuState.rotation = null;
@@ -471,87 +434,21 @@ class Rend {
                   }
                 }
               };
-              const _updateMenuAnchors = () => {
-                const {open} = menuState;
+              const _updateUiTracker = () => {
+                const navbarHoverState = navbarHoverStates[side];
 
-                if (open) {
-                  const {gamepads} = webvr.getStatus();
-
-                  const {statusMesh, navbarMesh} = menuMesh;
-                  const menuMatrixObject = _decomposeObjectMatrixWorld(statusMesh);
-                  const {page: statusPage} = statusMesh;
-                  const navbarMatrixObject = _decomposeObjectMatrixWorld(navbarMesh);
-                  const {page: navbarPage} = navbarMesh;
-
-                  SIDES.forEach(side => {
-                    const gamepad = gamepads[side];
-
-                    if (gamepad) {
-                      const {position: controllerPosition, rotation: controllerRotation, scale: controllerScale} = gamepad;
-
-                      const menuHoverState = menuHoverStates[side];
-                      const menuDotMesh = menuDotMeshes[side];
-                      const menuBoxMesh = menuBoxMeshes[side];
-
-                      const navbarHoverState = navbarHoverStates[side];
-                      const navbarDotMesh = navbarDotMeshes[side];
-                      const navbarBoxMesh = navbarBoxMeshes[side];
-
-                      const {tab} = navbarState;
-                      if (tab === 'status') {
-                        biolumi.updateAnchors({
-                          objects: [{
-                            matrixObject: menuMatrixObject,
-                            page: statusPage,
-                            width: WIDTH,
-                            height: HEIGHT,
-                            worldWidth: WORLD_WIDTH,
-                            worldHeight: WORLD_HEIGHT,
-                            worldDepth: WORLD_DEPTH,
-                          }],
-                          hoverState: menuHoverState,
-                          dotMesh: menuDotMesh,
-                          boxMesh: menuBoxMesh,
-                          controllerPosition,
-                          controllerRotation,
-                          controllerScale,
-                        });
-                      }
-
-                      biolumi.updateAnchors({
-                        objects: [{
-                          matrixObject: navbarMatrixObject,
-                          page: navbarPage,
-                          width: NAVBAR_WIDTH,
-                          height: NAVBAR_HEIGHT,
-                          worldWidth: NAVBAR_WORLD_WIDTH,
-                          worldHeight: NAVBAR_WORLD_HEIGHT,
-                          worldDepth: NAVBAR_WORLD_DEPTH,
-                        }],
-                        hoverState: navbarHoverState,
-                        dotMesh: navbarDotMesh,
-                        boxMesh: navbarBoxMesh,
-                        controllerPosition,
-                        controllerRotation,
-                        controllerScale,
-                      });
-                    }
-                  });
-                }
+                uiTracker.update({
+                  pose: webvr.getPose(),
+                });
               };
 
               _updateMeshAnimations();
-              _updateMenuAnchors();
+              _updateUiTracker();
             });
 
             cleanups.push(() => {
               scene.remove(menuMesh);
-              SIDES.forEach(side => {
-                scene.remove(menuDotMeshes[side]);
-                scene.remove(menuBoxMeshes[side]);
-                scene.remove(navbarDotMeshes[side]);
-                scene.remove(navbarBoxMeshes[side]);
-              });
+
               input.removeListener('trigger', trigger);
               input.removeListener('menudown', menudown);
             });

@@ -612,7 +612,7 @@ class Tags {
               this.metadata = metadata;
             }
 
-            addPage(pageSpec, options) {
+            makePage(pageSpec, options) {
               const {width, height, color, uis} = this;
 
               const ui = biolumi.makeUi({
@@ -620,7 +620,7 @@ class Tags {
                 height: height,
                 color,
               });
-              const pageMesh = ui.addPage(pageSpec, options);
+              const pageMesh = ui.makePage(pageSpec, options);
               return pageMesh;
             }
           }
@@ -2665,7 +2665,7 @@ class Tags {
               const _addUiManagerPage = uiManager => {
                 const {metadata: {open, details}} = uiManager;
 
-                const mesh = uiManager.addPage(({
+                const mesh = uiManager.makePage(({
                   item,
                   details: {
                     positioningId,
@@ -2881,7 +2881,7 @@ class Tags {
                             attribute: attribute,
                             focus: focusState,
                           };
-                          const newAttributeMesh = uiAttributeManager.addPage(({
+                          const newAttributeMesh = uiAttributeManager.makePage(({
                             attribute,
                             focus: {
                               keyboardFocusState,

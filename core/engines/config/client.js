@@ -201,7 +201,7 @@ class Config {
                       width: WIDTH,
                       height: HEIGHT,
                     });
-                    const mesh = configUi.addPage(({
+                    const mesh = configUi.makePage(({
                       config: {
                         resolutionValue,
                         voiceChatCheckboxValue,
@@ -253,7 +253,7 @@ class Config {
                       width: STATS_WIDTH,
                       height: STATS_HEIGHT,
                     });
-                    const mesh = statsUi.addPage(({
+                    const mesh = statsUi.makePage(({
                       config: {
                         statsCheckboxValue,
                       },
