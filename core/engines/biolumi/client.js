@@ -594,15 +594,15 @@ class Biolumi {
             constructor() {
               this.pages = [];
 
-              const _makeMenuHoverState = () => ({
+              const _makeHoverState = () => ({
                 intersectionPoint: null,
                 metadata: null,
                 anchor: null,
                 value: 0,
               });
               this.hoverStates = {
-                left: _makeMenuHoverState(),
-                right: _makeMenuHoverState(),
+                left: _makeHoverState(),
+                right: _makeHoverState(),
               };
 
               this.dotMeshes = {
