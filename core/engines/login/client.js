@@ -95,21 +95,15 @@ class Login {
             keyboardFocusState: null,
           };
 
-          const menuHoverStates = {
-            left: biolumi.makeMenuHoverState(),
-            right: biolumi.makeMenuHoverState(),
-          };
-
-          const menuUi = biolumi.makeUi({
-            width: WIDTH,
-            height: HEIGHT,
-          });
-
           const menuMesh = (() => {
             const object = new THREE.Object3D();
             object.position.y = DEFAULT_USER_HEIGHT;
 
             const planeMesh = (() => {
+              const menuUi = biolumi.makeUi({
+                width: WIDTH,
+                height: HEIGHT,
+              });
               const mesh = menuUi.makePage(({
                 login: {
                   hasHub,
@@ -152,6 +146,9 @@ class Login {
               mesh.position.z = -1;
               mesh.receiveShadow = true;
 
+              const {page} = mesh;
+              rend.addPage(page);
+
               return mesh;
             })();
             object.add(planeMesh);
@@ -171,20 +168,6 @@ class Login {
             return object;
           })();
           scene.add(menuMesh);
-
-          const menuDotMeshes = {
-            left: biolumi.makeMenuDotMesh(),
-            right: biolumi.makeMenuDotMesh(),
-          };
-          scene.add(menuDotMeshes.left);
-          scene.add(menuDotMeshes.right);
-
-          const menuBoxMeshes = {
-            left: biolumi.makeMenuBoxMesh(),
-            right: biolumi.makeMenuBoxMesh(),
-          };
-          scene.add(menuBoxMeshes.left);
-          scene.add(menuBoxMeshes.right);
 
           const _updatePages = () => {
             const {planeMesh} = menuMesh;
@@ -299,18 +282,18 @@ class Login {
 
                 const _trigger = e => {
                   const {side} = e;
-                  const menuHoverState = menuHoverStates[side];
-                  const {intersectionPoint} = menuHoverState;
+                  const hoverState = rend.getHoverState(side);
+                  const {intersectionPoint} = hoverState;
 
                   if (intersectionPoint) {
-                    const {anchor} = menuHoverState;
+                    const {anchor} = hoverState;
                     const onclick = (anchor && anchor.onclick) || '';
 
                     if (onclick === 'login:back') {
                       bootstrap.navigate('https://' + hubUrl);
                     } else if (onclick === 'login:focus:token') {
                       const {token: inputText} = loginState;
-                      const {value} = menuHoverState;
+                      const {value} = hoverState;
                       const valuePx = value * 640;
                       const {index, px} = biolumi.getTextPropertiesFromCoord(loginState.inputText, mainFontSpec, valuePx); // XXX this can be folded into the keyboard engine
                       const {hmd: {position: hmdPosition, rotation: hmdRotation}} = webvr.getStatus();
@@ -348,52 +331,6 @@ class Login {
                 };
                 input.on('trigger', _trigger);
 
-                const _update = () => {
-                  const {open} = loginState;
-
-                  if (open) {
-                    const _updateAnchors = () => {
-                      const {gamepads} = webvr.getStatus();
-
-                      const {planeMesh} = menuMesh;
-                      const {page} = planeMesh;
-                      const menuMatrixObject = _decomposeObjectMatrixWorld(planeMesh);
-
-                      SIDES.forEach(side => {
-                        const gamepad = gamepads[side];
-
-                        if (gamepad) {
-                          const {position: controllerPosition, rotation: controllerRotation, scale: controllerScale} = gamepad;
-
-                          const menuHoverState = menuHoverStates[side];
-                          const menuDotMesh = menuDotMeshes[side];
-                          const menuBoxMesh = menuBoxMeshes[side];
-
-                          biolumi.updateAnchors({
-                            objects: [{
-                              matrixObject: menuMatrixObject,
-                              page: page,
-                              width: WIDTH,
-                              height: HEIGHT,
-                              worldWidth: WORLD_WIDTH,
-                              worldHeight: WORLD_HEIGHT,
-                              worldDepth: WORLD_DEPTH,
-                            }],
-                            hoverState: menuHoverState,
-                            dotMesh: menuDotMesh,
-                            boxMesh: menuBoxMesh,
-                            controllerPosition,
-                            controllerRotation,
-                            controllerScale,
-                          });
-                        }
-                      });
-                    };
-                    _updateAnchors();
-                  }
-                };
-                rend.on('update', _update);
-
                 const _upload = file => {
                   if (loginApi.isOpen()) {
                     const reader = new FileReader();
@@ -410,14 +347,8 @@ class Login {
                 this._cleanup = () => {
                   scene.remove(menuMesh);
 
-                  SIDES.forEach(side => {
-                    scene.remove(menuDotMeshes[side]);
-                    scene.remove(menuBoxMeshes[side]);
-                  });
-
                   input.removeListener('trigger', _trigger);
 
-                  rend.removeListener('update', _update);
                   rend.removeListener('login', _login);
                   rend.removeListener('logout', _logout);
 
