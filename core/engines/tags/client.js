@@ -1468,11 +1468,7 @@ class Tags {
               }
             };
 
-            _doClickDetails() || _doClickGrabNpmTag() || _doClickGrabWorldTag() || _doClickAux() || _doSetPosition() || _doClickAttribute();
-
-            const hoverState = rend.getHoverState(side);
-            const {intersectionPoint} = hoverState;
-            if (intersectionPoint) {
+            if (_doClickDetails() || _doClickGrabNpmTag() || _doClickGrabWorldTag() || _doClickAux() || _doSetPosition() || _doClickAttribute()) {
               e.stopImmediatePropagation();
             }
           };

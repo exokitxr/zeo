@@ -316,8 +316,7 @@ class Rend {
                   }
                 };
 
-                _doClickNavbar();
-                _doClickMenu();
+                _doClickNavbar() || _doClickMenu();
               }
             };
             input.on('trigger', trigger);
