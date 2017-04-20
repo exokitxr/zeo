@@ -434,10 +434,8 @@ class Rend {
                 }
               };
               const _updateUiTracker = () => {
-                const navbarHoverState = navbarHoverStates[side];
-
                 uiTracker.update({
-                  pose: webvr.getPose(),
+                  pose: webvr.getStatus(),
                 });
               };
 
