@@ -369,6 +369,17 @@ class Keyboard {
           const {key} = keyMesh;
 
           if (key) {
+            e.stopImmediatePropagation();
+          }
+        };
+        input.on('triggerdown', _triggerdown);
+        const _trigger = e => {
+          const {side} = e;
+          const {keyMeshes} = keyboardMesh;
+          const keyMesh = keyMeshes[side];
+          const {key} = keyMesh;
+
+          if (key) {
             if (key !== 'header') {
               const keyCode = biolumi.getKeyCode(key);
 
@@ -392,7 +403,7 @@ class Keyboard {
             e.stopImmediatePropagation();
           }
         };
-        input.on('triggerdown', _triggerdown);
+        input.on('trigger', _trigger);
         const _triggerup = e => {
           const {side} = e;
           const {keyMeshes} = keyboardMesh;
@@ -630,6 +641,9 @@ class Keyboard {
 
           input.removeListener('keydown', _keydown);
           input.removeListener('keyboarddown', _keyboarddown);
+          input.on('triggerdown', _triggerdown);
+          input.on('trigger', _trigger);
+          input.on('triggerup', _triggerup);
           input.removeListener('paste', _paste);
 
           rend.removeListener('update', _update);
