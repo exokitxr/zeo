@@ -179,7 +179,7 @@ class Biolumi {
           }); */
 
           class Page {
-            constructor(parent, spec, type, state, color, world, height, worldWidth, worldHeight, metadata) {
+            constructor(parent, spec, type, state, color, world, height, worldWidth, worldHeight) {
               this.parent = parent;
               this.spec = spec;
               this.type = type;
@@ -189,7 +189,6 @@ class Biolumi {
               this.height = height;
               this.worldWidth = worldWidth;
               this.worldHeight = worldHeight;
-              this.metadata = metadata;
 
               const mesh = () => {
                 const geometry = new THREE.PlaneBufferGeometry(worldWidth, worldHeight);
@@ -574,12 +573,12 @@ class Biolumi {
               this.page = null;
             }
 
-            makePage(spec, {type = null, state = null, worldWidth, worldHeight, metadata} = {}) {
+            makePage(spec, {type = null, state = null, worldWidth, worldHeight} = {}) {
               const {page} = this;
 
               if (!page) {
                 const {width, height, color} = this;
-                const page = new Page(this, spec, type, state, color, width, height, worldWidth, worldHeight, metadata);
+                const page = new Page(this, spec, type, state, color, width, height, worldWidth, worldHeight);
                 this.page = page;
 
                 const {mesh} = page;
@@ -596,7 +595,7 @@ class Biolumi {
 
               const _makeHoverState = () => ({
                 intersectionPoint: null,
-                metadata: null,
+                page: null,
                 anchor: null,
                 value: 0,
               });
@@ -640,7 +639,7 @@ class Biolumi {
                 const boxMesh = boxMeshes[side];
 
                 const objects = pages.map(page => {
-                  const {mesh, width, height, worldWidth, worldHeight, metadata} = page;
+                  const {mesh, width, height, worldWidth, worldHeight} = page;
                   const matrixObject = _decomposeObjectMatrixWorld(mesh);
 
                   return {
@@ -651,7 +650,6 @@ class Biolumi {
                     worldWidth,
                     worldHeight,
                     worldDepth: worldWidth / 50,
-                    metadata,
                   };
                 });
                 const intersectionSpecs = objects.map(object => {
@@ -697,7 +695,6 @@ class Biolumi {
                       worldWidth,
                       worldHeight,
                       worldDepth,
-                      metadata,
                     },
                     intersectionPoint,
                     controllerLine,
@@ -705,7 +702,7 @@ class Biolumi {
                   } = intersectionSpec;
 
                   hoverState.intersectionPoint = intersectionPoint;
-                  hoverState.metadata = metadata || null;
+                  hoverState.page = page;
 
                   const _getMenuMeshPoint = _makeMeshPointGetter({
                     position,
@@ -802,7 +799,7 @@ class Biolumi {
                   }
                 } else {
                   hoverState.intersectionPoint = null;
-                  hoverState.metadata = null;
+                  hoverState.page = null;
                   hoverState.anchor = null;
                   hoverState.value = 0;
 

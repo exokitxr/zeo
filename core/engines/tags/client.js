@@ -25,6 +25,8 @@ import tagsRender from './lib/render/tags';
 const SIDES = ['left', 'right'];
 const AXES = ['x', 'y', 'z'];
 
+const tagMeshSymbol = Symbol();
+
 const itemInstanceSymbol = Symbol();
 const itemInstancingSymbol = Symbol();
 const itemPageSymbol = Symbol();
@@ -1143,30 +1145,33 @@ class Tags {
 
                 if (gripPressed) {
                   const hoverState = rend.getHoverState(side);
-                  const {intersectionPoint} = hoverState;
+                  const {page} = hoverState;
 
-                  if (intersectionPoint) {
-                    const {metadata} = hoverState;
-                    const {type} = metadata;
+                  if (page) {
+                    const {mesh} = page;
 
-                    if (type === 'module' || type === 'entity' || type === 'file') {
-                      const {tagMesh} = metadata;
+                    if (mesh[tagMeshSymbol]) {
+                      const tagMesh = mesh;
                       const {item} = tagMesh;
-                      const {type: itemType, metadata: itemMetadata} = item;
+                      const {type} = item;
 
-                      if (
-                        (itemType === 'module' && !(itemMetadata && itemMetadata.isStatic)) ||
-                        (itemType === 'entity' && !(itemMetadata && itemMetadata.isStatic)) ||
-                        (itemType === 'file')
-                      ) {
-                        tagsApi.emit('grabWorldTag', {
-                          side,
-                          tagMesh
-                        });
+                      if (type === 'module' || type === 'entity' || type === 'file') {
+                        const {metadata} = item;
 
-                        return true;
-                      } else {
-                        return false;
+                        if (
+                          (type === 'module' && !(metadata && metadata.isStatic)) ||
+                          (type === 'entity' && !(metadata && metadata.isStatic)) ||
+                          (type === 'file')
+                        ) {
+                          tagsApi.emit('grabWorldTag', {
+                            side,
+                            tagMesh
+                          });
+
+                          return true;
+                        } else {
+                          return false;
+                        }
                       }
                     } else {
                       return false;
@@ -2544,10 +2549,9 @@ class Tags {
                       attributeName: match[2],
                     };
                   })();
+                  const {type: itemType} = item;
                   const src = (() => {
-                    const {type} = item;
-
-                    switch (type) {
+                    switch (itemType) {
                       case 'module': {
                         if (!details) {
                           return tagsRenderer.getModuleSrc({item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec});
@@ -2586,6 +2590,8 @@ class Tags {
                   worldHeight: open ? WORLD_OPEN_HEIGHT : details ? WORLD_DETAILS_HEIGHT : WORLD_HEIGHT,
                 });
                 mesh.receiveShadow = true;
+
+                mesh[tagMeshSymbol] = true;
 
                 return mesh;
               };
@@ -2994,8 +3000,16 @@ class Tags {
 
             getPointedTagMesh(side) {
               const hoverState = rend.getHoverState(side);
-              const {metadata} = hoverState; // XXX flag the metadata as pointing to a tag mesh before returning it here
-              return metadata ? metadata.tagMesh : null;
+              const {page} = hoverState;
+
+              if (page) {
+                const {mesh} = page;
+
+                if (mesh[tagMeshSymbol]) {
+                  const tagMesh = mesh;
+                  return tagMesh;
+                }
+              }
             }
 
             getGrabTagMesh(side) {
@@ -3016,7 +3030,6 @@ class Tags {
             }
 
             updateLinesMesh() {
-              // XXX this needs to actually sync to the object positions
               linesMesh.render();
             }
 
