@@ -166,7 +166,6 @@ class Rend {
               object.statusMesh = statusMesh;
 
               object.worldMesh = null;
-              object.universeMesh = null;
               object.configMesh = null;
               object.statsMesh = null;
               object.trashMesh = null;
@@ -264,14 +263,13 @@ class Rend {
                   const onclick = (anchor && anchor.onclick) || '';
 
                   let match;
-                  if (match = onclick.match(/^navbar:(status|world|worlds|options)$/)) {
+                  if (match = onclick.match(/^navbar:(status|world|options)$/)) {
                     const newTab = match[1];
 
                     const _getTabMesh = tab => {
                       switch (tab) {
                         case 'status': return menuMesh.statusMesh;
                         case 'world': return menuMesh.worldMesh;
-                        case 'worlds': return menuMesh.universeMesh;
                         case 'options': return menuMesh.configMesh;
                         default: return null;
                       }
