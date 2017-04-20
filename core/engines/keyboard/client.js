@@ -733,7 +733,11 @@ class Keyboard {
 
               keyboardMesh.visible = false;
 
+              const {keyMeshes} = keyboardMesh;
               SIDES.forEach(side => {
+                const keyMesh = keyMeshes[side];
+                keyMesh.key = null;
+
                 const dotMesh = dotMeshes[side];
                 dotMesh.visible = false;
               });
