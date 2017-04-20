@@ -2569,8 +2569,10 @@ class Tags {
                   worldHeight: open ? WORLD_OPEN_HEIGHT : details ? WORLD_DETAILS_HEIGHT : WORLD_HEIGHT,
                 });
                 mesh.receiveShadow = true;
-
                 mesh[tagMeshSymbol] = true;
+
+                const {page} = mesh;
+                rend.addPage(page);
 
                 return mesh;
               };
