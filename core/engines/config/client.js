@@ -326,7 +326,7 @@ class Config {
 
                   if (isOpen && tab === 'options') {
                     const {side} = e;
-                    const hoverState = uiTracker.getHoverState(side);
+                    const hoverState = rend.getHoverState(side);
                     const {intersectionPoint} = hoverState;
 
                     if (intersectionPoint) {
