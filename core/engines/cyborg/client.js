@@ -234,10 +234,12 @@ class Cyborg {
                 object.tip = tip; */
 
                 const rayMesh = (() => {
-                  const geometry = new THREE.CylinderBufferGeometry(0.001, 0.001, 15, 32, 1);
-                  geometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -15 / 2));
-                  const material = new THREE.MeshPhongMaterial({
-                    color: 0x2196F3,
+                  const geometry = new THREE.CylinderBufferGeometry(0.001, 0.001, 15, 32, 1)
+                    .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
+                    .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -15 / 2));
+                  const material = new THREE.MeshBasicMaterial({
+                    // color: 0x2196F3,
+                    color: 0x44c2ff,
                   });
 
                   const mesh = new THREE.Mesh(geometry, material);
