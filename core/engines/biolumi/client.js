@@ -1,6 +1,7 @@
 import keycode from 'keycode';
 
 import menuShader from './lib/shaders/menu';
+// import circleImg from './lib/img/circle';
 
 const DEFAULT_FRAME_TIME = 1000 / (60 * 2)
 
@@ -23,9 +24,9 @@ class Biolumi {
       }
     };
 
-    const _requestTransparentImg = () => new Promise((accept, reject) => {
+    const _requestImg = src => new Promise((accept, reject) => {
       const img = new Image();
-      img.src = transparentImgUrl;
+      img.src = src;
       img.onload = () => {
         accept(img);
       };
@@ -33,6 +34,8 @@ class Biolumi {
         reject(err);
       };
     });
+    const _requestTransparentImg = () => _requestImg(transparentImgUrl);
+    // const _requestDotImg = () => _requestImg(circleImgUrl);
     const _requestUiWorker = () => {
       class UiWorker {
         constructor({frameTime = DEFAULT_FRAME_TIME} = {}) {
@@ -137,6 +140,7 @@ class Biolumi {
         '/core/utils/geometry-utils',
       ]),
       _requestTransparentImg(),
+      // _requestDotImg(),
       _requestUiWorker(),
       _requestUiTimer(),
     ])
@@ -147,6 +151,7 @@ class Biolumi {
           geometryUtils,
         ],
         transparentImg,
+        // dotImg,
         uiWorker,
         uiTimer,
       ]) => {
@@ -724,19 +729,36 @@ class Biolumi {
           });
 
           const pointsHighlightMaterial = new THREE.PointsMaterial({
-            color: 0xFF0000,
+            color: 0x44c2ff,
             size: 0.01,
           });
           const _makeMenuDotMesh = ({color = pointsHighlightMaterial.color, size = pointsHighlightMaterial.size} = {}) => {
-            const geometry = new THREE.BufferGeometry();
-            geometry.addAttribute('position', new THREE.BufferAttribute(Float32Array.from([0, 0, 0]), 3));
-            geometry.addAttribute('color', new THREE.BufferAttribute(Float32Array.from([0, 0, 0]), 3));
-            const material = new THREE.PointsMaterial({
-              color: color,
-              size: size,
+            const geometry = new THREE.CylinderBufferGeometry(0.0, 0.01, 0.001, 32)
+              .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
+            /* const texture = new THREE.Texture(
+              dotImg,
+              THREE.UVMapping,
+              THREE.ClampToEdgeWrapping,
+              THREE.ClampToEdgeWrapping,
+              THREE.LinearFilter,
+              THREE.LinearFilter,
+              THREE.RGBAFormat,
+              THREE.UnsignedByteType,
+              16
+            );
+            texture.needsUpdate = true; */
+            const material = new THREE.MeshBasicMaterial({
+              color: 0x44c2ff,
+              // map: texture,
+              // transparent: true,
+              // alphaTest: 0.5,
+              // side: THREE.DoubleSide,
+
+              // depthTest: false,
+              // depthWrite: false,
             });
 
-            const mesh = new THREE.Points(geometry, material);
+            const mesh = new THREE.Mesh(geometry, material);
             mesh.visible = false;
             return mesh;
           };
@@ -952,6 +974,7 @@ class Biolumi {
 
               if (dotMesh) {
                 dotMesh.position.copy(intersectionPoint);
+                dotMesh.quaternion.copy(rotation);
                 dotMesh.material.size = pointsHighlightMaterial.size / ((controllerScale.x + controllerScale.y + controllerScale.z) / 3);
 
                 if (!dotMesh.visible) {
@@ -1020,6 +1043,7 @@ const monospaceFonts = `Consolas, "Liberation Mono", Menlo, Courier, monospace`;
 const fontWeight = 300;
 const fontStyle = 'normal';
 const transparentImgUrl = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+// const circleImgUrl = 'data:image/svg+xml;base64,' + btoa(circleImg);
 const rootCss = `margin: 0px; padding: 0px; height: 100%; width: 100%; font-family: ${fonts}; font-weight: ${fontWeight}; overflow: visible; user-select: none;`;
 
 const debounce = fn => {
