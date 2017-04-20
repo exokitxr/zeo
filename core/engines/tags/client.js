@@ -26,7 +26,6 @@ const SIDES = ['left', 'right'];
 const AXES = ['x', 'y', 'z'];
 
 const tagMeshSymbol = Symbol();
-
 const itemInstanceSymbol = Symbol();
 const itemInstancingSymbol = Symbol();
 const itemPageSymbol = Symbol();
@@ -1800,41 +1799,49 @@ class Tags {
 
                     if (src) {
                       const hoverState = rend.getHoverState(side);
-                      const {intersectionPoint} = hoverState;
+                      const {page} = hoverState;
 
-                      if (intersectionPoint) {
-                        const {type: srcType, tagMesh: srcTagMesh} = src;
-                        const {metadata} = hoverState;
-                        const {type: hoverType, tagMesh: hoverTagMesh} = metadata;
+                      if (page) {
+                        const {mesh} = page;
 
-                        if (srcType === 'module' && hoverType === 'module' && srcTagMesh === hoverTagMesh) {
-                          dragState.dst = {
-                            type: 'module',
-                            tagMesh: hoverTagMesh,
-                          };
-                        } else if (srcType === 'module' && hoverType === 'entity') {
-                          dragState.dst = {
-                            type: 'entity',
-                            tagMesh: hoverTagMesh,
-                          };
-                        } else if (srcType === 'attribute' && hoverType === 'file') {
-                          dragState.dst = {
-                            type: 'file',
-                            tagMesh: hoverTagMesh,
-                          };
-                        } else if (srcType === 'file' && hoverType === 'attribute') {
-                          const {attributeName} = hoverTagMesh;
-                          const attributeSpec = _getAttributeSpec(attributeName);
-                          const attributeType = attributeSpec && attributeSpec.type;
-                          if (attributeType === 'file') {
-                            const {itemId} = hoverTagMesh;
+                        if (mesh[tagMeshSymbol]) {
+                          const hoverTagMesh = mesh;
+                          const {type: srcType, tagMesh: srcTagMesh} = src;
+                          const {item: hoverItem} = hoverTagMesh;
+                          const {type: hoverType} = hoverItem;
 
+                          if (srcType === 'module' && hoverType === 'module' && srcTagMesh === hoverTagMesh) {
                             dragState.dst = {
-                              type: 'attribute',
+                              type: 'module',
                               tagMesh: hoverTagMesh,
-                              itemId: itemId,
-                              attributeName: attributeName,
                             };
+                          } else if (srcType === 'module' && hoverType === 'entity') {
+                            dragState.dst = {
+                              type: 'entity',
+                              tagMesh: hoverTagMesh,
+                            };
+                          } else if (srcType === 'attribute' && hoverType === 'file') {
+                            dragState.dst = {
+                              type: 'file',
+                              tagMesh: hoverTagMesh,
+                            };
+                          } else if (srcType === 'file' && hoverType === 'attribute') {
+                            const {attributeName} = hoverTagMesh;
+                            const attributeSpec = _getAttributeSpec(attributeName);
+                            const attributeType = attributeSpec && attributeSpec.type;
+
+                            if (attributeType === 'file') {
+                              const {itemId} = hoverTagMesh;
+
+                              dragState.dst = {
+                                type: 'attribute',
+                                tagMesh: hoverTagMesh,
+                                itemId: itemId,
+                                attributeName: attributeName,
+                              };
+                            } else {
+                              dragState.dst = null;
+                            }
                           } else {
                             dragState.dst = null;
                           }
@@ -2570,6 +2577,7 @@ class Tags {
                 });
                 mesh.receiveShadow = true;
                 mesh[tagMeshSymbol] = true;
+                mesh.item = item;
 
                 const {page} = mesh;
                 rend.addPage(page);
