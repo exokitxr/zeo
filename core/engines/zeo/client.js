@@ -603,20 +603,16 @@ class Zeo {
                         return biolumi.makeUi(options);
                       }
 
-                      makeMenuHoverState() {
-                        return biolumi.makeMenuHoverState();
+                      addPage(page) {
+                        rend.addPage(page);
                       }
 
-                      makeMenuDotMesh() {
-                        return biolumi.makeMenuDotMesh();
+                      removePage(page) {
+                        rend.removePage(page);
                       }
 
-                      makeMenuBoxMesh() {
-                        return biolumi.makeMenuBoxMesh();
-                      }
-
-                      updateAnchors(spec) {
-                        return biolumi.updateAnchors(spec);
+                      getHoverState(side) {
+                        return rend.getHoverState(side);
                       }
 
                       getTransparentImg() {

@@ -382,29 +382,10 @@ class ZDraw {
               };
               entityApi.paperStates = paperStates;
 
-              const clearHoverStates = {
-                left: ui.makeMenuHoverState(),
-                right: ui.makeMenuHoverState(),
-              };
-
-              const clearDotMeshes = {
-                left: ui.makeMenuDotMesh(),
-                right: ui.makeMenuDotMesh(),
-              };
-              scene.add(clearDotMeshes.left);
-              scene.add(clearDotMeshes.right);
-
-              const clearBoxMeshes = {
-                left: ui.makeMenuBoxMesh(),
-                right: ui.makeMenuBoxMesh(),
-              };
-              scene.add(clearBoxMeshes.left);
-              scene.add(clearBoxMeshes.right);
-
               const _triggerdown = e => {
                 const {side} = e;
-                const clearHoverState = clearHoverStates[side];
-                const {anchor} = clearHoverState;
+                const hoverState = render.getHoverState(side);
+                const {anchor} = hoverState;
                 const onclick = (anchor && anchor.onclick) || '';
 
                 if (onclick === 'clear') {
@@ -451,57 +432,12 @@ class ZDraw {
               };
               input.on('triggerdown', _triggerdown);
 
-              const _update = () => {
-                const {gamepads} = pose.getStatus();
-
-                const {clearMesh} = mesh;
-                const matrixObject = _decomposeObjectMatrixWorld(clearMesh);
-                const {page} = clearMesh;
-
-                SIDES.forEach(side => {
-                  const gamepad = gamepads[side];
-
-                  if (gamepad) {
-                    const {position: controllerPosition, rotation: controllerRotation, scale: controllerScale} = gamepad;
-
-                    const clearHoverState = clearHoverStates[side];
-                    const clearDotMesh = clearDotMeshes[side];
-                    const clearBoxMesh = clearBoxMeshes[side];
-
-                    ui.updateAnchors({
-                      objects: [{
-                        matrixObject: matrixObject,
-                        page: page,
-                        width: CLEAR_WIDTH,
-                        height: CLEAR_HEIGHT,
-                        worldWidth: WORLD_CLEAR_WIDTH,
-                        worldHeight: WORLD_CLEAR_HEIGHT,
-                        worldDepth: WORLD_CLEAR_DEPTH,
-                      }],
-                      hoverState: clearHoverState,
-                      dotMesh: clearDotMesh,
-                      boxMesh: clearBoxMesh,
-                      controllerPosition,
-                      controllerRotation,
-                      controllerScale,
-                    });
-                  }
-                });
-              };
-              render.on('update', _update);
-
               papers.push(entityApi);
 
               entityApi._cleanup = () => {
                 entityObject.remove(mesh);
 
-                SIDES.forEach(side => {
-                  scene.remove(clearDotMeshes[side]);
-                  scene.remove(clearBoxMeshes[side]);
-                });
-
                 input.removeListener('triggerdown', _triggerdown);
-                render.removeListener('update', _update);
 
                 papers.splice(papers.indexOf(entityApi), 1);
               };
