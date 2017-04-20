@@ -597,6 +597,10 @@ class Rend {
             _removeModApiElement(tag);
           }
 
+          addPage(page) {
+            uiTracker.addPage(page);
+          }
+
           login() {
             menuState.open = true;
             menuState.position = [0, DEFAULT_USER_HEIGHT, -1.5];

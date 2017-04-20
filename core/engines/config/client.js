@@ -129,11 +129,6 @@ class Config {
             frame: 0,
           };
 
-          const configHoverStates = {
-            left: biolumi.makeMenuHoverState(),
-            right: biolumi.makeMenuHoverState(),
-          };
-
           const _requestGetBrowserConfig = () => new Promise((accept, reject) => {
             const configString = localStorage.getItem('config');
             const config = configString ? JSON.parse(configString) : DEFAULT_BROWSER_CONFIG;
@@ -231,6 +226,7 @@ class Config {
                     mesh.receiveShadow = true;
 
                     const {page} = mesh;
+                    rend.addPage(page);
                     page.initialUpdate();
 
                     return mesh;
@@ -281,6 +277,9 @@ class Config {
                     mesh.position.z = 0.03;
                     mesh.receiveShadow = true;
 
+                    const {page} = mesh;
+                    rend.addPage(page);
+
                     return mesh;
                   })();
                   object.add(planeMesh);
@@ -289,20 +288,6 @@ class Config {
                   return object;
                 })();
                 rend.registerMenuMesh('statsMesh', statsMesh);
-
-                const configBoxMeshes = {
-                  left: biolumi.makeMenuBoxMesh(),
-                  right: biolumi.makeMenuBoxMesh(),
-                };
-                scene.add(configBoxMeshes.left);
-                scene.add(configBoxMeshes.right);
-
-                const configDotMeshes = {
-                  left: biolumi.makeMenuDotMesh(),
-                  right: biolumi.makeMenuDotMesh(),
-                };
-                scene.add(configDotMeshes.left);
-                scene.add(configDotMeshes.right);
 
                 stats.render = () => {
                   const {frame: oldFrame} = statsState;
@@ -341,15 +326,15 @@ class Config {
 
                   if (isOpen && tab === 'options') {
                     const {side} = e;
-                    const configHoverState = configHoverStates[side];
-                    const {intersectionPoint} = configHoverState;
+                    const hoverState = uiTracker.getHoverState(side);
+                    const {intersectionPoint} = hoverState;
 
                     if (intersectionPoint) {
-                      const {anchor} = configHoverState;
+                      const {anchor} = hoverState;
                       const onclick = (anchor && anchor.onclick) || '';
 
                       if (onclick === 'config:resolution') {
-                        const {value} = configHoverState;
+                        const {value} = hoverState;
 
                         configState.resolutionValue = value;
 
@@ -395,50 +380,6 @@ class Config {
                 input.on('trigger', trigger);
 
                 const _update = () => {
-                  const _updateAnchors = () => {
-                    const isOpen = rend.isOpen();
-                    const tab = rend.getTab();
-
-                    if (isOpen && tab === 'options') {
-                      const {gamepads} = webvr.getStatus();
-
-                      const {planeMesh} = configMesh;
-                      const {page} = planeMesh;
-                      const configMatrixObject = _decomposeObjectMatrixWorld(planeMesh);
-
-                      SIDES.forEach(side => {
-                        const gamepad = gamepads[side];
-
-                        if (gamepad) {
-                          const {position: controllerPosition, rotation: controllerRotation, scale: controllerScale} = gamepad;
-
-                          const configHoverState = configHoverStates[side];
-                          const configDotMesh = configDotMeshes[side];
-                          const configBoxMesh = configBoxMeshes[side];
-
-                          biolumi.updateAnchors({
-                            objects: [{
-                              matrixObject: configMatrixObject,
-                              page: page,
-                              width: WIDTH,
-                              height: HEIGHT,
-                              worldWidth: WORLD_WIDTH,
-                              worldHeight: WORLD_HEIGHT,
-                              worldDepth: WORLD_DEPTH,
-                            }],
-                            hoverState: configHoverState,
-                            dotMesh: configDotMesh,
-                            boxMesh: configBoxMesh,
-                            controllerPosition,
-                            controllerRotation,
-                            controllerScale,
-                          });
-                        }
-                      });
-                    }
-                  };
-                  _updateAnchors();
-
                   stats.render();
                 };
                 rend.on('update', _update);
@@ -452,14 +393,10 @@ class Config {
                 rend.on('updateEnd', _updateEnd);
 
                 this._cleanup = () => {
-                  SIDES.forEach(side => {
-                    scene.remove(configBoxMeshes[side]);
-                    scene.remove(configDotMeshes[side]);
-                  });
-
                   input.removeListener('trigger', trigger);
                   input.removeListener('keydown', keydown);
                   input.removeListener('keyboarddown', keyboarddown);
+
                   rend.removeListener('update', _update);
                   rend.removeListener('updateStart', _updateStart);
                   rend.removeListener('updateEnd', _updateEnd);
