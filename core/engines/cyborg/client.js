@@ -373,6 +373,23 @@ class Cyborg {
           };
           rend.registerAuxObject('controllerMeshes', controllerMeshes);
 
+          const _open = () => {
+            SIDES.forEach(side => {
+              const controllerMesh = controllerMeshes[side];
+              const {rayMesh} = controllerMesh;
+              rayMesh.visible = true;
+            });
+          };
+          rend.on('open', _open);
+          const _close = () => {
+            SIDES.forEach(side => {
+              const controllerMesh = controllerMeshes[side];
+              const {rayMesh} = controllerMesh;
+              rayMesh.visible = false;
+            });
+          };
+          rend.on('close', _close);
+
           const _getPlayer = () => player;
           const _getHmd = () => hmd;
           const _getControllers = () => controllers;
@@ -435,6 +452,8 @@ class Cyborg {
               camera.parent.remove(controllerMesh);
             });
 
+            rend.removeListener('open', _open);
+            rend.removeListener('close', _close);
             rend.removeListener('update', _update);
             rend.removeListener('renderStart', _renderStart);
             rend.removeListener('renderEnd', _renderEnd);

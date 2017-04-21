@@ -335,6 +335,8 @@ class Rend {
 
                   const {tagsLinesMesh} = auxObjects;
                   tagsLinesMesh.visible = false;
+
+                  rendApi.emit('close');
                 } else {
                   const newCameraPosition = camera.position.clone();
                   const newCameraRotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(
@@ -354,13 +356,13 @@ class Rend {
                   menuState.rotation = newMenuRotation.toArray();
                   menuState.animation = anima.makeAnimation(TRANSITION_TIME);
 
+                  const {tagsLinesMesh} = auxObjects;
+                  tagsLinesMesh.visible = true;
+
                   rendApi.emit('open', {
                     position: newCameraPosition,
                     rotation: newCameraRotation,
                   });
-
-                  const {tagsLinesMesh} = auxObjects;
-                  tagsLinesMesh.visible = true;
                 }
               }
             };
