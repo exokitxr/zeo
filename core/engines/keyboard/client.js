@@ -369,17 +369,6 @@ class Keyboard {
           const {key} = keyMesh;
 
           if (key) {
-            e.stopImmediatePropagation();
-          }
-        };
-        input.on('triggerdown', _triggerdown);
-        const _trigger = e => {
-          const {side} = e;
-          const {keyMeshes} = keyboardMesh;
-          const keyMesh = keyMeshes[side];
-          const {key} = keyMesh;
-
-          if (key) {
             if (key !== 'header') {
               const keyCode = biolumi.getKeyCode(key);
 
@@ -403,8 +392,19 @@ class Keyboard {
             e.stopImmediatePropagation();
           }
         };
-        input.on('trigger', _trigger);
+        input.on('triggerdown', _triggerdown);
         const _triggerup = e => {
+          const {side} = e;
+          const {keyMeshes} = keyboardMesh;
+          const keyMesh = keyMeshes[side];
+          const {keydown} = keyMesh;
+
+          if (keydown) {
+            e.stopImmediatePropagation();
+          }
+        };
+        input.on('triggerup', _triggerup);
+        const _trigger = e => {
           const {side} = e;
           const {keyMeshes} = keyboardMesh;
           const keyMesh = keyMeshes[side];
@@ -430,7 +430,7 @@ class Keyboard {
             e.stopImmediatePropagation();
           }
         };
-        input.on('triggerup', _triggerup);
+        input.on('trigger', _trigger);
 
         const _keydown = e => {
           const {focusState} = keyboardState;
@@ -645,8 +645,8 @@ class Keyboard {
           input.removeListener('keydown', _keydown);
           input.removeListener('keyboarddown', _keyboarddown);
           input.on('triggerdown', _triggerdown);
-          input.on('trigger', _trigger);
           input.on('triggerup', _triggerup);
+          input.on('trigger', _trigger);
           input.removeListener('paste', _paste);
 
           rend.removeListener('update', _update);
