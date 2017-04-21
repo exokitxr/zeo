@@ -598,6 +598,30 @@ class Biolumi {
             }
           }
 
+          class IntersectionSpec {
+            constructor(
+              position,
+              rotation,
+              scale,
+              page,
+              width,
+              height,
+              worldWidth,
+              worldHeight,
+              intersectionPoint
+            ) {
+              this.position = position;
+              this.rotation = rotation;
+              this.scale = scale;
+              this.page = page;
+              this.width = width;
+              this.height = height;
+              this.worldWidth = worldWidth;
+              this.worldHeight = worldHeight;
+              this.intersectionPoint = intersectionPoint;
+            }
+          }
+
           class UiTracker {
             constructor() {
               this.pages = [];
@@ -650,72 +674,61 @@ class Biolumi {
                   const controllerMesh = controllerMeshes[side];
                   const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation, controllerScale);
 
-                  const objects = pages.map(page => {
-                    const {mesh} = page;
+                  const intersectionSpec = (() => {
+                    let closestIntersectionSpec = null;
+                    let closestIntersectionSpecDistance = Infinity;
 
-                    if (_isWorldVisible(mesh)) {
-                      const {width, height, worldWidth, worldHeight} = page;
-                      const matrixObject = _decomposeObjectMatrixWorld(mesh);
+                    for (let i = 0; i < pages.length; i++) {
+                      const page = pages[i];
+                      const {mesh} = page;
 
-                      return {
-                        matrixObject,
-                        page,
-                        width,
-                        height,
-                        worldWidth,
-                        worldHeight,
-                        worldDepth: 0.01,
-                      };
-                    } else {
-                      return null;
-                    }
-                  }).filter(object => object !== null);
-                  const intersectionSpecs = objects.map(object => {
-                    const {matrixObject, worldWidth, worldHeight, worldDepth} = object;
-                    const {position, rotation, scale} = matrixObject;
+                      if (_isWorldVisible(mesh)) {
+                        const {width, height, worldWidth, worldHeight} = page;
+                        const {position, rotation, scale} = _decomposeObjectMatrixWorld(mesh);
 
-                    const menuBoxTarget = geometryUtils.makeBoxTarget(
-                      position,
-                      rotation,
-                      scale,
-                      new THREE.Vector3(worldWidth, worldHeight, 0)
-                    );
-                    const intersectionPoint = menuBoxTarget.intersectLine(controllerLine);
-
-                    if (intersectionPoint) {
-                      const distance = controllerPosition.distanceTo(intersectionPoint);
-
-                      return {
-                        object,
-                        intersectionPoint,
-                        controllerLine,
-                        controllerScale,
-                        distance,
-                      };
-                    } else {
-                      return null;
-                    }
-                  }).filter(intersectionSpec => intersectionSpec !== null);
-                  const intersectionSpec = intersectionSpecs.length > 0 ? intersectionSpecs.sort((a, b) => a.distance - b.distance)[0] : null;
-
-                  if (intersectionSpec) {
-                    const {
-                      object: {
-                        matrixObject: {
+                        const menuBoxTarget = geometryUtils.makeBoxTarget(
                           position,
                           rotation,
                           scale,
-                        },
-                        page,
-                        width,
-                        height,
-                        worldWidth,
-                        worldHeight,
-                        worldDepth,
-                      },
+                          new THREE.Vector3(worldWidth, worldHeight, 0)
+                        );
+                        const intersectionPoint = menuBoxTarget.intersectLine(controllerLine);
+
+                        if (intersectionPoint) {
+                          const distance = controllerPosition.distanceTo(intersectionPoint);
+
+                          if (distance < closestIntersectionSpecDistance) {
+                            closestIntersectionSpec = new IntersectionSpec(
+                              position,
+                              rotation,
+                              scale,
+                              page,
+                              width,
+                              height,
+                              worldWidth,
+                              worldHeight,
+                              intersectionPoint
+                            );
+                            closestIntersectionSpecDistance = distance;
+                          }
+                        }
+                      }
+                    }
+
+                    return closestIntersectionSpec;
+                  })();
+
+                  if (intersectionSpec) {
+                    const {
+                      position,
+                      rotation,
+                      scale,
+                      page,
+                      width,
+                      height,
+                      worldWidth,
+                      worldHeight,
                       intersectionPoint,
-                      controllerLine,
-                      controllerScale,
                     } = intersectionSpec;
 
                     hoverState.intersectionPoint = intersectionPoint;
@@ -747,12 +760,12 @@ class Biolumi {
                             new THREE.Vector3(
                               -(worldWidth / 2) + (rect.left / width) * worldWidth,
                               (worldHeight / 2) + (-rect.top / height) * worldHeight,
-                              -(worldDepth / 2)
+                              -(0.01 / 2)
                             ),
                             new THREE.Vector3(
                               -(worldWidth / 2) + (rect.right / width) * worldWidth,
                               (worldHeight / 2) + (-rect.bottom / height) * worldHeight,
-                              worldDepth / 2
+                              0.01 / 2
                             )
                           );
                           anchorBoxTarget.anchor = anchor;
