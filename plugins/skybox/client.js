@@ -51,8 +51,8 @@ class Skybox {
               const entityObject = entityElement.getObject();
 
               const skyboxMesh = (() => {
-                const geometry = new THREE.BoxBufferGeometry(200000, 200000, 200000)
-                geometry.applyMatrix(new THREE.Matrix4().makeRotationY(Math.PI));
+                const geometry = new THREE.BoxBufferGeometry(10000, 10000, 10000)
+                  .applyMatrix(new THREE.Matrix4().makeRotationY(Math.PI));
 
                 const skyboxImgs = [
                   'right',
