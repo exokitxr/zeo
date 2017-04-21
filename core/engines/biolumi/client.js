@@ -861,15 +861,6 @@ class Biolumi {
             transparent: true,
           });
           const _getTransparentMaterial = () => transparentMaterial;
-          const solidMaterial = new THREE.MeshBasicMaterial({
-            color: 0xFFFFFF,
-            opacity: 1,
-            side: THREE.DoubleSide,
-            transparent: true,
-            // alphaTest: 0.5,
-            // depthWrite: false,
-          });
-          const _getSolidMaterial = () => solidMaterial;
 
           const _measureText = (() => {
             const measureContexts = {};
@@ -1049,7 +1040,6 @@ class Biolumi {
             getTransparentImg: _getTransparentImg,
 
             getTransparentMaterial: _getTransparentMaterial,
-            getSolidMaterial: _getSolidMaterial,
 
             getTextPropertiesFromCoord: _getTextPropertiesFromCoord,
             getTextPropertiesFromIndex: _getTextPropertiesFromIndex,

@@ -123,7 +123,6 @@ class Config {
 
           const transparentImg = biolumi.getTransparentImg();
           const transparentMaterial = biolumi.getTransparentMaterial();
-          const solidMaterial = biolumi.getSolidMaterial();
 
           const mainFontSpec = {
             fonts: biolumi.getFonts(),

@@ -82,7 +82,6 @@ class Login {
           const {THREE, scene} = three;
 
           const transparentMaterial = biolumi.getTransparentMaterial();
-          const solidMaterial = biolumi.getSolidMaterial();
 
           const _decomposeObjectMatrixWorld = object => {
             const position = new THREE.Vector3();
