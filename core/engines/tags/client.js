@@ -637,7 +637,7 @@ class Tags {
           const uiManager = new UiManager({
             width: WIDTH,
             height: HEIGHT,
-            color: [1, 1, 1, 1],
+            // color: [1, 1, 1, 1],
             metadata: {
               open: false,
             },
@@ -645,7 +645,7 @@ class Tags {
           const uiOpenManager = new UiManager({
             width: OPEN_WIDTH,
             height: OPEN_HEIGHT,
-            color: [1, 1, 1, 0],
+            // color: [1, 1, 1, 0],
             metadata: {
               open: true,
             },

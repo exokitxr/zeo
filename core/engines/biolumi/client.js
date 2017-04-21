@@ -220,7 +220,7 @@ class Biolumi {
                     vertexShader: menuShader.vertexShader,
                     fragmentShader: menuShader.fragmentShader,
                     side: THREE.DoubleSide,
-                    // transparent: true,
+                    transparent: color[3] === 0,
                     // depthWrite: false,
                   });
                   // shaderMaterial.polygonOffset = true;

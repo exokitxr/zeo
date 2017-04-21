@@ -134,7 +134,7 @@ class Assets {
               const menuUi = biolumi.makeUi({
                 width: MENU_WIDTH,
                 height: MENU_HEIGHT,
-                color: [1, 1, 1, 0],
+                // color: [1, 1, 1, 0],
               });
               const mesh = menuUi.makePage(({
                 menu: menuState,
