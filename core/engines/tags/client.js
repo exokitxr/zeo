@@ -43,10 +43,19 @@ class Tags {
     const {_archae: archae} = this;
     const {metadata: {home: {enabled: homeEnabled}}} = archae;
 
-    let live = true;
+    const cleanups = [];
     this._cleanup = () => {
-      live = false;
+      const oldCleanups = cleanups.slice();
+      for (let i = 0; i < oldCleanups.length; i++) {
+        const cleanup = oldCleanups[i];
+        cleanup();
+      }
     };
+
+    let live = true;
+    cleanups.push(() => {
+      live = false;
+    });
 
     return archae.requestPlugins([
       '/core/engines/bootstrap',
@@ -1936,7 +1945,7 @@ class Tags {
           };
           rend.on('update', _update);
 
-          this._cleanup = () => {
+          cleanups.push(() => {
             for (let i = 0; i < tagMeshes.length; i++) {
               const tagMesh = tagMeshes[i];
               tagMesh.parent.remove(tagMesh);
@@ -1952,7 +1961,7 @@ class Tags {
             input.removeListener('triggerup', _triggerup);
 
             rend.removeListener('update', _update);
-          };
+          });
 
           class Item extends EventEmitter {
             constructor(
@@ -2571,10 +2580,17 @@ class Tags {
                 const {page} = mesh;
                 rend.addPage(page);
 
+                const cleanup = () => {
+                  rend.removePage(page);
+                };
+                cleanups.push(cleanup);
+
                 mesh.destroy = (destroy => function() {
                   destroy.apply(this, arguments);
 
                   rend.removePage(page);
+
+                  cleanups.splice(cleanups.indexOf(cleanup), 1);
                 })(mesh.destroy);
 
                 return mesh;
@@ -2783,10 +2799,17 @@ class Tags {
                       const {page} = mesh;
                       rend.addPage(page);
 
+                      const cleanup = () => {
+                        rend.removePage(page);
+                      };
+                      cleanups.push(cleanup);
+
                       mesh.destroy = (destroy => function() {
                         destroy.apply(this, arguments);
 
                         rend.removePage(page);
+
+                        cleanups.splice(cleanups.indexOf(cleanup), 1);
                       })(mesh.destroy);
 
                       return mesh;

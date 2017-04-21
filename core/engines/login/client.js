@@ -20,10 +20,18 @@ class Login {
     const {_archae: archae} = this;
     const {metadata: {hub: {url: hubUrl}, server: {enabled: serverEnabled}}} = archae;
 
-   let live = true;
+    const cleanups = [];
     this._cleanup = () => {
-      live = false;
+      for (let i = 0; i < cleanups.length; i++) {
+        const cleanup = cleanups[i];
+        cleanup();
+      }
     };
+
+    let live = true;
+    cleanups.push(() => {
+      live = false;
+    });
 
     const hubSpec = (() => {
       const match = hubUrl.match(/^(.+\..+?)(?::([0-9]*?))?$/);
@@ -148,6 +156,10 @@ class Login {
 
               const {page} = mesh;
               rend.addPage(page);
+
+              cleanups.push(() => {
+                rend.removePage(page);
+              });
 
               return mesh;
             })();
@@ -344,7 +356,7 @@ class Login {
                 };
                 fs.on('upload', _upload);
 
-                this._cleanup = () => {
+                cleanups.push(() => {
                   scene.remove(menuMesh);
 
                   input.removeListener('trigger', _trigger);
@@ -353,7 +365,7 @@ class Login {
                   rend.removeListener('logout', _logout);
 
                   fs.removeListener('upload', _upload);
-                };
+                });
 
                 return loginApi;
               }

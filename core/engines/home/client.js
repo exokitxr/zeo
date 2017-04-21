@@ -47,10 +47,18 @@ class Home {
       },
     } = archae;
 
-    let live = true;
+    const cleanups = [];
     this._cleanup = () => {
-      live = false;
+      for (let i = 0; i < cleanups.length; i++) {
+        const cleanup = cleanups[i];
+        cleanup();
+      }
     };
+
+    let live = true;
+    cleanups.push(() => {
+      live = false;
+    });
 
     if (homeEnabled) {
       const _requestBlobDataUrl = blob => new Promise((accept, reject) => {
@@ -266,6 +274,10 @@ class Home {
                 const {page} = mesh;
                 rend.addPage(page);
 
+                cleanups.push(() => {
+                  rend.removePage(page);
+                });
+
                 return mesh;
               })();
               object.add(planeMesh);
@@ -459,6 +471,10 @@ class Home {
                 const {page} = mesh;
                 rend.addPage(page);
                 page.update();
+
+                cleanups.push(() => {
+                  rend.removePage(page);
+                });
 
                 return mesh;
               })();
@@ -1237,7 +1253,7 @@ class Home {
 
             tags.loadTags(defaultTags);
 
-            this._cleanup = () => {
+            cleanups.push(() => {
               bootstrap.removeListener('vrModeChange', _vrModeChange);
 
               scene.remove(menuMesh);
@@ -1265,7 +1281,7 @@ class Home {
               tags.removeListener('loadTags', _loadTags);
 
               rend.removeListener('update', _update);
-            };
+            });
           }
         });
     }

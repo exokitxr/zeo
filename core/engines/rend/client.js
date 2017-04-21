@@ -28,17 +28,19 @@ class Rend {
     const {_archae: archae} = this;
     const {metadata: {server: {worldname: serverWorldname, enabled: serverEnabled}, hub: {url: hubUrl}}} = archae;
 
-    let live = true;
     const cleanups = [];
     this._cleanup = () => {
-      live = false;
-
       const oldCleanups = cleanups.slice();
       for (let i = 0; i < oldCleanups.length; i++) {
         const cleanup = oldCleanups[i];
         cleanup();
       }
     };
+
+    let live = true;
+    cleanups.push(() => {
+      live = false;
+    });
 
     return archae.requestPlugins([
       '/core/engines/bootstrap',
@@ -166,6 +168,10 @@ class Rend {
                 const {page} = mesh;
                 uiTracker.addPage(page);
 
+                cleanups.push(() => {
+                  uiTracker.removePage(page);
+                });
+
                 return mesh;
               })();
               object.add(statusMesh);
@@ -205,6 +211,10 @@ class Rend {
 
                 const {page} = mesh;
                 uiTracker.addPage(page);
+
+                cleanups.push(() => {
+                  uiTracker.removePage(page);
+                });
 
                 return mesh;
               })();

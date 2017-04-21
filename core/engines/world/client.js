@@ -36,10 +36,18 @@ class World {
     const {_archae: archae} = this;
     const {metadata: {server: {enabled: serverEnabled}}} = archae;
 
-    let live = true;
+    const cleanups = [];
     this._cleanup = () => {
-      live = false;
+      for (let i = 0; i < cleanups.length; i++) {
+        const cleanup = cleanups[i];
+        cleanup();
+      }
     };
+
+    let live = true;
+    cleanups.push(() => {
+      live = false;
+    });
 
     if (serverEnabled) {
       return archae.requestPlugins([
@@ -750,6 +758,10 @@ class World {
 
                 const {page} = mesh;
                 rend.addPage(page);
+
+                cleanups.push(() => {
+                  rend.removePage(page);
+                });
 
                 return mesh;
               })();
@@ -1603,7 +1615,7 @@ class World {
             }
           });
 
-          this._cleanup = () => {
+          cleanups.push(() => {
             remoteGrabManager.destroy();
 
             rend.removeListener('update', _update);
@@ -1637,7 +1649,7 @@ class World {
             fs.removeListener('upload', _upload);
 
             connection.destroy();
-          };
+          });
 
           class WorldApi {
             makeFile({ext = 'txt'} = {}) {

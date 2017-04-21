@@ -37,10 +37,18 @@ class Config {
     const {_archae: archae} = this;
     const {metadata: {server: {enabled: serverEnabled}}} = archae;
 
-    let live = true;
+    const cleanups = [];
     this._cleanup = () => {
-      live = false;
+      for (let i = 0; i < cleanups.length; i++) {
+        const cleanup = cleanups[i];
+        cleanup();
+      }
     };
+
+    let live = true;
+    cleanups.push(() => {
+      live = false;
+    });
 
     const configState = {
       resolutionValue: 0.5,
@@ -229,6 +237,10 @@ class Config {
                     rend.addPage(page);
                     page.initialUpdate();
 
+                    cleanups.push(() => {
+                      rend.removePage(page);
+                    });
+
                     return mesh;
                   })();
                   object.add(planeMesh);
@@ -279,6 +291,10 @@ class Config {
 
                     const {page} = mesh;
                     rend.addPage(page);
+
+                    cleanups.push(() => {
+                      rend.removePage(page);
+                    });
 
                     return mesh;
                   })();
@@ -392,7 +408,7 @@ class Config {
                 };
                 rend.on('updateEnd', _updateEnd);
 
-                this._cleanup = () => {
+                cleanups.push(() => {
                   input.removeListener('trigger', trigger);
                   input.removeListener('keydown', keydown);
                   input.removeListener('keyboarddown', keyboarddown);
@@ -400,7 +416,7 @@ class Config {
                   rend.removeListener('update', _update);
                   rend.removeListener('updateStart', _updateStart);
                   rend.removeListener('updateEnd', _updateEnd);
-                };
+                });
 
                 return configApi;
               }
