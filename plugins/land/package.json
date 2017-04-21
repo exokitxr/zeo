@@ -6,7 +6,7 @@
   "client": "client.js",
   "dependencies": {
     "alea": "0.0.9",
-    "geometryutils": "0.0.6",
+    "geometryutils": "0.0.7",
     "indev": "^3.0.10",
     "three": "^0.84.0"
   }
