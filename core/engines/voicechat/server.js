@@ -1,14 +1,5 @@
-const path = require('path');
 const events = require('events');
 const {EventEmitter} = events;
-const stream = require('stream');
-const {PassThrough} = stream;
-const child_process = require('child_process');
-
-const MIN_BUFFER_LENGTH = 64 * 1024;
-const MAX_BUFFER_LENGTH = MIN_BUFFER_LENGTH * 2;
-
-const ffmpegBinPath = path.join(__dirname, 'lib', 'bin', 'ffmpeg', 'ffmpeg');
 
 class VoiceChat {
   constructor(archae) {
@@ -21,49 +12,14 @@ class VoiceChat {
 
     const connections = [];
     const audioBuffers = new Map();
-    const audioStreams = [];
 
     class AudioBuffer extends EventEmitter {
       constructor() {
         super();
-
-        this.buffers = [];
-        this.length = 0;
-
-        const ffmpeg = child_process.spawn(ffmpegBinPath, [
-          '-loglevel', 'panic',
-          // '-re',
-          '-i', '-',
-          '-f', 's16le',
-          '-ar', '44100',
-          '-ac', '1',
-          '-acodec', 'pcm_s16le',
-          'pipe:1'
-        ]);
-        ffmpeg.stdout.on('data', d => {
-          this.emit('update', d);
-        });
-
-        ffmpeg.stderr.pipe(process.stderr);
-        ffmpeg.on('error', err => {
-          console.warn(err);
-        });
-        ffmpeg.on('exit', exitCode => {
-          if (exitCode !== 0) {
-            console.warn('ffmpeg non-zero exit code: ' + exitCode);
-          }
-        });
-        this._ffmpeg = ffmpeg;
       }
 
       write(d) {
-        const {_ffmpeg: ffmpeg} = this;
-        ffmpeg.stdin.write(d);
-      }
-
-      close() {
-        const {_ffmpeg: ffmpeg} = this;
-        ffmpeg.kill();
+        this.emit('update', d);
       }
     }
 
@@ -94,8 +50,6 @@ class VoiceChat {
       const audioBuffer = audioBuffers.get(id);
 
       if (audioBuffer) {
-        audioBuffer.close();
-
         audioBuffers.delete(id);
       }
     };
@@ -134,11 +88,6 @@ class VoiceChat {
         connection.close();
       }
       connections.length = 0;
-
-      for (let i = 0; i < audioStreams.length; i++) {
-        const audioStream = audioStreams[i];
-        audioStream.close();
-      }
     };
   }
 

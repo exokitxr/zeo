@@ -62,7 +62,7 @@ export default class VoiceChat {
                   if (currentRemotePeerId !== null) {
                     callInterface.emit('buffer', {
                       id: currentRemotePeerId,
-                      data: new Int16Array(msg.data),
+                      data: new Float32Array(msg.data),
                     });
                   } else {
                     console.warn('buffer data before remote peer id', msg);
@@ -123,13 +123,13 @@ export default class VoiceChat {
 
               _requestMicrophoneMediaStream()
                 .then(mediaStream => {
-                  const audioContext = THREE.AudioContext.getContext();
+                  const dstAudioContext = THREE.AudioContext.getContext();
 
                   const _makeSoundBody = id => {
                     const remotePlayerMesh = multiplayer.getRemotePlayerMesh(id).children[0];
 
                     const inputNode = new WebAudioBufferQueue({
-                      audioContext,
+                      dstAudioContext,
                       // channels: 2,
                       channels: 1,
                       // bufferSize: 16384,
@@ -140,8 +140,6 @@ export default class VoiceChat {
                     result.setInputSource(inputNode);
                     result.inputNode = inputNode;
                     result.setObject(remotePlayerMesh);
-
-                    inputNode.write(new Int16Array(64 * 1024));
 
                     return result;
                   };
@@ -181,25 +179,19 @@ export default class VoiceChat {
                     }
                   });
 
-                  const mediaRecorder = new MediaRecorder(mediaStream, {
-                    mimeType: 'audio/webm;codecs=opus',
-                  });
-                  mediaRecorder.ondataavailable = e => {
-                    const {data: blob} = e;
-                    callInterface.write(blob);
-                  };
-                  const interval = setInterval(() => {
-                    if (mediaRecorder.state === 'recording') {
-                      mediaRecorder.requestData();
+                  const srcAudioContext = new AudioContext();
+                  const source = srcAudioContext.createMediaStreamSource(mediaStream);
+                  const scriptNode = srcAudioContext.createScriptProcessor(4096, 1, 1);
+                  scriptNode.onaudioprocess = e => {
+                    const {inputBuffer} = e;
+
+                    for (let channel = 0; channel < inputBuffer.numberOfChannels; channel++) {
+                      const inputData = inputBuffer.getChannelData(channel);
+                      callInterface.write(inputData);
                     }
-                  }, DATA_RATE);
-                  mediaRecorder.start();
-
-                  cleanups.push(() => {
-                    mediaRecorder.stop();
-
-                    clearInterval(interval);
-                  });
+                  };
+                  source.connect(scriptNode);
+                  scriptNode.connect(srcAudioContext.destination);
                 });
             };
             const _disable = () => {
