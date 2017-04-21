@@ -32,10 +32,18 @@ class Keyboard {
   mount() {
     const {_archae: archae} = this;
 
-    let live = true;
+    const cleanups = [];
     this._cleanup = () => {
-      live = false;
+      for (let i = 0; i < cleanups.length; i++) {
+        const cleanup = cleanups[i];
+        cleanup();
+      }
     };
+
+    let live = true;
+    cleanups.push(() => {
+      live = false;
+    });
 
     const _requestImage = src => new Promise((accept, reject) => {
       const img = new Image();
@@ -176,6 +184,14 @@ class Keyboard {
             mesh.add(headerMesh);
             mesh.headerMesh = headerMesh;
 
+            const headerSolidMesh = (() => {
+              const mesh = new THREE.Object3D();
+              mesh.position.copy(headerMesh.position);
+              return mesh;
+            })();
+            mesh.add(headerSolidMesh);
+            mesh.headerSolidMesh = headerSolidMesh;
+
             const shadowMesh = (() => {
               const geometry = new THREE.BoxBufferGeometry(KEYBOARD_WORLD_WIDTH, KEYBOARD_WORLD_HEIGHT, 0.01);
               const material = transparentMaterial;
@@ -189,6 +205,30 @@ class Keyboard {
           })();
           object.add(planeMesh);
           object.planeMesh = planeMesh;
+
+          const keyboardPage = {
+            mesh: planeMesh,
+            width: KEYBOARD_WIDTH,
+            height: KEYBOARD_HEIGHT,
+            worldWidth: KEYBOARD_WORLD_WIDTH,
+            worldHeight: KEYBOARD_WORLD_HEIGHT,
+          };
+          rend.addPage(keyboardPage);
+
+          const {headerSolidMesh} = planeMesh;
+          const keyboardHeaderPage = {
+            mesh: headerSolidMesh,
+            width: KEYBOARD_HEADER_WIDTH,
+            height: KEYBOARD_HEADER_HEIGHT,
+            worldWidth: KEYBOARD_HEADER_WORLD_WIDTH,
+            worldHeight: KEYBOARD_HEADER_WORLD_HEIGHT,
+          };
+          rend.addPage(keyboardHeaderPage);
+
+          cleanups.push(() => {
+            rend.removePage(keyboardPage);
+            rend.removePage(keyboardHeaderPage);
+          });
 
           const keySpecs = (() => {
             class KeySpec {
@@ -346,13 +386,6 @@ class Keyboard {
           return object;
         })();
         scene.add(keyboardMesh);
-
-        const dotMeshes = {
-          left: biolumi.makeDotMesh(),
-          right: biolumi.makeDotMesh(),
-        };
-        scene.add(dotMeshes.left);
-        scene.add(dotMeshes.right);
 
         const _makeKeyboardHoverState = () => ({
           key: null,
@@ -542,14 +575,11 @@ class Keyboard {
                       }
                     })();
 
-                    const dotMesh = dotMeshes[side];
                     const {keyMeshes} = keyboardMesh;
                     const keyMesh = keyMeshes[side];
                     if (matchingKeySpec) {
-                      dotMesh.position.copy(intersectionPoint);
-                      dotMesh.quaternion.copy(keyboardRotation);
-
                       const {key} = matchingKeySpec;
+
                       if (key !== keyMesh.key) {
                         const {
                           rect: {
@@ -601,9 +631,6 @@ class Keyboard {
                         onmouseover();
                       }
 
-                      if (!dotMesh.visible) {
-                        dotMesh.visible = true;
-                      }
                       if (!keyMesh.visible) {
                         keyMesh.visible = true;
                       }
@@ -618,9 +645,6 @@ class Keyboard {
 
                       keyMesh.key = null;
 
-                      if (dotMesh.visible) {
-                        dotMesh.visible = false;
-                      }
                       if (keyMesh.visible) {
                         keyMesh.visible = false;
                       }
@@ -636,11 +660,8 @@ class Keyboard {
         };
         rend.on('update', _update);
 
-        this._cleanup = () => {
+        cleanups.push(() => {
           scene.remove(keyboardMesh);
-          SIDES.forEach(side => {
-            scene.remove(dotMeshes[side]);
-          });
 
           input.removeListener('keydown', _keydown);
           input.removeListener('keyboarddown', _keyboarddown);
@@ -650,7 +671,7 @@ class Keyboard {
           input.removeListener('paste', _paste);
 
           rend.removeListener('update', _update);
-        };
+        });
 
         class KeyboardFocusState extends EventEmitter {
           constructor({type, inputText, inputIndex, inputValue, fontSpec}) {
@@ -740,9 +761,6 @@ class Keyboard {
               SIDES.forEach(side => {
                 const keyMesh = keyMeshes[side];
                 keyMesh.key = null;
-
-                const dotMesh = dotMeshes[side];
-                dotMesh.visible = false;
               });
             });
 
