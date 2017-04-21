@@ -744,13 +744,14 @@ class Biolumi {
                       worldHeight,
                     });
 
-                    const anchorBoxTargets = (() => {
+                    const anchorBoxTarget = (() => {
                       const {layer} = page;
 
                       if (layer) {
                         const anchors = layer.getAnchors();
 
-                        return anchors.map(anchor => {
+                        for (let i = 0; i < anchors.length; i++) {
+                          const anchor = anchors[i];
                           const {rect} = anchor;
 
                           const anchorBoxTarget = geometryUtils.makeBoxTargetOffset(
@@ -760,27 +761,23 @@ class Biolumi {
                             new THREE.Vector3(
                               -(worldWidth / 2) + (rect.left / width) * worldWidth,
                               (worldHeight / 2) + (-rect.top / height) * worldHeight,
-                              -(0.01 / 2)
+                              -(0.02 / 2)
                             ),
                             new THREE.Vector3(
                               -(worldWidth / 2) + (rect.right / width) * worldWidth,
                               (worldHeight / 2) + (-rect.bottom / height) * worldHeight,
-                              0.01 / 2
+                              0.02 / 2
                             )
                           );
-                          anchorBoxTarget.anchor = anchor;
 
-                          return anchorBoxTarget;
-                        });
-                      } else {
-                        return [];
-                      }
-                    })();
-                    const anchorBoxTarget = (() => {
-                      const interstectedAnchorBoxTargets = anchorBoxTargets.filter(anchorBoxTarget => anchorBoxTarget.intersectLine(controllerLine));
+                          if (anchorBoxTarget.intersectLine(controllerLine)) {
+                            anchorBoxTarget.anchor = anchor;
 
-                      if (interstectedAnchorBoxTargets.length > 0) {
-                        return interstectedAnchorBoxTargets[0];
+                            return anchorBoxTarget;
+                          }
+                        }
+
+                        return null;
                       } else {
                         return null;
                       }

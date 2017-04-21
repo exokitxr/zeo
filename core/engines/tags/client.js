@@ -756,7 +756,7 @@ class Tags {
           const _makeGrabBoxMesh = () => {
             const mesh = biolumi.makeBoxMesh();
             const {geometry} = mesh;
-            geometry.applyMatrix(new THREE.Matrix4().makeScale(WORLD_WIDTH, WORLD_HEIGHT, 0.01));
+            geometry.applyMatrix(new THREE.Matrix4().makeScale(WORLD_WIDTH, WORLD_HEIGHT, 0.02));
             return mesh;
           };
           const grabBoxMeshes = {
