@@ -754,19 +754,9 @@ class Tags {
           };
 
           const _makeGrabBoxMesh = () => {
-            const width = WORLD_WIDTH;
-            const height = WORLD_HEIGHT;
-            const depth = WORLD_DEPTH;
-
-            const geometry = new THREE.BoxBufferGeometry(width, height, depth);
-            const material = wireframeMaterial;
-
-            const mesh = new THREE.Mesh(geometry, material);
-            mesh.position.y = 1.2;
-            mesh.rotation.order = camera.rotation.order;
-            mesh.rotation.y = Math.PI / 2;
-            mesh.depthWrite = false;
-            mesh.visible = false;
+            const mesh = biolumi.makeBoxMesh();
+            const {geometry} = mesh;
+            geometry.applyMatrix(new THREE.Matrix4().makeScale(WORLD_WIDTH, WORLD_HEIGHT, 0.01));
             return mesh;
           };
           const grabBoxMeshes = {

@@ -664,7 +664,7 @@ class Biolumi {
                         height,
                         worldWidth,
                         worldHeight,
-                        worldDepth: worldWidth / 50,
+                        worldDepth: 0.01,
                       };
                     } else {
                       return null;
@@ -729,7 +729,6 @@ class Biolumi {
                       height,
                       worldWidth,
                       worldHeight,
-                      worldDepth,
                     });
 
                     const anchorBoxTargets = (() => {
@@ -748,12 +747,12 @@ class Biolumi {
                             new THREE.Vector3(
                               -(worldWidth / 2) + (rect.left / width) * worldWidth,
                               (worldHeight / 2) + (-rect.top / height) * worldHeight,
-                              -worldDepth
+                              -(worldDepth / 2)
                             ),
                             new THREE.Vector3(
                               -(worldWidth / 2) + (rect.right / width) * worldWidth,
                               (worldHeight / 2) + (-rect.bottom / height) * worldHeight,
-                              worldDepth
+                              worldDepth / 2
                             )
                           );
                           anchorBoxTarget.anchor = anchor;
