@@ -11,10 +11,18 @@ export default class VoiceChat {
     const {_archae: archae} = this;
     const {metadata: {server: {enabled: serverEnabled}}} = archae;
 
-    let live = true;
+    const cleanups = [];
     this._cleanup = () => {
-      live = false;
+      for (let i = 0; i < cleanups.length; i++) {
+        const cleanup = cleanups[i];
+        cleanup();
+      }
     };
+
+    let live = true;
+    cleanups.push(() => {
+      live = false;
+    });
 
     if (serverEnabled) {
       archae.requestPlugins([
@@ -86,26 +94,83 @@ export default class VoiceChat {
               return callInterface;
             })();
 
-            const cleanups = [];
-            const cleanup = () => {
-              for (let i = 0; i < cleanups.length; i++) {
-                const cleanup = cleanups[i];
-                cleanup();
+            const _init = () => {
+              const _makeSoundBody = id => {
+                const result = somnifer.makeBody();
+
+                const inputNode = new WebAudioBufferQueue({
+                  audioContext: result.sound.context,
+                  // channels: 2,
+                  channels: 1,
+                  // bufferSize: 16384,
+                  objectMode: true,
+                });
+                result.setInputSource(inputNode);
+                result.inputNode = inputNode;
+
+                const remotePlayerMesh = multiplayer.getRemotePlayerMesh(id).children[0];
+                result.setObject(remotePlayerMesh);
+
+                return result;
+              };
+
+              const soundBodies = (() => {
+                const playerStatuses = multiplayer.getPlayerStatuses();
+
+                const result = new Map();
+                playerStatuses.forEach((status, id) => {
+                  result.set(id, _makeSoundBody(id));
+                });
+                return result;
+              })();
+
+              const _playerEnter = ({id}) => {
+                soundBodies.set(id, _makeSoundBody(id));
+              };
+              multiplayer.on('playerEnter', _playerEnter);
+              const _playerLeave = ({id}) => {
+                const soundBody = soundBodies.get(id);
+                soundBody.destroy();
+
+                soundBodies.delete(id);
+              };
+              multiplayer.on('playerLeave', _playerLeave);
+              cleanups.push(() => {
+                multiplayer.removeListener('playerEnter', _playerEnter);
+                multiplayer.removeListener('playerLeave', _playerLeave);
+              });
+
+              callInterface.on('buffer', ({id, data}) => {
+                const soundBody = soundBodies.get(id);
+
+                if (soundBody) {
+                  const {inputNode} = soundBody;
+                  inputNode.write(data);
+                }
+              });
+            };
+            _init();
+
+            const localCleanups = [];
+            const _localCleanup = () => {
+              for (let i = 0; i < localCleanups.length; i++) {
+                const localCleanup = localCleanups[i];
+                localCleanup();
               }
-              cleanups.length = 0;
+              localCleanups.length = 0;
             };
 
             let enabled = false;
             const _enable = () => {
               enabled = true;
-              cleanups.push(() => {
+              localCleanups.push(() => {
                 enabled = false;
               });
 
               const _requestMicrophoneMediaStream = () => navigator.mediaDevices.getUserMedia({
                 audio: true,
               }).then(mediaStream => {
-                cleanups.push(() => {
+                localCleanups.push(() => {
                   _closeMediaStream(mediaStream);
                 });
 
@@ -114,7 +179,7 @@ export default class VoiceChat {
               /* const _requestCameraMediaStream = () => navigator.mediaDevices.getUserMedia({
                 audio: true,
               }).then(mediaStream => {
-                cleanups.push(() => {
+                localCleanups.push(() => {
                   _closeMediaStream(mediaStream);
                 });
 
@@ -123,62 +188,6 @@ export default class VoiceChat {
 
               _requestMicrophoneMediaStream()
                 .then(mediaStream => {
-                  const dstAudioContext = THREE.AudioContext.getContext();
-
-                  const _makeSoundBody = id => {
-                    const remotePlayerMesh = multiplayer.getRemotePlayerMesh(id).children[0];
-
-                    const inputNode = new WebAudioBufferQueue({
-                      dstAudioContext,
-                      // channels: 2,
-                      channels: 1,
-                      // bufferSize: 16384,
-                      objectMode: true,
-                    });
-
-                    const result = somnifer.makeBody();
-                    result.setInputSource(inputNode);
-                    result.inputNode = inputNode;
-                    result.setObject(remotePlayerMesh);
-
-                    return result;
-                  };
-
-                  const soundBodies = (() => {
-                    const playerStatuses = multiplayer.getPlayerStatuses();
-
-                    const result = new Map();
-                    playerStatuses.forEach((status, id) => {
-                      result.set(id, _makeSoundBody(id));
-                    });
-                    return result;
-                  })();
-
-                  const _playerEnter = ({id}) => {
-                    soundBodies.set(id, _makeSoundBody(id));
-                  };
-                  multiplayer.on('playerEnter', _playerEnter);
-                  const _playerLeave = ({id}) => {
-                    const soundBody = soundBodies.get(id);
-                    soundBody.destroy();
-
-                    soundBodies.delete(id);
-                  };
-                  multiplayer.on('playerLeave', _playerLeave);
-                  cleanups.push(() => {
-                    multiplayer.removeListener('playerEnter', _playerEnter);
-                    multiplayer.removeListener('playerLeave', _playerLeave);
-                  });
-
-                  callInterface.on('buffer', ({id, data}) => {
-                    const soundBody = soundBodies.get(id);
-
-                    if (soundBody) {
-                      const {inputNode} = soundBody;
-                      inputNode.write(data);
-                    }
-                  });
-
                   const srcAudioContext = new AudioContext();
                   const source = srcAudioContext.createMediaStreamSource(mediaStream);
                   const scriptNode = srcAudioContext.createScriptProcessor(4096, 1, 1);
@@ -195,7 +204,7 @@ export default class VoiceChat {
                 });
             };
             const _disable = () => {
-              cleanup();
+              _localCleanup();
             };
 
             const _updateEnabled = () => {
@@ -218,8 +227,8 @@ export default class VoiceChat {
 
             _updateEnabled();
 
-            this._cleanup = () => {
-              cleanup();
+            cleanups.push(() => {
+              _localCleanup();
 
               callInterface.destroy();
 
@@ -227,9 +236,7 @@ export default class VoiceChat {
               rend.removeListener('logout', _logout);
 
               config.removeListener('config', _config);
-            };
-
-            return {};
+            });
           }
         });
     }
