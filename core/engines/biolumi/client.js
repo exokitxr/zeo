@@ -168,15 +168,15 @@ class Biolumi {
             color: 0x44c2ff,
           });
           const boxMeshMaterial = new THREE.MeshBasicMaterial({
+            // color: new THREE.Color(0x44c2ff).multiplyScalar(0.75).getHex(),
             color: 0x44c2ff,
-            wireframe: true,
-            // opacity: 0.5,
-            // transparent: true,
+            // wireframe: true,
+            transparent: true,
+            opacity: 0.5,
+            // depthTest: false,
+            // depthWrite: false,
+            // alphaTest: 0.1,
           });
-          /* const pointsHighlightMaterial = new THREE.PointsMaterial({
-            color: 0x44c2ff,
-            size: 0.01,
-          }); */
 
           const _isWorldVisible = mesh => {
             for (; mesh; mesh = mesh.parent) {
@@ -220,7 +220,8 @@ class Biolumi {
                     vertexShader: menuShader.vertexShader,
                     fragmentShader: menuShader.fragmentShader,
                     side: THREE.DoubleSide,
-                    transparent: true,
+                    // transparent: true,
+                    // depthWrite: false,
                   });
                   // shaderMaterial.polygonOffset = true;
                   // shaderMaterial.polygonOffsetFactor = 1;
@@ -816,7 +817,6 @@ class Biolumi {
 
                     dotMesh.position.copy(intersectionPoint);
                     dotMesh.quaternion.copy(rotation);
-                    // dotMesh.material.size = pointsHighlightMaterial.size / ((controllerScale.x + controllerScale.y + controllerScale.z) / 3);
                     if (!dotMesh.visible) {
                       dotMesh.visible = true;
                     }

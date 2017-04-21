@@ -790,8 +790,6 @@ class Tags {
               return result;
             })();
             const material = new THREE.LineBasicMaterial({
-              // color: 0xFFFFFF,
-              // color: 0x333333,
               vertexColors: THREE.VertexColors,
             });
 
