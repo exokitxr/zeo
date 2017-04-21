@@ -848,12 +848,12 @@ class Tags {
                 map: texture,
                 side: THREE.DoubleSide,
                 transparent: true,
-                depthTest: false,
               });
               return material;
             })();
 
             const mesh = new THREE.Mesh(geometry, material);
+            mesh.position.z = 0.001;
           });
           const _requestFileItemAudioMesh = item => new Promise((accept, reject) => {
             const mesh = new THREE.Object3D();
@@ -2138,6 +2138,7 @@ class Tags {
 
                         const boundingBoxCenter = boundingBox.getCenter();
                         modelMeshWrap.position.y = -(WORLD_HEIGHT / 2) - (boundingBoxCenter.y * meshScaleFactor);
+                        modelMeshWrap.position.z = (WORLD_OPEN_HEIGHT - WORLD_HEIGHT) / 2;
 
                         return Promise.resolve(modelMesh);
                       })

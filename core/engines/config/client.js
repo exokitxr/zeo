@@ -274,7 +274,7 @@ class Config {
                       worldWidth: STATS_WORLD_WIDTH,
                       worldHeight: STATS_WORLD_HEIGHT,
                     });
-                    mesh.position.z = 0.03;
+                    mesh.position.z = 0.002;
                     mesh.receiveShadow = true;
 
                     const {page} = mesh;

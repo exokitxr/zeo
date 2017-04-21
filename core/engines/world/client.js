@@ -772,7 +772,7 @@ class World {
 
             const npmMesh = (() => {
               const object = new THREE.Object3D();
-              object.position.z = 0.01;
+              object.position.z = 0.001;
 
               const newEntityTagMesh = (() => {
                 const newEntityTagMesh = tags.makeTag({

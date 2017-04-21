@@ -392,7 +392,7 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
     `;
     const bodySrc = (() => {
       const _getFramePreviewSrc = (text = '') => `\
-        <div style="position: relative; display: flex; width: ${OPEN_WIDTH}px; height: ${OPEN_HEIGHT - HEIGHT}px; padding: 20px; border: 1px solid #000; font-size: 28px; font-weight: 400; justify-content: center; align-items: center; overflow: hidden; box-sizing: border-box;">${text}</div>
+        <div style="position: relative; display: flex; width: ${OPEN_WIDTH}px; height: ${OPEN_HEIGHT - HEIGHT}px; padding: 20px; background-color: #EEE; font-size: 28px; font-weight: 400; justify-content: center; align-items: center; overflow: hidden; box-sizing: border-box;">${text}</div>
       `;
 
       if (open) {
