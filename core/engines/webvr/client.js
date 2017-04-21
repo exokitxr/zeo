@@ -297,10 +297,10 @@ class WebVR {
                     effect.onEye = camera => {
                       updateEye(camera);
                     };
-                    effect.onFrameStart = () => {
+                    effect.onRenderStart = () => {
                       renderStart();
                     };
-                    effect.onFrameEnd = () => {
+                    effect.onRenderEnd = () => {
                       renderEnd();
                     };
                     effect.isPresenting = true;
