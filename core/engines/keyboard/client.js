@@ -465,17 +465,20 @@ class Keyboard {
 
                 if (keydown === 'header') {
                   const gamepad = gamepads[side];
-                  const {position: controllerPosition, rotation: controllerRotation} = gamepad;
-                  const controllerEnd = controllerPosition.clone()
-                    .add(
-                      new THREE.Vector3(
-                        0,
-                        -(KEYBOARD_WORLD_HEIGHT + KEYBOARD_HEADER_WORLD_HEIGHT) / 2,
-                        -Math.sqrt(Math.pow(0.6, 2) + Math.pow(0.4, 2))
-                      ).applyQuaternion(controllerRotation)
-                    );
-                  keyboardMesh.position.copy(controllerEnd);
-                  keyboardMesh.quaternion.copy(controllerRotation);
+
+                  if (gamepad) {
+                    const {position: controllerPosition, rotation: controllerRotation} = gamepad;
+                    const controllerEnd = controllerPosition.clone()
+                      .add(
+                        new THREE.Vector3(
+                          0,
+                          -(KEYBOARD_WORLD_HEIGHT + KEYBOARD_HEADER_WORLD_HEIGHT) / 2,
+                          -Math.sqrt(Math.pow(0.6, 2) + Math.pow(0.4, 2))
+                        ).applyQuaternion(controllerRotation)
+                      );
+                    keyboardMesh.position.copy(controllerEnd);
+                    keyboardMesh.quaternion.copy(controllerRotation);
+                  }
                 }
               });
             };
