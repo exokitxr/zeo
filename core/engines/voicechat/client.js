@@ -160,6 +160,7 @@ export default class VoiceChat {
               localCleanups.length = 0;
             };
 
+            let srcAudioContext = null;
             let enabled = false;
             const _enable = () => {
               enabled = true;
@@ -188,7 +189,9 @@ export default class VoiceChat {
 
               _requestMicrophoneMediaStream()
                 .then(mediaStream => {
-                  const srcAudioContext = new AudioContext();
+                  if (!srcAudioContext) {
+                    srcAudioContext = new AudioContext();
+                  }
                   const source = srcAudioContext.createMediaStreamSource(mediaStream);
                   const scriptNode = srcAudioContext.createScriptProcessor(4096, 1, 1);
                   scriptNode.onaudioprocess = e => {
@@ -201,6 +204,14 @@ export default class VoiceChat {
                   };
                   source.connect(scriptNode);
                   scriptNode.connect(srcAudioContext.destination);
+
+                  localCleanups.push(() => {
+                    source.disconnect(scriptNode);
+                    scriptNode.disconnect(srcAudioContext.destination);
+                    scriptNode.onaudioprocess = null;
+
+                    _closeMediaStream(mediaStream);
+                  });
                 });
             };
             const _disable = () => {
