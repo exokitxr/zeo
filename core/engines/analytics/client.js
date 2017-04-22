@@ -30,7 +30,7 @@ class Analytics {
         const cameraTrackers = [];
 
         class Tracker {
-          constructor(label);
+          constructor(label) {
             this.label = label;
 
             this.value = 0;
