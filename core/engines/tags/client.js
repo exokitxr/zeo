@@ -1492,10 +1492,16 @@ class Tags {
                   };
 
                   return true;
+                } else if (match = onmousedown.match(/^module:reinstall:(.+)$/)) {
+                  const id = match[1];
+                  const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
+
+                  console.log('reinstall module', tagMesh);
+
+                  return true;
                 } else if (match = onmousedown.match(/^attribute:(.+?):(.+?):link$/)) {
                   const id = match[1];
                   const attributeName = match[2];
-
                   const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
 
                   const dragState = dragStates[side];

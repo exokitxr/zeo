@@ -634,6 +634,18 @@ class World {
               console.warn('invalid tag seek arguments', {src, value});
             }
           };
+          const _handleReinstallModule = (userId, src) => {
+            // same for local and remote user ids
+            let match;
+            if (match = src.match(/^world:(.+)$/)) {
+              const id = match[1];
+
+              const tagMesh = elementManager.getTagMesh(id);
+              console.log('handle reinstall module', {tagMesh}); // XXX
+            } else {
+              console.warn('invalid tag seek arguments', {src, value});
+            }
+          };
           const _handleMessage = detail => {
             tags.message(detail);
           };
@@ -1389,6 +1401,14 @@ class World {
             _request('tagSeekUpdate', [localUserId, src, value], _warnError);
           };
           tags.on('seekUpdate', _tagsSeekUpdate);
+          const _reinstallModule = ({id}) => {
+            const src = _getTagIdSrc(id);
+
+            _request('reinstallModule', [localUserId, src], _warnError);
+
+            _handleReinstallModule(localUserId, src);
+          };
+          tags.on('reinstallModule', _reinstallModule);
           const _loadTags = ({itemSpecs}) => {
             for (let i = 0; i < itemSpecs.length; i++) {
               const itemSpec = itemSpecs[i];
@@ -1602,6 +1622,22 @@ class World {
               const {args: [userId, src]} = m;
 
               _handleTagCloseDetails(userId, src);
+            } else if (type === 'tagPlay') {
+              const {args: [userId, src]} = m;
+
+              _handleTagPlay(userId, src);
+            } else if (type === 'tagPause') {
+              const {args: [userId, src]} = m;
+
+              _handleTagPause(userId, src);
+            } else if (type === 'tagSeek') {
+              const {args: [userId, src, value]} = m;
+
+              _handleTagSeek(userId, src, value);
+            } else if (type === 'reinstallModule') {
+              const {args: [userId, src]} = m;
+
+              _handleReinstallModule(userId, src);
             } else if (type === 'message') {
               const {args: [detail]} = m;
 

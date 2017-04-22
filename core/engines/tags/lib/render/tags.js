@@ -15,6 +15,8 @@ const packageVariant = require('../img/package-variant');
 const packageVariantSrc = 'data:image/svg+xml;base64,' + btoa(packageVariant);
 const packageVariantClosed = require('../img/package-variant-closed');
 const packageVariantClosedSrc = 'data:image/svg+xml;base64,' + btoa(packageVariantClosed);
+const autorenewImg = require('../img/autorenew');
+const autorenewImgSrc = 'data:image/svg+xml;base64,' + btoa(autorenewImg);
 const barsBlackImg = require('../img/bars-black');
 const barsBlackImgSrc = 'data:image/svg+xml;base64,' + btoa(barsBlackImg);
 const barsWhiteImg = require('../img/bars-white');
@@ -101,6 +103,9 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
             <div style="font-size: 20px; font-weight: 300;">${description}</div>
           </div>
         </div>
+        <a style="display: flex; width: 80px; justify-content: center; align-items: center;" onclick="module:reinstall:${id}" onmousedown="module:reinstall:${id}">
+          <img src="${autorenewImgSrc}" width="40" height="40">
+        </a>
         <a style="display: flex; width: 80px; justify-content: center; align-items: center;" onclick="module:link:${id}" onmousedown="module:link:${id}">
           <img src="${imgSrc}" width="40" height="40">
         </a>

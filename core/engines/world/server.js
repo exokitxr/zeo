@@ -645,6 +645,12 @@ class World {
                         } else {
                           cb(_makeInvalidArgsError());
                         }
+                      } else if (method === 'reinstallModule') {
+                        const [userId, src] = args;
+
+                        _broadcast('reinstallModule', [userId, src]);
+
+                        cb();
                       } else if (method === 'broadcast') {
                         const [detail] = args;
 
