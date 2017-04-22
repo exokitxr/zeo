@@ -419,7 +419,8 @@ _checkArgs()
         console.log('Hub: ' + config.metadata.hub.url + '/');
       }
       if (flags.server) {
-        console.log('Server: ' + config.metadata.server.url + '/');
+        const auth = require('./lib/auth');
+        console.log('Server: ' + config.metadata.server.url + '/?t=' + encodeURIComponent(auth.makeToken({key})));
       }
     })
     .then(() => _launch())
