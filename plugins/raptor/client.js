@@ -147,15 +147,15 @@ class Raptor {
           };
 
           const avatarDotMeshes = {
-            left: ui.makeMenuDotMesh(),
-            right: ui.makeMenuDotMesh(),
+            left: ui.makeDotMesh(),
+            right: ui.makeDotMesh(),
           };
           scene.add(avatarDotMeshes.left);
           scene.add(avatarDotMeshes.right);
 
           const avatarBoxMeshes = {
-            left: ui.makeMenuBoxMesh(),
-            right: ui.makeMenuBoxMesh(),
+            left: ui.makeBoxMesh(),
+            right: ui.makeBoxMesh(),
           };
           scene.add(avatarBoxMeshes.left);
           scene.add(avatarBoxMeshes.right);
