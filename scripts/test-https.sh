@@ -12,12 +12,12 @@ npm start -- home my \
   hubUrl='https://test.zeovr.io:8000' \
   dataDirectory=data dataDirectorySrc='defaults/data' \
   cryptoDirectory='crypto-test' cryptoDirectorySrc='defaults/crypto' \
-  installDirectory='installed-test' installDirectorySrc='installed-test' &
+  installDirectory='installed-test' installDirectorySrc='installed' &
 npm start -- hub my \
   port=8000 secure=true \
   hubUrl='https://test.zeovr.io:8000' \
   cryptoDirectory='crypto-test-hub' cryptoDirectorySrc='defaults/crypto' \
-  installDirectory='installed-test-hub' installDirectorySrc='installed-test' &
+  installDirectory='installed-test-hub' installDirectorySrc='installed' &
 npm start -- server \
   port=7777 secure=true \
   hubUrl='https://test.zeovr.io:8000' \
@@ -25,7 +25,7 @@ npm start -- server \
   worldname='server_one' \
   dataDirectory='data/hub/servers/server_one/data' dataDirectorySrc='defaults/data' \
   cryptoDirectory='data/hub/servers/server_one/crypto' cryptoDirectorySrc='crypto-test' \
-  installDirectory='data/hub/servers/server_one/installed' installDirectorySrc='installed-test' &
+  installDirectory='data/hub/servers/server_one/installed' installDirectorySrc='installed' &
 npm start -- server \
   port=7778 secure=true \
   hubUrl='https://test.zeovr.io:8000' \
@@ -33,6 +33,6 @@ npm start -- server \
   worldname='server_two' \
   dataDirectory='data/hub/servers/server_two/data' dataDirectorySrc='defaults/data' \
   cryptoDirectory='data/hub/servers/server_two/crypto' cryptoDirectorySrc='crypto-test' \
-  installDirectory='data/hub/servers/server_two/installed' installDirectorySrc='installed-test' &
+  installDirectory='data/hub/servers/server_two/installed' installDirectorySrc='installed' &
 sleep infinity;
 popd;
