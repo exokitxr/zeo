@@ -149,6 +149,14 @@ const _checkArgs = () => {
   }
 };
 
+const _configure = () => {
+  [process.stdout, process.stderr].forEach(stream => {
+    stream.setMaxListeners(100);
+  });
+
+  return Promise.resolve();
+};
+
 const _preload = () => {
   if (flags.hub || flags.home || flags.server) {
     const crypto = require('./lib/crypto');
@@ -388,6 +396,7 @@ const _launch = () => {
 };
 
 _checkArgs()
+  .then(() => _configure())
   .then(() => _preload())
   .then(() => _load())
   .then(({
