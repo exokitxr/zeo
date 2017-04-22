@@ -85,7 +85,7 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
     const {id, name, displayName, version, description, readme, page, metadata: {exists}} = item;
     const imgSrc = (() => {
       if (exists) {
-        return packageVariantSrc;
+        return vectorPolygonImgSrc;
       } else {
         return packageVariantClosedSrc;
       }
