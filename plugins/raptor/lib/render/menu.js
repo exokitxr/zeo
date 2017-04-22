@@ -15,7 +15,7 @@ const getAvatarSrc = ({avatar: {text, done}}) => {
         <div style="position: relative; margin-bottom: ${notchSize}px; padding: 30px; background-color: #FFF; font-size: 30px; font-weight: 400; flex-grow: 1;">
           <div>${text}</div>
           ${done ?
-            `<a style="display: flex; position: absolute; bottom: 0; right: 0; width: 100px; height: 100px; justify-content: center; align-items: center;" onclick="avatar:next">
+            `<a style="display: flex; position: absolute; bottom: 0; right: 0; width: 100px; height: 100px; justify-content: center; align-items: center;" onclick="raptor:next">
               <img src="${checkImgsrc}" width="50" height="50" />
             </a>`
           :

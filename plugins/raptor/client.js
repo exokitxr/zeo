@@ -141,25 +141,6 @@ class Raptor {
             ];
           })();
 
-          const avatarHoverStates = {
-            left: ui.makeMenuHoverState(),
-            right: ui.makeMenuHoverState(),
-          };
-
-          const avatarDotMeshes = {
-            left: ui.makeDotMesh(),
-            right: ui.makeDotMesh(),
-          };
-          scene.add(avatarDotMeshes.left);
-          scene.add(avatarDotMeshes.right);
-
-          const avatarBoxMeshes = {
-            left: ui.makeBoxMesh(),
-            right: ui.makeBoxMesh(),
-          };
-          scene.add(avatarBoxMeshes.left);
-          scene.add(avatarBoxMeshes.right);
-
           const raptorComponent = {
             selector: 'raptor[position]',
             attributes: {
@@ -459,22 +440,39 @@ class Raptor {
                 const {side} = e;
 
                 const _doPlaneClick = () => {
-                  const avatarHoverState = avatarHoverStates[side];
-                  const {anchor} = avatarHoverState;
-                  const onclick = (anchor && anchor.onclick) || '';
+                  const hoverState = ui.getHoverState(side);
+                  const {page} = hoverState;
 
-                  if (onclick === 'avatar:next') {
-                    const {scriptIndex} = avatarState;
+                  if (page) {
+                    const {type} = page;
 
-                    if ((scriptIndex + 1) < scripts.length) {
-                      avatarState.scriptIndex = scriptIndex + 1;
+                    if (type === 'raptor') {
+                      const {anchor} = hoverState;
+                      const onclick = (anchor && anchor.onclick) || '';
 
-                      _playScript();
+                      if (onclick === 'raptor:next') {
+                        const {scriptIndex} = avatarState;
+
+                        if ((scriptIndex + 1) < scripts.length) {
+                          avatarState.scriptIndex = scriptIndex + 1;
+
+                          _playScript();
+                        } else {
+                          avatarState.scriptIndex = 0;
+                          avatarState.characterIndex = 0;
+
+                          _updateText();
+                        }
+
+                        return true;
+                      } else {
+                        return false;
+                      }
                     } else {
-                      avatarState.scriptIndex = 0;
-                      avatarState.characterIndex = 0;
-                      _updateText();
+                      return false;
                     }
+                  } else {
+                    return false;
                   }
                 };
                 const _doAvatarClick = () => {
@@ -492,7 +490,9 @@ class Raptor {
                   }
                 };
 
-                _doPlaneClick() || _doAvatarClick();
+                if (_doPlaneClick() || _doAvatarClick()) {
+                  e.stopImmediatePropagation();
+                }
               };
               input.on('trigger', _trigger);
 
@@ -586,55 +586,7 @@ class Raptor {
                 };
                 const _updatePlane = () => {
                   const {text} = avatarState;
-
-                  if (text) {
-                    const {gamepads} = pose.getStatus();
-
-                    const matrixObject = _decomposeObjectMatrixWorld(planeMesh);
-                    const {page} = planeMesh;
-
-                    SIDES.forEach(side => {
-                      const gamepad = gamepads[side];
-
-                      if (gamepad) {
-                        const {position: controllerPosition, rotation: controllerRotation, scale: controllerScale} = gamepad;
-
-                        const avatarHoverState = avatarHoverStates[side];
-                        const avatarDotMesh = avatarDotMeshes[side];
-                        const avatarBoxMesh = avatarBoxMeshes[side];
-
-                        ui.updateAnchors({
-                          objects: [{
-                            matrixObject: matrixObject,
-                            page: page,
-                            width: WIDTH,
-                            height: HEIGHT,
-                            worldWidth: WORLD_WIDTH,
-                            worldHeight: WORLD_HEIGHT,
-                            worldDepth: WORLD_DEPTH,
-                          }],
-                          hoverState: avatarHoverState,
-                          dotMesh: avatarDotMesh,
-                          boxMesh: avatarBoxMesh,
-                          controllerPosition,
-                          controllerRotation,
-                          controllerScale,
-                        });
-                      }
-                    });
-
-                    planeMesh.visible = true;
-                  } else {
-                    SIDES.forEach(side => {
-                      const avatarDotMesh = avatarDotMeshes[side];
-                      avatarDotMesh.visible = false;
-
-                      const avatarBoxMesh = avatarBoxMeshes[side];
-                      avatarBoxMesh.visible = false;
-                    });
-
-                    planeMesh.visible = false;
-                  }
+                  planeMesh.visible = Boolean(text);
                 };
 
                 _updateTargets();
