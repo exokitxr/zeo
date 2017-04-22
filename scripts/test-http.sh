@@ -6,8 +6,10 @@ pushd "$DIR"/../;
 export NODE_TLS_REJECT_UNAUTHORIZED=0
 
 npm start -- install
-cp -al installed data/hub/servers/server_one/installed
-cp -al installed data/hub/servers/server_two/installed
+mkdir -p data/hub/servers/server_one
+cp -ral installed data/hub/servers/server_one/
+mkdir -p data/hub/servers/server_two
+cp -ral installed data/hub/servers/server_two/
 
 npm start -- site my \
   port=8080 \
