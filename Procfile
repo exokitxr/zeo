@@ -1,1 +1,1 @@
-web: scripts/heroku.sh
+web: scripts/services/heroku.sh

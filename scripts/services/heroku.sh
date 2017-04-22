@@ -2,7 +2,7 @@
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-pushd "$DIR"/../;
+pushd "$DIR"/../../;
 export NODE_TLS_REJECT_UNAUTHORIZED=0
 npm start -- home my \
   port="$PORT" \
