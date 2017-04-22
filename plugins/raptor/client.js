@@ -325,7 +325,7 @@ class Raptor {
                   height: HEIGHT,
                   color: [1, 1, 1, 0],
                 });
-                const mesh = menuUi.addPage(({
+                const mesh = menuUi.makePage(({
                   avatar: avatarState,
                 }) => ({
                   type: 'html',
@@ -346,6 +346,10 @@ class Raptor {
                 });
                 mesh.rotation.order = camera.rotation.order;
                 mesh.visible = false;
+
+                const {page} = mesh;
+                ui.addPage(page);
+                page.update();
 
                 return mesh;
               })();
@@ -642,6 +646,10 @@ class Raptor {
 
               entityApi._cleanup = () => {
                 entityObject.remove(raptorMesh);
+
+                const {planeMesh} = raptorMesh;
+                const {page} = planeMesh;
+                ui.removePage(page);
 
                 scene.remove(head);
                 scene.remove(planeMesh);

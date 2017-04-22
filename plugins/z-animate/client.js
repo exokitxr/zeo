@@ -121,7 +121,7 @@ class ZAnimate {
               height: HEIGHT,
               // color: [1, 1, 1, 0],
             });
-            const mesh = menuUi.addPage(({
+            const mesh = menuUi.makePage(({
               tool: toolState,
             }) => ({
               type: 'html',

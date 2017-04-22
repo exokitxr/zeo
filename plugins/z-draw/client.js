@@ -242,7 +242,7 @@ class ZDraw {
                     height: WORLD_CLEAR_HEIGHT,
                     // color: [1, 1, 1, 0],
                   });
-                  const mesh = menuUi.addPage(() => ({
+                  const mesh = menuUi.makePage(() => ({
                     type: 'html',
                     src: `<div style="display: flex; width: ${CLEAR_WIDTH}px; height: ${CLEAR_HEIGHT}px; background-color: #EEE; justify-content: center; align-items: center;">
                       <a style="display: flex; margin: 0 50px; padding: 0 30px; width: 100%; border: 3px solid; border-radius: 20px; justify-content: center; align-items: center; font-size: 100px; text-decoration: none;" onclick="clear">Clear</a>
