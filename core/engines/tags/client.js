@@ -1091,11 +1091,11 @@ class Tags {
                       const id = match[2];
 
                       const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
-                      const canMakeTag =
-                        Boolean(tagMesh.item.metadata && tagMesh.item.metadata.isStatic)
-                        !(type === 'module' && (tagMesh.item.metadata.exists || tagMesh.item.instancing));
 
-                      if (canMakeTag) {
+                      if (
+                        Boolean(tagMesh.item.metadata && tagMesh.item.metadata.isStatic) &&
+                        !(type === 'module' && (tagMesh.item.metadata.exists || tagMesh.item.instancing))
+                      ) {
                         tagsApi.emit('grabNpmTag', { // XXX handle the multi-{user,controller} conflict cases
                           side,
                           tagMesh
