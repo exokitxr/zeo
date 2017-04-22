@@ -3,15 +3,28 @@
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 pushd "$DIR"/../;
+
 export NODE_TLS_REJECT_UNAUTHORIZED=0
-npm start -- install
+
+npm start -- install &
+INSTALL_PID_1=$!
+npm start -- install \
+  dataDirectory='data/hub/servers/server_one/data' \
+  installDirectory='data/hub/servers/server_one/installed' &
+INSTALL_PID_2=$!
+npm start -- install \
+  dataDirectory='data/hub/servers/server_two/data' \
+  installDirectory='data/hub/servers/server_two/installed' &
+INSTALL_PID_3=$!
+wait $INSTALL_PID_1 $INSTALL_PID_2 $INSTALL_PID_3
+
 npm start -- site my \
   port=8080 secure=true \
   hubUrl='https://test.zeovr.io:8000' &
 npm start -- home my \
   port=8081 secure=true \
   hubUrl='https://test.zeovr.io:8000' \
-  dataDirectory=data dataDirectorySrc='defaults/data' \
+  dataDirectory='data' dataDirectorySrc='defaults/data' \
   cryptoDirectory='crypto-test' cryptoDirectorySrc='defaults/crypto' \
   installDirectory='installed' installDirectorySrc='installed' &
 npm start -- hub my \
