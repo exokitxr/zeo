@@ -4,6 +4,7 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 pushd "$DIR"/../;
 export NODE_TLS_REJECT_UNAUTHORIZED=0
+npm start -- install
 npm start -- site my \
   port=8080 \
   hubUrl='http://test.zeovr.io:8000' &

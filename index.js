@@ -3,7 +3,6 @@ const fs = require('fs');
 const child_process = require('child_process');
 
 const mkdirp = require('mkdirp');
-const Spinner = require('cli-spinner').Spinner;
 const archae = require('archae');
 const rnd = require('rnd');
 rnd.setSeed(process.env.USER + ';' + process.cwd());
@@ -131,37 +130,9 @@ const config = {
 const a = archae(config);
 
 const _install = () => {
-  if (flags.install || flags.home || flags.hub || flags.server) {
-    const spinner = (() => {
-      if (flags.install) {
-        console.log('Installing core modules...');
-        const spinner = new Spinner();
-        spinner.start();
-
-        return spinner;
-      } else {
-        return null;
-      }
-    })();
-
+  if (flags.install) {
     return _getAllPlugins()
-      .then(plugins => a.installPlugins(plugins))
-      .then(result => {
-        if (spinner) {
-          spinner.stop();
-          console.log();
-        }
-
-        return Promise.resolve(result);
-      })
-      .catch(err => {
-        if (spinner) {
-          spinner.stop();
-          console.log();
-        }
-
-        return Promise.reject(err);
-      });
+      .then(plugins => a.installPlugins(plugins, {force: true}));
   } else {
     return Promise.resolve();
   }
