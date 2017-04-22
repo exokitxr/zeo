@@ -958,6 +958,7 @@ class World {
             }
 
             // cancel old rendering
+            // XXX this has a bug where flipping through pages too fast causes them to not re-render when we flip back to them
             for (let i = 0; i < npmCancels.length; i++) {
               const npmCancel = npmCancels[i];
               npmCancel();
@@ -1071,6 +1072,8 @@ class World {
                       const {inputText} = keyboardFocusState;
                       npmState.inputText = inputText;
 
+                      // XXX if the text hasn't changed then we don't need to re-request
+                      // XXX also, the backend should cache responses to prevent local re-requests from hitting external APIs
                       _updateNpm();
 
                       _updatePages();
