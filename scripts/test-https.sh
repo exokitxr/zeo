@@ -8,9 +8,9 @@ export NODE_TLS_REJECT_UNAUTHORIZED=0
 
 npm start -- install
 mkdir -p data/hub/servers/server_one
-cp -ral installed data/hub/servers/server_one/installed
+cp -ralf installed data/hub/servers/server_one/
 mkdir -p data/hub/servers/server_two
-cp -ral installed data/hub/servers/server_two/installed
+cp -ralf installed data/hub/servers/server_two/
 
 npm start -- site my \
   port=8080 secure=true \
