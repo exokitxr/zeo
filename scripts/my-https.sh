@@ -2,13 +2,16 @@
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-pushd "$DIR"/../;
+pushd "$DIR"/../
 export NODE_TLS_REJECT_UNAUTHORIZED=0
-npm start -- home my \
+
+./index.js home my \
   port=8080 secure=true \
   hubUrl='https://hub.zeovr.io:8000' \
   dataDirectorySrc='defaults/data' \
   cryptoDirectorySrc='defaults/crypto' \
   installDirectorySrc='installed' &
+
 sleep infinity;
+
 popd;
