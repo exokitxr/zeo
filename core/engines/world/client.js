@@ -1069,14 +1069,17 @@ class World {
                     focusState.keyboardFocusState = keyboardFocusState;
 
                     keyboardFocusState.on('update', () => {
-                      const {inputText} = keyboardFocusState;
-                      npmState.inputText = inputText;
+                      const {inputText: keyboardInputText} = keyboardFocusState;
+                      const {inputText: npmInputText} = npmState;
 
-                      // XXX if the text hasn't changed then we don't need to re-request
-                      // XXX also, the backend should cache responses to prevent local re-requests from hitting external APIs
-                      _updateNpm();
+                      if (keyboardInputText !== npmInputText) {
+                        npmState.inputText = keyboardInputText;
 
-                      _updatePages();
+                        // XXX the backend should cache responses to prevent local re-requests from hitting external APIs
+                        _updateNpm();
+
+                        _updatePages();
+                      }
                     });
                     keyboardFocusState.on('blur', () => {
                       focusState.keyboardFocusState = null;
