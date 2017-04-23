@@ -243,7 +243,7 @@ class Tags {
                 const name = moduleElement.getAttribute('src');
                 modulesMutex.lock(name)
                   .then(unlock => {
-                    archae.releasePlugin(name)
+                    archae.removePlugin(name)
                       .then(() => {
                         _updateNpmUi(tagMesh => {
                           const {item} = tagMesh;
