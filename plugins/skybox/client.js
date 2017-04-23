@@ -83,9 +83,8 @@ class Skybox {
                   });
                   return  material;
                 });
-                const material = new THREE.MultiMaterial(materials);
 
-                const mesh = new THREE.Mesh(geometry, material);
+                const mesh = new THREE.Mesh(geometry, materials);
                 return mesh;
               })();
               entityObject.add(skyboxMesh);

@@ -190,8 +190,9 @@ class Youtube {
                 });
                 return material;
               })();
+              const materials = [solidMaterial, textMaterial];
 
-              const mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, [solidMaterial, textMaterial]);
+              const mesh = new THREE.Mesh(geometry, materials);
               return mesh;
             })();
             mesh.add(controlsMesh);
