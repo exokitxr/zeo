@@ -65,6 +65,7 @@ class Tags {
       '/core/engines/cyborg',
       '/core/engines/biolumi',
       '/core/engines/keyboard',
+      '/core/engines/loader',
       '/core/engines/fs',
       '/core/engines/somnifer',
       '/core/engines/rend',
@@ -80,6 +81,7 @@ class Tags {
         cyborg,
         biolumi,
         keyboard,
+        loader,
         fs,
         somnifer,
         rend,
@@ -173,7 +175,7 @@ class Tags {
 
               modulesMutex.lock(name)
                 .then(unlock => {
-                  archae.requestPlugin(name)
+                  loader.requestPlugin(name)
                     .then(pluginInstance => {
                       item.instance = moduleElement;
                       item.instancing = false;
@@ -243,7 +245,7 @@ class Tags {
                 const name = moduleElement.getAttribute('src');
                 modulesMutex.lock(name)
                   .then(unlock => {
-                    archae.removePlugin(name)
+                    loader.removePlugin(name)
                       .then(() => {
                         _updateNpmUi(tagMesh => {
                           const {item} = tagMesh;
@@ -1494,9 +1496,8 @@ class Tags {
                   return true;
                 } else if (match = onmousedown.match(/^module:reinstall:(.+)$/)) {
                   const id = match[1];
-                  const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
 
-                  console.log('reinstall module', tagMesh);
+                  tagsApi.emit('reinstallModule', {id});
 
                   return true;
                 } else if (match = onmousedown.match(/^attribute:(.+?):(.+?):link$/)) {

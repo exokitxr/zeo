@@ -60,6 +60,7 @@ class World {
         '/core/engines/biolumi',
         '/core/engines/rend',
         '/core/engines/keyboard',
+        '/core/engines/loader',
         '/core/engines/tags',
         '/core/engines/fs',
         '/core/utils/network-utils',
@@ -74,6 +75,7 @@ class World {
         biolumi,
         rend,
         keyboard,
+        loader,
         tags,
         fs,
         networkUtils,
@@ -641,7 +643,15 @@ class World {
               const id = match[1];
 
               const tagMesh = elementManager.getTagMesh(id);
-              console.log('handle reinstall module', {tagMesh}); // XXX
+              const {item} = tagMesh;
+              const {displayName} = item;
+              loader.releasePlugin(displayName)
+                .then(() => {
+                  console.log('handle reinstall module', {displayName}); // XXX finish this
+                })
+                .catch(err => {
+                  console.warn(err);
+                });
             } else {
               console.warn('invalid tag seek arguments', {src, value});
             }

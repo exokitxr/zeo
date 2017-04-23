@@ -24,7 +24,7 @@ class Zeo {
     const $ = s => document.querySelectorAll(s);
     const $$ = (el, s) => el.querySelectorAll(s);
 
-    const _requestLoader = () => new Promise((accept, reject) => {
+    const _requestBlocker = () => new Promise((accept, reject) => {
       const loaderOverlay = $('#loader-overlay')[0];
       const loaderPlugin = $('#loader-plugin')[0];
 
@@ -72,8 +72,8 @@ class Zeo {
       });
     });
 
-    return _requestLoader()
-      .then(loader => {
+    return _requestBlocker()
+      .then(blocker => {
         if (live) {
           const _requestPlugins = () => archae.requestPlugins([
             '/core/engines/bootstrap',
@@ -90,6 +90,7 @@ class Zeo {
             '/core/engines/keyboard',
             '/core/engines/teleport',
             '/core/engines/scale',
+            '/core/engines/loader',
             '/core/engines/tags',
             '/core/engines/world',
             '/core/engines/multiplayer',
@@ -122,6 +123,7 @@ class Zeo {
             keyboard,
             teleport,
             scale,
+            loader,
             tags,
             world,
             multiplayer,
@@ -145,7 +147,7 @@ class Zeo {
               const {events} = jsUtils;
               const {EventEmitter} = events;
 
-              loader.destroy();
+              blocker.destroy();
 
               const isInIframe = bootstrap.isInIframe();
               const supportsWebVR = webvr.supportsWebVR();
