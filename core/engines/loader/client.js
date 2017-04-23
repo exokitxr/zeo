@@ -6,8 +6,6 @@ class Loader {
   mount() {
     const {_archae: archae} = this;
 
-    this._cleanup = () => {};
-
     class LoaderApi {
       requestPlugin(plugin) {
         return archae.requestPlugin(plugin, {
@@ -24,6 +22,20 @@ class Loader {
       }
     }
     const loaderApi = new LoaderApi();
+
+    const _unload = pluginName => {
+      loaderApi.releasePlugin(pluginName);
+    };
+    archae.on('unload', _unload);
+    const _load = plugin => {
+      loaderApi.requestPlugin(plugin);
+    };
+    archae.on('load', _load);
+
+    this._cleanup = () => {
+      archae.removeListener('unload', _unload);
+      archae.removeListener('load', _load);
+    };
 
     return loaderApi;
   }
