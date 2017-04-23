@@ -262,8 +262,8 @@ class Cyborg {
                 });
 
                 const padMesh = (() => {
-                  const geometry = new THREE.BoxBufferGeometry(0.005, 0.005, 0.005);
-                  geometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.0075, 0.05));
+                  const geometry = new THREE.BoxBufferGeometry(0.005, 0.005, 0.005)
+                    .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.0075, 0.05));
                   const padMeshSolidMaterial = new THREE.MeshPhongMaterial({
                     color: BUTTON_COLOR,
                     shininess: 0,
@@ -272,7 +272,7 @@ class Cyborg {
                   });
                   const materials = [padMeshSolidMaterial, buttonWireframeMaterial];
 
-                  const mesh = new THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
+                  const mesh = new THREE.Mesh(geometry, materials);
                   mesh.visible = false;
                   return mesh;
                 })();
@@ -280,11 +280,11 @@ class Cyborg {
                 object.padMesh = padMesh;
 
                 const menuMesh = (() => {
-                  const geometry = new THREE.BoxBufferGeometry(0.01, 0.01, 0.01);
-                  geometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.01 / 2, 0.02));
+                  const geometry = new THREE.BoxBufferGeometry(0.01, 0.01, 0.01)
+                    .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.01 / 2, 0.02));
                   const materials = [buttonSolidMaterial, buttonWireframeMaterial];
 
-                  const mesh = new THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
+                  const mesh = new THREE.Mesh(geometry, materials);
                   mesh.visible = false;
                   return mesh;
                 })();
@@ -292,11 +292,11 @@ class Cyborg {
                 object.menuMesh = menuMesh;
 
                 const triggerMesh = (() => {
-                  const geometry = new THREE.BoxBufferGeometry(0.02, 0.02, 0.02);
-                  geometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, -0.029, 0.0475));
+                  const geometry = new THREE.BoxBufferGeometry(0.02, 0.02, 0.02)
+                    .applyMatrix(new THREE.Matrix4().makeTranslation(0, -0.029, 0.0475));
                   const materials = [buttonSolidMaterial, buttonWireframeMaterial];
 
-                  const mesh = new THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
+                  const mesh = new THREE.Mesh(geometry, materials);
                   mesh.visible = false;
                   return mesh;
                 })();
@@ -305,8 +305,8 @@ class Cyborg {
 
                 const gripMesh = (() => {
                   const _makeGripSideGeometry = index => {
-                    const geometry = new THREE.BoxBufferGeometry(0.01, 0.0125, 0.0275);
-                    geometry.applyMatrix(new THREE.Matrix4().makeTranslation(0.0175 * ((index === 0) ? 1 : -1), -0.015, 0.0875));
+                    const geometry = new THREE.BoxBufferGeometry(0.01, 0.0125, 0.0275)
+                      .applyMatrix(new THREE.Matrix4().makeTranslation(0.0175 * ((index === 0) ? 1 : -1), -0.015, 0.0875));
                     return geometry;
                   };
 
@@ -316,7 +316,7 @@ class Cyborg {
                   );
                   const materials = [buttonSolidMaterial, buttonWireframeMaterial];
 
-                  const mesh = new THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
+                  const mesh = new THREE.Mesh(geometry, materials);
                   mesh.visible = false;
                   return mesh;
                 })();
@@ -338,7 +338,7 @@ class Cyborg {
               const {buttons} = gamepadStatus;
               mesh.padMesh.visible = buttons.pad.touched;
               mesh.padMesh.position.y = buttons.pad.pressed ? -0.0025 : 0;
-              mesh.padMesh.children[0].material.color.setHex(buttons.pad.pressed ? BUTTON_COLOR_HIGHLIGHT : BUTTON_COLOR);
+              mesh.padMesh.material[0].color.setHex(buttons.pad.pressed ? BUTTON_COLOR_HIGHLIGHT : BUTTON_COLOR);
               mesh.triggerMesh.visible = buttons.trigger.pressed;
               mesh.gripMesh.visible = buttons.grip.pressed;
               mesh.menuMesh.visible = buttons.menu.pressed;
