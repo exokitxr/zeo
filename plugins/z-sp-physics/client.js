@@ -22,19 +22,28 @@ class ZSpPhysics {
     });
 
     const _requestAmmo = () => new Promise((accept, reject) => {
-      const script = document.createElement('script');
-      script.src = 'archae/sp-physics/lib/ammo.js';
-      script.onload = () => {
-        document.body.removeChild(script);
+      window.module = {};
 
-        accept(window.Ammo);
+      const script = document.createElement('script');
+      script.src = 'archae/sp-physics/ammo.js';
+      script.onload = () => {
+        const {exports: Ammo} = window.module;
+        window.module = {};
+
+        accept(Ammo);
+
+        _cleanup();
       };
       script.onerror = err => {
-        document.body.removeChild(script);
-
         reject(err);
+
+        _cleanup();
       };
       document.body.appendChild(script);
+
+      const _cleanup = () => {
+        document.body.removeChild(script);
+      };
     });
 
     return _requestAmmo()

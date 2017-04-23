@@ -9,11 +9,13 @@ class SpPhysics {
     const {_archae: archae} = this;
     const {express, app} = archae.getCore();
 
-    const spPhysicsLibStatic = express.static(path.join(__dirname, 'lib'));
+    const ammojsDirectoryPath = path.dirname(require.resolve('ammojs'));
+
+    const spPhysicsLibStatic = express.static(ammojsDirectoryPath);
     function serveSpPhysicsLib(req, res, next) {
       spPhysicsLibStatic(req, res, next);
     }
-    app.use('/archae/sp-physics/lib', serveSpPhysicsLib);
+    app.use('/archae/sp-physics', serveSpPhysicsLib);
 
     this._cleanup = () => {
       function removeMiddlewares(route, i, routes) {
