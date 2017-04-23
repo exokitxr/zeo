@@ -43,6 +43,10 @@ class Zeo {
         _updateText();
       }
       archae.on('pluginload', pluginload);
+      const change = plugin => {
+        console.log('got change', {plugin}); // XXX handle this
+      };
+      archae.on('change', change);
 
       const _updateText = () => {
         loaderPlugin.innerText = (() => {

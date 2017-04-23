@@ -10,7 +10,9 @@ class Loader {
 
     class LoaderApi {
       requestPlugin(plugin) {
-        return archae.requestPlugin(plugin);
+        return archae.requestPlugin(plugin, {
+          hotload: true,
+        });
       }
 
       removePlugin(plugin) {
