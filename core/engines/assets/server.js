@@ -9,15 +9,25 @@ class Assets {
     const {_archae: archae} = this;
     const {express, app} = archae.getCore();
 
-    const assetsModelsStatic = express.static(path.join(__dirname, 'models'));
-    function serveAssetsModels(req, res, next) {
-      assetsModelsStatic(req, res, next);
+    const controllerjsModelPath = path.join(path.dirname(require.resolve('controllerjs')), 'model');
+
+    const assetsHmdStatic = express.static(path.join(__dirname, 'models', 'hmd'));
+    function serveAssetsHmd(req, res, next) {
+      assetsHmdStatic(req, res, next);
     }
-    app.use('/archae/assets/models', serveAssetsModels);
+    app.use('/archae/assets/models/hmd', serveAssetsHmd);
+    const assetsControllerStatic = express.static(controllerjsModelPath);
+    function serveAssetsController(req, res, next) {
+      assetsControllerStatic(req, res, next);
+    }
+    app.use('/archae/assets/models/controller', serveAssetsController);
 
     this._cleanup = () => {
       function removeMiddlewares(route, i, routes) {
-        if (route.handle.name === 'serveAssetsModels') {
+        if (
+          route.handle.name === 'serveAssetsHmd' ||
+          route.handle.name === 'serveAssetsController'
+        ) {
           routes.splice(i, 1);
         }
         if (route.route) {

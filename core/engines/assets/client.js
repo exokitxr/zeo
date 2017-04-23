@@ -49,11 +49,12 @@ class Assets {
             creatureUtils,
           });
 
-          const _requestModelMesh = modelJson => new Promise((accept, reject) => {
+          const _requestJsonMesh = (modelJson, modelTexturePath) => new Promise((accept, reject) => {
             const loader = new THREE.ObjectLoader();
+            loader.setTexturePath(modelTexturePath);
             loader.parse(modelJson, accept);
           });
-          const _requestHmdMesh = () => _requestModelMesh(hmdModelJson)
+          const _requestHmdMesh = () => _requestJsonMesh(hmdModelJson, hmdModelPath.replace(/[^\/]+$/, ''))
             .then(mesh => {
               const object = new THREE.Object3D();
 
@@ -65,7 +66,7 @@ class Assets {
 
               return object;
             });
-          const _requestControllerMesh = () => _requestModelMesh(controllerModelJson);
+          const _requestControllerMesh = () => _requestJsonMesh(controllerModelJson, controllerModelPath.replace(/[^\/]+$/, ''));
 
           return Promise.all([
             _requestHmdMesh(),
