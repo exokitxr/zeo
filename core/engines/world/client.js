@@ -636,25 +636,17 @@ class World {
               console.warn('invalid tag seek arguments', {src, value});
             }
           };
-          const _handleReinstallModule = (userId, src) => {
-            // same for local and remote user ids
-            let match;
-            if (match = src.match(/^world:(.+)$/)) {
-              const id = match[1];
-
-              const tagMesh = elementManager.getTagMesh(id);
-              const {item} = tagMesh;
-              const {displayName} = item;
-              loader.releasePlugin(displayName)
-                .then(() => {
-                  console.log('handle reinstall module', {displayName}); // XXX finish this
-                })
-                .catch(err => {
-                  console.warn(err);
-                });
-            } else {
-              console.warn('invalid tag seek arguments', {src, value});
-            }
+          const _handleLoadModule = (userId, plugin) => {
+            loader.requestPlugin(plugin)
+              .catch(err => {
+                console.warn(err);
+              });
+          };
+          const _handleUnloadModule = (userId, pluginName) => {
+            loader.releasePlugin(pluginName)
+              .catch(err => {
+                console.warn(err);
+              });
           };
           const _handleMessage = detail => {
             tags.message(detail);
@@ -1412,11 +1404,21 @@ class World {
           };
           tags.on('seekUpdate', _tagsSeekUpdate);
           const _reinstallModule = ({id}) => {
-            const src = _getTagIdSrc(id);
+            const tagMesh = elementManager.getTagMesh(id);
+            const {item} = tagMesh;
+            const {name, displayName} = item;
 
-            _request('reinstallModule', [localUserId, src], _warnError);
+            _request('unloadModule', [localUserId, displayName], _warnError);
+            _handleUnloadModule(localUserId, displayName);
 
-            _handleReinstallModule(localUserId, src);
+            loader.removePlugin(name)
+              .then(() => {
+                _request('loadModule', [localUserId, name], _warnError);
+                _handleLoadModule(localUserId, name);
+              })
+              .catch(err => {
+                console.warn(err);
+              });
           };
           tags.on('reinstallModule', _reinstallModule);
           const _loadTags = ({itemSpecs}) => {
@@ -1644,10 +1646,14 @@ class World {
               const {args: [userId, src, value]} = m;
 
               _handleTagSeek(userId, src, value);
-            } else if (type === 'reinstallModule') {
-              const {args: [userId, src]} = m;
+            } else if (type === 'loadModule') {
+              const {args: [userId, plugin]} = m;
 
-              _handleReinstallModule(userId, src);
+              _handleLoadModule(userId, plugin);
+            } else if (type === 'unloadModule') {
+              const {args: [userId, pluginName]} = m;
+
+              _handleUnloadModule(userId, pluginName);
             } else if (type === 'message') {
               const {args: [detail]} = m;
 

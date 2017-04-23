@@ -645,10 +645,16 @@ class World {
                         } else {
                           cb(_makeInvalidArgsError());
                         }
-                      } else if (method === 'reinstallModule') {
+                      } else if (method === 'loadModule') {
                         const [userId, src] = args;
 
-                        _broadcast('reinstallModule', [userId, src]);
+                        _broadcast('loadModule', [userId, src]);
+
+                        cb();
+                      } else if (method === 'unloadModule') {
+                        const [userId, src] = args;
+
+                        _broadcast('unloadModule', [userId, src]);
 
                         cb();
                       } else if (method === 'broadcast') {
