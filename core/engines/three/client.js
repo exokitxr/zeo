@@ -1,58 +1,85 @@
-const THREE = require('three');
-
 const DEFAULT_USER_HEIGHT = 1.6;
 const CAMERA_ROTATION_ORDER = 'YXZ';
 
 class Three {
   mount() {
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0xFFFFFF);
-    scene.fog = new THREE.FogExp2(0xFFFFFF, 0);
+    const _requestThree = () => new Promise((accept, reject) => {
+      window.module = {};
 
-    const camera = (() => {
-      const result = new THREE.PerspectiveCamera(90, window.innerWidth / window.innerHeight, 0.01, 100000);
-      result.position.x = 0;
-      result.position.y = DEFAULT_USER_HEIGHT;
-      result.position.z = 0;
-      result.rotation.order = CAMERA_ROTATION_ORDER;
-      result.up = new THREE.Vector3(0, 1, 0);
-      result.side = 'left'; // for webvr updateEye()
+      const script = document.createElement('script');
+      script.src = 'archae/three/three.js';
+      script.async = true;
+      script.onload = () => {
+        const {exports: THREE} = window.module;
+        window.module = {};
 
-      const target = new THREE.Vector3(0, DEFAULT_USER_HEIGHT, -1);
-      result.lookAt(target);
-      result.target = target;
+        accept(THREE);
 
-      return result;
-    })();
-    const cameraParent = new THREE.Object3D();
-    cameraParent.add(camera);
-    scene.add(cameraParent);
+        _cleanup();
+      };
+      script.onerror = err => {
+        reject(err);
 
-    const canvas = document.querySelector('#canvas');
-    const renderer = new THREE.WebGLRenderer({
-      canvas: canvas,
-      antialias: true,
-    });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(window.devicePixelRatio);
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.autoUpdate = false;
-    // renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    window.document.body.appendChild(renderer.domElement);
+        _cleanup();
+      };
+      document.body.appendChild(script);
 
-    window.addEventListener('resize', () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-
-      renderer.setSize(window.innerWidth, window.innerHeight);
+      const _cleanup = () => {
+        document.body.removeChild(script);
+      };
     });
 
-    return {
-      THREE,
-      scene,
-      camera,
-      renderer,
-    };
+    return _requestThree()
+      .then(THREE => {
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xFFFFFF);
+        scene.fog = new THREE.FogExp2(0xFFFFFF, 0);
+
+        const camera = (() => {
+          const result = new THREE.PerspectiveCamera(90, window.innerWidth / window.innerHeight, 0.01, 100000);
+          result.position.x = 0;
+          result.position.y = DEFAULT_USER_HEIGHT;
+          result.position.z = 0;
+          result.rotation.order = CAMERA_ROTATION_ORDER;
+          result.up = new THREE.Vector3(0, 1, 0);
+          result.side = 'left'; // for webvr updateEye()
+
+          const target = new THREE.Vector3(0, DEFAULT_USER_HEIGHT, -1);
+          result.lookAt(target);
+          result.target = target;
+
+          return result;
+        })();
+        const cameraParent = new THREE.Object3D();
+        cameraParent.add(camera);
+        scene.add(cameraParent);
+
+        const canvas = document.querySelector('#canvas');
+        const renderer = new THREE.WebGLRenderer({
+          canvas: canvas,
+          antialias: true,
+        });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.autoUpdate = false;
+        // renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        window.document.body.appendChild(renderer.domElement);
+
+        window.addEventListener('resize', () => {
+          camera.aspect = window.innerWidth / window.innerHeight;
+          camera.updateProjectionMatrix();
+
+          renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        return {
+          THREE,
+          scene,
+          camera,
+          renderer,
+        };
+      });
   }
 
   unmount() {
