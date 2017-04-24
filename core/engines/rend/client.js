@@ -118,9 +118,11 @@ class Rend {
           animation: null,
         };
         const statusState = {
+          url: bootstrap.getInitialPath(),
           username: null,
           worldname: serverWorldname,
           users: [],
+          token: '',
           hasHub: Boolean(hubSpec),
         };
         const navbarState = {
@@ -283,7 +285,7 @@ class Rend {
                   const {anchor} = hoverState;
                   const onclick = (anchor && anchor.onclick) || '';
 
-                  if (onclick === 'status:downloadLoginToken') {
+                  /* if (onclick === 'status:downloadLoginToken') {
                     const a = document.createElement('a');
                     a.href = '/server/token';
                     a.download = 'token.txt';
@@ -312,11 +314,7 @@ class Rend {
                       });
 
                     return true;
-                  } else if (onclick === 'status:snapshotWorld') {
-                    // XXX implement this
-
-                    return true;
-                  } else if (onclick === 'status:backToHub') {
+                  } else */if (onclick === 'status:backToHub') {
                     const initialToken = _getQueryVariable(bootstrap.getInitialUrl(), 't');
                     bootstrap.navigate('https://' + hubUrl + (initialToken ? ('?t=' + initialToken) : ''));
 
@@ -330,6 +328,40 @@ class Rend {
               }
             };
             input.on('trigger', trigger);
+            // this needs to be a native click event rather than a soft trigger click event due for clipboard copy security reasons
+            const click = () => {
+              const mode = webvr.getMode();
+
+              if (SIDES.indexOf(mode) !== -1) {
+                const side = mode;
+                const hoverState = uiTracker.getHoverState(side);
+                const {anchor} = hoverState;
+                const onclick = (anchor && anchor.onclick) || '';
+
+                if (onclick === 'status:token') {
+                  const {url, token} = statusState;
+                  const clipboardText = url + '?t=' + token;
+
+                  const ok = _copyToClipboard(clipboardText);
+                  if (ok) {
+                    console.log('copied to clipboard: ' + clipboardText);
+
+                    /* const {worldname} = server;
+
+                    _proxyLoginServer(worldname)
+                      .then(token => {
+                        server.token = token;
+                      })
+                      .catch(err => {
+                        console.warn(err);
+                      }); */
+                  } else {
+                    console.warn('failed to copy URL:\n' + clipboardText);
+                  }
+                }
+              }
+            };
+            input.on('click', click);
             const menudown = () => {
               const {loggedIn} = menuState;
 
@@ -471,6 +503,7 @@ class Rend {
               });
 
               input.removeListener('trigger', trigger);
+              input.removeListener('click', click);
               input.removeListener('menudown', menudown);
             });
 
@@ -682,6 +715,36 @@ const _getQueryVariable = (url, variable) => {
     }
   }
   return null;
+};
+const _copyToClipboard = s => {
+  const mark = document.createElement('span');
+  mark.textContent = s;
+  mark.setAttribute('style', [
+    // reset user styles for span element
+    'all: unset',
+    // prevents scrolling to the end of the page
+    'position: fixed',
+    'top: 0',
+    'clip: rect(0, 0, 0, 0)',
+    // used to preserve spaces and line breaks
+    'white-space: pre',
+    // do not inherit user-select (it may be `none`)
+    '-webkit-user-select: text',
+    '-moz-user-select: text',
+    '-ms-user-select: text',
+    'user-select: text',
+  ].join(';'));
+  document.body.appendChild(mark);
+
+  const range = document.createRange();
+  range.selectNode(mark);
+
+  const selection = document.getSelection();
+  selection.removeAllRanges();
+  selection.addRange(range);
+
+  const successful = document.execCommand('copy');
+  return successful;
 };
 
 module.exports = Rend;

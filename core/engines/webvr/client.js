@@ -791,6 +791,16 @@ class WebVR {
             display.resetPose();
           }
 
+          getMode() {
+            const {display} = this;
+
+            if (display instanceof FakeVRDisplay) {
+              return display.getMode();
+            } else {
+              return null;
+            }
+          }
+
           vibrate(side, value, time) {
             let left = null;
             let right = null;

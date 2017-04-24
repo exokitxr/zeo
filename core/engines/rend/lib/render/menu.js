@@ -7,7 +7,7 @@ const homeImgSrc = 'data:image/svg+xml;base64,' + btoa(homeImg);
 
 const makeRenderer = ({creatureUtils}) => {
 
-const getStatusSrc = ({status: {username, worldname, users, hasHub}}) => {
+const getStatusSrc = ({status: {url, username, worldname, users, token, hasHub}}) => {
   const allUsers = [username].concat(users).sort((a, b) => a.localeCompare(b));
 
   return `\
@@ -40,7 +40,7 @@ const getStatusSrc = ({status: {username, worldname, users, hasHub}}) => {
       <div style="width: 400px;">
         <h1 style="margin: 15px 0; font-size: 40px; font-weight: 400;">Access token</h1>
         <div style="margin-bottom: 10px; font-size: 20px; font-weight: 400;">Share this token to allow others to log in. Click to copy to clipboard.</div>
-        <a style="display: block; margin-bottom: 10px; font-size: 30px; font-weight: 400; color: #2196F3; text-decoration: none; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;" onclick="status:token">http://127.0.0.1:8081/s/server_two/?t=QmhiJQ02UUVzflIHXkUWPw0HM0shcxXCgFoPQCoB</a>
+        <a style="display: block; margin-bottom: 10px; font-size: 30px; font-weight: 400; color: #2196F3; text-decoration: none; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;" onclick="status:token">${url}${token ? ('?t=' + token) : ''}</a>
         <h1 style="margin: 15px 0; font-size: 40px; font-weight: 400;">Links</h1>
         ${hasHub ? `<a style="display: flex; padding: 0 10px; font-size: 24px; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="status:backToHub">
           <img src="${homeImgSrc}" width="40" height="40" style="margin-right: 10px;" />

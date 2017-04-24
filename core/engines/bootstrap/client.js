@@ -29,6 +29,7 @@ class Bootstrap {
     };
 
     const initialUrl = document.location.href;
+    const initialPath = document.location.protocol + '//' + document.location.host + document.location.pathname;
 
     const _requestStartTime = () => fetch('archae/bootstrap/start-time.json')
       .then(res => res.json()
@@ -89,6 +90,10 @@ class Bootstrap {
           class BootstrapApi extends EventEmitter {
             getInitialUrl() {
               return initialUrl;
+            }
+
+            getInitialPath() {
+              return initialPath;
             }
 
             isInIframe() {

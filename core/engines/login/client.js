@@ -221,47 +221,57 @@ class Login {
               return Promise.resolve();
             }
           };
-          const _requestLogin = ({token = null} = {}) => new Promise((accept, reject) => {
-            fetch('server/login', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({token}),
-              credentials: 'same-origin',
+          const _fetchAuthenticatedJson = (url, token) => fetch('server/login', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({token}),
+            credentials: 'same-origin',
+          })
+            .then(res => {
+              if (res.status >= 200 && res.status < 300) {
+                return res.json();
+              } else {
+                return null;
+              }
+            });
+          const _requestLogin = ({token = null} = {}) => Promise.all([
+            _requestUsername({token}),
+            _requestToken({token}),
+          ]);
+          const _requestUsername = ({token}) => _fetchAuthenticatedJson('server/login', token)
+            .then(loginSpec => {
+              const {token, username} = loginSpec;
+              history.replaceState(null, '', '?t=' + encodeURIComponent(token));
+
+              loginState.username = username;
+
+              rend.login();
+              rend.setStatus('username', username);
+
+              return Promise.resolve();
             })
-              .then(res => {
-                if (res.status >= 200 && res.status < 300) {
-                  return res.json();
-                } else {
-                  return null;
-                }
-              })
-              .then(loginSpec => {
-                if (loginSpec) {
-                  const {token, username} = loginSpec;
-                  history.replaceState(null, '', '?t=' + encodeURIComponent(token));
+            .catch(err => {
+              console.warn(err);
 
-                  loginState.username = username;
-
-                  rend.login();
-                  rend.setStatus('username', username);
-
-                  accept();
-                } else {
-                  accept({
-                    error: 'EAUTH',
-                  });
-                }
-              })
-              .catch(err => {
-                console.warn(err);
-
-                accept({
-                  error: err,
-                });
+              return Promise.resolve({
+                error: err,
               });
-          });
+            });
+          const _requestToken = ({token}) => _fetchAuthenticatedJson('server/proxyLogin', token)
+            .then(({token}) => {
+              rend.setStatus('token', token);
+
+              return Promise.resolve();
+            })
+            .catch(err => {
+              console.warn(err);
+
+              return Promise.resolve({
+                error: err,
+              });
+            });
 
           return _requestInitialLogin()
             .then(() => {
@@ -278,7 +288,13 @@ class Login {
                     _requestLogin({
                       token,
                     })
-                      .then(({error = null} = {}) => {
+                      .then(() => {
+                        loginState.loading = false;
+                        loginState.error = null;
+
+                        _updatePages();
+                      })
+                      .catch(err => {
                         loginState.loading = false;
                         loginState.error = error;
 
