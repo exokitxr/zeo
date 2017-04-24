@@ -236,10 +236,8 @@ class Login {
                 return null;
               }
             });
-          const _requestLogin = ({token = null} = {}) => Promise.all([
-            _requestUsername({token}),
-            _requestToken({token}),
-          ]);
+          const _requestLogin = ({token = null} = {}) => _requestUsername({token})
+            .then(() => _requestToken({token})); // XXX this could be folded into a single request
           const _requestUsername = ({token}) => _fetchAuthenticatedJson('server/login', token)
             .then(loginSpec => {
               const {token, username} = loginSpec;
