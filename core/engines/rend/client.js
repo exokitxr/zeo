@@ -122,7 +122,7 @@ class Rend {
           username: null,
           worldname: serverWorldname,
           users: [],
-          token: '',
+          authToken: '',
           hasHub: Boolean(hubSpec),
         };
         const navbarState = {
@@ -339,22 +339,22 @@ class Rend {
                 const onclick = (anchor && anchor.onclick) || '';
 
                 if (onclick === 'status:token') {
-                  const {url, token} = statusState;
-                  const clipboardText = url + '?t=' + token;
+                  const {url, authToken} = statusState;
+                  const clipboardText = url + '?t=' + authToken;
 
                   const ok = _copyToClipboard(clipboardText);
                   if (ok) {
                     console.log('copied to clipboard: ' + clipboardText);
 
-                    /* const {worldname} = server;
-
-                    _proxyLoginServer(worldname)
+                    _proxyLogin()
                       .then(token => {
-                        server.token = token;
+                        statusState.authToken = token;
+
+                        _updateMenuPage();
                       })
                       .catch(err => {
                         console.warn(err);
-                      }); */
+                      });
                   } else {
                     console.warn('failed to copy URL:\n' + clipboardText);
                   }
@@ -746,5 +746,12 @@ const _copyToClipboard = s => {
   const successful = document.execCommand('copy');
   return successful;
 };
+const _proxyLogin = () => fetch('server/proxyLogin', {
+  method: 'POST',
+  credentials: 'same-origin',
+})
+  .then(res => res.json()
+    .then(({token}) => token)
+  );
 
 module.exports = Rend;

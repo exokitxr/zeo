@@ -261,7 +261,7 @@ class Login {
             });
           const _requestToken = ({token}) => _fetchAuthenticatedJson('server/proxyLogin', token)
             .then(({token}) => {
-              rend.setStatus('token', token);
+              rend.setStatus('authToken', token);
 
               return Promise.resolve();
             })
