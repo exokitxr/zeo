@@ -30,7 +30,7 @@
     "node": "7.x"
   },
   "dependencies": {
-    "archae": "0.0.70",
+    "archae": "0.0.71",
     "base128": "^0.2.1",
     "body-parser": "^1.16.1",
     "cookie": "^0.3.1",
