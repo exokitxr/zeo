@@ -638,11 +638,6 @@ class Raptor {
           elements.registerComponent(this, raptorComponent);
 
           this._cleanup = () => {
-            SIDES.forEach(side => {
-              scene.remove(avatarDotMeshes[side]);
-              scene.remove(avatarBoxMeshes[side]);
-            });
-
             elements.unregisterComponent(this, raptorComponent);
           };
         }
