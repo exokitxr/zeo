@@ -56,6 +56,31 @@ class Rend {
                 .catch(reject);
             }
           });
+          const _getPluginVersions = plugin => new Promise((accept, reject) => {
+            if (path.isAbsolute(plugin)) {
+              fs.readFile(path.join(dirname, plugin, 'package.json'), 'utf8', (err, s) => {
+                if (!err) {
+                  const j = _jsonParse(s);
+
+                  if (j !== null) {
+                    const {version = '0.0.1'} = j;
+                    const versions = [version];
+
+                    accept(versions);
+                  } else {
+                    const err = new Error('Failed to parse package.json for ' + JSON.stringify(plugin));
+                    reject(err);
+                  }
+                } else {
+                  reject(err);
+                }
+              });
+            } else {
+              npm.requestPackageVersions(plugin)
+                .then(accept)
+                .catch(reject);
+            }
+          });
           const _getPluginReadme = plugin => new Promise((accept, reject) => {
             if (path.isAbsolute(plugin)) {
               fs.readFile(path.join(dirname, plugin, 'README.md'), 'utf8', (err, s) => {
@@ -151,10 +176,12 @@ class Rend {
             })); */
           const _getModSpec = mod => Promise.all([
             _getPluginPackageJson(mod),
+            _getPluginVersions(mod),
             _getPluginReadme(mod),
           ])
             .then(([
               packageJson,
+              versions,
               readme,
             ]) => ({
               type: 'module',
@@ -162,6 +189,7 @@ class Rend {
               name: mod,
               displayName: packageJson.name,
               version: packageJson.version,
+              versions: versions,
               description: packageJson.description || null,
               readme: readme ? marked(readme) : null,
               hasClient: Boolean(packageJson.client),

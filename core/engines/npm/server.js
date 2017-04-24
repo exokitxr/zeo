@@ -76,6 +76,35 @@ class Npm {
       });
     });
 
+    const _requestPackageVersions = module => new Promise((accept, reject) => {
+      const _sendApiError = _makeSendApiError(reject);
+
+      https.get({
+        hostname: 'registry.npmjs.org',
+        path: '/' + module,
+      }, proxyRes => {
+        if (proxyRes.statusCode >= 200 && proxyRes.statusCode < 300) {
+          _getJson(proxyRes, (err, j) => {
+            if (!err) {
+              if (typeof j === 'object' && j !== null && typeof j.versions === 'object' && j.versions !== null) {
+                const versions = Object.keys(versions);
+
+                accept(versions);
+              } else {
+                _sendApiError();
+              }
+            } else {
+              _sendApiError(proxyRes.statusCode);
+            }
+          });
+        } else {
+          _sendApiError(proxyRes.statusCode);
+        }
+      }).on('error', err => {
+        _sendApiError(500, err.stack);
+      });
+    });
+
     const _requestReadme = module => new Promise((accept, reject) => {
       const _sendApiError = _makeSendApiError(reject);
 
@@ -161,6 +190,7 @@ class Npm {
 
     return {
       requestPackageJson: _requestPackageJson,
+      requestPackageVersions: _requestPackageVersions,
       requestReadme: _requestReadme,
       requestReadmeMd: _requestReadmeMd,
       requestSearch: _requestSearch,

@@ -2046,6 +2046,7 @@ class Tags {
               displayName,
               description,
               version,
+              versions,
               readme,
               tagName,
               matrix,
@@ -2065,6 +2066,7 @@ class Tags {
               this.displayName = displayName;
               this.description = description;
               this.version = version;
+              this.versions = versions;
               this.readme = readme;
               this.tagName = tagName;
               this.matrix = matrix;
@@ -2570,6 +2572,7 @@ class Tags {
                 itemSpec.displayName,
                 itemSpec.description,
                 itemSpec.version,
+                itemSpec.versions,
                 itemSpec.readme,
                 itemSpec.tagName, // XXX get rid of these
                 itemSpec.matrix,
