@@ -1520,7 +1520,7 @@ class Tags {
                 const onmousedown = (anchor && anchor.onmousedown) || '';
 
                 let match;
-                if (match = onmousedown.match(/^module:link:(.+)$/)) {
+                if (match = onmousedown.match(/^module:(?:main|link):(.+)$/)) {
                   const id = match[1];
                   const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
 
@@ -1575,206 +1575,247 @@ class Tags {
           input.on('triggerdown', _triggerdown);
           const _triggerup = e => {
             const {side} = e;
+            const dragState = dragStates[side];
+            const {src, dst} = dragState;
+            const {type: srcType = ''} = src || {};
+            const {type: dstType = ''} = dst || {};
 
-            const _doClickTag = () => {
-              const dragState = dragStates[side];
-              const {src, dst} = dragState;
+            if (srcType === 'module') {
+              const _linkModule = (srcTagMesh, dstTagMesh, {controllerPosition, controllerRotation, controllerScale}) => {
+                const {item: srcItem} = srcTagMesh;
+                const {name: srcName} = srcItem;
+                const componentApis = tagComponentApis[srcName];
 
-              if (src && dst) {
-                const {type: srcType} = src;
-                const {type: dstType} = dst;
+                for (let i = 0; i < componentApis.length; i++) {
+                  const componentApi = componentApis[i];
 
-                if (srcType === 'module' && dstType === 'module') {
-                  const {gamepads} = webvr.getStatus();
-                  const gamepad = gamepads[side];
+                  const _requestSrcTagAttributes = fn => new Promise((accept, reject) => {
+                    const componentApi = componentApis[i];
+                    const {attributes: componentAttributes = {}} = componentApi;
+                    const componentAttributeKeys = Object.keys(componentAttributes);
 
-                  if (gamepad) {
-                    const {buttons: {grip: {pressed: gripPressed}}} = gamepad;
-
-                    if (!gripPressed) {
-                      const {tagMesh: srcTagMesh} = src;
-                      const {item} = srcTagMesh;
-
-                      if (!item.instancing) {
-                        const {tagMesh: dstTagMesh} = dst;
-
-                        const _linkModule = (srcTagMesh, dstTagMesh) => {
-                          const {item: srcItem} = srcTagMesh;
-                          const {name: srcName} = srcItem;
-                          const componentApis = tagComponentApis[srcName];
-
-                          for (let i = 0; i < componentApis.length; i++) {
-                            const componentApi = componentApis[i];
-
-                            const _requestSrcTagAttributes = fn => new Promise((accept, reject) => {
-                              const componentApi = componentApis[i];
-                              const {attributes: componentAttributes = {}} = componentApi;
-                              const componentAttributeKeys = Object.keys(componentAttributes);
-
-                              const _recurse = i => {
-                                if (i < componentAttributeKeys.length) {
-                                  const attributeName = componentAttributeKeys[i];
-                                  const attribute = componentAttributes[attributeName];
-                                  const _requestAttributeValue = () => {
-                                    let {value: attributeValue} = attribute;
-                                    if (typeof attributeValue === 'function') {
-                                      attributeValue = attributeValue();
-                                    }
-                                    return Promise.resolve(attributeValue);
-                                  };
-
-                                  const result = fn(attributeName, _requestAttributeValue);
-                                  Promise.resolve(result)
-                                    .then(() => {
-                                      _recurse(i + 1);
-                                    });
-                                } else {
-                                  accept();
-                                }
-                              };
-                              _recurse(0);
-                            });
-
-                            if (!dstTagMesh) {
-                              const {item} = srcTagMesh;
-
-                              const _requestAttributes = () => {
-                                const result = {};
-                                return _requestSrcTagAttributes((attributeName, getAttributeValue) =>
-                                  getAttributeValue()
-                                    .then(attributeValue => {
-                                      result[attributeName] = {
-                                        value: attributeValue,
-                                      };
-                                    })
-                                ).then(() => result);
-                              };
-
-                              _requestAttributes()
-                                .then(attributes => {
-                                  const itemSpec = _clone(item);
-                                  itemSpec.id = _makeId();
-                                  itemSpec.type = 'entity';
-                                  const tagName = (() => {
-                                    const {selector: componentSelector = 'div'} = componentApi;
-                                    const {rule: {tagName}} = cssSelectorParser.parse(componentSelector);
-
-                                    if (tagName) {
-                                      return tagName;
-                                    } else {
-                                      return 'entity';
-                                    }
-                                  })();
-                                  itemSpec.name = tagName;
-                                  itemSpec.displayName = tagName;
-                                  itemSpec.tagName = tagName;
-                                  itemSpec.attributes = attributes;
-                                  const matrix = (() => { // XXX we should offset multiple tags here so they don't overlap
-                                    const {matrix: oldMatrix} = itemSpec;
-                                    const position = new THREE.Vector3().fromArray(oldMatrix.slice(0, 3));
-                                    const rotation = new THREE.Quaternion().fromArray(oldMatrix.slice(3, 3 + 4));
-                                    const scale = new THREE.Vector3().fromArray(oldMatrix.slice(3 + 4, 3 + 4 + 3));
-
-                                    position.add(new THREE.Vector3(0, 0, 0.1).applyQuaternion(rotation));
-
-                                    return position.toArray().concat(rotation.toArray()).concat(scale.toArray());
-                                  })();
-                                  itemSpec.matrix = matrix;
-
-                                  tagsApi.emit('addTag', {
-                                    itemSpec: itemSpec,
-                                    dst: 'world',
-                                  });
-                                })
-                                .catch(err => {
-                                  console.warn(err);
-                                });
-                            } else {
-                              const {item: dstItem} = dstTagMesh;
-                              const {id: dstId, instance: dstElement} = dstItem;
-
-                              _requestSrcTagAttributes((attributeName, requestAttributeValue) => {
-                                if (!dstElement.hasAttribute(attributeName)) {
-                                  return requestAttributeValue()
-                                    .then(attributeValue => {
-                                      tagsApi.emit('setAttribute', {
-                                        id: dstId,
-                                        name: attributeName,
-                                        value: attributeValue,
-                                      });
-                                    });
-                                }
-                              });
-                            }
+                    const _recurse = i => {
+                      if (i < componentAttributeKeys.length) {
+                        const attributeName = componentAttributeKeys[i];
+                        const attribute = componentAttributes[attributeName];
+                        const _requestAttributeValue = () => {
+                          let {value: attributeValue} = attribute;
+                          if (typeof attributeValue === 'function') {
+                            attributeValue = attributeValue();
                           }
+                          return Promise.resolve(attributeValue);
                         };
-                        _linkModule(srcTagMesh, (srcTagMesh === dstTagMesh) ? null : dstTagMesh);
 
-                        dragState.src = null;
-                        dragState.dst = null;
-
-                        return true;
+                        const result = fn(attributeName, _requestAttributeValue);
+                        Promise.resolve(result)
+                          .then(() => {
+                            _recurse(i + 1);
+                          });
                       } else {
-                        return false;
+                        accept();
                       }
+                    };
+                    _recurse(0);
+                  });
+
+                  if (!dstTagMesh) {
+                    const {item} = srcTagMesh;
+
+                    const _requestAttributes = () => {
+                      const result = {};
+                      return _requestSrcTagAttributes((attributeName, getAttributeValue) =>
+                        getAttributeValue()
+                          .then(attributeValue => {
+                            result[attributeName] = {
+                              value: attributeValue,
+                            };
+                          })
+                      ).then(() => result);
+                    };
+
+                    _requestAttributes()
+                      .then(attributes => {
+                        const itemSpec = _clone(item);
+                        itemSpec.id = _makeId();
+                        itemSpec.type = 'entity';
+                        const tagName = (() => {
+                          const {selector: componentSelector = 'div'} = componentApi;
+                          const {rule: {tagName}} = cssSelectorParser.parse(componentSelector);
+
+                          if (tagName) {
+                            return tagName;
+                          } else {
+                            return 'entity';
+                          }
+                        })();
+                        itemSpec.name = tagName;
+                        itemSpec.displayName = tagName;
+                        itemSpec.tagName = tagName;
+                        itemSpec.attributes = attributes;
+                        const matrix = (() => { // XXX we should offset multiple entity tags here so they don't overlap
+                          const {matrix: oldMatrix} = itemSpec;
+                          const position = new THREE.Vector3().fromArray(oldMatrix.slice(0, 3));
+                          // const rotation = new THREE.Quaternion().fromArray(oldMatrix.slice(3, 3 + 4));
+                          // const scale = new THREE.Vector3().fromArray(oldMatrix.slice(3 + 4, 3 + 4 + 3));
+
+                          const newPosition = controllerPosition.clone()
+                            .add(
+                              new THREE.Vector3(0, 0, -1)
+                                .multiplyScalar(
+                                  position.clone()
+                                   .sub(controllerPosition)
+                                   .length()
+                                )
+                                .applyQuaternion(controllerRotation)
+                            );
+                          const newRotation = controllerRotation;
+                          const newScale = controllerScale;
+
+                          return newPosition.toArray().concat(newRotation.toArray()).concat(newScale.toArray());
+                        })();
+                        itemSpec.matrix = matrix;
+
+                        tagsApi.emit('addTag', {
+                          itemSpec: itemSpec,
+                          dst: 'world',
+                        });
+                      })
+                      .catch(err => {
+                        console.warn(err);
+                      });
+                  } else {
+                    const {item: dstItem} = dstTagMesh;
+                    const {id: dstId, instance: dstElement} = dstItem;
+
+                    _requestSrcTagAttributes((attributeName, requestAttributeValue) => {
+                      if (!dstElement.hasAttribute(attributeName)) {
+                        return requestAttributeValue()
+                          .then(attributeValue => {
+                            tagsApi.emit('setAttribute', {
+                              id: dstId,
+                              name: attributeName,
+                              value: attributeValue,
+                            });
+                          });
+                      }
+                    });
+                  }
+                }
+              };
+
+              if (!dstType) {
+                const {gamepads} = webvr.getStatus();
+                const gamepad = gamepads[side];
+
+                if (gamepad) {
+                  const {buttons: {grip: {pressed: gripPressed}}} = gamepad;
+
+                  if (!gripPressed) {
+                    const {tagMesh: srcTagMesh} = src;
+                    const {item} = srcTagMesh;
+
+                    if (!item.instancing) {
+                      const {position: controllerPosition, rotation: controllerRotation, scale: controllerScale} = gamepad;
+
+                      _linkModule(srcTagMesh, null, {
+                        controllerPosition,
+                        controllerRotation,
+                        controllerScale,
+                      });
+
+                      dragState.src = null;
+                      dragState.dst = null;
+
+                      return true;
                     } else {
                       return false;
                     }
                   } else {
                     return false;
                   }
-                } else if (srcType === 'attribute' && dstType === 'file') {
-                  const {tagMesh: srcTagMesh, attributeName} = src;
-                  const {tagMesh: dstTagMesh} = dst;
-
-                  const _linkAttribute = ({srcTagMesh, attributeName, dstTagMesh}) => {
-                    const {item: {id, name}} = dstTagMesh;
-                    srcTagMesh.setAttribute(attributeName, 'fs/' + id + name);
-                  };
-                  _linkAttribute({
-                    srcTagMesh,
-                    attributeName,
-                    dstTagMesh,
-                  });
-
-                  dragState.src = null;
-                  dragState.dst = null;
-
-                  return true;
-                } else if (srcType === 'file' && dstType === 'attribute') {
-                  const {tagMesh: srcTagMesh} = src;
-                  const {itemId, attributeName} = dst;
-                  const dstTagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === itemId);
-
-                  const _linkFile = ({srcTagMesh, attributeName, dstTagMesh}) => {
-                    const {item: {id, name}} = srcTagMesh;
-                    dstTagMesh.setAttribute(attributeName, 'fs/' + id + name);
-                  };
-                  _linkFile({
-                    srcTagMesh,
-                    attributeName,
-                    dstTagMesh,
-                  });
-
-                  dragState.src = null;
-                  dragState.dst = null;
-
-                  return true;
                 } else {
-                  dragState.src = null;
-                  dragState.dst = null;
+                  return false;
+                }
+              } else if (dstType === 'entity') {
+                const {gamepads} = webvr.getStatus();
+                const gamepad = gamepads[side];
 
+                if (gamepad) {
+                  const {buttons: {grip: {pressed: gripPressed}}} = gamepad;
+
+                  if (!gripPressed) {
+                    const {tagMesh: srcTagMesh} = src;
+                    const {item} = srcTagMesh;
+
+                    if (!item.instancing) {
+                      const {tagMesh: dstTagMesh} = dst;
+                      const {position: controllerPosition, rotation: controllerRotation, scale: controllerScale} = gamepad;
+
+                      _linkModule(srcTagMesh, dstTagMesh, {
+                        controllerPosition,
+                        controllerRotation,
+                        controllerScale,
+                      });
+
+                      dragState.src = null;
+                      dragState.dst = null;
+
+                      return true;
+                    } else {
+                      return false;
+                    }
+                  } else {
+                    return false;
+                  }
+                } else {
                   return false;
                 }
               } else {
-                dragState.src = null;
-                dragState.dst = null;
-
                 return false;
               }
-            };
+            } else if (srcType === 'attribute' && dstType === 'file') {
+              const {tagMesh: srcTagMesh, attributeName} = src;
+              const {tagMesh: dstTagMesh} = dst;
 
-            _doClickTag();
+              const _linkAttribute = ({srcTagMesh, attributeName, dstTagMesh}) => {
+                const {item: {id, name}} = dstTagMesh;
+                srcTagMesh.setAttribute(attributeName, 'fs/' + id + name);
+              };
+              _linkAttribute({
+                srcTagMesh,
+                attributeName,
+                dstTagMesh,
+              });
+
+              dragState.src = null;
+              dragState.dst = null;
+
+              return true;
+            } else if (srcType === 'file' && dstType === 'attribute') {
+              const {tagMesh: srcTagMesh} = src;
+              const {itemId, attributeName} = dst;
+              const dstTagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === itemId);
+
+              const _linkFile = ({srcTagMesh, attributeName, dstTagMesh}) => {
+                const {item: {id, name}} = srcTagMesh;
+                dstTagMesh.setAttribute(attributeName, 'fs/' + id + name);
+              };
+              _linkFile({
+                srcTagMesh,
+                attributeName,
+                dstTagMesh,
+              });
+
+              dragState.src = null;
+              dragState.dst = null;
+
+              return true;
+            } else {
+              dragState.src = null;
+              dragState.dst = null;
+
+              return false;
+            }
           };
           input.on('triggerup', _triggerup);
 
@@ -1898,16 +1939,11 @@ class Tags {
               };
               const _updateDragLines = () => {
                 if (rend.isOpen() || homeEnabled) {
-                  const {gamepads} = webvr.getStatus();
-                  const controllers = cyborg.getControllers();
-                  const controllerMeshes = SIDES.map(side => controllers[side].mesh);
-
                   SIDES.forEach(side => {
-                    const gamepad = gamepads[side];
                     const dragState = dragStates[side];
                     const {src, line} = dragState;
 
-                    if (gamepad && src) {
+                    if (src) {
                       const localLine = (() => {
                         if (line) {
                           return line;
@@ -1924,14 +1960,9 @@ class Tags {
 
                         if (dst) {
                           const {tagMesh: dstTagMesh} = dst;
-
-                          if (dstTagMesh !== srcObject) {
-                            return dstTagMesh;
-                          } else {
-                            return gamepad;
-                          }
+                          return dstTagMesh;
                         } else {
-                          return gamepad;
+                          return srcObject;
                         }
                       })();
                       localLine.set(srcObject, dstObject);

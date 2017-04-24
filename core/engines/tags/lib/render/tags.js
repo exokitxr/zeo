@@ -55,7 +55,7 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
     const headerSrc = `\
       <div style="position: relative; display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; background-color: #EEE; padding-left: 30px; text-decoration: none; overflow: hidden; box-sizing: border-box; ${(instancing || staticExists) ? 'filter: brightness(75%);' : ''}">
         <div style="display: flex; position: absolute; top: 60px; left: -60px; width: ${HEIGHT}px; height: 30px; background-color: #4CAF50; font-weight: 300; justify-content: center; align-items: center; box-sizing: border-box; transform: rotate(-90deg);">Module</div>
-        <${linkTagName} style="display: flex; flex-grow: 1; text-decoration: none;" onclick="module:main:${id}">
+        <${linkTagName} style="display: flex; flex-grow: 1; text-decoration: none;" onclick="module:main:${id}" onmousedown="module:main:${id}">
           <img src="${creatureUtils.makeStaticCreature('module:' + name)}" width="80" height="80" style="width: 80px; height: 80px; margin: 10px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;" />
           <div style="margin-right: 10px; flex-grow: 1;">
             <div style="display: flex; height: 150px; flex-direction: column;">
@@ -99,7 +99,7 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
             <div style="font-size: 20px; font-weight: 300;">${description}</div>
           </div>
         </div>
-        <a style="display: flex; width: 80px; justify-content: center; align-items: center;" onclick="module:reinstall:${id}" onmousedown="module:reinstall:${id}">
+        <a style="display: flex; width: 80px; justify-content: center; align-items: center;" onclick="module:reinstall:${id}">
           <img src="${autorenewImgSrc}" width="40" height="40">
         </a>
         <a style="display: flex; width: 80px; justify-content: center; align-items: center;" onclick="module:link:${id}" onmousedown="module:link:${id}">
@@ -216,7 +216,7 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
       case 'matrix': {
         return `\
           <div style="display: flex; width: ${WIDTH}px; justify-content: flex-end;">
-            <a style="display: flex; width: 80px; justify-content: center; align-items: center;" onclick="attribute:${id}:${name}:position" onmousedown="attribute:${name}:position">
+            <a style="display: flex; width: 80px; justify-content: center; align-items: center;" onclick="attribute:${id}:${name}:position">
               <img src="${targetImgSrc}" width="50" height="50" style="margin: 10px; image-rendering: pixelated;" />
             </a>
           </div>
