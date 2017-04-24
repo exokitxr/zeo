@@ -120,14 +120,6 @@ class World {
           };
 
           const localUserId = multiplayer.getId();
-          const _makeGrabbableState = () => ({
-            hoverMesh: null,
-            pointerMesh: null,
-          });
-          const grabbableStates = {
-            left: _makeGrabbableState(),
-            right: _makeGrabbableState(),
-          };
 
           const _getInFrontOfCameraMatrix = () => {
             const {hmd} = webvr.getStatus();
@@ -806,54 +798,12 @@ class World {
           _updatePages();
 
           const _update = e => {
-            const _updateGrabbers = () => {
-              const isOpen = rend.isOpen();
-
-              if (isOpen) {
-                const _getHoverGrabbable = side => {
-                  const grabMesh = grabManager.getMesh(side);
-
-                  if (!grabMesh) {
-                    return tags.getGrabTagMesh(side);
-                  } else {
-                    return null;
-                  }
-                };
-                const _getPointerGrabbable = side => {
-                  const grabMesh = grabManager.getMesh(side);
-
-                  if (!grabMesh) {
-                    return tags.getPointedTagMesh(side);
-                  } else {
-                    return null;
-                  }
-                };
-
-                SIDES.forEach(side => {
-                  const grabbableState = grabbableStates[side];
-
-                  const hoverMesh = _getHoverGrabbable(side);
-                  const pointerMesh = _getPointerGrabbable(side);
-
-                  grabbableState.hoverMesh = hoverMesh;
-                  grabbableState.pointerMesh = pointerMesh;
-                });
-              } else {
-                SIDES.forEach(side => {
-                  const grabbableState = grabbableStates[side];
-
-                  grabbableState.hoverMesh = null;
-                  grabbableState.pointerMesh = null;
-                });
-              }
-            };
             const _updateTagsLinesMesh = () => {
               if (grabManager.isGrabbed() || remoteGrabManager.isGrabbed()) {
                 tags.updateLinesMesh();
               }
             };
 
-            _updateGrabbers();
             _updateTagsLinesMesh();
           };
           rend.on('update', _update);
@@ -1017,8 +967,15 @@ class World {
               const isOpen = rend.isOpen();
 
               if (isOpen) {
-                const grabbableState = grabbableStates[side];
-                const {hoverMesh: grabMesh} = grabbableState;
+                const grabMesh = (() => {
+                  const grabMesh = grabManager.getMesh(side);
+
+                  if (!grabMesh) {
+                    return tags.getGrabTagMesh(side);
+                  } else {
+                    return null;
+                  }
+                })()
 
                 if (grabMesh) {
                   const elementsTagMeshes = elementManager.getTagMeshes();
