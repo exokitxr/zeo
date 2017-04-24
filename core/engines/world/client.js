@@ -1097,6 +1097,12 @@ class World {
 
                 const matrixArray = position.toArray().concat(rotation.toArray()).concat(scale.toArray());
                 _moveTag('hand:' + side, 'world:' + JSON.stringify(matrixArray));
+
+                const triggerState = triggerStates[side];
+                const {triggered} = triggerState;
+                if (triggered) {
+                  triggerState.triggered = false;
+                }
               }
             }
           };
