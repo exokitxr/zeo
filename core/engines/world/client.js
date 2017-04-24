@@ -120,6 +120,13 @@ class World {
           };
 
           const localUserId = multiplayer.getId();
+          const _makeTriggerState = () => ({
+            triggered: false,
+          });
+          const triggerStates = {
+            left: _makeTriggerState(),
+            right: _makeTriggerState(),
+          };
 
           const _getInFrontOfCameraMatrix = () => {
             const {hmd} = webvr.getStatus();
@@ -883,7 +890,31 @@ class World {
           const _trigger = e => {
             const {side} = e;
 
-            // _removeTag('hand:' + side); // XXX call this on new trash click
+            const _clickCast = () => {
+              const isOpen = rend.isOpen();
+
+              if (isOpen) {
+                const grabMesh = grabManager.getMesh(side);
+                const triggerState = triggerStates[side];
+                const {triggered} = triggerState;
+
+                if (grabMesh && triggered) {
+                  const tagMesh = grabMesh;
+                  const {position, rotation, scale} = _decomposeObjectMatrixWorld(tagMesh);
+
+                  const matrixArray = position.toArray().concat(rotation.toArray()).concat(scale.toArray());
+                  _moveTag('hand:' + side, 'world:' + JSON.stringify(matrixArray));
+
+                  triggerState.triggered = false;
+
+                  return true;
+                } else {
+                  return false;
+                }
+              } else {
+                return false;
+              }
+            };
             const _clickMenu = () => {
               const tab = rend.getTab();
 
@@ -955,10 +986,29 @@ class World {
               }
             };
 
-            _clickMenu();
+            if (_clickCast() || _clickMenu()) {
+              e.stopImmediatePropagation();
+            }
           };
           input.on('trigger', _trigger, {
-            priority: -1,
+            priority: 1,
+          });
+          const _triggerdown = e => {
+            const {side} = e;
+            const grabMesh = grabManager.getMesh(side);
+
+            if (grabMesh) {
+              const triggerState = triggerStates[side];
+              triggerState.triggered = true;
+
+              grabMesh.position.z = -1;
+              grabMesh.quaternion.copy(zeroQuaternion);
+
+              e.stopImmediatePropagation();
+            }
+          };
+          input.on('triggerdown', _triggerdown, {
+            priority: 1,
           });
           const _gripdown = e => {
             const {side} = e;
@@ -1036,7 +1086,6 @@ class World {
           });
           const _gripup = e => {
             const {side} = e;
-
             const isOpen = rend.isOpen();
 
             if (isOpen) {
@@ -1509,6 +1558,7 @@ class World {
             rend.removeListener('tabchange', _tabchange);
 
             input.removeListener('trigger', _trigger);
+            input.removeListener('triggerdown', _triggerdown);
             input.removeListener('gripdown', _gripdown);
             input.removeListener('gripup', _gripup);
 
