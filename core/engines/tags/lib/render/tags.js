@@ -174,7 +174,7 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
             <img src="${creatureUtils.makeStaticCreature('entity:' + name)}" width="80" height="80" style="width: 80px; height: 80px; margin: 10px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;" />
             <h1 style="margin: 0; margin-top: 10px; font-size: 28px; font-weight: 400; line-height: 1.4;">${displayName}</h1>
           </div>
-          <${linkTagName} style="display: inline-flex; margin-left: auto; margin-bottom: 10px; padding: 10px 30px; border: 2px solid; font-weight: 400; text-decoration: none;" onclick="entity:addAttribute:${id}">Add Link</${linkTagName}>
+          <${linkTagName} style="display: inline-flex; margin-left: 20px; margin-right: auto; margin-bottom: 10px; padding: 10px 30px; border: 2px solid; font-weight: 400; text-decoration: none;" onclick="entity:addAttribute:${id}">Add Link</${linkTagName}>
         </div>
         <div style="display: flex;">
           <a style="display: flex; margin-bottom: auto; padding: 15px; text-decoration: none; justify-content: center; align-items: center;" onclick="entity:remove:${id}">
@@ -386,23 +386,28 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
     const headerSrc = `\
       <div style="position: relative; display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; background-color: #EEE; padding-left: 30px; text-decoration: none; overflow: hidden; box-sizing: border-box; ${instancing ? 'filter: brightness(75%);' : ''}">
         <div style="display: flex; position: absolute; top: 60px; left: -60px; width: ${HEIGHT}px; height: 30px; background-color: #E91E63; justify-content: center; align-items: center; box-sizing: border-box; transform: rotate(-90deg);">File</div>
-        <img src="${creatureUtils.makeStaticCreature('file:' + displayName)}" width="80" height="80" style="margin: 10px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;" />
-        <div style="width: ${WIDTH - (80 + (10 * 2)) - 10 - 80}px; margin-right: 10px;">
-          <div style="height: 150px; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">
-            <h1 style="margin: 0; margin-top: 10px; font-size: 28px; font-weight: 400; line-height: 1.4;">${name}</h1>
-            <p style="margin: 0; margin-bottom: 10px; font-size: 15px; line-height: 1.4;">${mimeType}</p>
-            <a style="display: inline-flex; padding: 4px 20px; border: 1px solid #333; border-radius: 100px; font-size: 28px; text-decoration: none; justify-content: center; align-items: center;" onclick="tag:download:${id}">Download</a>
+        <div style="display: flex; flex-grow: 1; flex-direction: column;">
+          <div style="display: flex; flex: 1;">
+            <img src="${creatureUtils.makeStaticCreature('file:' + displayName)}" width="80" height="80" style="margin: 10px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;" />
+            <div style="display: flex; flex-direction: column;">
+              <h1 style="margin: 0; margin-top: 10px; font-size: 28px; font-weight: 400; line-height: 1.4;">${name}</h1>
+              <p style="margin: 0; margin-bottom: 10px; font-size: 15px; line-height: 1.4;">${mimeType}</p>
+            </div>
+          </div>
+          <div style="display: flex; margin-bottom: 10px;">
+            ${!open ?
+              `<a style="display: flex; margin-left: 20px; margin-right: 20px; padding: 10px 30px; border: 2px solid; font-weight: 400; text-decoration: none;" onclick="tag:open:${id}">Preview</a>`
+            :
+              `<a style="display: flex; margin-left: 20px; margin-right: 20px; padding: 10px 30px; border: 2px solid transparent; background-color: #000; color: #FFF; font-weight: 400; text-decoration: none;" onclick="tag:close:${id}">Preview</a>`
+            }
+            <a style="display: flex; margin-right: auto; padding: 10px 30px; border: 2px solid; font-weight: 400; text-decoration: none;" onclick="tag:download:${id}">Download</a>
           </div>
         </div>
-        ${!open ?
-          `<a style="display: flex; width: 80px; justify-content: center; align-items: center;" onclick="tag:open:${id}" onmousedown="file:link:${id}">
-            <img src="${playBlackImgSrc}" width="50" height="50">
-          </a>`
-        :
-          `<a style="display: flex; width: 80px; background-color: #000; justify-content: center; align-items: center;" onclick="tag:close:${id}" onmousedown="file:link:${id}">
-            <img src="${playWhiteImgSrc}" width="50" height="50">
-          </a>`
-        }
+        <div style="display: flex;">
+          <a style="display: flex; margin-bottom: auto; padding: 15px; text-decoration: none; justify-content: center; align-items: center;" onclick="entity:remove:${id}">
+            <img src="${closeOutlineSrc}" width="30" height="30" />
+          </a>
+        </div>
       </div>
     `;
     const bodySrc = (() => {
