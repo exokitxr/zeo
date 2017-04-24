@@ -2,7 +2,7 @@ import indev from 'indev';
 
 import {
   NUM_CELLS,
-} from '../constants/universe';
+} from '../constants/map';
 
 export class Point {
   constructor(
@@ -232,7 +232,7 @@ const makeMapChunk = ({position}) => {
 
   return new Chunk(
     position,
-    points
+    points,
   );
 };
 const getBiomeColor = biome => BIOME_COLORS[biome];
