@@ -120,9 +120,8 @@ class Rend {
         const statusState = {
           username: null,
           worldname: serverWorldname,
-          users: null,
+          users: [],
           hasHub: Boolean(hubSpec),
-          loading: true,
         };
         const navbarState = {
           tab: 'status',
@@ -572,11 +571,6 @@ class Rend {
 
           setStatus(name, value) {
             statusState[name] = value;
-
-            const {loading, username, users} = statusState;
-            if (loading && username !== null && users !== null) {
-              statusState.loading = false;
-            }
 
             this.emit('statusUpdate');
 

@@ -5,37 +5,36 @@ const {
 
 const makeRenderer = ({creatureUtils}) => {
 
-const getStatusSrc = ({status: {username, worldname, users, hasHub, loading}}) => {
-  const allUsers = !loading ? [username].concat(users).sort((a, b) => a.localeCompare(b)) : null;
+const getStatusSrc = ({status: {username, worldname, users, hasHub}}) => {
+  const allUsers = [username].concat(users).sort((a, b) => a.localeCompare(b));
 
   return `\
-    <div style="padding: 30px;">
-      <div style="display: flex; margin-bottom: 20px; font-size: 30px; line-height: 1; justify-content: center; align-items: center;">
-        <div style="display: inline-flex; margin-right: auto; padding: 5px 20px; background-color: #EEE; border-radius: 100px; justify-content: center; align-items: center; ${!loading ? '' : 'visibility: hidden;'}">
+    <div style="padding: 0 30px;">
+      <h1 style="margin: 15px 0; font-size: 40px; font-weight: 400;">My profile</h1>
+      <div style="display: flex; font-size: 30px; line-height: 1; justify-content: center; align-items: center;">
+        <div style="display: inline-flex; margin-right: auto; justify-content: center; align-items: center;">
           <img src="${creatureUtils.makeStaticCreature('user:' + username)}" width="40" height="40" style="margin-right: 10px; image-rendering: pixelated;" />
           <span>${username}</span>
         </div>
         <a style="display: flex; height: 46px; margin-right: 20px; padding: 0 20px; border: 1px solid; border-radius: 10px; color: #F44336; font-size: 24px; text-decoration: none; justify-content: center; align-items: center; box-sizing: border-box;" onclick="status:downloadLoginToken">Download token</a>
         <a style="display: flex; height: 46px; padding: 0 20px; border: 1px solid; border-radius: 10px; color: #2196F3; font-size: 24px; text-decoration: none; justify-content: center; align-items: center; box-sizing: border-box;" onclick="status:logOut">Log out</a>
       </div>
-      <div style="display: flex; margin: 0 -30px; margin-bottom: 20px; padding: 30px; background-color: #000; color: #FFF;">
-        <img src="${creatureUtils.makeStaticCreature('server:' + worldname)}" width="100" height="100" style="margin-right: 20px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;" />
-        <div style="margin-right: 30px;">
-          <div style="font-size: 24px;">${worldname}</div>
-          ${!loading ? `<div style="font-size: 24px;">${allUsers.length} User${allUsers.length !== 1 ? 's' : ''}</div>` : ''}
-        </div>
-        <div style="margin-right: auto;">
-          ${!loading ? allUsers.map(user => `\
-            <div style="display: flex; margin-bottom: 2px; padding: 5px 15px; background-color: #222; border-radius: 100px; font-size: 16px; line-height: 1; align-items: center;">
-              <img src="${creatureUtils.makeStaticCreature('user:' + user)}" width="26" height="26" style="margin-right: 5px; image-rendering: pixelated;" />
-              <div>${user}</div>
-            </div>
-          `).join('\n') : ''}
-        </div>
-        <div>
-          <a style="display: flex; height: 46px; margin-bottom: 20px; padding: 0 20px; border: 2px solid; border-radius: 10px; color: #66BB6A; font-size: 24px; font-weight: 400; text-decoration: none; justify-content: center; align-items: center; box-sizing: border-box;" onclick="status:snapshotWorld">Snapshot world</a>
-          ${hasHub ? `<a style="display: flex; height: 46px; padding: 0 20px; border: 2px solid; border-radius: 10px; color: #9575CD; font-size: 24px; font-weight: 400; text-decoration: none; justify-content: center; align-items: center; box-sizing: border-box;" onclick="status:backToHub">Back to hub</a>` : ''}
-        </div>
+      <h1 style="margin: 15px 0; font-size: 40px; font-weight: 400;">Server status</h1>
+      <div style="display: flex; justify-content: center; align-items: center;">
+        <div style="display: flex; position: relative; margin-left: -30px; margin-right: auto; padding: 10px 30px; background-color: #000; font-size: 30px; font-weight: 400; color: #FFF; justify-content: center; align-items: center;">
+          <img src="${creatureUtils.makeStaticCreature('server:' + worldname)}" width="40" height="40" style="margin-right: 20px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;" />
+          <span style="margin-right: auto;">${worldname}</span>
+        </div>>
+        ${hasHub ? `<a style="display: flex; height: 46px; padding: 0 20px; border: 2px solid; border-radius: 10px; color: #9575CD; font-size: 24px; font-weight: 400; text-decoration: none; justify-content: center; align-items: center; box-sizing: border-box;" onclick="status:backToHub">Back to hub</a>` : ''}
+      </div>
+      <h1 style="margin: 15px 0; font-size: 40px; font-weight: 400;">Online (${allUsers.length})</h1>
+      <div style="display: flex;">
+        ${allUsers.map(user => `\
+          <div style="display: flex; margin-bottom: 5px; font-size: 30px; line-height: 1; align-items: center;">
+            <img src="${creatureUtils.makeStaticCreature('user:' + user)}" width="40" height="40" style="margin-right: 20px; image-rendering: pixelated;" />
+            <div>${user}</div>
+          </div>
+        `).join('\n')}
       </div>
     </div>
   `;
