@@ -72,12 +72,11 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
             </div>
           </div>
         </${linkTagName}>
-        <!-- <${linkTagName} style="display: flex; width: 80px; justify-content: center; align-items: center;" onclick="module:link:${id}" onmousedown="module:link:${id}">
-          <img src="${imgSrc}" width="50" height="50">
-        </${linkTagName}> -->
-        ${!isStatic ? `<a style="display: flex; position: absolute; top: 0; right: 0; text-decoration: none; justify-content: center; align-items: center;" onclick="module:remove:${id}">
-          <img src="${closeOutlineSrc}" width="30" height="30" style="margin: 10px;">
-        </a>` : ''}
+        ${!isStatic ? `<div style="display: flex;">
+          <a style="display: flex; margin-bottom: auto; padding: 15px; text-decoration: none; justify-content: center; align-items: center;" onclick="module:remove:${id}">
+            <img src="${closeOutlineSrc}" width="30" height="30">
+          </a>
+        </div>` : ''}
       </div>
     `;
 
@@ -174,7 +173,7 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
             <img src="${creatureUtils.makeStaticCreature('entity:' + name)}" width="80" height="80" style="width: 80px; height: 80px; margin: 10px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;" />
             <h1 style="margin: 0; margin-top: 10px; font-size: 28px; font-weight: 400; line-height: 1.4;">${displayName}</h1>
           </div>
-          <${linkTagName} style="display: inline-flex; margin-left: 20px; margin-right: auto; margin-bottom: 10px; padding: 10px 30px; border: 2px solid; font-weight: 400; text-decoration: none;" onclick="entity:addAttribute:${id}">Add Link</${linkTagName}>
+          ${!isStatic ? `<a style="display: inline-flex; margin-left: 20px; margin-right: auto; margin-bottom: 10px; padding: 10px 30px; border: 2px solid; font-weight: 400; text-decoration: none;" onclick="entity:addAttribute:${id}">Add Link</a>` : ''}
         </div>
         <div style="display: flex;">
           <a style="display: flex; margin-bottom: auto; padding: 15px; text-decoration: none; justify-content: center; align-items: center;" onclick="entity:remove:${id}">
