@@ -79,8 +79,9 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
     `;
   };
 
-  const getModuleDetailsSrc = ({item}) => {
-    const {id, name, displayName, version, description, readme, page, metadata: {exists}} = item;
+  const getModuleDetailsSrc = ({item, focusVersionSpec}) => {
+    const {id, name, displayName, version, versions, description, readme, page, metadata: {exists}} = item;
+    const focus = focusVersionSpec ? (id === focusVersionSpec.tagId) : false;
     const imgSrc = (() => {
       if (exists) {
         return vectorPolygonImgSrc;
@@ -97,10 +98,35 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
             <div style="margin-right: 15px; font-size: 28px; font-weight: 400;">${displayName}</div>
             <div style="font-size: 16px; font-weight: 400;">${description}</div>
           </div>
-          <a style="display: flex; height: 20px; margin-right: auto; padding: 15px 10px; border: 2px solid #333; font-size: 16px; font-weight: 400; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="module:${id}:focusVersion">
-            <div style="text-overflow: ellipsis; margin-right: 10px; overflow: hidden;">${version}</div>
-            <div style="display: flex; font-size: 13px; justify-content: center;">▼</div>
-          </a>
+          ${!focus ?
+            `<a style="display: flex; height: 20px; margin-right: auto; padding: 15px 10px; border: 2px solid #333; font-size: 16px; font-weight: 400; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="module:focusVersion:${id}">
+              <div style="text-overflow: ellipsis; margin-right: 10px; overflow: hidden;">${version}</div>
+              <div style="display: flex; font-size: 13px; justify-content: center;">▼</div>
+            </a>`
+          :
+            `<div style="position: relative; height: 20px; margin-right: auto; z-index: 1;">
+              <div style="display: flex; flex-direction: column; background-color: #FFF;">
+                ${versions.map((versionOption, i, a) => {
+                  const style = (() => {
+                    let result = '';
+                    if (i !== 0) {
+                      result += 'padding-top: 2px; border-top: 0;';
+                    }
+                    if (i !== (a.length - 1)) {
+                      result += 'padding-bottom: 2px; border-bottom: 0;';
+                    }
+                    if (versionOption === version) {
+                      result += 'background-color: #EEE;';
+                    }
+                    return result;
+                  })();
+                  return `<a style="display: flex; height: 20px; padding: 15px 10px; border: 2px solid #333; ${style}; font-size: 16px; text-decoration: none; align-items: center; text-overflow: ellipsis; overflow: hidden; box-sizing: border-box;" onclick="module:setVersion:${id}:${versionOption}">
+                    ${versionOption}
+                  </a>`;
+                }).join('\n')}
+              </div>
+            </div>`
+          }
         </div>
         <a style="display: flex; width: 80px; justify-content: center; align-items: center;" onclick="module:reinstall:${id}">
           <img src="${autorenewImgSrc}" width="40" height="40">

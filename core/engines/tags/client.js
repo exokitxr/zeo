@@ -1064,6 +1064,62 @@ class Tags {
                       });
 
                       return true;
+                    } else if (match = onclick.match(/^module:focusVersion:(.+)$/)) {
+                      const id = match[1];
+
+                      const _updateTagMeshDetailsPage = () => {
+                        const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
+                        const {planeDetailsMesh} = tagMesh;
+                        const {page} = planeDetailsMesh;
+                        page.update();
+                      };
+
+                      const keyboardFocusState = keyboard.fakeFocus({
+                        type: 'version:' + id,
+                      });
+                      focusState.keyboardFocusState = keyboardFocusState;
+
+                      keyboardFocusState.on('blur', () => {
+                        focusState.keyboardFocusState = null;
+
+                        _updateTagMeshDetailsPage();
+                      });
+
+                      _updateTagMeshDetailsPage();
+
+                      return true;
+                    } else if (match = onclick.match(/^module:setVersion:(.+):(.+)$/)) {
+                      const id = match[1];
+                      const version = match[2];
+
+                      const _updateTagMeshDetailsPage = () => {
+                        const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
+                        const {planeDetailsMesh} = tagMesh;
+                        const {page} = planeDetailsMesh;
+                        page.update();
+                      };
+
+                      const {keyboardFocusState} = focusState;
+                      const {type: focusType = ''} = keyboardFocusState || {};
+                      let match2;
+                      if (match2 = focusType.match(/^version:(.+?)$/)) {
+                        const focusId = match2[1];
+
+                        if (focusId === id) {
+                          console.log('set version', { // XXX actually switch the version here
+                            id,
+                            version,
+                          });
+
+                          keyboardFocusState.blur();
+
+                          return true;
+                        } else {
+                          return false;
+                        }
+                      } else {
+                        return false;
+                      }
                     } else if (match = onclick.match(/^module:reinstall:(.+)$/)) {
                       const id = match[1];
 
@@ -2604,21 +2660,30 @@ class Tags {
                   },
                 }) => {
                   const {type: focusType = '', inputText = '', inputValue = 0} = keyboardFocusState || {};
-                  const focusAttributeSpec = (() => {
-                    const match = focusType.match(/^attribute:(.+?):(.+?)$/);
-                    return match && {
-                      tagId: match[1],
-                      attributeName: match[2],
-                    };
-                  })();
-                  const {type: itemType} = item;
                   const src = (() => {
+                    const {type: itemType} = item;
+
                     switch (itemType) {
                       case 'module': {
                         if (!details) {
+                          const focusAttributeSpec = (() => {
+                            const match = focusType.match(/^attribute:(.+?):(.+?)$/);
+                            return match && {
+                              tagId: match[1],
+                              attributeName: match[2],
+                            };
+                          })();
+
                           return tagsRenderer.getModuleSrc({item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec});
                         } else {
-                          return tagsRenderer.getModuleDetailsSrc({item});
+                          const focusVersionSpec = (() => {
+                            const match = focusType.match(/^version:(.+?)$/);
+                            return match && {
+                              tagId: match[1],
+                            };
+                          })();
+
+                          return tagsRenderer.getModuleDetailsSrc({item, focusVersionSpec});
                         }
                       }
                       case 'entity': {
