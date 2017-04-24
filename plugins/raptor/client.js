@@ -335,6 +335,7 @@ class Raptor {
                 return mesh;
               })();
               scene.add(planeMesh);
+              result.planeMesh = planeMesh;
 
               const soundBody = (() => {
                 const result = sound.makeBody();
