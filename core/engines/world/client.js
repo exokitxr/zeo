@@ -778,7 +778,7 @@ class World {
                 });
                 newEntityTagMesh.position.set(
                   (WORLD_WIDTH / 2) - 0.24,
-                  (WORLD_HEIGHT / 2) - 0.1,
+                  (WORLD_HEIGHT / 2) - 0.13,
                   0
                 );
                 newEntityTagMesh.planeMesh.scale.set(NPM_TAG_MESH_SCALE, NPM_TAG_MESH_SCALE, 1);
@@ -897,7 +897,7 @@ class World {
               const y = Math.floor(baseI / TAGS_PER_ROW);
               newTagMesh.position.set(
                 -(WORLD_WIDTH / 2) + (leftClip + (width / 2)) + (x * (width + padding)),
-                (WORLD_HEIGHT / 2) - (height / 2) - (y * (height + padding)) - 0.2,
+                (WORLD_HEIGHT / 2) - (height / 2) - (y * (height + padding)) - 0.23,
                 0
               );
               newTagMesh.planeDetailsMesh.position.copy(
