@@ -236,30 +236,16 @@ class Login {
                 return null;
               }
             });
-          const _requestLogin = ({token = null} = {}) => _requestUsername({token})
-            .then(() => _requestToken({token})); // XXX this could be folded into a single request
-          const _requestUsername = ({token}) => _fetchAuthenticatedJson('server/login', token)
+          const _requestLogin = ({token = null} = {}) => _fetchAuthenticatedJson('server/login', token)
             .then(loginSpec => {
-              const {token, username} = loginSpec;
+              const {token, username, authToken} = loginSpec;
               history.replaceState(null, '', '?t=' + encodeURIComponent(token));
 
               loginState.username = username;
 
               rend.login();
               rend.setStatus('username', username);
-
-              return Promise.resolve();
-            })
-            .catch(err => {
-              console.warn(err);
-
-              return Promise.resolve({
-                error: err,
-              });
-            });
-          const _requestToken = ({token}) => _fetchAuthenticatedJson('server/proxyLogin', token)
-            .then(({token}) => {
-              rend.setStatus('authToken', token);
+              rend.setStatus('authToken', authToken);
 
               return Promise.resolve();
             })
