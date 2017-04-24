@@ -2102,7 +2102,7 @@ class Tags {
               displayName,
               description,
               version,
-              versions,
+              versions, // XXX need to fetch these from the backend every time instead of saving it to the tags json
               readme,
               tagName,
               matrix,
