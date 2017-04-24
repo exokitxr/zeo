@@ -99,12 +99,12 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
             <div style="font-size: 16px; font-weight: 400;">${description}</div>
           </div>
           ${!focus ?
-            `<a style="display: flex; height: 20px; margin-right: auto; padding: 15px 10px; border: 2px solid #333; font-size: 16px; font-weight: 400; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="module:focusVersion:${id}">
+            `<a style="display: flex; height: 30px; margin-right: auto; padding: 0 10px; border: 2px solid #333; font-size: 16px; font-weight: 400; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="module:focusVersion:${id}">
               <div style="text-overflow: ellipsis; margin-right: 10px; overflow: hidden;">${version}</div>
               <div style="display: flex; font-size: 13px; justify-content: center;">▼</div>
             </a>`
           :
-            `<div style="position: relative; height: 20px; margin-right: auto; z-index: 1;">
+            `<div style="position: relative; height: 30px; margin-right: auto; z-index: 1;">
               <div style="display: flex; flex-direction: column; background-color: #FFF;">
                 ${versions.map((versionOption, i, a) => {
                   const style = (() => {
@@ -120,7 +120,7 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
                     }
                     return result;
                   })();
-                  return `<a style="display: flex; height: 20px; padding: 15px 10px; border: 2px solid #333; ${style}; font-size: 16px; text-decoration: none; align-items: center; text-overflow: ellipsis; overflow: hidden; box-sizing: border-box;" onclick="module:setVersion:${id}:${versionOption}">
+                  return `<a style="display: flex; height: 30px; padding: 0 10px; border: 2px solid #333; ${style}; font-size: 16px; text-decoration: none; align-items: center; text-overflow: ellipsis; overflow: hidden; box-sizing: border-box;" onclick="module:setVersion:${id}:${versionOption}">
                     ${versionOption}
                   </a>`;
                 }).join('\n')}
