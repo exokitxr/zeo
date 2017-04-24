@@ -11,6 +11,8 @@ const vectorPolygonImg = require('../img/vector-polygon');
 const vectorPolygonImgSrc = 'data:image/svg+xml;base64,' + btoa(vectorPolygonImg);
 const closeBoxOutline = require('../img/close-box-outline');
 const closeBoxOutlineSrc = 'data:image/svg+xml;base64,' + btoa(closeBoxOutline);
+const closeOutline = require('../img/close-outline');
+const closeOutlineSrc = 'data:image/svg+xml;base64,' + btoa(closeOutline);
 const packageVariant = require('../img/package-variant');
 const packageVariantSrc = 'data:image/svg+xml;base64,' + btoa(packageVariant);
 const packageVariantClosed = require('../img/package-variant-closed');
@@ -27,6 +29,8 @@ const playWhiteImg = require('../img/play-white');
 const playWhiteImgSrc = 'data:image/svg+xml;base64,' + btoa(playWhiteImg);
 const closeBoxImg = require('../img/close-box');
 const closeBoxImgSrc = 'data:image/svg+xml;base64,' + btoa(closeBoxImg);
+const closeBoxRedImg = require('../img/close-box-red');
+const closeBoxRedImgSrc = 'data:image/svg+xml;base64,' + btoa(closeBoxRedImg);
 const plusBoxImg = require('../img/plus-box');
 const plusBoxImgSrc = 'data:image/svg+xml;base64,' + btoa(plusBoxImg);
 const idImg = require('../img/id');
@@ -59,8 +63,8 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
     })();
 
     const headerSrc = `\
-      <div style="position: relative; display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; background-color: #F0F0F0; text-decoration: none; overflow: hidden; ${(instancing || staticExists) ? 'filter: brightness(75%);' : ''}">
-        <div style="display: flex; position: absolute; top: -15px; right: -58px; width: 155px; padding-top: 30px; padding-bottom: 10px; background-color: #4CAF50; color: #FFF; justify-content: center; align-items: center; box-sizing: border-box; transform: rotate(45deg);">Module</div>
+      <div style="position: relative; display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; background-color: #EEE; padding-left: 30px; text-decoration: none; overflow: hidden; box-sizing: border-box; ${(instancing || staticExists) ? 'filter: brightness(75%);' : ''}">
+        <div style="display: flex; position: absolute; top: 60px; left: -60px; width: ${HEIGHT}px; height: 30px; background-color: #4CAF50; font-weight: 300; justify-content: center; align-items: center; box-sizing: border-box; transform: rotate(-90deg);">Module</div>
         <${linkTagName} style="display: flex; flex-grow: 1; text-decoration: none;" onclick="module:main:${id}">
           <img src="${creatureUtils.makeStaticCreature('module:' + name)}" width="80" height="80" style="width: 80px; height: 80px; margin: 10px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;" />
           <div style="margin-right: 10px; flex-grow: 1;">
@@ -70,9 +74,12 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
             </div>
           </div>
         </${linkTagName}>
-        <${linkTagName} style="display: flex; width: 80px; justify-content: center; align-items: center;" onclick="module:link:${id}" onmousedown="module:link:${id}">
+        <!-- <${linkTagName} style="display: flex; width: 80px; justify-content: center; align-items: center;" onclick="module:link:${id}" onmousedown="module:link:${id}">
           <img src="${imgSrc}" width="50" height="50">
-        </${linkTagName}>
+        </${linkTagName}> -->
+        ${!isStatic ? `<a style="display: flex; position: absolute; top: 0; right: 0; text-decoration: none; justify-content: center; align-items: center;" onclick="module:remove:${id}">
+          <img src="${closeOutlineSrc}" width="30" height="30" style="margin: 10px;">
+        </a>` : ''}
       </div>
     `;
 
@@ -162,8 +169,8 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
     const linkTagName = isStatic ? 'div' : 'a';
 
     const headerSrc = `\
-      <div style="position: relative; display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; background-color: #F0F0F0; text-decoration: none; overflow: hidden;">
-        <div style="display: flex; position: absolute; top: -15px; right: -58px; width: 155px; padding-top: 30px; padding-bottom: 10px; background-color: #03A9F4; color: #FFF; justify-content: center; align-items: center; box-sizing: border-box; transform: rotate(45deg);">Entity</div>
+      <div style="position: relative; display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; background-color: #EEE; padding-left: 30px; text-decoration: none; overflow: hidden; box-sizing: border-box;">
+        <div style="display: flex; position: absolute; top: 60px; left: -60px; width: ${HEIGHT}px; height: 30px; background-color: #03A9F4; justify-content: center; align-items: center; box-sizing: border-box; transform: rotate(-90deg);">Entity</div>
         <img src="${creatureUtils.makeStaticCreature('entity:' + name)}" width="80" height="80" style="width: 80px; height: 80px; margin: 10px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;" />
         <div style="width: ${WIDTH - (80 + (10 * 2)) - 10 - 100}px; margin-right: 10px;">
           <div style="height: 100px;">
@@ -189,10 +196,10 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
     const focus = focusAttributeSpec ? (id === focusAttributeSpec.tagId && name === focusAttributeSpec.attributeName) : false;
 
     const headerSrc = `\
-      <div style="display: flex; background-color: #000; color: #FFF; font-size: 28px; line-height: 2;">
-        <div style="margin-left: 20px; margin-right: auto;">${name}</div>
+      <div style="display: flex; font-size: 28px; line-height: 2;">
+        <div style="margin-left: 20px; margin-right: auto; font-weight: 400;">${name}</div>
         <a style="display: flex; padding: 0 15px; text-decoration: none; justify-content: center; align-items: center;" onclick="attribute:remove:${id}:${name}">
-          <img src="${closeBoxImgSrc}" width="24" height="24" />
+          <img src="${closeOutlineSrc}" width="30" height="30" />
         </a>
       </div>
     `;
@@ -201,9 +208,11 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
     `;
 
     return `\
-      <div style="position: relative; display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; background-color: #F0F0F0; text-decoration: none; flex-direction: column;">
-        ${headerSrc}
-        ${bodySrc}
+      <div style="width: ${WIDTH}px; height: ${HEIGHT}px; background-color: #EEE; border-left: 5px solid; box-sizing: border-box;">
+        <div style="position: relative; display: flex; width: inherit; height: inherit; border-bottom: 2px solid #CCC; text-decoration: none; flex-direction: column; box-sizing: border-box;">
+          ${headerSrc}
+          ${bodySrc}
+        </div>
       </div>
     `;
   };
@@ -374,8 +383,8 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
     const {id, name, displayName, mimeType, instancing, paused, value} = item;
 
     const headerSrc = `\
-      <div style="position: relative; display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; background-color: #F0F0F0; text-decoration: none; overflow: hidden; ${instancing ? 'filter: brightness(75%);' : ''}">
-        <div style="display: flex; position: absolute; top: -15px; right: -58px; width: 155px; padding-top: 30px; padding-bottom: 10px; background-color: #E91E63; color: #FFF; justify-content: center; align-items: center; box-sizing: border-box; transform: rotate(45deg);">File</div>
+      <div style="position: relative; display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; background-color: #EEE; padding-left: 30px; text-decoration: none; overflow: hidden; box-sizing: border-box; ${instancing ? 'filter: brightness(75%);' : ''}">
+        <div style="display: flex; position: absolute; top: 60px; left: -60px; width: ${HEIGHT}px; height: 30px; background-color: #E91E63; justify-content: center; align-items: center; box-sizing: border-box; transform: rotate(-90deg);">File</div>
         <img src="${creatureUtils.makeStaticCreature('file:' + displayName)}" width="80" height="80" style="margin: 10px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;" />
         <div style="width: ${WIDTH - (80 + (10 * 2)) - 10 - 80}px; margin-right: 10px;">
           <div style="height: 150px; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">
