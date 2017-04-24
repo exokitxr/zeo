@@ -1205,6 +1205,14 @@ class World {
             _handleSetTagAttribute(localUserId, src, {name, value});
           };
           tags.on('setAttribute', _tagsSetAttribute);
+          const _tagsRemove = ({id}) => {
+            const src = _getTagIdSrc(id);
+
+            _request('removeTag', [localUserId, src], _warnError);
+
+            _handleRemoveTag(localUserId, src);
+          };
+          tags.on('remove', _tagsRemove);
           const _tagsOpen = ({id}) => {
             const src = _getTagIdSrc(id);
 
@@ -1557,6 +1565,7 @@ class World {
             tags.removeListener('mutateSetAttribute', _mutateSetAttribute);
             tags.removeListener('addTag', _tagsAddTag);
             tags.removeListener('setAttribute', _tagsSetAttribute);
+            tags.removeListener('remove', _tagsRemove);
             tags.removeListener('open', _tagsOpen);
             tags.removeListener('close', _tagsClose);
             tags.removeListener('openDetails', _tagsOpenDetails);

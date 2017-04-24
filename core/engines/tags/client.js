@@ -1252,6 +1252,16 @@ class Tags {
                   e.stopImmediatePropagation();
 
                   return true;
+                } else if (match = onclick.match(/^tag:remove:(.+)$/)) {
+                  const id = match[1];
+
+                  tagsApi.emit('remove', {
+                    id: id,
+                  });
+
+                  e.stopImmediatePropagation();
+
+                  return true;
                 } else if (match = onclick.match(/^tag:download:(.+)$/)) {
                   const id = match[1];
 

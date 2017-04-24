@@ -65,7 +65,7 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
           </div>
         </${linkTagName}>
         ${!isStatic ? `<div style="display: flex;">
-          <a style="display: flex; margin-bottom: auto; padding: 15px; text-decoration: none; justify-content: center; align-items: center;" onclick="module:remove:${id}">
+          <a style="display: flex; margin-bottom: auto; padding: 15px; text-decoration: none; justify-content: center; align-items: center;" onclick="tag:remove:${id}">
             <img src="${closeOutlineSrc}" width="30" height="30">
           </a>
         </div>` : ''}
@@ -168,7 +168,7 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
           ${!isStatic ? `<a style="display: inline-flex; margin-left: 20px; margin-right: auto; margin-bottom: 10px; padding: 10px 30px; border: 2px solid; font-weight: 400; text-decoration: none;" onclick="entity:addAttribute:${id}">Add Link</a>` : ''}
         </div>
         <div style="display: flex;">
-          <a style="display: flex; margin-bottom: auto; padding: 15px; text-decoration: none; justify-content: center; align-items: center;" onclick="entity:remove:${id}">
+          <a style="display: flex; margin-bottom: auto; padding: 15px; text-decoration: none; justify-content: center; align-items: center;" onclick="tag:remove:${id}">
             <img src="${closeOutlineSrc}" width="30" height="30" />
           </a>
         </div>
@@ -395,7 +395,7 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
           </div>
         </div>
         <div style="display: flex;">
-          <a style="display: flex; margin-bottom: auto; padding: 15px; text-decoration: none; justify-content: center; align-items: center;" onclick="entity:remove:${id}">
+          <a style="display: flex; margin-bottom: auto; padding: 15px; text-decoration: none; justify-content: center; align-items: center;" onclick="tag:remove:${id}">
             <img src="${closeOutlineSrc}" width="30" height="30" />
           </a>
         </div>
