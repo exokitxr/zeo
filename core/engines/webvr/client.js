@@ -1,4 +1,3 @@
-require('./lib/polyfill/webcomponents-hi-ce');
 window.WebVRConfig = {
   CARDBOARD_UI_DISABLED: true,
   // FORCE_ENABLE_VR: false,

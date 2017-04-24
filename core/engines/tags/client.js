@@ -57,37 +57,64 @@ class Tags {
       live = false;
     });
 
-    return archae.requestPlugins([
-      '/core/engines/bootstrap',
-      '/core/engines/three',
-      '/core/engines/input',
-      '/core/engines/webvr',
-      '/core/engines/cyborg',
-      '/core/engines/biolumi',
-      '/core/engines/keyboard',
-      '/core/engines/loader',
-      '/core/engines/fs',
-      '/core/engines/somnifer',
-      '/core/engines/rend',
-      '/core/utils/js-utils',
-      '/core/utils/image-utils',
-      '/core/utils/creature-utils',
+    const _requestScript = src => new Promise((accept, reject) => {
+      const script = document.createElement('script');
+      script.src = src;
+      script.async = true;
+      script.onload = () => {
+        accept();
+
+        _cleanup();
+      };
+      script.onerror = err => {
+        reject(err);
+
+        _cleanup();
+      };
+      document.body.appendChild(script);
+
+      const _cleanup = () => {
+        document.body.removeChild(script);
+      };
+    });
+
+    return Promise.all([
+      archae.requestPlugins([
+        '/core/engines/bootstrap',
+        '/core/engines/three',
+        '/core/engines/input',
+        '/core/engines/webvr',
+        '/core/engines/cyborg',
+        '/core/engines/biolumi',
+        '/core/engines/keyboard',
+        '/core/engines/loader',
+        '/core/engines/fs',
+        '/core/engines/somnifer',
+        '/core/engines/rend',
+        '/core/utils/js-utils',
+        '/core/utils/image-utils',
+        '/core/utils/creature-utils',
+      ]),
+      _requestScript('archae/tags/polyfills/webcomponents-hi-ce.js'),
     ])
       .then(([
-        bootstrap,
-        three,
-        input,
-        webvr,
-        cyborg,
-        biolumi,
-        keyboard,
-        loader,
-        fs,
-        somnifer,
-        rend,
-        jsUtils,
-        imageUtils,
-        creatureUtils,
+        [
+          bootstrap,
+          three,
+          input,
+          webvr,
+          cyborg,
+          biolumi,
+          keyboard,
+          loader,
+          fs,
+          somnifer,
+          rend,
+          jsUtils,
+          imageUtils,
+          creatureUtils,
+        ],
+        webComponentsLoadResult,
       ]) => {
         if (live) {
           const {THREE, scene, camera} = three;
