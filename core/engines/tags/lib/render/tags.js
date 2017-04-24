@@ -92,12 +92,15 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
     const headerSrc = `\
       <div style="display: flex; height: 100px; justify-content: center; align-items: center;">
         <img src="${creatureUtils.makeStaticCreature('module:' + name)}" width="80" height="80" style="width: 80px; height: 80px; margin: 10px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;" />
-        <div style="display: flex; margin-right: auto; justify-content: center; align-items: center;">
-          <div style="display: flex; max-width: ${DETAILS_WIDTH - (10 * 2) - (80 * 3)}px; height: 50px; align-items: flex-end; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+        <div style="display: flex; margin-right: auto; flex-direction: column; justify-content: center;">
+          <div style="display: flex; margin-bottom: 10px; align-items: flex-end; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
             <div style="margin-right: 15px; font-size: 28px; font-weight: 400;">${displayName}</div>
-            <div style="margin-right: 15px; color: #808080; font-size: 20px; font-weight: 400;">${version}</div>
-            <div style="font-size: 20px; font-weight: 300;">${description}</div>
+            <div style="font-size: 16px; font-weight: 400;">${description}</div>
           </div>
+          <a style="display: flex; height: 20px; margin-right: auto; padding: 15px 10px; border: 2px solid #333; font-size: 16px; font-weight: 400; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="module:${id}:focusVersion">
+            <div style="text-overflow: ellipsis; margin-right: 10px; overflow: hidden;">${version}</div>
+            <div style="display: flex; font-size: 13px; justify-content: center;">▼</div>
+          </a>
         </div>
         <a style="display: flex; width: 80px; justify-content: center; align-items: center;" onclick="module:reinstall:${id}">
           <img src="${autorenewImgSrc}" width="40" height="40">
