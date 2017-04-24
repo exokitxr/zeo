@@ -181,7 +181,6 @@ class Rend {
               object.worldMesh = null;
               object.configMesh = null;
               object.statsMesh = null;
-              object.trashMesh = null;
 
               const navbarMesh = (() => {
                 const navbarUi = biolumi.makeUi({

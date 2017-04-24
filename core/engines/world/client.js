@@ -87,33 +87,6 @@ class World {
 
           // constants
           const transparentMaterial = biolumi.getTransparentMaterial();
-          const trashGeometry = (() => {
-            const size = 0.2;
-            const geometry = geometryUtils.unindexBufferGeometry(new THREE.BoxBufferGeometry(size, size * 2, size));
-
-            const positionsAttrbiute = geometry.getAttribute('position');
-            const positions = positionsAttrbiute.array;
-            const numFaces = positions.length / 3 / 3;
-            for (let i = 0; i < numFaces; i++) {
-              const baseIndex = i * 3 * 3;
-              const points = [
-                positions.slice(baseIndex, baseIndex + 3),
-                positions.slice(baseIndex + 3, baseIndex + 6),
-                positions.slice(baseIndex + 6, baseIndex + 9),
-              ];
-              if (points[0][1] >= size && points[1][1] >= size && points[0][1] >= size) {
-                for (let j = 0; j < 9; j++) {
-                  positions[baseIndex + j] = 0;
-                }
-              }
-            }
-
-            return geometry;
-          })();
-          const solidMaterial = new THREE.MeshPhongMaterial({
-            color: 0x808080,
-            side: THREE.DoubleSide,
-          });
 
           const wireframeHighlightMaterial = new THREE.MeshBasicMaterial({
             color: 0x0000FF,
@@ -154,15 +127,6 @@ class World {
           const grabbableStates = {
             left: _makeGrabbableState(),
             right: _makeGrabbableState(),
-          };
-
-          const _makeTrashState = () => ({
-            hovered: false,
-            pointed: false,
-          });
-          const trashStates = {
-            left: _makeTrashState(),
-            right: _makeTrashState(),
           };
 
           const _getInFrontOfCameraMatrix = () => {
@@ -833,32 +797,6 @@ class World {
           })();
           rend.registerMenuMesh('worldMesh', worldMesh);
 
-          const trashMesh = (() => {
-            const geometry = trashGeometry;
-            const material = solidMaterial;
-
-            const mesh = new THREE.Mesh(geometry, material);
-            mesh.position.x = (WORLD_WIDTH / 2) - (((250 / WIDTH) * WORLD_WIDTH) / 2);
-            mesh.position.y = -DEFAULT_USER_HEIGHT + 1.2;
-            mesh.position.z = (0.2 / 2) + 0.02;
-            mesh.visible = false;
-
-            const highlightMesh = (() => {
-              const geometry = new THREE.BoxBufferGeometry(0.2, 0.4, 0.2);
-              const material = wireframeHighlightMaterial;
-
-              const mesh = new THREE.Mesh(geometry, material);
-              mesh.rotation.order = camera.rotation.order;
-              mesh.visible = false;
-              return mesh;
-            })();
-            mesh.add(highlightMesh);
-            mesh.highlightMesh = highlightMesh;
-
-            return mesh;
-          })();
-          rend.registerMenuMesh('trashMesh', trashMesh);
-
           const _updatePages = () => {
             const {menuMesh} = worldMesh;
             const {planeMesh} = menuMesh;
@@ -914,50 +852,9 @@ class World {
                 tags.updateLinesMesh();
               }
             };
-            const _updateTrashAnchor = () => {
-              const {gamepads} = webvr.getStatus();
-              const {position: trashPosition, rotation: trashRotation, scale: trashScale} = _decomposeObjectMatrixWorld(trashMesh);
-              const trashBoxTarget = geometryUtils.makeBoxTarget(trashPosition, trashRotation, trashScale, new THREE.Vector3(0.2, 0.4, 0.2));
-
-              SIDES.forEach(side => {
-                const trashState = trashStates[side];
-                const gamepad = gamepads[side];
-
-                const hovered = (() => {
-                  if (gamepad) {
-                    const {position: controllerPosition} = gamepad;
-
-                    return trashBoxTarget.containsPoint(controllerPosition);
-                  } else {
-                    return false;
-                  }
-                })();
-                trashState.hovered = hovered;
-
-                const pointed = (() => {
-                  if (gamepad) {
-                    const {position: controllerPosition, rotation: controllerRotation, scale: controllerScale} = gamepad;
-                    const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation, controllerScale);
-
-                    return trashBoxTarget.intersectLine(controllerLine);
-                  } else {
-                    return false;
-                  }
-                })();
-                trashState.pointed = pointed;
-              });
-
-              const {highlightMesh} = trashMesh;
-              highlightMesh.visible = SIDES.some(side => {
-                const trashState = trashStates[side];
-                const {hovered, pointed} = trashState;
-                return hovered || pointed;
-              });
-            };
 
             _updateGrabbers();
             _updateTagsLinesMesh();
-            _updateTrashAnchor();
           };
           rend.on('update', _update);
 
@@ -1029,10 +926,6 @@ class World {
 
                 npmCacheState.loaded = true;
               }
-
-              trashMesh.visible = true;
-            } else {
-              trashMesh.visible = false;
             }
           };
           rend.on('tabchange', _tabchange);
@@ -1040,19 +933,7 @@ class World {
           const _trigger = e => {
             const {side} = e;
 
-            const _clickTrash = () => {
-              const grabMesh = grabManager.getMesh(side);
-              const trashState = trashStates[side];
-              const {pointed} = trashState;
-
-              if (grabMesh && pointed) {
-                _removeTag('hand:' + side);
-
-                return true;
-              } else {
-                return false;
-              }
-            };
+            // _removeTag('hand:' + side); // XXX call this on new trash click
             const _clickMenu = () => {
               const tab = rend.getTab();
 
@@ -1124,7 +1005,7 @@ class World {
               }
             };
 
-            _clickTrash() || _clickMenu();
+            _clickMenu();
           };
           input.on('trigger', _trigger, {
             priority: -1,
@@ -1205,28 +1086,11 @@ class World {
               const grabMesh = grabManager.getMesh(side);
 
               if (grabMesh) {
-                const _releaseTrashTag = () => {
-                  const hovered = SIDES.some(side => trashStates[side].hovered);
+                const tagMesh = grabMesh;
+                const {position, rotation, scale} = _decomposeObjectMatrixWorld(tagMesh);
 
-                  if (hovered) {
-                    _removeTag('hand:' + side);
-
-                    return true;
-                  } else {
-                    return false;
-                  }
-                };
-                const _releaseWorldTag = () => {
-                  const tagMesh = grabMesh;
-                  const {position, rotation, scale} = _decomposeObjectMatrixWorld(tagMesh);
-
-                  const matrixArray = position.toArray().concat(rotation.toArray()).concat(scale.toArray());
-                  _moveTag('hand:' + side, 'world:' + JSON.stringify(matrixArray));
-
-                  return true;
-                };
-
-                _releaseTrashTag() || _releaseWorldTag();
+                const matrixArray = position.toArray().concat(rotation.toArray()).concat(scale.toArray());
+                _moveTag('hand:' + side, 'world:' + JSON.stringify(matrixArray));
               }
             }
           };
