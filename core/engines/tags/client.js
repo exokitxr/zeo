@@ -1064,6 +1064,12 @@ class Tags {
                       });
 
                       return true;
+                    } else if (match = onclick.match(/^module:reinstall:(.+)$/)) {
+                      const id = match[1];
+
+                      tagsApi.emit('reinstallModule', {id});
+
+                      return true;
                     } else if (match = onclick.match(/^module:up:(.+)$/)) {
                       const id = match[1];
 
@@ -1529,12 +1535,6 @@ class Tags {
                     type: 'module',
                     tagMesh: tagMesh,
                   };
-
-                  return true;
-                } else if (match = onmousedown.match(/^module:reinstall:(.+)$/)) {
-                  const id = match[1];
-
-                  tagsApi.emit('reinstallModule', {id});
 
                   return true;
                 } else if (match = onmousedown.match(/^attribute:(.+?):(.+?):link$/)) {
