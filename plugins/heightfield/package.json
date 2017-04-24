@@ -1,7 +1,7 @@
 {
-  "name": "map",
+  "name": "heightfield",
   "version": "0.0.1",
-  "description": "Procedurally genetarated 3D map mesh.",
+  "description": "Procedurally genetarated heightfield map.",
   "client": "client.js",
   "worker": "worker.js",
   "dependencies": {

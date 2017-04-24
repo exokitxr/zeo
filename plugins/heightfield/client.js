@@ -16,7 +16,7 @@ const DIRECTIONS = (() => {
   return result;
 })();
 
-class MapClient {
+class Heightfield {
   constructor(archae) {
     this._archae = archae;
   }
@@ -200,4 +200,4 @@ class MapClient {
   }
 }
 
-module.exports = MapClient;
+module.exports = Heightfield;
