@@ -169,15 +169,18 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
     const headerSrc = `\
       <div style="position: relative; display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; background-color: #EEE; padding-left: 30px; text-decoration: none; overflow: hidden; box-sizing: border-box;">
         <div style="display: flex; position: absolute; top: 60px; left: -60px; width: ${HEIGHT}px; height: 30px; background-color: #03A9F4; justify-content: center; align-items: center; box-sizing: border-box; transform: rotate(-90deg);">Entity</div>
-        <img src="${creatureUtils.makeStaticCreature('entity:' + name)}" width="80" height="80" style="width: 80px; height: 80px; margin: 10px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;" />
-        <div style="width: ${WIDTH - (80 + (10 * 2)) - 10 - 100}px; margin-right: 10px;">
-          <div style="height: 100px;">
+        <div style="display: flex; flex-grow: 1; flex-direction: column;">
+          <div style="display: flex; flex: 1;">
+            <img src="${creatureUtils.makeStaticCreature('entity:' + name)}" width="80" height="80" style="width: 80px; height: 80px; margin: 10px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;" />
             <h1 style="margin: 0; margin-top: 10px; font-size: 28px; font-weight: 400; line-height: 1.4;">${displayName}</h1>
           </div>
+          <${linkTagName} style="display: inline-flex; margin-left: auto; margin-bottom: 10px; padding: 10px 30px; border: 2px solid; font-weight: 400; text-decoration: none;" onclick="entity:addAttribute:${id}">Add Link</${linkTagName}>
         </div>
-        <${linkTagName} style="display: flex; width: 100px; justify-content: center; align-items: center;" onclick="entity:addAttribute:${id}">
-          <img src="${plusBoxImgSrc}" width="40" height="40">
-        </${linkTagName}>
+        <div style="display: flex;">
+          <a style="display: flex; margin-bottom: auto; padding: 15px; text-decoration: none; justify-content: center; align-items: center;" onclick="entity:remove:${id}">
+            <img src="${closeOutlineSrc}" width="30" height="30" />
+          </a>
+        </div>
       </div>
     `;
 
