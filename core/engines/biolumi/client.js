@@ -245,7 +245,7 @@ class Biolumi {
             }
 
             update() {
-              let cache = {
+              const cache = {
                 layerSpec: null,
                 htmlSrc: null,
                 innerSrc: null,
@@ -354,22 +354,20 @@ class Biolumi {
               const _requestLayer = () => {
                 const {layerSpec} = cache;
                 const {type = 'html'} = layerSpec;
+
                 if (type === 'html') {
                   const {parent: {width, height}} = this;
                   const {src, x = 0, y = 0, w = width, h = height} = layerSpec;
 
-                  let divEl = null;
                   const _renderTempElement = fn => {
-                    if (!divEl) {
-                      divEl = (() => {
-                        const el = document.createElement('div');
-                        el.style.cssText = 'position: absolute; top: 0; left: 0; width: ' + w + 'px;';
-                        const {innerSrc} = cache;
-                        el.innerHTML = innerSrc;
+                    const divEl = (() => {
+                      const el = document.createElement('div');
+                      el.style.cssText = 'position: absolute; top: 0; left: 0; width: ' + w + 'px;';
+                      const {innerSrc} = cache;
+                      el.innerHTML = innerSrc;
 
-                        return el;
-                      })();
-                    }
+                      return el;
+                    })();
                     document.body.appendChild(divEl);
 
                     const result = fn(divEl);
@@ -390,23 +388,6 @@ class Biolumi {
                   const layer = new Layer(this);
                   layer.anchors = null;
                   layer.makeAnchors = _makeAnchors;
-                  layer.medias = _renderTempElement(divEl => Array.from(divEl.querySelectorAll('a[media]')).map(a => {
-                    const rect = a.getBoundingClientRect();
-                    const media = a.getAttribute('media') || null;
-
-                    return new Media(rect, media);
-                  }));
-                  layer.x = x;
-                  layer.y = y;
-                  layer.w = w;
-                  layer.h = h;
-
-                  this.layer = layer;
-                } else if (type === 'image') {
-                  const {parent: {width, height}} = this;
-                  const {x = 0, y = 0, w = width, h = height} = layerSpec;
-
-                  const layer = new Layer(this);
                   layer.x = x;
                   layer.y = y;
                   layer.w = w;
