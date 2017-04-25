@@ -269,30 +269,15 @@ class Biolumi {
                     const el = document.createElement('div');
                     el.setAttribute('xmlns', 'http://www.w3.org/1999/xhtml');
                     el.setAttribute('style', rootCss);
-                    el.innerHTML = src
-                      .replace(/(<img\s+(?:(?!src=)[^>])*)(src=(?!['"]?data:)\S+)/g, '$1'); // optimization: do not load non-dataurl images
+                    el.innerHTML = src;
 
-                    const imgs = el.querySelectorAll('img');
-
-                    // do not load images without an explicit width + height
-                    for (let i = 0; i < imgs.length; i++) {
-                      const img = imgs[i];
-                      if (!img.hasAttribute('width') || !img.hasAttribute('height')) {
-                        img.parentNode.removeChild(img);
-                      }
-                    }
-
-                    // remove empty anchors
-                    const as = el.querySelectorAll('a');
-                    for (let i = 0; i < as.length; i++) {
-                      const a = as[i];
-                      if (a.childNodes.length > 0) {
-                        if (!a.style.textDecoration) {
-                          a.style.textDecoration = 'underline';
-                        }
-                      } else {
-                        a.parentNode.removeChild(a);
-                      }
+                    const videos = el.querySelectorAll('video');
+                    for (let i = 0; i < videos.length; i++) {
+                      const video = videos[i];
+                      const a = document.createElement('a');
+                      a.style = video.style;
+                      a.setAttribute('media', 'video:' + video.src);
+                      video.parentNode.replaceChild(a, video);
                     }
 
                     return new XMLSerializer().serializeToString(el);
@@ -373,56 +358,44 @@ class Biolumi {
                   const {parent: {width, height}} = this;
                   const {src, x = 0, y = 0, w = width, h = height} = layerSpec;
 
-                  const _makeAnchors = () => {
-                    const divEl = (() => {
-                      const el = document.createElement('div');
-                      el.style.cssText = 'position: absolute; top: 0; left: 0; width: ' + w + 'px;';
-                      const {innerSrc} = cache;
-                      el.innerHTML = innerSrc;
+                  let divEl = null;
+                  const _renderTempElement = fn => {
+                    if (!divEl) {
+                      divEl = (() => {
+                        const el = document.createElement('div');
+                        el.style.cssText = 'position: absolute; top: 0; left: 0; width: ' + w + 'px;';
+                        const {innerSrc} = cache;
+                        el.innerHTML = innerSrc;
 
-                      return el;
-                    })();
+                        return el;
+                      })();
+                    }
                     document.body.appendChild(divEl);
 
-                    const anchors = (() => {
-                      const as = (() => {
-                        const as = divEl.querySelectorAll('a');
-
-                        const result = [];
-                        for (let i = 0; i < as.length; i++) {
-                          const a = as[i];
-                          if (a.style.display !== 'none' && a.style.visibility !== 'hidden') {
-                            result.push(a);
-                          }
-                        }
-                        return result;
-                      })();
-                      const numAs = as.length;
-
-                      const result = Array(numAs);
-                      for (let i = 0; i < numAs; i++) {
-                        const a = as[i];
-
-                        const rect = a.getBoundingClientRect();
-                        const onclick = a.getAttribute('onclick') || null;
-                        const onmousedown = a.getAttribute('onmousedown') || null;
-                        const onmouseup = a.getAttribute('onmouseup') || null;
-
-                        const anchor = new Anchor(rect, onclick, onmousedown, onmouseup);
-                        result[i] = anchor;
-                      }
-
-                      return result;
-                    })();
+                    const result = fn(divEl);
 
                     document.body.removeChild(divEl);
 
-                    return anchors;
+                    return result;
                   };
+                  const _makeAnchors = () => _renderTempElement(divEl => Array.from(divEl.querySelectorAll('a')).map(a => {
+                    const rect = a.getBoundingClientRect();
+                    const onclick = a.getAttribute('onclick') || null;
+                    const onmousedown = a.getAttribute('onmousedown') || null;
+                    const onmouseup = a.getAttribute('onmouseup') || null;
+
+                    return new Anchor(rect, onclick, onmousedown, onmouseup);
+                  }));
 
                   const layer = new Layer(this);
                   layer.anchors = null;
                   layer.makeAnchors = _makeAnchors;
+                  layer.medias = _renderTempElement(divEl => Array.from(divEl.querySelectorAll('a[media]')).map(a => {
+                    const rect = a.getBoundingClientRect();
+                    const media = a.getAttribute('media') || null;
+
+                    return new Media(rect, media);
+                  }));
                   layer.x = x;
                   layer.y = y;
                   layer.w = w;
@@ -483,8 +456,9 @@ class Biolumi {
               this.img = null;
               this.anchors = [];
               this.makeAnchors = null;
-              const {parent: {width, height}} = parent;
+              this.medias = null;
 
+              const {parent: {width, height}} = parent;
               this.x = 0;
               this.y = 0;
               this.w = width;
@@ -553,6 +527,13 @@ class Biolumi {
               this.onclick = onclick;
               this.onmousedown = onmousedown;
               this.onmouseup = onmouseup;
+            }
+          }
+
+          class Media {
+            constructor(rect, media) {
+              this.rect = rect;
+              this.media = media;
             }
           }
 
