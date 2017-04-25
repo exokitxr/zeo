@@ -3,9 +3,9 @@
     "3sef39": {
       "type": "module",
       "id": "3sef39",
-      "name": "/plugins/floor",
-      "displayName": "floor",
-      "description": "Provides a basic floor.",
+      "name": "/plugins/map",
+      "displayName": "map",
+      "description": "Procedurally generated pixel map floor.",
       "version": "0.0.1",
       "readme": null,
       "matrix": [
@@ -19,31 +19,6 @@
         0.9999999983257802,
         1.0000000000000004,
         0.9999999952887881
-      ],
-      "metadata": {
-        "isStatic": false,
-        "exists": false
-      }
-    },
-    "ryqvf": {
-      "type": "module",
-      "id": "ryqvf",
-      "name": "/plugins/raptor",
-      "displayName": "raptor",
-      "description": "A simple 3D raptor.",
-      "version": "0.0.1",
-      "readme": null,
-      "matrix": [
-        -1.7159984111785889,
-        1.3923002481460571,
-        -0.5972616076469421,
-        -7.13046554205194e-10,
-        0.6444332623180868,
-        -7.259580816666767e-17,
-        0.7646605586897474,
-        0.9999999995294857,
-        1,
-        0.9999999995294857
       ],
       "metadata": {
         "isStatic": false,
@@ -100,54 +75,12 @@
         "exists": false
       }
     },
-    "svw5h": {
-      "type": "entity",
-      "id": "svw5h",
-      "name": "raptor",
-      "displayName": "raptor",
-      "description": "A simple 3D raptor.",
-      "version": "0.0.1",
-      "readme": null,
-      "matrix": [
-        -1.6174438714981079,
-        1.3923002482551048,
-        -0.5803204536035637,
-        -7.13046554205194e-10,
-        0.6444332623180868,
-        -7.259580816666767e-17,
-        0.7646605586897474,
-        0.9999999995294857,
-        1,
-        0.9999999995294857
-      ],
-      "metadata": {
-        "isStatic": false,
-        "exists": false
-      },
-      "tagName": "raptor",
-      "attributes": {
-        "position": {
-          "value": [
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            1,
-            1,
-            1
-          ]
-        }
-      }
-    },
     "nc0r9": {
       "type": "entity",
       "id": "nc0r9",
-      "name": "floor",
-      "displayName": "floor",
-      "description": "Provides a basic floor.",
+      "name": "map",
+      "displayName": "map",
+      "description": "Procedurally generated pixel map floor.",
       "version": "0.0.1",
       "readme": null,
       "matrix": [
@@ -166,7 +99,7 @@
         "isStatic": false,
         "exists": false
       },
-      "tagName": "floor",
+      "tagName": "map",
       "attributes": {
         "position": {
           "value": [
