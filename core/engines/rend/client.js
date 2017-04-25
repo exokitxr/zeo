@@ -480,15 +480,8 @@ class Rend {
                   }
                 }
               };
-              const _updateUiTracker = () => {
-                uiTracker.update({
-                  pose: webvr.getStatus(),
-                  controllerMeshes: auxObjects.controllerMeshes,
-                });
-              };
 
               _updateMeshAnimations();
-              _updateUiTracker();
             });
 
             cleanups.push(() => {
@@ -546,9 +539,16 @@ class Rend {
           const _updateUiTimer = () => {
             biolumi.updateUiTimer();
           };
+          const _updateUiTracker = () => {
+            uiTracker.update({
+              pose: webvr.getStatus(),
+              controllerMeshes: auxObjects.controllerMeshes,
+            });
+          };
 
           _updateRenderer();
           _updateUiTimer();
+          _updateUiTracker();
         });
 
         const unload = e => {
