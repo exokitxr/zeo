@@ -1008,7 +1008,7 @@ class WebVR {
             };
             const mousemove = e => {
               if (this.isPresenting) {
-                const _handleGamepad = () => this.isPresenting && SIDES.indexOf(this.mode) !== -1 && (e.ctrlKey || e.altKey); // handled by the fake gamepad
+                const _handleGamepad = () => this.isPresenting && SIDES.indexOf(this.mode) !== -1 && (e.ctrlKey || e.altKey || keys.touch); // handled by the fake gamepad
                 const _handleDisplay = () => {
                   const {rotation: quaternion} = this;
 
@@ -1274,26 +1274,15 @@ class WebVR {
                   this.move(-e.movementX, -e.movementY, 0);
                 } else if (e.altKey) {
                   this.move(-e.movementX, 0, -e.movementY);
+                } else if (this._parent.keys.touch) {
+                  this.touch(-e.movementX, -e.movementY);
                 }
               }
             };
             input.on('mousemove', mousemove);
-            const wheel = e => { // XXX port these over
-              if (this.displayIsInControllerMode()) {
-                if (e.shiftKey) {
-                  this.rotate(e.deltaX, e.deltaY);
-                } else if (e.altKey) {
-                  this.touch(e.deltaX, e.deltaY);
-                }
-
-                e.preventDefault();
-              }
-            };
-            input.on('wheel', wheel);
 
             this._cleanup = () => {
               input.removeListener('mousemove', mousemove);
-              input.removeListener('wheel', wheel);
             };
           }
 
@@ -1314,19 +1303,19 @@ class WebVR {
             this.updateProperties();
           }
 
-          touch(x, y, z) {
+          touch(x, y) {
             const {axes} = this;
 
             const _clampAxis = v => Math.min(Math.max(v, -1), 1);
 
-            const moveFactor = 0.02;
+            const moveFactor = 0.01;
             axes[0] = _clampAxis(axes[0] - (x * moveFactor));
             axes[1] = _clampAxis(axes[1] + (y * moveFactor));
 
             this.updateProperties();
           }
 
-          rotate(x, y) {
+          /* rotate(x, y) {
             const {rotationOffset} = this;
 
             const moveFactor = 0.001 * (Math.PI * 2);
@@ -1334,7 +1323,7 @@ class WebVR {
             rotationOffset.x = Math.max(Math.min(rotationOffset.x + (y * moveFactor), Math.PI / 2), -Math.PI / 2);
 
             this.updateProperties();
-          }
+          } */
 
           updateProperties() {
             const {_parent: parent, positionOffset, rotationOffset} = this;

@@ -366,19 +366,20 @@ class Cyborg {
 
                   const notchMesh = (() => {
                     const geometry = new THREE.SphereBufferGeometry(0.005, 5, 4)
-                      .applyMatrix(new THREE.Matrix4().makeRotationY(Math.PI / 8));
-                      // .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
+                      .applyMatrix(new THREE.Matrix4().makeRotationY(Math.PI / 8))
+                      .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, 0.003));
                     const material = solidMaterial;
 
                     const mesh = new THREE.Mesh(geometry, material);
-                    // mesh.position.z = 0.005 / 2;
                     return mesh;
                   })();
                   mesh.add(notchMesh);
+                  mesh.notchMesh = notchMesh;
 
                   return mesh;
                 })();
                 object.add(circleMesh);
+                object.circleMesh = circleMesh;
 
                 return object;
               })();
@@ -409,9 +410,25 @@ class Cyborg {
               const _updateHmdMesh = () => {
                 const {hudMesh} = this;
 
-                hudMesh.position.copy(hmdStatus.position);
-                hudMesh.quaternion.copy(hmdStatus.rotation);
-                hudMesh.scale.copy(hmdStatus.scale);
+                const {buttons} = gamepadStatus;
+                if (buttons.pad.touched) {
+                  hudMesh.position.copy(hmdStatus.position);
+                  hudMesh.quaternion.copy(hmdStatus.rotation);
+                  hudMesh.scale.copy(hmdStatus.scale);
+
+                  const {circleMesh} = hudMesh;
+                  const {notchMesh} = circleMesh;
+                  const {axes} = gamepadStatus;
+                  notchMesh.position.set(axes[0] * 0.05, axes[1] * 0.05, (1 - new THREE.Vector2(axes[0], axes[1]).length()) * (-0.005));
+
+                  if (!hudMesh.visible) {
+                    hudMesh.visible = true;
+                  }
+                } else {
+                  if (hudMesh.visible) {
+                    hudMesh.visible = false;
+                  }
+                }
               };
 
               _updateMesh();
