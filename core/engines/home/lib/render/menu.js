@@ -208,26 +208,39 @@ const getTutorialPageSrc = (pageIndex, vrMode, flags) => {
   return getHeaderWrappedSrc(content, 'Introduction 1: Controls', {back: true});
 };
 
-const getMenuPageSrc = flags => getHeaderWrappedSrc(`\
-  <div style="display: flex; height: 500px; justify-content: center; align-items: center;">
-    <a style="display: flex; width: 200px; height: 200px; margin-right: 30px; border: 1px solid; border-radius: 5px; font-weight: 400; text-decoration: none; flex-direction: column; justify-content: center; align-items: center;" onclick="home:remoteServers">
-      <div style="margin-bottom: 15px; font-size: 24px;">Remote servers</div>
-      <img src="${earthBoxImgSrc}" width="100" height="100" />
-    </a>
-    <a style="display: flex; width: 200px; height: 200px; margin-right: 30px; border: 1px solid; border-radius: 5px; font-weight: 400; text-decoration: none; flex-direction: column; justify-content: center; align-items: center;" onclick="home:unfinishTutorial">
-      <div style="margin-bottom: 15px; font-size: 24px;">Tutorial</div>
-      <img src="${viewCarouselImgSrc}" width="100" height="100" />
-    </a>
-    ${flags.localServers ?
-      `<a style="display: flex; width: 200px; height: 200px; margin-right: 30px; border: 1px solid; border-radius: 5px; font-weight: 400; text-decoration: none; flex-direction: column; justify-content: center; align-items: center;" onclick="home:localServers">
-        <div style="margin-bottom: 15px; font-size: 24px;">Local servers</div>
-        <img src="${serverPlusImgSrc}" width="100" height="100" />
-      </a>`
-    :
-      ''
-    }
-  </div>
-`, 'Introduction videos');
+const getMenuPageSrc = flags => {
+  const videos = [
+    {},
+    {},
+    {},
+    {},
+    {},
+  ];
+
+  return getHeaderWrappedSrc(`\
+    <div style="display: flex; flex-direction: column; flex-grow: 1;">
+      <div style="display: flex; margin-bottom: auto; flex-direction: column;">
+        ${videos.map((video, index) =>
+          `<a style="display: flex; padding: 10px 0; margin: 0 50px; text-decoration: none; align-items: center;">
+             <div style="background-color: #EEE; height: 60px; width: ${60 * 1.5}px; margin-right: 20px;"></div>
+             <div style="display: flex; height: 60px; font-size: 24px; font-weight: 400;">Introduction ${index}: Some video name</div>
+          </a>`
+        ).join('\n')}
+      </div>
+      <div style="display: flex; height: 100px; padding: 0 50px; justify-content: center; align-items: center;"> -->
+        <a style="display: flex; margin-left: auto; padding: 10px 15px; border: 2px solid; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:next">Skip tutorial</a>
+      </div>
+      ${flags.localServers ?
+        `<!-- <a style="display: flex; width: 200px; height: 200px; margin-right: 30px; border: 1px solid; border-radius: 5px; font-weight: 400; text-decoration: none; flex-direction: column; justify-content: center; align-items: center;" onclick="home:localServers">
+          <div style="margin-bottom: 15px; font-size: 24px;">Local servers</div>
+          <img src="${serverPlusImgSrc}" width="100" height="100" />
+        </a> -->`
+      :
+        ''
+      }
+    </div>
+  `, 'Introduction videos');
+};
 
 const getHeaderWrappedSrc = (content, headerText, {back = false} = {}) => `\
   <div style="display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; flex-direction: column;">
