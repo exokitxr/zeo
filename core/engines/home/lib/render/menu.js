@@ -78,39 +78,9 @@ const getTutorialPageSrc = (pageIndex, vrMode, flags, imgs) => {
     switch (pageIndex) {
       case 0: return `\
         <div style="display: flex; padding: 30px 100px; justify-content: center; align-items: center; flex-direction: column; flex-grow: 1">
-          <div style="margin-bottom: 10px; font-size: 30px; font-weight: 400;">Welcome to Zeo!</div>
-          <img src="${imgs.logo}" width="${100 * 0.75}" height="{158 * 0.75}" />
-          <div style="width: 540px; margin-bottom: auto; font-size: 15px; font-weight: 400; flex-grow: 1">
-            ${keyboardVrMode ? `\
-              <p>You're using a keyboard and mouse, so here are the controls:</p>
-              <div style="display: flex; justify-content: center; align-items: center;">
-                <img src="${imgs.keyboard}" width="128" height="${128 / 3}" />
-              </div>
-              <p>
-                <b>WASD</b>: Move around<br/>
-                <b>Z or C</b>: Focus left or right controller (<i>required</i> to use the buttons below)<br/>
-                <b>Click, E, F, Q</b>: Trigger, menu, grip, touchpad buttons<br/>
-                <b>Mousewheel</b> Move controller x/y axis<br/>
-                <b>Ctrl + Mousewheel</b> Move controller x/z axis<br/>
-                <b>Shift + mousewheel</b> Rotate controller<br/>
-                <b>RED DOTS</b> show where your controllers are pointing<br/>
-              </p>
-              <p style="margin: 0; font-size: 18px;">
-                <i>To continue, click the <b>NEXT BUTTON</b> with your <b>TRIGGER</b>:</i>
-              </p>
-            ` : `\
-              <p>You're using a headset, so you can interact with the world with your controllers!</p>
-              <p><b>PRESS A BUTTON</b> on your controllers to <b>WAKE</b> them. <b>RED DOTS</b> show where your controllers are pointing.</p>
-              <div style="display: flex; margin-top: -20px; justify-content: center; align-items: center;">
-                <img src="${imgs.controller}" width="200" height="200" />
-              </div>
-              <p style="margin: 0; font-size: 18px;">
-                <i>To continue, click the <b>NEXT BUTTON</b> with your <b>TRIGGER</b>:</i>
-              </p>
-            `}
-          </div>
-          <div style="display: flex; width: 100%;">
-            <a style="margin-left: auto; padding: 10px 15px; border: 1px solid; border-radius: 5px; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:next">Next: Modules &gt;</a>
+          <video src="https://rawgit.com/modulesio/zeo-data/72356f9186ab6af74b2ea733636f366c6e97de0f/video/sample.webm" style="display: flex; width: ${WIDTH}px; height: ${HEIGHT - 100}px;">
+          <div style="display: flex; width: 100%; height: 100px;">
+            <a style="margin-left: auto; padding: 10px 15px; border: 2px solid; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:next">Next: Modules &gt;</a>
           </div>
         </div>
       `;
