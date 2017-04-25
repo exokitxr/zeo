@@ -660,19 +660,20 @@ class Biolumi {
               return this.hoverStates[side];
             }
 
-            update({pose, controllerMeshes}) {
+            update({pose, enabled, sides, controllerMeshes}) {
               const {gamepads} = pose;
               const {pages, hoverStates, dotMeshes, boxMeshes} = this;
 
               SIDES.forEach(side => {
+                const dotMesh = dotMeshes[side];
+                const boxMesh = boxMeshes[side];
+                const controllerMesh = controllerMeshes[side];
+                const {rayMesh} = controllerMesh;
                 const gamepad = gamepads[side];
 
-                if (gamepad) {
+                if (enabled && sides.indexOf(side) !== -1 && gamepad) {
                   const {position: controllerPosition, rotation: controllerRotation, scale: controllerScale} = gamepad;
                   const hoverState = hoverStates[side];
-                  const dotMesh = dotMeshes[side];
-                  const boxMesh = boxMeshes[side];
-                  const controllerMesh = controllerMeshes[side];
                   const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation, controllerScale);
 
                   const intersectionSpec = (() => {
@@ -821,8 +822,10 @@ class Biolumi {
                       dotMesh.visible = true;
                     }
 
-                    const {rayMesh} = controllerMesh;
                     rayMesh.scale.z = intersectionPoint.distanceTo(controllerLine.start);
+                    if (!rayMesh.visible) {
+                      rayMesh.visible = true;
+                    }
                   } else {
                     hoverState.intersectionPoint = null;
                     hoverState.page = null;
@@ -836,8 +839,21 @@ class Biolumi {
                       dotMesh.visible = false;
                     }
 
-                    const {rayMesh} = controllerMesh;
                     rayMesh.scale.z = controllerLine.distance();
+                    if (!rayMesh.visible) {
+                      rayMesh.visible = true;
+                    }
+                  }
+                } else {
+                  if (boxMesh.visible) {
+                    boxMesh.visible = false;
+                  }
+                  if (dotMesh.visible) {
+                    dotMesh.visible = false;
+                  }
+
+                  if (rayMesh.visible) {
+                    rayMesh.visible = false;
                   }
                 }
               });

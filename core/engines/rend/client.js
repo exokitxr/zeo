@@ -26,7 +26,7 @@ class Rend {
 
   mount() {
     const {_archae: archae} = this;
-    const {metadata: {server: {worldname: serverWorldname, enabled: serverEnabled}, hub: {url: hubUrl}}} = archae;
+    const {metadata: {home: {enabled: homeEnabled}, server: {worldname: serverWorldname, enabled: serverEnabled}, hub: {url: hubUrl}}} = archae;
 
     const cleanups = [];
     this._cleanup = () => {
@@ -542,6 +542,16 @@ class Rend {
           const _updateUiTracker = () => {
             uiTracker.update({
               pose: webvr.getStatus(),
+              enabled: rendApi.isOpen() || homeEnabled,
+              sides: (() => {
+                const mode = webvr.getMode();
+
+                if (mode !== null) {
+                  return [mode];
+                } else {
+                  return SIDES;
+                }
+              })(),
               controllerMeshes: auxObjects.controllerMeshes,
             });
           };
