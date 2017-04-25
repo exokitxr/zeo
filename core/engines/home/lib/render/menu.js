@@ -79,7 +79,27 @@ const getTutorialPageSrc = (pageIndex, vrMode, flags, imgs) => {
       case 0: return `\
         <div style="display: flex; padding: 0 50px; justify-content: center; align-items: center; flex-direction: column; flex-grow: 1;">
           <div style="display: flex; width: 100%; height: 100px; margin-top: auto; justify-content: center; align-items: center;">
-            <a style="display: flex; margin-left: auto; padding: 10px 15px; border: 2px solid; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:next">Next: Modules</a>
+            <div style="width: 200px;"></div>
+            <div style="display: flex; flex-grow: 1;">
+              <a style="display: flex; width: 90px; height: 100px; justify-content: center; align-items: center;" onclick="tutorial:setPage:1">
+                <div style="display: flex; width: 10px; height: 10px; background-color: #000;"></div>
+              </a>
+              <a style="display: flex; width: 90px; height: 100px; justify-content: center; align-items: center;" onclick="tutorial:setPage:2">
+                <div style="display: flex; width: 10px; height: 10px; background-color: #CCC;"></div>
+              </a>
+              <a style="display: flex; width: 90px; height: 100px; justify-content: center; align-items: center;" onclick="tutorial:setPage:3">
+                <div style="display: flex; width: 10px; height: 10px; background-color: #CCC;"></div>
+              </a>
+              <a style="display: flex; width: 90px; height: 100px; justify-content: center; align-items: center;" onclick="tutorial:setPage:4">
+                <div style="display: flex; width: 10px; height: 10px; background-color: #CCC;"></div>
+              </a>
+              <a style="display: flex; width: 90px; height: 100px; justify-content: center; align-items: center;" onclick="tutorial:setPage:5">
+                <div style="display: flex; width: 10px; height: 10px; background-color: #CCC;"></div>
+              </a>
+            </div>
+            <div style="display: flex; width: 200px;">
+              <a style="display: flex; margin-left: auto; padding: 10px 15px; border: 2px solid; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:next">Next: Modules</a>
+            </div>
           </div>
         </div>
       `;
@@ -225,7 +245,7 @@ const getHeaderWrappedSrc = content => `\
       <a style="display: flex; width: 100px; height: 100px; justify-content: center; align-items: center;" onclick="home:back">
         <img src="${chevronLeftImgSrc}" width="80" height="80" />
       </a>
-      <div style="margin-right: auto; font-size: 40px;">Welcome</div>
+      <div style="margin-right: auto; font-size: 40px; font-weight: 400;">Welcome</div>
     </div>
     ${content}
   </div>
