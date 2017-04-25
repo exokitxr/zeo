@@ -857,6 +857,12 @@ class Home {
                   }
 
                   return true;
+                } else if (match = onclick.match(/^home:tutorial:([0-9]+)$/)) {
+                  const n = parseInt(match[1], 10);
+
+                  _setPage('tutorial:' + n);
+
+                  return true;
                 } if (onclick === 'home:finishTutorial') {
                   bootstrap.setTutorialFlag(false);
 
