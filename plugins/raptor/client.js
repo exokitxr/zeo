@@ -335,7 +335,7 @@ class Raptor {
                 return mesh;
               })();
               scene.add(planeMesh);
-              result.planeMesh = planeMesh;
+              entityApi.planeMesh = planeMesh;
 
               const soundBody = (() => {
                 const result = sound.makeBody();
@@ -600,7 +600,6 @@ class Raptor {
               entityApi._cleanup = () => {
                 entityObject.remove(raptorMesh);
 
-                const {planeMesh} = raptorMesh;
                 const {page} = planeMesh;
                 ui.removePage(page);
 
