@@ -205,12 +205,12 @@ class Home {
               keyboardFocusState: null,
             };
 
-            const _vrModeChange = vrMode => {
+            /* const _vrModeChange = vrMode => { // XXX we might not need this with the
               homeState.vrMode = vrMode;
 
               _updatePages();
             };
-            bootstrap.on('vrModeChange', _vrModeChange);
+            bootstrap.on('vrModeChange', _vrModeChange); */
 
             const menuMesh = (() => {
               const object = new THREE.Object3D();
@@ -1254,7 +1254,7 @@ class Home {
             tags.loadTags(defaultTags);
 
             cleanups.push(() => {
-              bootstrap.removeListener('vrModeChange', _vrModeChange);
+              // bootstrap.removeListener('vrModeChange', _vrModeChange);
 
               scene.remove(menuMesh);
               SIDES.forEach(side => {
