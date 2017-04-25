@@ -4,6 +4,7 @@ const EVENTS = [
   'mouseup',
   'mousemove',
   'mousewheel',
+  'wheel',
   'keypress',
   'keydown',
   'keyup',
@@ -111,6 +112,7 @@ class Input {
     window.addEventListener('mouseup', eventRouters.mouseup.handle);
     window.addEventListener('mousemove', eventRouters.mousemove.handle);
     window.addEventListener('mousewheel', eventRouters.mousewheel.handle);
+    window.addEventListener('wheel', eventRouters.wheel.handle);
     window.addEventListener('keypress', eventRouters.keypress.handle);
     window.addEventListener('keydown', eventRouters.keydown.handle);
     window.addEventListener('keyup', eventRouters.keyup.handle);
