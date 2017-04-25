@@ -928,6 +928,9 @@ class WebVR {
                   case 18: // alt
                     keys.alt = true;
                     needsGamepadUpdate = true;
+
+                    e.preventDefault(); // prevent losing page focus
+
                     break;
                   case 90: // Z
                     this.mode = 'left';
