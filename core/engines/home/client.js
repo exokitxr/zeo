@@ -61,43 +61,6 @@ class Home {
     });
 
     if (homeEnabled) {
-      const _requestBlobDataUrl = blob => new Promise((accept, reject) => {
-        const reader = new FileReader();
-        reader.onload = e => {
-          accept(e.target.result);
-        };
-        reader.readAsDataURL(blob);
-      });
-      const _requestFileBlobData = url => fetch(url)
-       .then(res => res.blob()
-         .then(blob => _requestBlobDataUrl(blob))
-       );
-      const _requestImgs = () => Promise.all([
-        '/img/logo-large.png',
-        '/archae/home/img/keyboard.png',
-        '/archae/home/img/controller.png',
-        '/archae/home/img/menu.png',
-        '/archae/home/img/teleport.png',
-        '/archae/home/img/cake.png',
-        '/archae/home/img/server.png',
-      ].map(_requestFileBlobData))
-        .then(([
-          logo,
-          keyboard,
-          controller,
-          menu,
-          teleport,
-          cake,
-          server,
-        ]) => ({
-          logo,
-          keyboard,
-          controller,
-          menu,
-          teleport,
-          cake,
-          server,
-        }));
       const _requestZCakeNpmItemSpec = () => fetch('/archae/rend/mods?q=' + encodeURIComponent('/plugins/z-cake'))
         .then(res => res.json()
           .then(itemSpec => {
@@ -126,7 +89,6 @@ class Home {
           '/core/utils/geometry-utils',
           '/core/utils/creature-utils',
         ]),
-        _requestImgs(),
         _requestZCakeNpmItemSpec(),
         _requestDefaultTags(),
       ])
@@ -145,7 +107,6 @@ class Home {
             geometryUtils,
             creatureUtils,
           ],
-          imgs,
           zCakeNpmItemSpec,
           defaultTags,
         ]) => {
@@ -233,8 +194,7 @@ class Home {
                   },
                   focus: {
                     keyboardFocusState,
-                  } ,
-                  imgs,
+                  },
                 }) => {
                   const {type: focusType = '', inputIndex = 0, inputValue = 0} = keyboardFocusState || {};
 
@@ -251,7 +211,6 @@ class Home {
                       vrMode,
                       focusType,
                       flags,
-                      imgs,
                     }),
                     x: 0,
                     y: 0,
@@ -263,7 +222,6 @@ class Home {
                   state: {
                     home: homeState,
                     focus: focusState,
-                    imgs: imgs,
                   },
                   worldWidth: WORLD_WIDTH,
                   worldHeight: WORLD_HEIGHT,

@@ -35,7 +35,7 @@ const downImg = require('../img/down');
 
 const makeRenderer = ({creatureUtils}) => {
 
-const getHomeMenuSrc = ({page, remoteServers, localServers, inputText, inputIndex, inputValue, loading, vrMode, focusType, flags, imgs}) => {
+const getHomeMenuSrc = ({page, remoteServers, localServers, inputText, inputIndex, inputValue, loading, vrMode, focusType, flags}) => {
   const pageSpec = (() => {
     const split = page.split(':');
     const name = split[0];
@@ -51,9 +51,9 @@ const getHomeMenuSrc = ({page, remoteServers, localServers, inputText, inputInde
     const {args} = pageSpec;
     const pageIndex = parseInt(args[0], 10);
 
-    return getTutorialPageSrc(pageIndex, vrMode, flags, imgs);
+    return getTutorialPageSrc(pageIndex, vrMode, flags);
   } else if (name === 'menu') {
-    return getMenuPageSrc(flags, imgs);
+    return getMenuPageSrc(flags);
   } else if (name === 'remoteServers') {
     const {args} = pageSpec;
     const pageIndex = parseInt(args[0], 10);
@@ -71,7 +71,7 @@ const getHomeMenuSrc = ({page, remoteServers, localServers, inputText, inputInde
   }
 };
 
-const getTutorialPageSrc = (pageIndex, vrMode, flags, imgs) => {
+const getTutorialPageSrc = (pageIndex, vrMode, flags) => {
   const keyboardVrMode = vrMode === null || vrMode === 'keyboard';
 
   const content = (() => {
@@ -107,8 +107,8 @@ const getTutorialPageSrc = (pageIndex, vrMode, flags, imgs) => {
         <div style="display: flex; padding: 30px 100px; justify-content: center; align-items: center; flex-direction: column; flex-grow: 1">
           <div style="font-size: 30px; font-weight: 400;">Discover your superpowers</div>
           <div style="display: flex;">
-            <img src="${imgs.menu}" width="256" height="128" style="margin: 10px 0; margin-right: 28px;" />
-            <img src="${imgs.teleport}" width="256" height="128" style="margin: 10px 0;" />
+            <!-- <img src="${imgs.u}" width="256" height="128" style="margin: 10px 0; margin-right: 28px;" />
+            <img src="${imgs.teleport}" width="256" height="128" style="margin: 10px 0;" /> -->
           </div>
           <div style="width: 540px; margin-bottom: auto; font-size: 15px; font-weight: 400; flex-grow: 1">
             <p>This screen is the <b>MENU</b>. The menu has tools to edit your VR world, move between worlds, and change settings. It's showing you this tutorial.</p>
@@ -130,7 +130,7 @@ const getTutorialPageSrc = (pageIndex, vrMode, flags, imgs) => {
       case 2: return `\
         <div style="display: flex; padding: 30px 100px; justify-content: center; align-items: center; flex-direction: column; flex-grow: 1">
           <div style="font-size: 30px; font-weight: 400;">The cake is real</div>
-          <img src="${imgs.cake}" width="256" height="128" style="margin: 10px 0;" />
+          <!-- <img src="${imgs.cake}" width="256" height="128" style="margin: 10px 0;" /> -->
           <div style="width: 540px; margin-bottom: auto; font-size: 15px; font-weight: 400; flex-grow: 1">
             <p>In Zeo VR, your world is made up of <i>modules</i>. Modules are objects you can add to the world.</p>
             <p>For example, here is a <b>CAKE MODULE</b>:</p>
@@ -151,7 +151,7 @@ const getTutorialPageSrc = (pageIndex, vrMode, flags, imgs) => {
       case 3: return `\
         <div style="display: flex; padding: 30px 100px; justify-content: center; align-items: center; flex-direction: column; flex-grow: 1">
           <div style="font-size: 30px; font-weight: 400;">It's dangerous to go alone!</div>
-          <img src="${imgs.server}" width="256" height="128" style="margin: 10px 0;" />
+          <!-- <img src="${imgs.server}" width="256" height="128" style="margin: 10px 0;" /> -->
           <div style="width: 540px; margin-bottom: auto; font-size: 15px; font-weight: 400; flex-grow: 1">
             <p>Zeo VR lets you connect to multiplayer world servers.</p>
             <p>Look at the <b>LINK ORBS</b> around you. Each Link Orb is a server you can join. To connect to a server, <b>POINT</b> at it and click your <b>TRIGGER</b>.</p>
@@ -205,10 +205,10 @@ const getTutorialPageSrc = (pageIndex, vrMode, flags, imgs) => {
     }
   })();
 
-  return getHeaderWrappedSrc(content);
+  return getHeaderWrappedSrc(content, 'Introduction 1: Controls', {back: true});
 };
 
-const getMenuPageSrc = (flags, imgs) => getLogoWrappedSrc(`\
+const getMenuPageSrc = flags => getHeaderWrappedSrc(`\
   <div style="display: flex; height: 500px; justify-content: center; align-items: center;">
     <a style="display: flex; width: 200px; height: 200px; margin-right: 30px; border: 1px solid; border-radius: 5px; font-weight: 400; text-decoration: none; flex-direction: column; justify-content: center; align-items: center;" onclick="home:remoteServers">
       <div style="margin-bottom: 15px; font-size: 24px;">Remote servers</div>
@@ -227,25 +227,19 @@ const getMenuPageSrc = (flags, imgs) => getLogoWrappedSrc(`\
       ''
     }
   </div>
-`, imgs);
+`, 'Introduction videos');
 
-const getLogoWrappedSrc = (content, imgs) => `\
-  <div style="display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; flex-direction: column;">
-    <div style="display: flex; height: 100px; padding: 20px; font-size: 40px; box-sizing: border-box; align-items: center;">
-      <img src="${imgs.logo}" width="${100 / 2}" height="${158 / 2}" style="margin-right: 30px;" />
-      <div>zeo vr</div>
-    </div>
-    ${content}
-  </div>
-`;
-
-const getHeaderWrappedSrc = content => `\
+const getHeaderWrappedSrc = (content, headerText, {back = false} = {}) => `\
   <div style="display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; flex-direction: column;">
     <div style="display: flex; height: 100px; justify-content: center; align-items: center;">
-      <a style="display: flex; width: 100px; height: 100px; justify-content: center; align-items: center;" onclick="home:back">
-        <img src="${chevronLeftImgSrc}" width="80" height="80" />
-      </a>
-      <div style="margin-right: auto; font-size: 40px; font-weight: 400;">Welcome</div>
+      ${back ?
+        `<a style="display: flex; width: 100px; height: 100px; justify-content: center; align-items: center;" onclick="home:back">
+          <img src="${chevronLeftImgSrc}" width="80" height="80" />
+        </a>`
+      :
+        `<div style="width: 50px; height: 100px;"></div>`
+      }
+      <div style="margin-right: auto; font-size: 32px; font-weight: 400;">${headerText}</div>
     </div>
     ${content}
   </div>
