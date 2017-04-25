@@ -380,7 +380,7 @@ class Cyborg {
             SIDES.forEach(side => {
               const controllerMesh = controllerMeshes[side];
               const {rayMesh} = controllerMesh;
-              rayMesh.visible = mode === side;
+              rayMesh.visible = mode === side || mode === null;
             });
           };
           rend.on('open', _open);
@@ -397,7 +397,7 @@ class Cyborg {
               SIDES.forEach(side => {
                 const controllerMesh = controllerMeshes[side];
                 const {rayMesh} = controllerMesh;
-                rayMesh.visible = mode === side;
+                rayMesh.visible = mode === side || mode === null;
               });
             }
           };
