@@ -242,7 +242,7 @@ const getMenuPageSrc = (flags, imgs) => getWrappedSrc(`\
 
 const getWrappedSrc = (content, imgs) => `\
   <div style="display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; flex-direction: column;">
-    <div style="display: flex; height: 100px; padding: 20px; background-color: #000; font-size: 40px; color: #FFF; box-sizing: border-box; align-items: center;">
+    <div style="display: flex; height: 100px; padding: 20px; font-size: 40px; box-sizing: border-box; align-items: center;">
       <img src="${imgs.logo}" width="${100 / 2}" height="${158 / 2}" style="margin-right: 30px;" />
       <div>zeo vr</div>
     </div>
