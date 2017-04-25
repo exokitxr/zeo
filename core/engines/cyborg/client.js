@@ -49,6 +49,12 @@ class Cyborg {
           const {events} = jsUtils;
           const {EventEmitter} = events;
 
+          const solidMaterial = new THREE.MeshPhongMaterial({
+            color: 0x666666,
+            shininess: 0,
+            shading: THREE.FlatShading,
+          });
+
           class Player extends EventEmitter {
             constructor() {
               super();
@@ -326,27 +332,90 @@ class Cyborg {
                 return object;
               })();
               this.mesh = mesh;
+
+              const hudMesh = (() => {
+                const object = new THREE.Object3D();
+                // object.visible = false;
+
+                const circleMesh = (() => {
+                  const geometry = (() => {
+                    const geometry = new THREE.CylinderBufferGeometry(0.05, 0.05, 0.01, 8, 1)
+                      .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
+                      .applyMatrix(new THREE.Matrix4().makeRotationZ(Math.PI / 8));
+
+                    const _almostZero = v => Math.abs(v) < 0.001;
+
+                    const {array: positions} = geometry.getAttribute('position');
+                    const numPositions = positions.length / 3;
+                    for (let i = 0; i < numPositions; i++) {
+                      const baseIndex = i * 3;
+
+                      if (_almostZero(positions[baseIndex + 0]) && _almostZero(positions[baseIndex + 1])) {
+                        positions[baseIndex + 2] -= 0.005;
+                      }
+                    }
+
+                    geometry.computeVertexNormals();
+
+                    return geometry;
+                  })();
+                  const material = solidMaterial;
+
+                  const mesh = new THREE.Mesh(geometry, material);
+                  mesh.position.z = -0.1;
+
+                  const notchMesh = (() => {
+                    const geometry = new THREE.SphereBufferGeometry(0.005, 5, 4)
+                      .applyMatrix(new THREE.Matrix4().makeRotationY(Math.PI / 8));
+                      // .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
+                    const material = solidMaterial;
+
+                    const mesh = new THREE.Mesh(geometry, material);
+                    // mesh.position.z = 0.005 / 2;
+                    return mesh;
+                  })();
+                  mesh.add(notchMesh);
+
+                  return mesh;
+                })();
+                object.add(circleMesh);
+
+                return object;
+              })();
+              this.hudMesh = hudMesh;
             }
 
-            update(gamepadStatus) {
-              const {mesh} = this;
+            update(hmdStatus, gamepadStatus) {
+              const _updateMesh = () => {
+                const {mesh} = this;
 
-              mesh.position.copy(gamepadStatus.position);
-              mesh.quaternion.copy(gamepadStatus.rotation);
-              // mesh.scale.copy(gamepadStatus.scale);
+                mesh.position.copy(gamepadStatus.position);
+                mesh.quaternion.copy(gamepadStatus.rotation);
+                // mesh.scale.copy(gamepadStatus.scale);
 
-              const {buttons} = gamepadStatus;
-              mesh.padMesh.visible = buttons.pad.touched;
-              mesh.padMesh.position.y = buttons.pad.pressed ? -0.0025 : 0;
-              mesh.padMesh.material[0].color.setHex(buttons.pad.pressed ? BUTTON_COLOR_HIGHLIGHT : BUTTON_COLOR);
-              mesh.triggerMesh.visible = buttons.trigger.pressed;
-              mesh.gripMesh.visible = buttons.grip.pressed;
-              mesh.menuMesh.visible = buttons.menu.pressed;
-              const {axes} = gamepadStatus;
-              mesh.padMesh.position.x = axes[0] * 0.02;
-              mesh.padMesh.position.z = -axes[1] * 0.02;
+                const {buttons} = gamepadStatus;
+                mesh.padMesh.visible = buttons.pad.touched;
+                mesh.padMesh.position.y = buttons.pad.pressed ? -0.0025 : 0;
+                mesh.padMesh.material[0].color.setHex(buttons.pad.pressed ? BUTTON_COLOR_HIGHLIGHT : BUTTON_COLOR);
+                mesh.triggerMesh.visible = buttons.trigger.pressed;
+                mesh.gripMesh.visible = buttons.grip.pressed;
+                mesh.menuMesh.visible = buttons.menu.pressed;
+                const {axes} = gamepadStatus;
+                mesh.padMesh.position.x = axes[0] * 0.02;
+                mesh.padMesh.position.z = -axes[1] * 0.02;
 
-              mesh.updateMatrixWorld();
+                mesh.updateMatrixWorld();
+              };
+              const _updateHmdMesh = () => {
+                const {hudMesh} = this;
+
+                hudMesh.position.copy(hmdStatus.position);
+                hudMesh.quaternion.copy(hmdStatus.rotation);
+                hudMesh.scale.copy(hmdStatus.scale);
+              };
+
+              _updateMesh();
+              _updateHmdMesh();
             }
           }
 
@@ -363,8 +432,9 @@ class Cyborg {
           };
           SIDES.forEach(side => {
             const controller = controllers[side];
-            const {mesh: controllerMesh} = controller;
+            const {mesh: controllerMesh, hudMesh: controllerHudMesh} = controller;
             camera.parent.add(controllerMesh);
+            camera.parent.add(controllerHudMesh);
           });
 
           const controllerMeshes = {
@@ -395,7 +465,7 @@ class Cyborg {
               const gamepadStatus = gamepadsStatus[side];
 
               if (gamepadStatus) {
-                controller.update(gamepadStatus);
+                controller.update(hmdStatus, gamepadStatus);
               }
             });
 
@@ -426,13 +496,16 @@ class Cyborg {
           this._cleanup = () => {
             cleanup();
 
+            solidMaterial.dispose();
+
             const {mesh: hmdMesh, labelMesh: hmdLabelMesh} = hmd;
-            camera.parent.remove(hmdMesh);
+            camera.parent.remove(hmdMesh); // XXX need to destroy these meshes to prevent memory leaks
             camera.parent.remove(hmdLabelMesh);
             SIDES.forEach(side => {
               const controller = controllers[side];
-              const {mesh: controllerMesh} = controller;
+              const {mesh: controllerMesh, hudMesh: controllerHudMesh} = controller;
               camera.parent.remove(controllerMesh);
+              camera.parent.remove(controllerHudMesh);
             });
 
             rend.removeListener('update', _update);
