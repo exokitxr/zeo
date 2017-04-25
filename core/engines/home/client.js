@@ -371,7 +371,7 @@ class Home {
             const _makeEnvBoxMesh = () => {
               const size = SPHERE_RADIUS * 2;
 
-              const mesh = biolumi.makeMenuBoxMesh();
+              const mesh = biolumi.makeBoxMesh();
               const {geometry} = mesh;
               geometry.applyMatrix(new THREE.Matrix4().makeScale(size, size, size));
               return mesh;
