@@ -1006,15 +1006,22 @@ class WebVR {
             };
             const mousemove = e => {
               if (this.isPresenting) {
-                const {rotation: quaternion} = this;
+                const _handleGamepad = () => this.isPresenting && SIDES.indexOf(this.mode) !== -1 && (e.ctrlKey || e.altKey); // handled by the fake gamepad
+                const _handleDisplay = () => {
+                  const {rotation: quaternion} = this;
 
-                const rotation = new THREE.Euler().setFromQuaternion(quaternion, camera.rotation.order);
-                rotation.x = Math.max(Math.min(rotation.x - e.movementY * ROTATION_SPEED, Math.PI / 2), -Math.PI / 2);
-                rotation.y = mod(rotation.y - e.movementX * ROTATION_SPEED, Math.PI * 2);
-                quaternion.setFromEuler(rotation);
+                  const rotation = new THREE.Euler().setFromQuaternion(quaternion, camera.rotation.order);
+                  rotation.x = Math.max(Math.min(rotation.x - e.movementY * ROTATION_SPEED, Math.PI / 2), -Math.PI / 2);
+                  rotation.y = mod(rotation.y - e.movementX * ROTATION_SPEED, Math.PI * 2);
+                  quaternion.setFromEuler(rotation);
 
-                this.updateMatrix();
-                this.updateGamepads();
+                  this.updateMatrix();
+                  this.updateGamepads();
+
+                  return true;
+                };
+
+                _handleGamepad() || _handleDisplay();
               }
             };
             const pointerlockchange = e => {
@@ -1259,16 +1266,22 @@ class WebVR {
 
             this.updateProperties();
 
-            const wheel = e => {
+            const mousemove = e => {
+              if (this.displayIsInControllerMode()) {
+                if (e.ctrlKey) {
+                  this.move(-e.movementX, -e.movementY, 0);
+                } else if (e.altKey) {
+                  this.move(-e.movementX, 0, -e.movementY);
+                }
+              }
+            };
+            input.on('mousemove', mousemove);
+            const wheel = e => { // XXX port these over
               if (this.displayIsInControllerMode()) {
                 if (e.shiftKey) {
                   this.rotate(e.deltaX, e.deltaY);
-                } else if (e.ctrlKey) {
-                  this.move(0, 0, e.deltaY);
                 } else if (e.altKey) {
                   this.touch(e.deltaX, e.deltaY);
-                } else {
-                  this.move(e.deltaX, e.deltaY, 0);
                 }
 
                 e.preventDefault();
@@ -1277,6 +1290,7 @@ class WebVR {
             input.on('wheel', wheel);
 
             this._cleanup = () => {
+              input.removeListener('mousemove', mousemove);
               input.removeListener('wheel', wheel);
             };
           }
