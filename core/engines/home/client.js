@@ -190,7 +190,7 @@ class Home {
               fontStyle: biolumi.getFontStyle(),
             };
             const homeState = {
-              page: bootstrap.getTutorialFlag() ? ('tutorial:' + 0) : 'menu',
+              page: '',
               remoteServers: [],
               localServers: [],
               username: '',
@@ -316,6 +316,7 @@ class Home {
                 const mesh = new THREE.Mesh(geometry, material);
                 // mesh.position.y = -((WORLD_HEIGHT * (100 / HEIGHT)) / 2);
                 mesh.position.z = -1 + 0.001;
+                mesh.visible = false;
                 return mesh;
               })();
               object.add(videoMesh);
@@ -629,6 +630,13 @@ class Home {
                 args,
               };
             };
+            const _removeServerMeshes = () => {
+              const {children} = serversMesh;
+              for (let i = 0; i < children.length; i++) {
+                const child = children[i];
+                serversMesh.remove(child);
+              }
+            };
             const _setPage = page => {
               homeState.page = page;
 
@@ -637,16 +645,14 @@ class Home {
               _removeServerMeshes();
 
               const {cakeTagMesh} = menuMesh;
-              const pageIndex = parseInt(_parsePage(page).args[0], 10);
-              cakeTagMesh.visible = pageIndex === 2;
+              const n = parseInt(_parsePage(page).args[0], 10);
+              cakeTagMesh.visible = n === 2;
+
+              const {videoMesh} = menuMesh;
+              videoMesh.visible = n >= 0;
             };
-            const _removeServerMeshes = () => {
-              const {children} = serversMesh;
-              for (let i = 0; i < children.length; i++) {
-                const child = children[i];
-                serversMesh.remove(child);
-              }
-            };
+            _setPage(bootstrap.getTutorialFlag() ? ('tutorial:' + 0) : 'menu');
+
             const _openRemoteServersPage = () => {
               homeState.loading = true;
 
@@ -725,7 +731,7 @@ class Home {
                   return false;
                 }
               };
-              const _doServerMeshClick = () => {
+              /* const _doServerMeshClick = () => {
                 const hoverState = rend.getHoverState(side);
                 const {intersectionPoint} = hoverState;
 
@@ -867,7 +873,7 @@ class Home {
                 } else {
                   return false;
                 }
-              };
+              }; */
               const _doMenuMeshClick = () => {
                 const hoverState = rend.getHoverState(side);
                 const {anchor} = hoverState;
@@ -877,13 +883,20 @@ class Home {
                 if (onclick === 'home:next') {
                   const {page} = homeState;
                   const pageSpec = _parsePage(page);
-                  _setPage([pageSpec.name, parseInt(pageSpec.args[0], 10) + 1].join(':'));
+                  const n = parseInt(pageSpec.args[0], 10);
+                  _setPage([pageSpec.name, n + 1].join(':'));
 
                   return true;
                 } else if (onclick === 'home:back') {
                   const {page} = homeState;
                   const pageSpec = _parsePage(page);
-                  _setPage([pageSpec.name, parseInt(pageSpec.args[0], 10) - 1].join(':'));
+                  const n = parseInt(pageSpec.args[0], 10);
+
+                  if (n > 0) {
+                    _setPage([pageSpec.name, n - 1].join(':'));
+                  } else {
+                    _setPage('menu');
+                  }
 
                   return true;
                 } if (onclick === 'home:finishTutorial') {
@@ -1029,7 +1042,7 @@ class Home {
                 }
               };
 
-              _doTagMeshClick() || _doServerMeshClick() || _doEnvMeshClick() || _doMenuMeshClick();
+              _doTagMeshClick() || /*_doServerMeshClick() || _doEnvMeshClick() ||*/ _doMenuMeshClick();
             };
             input.on('trigger', _trigger, {
               priority: 1,
