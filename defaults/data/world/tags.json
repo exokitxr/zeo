@@ -25,31 +25,6 @@
         "exists": false
       }
     },
-    "efn08q": {
-      "type": "module",
-      "id": "efn08q",
-      "name": "/plugins/ambient-light",
-      "displayName": "ambient-light",
-      "description": "Provides a basic ambient light source.",
-      "version": "0.0.1",
-      "readme": null,
-      "matrix": [
-        1.9401973485946655,
-        1.3853570222854614,
-        0.4031476378440857,
-        5.567034625323328e-9,
-        -0.8199341571564221,
-        9.086803837529126e-9,
-        0.5724578638687318,
-        1.0000000183365498,
-        1,
-        1.00000001833655
-      ],
-      "metadata": {
-        "isStatic": false,
-        "exists": false
-      }
-    },
     "h5ypno": {
       "type": "module",
       "id": "h5ypno",
@@ -117,54 +92,6 @@
         }
       }
     },
-    "xiaz5w": {
-      "type": "entity",
-      "id": "xiaz5w",
-      "name": "ambient-light",
-      "displayName": "ambient-light",
-      "description": "Provides a basic ambient light source.",
-      "version": "0.0.1",
-      "readme": null,
-      "matrix": [
-        1.8463217973709107,
-        1.3853570201579668,
-        0.3686892362274196,
-        5.567034625323328e-9,
-        -0.8199341571564221,
-        9.086803837529126e-9,
-        0.5724578638687318,
-        1.0000000183365498,
-        1,
-        1.00000001833655
-      ],
-      "metadata": {
-        "isStatic": false,
-        "exists": false
-      },
-      "tagName": "ambient-light",
-      "attributes": {
-        "position": {
-          "value": [
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            1,
-            1,
-            1
-          ]
-        },
-        "color": {
-          "value": "#FFFFFF"
-        },
-        "intensity": {
-          "value": 0.2
-        }
-      }
-    },
     "zgsewb": {
       "type": "entity",
       "id": "zgsewb",
@@ -223,7 +150,72 @@
           "value": "#FFFFFF"
         },
         "intensity": {
-          "value": 2
+          "value": 1
+        },
+        "shadow": {
+          "value": false
+        }
+      }
+    },
+    "zgsewb2": {
+      "type": "entity",
+      "id": "zgsewb2",
+      "name": "directional-light",
+      "displayName": "directional-light",
+      "description": "Provides a basic directional light source.",
+      "version": "0.0.1",
+      "readme": null,
+      "matrix": [
+        -2.0011440702916174,
+        1.4319797542109005,
+        1.3087704188051177,
+        0.006806656760488237,
+        0.9341667204700038,
+        0.017844833549030353,
+        -0.3563253457383994,
+        0.9999999629944863,
+        1.000000035444366,
+        0.9999999936258022
+      ],
+      "metadata": {
+        "isStatic": false,
+        "exists": false
+      },
+      "tagName": "directional-light",
+      "attributes": {
+        "position": {
+          "value": [
+            -3,
+            3,
+            0,
+            0,
+            0,
+            0,
+            1,
+            1,
+            1,
+            1
+          ]
+        },
+        "lookat": {
+          "value": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            1,
+            1,
+            1
+          ]
+        },
+        "color": {
+          "value": "#FFFFFF"
+        },
+        "intensity": {
+          "value": 1
         },
         "shadow": {
           "value": false
