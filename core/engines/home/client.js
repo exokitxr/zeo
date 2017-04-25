@@ -283,6 +283,44 @@ class Home {
               object.add(planeMesh);
               object.planeMesh = planeMesh;
 
+              const videoMesh = (() => {
+                const geometry = new THREE.PlaneBufferGeometry(WORLD_WIDTH, WORLD_HEIGHT * ((HEIGHT - 200) / HEIGHT));
+                const texture = new THREE.Texture(
+                  transparentImg,
+                  THREE.UVMapping,
+                  THREE.ClampToEdgeWrapping,
+                  THREE.ClampToEdgeWrapping,
+                  THREE.NearestFilter,
+                  THREE.NearestFilter,
+                  THREE.RGBFormat,
+                  THREE.UnsignedByteType,
+                  16
+                );
+                texture.needsUpdate = true;
+                const material = new THREE.MeshBasicMaterial({
+                  map: texture,
+                  side: THREE.DoubleSide,
+                });
+
+                const video = document.createElement('video');
+                video.crossOrigin = 'Anonymous';
+                video.oncanplaythrough = () => {
+                  texture.image = video;
+                  texture.needsUpdate = true;
+                };
+                video.onerror = err => {
+                  console.warn(err);
+                };
+                video.src = 'https://rawgit.com/modulesio/zeo-data/72356f9186ab6af74b2ea733636f366c6e97de0f/video/sample.webm';
+
+                const mesh = new THREE.Mesh(geometry, material);
+                // mesh.position.y = -((WORLD_HEIGHT * (100 / HEIGHT)) / 2);
+                mesh.position.z = -1 + 0.001;
+                return mesh;
+              })();
+              object.add(videoMesh);
+              object.videoMesh = videoMesh;
+
               const scale = 2;
               const cakeTagMesh = tags.makeTag(zCakeNpmItemSpec);
               cakeTagMesh.position.y = -0.26;

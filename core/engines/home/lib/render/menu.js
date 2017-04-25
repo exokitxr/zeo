@@ -25,7 +25,7 @@ const viewCarouselImgSrc = 'data:image/svg+xml;base64,' + btoa(viewCarouselImg);
 const serverPlusImg = require('../img/server-plus');
 const serverPlusImgSrc = 'data:image/svg+xml;base64,' + btoa(serverPlusImg);
 const chevronLeftImg = require('../img/chevron-left');
-const chevronLeftIconSrc = 'data:image/svg+xml;base64,' + btoa(chevronLeftImg);
+const chevronLeftImgSrc = 'data:image/svg+xml;base64,' + btoa(chevronLeftImg);
 const lanConnectImg = require('../img/lan-connect');
 const lanConnectImgSrc = 'data:image/svg+xml;base64,' + btoa(lanConnectImg);
 const lanDisconnectImg = require('../img/lan-disconnect');
@@ -77,10 +77,9 @@ const getTutorialPageSrc = (pageIndex, vrMode, flags, imgs) => {
   const content = (() => {
     switch (pageIndex) {
       case 0: return `\
-        <div style="display: flex; padding: 30px 100px; justify-content: center; align-items: center; flex-direction: column; flex-grow: 1">
-          <video src="https://rawgit.com/modulesio/zeo-data/72356f9186ab6af74b2ea733636f366c6e97de0f/video/sample.webm" style="display: flex; width: ${WIDTH}px; height: ${HEIGHT - 100}px;">
-          <div style="display: flex; width: 100%; height: 100px;">
-            <a style="margin-left: auto; padding: 10px 15px; border: 2px solid; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:next">Next: Modules &gt;</a>
+        <div style="display: flex; padding: 0 50px; justify-content: center; align-items: center; flex-direction: column; flex-grow: 1;">
+          <div style="display: flex; width: 100%; height: 100px; margin-top: auto; justify-content: center; align-items: center;">
+            <a style="display: flex; margin-left: auto; padding: 10px 15px; border: 2px solid; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:next">Next: Modules</a>
           </div>
         </div>
       `;
@@ -186,10 +185,10 @@ const getTutorialPageSrc = (pageIndex, vrMode, flags, imgs) => {
     }
   })();
 
-  return getWrappedSrc(content, imgs);
+  return getHeaderWrappedSrc(content);
 };
 
-const getMenuPageSrc = (flags, imgs) => getWrappedSrc(`\
+const getMenuPageSrc = (flags, imgs) => getLogoWrappedSrc(`\
   <div style="display: flex; height: 500px; justify-content: center; align-items: center;">
     <a style="display: flex; width: 200px; height: 200px; margin-right: 30px; border: 1px solid; border-radius: 5px; font-weight: 400; text-decoration: none; flex-direction: column; justify-content: center; align-items: center;" onclick="home:remoteServers">
       <div style="margin-bottom: 15px; font-size: 24px;">Remote servers</div>
@@ -210,11 +209,23 @@ const getMenuPageSrc = (flags, imgs) => getWrappedSrc(`\
   </div>
 `, imgs);
 
-const getWrappedSrc = (content, imgs) => `\
+const getLogoWrappedSrc = (content, imgs) => `\
   <div style="display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; flex-direction: column;">
     <div style="display: flex; height: 100px; padding: 20px; font-size: 40px; box-sizing: border-box; align-items: center;">
       <img src="${imgs.logo}" width="${100 / 2}" height="${158 / 2}" style="margin-right: 30px;" />
       <div>zeo vr</div>
+    </div>
+    ${content}
+  </div>
+`;
+
+const getHeaderWrappedSrc = content => `\
+  <div style="display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; flex-direction: column;">
+    <div style="display: flex; height: 100px; justify-content: center; align-items: center;">
+      <a style="display: flex; width: 100px; height: 100px; justify-content: center; align-items: center;" onclick="home:back">
+        <img src="${chevronLeftImgSrc}" width="80" height="80" />
+      </a>
+      <div style="margin-right: auto; font-size: 40px;">Welcome</div>
     </div>
     ${content}
   </div>
@@ -271,7 +282,7 @@ const getRemoteServersSrc = (servers, pageIndex, loading) => {
       <div style="display: flex; margin-right: auto; flex-direction: column;">
         <div style="display: flex; height: 100px; justify-content: center; align-items: center;">
           <a style="display: block; width: 100px;" onclick="home:menu">
-            <img src="${chevronLeftIconSrc}" width="80" height="80" />
+            <img src="${chevronLeftImgSrc}" width="80" height="80" />
           </a>
           <div style="margin-right: auto; font-size: 40px;">Remote servers</div>
         </div>
