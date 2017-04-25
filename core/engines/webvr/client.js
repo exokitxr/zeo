@@ -1259,10 +1259,8 @@ class WebVR {
 
             this.updateProperties();
 
-            const mousewheel = e => {
+            const wheel = e => {
               if (this.displayIsInControllerMode()) {
-                e.preventDefault();
-
                 if (e.shiftKey) {
                   this.rotate(e.deltaX, e.deltaY);
                 } else if (e.ctrlKey) {
@@ -1272,12 +1270,14 @@ class WebVR {
                 } else {
                   this.move(e.deltaX, e.deltaY, 0);
                 }
+
+                e.preventDefault();
               }
             };
-            input.on('mousewheel', mousewheel);
+            input.on('wheel', wheel);
 
             this._cleanup = () => {
-              input.removeListener('mousewheel', mousewheel);
+              input.removeListener('wheel', wheel);
             };
           }
 
