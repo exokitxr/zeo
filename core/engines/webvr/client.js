@@ -1058,7 +1058,7 @@ class WebVR {
             document.addEventListener('pointerlockerror', pointerlockerror);
 
             this._cleanup = () => {
-              this.emit('mode', null);
+              this.emit('modeChange', null);
 
               for (let i = 0; i < gamepads.length; i++) {
                 const gamepad = gamepads[i];
