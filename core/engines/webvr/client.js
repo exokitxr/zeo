@@ -502,7 +502,12 @@ class WebVR {
                   if (stereoscopic && _canPresent(bestDisplay)) {
                     return bestDisplay;
                   } else {
-                    return new FakeVRDisplay();
+                    const fakeVrDisplay = new FakeVRDisplay();
+                    fakeVrDisplay.on('modeChange', mode => {
+                      webvrInstance.emit('modeChange', mode);
+                    });
+                    fakeVrDisplay.listen();
+                    return fakeVrDisplay;
                   }
                 })();
 
@@ -932,9 +937,11 @@ class WebVR {
                     break;
                   case 90: // Z
                     this.mode = 'left';
+                    this.emit('modeChange', this.mode);
                     break;
                   case 67: // C
                     this.mode = 'right';
+                    this.emit('modeChange', this.mode);
                     break;
                   case 88: // X
                     keys.touch = true;
@@ -1051,6 +1058,8 @@ class WebVR {
             document.addEventListener('pointerlockerror', pointerlockerror);
 
             this._cleanup = () => {
+              this.emit('mode', null);
+
               for (let i = 0; i < gamepads.length; i++) {
                 const gamepad = gamepads[i];
                 gamepad.destroy();
@@ -1211,6 +1220,10 @@ class WebVR {
               const gamepad = gamepads[i];
               gamepad.updateProperties();
             }
+          }
+
+          listen() {
+            this.emit('modeChange', this.mode);
           }
 
           destroy() {

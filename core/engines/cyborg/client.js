@@ -16,7 +16,7 @@ class Cyborg {
 
   mount() {
     const {_archae: archae} = this;
-    const {metadata: {server: {enabled: serverEnabled}}} = archae;
+    const {metadata: {home: {enabled: homeEnabled}, server: {enabled: serverEnabled}}} = archae;
 
     let live = true;
     this._cleanup = () => {
@@ -243,6 +243,7 @@ class Cyborg {
                   });
 
                   const mesh = new THREE.Mesh(geometry, material);
+                  mesh.visible = false;
                   return mesh;
                 })();
                 object.add(rayMesh);
@@ -374,10 +375,12 @@ class Cyborg {
           rend.registerAuxObject('controllerMeshes', controllerMeshes);
 
           const _open = () => {
+            const mode = webvr.getMode();
+
             SIDES.forEach(side => {
               const controllerMesh = controllerMeshes[side];
               const {rayMesh} = controllerMesh;
-              rayMesh.visible = true;
+              rayMesh.visible = mode === side;
             });
           };
           rend.on('open', _open);
@@ -389,6 +392,16 @@ class Cyborg {
             });
           };
           rend.on('close', _close);
+          const _modeChange = mode => {
+            if (rend.isOpen() || homeEnabled) {
+              SIDES.forEach(side => {
+                const controllerMesh = controllerMeshes[side];
+                const {rayMesh} = controllerMesh;
+                rayMesh.visible = mode === side;
+              });
+            }
+          };
+          webvr.on('modeChange', _modeChange);
 
           const _getPlayer = () => player;
           const _getHmd = () => hmd;
@@ -454,6 +467,7 @@ class Cyborg {
 
             rend.removeListener('open', _open);
             rend.removeListener('close', _close);
+            webvr.removeListener('modeChange', _modeChange);
             rend.removeListener('update', _update);
             rend.removeListener('renderStart', _renderStart);
             rend.removeListener('renderEnd', _renderEnd);
