@@ -868,11 +868,11 @@ class WebVR {
               left: false,
               right: false,
               pad: false,
+              touch: false,
               trigger: false,
               grip: false,
               menu: false,
               shift: false,
-              alt: false,
             };
             this.keys = keys;
 
@@ -882,16 +882,16 @@ class WebVR {
               keys.left = false;
               keys.right = false;
               keys.pad = false;
+              keys.touch = false;
               keys.trigger = false;
               keys.grip = false;
               keys.menu = false;
-              keys.shift = false;
             };
 
             const gamepads = [new FakeVRGamepad(this, 0), new FakeVRGamepad(this, 1)];
             this.gamepads = gamepads;
 
-            this.mode = 'move';
+            this.mode = 'left';
 
             const keydown = e => {
               if (this.isPresenting) {
@@ -928,18 +928,17 @@ class WebVR {
                   case 18: // alt
                     keys.alt = true;
                     needsGamepadUpdate = true;
-
                     e.preventDefault(); // prevent losing page focus
-
                     break;
                   case 90: // Z
                     this.mode = 'left';
                     break;
-                  case 88: // X
-                    this.mode = 'move';
-                    break;
                   case 67: // C
                     this.mode = 'right';
+                    break;
+                  case 88: // X
+                    keys.touch = true;
+                    needsGamepadUpdate = true;
                     break;
                 }
 
@@ -977,12 +976,12 @@ class WebVR {
                     keys.grip = false;
                     needsGamepadUpdate = true;
                     break;
+                  case 88: // X
+                    keys.touch = false;
+                    needsGamepadUpdate = true;
+                    break;
                   case 16: // shift
                     keys.shift = false;
-                    break;
-                  case 18: // alt
-                    keys.alt = false;
-                    needsGamepadUpdate = true;
                     break;
                 }
 
@@ -1364,7 +1363,7 @@ class WebVR {
 
             if (this.displayIsInControllerMode()) {
               const {keys} = parent;
-              this.buttons[BUTTONS.PAD].touched = keys.alt;
+              this.buttons[BUTTONS.PAD].touched = keys.touch;
               this.buttons[BUTTONS.PAD].pressed = keys.pad;
               this.buttons[BUTTONS.TRIGGER].pressed = keys.trigger;
               this.buttons[BUTTONS.GRIP].pressed = keys.grip;
