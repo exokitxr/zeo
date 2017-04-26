@@ -128,6 +128,7 @@ class Home {
           '/core/engines/webvr',
           '/core/engines/biolumi',
           '/core/engines/cyborg',
+          '/core/engines/somnifer',
           '/core/engines/rend',
           '/core/engines/keyboard',
           '/core/engines/tags',
@@ -147,6 +148,7 @@ class Home {
             webvr,
             biolumi,
             cyborg,
+            somnifer,
             rend,
             keyboard,
             tags,
@@ -377,6 +379,10 @@ class Home {
                 })();
                 object.add(controlsMesh);
                 object.controlsMesh = controlsMesh;
+
+                const soundBody = somnifer.makeBody();
+                soundBody.setObject(object);
+                object.soundBody = soundBody;
 
                 return object;
               })();
@@ -1063,6 +1069,12 @@ class Home {
                   video.oncanplaythrough = () => {
                     texture.image = video;
                     texture.needsUpdate = true;
+
+                    const {soundBody} = videoMesh;
+                    soundBody.setInputElement(video);
+
+                    video.oncanplaythrough = null;
+                    video.onerror = null;
                   };
                   video.onerror = err => {
                     console.warn(err);
