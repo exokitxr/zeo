@@ -377,14 +377,22 @@ class Biolumi {
 
                     return result;
                   };
-                  const _makeAnchors = () => _renderTempElement(divEl => Array.from(divEl.querySelectorAll('a')).map(a => {
-                    const rect = a.getBoundingClientRect();
-                    const onclick = a.getAttribute('onclick') || null;
-                    const onmousedown = a.getAttribute('onmousedown') || null;
-                    const onmouseup = a.getAttribute('onmouseup') || null;
+                  const _makeAnchors = () => _renderTempElement(divEl =>
+                    Array.from(divEl.querySelectorAll('a'))
+                      .map(a => {
+                        if (a.style.display !== 'none' && a.style.visibility !== 'hidden') {
+                          const rect = a.getBoundingClientRect();
+                          const onclick = a.getAttribute('onclick') || null;
+                          const onmousedown = a.getAttribute('onmousedown') || null;
+                          const onmouseup = a.getAttribute('onmouseup') || null;
 
-                    return new Anchor(rect, onclick, onmousedown, onmouseup);
-                  }));
+                          return new Anchor(rect, onclick, onmousedown, onmouseup);
+                        } else {
+                          return null;
+                        }
+                      })
+                      .filter(anchor => anchor !== null)
+                  );
 
                   const layer = new Layer(this);
                   layer.anchors = null;
