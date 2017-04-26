@@ -11,20 +11,8 @@ const {
 
 const SERVERS_PER_PAGE = 8;
 
-const leftWhiteImg = require('../img/left-white');
-const leftWhiteImgSrc = 'data:image/svg+xml;base64,' + btoa(leftWhiteImg);
-const rightWhiteImg = require('../img/right-white');
-const rightWhiteImgSrc = 'data:image/svg+xml;base64,' + btoa(rightWhiteImg);
-const chipImg = require('../img/chip');
-const chipImgSrc = 'data:image/svg+xml;base64,' + btoa(chipImg);
-const earthImg = require('../img/earth');
-const earthImgSrc = 'data:image/svg+xml;base64,' + btoa(earthImg);
 const closeBoxImg = require('../img/close-box');
 const closeBoxImgSrc = 'data:image/svg+xml;base64,' + btoa(closeBoxImg);
-const earthBoxImg = require('../img/earth-box');
-const earthBoxImgSrc = 'data:image/svg+xml;base64,' + btoa(earthBoxImg);
-const viewCarouselImg = require('../img/view-carousel');
-const viewCarouselImgSrc = 'data:image/svg+xml;base64,' + btoa(viewCarouselImg);
 const serverPlusImg = require('../img/server-plus');
 const serverPlusImgSrc = 'data:image/svg+xml;base64,' + btoa(serverPlusImg);
 const chevronLeftImg = require('../img/chevron-left');
