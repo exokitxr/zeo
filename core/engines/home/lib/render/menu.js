@@ -23,6 +23,8 @@ const lanDisconnectImg = require('../img/lan-disconnect');
 const lanDisconnectImgSrc = 'data:image/svg+xml;base64,' + btoa(lanDisconnectImg);
 const mouseImg = require('../img/mouse');
 const mouseImgSrc = 'data:image/svg+xml;base64,' + btoa(mouseImg);
+const playImg = require('../img/play');
+const playImgSrc = 'data:image/svg+xml;base64,' + btoa(playImg);
 const upImg = require('../img/up');
 const downImg = require('../img/down');
 
@@ -92,7 +94,7 @@ const getTutorialPageSrc = (pageIndex, vrMode, flags) => {
                 <div style="display: flex; width: 10px; height: 10px; background-color: #CCC;"></div>
               </a>
             </div>
-            <div style="display: flex; width: 200px;"> -->
+            <div style="display: flex; width: 100%"> -->
               <a style="display: flex; margin-left: auto; margin-right: 40px; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:menu">Skip all tutorials</a>
               <a style="display: flex; padding: 10px 15px; border: 2px solid; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:next">Next: Modules</a>
             <!-- </div> -->
@@ -485,10 +487,44 @@ const getWalkthroughSrc = ({label}) => {
   </div>`;
 };
 
+const getMediaControlsSrc = ({paused, value}) => {
+  const buttonSrc = (() => {
+    if (paused) {
+      return `\
+        <a style="display: flex; width: 100%; height: ${HEIGHT - 300}px; justify-content: center; align-items: center;" onclick="media:play">
+          <img src="${playImgSrc}" width="80" height="80">
+        </a>
+      `;
+    } else  {
+      return `\
+        <a style="display: flex; width: 100%; height: ${HEIGHT - 300}px; justify-content: center; align-items: center;" onclick="media:pause">
+          <div></div>
+        </a>
+      `;
+    }
+  })();
+  const barSrc = `\
+    <a style="display: flex; width: 100%; height: 100px;" onclick="media:seek">
+      <svg xmlns="http://www.w3.org/2000/svg" width="1" height="16" viewBox="0 0 0.26458333 4.2333333" style="position: absolute; height: 100px; width: ${100 * (1 / 16)}px; margin-left: ${-(100 * (1 / 16) / 2)}px; left: ${value * 100}%;">
+        <path d="M0 0v4.233h.265V0H0" fill="#f44336"/>
+      </svg>
+      <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 8.4666666 8.4666666" preserveAspectRatio="none" style="width: ${WIDTH}px; height: 100px;">
+        <path d="M0 3.97v.528h8.467v-.53H0" fill="#ccc"/>
+      </svg>
+    </a>
+  `;
+
+  return `<div style="display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; padding: 100px 0; flex-direction: column; box-sizing: border-box;">
+    ${buttonSrc}
+    ${barSrc}
+  </div>`;
+};
+
 return {
   getHomeMenuSrc,
   getServerTagSrc,
   getWalkthroughSrc,
+  getMediaControlsSrc,
 };
 
 };

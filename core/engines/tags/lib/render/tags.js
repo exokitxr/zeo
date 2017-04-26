@@ -479,7 +479,7 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
               <svg xmlns="http://www.w3.org/2000/svg" width="1" height="16" viewBox="0 0 0.26458333 4.2333333" style="position: absolute; height: 100px; width: ${100 * (1 / 16)}px; margin-left: ${-(100 * (1 / 16) / 2)}px; left: ${value * 100}%;">
                 <path d="M0 0v4.233h.265V0H0" fill="#f44336"/>
               </svg>
-              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 8.4666666 8.4666666" preserveAspectRatio="none" style="width: ${OPEN_WIDTH}px; height:100px;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 8.4666666 8.4666666" preserveAspectRatio="none" style="width: ${OPEN_WIDTH}px; height: 100px;">
                 <path d="M0 3.97v.528h8.467v-.53H0" fill="#ccc"/>
               </svg>
             </div>

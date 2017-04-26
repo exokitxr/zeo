@@ -16,7 +16,6 @@ import {
   SERVER_HEIGHT,
   SERVER_WORLD_WIDTH,
   SERVER_WORLD_HEIGHT,
-  SERVER_WORLD_DEPTH,
 
   WALKTHROUGH_WIDTH,
   WALKTHROUGH_HEIGHT,
@@ -155,6 +154,10 @@ class Home {
               },
               vrMode: bootstrap.getVrMode(),
             };
+            const mediaState = {
+              paused: true,
+              value: 0,
+            };
             const focusState = {
               keyboardFocusState: null,
             };
@@ -235,40 +238,95 @@ class Home {
               object.planeMesh = planeMesh;
 
               const videoMesh = (() => {
-                const geometry = new THREE.PlaneBufferGeometry(WORLD_WIDTH, WORLD_HEIGHT * ((HEIGHT - 200) / HEIGHT));
-                const texture = new THREE.Texture(
-                  transparentImg,
-                  THREE.UVMapping,
-                  THREE.ClampToEdgeWrapping,
-                  THREE.ClampToEdgeWrapping,
-                  THREE.NearestFilter,
-                  THREE.NearestFilter,
-                  THREE.RGBFormat,
-                  THREE.UnsignedByteType,
-                  16
-                );
-                texture.needsUpdate = true;
-                const material = new THREE.MeshBasicMaterial({
-                  map: texture,
-                  side: THREE.DoubleSide,
-                });
+                const object = new THREE.Object3D();
+                object.position.z = -1;
+                object.visible = false;
 
-                const video = document.createElement('video');
-                video.crossOrigin = 'Anonymous';
-                video.oncanplaythrough = () => {
-                  texture.image = video;
+                const viewportMesh = (() => {
+                  const worldWidth = WORLD_WIDTH;
+                  const worldHeight = WORLD_HEIGHT * ((HEIGHT - 300) / HEIGHT);
+                  const geometry = new THREE.PlaneBufferGeometry(worldWidth, worldHeight);
+                  const texture = new THREE.Texture(
+                    transparentImg,
+                    THREE.UVMapping,
+                    THREE.ClampToEdgeWrapping,
+                    THREE.ClampToEdgeWrapping,
+                    THREE.NearestFilter,
+                    THREE.NearestFilter,
+                    THREE.RGBFormat,
+                    THREE.UnsignedByteType,
+                    16
+                  );
                   texture.needsUpdate = true;
-                };
-                video.onerror = err => {
-                  console.warn(err);
-                };
-                video.src = 'https://rawgit.com/modulesio/zeo-data/72356f9186ab6af74b2ea733636f366c6e97de0f/video/sample.webm';
+                  const material = new THREE.MeshBasicMaterial({
+                    map: texture,
+                    side: THREE.DoubleSide,
+                  });
 
-                const mesh = new THREE.Mesh(geometry, material);
-                // mesh.position.y = -((WORLD_HEIGHT * (100 / HEIGHT)) / 2);
-                mesh.position.z = -1 + 0.001;
-                mesh.visible = false;
-                return mesh;
+                  const video = document.createElement('video');
+                  video.crossOrigin = 'Anonymous';
+                  video.oncanplaythrough = () => {
+                    texture.image = video;
+                    texture.needsUpdate = true;
+                  };
+                  video.onerror = err => {
+                    console.warn(err);
+                  };
+                  video.src = 'https://rawgit.com/modulesio/zeo-data/72356f9186ab6af74b2ea733636f366c6e97de0f/video/sample.webm';
+
+                  const mesh = new THREE.Mesh(geometry, material);
+                  mesh.position.y = (WORLD_HEIGHT / 2) - (worldHeight / 2) - (WORLD_HEIGHT * (100 / HEIGHT));
+                  mesh.position.z = 0.001;
+
+                  return mesh;
+                })();
+                object.add(viewportMesh);
+
+                const controlsMesh = (() => {
+                  const menuUi = biolumi.makeUi({
+                    width: WORLD_WIDTH,
+                    height: WORLD_HEIGHT,
+                    color: [1, 1, 1, 0],
+                  });
+                  const mesh = menuUi.makePage(({
+                    media: {
+                      paused,
+                      value,
+                    },
+                  }) => ({
+                    type: 'html',
+                    src: menuRenderer.getMediaControlsSrc({
+                      paused,
+                      value,
+                    }),
+                    x: 0,
+                    y: 0,
+                    w: WIDTH,
+                    h: HEIGHT,
+                  }), {
+                    type: 'controls',
+                    state: {
+                      media: mediaState,
+                    },
+                    worldWidth: WORLD_WIDTH,
+                    worldHeight: WORLD_HEIGHT,
+                  });
+                  mesh.position.z = 0.002;
+
+                  const {page} = mesh;
+                  rend.addPage(page);
+                  page.update();
+
+                  cleanups.push(() => {
+                    rend.removePage(page);
+                  });
+
+                  return mesh;
+                })();
+                object.add(controlsMesh);
+                object.controlsMesh = controlsMesh;
+
+                return object;
               })();
               object.add(videoMesh);
               object.videoMesh = videoMesh;
@@ -450,11 +508,13 @@ class Home {
                   const keydown = e => {
                     if (e.keyCode === 67) { // C
                       _setNextWalkthroughIndex();
-
-                      input.removeListener('keydown', keydown);
                     }
                   };
                   input.on('keydown', keydown);
+
+                  return () => {
+                    input.removeListener('keydown', keydown);
+                  };
                 },
               },
               {
@@ -463,11 +523,13 @@ class Home {
                   const keydown = e => {
                     if (e.keyCode === 90) { // Z
                       _setNextWalkthroughIndex();
-
-                      input.removeListener('keydown', keydown);
                     }
                   };
                   input.on('keydown', keydown);
+
+                  return () => {
+                    input.removeListener('keydown', keydown);
+                  };
                 },
               },
               {
@@ -475,10 +537,12 @@ class Home {
                 listen: () => {
                   const mousedown = () => {
                     _setNextWalkthroughIndex();
-
-                    input.removeListener('mousedown', mousedown);
                   };
                   input.on('mousedown', mousedown);
+
+                  return () => {
+                    input.removeListener('mousedown', mousedown);
+                  };
                 },
               },
               {
@@ -487,11 +551,13 @@ class Home {
                   const keydown = e => {
                     if (e.keyCode === 69) { // E
                       _setNextWalkthroughIndex();
-
-                      input.removeListener('keydown', keydown);
                     }
                   };
                   input.on('keydown', keydown);
+
+                  return () => {
+                    input.removeListener('keydown', keydown);
+                  };
                 },
               },
               {
@@ -500,11 +566,13 @@ class Home {
                   const keydown = e => {
                     if (e.keyCode === 69) { // E
                       _setNextWalkthroughIndex();
-
-                      input.removeListener('keydown', keydown);
                     }
                   };
                   input.on('keydown', keydown);
+
+                  return () => {
+                    input.removeListener('keydown', keydown);
+                  };
                 },
               },
               {
@@ -513,11 +581,13 @@ class Home {
                   const keydown = e => {
                     if (e.keyCode === 81) { // Q
                       _setNextWalkthroughIndex();
-
-                      input.removeListener('keydown', keydown);
                     }
                   };
                   input.on('keydown', keydown);
+
+                  return () => {
+                    input.removeListener('keydown', keydown);
+                  };
                 },
               },
               {
@@ -526,11 +596,13 @@ class Home {
                   const keydown = e => {
                     if (e.keyCode === 70) { // F
                       _setNextWalkthroughIndex();
-
-                      input.removeListener('keydown', keydown);
                     }
                   };
                   input.on('keydown', keydown);
+
+                  return () => {
+                    input.removeListener('keydown', keydown);
+                  };
                 },
               },
               {
@@ -539,11 +611,13 @@ class Home {
                   const keydown = e => {
                     if (e.keyCode === 17) { // Ctrl
                       _setNextWalkthroughIndex();
-
-                      input.removeListener('keydown', keydown);
                     }
                   };
                   input.on('keydown', keydown);
+
+                  return () => {
+                    input.removeListener('keydown', keydown);
+                  };
                 },
               },
               {
@@ -552,11 +626,13 @@ class Home {
                   const keydown = e => {
                     if (e.keyCode === 18) { // Alt
                       _setNextWalkthroughIndex();
-
-                      input.removeListener('keydown', keydown);
                     }
                   };
                   input.on('keydown', keydown);
+
+                  return () => {
+                    input.removeListener('keydown', keydown);
+                  };
                 },
               },
               {
@@ -565,11 +641,13 @@ class Home {
                   const keydown = e => {
                     if (e.keyCode === 88) { // X
                       _setPage('menu');
-
-                      input.removeListener('keydown', keydown);
                     }
                   };
                   input.on('keydown', keydown);
+
+                  return () => {
+                    input.removeListener('keydown', keydown);
+                  };
                 },
               },
               {
@@ -578,6 +656,7 @@ class Home {
               },
             ];
             let walkthroughIndex = 0;
+            let walkthroughCancel = null;
             const _setWalkthroughIndex = n => {
               const oldScript = WALKTHROUGH_SCRIPTS[walkthroughIndex];
               const {mesh: oldMesh} = oldScript;
@@ -585,16 +664,21 @@ class Home {
                 oldMesh.visible = false;
               }
 
+              if (walkthroughCancel) {
+                walkthroughCancel();
+                walkthroughCancel = null;
+              }
+
+              walkthroughIndex = n;
+
               const script = WALKTHROUGH_SCRIPTS[n];
               const {mesh} = script;
               if (mesh) {
                 mesh.visible = true;
               }
 
-              walkthroughIndex = n;
-
               if (script.listen) {
-                script.listen();
+                walkthroughCancel = script.listen();
               }
             };
             const _setNextWalkthroughIndex = () => _setWalkthroughIndex(walkthroughIndex + 1);
@@ -633,7 +717,7 @@ class Home {
               return mesh;
             };
 
-            const _makeEnvHoverState = () => ({
+            /* const _makeEnvHoverState = () => ({
               hoveredServerMesh: null,
             });
             const envHoverStates = {
@@ -787,7 +871,7 @@ class Home {
               return object;
             };
             const serversMesh = new THREE.Object3D();
-            scene.add(serversMesh);
+            scene.add(serversMesh); */
 
             const _updatePages = () => {
               const {planeMesh} = menuMesh;
@@ -883,20 +967,20 @@ class Home {
                 args,
               };
             };
-            const _removeServerMeshes = () => {
+            /* const _removeServerMeshes = () => {
               const {children} = serversMesh;
               for (let i = 0; i < children.length; i++) {
                 const child = children[i];
                 serversMesh.remove(child);
               }
-            };
+            }; */
             const _setPage = page => {
               const {page: oldPage} = homeState;
               homeState.page = page;
 
               _updatePages();
 
-              _removeServerMeshes();
+              // _removeServerMeshes();
 
               if (page === 'menu' && oldPage !== 'menu') {
                 bootstrap.setTutorialFlag(false);
@@ -1193,7 +1277,7 @@ class Home {
                   _setPage('remoteServers'); // XXX rename this to menu
 
                   return true;
-                } else if (onclick === 'home:localServers') { // XXX fold this into remoteServers/menu
+                /* } else if (onclick === 'home:localServers') { // XXX fold this into remoteServers/menu
                   _openLocalServersPage();
 
                   return true;
@@ -1310,7 +1394,7 @@ class Home {
                 } else if (onclick === 'home:apiDocs') {
                   bootstrap.navigate('https://zeovr.io/docs');
 
-                  return true; // can't happen
+                  return true; // can't happen */
                 } else {
                   return false;
                 }
@@ -1474,7 +1558,7 @@ class Home {
                   grabbableState.grabMesh = grabMesh;
                 });
               };
-              const _updateEnvAnchors = () => {
+              /* const _updateEnvAnchors = () => {
                 const {gamepads} = webvr.getStatus();
                 const {children: serverMeshes} = serversMesh;
 
@@ -1566,13 +1650,13 @@ class Home {
                   cubeCamera.updateCubeMap(renderer, scene);
                   envMesh.visible = true;
                 }
-              };
+              }; */
 
               _updateTagPointerAnchors();
               _updateTagGrabAnchors();
-              _updateEnvAnchors();
+              /* _updateEnvAnchors();
               _updateServerMeshes();
-              _updateEnvMaps();
+              _updateEnvMaps(); */
             };
             rend.on('update', _update);
 
@@ -1582,17 +1666,14 @@ class Home {
               // bootstrap.removeListener('vrModeChange', _vrModeChange);
 
               scene.remove(menuMesh);
-              SIDES.forEach(side => {
-                scene.remove(menuDotMeshes[side]);
-                scene.remove(menuBoxMeshes[side]);
-
+              /* SIDES.forEach(side => {
                 scene.remove(serverDotMeshes[side]);
                 scene.remove(serverBoxMeshes[side]);
 
                 scene.remove(envDotMeshes[side]);
                 scene.remove(envBoxMeshes[side]);
               });
-              scene.remove(serversMesh);
+              scene.remove(serversMesh); */
 
               input.removeListener('trigger', _trigger);
 
