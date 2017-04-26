@@ -595,6 +595,7 @@ class Home {
                 const object = new THREE.Object3D();
                 object.position.y = 2;
                 object.position.z = -0.5;
+                object.visible = false;
 
                 for (let i = 0; i < 4; i++) {
                   const ringMesh = (() => {
@@ -621,6 +622,7 @@ class Home {
                 const object = new THREE.Object3D();
                 object.position.y = 5 / 2;
                 object.position.z = -5;
+                object.visible = false;
 
                 const cylinderMesh = (() => {
                   const geometry = new THREE.CylinderBufferGeometry(1, 1, 5, 10, 1, true);
@@ -650,6 +652,7 @@ class Home {
                 const mesh = new THREE.Mesh(geometry, material);
                 mesh.rotation.order = camera.rotation.order;
                 mesh.position.set(0.5, 2, -0.5);
+                mesh.visible = false;
 
                 scene.add(mesh);
 
@@ -665,6 +668,7 @@ class Home {
                 const object = new THREE.Object3D();
                 object.position.y = 1.5;
                 object.position.x = 1;
+                object.visible = false;
 
                 const outerMesh = (() => {
                   const result = new THREE.Object3D();
@@ -771,8 +775,10 @@ class Home {
                 };
               },
               () => {
-                const mesh = walkthroughMeshes.clickLabelMesh;
-                mesh.visible = true;
+                const meshes = [walkthroughMeshes.clickLabelMesh, walkthroughMeshes.targetMesh];
+                meshes.forEach(mesh => {
+                  mesh.visible = true;
+                });
 
                 const mousedown = () => {
                   _setNextWalkthroughIndex();
@@ -782,7 +788,9 @@ class Home {
                 return () => {
                   input.removeListener('mousedown', mousedown);
 
-                  mesh.visible = false;
+                  meshes.forEach(mesh => {
+                    mesh.visible = false;
+                  });
                 };
               },
               () => {
@@ -820,8 +828,10 @@ class Home {
                 };
               },
               () => {
-                const mesh = walkthroughMeshes.padButtonMesh;
-                mesh.visible = true;
+                const meshes = [walkthroughMeshes.padButtonMesh, walkthroughMeshes.goalMesh];
+                meshes.forEach(mesh => {
+                  mesh.visible = true;
+                });
 
                 const keydown = e => {
                   if (e.keyCode === 81) { // Q
@@ -833,12 +843,16 @@ class Home {
                 return () => {
                   input.removeListener('keydown', keydown);
 
-                  mesh.visible = false;
+                  meshes.forEach(mesh => {
+                    mesh.visible = false;
+                  });
                 };
               },
               () => {
-                const mesh = walkthroughMeshes.gripButtonMesh;
-                mesh.visible = true;
+                const meshes = [walkthroughMeshes.gripButtonMesh, walkthroughMeshes.legoMesh];
+                meshes.forEach(mesh => {
+                  mesh.visible = true;
+                });
 
                 const keydown = e => {
                   if (e.keyCode === 70) { // F
@@ -850,12 +864,16 @@ class Home {
                 return () => {
                   input.removeListener('keydown', keydown);
 
-                  mesh.visible = false;
+                  meshes.forEach(mesh => {
+                    mesh.visible = false;
+                  });
                 };
               },
               () => {
-                const mesh = walkthroughMeshes.xyMoveMesh;
-                mesh.visible = true;
+                const meshes = [walkthroughMeshes.xyMoveMesh, walkthroughMeshes.touchMesh];
+                meshes.forEach(mesh => {
+                  mesh.visible = true;
+                });
 
                 const keydown = e => {
                   if (e.keyCode === 17) { // Ctrl
@@ -867,12 +885,16 @@ class Home {
                 return () => {
                   input.removeListener('keydown', keydown);
 
-                  mesh.visible = false;
+                  meshes.forEach(mesh => {
+                    mesh.visible = false;
+                  });
                 };
               },
               () => {
-                const mesh = walkthroughMeshes.xzMoveMesh;
-                mesh.visible = true;
+                const meshes = [walkthroughMeshes.xzMoveMesh, walkthroughMeshes.touchMesh];
+                meshes.forEach(mesh => {
+                  mesh.visible = true;
+                });
 
                 const keydown = e => {
                   if (e.keyCode === 18) { // Alt
@@ -884,11 +906,13 @@ class Home {
                 return () => {
                   input.removeListener('keydown', keydown);
 
-                  mesh.visible = false;
+                  meshes.forEach(mesh => {
+                    mesh.visible = false;
+                  });
                 };
               },
               () => {
-                const mesh = walkthroughMeshes.padMesh;
+                const mesh = walkthroughMeshes.padMesh; // XXX add another target mesh for handling this case
                 mesh.visible = true;
 
                 const keydown = e => {
