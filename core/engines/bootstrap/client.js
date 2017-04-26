@@ -9,9 +9,6 @@ import {
 } from './lib/constants/menu';
 import menuRenderer from './lib/render/menu';
 
-const DEFAULT_MATRIX = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
-const NUM_INVENTORY_ITEMS = 4;
-
 const FACES = ['top', 'bottom', 'left', 'right', 'front', 'back'];
 
 class Bootstrap {
@@ -74,18 +71,6 @@ class Bootstrap {
             }
           }
           const worldTimer = new WorldTimer(startTime);
-          const userState = {
-            username: null,
-            world: null,
-            matrix: DEFAULT_MATRIX,
-            inventory: (() => {
-              const result = Array(NUM_INVENTORY_ITEMS);
-              for (let i = 0; i < NUM_INVENTORY_ITEMS; i++) {
-                result[i] = null;
-              }
-              return result;
-            })(),
-          };
 
           class BootstrapApi extends EventEmitter {
             getInitialUrl() {
@@ -149,59 +134,6 @@ class Bootstrap {
                     return null;
                   }
                 });
-            }
-
-            getUserState() {
-              return userState;
-            }
-
-            getUserStateJson() {
-              const {world, matrix} = userState;
-              return {
-                token: null,
-                state: {
-                  world,
-                  matrix,
-                  inventory,
-                },
-              };
-            }
-
-            setUserStateMatrix(matrix) {
-              userState.matrix = matrix;
-            }
-
-            getUserStateInventoryItem(index) {
-              return userState.inventory[index] || null;
-            }
-
-            setUserStateInventoryItem(index, item) {
-              userState.inventory[index] = item;
-            }
-
-            saveUserState() { // XXX rethink these
-              const {username} = userState;
-
-              if (hubEnabled && username) {
-                return fetch(hubUrl + '/hub/userState', {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify(_getUserStateJson()),
-                });
-              } else {
-                return Promise.resolve();
-              }
-            }
-
-            saveUserStateAsync() {
-              const {username} = userState;
-              if (hubEnabled && username) {
-                navigator.sendBeacon(hubUrl + '/hub/userState', new Blob([JSON.stringify(_getUserStateJson())], {
-                  type: 'application/json',
-                }));
-              }
             }
           }
           const bootstrapApi = new BootstrapApi();

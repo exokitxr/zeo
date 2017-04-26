@@ -12,24 +12,6 @@ const DEFAULT_TAGS = {
 const DEFAULT_FILES = {
   files: [],
 };
-const DEFAULT_EQUIPMENT = (() => {
-  const numEquipments = (1 + 1 + 2 + 8);
-
-  const result = Array(numEquipments);
-  for (let i = 0; i < numEquipments; i++) {
-    result[i] = null;
-  }
-  return result;
-})();
-const DEFAULT_INVENTORY = (() => {
-  const numItems = 9;
-
-  const result = Array(numItems);
-  for (let i = 0; i < numItems; i++) {
-    result[i] = null;
-  }
-  return result;
-})();
 
 class World {
   constructor(archae) {
@@ -98,94 +80,7 @@ class World {
         ensureWorldPathResult,
       ]) => {
         if (live) {
-          const equipmentJson = {
-            equipment: DEFAULT_EQUIPMENT,
-          };
-          const inventoryJson = {
-            inventory: DEFAULT_INVENTORY,
-          };
           const usersJson = {};
-
-          /* const _requestHub = ({token, method, url, body}) => new Promise((accept, reject) => {
-            const proxyReq = https.request({
-              method,
-              hostname: hubSpec.host,
-              port: hubSpec.port,
-              path: url,
-              headers: (() => {
-                const result = {
-                  'Authorization': 'Token ' + token, // XXX hub authentication now works via cookies, not this
-                };
-                if (body) {
-                  result['Content-Type'] = 'application/json';
-                }
-                return result;
-              })(),
-            });
-            proxyReq.on('error', err => {
-              reject(err);
-            });
-            proxyReq.on('response', proxyRes => {
-              const bs = [];
-              proxyRes.on('data', d => {
-                bs.push(d);
-              });
-              proxyRes.on('end', () => {
-                const b = Buffer.concat(bs);
-                const s = b.toString('utf8');
-
-                if (proxyRes.statusCode >= 200 && proxyRes.statusCode < 300) {
-                  if (/^application\/json(?:;|$)/.test(proxyRes.headers['content-type'])) {
-                    const j = JSON.parse(s);
-
-                    accept(j);
-                  } else {
-                    accept();
-                  }
-                } else {
-                  const err = new Error('hub returned failure status code: ' + JSON.stringify({
-                    method,
-                    url,
-                    statusCode: proxyRes.statusCode,
-                    body: s,
-                  }, null, 2));
-
-                  reject(err);
-                }
-              });
-              proxyRes.on('error', err => {
-                reject(err);
-              });
-            });
-
-            if (body) {
-              proxyReq.end(JSON.stringify(body));
-            } else {
-              proxyReq.end();
-            }
-          }); */
-          const _requestEquipmentJson = ({token}) => {
-            /* if (hubSpec) { // XXX re-enable hub equipment storage for these
-              return _requestHub({
-                token,
-                method: 'GET',
-                url: '/hub/world/equipment.json',
-              });
-            } else { */
-              return Promise.resolve(equipmentJson);
-            // }
-          };
-          const _requestInventoryJson = ({token}) => {
-            /* if (hubSpec) {
-              return _requestHub({
-                token,
-                method: 'GET',
-                url: '/hub/world/inventory.json',
-              });
-            } else { */
-              return Promise.resolve(inventoryJson);
-            // }
-          };
 
           const connections = [];
 
@@ -197,507 +92,449 @@ class World {
               const userId = match[1];
               const token = null; // XXX actually authenticate with the token here;
 
-              Promise.all([
-                _requestEquipmentJson({token}),
-                _requestInventoryJson({token}),
-              ])
-                .then(([
-                  equipmentJson,
-                  inventoryJson,
-                ]) => {
-                  const user = {
-                    id: userId,
-                    hands: {
-                      left: null,
-                      right: null,
-                    },
-                    equipment: equipmentJson.equipment,
-                    inventory: inventoryJson.inventory,
-                  };
-                  usersJson[userId] = user;
+              const user = {
+                id: userId,
+                hands: {
+                  left: null,
+                  right: null,
+                },
+              };
+              usersJson[userId] = user;
 
-                  const _sendInit = () => {
-                    const e = {
-                      type: 'init',
-                      args: [
-                        _arrayify(tagsJson.tags),
-                        equipmentJson.equipment,
-                        inventoryJson.inventory,
-                        _arrayify(usersJson),
-                      ],
-                    };
-                    const es = JSON.stringify(e);
-                    c.send(es);
-                  };
-                  _sendInit();
+              const _sendInit = () => {
+                const e = {
+                  type: 'init',
+                  args: [
+                    _arrayify(tagsJson.tags),
+                    _arrayify(usersJson),
+                  ],
+                };
+                const es = JSON.stringify(e);
+                c.send(es);
+              };
+              _sendInit();
 
-                  const _broadcast = (type, args) => {
-                    if (connections.some(connection => connection !== c)) {
+              const _broadcast = (type, args) => {
+                if (connections.some(connection => connection !== c)) {
+                  const e = {
+                    type,
+                    args,
+                  };
+                  const es = JSON.stringify(e);
+
+                  for (let i = 0; i < connections.length; i++) {
+                    const connection = connections[i];
+                    if (connection !== c) {
+                      connection.send(es);
+                    }
+                  }
+                }
+              };
+
+              c.on('message', s => {
+                const m = _jsonParse(s);
+
+                if (typeof m === 'object' && m !== null && typeof m.method === 'string' && Array.isArray(m.args) && typeof m.id === 'string') {
+                  const {method, id, args} = m;
+
+                  let cb = (err = null, result = null) => {
+                    if (c.readyState === OPEN) {
                       const e = {
-                        type,
-                        args,
+                        type: 'response',
+                        id: id,
+                        error: err,
+                        result: result,
                       };
                       const es = JSON.stringify(e);
-
-                      for (let i = 0; i < connections.length; i++) {
-                        const connection = connections[i];
-                        if (connection !== c) {
-                          connection.send(es);
-                        }
-                      }
+                      c.send(es);
                     }
                   };
-                  const _saveEquipment = _debounce(next => {
-                    /* if (hubSpec) {
-                      _requestHub({
-                        token,
-                        method: 'PUT',
-                        url: '/hub/world/equipment.json',
-                        body: equipmentJson,
-                      })
-                        .then(() => {
-                          next();
-                        })
-                        .catch(err => {
-                          console.warn('failed to save equipment', err);
-
-                          next();
-                        });
-                    } else { */
-                      console.warn('not saving equipment due to invalid hub spec');
-                    // }
-                  });
-                  const _saveInventory = _debounce(next => {
-                    /* if (hubSpec) {
-                      _requestHub({
-                        token,
-                        method: 'PUT',
-                        url: '/hub/world/inventory.json',
-                        body: inventoryJson,
-                      })
-                        .then(() => {
-                          next();
-                        })
-                        .catch(err => {
-                          console.warn('failed to save inventory', err);
-
-                          next();
-                        });
-                    } else { */
-                      console.warn('not saving inventory due to invalid hub spec');
-                    // }
-                  });
-
-                  c.on('message', s => {
-                    const m = _jsonParse(s);
-
-                    if (typeof m === 'object' && m !== null && typeof m.method === 'string' && Array.isArray(m.args) && typeof m.id === 'string') {
-                      const {method, id, args} = m;
-
-                      let cb = (err = null, result = null) => {
-                        if (c.readyState === OPEN) {
-                          const e = {
-                            type: 'response',
-                            id: id,
-                            error: err,
-                            result: result,
-                          };
-                          const es = JSON.stringify(e);
-                          c.send(es);
-                        }
-                      };
-
-                      if (method === 'addTag') {
-                        const [userId, itemSpec, dst] = args;
-
-                        cb = (cb => err => {
-                          if (!err) {
-                            _broadcast('addTag', [userId, itemSpec, dst]);
-                          }
-
-                          cb(err);
-                        })(cb);
-
-                        let match;
-                        if (dst === 'world') {
-                          const {id} = itemSpec;
-                          tagsJson.tags[id] = itemSpec;
-
-                          _saveTags();
-
-                          cb();
-                        } else if (match = dst.match(/^hand:(left|right)$/)) {
-                          const side = match[1];
-
-                          const user = usersJson[userId];
-                          const {hands} = user;
-                          hands[side] = itemSpec;
-
-                          cb();
-                        } else {
-                          cb(_makeInvalidArgsError());
-                        }
-                      } else if (method === 'removeTag') {
-                        const [userId, src] = args;
-
-                        cb = (cb => err => {
-                          if (!err) {
-                            _broadcast('removeTag', [userId, src]);
-                          }
-
-                          cb(err);
-                        })(cb);
-
-                        let match;
-                        if (match = src.match(/^world:(.+)$/)) {
-                          const id = match[1];
-
-                          delete tagsJson.tags[id];
-
-                          _saveTags();
-
-                          cb();
-                        } else if (match = src.match(/^hand:(left|right)$/)) {
-                          const side = match[1];
-
-                          const user = usersJson[userId];
-                          const {hands} = user;
-                          delete hands[side];
-
-                          cb();
-                        } else {
-                          cb(_makeInvalidArgsError());
-                        }
-                      } else if (method === 'moveTag') {
-                        const [userId, src, dst] = args;
-
-                        cb = (cb => err => {
-                          if (!err) {
-                            _broadcast('moveTag', [userId, src, dst]);
-                          }
-
-                          cb(err);
-                        })(cb);
-
-                        let match;
-                        if (match = src.match(/^world:(.+)$/)) {
-                          const id = match[1];
-
-                          if (match = dst.match(/^hand:(left|right)$/)) {
-                            const side = match[1];
-
-                            const itemSpec = tagsJson.tags[id];
-                            const user = usersJson[userId];
-                            const {hands} = user;
-                            hands[side] = itemSpec;
-                            delete tagsJson.tags[id];
-
-                            _saveTags();
-
-                            cb();
-                          } else {
-                            cb(_makeInvalidArgsError());
-                          }
-                        } else if (match = src.match(/^hand:(left|right)$/)) {
-                          const side = match[1];
-
-                          if (match = dst.match(/^world:(.+)$/)) {
-                            const matrixArrayString = match[1];
-                            const matrixArray = JSON.parse(matrixArrayString);
-
-                            const user = usersJson[userId];
-                            const {hands} = user;
-                            const itemSpec = hands[side];
-                            hands[side] = null;
-
-                            itemSpec.matrix = matrixArray;
-
-                            const {id} = itemSpec;
-                            tagsJson.tags[id] = itemSpec;
-
-                            _saveTags();
-
-                            cb();
-                          } else {
-                            cb(_makeInvalidArgsError());
-                          }
-                        } else {
-                          cb(_makeInvalidArgsError());
-                        }
-                      } else if (method === 'setTagAttribute') {
-                        const [userId, src, {name: attributeName, value: attributeValue}] = args;
-
-                        cb = (cb => err => {
-                          if (!err) {
-                            _broadcast('setTagAttribute', [userId, src, {name: attributeName, value: attributeValue}]);
-                          }
-
-                          cb(err);
-                        })(cb);
-
-                        let match;
-                        if (match = src.match(/^world:(.+)$/)) {
-                          const id = match[1];
-
-                          const itemSpec = tagsJson.tags[id];
-                          const {attributes} = itemSpec;
-                          if (attributeValue !== undefined) {
-                            attributes[attributeName] = {
-                              value: attributeValue,
-                            };
-                          } else {
-                            delete attributes[attributeName];
-                          }
-
-                          _saveTags();
-
-                          cb();
-                        } else {
-                          cb(_makeInvalidArgsError());
-                        }
-                      } else if (method === 'tagOpen') {
-                        const [userId, src] = args;
-
-                        cb = (cb => err => {
-                          if (!err) {
-                            _broadcast('tagOpen', [userId, src]);
-                          }
-
-                          cb(err);
-                        })(cb);
-
-                        let match;
-                        if (match = src.match(/^world:(.+)$/)) {
-                          const id = match[1];
-
-                          const itemSpec = tagsJson.tags[id];
-                          itemSpec.open = true;
-
-                          _saveTags();
-
-                          cb();
-                        } else {
-                          cb(_makeInvalidArgsError());
-                        }
-                      } else if (method === 'tagClose') {
-                        const [userId, src] = args;
-
-                        cb = (cb => err => {
-                          if (!err) {
-                            _broadcast('tagClose', [userId, src]);
-                          }
-
-                          cb(err);
-                        })(cb);
-
-                        let match;
-                        if (match = src.match(/^world:(.+)$/)) {
-                          const id = match[1];
-
-                          const itemSpec = tagsJson.tags[id];
-                          itemSpec.open = false;
-
-                          _saveTags();
-
-                          cb();
-                        } else {
-                          cb(_makeInvalidArgsError());
-                        }
-                      } else if (method === 'tagOpenDetails') {
-                        const [userId, src] = args;
-
-                        cb = (cb => err => {
-                          if (!err) {
-                            _broadcast('tagOpenDetails', [userId, src]);
-                          }
-
-                          cb(err);
-                        })(cb);
-
-                        let match;
-                        if (match = src.match(/^(world|npm):(.+)$/)) {
-                          const type = match[1];
-                          const id = match[2];
-
-                          if (type === 'world') {
-                            const itemSpec = tagsJson.tags[id];
-                            itemSpec.details = true;
-
-                            _saveTags();
-                          }
-
-                          cb();
-                        } else {
-                          cb(_makeInvalidArgsError());
-                        }
-                      } else if (method === 'tagCloseDetails') {
-                        const [userId, src] = args;
-
-                        cb = (cb => err => {
-                          if (!err) {
-                            _broadcast('tagCloseDetails', [userId, src]);
-                          }
-
-                          cb(err);
-                        })(cb);
-
-                        let match;
-                        if (match = src.match(/^(world|npm):(.+)$/)) {
-                          const type = match[1];
-                          const id = match[2];
-
-                          if (type === 'world') {
-                            const itemSpec = tagsJson.tags[id];
-                            itemSpec.details = false;
-
-                            _saveTags();
-                          }
-
-                          cb();
-                        } else {
-                          cb(_makeInvalidArgsError());
-                        }
-                      } else if (method === 'tagPlay') {
-                        const [userId, src] = args;
-
-                        cb = (cb => err => {
-                          if (!err) {
-                            _broadcast('tagPlay', [userId, src]);
-                          }
-
-                          cb(err);
-                        })(cb);
-
-                        let match;
-                        if (match = src.match(/^world:(.+)$/)) {
-                          const id = match[1];
-
-                          const itemSpec = tagsJson.tags[id];
-                          itemSpec.paused = false;
-
-                          _saveTags();
-
-                          cb();
-                        } else {
-                          cb(_makeInvalidArgsError());
-                        }
-                      } else if (method === 'tagPause') {
-                        const [userId, src] = args;
-
-                        cb = (cb => err => {
-                          if (!err) {
-                            _broadcast('tagPause', [userId, src]);
-                          }
-
-                          cb(err);
-                        })(cb);
-
-                        let match;
-                        if (match = src.match(/^world:(.+)$/)) {
-                          const id = match[1];
-
-                          const itemSpec = tagsJson.tags[id];
-                          itemSpec.paused = true;
-
-                          _saveTags();
-
-                          cb();
-                        } else {
-                          cb(_makeInvalidArgsError());
-                        }
-                      } else if (method === 'tagSeek') {
-                        const [userId, src, value] = args;
-
-                        cb = (cb => err => {
-                          if (!err) {
-                            _broadcast('tagSeek', [userId, src, value]);
-                          }
-
-                          cb(err);
-                        })(cb);
-
-                        let match;
-                        if (match = src.match(/^world:(.+)$/)) {
-                          const id = match[1];
-
-                          const itemSpec = tagsJson.tags[id];
-                          itemSpec.value = value;
-
-                          _saveTags();
-
-                          cb();
-                        } else {
-                          cb(_makeInvalidArgsError());
-                        }
-                      } else if (method === 'tagSeekUpdate') {
-                        const [userId, src, value] = args;
-
-                        let match;
-                        if (match = src.match(/^world:(.+)$/)) {
-                          const id = match[1];
-
-                          const itemSpec = tagsJson.tags[id];
-                          itemSpec.value = value;
-
-                          _saveTags();
-
-                          cb();
-                        } else {
-                          cb(_makeInvalidArgsError());
-                        }
-                      } else if (method === 'loadModule') {
-                        const [userId, src] = args;
-
-                        _broadcast('loadModule', [userId, src]);
-
-                        cb();
-                      } else if (method === 'unloadModule') {
-                        const [userId, src] = args;
-
-                        _broadcast('unloadModule', [userId, src]);
-
-                        cb();
-                      } else if (method === 'broadcast') {
-                        const [detail] = args;
-
-                        _broadcast('message', [detail]);
+
+                  if (method === 'addTag') {
+                    const [userId, itemSpec, dst] = args;
+
+                    cb = (cb => err => {
+                      if (!err) {
+                        _broadcast('addTag', [userId, itemSpec, dst]);
+                      }
+
+                      cb(err);
+                    })(cb);
+
+                    let match;
+                    if (dst === 'world') {
+                      const {id} = itemSpec;
+                      tagsJson.tags[id] = itemSpec;
+
+                      _saveTags();
+
+                      cb();
+                    } else if (match = dst.match(/^hand:(left|right)$/)) {
+                      const side = match[1];
+
+                      const user = usersJson[userId];
+                      const {hands} = user;
+                      hands[side] = itemSpec;
+
+                      cb();
+                    } else {
+                      cb(_makeInvalidArgsError());
+                    }
+                  } else if (method === 'removeTag') {
+                    const [userId, src] = args;
+
+                    cb = (cb => err => {
+                      if (!err) {
+                        _broadcast('removeTag', [userId, src]);
+                      }
+
+                      cb(err);
+                    })(cb);
+
+                    let match;
+                    if (match = src.match(/^world:(.+)$/)) {
+                      const id = match[1];
+
+                      delete tagsJson.tags[id];
+
+                      _saveTags();
+
+                      cb();
+                    } else if (match = src.match(/^hand:(left|right)$/)) {
+                      const side = match[1];
+
+                      const user = usersJson[userId];
+                      const {hands} = user;
+                      delete hands[side];
+
+                      cb();
+                    } else {
+                      cb(_makeInvalidArgsError());
+                    }
+                  } else if (method === 'moveTag') {
+                    const [userId, src, dst] = args;
+
+                    cb = (cb => err => {
+                      if (!err) {
+                        _broadcast('moveTag', [userId, src, dst]);
+                      }
+
+                      cb(err);
+                    })(cb);
+
+                    let match;
+                    if (match = src.match(/^world:(.+)$/)) {
+                      const id = match[1];
+
+                      if (match = dst.match(/^hand:(left|right)$/)) {
+                        const side = match[1];
+
+                        const itemSpec = tagsJson.tags[id];
+                        const user = usersJson[userId];
+                        const {hands} = user;
+                        hands[side] = itemSpec;
+                        delete tagsJson.tags[id];
+
+                        _saveTags();
 
                         cb();
                       } else {
-                        const err = new Error('no such method:' + JSON.stringify(method));
-                        cb(err.stack);
+                        cb(_makeInvalidArgsError());
+                      }
+                    } else if (match = src.match(/^hand:(left|right)$/)) {
+                      const side = match[1];
+
+                      if (match = dst.match(/^world:(.+)$/)) {
+                        const matrixArrayString = match[1];
+                        const matrixArray = JSON.parse(matrixArrayString);
+
+                        const user = usersJson[userId];
+                        const {hands} = user;
+                        const itemSpec = hands[side];
+                        hands[side] = null;
+
+                        itemSpec.matrix = matrixArray;
+
+                        const {id} = itemSpec;
+                        tagsJson.tags[id] = itemSpec;
+
+                        _saveTags();
+
+                        cb();
+                      } else {
+                        cb(_makeInvalidArgsError());
                       }
                     } else {
-                      console.warn('invalid message', m);
+                      cb(_makeInvalidArgsError());
                     }
-                  });
+                  } else if (method === 'setTagAttribute') {
+                    const [userId, src, {name: attributeName, value: attributeValue}] = args;
 
-                  const cleanups = [];
-                  const cleanup = () => {
-                    for (let i = 0; i < cleanups.length; i++) {
-                      const cleanup = cleanups[i];
-                      cleanup();
+                    cb = (cb => err => {
+                      if (!err) {
+                        _broadcast('setTagAttribute', [userId, src, {name: attributeName, value: attributeValue}]);
+                      }
+
+                      cb(err);
+                    })(cb);
+
+                    let match;
+                    if (match = src.match(/^world:(.+)$/)) {
+                      const id = match[1];
+
+                      const itemSpec = tagsJson.tags[id];
+                      const {attributes} = itemSpec;
+                      if (attributeValue !== undefined) {
+                        attributes[attributeName] = {
+                          value: attributeValue,
+                        };
+                      } else {
+                        delete attributes[attributeName];
+                      }
+
+                      _saveTags();
+
+                      cb();
+                    } else {
+                      cb(_makeInvalidArgsError());
                     }
-                  };
+                  } else if (method === 'tagOpen') {
+                    const [userId, src] = args;
 
-                  c.on('close', () => {
-                    cleanup();
-                  });
+                    cb = (cb => err => {
+                      if (!err) {
+                        _broadcast('tagOpen', [userId, src]);
+                      }
 
-                  cleanups.push(() => {
-                    delete usersJson[userId];
-                  });
+                      cb(err);
+                    })(cb);
 
-                  connections.push(c);
-                  cleanups.push(() => {
-                    connections.splice(connections.indexOf(c), 1);
-                  });
-                })
-                .catch(err => {
-                  console.warn('failed to authenticate connection', err);
+                    let match;
+                    if (match = src.match(/^world:(.+)$/)) {
+                      const id = match[1];
 
-                  c.close();
-                });
+                      const itemSpec = tagsJson.tags[id];
+                      itemSpec.open = true;
+
+                      _saveTags();
+
+                      cb();
+                    } else {
+                      cb(_makeInvalidArgsError());
+                    }
+                  } else if (method === 'tagClose') {
+                    const [userId, src] = args;
+
+                    cb = (cb => err => {
+                      if (!err) {
+                        _broadcast('tagClose', [userId, src]);
+                      }
+
+                      cb(err);
+                    })(cb);
+
+                    let match;
+                    if (match = src.match(/^world:(.+)$/)) {
+                      const id = match[1];
+
+                      const itemSpec = tagsJson.tags[id];
+                      itemSpec.open = false;
+
+                      _saveTags();
+
+                      cb();
+                    } else {
+                      cb(_makeInvalidArgsError());
+                    }
+                  } else if (method === 'tagOpenDetails') {
+                    const [userId, src] = args;
+
+                    cb = (cb => err => {
+                      if (!err) {
+                        _broadcast('tagOpenDetails', [userId, src]);
+                      }
+
+                      cb(err);
+                    })(cb);
+
+                    let match;
+                    if (match = src.match(/^(world|npm):(.+)$/)) {
+                      const type = match[1];
+                      const id = match[2];
+
+                      if (type === 'world') {
+                        const itemSpec = tagsJson.tags[id];
+                        itemSpec.details = true;
+
+                        _saveTags();
+                      }
+
+                      cb();
+                    } else {
+                      cb(_makeInvalidArgsError());
+                    }
+                  } else if (method === 'tagCloseDetails') {
+                    const [userId, src] = args;
+
+                    cb = (cb => err => {
+                      if (!err) {
+                        _broadcast('tagCloseDetails', [userId, src]);
+                      }
+
+                      cb(err);
+                    })(cb);
+
+                    let match;
+                    if (match = src.match(/^(world|npm):(.+)$/)) {
+                      const type = match[1];
+                      const id = match[2];
+
+                      if (type === 'world') {
+                        const itemSpec = tagsJson.tags[id];
+                        itemSpec.details = false;
+
+                        _saveTags();
+                      }
+
+                      cb();
+                    } else {
+                      cb(_makeInvalidArgsError());
+                    }
+                  } else if (method === 'tagPlay') {
+                    const [userId, src] = args;
+
+                    cb = (cb => err => {
+                      if (!err) {
+                        _broadcast('tagPlay', [userId, src]);
+                      }
+
+                      cb(err);
+                    })(cb);
+
+                    let match;
+                    if (match = src.match(/^world:(.+)$/)) {
+                      const id = match[1];
+
+                      const itemSpec = tagsJson.tags[id];
+                      itemSpec.paused = false;
+
+                      _saveTags();
+
+                      cb();
+                    } else {
+                      cb(_makeInvalidArgsError());
+                    }
+                  } else if (method === 'tagPause') {
+                    const [userId, src] = args;
+
+                    cb = (cb => err => {
+                      if (!err) {
+                        _broadcast('tagPause', [userId, src]);
+                      }
+
+                      cb(err);
+                    })(cb);
+
+                    let match;
+                    if (match = src.match(/^world:(.+)$/)) {
+                      const id = match[1];
+
+                      const itemSpec = tagsJson.tags[id];
+                      itemSpec.paused = true;
+
+                      _saveTags();
+
+                      cb();
+                    } else {
+                      cb(_makeInvalidArgsError());
+                    }
+                  } else if (method === 'tagSeek') {
+                    const [userId, src, value] = args;
+
+                    cb = (cb => err => {
+                      if (!err) {
+                        _broadcast('tagSeek', [userId, src, value]);
+                      }
+
+                      cb(err);
+                    })(cb);
+
+                    let match;
+                    if (match = src.match(/^world:(.+)$/)) {
+                      const id = match[1];
+
+                      const itemSpec = tagsJson.tags[id];
+                      itemSpec.value = value;
+
+                      _saveTags();
+
+                      cb();
+                    } else {
+                      cb(_makeInvalidArgsError());
+                    }
+                  } else if (method === 'tagSeekUpdate') {
+                    const [userId, src, value] = args;
+
+                    let match;
+                    if (match = src.match(/^world:(.+)$/)) {
+                      const id = match[1];
+
+                      const itemSpec = tagsJson.tags[id];
+                      itemSpec.value = value;
+
+                      _saveTags();
+
+                      cb();
+                    } else {
+                      cb(_makeInvalidArgsError());
+                    }
+                  } else if (method === 'loadModule') {
+                    const [userId, src] = args;
+
+                    _broadcast('loadModule', [userId, src]);
+
+                    cb();
+                  } else if (method === 'unloadModule') {
+                    const [userId, src] = args;
+
+                    _broadcast('unloadModule', [userId, src]);
+
+                    cb();
+                  } else if (method === 'broadcast') {
+                    const [detail] = args;
+
+                    _broadcast('message', [detail]);
+
+                    cb();
+                  } else {
+                    const err = new Error('no such method:' + JSON.stringify(method));
+                    cb(err.stack);
+                  }
+                } else {
+                  console.warn('invalid message', m);
+                }
+              });
+
+              const cleanups = [];
+              const cleanup = () => {
+                for (let i = 0; i < cleanups.length; i++) {
+                  const cleanup = cleanups[i];
+                  cleanup();
+                }
+              };
+
+              c.on('close', () => {
+                cleanup();
+              });
+
+              cleanups.push(() => {
+                delete usersJson[userId];
+              });
+
+              connections.push(c);
+              cleanups.push(() => {
+                connections.splice(connections.indexOf(c), 1);
+              });
             }
           });
           const _saveFile = (p, j) => new Promise((accept, reject) => {

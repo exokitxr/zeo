@@ -129,12 +129,6 @@ class Rend {
           tab: 'status',
         };
 
-        const {matrix: matrixArray} = bootstrap.getUserState();
-        if (matrixArray) {
-          webvr.setStageMatrix(new THREE.Matrix4().fromArray(matrixArray));
-          webvr.updateStatus();
-        }
-
         const menuMesh = (() => {
           if (serverEnabled) {
             const menuMesh = (() => {
@@ -559,14 +553,6 @@ class Rend {
           _updateRenderer();
           _updateUiTimer();
           _updateUiTracker();
-        });
-
-        const unload = e => {
-          bootstrap.saveUserStateAsync();
-        };
-        window.addEventListener('unload', unload);
-        cleanups.push(() => {
-          window.removeEventListener('unload', unload);
         });
 
         class RendApi extends EventEmitter {

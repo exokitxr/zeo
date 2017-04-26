@@ -230,6 +230,9 @@ class WebVR {
             const stageMatrix = new THREE.Matrix4().makeTranslation(0, DEFAULT_USER_HEIGHT, 0);
             this.stageMatrix = stageMatrix;
 
+            const userStageMatrix = new THREE.Matrix4();
+            this.userStageMatrix = userStageMatrix;
+
             this.status = {
               hmd: _makeDefaultHmdStatus(),
               gamepads: new GamepadsStatus(
@@ -325,7 +328,7 @@ class WebVR {
                     });
                   }
 
-                  const userStageMatrix = new THREE.Matrix4().fromArray(bootstrap.getUserState().matrix);
+                  const {userStageMatrix} = this;
                   const displayStageMatrix = (display && display.stageParameters) ?
                     new THREE.Matrix4().fromArray(display.stageParameters.sittingToStandingTransform)
                   :
@@ -335,9 +338,9 @@ class WebVR {
                   this.updateStatus();
 
                   cleanups.push(() => {
-                    const {display} = this;
-
                     this.updateUserStageMatrix();
+
+                    const {display} = this;
                     if (display) {
                       display.resetPoseHard();
                     }
@@ -755,6 +758,11 @@ class WebVR {
             this.stageMatrix.copy(stageMatrix);
           }
 
+          resetPose() {
+            const {display} = this;
+            display.resetPose();
+          }
+
           updateUserStageMatrix() {
             const {display} = this;
 
@@ -765,8 +773,8 @@ class WebVR {
               :
                 new THREE.Matrix4().makeTranslation(0, DEFAULT_USER_HEIGHT, 0);
 
-              const userStageMatrix = stageMatrix.clone().multiply(new THREE.Matrix4().getInverse(displayStageMatrix));
-              const {position: userPosition, rotation: userQuaternion, scale: userScale} = _getPropertiesFromMatrix(userStageMatrix);
+              const localUserStageMatrix = stageMatrix.clone().multiply(new THREE.Matrix4().getInverse(displayStageMatrix));
+              const {position: userPosition, rotation: userQuaternion, scale: userScale} = _getPropertiesFromMatrix(localUserStageMatrix);
               const userRotationY = new THREE.Euler().setFromQuaternion(userQuaternion, camera.rotation.order).y;
 
               const {_frameData: frameData} = this;
@@ -775,19 +783,13 @@ class WebVR {
               const displayQuaternion = frameData.pose.orientation ? new THREE.Quaternion().fromArray(frameData.pose.orientation) : zeroQuaternion;
               const displayRotationY = new THREE.Euler().setFromQuaternion(displayQuaternion, camera.rotation.order).y;
 
-              const newUserStageMatrix = new THREE.Matrix4().compose(
+              const {userStageMatrix} = this;
+              userStageMatrix.compose(
                 userPosition.clone().add(displayPosition.clone().applyQuaternion(userQuaternion)),
                 new THREE.Quaternion().setFromEuler(new THREE.Euler(0, userRotationY + displayRotationY, 0, camera.rotation.order)),
                 userScale
               );
-
-              bootstrap.setUserStateMatrix(newUserStageMatrix.toArray());
             }
-          }
-
-          resetPose() {
-            const {display} = this;
-            display.resetPose();
           }
 
           getMode() {
