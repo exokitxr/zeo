@@ -566,7 +566,7 @@ class Home {
               })();
               result.xzMoveMesh = xzMoveMesh;
 
-              const touchMoveMesh = (() => {
+              const padMesh = (() => {
                 const walkthroughMesh = _makeWalkthroughMesh('X + $MOUSE');
                 walkthroughMesh.position.y = 0.1;
 
@@ -574,7 +574,7 @@ class Home {
                 leftControllerMesh.add(walkthroughMesh);
                 return walkthroughMesh;
               })();
-              result.touchMoveMesh = touchMoveMesh;
+              result.padMesh = padMesh;
 
               const targetMesh = (() => {
                 const object = new THREE.Object3D();
@@ -757,7 +757,7 @@ class Home {
                 },
               },
               {
-                mesh: walkthroughMeshes.touchMoveMesh,
+                mesh: walkthroughMeshes.padMesh,
                 listen: () => {
                   const keydown = e => {
                     if (e.keyCode === 88) { // X
