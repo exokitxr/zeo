@@ -284,8 +284,8 @@ class Home {
 
                 const controlsMesh = (() => {
                   const menuUi = biolumi.makeUi({
-                    width: WORLD_WIDTH,
-                    height: WORLD_HEIGHT,
+                    width: WIDTH,
+                    height: HEIGHT,
                     color: [1, 1, 1, 0],
                   });
                   const mesh = menuUi.makePage(({
