@@ -2050,7 +2050,7 @@ class Home {
                 const {viewportMesh: {material: {map: texture}}} = videoMesh;
                 const {image: media} = texture;
 
-                if (media.tagName === 'VIDEO' && !media.paused) {
+                if (videoMesh.visible && media.tagName === 'VIDEO') {
                   const {value: prevValue} = mediaState;
                   const nextValue = media.currentTime / media.duration;
 
