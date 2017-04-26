@@ -620,6 +620,20 @@ class Home {
               })();
               result.goalMesh = goalMesh;
 
+              const touchMesh = (() => {
+                const geometry = new THREE.BoxBufferGeometry(0.1, 0.1, 0.1);
+                const material = transparentMaterials.red;
+
+                const mesh = new THREE.Mesh(geometry, material);
+                mesh.rotation.order = camera.rotation.order;
+                mesh.position.set(0.5, 2, -0.5);
+
+                scene.add(mesh);
+
+                return mesh;
+              })();
+              result.touchMesh = touchMesh;
+
               return result;
             })();
             const WALKTHROUGH_SCRIPTS = [
@@ -1849,11 +1863,17 @@ class Home {
               const _updateWalkthroughMeshes = () => {
                 const uiTime = biolumi.getUiTime();
 
+                const v = (uiTime / 1000 * Math.PI * 0.1) % (Math.PI * 2);
+
                 const {targetMesh} = walkthroughMeshes;
-                targetMesh.rotation.z = (uiTime / 1000 * Math.PI * 0.1) % (Math.PI * 2);
+                targetMesh.rotation.z = v;
 
                 const {goalMesh} = walkthroughMeshes;
-                goalMesh.rotation.y = (uiTime / 1000 * Math.PI * 0.1) % (Math.PI * 2);
+                goalMesh.rotation.y = v;
+
+                const {touchMesh} = walkthroughMeshes;
+                touchMesh.rotation.x = v;
+                touchMesh.rotation.y = v;
               };
               const _updateVideo = () => {
                 const {videoMesh} = menuMesh;
