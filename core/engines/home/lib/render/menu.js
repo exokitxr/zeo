@@ -478,7 +478,7 @@ const getServerTagSrc = ({worldname, url, running, local}) => {
 
 const getWalkthroughSrc = ({label}) => {
   return `<div style="display: flex; width: ${WALKTHROUGH_WIDTH}px; height: ${WALKTHROUGH_HEIGHT}px; color: #FFF; flex-direction: column;">
-    <div style="display: flex; margin: 10px; height: 150px; background-color: #000; font-size: 80px; font-weight: 400; justify-content: center; align-items: center;">${label}</div>
+    <div style="display: flex; margin: 10px; height: 150px; background-color: #000; font-size: 30px; font-weight: 400; justify-content: center; align-items: center;">${label}</div>
     <div style="position: relative; width: 100%; height: 50px;">
       <div style="position: absolute; bottom: 5px; left: ${(WALKTHROUGH_WIDTH / 2) - (50 / 2)}px; border-style: solid; border-width: 50px 25px 0 25px; border-color: #000 transparent transparent transparent;"></div>
     </div>

@@ -325,6 +325,7 @@ class Home {
                   worldWidth: WALKTHROUGH_WORLD_WIDTH,
                   worldHeight: WALKTHROUGH_WORLD_HEIGHT,
                 });
+                mesh.visible = false;
 
                 const {page} = mesh;
                 page.update();
@@ -339,24 +340,92 @@ class Home {
                 return mesh;
               };
 
-              const controllers = cyborg.getControllers();
-              const controllerLabelMeshes = SIDES.map(side => {
+              const _makeControllerWalkthroughMesh = side => {
                 const walkthroughMesh = _makeWalkthroughMesh(side === 'left' ? 'Z' : 'C');
                 walkthroughMesh.position.y = 0.1;
-                walkthroughMesh.side = side;
-                return walkthroughMesh;
-              });
-              controllerLabelMeshes.forEach(controllerLabelMesh => {
-                const {side} = controllerLabelMesh;
 
+                const controllers = cyborg.getControllers();
                 const controller = controllers[side];
                 const {mesh: controllerMesh} = controller;
-                controllerMesh.add(controllerLabelMesh);
-              });
+                controllerMesh.add(walkthroughMesh);
+
+                return walkthroughMesh;
+              };
+              const controllerLabelMeshes = {
+                left: _makeControllerWalkthroughMesh('left'),
+                right: _makeControllerWalkthroughMesh('right'),
+              };
               result.controllerLabelMeshes = controllerLabelMeshes;
+
+              const clickLabelMesh = (() => {
+                const walkthroughMesh = _makeWalkthroughMesh('Click');
+                walkthroughMesh.position.y = 0.1;
+
+                const controllers = cyborg.getControllers();
+                const {left: leftController} = controllers;
+                const {mesh: leftControllerMesh} = leftController;
+                leftControllerMesh.add(walkthroughMesh);
+                return walkthroughMesh;
+              })();
+              result.clickLabelMesh = clickLabelMesh;
 
               return result;
             })();
+            const WALKTHROUGH_SCRIPTS = [
+              {
+                mesh: walkthroughMeshes.controllerLabelMeshes.right,
+                listen: () => {
+                  const keypress = e => {
+                    if (e.keyCode === 67) { // C
+                      _setNextWalkthroughIndex();
+
+                      input.removeListener('keydown', keypress);
+                    }
+                  };
+                  input.on('keydown', keypress);
+                },
+              },
+              {
+                mesh: walkthroughMeshes.controllerLabelMeshes.left,
+                listen: () => {
+                  const keypress = e => {
+                    if (e.keyCode === 90) { // Z
+                      _setNextWalkthroughIndex();
+
+                      input.removeListener('keydown', keypress);
+                    }
+                  };
+                  input.on('keydown', keypress);
+                },
+              },
+              {
+                mesh: walkthroughMeshes.clickLabelMesh,
+                listen: () => {
+                  const mousedown = () => {
+                    _setNextWalkthroughIndex();
+
+                    input.removeListener('mousedown', mousedown);
+                  };
+                  input.on('mousedown', mousedown);
+                },
+              },
+            ];
+            let walkthroughIndex = 0;
+            const _setWalkthroughIndex = n => {
+              const oldScript = WALKTHROUGH_SCRIPTS[walkthroughIndex];
+              const {mesh: oldMesh} = oldScript;
+              oldMesh.visible = false;
+
+              const script = WALKTHROUGH_SCRIPTS[n];
+              const {mesh} = script;
+              mesh.visible = true;
+
+              walkthroughIndex = n;
+
+              script.listen();
+            };
+            const _setNextWalkthroughIndex = () => _setWalkthroughIndex(walkthroughIndex + 1);
+            _setWalkthroughIndex(0);
 
             const _makeGrabState = () => ({
               tagMesh: null,
