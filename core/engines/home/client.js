@@ -340,13 +340,17 @@ class Home {
                 return mesh;
               };
 
+              const controllers = cyborg.getControllers();
+              const controllerMeshes = {
+                left: controllers.left.mesh,
+                right: controllers.right.mesh,
+              };
+
               const _makeControllerWalkthroughMesh = side => {
                 const walkthroughMesh = _makeWalkthroughMesh(side === 'left' ? 'Z' : 'C');
                 walkthroughMesh.position.y = 0.1;
 
-                const controllers = cyborg.getControllers();
-                const controller = controllers[side];
-                const {mesh: controllerMesh} = controller;
+                const controllerMesh = controllerMeshes[side];
                 controllerMesh.add(walkthroughMesh);
 
                 return walkthroughMesh;
@@ -361,13 +365,81 @@ class Home {
                 const walkthroughMesh = _makeWalkthroughMesh('Click');
                 walkthroughMesh.position.y = 0.1;
 
-                const controllers = cyborg.getControllers();
-                const {left: leftController} = controllers;
-                const {mesh: leftControllerMesh} = leftController;
+                const {left: leftControllerMesh} = controllerMeshes;
                 leftControllerMesh.add(walkthroughMesh);
                 return walkthroughMesh;
               })();
               result.clickLabelMesh = clickLabelMesh;
+
+              const menuButtonMesh1 = (() => {
+                const walkthroughMesh = _makeWalkthroughMesh('E');
+                walkthroughMesh.position.y = 0.1;
+
+                const {left: leftControllerMesh} = controllerMeshes;
+                leftControllerMesh.add(walkthroughMesh);
+                return walkthroughMesh;
+              })();
+              result.menuButtonMesh1 = menuButtonMesh1;
+
+              const menuButtonMesh2 = (() => {
+                const walkthroughMesh = _makeWalkthroughMesh('E (again)');
+                walkthroughMesh.position.y = 0.1;
+
+                const {left: leftControllerMesh} = controllerMeshes;
+                leftControllerMesh.add(walkthroughMesh);
+                return walkthroughMesh;
+              })();
+              result.menuButtonMesh2 = menuButtonMesh2;
+
+              const padButtonMesh = (() => {
+                const walkthroughMesh = _makeWalkthroughMesh('Q');
+                walkthroughMesh.position.y = 0.1;
+
+                const {left: leftControllerMesh} = controllerMeshes;
+                leftControllerMesh.add(walkthroughMesh);
+                return walkthroughMesh;
+              })();
+              result.padButtonMesh = padButtonMesh;
+
+              const gripButtonMesh = (() => {
+                const walkthroughMesh = _makeWalkthroughMesh('F');
+                walkthroughMesh.position.y = 0.1;
+
+                const {left: leftControllerMesh} = controllerMeshes;
+                leftControllerMesh.add(walkthroughMesh);
+                return walkthroughMesh;
+              })();
+              result.gripButtonMesh = gripButtonMesh;
+
+              const xyMoveMesh = (() => {
+                const walkthroughMesh = _makeWalkthroughMesh('<span>Ctrl + </span>$MOUSE');
+                walkthroughMesh.position.y = 0.1;
+
+                const {left: leftControllerMesh} = controllerMeshes;
+                leftControllerMesh.add(walkthroughMesh);
+                return walkthroughMesh;
+              })();
+              result.xyMoveMesh = xyMoveMesh;
+
+              const xzMoveMesh = (() => {
+                const walkthroughMesh = _makeWalkthroughMesh('Alt + $MOUSE');
+                walkthroughMesh.position.y = 0.1;
+
+                const {left: leftControllerMesh} = controllerMeshes;
+                leftControllerMesh.add(walkthroughMesh);
+                return walkthroughMesh;
+              })();
+              result.xzMoveMesh = xzMoveMesh;
+
+              const touchMoveMesh = (() => {
+                const walkthroughMesh = _makeWalkthroughMesh('X + $MOUSE');
+                walkthroughMesh.position.y = 0.1;
+
+                const {left: leftControllerMesh} = controllerMeshes;
+                leftControllerMesh.add(walkthroughMesh);
+                return walkthroughMesh;
+              })();
+              result.touchMoveMesh = touchMoveMesh;
 
               return result;
             })();
@@ -375,27 +447,27 @@ class Home {
               {
                 mesh: walkthroughMeshes.controllerLabelMeshes.right,
                 listen: () => {
-                  const keypress = e => {
+                  const keydown = e => {
                     if (e.keyCode === 67) { // C
                       _setNextWalkthroughIndex();
 
-                      input.removeListener('keydown', keypress);
+                      input.removeListener('keydown', keydown);
                     }
                   };
-                  input.on('keydown', keypress);
+                  input.on('keydown', keydown);
                 },
               },
               {
                 mesh: walkthroughMeshes.controllerLabelMeshes.left,
                 listen: () => {
-                  const keypress = e => {
+                  const keydown = e => {
                     if (e.keyCode === 90) { // Z
                       _setNextWalkthroughIndex();
 
-                      input.removeListener('keydown', keypress);
+                      input.removeListener('keydown', keydown);
                     }
                   };
-                  input.on('keydown', keypress);
+                  input.on('keydown', keydown);
                 },
               },
               {
@@ -407,6 +479,97 @@ class Home {
                     input.removeListener('mousedown', mousedown);
                   };
                   input.on('mousedown', mousedown);
+                },
+              },
+              {
+                mesh: walkthroughMeshes.menuButtonMesh1,
+                listen: () => {
+                  const keydown = e => {
+                    if (e.keyCode === 69) { // E
+                      _setNextWalkthroughIndex();
+
+                      input.removeListener('keydown', keydown);
+                    }
+                  };
+                  input.on('keydown', keydown);
+                },
+              },
+              {
+                mesh: walkthroughMeshes.menuButtonMesh2,
+                listen: () => {
+                  const keydown = e => {
+                    if (e.keyCode === 69) { // E
+                      _setNextWalkthroughIndex();
+
+                      input.removeListener('keydown', keydown);
+                    }
+                  };
+                  input.on('keydown', keydown);
+                },
+              },
+              {
+                mesh: walkthroughMeshes.padButtonMesh,
+                listen: () => {
+                  const keydown = e => {
+                    if (e.keyCode === 81) { // Q
+                      _setNextWalkthroughIndex();
+
+                      input.removeListener('keydown', keydown);
+                    }
+                  };
+                  input.on('keydown', keydown);
+                },
+              },
+              {
+                mesh: walkthroughMeshes.gripButtonMesh,
+                listen: () => {
+                  const keydown = e => {
+                    if (e.keyCode === 70) { // F
+                      _setNextWalkthroughIndex();
+
+                      input.removeListener('keydown', keydown);
+                    }
+                  };
+                  input.on('keydown', keydown);
+                },
+              },
+              {
+                mesh: walkthroughMeshes.xyMoveMesh,
+                listen: () => {
+                  const keydown = e => {
+                    if (e.keyCode === 17) { // Ctrl
+                      _setNextWalkthroughIndex();
+
+                      input.removeListener('keydown', keydown);
+                    }
+                  };
+                  input.on('keydown', keydown);
+                },
+              },
+              {
+                mesh: walkthroughMeshes.xzMoveMesh,
+                listen: () => {
+                  const keydown = e => {
+                    if (e.keyCode === 18) { // Alt
+                      _setNextWalkthroughIndex();
+
+                      input.removeListener('keydown', keydown);
+                    }
+                  };
+                  input.on('keydown', keydown);
+                },
+              },
+              {
+                mesh: walkthroughMeshes.touchMoveMesh,
+                listen: () => {
+                  const keydown = e => {
+                    if (e.keyCode === 88) { // X
+                      console.log('done controlle tutorial'); // XXX
+
+                      input.removeListener('keydown', keydown);
+                    }
+                  };
+                  input.on('keydown', keydown);
                 },
               },
             ];

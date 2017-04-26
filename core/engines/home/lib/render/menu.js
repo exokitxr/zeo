@@ -33,6 +33,8 @@ const lanConnectImg = require('../img/lan-connect');
 const lanConnectImgSrc = 'data:image/svg+xml;base64,' + btoa(lanConnectImg);
 const lanDisconnectImg = require('../img/lan-disconnect');
 const lanDisconnectImgSrc = 'data:image/svg+xml;base64,' + btoa(lanDisconnectImg);
+const mouseImg = require('../img/mouse');
+const mouseImgSrc = 'data:image/svg+xml;base64,' + btoa(mouseImg);
 const upImg = require('../img/up');
 const downImg = require('../img/down');
 
@@ -477,8 +479,11 @@ const getServerTagSrc = ({worldname, url, running, local}) => {
 };
 
 const getWalkthroughSrc = ({label}) => {
+  label = label.replace(/\$MOUSE/g, `<img src="${mouseImgSrc}" width="24" height="24">`);
+console.log('got label', {label});
+
   return `<div style="display: flex; width: ${WALKTHROUGH_WIDTH}px; height: ${WALKTHROUGH_HEIGHT}px; color: #FFF; flex-direction: column;">
-    <div style="display: flex; margin: 10px; height: 150px; background-color: #000; font-size: 30px; font-weight: 400; justify-content: center; align-items: center;">${label}</div>
+    <div style="display: flex; margin: 10px; height: 150px; background-color: #000; font-size: 24px; font-weight: 400; justify-content: center; align-items: center;">${label}</div>
     <div style="position: relative; width: 100%; height: 50px;">
       <div style="position: absolute; bottom: 5px; left: ${(WALKTHROUGH_WIDTH / 2) - (50 / 2)}px; border-style: solid; border-width: 50px 25px 0 25px; border-color: #000 transparent transparent transparent;"></div>
     </div>
