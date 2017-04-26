@@ -194,6 +194,8 @@ class Home {
             const solidMaterials = {
               red: _makeSolidMaterial(0xF44336),
               white: _makeSolidMaterial(0xFFFFFF),
+              blue: _makeSolidMaterial(0x2196F3),
+              green: _makeSolidMaterial(0x4CAF50),
             };
             const _makeTransparentMaterial = color => new THREE.MeshPhongMaterial({
               color: color,
@@ -633,6 +635,71 @@ class Home {
                 return mesh;
               })();
               result.touchMesh = touchMesh;
+
+              const legoMesh = (() => {
+                const object = new THREE.Object3D();
+                object.position.y = 1.5;
+                object.position.x = 1;
+
+                const outerMesh = (() => {
+                  const result = new THREE.Object3D();
+                  result.position.x = -0.05 / 2;
+
+                  [
+                    [0, 0],
+                    [-1, 1],
+                    [-1, 0],
+                    [-1, -1],
+                  ].forEach(coord => {
+                    const boxMesh = (() => {
+                      const geometry = new THREE.BoxBufferGeometry(0.05, 0.05, 0.05);
+                      const material = solidMaterials.blue;
+
+                      const mesh = new THREE.Mesh(geometry, material);
+                      mesh.position.x = coord[0] * 0.05;
+                      mesh.position.y = coord[1] * 0.05;
+                      return mesh;
+                    })();
+                    result.add(boxMesh);
+                  });
+
+                  return result;
+                })();
+                object.add(outerMesh);
+                object.outerMesh = outerMesh;
+
+                const innerMesh = (() => {
+                  const result = new THREE.Object3D();
+
+                  [
+                    [0, 1],
+                    [1, 1],
+                    [1, 0],
+                    [1, -1],
+                    [0, -1],
+                  ].forEach(coord => {
+                    const boxMesh = (() => {
+                      const geometry = new THREE.BoxBufferGeometry(0.05, 0.05, 0.05);
+                      const material = solidMaterials.green;
+
+                      const mesh = new THREE.Mesh(geometry, material);
+                      mesh.position.x = coord[0] * 0.05;
+                      mesh.position.y = coord[1] * 0.05;
+                      return mesh;
+                    })();
+                    result.add(boxMesh);
+                  });
+
+                  return result;
+                })();
+                object.add(innerMesh);
+                object.innerMesh = innerMesh;
+
+                scene.add(object);
+
+                return object;
+              })();
+              result.legoMesh = legoMesh;
 
               return result;
             })();
