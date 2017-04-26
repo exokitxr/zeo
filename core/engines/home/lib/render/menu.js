@@ -165,38 +165,28 @@ const getTutorialPageSrc = (pageIndex, vrMode, flags) => {
           </div>
         </div>
       `;
-      /* `\
-        <div style="display: flex; height: 200px; justify-content: center; align-items: center;">
-          <div style="font-size: 50px;">Choose a server</div>
-        </div>
-        <div style="position: relative; display: flex; justify-content: center; align-items: center; flex-direction: column;">
-          <div style="width: 640px;">
-            ${!loading ? `\
-              ${error ? `\
-                <div style="display: flex; position: absolute; left: 0; right: 0; margin-top: ${-50 - 80}px; height: 80px; background-color: #F44336; color: #FFF; font-size: 30px; font-weight: 400; justify-content: center; align-items: center;">
-                  <div style="display: flex; width: 640px;">
-                    <div style="flex: 1;">
-                      ${error === 'EINPUT' ? 'Enter a token.' : ''}
-                      ${error === 'EAUTH' ? 'Invalid token.' : ''}
-                    </div>
-                    <a style="display: flex; width: 80px; border: 1px solid; border-radius: 5px; text-decoration: none; justify-content: center; align-items: center;" onclick="error:close">X</a>
-                  </div>
-                </div>
-              ` : ''}
-              <a style="position: relative; display: block; margin-bottom: 30px; background-color: #EEE; font-size: 40px; text-decoration: none; overflow: hidden;" onclick="home:focus:search">
-                ${focusType === 'search' ? `<div style="position: absolute; width: 2px; top: 2px; bottom: 2px; left: ${inputValue}px; background-color: #333;"></div>` : ''}
-                <div>${searchText}</div>
-                ${!searchText ? `<div style="color: #AAA;">Search servers</div>` : ''}
-              </a>
-            ` : `\
-              <div style="font-size: 40px;">Loading...</div>
-            `}
+      case 4: return `\
+        <div style="display: flex; padding: 0 50px; justify-content: center; align-items: center; flex-direction: column; flex-grow: 1;">
+          <div style="display: flex; width: 100%; height: 100px; margin-top: auto; justify-content: center; align-items: center;">
+            <!-- <div style="font-size: 30px; font-weight: 400;">It's dangerous to go alone!</div>
+            <img src="" width="256" height="128" style="margin: 10px 0;" />
+            <div style="width: 540px; margin-bottom: auto; font-size: 15px; font-weight: 400; flex-grow: 1">
+              <p>Zeo VR lets you connect to multiplayer world servers.</p>
+              <p>Look at the <b>LINK ORBS</b> around you. Each Link Orb is a server you can join. To connect to a server, <b>POINT</b> at it and click your <b>TRIGGER</b>.</p>
+              <p>Some servers are <b>LOCKED</b> until you get permission from the owner. Contact info for each server is written above the server, but you can <i>sneak a peek</i> through the orb.</p>
+              <p style="margin-bottom: 0; font-size: 18px;">
+                <i>
+                  To <b>LEARN</b> how to code your own worlds, read the <a onclick="home:apiDocs"><b>API Docs</b></a>.<br/>
+                  To <b>HIDE</b> the tutorial, click the <b>NEXT BUTTON</b>.<br/>
+                </i>
+              </p>
+            </div>
+            <div style="display: flex; width: 100%;"> -->
+  <a style="display: flex; margin-left: auto; padding: 10px 15px; border: 2px solid; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:next">Go to main menu</a>
+            <!-- </div> -->
           </div>
         </div>
-        <div style="display: flex; margin-top: auto; padding: 100px; justify-content: center; align-items: center;">
-          <a style="display: inline-block; padding: 10px 15px; border: 1px solid; border-radius: 5px; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:unfinishTutorial">Start tutorial</a>
-        </div>
-      `; */
+      `;
       default: return '';
     }
   })();
