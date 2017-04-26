@@ -833,6 +833,7 @@ class Biolumi {
           const _updateUiTimer = () => {
             uiTimer.update();
           };
+          const _getUiTime = () => uiTimer.getUiTime();
 
           const _getFonts = () => fonts;
           const _getMonospaceFonts = () => monospaceFonts;
@@ -1016,6 +1017,7 @@ class Biolumi {
             makeUi: _makeUi,
 
             updateUiTimer: _updateUiTimer,
+            getUiTime: _getUiTime,
 
             getFonts: _getFonts,
             getMonospaceFonts: _getMonospaceFonts,

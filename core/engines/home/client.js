@@ -195,6 +195,16 @@ class Home {
               red: _makeSolidMaterial(0xF44336),
               white: _makeSolidMaterial(0xFFFFFF),
             };
+            const _makeTransparentMaterial = color => new THREE.MeshPhongMaterial({
+              color: color,
+              // shininess: 0,
+              shading: THREE.FlatShading,
+              transparent: true,
+              opacity: 0.5,
+            });
+            const transparentMaterials = {
+              red: _makeTransparentMaterial(0xF44336),
+            };
 
             const controllerMeshOffset = new THREE.Vector3(0, 0, -0.02);
             const controllerMeshQuaternion = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, -1));
@@ -587,6 +597,28 @@ class Home {
                 return object;
               })();
               result.targetMesh = targetMesh;
+
+              const goalMesh = (() => {
+                const object = new THREE.Object3D();
+                object.position.y = 5 / 2;
+                object.position.z = -5;
+
+                const cylinderMesh = (() => {
+                  const geometry = new THREE.CylinderBufferGeometry(1, 1, 5, 10, 1, true);
+                  const material = transparentMaterials.red;
+
+                  const mesh = new THREE.Mesh(geometry, material);
+                  mesh.rotation.order = camera.rotation.order;
+                  return mesh;
+                })();
+                object.add(cylinderMesh);
+                object.cylinderMesh = cylinderMesh;
+
+                scene.add(object);
+
+                return object;
+              })();
+              result.goalMesh = goalMesh;
 
               return result;
             })();
@@ -1814,6 +1846,15 @@ class Home {
                   envMesh.visible = true;
                 }
               }; */
+              const _updateWalkthroughMeshes = () => {
+                const uiTime = biolumi.getUiTime();
+
+                const {targetMesh} = walkthroughMeshes;
+                targetMesh.rotation.z = (uiTime / 1000 * Math.PI * 0.1) % (Math.PI * 2);
+
+                const {goalMesh} = walkthroughMeshes;
+                goalMesh.rotation.y = (uiTime / 1000 * Math.PI * 0.1) % (Math.PI * 2);
+              };
               const _updateVideo = () => {
                 const {videoMesh} = menuMesh;
                 const {viewportMesh: {material: {map: texture}}} = videoMesh;
@@ -1840,6 +1881,7 @@ class Home {
               /* _updateEnvAnchors();
               _updateServerMeshes();
               _updateEnvMaps(); */
+              _updateWalkthroughMeshes();
               _updateVideo();
             };
             rend.on('update', _update);
