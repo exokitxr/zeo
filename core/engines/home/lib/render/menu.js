@@ -224,7 +224,8 @@ const getMenuPageSrc = flags => {
         ).join('\n')}
       </div>
       <div style="display: flex; height: 100px; padding: 0 50px; justify-content: center; align-items: center;">
-        <a style="display: flex; margin-left: auto; padding: 10px 15px; border: 2px solid; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:next">Skip tutorial</a>
+        <a style="display: flex; margin-left: auto; margin-right: 40px; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:menu">Skip tutorial</a>
+        <a style="display: flex; padding: 10px 15px; border: 2px solid; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:next">Next: Controls</a>
       </div>
       ${flags.localServers ?
         `<!-- <a style="display: flex; width: 200px; height: 200px; margin-right: 30px; border: 1px solid; border-radius: 5px; font-weight: 400; text-decoration: none; flex-direction: column; justify-content: center; align-items: center;" onclick="home:localServers">
@@ -304,10 +305,10 @@ const getRemoteServersSrc = (servers, pageIndex, loading) => {
     return `\
       <div style="display: flex; margin-right: auto; flex-direction: column;">
         <div style="display: flex; height: 100px; justify-content: center; align-items: center;">
-          <a style="display: block; width: 100px;" onclick="home:menu">
+          <a style="display: block; width: 100px;" onclick="home:back">
             <img src="${chevronLeftImgSrc}" width="80" height="80" />
           </a>
-          <div style="margin-right: auto; font-size: 40px;">Remote servers</div>
+          <div style="margin-right: auto; font-size: 32px; font-size: 400;">Remote servers</div>
         </div>
         ${getServersSrc(servers.slice(pageIndex * SERVERS_PER_PAGE, (pageIndex + 1) * SERVERS_PER_PAGE), loading, 'remoteServer')}
       </div>
@@ -458,7 +459,6 @@ const getServerTagSrc = ({worldname, url, running, local}) => {
 
 const getWalkthroughSrc = ({label}) => {
   label = label.replace(/\$MOUSE/g, `<img src="${mouseImgSrc}" width="24" height="24">`);
-console.log('got label', {label});
 
   return `<div style="display: flex; width: ${WALKTHROUGH_WIDTH}px; height: ${WALKTHROUGH_HEIGHT}px; color: #FFF; flex-direction: column;">
     <div style="display: flex; margin: 10px; height: 150px; background-color: #000; font-size: 24px; font-weight: 400; justify-content: center; align-items: center;">${label}</div>
