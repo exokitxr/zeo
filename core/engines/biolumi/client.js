@@ -174,7 +174,7 @@ class Biolumi {
             transparent: true,
             opacity: 0.5,
             // depthTest: false,
-            // depthWrite: false,
+            depthWrite: false,
             // alphaTest: 0.1,
           });
 
