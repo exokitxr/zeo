@@ -186,6 +186,15 @@ class Home {
               opacity: 0.5,
               transparent: true,
             });
+            const _makeSolidMaterial = color => new THREE.MeshPhongMaterial({
+              color: color,
+              // shininess: 0,
+              shading: THREE.FlatShading,
+            });
+            const solidMaterials = {
+              red: _makeSolidMaterial(0xF44336),
+              white: _makeSolidMaterial(0xFFFFFF),
+            };
 
             const controllerMeshOffset = new THREE.Vector3(0, 0, -0.02);
             const controllerMeshQuaternion = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, -1));
@@ -556,6 +565,28 @@ class Home {
                 return walkthroughMesh;
               })();
               result.touchMoveMesh = touchMoveMesh;
+
+              const targetMesh = (() => {
+                const object = new THREE.Object3D();
+                object.position.y = 2;
+                object.position.z = -0.5;
+
+                for (let i = 0; i < 4; i++) {
+                  const ringMesh = (() => {
+                    const geometry = new THREE.TorusBufferGeometry(0.05 * (i + 0.5), 0.05, 3, 8);
+                    const material = solidMaterials[(i % 2) === 0 ? 'red' : 'white'];
+
+                    const mesh = new THREE.Mesh(geometry, material);
+                    return mesh;
+                  })();
+                  object.add(ringMesh);
+                }
+
+                scene.add(object);
+
+                return object;
+              })();
+              result.targetMesh = targetMesh;
 
               return result;
             })();
