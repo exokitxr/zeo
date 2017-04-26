@@ -30,7 +30,7 @@ const downImg = require('../img/down');
 
 const makeRenderer = ({creatureUtils}) => {
 
-const getHomeMenuSrc = ({page, remoteServers, localServers, inputText, inputIndex, inputValue, loading, vrMode, focusType, flags}) => {
+const getHomeMenuSrc = ({page, remoteServers, localServers, inputText, inputIndex, inputValue, loading, vrMode, focusType, flags, videos}) => {
   const pageSpec = (() => {
     const split = page.split(':');
     const name = split[0];
@@ -45,7 +45,7 @@ const getHomeMenuSrc = ({page, remoteServers, localServers, inputText, inputInde
   if (name === 'controls') {
     return getControlsPageSrc(flags);
   } else if (name === 'menu') {
-    return getMenuPageSrc(flags);
+    return getMenuPageSrc(flags, videos);
   } else if (name === 'tutorial') {
     const {args} = pageSpec;
     const pageIndex = parseInt(args[0], 10);
@@ -223,22 +223,14 @@ const getControlsPageSrc = flags => {
   </div>`;
 };
 
-const getMenuPageSrc = flags => {
-  const videos = [
-    {},
-    {},
-    {},
-    {},
-    {},
-  ];
-
+const getMenuPageSrc = (flags, videos) => {
   return getHeaderWrappedSrc(`\
     <div style="display: flex; flex-direction: column; flex-grow: 1;">
       <div style="display: flex; margin-bottom: auto; flex-direction: column;">
         ${videos.map((video, index) =>
           `<a style="display: flex; padding: 10px 0; margin: 0 50px; text-decoration: none; align-items: center;" onclick="home:tutorial:${index}">
-             <div style="background-color: #EEE; height: 60px; width: ${60 * 1.5}px; margin-right: 20px;"></div>
-             <div style="display: flex; height: 60px; font-size: 24px; font-weight: 400;">Introduction ${index + 1}: Some video name</div>
+             <img src="${video.thumbnailImgData}" style="display: block; height: 60px; width: ${60 * 1.5}px; margin-right: 20px;">
+             <div style="display: flex; height: 60px; font-size: 24px; font-weight: 400;">${video.name}</div>
           </a>`
         ).join('\n')}
       </div>
@@ -425,7 +417,7 @@ const getCreateServerSrc = (inputText, inputIndex, inputValue, focusType) => {
   `;
 };
 
-const getServerTagSrc = ({worldname, url, running, local}) => {
+/* const getServerTagSrc = ({worldname, url, running, local}) => {
   return `\
     <div style="display: flex; width: ${SERVER_WIDTH}px; height: ${SERVER_HEIGHT}px; padding: 50px; background-color: #EEE; flex-direction: column; justify-content: center; align-items: center; box-sizing: border-box;">
       <div style="display: flex; width: 100%;">
@@ -474,7 +466,7 @@ const getServerTagSrc = ({worldname, url, running, local}) => {
       </div>
     </div>
   `;
-};
+}; */
 
 const getWalkthroughSrc = ({label}) => {
   label = label.replace(/\$MOUSE/g, `<img src="${mouseImgSrc}" width="24" height="24">`);
@@ -522,7 +514,7 @@ const getMediaControlsSrc = ({paused, value}) => {
 
 return {
   getHomeMenuSrc,
-  getServerTagSrc,
+  // getServerTagSrc,
   getWalkthroughSrc,
   getMediaControlsSrc,
 };

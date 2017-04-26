@@ -28,6 +28,34 @@ import {
 } from './lib/constants/menu';
 import menuRender from './lib/render/menu';
 
+const VIDEOS = [
+  {
+    name: 'Introduction 1: Controls',
+    video: 'https://raw.githubusercontent.com/modulesio/zeo-data/c6e33eedbbd7cabe3b3d18a8e7219048114ee722/video/sample1.webm',
+    thumbnail: 'https://raw.githubusercontent.com/modulesio/zeo-data/c6e33eedbbd7cabe3b3d18a8e7219048114ee722/video/sample1.png',
+  },
+  {
+    name: 'Introduction 2: Modules',
+    video: 'https://raw.githubusercontent.com/modulesio/zeo-data/c6e33eedbbd7cabe3b3d18a8e7219048114ee722/video/sample2.webm',
+    thumbnail: 'https://raw.githubusercontent.com/modulesio/zeo-data/c6e33eedbbd7cabe3b3d18a8e7219048114ee722/video/sample2.png',
+  },
+  {
+    name: 'Introduction 3: Multiplayer',
+    video: 'https://raw.githubusercontent.com/modulesio/zeo-data/c6e33eedbbd7cabe3b3d18a8e7219048114ee722/video/sample1.webm',
+    thumbnail: 'https://raw.githubusercontent.com/modulesio/zeo-data/c6e33eedbbd7cabe3b3d18a8e7219048114ee722/video/sample1.png',
+  },
+  {
+    name: 'Introduction 4: Host your own',
+    video: 'https://raw.githubusercontent.com/modulesio/zeo-data/c6e33eedbbd7cabe3b3d18a8e7219048114ee722/video/sample2.webm',
+    thumbnail: 'https://raw.githubusercontent.com/modulesio/zeo-data/c6e33eedbbd7cabe3b3d18a8e7219048114ee722/video/sample2.png',
+  },
+  {
+    name: 'Introduction 5: Host your own',
+    video: 'https://raw.githubusercontent.com/modulesio/zeo-data/c6e33eedbbd7cabe3b3d18a8e7219048114ee722/video/sample1.webm',
+    thumbnail: 'https://raw.githubusercontent.com/modulesio/zeo-data/c6e33eedbbd7cabe3b3d18a8e7219048114ee722/video/sample1.png',
+  },
+];
+
 const SIDES = ['left', 'right'];
 
 class Home {
@@ -53,14 +81,40 @@ class Home {
     });
 
     if (homeEnabled) {
-      const _requestZCakeNpmItemSpec = () => fetch('/archae/rend/mods?q=' + encodeURIComponent('/plugins/z-cake'))
+      const _requestBlobBase64 = blob => new Promise((accept, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(blob);
+        reader.onloadend = () => {
+          accept(reader.result);
+        };
+        reader.onerror = err => {
+          reject(err);
+        };
+      });
+      const _requestVideoSpecs = () => Promise.all(VIDEOS.map(videoSpec =>
+        fetch(videoSpec.thumbnail)
+          .then(res => res.blob()
+            .then(blob => _requestBlobBase64(blob))
+            .then(thumbnailImgData => {
+              const {name, video, thumbnail} = videoSpec;
+
+              return {
+                name,
+                video,
+                thumbnail,
+                thumbnailImgData,
+              };
+            })
+          )
+      ));
+      /* const _requestZCakeNpmItemSpec = () => fetch('/archae/rend/mods?q=' + encodeURIComponent('/plugins/z-cake'))
         .then(res => res.json()
           .then(itemSpec => {
             itemSpec.metadata.isStatic = true;
 
             return itemSpec;
           })
-        );
+        ); */
       const _requestDefaultTags = () => fetch('/archae/home/defaults/data/world/tags.json')
         .then(res => res.json()
           .then(({tags}) => Object.keys(tags).map(id => tags[id]))
@@ -81,7 +135,8 @@ class Home {
           '/core/utils/geometry-utils',
           '/core/utils/creature-utils',
         ]),
-        _requestZCakeNpmItemSpec(),
+        _requestVideoSpecs(),
+        // _requestZCakeNpmItemSpec(),
         _requestDefaultTags(),
       ])
         .then(([
@@ -99,7 +154,8 @@ class Home {
             geometryUtils,
             creatureUtils,
           ],
-          zCakeNpmItemSpec,
+          videos,
+          // zCakeNpmItemSpec,
           defaultTags,
         ]) => {
           if (live) {
@@ -188,6 +244,7 @@ class Home {
                     flags,
                     vrMode,
                   },
+                  videos,
                   focus: {
                     keyboardFocusState,
                   },
@@ -207,6 +264,7 @@ class Home {
                       vrMode,
                       focusType,
                       flags,
+                      videos,
                     }),
                     x: 0,
                     y: 0,
@@ -217,6 +275,7 @@ class Home {
                   type: 'home',
                   state: {
                     home: homeState,
+                    videos: videos,
                     focus: focusState,
                   },
                   worldWidth: WORLD_WIDTH,
@@ -967,13 +1026,6 @@ class Home {
                 serversMesh.remove(child);
               }
             }; */
-            const VIDEOS = [
-              'https://raw.githubusercontent.com/modulesio/zeo-data/dbddfdd562136f933916634ff1ff9e5f5c98b52b/video/sample1.webm',
-              'https://raw.githubusercontent.com/modulesio/zeo-data/dbddfdd562136f933916634ff1ff9e5f5c98b52b/video/sample2.webm',
-              'https://raw.githubusercontent.com/modulesio/zeo-data/dbddfdd562136f933916634ff1ff9e5f5c98b52b/video/sample1.webm',
-              'https://raw.githubusercontent.com/modulesio/zeo-data/dbddfdd562136f933916634ff1ff9e5f5c98b52b/video/sample2.webm',
-              'https://raw.githubusercontent.com/modulesio/zeo-data/dbddfdd562136f933916634ff1ff9e5f5c98b52b/video/sample1.webm',
-            ];
             let videoUpdateInterval = null;
             const _setPage = page => {
               const {page: oldPage} = homeState;
@@ -1015,7 +1067,7 @@ class Home {
                   video.onerror = err => {
                     console.warn(err);
                   };
-                  video.src = VIDEOS[id];
+                  video.src = videos[id].video;
                   return video;
                 })();
                 texture.image = transparentImg;
