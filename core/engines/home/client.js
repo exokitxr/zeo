@@ -993,13 +993,25 @@ class Home {
               } else {
                 _setWalkthroughIndex(10);
               }
+
+              const {videoMesh} = menuMesh;
+              const {viewportMesh: {material: {map: texture}}} = videoMesh;
+              const {image: media} = texture;
+              if (media.tagName === 'VIDEO' && !media.paused) {
+                media.pause();
+
+                mediaState.paused = true;
+
+                const {controlsMesh} = videoMesh;
+                const {page} = controlsMesh;
+                page.update();
+              }
+
               let match;
               if (match = page.match(/^tutorial:([0-9]+)$/)) {
                 const id = parseInt(match[1], 10);
 
-                const {videoMesh} = menuMesh;
                 videoMesh.visible = true;
-                const {viewportMesh: {material: {map: texture}}} = videoMesh;
                 const video = (() => {
                   const video = document.createElement('video');
                   video.width = 512;
@@ -1020,11 +1032,25 @@ class Home {
 
                 if (!videoUpdateInterval) {
                   videoUpdateInterval = setInterval(() => {
-                    texture.needssUpdate = true;
-                  }, 1000 / 30);
+                    const {image: media} = texture;
+
+                    if (media.tagName === 'VIDEO' && !media.paused) {
+                      const {value: prevValue} = mediaState;
+                      const nextValue = media.currentTime / media.duration;
+
+                      if (Math.abs(nextValue - prevValue) >= (1 / 1000)) { // to reduce the frequency of texture updates
+                        mediaState.value = nextValue;
+
+                        const {controlsMesh} = videoMesh;
+                        const {page} = controlsMesh;
+                        page.update();
+                      }
+
+                      texture.needsUpdate = true;
+                    }
+                  }, 1000 / 60);
                 }
               } else {
-                const {videoMesh} = menuMesh;
                 videoMesh.visible = false;
 
                 if (videoUpdateInterval) {
@@ -1310,6 +1336,36 @@ class Home {
                   return true;
                 } else if (onclick === 'home:menu') {
                   _setPage('remoteServers'); // XXX rename this to menu
+
+                  return true;
+                } else if (match = onclick.match(/^media:(play|pause|seek)$/)) {
+                  const action = match[1];
+
+                  const {videoMesh} = menuMesh;
+                  const {viewportMesh: {material: {map: {image: media}}}} = videoMesh;
+                  if (action === 'play') {
+                    if (media.paused) {
+                      media.play();
+
+                      mediaState.paused = false;
+
+                      const {controlsMesh} = videoMesh;
+                      const {page} = controlsMesh;
+                      page.update();
+                    }
+                  } else if (action === 'pause') {
+                    if (!media.paused) {
+                      media.pause();
+
+                      mediaState.paused = true;
+
+                      const {controlsMesh} = videoMesh;
+                      const {page} = controlsMesh;
+                      page.update();
+                    }
+                  } else if (action === 'seek') {
+                    media.currentTime = value * media.duration;
+                  }
 
                   return true;
                 /* } else if (onclick === 'home:localServers') { // XXX fold this into remoteServers/menu
