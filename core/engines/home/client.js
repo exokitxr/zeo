@@ -208,6 +208,19 @@ class Home {
               red: _makeTransparentMaterial(0xF44336),
             };
 
+            const targetDotMeshes = {
+              left: biolumi.makeDotMesh(),
+              right: biolumi.makeDotMesh(),
+            };
+            scene.add(targetDotMeshes.left);
+            scene.add(targetDotMeshes.right);
+            const targetBoxMeshes = {
+              left: biolumi.makeBoxMesh(),
+              right: biolumi.makeBoxMesh(),
+            };
+            scene.add(targetBoxMeshes.left);
+            scene.add(targetBoxMeshes.right);
+
             const controllerMeshOffset = new THREE.Vector3(0, 0, -0.02);
             const controllerMeshQuaternion = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, -1));
             const oneVector = new THREE.Vector3(1, 1, 1);
@@ -1948,6 +1961,41 @@ class Home {
                 touchMesh.rotation.x = v;
                 touchMesh.rotation.y = v;
               };
+              const _updateWalkthroughTargets = () => {
+                const {gamepads} = webvr.getStatus();
+
+                SIDES.forEach(side => {
+                  const targetDotMesh = targetDotMeshes[side];
+                  const targetBoxMesh =  targetBoxMeshes[side];
+
+                  const {targetMesh} = walkthroughMeshes;
+                  const boxTarget = new THREE.Box3().setFromObject(targetMesh); // XXX should not account for rotation
+                  const gamepad = gamepads[side];
+
+                  if (gamepad) {
+                    const {position: controllerPosition, rotation: controllerRotation, scale: controllerScale} = gamepad;
+                    const ray = new THREE.Ray(controllerPosition, new THREE.Vector3(0, 0, -1).applyQuaternion(controllerRotation));
+                    const intersectionPoint = ray.intersectBox(boxTarget);
+
+                    if (intersectionPoint) {
+                      targetDotMesh.position.copy(intersectionPoint);
+                      targetDotMesh.quaternion.copy(controllerRotation);
+                      targetDotMesh.visible = true;
+
+                      const {position: targetPosition} = _decomposeObjectMatrixWorld(targetMesh);
+                      targetBoxMesh.position.copy(targetPosition);
+                      targetBoxMesh.scale.copy(boxTarget.getSize());
+                      targetBoxMesh.visible = true;
+                    } else {
+                      targetDotMesh.visible = false;
+                      targetBoxMesh.visible = false;
+                    }
+                  } else {
+                    targetDotMesh.visible = false;
+                    targetBoxMesh.visible = false;
+                  }
+                });
+              };
               const _updateVideo = () => {
                 const {videoMesh} = menuMesh;
                 const {viewportMesh: {material: {map: texture}}} = videoMesh;
@@ -1975,6 +2023,7 @@ class Home {
               _updateServerMeshes();
               _updateEnvMaps(); */
               _updateWalkthroughMeshes();
+              _updateWalkthroughTargets();
               _updateVideo();
             };
             rend.on('update', _update);
@@ -1985,6 +2034,10 @@ class Home {
               // bootstrap.removeListener('vrModeChange', _vrModeChange);
 
               scene.remove(menuMesh);
+              SIDES.forEach(side => {
+                scene.remove(targetDotMeshes[side]);
+                scene.remove(targetBoxMeshes[side]);
+              });
               /* SIDES.forEach(side => {
                 scene.remove(serverDotMeshes[side]);
                 scene.remove(serverBoxMeshes[side]);
