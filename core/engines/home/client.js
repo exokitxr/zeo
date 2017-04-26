@@ -564,7 +564,7 @@ class Home {
                 listen: () => {
                   const keydown = e => {
                     if (e.keyCode === 88) { // X
-                      console.log('done controlle tutorial'); // XXX
+                      _setPage('menu');
 
                       input.removeListener('keydown', keydown);
                     }
@@ -572,23 +572,32 @@ class Home {
                   input.on('keydown', keydown);
                 },
               },
+              {
+                mesh: null,
+                listen: null,
+              },
             ];
             let walkthroughIndex = 0;
             const _setWalkthroughIndex = n => {
               const oldScript = WALKTHROUGH_SCRIPTS[walkthroughIndex];
               const {mesh: oldMesh} = oldScript;
-              oldMesh.visible = false;
+              if (oldMesh) {
+                oldMesh.visible = false;
+              }
 
               const script = WALKTHROUGH_SCRIPTS[n];
               const {mesh} = script;
-              mesh.visible = true;
+              if (mesh) {
+                mesh.visible = true;
+              }
 
               walkthroughIndex = n;
 
-              script.listen();
+              if (script.listen) {
+                script.listen();
+              }
             };
             const _setNextWalkthroughIndex = () => _setWalkthroughIndex(walkthroughIndex + 1);
-            _setWalkthroughIndex(0);
 
             const _makeGrabState = () => ({
               tagMesh: null,
@@ -888,14 +897,19 @@ class Home {
 
               _removeServerMeshes();
 
-              const {cakeTagMesh} = menuMesh;
-              const n = parseInt(_parsePage(page).args[0], 10);
-              cakeTagMesh.visible = n === 2;
+              if (page === 'controls') {
+                _setWalkthroughIndex(0);
+              } else {
+                _setWalkthroughIndex(10);
+              }
 
+              const n = parseInt(_parsePage(page).args[0], 10);
+              /* const {cakeTagMesh} = menuMesh;
+              cakeTagMesh.visible = n === 2; */
               const {videoMesh} = menuMesh;
               videoMesh.visible = n >= 0;
             };
-            _setPage(bootstrap.getTutorialFlag() ? ('tutorial:' + 0) : 'controls');
+            _setPage(bootstrap.getTutorialFlag() ? 'remoteServers' : 'controls');
 
             const _openRemoteServersPage = () => {
               homeState.loading = true;
