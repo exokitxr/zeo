@@ -704,168 +704,179 @@ class Home {
               return result;
             })();
             const WALKTHROUGH_SCRIPTS = [
-              {
-                mesh: walkthroughMeshes.controllerLabelMeshes.right,
-                listen: () => {
-                  const keydown = e => {
-                    if (e.keyCode === 67) { // C
-                      _setNextWalkthroughIndex();
-                    }
-                  };
-                  input.on('keydown', keydown);
+              () => {
+                const mesh = walkthroughMeshes.controllerLabelMeshes.right;
+                mesh.visible = true;
 
-                  return () => {
-                    input.removeListener('keydown', keydown);
-                  };
-                },
-              },
-              {
-                mesh: walkthroughMeshes.controllerLabelMeshes.left,
-                listen: () => {
-                  const keydown = e => {
-                    if (e.keyCode === 90) { // Z
-                      _setNextWalkthroughIndex();
-                    }
-                  };
-                  input.on('keydown', keydown);
-
-                  return () => {
-                    input.removeListener('keydown', keydown);
-                  };
-                },
-              },
-              {
-                mesh: walkthroughMeshes.clickLabelMesh,
-                listen: () => {
-                  const mousedown = () => {
+                const keydown = e => {
+                  if (e.keyCode === 67) { // C
                     _setNextWalkthroughIndex();
-                  };
-                  input.on('mousedown', mousedown);
+                  }
+                };
+                input.on('keydown', keydown);
 
-                  return () => {
-                    input.removeListener('mousedown', mousedown);
-                  };
-                },
-              },
-              {
-                mesh: walkthroughMeshes.menuButtonMesh1,
-                listen: () => {
-                  const keydown = e => {
-                    if (e.keyCode === 69) { // E
-                      _setNextWalkthroughIndex();
-                    }
-                  };
-                  input.on('keydown', keydown);
+                return () => {
+                  input.removeListener('keydown', keydown);
 
-                  return () => {
-                    input.removeListener('keydown', keydown);
-                  };
-                },
+                  mesh.visible = false;
+                };
               },
-              {
-                mesh: walkthroughMeshes.menuButtonMesh2,
-                listen: () => {
-                  const keydown = e => {
-                    if (e.keyCode === 69) { // E
-                      _setNextWalkthroughIndex();
-                    }
-                  };
-                  input.on('keydown', keydown);
+              () => {
+                const mesh = walkthroughMeshes.controllerLabelMeshes.left;
+                mesh.visible = true;
 
-                  return () => {
-                    input.removeListener('keydown', keydown);
-                  };
-                },
-              },
-              {
-                mesh: walkthroughMeshes.padButtonMesh,
-                listen: () => {
-                  const keydown = e => {
-                    if (e.keyCode === 81) { // Q
-                      _setNextWalkthroughIndex();
-                    }
-                  };
-                  input.on('keydown', keydown);
+                const keydown = e => {
+                  if (e.keyCode === 90) { // Z
+                    _setNextWalkthroughIndex();
+                  }
+                };
+                input.on('keydown', keydown);
 
-                  return () => {
-                    input.removeListener('keydown', keydown);
-                  };
-                },
-              },
-              {
-                mesh: walkthroughMeshes.gripButtonMesh,
-                listen: () => {
-                  const keydown = e => {
-                    if (e.keyCode === 70) { // F
-                      _setNextWalkthroughIndex();
-                    }
-                  };
-                  input.on('keydown', keydown);
+                return () => {
+                  input.removeListener('keydown', keydown);
 
-                  return () => {
-                    input.removeListener('keydown', keydown);
-                  };
-                },
+                  mesh.visible = false;
+                };
               },
-              {
-                mesh: walkthroughMeshes.xyMoveMesh,
-                listen: () => {
-                  const keydown = e => {
-                    if (e.keyCode === 17) { // Ctrl
-                      _setNextWalkthroughIndex();
-                    }
-                  };
-                  input.on('keydown', keydown);
+              () => {
+                const mesh = walkthroughMeshes.clickLabelMesh;
+                mesh.visible = true;
 
-                  return () => {
-                    input.removeListener('keydown', keydown);
-                  };
-                },
-              },
-              {
-                mesh: walkthroughMeshes.xzMoveMesh,
-                listen: () => {
-                  const keydown = e => {
-                    if (e.keyCode === 18) { // Alt
-                      _setNextWalkthroughIndex();
-                    }
-                  };
-                  input.on('keydown', keydown);
+                const mousedown = () => {
+                  _setNextWalkthroughIndex();
+                };
+                input.on('mousedown', mousedown);
 
-                  return () => {
-                    input.removeListener('keydown', keydown);
-                  };
-                },
-              },
-              {
-                mesh: walkthroughMeshes.padMesh,
-                listen: () => {
-                  const keydown = e => {
-                    if (e.keyCode === 88) { // X
-                      _setPage('tutorial:' + 0);
-                    }
-                  };
-                  input.on('keydown', keydown);
+                return () => {
+                  input.removeListener('mousedown', mousedown);
 
-                  return () => {
-                    input.removeListener('keydown', keydown);
-                  };
-                },
+                  mesh.visible = false;
+                };
               },
-              {
-                mesh: null,
-                listen: null,
+              () => {
+                const mesh = walkthroughMeshes.menuButtonMesh1;
+                mesh.visible = true;
+
+                const keydown = e => {
+                  if (e.keyCode === 69) { // E
+                    _setNextWalkthroughIndex();
+                  }
+                };
+                input.on('keydown', keydown);
+
+                return () => {
+                  input.removeListener('keydown', keydown);
+
+                  mesh.visible = false;
+                };
               },
+              () => {
+                const mesh = walkthroughMeshes.menuButtonMesh2;
+                mesh.visible = true;
+
+                const keydown = e => {
+                  if (e.keyCode === 69) { // E
+                    _setNextWalkthroughIndex();
+                  }
+                };
+                input.on('keydown', keydown);
+
+                return () => {
+                  input.removeListener('keydown', keydown);
+
+                  mesh.visible = false;
+                };
+              },
+              () => {
+                const mesh = walkthroughMeshes.padButtonMesh;
+                mesh.visible = true;
+
+                const keydown = e => {
+                  if (e.keyCode === 81) { // Q
+                    _setNextWalkthroughIndex();
+                  }
+                };
+                input.on('keydown', keydown);
+
+                return () => {
+                  input.removeListener('keydown', keydown);
+
+                  mesh.visible = false;
+                };
+              },
+              () => {
+                const mesh = walkthroughMeshes.gripButtonMesh;
+                mesh.visible = true;
+
+                const keydown = e => {
+                  if (e.keyCode === 70) { // F
+                    _setNextWalkthroughIndex();
+                  }
+                };
+                input.on('keydown', keydown);
+
+                return () => {
+                  input.removeListener('keydown', keydown);
+
+                  mesh.visible = false;
+                };
+              },
+              () => {
+                const mesh = walkthroughMeshes.xyMoveMesh;
+                mesh.visible = true;
+
+                const keydown = e => {
+                  if (e.keyCode === 17) { // Ctrl
+                    _setNextWalkthroughIndex();
+                  }
+                };
+                input.on('keydown', keydown);
+
+                return () => {
+                  input.removeListener('keydown', keydown);
+
+                  mesh.visible = false;
+                };
+              },
+              () => {
+                const mesh = walkthroughMeshes.xzMoveMesh;
+                mesh.visible = true;
+
+                const keydown = e => {
+                  if (e.keyCode === 18) { // Alt
+                    _setNextWalkthroughIndex();
+                  }
+                };
+                input.on('keydown', keydown);
+
+                return () => {
+                  input.removeListener('keydown', keydown);
+
+                  mesh.visible = false;
+                };
+              },
+              () => {
+                const mesh = walkthroughMeshes.padMesh;
+                mesh.visible = true;
+
+                const keydown = e => {
+                  if (e.keyCode === 88) { // X
+                    _setPage('tutorial:' + 0);
+                  }
+                };
+                input.on('keydown', keydown);
+
+                return () => {
+                  input.removeListener('keydown', keydown);
+
+                  mesh.visible = false;
+                };
+              },
+              null,
             ];
             let walkthroughIndex = 0;
             let walkthroughCancel = null;
             const _setWalkthroughIndex = n => {
-              const oldScript = WALKTHROUGH_SCRIPTS[walkthroughIndex];
-              const {mesh: oldMesh} = oldScript;
-              if (oldMesh) {
-                oldMesh.visible = false;
-              }
-
               if (walkthroughCancel) {
                 walkthroughCancel();
                 walkthroughCancel = null;
@@ -874,13 +885,8 @@ class Home {
               walkthroughIndex = n;
 
               const script = WALKTHROUGH_SCRIPTS[n];
-              const {mesh} = script;
-              if (mesh) {
-                mesh.visible = true;
-              }
-
-              if (script.listen) {
-                walkthroughCancel = script.listen();
+              if (script) {
+                walkthroughCancel = script();
               }
             };
             const _setNextWalkthroughIndex = () => _setWalkthroughIndex(walkthroughIndex + 1);
