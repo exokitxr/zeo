@@ -18,6 +18,11 @@ import {
   SERVER_WORLD_HEIGHT,
   SERVER_WORLD_DEPTH,
 
+  WALKTHROUGH_WIDTH,
+  WALKTHROUGH_HEIGHT,
+  WALKTHROUGH_WORLD_WIDTH,
+  WALKTHROUGH_WORLD_HEIGHT,
+
   SPHERE_RADIUS,
 
   DEFAULT_USER_HEIGHT,
@@ -33,19 +38,7 @@ class Home {
 
   mount() {
     const {_archae: archae} = this;
-    const {
-      metadata: {
-        home: {
-          enabled: homeEnabled,
-        },
-        my: {
-          enabled: myEnabled,
-        },
-        hub: {
-          url: hubUrl,
-        },
-      },
-    } = archae;
+    const {metadata: {home: {enabled: homeEnabled}, my: {enabled: myEnabled}, hub: {url: hubUrl}}} = archae;
 
     const cleanups = [];
     this._cleanup = () => {
@@ -303,6 +296,67 @@ class Home {
               return object;
             })();
             scene.add(menuMesh);
+
+            const walkthroughMeshes = (() => {
+              const result = {};
+
+              const _makeWalkthroughMesh = label => {
+                const menuUi = biolumi.makeUi({
+                  width: WALKTHROUGH_WIDTH,
+                  height: WALKTHROUGH_HEIGHT,
+                  color: [0, 0, 0, 0],
+                });
+                const mesh = menuUi.makePage(({
+                  // nothing
+                }) => {
+                  return {
+                    type: 'html',
+                    src: menuRenderer.getWalkthroughSrc({
+                      label: label,
+                    }),
+                    x: 0,
+                    y: 0,
+                    w: WALKTHROUGH_WIDTH,
+                    h: WALKTHROUGH_HEIGHT,
+                  };
+                }, {
+                  type: 'home',
+                  state: {},
+                  worldWidth: WALKTHROUGH_WORLD_WIDTH,
+                  worldHeight: WALKTHROUGH_WORLD_HEIGHT,
+                });
+
+                const {page} = mesh;
+                page.update();
+
+                /* const {page} = mesh;
+                rend.addPage(page);
+
+                cleanups.push(() => {
+                  rend.removePage(page);
+                }); */
+
+                return mesh;
+              };
+
+              const controllers = cyborg.getControllers();
+              const controllerLabelMeshes = SIDES.map(side => {
+                const walkthroughMesh = _makeWalkthroughMesh(side === 'left' ? 'Z' : 'C');
+                walkthroughMesh.position.y = 0.1;
+                walkthroughMesh.side = side;
+                return walkthroughMesh;
+              });
+              controllerLabelMeshes.forEach(controllerLabelMesh => {
+                const {side} = controllerLabelMesh;
+
+                const controller = controllers[side];
+                const {mesh: controllerMesh} = controller;
+                controllerMesh.add(controllerLabelMesh);
+              });
+              result.controllerLabelMeshes = controllerLabelMeshes;
+
+              return result;
+            })();
 
             const _makeGrabState = () => ({
               tagMesh: null,

@@ -4,6 +4,9 @@ const {
 
   SERVER_WIDTH,
   SERVER_HEIGHT,
+
+  WALKTHROUGH_WIDTH,
+  WALKTHROUGH_HEIGHT,
 } = require('../constants/menu');
 
 const SERVERS_PER_PAGE = 8;
@@ -240,7 +243,7 @@ const getMenuPageSrc = flags => {
           </a>`
         ).join('\n')}
       </div>
-      <div style="display: flex; height: 100px; padding: 0 50px; justify-content: center; align-items: center;"> -->
+      <div style="display: flex; height: 100px; padding: 0 50px; justify-content: center; align-items: center;">
         <a style="display: flex; margin-left: auto; padding: 10px 15px; border: 2px solid; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:next">Skip tutorial</a>
       </div>
       ${flags.localServers ?
@@ -473,9 +476,19 @@ const getServerTagSrc = ({worldname, url, running, local}) => {
   `;
 };
 
+const getWalkthroughSrc = ({label}) => {
+  return `<div style="display: flex; width: ${WALKTHROUGH_WIDTH}px; height: ${WALKTHROUGH_HEIGHT}px; color: #FFF; flex-direction: column;">
+    <div style="display: flex; margin: 10px; height: 150px; background-color: #000; font-size: 80px; font-weight: 400; justify-content: center; align-items: center;">${label}</div>
+    <div style="position: relative; width: 100%; height: 50px;">
+      <div style="position: absolute; bottom: 5px; left: ${(WALKTHROUGH_WIDTH / 2) - (50 / 2)}px; border-style: solid; border-width: 50px 25px 0 25px; border-color: #000 transparent transparent transparent;"></div>
+    </div>
+  </div>`;
+};
+
 return {
   getHomeMenuSrc,
   getServerTagSrc,
+  getWalkthroughSrc,
 };
 
 };
