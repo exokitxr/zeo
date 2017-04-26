@@ -272,7 +272,7 @@ class Home {
                 object.add(viewportMesh);
                 object.viewportMesh = viewportMesh;
 
-                const controlsMesh = (() => {
+                const controlsMesh = (() => { // XXX break this up into two meshes for performance
                   const worldWidth = WORLD_WIDTH;
                   const worldHeight = WORLD_HEIGHT * ((HEIGHT - 200) / HEIGHT);
                   const menuUi = biolumi.makeUi({
