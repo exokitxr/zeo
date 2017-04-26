@@ -4,9 +4,6 @@ const ROTATION_SPEED = 0.02 / (Math.PI * 2);
 
 const NUM_PREV_STATUSES = 3;
 
-const BUTTON_COLOR = 0xFF4444;
-const BUTTON_COLOR_HIGHLIGHT = 0xffbb33;
-
 const SIDES = ['left', 'right'];
 
 class Cyborg {
@@ -54,6 +51,12 @@ class Cyborg {
             shininess: 0,
             shading: THREE.FlatShading,
           });
+
+          const BUTTON_COLOR = 0xFF4444;
+          const BUTTON_COLOR_HIGHLIGHT = 0xffbb33;
+
+          const RAY_COLOR = 0x44c2ff;
+          const RAY_HIGHLIGHT_COLOR = new THREE.Color(RAY_COLOR).multiplyScalar(0.5).getHex();
 
           class Player extends EventEmitter {
             constructor() {
@@ -245,7 +248,7 @@ class Cyborg {
                     .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -0.5));
                   const material = new THREE.MeshBasicMaterial({
                     // color: 0x2196F3,
-                    color: 0x44c2ff,
+                    color: RAY_COLOR,
                   });
 
                   const mesh = new THREE.Mesh(geometry, material);
@@ -404,6 +407,12 @@ class Cyborg {
                 const {axes} = gamepadStatus;
                 mesh.padMesh.position.x = axes[0] * 0.02;
                 mesh.padMesh.position.z = -axes[1] * 0.02;
+
+                if (!buttons.trigger.pressed && mesh.rayMesh.material.color.getHex() !== RAY_COLOR) {
+                  mesh.rayMesh.material.color.setHex(RAY_COLOR);
+                } else if (buttons.trigger.pressed && mesh.rayMesh.material.color.getHex() !== RAY_HIGHLIGHT_COLOR) {
+                  mesh.rayMesh.material.color.setHex(RAY_HIGHLIGHT_COLOR);
+                }
 
                 mesh.updateMatrixWorld();
               };

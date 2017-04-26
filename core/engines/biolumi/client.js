@@ -164,13 +164,14 @@ class Biolumi {
             return {position, rotation, scale};
           };
 
+          const RAY_COLOR = 0x44c2ff;
+          const RAY_HIGHLIGHT_COLOR = new THREE.Color(RAY_COLOR).multiplyScalar(0.5).getHex();
+
           const dotMeshMaterial = new THREE.MeshBasicMaterial({
-            color: 0x44c2ff,
+            color: RAY_COLOR,
           });
           const boxMeshMaterial = new THREE.MeshBasicMaterial({
-            // color: new THREE.Color(0x44c2ff).multiplyScalar(0.75).getHex(),
-            color: 0x44c2ff,
-            // wireframe: true,
+            color: RAY_COLOR,
             transparent: true,
             opacity: 0.5,
             // depthTest: false,
@@ -780,6 +781,11 @@ class Biolumi {
 
                     dotMesh.position.copy(intersectionPoint);
                     dotMesh.quaternion.copy(rotation);
+                    if (!gamepad.buttons.trigger.pressed && dotMesh.material.color.getHex() !== RAY_COLOR) {
+                      dotMesh.material.color.setHex(RAY_COLOR);
+                    } else if (gamepad.buttons.trigger.pressed && dotMesh.material.color.getHex() !== RAY_HIGHLIGHT_COLOR) {
+                      dotMesh.material.color.setHex(RAY_HIGHLIGHT_COLOR);
+                    }
                     if (!dotMesh.visible) {
                       dotMesh.visible = true;
                     }
