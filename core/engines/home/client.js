@@ -263,17 +263,6 @@ class Home {
                     side: THREE.DoubleSide,
                   });
 
-                  const video = document.createElement('video');
-                  video.crossOrigin = 'Anonymous';
-                  video.oncanplaythrough = () => {
-                    texture.image = video;
-                    texture.needsUpdate = true;
-                  };
-                  video.onerror = err => {
-                    console.warn(err);
-                  };
-                  video.src = 'https://rawgit.com/modulesio/zeo-data/72356f9186ab6af74b2ea733636f366c6e97de0f/video/sample.webm';
-
                   const mesh = new THREE.Mesh(geometry, material);
                   mesh.position.y = (WORLD_HEIGHT / 2) - (worldHeight / 2) - (WORLD_HEIGHT * (100 / HEIGHT));
                   mesh.position.z = 0.001;
@@ -281,6 +270,7 @@ class Home {
                   return mesh;
                 })();
                 object.add(viewportMesh);
+                object.viewportMesh = viewportMesh;
 
                 const controlsMesh = (() => {
                   const menuUi = biolumi.makeUi({
@@ -974,6 +964,14 @@ class Home {
                 serversMesh.remove(child);
               }
             }; */
+            const VIDEOS = [
+              'https://cdn.rawgit.com/modulesio/zeo-data/268158e86702f639badc69ef0674888654085c44/video/sample1.mkv',
+              'https://cdn.rawgit.com/modulesio/zeo-data/268158e86702f639badc69ef0674888654085c44/video/sample2.mkv',
+              'https://cdn.rawgit.com/modulesio/zeo-data/268158e86702f639badc69ef0674888654085c44/video/sample1.mkv',
+              'https://cdn.rawgit.com/modulesio/zeo-data/268158e86702f639badc69ef0674888654085c44/video/sample2.mkv',
+              'https://cdn.rawgit.com/modulesio/zeo-data/268158e86702f639badc69ef0674888654085c44/video/sample1.mkv',
+            ];
+            let videoUpdateInterval = null;
             const _setPage = page => {
               const {page: oldPage} = homeState;
               homeState.page = page;
@@ -987,16 +985,47 @@ class Home {
               } else if (oldPage === 'menu' && page !== 'menu') {
                 bootstrap.setTutorialFlag(true);
               }
-
               if (page === 'controls') {
                 _setWalkthroughIndex(0);
               } else {
                 _setWalkthroughIndex(10);
               }
+              let match;
+              if (match = page.match(/^tutorial:([0-9]+)$/)) {
+                const id = parseInt(match[1], 10);
 
-              const n = parseInt(_parsePage(page).args[0], 10);
-              const {videoMesh} = menuMesh;
-              videoMesh.visible = n >= 0;
+                const {videoMesh} = menuMesh;
+                videoMesh.visible = true;
+                const {viewportMesh: {material: {map: texture}}} = videoMesh;
+                const video = (() => {
+                  const video = document.createElement('video');
+                  video.width = 512;
+                  video.height = (video.width / 1.5) * ((HEIGHT - 300) / HEIGHT);
+                  video.crossOrigin = 'Anonymous';
+                  video.oncanplaythrough = () => {
+                    texture.image = video;
+                    texture.needsUpdate = true;
+                  };
+                  video.onerror = err => {
+                    console.warn(err);
+                  };
+                  video.src = VIDEOS[id];
+                  return video;
+                })();
+                texture.image = transparentImg;
+                texture.needsUpdate = true;
+
+                if (!videoUpdateInterval) {
+                  videoUpdateInterval = setInterval(() => {
+                    texture.needssUpdate = true;
+                  }, 1000 / 30);
+                }
+              } else {
+                if (videoUpdateInterval) {
+                  clearInterval(videoUpdateInterval);
+                  videoUpdateInterval = null;
+                }
+              }
             };
             _setPage(bootstrap.getTutorialFlag() ? 'remoteServers' : 'controls');
 
