@@ -609,6 +609,10 @@ class Home {
 
                 scene.add(object);
 
+                object.updateMatrixWorld();
+                const boxTarget = new THREE.Box3().setFromObject(object);
+                object.boxTarget = boxTarget;
+
                 return object;
               })();
               result.targetMesh = targetMesh;
@@ -631,6 +635,10 @@ class Home {
 
                 scene.add(object);
 
+                object.updateMatrixWorld();
+                const boxTarget = new THREE.Box3().setFromObject(object);
+                object.boxTarget = boxTarget;
+
                 return object;
               })();
               result.goalMesh = goalMesh;
@@ -644,6 +652,10 @@ class Home {
                 mesh.position.set(0.5, 2, -0.5);
 
                 scene.add(mesh);
+
+                mesh.updateMatrixWorld();
+                const boxTarget = new THREE.Box3().setFromObject(mesh);
+                mesh.boxTarget = boxTarget;
 
                 return mesh;
               })();
@@ -716,6 +728,7 @@ class Home {
 
               return result;
             })();
+            const walkthroughEmitter = new EventEmitter();
             const WALKTHROUGH_SCRIPTS = [
               () => {
                 const mesh = walkthroughMeshes.controllerLabelMeshes.right;
@@ -1969,7 +1982,7 @@ class Home {
                   const targetBoxMesh =  targetBoxMeshes[side];
 
                   const {targetMesh} = walkthroughMeshes;
-                  const boxTarget = new THREE.Box3().setFromObject(targetMesh); // XXX should not account for rotation
+                  const {boxTarget} = targetMesh;
                   const gamepad = gamepads[side];
 
                   if (gamepad) {
@@ -1993,6 +2006,36 @@ class Home {
                   } else {
                     targetDotMesh.visible = false;
                     targetBoxMesh.visible = false;
+                  }
+                });
+              };
+              const _updateWalkthroughEmitter = () => {
+                const {hmd, gamepads} = webvr.getStatus();
+
+                const {goalMesh} = walkthroughMeshes;
+                const {position: hmdPosition} = hmd;
+                [goalMesh].forEach(targetMesh => {
+                  const {boxTarget} = targetMesh;
+
+                  if (boxTarget.containsPoint(hmdPosition)) {
+                    walkthroughEmitter.emit('intersect', targetMesh);
+                  }
+                });
+
+                const {touchMesh} = walkthroughMeshes;
+                SIDES.forEach(side => {
+                  const gamepad = gamepads[side];
+
+                  if (gamepad) {
+                    const {position: controllerPosition} = gamepad;
+
+                    [touchMesh].forEach(targetMesh => {
+                      const {boxTarget} = targetMesh;
+
+                      if (boxTarget.containsPoint(controllerPosition)) {
+                        walkthroughEmitter.emit('intersect', targetMesh);
+                      }
+                    });
                   }
                 });
               };
@@ -2024,6 +2067,7 @@ class Home {
               _updateEnvMaps(); */
               _updateWalkthroughMeshes();
               _updateWalkthroughTargets();
+              _updateWalkthroughEmitter();
               _updateVideo();
             };
             rend.on('update', _update);
