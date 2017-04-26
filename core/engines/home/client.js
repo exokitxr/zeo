@@ -722,6 +722,12 @@ class Home {
 
                 scene.add(object);
 
+                [outerMesh, innerMesh].forEach(subMesh => {
+                  subMesh.updateMatrixWorld();
+                  const boxTarget = new THREE.Box3().setFromObject(subMesh);
+                  subMesh.boxTarget = boxTarget;
+                });
+
                 return object;
               })();
               result.legoMesh = legoMesh;
@@ -2022,14 +2028,14 @@ class Home {
                   }
                 });
 
-                const {touchMesh} = walkthroughMeshes;
+                const {touchMesh, legoMesh: {outerMesh: legoOuterMesh, innerMesh: legoInnerMesh}} = walkthroughMeshes;
                 SIDES.forEach(side => {
                   const gamepad = gamepads[side];
 
                   if (gamepad) {
                     const {position: controllerPosition} = gamepad;
 
-                    [touchMesh].forEach(targetMesh => {
+                    [touchMesh, legoOuterMesh, legoInnerMesh].forEach(targetMesh => {
                       const {boxTarget} = targetMesh;
 
                       if (boxTarget.containsPoint(controllerPosition)) {
