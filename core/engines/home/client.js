@@ -698,7 +698,7 @@ class Home {
                 listen: () => {
                   const keydown = e => {
                     if (e.keyCode === 88) { // X
-                      _setPage('menu');
+                      _setPage('tutorial:' + 0);
                     }
                   };
                   input.on('keydown', keydown);
