@@ -93,7 +93,8 @@ const getTutorialPageSrc = (pageIndex, vrMode, flags) => {
               </a>
             </div>
             <div style="display: flex; width: 200px;"> -->
-              <a style="display: flex; margin-left: auto; padding: 10px 15px; border: 2px solid; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:next">Next: Modules</a>
+              <a style="display: flex; margin-left: auto; margin-right: 40px; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:menu">Skip all tutorials</a>
+              <a style="display: flex; padding: 10px 15px; border: 2px solid; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:next">Next: Modules</a>
             <!-- </div> -->
           </div>
         </div>
@@ -118,7 +119,8 @@ const getTutorialPageSrc = (pageIndex, vrMode, flags) => {
               </p>
             </div>
             <div style="display: flex; width: 100%;"> -->
-  <a style="display: flex; margin-left: auto; padding: 10px 15px; border: 2px solid; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:next">Next: Servers</a>
+              <a style="display: flex; margin-left: auto; margin-right: 40px; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:menu">Skip all tutorials</a>
+              <a style="display: flex; padding: 10px 15px; border: 2px solid; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:next">Next: Servers</a>
             <!-- </div> -->
           </div>
         </div>
@@ -140,7 +142,8 @@ const getTutorialPageSrc = (pageIndex, vrMode, flags) => {
               </p>
             </div>
             <div style="display: flex; width: 100%;"> -->
-  <a style="display: flex; margin-left: auto; padding: 10px 15px; border: 2px solid; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:next">Next: Multiplayer</a>
+              <a style="display: flex; margin-left: auto; margin-right: 40px; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:menu">Skip all tutorials</a>
+              <a style="display: flex; padding: 10px 15px; border: 2px solid; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:next">Next: Multiplayer</a>
             <!-- </div> -->
           </div>
         </div>
@@ -162,7 +165,8 @@ const getTutorialPageSrc = (pageIndex, vrMode, flags) => {
               </p>
             </div>
             <div style="display: flex; width: 100%;"> -->
-  <a style="display: flex; margin-left: auto; padding: 10px 15px; border: 2px solid; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:next">Next: Host your own</a>
+              <a style="display: flex; margin-left: auto; margin-right: 40px; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:menu">Skip all tutorials</a>
+              <a style="display: flex; padding: 10px 15px; border: 2px solid; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:next">Next: Host your own</a>
             <!-- </div> -->
           </div>
         </div>
@@ -184,7 +188,8 @@ const getTutorialPageSrc = (pageIndex, vrMode, flags) => {
               </p>
             </div>
             <div style="display: flex; width: 100%;"> -->
-  <a style="display: flex; margin-left: auto; padding: 10px 15px; border: 2px solid; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:next">Go to main menu</a>
+            <a style="display: flex; margin-left: auto; margin-right: 40px; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:menu">Skip all tutorials</a>
+  <a style="display: flex; padding: 10px 15px; border: 2px solid; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:next">Go to main menu</a>
             <!-- </div> -->
           </div>
         </div>
@@ -210,7 +215,7 @@ const getControlsPageSrc = flags => {
   return `<div style="display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; justify-content: center; align-items: center; flex-direction: column;">
     <div style="display: flex; font-size: 40px; margin: auto 0; justify-content: center; align-items: center;">Controls tutorial in progress</div>
     <div style="display: flex; width: 100%; height: 100px; padding: 0 50px; justify-content: center; align-items: center; box-sizing: border-box;">
-      <a style="display: flex; margin-left: auto; margin-right: 40px; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:menu">Main menu</a>
+      <a style="display: flex; margin-left: auto; margin-right: 40px; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:menu">Skip all tutorials</a>
       <a style="display: flex; padding: 10px 15px; border: 2px solid; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:next">Skip controls tutorial</a>
     </div>
   </div>`;

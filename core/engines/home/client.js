@@ -891,11 +891,18 @@ class Home {
               }
             };
             const _setPage = page => {
+              const {page: oldPage} = homeState;
               homeState.page = page;
 
               _updatePages();
 
               _removeServerMeshes();
+
+              if (page === 'menu' && oldPage !== 'menu') {
+                bootstrap.setTutorialFlag(false);
+              } else if (oldPage === 'menu' && page !== 'menu') {
+                bootstrap.setTutorialFlag(true);
+              }
 
               if (page === 'controls') {
                 _setWalkthroughIndex(0);
@@ -1142,7 +1149,7 @@ class Home {
                   const {name} = pageSpec;
 
                   if (name === 'controls') {
-                    _setPage('menu');
+                    _setPage('tutorial:' + 0);
                   } else if (name === 'menu') {
                     _setPage('tutorial:' + 0);
                   } else if (name === 'tutorial') {
@@ -1151,8 +1158,6 @@ class Home {
                     if (n < 4) {
                       _setPage([pageSpec.name, n + 1].join(':'));
                     } else {
-                      bootstrap.setTutorialFlag(false);
-
                       _setPage('remoteServers'); // XXX rename this to menu
                     }                    
                   }
@@ -1185,8 +1190,6 @@ class Home {
 
                   return true;
                 } else if (onclick === 'home:menu') {
-                  bootstrap.setTutorialFlag(false);
-
                   _setPage('remoteServers'); // XXX rename this to menu
 
                   return true;
