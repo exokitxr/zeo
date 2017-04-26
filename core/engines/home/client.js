@@ -968,11 +968,11 @@ class Home {
               }
             }; */
             const VIDEOS = [
-              'https://cdn.rawgit.com/modulesio/zeo-data/268158e86702f639badc69ef0674888654085c44/video/sample1.mkv',
-              'https://cdn.rawgit.com/modulesio/zeo-data/268158e86702f639badc69ef0674888654085c44/video/sample2.mkv',
-              'https://cdn.rawgit.com/modulesio/zeo-data/268158e86702f639badc69ef0674888654085c44/video/sample1.mkv',
-              'https://cdn.rawgit.com/modulesio/zeo-data/268158e86702f639badc69ef0674888654085c44/video/sample2.mkv',
-              'https://cdn.rawgit.com/modulesio/zeo-data/268158e86702f639badc69ef0674888654085c44/video/sample1.mkv',
+              'https://raw.githubusercontent.com/modulesio/zeo-data/dbddfdd562136f933916634ff1ff9e5f5c98b52b/video/sample1.webm',
+              'https://raw.githubusercontent.com/modulesio/zeo-data/dbddfdd562136f933916634ff1ff9e5f5c98b52b/video/sample2.webm',
+              'https://raw.githubusercontent.com/modulesio/zeo-data/dbddfdd562136f933916634ff1ff9e5f5c98b52b/video/sample1.webm',
+              'https://raw.githubusercontent.com/modulesio/zeo-data/dbddfdd562136f933916634ff1ff9e5f5c98b52b/video/sample2.webm',
+              'https://raw.githubusercontent.com/modulesio/zeo-data/dbddfdd562136f933916634ff1ff9e5f5c98b52b/video/sample1.webm',
             ];
             let videoUpdateInterval = null;
             const _setPage = page => {
@@ -999,14 +999,7 @@ class Home {
               const {image: media} = texture;
               if (media.tagName === 'VIDEO' && !media.paused) {
                 media.pause();
-
-                mediaState.paused = true;
-
-                const {controlsMesh} = videoMesh;
-                const {page} = controlsMesh;
-                page.update();
               }
-
               let match;
               if (match = page.match(/^tutorial:([0-9]+)$/)) {
                 const id = parseInt(match[1], 10);
@@ -1014,8 +1007,6 @@ class Home {
                 videoMesh.visible = true;
                 const video = (() => {
                   const video = document.createElement('video');
-                  video.width = 512;
-                  video.height = (video.width / 1.5) * ((HEIGHT - 300) / HEIGHT);
                   video.crossOrigin = 'Anonymous';
                   video.oncanplaythrough = () => {
                     texture.image = video;
@@ -1029,39 +1020,19 @@ class Home {
                 })();
                 texture.image = transparentImg;
                 texture.needsUpdate = true;
-
-                if (!videoUpdateInterval) {
-                  videoUpdateInterval = setInterval(() => {
-                    const {image: media} = texture;
-
-                    if (media.tagName === 'VIDEO' && !media.paused) {
-                      const {value: prevValue} = mediaState;
-                      const nextValue = media.currentTime / media.duration;
-
-                      if (Math.abs(nextValue - prevValue) >= (1 / 1000)) { // to reduce the frequency of texture updates
-                        mediaState.value = nextValue;
-
-                        const {controlsMesh} = videoMesh;
-                        const {page} = controlsMesh;
-                        page.update();
-                      }
-
-                      texture.needsUpdate = true;
-                    }
-                  }, 1000 / 60);
-                }
               } else {
                 videoMesh.visible = false;
-
-                if (videoUpdateInterval) {
-                  clearInterval(videoUpdateInterval);
-                  videoUpdateInterval = null;
-                }
               }
+
+              mediaState.paused = true;
+              mediaState.value = 0;
+              const {controlsMesh} = videoMesh;
+              const {page: controlsPage} = controlsMesh;
+              controlsPage.update();
             };
             _setPage(bootstrap.getTutorialFlag() ? 'remoteServers' : 'controls');
 
-            const _openRemoteServersPage = () => {
+            /* const _openRemoteServersPage = () => {
               homeState.loading = true;
 
               _setPage('remoteServers:' + 0);
@@ -1092,7 +1063,7 @@ class Home {
                 .catch(err => {
                   console.warn(err);
                 });
-            };
+            }; */
             const _proxyLoginServer = worldname => fetch('servers/proxyLogin', {
               method: 'POST',
               headers: (() => {
@@ -1364,7 +1335,13 @@ class Home {
                       page.update();
                     }
                   } else if (action === 'seek') {
+                    const {value} = hoverState;
                     media.currentTime = value * media.duration;
+
+                    mediaState.value = value;
+                    const {controlsMesh} = videoMesh;
+                    const {page} = controlsMesh;
+                    page.update();
                   }
 
                   return true;
@@ -1742,12 +1719,33 @@ class Home {
                   envMesh.visible = true;
                 }
               }; */
+              const _updateVideo = () => {
+                const {videoMesh} = menuMesh;
+                const {viewportMesh: {material: {map: texture}}} = videoMesh;
+                const {image: media} = texture;
+
+                if (media.tagName === 'VIDEO' && !media.paused) {
+                  const {value: prevValue} = mediaState;
+                  const nextValue = media.currentTime / media.duration;
+
+                  if (Math.abs(nextValue - prevValue) >= (1 / 1000)) { // to reduce the frequency of texture updates
+                    mediaState.value = nextValue;
+
+                    const {controlsMesh} = videoMesh;
+                    const {page} = controlsMesh;
+                    page.update();
+                  }
+
+                  texture.needsUpdate = true;
+                }
+              };
 
               _updateTagPointerAnchors();
               _updateTagGrabAnchors();
               /* _updateEnvAnchors();
               _updateServerMeshes();
               _updateEnvMaps(); */
+              _updateVideo();
             };
             rend.on('update', _update);
 
