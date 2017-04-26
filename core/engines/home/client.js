@@ -273,14 +273,14 @@ class Home {
               object.add(videoMesh);
               object.videoMesh = videoMesh;
 
-              const scale = 2;
+              /* const scale = 2;
               const cakeTagMesh = tags.makeTag(zCakeNpmItemSpec);
               cakeTagMesh.position.y = -0.26;
               cakeTagMesh.position.z = -1 + 0.01;
               cakeTagMesh.planeMesh.scale.set(scale, scale, 1);
               cakeTagMesh.visible = false;
               object.add(cakeTagMesh);
-              object.cakeTagMesh = cakeTagMesh;
+              object.cakeTagMesh = cakeTagMesh; */
 
               const shadowMesh = (() => {
                 const geometry = new THREE.BoxBufferGeometry(WORLD_WIDTH, WORLD_HEIGHT, 0.01);
@@ -904,8 +904,6 @@ class Home {
               }
 
               const n = parseInt(_parsePage(page).args[0], 10);
-              /* const {cakeTagMesh} = menuMesh;
-              cakeTagMesh.visible = n === 2; */
               const {videoMesh} = menuMesh;
               videoMesh.visible = n >= 0;
             };
@@ -1370,13 +1368,13 @@ class Home {
               const {grabMesh} = grabbableState;
 
               if (grabMesh) {
-                const {cakeTagMesh} = menuMesh;
+                /* const {cakeTagMesh} = menuMesh;
 
                 if (grabMesh === cakeTagMesh) {
                   if (!grabMesh.item.metadata.exists) {
                     _addNpmModule(side, grabMesh);
                   }
-                } else {
+                } else { */
                   const controllers = cyborg.getControllers();
                   const controller = controllers[side];
                   const {mesh: controllerMesh} = controller;
@@ -1388,7 +1386,7 @@ class Home {
 
                   const grabState = grabStates[side];
                   grabState.tagMesh = grabMesh;
-                }
+                // }
 
                 e.stopImmediatePropagation();
               }
