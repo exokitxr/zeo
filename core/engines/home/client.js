@@ -273,9 +273,11 @@ class Home {
                 object.viewportMesh = viewportMesh;
 
                 const controlsMesh = (() => {
+                  const worldWidth = WORLD_WIDTH;
+                  const worldHeight = WORLD_HEIGHT * ((HEIGHT - 200) / HEIGHT);
                   const menuUi = biolumi.makeUi({
                     width: WIDTH,
-                    height: HEIGHT,
+                    height: HEIGHT - 200,
                     color: [1, 1, 1, 0],
                   });
                   const mesh = menuUi.makePage(({
@@ -292,15 +294,16 @@ class Home {
                     x: 0,
                     y: 0,
                     w: WIDTH,
-                    h: HEIGHT,
+                    h: HEIGHT - 200,
                   }), {
                     type: 'controls',
                     state: {
                       media: mediaState,
                     },
-                    worldWidth: WORLD_WIDTH,
-                    worldHeight: WORLD_HEIGHT,
+                    worldWidth: worldWidth,
+                    worldHeight: worldHeight,
                   });
+                  mesh.position.y = (WORLD_HEIGHT / 2) - (worldHeight / 2) - (WORLD_HEIGHT * (100 / HEIGHT));
                   mesh.position.z = 0.002;
 
                   const {page} = mesh;
@@ -1021,6 +1024,9 @@ class Home {
                   }, 1000 / 30);
                 }
               } else {
+                const {videoMesh} = menuMesh;
+                videoMesh.visible = false;
+
                 if (videoUpdateInterval) {
                   clearInterval(videoUpdateInterval);
                   videoUpdateInterval = null;

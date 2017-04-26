@@ -514,7 +514,7 @@ const getMediaControlsSrc = ({paused, value}) => {
     </a>
   `;
 
-  return `<div style="display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; padding: 100px 0; flex-direction: column; box-sizing: border-box;">
+  return `<div style="display: flex; width: ${WIDTH}px; height: ${HEIGHT - 200}px; flex-direction: column; box-sizing: border-box;">
     ${buttonSrc}
     ${barSrc}
   </div>`;
