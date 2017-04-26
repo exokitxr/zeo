@@ -895,7 +895,7 @@ class Home {
               const {videoMesh} = menuMesh;
               videoMesh.visible = n >= 0;
             };
-            _setPage(bootstrap.getTutorialFlag() ? ('tutorial:' + 0) : 'menu');
+            _setPage(bootstrap.getTutorialFlag() ? ('tutorial:' + 0) : 'controls');
 
             const _openRemoteServersPage = () => {
               homeState.loading = true;
@@ -1129,7 +1129,9 @@ class Home {
                   const pageSpec = _parsePage(page);
                   const {name} = pageSpec;
 
-                  if (name === 'menu') {
+                  if (name === 'controls') {
+                    _setPage('menu');
+                  } else if (name === 'menu') {
                     _setPage('tutorial:' + 0);
                   } else if (name === 'tutorial') {
                     const n = parseInt(pageSpec.args[0], 10);
@@ -1149,7 +1151,9 @@ class Home {
                   const pageSpec = _parsePage(page);
                   const {name} = pageSpec;
 
-                  if (name === 'tutorial') {
+                  if (name === 'menu') {
+                    _setPage('controls');
+                  } else if (name === 'tutorial') {
                     const n = parseInt(pageSpec.args[0], 10);
 
                     if (n > 0) {

@@ -40,13 +40,15 @@ const getHomeMenuSrc = ({page, remoteServers, localServers, inputText, inputInde
   })();
 
   const {name} = pageSpec;
-  if (name === 'tutorial') {
+  if (name === 'controls') {
+    return getControlsPageSrc(flags);
+  } else if (name === 'menu') {
+    return getMenuPageSrc(flags);
+  } else if (name === 'tutorial') {
     const {args} = pageSpec;
     const pageIndex = parseInt(args[0], 10);
 
     return getTutorialPageSrc(pageIndex, vrMode, flags);
-  } else if (name === 'menu') {
-    return getMenuPageSrc(flags);
   } else if (name === 'remoteServers') {
     const {args} = pageSpec;
     const pageIndex = parseInt(args[0], 10);
@@ -204,6 +206,16 @@ const getTutorialPageSrc = (pageIndex, vrMode, flags) => {
   return getHeaderWrappedSrc(content, headerText, {back: true});
 };
 
+const getControlsPageSrc = flags => {
+  return `<div style="display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; justify-content: center; align-items: center; flex-direction: column;">
+    <div style="display: flex; font-size: 40px; margin: auto 0; justify-content: center; align-items: center;">Controls tutorial in progress</div>
+    <div style="display: flex; width: 100%; height: 100px; padding: 0 50px; justify-content: center; align-items: center; box-sizing: border-box;">
+      <a style="display: flex; margin-left: auto; margin-right: 40px; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:menu">Main menu</a>
+      <a style="display: flex; padding: 10px 15px; border: 2px solid; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:next">Skip controls tutorial</a>
+    </div>
+  </div>`;
+};
+
 const getMenuPageSrc = flags => {
   const videos = [
     {},
@@ -224,7 +236,7 @@ const getMenuPageSrc = flags => {
         ).join('\n')}
       </div>
       <div style="display: flex; height: 100px; padding: 0 50px; justify-content: center; align-items: center;">
-        <a style="display: flex; margin-left: auto; margin-right: 40px; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:menu">Skip tutorial</a>
+        <a style="display: flex; margin-left: auto; margin-right: 40px; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:menu">Main menu</a>
         <a style="display: flex; padding: 10px 15px; border: 2px solid; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:next">Next: Controls</a>
       </div>
       ${flags.localServers ?
@@ -236,7 +248,7 @@ const getMenuPageSrc = flags => {
         ''
       }
     </div>
-  `, 'Introduction videos');
+  `, 'Introduction videos', {back: true});
 };
 
 const getHeaderWrappedSrc = (content, headerText, {back = false} = {}) => `\
