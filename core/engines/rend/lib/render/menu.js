@@ -7,48 +7,58 @@ const homeImgSrc = 'data:image/svg+xml;base64,' + btoa(homeImg);
 
 const makeRenderer = ({creatureUtils}) => {
 
-const getStatusSrc = ({status: {url, username, worldname, users, authToken, hasHub}}) => {
-  const allUsers = [username].concat(users).sort((a, b) => a.localeCompare(b));
+const getStatusSrc = ({status: {url, username, worldname, users, authToken, flags}}) => {
+  if (flags.server) {
+    const allUsers = [username].concat(users).sort((a, b) => a.localeCompare(b));
 
-  return `\
-    <div style="display: flex; padding: 0 30px;">
-      <div style="margin-right: auto;">
-        <h1 style="margin: 15px 0; font-size: 40px; font-weight: 400;">My profile</h1>
-        <div style="display: flex; font-size: 30px; line-height: 1; justify-content: center; align-items: center;">
-          <div style="display: inline-flex; margin-right: auto; justify-content: center; align-items: center;">
-            <img src="${creatureUtils.makeStaticCreature('user:' + username)}" width="40" height="40" style="margin-right: 10px; image-rendering: pixelated;" />
-            <span>${username}</span>
-          </div>
-        </div>
-        <h1 style="margin: 15px 0; font-size: 40px; font-weight: 400;">Server status</h1>
-        <div style="display: flex; justify-content: center; align-items: center;">
-          <div style="display: flex; position: relative; margin-left: -30px; margin-right: auto; padding: 10px 30px; background-color: #000; font-size: 30px; font-weight: 400; color: #FFF; justify-content: center; align-items: center;">
-            <img src="${creatureUtils.makeStaticCreature('server:' + worldname)}" width="40" height="40" style="margin-right: 20px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;" />
-            <span style="margin-right: auto;">${worldname}</span>
-          </div>
-        </div>
-        <h1 style="margin: 15px 0; font-size: 40px; font-weight: 400;">Online (${allUsers.length})</h1>
-        <div style="display: flex;">
-          ${allUsers.map(user => `\
-            <div style="display: flex; margin-bottom: 5px; font-size: 30px; line-height: 1; align-items: center;">
-              <img src="${creatureUtils.makeStaticCreature('user:' + user)}" width="40" height="40" style="margin-right: 20px; image-rendering: pixelated;" />
-              <div>${user}</div>
+    return `\
+      <div style="display: flex; padding: 0 30px;">
+        <div style="margin-right: auto;">
+          <h1 style="margin: 15px 0; font-size: 40px; font-weight: 400;">My profile</h1>
+          <div style="display: flex; font-size: 30px; line-height: 1; justify-content: center; align-items: center;">
+            <div style="display: inline-flex; margin-right: auto; justify-content: center; align-items: center;">
+              <img src="${creatureUtils.makeStaticCreature('user:' + username)}" width="40" height="40" style="margin-right: 10px; image-rendering: pixelated;" />
+              <span>${username}</span>
             </div>
-          `).join('\n')}
+          </div>
+          <h1 style="margin: 15px 0; font-size: 40px; font-weight: 400;">Server status</h1>
+          <div style="display: flex; justify-content: center; align-items: center;">
+            <div style="display: flex; position: relative; margin-left: -30px; margin-right: auto; padding: 10px 30px; background-color: #000; font-size: 30px; font-weight: 400; color: #FFF; justify-content: center; align-items: center;">
+              <img src="${creatureUtils.makeStaticCreature('server:' + worldname)}" width="40" height="40" style="margin-right: 20px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;" />
+              <span style="margin-right: auto;">${worldname}</span>
+            </div>
+          </div>
+          <h1 style="margin: 15px 0; font-size: 40px; font-weight: 400;">Online (${allUsers.length})</h1>
+          <div style="display: flex;">
+            ${allUsers.map(user => `\
+              <div style="display: flex; margin-bottom: 5px; font-size: 30px; line-height: 1; align-items: center;">
+                <img src="${creatureUtils.makeStaticCreature('user:' + user)}" width="40" height="40" style="margin-right: 20px; image-rendering: pixelated;" />
+                <div>${user}</div>
+              </div>
+            `).join('\n')}
+          </div>
+        </div>
+        <div style="width: 400px;">
+          <h1 style="margin: 15px 0; font-size: 40px; font-weight: 400;">Access token</h1>
+          <div style="margin-bottom: 10px; font-size: 20px; font-weight: 400;">Share this token to allow others to log in. Click to copy to clipboard.</div>
+          <a style="display: block; margin-bottom: 10px; font-size: 30px; font-weight: 400; color: #2196F3; text-decoration: none; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;" onclick="status:token">${url}${authToken ? ('?t=' + authToken) : ''}</a>
+          <h1 style="margin: 15px 0; font-size: 40px; font-weight: 400;">Links</h1>
+          ${flags.hub ? `<a style="display: flex; padding: 0 10px; font-size: 24px; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="status:backToHub">
+            <img src="${homeImgSrc}" width="40" height="40" style="margin-right: 10px;" />
+            <span style="font-weight: 400;">Zeo VR Home</span>
+          </a>` : ''}
         </div>
       </div>
-      <div style="width: 400px;">
-        <h1 style="margin: 15px 0; font-size: 40px; font-weight: 400;">Access token</h1>
-        <div style="margin-bottom: 10px; font-size: 20px; font-weight: 400;">Share this token to allow others to log in. Click to copy to clipboard.</div>
-        <a style="display: block; margin-bottom: 10px; font-size: 30px; font-weight: 400; color: #2196F3; text-decoration: none; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;" onclick="status:token">${url}${authToken ? ('?t=' + authToken) : ''}</a>
-        <h1 style="margin: 15px 0; font-size: 40px; font-weight: 400;">Links</h1>
-        ${hasHub ? `<a style="display: flex; padding: 0 10px; font-size: 24px; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="status:backToHub">
-          <img src="${homeImgSrc}" width="40" height="40" style="margin-right: 10px;" />
-          <span style="font-weight: 400;">Zeo VR Home</span>
-        </a>` : ''}
+    `;
+  } else {
+    return `<div style="display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; flex-direction: column; justify-content: center; align-items: center;">
+      <div style="display: flex; margin: auto 0; flex-direction: column; justify-content: center; align-items: center;">
+        <div style="margin-bottom: 20px; font-size: 50px;">Demo world</div>
+        <div style="font-size: 24px;">This is an unsaved singleplayer world.</div>
+        <div style="font-size: 24px;">Connect to a multiplayer world in the <a style="display: inline-block; font-weight: 400; text-decoration: none;" onclick="status:servers">Servers</a> tab.</div>
       </div>
-    </div>
-  `;
+    </div>`;
+  }
 };
 
 const getNavbarSrc = ({tab}) => {

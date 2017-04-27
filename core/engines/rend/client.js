@@ -1,4 +1,4 @@
-import {
+const {
   WIDTH,
   HEIGHT,
   WORLD_WIDTH,
@@ -13,9 +13,9 @@ import {
 
   DEFAULT_USER_HEIGHT,
   TRANSITION_TIME,
-} from './lib/constants/menu';
-import menuUtils from './lib/utils/menu';
-import menuRender from './lib/render/menu';
+} = require('./lib/constants/menu');
+const menuUtils = require('./lib/utils/menu');
+const menuRender = require('./lib/render/menu');
 
 const SIDES = ['left', 'right'];
 
@@ -123,7 +123,10 @@ class Rend {
           worldname: serverWorldname,
           users: [],
           authToken: '',
-          hasHub: Boolean(hubSpec),
+          flags: {
+            hub: Boolean(hubSpec),
+            server: serverEnabled,
+          }
         };
         const navbarState = {
           tab: 'status',
@@ -236,6 +239,31 @@ class Rend {
           if (open) {
             const {side} = e;
 
+            const _setTab = newTab => {
+              const _getTabMesh = tab => {
+                switch (tab) {
+                  case 'status': return menuMesh.statusMesh;
+                  case 'world': return menuMesh.worldMesh;
+                  case 'servers': return menuMesh.serversMesh;
+                  case 'options': return menuMesh.configMesh;
+                  default: return null;
+                }
+              };
+
+              const {tab: oldTab} = navbarState;
+              const oldMesh = _getTabMesh(oldTab);
+              const newMesh = _getTabMesh(newTab);
+
+              oldMesh.visible = false;
+              newMesh.visible = true;
+
+              navbarState.tab = newTab;
+
+              _updateNavbarPage();
+
+              rendApi.emit('tabchange', newTab);
+            };
+
             const _doClickNavbar = () => {
               const hoverState = uiTracker.getHoverState(side);
               const {anchor} = hoverState;
@@ -245,28 +273,7 @@ class Rend {
               if (match = onclick.match(/^navbar:(status|world|servers|options)$/)) {
                 const newTab = match[1];
 
-                const _getTabMesh = tab => {
-                  switch (tab) {
-                    case 'status': return menuMesh.statusMesh;
-                    case 'world': return menuMesh.worldMesh;
-                    case 'servers': return menuMesh.serversMesh;
-                    case 'options': return menuMesh.configMesh;
-                    default: return null;
-                  }
-                };
-
-                const {tab: oldTab} = navbarState;
-                const oldMesh = _getTabMesh(oldTab);
-                const newMesh = _getTabMesh(newTab);
-
-                oldMesh.visible = false;
-                newMesh.visible = true;
-
-                navbarState.tab = newTab;
-
-                _updateNavbarPage();
-
-                rendApi.emit('tabchange', newTab);
+                _setTab(newTab);
 
                 return true;
               } else {
@@ -312,6 +319,8 @@ class Rend {
                 bootstrap.navigate('https://' + hubUrl + (initialToken ? ('?t=' + initialToken) : ''));
 
                 return true; // can't happen
+              } else if (onclick === 'status:servers') {
+                _setTab('servers');
               } else {
                 return false;
               }
