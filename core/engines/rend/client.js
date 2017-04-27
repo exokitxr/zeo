@@ -114,15 +114,15 @@ class Rend {
           open: serverEnabled,
           position: null,
           rotation: null,
-          loggedIn: false,
           animation: null,
         };
+        const loginResult = bootstrap.getLoginResult();
         const statusState = {
           url: bootstrap.getInitialPath(),
-          username: null,
+          username: loginResult ? loginResult.username : null,
           worldname: serverWorldname,
           users: [],
-          authToken: '',
+          authToken: loginResult ? loginResult.authToken : '',
           flags: {
             hub: Boolean(hubSpec),
             server: serverEnabled,
@@ -650,32 +650,6 @@ class Rend {
 
           getHoverState(side) {
             return uiTracker.getHoverState(side);
-          }
-
-          login() {
-            menuState.open = true;
-            menuState.position = [0, DEFAULT_USER_HEIGHT, -1.5];
-            menuState.rotation = [0, 0, 0, 1];
-            menuState.loggedIn = true;
-
-            _updateMenuPage();
-
-            menuMesh.visible = true;
-
-            this.emit('login');
-          }
-
-          logout() {
-            menuState.open = false;
-            menuState.position = null;
-            menuState.rotation = null;
-            menuState.loggedIn = false;
-
-            _updateMenuPage();
-
-            menuMesh.visible = false;
-
-            this.emit('logout');
           }
         }
         const rendApi = new RendApi();

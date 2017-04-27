@@ -28,8 +28,6 @@ export default class VoiceChat {
       archae.requestPlugins([
         '/core/engines/three',
         '/core/engines/somnifer',
-        '/core/engines/login',
-        '/core/engines/rend',
         '/core/engines/config',
         '/core/engines/multiplayer',
         '/core/utils/js-utils',
@@ -38,8 +36,6 @@ export default class VoiceChat {
         .then(([
           three,
           somnifer,
-          login,
-          rend,
           config,
           multiplayer,
           jsUtils,
@@ -219,9 +215,8 @@ export default class VoiceChat {
             };
 
             const _updateEnabled = () => {
-              const loggedIn = !login.isOpen();
               const {voiceChat} = config.getConfig();
-              const shouldBeEnabled = loggedIn && voiceChat;
+              const shouldBeEnabled = voiceChat;
 
               if (shouldBeEnabled && !enabled) {
                 _enable();
@@ -229,10 +224,6 @@ export default class VoiceChat {
                 _disable();
               };
             };
-            const _login = _updateEnabled;
-            rend.on('login', _login);
-            const _logout = _updateEnabled;
-            rend.on('logout', _logout);
             const _config = _updateEnabled;
             config.on('config', _config);
 
@@ -242,9 +233,6 @@ export default class VoiceChat {
               _localCleanup();
 
               callInterface.destroy();
-
-              rend.removeListener('login', _login);
-              rend.removeListener('logout', _logout);
 
               config.removeListener('config', _config);
             });

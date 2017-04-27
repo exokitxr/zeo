@@ -67,7 +67,6 @@ class World {
         '/core/engines/webvr',
         '/core/engines/cyborg',
         '/core/engines/multiplayer',
-        '/core/engines/login',
         '/core/engines/biolumi',
         '/core/engines/rend',
         '/core/engines/keyboard',
@@ -85,7 +84,6 @@ class World {
         webvr,
         cyborg,
         multiplayer,
-        login,
         biolumi,
         rend,
         keyboard,
@@ -1404,83 +1402,81 @@ class World {
             });
         };
         const _upload = files => {
-          if (!login.isOpen()) {
-            const _makeFileTagFromFiles = files => {
-              const id = _makeFileId();
-              const mainFile = (() => {
-                const _isRoot = f => /^\/[^\/]+/.test(f.path);
-                const _getFileMode = f => {
-                  const {type: autoMimeType} = f;
+          const _makeFileTagFromFiles = files => {
+            const id = _makeFileId();
+            const mainFile = (() => {
+              const _isRoot = f => /^\/[^\/]+/.test(f.path);
+              const _getFileMode = f => {
+                const {type: autoMimeType} = f;
 
-                  if (autoMimeType) {
-                    return fs.getFileMode(autoMimeType);
-                  } else {
-                    const match = f.path.match(/\.([^\/]+)$/);
-
-                    if (match) {
-                      const ext = match[1];
-                      const fakeMimeType = 'mime/' + ext.toLowerCase();
-
-                      return fs.getFileMode(fakeMimeType);
-                    } else {
-                      return null;
-                    }
-                  }
-                };
-                const _isRecognizedMimeType = f => _getFileMode(f) !== null;
-                const _isModelMimeType = f => _getFileMode(f) === 'model';
-
-                return files.sort((a, b) => a.path.localeCompare(b.path))
-                  .sort((a, b) => {
-                    const isRootDiff = +_isRoot(b) - +_isRoot(a);
-
-                    if (isRootDiff !== 0) {
-                      return isRootDiff;
-                    } else {
-                      const isRecognizedMimeTypeDiff = +_isRecognizedMimeType(b) - +_isRecognizedMimeType(a);
-
-                      if (isRecognizedMimeTypeDiff !== 0) {
-                        return isRecognizedMimeTypeDiff;
-                      } else {
-                        return _isModelMimeType(b) - +_isModelMimeType(a);
-                      }
-                    }
-                  })[0];
-                })();
-              const {path: name} = mainFile;
-              const mimeType = (() => {
-                const {type: mimeType} = mainFile;
-
-                if (mimeType) {
-                  return mimeType;
+                if (autoMimeType) {
+                  return fs.getFileMode(autoMimeType);
                 } else {
-                  const match = name.match(/\.([^.]+)$/);
+                  const match = f.path.match(/\.([^\/]+)$/);
 
                   if (match) {
                     const ext = match[1];
+                    const fakeMimeType = 'mime/' + ext.toLowerCase();
 
-                    return 'mime/' + ext.toLowerCase();
+                    return fs.getFileMode(fakeMimeType);
                   } else {
-                    return 'mime/blank';
+                    return null;
                   }
                 }
-              })();
+              };
+              const _isRecognizedMimeType = f => _getFileMode(f) !== null;
+              const _isModelMimeType = f => _getFileMode(f) === 'model';
 
-              return _makeFileTagFromSpec({
-                id,
-                name,
-                mimeType,
-                files,
-              });
-            };
-            _makeFileTagFromFiles(files)
-              .then(tagMesh => {
-                console.log('upoaded file', tagMesh);
-              })
-              .catch(err => {
-                console.warn(err);
-              });
-          }
+              return files.sort((a, b) => a.path.localeCompare(b.path))
+                .sort((a, b) => {
+                  const isRootDiff = +_isRoot(b) - +_isRoot(a);
+
+                  if (isRootDiff !== 0) {
+                    return isRootDiff;
+                  } else {
+                    const isRecognizedMimeTypeDiff = +_isRecognizedMimeType(b) - +_isRecognizedMimeType(a);
+
+                    if (isRecognizedMimeTypeDiff !== 0) {
+                      return isRecognizedMimeTypeDiff;
+                    } else {
+                      return _isModelMimeType(b) - +_isModelMimeType(a);
+                    }
+                  }
+                })[0];
+              })();
+            const {path: name} = mainFile;
+            const mimeType = (() => {
+              const {type: mimeType} = mainFile;
+
+              if (mimeType) {
+                return mimeType;
+              } else {
+                const match = name.match(/\.([^.]+)$/);
+
+                if (match) {
+                  const ext = match[1];
+
+                  return 'mime/' + ext.toLowerCase();
+                } else {
+                  return 'mime/blank';
+                }
+              }
+            })();
+
+            return _makeFileTagFromSpec({
+              id,
+              name,
+              mimeType,
+              files,
+            });
+          };
+          _makeFileTagFromFiles(files)
+            .then(tagMesh => {
+              console.log('upoaded file', tagMesh);
+            })
+            .catch(err => {
+              console.warn(err);
+            });
         };
         fs.on('upload', _upload);
 

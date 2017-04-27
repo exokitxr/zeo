@@ -25,7 +25,6 @@ class Multiplayer {
     return archae.requestPlugins([
       '/core/engines/three',
       '/core/engines/webvr',
-      '/core/engines/login',
       '/core/engines/assets',
       '/core/engines/biolumi',
       '/core/engines/rend',
@@ -34,7 +33,6 @@ class Multiplayer {
     ]).then(([
       three,
       webvr,
-      login,
       assets,
       biolumi,
       rend,
@@ -331,8 +329,8 @@ class Multiplayer {
         rend.on('update', _update);
 
         const connection = (() => {
-          if (serverEnabled && !login.isOpen()) {
-            const connection = new AutoWs(_relativeWsUrl('archae/multiplayerWs?id=' + encodeURIComponent(multiplayerApi.getId()) + '&username=' + encodeURIComponent(login.getUsername())));
+          if (serverEnabled) {
+            const connection = new AutoWs(_relativeWsUrl('archae/multiplayerWs?id=' + encodeURIComponent(multiplayerApi.getId()) + '&username=' + encodeURIComponent(rend.getStatus('username'))));
             connection.on('message', msg => {
               const m = JSON.parse(msg.data);
               const {type} = m;

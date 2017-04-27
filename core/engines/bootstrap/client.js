@@ -28,6 +28,37 @@ class Bootstrap {
     const initialUrl = document.location.href;
     const initialPath = document.location.protocol + '//' + document.location.host + document.location.pathname;
 
+    const _requestInitialLogin = () => {
+      if (serverEnabled) {
+        const token = _getQueryVariable(initialUrl, 't');
+
+        if (token !== null) {
+          return _requestLogin({
+            token,
+          });
+        } else {
+          return _requestLogin();
+        }
+      } else {
+        return Promise.resolve();
+      }
+    };
+    const _requestLogin = ({token = null} = {}) => _fetchAuthenticatedJson('server/login', token);
+    const _fetchAuthenticatedJson = (url, token) => fetch('server/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({token}),
+      credentials: 'same-origin',
+    })
+      .then(res => {
+        if (res.status >= 200 && res.status < 300) {
+          return res.json();
+        } else {
+          return null;
+        }
+      });
     const _requestStartTime = () => fetch('archae/bootstrap/start-time.json')
       .then(res => res.json()
         .then(({startTime}) => startTime)
@@ -37,17 +68,24 @@ class Bootstrap {
       archae.requestPlugins([
         '/core/utils/js-utils',
       ]),
+      _requestInitialLogin(),
       _requestStartTime(),
     ])
       .then(([
         [
           jsUtils,
         ],
+        loginResult,
         startTime,
       ]) => {
         if (live) {
           const {events} = jsUtils;
           const {EventEmitter} = events;
+
+          if (loginResult) {
+            const {token, username, authToken} = loginResult;
+            history.replaceState(null, '', '?t=' + encodeURIComponent(token));
+          }
 
           const isInIframe = (() => {
             try {
@@ -79,6 +117,10 @@ class Bootstrap {
 
             getInitialPath() {
               return initialPath;
+            }
+
+            getLoginResult() {
+              return loginResult;
             }
 
             isInIframe() {
@@ -147,5 +189,20 @@ class Bootstrap {
     this._cleanup();
   }
 }
+
+const _getQueryVariable = (url, variable) => {
+  const match = url.match(/\?(.+)$/);
+  const query = match ? match[1] : '';
+  const vars = query.split('&');
+
+  for (let i = 0; i < vars.length; i++) {
+    const pair = vars[i].split('=');
+
+    if (decodeURIComponent(pair[0]) === variable) {
+      return decodeURIComponent(pair[1]);
+    }
+  }
+  return null;
+};
 
 module.exports = Bootstrap;
