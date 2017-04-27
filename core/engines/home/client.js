@@ -490,6 +490,8 @@ class Home {
                 return mesh;
               };
 
+              const hmd = cyborg.getHmd();
+              const {hudMesh} = hmd;
               const controllers = cyborg.getControllers();
               const controllerMeshes = {
                 left: controllers.left.mesh,
@@ -736,6 +738,21 @@ class Home {
               })();
               result.legoMesh = legoMesh;
 
+              const padTargetMesh = (() => {
+                const geometry = new THREE.BoxBufferGeometry(0.05, 0.05 / 4, 0.05 / 4);
+                const material = transparentMaterials.red;
+
+                const mesh = new THREE.Mesh(geometry, material);
+                mesh.position.y = 0.046 - ((0.05 / 4) / 2);
+                mesh.visible = false;
+
+                const {circleMesh} = hudMesh;
+                circleMesh.add(mesh);
+
+                return mesh;
+              })();
+              result.padTargetMesh = padTargetMesh;
+
               return result;
             })();
             const walkthroughEmitter = new EventEmitter();
@@ -912,11 +929,14 @@ class Home {
                 };
               },
               () => {
-                const mesh = walkthroughMeshes.padMesh; // XXX add another target mesh for handling this case
-                mesh.visible = true;
+                const meshes = [walkthroughMeshes.padMesh, walkthroughMeshes.padTargetMesh];
+                meshes.forEach(mesh => {
+                  mesh.visible = true;
+                });
 
                 const keydown = e => {
-                  if (e.keyCode === 88) { // X
+                  // if (e.keyCode === 88) { // X
+                  if (e.keyCode === 82) { // R // XXX this is fake
                     _setPage('tutorial:' + 0);
                   }
                 };
@@ -925,7 +945,9 @@ class Home {
                 return () => {
                   input.removeListener('keydown', keydown);
 
-                  mesh.visible = false;
+                  meshes.forEach(mesh => {
+                    mesh.visible = false;
+                  });
                 };
               },
               null,
