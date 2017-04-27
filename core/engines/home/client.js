@@ -227,13 +227,9 @@ class Home {
             const homeState = {
               page: '',
               remoteServers: [],
-              localServers: [],
               username: '',
               inputText: '',
               loading: false,
-              flags: {
-                localServers: myEnabled,
-              },
               vrMode: bootstrap.getVrMode(),
             };
             const mediaState = {
@@ -271,10 +267,8 @@ class Home {
                   home: {
                     page,
                     remoteServers,
-                    localServers,
                     inputText,
                     loading,
-                    flags,
                     vrMode,
                   },
                   videos,
@@ -289,14 +283,12 @@ class Home {
                     src: menuRenderer.getHomeMenuSrc({
                       page,
                       remoteServers,
-                      localServers,
                       inputText,
                       inputIndex,
                       inputValue,
                       loading,
                       vrMode,
                       focusType,
-                      flags,
                       videos,
                     }),
                     x: 0,
@@ -1408,49 +1400,6 @@ class Home {
               priority: 1,
             });
 
-            // this needs to be a native click event rather than a soft trigger click event due for clipboard copy security reasons
-            const _click = () => {
-              SIDES.some(side => {
-                const hoverState = rend.getHoverState(side);
-                const {intersectionPoint} = hoverState;
-
-                if (intersectionPoint) {
-                  const {anchor} = hoverState;
-                  const onclick = (anchor && anchor.onclick) || '';
-
-                  let match;
-                  if (match = onclick.match(/^server:copyUrl:(.+)$/)) {
-                    const {metadata: {serverMesh}} = hoverState;
-                    const {server} = serverMesh;
-                    const {url, token} = server;
-                    const clipboardText = url + '?t=' + token;
-
-                    const ok = _copyToClipboard(clipboardText);
-                    if (ok) {
-                      const {worldname} = server;
-
-                      _proxyLoginServer(worldname)
-                        .then(token => {
-                          server.token = token;
-                        })
-                        .catch(err => {
-                          console.warn(err);
-                        });
-                    } else {
-                      console.warn('failed to copy URL:\n' + clipboardText);
-                    }
-
-                    return true;
-                  } else {
-                    return false;
-                  }
-                } else {
-                  return false;
-                }
-              });
-            };
-            input.on('click', _click);
-
             const _gripdown = e => {
               const {side} = e;
               const grabbableState = grabbableStates[side];
@@ -1697,8 +1646,6 @@ class Home {
 
               input.removeListener('trigger', _trigger);
 
-              input.removeListener('click', _click);
-
               input.removeListener('gripdown', _gripdown);
               input.removeListener('gripup', _gripup);
 
@@ -1720,35 +1667,5 @@ class Home {
 
 const _clone = o => JSON.parse(JSON.stringify(o));
 const _makeId = () => Math.random().toString(36).substring(7);
-const _copyToClipboard = s => {
-  const mark = document.createElement('span');
-  mark.textContent = s;
-  mark.setAttribute('style', [
-    // reset user styles for span element
-    'all: unset',
-    // prevents scrolling to the end of the page
-    'position: fixed',
-    'top: 0',
-    'clip: rect(0, 0, 0, 0)',
-    // used to preserve spaces and line breaks
-    'white-space: pre',
-    // do not inherit user-select (it may be `none`)
-    '-webkit-user-select: text',
-    '-moz-user-select: text',
-    '-ms-user-select: text',
-    'user-select: text',
-  ].join(';'));
-  document.body.appendChild(mark);
-
-  const range = document.createRange();
-  range.selectNode(mark);
-
-  const selection = document.getSelection();
-  selection.removeAllRanges();
-  selection.addRange(range);
-
-  const successful = document.execCommand('copy');
-  return successful;
-};
 
 module.exports = Home;

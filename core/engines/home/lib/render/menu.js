@@ -30,7 +30,7 @@ const downImg = require('../img/down');
 
 const makeRenderer = ({creatureUtils}) => {
 
-const getHomeMenuSrc = ({page, remoteServers, localServers, inputText, inputIndex, inputValue, loading, vrMode, focusType, flags, videos}) => {
+const getHomeMenuSrc = ({page, remoteServers, inputText, inputIndex, inputValue, loading, vrMode, focusType, videos}) => {
   const pageSpec = (() => {
     const split = page.split(':');
     const name = split[0];
@@ -43,32 +43,25 @@ const getHomeMenuSrc = ({page, remoteServers, localServers, inputText, inputInde
 
   const {name} = pageSpec;
   if (name === 'controls') {
-    return getControlsPageSrc(flags);
+    return getControlsPageSrc();
   } else if (name === 'menu') {
-    return getMenuPageSrc(flags, videos);
+    return getMenuPageSrc(videos);
   } else if (name === 'tutorial') {
     const {args} = pageSpec;
     const pageIndex = parseInt(args[0], 10);
 
-    return getTutorialPageSrc(pageIndex, vrMode, flags);
+    return getTutorialPageSrc(pageIndex, vrMode);
   } else if (name === 'remoteServers') {
     const {args} = pageSpec;
     const pageIndex = parseInt(args[0], 10);
 
     return getRemoteServersSrc(remoteServers, pageIndex, loading);
-  } else if (name === 'localServers') {
-    const {args} = pageSpec;
-    const pageIndex = parseInt(args[0], 10);
-
-    return getLocalServersSrc(localServers, pageIndex, loading);
-  } else if (name === 'createServer') {
-    return getCreateServerSrc(inputText, inputIndex, inputValue, focusType);
   } else {
     return '';
   }
 };
 
-const getTutorialPageSrc = (pageIndex, vrMode, flags) => {
+const getTutorialPageSrc = (pageIndex, vrMode) => {
   const keyboardVrMode = vrMode === null || vrMode === 'keyboard';
 
   const content = (() => {
@@ -213,7 +206,7 @@ const getTutorialPageSrc = (pageIndex, vrMode, flags) => {
   return getHeaderWrappedSrc(content, headerText, {back: true});
 };
 
-const getControlsPageSrc = flags => {
+const getControlsPageSrc = () => {
   return `<div style="display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; justify-content: center; align-items: center; flex-direction: column;">
     <div style="display: flex; font-size: 40px; margin: auto 0; justify-content: center; align-items: center;">Controls tutorial in progress</div>
     <div style="display: flex; width: 100%; height: 100px; padding: 0 50px; justify-content: center; align-items: center; box-sizing: border-box;">
@@ -223,7 +216,7 @@ const getControlsPageSrc = flags => {
   </div>`;
 };
 
-const getMenuPageSrc = (flags, videos) => {
+const getMenuPageSrc = videos => {
   return getHeaderWrappedSrc(`\
     <div style="display: flex; flex-direction: column; flex-grow: 1;">
       <div style="display: flex; margin-bottom: auto; flex-direction: column;">
@@ -238,14 +231,6 @@ const getMenuPageSrc = (flags, videos) => {
         <a style="display: flex; margin-left: auto; margin-right: 40px; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:menu">Main menu</a>
         <a style="display: flex; padding: 10px 15px; border: 2px solid; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:next">Next: Controls</a>
       </div>
-      ${flags.localServers ?
-        `<!-- <a style="display: flex; width: 200px; height: 200px; margin-right: 30px; border: 1px solid; border-radius: 5px; font-weight: 400; text-decoration: none; flex-direction: column; justify-content: center; align-items: center;" onclick="home:localServers">
-          <div style="margin-bottom: 15px; font-size: 24px;">Local servers</div>
-          <img src="${serverPlusImgSrc}" width="100" height="100" />
-        </a> -->`
-      :
-        ''
-      }
     </div>
   `, 'Introduction videos', {back: true});
 };
@@ -349,125 +334,6 @@ const getRemoteServersSrc = (servers, pageIndex, loading) => {
   `;
 };
 
-const getLocalServersSrc = (servers, pageIndex, loading) => {
-  const leftSrc = (() => {
-    return `\
-      <div style="display: flex; margin-right: auto; flex-direction: column;">
-        <div style="display: flex; height: 100px; justify-content: center; align-items: center;">
-          <a style="display: block; width: 100px;" onclick="home:menu">
-            <img src="${chevronLeftIconSrc}" width="80" height="80" />
-          </a>
-          <div style="margin-right: auto; font-size: 40px;">Local servers</div>
-        </div>
-        ${getServersSrc(servers.slice(pageIndex * SERVERS_PER_PAGE, (pageIndex + 1) * SERVERS_PER_PAGE), loading, 'localServer')}
-      </div>
-    `;
-  })();
-  const rightSrc = (() => {
-    const showUp = pageIndex > 0;
-    const showDown = servers.length >= ((pageIndex + 1) * SERVERS_PER_PAGE);
-
-    return `\
-      <div style="display: flex; width: 250px; height: inherit; flex-direction: column; box-sizing: border-box;">
-        <a style="display: flex; margin: 30px; padding: 20px 0; border: 1px solid; border-radius: 5px; font-weight: 400; text-decoration: none; flex-direction: column; justify-content: center; align-items: center;" onclick="localServers:createServer">
-          <div style="font-size: 24px;">Create server</div>
-          <img src="${serverPlusImgSrc}" width="80" height="80" />
-        </a>
-        <a style="position: relative; display: flex; margin: 0 30px; margin-bottom: auto; border: 1px solid; border-radius: 5px; text-decoration: none; justify-content: center; align-items: center; ${showUp ? '' : 'visibility: hidden;'}" onclick="servers:up">
-          ${upImg}
-        </a>
-        <a style="position: relative; display: flex; margin: 0 30px; margin-bottom: 20px; border: 1px solid; border-radius: 5px; text-decoration: none; justify-content: center; align-items: center; ${showDown ? '' : 'visibility: hidden;'}" onclick="servers:down">
-          ${downImg}
-        </a>
-      </div>
-    `;
-  })();
-
-  return `\
-    <div style="display: flex; height: ${HEIGHT}px;">
-      ${leftSrc}
-      ${rightSrc}
-    </div>
-  `;
-};
-
-const getCreateServerSrc = (inputText, inputIndex, inputValue, focusType) => {
-  return `\
-    <div>
-      <div style="display: flex; height: 100px; justify-content: center; align-items: center;">
-        <a style="display: block; width: 100px;" onclick="home:menu">
-          <img src="${chevronLeftIconSrc}" width="80" height="80" />
-        </a>
-        <div style="margin-right: auto; font-size: 40px;">Create server</div>
-      </div>
-      <div style="display: flex; width: ${WIDTH}px; height: ${HEIGHT - 100}px; flex-direction: column; justify-content: center; align-items: center;">
-        <a style="position: relative; display: block; width: 600px; margin-bottom: 20px; border-bottom: 3px solid #000; font-size: 40px; line-height: 1.4; text-decoration: none; overflow: hidden;" onclick="createServer:focus">
-          ${focusType === 'createServer' ? `<div style="position: absolute; width: 2px; top: 2px; bottom: 2px; left: ${inputValue}px; background-color: #333;"></div>` : ''}
-          <div>${inputText}</div>
-          ${!inputText ? `<div style="color: #AAA;">Choose a name</div>` : ''}
-        </a>
-        <div style="display: flex; justify-content: center; align-items: center;">
-          <a style="display: flex; margin: 30px; padding: 20px; border: 1px solid; border-radius: 5px; font-weight: 400; text-decoration: none; flex-direction: column; justify-content: center; align-items: center;" onclick="createServer:submit">
-            <div style="font-size: 24px;">Create server</div>
-            <img src="${serverPlusImgSrc}" width="80" height="80" />
-          </a>
-        </div>
-      </div>
-    </div>
-  `;
-};
-
-/* const getServerTagSrc = ({worldname, url, running, local}) => {
-  return `\
-    <div style="display: flex; width: ${SERVER_WIDTH}px; height: ${SERVER_HEIGHT}px; padding: 50px; background-color: #EEE; flex-direction: column; justify-content: center; align-items: center; box-sizing: border-box;">
-      <div style="display: flex; width: 100%;">
-        <a style="display: flex; position: absolute; top: 0; right: 0; width: 100px; height: 100px; justify-content: center; align-items: center;" onclick="server:close:${worldname}">
-          <img src="${closeBoxImgSrc}" width="80" height="80" />
-        </a>
-        <img src="${creatureUtils.makeStaticCreature('server:' + worldname)}" width="${SERVER_HEIGHT}" height="${SERVER_HEIGHT}" style="width: ${SERVER_HEIGHT}px; height: ${SERVER_HEIGHT}px; margin: -50px; margin-right: 50px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;" />
-        <div style="display: flex; flex-grow: 1; flex-direction: column;">
-          <div style="flex-grow: 1;">
-            <div style="font-size: 60px; font-weight: 400;">${worldname}</div>
-            ${url ?
-              `<div style="font-size: 30px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${url}</div>`
-            :
-              ''
-            }
-          </div>
-          ${local ? `\
-            ${running ?
-              `<a style="display: flex; margin-bottom: 20px; padding: 10px; background-color: #4CAF50; color: #FFF; font-size: 40px; text-decoration: none; justify-content: center; align-items: center;" onclick="server:copyUrl:${worldname}">Copy URL</a>`
-            :
-              ''
-            }
-            <a style="display: flex; align-items: center; text-decoration: none;" onclick="server:toggleRunning:${worldname}">
-              <div style="display: flex; margin-right: 30px; align-items: center;">
-                ${running ?
-                  `<div style="display: flex; justify-content: center; align-items: center;">
-                    <div style="display: flex; width: ${(60 * 2) - (5 * 2)}px; height: 60px; padding: 5px; border: 5px solid #333; justify-content: flex-end; align-items: center; box-sizing: border-box;">
-                      <div style="width: ${60 - ((5 * 2) + (5 * 2))}px; height: ${60 - ((5 * 2) + (5 * 2))}px; background-color: #333;"></div>
-                    </div>
-                  </div>`
-                :
-                  `<div style="display: flex; justify-content: center; align-items: center;">
-                    <div style="display: flex; width: ${(60 * 2) - (5 * 2)}px; height: 60px; padding: 5px; border: 5px solid #CCC; justify-content: flex-start; align-items: center; box-sizing: border-box;">
-                      <div style="width: ${60 - ((5 * 2) + (5 * 2))}px; height: ${60 - ((5 * 2) + (5 * 2))}px; background-color: #CCC;"></div>
-                    </div>
-                  </div>`
-                }
-              </div>
-              <div style="font-size: 60px; font-weight: 400; ${running ? 'color: #000;' : 'color: #CCC;'}">${running ? 'Running' : 'Not running'}</div>
-            </a>
-          `
-          :
-            ''
-          }
-        </div>
-      </div>
-    </div>
-  `;
-}; */
-
 const getWalkthroughSrc = ({label}) => {
   label = label.replace(/\$MOUSE/g, `<img src="${mouseImgSrc}" width="24" height="24">`);
 
@@ -514,7 +380,6 @@ const getMediaControlsSrc = ({paused, value}) => {
 
 return {
   getHomeMenuSrc,
-  // getServerTagSrc,
   getWalkthroughSrc,
   getMediaControlsSrc,
 };
