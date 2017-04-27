@@ -107,14 +107,6 @@ class Home {
             })
           )
       ));
-      /* const _requestZCakeNpmItemSpec = () => fetch('/archae/rend/mods?q=' + encodeURIComponent('/plugins/z-cake'))
-        .then(res => res.json()
-          .then(itemSpec => {
-            itemSpec.metadata.isStatic = true;
-
-            return itemSpec;
-          })
-        ); */
       const _requestDefaultTags = () => fetch('/archae/home/defaults/data/world/tags.json')
         .then(res => res.json()
           .then(({tags}) => Object.keys(tags).map(id => tags[id]))
@@ -137,7 +129,6 @@ class Home {
           '/core/utils/creature-utils',
         ]),
         _requestVideoSpecs(),
-        // _requestZCakeNpmItemSpec(),
         _requestDefaultTags(),
       ])
         .then(([
@@ -157,7 +148,6 @@ class Home {
             creatureUtils,
           ],
           videos,
-          // zCakeNpmItemSpec,
           defaultTags,
         ]) => {
           if (live) {
@@ -430,15 +420,6 @@ class Home {
               object.add(videoMesh);
               object.videoMesh = videoMesh;
 
-              /* const scale = 2;
-              const cakeTagMesh = tags.makeTag(zCakeNpmItemSpec);
-              cakeTagMesh.position.y = -0.26;
-              cakeTagMesh.position.z = -1 + 0.01;
-              cakeTagMesh.planeMesh.scale.set(scale, scale, 1);
-              cakeTagMesh.visible = false;
-              object.add(cakeTagMesh);
-              object.cakeTagMesh = cakeTagMesh; */
-
               const shadowMesh = (() => {
                 const geometry = new THREE.BoxBufferGeometry(WORLD_WIDTH, WORLD_HEIGHT, 0.01);
                 const material = transparentMaterial.clone();
@@ -486,13 +467,6 @@ class Home {
 
                 const {page} = mesh;
                 page.update();
-
-                /* const {page} = mesh;
-                rend.addPage(page);
-
-                cleanups.push(() => {
-                  rend.removePage(page);
-                }); */
 
                 return mesh;
               };
@@ -1035,162 +1009,6 @@ class Home {
               return mesh;
             };
 
-            /* const _makeEnvHoverState = () => ({
-              hoveredServerMesh: null,
-            });
-            const envHoverStates = {
-              left: _makeEnvHoverState(),
-              right: _makeEnvHoverState(),
-            };
-
-            const _makeEnvDotMesh = () => {
-              const geometry = new THREE.BufferGeometry();
-              geometry.addAttribute('position', new THREE.BufferAttribute(Float32Array.from([0, 0, 0]), 3));
-              const material = new THREE.PointsMaterial({
-                color: 0xFF0000,
-                size: 0.01,
-              });
-
-              const mesh = new THREE.Points(geometry, material);
-              mesh.visible = false;
-              return mesh;
-            };
-            const envDotMeshes = {
-              left: _makeEnvDotMesh(),
-              right: _makeEnvDotMesh(),
-            };
-            scene.add(envDotMeshes.left);
-            scene.add(envDotMeshes.right);
-
-            const _makeEnvBoxMesh = () => {
-              const size = SPHERE_RADIUS * 2;
-
-              const mesh = biolumi.makeBoxMesh();
-              const {geometry} = mesh;
-              geometry.applyMatrix(new THREE.Matrix4().makeScale(size, size, size));
-              return mesh;
-            };
-            const envBoxMeshes = {
-              left: _makeEnvBoxMesh(),
-              right: _makeEnvBoxMesh(),
-            };
-            scene.add(envBoxMeshes.left);
-            scene.add(envBoxMeshes.right);
-
-            const _makeServerMesh = server => {
-              const object = new THREE.Object3D();
-              object.server = server;
-
-              const envMesh = _makeServerEnvMesh(server);
-              object.add(envMesh);
-              object.envMesh = envMesh;
-
-              const menuMesh = _makeServerMenuMesh(server);
-              object.add(menuMesh);
-              object.menuMesh = menuMesh;
-
-              return object;
-            };
-            const _makeServerEnvMesh = server => {
-              const cubeCamera = new THREE.CubeCamera(0.001, 1024, 256);
-
-              const mesh = (() => {
-                const geometry = new THREE.SphereBufferGeometry(SPHERE_RADIUS, 64, 64);
-                const material = new THREE.MeshLambertMaterial({
-                  color: 0xffffff,
-                  envMap: cubeCamera.renderTarget.texture,
-                });
-
-                const mesh = new THREE.Mesh(geometry, material);
-                mesh.castShadow = true;
-
-                return mesh;
-              })();
-              mesh.add(cubeCamera);
-              mesh.cubeCamera = cubeCamera;
-
-              mesh.boxTarget = null;
-              const _updateBoxTarget = () => {
-                const {position: envMeshPosition, rotation: envMeshRotation, scale: envMeshScale} = _decomposeObjectMatrixWorld(mesh);
-                const boxTarget = geometryUtils.makeBoxTarget(envMeshPosition, envMeshRotation, envMeshScale, sphereDiameterVector);
-                mesh.boxTarget = boxTarget;
-              };
-              mesh.updateBoxTarget = _updateBoxTarget;
-
-              return mesh;
-            };
-            const _makeServerMenuMesh = server => {
-              const object = new THREE.Object3D();
-
-              const planeMesh = (() => {
-                const serverUi = biolumi.makeUi({
-                  width: SERVER_WIDTH,
-                  height: SERVER_HEIGHT,
-                });
-                const mesh = serverUi.makePage(({
-                  server: {
-                    worldname,
-                    url,
-                    running,
-                    local,
-                  },
-                }) => ({
-                  type: 'html',
-                  src: menuRenderer.getServerTagSrc({
-                    worldname,
-                    url,
-                    running,
-                    local,
-                  }),
-                  x: 0,
-                  y: 0,
-                  w: SERVER_WIDTH,
-                  h: SERVER_HEIGHT,
-                }), {
-                  type: 'home',
-                  state: {
-                    server: {
-                      worldname: server.worldname,
-                      url: server.url,
-                      running: server.running,
-                      local: server.local,
-                    },
-                  },
-                  worldWidth: SERVER_WORLD_WIDTH,
-                  worldHeight: SERVER_WORLD_HEIGHT,
-                });
-                mesh.position.y = 0.45;
-                mesh.receiveShadow = true;
-
-                const {page} = mesh;
-                rend.addPage(page);
-                page.update();
-
-                cleanups.push(() => {
-                  rend.removePage(page);
-                });
-
-                return mesh;
-              })();
-              object.add(planeMesh);
-              object.planeMesh = planeMesh;
-
-              const shadowMesh = (() => {
-                const geometry = new THREE.BoxBufferGeometry(SERVER_WORLD_WIDTH, SERVER_WORLD_HEIGHT, 0.01);
-                const material = transparentMaterial.clone();
-                material.depthWrite = false;
-
-                const mesh = new THREE.Mesh(geometry, material);
-                mesh.castShadow = true;
-                return mesh;
-              })();
-              object.add(shadowMesh);
-
-              return object;
-            };
-            const serversMesh = new THREE.Object3D();
-            scene.add(serversMesh); */
-
             const _updatePages = () => {
               const {planeMesh} = menuMesh;
               const {page} = planeMesh;
@@ -1198,7 +1016,7 @@ class Home {
             };
             _updatePages();
 
-            /* const _addTag = (side, srcTagMesh) => { // XXX needs to be broken up into module and entity cases
+            /* const _addTag = (side, srcTagMesh) => { // XXX all of these should be moved to the home engine under home (non-saving) mode
               const itemSpec = _clone(srcTagMesh.item);
               itemSpec.id = _makeId();
               const tagMesh = tags.makeTag(itemSpec);
@@ -1285,21 +1103,12 @@ class Home {
                 args,
               };
             };
-            /* const _removeServerMeshes = () => {
-              const {children} = serversMesh;
-              for (let i = 0; i < children.length; i++) {
-                const child = children[i];
-                serversMesh.remove(child);
-              }
-            }; */
             let videoUpdateInterval = null;
             const _setPage = page => {
               const {page: oldPage} = homeState;
               homeState.page = page;
 
               _updatePages();
-
-              // _removeServerMeshes();
 
               if (page === 'menu' && oldPage !== 'menu') {
                 bootstrap.setTutorialFlag(false);
@@ -1371,22 +1180,6 @@ class Home {
                 .catch(err => {
                   console.warn(err);
                 });
-            };
-            const _openLocalServersPage = () => {
-              homeState.loading = true;
-
-              _setPage('localServers:' + 0);
-
-              _requestLocalServers()
-                .then(servers => {
-                  homeState.localServers = servers;
-                  homeState.loading = false;
-
-                  _updatePages();
-                })
-                .catch(err => {
-                  console.warn(err);
-                });
             }; */
             const _proxyLoginServer = worldname => fetch('servers/proxyLogin', {
               method: 'POST',
@@ -1434,88 +1227,7 @@ class Home {
                   return false;
                 }
               };
-              /* const _doServerMeshClick = () => {
-                const hoverState = rend.getHoverState(side);
-                const {intersectionPoint} = hoverState;
-
-                if (intersectionPoint) {
-                  const {anchor} = hoverState;
-                  const onclick = (anchor && anchor.onclick) || '';
-
-                  let match;
-                  if (match = onclick.match(/^server:close:(.+)$/)) {
-                    const {metadata: {serverMesh}} = hoverState;
-                    serversMesh.remove(serverMesh);
-                  } else if (match = onclick.match(/^server:toggleRunning:(.+)$/)) {
-                    const {metadata: {serverMesh}} = hoverState;
-                    const {server} = serverMesh;
-                    const {worldname, running} = server;
-
-                    if (!running) {
-                      fetch('servers/start', {
-                        method: 'POST',
-                        headers: (() => {
-                          const result = new Headers();
-                          result.append('Content-Type', 'application/json');
-                          return result;
-                        })(),
-                        body: JSON.stringify({
-                          worldname: worldname,
-                        }),
-                      })
-                        .then(res => {
-                          const {status} = res;
-
-                          if (status >= 200 && status < 300) {
-                            return res.blob()
-                              .then(() => {
-                                 _openLocalServersPage();
-                              });
-                          } else {
-                            const err = new Error('home backend returned invalid status code: ' + status);
-                            return Promise.reject(err);
-                          }
-                        })
-                        .catch(err => {
-                          console.warn(err);
-                        });
-                    } else {
-                      fetch('servers/stop', {
-                        method: 'POST',
-                        headers: (() => {
-                          const result = new Headers();
-                          result.append('Content-Type', 'application/json');
-                          return result;
-                        })(),
-                        body: JSON.stringify({
-                          worldname: worldname,
-                        }),
-                      })
-                        .then(res => {
-                          const {status} = res;
-
-                          if (status >= 200 && status < 300) {
-                            return res.blob()
-                              .then(() => {
-                                 _openLocalServersPage();
-                              });
-                          } else {
-                            const err = new Error('home backend returned invalid status code: ' + status);
-                            return Promise.reject(err);
-                          }
-                        })
-                        .catch(err => {
-                          console.warn(err);
-                        });
-                    }
-                  }
-
-                  return true;
-                } else {
-                  return false;
-                }
-              };
-              const _doEnvMeshClick = () => {
+              /* const _doEnvMeshClick = () => { // XXX integrate this into the rend engine menu
                 const envHoverState = envHoverStates[side];
                 const {hoveredServerMesh} = envHoverState;
 
@@ -1669,47 +1381,7 @@ class Home {
                   }
 
                   return true;
-                /* } else if (onclick === 'home:localServers') { // XXX fold this into remoteServers/menu
-                  _openLocalServersPage();
-
-                  return true;
-                } else if (match = onclick.match(/^remoteServer:([0-9]+)$/)) {
-                  const index = parseInt(match[1], 10);
-
-                  const {remoteServers} = homeState;
-                  const server = remoteServers[index];
-
-                  // remove old server meshes
-                  _removeServerMeshes();
-
-                  // add new server mesh
-                  const serverMesh = _makeServerMesh(server);
-                  serverMesh.position.y = 1.2;
-                  serversMesh.add(serverMesh);
-                  serverMesh.updateMatrixWorld();
-                  const {envMesh} = serverMesh;
-                  envMesh.updateBoxTarget();
-
-                  return true;
-                } else if (match = onclick.match(/^localServer:([0-9]+)$/)) {
-                  const index = parseInt(match[1], 10);
-
-                  const {localServers} = homeState;
-                  const server = localServers[index];
-
-                  // remove old server meshes
-                  _removeServerMeshes();
-
-                  // add new server mesh
-                  const serverMesh = _makeServerMesh(server);
-                  serverMesh.position.y = 1.2;
-                  serversMesh.add(serverMesh);
-                  serverMesh.updateMatrixWorld();
-                  const {envMesh} = serverMesh;
-                  envMesh.updateBoxTarget();
-
-                  return true;
-                } else if (onclick === 'servers:up') {
+                /* } else if (onclick === 'servers:up') { // XXX integrate this into the rend engine menu
                   const {page} = homeState;
                   const pageSpec = _parsePage(page);
                   _setPage([pageSpec.name, parseInt(pageSpec.args[0], 10) - 1].join(':'));
@@ -1721,68 +1393,6 @@ class Home {
                   _setPage([pageSpec.name, parseInt(pageSpec.args[0], 10) + 1].join(':'));
 
                   return true;
-                } else if (onclick === 'localServers:createServer') {
-                  _setPage('createServer');
-
-                  return true;
-                } else if (onclick === 'createServer:focus') {
-                  const {inputText} = homeState;
-                  const {value} = hoverState;
-                  const valuePx = value * 600;
-                  const {index, px} = biolumi.getTextPropertiesFromCoord(inputText, mainFontSpec, valuePx); // XXX this can be folded into the keyboard engine
-                  const {hmd: {position: hmdPosition, rotation: hmdRotation}} = webvr.getStatus();
-                  const keyboardFocusState = keyboard.focus({
-                    type: 'createServer',
-                    position: hmdPosition,
-                    rotation: hmdRotation,
-                    inputText: inputText,
-                    inputIndex: index,
-                    inputValue: px,
-                    fontSpec: mainFontSpec,
-                  });
-                  focusState.keyboardFocusState = keyboardFocusState;
-
-                  keyboardFocusState.on('update', () => {
-                    const {inputText} = keyboardFocusState;
-                    homeState.inputText = inputText;
-
-                    _updatePages();
-                  });
-                  keyboardFocusState.on('blur', () => {
-                    focusState.keyboardFocusState = null;
-
-                    _updatePages();
-                  });
-
-                  _updatePages();
-
-                  return true;
-                } else if (onclick === 'createServer:submit') {
-                  const {inputText: worldname} = homeState;
-
-                  if (/^[a-z][a-z0-9_-]*$/i.test(worldname)) {
-                    fetch('servers/create', {
-                      method: 'POST',
-                      headers: (() => {
-                        const result = new Headers();
-                        result.append('Content-Type', 'application/json');
-                        return result;
-                      })(),
-                      body: JSON.stringify({
-                        worldname: worldname,
-                      }),
-                    })
-                      .then(res => res.blob()
-                        .then(() => {
-                           _openLocalServersPage();
-                        })
-                      )
-                      .catch(err => {
-                        console.warn(err);
-                      });
-                  }
-
-                  return true;
                 } else if (onclick === 'home:apiDocs') {
                   bootstrap.navigate('https://zeovr.io/docs');
 
@@ -1792,7 +1402,7 @@ class Home {
                 }
               };
 
-              _doTagMeshClick() || /*_doServerMeshClick() || _doEnvMeshClick() ||*/ _doMenuMeshClick();
+              _doTagMeshClick() || /*_doEnvMeshClick() ||*/ _doMenuMeshClick();
             };
             input.on('trigger', _trigger, {
               priority: 1,
@@ -1847,25 +1457,17 @@ class Home {
               const {grabMesh} = grabbableState;
 
               if (grabMesh) {
-                /* const {cakeTagMesh} = menuMesh;
+                const controllers = cyborg.getControllers();
+                const controller = controllers[side];
+                const {mesh: controllerMesh} = controller;
+                grabMesh.position.copy(controllerMeshOffset);
+                grabMesh.quaternion.copy(controllerMeshQuaternion);
+                grabMesh.scale.copy(oneVector);
 
-                if (grabMesh === cakeTagMesh) {
-                  if (!grabMesh.item.metadata.exists) {
-                    _addNpmModule(side, grabMesh);
-                  }
-                } else { */
-                  const controllers = cyborg.getControllers();
-                  const controller = controllers[side];
-                  const {mesh: controllerMesh} = controller;
-                  grabMesh.position.copy(controllerMeshOffset);
-                  grabMesh.quaternion.copy(controllerMeshQuaternion);
-                  grabMesh.scale.copy(oneVector);
+                controllerMesh.add(grabMesh);
 
-                  controllerMesh.add(grabMesh);
-
-                  const grabState = grabStates[side];
-                  grabState.tagMesh = grabMesh;
-                // }
+                const grabState = grabStates[side];
+                grabState.tagMesh = grabMesh;
 
                 e.stopImmediatePropagation();
               }
@@ -1950,99 +1552,6 @@ class Home {
                   grabbableState.grabMesh = grabMesh;
                 });
               };
-              /* const _updateEnvAnchors = () => {
-                const {gamepads} = webvr.getStatus();
-                const {children: serverMeshes} = serversMesh;
-
-                SIDES.forEach(side => {
-                  const gamepad = gamepads[side];
-                  const envHoverState = envHoverStates[side];
-                  const envDotMesh = envDotMeshes[side];
-                  const envBoxMesh = envBoxMeshes[side];
-
-                  if (gamepad) {
-                    const {position: controllerPosition, rotation: controllerRotation, scale: controllerScale} = gamepad;
-                    const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation, controllerScale);
-
-                    const intersectionSpecs = serverMeshes.map(serverMesh => {
-                      const {envMesh} = serverMesh;
-                      const {boxTarget} = envMesh;
-
-                      if (boxTarget) { // we add the box target asynchronously on next tick
-                        const intersectionPoint = boxTarget.intersectLine(controllerLine);
-
-                        if (intersectionPoint) {
-                          const distance = intersectionPoint.distanceTo(controllerPosition);
-
-                          return {
-                            intersectionPoint,
-                            distance,
-                            serverMesh,
-                          };
-                        } else {
-                          return null;
-                        }
-                      } else {
-                        return null;
-                      }
-                    }).filter(intersectionSpec => intersectionSpec !== null);
-
-                    if (intersectionSpecs.length > 0) {
-                      const intersectionSpec = intersectionSpecs.sort((a, b) => a.distance - b.distance)[0];
-                      const {intersectionPoint, serverMesh} = intersectionSpec;
-                      const {envMesh} = serverMesh;
-                      const {position: envMeshPosition, rotation: envMeshRotation, scale: envMeshScale} = _decomposeObjectMatrixWorld(envMesh);
-
-                      envDotMesh.position.copy(intersectionPoint);
-                      envBoxMesh.position.copy(envMeshPosition);
-                      envBoxMesh.quaternion.copy(envMeshRotation);
-                      envBoxMesh.scale.copy(envMeshScale);
-
-                      envHoverState.hoveredServerMesh = serverMesh;
-                      envDotMesh.visible = true;
-                      envBoxMesh.visible = true;
-                    } else {
-                      envHoverState.hoveredServerMesh = null;
-                      envDotMesh.visible = false;
-                      envBoxMesh.visible = false;
-                    }
-                  } else {
-                    envHoverState.hoveredServerMesh = null;
-                    envDotMesh.visible = false;
-                    envBoxMesh.visible = false;
-                  }
-                });
-              };
-              const _updateServerMeshes = () => {
-                const {hmd} = webvr.getStatus();
-                const {children: serverMeshes} = serversMesh;
-
-                for (let i = 0; i < serverMeshes.length; i++) {
-                  const serverMesh = serverMeshes[i];
-                  const {menuMesh} = serverMesh;
-                  const {position: menuMeshPosition} = _decomposeObjectMatrixWorld(menuMesh);
-                  const serverMeshNormal = hmd.position.clone().sub(menuMeshPosition);
-                  serverMeshNormal.y = 0;
-                  serverMeshNormal.normalize();
-                  menuMesh.quaternion.setFromUnitVectors(
-                    backVector,
-                    serverMeshNormal
-                  );
-                }
-              };
-              const _updateEnvMaps = () => {
-                const {children: serverMeshes} = serversMesh;
-
-                for (let i = 0; i < serverMeshes.length; i++) {
-                  const serverMesh = serverMeshes[i];
-                  const {envMesh} = serverMesh;
-                  const {cubeCamera} = envMesh;
-
-                  envMesh.visible = false;
-                  cubeCamera.updateCubeMap(renderer, scene);
-                  envMesh.visible = true;
-                }
-              }; */
               const _updateWalkthroughMeshes = () => {
                 const uiTime = biolumi.getUiTime();
 
@@ -2168,9 +1677,6 @@ class Home {
 
               _updateTagPointerAnchors();
               _updateTagGrabAnchors();
-              /* _updateEnvAnchors();
-              _updateServerMeshes();
-              _updateEnvMaps(); */
               _updateWalkthroughMeshes();
               _updateWalkthroughTargets();
               _updateWalkthroughEmitter();
@@ -2188,14 +1694,6 @@ class Home {
                 scene.remove(targetDotMeshes[side]);
                 scene.remove(targetBoxMeshes[side]);
               });
-              /* SIDES.forEach(side => {
-                scene.remove(serverDotMeshes[side]);
-                scene.remove(serverBoxMeshes[side]);
-
-                scene.remove(envDotMeshes[side]);
-                scene.remove(envBoxMeshes[side]);
-              });
-              scene.remove(serversMesh); */
 
               input.removeListener('trigger', _trigger);
 
