@@ -34,7 +34,7 @@ class World {
 
   mount() {
     const {_archae: archae} = this;
-    const {metadata: {server: {enabled: serverEnabled}}} = archae;
+    const {metadata: {home: {enabled: homeEnabled}, server: {enabled: serverEnabled}}} = archae;
 
     const cleanups = [];
     this._cleanup = () => {
@@ -49,36 +49,53 @@ class World {
       live = false;
     });
 
-    return archae.requestPlugins([
-      '/core/engines/three',
-      '/core/engines/input',
-      '/core/engines/webvr',
-      '/core/engines/cyborg',
-      '/core/engines/multiplayer',
-      '/core/engines/login',
-      '/core/engines/biolumi',
-      '/core/engines/rend',
-      '/core/engines/keyboard',
-      '/core/engines/loader',
-      '/core/engines/tags',
-      '/core/engines/fs',
-      '/core/utils/network-utils',
-      '/core/utils/geometry-utils',
+    const _requestDefaultTags = () => {
+      if (homeEnabled) {
+        return fetch('/archae/home/defaults/data/world/tags.json')
+          .then(res => res.json()
+            .then(({tags}) => Object.keys(tags).map(id => tags[id]))
+          );
+      } else {
+        return Promise.resolve();
+      }
+    };
+
+    return Promise.all([
+      archae.requestPlugins([
+        '/core/engines/three',
+        '/core/engines/input',
+        '/core/engines/webvr',
+        '/core/engines/cyborg',
+        '/core/engines/multiplayer',
+        '/core/engines/login',
+        '/core/engines/biolumi',
+        '/core/engines/rend',
+        '/core/engines/keyboard',
+        '/core/engines/loader',
+        '/core/engines/tags',
+        '/core/engines/fs',
+        '/core/utils/network-utils',
+        '/core/utils/geometry-utils',
+      ]),
+      _requestDefaultTags(),
     ]).then(([
-      three,
-      input,
-      webvr,
-      cyborg,
-      multiplayer,
-      login,
-      biolumi,
-      rend,
-      keyboard,
-      loader,
-      tags,
-      fs,
-      networkUtils,
-      geometryUtils,
+      [
+        three,
+        input,
+        webvr,
+        cyborg,
+        multiplayer,
+        login,
+        biolumi,
+        rend,
+        keyboard,
+        loader,
+        tags,
+        fs,
+        networkUtils,
+        geometryUtils,
+      ],
+      defaultTags,
     ]) => {
       if (live) {
         const {THREE, scene, camera} = three;
@@ -275,30 +292,27 @@ class World {
 
         const requestHandlers = new Map();
         const _request = (method, args, cb) => {
-          const id = _makeId();
+          if (connection) {
+            const id = _makeId();
 
-          const e = {
-            method,
-            args,
-            id,
-          };
-          const es = JSON.stringify(e);
-          connection.send(es);
+            const e = {
+              method,
+              args,
+              id,
+            };
+            const es = JSON.stringify(e);
+            connection.send(es);
 
-          const requestHandler = (err, result) => {
-            if (!err) {
-              cb(null, result);
-            } else {
-              cb(err);
-            }
+            const requestHandler = (err, result) => {
+              if (!err) {
+                cb(null, result);
+              } else {
+                cb(err);
+              }
 
-            requestHandlers.delete(id);
-          };
-          requestHandlers.set(id, requestHandler);
-        };
-        const _requestWritable = (method, args, cb) => {
-          if (serverEnabled) {
-            _request(method, args, cb);
+              requestHandlers.delete(id);
+            };
+            requestHandlers.set(id, requestHandler);
           } else {
             setTimeout(() => {
               cb(null);
@@ -308,17 +322,17 @@ class World {
         const _addTag = (itemSpec, dst, {element = null} = {}) => {
           _handleAddTag(localUserId, itemSpec, dst, {element});
 
-          _requestWritable('addTag', [localUserId, itemSpec, dst], _warnError);
+          _request('addTag', [localUserId, itemSpec, dst], _warnError);
         };
         const _removeTag = src => {
           _handleRemoveTag(localUserId, src);
 
-          _requestWritable('removeTag', [localUserId, src], _warnError);
+          _request('removeTag', [localUserId, src], _warnError);
         };
         const _moveTag = (src, dst) => {
           _handleMoveTag(localUserId, src, dst);
 
-          _requestWritable('moveTag', [localUserId, src, dst], _warnError);
+          _request('moveTag', [localUserId, src, dst], _warnError);
         };
 
         const _handleAddTag = (userId, itemSpec, dst, {element = null} = {}) => {
@@ -1210,7 +1224,7 @@ class World {
         const _mutateSetAttribute = ({id, name, value}) => {
           const src = _getTagIdSrc(id);
 
-          _requestWritable('setTagAttribute', [localUserId, src, {name, value}], _warnError);
+          _request('setTagAttribute', [localUserId, src, {name, value}], _warnError);
         };
         tags.on('mutateSetAttribute', _mutateSetAttribute);
         const _tagsAddTag = ({itemSpec, dst}) => {
@@ -1226,7 +1240,7 @@ class World {
         const _tagsRemove = ({id}) => {
           const src = _getTagIdSrc(id);
 
-          _requestWritable('removeTag', [localUserId, src], _warnError);
+          _request('removeTag', [localUserId, src], _warnError);
 
           _handleRemoveTag(localUserId, src);
         };
@@ -1234,7 +1248,7 @@ class World {
         const _tagsOpen = ({id}) => {
           const src = _getTagIdSrc(id);
 
-          _requestWritable('tagOpen', [localUserId, src], _warnError);
+          _request('tagOpen', [localUserId, src], _warnError);
 
           _handleTagOpen(localUserId, src);
         };
@@ -1242,7 +1256,7 @@ class World {
         const _tagsClose = ({id}) => {
           const src = _getTagIdSrc(id);
 
-          _requestWritable('tagClose', [localUserId, src], _warnError);
+          _request('tagClose', [localUserId, src], _warnError);
 
           _handleTagClose(localUserId, src);
         };
@@ -1250,7 +1264,7 @@ class World {
         const _tagsOpenDetails = ({id}) => {
           const src = _getTagIdSrc(id);
 
-          _requestWritable('tagOpenDetails', [localUserId, src], _warnError);
+          _request('tagOpenDetails', [localUserId, src], _warnError);
 
           _handleTagOpenDetails(localUserId, src);
         };
@@ -1258,7 +1272,7 @@ class World {
         const _tagsCloseDetails = ({id}) => {
           const src = _getTagIdSrc(id);
 
-          _requestWritable('tagCloseDetails', [localUserId, src], _warnError);
+          _request('tagCloseDetails', [localUserId, src], _warnError);
 
           _handleTagCloseDetails(localUserId, src);
         };
@@ -1266,7 +1280,7 @@ class World {
         const _tagsPlay = ({id}) => {
           const src = _getTagIdSrc(id);
 
-          _requestWritable('tagPlay', [localUserId, src], _warnError);
+          _request('tagPlay', [localUserId, src], _warnError);
 
           _handleTagPlay(localUserId, src);
         };
@@ -1274,7 +1288,7 @@ class World {
         const _tagsPause = ({id}) => {
           const src = _getTagIdSrc(id);
 
-          _requestWritable('tagPause', [localUserId, src], _warnError);
+          _request('tagPause', [localUserId, src], _warnError);
 
           _handleTagPause(localUserId, src);
         };
@@ -1282,7 +1296,7 @@ class World {
         const _tagsSeek = ({id, value}) => {
           const src = _getTagIdSrc(id);
 
-          _requestWritable('tagSeek', [localUserId, src, value], _warnError);
+          _request('tagSeek', [localUserId, src, value], _warnError);
 
           _handleTagSeek(localUserId, src, value);
         };
@@ -1290,7 +1304,7 @@ class World {
         const _tagsSeekUpdate = ({id, value}) => {
           const src = _getTagIdSrc(id);
 
-          _requestWritable('tagSeekUpdate', [localUserId, src, value], _warnError);
+          _request('tagSeekUpdate', [localUserId, src, value], _warnError);
         };
         tags.on('seekUpdate', _tagsSeekUpdate);
         const _reinstallModule = ({id}) => {
@@ -1298,12 +1312,12 @@ class World {
           const {item} = tagMesh;
           const {name, displayName} = item;
 
-          _requestWritable('unloadModule', [localUserId, displayName], _warnError);
+          _request('unloadModule', [localUserId, displayName], _warnError);
           _handleUnloadModule(localUserId, displayName);
 
           loader.removePlugin(name)
             .then(() => {
-              _requestWritable('loadModule', [localUserId, name], _warnError);
+              _request('loadModule', [localUserId, name], _warnError);
               _handleLoadModule(localUserId, name);
             })
             .catch(err => {
@@ -1320,7 +1334,7 @@ class World {
         };
         tags.on('loadTags', _loadTags);
         const _broadcast = detail => {
-          _requestWritable('broadcast', [detail], _warnError);
+          _request('broadcast', [detail], _warnError);
         };
         tags.on('broadcast', _broadcast);
 
@@ -1466,104 +1480,113 @@ class World {
         };
         fs.on('upload', _upload);
 
-        const connection = new AutoWs(_relativeWsUrl('archae/worldWs?id=' + localUserId));
-        let initialized = false;
-        connection.on('message', msg => {
-          const m = JSON.parse(msg.data);
-          const {type} = m;
+        const connection = (() => {
+          if (serverEnabled) {
+            const connection = new AutoWs(_relativeWsUrl('archae/worldWs?id=' + localUserId));
+            let initialized = false;
+            connection.on('message', msg => {
+              const m = JSON.parse(msg.data);
+              const {type} = m;
 
-          if (type === 'init') {
-            if (serverEnabled) {
-              if (!initialized) { // XXX temporary hack until we correctly unload tags on disconnect
-                const {args: [itemSpecs]} = m;
+              if (type === 'init') {
+                if (!initialized) { // XXX temporary hack until we correctly unload tags on disconnect
+                  const {args: [itemSpecs]} = m;
 
-                tags.loadTags(itemSpecs);
+                  tags.loadTags(itemSpecs);
 
-                initialized = true;
+                  initialized = true;
+                }
+              } else if (type === 'addTag') {
+                const {args: [userId, itemSpec, dst]} = m;
+
+                _handleAddTag(userId, itemSpec, dst);
+              } else if (type === 'removeTag') {
+                const {args: [userId, src]} = m;
+
+                _handleRemoveTag(userId, src);
+              } else if (type === 'moveTag') {
+                const {args: [userId, src, dst]} = m;
+
+                _handleMoveTag(userId, src, dst);
+              } else if (type === 'setTagAttribute') {
+                const {args: [userId, src, {name, value}]} = m;
+
+                const tagMesh = _handleSetTagAttribute(userId, src, {name, value});
+
+                // this prevents this mutation from triggering an infinite recursion multiplayer update
+                // we simply ignore this mutation during the next entity mutation tick
+                if (tagMesh) {
+                  const {item} = tagMesh;
+                  const {id} = item;
+
+                  tags.ignoreEntityMutation({
+                    type: 'setAttribute',
+                    args: [id, name, value],
+                  });
+                }
+              } else if (type === 'tagOpen') {
+                const {args: [userId, src]} = m;
+
+                _handleTagOpen(userId, src);
+              } else if (type === 'tagClose') {
+                const {args: [userId, src]} = m;
+
+                _handleTagClose(userId, src);
+              } else if (type === 'tagOpenDetails') {
+                const {args: [userId, src]} = m;
+
+                _handleTagOpenDetails(userId, src);
+              } else if (type === 'tagCloseDetails') {
+                const {args: [userId, src]} = m;
+
+                _handleTagCloseDetails(userId, src);
+              } else if (type === 'tagPlay') {
+                const {args: [userId, src]} = m;
+
+                _handleTagPlay(userId, src);
+              } else if (type === 'tagPause') {
+                const {args: [userId, src]} = m;
+
+                _handleTagPause(userId, src);
+              } else if (type === 'tagSeek') {
+                const {args: [userId, src, value]} = m;
+
+                _handleTagSeek(userId, src, value);
+              } else if (type === 'loadModule') {
+                const {args: [userId, plugin]} = m;
+
+                _handleLoadModule(userId, plugin);
+              } else if (type === 'unloadModule') {
+                const {args: [userId, pluginName]} = m;
+
+                _handleUnloadModule(userId, pluginName);
+              } else if (type === 'message') {
+                const {args: [detail]} = m;
+
+                _handleMessage(detail);
+              } else if (type === 'response') {
+                const {id} = m;
+
+                const requestHandler = requestHandlers.get(id);
+                if (requestHandler) {
+                  const {error, result} = m;
+                  requestHandler(error, result);
+                } else {
+                  console.warn('unregistered handler:', JSON.stringify(id));
+                }
+              } else {
+                console.log('unknown message', m);
               }
-            }
-          } else if (type === 'addTag') {
-            const {args: [userId, itemSpec, dst]} = m;
-
-            _handleAddTag(userId, itemSpec, dst);
-          } else if (type === 'removeTag') {
-            const {args: [userId, src]} = m;
-
-            _handleRemoveTag(userId, src);
-          } else if (type === 'moveTag') {
-            const {args: [userId, src, dst]} = m;
-
-            _handleMoveTag(userId, src, dst);
-          } else if (type === 'setTagAttribute') {
-            const {args: [userId, src, {name, value}]} = m;
-
-            const tagMesh = _handleSetTagAttribute(userId, src, {name, value});
-
-            // this prevents this mutation from triggering an infinite recursion multiplayer update
-            // we simply ignore this mutation during the next entity mutation tick
-            if (tagMesh) {
-              const {item} = tagMesh;
-              const {id} = item;
-
-              tags.ignoreEntityMutation({
-                type: 'setAttribute',
-                args: [id, name, value],
-              });
-            }
-          } else if (type === 'tagOpen') {
-            const {args: [userId, src]} = m;
-
-            _handleTagOpen(userId, src);
-          } else if (type === 'tagClose') {
-            const {args: [userId, src]} = m;
-
-            _handleTagClose(userId, src);
-          } else if (type === 'tagOpenDetails') {
-            const {args: [userId, src]} = m;
-
-            _handleTagOpenDetails(userId, src);
-          } else if (type === 'tagCloseDetails') {
-            const {args: [userId, src]} = m;
-
-            _handleTagCloseDetails(userId, src);
-          } else if (type === 'tagPlay') {
-            const {args: [userId, src]} = m;
-
-            _handleTagPlay(userId, src);
-          } else if (type === 'tagPause') {
-            const {args: [userId, src]} = m;
-
-            _handleTagPause(userId, src);
-          } else if (type === 'tagSeek') {
-            const {args: [userId, src, value]} = m;
-
-            _handleTagSeek(userId, src, value);
-          } else if (type === 'loadModule') {
-            const {args: [userId, plugin]} = m;
-
-            _handleLoadModule(userId, plugin);
-          } else if (type === 'unloadModule') {
-            const {args: [userId, pluginName]} = m;
-
-            _handleUnloadModule(userId, pluginName);
-          } else if (type === 'message') {
-            const {args: [detail]} = m;
-
-            _handleMessage(detail);
-          } else if (type === 'response') {
-            const {id} = m;
-
-            const requestHandler = requestHandlers.get(id);
-            if (requestHandler) {
-              const {error, result} = m;
-              requestHandler(error, result);
-            } else {
-              console.warn('unregistered handler:', JSON.stringify(id));
-            }
+            });
+            return connection;
           } else {
-            console.log('unknown message', m);
+            return null;
           }
         });
+
+        if (homeEnabled) {
+          tags.loadTags(defaultTags);
+        }
 
         cleanups.push(() => {
           remoteGrabManager.destroy();

@@ -148,7 +148,6 @@ class Home {
             creatureUtils,
           ],
           videos,
-          defaultTags,
         ]) => {
           if (live) {
             const {THREE, scene, camera, renderer} = three;
@@ -1357,8 +1356,6 @@ class Home {
               _updateVideo();
             };
             rend.on('update', _update);
-
-            tags.loadTags(defaultTags);
 
             cleanups.push(() => {
               // bootstrap.removeListener('vrModeChange', _vrModeChange);
