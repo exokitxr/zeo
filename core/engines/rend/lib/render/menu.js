@@ -72,8 +72,8 @@ const getNavbarSrc = ({tab}) => {
     <div style="position: absolute; top: 0; right: 0; border-width: 50px 0 0 25px; border-style: solid; border-color: transparent transparent transparent #EEE;"></div>
     <div style="display: flex; position: relative; width: 120px; background-color: #EEE; justify-content: center; align-items: center;">${label}</div>
   `;
-  const tabContent = (tabName, tabLabel) => `\
-    <a style="display: flex; position: relative; width: 170px; height: 100%; justify-content: center; align-items: stretch; font-size: 20px; text-decoration: none; ${tab === tabName ? 'z-index: 1;' : ''}" onclick="navbar:${tabName}">
+  const tabContent = (tabName, tabLabel, first) => `\
+    <a style="display: flex; position: relative; width: 170px; height: 100%; ${first ? '' : 'margin-left: -25px;'} justify-content: center; align-items: stretch; font-size: 20px; text-decoration: none; ${tab === tabName ? 'z-index: 1;' : ''}" onclick="navbar:${tabName}">
       ${tab === tabName ? focusedContent(tabLabel) : unfocusedContent(tabLabel)}
     </a>
   `;
@@ -81,9 +81,14 @@ const getNavbarSrc = ({tab}) => {
   return `\
     <div style="display: flex; width: 1024px; height: 50px; background-color: #CCC;">
       ${tab === 'tutorial' ?
-        tabContent('tutorial', 'Tutorial')
+        tabContent('tutorial', 'Tutorial', true)
       :
-        [tabContent('status', 'Status'), tabContent('world', 'World'), tabContent('servers', 'Servers'), tabContent('options', 'Options')].join('\n')
+        [
+          tabContent('status', 'Status', true),
+          tabContent('world', 'World', false),
+          tabContent('servers', 'Servers', false),
+          tabContent('options', 'Options', false)
+        ].join('\n')
       }
       </a>
     </div>
