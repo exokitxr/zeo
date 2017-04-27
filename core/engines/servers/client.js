@@ -178,6 +178,12 @@ class Servers {
               const remoteServer = remoteServers[index];
               const {url: remoteServerUrl} = remoteServer;
               _connectServer(remoteServerUrl);
+            } else if (match = onclick.match(/^servers:(up|down)$/)) {
+              const direction = match[1];
+
+              serversState.page += (direction === 'up' ? -1 : 1);
+
+              _updatePages();
             }
           }
         };
@@ -196,6 +202,7 @@ class Servers {
               _requestRemoteServers()
                 .then(remoteServers => {
                   serversState.remoteServers = remoteServers;
+                  serversState.page = 0;
                   serversState.loading = false;
 
                   _updatePages();
