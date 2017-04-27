@@ -739,11 +739,11 @@ class Home {
               result.legoMesh = legoMesh;
 
               const padTargetMesh = (() => {
-                const geometry = new THREE.BoxBufferGeometry(0.05, 0.05 / 4, 0.05 / 4);
+                const geometry = new THREE.BoxBufferGeometry(0.043, 0.043 / 4, 0.043 / 4);
                 const material = transparentMaterials.red;
 
                 const mesh = new THREE.Mesh(geometry, material);
-                mesh.position.y = 0.046 - ((0.05 / 4) / 2);
+                mesh.position.y = 0.046 - ((0.043 / 4) / 2);
                 mesh.visible = false;
 
                 const {circleMesh} = hudMesh;
@@ -2088,6 +2088,19 @@ class Home {
                         walkthroughEmitter.emit('intersect', targetMesh);
                       }
                     });
+                  }
+                });
+
+                const {padTargetMesh} = walkthroughMeshes;
+                SIDES.forEach(side => {
+                  const gamepad = gamepads[side];
+
+                  if (gamepad) {
+                    const {axes} = gamepad;
+
+                    if (Math.abs(axes[0]) < 0.5 && axes[1] > 0.8) {
+                      walkthroughEmitter.emit('intersect', padTargetMesh);
+                    }
                   }
                 });
               };
