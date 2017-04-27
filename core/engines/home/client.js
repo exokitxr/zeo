@@ -1097,15 +1097,15 @@ class Home {
             };
             let videoUpdateInterval = null;
             const _setPage = page => {
-              const {page: oldPage} = homeState;
               homeState.page = page;
 
               _updatePages();
 
-              if (page === 'menu' && oldPage !== 'menu') {
-                bootstrap.setTutorialFlag(false);
-              } else if (oldPage === 'menu' && page !== 'menu') {
+              const isTutorialPage = /^(?:controls|menu|tutorial:[0-9]+)$/.test(page);
+              if (isTutorialPage && !bootstrap.getTutorialFlag()) {
                 bootstrap.setTutorialFlag(true);
+              } else if (!isTutorialPage && bootstrap.getTutorialFlag()) {
+                bootstrap.setTutorialFlag(false);
               }
               if (page === 'controls') {
                 _setWalkthroughIndex(0);
@@ -1155,7 +1155,7 @@ class Home {
               const {page: controlsPage} = controlsMesh;
               controlsPage.update();
             };
-            _setPage(bootstrap.getTutorialFlag() ? 'remoteServers' : 'controls');
+            _setPage(bootstrap.getTutorialFlag() ? 'controls' : 'remoteServers');
 
             /* const _openRemoteServersPage = () => {
               homeState.loading = true;
