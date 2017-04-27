@@ -253,6 +253,13 @@ class Home {
             const focusState = {
               keyboardFocusState: null,
             };
+            const _makeTargetState = () => ({
+              pointed: false,
+            });
+            const targetStates = {
+              left: _makeTargetState(),
+              right: _makeTargetState(),
+            };
 
             /* const _vrModeChange = vrMode => { // XXX we might not need this with the
               homeState.vrMode = vrMode;
@@ -817,13 +824,19 @@ class Home {
                   mesh.visible = true;
                 });
 
-                const mousedown = () => {
-                  _setNextWalkthroughIndex();
+                const triggerdown = e => {
+                  const {side} = e;
+                  const targetState = targetStates[side];
+                  const {pointed} = targetState;
+
+                  if (pointed) {
+                    _setNextWalkthroughIndex();
+                  }
                 };
-                input.on('mousedown', mousedown);
+                input.on('triggerdown', triggerdown);
 
                 return () => {
-                  input.removeListener('mousedown', mousedown);
+                  input.removeListener('triggerdown', triggerdown);
 
                   meshes.forEach(mesh => {
                     mesh.visible = false;
@@ -2053,14 +2066,15 @@ class Home {
                 SIDES.forEach(side => {
                   const targetDotMesh = targetDotMeshes[side];
                   const targetBoxMesh =  targetBoxMeshes[side];
+                  const targetState = targetStates[side];
 
                   const {targetMesh} = walkthroughMeshes;
-                  const {boxTarget} = targetMesh;
                   const gamepad = gamepads[side];
 
-                  if (gamepad) {
+                  if (targetMesh.visible && gamepad) {
                     const {position: controllerPosition, rotation: controllerRotation, scale: controllerScale} = gamepad;
                     const ray = new THREE.Ray(controllerPosition, new THREE.Vector3(0, 0, -1).applyQuaternion(controllerRotation));
+                    const {boxTarget} = targetMesh;
                     const intersectionPoint = ray.intersectBox(boxTarget);
 
                     if (intersectionPoint) {
@@ -2072,13 +2086,19 @@ class Home {
                       targetBoxMesh.position.copy(targetPosition);
                       targetBoxMesh.scale.copy(boxTarget.getSize());
                       targetBoxMesh.visible = true;
+
+                      targetState.pointed = true;
                     } else {
                       targetDotMesh.visible = false;
                       targetBoxMesh.visible = false;
+
+                      targetState.pointed = false;
                     }
                   } else {
                     targetDotMesh.visible = false;
                     targetBoxMesh.visible = false;
+
+                    targetState.pointed = false;
                   }
                 });
               };
