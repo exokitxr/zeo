@@ -179,6 +179,10 @@ class World {
             const {id} = item;
             tagMeshes[id] = tagMesh;
 
+            if (!rend.isOpen()) {
+              tagMesh.visible = false;
+            }
+
             scene.add(tagMesh);
           }
 
