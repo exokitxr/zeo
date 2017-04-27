@@ -11,11 +11,13 @@ const NUM_SERVERS_PER_PAGE = 8;
 const makeRenderer = ({creatureUtils}) => {
 
 const getServersPageSrc = ({remoteServers, page, loading}) => {
-  const localRemoteServers = remoteServers.slice(page * NUM_SERVERS_PER_PAGE, (page + 1) * NUM_SERVERS_PER_PAGE);
+  const startIndex = page * NUM_SERVERS_PER_PAGE;
+  const endIndex = (page + 1) * NUM_SERVERS_PER_PAGE;
+  const localRemoteServers = remoteServers.slice(startIndex, endIndex);
 
   const leftSrc = `<div style="display: flex; font-size: 36px; line-height: 1.4; flex-grow: 1; flex-direction: column;">
     ${loading ? `<h1 style="margin: 15px 30px; font-size: 40px; font-weight: 400;">Loading...</h1>` : ''}
-    ${!loading ? getServersSrc(localRemoteServers) : ''}
+    ${!loading ? getServersSrc(localRemoteServers, startIndex) : ''}
   </div>`
   const rightSrc = (() => {
     const showUp = page !== 0;
@@ -48,7 +50,7 @@ const getServerSrc = (server, index) => {
   const {worldname, url, users} = server;
 
   return `\
-    <a style="display: flex; padding: 10px 0; border-bottom: 1px solid #EEE; text-decoration: none;" onclick="servers:${index}">
+    <a style="display: flex; padding: 10px 0; border-bottom: 1px solid #EEE; text-decoration: none;" onclick="servers:go:${index}">
       <img src="${creatureUtils.makeStaticCreature('server:' + worldname)}" width="80" height="80" style="display: flex; margin-right: 10px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;" />
       <div style="display: flex; margin-right: auto; padding: 5px; flex-direction: column;">
         <div style="font-size: 24px; font-weight: 600;">${worldname}</div>
@@ -68,10 +70,10 @@ const getServerSrc = (server, index) => {
   `;
 };
 
-const getServersSrc = servers => {
+const getServersSrc = (servers, startIndex) => {
   if (servers.length > 0) {
     return `<div style="display: flex; width: ${WIDTH - 250}px; height: ${HEIGHT - 100}px; padding: 15px 30px; flex-direction: column; box-sizing: border-box;">
-      ${servers.map((server, index) => getServerSrc(server, index)).join('')}
+      ${servers.map((server, index) => getServerSrc(server, startIndex + index)).join('')}
     </div>`;
   } else {
     return `<h1 style="margin: 15px 30px; font-size: 40px; font-weight: 400;">No servers</h1>`;

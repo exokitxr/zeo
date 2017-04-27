@@ -157,7 +157,33 @@ class Servers {
         })();
         rend.registerMenuMesh('serversMesh', serversMesh);
 
-        const tabchange = tab => {
+        const _connectServer = serverUrl => {
+          window.parent.location = serverUrl;
+        };
+
+        const _trigger = e => {
+          const {side} = e;
+          const hoverState = rend.getHoverState(side);
+          const {intersectionPoint} = hoverState;
+
+          if (intersectionPoint) {
+            const {anchor} = hoverState;
+            const onclick = (anchor && anchor.onclick) || '';
+
+            let match;
+            if (match = onclick.match(/^servers:go:([0-9]+)$/)) {
+              const index = parseInt(match[1], 10);
+
+              const {remoteServers} = serversState;
+              const remoteServer = remoteServers[index];
+              const {url: remoteServerUrl} = remoteServer;
+              _connectServer(remoteServerUrl);
+            }
+          }
+        };
+        input.on('trigger', _trigger);
+
+        const _tabchange = tab => {
           if (tab === 'servers') {
             const {loaded} = serversState;
 
@@ -180,10 +206,12 @@ class Servers {
             }
           }
         };
-        rend.on('tabchange', tabchange);
+        rend.on('tabchange', _tabchange);
 
         cleanups.push(() => {
-          rend.removeListener('tabchange', tabchange);
+          input.removeListener('trigger', _trigger);
+
+          rend.removeListener('tabchange', _tabchange);
         });
       }
     });
