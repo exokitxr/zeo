@@ -302,7 +302,7 @@ const getWalkthroughSrc = ({label}) => {
   </div>`;
 };
 
-const getMediaControlsSrc = ({paused, value}) => {
+const getMediaPlaySrc = ({paused}) => {
   const buttonSrc = (() => {
     if (paused) {
       return `\
@@ -318,6 +318,13 @@ const getMediaControlsSrc = ({paused, value}) => {
       `;
     }
   })();
+
+  return `<div style="display: flex; width: ${WIDTH}px; height: ${HEIGHT - 300}px; flex-direction: column; box-sizing: border-box;">
+    ${buttonSrc}
+  </div>`;
+};
+
+const getMediaBarSrc = ({value}) => {
   const barSrc = `\
     <a style="display: flex; width: 100%; height: 100px;" onclick="media:seek">
       <svg xmlns="http://www.w3.org/2000/svg" width="1" height="16" viewBox="0 0 0.26458333 4.2333333" style="position: absolute; height: 100px; width: ${100 * (1 / 16)}px; margin-left: ${-(100 * (1 / 16) / 2)}px; left: ${value * 100}%;">
@@ -329,8 +336,7 @@ const getMediaControlsSrc = ({paused, value}) => {
     </a>
   `;
 
-  return `<div style="display: flex; width: ${WIDTH}px; height: ${HEIGHT - 200}px; flex-direction: column; box-sizing: border-box;">
-    ${buttonSrc}
+  return `<div style="display: flex; width: ${WIDTH}px; height: 100px; flex-direction: column; box-sizing: border-box;">
     ${barSrc}
   </div>`;
 };
@@ -338,7 +344,8 @@ const getMediaControlsSrc = ({paused, value}) => {
 return {
   getHomeMenuSrc,
   getWalkthroughSrc,
-  getMediaControlsSrc,
+  getMediaPlaySrc,
+  getMediaBarSrc,
 };
 
 };

@@ -337,12 +337,12 @@ class Home {
                 object.add(viewportMesh);
                 object.viewportMesh = viewportMesh;
 
-                const controlsMesh = (() => { // XXX break this up into two meshes for performance
+                const playMesh = (() => {
                   const worldWidth = WORLD_WIDTH;
-                  const worldHeight = WORLD_HEIGHT * ((HEIGHT - 200) / HEIGHT);
+                  const worldHeight = WORLD_HEIGHT * ((HEIGHT - 300) / HEIGHT);
                   const menuUi = biolumi.makeUi({
                     width: WIDTH,
-                    height: HEIGHT - 200,
+                    height: HEIGHT - 300,
                     color: [1, 1, 1, 0],
                   });
                   const mesh = menuUi.makePage(({
@@ -352,16 +352,16 @@ class Home {
                     },
                   }) => ({
                     type: 'html',
-                    src: menuRenderer.getMediaControlsSrc({
+                    src: menuRenderer.getMediaPlaySrc({
                       paused,
                       value,
                     }),
                     x: 0,
                     y: 0,
                     w: WIDTH,
-                    h: HEIGHT - 200,
+                    h: HEIGHT - 300,
                   }), {
-                    type: 'videoControls',
+                    type: 'videoPlay',
                     state: {
                       media: mediaState,
                     },
@@ -381,8 +381,55 @@ class Home {
 
                   return mesh;
                 })();
-                object.add(controlsMesh);
-                object.controlsMesh = controlsMesh;
+                object.add(playMesh);
+                object.playMesh = playMesh;
+
+                const barMesh = (() => {
+                  const worldWidth = WORLD_WIDTH;
+                  const worldHeight = WORLD_HEIGHT * (100 / HEIGHT);
+                  const menuUi = biolumi.makeUi({
+                    width: WIDTH,
+                    height: 100,
+                    color: [1, 1, 1, 0],
+                  });
+                  const mesh = menuUi.makePage(({
+                    media: {
+                      paused,
+                      value,
+                    },
+                  }) => ({
+                    type: 'html',
+                    src: menuRenderer.getMediaBarSrc({
+                      paused,
+                      value,
+                    }),
+                    x: 0,
+                    y: 0,
+                    w: WIDTH,
+                    h: 100,
+                  }), {
+                    type: 'videoBar',
+                    state: {
+                      media: mediaState,
+                    },
+                    worldWidth: worldWidth,
+                    worldHeight: worldHeight,
+                  });
+                  mesh.position.y = -(WORLD_HEIGHT / 2) + (worldHeight / 2) + (WORLD_HEIGHT * (100 / HEIGHT));
+                  mesh.position.z = 0.002;
+
+                  const {page} = mesh;
+                  rend.addPage(page);
+                  page.update();
+
+                  cleanups.push(() => {
+                    rend.removePage(page);
+                  });
+
+                  return mesh;
+                })();
+                object.add(barMesh);
+                object.barMesh = barMesh;
 
                 const soundBody = somnifer.makeBody();
                 soundBody.setObject(object);
@@ -1061,9 +1108,11 @@ class Home {
 
               mediaState.paused = true;
               mediaState.value = 0;
-              const {controlsMesh} = videoMesh;
-              const {page: controlsPage} = controlsMesh;
-              controlsPage.update();
+              const {playMesh, barMesh} = videoMesh;
+              const {page: playPage} = playMesh;
+              playPage.update();
+              const {page: barPage} = barMesh;
+              barPage.update();
 
               if (page !== 'done') {
                 homeState.page = page;
@@ -1221,8 +1270,8 @@ class Home {
 
                       mediaState.paused = false;
 
-                      const {controlsMesh} = videoMesh;
-                      const {page} = controlsMesh;
+                      const {playMesh} = videoMesh;
+                      const {page} = playMesh;
                       page.update();
                     }
                   } else if (action === 'pause') {
@@ -1231,8 +1280,8 @@ class Home {
 
                       mediaState.paused = true;
 
-                      const {controlsMesh} = videoMesh;
-                      const {page} = controlsMesh;
+                      const {playMesh} = videoMesh;
+                      const {page} = playMesh;
                       page.update();
                     }
                   } else if (action === 'seek') {
@@ -1240,8 +1289,8 @@ class Home {
                     media.currentTime = value * media.duration;
 
                     mediaState.value = value;
-                    const {controlsMesh} = videoMesh;
-                    const {page} = controlsMesh;
+                    const {barMesh} = videoMesh;
+                    const {page} = barMesh;
                     page.update();
                   }
 
@@ -1336,8 +1385,8 @@ class Home {
                   if (Math.abs(nextValue - prevValue) >= (1 / 1000)) { // to reduce the frequency of texture updates
                     mediaState.value = nextValue;
 
-                    const {controlsMesh} = videoMesh;
-                    const {page} = controlsMesh;
+                    const {barMesh} = videoMesh;
+                    const {page} = barMesh;
                     page.update();
                   }
 
