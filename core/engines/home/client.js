@@ -647,7 +647,26 @@ class Home {
               })();
               result.goalMesh = goalMesh;
 
-              const touchMesh = (() => {
+              const touchMesh1 = (() => {
+                const geometry = new THREE.BoxBufferGeometry(0.1, 0.1, 0.1);
+                const material = transparentMaterials.red;
+
+                const mesh = new THREE.Mesh(geometry, material);
+                mesh.rotation.order = camera.rotation.order;
+                mesh.position.set(0.5, 2, 0);
+                mesh.visible = false;
+
+                scene.add(mesh);
+
+                mesh.updateMatrixWorld();
+                const boxTarget = new THREE.Box3().setFromObject(mesh);
+                mesh.boxTarget = boxTarget;
+
+                return mesh;
+              })();
+              result.touchMesh1 = touchMesh1;
+
+              const touchMesh2 = (() => {
                 const geometry = new THREE.BoxBufferGeometry(0.1, 0.1, 0.1);
                 const material = transparentMaterials.red;
 
@@ -664,7 +683,7 @@ class Home {
 
                 return mesh;
               })();
-              result.touchMesh = touchMesh;
+              result.touchMesh2 = touchMesh2;
 
               const legoMesh = (() => {
                 const object = new THREE.Object3D();
@@ -728,8 +747,9 @@ class Home {
 
                 scene.add(object);
 
+                object.updateMatrixWorld();
+
                 [outerMesh, innerMesh].forEach(subMesh => {
-                  subMesh.updateMatrixWorld();
                   const boxTarget = new THREE.Box3().setFromObject(subMesh);
                   subMesh.boxTarget = boxTarget;
                 });
@@ -850,15 +870,15 @@ class Home {
                   mesh.visible = true;
                 });
 
-                const keydown = e => {
-                  if (e.keyCode === 81) { // Q
+                const intersect = mesh => {
+                  if (mesh === walkthroughMeshes.goalMesh) {
                     _setNextWalkthroughIndex();
                   }
                 };
-                input.on('keydown', keydown);
+                walkthroughEmitter.on('intersect', intersect);
 
                 return () => {
-                  input.removeListener('keydown', keydown);
+                  walkthroughEmitter.removeListener('intersect', intersect);
 
                   meshes.forEach(mesh => {
                     mesh.visible = false;
@@ -871,15 +891,15 @@ class Home {
                   mesh.visible = true;
                 });
 
-                const keydown = e => {
-                  if (e.keyCode === 70) { // F
+                const intersect = mesh => {
+                  if (mesh === walkthroughMeshes.legoMesh.innerMesh) {
                     _setNextWalkthroughIndex();
                   }
                 };
-                input.on('keydown', keydown);
+                walkthroughEmitter.on('intersect', intersect);
 
                 return () => {
-                  input.removeListener('keydown', keydown);
+                  walkthroughEmitter.removeListener('intersect', intersect);
 
                   meshes.forEach(mesh => {
                     mesh.visible = false;
@@ -887,20 +907,20 @@ class Home {
                 };
               },
               () => {
-                const meshes = [walkthroughMeshes.xyMoveMesh, walkthroughMeshes.touchMesh];
+                const meshes = [walkthroughMeshes.xyMoveMesh, walkthroughMeshes.touchMesh1];
                 meshes.forEach(mesh => {
                   mesh.visible = true;
                 });
 
-                const keydown = e => {
-                  if (e.keyCode === 17) { // Ctrl
+                const intersect = mesh => {
+                  if (mesh === walkthroughMeshes.touchMesh1) {
                     _setNextWalkthroughIndex();
                   }
                 };
-                input.on('keydown', keydown);
+                walkthroughEmitter.on('intersect', intersect);
 
                 return () => {
-                  input.removeListener('keydown', keydown);
+                  walkthroughEmitter.removeListener('intersect', intersect);
 
                   meshes.forEach(mesh => {
                     mesh.visible = false;
@@ -908,20 +928,20 @@ class Home {
                 };
               },
               () => {
-                const meshes = [walkthroughMeshes.xzMoveMesh, walkthroughMeshes.touchMesh];
+                const meshes = [walkthroughMeshes.xzMoveMesh, walkthroughMeshes.touchMesh2];
                 meshes.forEach(mesh => {
                   mesh.visible = true;
                 });
 
-                const keydown = e => {
-                  if (e.keyCode === 18) { // Alt
+                const intersect = mesh => {
+                  if (mesh === walkthroughMeshes.touchMesh2) {
                     _setNextWalkthroughIndex();
                   }
                 };
-                input.on('keydown', keydown);
+                walkthroughEmitter.on('intersect', intersect);
 
                 return () => {
-                  input.removeListener('keydown', keydown);
+                  walkthroughEmitter.removeListener('intersect', intersect);
 
                   meshes.forEach(mesh => {
                     mesh.visible = false;
@@ -934,16 +954,15 @@ class Home {
                   mesh.visible = true;
                 });
 
-                const keydown = e => {
-                  // if (e.keyCode === 88) { // X
-                  if (e.keyCode === 82) { // R // XXX this is fake
+                const intersect = mesh => {
+                  if (mesh === walkthroughMeshes.padTargetMesh) {
                     _setPage('tutorial:' + 0);
                   }
                 };
-                input.on('keydown', keydown);
+                walkthroughEmitter.on('intersect', intersect);
 
                 return () => {
-                  input.removeListener('keydown', keydown);
+                  walkthroughEmitter.removeListener('intersect', intersect);
 
                   meshes.forEach(mesh => {
                     mesh.visible = false;
@@ -2022,9 +2041,11 @@ class Home {
                 const {goalMesh} = walkthroughMeshes;
                 goalMesh.rotation.y = v;
 
-                const {touchMesh} = walkthroughMeshes;
-                touchMesh.rotation.x = v;
-                touchMesh.rotation.y = v;
+                const {touchMesh1, touchMesh2} = walkthroughMeshes;
+                [touchMesh1, touchMesh2].forEach(touchMesh => {
+                  touchMesh.rotation.x = v;
+                  touchMesh.rotation.y = v;
+                });
               };
               const _updateWalkthroughTargets = () => {
                 const {gamepads} = webvr.getStatus();
@@ -2074,14 +2095,14 @@ class Home {
                   }
                 });
 
-                const {touchMesh, legoMesh: {outerMesh: legoOuterMesh, innerMesh: legoInnerMesh}} = walkthroughMeshes;
+                const {touchMesh1, touchMesh2, legoMesh: {outerMesh: legoOuterMesh, innerMesh: legoInnerMesh}} = walkthroughMeshes;
                 SIDES.forEach(side => {
                   const gamepad = gamepads[side];
 
                   if (gamepad) {
                     const {position: controllerPosition} = gamepad;
 
-                    [touchMesh, legoOuterMesh, legoInnerMesh].forEach(targetMesh => {
+                    [touchMesh1, touchMesh2, legoOuterMesh, legoInnerMesh].forEach(targetMesh => {
                       const {boxTarget} = targetMesh;
 
                       if (boxTarget.containsPoint(controllerPosition)) {
