@@ -259,36 +259,7 @@ class Rend {
             const {anchor} = hoverState;
             const onclick = (anchor && anchor.onclick) || '';
 
-            /* if (onclick === 'status:downloadLoginToken') {
-              const a = document.createElement('a');
-              a.href = '/server/token';
-              a.download = 'token.txt';
-              a.style.display = 'none';
-              document.body.appendChild(a);
-              a.click();
-              document.body.removeChild(a);
-
-              return true;
-            } else if (onclick === 'status:logOut') {
-              const _requestLogout = () => new Promise((accept, reject) => {
-                bootstrap.requestLogout()
-                  .then(() => {
-                    accept();
-                  })
-                  .catch(err => {
-                    console.warn(err);
-
-                    accept();
-                  });
-              });
-
-              _requestLogout()
-                .then(() => {
-                  rendApi.logout();
-                });
-
-              return true;
-            } else */if (onclick === 'status:backToHub') {
+            if (onclick === 'status:backToHub') {
               const initialToken = _getQueryVariable(bootstrap.getInitialUrl(), 't');
               bootstrap.navigate('https://' + hubUrl + (initialToken ? ('?t=' + initialToken) : ''));
 
