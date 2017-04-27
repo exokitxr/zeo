@@ -96,6 +96,9 @@ class Config {
           voiceChatCheckboxValue: false,
           statsCheckboxValue: false,
           lockedCheckboxValue: false,
+          flags: {
+            server: serverEnabled,
+          },
         };
         const statsState = {
           frame: 0,
@@ -180,6 +183,7 @@ class Config {
                       voiceChatCheckboxValue,
                       statsCheckboxValue,
                       lockedCheckboxValue,
+                      flags,
                     },
                   }) => ({
                     type: 'html',
@@ -188,6 +192,7 @@ class Config {
                       voiceChatCheckboxValue,
                       statsCheckboxValue,
                       lockedCheckboxValue,
+                      flags,
                     }),
                     x: 0,
                     y: 0,

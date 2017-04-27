@@ -2,7 +2,7 @@ const {
   WIDTH,
 } = require('../constants/config');
 
-const getConfigPageSrc = ({/*focus, */resolutionValue, voiceChatCheckboxValue, statsCheckboxValue, lockedCheckboxValue}) => `\
+const getConfigPageSrc = ({/*focus, */resolutionValue, voiceChatCheckboxValue, statsCheckboxValue, lockedCheckboxValue, flags}) => `\
   <div style="width: ${WIDTH}px;">
     <div style="display: flex; width: 640px; padding: 0 30px; box-sizing: border-box; flex-direction: column;">
       <h1 style="margin: 15px 0; font-size: 40px; font-weight: 400;">Browser settings</h1>
@@ -10,8 +10,10 @@ const getConfigPageSrc = ({/*focus, */resolutionValue, voiceChatCheckboxValue, s
       ${getSliderSrc('Resolution', resolutionValue)}
       ${getCheckboxSrc('Voice chat', voiceChatCheckboxValue, 'config:voiceChat')}
       ${getCheckboxSrc('Stats', statsCheckboxValue, 'config:stats')}
-      <h1 style="margin: 15px 0; font-size: 40px; font-weight: 400;">Server settings</h1>
-      ${getCheckboxSrc('Lock mode', lockedCheckboxValue, 'config:lock')}
+      ${flags.server ? `\
+        <h1 style="margin: 15px 0; font-size: 40px; font-weight: 400;">Server settings</h1>
+        ${getCheckboxSrc('Lock mode', lockedCheckboxValue, 'config:lock')}
+      ` : ''}
     </div>
   </div>
 `;
