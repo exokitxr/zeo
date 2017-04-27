@@ -83,7 +83,7 @@ class Servers {
             remoteServers: [],
             page: 0,
             loaded: false,
-            loading: false,
+            loading: true,
           };
 
           const _requestRemoteServers = () => fetch(hubUrl + '/servers/servers.json')
