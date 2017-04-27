@@ -197,19 +197,6 @@ class Home {
               red: _makeTransparentMaterial(0xF44336),
             };
 
-            const targetDotMeshes = {
-              left: biolumi.makeDotMesh(),
-              right: biolumi.makeDotMesh(),
-            };
-            scene.add(targetDotMeshes.left);
-            scene.add(targetDotMeshes.right);
-            const targetBoxMeshes = {
-              left: biolumi.makeBoxMesh(),
-              right: biolumi.makeBoxMesh(),
-            };
-            scene.add(targetBoxMeshes.left);
-            scene.add(targetBoxMeshes.right);
-
             const controllerMeshOffset = new THREE.Vector3(0, 0, -0.02);
             const controllerMeshQuaternion = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, -1));
             const oneVector = new THREE.Vector3(1, 1, 1);
@@ -566,7 +553,8 @@ class Home {
                 object.position.z = -0.5;
                 object.visible = false;
 
-                for (let i = 0; i < 4; i++) {
+                const numRings = 4;
+                for (let i = 0; i < numRings; i++) {
                   const ringMesh = (() => {
                     const geometry = new THREE.TorusBufferGeometry(0.05 * (i + 0.5), 0.05, 3, 8);
                     const material = solidMaterials[(i % 2) === 0 ? 'red' : 'white'];
@@ -580,7 +568,13 @@ class Home {
                 scene.add(object);
 
                 object.updateMatrixWorld();
-                const boxTarget = new THREE.Box3().setFromObject(object);
+                const {position, rotation, scale} = _decomposeObjectMatrixWorld(object);
+                const boxTarget = geometryUtils.makeBoxTarget(
+                  position,
+                  rotation,
+                  scale,
+                  new THREE.Vector3((0.05 * (numRings + 0.5)) * 2, (0.05 * (numRings + 0.5)) * 2, 0.05 * 2)
+                );
                 object.boxTarget = boxTarget;
 
                 return object;
@@ -607,7 +601,13 @@ class Home {
                 scene.add(object);
 
                 object.updateMatrixWorld();
-                const boxTarget = new THREE.Box3().setFromObject(object);
+                const {position, rotation, scale} = _decomposeObjectMatrixWorld(object);
+                const boxTarget = geometryUtils.makeBoxTarget(
+                  position,
+                  rotation,
+                  scale,
+                  new THREE.Vector3(1 * 2, 5, 1 * 2)
+                );
                 object.boxTarget = boxTarget;
 
                 return object;
@@ -626,7 +626,13 @@ class Home {
                 scene.add(mesh);
 
                 mesh.updateMatrixWorld();
-                const boxTarget = new THREE.Box3().setFromObject(mesh);
+                const {position, rotation, scale} = _decomposeObjectMatrixWorld(mesh);
+                const boxTarget = geometryUtils.makeBoxTarget(
+                  position,
+                  rotation,
+                  scale,
+                  new THREE.Vector3(0.1, 0.1, 0.1)
+                );
                 mesh.boxTarget = boxTarget;
 
                 return mesh;
@@ -645,7 +651,13 @@ class Home {
                 scene.add(mesh);
 
                 mesh.updateMatrixWorld();
-                const boxTarget = new THREE.Box3().setFromObject(mesh);
+                const {position, rotation, scale} = _decomposeObjectMatrixWorld(mesh);
+                const boxTarget = geometryUtils.makeBoxTarget(
+                  position,
+                  rotation,
+                  scale,
+                  new THREE.Vector3(0.1, 0.1, 0.1)
+                );
                 mesh.boxTarget = boxTarget;
 
                 return mesh;
@@ -717,7 +729,13 @@ class Home {
                 object.updateMatrixWorld();
 
                 [outerMesh, innerMesh].forEach(subMesh => {
-                  const boxTarget = new THREE.Box3().setFromObject(subMesh);
+                  const {position, rotation, scale} = _decomposeObjectMatrixWorld(subMesh);
+                  const boxTarget = geometryUtils.makeBoxTarget(
+                    position,
+                    rotation,
+                    scale,
+                    new THREE.Vector3(0.05, 0.05, 0.05)
+                  );
                   subMesh.boxTarget = boxTarget;
                 });
 
@@ -784,13 +802,26 @@ class Home {
                   mesh.visible = true;
                 });
 
+                const boxAnchor = {
+                  boxTarget: walkthroughMeshes.targetMesh.boxTarget,
+                  anchor: {
+                    onclick: 'tutorial:target',
+                  },
+                };
+                rend.addBoxAnchor(boxAnchor);
+
                 const triggerdown = e => {
                   const {side} = e;
-                  const targetState = targetStates[side];
-                  const {pointed} = targetState;
+                  const hoverState = rend.getHoverState(side);
+                  const {type} = hoverState;
 
-                  if (pointed) {
-                    _setNextWalkthroughIndex();
+                  if (type === 'boxAnchor') {
+                    const {anchor} = hoverState;
+                    const onclick = (anchor && anchor.onclick) || '';
+
+                    if (onclick === 'tutorial:target') {
+                      _setNextWalkthroughIndex();
+                    }
                   }
                 };
                 input.on('triggerdown', triggerdown);
@@ -801,6 +832,8 @@ class Home {
                   meshes.forEach(mesh => {
                     mesh.visible = false;
                   });
+
+                  rend.removeBoxAnchor(boxAnchor);
                 };
               },
               () => {
@@ -1248,48 +1281,6 @@ class Home {
                   touchMesh.rotation.y = v;
                 });
               };
-              const _updateWalkthroughTargets = () => {
-                const {gamepads} = webvr.getStatus();
-
-                SIDES.forEach(side => {
-                  const targetDotMesh = targetDotMeshes[side];
-                  const targetBoxMesh =  targetBoxMeshes[side];
-                  const targetState = targetStates[side];
-
-                  const {targetMesh} = walkthroughMeshes;
-                  const gamepad = gamepads[side];
-
-                  if (targetMesh.visible && gamepad) {
-                    const {position: controllerPosition, rotation: controllerRotation, scale: controllerScale} = gamepad;
-                    const ray = new THREE.Ray(controllerPosition, new THREE.Vector3(0, 0, -1).applyQuaternion(controllerRotation));
-                    const {boxTarget} = targetMesh;
-                    const intersectionPoint = ray.intersectBox(boxTarget);
-
-                    if (intersectionPoint) {
-                      targetDotMesh.position.copy(intersectionPoint);
-                      targetDotMesh.quaternion.copy(controllerRotation);
-                      targetDotMesh.visible = true;
-
-                      const {position: targetPosition} = _decomposeObjectMatrixWorld(targetMesh);
-                      targetBoxMesh.position.copy(targetPosition);
-                      targetBoxMesh.scale.copy(boxTarget.getSize());
-                      targetBoxMesh.visible = true;
-
-                      targetState.pointed = true;
-                    } else {
-                      targetDotMesh.visible = false;
-                      targetBoxMesh.visible = false;
-
-                      targetState.pointed = false;
-                    }
-                  } else {
-                    targetDotMesh.visible = false;
-                    targetBoxMesh.visible = false;
-
-                    targetState.pointed = false;
-                  }
-                });
-              };
               const _updateWalkthroughEmitter = () => {
                 const {hmd, gamepads} = webvr.getStatus();
 
@@ -1355,7 +1346,6 @@ class Home {
               };
 
               _updateWalkthroughMeshes();
-              _updateWalkthroughTargets();
               _updateWalkthroughEmitter();
               _updateVideo();
             };
@@ -1363,11 +1353,6 @@ class Home {
 
             cleanups.push(() => {
               // bootstrap.removeListener('vrModeChange', _vrModeChange);
-
-              SIDES.forEach(side => {
-                scene.remove(targetDotMeshes[side]);
-                scene.remove(targetBoxMeshes[side]);
-              });
 
               input.removeListener('trigger', _trigger);
 

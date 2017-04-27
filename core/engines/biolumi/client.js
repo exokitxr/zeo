@@ -583,24 +583,12 @@ class Biolumi {
 
           class IntersectionSpec {
             constructor(
-              position,
-              rotation,
-              scale,
-              page,
-              width,
-              height,
-              worldWidth,
-              worldHeight,
+              type,
+              metadata,
               intersectionPoint
             ) {
-              this.position = position;
-              this.rotation = rotation;
-              this.scale = scale;
-              this.page = page;
-              this.width = width;
-              this.height = height;
-              this.worldWidth = worldWidth;
-              this.worldHeight = worldHeight;
+              this.type = type;
+              this.metadata = metadata;
               this.intersectionPoint = intersectionPoint;
             }
           }
@@ -608,10 +596,12 @@ class Biolumi {
           class UiTracker {
             constructor() {
               this.pages = [];
+              this.boxAnchors = [];
 
               const _makeHoverState = () => ({
                 intersectionPoint: null,
-                page: null,
+                type: null,
+                target: null,
                 anchor: null,
                 value: 0,
               });
@@ -638,13 +628,21 @@ class Biolumi {
               this.pages.splice(this.pages.indexOf(page), 1);
             }
 
+            addBoxAnchor(boxAnchor) {
+              this.boxAnchors.push(boxAnchor);
+            }
+
+            removeBoxAnchor(boxAnchor) {
+              this.boxAnchors.splice(this.boxAnchors.indexOf(boxAnchor), 1);
+            }
+
             getHoverState(side) {
               return this.hoverStates[side];
             }
 
             update({pose, enabled, sides, controllerMeshes}) {
               const {gamepads} = pose;
-              const {pages, hoverStates, dotMeshes, boxMeshes} = this;
+              const {pages, boxAnchors, hoverStates, dotMeshes, boxMeshes} = this;
 
               SIDES.forEach(side => {
                 const dotMesh = dotMeshes[side];
@@ -670,31 +668,56 @@ class Biolumi {
                         const {width, height, worldWidth, worldHeight} = page;
                         const {position, rotation, scale} = _decomposeObjectMatrixWorld(mesh);
 
-                        const menuBoxTarget = geometryUtils.makeBoxTarget(
+                        const boxTarget = geometryUtils.makeBoxTarget(
                           position,
                           rotation,
                           scale,
                           new THREE.Vector3(worldWidth, worldHeight, 0)
                         );
-                        const intersectionPoint = menuBoxTarget.intersectLine(controllerLine);
+                        const intersectionPoint = boxTarget.intersectLine(controllerLine);
 
                         if (intersectionPoint) {
                           const distance = controllerPosition.distanceTo(intersectionPoint);
 
                           if (distance < closestIntersectionSpecDistance) {
                             closestIntersectionSpec = new IntersectionSpec(
-                              position,
-                              rotation,
-                              scale,
-                              page,
-                              width,
-                              height,
-                              worldWidth,
-                              worldHeight,
+                              'page',
+                              {
+                                page,
+                                position,
+                                rotation,
+                                scale,
+                                width,
+                                height,
+                                worldWidth,
+                                worldHeight,
+                              },
                               intersectionPoint
                             );
                             closestIntersectionSpecDistance = distance;
                           }
+                        }
+                      }
+                    }
+                    for (let i = 0; i < boxAnchors.length; i++) {
+                      const boxAnchor = boxAnchors[i];
+                      const {boxTarget, anchor} = boxAnchor;
+                      const intersectionPoint = boxTarget.intersectLine(controllerLine);
+
+                      if (intersectionPoint) {
+                        const distance = controllerPosition.distanceTo(intersectionPoint);
+
+                        if (distance < closestIntersectionSpecDistance) {
+                          closestIntersectionSpec = new IntersectionSpec(
+                            'boxAnchor',
+                            {
+                              boxAnchor,
+                              boxTarget,
+                              anchor,
+                            },
+                            intersectionPoint
+                          );
+                          closestIntersectionSpecDistance = distance;
                         }
                       }
                     }
@@ -704,118 +727,163 @@ class Biolumi {
 
                   if (intersectionSpec) {
                     const {
-                      position,
-                      rotation,
-                      scale,
-                      page,
-                      width,
-                      height,
-                      worldWidth,
-                      worldHeight,
+                      type,
+                      metadata,
                       intersectionPoint,
                     } = intersectionSpec;
 
                     hoverState.intersectionPoint = intersectionPoint;
-                    hoverState.page = page;
 
-                    const _getMenuMeshPoint = _makeMeshPointGetter({
-                      position,
-                      rotation,
-                      scale,
-                      width,
-                      height,
-                      worldWidth,
-                      worldHeight,
-                    });
+                    if (type === 'page') {
+                      const {
+                        page,
+                        position,
+                        rotation,
+                        scale,
+                        width,
+                        height,
+                        worldWidth,
+                        worldHeight,
+                      } = metadata;
 
-                    const anchorBoxTarget = (() => {
-                      const {layer} = page;
+                      hoverState.type = 'page';
+                      hoverState.target = page;
 
-                      if (layer) {
-                        const anchors = layer.getAnchors();
+                      const _getMenuMeshPoint = _makeMeshPointGetter({
+                        position,
+                        rotation,
+                        scale,
+                        width,
+                        height,
+                        worldWidth,
+                        worldHeight,
+                      });
 
-                        for (let i = 0; i < anchors.length; i++) {
-                          const anchor = anchors[i];
-                          const {rect} = anchor;
+                      const anchorBoxTarget = (() => {
+                        const {layer} = page;
 
-                          const anchorBoxTarget = geometryUtils.makeBoxTargetOffset(
-                            position,
-                            rotation,
-                            scale,
-                            new THREE.Vector3(
-                              -(worldWidth / 2) + (rect.left / width) * worldWidth,
-                              (worldHeight / 2) + (-rect.top / height) * worldHeight,
-                              -(0.02 / 2)
-                            ),
-                            new THREE.Vector3(
-                              -(worldWidth / 2) + (rect.right / width) * worldWidth,
-                              (worldHeight / 2) + (-rect.bottom / height) * worldHeight,
-                              0.02 / 2
-                            )
-                          );
+                        if (layer) {
+                          const anchors = layer.getAnchors();
 
-                          if (anchorBoxTarget.intersectLine(controllerLine)) {
-                            anchorBoxTarget.anchor = anchor;
+                          for (let i = 0; i < anchors.length; i++) {
+                            const anchor = anchors[i];
+                            const {rect} = anchor;
 
-                            return anchorBoxTarget;
+                            const anchorBoxTarget = geometryUtils.makeBoxTargetOffset(
+                              position,
+                              rotation,
+                              scale,
+                              new THREE.Vector3(
+                                -(worldWidth / 2) + (rect.left / width) * worldWidth,
+                                (worldHeight / 2) + (-rect.top / height) * worldHeight,
+                                -(0.02 / 2)
+                              ),
+                              new THREE.Vector3(
+                                -(worldWidth / 2) + (rect.right / width) * worldWidth,
+                                (worldHeight / 2) + (-rect.bottom / height) * worldHeight,
+                                0.02 / 2
+                              )
+                            );
+
+                            if (anchorBoxTarget.intersectLine(controllerLine)) {
+                              anchorBoxTarget.anchor = anchor;
+
+                              return anchorBoxTarget;
+                            }
                           }
+
+                          return null;
+                        } else {
+                          return null;
                         }
-
-                        return null;
-                      } else {
-                        return null;
-                      }
-                    })();
-                    if (anchorBoxTarget) {
-                      const {anchor} = anchorBoxTarget;
-                      hoverState.anchor = anchor;
-                      hoverState.value = (() => {
-                        const {rect} = anchor;
-                        const horizontalLine = new THREE.Line3(
-                          _getMenuMeshPoint(rect.left, (rect.top + rect.bottom) / 2, 0),
-                          _getMenuMeshPoint(rect.right, (rect.top + rect.bottom) / 2, 0)
-                        );
-                        const closestHorizontalPoint = horizontalLine.closestPointToPoint(intersectionPoint, true);
-                        return new THREE.Line3(horizontalLine.start.clone(), closestHorizontalPoint.clone()).distance() / horizontalLine.distance();
                       })();
+                      if (anchorBoxTarget) {
+                        const {anchor} = anchorBoxTarget;
+                        hoverState.anchor = anchor;
+                        hoverState.value = (() => {
+                          const {rect} = anchor;
+                          const horizontalLine = new THREE.Line3(
+                            _getMenuMeshPoint(rect.left, (rect.top + rect.bottom) / 2, 0),
+                            _getMenuMeshPoint(rect.right, (rect.top + rect.bottom) / 2, 0)
+                          );
+                          const closestHorizontalPoint = horizontalLine.closestPointToPoint(intersectionPoint, true);
+                          return new THREE.Line3(horizontalLine.start.clone(), closestHorizontalPoint.clone()).distance() / horizontalLine.distance();
+                        })();
 
-                      boxMesh.position.copy(anchorBoxTarget.position);
-                      boxMesh.quaternion.copy(anchorBoxTarget.quaternion);
+                        boxMesh.position.copy(anchorBoxTarget.position);
+                        boxMesh.quaternion.copy(anchorBoxTarget.quaternion);
+                        boxMesh.scale.set(
+                          Math.max(anchorBoxTarget.size.x * anchorBoxTarget.scale.x, 0.001),
+                          Math.max(anchorBoxTarget.size.y * anchorBoxTarget.scale.y, 0.001),
+                          Math.max(anchorBoxTarget.size.z * anchorBoxTarget.scale.z, 0.001)
+                        );
+                        if (!boxMesh.visible) {
+                          boxMesh.visible = true;
+                        }
+                      } else {
+                        hoverState.anchor = null;
+                        hoverState.value = 0;
+
+                        if (boxMesh.visible) {
+                          boxMesh.visible = false;
+                        }
+                      }
+
+                      dotMesh.position.copy(intersectionPoint);
+                      dotMesh.quaternion.copy(rotation);
+                      if (!gamepad.buttons.trigger.pressed && dotMesh.material.color.getHex() !== RAY_COLOR) {
+                        dotMesh.material.color.setHex(RAY_COLOR);
+                      } else if (gamepad.buttons.trigger.pressed && dotMesh.material.color.getHex() !== RAY_HIGHLIGHT_COLOR) {
+                        dotMesh.material.color.setHex(RAY_HIGHLIGHT_COLOR);
+                      }
+                      if (!dotMesh.visible) {
+                        dotMesh.visible = true;
+                      }
+
+                      rayMesh.scale.z = intersectionPoint.distanceTo(controllerLine.start);
+                      if (!rayMesh.visible) {
+                        rayMesh.visible = true;
+                      }
+                    } else if (type === 'boxAnchor') {
+                      const {boxAnchor, boxTarget, anchor} = metadata;
+
+                      hoverState.type = 'boxAnchor';
+                      hoverState.target = boxAnchor;
+                      hoverState.anchor = anchor;
+                      hoverState.value = 0;
+
+                      dotMesh.position.copy(intersectionPoint);
+                      dotMesh.quaternion.copy(controllerRotation);
+                      if (!gamepad.buttons.trigger.pressed && dotMesh.material.color.getHex() !== RAY_COLOR) {
+                        dotMesh.material.color.setHex(RAY_COLOR);
+                      } else if (gamepad.buttons.trigger.pressed && dotMesh.material.color.getHex() !== RAY_HIGHLIGHT_COLOR) {
+                        dotMesh.material.color.setHex(RAY_HIGHLIGHT_COLOR);
+                      }
+                      if (!dotMesh.visible) {
+                        dotMesh.visible = true;
+                      }
+
+                      boxMesh.position.copy(boxTarget.position);
+                      boxMesh.quaternion.copy(boxTarget.quaternion);
                       boxMesh.scale.set(
-                        Math.max(anchorBoxTarget.size.x * anchorBoxTarget.scale.x, 0.001),
-                        Math.max(anchorBoxTarget.size.y * anchorBoxTarget.scale.y, 0.001),
-                        Math.max(anchorBoxTarget.size.z * anchorBoxTarget.scale.z, 0.001)
+                        Math.max(boxTarget.size.x * boxTarget.scale.x, 0.001),
+                        Math.max(boxTarget.size.y * boxTarget.scale.y, 0.001),
+                        Math.max(boxTarget.size.z * boxTarget.scale.z, 0.001)
                       );
                       if (!boxMesh.visible) {
                         boxMesh.visible = true;
                       }
-                    } else {
-                      hoverState.anchor = null;
-                      hoverState.value = 0;
 
-                      if (boxMesh.visible) {
-                        boxMesh.visible = false;
+                      rayMesh.scale.z = intersectionPoint.distanceTo(controllerLine.start);
+                      if (!rayMesh.visible) {
+                        rayMesh.visible = true;
                       }
-                    }
-
-                    dotMesh.position.copy(intersectionPoint);
-                    dotMesh.quaternion.copy(rotation);
-                    if (!gamepad.buttons.trigger.pressed && dotMesh.material.color.getHex() !== RAY_COLOR) {
-                      dotMesh.material.color.setHex(RAY_COLOR);
-                    } else if (gamepad.buttons.trigger.pressed && dotMesh.material.color.getHex() !== RAY_HIGHLIGHT_COLOR) {
-                      dotMesh.material.color.setHex(RAY_HIGHLIGHT_COLOR);
-                    }
-                    if (!dotMesh.visible) {
-                      dotMesh.visible = true;
-                    }
-
-                    rayMesh.scale.z = intersectionPoint.distanceTo(controllerLine.start);
-                    if (!rayMesh.visible) {
-                      rayMesh.visible = true;
+                    } else {
+                      const err = new Error('unknown anchor intersection spec type: ' + JSON.stringify(type));
+                      console.warn(err);
                     }
                   } else {
-                    hoverState.intersectionPoint = null;
-                    hoverState.page = null;
+                    hoverState.target = null;
                     hoverState.anchor = null;
                     hoverState.value = 0;
 

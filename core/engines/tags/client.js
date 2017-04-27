@@ -1218,9 +1218,10 @@ class Tags {
 
                 if (gripPressed) {
                   const hoverState = rend.getHoverState(side);
-                  const {page} = hoverState;
+                  const {type} = hoverState;
 
-                  if (page) {
+                  if (type === 'page') {
+                    const {target: page} = hoverState;
                     const {mesh} = page;
 
                     if (mesh[tagMeshSymbol]) {
@@ -1937,9 +1938,10 @@ class Tags {
 
                     if (src) {
                       const hoverState = rend.getHoverState(side);
-                      const {page} = hoverState;
+                      const {type} = hoverState;
 
-                      if (page) {
+                      if (type === 'page') {
+                        const {target: page} = hoverState;
                         const {mesh} = page;
 
                         if (mesh[tagMeshSymbol]) {
@@ -3169,9 +3171,10 @@ class Tags {
 
             getPointedTagMesh(side) {
               const hoverState = rend.getHoverState(side);
-              const {page} = hoverState;
+              const {type} = hoverState;
 
-              if (page) {
+              if (type === 'page') {
+                const {target: page} = hoverState;
                 const {mesh} = page;
 
                 if (mesh[tagMeshSymbol]) {

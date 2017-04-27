@@ -651,6 +651,14 @@ class Rend {
             uiTracker.removePage(page);
           }
 
+          addBoxAnchor(boxAnchor) {
+            uiTracker.addBoxAnchor(boxAnchor);
+          }
+
+          removeBoxAnchor(boxAnchor) {
+            uiTracker.removeBoxAnchor(boxAnchor);
+          }
+
           getHoverState(side) {
             return uiTracker.getHoverState(side);
           }
