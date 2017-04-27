@@ -226,7 +226,6 @@ class Home {
             };
             const homeState = {
               page: '',
-              remoteServers: [],
               username: '',
               inputText: '',
               loading: false,
@@ -266,7 +265,6 @@ class Home {
                 const mesh = menuUi.makePage(({
                   home: {
                     page,
-                    remoteServers,
                     inputText,
                     loading,
                     vrMode,
@@ -282,7 +280,6 @@ class Home {
                     type: 'html',
                     src: menuRenderer.getHomeMenuSrc({
                       page,
-                      remoteServers,
                       inputText,
                       inputIndex,
                       inputValue,
@@ -1097,10 +1094,6 @@ class Home {
             };
             let videoUpdateInterval = null;
             const _setPage = page => {
-              homeState.page = page;
-
-              _updatePages();
-
               const isTutorialPage = /^(?:controls|menu|tutorial:[0-9]+)$/.test(page);
               if (isTutorialPage && !bootstrap.getTutorialFlag()) {
                 bootstrap.setTutorialFlag(true);
@@ -1154,39 +1147,16 @@ class Home {
               const {controlsMesh} = videoMesh;
               const {page: controlsPage} = controlsMesh;
               controlsPage.update();
+
+              if (page !== 'done') {
+                homeState.page = page;
+
+                _updatePages();
+              } else {
+                menuMesh.visible = false; // XXX instead of hiding the page, defer to the rend engine
+              }
             };
-            _setPage(bootstrap.getTutorialFlag() ? 'controls' : 'remoteServers');
-
-            /* const _openRemoteServersPage = () => {
-              homeState.loading = true;
-
-              _setPage('remoteServers:' + 0);
-
-              _requestRemoteServers() // XXX cancel these when switching pages
-                .then(servers => {
-                  homeState.remoteServers = servers;
-                  homeState.loading = false;
-
-                  _updatePages();
-                })
-                .catch(err => {
-                  console.warn(err);
-                });
-            }; */
-            const _proxyLoginServer = worldname => fetch('servers/proxyLogin', {
-              method: 'POST',
-              headers: (() => {
-                const result = new Headers();
-                result.append('Content-Type', 'application/json');
-                return result;
-              })(),
-              body: JSON.stringify({
-                worldname: worldname,
-              }),
-            })
-              .then(res => res.json()
-                .then(({token}) => token)
-              );
+            _setPage(bootstrap.getTutorialFlag() ? 'controls' : 'done');
 
             const _trigger = e => {
               const {side} = e;
@@ -1219,7 +1189,21 @@ class Home {
                   return false;
                 }
               };
-              /* const _doEnvMeshClick = () => { // XXX integrate this into the rend engine menu
+              /* const _proxyLoginServer = worldname => fetch('servers/proxyLogin', {
+                method: 'POST',
+                headers: (() => {
+                  const result = new Headers();
+                  result.append('Content-Type', 'application/json');
+                  return result;
+                })(),
+                body: JSON.stringify({
+                  worldname: worldname,
+                }),
+              })
+                .then(res => res.json()
+                  .then(({token}) => token)
+                );
+               const _doEnvMeshClick = () => { // XXX integrate this into the rend engine menu
                 const envHoverState = envHoverStates[side];
                 const {hoveredServerMesh} = envHoverState;
 
@@ -1302,7 +1286,7 @@ class Home {
                     if (n < 4) {
                       _setPage([pageSpec.name, n + 1].join(':'));
                     } else {
-                      _setPage('remoteServers'); // XXX rename this to menu
+                      _setPage('done');
                     }                    
                   }
 
@@ -1322,7 +1306,7 @@ class Home {
                     } else {
                       _setPage('menu');
                     }
-                  } else if (name === 'remoteServers') {
+                  } else if (name === 'done') {
                     _setPage('menu');
                   }
 
@@ -1334,7 +1318,7 @@ class Home {
 
                   return true;
                 } else if (onclick === 'home:menu') {
-                  _setPage('remoteServers'); // XXX rename this to menu
+                  _setPage('done'); // XXX rename this to menu
 
                   return true;
                 } else if (match = onclick.match(/^media:(play|pause|seek)$/)) {

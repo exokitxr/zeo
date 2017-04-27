@@ -30,7 +30,7 @@ const downImg = require('../img/down');
 
 const makeRenderer = ({creatureUtils}) => {
 
-const getHomeMenuSrc = ({page, remoteServers, inputText, inputIndex, inputValue, loading, vrMode, focusType, videos}) => {
+const getHomeMenuSrc = ({page, inputText, inputIndex, inputValue, loading, vrMode, focusType, videos}) => {
   const pageSpec = (() => {
     const split = page.split(':');
     const name = split[0];
@@ -51,11 +51,6 @@ const getHomeMenuSrc = ({page, remoteServers, inputText, inputIndex, inputValue,
     const pageIndex = parseInt(args[0], 10);
 
     return getTutorialPageSrc(pageIndex, vrMode);
-  } else if (name === 'remoteServers') {
-    const {args} = pageSpec;
-    const pageIndex = parseInt(args[0], 10);
-
-    return getRemoteServersSrc(remoteServers, pageIndex, loading);
   } else {
     return '';
   }
@@ -294,44 +289,6 @@ const getServersSrc = (servers, loading, prefix) => {
   } else {
     return `<div style="padding: 0 30px; font-size: 30px;">Loading...</div>`;
   }
-};
-
-const getRemoteServersSrc = (servers, pageIndex, loading) => {
-  const leftSrc = (() => {
-    return `\
-      <div style="display: flex; margin-right: auto; flex-direction: column;">
-        <div style="display: flex; height: 100px; justify-content: center; align-items: center;">
-          <a style="display: block; width: 100px;" onclick="home:back">
-            <img src="${chevronLeftImgSrc}" width="80" height="80" />
-          </a>
-          <div style="margin-right: auto; font-size: 32px; font-size: 400;">Remote servers</div>
-        </div>
-        ${getServersSrc(servers.slice(pageIndex * SERVERS_PER_PAGE, (pageIndex + 1) * SERVERS_PER_PAGE), loading, 'remoteServer')}
-      </div>
-    `;
-  })();
-  const rightSrc = (() => {
-    const showUp = pageIndex > 0;
-    const showDown = servers.length >= ((pageIndex + 1) * SERVERS_PER_PAGE);
-
-    return `\
-      <div style="display: flex; width: 250px; height: inherit; flex-direction: column; box-sizing: border-box;">
-        <a style="position: relative; display: flex; margin: 0 30px; margin-top: 20px; margin-bottom: auto; border: 1px solid; border-radius: 5px; text-decoration: none; justify-content: center; align-items: center; ${showUp ? '' : 'visibility: hidden;'}" onclick="servers:up">
-          ${upImg}
-        </a>
-        <a style="position: relative; display: flex; margin: 0 30px; margin-bottom: 20px; border: 1px solid; border-radius: 5px; text-decoration: none; justify-content: center; align-items: center; ${showDown ? '' : 'visibility: hidden;'}" onclick="servers:down">
-          ${downImg}
-        </a>
-      </div>
-    `;
-  })();
-
-  return `\
-    <div style="display: flex; height: ${HEIGHT}px;">
-      ${leftSrc}
-      ${rightSrc}
-    </div>
-  `;
 };
 
 const getWalkthroughSrc = ({label}) => {
