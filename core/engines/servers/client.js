@@ -5,7 +5,7 @@ import {
   WORLD_HEIGHT,
   WORLD_DEPTH,
 } from './lib/constants/servers';
-import serversRenderer from './lib/render/servers';
+import menuRender from './lib/render/servers';
 
 const SIDES = ['left', 'right'];
 
@@ -16,7 +16,7 @@ class Servers {
 
   mount() {
     const {_archae: archae} = this;
-    const {metadata: {server: {enabled: serverEnabled}}} = archae;
+    const {metadata: {hub: {url: hubUrl}, server: {enabled: serverEnabled}}} = archae;
 
     const cleanups = [];
     this._cleanup = () => {
@@ -40,6 +40,7 @@ class Servers {
         '/core/engines/biolumi',
         '/core/engines/rend',
         '/core/utils/js-utils',
+        '/core/utils/creature-utils',
       ]).then(([
         bootstrap,
         input,
@@ -48,11 +49,16 @@ class Servers {
         biolumi,
         rend,
         jsUtils,
+        creatureUtils,
       ]) => {
         if (live) {
           const {THREE, scene} = three;
           const {events} = jsUtils;
           const {EventEmitter} = events;
+
+          const menuRenderer = menuRender.makeRenderer({
+            creatureUtils,
+          });
 
           const _decomposeObjectMatrixWorld = object => {
             const position = new THREE.Vector3();
@@ -76,6 +82,27 @@ class Servers {
           const serversState = {
             remoteServers: [],
             page: 0,
+            loaded: false,
+            loading: false,
+          };
+
+          const _requestRemoteServers = () => fetch(hubUrl + '/servers/servers.json')
+            .then(res => res.json()
+              .then(j => {
+                const {servers} = j;
+
+                for (let i = 0; i < servers.length; i++) {
+                  const server = servers[i];
+                  server.local = false;
+                }
+
+                return servers;
+              })
+            );
+          const _updatePages = () => {
+            const {planeMesh} = serversMesh;
+            const {page} = planeMesh;
+            page.update();
           };
 
           const serversMesh = (() => {
@@ -91,12 +118,14 @@ class Servers {
                 servers: {
                   remoteServers,
                   page,
+                  loading,
                 },
               }) => ({
                 type: 'html',
-                src: serversRenderer.getServersPageSrc({
+                src: menuRenderer.getServersPageSrc({
                   remoteServers,
                   page,
+                  loading,
                 }),
                 x: 0,
                 y: 0,
@@ -128,6 +157,35 @@ class Servers {
             return object;
           })();
           rend.registerMenuMesh('serversMesh', serversMesh);
+
+          const tabchange = tab => {
+            if (tab === 'servers') {
+              const {loaded} = serversState;
+
+              if (!loaded) {
+                serversState.loading = true;
+                serversState.loaded = true;
+
+                _updatePages();
+
+                _requestRemoteServers()
+                  .then(remoteServers => {
+                    serversState.remoteServers = remoteServers;
+                    serversState.loading = false;
+
+                    _updatePages();
+                  })
+                  .catch(err => {
+                    console.warn(err);
+                  });
+              }
+            }
+          };
+          rend.on('tabchange', tabchange);
+
+          cleanups.push(() => {
+            rend.removeListener('tabchange', tabchange);
+          });
         }
       });
     }
