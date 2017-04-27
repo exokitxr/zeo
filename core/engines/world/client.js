@@ -1582,7 +1582,7 @@ class World {
           } else {
             return null;
           }
-        });
+        })();
 
         if (homeEnabled) {
           tags.loadTags(defaultTags);
