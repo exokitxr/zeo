@@ -44,9 +44,7 @@
     "marked": "^0.3.6",
     "mkdirp": "^0.5.1",
     "nedb": "^1.8.0",
-    "node-fetch": "^1.6.3",
     "password-hash-and-salt": "^0.1.4",
-    "portastic": "^1.0.1",
     "rnd": "^1.0.10",
     "urlsafe-base64": "^1.0.0"
   }
