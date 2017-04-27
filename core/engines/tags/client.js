@@ -721,7 +721,7 @@ class Tags {
             const material = lineMaterial;
 
             const mesh = new THREE.LineSegments(geometry, material);
-            // mesh.rotation.order = camera.rotation.order;
+            mesh.visible = false;
             mesh.frustumCulled = false;
 
             class Line {
@@ -1994,7 +1994,7 @@ class Tags {
                 }
               };
               const _updateDragLines = () => {
-                if (rend.isOpen() || homeEnabled) {
+                if (rend.isOpen()) {
                   SIDES.forEach(side => {
                     const dragState = dragStates[side];
                     const {src, line} = dragState;
@@ -2032,6 +2032,14 @@ class Tags {
                       }
                     }
                   });
+
+                  if (!linesMesh.visible) {
+                    linesMesh.visible = true;
+                  }
+                } else {
+                  if (linesMesh.visible) {
+                    linesMesh.visible = false;
+                  }
                 }
               };
               const _updatePositioningMesh = () => {
