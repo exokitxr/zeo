@@ -72,20 +72,19 @@ const getNavbarSrc = ({tab}) => {
     <div style="position: absolute; top: 0; right: 0; border-width: 50px 0 0 25px; border-style: solid; border-color: transparent transparent transparent #EEE;"></div>
     <div style="display: flex; position: relative; width: 120px; background-color: #EEE; justify-content: center; align-items: center;">${label}</div>
   `;
+  const tabContent = (tabName, tabLabel) => `\
+    <a style="display: flex; position: relative; width: 170px; height: 100%; justify-content: center; align-items: stretch; font-size: 20px; text-decoration: none; ${tab === tabName ? 'z-index: 1;' : ''}" onclick="navbar:${tabName}">
+      ${tab === tabName ? focusedContent(tabLabel) : unfocusedContent(tabLabel)}
+    </a>
+  `;
 
   return `\
     <div style="display: flex; width: 1024px; height: 50px; background-color: #CCC;">
-      <a style="display: flex; position: relative; width: 170px; height: 100%; justify-content: center; align-items: stretch; font-size: 20px; text-decoration: none; ${tab === 'status' ? 'z-index: 1;' : ''}" onclick="navbar:status">
-        ${tab === 'status' ? focusedContent('Status') : unfocusedContent('Status')}
-      </a>
-      <a style="display: flex; position: relative; width: 170px; height: 100%; margin-left: -25px; justify-content: center; align-items: stretch; font-size: 20px; text-decoration: none; box-sizing: border-box; ${tab === 'world' ? 'z-index: 1;' : ''}" onclick="navbar:world">
-        ${tab === 'world' ? focusedContent('World') : unfocusedContent('World')}
-      </a>
-      <a style="display: flex; position: relative; width: 170px; height: 100%; margin-left: -25px; justify-content: center; align-items: stretch; font-size: 20px; text-decoration: none; box-sizing: border-box; ${tab === 'servers' ? 'z-index: 1;' : ''}" onclick="navbar:servers">
-        ${tab === 'servers' ? focusedContent('Servers') : unfocusedContent('Servers')}
-      </a>
-      <a style="display: flex; position: relative; width: 170px; height: 100%; margin-left: -25px; justify-content: center; align-items: stretch; font-size: 20px; text-decoration: none; box-sizing: border-box; ${tab === 'options' ? 'z-index: 1;' : ''}" onclick="navbar:options">
-        ${tab === 'options' ? focusedContent('Options') : unfocusedContent('Options')}
+      ${tab === 'tutorial' ?
+        tabContent('tutorial', 'Tutorial')
+      :
+        [tabContent('status', 'Status'), tabContent('world', 'World'), tabContent('servers', 'Servers'), tabContent('options', 'Options')].join('\n')
+      }
       </a>
     </div>
   `;

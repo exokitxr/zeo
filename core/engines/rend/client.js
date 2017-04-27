@@ -111,7 +111,7 @@ class Rend {
         };
 
         const menuState = {
-          open: serverEnabled,
+          open: true,
           position: null,
           rotation: null,
           animation: null,
@@ -129,7 +129,7 @@ class Rend {
           }
         };
         const navbarState = {
-          tab: 'status',
+          tab: bootstrap.getTutorialFlag() ? 'tutorial' : 'status',
         };
 
         const menuMesh = (() => {
@@ -159,6 +159,7 @@ class Rend {
               worldWidth: WORLD_WIDTH,
               worldHeight: WORLD_HEIGHT,
             });
+            mesh.visible = !bootstrap.getTutorialFlag();
             mesh.receiveShadow = true;
 
             const {page} = mesh;
@@ -173,6 +174,7 @@ class Rend {
           object.add(statusMesh);
           object.statusMesh = statusMesh;
 
+          object.tutorialMesh = null;
           object.worldMesh = null;
           object.serversMesh = null;
           object.configMesh = null;
@@ -239,41 +241,16 @@ class Rend {
           if (open) {
             const {side} = e;
 
-            const _setTab = newTab => {
-              const _getTabMesh = tab => {
-                switch (tab) {
-                  case 'status': return menuMesh.statusMesh;
-                  case 'world': return menuMesh.worldMesh;
-                  case 'servers': return menuMesh.serversMesh;
-                  case 'options': return menuMesh.configMesh;
-                  default: return null;
-                }
-              };
-
-              const {tab: oldTab} = navbarState;
-              const oldMesh = _getTabMesh(oldTab);
-              const newMesh = _getTabMesh(newTab);
-
-              oldMesh.visible = false;
-              newMesh.visible = true;
-
-              navbarState.tab = newTab;
-
-              _updateNavbarPage();
-
-              rendApi.emit('tabchange', newTab);
-            };
-
             const _doClickNavbar = () => {
               const hoverState = uiTracker.getHoverState(side);
               const {anchor} = hoverState;
               const onclick = (anchor && anchor.onclick) || '';
 
               let match;
-              if (match = onclick.match(/^navbar:(status|world|servers|options)$/)) {
+              if (match = onclick.match(/^navbar:(tutorial|status|world|servers|options)$/)) {
                 const newTab = match[1];
 
-                _setTab(newTab);
+                rendApi.setTab(newTab);
 
                 return true;
               } else {
@@ -320,7 +297,7 @@ class Rend {
 
                 return true; // can't happen
               } else if (onclick === 'status:servers') {
-                _setTab('servers');
+                rendApi.setTab('servers');
               } else {
                 return false;
               }
@@ -577,6 +554,32 @@ class Rend {
 
           getTab() {
             return navbarState.tab;
+          }
+
+          setTab(newTab) {
+            const _getTabMesh = tab => {
+              switch (tab) {
+                case 'tutorial': return menuMesh.tutorialMesh;
+                case 'status': return menuMesh.statusMesh;
+                case 'world': return menuMesh.worldMesh;
+                case 'servers': return menuMesh.serversMesh;
+                case 'options': return menuMesh.configMesh;
+                default: return null;
+              }
+            };
+
+            const {tab: oldTab} = navbarState;
+            const oldMesh = _getTabMesh(oldTab);
+            const newMesh = _getTabMesh(newTab);
+
+            oldMesh.visible = false;
+            newMesh.visible = true;
+
+            navbarState.tab = newTab;
+
+            _updateNavbarPage();
+
+            this.emit('tabchange', newTab);
           }
 
           getMenuMesh() {

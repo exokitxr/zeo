@@ -252,9 +252,9 @@ class Home {
             };
             bootstrap.on('vrModeChange', _vrModeChange); */
 
-            const menuMesh = (() => {
+            const tutorialMesh = (() => {
               const object = new THREE.Object3D();
-              object.position.y = DEFAULT_USER_HEIGHT;
+              object.visible = bootstrap.getTutorialFlag();
 
               const planeMesh = (() => {
                 const menuUi = biolumi.makeUi({
@@ -302,7 +302,6 @@ class Home {
                   worldWidth: WORLD_WIDTH,
                   worldHeight: WORLD_HEIGHT,
                 });
-                mesh.position.z = -1;
                 mesh.receiveShadow = true;
 
                 const {page} = mesh;
@@ -319,7 +318,6 @@ class Home {
 
               const videoMesh = (() => {
                 const object = new THREE.Object3D();
-                object.position.z = -1;
                 object.visible = false;
 
                 const viewportMesh = (() => {
@@ -421,7 +419,7 @@ class Home {
 
               return object;
             })();
-            scene.add(menuMesh);
+            rend.registerMenuMesh('tutorialMesh', tutorialMesh);
 
             const walkthroughMeshes = (() => {
               const result = {};
@@ -964,7 +962,7 @@ class Home {
             const _setNextWalkthroughIndex = () => _setWalkthroughIndex(walkthroughIndex + 1);
 
             const _updatePages = () => {
-              const {planeMesh} = menuMesh;
+              const {planeMesh} = tutorialMesh;
               const {page} = planeMesh;
               page.update();
             };
@@ -992,7 +990,7 @@ class Home {
                 _setWalkthroughIndex(10);
               }
 
-              const {videoMesh} = menuMesh;
+              const {videoMesh} = tutorialMesh;
               const {viewportMesh: {material: {map: texture}}} = videoMesh;
               const {image: media} = texture;
               if (media.tagName === 'VIDEO' && !media.paused) {
@@ -1039,7 +1037,7 @@ class Home {
 
                 _updatePages();
               } else {
-                menuMesh.visible = false; // XXX instead of hiding the page, defer to the rend engine
+                rend.setTab('status');
               }
             };
             _setPage(bootstrap.getTutorialFlag() ? 'controls' : 'done');
@@ -1182,7 +1180,7 @@ class Home {
                 } else if (match = onclick.match(/^media:(play|pause|seek)$/)) {
                   const action = match[1];
 
-                  const {videoMesh} = menuMesh;
+                  const {videoMesh} = tutorialMesh;
                   const {viewportMesh: {material: {map: {image: media}}}} = videoMesh;
                   if (action === 'play') {
                     if (media.paused) {
@@ -1330,7 +1328,7 @@ class Home {
                 });
               };
               const _updateVideo = () => {
-                const {videoMesh} = menuMesh;
+                const {videoMesh} = tutorialMesh;
                 const {viewportMesh: {material: {map: texture}}} = videoMesh;
                 const {image: media} = texture;
 
@@ -1360,7 +1358,6 @@ class Home {
             cleanups.push(() => {
               // bootstrap.removeListener('vrModeChange', _vrModeChange);
 
-              scene.remove(menuMesh);
               SIDES.forEach(side => {
                 scene.remove(targetDotMeshes[side]);
                 scene.remove(targetBoxMeshes[side]);
