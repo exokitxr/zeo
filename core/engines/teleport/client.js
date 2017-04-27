@@ -44,17 +44,17 @@ class Teleport {
           };
         };
 
-        const teleportMeshMaterial = new THREE.MeshBasicMaterial({
-          color: 0x808080,
-          wireframe: true,
-          // opacity: 0.25,
-          // transparent: true,
+        const teleportMeshMaterial = new THREE.MeshPhongMaterial({
+          color: 0xFFC107,
+          shading: THREE.FlatShading,
+          opacity: 0.5,
+          transparent: true,
         });
 
         const floorPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, 0));
 
         const _makeTeleportFloorMesh = () => {
-          const geometry = new THREE.TorusBufferGeometry(0.5, 0.1, 3, 5, Math.PI * 2);
+          const geometry = new THREE.TorusBufferGeometry(0.5, 0.15, 3, 5);
           geometry.applyMatrix(new THREE.Matrix4().makeRotationX(-(Math.PI / 2)));
           geometry.applyMatrix(new THREE.Matrix4().makeRotationY((1 / 20) * (Math.PI * 2)));
 
