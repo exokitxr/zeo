@@ -44,9 +44,9 @@ const getHomeMenuSrc = ({page, inputText, inputIndex, inputValue, loading, vrMod
   const {name} = pageSpec;
   if (name === 'controls') {
     return getControlsPageSrc();
-  } else if (name === 'menu') {
-    return getMenuPageSrc(videos);
-  } else if (name === 'tutorial') {
+  } else if (name === 'videos') {
+    return getVideosPageSrc(videos);
+  } else if (name === 'video') {
     const {args} = pageSpec;
     const pageIndex = parseInt(args[0], 10);
 
@@ -83,7 +83,7 @@ const getTutorialPageSrc = (pageIndex, vrMode) => {
               </a>
             </div>
             <div style="display: flex; width: 100%"> -->
-              <a style="display: flex; margin-left: auto; margin-right: 40px; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:menu">Skip all tutorials</a>
+              <a style="display: flex; margin-left: auto; margin-right: 40px; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:skipAll">Skip all tutorials</a>
               <a style="display: flex; padding: 10px 15px; border: 2px solid; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:next">Next: Modules</a>
             <!-- </div> -->
           </div>
@@ -109,7 +109,7 @@ const getTutorialPageSrc = (pageIndex, vrMode) => {
               </p>
             </div>
             <div style="display: flex; width: 100%;"> -->
-              <a style="display: flex; margin-left: auto; margin-right: 40px; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:menu">Skip all tutorials</a>
+              <a style="display: flex; margin-left: auto; margin-right: 40px; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:skipAll">Skip all tutorials</a>
               <a style="display: flex; padding: 10px 15px; border: 2px solid; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:next">Next: Servers</a>
             <!-- </div> -->
           </div>
@@ -132,7 +132,7 @@ const getTutorialPageSrc = (pageIndex, vrMode) => {
               </p>
             </div>
             <div style="display: flex; width: 100%;"> -->
-              <a style="display: flex; margin-left: auto; margin-right: 40px; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:menu">Skip all tutorials</a>
+              <a style="display: flex; margin-left: auto; margin-right: 40px; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:skipAll">Skip all tutorials</a>
               <a style="display: flex; padding: 10px 15px; border: 2px solid; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:next">Next: Multiplayer</a>
             <!-- </div> -->
           </div>
@@ -155,7 +155,7 @@ const getTutorialPageSrc = (pageIndex, vrMode) => {
               </p>
             </div>
             <div style="display: flex; width: 100%;"> -->
-              <a style="display: flex; margin-left: auto; margin-right: 40px; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:menu">Skip all tutorials</a>
+              <a style="display: flex; margin-left: auto; margin-right: 40px; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:skipAll">Skip all tutorials</a>
               <a style="display: flex; padding: 10px 15px; border: 2px solid; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:next">Next: Host your own</a>
             <!-- </div> -->
           </div>
@@ -178,7 +178,7 @@ const getTutorialPageSrc = (pageIndex, vrMode) => {
               </p>
             </div>
             <div style="display: flex; width: 100%;"> -->
-            <a style="display: flex; margin-left: auto; margin-right: 40px; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:menu">Skip all tutorials</a>
+            <a style="display: flex; margin-left: auto; margin-right: 40px; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:skipAll">Skip all tutorials</a>
   <a style="display: flex; padding: 10px 15px; border: 2px solid; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:next">Go to main menu</a>
             <!-- </div> -->
           </div>
@@ -205,25 +205,25 @@ const getControlsPageSrc = () => {
   return `<div style="display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; justify-content: center; align-items: center; flex-direction: column;">
     <div style="display: flex; font-size: 40px; margin: auto 0; justify-content: center; align-items: center;">Controls tutorial in progress</div>
     <div style="display: flex; width: 100%; height: 100px; padding: 0 50px; justify-content: center; align-items: center; box-sizing: border-box;">
-      <a style="display: flex; margin-left: auto; margin-right: 40px; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:menu">Skip all tutorials</a>
+      <a style="display: flex; margin-left: auto; margin-right: 40px; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:skipAll">Skip all tutorials</a>
       <a style="display: flex; padding: 10px 15px; border: 2px solid; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:next">Skip controls tutorial</a>
     </div>
   </div>`;
 };
 
-const getMenuPageSrc = videos => {
+const getVideosPageSrc = videos => {
   return getHeaderWrappedSrc(`\
     <div style="display: flex; flex-direction: column; flex-grow: 1;">
       <div style="display: flex; margin-bottom: auto; flex-direction: column;">
         ${videos.map((video, index) =>
-          `<a style="display: flex; padding: 10px 0; margin: 0 50px; text-decoration: none; align-items: center;" onclick="home:tutorial:${index}">
+          `<a style="display: flex; padding: 10px 0; margin: 0 50px; text-decoration: none; align-items: center;" onclick="home:video:${index}">
              <img src="${video.thumbnailImgData}" style="display: block; height: 60px; width: ${60 * 1.5}px; margin-right: 20px;">
              <div style="display: flex; height: 60px; font-size: 24px; font-weight: 400;">${video.name}</div>
           </a>`
         ).join('\n')}
       </div>
       <div style="display: flex; height: 100px; padding: 0 50px; justify-content: center; align-items: center;">
-        <a style="display: flex; margin-left: auto; margin-right: 40px; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:menu">Main menu</a>
+        <a style="display: flex; margin-left: auto; margin-right: 40px; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:skipAll">Main menu</a>
         <a style="display: flex; padding: 10px 15px; border: 2px solid; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:next">Next: Controls</a>
       </div>
     </div>

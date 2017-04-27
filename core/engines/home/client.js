@@ -374,7 +374,7 @@ class Home {
                     w: WIDTH,
                     h: HEIGHT - 200,
                   }), {
-                    type: 'controls',
+                    type: 'videoControls',
                     state: {
                       media: mediaState,
                     },
@@ -929,7 +929,7 @@ class Home {
 
                 const intersect = mesh => {
                   if (mesh === walkthroughMeshes.padTargetMesh) {
-                    _setPage('tutorial:' + 0);
+                    _setPage('video:' + 0);
                   }
                 };
                 walkthroughEmitter.on('intersect', intersect);
@@ -978,7 +978,7 @@ class Home {
               };
             };
             const _setPage = page => {
-              const isTutorialPage = /^(?:controls|menu|tutorial:[0-9]+)$/.test(page);
+              const isTutorialPage = /^(?:controls|videos|video:[0-9]+)$/.test(page);
               if (isTutorialPage && !bootstrap.getTutorialFlag()) {
                 bootstrap.setTutorialFlag(true);
               } else if (!isTutorialPage && bootstrap.getTutorialFlag()) {
@@ -997,7 +997,7 @@ class Home {
                 media.pause();
               }
               let match;
-              if (match = page.match(/^tutorial:([0-9]+)$/)) {
+              if (match = page.match(/^video:([0-9]+)$/)) {
                 const id = parseInt(match[1], 10);
 
                 videoMesh.visible = true;
@@ -1133,10 +1133,10 @@ class Home {
                   const {name} = pageSpec;
 
                   if (name === 'controls') {
-                    _setPage('tutorial:' + 0);
-                  } else if (name === 'menu') {
-                    _setPage('tutorial:' + 0);
-                  } else if (name === 'tutorial') {
+                    _setPage('video:' + 0);
+                  } else if (name === 'videos') {
+                    _setPage('video:' + 0);
+                  } else if (name === 'video') {
                     const n = parseInt(pageSpec.args[0], 10);
 
                     if (n < 4) {
@@ -1152,29 +1152,29 @@ class Home {
                   const pageSpec = _parsePage(page);
                   const {name} = pageSpec;
 
-                  if (name === 'menu') {
+                  if (name === 'videos') {
                     _setPage('controls');
-                  } else if (name === 'tutorial') {
+                  } else if (name === 'video') {
                     const n = parseInt(pageSpec.args[0], 10);
 
                     if (n > 0) {
                       _setPage([pageSpec.name, n - 1].join(':'));
                     } else {
-                      _setPage('menu');
+                      _setPage('videos');
                     }
                   } else if (name === 'done') {
-                    _setPage('menu');
+                    _setPage('videos');
                   }
 
                   return true;
-                } else if (match = onclick.match(/^home:tutorial:([0-9]+)$/)) {
+                } else if (match = onclick.match(/^home:video:([0-9]+)$/)) {
                   const n = parseInt(match[1], 10);
 
-                  _setPage('tutorial:' + n);
+                  _setPage('video:' + n);
 
                   return true;
-                } else if (onclick === 'home:menu') {
-                  _setPage('done'); // XXX rename this to menu
+                } else if (onclick === 'home:skipAll') {
+                  _setPage('done');
 
                   return true;
                 } else if (match = onclick.match(/^media:(play|pause|seek)$/)) {
