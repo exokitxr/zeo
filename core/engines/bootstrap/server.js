@@ -64,8 +64,7 @@ class Bootstrap {
       req.end(JSON.stringify({
         worldname: serverWorldname,
         protocol: serverSpec.protocol,
-        serverPort: serverSpec.port,
-        homePort: homeSpec.port,
+        port: serverSpec.port,
         users: [], // XXX announce the real users from the hub engine
       }));
 
