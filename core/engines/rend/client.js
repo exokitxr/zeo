@@ -356,48 +356,44 @@ class Rend {
         };
         input.on('click', click);
         const menudown = () => {
-          const {loggedIn} = menuState;
+          const {open, animation} = menuState;
 
-          if (loggedIn) {
-            const {open, animation} = menuState;
+          if (open) {
+            menuState.open = false; // XXX need to cancel other menu states as well
+            menuState.position = null;
+            menuState.rotation = null;
+            menuState.animation = anima.makeAnimation(TRANSITION_TIME);
 
-            if (open) {
-              menuState.open = false; // XXX need to cancel other menu states as well
-              menuState.position = null;
-              menuState.rotation = null;
-              menuState.animation = anima.makeAnimation(TRANSITION_TIME);
+            const {tagsLinesMesh} = auxObjects;
+            tagsLinesMesh.visible = false;
 
-              const {tagsLinesMesh} = auxObjects;
-              tagsLinesMesh.visible = false;
+            rendApi.emit('close');
+          } else {
+            const newCameraPosition = camera.position.clone();
+            const newCameraRotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(
+              0,
+              camera.rotation.y,
+              0,
+              camera.rotation.order
+            ));
+            const newMenuPosition = newCameraPosition.clone()
+              .add(new THREE.Vector3(0, 0, -1.5).applyQuaternion(newCameraRotation));
+            const newMenuRotation = newCameraRotation;
+            menuMesh.position.copy(newMenuPosition);
+            menuMesh.quaternion.copy(newMenuRotation);
 
-              rendApi.emit('close');
-            } else {
-              const newCameraPosition = camera.position.clone();
-              const newCameraRotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(
-                0,
-                camera.rotation.y,
-                0,
-                camera.rotation.order
-              ));
-              const newMenuPosition = newCameraPosition.clone()
-                .add(new THREE.Vector3(0, 0, -1.5).applyQuaternion(newCameraRotation));
-              const newMenuRotation = newCameraRotation;
-              menuMesh.position.copy(newMenuPosition);
-              menuMesh.quaternion.copy(newMenuRotation);
+            menuState.open = true;
+            menuState.position = newMenuPosition.toArray();
+            menuState.rotation = newMenuRotation.toArray();
+            menuState.animation = anima.makeAnimation(TRANSITION_TIME);
 
-              menuState.open = true;
-              menuState.position = newMenuPosition.toArray();
-              menuState.rotation = newMenuRotation.toArray();
-              menuState.animation = anima.makeAnimation(TRANSITION_TIME);
+            const {tagsLinesMesh} = auxObjects;
+            tagsLinesMesh.visible = true;
 
-              const {tagsLinesMesh} = auxObjects;
-              tagsLinesMesh.visible = true;
-
-              rendApi.emit('open', {
-                position: newCameraPosition,
-                rotation: newCameraRotation,
-              });
-            }
+            rendApi.emit('open', {
+              position: newCameraPosition,
+              rotation: newCameraRotation,
+            });
           }
         };
         input.on('menudown', menudown);
