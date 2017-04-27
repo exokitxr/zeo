@@ -236,75 +236,71 @@ class Rend {
         scene.add(menuMesh);
 
         const trigger = e => {
-          const {open} = menuState;
+          const {side} = e;
 
-          if (open) {
-            const {side} = e;
+          const _doClickNavbar = () => {
+            const hoverState = uiTracker.getHoverState(side);
+            const {anchor} = hoverState;
+            const onclick = (anchor && anchor.onclick) || '';
 
-            const _doClickNavbar = () => {
-              const hoverState = uiTracker.getHoverState(side);
-              const {anchor} = hoverState;
-              const onclick = (anchor && anchor.onclick) || '';
+            let match;
+            if (match = onclick.match(/^navbar:(tutorial|status|world|servers|options)$/)) {
+              const newTab = match[1];
 
-              let match;
-              if (match = onclick.match(/^navbar:(tutorial|status|world|servers|options)$/)) {
-                const newTab = match[1];
+              rendApi.setTab(newTab);
 
-                rendApi.setTab(newTab);
+              return true;
+            } else {
+              return false;
+            }
+          };
+          const _doClickMenu = () => {
+            const hoverState = uiTracker.getHoverState(side);
+            const {anchor} = hoverState;
+            const onclick = (anchor && anchor.onclick) || '';
 
-                return true;
-              } else {
-                return false;
-              }
-            };
-            const _doClickMenu = () => {
-              const hoverState = uiTracker.getHoverState(side);
-              const {anchor} = hoverState;
-              const onclick = (anchor && anchor.onclick) || '';
+            /* if (onclick === 'status:downloadLoginToken') {
+              const a = document.createElement('a');
+              a.href = '/server/token';
+              a.download = 'token.txt';
+              a.style.display = 'none';
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
 
-              /* if (onclick === 'status:downloadLoginToken') {
-                const a = document.createElement('a');
-                a.href = '/server/token';
-                a.download = 'token.txt';
-                a.style.display = 'none';
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
+              return true;
+            } else if (onclick === 'status:logOut') {
+              const _requestLogout = () => new Promise((accept, reject) => {
+                bootstrap.requestLogout()
+                  .then(() => {
+                    accept();
+                  })
+                  .catch(err => {
+                    console.warn(err);
 
-                return true;
-              } else if (onclick === 'status:logOut') {
-                const _requestLogout = () => new Promise((accept, reject) => {
-                  bootstrap.requestLogout()
-                    .then(() => {
-                      accept();
-                    })
-                    .catch(err => {
-                      console.warn(err);
+                    accept();
+                  });
+              });
 
-                      accept();
-                    });
+              _requestLogout()
+                .then(() => {
+                  rendApi.logout();
                 });
 
-                _requestLogout()
-                  .then(() => {
-                    rendApi.logout();
-                  });
+              return true;
+            } else */if (onclick === 'status:backToHub') {
+              const initialToken = _getQueryVariable(bootstrap.getInitialUrl(), 't');
+              bootstrap.navigate('https://' + hubUrl + (initialToken ? ('?t=' + initialToken) : ''));
 
-                return true;
-              } else */if (onclick === 'status:backToHub') {
-                const initialToken = _getQueryVariable(bootstrap.getInitialUrl(), 't');
-                bootstrap.navigate('https://' + hubUrl + (initialToken ? ('?t=' + initialToken) : ''));
+              return true; // can't happen
+            } else if (onclick === 'status:servers') {
+              rendApi.setTab('servers');
+            } else {
+              return false;
+            }
+          };
 
-                return true; // can't happen
-              } else if (onclick === 'status:servers') {
-                rendApi.setTab('servers');
-              } else {
-                return false;
-              }
-            };
-
-            _doClickNavbar() || _doClickMenu();
-          }
+          _doClickNavbar() || _doClickMenu();
         };
         input.on('trigger', trigger);
         // this needs to be a native click event rather than a soft trigger click event due for clipboard copy security reasons
