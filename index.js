@@ -89,6 +89,7 @@ const worldname = flags.worldname || [_capitalize(rnd.adjective()), _capitalize(
 const protocolString = !secure ? 'http' : 'https';
 const hubUrl = flags.hubUrl || (protocolString + '://hub.' + hostname + ':' + port);
 const homeUrl = flags.homeUrl || (protocolString + '://127.0.0.1:' + port);
+const serverUrl = protocolString + '://127.0.0.1:' + port;
 const config = {
   dirname: __dirname,
   hostname: hostname,
@@ -120,7 +121,7 @@ const config = {
       enabled: flags.hub,
     },
     server: {
-      url: homeUrl,
+      url: serverUrl,
       worldname: worldname,
       enabled: flags.server,
     },
