@@ -14,6 +14,8 @@ const getConfigPageSrc = ({/*focus, */resolutionValue, voiceChatCheckboxValue, s
         <h1 style="margin: 15px 0; font-size: 40px; font-weight: 400;">Server settings</h1>
         ${getCheckboxSrc('Lock mode', lockedCheckboxValue, 'config:lock')}
       ` : ''}
+      <h1 style="margin: 15px 0; font-size: 40px; font-weight: 400;">Help</h1>
+      ${getButtonSrc('Run tutorial', 'config:tutorial')}
     </div>
   </div>
 `;
@@ -63,13 +65,9 @@ const getCheckboxSrc = (label, checkboxValue, onclick) => `\
 `;
 
 const getButtonSrc = (label, onclick) => `\
-  <a style="display: inline-block; margin-top: 10px; padding: 5px 20px; border: 1px solid #333; border-radius: 100px; color: #333; font-size: 24px; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="${onclick}">${label}</a>
+  <a style="margin-right: auto; padding: 10px 15px; border: 2px solid; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="${onclick}">${label}</a>
 `;
 
 module.exports = {
   getConfigPageSrc,
-  /* getInputSrc,
-  getSliderSrc,
-  getCheckboxSrc,
-  getButtonSrc, */
 };

@@ -1224,6 +1224,12 @@ class Home {
               priority: 1,
             });
 
+            const _tabchange = tab => {
+              if (tab === 'tutorial') {
+                _setPage('controls');
+              }
+            };
+            rend.on('tabchange', _tabchange);
             const _update = () => {
               const _updateWalkthroughMeshes = () => {
                 const uiTime = biolumi.getUiTime();
@@ -1365,6 +1371,7 @@ class Home {
 
               input.removeListener('trigger', _trigger);
 
+              rend.removeListener('tabchange', _tabchange);
               rend.removeListener('update', _update);
             });
           }

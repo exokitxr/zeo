@@ -357,6 +357,8 @@ class Config {
                 configApi.updateConfig();
 
                 _updatePages();
+              } else if (onclick === 'config:tutorial') {
+                rend.setTab('tutorial');
               } else {
                 _updatePages();
               }
