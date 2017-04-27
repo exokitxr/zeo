@@ -964,40 +964,6 @@ class Home {
             };
             const _setNextWalkthroughIndex = () => _setWalkthroughIndex(walkthroughIndex + 1);
 
-            const _makeGrabState = () => ({
-              tagMesh: null,
-            });
-            const grabStates = {
-              left: _makeGrabState(),
-              right: _makeGrabState(),
-            };
-
-            const _makeGrabbableState = () => ({
-              pointerMesh: null,
-              grabMesh: null,
-            });
-            const grabbableStates = {
-              left: _makeGrabbableState(),
-              right: _makeGrabbableState(),
-            };
-
-            const _makeGrabBoxMesh = () => {
-              const width = TAGS_WORLD_WIDTH;
-              const height = TAGS_WORLD_HEIGHT;
-              const depth = TAGS_WORLD_DEPTH;
-
-              const geometry = new THREE.BoxBufferGeometry(width, height, depth);
-              const material = wireframeHighlightMaterial;
-
-              const mesh = new THREE.Mesh(geometry, material);
-              mesh.position.y = 1.2;
-              mesh.rotation.order = camera.rotation.order;
-              mesh.rotation.y = Math.PI / 2;
-              mesh.depthWrite = false;
-              mesh.visible = false;
-              return mesh;
-            };
-
             const _updatePages = () => {
               const {planeMesh} = menuMesh;
               const {page} = planeMesh;
@@ -1005,84 +971,6 @@ class Home {
             };
             _updatePages();
 
-            /* const _addTag = (side, srcTagMesh) => { // XXX all of these should be moved to the home engine under home (non-saving) mode
-              const itemSpec = _clone(srcTagMesh.item);
-              itemSpec.id = _makeId();
-              const tagMesh = tags.makeTag(itemSpec);
-
-              const grabState = grabStates[side];
-              grabState.tagMesh = tagMesh;
-
-              const controllers = cyborg.getControllers();
-              const controller = controllers[side];
-              const {mesh: controllerMesh} = controller;
-              tagMesh.position.copy(controllerMeshOffset);
-              tagMesh.quaternion.copy(controllerMeshQuaternion);
-              tagMesh.scale.copy(oneVector);
-              controllerMesh.add(tagMesh);
-            }; */
-            const _loadModule = itemSpec => {
-              const tagMesh = tags.makeTag(itemSpec);
-              tags.reifyModule(tagMesh);
-
-              scene.add(tagMesh);
-            };
-            const _loadEntity = itemSpec => {
-              const tagMesh = tags.makeTag(itemSpec);
-              tags.reifyEntity(tagMesh);
-
-              scene.add(tagMesh);
-            };
-            const _addNpmModule = (side, srcTagMesh) => {
-              const itemSpec = _clone(srcTagMesh.item);
-              itemSpec.id = _makeId();
-              itemSpec.metadata.isStatic = false;
-              const tagMesh = tags.makeTag(itemSpec);
-
-              const grabState = grabStates[side];
-              grabState.tagMesh = tagMesh;
-
-              const controllers = cyborg.getControllers();
-              const controller = controllers[side];
-              const {mesh: controllerMesh} = controller;
-              tagMesh.position.copy(controllerMeshOffset);
-              tagMesh.quaternion.copy(controllerMeshQuaternion);
-              tagMesh.scale.copy(oneVector);
-
-              controllerMesh.add(tagMesh);
-
-              tags.reifyModule(tagMesh);
-            };
-
-            const _requestRemoteServers = () => fetch(hubUrl + '/servers/servers.json')
-              .then(res => res.json()
-                .then(j => {
-                  const {servers} = j;
-
-                  for (let i = 0; i < servers.length; i++) {
-                    const server = servers[i];
-                    server.local = false;
-                  }
-
-                  return servers;
-                })
-              );
-            const _requestLocalServers = () => fetch('servers/local.json')
-              .then(res => res.json()
-                .then(j => {
-                  const {servers} = j;
-
-                  for (let i = 0; i < servers.length; i++) {
-                    const server = servers[i];
-                    if (server.url) {
-                      server.url = document.location.protocol + '//' + document.location.hostname + (document.location.port ? (':' + document.location.port) : '') + '/' + server.url;
-                    }
-                    server.local = true;
-                  }
-
-                  return servers;
-                })
-              );
             const _parsePage = page => {
               const split = page.split(':');
               const name = split[0];
@@ -1092,7 +980,6 @@ class Home {
                 args,
               };
             };
-            let videoUpdateInterval = null;
             const _setPage = page => {
               const isTutorialPage = /^(?:controls|menu|tutorial:[0-9]+)$/.test(page);
               if (isTutorialPage && !bootstrap.getTutorialFlag()) {
@@ -1161,34 +1048,6 @@ class Home {
             const _trigger = e => {
               const {side} = e;
 
-              const _doTagMeshClick = () => {
-                const {side} = e;
-                const {gamepads} = webvr.getStatus();
-                const gamepad = gamepads[side];
-
-                if (gamepad) {
-                  const {buttons: {grip: {pressed: gripPressed}}} = gamepad;
-
-                  if (gripPressed) {
-                    const grabbableState = grabbableStates[side];
-                    const grabState = grabStates[side];
-                    const {pointerMesh} = grabbableState;
-                    const {tagMesh: grabMesh} = grabState;
-
-                    if (pointerMesh && !grabMesh) {
-                      _addNpmModule(side, pointerMesh); // XXX make this handle both tag and module cases
-
-                      return true;
-                    } else {
-                      return false;
-                    }
-                  } else {
-                    return false;
-                  }
-                } else {
-                  return false;
-                }
-              };
               /* const _proxyLoginServer = worldname => fetch('servers/proxyLogin', {
                 method: 'POST',
                 headers: (() => {
@@ -1357,134 +1216,18 @@ class Home {
                   }
 
                   return true;
-                /* } else if (onclick === 'servers:up') { // XXX integrate this into the rend engine menu
-                  const {page} = homeState;
-                  const pageSpec = _parsePage(page);
-                  _setPage([pageSpec.name, parseInt(pageSpec.args[0], 10) - 1].join(':'));
-
-                  return true;
-                } else if (onclick === 'servers:down') {
-                  const {page} = homeState;
-                  const pageSpec = _parsePage(page);
-                  _setPage([pageSpec.name, parseInt(pageSpec.args[0], 10) + 1].join(':'));
-
-                  return true;
-                } else if (onclick === 'home:apiDocs') {
-                  bootstrap.navigate('https://zeovr.io/docs');
-
-                  return true; // can't happen */
                 } else {
                   return false;
                 }
               };
 
-              _doTagMeshClick() || /*_doEnvMeshClick() ||*/ _doMenuMeshClick();
+              _doMenuMeshClick();
             };
             input.on('trigger', _trigger, {
               priority: 1,
             });
 
-            const _gripdown = e => {
-              const {side} = e;
-              const grabbableState = grabbableStates[side];
-              const {grabMesh} = grabbableState;
-
-              if (grabMesh) {
-                const controllers = cyborg.getControllers();
-                const controller = controllers[side];
-                const {mesh: controllerMesh} = controller;
-                grabMesh.position.copy(controllerMeshOffset);
-                grabMesh.quaternion.copy(controllerMeshQuaternion);
-                grabMesh.scale.copy(oneVector);
-
-                controllerMesh.add(grabMesh);
-
-                const grabState = grabStates[side];
-                grabState.tagMesh = grabMesh;
-
-                e.stopImmediatePropagation();
-              }
-            };
-            input.on('gripdown', _gripdown, {
-              priority: 1,
-            });
-            const _gripup = e => {
-              const {side} = e;
-              const grabState = grabStates[side];
-              const {tagMesh: grabTagMesh} = grabState;
-
-              if (grabTagMesh) {
-                const {position, rotation, scale} = _decomposeObjectMatrixWorld(grabTagMesh);
-                scene.add(grabTagMesh);
-                grabTagMesh.position.copy(position);
-                grabTagMesh.quaternion.copy(rotation);
-                grabTagMesh.scale.copy(scale);
-
-                const {item} = grabTagMesh;
-                const matrixArray = position.toArray().concat(rotation.toArray()).concat(scale.toArray());
-                item.matrix = matrixArray;
-
-                grabState.tagMesh = null;
-
-                e.stopImmediatePropagation();
-              }
-            };
-            input.on('gripup', _gripup, {
-              priority: 1,
-            });
-
-            const tagMeshes = [];
-            const _tagsAddTag = ({itemSpec, dst}) => {
-              if (dst === 'world') {
-                const {type} = itemSpec;
-
-                if (type === 'entity') {
-                  const tagMesh = tags.makeTag(itemSpec);
-                  tags.reifyEntity(tagMesh);
-
-                  tagMeshes.push(tagMesh);
-
-                  scene.add(tagMesh);
-                }
-              }
-            };
-            tags.on('addTag', _tagsAddTag);
-            const _tagsSetAttribute = ({id, name, value}) => {
-              const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
-              tagMesh.setAttribute(name, value);
-            };
-            tags.on('setAttribute', _tagsSetAttribute);
-            const _loadTags = ({itemSpecs}) => {
-              for (let i = 0; i < itemSpecs.length; i++) {
-                const itemSpec = itemSpecs[i];
-                const {type} = itemSpec;
-
-                if (type === 'module') {
-                  _loadModule(itemSpec);
-                } else if (type === 'entity') {
-                  _loadEntity(itemSpec);
-                }
-              }
-            };
-            tags.on('loadTags', _loadTags);
-
             const _update = () => {
-              const _updateTagPointerAnchors = () => {
-                SIDES.forEach(side => {
-                  const grabbableState = grabbableStates[side];
-
-                  const pointerMesh = tags.getPointedTagMesh(side);
-                  grabbableState.pointerMesh = pointerMesh;
-                });
-              };
-              const _updateTagGrabAnchors = () => {
-                SIDES.forEach(side => {
-                  const grabbableState = grabbableStates[side];
-
-                  const grabMesh = tags.getGrabTagMesh(side);
-                  grabbableState.grabMesh = grabMesh;
-                });
-              };
               const _updateWalkthroughMeshes = () => {
                 const uiTime = biolumi.getUiTime();
 
@@ -1608,8 +1351,6 @@ class Home {
                 }
               };
 
-              _updateTagPointerAnchors();
-              _updateTagGrabAnchors();
               _updateWalkthroughMeshes();
               _updateWalkthroughTargets();
               _updateWalkthroughEmitter();
@@ -1629,13 +1370,6 @@ class Home {
               });
 
               input.removeListener('trigger', _trigger);
-
-              input.removeListener('gripdown', _gripdown);
-              input.removeListener('gripup', _gripup);
-
-              tags.removeListener('addTag', _tagsAddTag);
-              tags.removeListener('setAttribute', _tagsSetAttribute);
-              tags.removeListener('loadTags', _loadTags);
 
               rend.removeListener('update', _update);
             });
