@@ -111,7 +111,7 @@ class Rend {
         };
 
         const menuState = {
-          open: false,
+          open: serverEnabled,
           position: null,
           rotation: null,
           loggedIn: false,
@@ -130,376 +130,368 @@ class Rend {
         };
 
         const menuMesh = (() => {
-          if (serverEnabled) {
-            const menuMesh = (() => {
-              const object = new THREE.Object3D();
-              object.position.set(0, DEFAULT_USER_HEIGHT, -1.5);
-              object.visible = menuState.open;
+          const object = new THREE.Object3D();
+          object.position.set(0, DEFAULT_USER_HEIGHT, -1.5);
+          object.visible = menuState.open;
 
-              const statusMesh = (() => {
-                const menuUi = biolumi.makeUi({
-                  width: WIDTH,
-                  height: HEIGHT,
-                });
-                const mesh = menuUi.makePage(({
-                  status,
-                }) => ({
-                  type: 'html',
-                  src: menuRenderer.getStatusSrc({status}),
-                  x: 0,
-                  y: 0,
-                  w: WIDTH,
-                  h: HEIGHT,
-                }), {
-                  type: 'status',
-                  state: {
-                    status: statusState,
-                  },
-                  worldWidth: WORLD_WIDTH,
-                  worldHeight: WORLD_HEIGHT,
-                });
-                mesh.receiveShadow = true;
-
-                const {page} = mesh;
-                uiTracker.addPage(page);
-
-                cleanups.push(() => {
-                  uiTracker.removePage(page);
-                });
-
-                return mesh;
-              })();
-              object.add(statusMesh);
-              object.statusMesh = statusMesh;
-
-              object.worldMesh = null;
-              object.serversMesh = null;
-              object.configMesh = null;
-              object.statsMesh = null;
-
-              const navbarMesh = (() => {
-                const navbarUi = biolumi.makeUi({
-                  width: NAVBAR_WIDTH,
-                  height: NAVBAR_HEIGHT,
-                });
-                const mesh = navbarUi.makePage(({
-                  navbar: {
-                    tab,
-                  },
-                }) => ({
-                  type: 'html',
-                  src: menuRenderer.getNavbarSrc({tab}),
-                  x: 0,
-                  y: 0,
-                  w: NAVBAR_WIDTH,
-                  h: NAVBAR_HEIGHT,
-                }), {
-                  type: 'navbar',
-                  state: {
-                    navbar: navbarState,
-                  },
-                  worldWidth: NAVBAR_WORLD_WIDTH,
-                  worldHeight: NAVBAR_WORLD_HEIGHT,
-                });
-                mesh.position.y = (WORLD_HEIGHT / 2) + (NAVBAR_WORLD_HEIGHT / 2);
-                mesh.receiveShadow = true;
-
-                const {page} = mesh;
-                uiTracker.addPage(page);
-
-                cleanups.push(() => {
-                  uiTracker.removePage(page);
-                });
-
-                return mesh;
-              })();
-              object.add(navbarMesh);
-              object.navbarMesh = navbarMesh;
-
-              const shadowMesh = (() => {
-                const geometry = new THREE.BoxBufferGeometry(WORLD_WIDTH, WORLD_HEIGHT + NAVBAR_WORLD_HEIGHT, 0.01);
-                const material = transparentMaterial.clone();
-                material.depthWrite = false;
-
-                const mesh = new THREE.Mesh(geometry, material);
-                mesh.position.y = NAVBAR_WORLD_HEIGHT / 2;
-                mesh.castShadow = true;
-                return mesh;
-              })();
-              object.add(shadowMesh);
-
-              return object;
-            })();
-            scene.add(menuMesh);
-
-            const trigger = e => {
-              const {open} = menuState;
-
-              if (open) {
-                const {side} = e;
-
-                const _doClickNavbar = () => {
-                  const hoverState = uiTracker.getHoverState(side);
-                  const {anchor} = hoverState;
-                  const onclick = (anchor && anchor.onclick) || '';
-
-                  let match;
-                  if (match = onclick.match(/^navbar:(status|world|servers|options)$/)) {
-                    const newTab = match[1];
-
-                    const _getTabMesh = tab => {
-                      switch (tab) {
-                        case 'status': return menuMesh.statusMesh;
-                        case 'world': return menuMesh.worldMesh;
-                        case 'servers': return menuMesh.serversMesh;
-                        case 'options': return menuMesh.configMesh;
-                        default: return null;
-                      }
-                    };
-
-                    const {tab: oldTab} = navbarState;
-                    const oldMesh = _getTabMesh(oldTab);
-                    const newMesh = _getTabMesh(newTab);
-
-                    oldMesh.visible = false;
-                    newMesh.visible = true;
-
-                    navbarState.tab = newTab;
-
-                    _updateNavbarPage();
-
-                    rendApi.emit('tabchange', newTab);
-
-                    return true;
-                  } else {
-                    return false;
-                  }
-                };
-                const _doClickMenu = () => {
-                  const hoverState = uiTracker.getHoverState(side);
-                  const {anchor} = hoverState;
-                  const onclick = (anchor && anchor.onclick) || '';
-
-                  /* if (onclick === 'status:downloadLoginToken') {
-                    const a = document.createElement('a');
-                    a.href = '/server/token';
-                    a.download = 'token.txt';
-                    a.style.display = 'none';
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-
-                    return true;
-                  } else if (onclick === 'status:logOut') {
-                    const _requestLogout = () => new Promise((accept, reject) => {
-                      bootstrap.requestLogout()
-                        .then(() => {
-                          accept();
-                        })
-                        .catch(err => {
-                          console.warn(err);
-
-                          accept();
-                        });
-                    });
-
-                    _requestLogout()
-                      .then(() => {
-                        rendApi.logout();
-                      });
-
-                    return true;
-                  } else */if (onclick === 'status:backToHub') {
-                    const initialToken = _getQueryVariable(bootstrap.getInitialUrl(), 't');
-                    bootstrap.navigate('https://' + hubUrl + (initialToken ? ('?t=' + initialToken) : ''));
-
-                    return true; // can't happen
-                  } else {
-                    return false;
-                  }
-                };
-
-                _doClickNavbar() || _doClickMenu();
-              }
-            };
-            input.on('trigger', trigger);
-            // this needs to be a native click event rather than a soft trigger click event due for clipboard copy security reasons
-            const click = () => {
-              const mode = webvr.getMode();
-
-              if (SIDES.indexOf(mode) !== -1) {
-                const side = mode;
-                const hoverState = uiTracker.getHoverState(side);
-                const {anchor} = hoverState;
-                const onclick = (anchor && anchor.onclick) || '';
-
-                if (onclick === 'status:token') {
-                  const {url, authToken} = statusState;
-                  const clipboardText = url + '?t=' + authToken;
-
-                  const ok = _copyToClipboard(clipboardText);
-                  if (ok) {
-                    console.log('copied to clipboard: ' + clipboardText);
-
-                    _proxyLogin()
-                      .then(token => {
-                        statusState.authToken = token;
-
-                        _updateMenuPage();
-                      })
-                      .catch(err => {
-                        console.warn(err);
-                      });
-                  } else {
-                    console.warn('failed to copy URL:\n' + clipboardText);
-                  }
-                }
-              }
-            };
-            input.on('click', click);
-            const menudown = () => {
-              const {loggedIn} = menuState;
-
-              if (loggedIn) {
-                const {open, animation} = menuState;
-
-                if (open) {
-                  menuState.open = false; // XXX need to cancel other menu states as well
-                  menuState.position = null;
-                  menuState.rotation = null;
-                  menuState.animation = anima.makeAnimation(TRANSITION_TIME);
-
-                  const {tagsLinesMesh} = auxObjects;
-                  tagsLinesMesh.visible = false;
-
-                  rendApi.emit('close');
-                } else {
-                  const newCameraPosition = camera.position.clone();
-                  const newCameraRotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(
-                    0,
-                    camera.rotation.y,
-                    0,
-                    camera.rotation.order
-                  ));
-                  const newMenuPosition = newCameraPosition.clone()
-                    .add(new THREE.Vector3(0, 0, -1.5).applyQuaternion(newCameraRotation));
-                  const newMenuRotation = newCameraRotation;
-                  menuMesh.position.copy(newMenuPosition);
-                  menuMesh.quaternion.copy(newMenuRotation);
-
-                  menuState.open = true;
-                  menuState.position = newMenuPosition.toArray();
-                  menuState.rotation = newMenuRotation.toArray();
-                  menuState.animation = anima.makeAnimation(TRANSITION_TIME);
-
-                  const {tagsLinesMesh} = auxObjects;
-                  tagsLinesMesh.visible = true;
-
-                  rendApi.emit('open', {
-                    position: newCameraPosition,
-                    rotation: newCameraRotation,
-                  });
-                }
-              }
-            };
-            input.on('menudown', menudown);
-
-            localUpdates.push(() => {
-              const _updateMeshAnimations = () => {
-                const {animation} = menuState;
-
-                if (animation) {
-                  const {open} = menuState;
-
-                  const startValue = open ? 0 : 1;
-                  const endValue = 1 - startValue;
-                  const factor = animation.getValue();
-                  const value = ((1 - factor) * startValue) + (factor * endValue);
-
-                  const {tagMeshes} = auxObjects;
-                  const animatedMeshSpecs = [
-                    {
-                      mesh: menuMesh,
-                      direction: 'y',
-                    },
-                    /* {
-                      mesh: keyboardMesh,
-                      direction: 'x',
-                    }, */
-                  ].concat(tagMeshes.map(tagMesh => ({
-                    mesh: tagMesh,
-                    direction: 'y',
-                  })));
-
-                  if (factor < 1) {
-                    if (value > 0.001) {
-                      animatedMeshSpecs.forEach(meshSpec => {
-                        const {direction, mesh} = meshSpec;
-
-                        switch (direction) {
-                          case 'x':
-                            mesh.scale.set(value, 1, 1);
-                            break;
-                          case 'y':
-                            mesh.scale.set(1, value, 1);
-                            break;
-                          case 'z':
-                            mesh.scale.set(1, 1, value);
-                            break;
-                        }
-
-                        if (!mesh.visible) {
-                          mesh.visible = (('initialVisible' in mesh) ? mesh.initialVisible : true);
-                        }
-                      });
-                    } else {
-                      animatedMeshSpecs.forEach(meshSpec => {
-                        const {mesh} = meshSpec;
-
-                        mesh.visible = false;
-                      });
-                    }
-                  } else {
-                    animatedMeshSpecs.forEach(meshSpec => {
-                      const {mesh} = meshSpec;
-
-                      mesh.scale.set(1, 1, 1);
-
-                      if (open && !mesh.visible) {
-                        mesh.visible = (('initialVisible' in mesh) ? mesh.initialVisible : true);
-                      } else if (!open && mesh.visible) {
-                        mesh.visible = false;
-                      }
-                    });
-
-                    menuState.animation = null;
-                  }
-                }
-              };
-
-              _updateMeshAnimations();
+          const statusMesh = (() => {
+            const menuUi = biolumi.makeUi({
+              width: WIDTH,
+              height: HEIGHT,
             });
+            const mesh = menuUi.makePage(({
+              status,
+            }) => ({
+              type: 'html',
+              src: menuRenderer.getStatusSrc({status}),
+              x: 0,
+              y: 0,
+              w: WIDTH,
+              h: HEIGHT,
+            }), {
+              type: 'status',
+              state: {
+                status: statusState,
+              },
+              worldWidth: WORLD_WIDTH,
+              worldHeight: WORLD_HEIGHT,
+            });
+            mesh.receiveShadow = true;
+
+            const {page} = mesh;
+            uiTracker.addPage(page);
 
             cleanups.push(() => {
-              scene.remove(menuMesh);
-
-              SIDES.forEach(side => {
-                const {dotMeshes, boxMeshes} = uiTracker;
-
-                scene.remove(dotMeshes[side]);
-                scene.remove(boxMeshes[side]);
-              });
-
-              input.removeListener('trigger', trigger);
-              input.removeListener('click', click);
-              input.removeListener('menudown', menudown);
+              uiTracker.removePage(page);
             });
 
-            return menuMesh;
-          } else {
-            return null;
-          }
+            return mesh;
+          })();
+          object.add(statusMesh);
+          object.statusMesh = statusMesh;
+
+          object.worldMesh = null;
+          object.serversMesh = null;
+          object.configMesh = null;
+          object.statsMesh = null;
+
+          const navbarMesh = (() => {
+            const navbarUi = biolumi.makeUi({
+              width: NAVBAR_WIDTH,
+              height: NAVBAR_HEIGHT,
+            });
+            const mesh = navbarUi.makePage(({
+              navbar: {
+                tab,
+              },
+            }) => ({
+              type: 'html',
+              src: menuRenderer.getNavbarSrc({tab}),
+              x: 0,
+              y: 0,
+              w: NAVBAR_WIDTH,
+              h: NAVBAR_HEIGHT,
+            }), {
+              type: 'navbar',
+              state: {
+                navbar: navbarState,
+              },
+              worldWidth: NAVBAR_WORLD_WIDTH,
+              worldHeight: NAVBAR_WORLD_HEIGHT,
+            });
+            mesh.position.y = (WORLD_HEIGHT / 2) + (NAVBAR_WORLD_HEIGHT / 2);
+            mesh.receiveShadow = true;
+
+            const {page} = mesh;
+            uiTracker.addPage(page);
+
+            cleanups.push(() => {
+              uiTracker.removePage(page);
+            });
+
+            return mesh;
+          })();
+          object.add(navbarMesh);
+          object.navbarMesh = navbarMesh;
+
+          const shadowMesh = (() => {
+            const geometry = new THREE.BoxBufferGeometry(WORLD_WIDTH, WORLD_HEIGHT + NAVBAR_WORLD_HEIGHT, 0.01);
+            const material = transparentMaterial.clone();
+            material.depthWrite = false;
+
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.position.y = NAVBAR_WORLD_HEIGHT / 2;
+            mesh.castShadow = true;
+            return mesh;
+          })();
+          object.add(shadowMesh);
+
+          return object;
         })();
+        scene.add(menuMesh);
+
+        const trigger = e => {
+          const {open} = menuState;
+
+          if (open) {
+            const {side} = e;
+
+            const _doClickNavbar = () => {
+              const hoverState = uiTracker.getHoverState(side);
+              const {anchor} = hoverState;
+              const onclick = (anchor && anchor.onclick) || '';
+
+              let match;
+              if (match = onclick.match(/^navbar:(status|world|servers|options)$/)) {
+                const newTab = match[1];
+
+                const _getTabMesh = tab => {
+                  switch (tab) {
+                    case 'status': return menuMesh.statusMesh;
+                    case 'world': return menuMesh.worldMesh;
+                    case 'servers': return menuMesh.serversMesh;
+                    case 'options': return menuMesh.configMesh;
+                    default: return null;
+                  }
+                };
+
+                const {tab: oldTab} = navbarState;
+                const oldMesh = _getTabMesh(oldTab);
+                const newMesh = _getTabMesh(newTab);
+
+                oldMesh.visible = false;
+                newMesh.visible = true;
+
+                navbarState.tab = newTab;
+
+                _updateNavbarPage();
+
+                rendApi.emit('tabchange', newTab);
+
+                return true;
+              } else {
+                return false;
+              }
+            };
+            const _doClickMenu = () => {
+              const hoverState = uiTracker.getHoverState(side);
+              const {anchor} = hoverState;
+              const onclick = (anchor && anchor.onclick) || '';
+
+              /* if (onclick === 'status:downloadLoginToken') {
+                const a = document.createElement('a');
+                a.href = '/server/token';
+                a.download = 'token.txt';
+                a.style.display = 'none';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+
+                return true;
+              } else if (onclick === 'status:logOut') {
+                const _requestLogout = () => new Promise((accept, reject) => {
+                  bootstrap.requestLogout()
+                    .then(() => {
+                      accept();
+                    })
+                    .catch(err => {
+                      console.warn(err);
+
+                      accept();
+                    });
+                });
+
+                _requestLogout()
+                  .then(() => {
+                    rendApi.logout();
+                  });
+
+                return true;
+              } else */if (onclick === 'status:backToHub') {
+                const initialToken = _getQueryVariable(bootstrap.getInitialUrl(), 't');
+                bootstrap.navigate('https://' + hubUrl + (initialToken ? ('?t=' + initialToken) : ''));
+
+                return true; // can't happen
+              } else {
+                return false;
+              }
+            };
+
+            _doClickNavbar() || _doClickMenu();
+          }
+        };
+        input.on('trigger', trigger);
+        // this needs to be a native click event rather than a soft trigger click event due for clipboard copy security reasons
+        const click = () => {
+          const mode = webvr.getMode();
+
+          if (SIDES.indexOf(mode) !== -1) {
+            const side = mode;
+            const hoverState = uiTracker.getHoverState(side);
+            const {anchor} = hoverState;
+            const onclick = (anchor && anchor.onclick) || '';
+
+            if (onclick === 'status:token') {
+              const {url, authToken} = statusState;
+              const clipboardText = url + '?t=' + authToken;
+
+              const ok = _copyToClipboard(clipboardText);
+              if (ok) {
+                console.log('copied to clipboard: ' + clipboardText);
+
+                _proxyLogin()
+                  .then(token => {
+                    statusState.authToken = token;
+
+                    _updateMenuPage();
+                  })
+                  .catch(err => {
+                    console.warn(err);
+                  });
+              } else {
+                console.warn('failed to copy URL:\n' + clipboardText);
+              }
+            }
+          }
+        };
+        input.on('click', click);
+        const menudown = () => {
+          const {loggedIn} = menuState;
+
+          if (loggedIn) {
+            const {open, animation} = menuState;
+
+            if (open) {
+              menuState.open = false; // XXX need to cancel other menu states as well
+              menuState.position = null;
+              menuState.rotation = null;
+              menuState.animation = anima.makeAnimation(TRANSITION_TIME);
+
+              const {tagsLinesMesh} = auxObjects;
+              tagsLinesMesh.visible = false;
+
+              rendApi.emit('close');
+            } else {
+              const newCameraPosition = camera.position.clone();
+              const newCameraRotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(
+                0,
+                camera.rotation.y,
+                0,
+                camera.rotation.order
+              ));
+              const newMenuPosition = newCameraPosition.clone()
+                .add(new THREE.Vector3(0, 0, -1.5).applyQuaternion(newCameraRotation));
+              const newMenuRotation = newCameraRotation;
+              menuMesh.position.copy(newMenuPosition);
+              menuMesh.quaternion.copy(newMenuRotation);
+
+              menuState.open = true;
+              menuState.position = newMenuPosition.toArray();
+              menuState.rotation = newMenuRotation.toArray();
+              menuState.animation = anima.makeAnimation(TRANSITION_TIME);
+
+              const {tagsLinesMesh} = auxObjects;
+              tagsLinesMesh.visible = true;
+
+              rendApi.emit('open', {
+                position: newCameraPosition,
+                rotation: newCameraRotation,
+              });
+            }
+          }
+        };
+        input.on('menudown', menudown);
+
+        localUpdates.push(() => {
+          const _updateMeshAnimations = () => {
+            const {animation} = menuState;
+
+            if (animation) {
+              const {open} = menuState;
+
+              const startValue = open ? 0 : 1;
+              const endValue = 1 - startValue;
+              const factor = animation.getValue();
+              const value = ((1 - factor) * startValue) + (factor * endValue);
+
+              const {tagMeshes} = auxObjects;
+              const animatedMeshSpecs = [
+                {
+                  mesh: menuMesh,
+                  direction: 'y',
+                },
+                /* {
+                  mesh: keyboardMesh,
+                  direction: 'x',
+                }, */
+              ].concat(tagMeshes.map(tagMesh => ({
+                mesh: tagMesh,
+                direction: 'y',
+              })));
+
+              if (factor < 1) {
+                if (value > 0.001) {
+                  animatedMeshSpecs.forEach(meshSpec => {
+                    const {direction, mesh} = meshSpec;
+
+                    switch (direction) {
+                      case 'x':
+                        mesh.scale.set(value, 1, 1);
+                        break;
+                      case 'y':
+                        mesh.scale.set(1, value, 1);
+                        break;
+                      case 'z':
+                        mesh.scale.set(1, 1, value);
+                        break;
+                    }
+
+                    if (!mesh.visible) {
+                      mesh.visible = (('initialVisible' in mesh) ? mesh.initialVisible : true);
+                    }
+                  });
+                } else {
+                  animatedMeshSpecs.forEach(meshSpec => {
+                    const {mesh} = meshSpec;
+
+                    mesh.visible = false;
+                  });
+                }
+              } else {
+                animatedMeshSpecs.forEach(meshSpec => {
+                  const {mesh} = meshSpec;
+
+                  mesh.scale.set(1, 1, 1);
+
+                  if (open && !mesh.visible) {
+                    mesh.visible = (('initialVisible' in mesh) ? mesh.initialVisible : true);
+                  } else if (!open && mesh.visible) {
+                    mesh.visible = false;
+                  }
+                });
+
+                menuState.animation = null;
+              }
+            }
+          };
+
+          _updateMeshAnimations();
+        });
+
+        cleanups.push(() => {
+          scene.remove(menuMesh);
+
+          SIDES.forEach(side => {
+            const {dotMeshes, boxMeshes} = uiTracker;
+
+            scene.remove(dotMeshes[side]);
+            scene.remove(boxMeshes[side]);
+          });
+
+          input.removeListener('trigger', trigger);
+          input.removeListener('click', click);
+          input.removeListener('menudown', menudown);
+        });
 
         let lastMenuStatusJsonString = '';
         const _updateMenuPage = () => {
