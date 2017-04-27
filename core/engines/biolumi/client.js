@@ -403,6 +403,17 @@ class Biolumi {
                   layer.h = h;
 
                   this.layer = layer;
+                } else if (type === 'image') {
+                  const {parent: {width, height}} = this;
+                  const {x = 0, y = 0, w = width, h = height} = layerSpec;
+
+                  const layer = new Layer(this);
+                  layer.x = x;
+                  layer.y = y;
+                  layer.w = w;
+                  layer.h = h;
+
+                  this.layer = layer;
                 } else {
                   console.warn('illegal layer spec type:' + JSON.stringify(type));
 
