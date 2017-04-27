@@ -8,7 +8,7 @@ const getConfigPageSrc = ({/*focus, */resolutionValue, voiceChatCheckboxValue, s
       <h1 style="margin: 15px 0; font-size: 40px; font-weight: 400;">Browser settings</h1>
       ${/*getInputSrc(inputText, '', inputValue, focus, 'config:input') */''}
       ${getSliderSrc('Resolution', resolutionValue)}
-      ${getCheckboxSrc('Voice chat', voiceChatCheckboxValue, 'config:voiceChat')}
+      ${flags.server ? getCheckboxSrc('Voice chat', voiceChatCheckboxValue, 'config:voiceChat') : ''}
       ${getCheckboxSrc('Stats', statsCheckboxValue, 'config:stats')}
       ${flags.server ? `\
         <h1 style="margin: 15px 0; font-size: 40px; font-weight: 400;">Server settings</h1>
