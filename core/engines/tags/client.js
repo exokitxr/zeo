@@ -2176,7 +2176,55 @@ class Tags {
                       } else if (srcType === 'translate') {
                         const {mode, startControllerPosition, startControllerRotation, startIntersectionPoint, startPosition} = src;
 
-                        if (mode === 'xyz') {
+                        if (mode === 'x') {
+                          const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 0, 1), startIntersectionPoint);
+                          const {position: controllerPosition, rotation: controllerRotation, scale: controllerScale} = gamepad;
+                          const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation, controllerScale);
+                          const controllerIntersectionPoint = plane.intersectLine(controllerLine);
+
+                          if (controllerIntersectionPoint) {
+                            const endIntersectionPoint = new THREE.Vector3(
+                              controllerIntersectionPoint.x,
+                              startIntersectionPoint.y,
+                              startIntersectionPoint.z
+                            );
+                            const positionDiff = endIntersectionPoint.clone().sub(startIntersectionPoint);
+                            const endPosition = startPosition.clone().add(positionDiff);
+                            translateGizmo.position.copy(endPosition);
+                          }
+                        } else if (mode === 'y') {
+                          const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 0, 1), startIntersectionPoint);
+                          const {position: controllerPosition, rotation: controllerRotation, scale: controllerScale} = gamepad;
+                          const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation, controllerScale);
+                          const controllerIntersectionPoint = plane.intersectLine(controllerLine);
+
+                          if (controllerIntersectionPoint) {
+                            const endIntersectionPoint = new THREE.Vector3(
+                              startIntersectionPoint.x,
+                              controllerIntersectionPoint.y,
+                              startIntersectionPoint.z
+                            );
+                            const positionDiff = endIntersectionPoint.clone().sub(startIntersectionPoint);
+                            const endPosition = startPosition.clone().add(positionDiff);
+                            translateGizmo.position.copy(endPosition);
+                          }
+                        } else if (mode === 'z') {
+                          const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(1, 0, 0), startIntersectionPoint);
+                          const {position: controllerPosition, rotation: controllerRotation, scale: controllerScale} = gamepad;
+                          const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation, controllerScale);
+                          const controllerIntersectionPoint = plane.intersectLine(controllerLine);
+
+                          if (controllerIntersectionPoint) {
+                            const endIntersectionPoint = new THREE.Vector3(
+                              startIntersectionPoint.x,
+                              startIntersectionPoint.y,
+                              controllerIntersectionPoint.z,
+                            );
+                            const positionDiff = endIntersectionPoint.clone().sub(startIntersectionPoint);
+                            const endPosition = startPosition.clone().add(positionDiff);
+                            translateGizmo.position.copy(endPosition);
+                          }
+                        } else if (mode === 'xyz') {
                           const {position: controllerPosition, rotation: controllerRotation} = gamepad;
                           const endPosition = controllerPosition.clone()
                             .add(
