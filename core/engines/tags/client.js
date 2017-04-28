@@ -93,6 +93,7 @@ class Tags {
         '/core/engines/somnifer',
         '/core/engines/rend',
         '/core/utils/js-utils',
+        '/core/utils/geometry-utils',
         '/core/utils/image-utils',
         '/core/utils/creature-utils',
       ]),
@@ -112,6 +113,7 @@ class Tags {
           somnifer,
           rend,
           jsUtils,
+          geometryUtils,
           imageUtils,
           creatureUtils,
         ],
@@ -129,20 +131,66 @@ class Tags {
             THREETransformGizmoScale,
           } = THREETransformControls;
 
-          const translateGizmo = new THREETransformGizmoTranslate();
-          translateGizmo.position.x = -2;
-          translateGizmo.position.y = 1.5;
-          scene.add(translateGizmo);
+          const _makeTransformGizmo = () => {
+            const translateGizmo = new THREETransformGizmoTranslate();
+            translateGizmo.position.x = -2;
+            translateGizmo.position.y = 1.5;
 
-          const rotateGizmo = new THREETransformGizmoRotate();
-          rotateGizmo.position.x = 0;
-          rotateGizmo.position.y = 1.5;
-          scene.add(rotateGizmo);
+            const {pickerGizmos} = translateGizmo;
 
-          const scaleGizmo = new THREETransformGizmoScale();
-          scaleGizmo.position.x = 2;
-          scaleGizmo.position.y = 1.5;
-          scene.add(scaleGizmo);
+            const boxAnchors = [
+              {
+                boxTarget: geometryUtils.makeBoxTarget(
+                  translateGizmo.position.clone().add(new THREE.Vector3(1, 0, 0)),
+                  new THREE.Quaternion(),
+                  new THREE.Vector3(1, 1, 1),
+                  new THREE.Vector3(0.2, 0.1, 0.1)
+                ),
+                anchor: {
+                  onmousedown: 'translate:x',
+                },
+              },
+              {
+                boxTarget: geometryUtils.makeBoxTarget(
+                  translateGizmo.position.clone().add(new THREE.Vector3(0, 1, 0)),
+                  new THREE.Quaternion(),
+                  new THREE.Vector3(1, 1, 1),
+                  new THREE.Vector3(0.1, 0.2, 0.1)
+                ),
+                anchor: {
+                  onmousedown: 'translate:y',
+                },
+              },
+              {
+                boxTarget: geometryUtils.makeBoxTarget(
+                  translateGizmo.position.clone().add(new THREE.Vector3(0, 0, 1)),
+                  new THREE.Quaternion(),
+                  new THREE.Vector3(1, 1, 1),
+                  new THREE.Vector3(0.1, 0.1, 0.2)
+                ),
+                anchor: {
+                  onmousedown: 'translate:z',
+                },
+              },
+            ];
+            boxAnchors.forEach(boxAnchor => {
+              rend.addBoxAnchor(boxAnchor);
+            });
+
+            /* const rotateGizmo = new THREETransformGizmoRotate();
+            rotateGizmo.position.x = 0;
+            rotateGizmo.position.y = 1.5;
+            scene.add(rotateGizmo);
+
+            const scaleGizmo = new THREETransformGizmoScale();
+            scaleGizmo.position.x = 2;
+            scaleGizmo.position.y = 1.5;
+            scene.add(scaleGizmo); */
+
+            return translateGizmo;
+          };
+          const transformGizmo = _makeTransformGizmo();
+          scene.add(transformGizmo);
 
           const transparentImg = biolumi.getTransparentImg();
 
