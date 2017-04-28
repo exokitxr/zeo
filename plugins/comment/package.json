@@ -1,0 +1,8 @@
+{
+  "name": "comment",
+  "description": "Floating world comments.",
+  "version": "0.0.1",
+  "keywords": [],
+  "client": "client.js",
+  "dependencies": {}
+}
