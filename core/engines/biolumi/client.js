@@ -600,7 +600,7 @@ class Biolumi {
 
               const _makeHoverState = () => ({
                 intersectionPoint: null,
-                type: null,
+                type: '',
                 target: null,
                 anchor: null,
                 value: 0,
@@ -883,6 +883,7 @@ class Biolumi {
                       console.warn(err);
                     }
                   } else {
+                    hoverState.type = '';
                     hoverState.target = null;
                     hoverState.anchor = null;
                     hoverState.value = 0;
