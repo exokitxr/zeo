@@ -14,7 +14,7 @@ class Raycast {
     });
     const _makeDotMesh = () => {
       const geometry = geometryUtils.concatBufferGeometry([
-        new THREE.CylinderBufferGeometry(0, 0.01, 0.05, 4)
+        new THREE.CylinderBufferGeometry(0, 0.015, 0.05, 5)
          .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.05 / 2, 0)),
         new THREE.TorusBufferGeometry(0.05, 0.01, 3, 6)
          .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2)),
