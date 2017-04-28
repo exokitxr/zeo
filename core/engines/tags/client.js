@@ -21,6 +21,7 @@ import {
 } from './lib/constants/tags';
 import menuUtilser from './lib/utils/menu';
 import tagsRender from './lib/render/tags';
+import TransformControls from './lib/three-extra/TransformControls';
 
 const SIDES = ['left', 'right'];
 const AXES = ['x', 'y', 'z'];
@@ -120,6 +121,28 @@ class Tags {
           const {THREE, scene, camera} = three;
           const {events} = jsUtils;
           const {EventEmitter} = events;
+
+          const THREETransformControls = TransformControls(THREE);
+          const {
+            THREETransformGizmoTranslate,
+            THREETransformGizmoRotate,
+            THREETransformGizmoScale,
+          } = THREETransformControls;
+
+          const translateGizmo = new THREETransformGizmoTranslate();
+          translateGizmo.position.x = -2;
+          translateGizmo.position.y = 1.5;
+          scene.add(translateGizmo);
+
+          const rotateGizmo = new THREETransformGizmoRotate();
+          rotateGizmo.position.x = 0;
+          rotateGizmo.position.y = 1.5;
+          scene.add(rotateGizmo);
+
+          const scaleGizmo = new THREETransformGizmoScale();
+          scaleGizmo.position.x = 2;
+          scaleGizmo.position.y = 1.5;
+          scene.add(scaleGizmo);
 
           const transparentImg = biolumi.getTransparentImg();
 
