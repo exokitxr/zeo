@@ -131,95 +131,112 @@ class Tags {
             THREETransformGizmoScale,
           } = THREETransformControls;
 
-          const _makeTransformGizmo = () => {
+          const _makeTranslateGizmo = () => {
             const translateGizmo = new THREETransformGizmoTranslate();
             translateGizmo.position.x = -2;
             translateGizmo.position.y = 1.5;
 
             const {pickerGizmos} = translateGizmo;
 
-            const boxAnchors = [
-              {
-                boxTarget: geometryUtils.makeBoxTarget(
-                  translateGizmo.position.clone().add(new THREE.Vector3(1, 0, 0)),
-                  new THREE.Quaternion(),
-                  new THREE.Vector3(1, 1, 1),
-                  new THREE.Vector3(0.2, 0.1, 0.1)
-                ),
-                anchor: {
-                  onmousedown: 'translate:x',
+            let boxAnchors = null;
+            const _removeBoxTargets = () => {
+              if (boxAnchors) {
+                for (let i = 0; i < boxAnchors.length; i++) {
+                  const boxAnchor = boxAnchors[i];
+                  rend.removeBoxAnchor(boxAnchor);
+                }
+                boxAnchors = null;
+              }
+            };
+            translateGizmo.removeBoxTargets = _removeBoxTargets;
+            const _updateBoxTargets = () => {
+              _removeBoxTargets();
+
+              boxAnchors = [
+                {
+                  boxTarget: geometryUtils.makeBoxTarget(
+                    translateGizmo.position.clone().add(new THREE.Vector3(1, 0, 0)),
+                    new THREE.Quaternion(),
+                    new THREE.Vector3(1, 1, 1),
+                    new THREE.Vector3(0.2, 0.1, 0.1)
+                  ),
+                  anchor: {
+                    onmousedown: 'translate:x',
+                  },
                 },
-              },
-              {
-                boxTarget: geometryUtils.makeBoxTarget(
-                  translateGizmo.position.clone().add(new THREE.Vector3(0, 1, 0)),
-                  new THREE.Quaternion(),
-                  new THREE.Vector3(1, 1, 1),
-                  new THREE.Vector3(0.1, 0.2, 0.1)
-                ),
-                anchor: {
-                  onmousedown: 'translate:y',
+                {
+                  boxTarget: geometryUtils.makeBoxTarget(
+                    translateGizmo.position.clone().add(new THREE.Vector3(0, 1, 0)),
+                    new THREE.Quaternion(),
+                    new THREE.Vector3(1, 1, 1),
+                    new THREE.Vector3(0.1, 0.2, 0.1)
+                  ),
+                  anchor: {
+                    onmousedown: 'translate:y',
+                  },
                 },
-              },
-              {
-                boxTarget: geometryUtils.makeBoxTarget(
-                  translateGizmo.position.clone().add(new THREE.Vector3(0, 0, 1)),
-                  new THREE.Quaternion(),
-                  new THREE.Vector3(1, 1, 1),
-                  new THREE.Vector3(0.1, 0.1, 0.2)
-                ),
-                anchor: {
-                  onmousedown: 'translate:z',
+                {
+                  boxTarget: geometryUtils.makeBoxTarget(
+                    translateGizmo.position.clone().add(new THREE.Vector3(0, 0, 1)),
+                    new THREE.Quaternion(),
+                    new THREE.Vector3(1, 1, 1),
+                    new THREE.Vector3(0.1, 0.1, 0.2)
+                  ),
+                  anchor: {
+                    onmousedown: 'translate:z',
+                  },
                 },
-              },
-              {
-                boxTarget: geometryUtils.makeBoxTarget(
-                  translateGizmo.position.clone(),
-                  new THREE.Quaternion(),
-                  new THREE.Vector3(1, 1, 1),
-                  new THREE.Vector3(0.2, 0.2, 0.2)
-                ),
-                anchor: {
-                  onmousedown: 'translate:xyz',
+                {
+                  boxTarget: geometryUtils.makeBoxTarget(
+                    translateGizmo.position.clone(),
+                    new THREE.Quaternion(),
+                    new THREE.Vector3(1, 1, 1),
+                    new THREE.Vector3(0.2, 0.2, 0.2)
+                  ),
+                  anchor: {
+                    onmousedown: 'translate:xyz',
+                  },
                 },
-              },
-              {
-                boxTarget: geometryUtils.makeBoxTarget(
-                  translateGizmo.position.clone().add(new THREE.Vector3(0.3 / 2, 0.3 / 2, 0)),
-                  new THREE.Quaternion(),
-                  new THREE.Vector3(1, 1, 1),
-                  new THREE.Vector3(0.3, 0.3, 0.01)
-                ),
-                anchor: {
-                  onmousedown: 'translate:xy',
+                {
+                  boxTarget: geometryUtils.makeBoxTarget(
+                    translateGizmo.position.clone().add(new THREE.Vector3(0.3 / 2, 0.3 / 2, 0)),
+                    new THREE.Quaternion(),
+                    new THREE.Vector3(1, 1, 1),
+                    new THREE.Vector3(0.3, 0.3, 0.01)
+                  ),
+                  anchor: {
+                    onmousedown: 'translate:xy',
+                  },
                 },
-              },
-              {
-                boxTarget: geometryUtils.makeBoxTarget(
-                  translateGizmo.position.clone().add(new THREE.Vector3(0, 0.3 / 2, 0.3 / 2)),
-                  new THREE.Quaternion(),
-                  new THREE.Vector3(1, 1, 1),
-                  new THREE.Vector3(0.01, 0.3, 0.3)
-                ),
-                anchor: {
-                  onmousedown: 'translate:yz',
+                {
+                  boxTarget: geometryUtils.makeBoxTarget(
+                    translateGizmo.position.clone().add(new THREE.Vector3(0, 0.3 / 2, 0.3 / 2)),
+                    new THREE.Quaternion(),
+                    new THREE.Vector3(1, 1, 1),
+                    new THREE.Vector3(0.01, 0.3, 0.3)
+                  ),
+                  anchor: {
+                    onmousedown: 'translate:yz',
+                  },
                 },
-              },
-              {
-                boxTarget: geometryUtils.makeBoxTarget(
-                  translateGizmo.position.clone().add(new THREE.Vector3(0.3 / 2, 0, 0.3 / 2)),
-                  new THREE.Quaternion(),
-                  new THREE.Vector3(1, 1, 1),
-                  new THREE.Vector3(0.3, 0.01, 0.3)
-                ),
-                anchor: {
-                  onmousedown: 'translate:xz',
+                {
+                  boxTarget: geometryUtils.makeBoxTarget(
+                    translateGizmo.position.clone().add(new THREE.Vector3(0.3 / 2, 0, 0.3 / 2)),
+                    new THREE.Quaternion(),
+                    new THREE.Vector3(1, 1, 1),
+                    new THREE.Vector3(0.3, 0.01, 0.3)
+                  ),
+                  anchor: {
+                    onmousedown: 'translate:xz',
+                  },
                 },
-              },
-            ];
-            boxAnchors.forEach(boxAnchor => {
-              rend.addBoxAnchor(boxAnchor);
-            });
+              ];
+              for (let i = 0; i < boxAnchors.length; i++) {
+                const boxAnchor = boxAnchors[i];
+                rend.addBoxAnchor(boxAnchor);
+              }
+            };
+            translateGizmo.updateBoxTargets = _updateBoxTargets;
 
             /* const rotateGizmo = new THREETransformGizmoRotate();
             rotateGizmo.position.x = 0;
@@ -233,8 +250,9 @@ class Tags {
 
             return translateGizmo;
           };
-          const transformGizmo = _makeTransformGizmo();
-          scene.add(transformGizmo);
+          const translateGizmo = _makeTranslateGizmo();
+          scene.add(translateGizmo);
+          translateGizmo.updateBoxTargets();
 
           const transparentImg = biolumi.getTransparentImg();
 
@@ -1741,8 +1759,45 @@ class Tags {
                 return false;
               }
             };
+            const _doClickTransformGizmo = () => {
+              const hoverState = rend.getHoverState(side);
+              const {intersectionPoint} = hoverState;
 
-            _doClickTag();
+              if (intersectionPoint) {
+                const {anchor} = hoverState;
+                const onmousedown = (anchor && anchor.onmousedown) || '';
+
+                let match;
+                if (match = onmousedown.match(/^translate:(x|y|z|xyz|xy|yz|xz)$/)) {
+                  const mode = match[1];
+
+                  const dragState = dragStates[side];
+                  const {gamepads} = webvr.getStatus();
+                  const gamepad = gamepads[side];
+                  const {position: controllerPosition, rotation: controllerRotation} = gamepad;
+                  dragState.src = {
+                    type: 'translate',
+                    mode: mode,
+                    startControllerPosition: controllerPosition.clone(),
+                    startControllerRotation: controllerRotation.clone(),
+                    startIntersectionPoint: intersectionPoint.clone(),
+                    startPosition: translateGizmo.position.clone(),
+                  };
+
+                  translateGizmo.removeBoxTargets();
+
+                  return true;
+                } else {
+                  return false;
+                }
+              } else {
+                return false;
+              }
+            };
+
+            if (_doClickTag() || _doClickTransformGizmo()) {
+              e.stopImmediatePropagation();
+            }
           };
           input.on('triggerdown', _triggerdown);
           const _triggerup = e => {
@@ -1982,6 +2037,13 @@ class Tags {
               dragState.dst = null;
 
               return true;
+            } else if (srcType === 'translate') {
+              translateGizmo.updateBoxTargets();
+
+              dragState.src = null;
+              dragState.dst = null;
+
+              return true;
             } else {
               dragState.src = null;
               dragState.dst = null;
@@ -2050,50 +2112,58 @@ class Tags {
                   SIDES.forEach(side => {
                     const dragState = dragStates[side];
                     const {src} = dragState;
+                    const {gamepads} = webvr.getStatus();
+                    const gamepad = gamepads[side];
 
                     if (src) {
-                      const hoverState = rend.getHoverState(side);
-                      const {type} = hoverState;
+                      const {type: srcType} = src;
 
-                      if (type === 'page') {
-                        const {target: page} = hoverState;
-                        const {mesh} = page;
+                      if (srcType === 'module' || srcType === 'entity' || srcType === 'file' || srcType === 'attribute') {
+                        const hoverState = rend.getHoverState(side);
+                        const {type} = hoverState;
 
-                        if (mesh[tagMeshSymbol]) {
-                          const {tagMesh: hoverTagMesh} = mesh;
-                          const {type: srcType, tagMesh: srcTagMesh} = src;
-                          const {item: hoverItem} = hoverTagMesh;
-                          const {type: hoverType} = hoverItem;
+                        if (type === 'page') {
+                          const {target: page} = hoverState;
+                          const {mesh} = page;
 
-                          if (srcType === 'module' && hoverType === 'module' && srcTagMesh === hoverTagMesh) {
-                            dragState.dst = {
-                              type: 'module',
-                              tagMesh: hoverTagMesh,
-                            };
-                          } else if (srcType === 'module' && hoverType === 'entity') {
-                            dragState.dst = {
-                              type: 'entity',
-                              tagMesh: hoverTagMesh,
-                            };
-                          } else if (srcType === 'attribute' && hoverType === 'file') {
-                            dragState.dst = {
-                              type: 'file',
-                              tagMesh: hoverTagMesh,
-                            };
-                          } else if (srcType === 'file' && hoverType === 'attribute') {
-                            const {attributeName} = hoverTagMesh;
-                            const attributeSpec = _getAttributeSpec(attributeName);
-                            const attributeType = attributeSpec && attributeSpec.type;
+                          if (mesh[tagMeshSymbol]) {
+                            const {tagMesh: hoverTagMesh} = mesh;
+                            const {tagMesh: srcTagMesh} = src;
+                            const {item: hoverItem} = hoverTagMesh;
+                            const {type: hoverType} = hoverItem;
 
-                            if (attributeType === 'file') {
-                              const {itemId} = hoverTagMesh;
-
+                            if (srcType === 'module' && hoverType === 'module' && srcTagMesh === hoverTagMesh) {
                               dragState.dst = {
-                                type: 'attribute',
+                                type: 'module',
                                 tagMesh: hoverTagMesh,
-                                itemId: itemId,
-                                attributeName: attributeName,
                               };
+                            } else if (srcType === 'module' && hoverType === 'entity') {
+                              dragState.dst = {
+                                type: 'entity',
+                                tagMesh: hoverTagMesh,
+                              };
+                            } else if (srcType === 'attribute' && hoverType === 'file') {
+                              dragState.dst = {
+                                type: 'file',
+                                tagMesh: hoverTagMesh,
+                              };
+                            } else if (srcType === 'file' && hoverType === 'attribute') {
+                              const {attributeName} = hoverTagMesh;
+                              const attributeSpec = _getAttributeSpec(attributeName);
+                              const attributeType = attributeSpec && attributeSpec.type;
+
+                              if (attributeType === 'file') {
+                                const {itemId} = hoverTagMesh;
+
+                                dragState.dst = {
+                                  type: 'attribute',
+                                  tagMesh: hoverTagMesh,
+                                  itemId: itemId,
+                                  attributeName: attributeName,
+                                };
+                              } else {
+                                dragState.dst = null;
+                              }
                             } else {
                               dragState.dst = null;
                             }
@@ -2103,6 +2173,24 @@ class Tags {
                         } else {
                           dragState.dst = null;
                         }
+                      } else if (srcType === 'translate') {
+                        const {mode, startControllerPosition, startControllerRotation, startIntersectionPoint, startPosition} = src;
+
+                        if (mode === 'xyz') {
+                          const {position: controllerPosition, rotation: controllerRotation} = gamepad;
+                          const endPosition = controllerPosition.clone()
+                            .add(
+                              new THREE.Vector3(0, 0, -1)
+                                .applyQuaternion(controllerRotation)
+                                .multiplyScalar(startIntersectionPoint.clone().sub(startControllerPosition).length())
+                            )
+                            .add(
+                              startPosition.clone().sub(startIntersectionPoint)
+                            );
+                          translateGizmo.position.copy(endPosition);
+                        }
+
+                        dragState.dst = null;
                       } else {
                         dragState.dst = null;
                       }
@@ -2116,37 +2204,47 @@ class Tags {
                     const dragState = dragStates[side];
                     const {src, line} = dragState;
 
-                    if (src) {
-                      const localLine = (() => {
-                        if (line) {
-                          return line;
-                        } else {
-                          const newLine = linesMesh.addLine();
-                          dragState.line = newLine;
-                          return newLine;
-                        }
-                      })();
-
-                      const {tagMesh: srcObject} = src;
-                      const dstObject = (() => {
-                        const {dst} = dragState;
-
-                        if (dst) {
-                          const {tagMesh: dstTagMesh} = dst;
-                          return dstTagMesh;
-                        } else {
-                          return srcObject;
-                        }
-                      })();
-                      localLine.set(srcObject, dstObject);
-                      linesMesh.render();
-                    } else {
+                    const _clearLine = () => {
                       if (line) {
                         linesMesh.removeLine(line);
                         linesMesh.render();
 
                         dragState.line = null;
                       }
+                    };
+
+                    if (src) {
+                      const {type: srcType} = src;
+
+                      if (srcType === 'module' || srcType === 'entity' || srcType === 'file' || srcType === 'attribute') {
+                        const localLine = (() => {
+                          if (line) {
+                            return line;
+                          } else {
+                            const newLine = linesMesh.addLine();
+                            dragState.line = newLine;
+                            return newLine;
+                          }
+                        })();
+
+                        const {tagMesh: srcObject} = src;
+                        const dstObject = (() => {
+                          const {dst} = dragState;
+
+                          if (dst) {
+                            const {tagMesh: dstTagMesh} = dst;
+                            return dstTagMesh;
+                          } else {
+                            return srcObject;
+                          }
+                        })();
+                        localLine.set(srcObject, dstObject);
+                        linesMesh.render();
+                      } else {
+                        _clearLine();
+                      }
+                    } else {
+                      _clearLine();
                     }
                   });
 
