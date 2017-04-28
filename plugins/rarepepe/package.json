@@ -1,0 +1,11 @@
+{
+  "name": "rarepepe",
+  "description": "Rarepepe cards in VR.",
+  "version": "0.0.1",
+  "keywords": [],
+  "client": "client.js",
+  "server": "server.js",
+  "dependencies": {
+    "mkdirp": "^0.5.1"
+  }
+}
