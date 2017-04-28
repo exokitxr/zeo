@@ -9,11 +9,6 @@ class Rarepepe {
     const {_archae: archae} = this;
     const {express, app} = archae.getCore();
 
-    const rarepepeAssetsStatic = express.static(path.join(__dirname, 'lib/assets'));
-    function serveRarepepeAssets(req, res, next) {
-      rarepepeAssetsStatic(req, res, next);
-    }
-    app.use('/archae/rarepepe/assets', serveRarepepeAssets);
     const rarepepeImgStatic = express.static(path.join(__dirname, 'lib/img'));
     function serveRarepepeImg(req, res, next) {
       rarepepeImgStatic(req, res, next);
@@ -22,10 +17,7 @@ class Rarepepe {
 
     this._cleanup = () => {
       function removeMiddlewares(route, i, routes) {
-        if (
-          route.handle.name === 'serveRarepepeAssets' ||
-          route.handle.name === 'serveRarepepeImg'
-        ) {
+        if (route.handle.name === 'serveRarepepeImg') {
           routes.splice(i, 1);
         }
         if (route.route) {

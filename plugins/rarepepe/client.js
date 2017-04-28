@@ -3,7 +3,7 @@ const {
   WORLD_HEIGHT,
 } = require('./lib/constants/constants');
 
-const SIDES = ['left', 'right'];
+const DATA_URL = 'https://cdn.rawgit.com/modulesio/rarepepe-data/4ff244225d7271d1cd7ca6fe35e53e5059385c51/'
 
 class Rarepepe {
   mount() {
@@ -25,7 +25,9 @@ class Rarepepe {
       return {position, rotation, scale};
     };
 
-    const _requestPepes = () => fetch('archae/rarepepe/assets/rarepepes.json')
+    const _requestPepes = () => fetch(DATA_URL + '/assets/rarepepes.json', {
+      mode: 'cors',
+    })
       .then(res => res.json());
     const _requestImg = src => new Promise((accept, reject) => {
       const img = new Image();
@@ -35,6 +37,7 @@ class Rarepepe {
       img.onerror = err => {
         reject(err);
       };
+      img.crossOrigin = 'Anonymous';
       img.src = src;
     });
 
@@ -47,7 +50,7 @@ class Rarepepe {
         cardbackImg,
       ]) => {
         if (live) {
-          const _requestPepeImg = index => _requestImg('archae/rarepepe/assets/' + pepes[index]);
+          const _requestPepeImg = index => _requestImg(DATA_URL + '/assets/' + pepes[index] + '.png');
 
           const cardfrontGeometry = new THREE.PlaneBufferGeometry(WORLD_WIDTH, WORLD_HEIGHT);
           const cardbackGeometry = new THREE.PlaneBufferGeometry(WORLD_WIDTH, WORLD_HEIGHT)
