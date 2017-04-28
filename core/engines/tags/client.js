@@ -2224,6 +2224,39 @@ class Tags {
                             const endPosition = startPosition.clone().add(positionDiff);
                             translateGizmo.position.copy(endPosition);
                           }
+                        } else if (mode === 'xy') {
+                          const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 0, 1), startIntersectionPoint);
+                          const {position: controllerPosition, rotation: controllerRotation, scale: controllerScale} = gamepad;
+                          const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation, controllerScale);
+                          const endIntersectionPoint = plane.intersectLine(controllerLine);
+
+                          if (endIntersectionPoint) {
+                            const positionDiff = endIntersectionPoint.clone().sub(startIntersectionPoint);
+                            const endPosition = startPosition.clone().add(positionDiff);
+                            translateGizmo.position.copy(endPosition);
+                          }
+                        } else if (mode === 'yz') {
+                          const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(1, 0, 0), startIntersectionPoint);
+                          const {position: controllerPosition, rotation: controllerRotation, scale: controllerScale} = gamepad;
+                          const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation, controllerScale);
+                          const endIntersectionPoint = plane.intersectLine(controllerLine);
+
+                          if (endIntersectionPoint) {
+                            const positionDiff = endIntersectionPoint.clone().sub(startIntersectionPoint);
+                            const endPosition = startPosition.clone().add(positionDiff);
+                            translateGizmo.position.copy(endPosition);
+                          }
+                        } else if (mode === 'xz') {
+                          const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 1, 0), startIntersectionPoint);
+                          const {position: controllerPosition, rotation: controllerRotation, scale: controllerScale} = gamepad;
+                          const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation, controllerScale);
+                          const endIntersectionPoint = plane.intersectLine(controllerLine);
+
+                          if (endIntersectionPoint) {
+                            const positionDiff = endIntersectionPoint.clone().sub(startIntersectionPoint);
+                            const endPosition = startPosition.clone().add(positionDiff);
+                            translateGizmo.position.copy(endPosition);
+                          }
                         } else if (mode === 'xyz') {
                           const {position: controllerPosition, rotation: controllerRotation} = gamepad;
                           const endPosition = controllerPosition.clone()
