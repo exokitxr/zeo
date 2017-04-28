@@ -172,6 +172,50 @@ class Tags {
                   onmousedown: 'translate:z',
                 },
               },
+              {
+                boxTarget: geometryUtils.makeBoxTarget(
+                  translateGizmo.position.clone(),
+                  new THREE.Quaternion(),
+                  new THREE.Vector3(1, 1, 1),
+                  new THREE.Vector3(0.2, 0.2, 0.2)
+                ),
+                anchor: {
+                  onmousedown: 'translate:xyz',
+                },
+              },
+              {
+                boxTarget: geometryUtils.makeBoxTarget(
+                  translateGizmo.position.clone().add(new THREE.Vector3(0.3 / 2, 0.3 / 2, 0)),
+                  new THREE.Quaternion(),
+                  new THREE.Vector3(1, 1, 1),
+                  new THREE.Vector3(0.3, 0.3, 0.01)
+                ),
+                anchor: {
+                  onmousedown: 'translate:xy',
+                },
+              },
+              {
+                boxTarget: geometryUtils.makeBoxTarget(
+                  translateGizmo.position.clone().add(new THREE.Vector3(0, 0.3 / 2, 0.3 / 2)),
+                  new THREE.Quaternion(),
+                  new THREE.Vector3(1, 1, 1),
+                  new THREE.Vector3(0.01, 0.3, 0.3)
+                ),
+                anchor: {
+                  onmousedown: 'translate:yz',
+                },
+              },
+              {
+                boxTarget: geometryUtils.makeBoxTarget(
+                  translateGizmo.position.clone().add(new THREE.Vector3(0.3 / 2, 0, 0.3 / 2)),
+                  new THREE.Quaternion(),
+                  new THREE.Vector3(1, 1, 1),
+                  new THREE.Vector3(0.3, 0.01, 0.3)
+                ),
+                anchor: {
+                  onmousedown: 'translate:xz',
+                },
+              },
             ];
             boxAnchors.forEach(boxAnchor => {
               rend.addBoxAnchor(boxAnchor);
