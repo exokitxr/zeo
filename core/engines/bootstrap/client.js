@@ -18,7 +18,7 @@ class Bootstrap {
 
   mount() {
     const {_archae: archae} = this;
-    const {metadata: {site: {url: siteUrl}, hub: {url: hubUrl, enabled: hubEnabled}, server: {enabled: serverEnabled}}} = archae;
+    const {metadata: {site: {url: siteUrl}, hub: {url: hubUrl, enabled: hubEnabled}, home: {enabled: homeEnabled}, server: {enabled: serverEnabled}}} = archae;
 
     let live = true;
     this._cleanup = () => {
@@ -95,7 +95,7 @@ class Bootstrap {
             }
           })();
           let vrMode = null;
-          let tutorialFlag = localStorage.getItem('tutorial') !== JSON.stringify(false);
+          let tutorialFlag = homeEnabled && localStorage.getItem('tutorial') !== JSON.stringify(false);
           class WorldTimer {
             constructor(startTime = 0) {
               this.startTime = startTime;
