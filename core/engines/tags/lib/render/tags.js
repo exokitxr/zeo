@@ -189,10 +189,10 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
     const headerSrc = `\
       <div style="position: relative; display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; background-color: #EEE; padding-left: 30px; text-decoration: none; overflow: hidden; box-sizing: border-box;">
         <div style="display: flex; position: absolute; top: 60px; left: -60px; width: ${HEIGHT}px; height: 30px; background-color: #03A9F4; justify-content: center; align-items: center; box-sizing: border-box; transform: rotate(-90deg);">Entity</div>
-        <div style="display: flex; margin-right: auto; flex-direction: column;">
-          <div style="display: flex; flex: 1;">
+        <div style="display: flex; flex-grow: 1; flex-direction: column;">
+          <div style="display: flex; flex-grow: 1;">
             <img src="${creatureUtils.makeStaticCreature('entity:' + name)}" width="80" height="80" style="width: 80px; height: 80px; margin: 10px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;" />
-            <h1 style="margin: 0; margin-top: 10px; font-size: 28px; font-weight: 400; line-height: 1.4;">${displayName}</h1>
+            <h1 style="display: flex; max-width: ${WIDTH - (30) - (80 + (10 * 2) - (30 + (15 * 2)))}px; flex-grow: 1; margin: 10px 0; font-size: 28px; font-weight: 400; line-height: 1.4; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">${displayName}</h1>
           </div>
           ${!isStatic ? `<a style="display: inline-flex; margin-left: 20px; margin-right: auto; margin-bottom: 10px; padding: 10px 30px; border: 2px solid; font-weight: 400; text-decoration: none;" onclick="entity:addAttribute:${id}">Add Link</a>` : ''}
         </div>
@@ -405,9 +405,9 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
       <div style="position: relative; display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; background-color: #EEE; padding-left: 30px; text-decoration: none; overflow: hidden; box-sizing: border-box; ${instancing ? 'filter: brightness(75%);' : ''}">
         <div style="display: flex; position: absolute; top: 60px; left: -60px; width: ${HEIGHT}px; height: 30px; background-color: #E91E63; justify-content: center; align-items: center; box-sizing: border-box; transform: rotate(-90deg);">File</div>
         <div style="display: flex; flex-grow: 1; flex-direction: column;">
-          <div style="display: flex; flex: 1;">
+          <div style="display: flex; flex-grow: 1;">
             <img src="${creatureUtils.makeStaticCreature('file:' + displayName)}" width="80" height="80" style="margin: 10px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;" />
-            <div style="display: flex; flex-direction: column;">
+            <div style="display: flex; max-width: ${WIDTH - (30) - (80 + (10 * 2)) - (30 + (15 * 2))}px; flew-grow: 1; flex-direction: column; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">
               <h1 style="margin: 0; margin-top: 10px; font-size: 28px; font-weight: 400; line-height: 1.4;">${name}</h1>
               <p style="margin: 0; margin-bottom: 10px; font-size: 15px; line-height: 1.4;">${mimeType}</p>
             </div>
