@@ -241,7 +241,6 @@ class Home {
           const tutorialMesh = (() => {
             const object = new THREE.Object3D();
             object.visible = bootstrap.getTutorialFlag();
-console.log('tutorial visible', object.visible);
 
             const planeMesh = (() => {
               const menuUi = biolumi.makeUi({
