@@ -4,6 +4,8 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 pushd "$DIR"/../
 
+./index.js install
+
 ./index.js site home \
   port=443 secure=true \
   cryptoDirectorySrc='defaults/crypto' &

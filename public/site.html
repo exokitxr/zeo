@@ -132,7 +132,7 @@ const $ = s => document.querySelectorAll(s);
 const $$ = (e, s) => e.querySelectorAll(s);
 
 const hubIframe = $('#hub-iframe')[0];
-hubIframe.contentWindow.location.replace(document.location.protocol + '//' + document.location.host + document.location.pathname + '/hub' + document.location.search + document.location.hash);
+hubIframe.contentWindow.location.replace(document.location.protocol + '//' + document.location.host + document.location.pathname + 'home' + document.location.search + document.location.hash);
 
 window.addEventListener('message', e => {
   const {data} = e;

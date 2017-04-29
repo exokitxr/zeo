@@ -157,7 +157,7 @@ class Zeo {
               if (isInIframe) {
                 window.parent.postMessage({
                   method: 'loaded',
-                }, 'https://' + siteUrl);
+                }, siteUrl);
               }
 
               const updates = [];

@@ -54,6 +54,7 @@ const flags = {
   cryptoDirectorySrc: _findArg('cryptoDirectorySrc'),
   installDirectorySrc: _findArg('installDirectorySrc'),
   worldname: _findArg('worldname'),
+  siteUrl: _findArg('siteUrl'),
   hubUrl: _findArg('hubUrl'),
   homeUrl: _findArg('homeUrl'),
   my: args.includes('my'),
@@ -87,7 +88,9 @@ const installDirectorySrc = flags.installDirectorySrc || installDirectory;
 const staticSite = flags.site && !(flags.home || flags.hub || flags.server);
 const worldname = flags.worldname || [_capitalize(rnd.adjective()), _capitalize(rnd.noun())].join(' ');
 const protocolString = !secure ? 'http' : 'https';
+const siteUrl = flags.siteUrl || (protocolString + '://' + hostname + ':' + port);
 const hubUrl = flags.hubUrl || (protocolString + '://hub.' + hostname + ':' + port);
+const homeUrl = flags.homeUrl || (protocolString + '://127.0.0.1:' + port);
 const fullUrl = protocolString + '://127.0.0.1:' + port;
 const config = {
   dirname: __dirname,
@@ -108,11 +111,11 @@ const config = {
       installDirectorySrc: installDirectorySrc,
     },
     site: {
-      url: protocolString + '://' + hostname + ':' + port,
+      url: siteUrl,
       enabled: flags.site,
     },
     home: {
-      url: fullUrl,
+      url: homeUrl,
       enabled: flags.home,
     },
     hub: {
