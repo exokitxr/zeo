@@ -783,12 +783,11 @@ section.list {
   display: flex;
   position: relative;
   width: 100%;
-  color: #FFF;
+  // color: #FFF;
   justify-content: center;
-  // background-color : #3F51B5;
 }
 .grid-item-wrap:nth-child(1) {
-  background-color : #3F51B5;
+  // background-color : #3F51B5;
 }
 .grid-item-wrap:nth-child(2) {
   background-image: linear-gradient(to right, #000000 , #222);
@@ -866,10 +865,9 @@ section.list {
   margin: 20px 0;
   margin-right: auto;
   padding: 5px 20px;
-  border: 1px solid #FFF;
-  border-radius: 100px;
   font-size: 14px;
   line-height: 2;
+  border: 1px solid;
 }
 section.pricing {
   display: flex;
