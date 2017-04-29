@@ -151,14 +151,7 @@ class Zeo {
 
               blocker.destroy();
 
-              const isInIframe = bootstrap.isInIframe();
               const supportsWebVR = webvr.supportsWebVR();
-
-              if (isInIframe) {
-                window.parent.postMessage({
-                  method: 'loaded',
-                }, siteUrl);
-              }
 
               const updates = [];
               const updateEyes = [];
@@ -340,25 +333,16 @@ class Zeo {
                     };
 
                     const _styleButton = button => {
-                      if (!isInIframe) {
-                        button.addEventListener('mouseover', e => {
-                          button.style.backgroundColor = '#000';
-                          button.style.borderColor = 'transparent';
-                          button.style.color = '#FFF';
-                        });
-                        button.addEventListener('mouseout', e => {
-                          button.style.backgroundColor = 'transparent';
-                          button.style.borderColor = 'currentColor';
-                          button.style.color = '#000';
-                        });
-                      } else {
-                        button.addEventListener('mouseover', e => {
-                          button.style.backgroundColor = '#4CAF50';
-                        });
-                        button.addEventListener('mouseout', e => {
-                          button.style.backgroundColor = '#000';
-                        });
-                      }
+                      button.addEventListener('mouseover', e => {
+                        button.style.backgroundColor = '#000';
+                        button.style.borderColor = 'transparent';
+                        button.style.color = '#FFF';
+                      });
+                      button.addEventListener('mouseout', e => {
+                        button.style.backgroundColor = 'transparent';
+                        button.style.borderColor = 'currentColor';
+                        button.style.color = '#000';
+                      });
                     };
 
                     const headsetButtons = [$$(enterHelperContent, '.headset-button')[0], $$(siteContent, '.headset-button')[0]];
@@ -403,14 +387,9 @@ class Zeo {
                       });
                     });
 
-                    if (!isInIframe) {
-                      overlayContent.appendChild(helper);
-                      helper.appendChild(enterHelperContent);
-                      helper.appendChild(errorMessage);
-                    } else {
-                      overlayContent.appendChild(siteContent);
-                      siteContent.appendChild(errorMessage);
-                    }
+                    overlayContent.appendChild(helper);
+                    helper.appendChild(enterHelperContent);
+                    helper.appendChild(errorMessage);
 
                     // end helper content
 

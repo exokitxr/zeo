@@ -27,16 +27,7 @@
   </header>
   <div class="body home-body" id=home-body>
     <iframe class=hub-iframe id=hub-iframe></iframe>
-    <section class=hero>
-      <div class=hero-wrap id=hero-wrap>
-        <div class=hero-heading>
-          <h1>Multiplayer VR<br/>in your browser<br/>powered by npm</h1>
-        </div>
-        <div class=loader-wrap>
-          <div class=loader></div>
-        </div>
-      </div>
-    </section>
+    <section class=hero></section>
     <section class=details>
       <div class=details-wrapper id=demographics-details-2>
         <div class=details-card>
@@ -133,16 +124,6 @@ const $$ = (e, s) => e.querySelectorAll(s);
 
 const hubIframe = $('#hub-iframe')[0];
 hubIframe.contentWindow.location.replace(document.location.protocol + '//' + document.location.host + document.location.pathname + 'home' + document.location.search + document.location.hash);
-
-window.addEventListener('message', e => {
-  const {data} = e;
-  const {method} = data;
-
-  if (method === 'loaded') {
-    const heroWrap = $('#hero-wrap')[0];
-    heroWrap.parentNode.removeChild(heroWrap);
-  }
-});
 
   </script>
 </body>

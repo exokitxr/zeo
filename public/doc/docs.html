@@ -23,14 +23,11 @@
 
   .header {
     display: flex;
-    position: sticky;
-    top: 0;
     width: 100vw;
     height: 80px;
     padding: 0 30px;
-    background: linear-gradient(to left, #FF512F , #DD2476);
-    color: #FFF;
     align-items: center;
+    box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.5);
     box-sizing: border-box;
     overflow: hidden;
     z-index: 1;
@@ -81,7 +78,6 @@
   .header-logo-anchor {
     display: flex;
     font-size: 20px;
-    font-weight: 300;
     align-items: center;
   }
   .header-logo-anchor:hover {
@@ -127,6 +123,7 @@
   }
   .demographics > navbar > a.green.selected {
     background-color: #000;
+    color: #FFF;
   }
   .demographics > navbar > a.green.selected::after {
     border-color: #4CAF50 transparent transparent transparent;
