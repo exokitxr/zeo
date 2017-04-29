@@ -6,13 +6,18 @@ pushd "$DIR"/../
 
 ./index.js install
 
-./index.js site home \
-  port=443 secure=true \
-  cryptoDirectorySrc='defaults/crypto' &
+./index.js site \
+  port=8080 secure=true \
+  homeUrl='https://zeovr.io:8081' \
+  cryptoDirectory='crypto-test' cryptoDirectorySrc='defaults/crypto' &
+./index.js home \
+  port=8081 secure=true \
+  siteUrl='https://zeovr.io:8080' \
+  cryptoDirectory='crypto-test' cryptoDirectorySrc='defaults/crypto' &
 ./index.js hub \
   port=8000 secure=true \
   # hubUrl='https://hub.zeovr.io:8000' \
-  cryptoDirectorySrc='defaults/crypto' &
+  cryptoDirectory='crypto-test' cryptoDirectorySrc='defaults/crypto' &
 
 sleep infinity;
 
