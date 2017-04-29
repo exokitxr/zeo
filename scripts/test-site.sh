@@ -16,7 +16,7 @@ pushd "$DIR"/../
   cryptoDirectory='crypto-test' cryptoDirectorySrc='defaults/crypto' &
 ./index.js hub \
   port=8000 secure=true \
-  # hubUrl='https://hub.zeovr.io:8000' \
+  hubUrl='https://hub.zeovr.io:8000' \
   cryptoDirectory='crypto-test' cryptoDirectorySrc='defaults/crypto' &
 
 sleep infinity;
