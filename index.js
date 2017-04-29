@@ -88,8 +88,7 @@ const staticSite = flags.site && !(flags.home || flags.hub || flags.server);
 const worldname = flags.worldname || [_capitalize(rnd.adjective()), _capitalize(rnd.noun())].join(' ');
 const protocolString = !secure ? 'http' : 'https';
 const hubUrl = flags.hubUrl || (protocolString + '://hub.' + hostname + ':' + port);
-const homeUrl = flags.homeUrl || (protocolString + '://127.0.0.1:' + port);
-const serverUrl = protocolString + '://127.0.0.1:' + port;
+const fullUrl = protocolString + '://127.0.0.1:' + port;
 const config = {
   dirname: __dirname,
   hostname: hostname,
@@ -100,7 +99,7 @@ const config = {
   cryptoDirectory: cryptoDirectory,
   installDirectory: installDirectory,
   cors: !staticSite,
-  corsOrigin: homeUrl,
+  corsOrigin: fullUrl,
   staticSite: staticSite,
   metadata: {
     config: {
@@ -113,15 +112,15 @@ const config = {
       enabled: flags.site,
     },
     home: {
-      url: homeUrl,
+      url: fullUrl,
       enabled: flags.home,
     },
     hub: {
-      url: hubUrl,
+      url: fullUrl,
       enabled: flags.hub,
     },
     server: {
-      url: serverUrl,
+      url: fullUrl,
       worldname: worldname,
       enabled: flags.server,
     },

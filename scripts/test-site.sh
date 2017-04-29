@@ -5,12 +5,12 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 pushd "$DIR"/../
 
 ./index.js site home \
-  port=443 secure=true \
-  cryptoDirectorySrc='defaults/crypto' &
+  port=8080 secure=true \
+  cryptoDirectory='crypto-test' cryptoDirectorySrc='defaults/crypto' &
 ./index.js hub \
   port=8000 secure=true \
   # hubUrl='https://hub.zeovr.io:8000' \
-  cryptoDirectorySrc='defaults/crypto' &
+  cryptoDirectory='crypto-test' cryptoDirectorySrc='defaults/crypto' &
 
 sleep infinity;
 
