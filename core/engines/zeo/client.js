@@ -245,7 +245,7 @@ class Zeo {
                       font-family: ${biolumi.getFonts()};
                     `;
                     overlay.innerHTML = `\
-                      <div style="display: flex; width: 100%; margin: auto 0; padding: 20px 0; justify-content: center;">
+                      <div style="display: flex; width: 100%; margin: auto 0; padding: 20px 0; background-color: rgba(250, 250, 250, 0.9); justify-content: center;">
                         <div style="display: flex; flex-direction: column; justify-content: center; align-items: center;" class=overlay-content></div>
                       </div>
                     `;
@@ -262,7 +262,6 @@ class Zeo {
                     `;
                     const fonts = biolumi.getFonts().replace(/"/g, "'");
                     helper.innerHTML = `\
-                      <img src="/img/logo-large.png" width=100 height=158 style="width: 100px; height: 158px; margin-bottom: 20px;">
                       <h1 style="display: flex; margin: 0; margin-bottom: 20px; font-size: 40px; font-weight: 300; justify-content: center;">Paused</span></h1>
                     `;
                     helper.addEventListener('dragover', e => {
@@ -279,29 +278,11 @@ class Zeo {
 
                     const errorMessage = document.createElement('div');
                     errorMessage.innerHTML = `\
-                      <div style="height: 80px; padding: 15px; background-color: #000; color: #FFF; box-sizing: border-box;">
+                      <div style="height: 80px;">
                         <div style="margin-bottom: 15px; font-size: 18px; line-height: 1;">No WebVR</div>
                         <div style="font-size: 13px;">WebVR is not supported by your browser, so you can't use a headset. <a href="#" style="color: inherit; text-decoration: underline;">Learn more</a>
                       </div>
                     `;
-
-                    const siteContent = document.createElement('div');
-                    siteContent.innerHTML = `\
-                      <div style="height: 272px; margin-bottom: 10px; padding: 0 30px; padding-bottom: 20px; background-color: #000; color: #FFF; font-size: 60px; line-height: 1.4; font-weight: 300; box-sizing: border-box;">Multiplayer VR<br>in your browser<br>powered by npm</div>
-                      <div style="display: flex; height: 42px; margin-bottom: 10px;">
-                        <button style="display: inline-flex; position: relative; height: inherit; margin-right: 10px; padding: 4px 8px; background-color: #000; border: 0; color: #FFF; font-family: ${fonts}; font-size: 13px; font-weight: 600; cursor: pointer; outline: none; justify-content: center; align-items: center; box-sizing: border-box;" class=headset-button>
-                          <img src="/img/headset.svg" style="margin-right: 5px; padding: 5px;" />
-                          Headset
-                        </button>
-                        <button style="display: inline-flex; position: relative; height: inherit; padding: 4px 8px; background-color: #000; border: 0; color: #FFF; font-family: ${fonts}; font-size: 13px; font-weight: 600; cursor: pointer; outline: none; justify-content: center; align-items: center; box-sizing: border-box;" class=keyboard-button>
-                          <img src="/img/mouse.svg" style="margin-right: 5px; padding: 5px;" />
-                          Mouse + keyboard
-                        </button>
-                      </div>
-                    `;
-
-                    const strikethrough = document.createElement('div');
-                    strikethrough.style.cssText = 'position: absolute; top: 50%; margin-top: -1px; left: -5px; right: -5px; height: 2px; background-color: #F44336;';
 
                     const _enterHeadsetVR = () => {
                       _enterVR({
@@ -345,16 +326,14 @@ class Zeo {
                       });
                     };
 
-                    const headsetButtons = [$$(enterHelperContent, '.headset-button')[0], $$(siteContent, '.headset-button')[0]];
+                    const headsetButton = $$(enterHelperContent, '.headset-button')[0];
                     if (supportsWebVR) {
-                      headsetButtons.forEach(headsetButton => {
-                        _styleButton(headsetButton);
+                      _styleButton(headsetButton);
 
-                        headsetButton.addEventListener('click', e => {
-                          if (!webvr.isPresenting()) {
-                            _enterHeadsetVR();
-                          }
-                        });
+                      headsetButton.addEventListener('click', e => {
+                        if (!webvr.isPresenting()) {
+                          _enterHeadsetVR();
+                        }
                       });
 
                       errorMessage.style.display = 'none';
@@ -371,20 +350,16 @@ class Zeo {
                         _enterKeyboardVR();
                       }
                     } else {
-                      headsetButtons.forEach(headsetButton => {
-                        headsetButton.appendChild(strikethrough.cloneNode(true));
-                      });
+                      headsetButton.style.display = 'none';
                     }
 
-                    const keyboardButtons = [$$(enterHelperContent, '.keyboard-button')[0], $$(siteContent, '.keyboard-button')[0]];
-                    keyboardButtons.forEach(keyboardButton => {
-                      _styleButton(keyboardButton);
+                    const keyboardButton = $$(enterHelperContent, '.keyboard-button')[0];
+                    _styleButton(keyboardButton);
 
-                      keyboardButton.addEventListener('click', e => {
-                        if (!webvr.isPresenting()) {
-                          _enterKeyboardVR();
-                        }
-                      });
+                    keyboardButton.addEventListener('click', e => {
+                      if (!webvr.isPresenting()) {
+                        _enterKeyboardVR();
+                      }
                     });
 
                     overlayContent.appendChild(helper);
