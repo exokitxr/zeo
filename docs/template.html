@@ -13,10 +13,8 @@
   }
   .toc a {
     display: block;
-    // margin-right: 20px;
     padding: 0 15px;
-    // border-bottom: 5px solid transparent;
-    font-size: 30px;
+    font-size: 26px;
     font-weight: 300;
     line-height: 2.5;
     color: #BBB;
@@ -24,7 +22,6 @@
   }
   .toc a.selected {
     background-color: #EEE;
-    // border-bottom-color: #000;
   }
   .toc a:hover,
   .toc a.selected {
@@ -84,8 +81,8 @@
 const $ = s => document.querySelectorAll(s);
 
 let page = document.location.pathname.match(/^\/docs(?:\/(.*))?/)[1];
-if (['tutorials', 'manual', 'api', 'features', 'contact'].indexOf(page) === -1) {
-  page = 'tutorials';
+if (['introduction', 'tutorials', 'manual', 'api', 'features', 'contact'].indexOf(page) === -1) {
+  page = 'introduction';
 }
 
 $('.toc > a').forEach(e => {

@@ -7,6 +7,7 @@ module.exports = {
   },
   getMarkdowns() {
     return [
+      'introduction',
       'tutorials',
       'manual',
       'api',

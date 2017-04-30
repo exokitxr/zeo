@@ -13,10 +13,8 @@
   }
   .toc a {
     display: block;
-    // margin-right: 20px;
     padding: 0 15px;
-    // border-bottom: 5px solid transparent;
-    font-size: 30px;
+    font-size: 26px;
     font-weight: 300;
     line-height: 2.5;
     color: #BBB;
@@ -24,7 +22,6 @@
   }
   .toc a.selected {
     background-color: #EEE;
-    // border-bottom-color: #000;
   }
   .toc a:hover,
   .toc a.selected {
@@ -79,15 +76,16 @@
   </header>
   <div class=markdown-body>
     <div class=toc>
-  <a href="/docs/tutorials" class="tutorials">Tutorials</a>
+  <a href="/docs/introduction" class="introduction">Introduction</a>
+<a href="/docs/tutorials" class="tutorials">Tutorials</a>
 <a href="/docs/manual" class="manual">Manual</a>
 <a href="/docs/api" class="api">Api</a>
 <a href="/docs/features" class="features">Features</a>
 <a href="/docs/contact" class="contact">Contact</a>
 </div>
 <div class=body>
-  <div class="section tutorials">
-  <h1 id="tutorials">Tutorials</h1>
+  <div class="section introduction">
+  <h1 id="introduction">Introduction</h1>
 <h3 id="what-is-zeo-vr-">What is Zeo VR?</h3>
 <p>It&#39;s a realtime virtual reality world builder that runs your browser. &#x1F47E;</p>
 <p>Wanna geek out on buzzwords? <i>100% JS/HTML5, hotloaded npm modules, node backend, WebVR, THREE.js, Entity-Component System.</i></p>
@@ -113,6 +111,11 @@
 <p>If you know <a href="https://en.wikipedia.org/wiki/JavaScript">Javascript</a>, <a href="https://nodejs.org/">node</a>, and <a href="https://threejs.org/">THREE.js</a>, you can build and publish VR modules to <a href="https://npmjs.org/"><code>npm</code></a> and load them directly to your face. Or literally throw them at someone else&#39;s.</p>
 <p>There&#39;s extensive <a href="/docs/api">API docs and walkthroughs</a> when you&#39;re ready to get started. And our crack team is <a href="/docs/contact">here to help</a>. &#x1F917;</p>
 <p><a href="/docs/tutorials" style="display: inline-flex; margin: 10px 0; padding: 5px 10px; border: 2px solid; color: #000; font-weight: 400; text-decoration: none; justify-content: center; align-items: center;">Next: Tutorials &#x1F449;</a></p>
+
+</div>
+
+<div class="section tutorials">
+  <h1 id="tutorials">Tutorials</h1>
 <p><strong>Zeo VR</strong> is a <a href="https://nodejs.org"><code>node.js</code></a> web server that runs virtual worlds built out of <a href="https://npmjs.org"><code>npm</code></a> modules.</p>
 <p>You can access the VR world from any modern web browser. Most headsets and controllers are supported via <a href="https://webvr.info/"><code>WebVR</code></a>. You don&#39;t need a headset, though; there&#39;s mouse and keyboard emulation.</p>
 <p>Worlds are <i>persistent</i> and <i>multiplayer</i> out of the box, and you can <i>drag and drop</i> and configure <a href="">npm modules</a> to add objects, behaviors, and entire features like physics engines -- without taking off your headset.</p>
@@ -1247,8 +1250,8 @@ module.exports = archae =&gt; ({
 const $ = s => document.querySelectorAll(s);
 
 let page = document.location.pathname.match(/^\/docs(?:\/(.*))?/)[1];
-if (['tutorials', 'manual', 'api', 'features', 'contact'].indexOf(page) === -1) {
-  page = 'tutorials';
+if (['introduction', 'tutorials', 'manual', 'api', 'features', 'contact'].indexOf(page) === -1) {
+  page = 'introduction';
 }
 
 $('.toc > a').forEach(e => {
