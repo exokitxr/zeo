@@ -328,22 +328,25 @@ class ZDraw {
                     } else {
                       if (currentRemoteDrawSpec !== null) {
                         const {x, y, width, height, canvasWidth, canvasHeight} = currentRemoteDrawSpec;
-                        const {data} = msg;
-                        const {
-                          planeMesh: {
-                            material: {
-                              map: texture,
+
+                        if (width > 0 && height > 0) {
+                          const {data} = msg;
+                          const {
+                            planeMesh: {
+                              material: {
+                                map: texture,
+                              },
                             },
-                          },
-                        } = mesh;
-                        const {image: canvas} = texture;
+                          } = mesh;
+                          const {image: canvas} = texture;
 
-                        const imageData = canvas.ctx.createImageData(width, height);
-                        const {data: imageDataData} = imageData;
-                        imageDataData.set(new Uint8Array(data));
-                        canvas.ctx.putImageData(imageData, x, y);
+                          const imageData = canvas.ctx.createImageData(width, height);
+                          const {data: imageDataData} = imageData;
+                          imageDataData.set(new Uint8Array(data));
+                          canvas.ctx.putImageData(imageData, x, y);
 
-                        texture.needsUpdate = true;
+                          texture.needsUpdate = true;
+                        }
                       } else {
                         console.warn('buffer data before draw spec', msg);
                       }
