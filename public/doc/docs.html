@@ -918,19 +918,29 @@ module.exports = archae =&gt; ({
 <p>There is of course positioned voice chat support, whether you&#39;re using a headset or not. Since it&#39;s server based, there&#39;s no weird connection stuff to worry about. You can VR-meet with people across continents if you want. &#x1F30E;</p>
 <p>And if you&#39;re feeling lonesome, you can browse servers and explore other people&#39;s worlds. Servers automatically broadcast their presence to share the VR love. &#x1F497;</p>
 <h3 id="pure-javascript">Pure Javascript</h3>
-<p><img src="https://transfer.sh/16bjNs/nodejs.svg" width=100 height=100></p>
+<div style="display: flex;"?>
+  <img src="/img/nodejs.svg" width=100 height=100>
+  <img src="/img/npm.svg" width=100 height=100>
+</div>
+
 <p>Time for some geek talk. This crud is built with the world&#39;s most popular programming language. &#x1F468;&#x200D;&#x1F4BB;</p>
 <p>If you know Javascript you&#39;ll feel right at home hacking your world. If you know <a href="https://threejs.org/">THREE.js</a> then you have nothing to learn.</p>
 <p>There&#39;s no secrets in the code; it&#39;s just a bunch of readable <code>npm</code> modules stuck together. To get it running, run</p>
 <pre><code>npm install modulesio/zeo
 </code></pre><p>wherever <code>node</code> is found.</p>
 <h3 id="backend-and-frontend">Backend and frontend</h3>
-<h3 id="hotloading">Hotloading</h3>
-<h3 id="unopinionated-deploy">Unopinionated deploy</h3>
-<h3 id="unopinionated-deploy">Unopinionated deploy</h3>
-<h3 id="npm-in-vr">Npm in VR</h3>
-<h3 id="three-js-api">THREE.js API</h3>
-<h3 id="entity-component-system">Entity-component system</h3>
+<p>This isn&#39;t just a browser framework; it&#39;s full stack. That means your VR world can run any piece of code you want, whether it&#39;s in the browser, or whether it&#39;s JS at all.</p>
+<p>Run server-side physics &#x269B;, scrape Youtube videos &#x1F39E;, upload models and media to the world by dragging it into the browser window &#x1F4BB;, or emulate retro video game consoles and play them together in VR. &#x1F4FA; &#x1F3AE;</p>
+<p>You can even code things live without leaving the page, since modules get <a href="https://en.wikipedia.org/wiki/Hot_swapping">hotloaded</a> when you save them.</p>
+<h3 id="a-boring-api">A boring API</h3>
+<p>We tried our best to keep the surprises <em>inside</em> the VR and <em>out of</em> the code. &#x1F913;</p>
+<p>Everything is an <code>npm</code> module, and modules export functions that add stuff to the THREE.js scene graph or handle HTTP routes. That&#39;s it; if you&#39;ve coded for the browser or <code>node</code> before then you&#39;ll feel right at home with <a href="/docs/api">the API</a>.</p>
+<p>To make your stuff configurable from the VR world, just specify the JSON Entity-Component schema: &quot;the sky has a color and it&#39;s controlled by this material&quot;. The VR UI is automagically generated for you. &#x1F984;</p>
+
+</div>
+
+<div class="section contact">
+  <h1 id="contact">Contact</h1>
 <p><strong>Zeo VR</strong> is a <a href="https://nodejs.org"><code>node.js</code></a> web server that runs virtual worlds built out of <a href="https://npmjs.org"><code>npm</code></a> modules.</p>
 <p>You can access the VR world from any modern web browser. Most headsets and controllers are supported via <a href="https://webvr.info/"><code>WebVR</code></a>. You don&#39;t need a headset, though; there&#39;s mouse and keyboard emulation.</p>
 <p>Worlds are <i>persistent</i> and <i>multiplayer</i> out of the box, and you can <i>drag and drop</i> and configure <a href="">npm modules</a> to add objects, behaviors, and entire features like physics engines -- without taking off your headset.</p>
@@ -998,137 +1008,6 @@ module.exports = archae =&gt; ({
 <p>Most other headsets (including mobile platforms like Daydream) <em>will probably work</em> but are not tested.</p>
 <p>The main problem you&#39;ll run into is that models, tutorials, and documentation assume you&#39;re using a Vive. The other potential problem is performance.</p>
 <p>Support for more devices is on the roadmap.</p>
-
-</div>
-
-<div class="section contact">
-  <h1 id="contact">Contact</h1>
-<h2 id="getting-started">Getting started</h2>
-<p>Here&#39;s how to get started running your own Zeo VR server.</p>
-<h2 id="server-setup-docker">Server setup: Docker</h2>
-<p>The recommended (and easiest) way to run Zeo VR is with <a href="https://docker.com">Docker</a>. That way you won&#39;t have to install anything else or worry about versions.</p>
-<p>Unless you need to hack on Zeo VR itself, this is your best option.</p>
-<h3 id="step-1-get-docker">Step 1: Get Docker</h3>
-<p>If you don&#39;t have Docker yet, follow <a href="https://docs.docker.com/engine/getstarted/step_one/">these instructions</a>.</p>
-<h3 id="step-2-pull-image">Step 2: Pull image</h3>
-<p>The <a href="https://hub.docker.com/r/modulesio/zeo/">latest Zeo VR image</a> is on Docker hub. The build is automated from the Github <code>master</code> branch.</p>
-<h4 id="pull-modulesio-zeo-with-docker">Pull modulesio/zeo with docker</h4>
-<pre><code class="lang-javascript">docker pull modulesio/zeo
-</code></pre>
-<p>You can repeat this anytime to get the latest Zeo VR image, but note that you will also need to follow the rest of the steps to create a new container for the the image.</p>
-<h3 id="step-3-run-container">Step 3: Run container</h3>
-<p>Once you have the Zeo VR Docker image, you&#39;ll need to start it in a container:</p>
-<pre><code class="lang-bash">docker run -it \
-  -v ~/.zeo/data:/root/zeo/data \
-  -v ~/.zeo/crypto:/root/zeo/crypto \
-  -p 8000:8000 \
-  modulesio/zeo
-</code></pre>
-<p>The interesting parts of this command are:</p>
-<ul>
-<li>we are storing world data and certificates in <code>~/.zeo</code> on the host, and</li>
-<li>we are using host TCP port <code>8000</code></li>
-</ul>
-<p>To run on the traditional HTTPS port (<code>443</code>), we could instead use:</p>
-<pre><code class="lang-bash">docker run -it \
-  -v ~/.zeo/data:/root/zeo/data \
-  -v ~/.zeo/crypto:/root/zeo/crypto \
-  -p 443:8000 \
-  modulesio/zeo
-</code></pre>
-<p>See the <a href="https://docs.docker.com/engine/reference/run/"><code>docker run</code> documentation</a> for all of the options available here.</p>
-<h4 id="run-modulesio-zeo-with-docker">Run modulesio/zeo with docker</h4>
-<pre><code class="lang-javascript">docker run modulesio/zeo
-</code></pre>
-<p>If you did everything right, the autput should be a URL that you can access from your browser.</p>
-<p>However, you might also want to (or need to) clean up your configuration to get your browser pointed at the right place and fix browser warnings:</p>
-<ul>
-<li><a href="#step-6-hosts-file-optional">Update your /etc/hosts</a></li>
-<li><a href="#step-7-tls-certificate-optional">Configure a TLS certificate</a></li>
-</ul>
-<p><a href="#command-line">See here</a> for the command line arguments you can use when starting your container. They&#39;re passed through directly to the server start script.</p>
-<h2 id="server-setup-standard">Server setup: Standard</h2>
-<p>Here&#39;s how to set up Zeo VR on a bare server.</p>
-<p>It&#39;s more involved than the <a href="#server-setup-docker">Docker install</a> route, without any advantages for typical users, so it&#39;s really only recommended if you want to hack on Zeo VR itself. In particular, note that you can install and develop modules without having to do any of this.</p>
-<h3 id="step-1-get-linux">Step 1: Get Linux</h3>
-<p>Get yourself a Linux machine.</p>
-<p>It can be raw Linux or a virtual machine, but it needs to be Linux. It doesn&#39;t matter which distribution.</p>
-<h3 id="step-2-get-node">Step 2: Get node</h3>
-<p><a href="https://nodejs.org/en/download/">Install node.js</a>, version <code>7+</code>.</p>
-<p>You have many options here: install the binaries, use your distribution&#39;s package manager, or use <a href="https://github.com/creationix/nvm"><code>nvm</code></a> (recommended).</p>
-<h3 id="step-3-install-dependencies">Step 3: Install dependencies</h3>
-<p>Zeo VR requires some native modules to be built for server-side physics, audio/video processing, and such. These should be built automatically when you <code>npm install zeo</code>, but for that to work you&#39;ll need a compiler, build system, and a few libraries on your system.</p>
-<p>These are:</p>
-<ul>
-<li><code>build-essential</code></li>
-<li><code>cmake</code></li>
-<li><code>python</code></li>
-<li><code>ffmpeg</code></li>
-<li><code>libcairo2-dev</code></li>
-</ul>
-<p>You&#39;ll find these in your package manager of choice.</p>
-<h4 id="install-dependencies-ubuntu-">Install dependencies (Ubuntu)</h4>
-<pre><code class="lang-javascript">sudo apt-get install build-essential cmake python ffmpeg libcairo2-dev
-</code></pre>
-<h4 id="install-dependencies-debian-">Install dependencies (Debian)</h4>
-<pre><code class="lang-javascript">sudo apt-get install build-essential cmake python libav-tools libcairo2-dev
-</code></pre>
-<h3 id="step-4-npm-install">Step 4: Npm install</h3>
-<p>This one is fairly straightforward. Just make sure there are no build errors.</p>
-<h4 id="install-zeo-module">Install zeo module</h4>
-<pre><code class="lang-javascript">npm install zeo
-</code></pre>
-<h3 id="step-5-start-server">Step 5: Start server</h3>
-<p>If everything worked, you should be able to start your server now. The first run will need to generate some stuff like SSL certificates, signing keys, and a server identity (procedurally generated icons and skyboxes), so it might take a minute.</p>
-<h4 id="start-zeo-vr-server">Start Zeo VR server</h4>
-<pre><code class="lang-javascript">./scripts/start.sh
-</code></pre>
-<p>Once everything&#39;s up and running, you&#39;ll get a URL and access token you can use to connect to your server from your browser.</p>
-<p>Note that since you&#39;re using a self-signed SSL certificate, your browser will complain that the connection is insecure. The fix is to use your own SSL certificate (see below).</p>
-<p><a href="#command-line">See here</a> for the command line arguments you can use.</p>
-<h4 id="after-a-while-you-should-see">After a while you should see</h4>
-<pre><code class="lang-javascript">https://local.zeovr.io:8000?t=ZU1TVgYyUAlDCnJgDVNDRHlrCmhAGDvCgHRhexoD
-</code></pre>
-<h2 id="server-setup-addendum">Server setup: Addendum</h2>
-<p>Here are some additional notes and steps that apply regardless of how you run your server.</p>
-<h3 id="optional-1-hosts-file">Optional 1: Hosts file</h3>
-<p>Since by default you&#39;re running a server under the <code>local.zeovr.io</code> domain, and you probably don&#39;t control that domain, you&#39;ll need to teach your computer how to reach it.</p>
-<p>That is, you&#39;ll need to add a line to your <a href="https://en.wikipedia.org/wiki/Hosts_(file">hosts file</a>).</p>
-<p>Once you&#39;ve done that, you should be able to connect to your server by opening the URL from the previous step in your browser.</p>
-<pre><code class="lang-javascript"># /etc/hosts
-127.0.0.1 local.zeovr.io
-</code></pre>
-<h3 id="optional-2-tls-certificate">Optional 2: TLS certificate</h3>
-<p>Zeo VR uses <strong>HTTP/2</strong>, for both security and performance. This requires using a TLS certificate. By default the server will generate a self-signed certificate for a fake domain (<code>local.zeovr.io</code>) and use that.</p>
-<p>Although this &quot;works&quot;, browsers will complain about it, it&#39;s insecure, and will impact load performance (due to lack of caching). Unfortunately Zeo VR cannot fix this for you -- that would defeat the point of TLS.</p>
-<p>The good news is that if you have a domain, you can easily fix this with a <a href="https://certbot.eff.org/">free TLS certificate from Let&#39;s Encrypt</a>. If you don&#39;t have a domain, you&#39;ll need to either get a domain or accept these caveats.</p>
-<p>If you have a certificate, just drop <code>cert.pem</code> and <code>private.pem</code> it into the <code>crypto/cert</code> directory and restart your server with the <code>serverHost=yourdomain.com</code> argument. <code>yourdomain.com</code> can be any domain covered by your certificate. You can overwrite the self-signed certificate in <code>crypto/cert</code>.</p>
-<h4 id="place-your-tls-certificate-here">Place your TLS certificate here</h4>
-<pre><code class="lang-javascript">./crypto/cert/cert.pem
-./crypto/cert/private.pem
-</code></pre>
-<h2 id="getting-help">Getting help</h2>
-<p>Found a bug? <a href="https://github.com/modulesio/zeo/issues">File an issue on Github</a>.</p>
-<p>Need help? <a href="https://twitter.com/modulesio">Reach out on Twitter</a>.</p>
-<h2 id="reference">Reference</h2>
-<p>Here are some useful reference pages.</p>
-<h3 id="command-line">Command line</h3>
-<p>// XXX</p>
-<h3 id="key-bindings">Key bindings</h3>
-<p>Zeo VR works best with a headset, but here are the mouse + keyboard key bindings in case you missed them in the Hub tutorial:</p>
-<ul>
-<li><strong>WASD</strong> Move around</li>
-<li><strong>Z or C</strong> Focus left or right controller (<em>required</em> to use the buttons below)</li>
-<li><strong>Click</strong> Trigger</li>
-<li><strong>E</strong> Menu</li>
-<li><strong>F</strong> Grip</li>
-<li><strong>Q</strong> Touchpad</li>
-<li><strong>Mousewheel</strong> Move controller x/y axis</li>
-<li><strong>Ctrl + Mousewheel</strong> Move controller x/z axis</li>
-<li><strong>Shift + Mousewheel</strong> Rotate controller</li>
-</ul>
-<h3 id="data-directories">Data directories</h3>
-<p>XXX</p>
 
 </div>
 
