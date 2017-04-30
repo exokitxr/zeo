@@ -1481,31 +1481,6 @@ class Tags {
                 return false;
               }
             };
-            /* const _doSetPosition = () => { // XXX make this work with the new transform gizmos
-              const {positioningSide} = detailsState;
-
-              if (positioningSide && side === positioningSide) {
-                const {positioningId, positioningName} = detailsState;
-
-                const newValue = (() => {
-                  const {position, quaternion, scale} = positioningMesh;
-                  return position.toArray().concat(quaternion.toArray()).concat(scale.toArray());
-                })();
-                tagsApi.emit('setAttribute', {
-                  id: positioningId,
-                  name: positioningName,
-                  value: newValue,
-                });
-
-                detailsState.positioningId = null;
-                detailsState.positioningName = null;
-                detailsState.positioningSide = null;
-
-                return true;
-              } else {
-                return false;
-              }
-            }; */
             const _doClickAttribute = () => {
               const hoverState = rend.getHoverState(side);
               const {intersectionPoint} = hoverState;
@@ -2035,6 +2010,13 @@ class Tags {
             } else if (srcType === 'translate') {
               const {tagId, attributeName} = src;
               const translateGizmo = translateGizmos.find(translateGizmo => translateGizmo.tagId === tagId && translateGizmo.attributeName === attributeName);
+              const {position, rotation, scale} = _decomposeObjectMatrixWorld(translateGizmo);
+
+              tagsApi.emit('setAttribute', {
+                id: tagId,
+                name: attributeName,
+                value: position.toArray().concat(rotation.toArray()).concat(scale.toArray()),
+              });
 
               translateGizmo.updateBoxTargets();
 
