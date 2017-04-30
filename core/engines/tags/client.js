@@ -937,46 +937,12 @@ class Tags {
           scene.add(grabBoxMeshes.left);
           scene.add(grabBoxMeshes.right);
 
-          const positioningMesh = (() => {
-            const geometry = (() => {
-              const result = new THREE.BufferGeometry();
-              const positions = Float32Array.from([
-                0, 0, 0,
-                1, 0, 0,
-                0, 0, 0,
-                0, 1, 0,
-                0, 0, 0,
-                0, 0, 1,
-              ]);
-              result.addAttribute('position', new THREE.BufferAttribute(positions, 3));
-              const colors = Float32Array.from([
-                1, 0, 0,
-                1, 0, 0,
-                0, 1, 0,
-                0, 1, 0,
-                0, 0, 1,
-                0, 0, 1,
-              ]);
-              result.addAttribute('color', new THREE.BufferAttribute(colors, 3));
-              return result;
-            })();
-            const material = new THREE.LineBasicMaterial({
-              vertexColors: THREE.VertexColors,
-            });
-
-            const mesh = new THREE.LineSegments(geometry, material);
-            mesh.visible = false;
-            return mesh;
-          })();
-          scene.add(positioningMesh);
-
           const detailsState = {
             inputText: '',
             inputIndex: 0,
             inputValue: 0,
             positioningId: null,
             positioningName: null,
-            positioningSide: null,
             page: 0,
           };
           const focusState = {
@@ -1516,7 +1482,7 @@ class Tags {
                 return false;
               }
             };
-            const _doSetPosition = () => {
+            /* const _doSetPosition = () => { // XXX make this work with the new transform gizmos
               const {positioningSide} = detailsState;
 
               if (positioningSide && side === positioningSide) {
@@ -1540,7 +1506,7 @@ class Tags {
               } else {
                 return false;
               }
-            };
+            }; */
             const _doClickAttribute = () => {
               const hoverState = rend.getHoverState(side);
               const {intersectionPoint} = hoverState;
@@ -1571,7 +1537,6 @@ class Tags {
                   if (action === 'position') {
                     detailsState.positioningId = tagId;
                     detailsState.positioningName = attributeName;
-                    detailsState.positioningSide = side;
 
                     keyboard.tryBlur();
                   } else if (action === 'focus') {
@@ -1699,7 +1664,7 @@ class Tags {
               }
             };
 
-            if (_doClickDetails() || _doClickGrabNpmTag() || _doClickGrabWorldTag() || _doClickAux() || _doSetPosition() || _doClickAttribute()) {
+            if (_doClickDetails() || _doClickGrabNpmTag() || _doClickGrabWorldTag() || _doClickAux() || _doClickAttribute()) {
               e.stopImmediatePropagation();
             }
           };
@@ -2338,35 +2303,10 @@ class Tags {
                   }
                 }
               };
-              const _updatePositioningMesh = () => {
-                const {positioningId, positioningName, positioningSide} = detailsState;
-
-                if (positioningId && positioningName && positioningSide) {
-                  const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === positioningId);
-                  const {gamepads} = webvr.getStatus();
-                  const gamepad = gamepads[positioningSide];
-
-                  if (gamepad) {
-                    const {position: controllerPosition, rotation: controllerRotation, scale: controllerScale} = gamepad;
-                    positioningMesh.position.copy(controllerPosition);
-                    positioningMesh.quaternion.copy(controllerRotation);
-                    positioningMesh.scale.copy(controllerScale);
-                  }
-
-                  if (!positioningMesh.visible) {
-                    positioningMesh.visible = true;
-                  }
-                } else {
-                  if (positioningMesh.visible) {
-                    positioningMesh.visible = false;
-                  }
-                }
-              };
 
               _updateElementGrabbables();
               _updateDragStates();
               _updateDragLines();
-              _updatePositioningMesh();
             };
             const _updateLocal = () => {
               for (let i = 0; i < localUpdates.length; i++) {
