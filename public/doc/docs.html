@@ -914,6 +914,7 @@ module.exports = archae =&gt; ({
 <p>In fact there is no VR-less interface at all. The only way to <em>not</em> use a headset and controllers is to fake them with your mouse and keyboard!</p>
 <p>But don&#39;t worry, that&#39;s fully supported! We even made a tutorial for you to familiarize yourself with controlling your avatar when you&#39;re without VR gear. &#x1F50C;</p>
 <h3 id="in-browser-multiplayer">In-browser multiplayer</h3>
+<p><img src="/img/minecraft.svg" width=100 height=100></p>
 <p>Every world automatically supports other avatars joining anytime. Just paste others the URL -- it fits in a tweet. All they need is a browser.</p>
 <p>There is of course positioned voice chat support, whether you&#39;re using a headset or not. Since it&#39;s server based, there&#39;s no weird connection stuff to worry about. You can VR-meet with people across continents if you want. &#x1F30E;</p>
 <p>And if you&#39;re feeling lonesome, you can browse servers and explore other people&#39;s worlds. Servers automatically broadcast their presence to share the VR love. &#x1F497;</p>
@@ -932,10 +933,13 @@ module.exports = archae =&gt; ({
 <p>This isn&#39;t just a browser framework; it&#39;s full stack. That means your VR world can run any piece of code you want, whether it&#39;s in the browser, or whether it&#39;s JS at all.</p>
 <p>Run server-side physics &#x269B;, scrape Youtube videos &#x1F39E;, upload models and media to the world by dragging it into the browser window &#x1F4BB;, or emulate retro video game consoles and play them together in VR. &#x1F4FA; &#x1F3AE;</p>
 <p>You can even code things live without leaving the page, since modules get <a href="https://en.wikipedia.org/wiki/Hot_swapping">hotloaded</a> when you save them.</p>
-<h3 id="a-boring-api">A boring API</h3>
-<p>We tried our best to keep the surprises <em>inside</em> the VR and <em>out of</em> the code. &#x1F913;</p>
-<p>Everything is an <code>npm</code> module, and modules export functions that add stuff to the THREE.js scene graph or handle HTTP routes. That&#39;s it; if you&#39;ve coded for the browser or <code>node</code> before then you&#39;ll feel right at home with <a href="/docs/api">the API</a>.</p>
+<h3 id="an-api-you-probably-already-know">An API you (probably) already know</h3>
+<p><img src="/img/github-circle.svg" width=100 height=100></p>
+<p>We tried to keep the surprises <em>inside</em> the VR and <em>out of</em> the code. &#x1F913;</p>
+<p>Everything is an <code>npm</code> module, and modules export functions that add stuff to the THREE.js scene graph or handle HTTP routes. That&#39;s basically it; if you&#39;ve coded for the browser or <code>node</code> before then you&#39;ll feel right at home with <a href="/docs/api">the API</a>.</p>
 <p>To make your stuff configurable from the VR world, just specify the JSON Entity-Component schema: &quot;the sky has a color and it&#39;s controlled by this material&quot;. The VR UI is automagically generated for you. &#x1F984;</p>
+<p>If that sounds complicated, we&#39;ve got your back with the <a href="/docs/api">docs</a> and plenty of <a href="/modules">exiting modules</a> for you to learn from and steal (if you feel so inclinded).</p>
+<p><a href="/docs/contact" style="display: inline-flex; margin: 10px 0; padding: 10px 15px; border: 2px solid; color: #000; font-weight: 400; text-decoration: none; justify-content: center; align-items: center;">Next: Contact &#x1F449;</a></p>
 
 </div>
 

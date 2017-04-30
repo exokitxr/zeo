@@ -12,6 +12,8 @@ But don't worry, that's fully supported! We even made a tutorial for you to fami
 
 ### In-browser multiplayer
 
+<img src="/img/minecraft.svg" width=100 height=100>
+
 Every world automatically supports other avatars joining anytime. Just paste others the URL -- it fits in a tweet. All they need is a browser.
 
 There is of course positioned voice chat support, whether you're using a headset or not. Since it's server based, there's no weird connection stuff to worry about. You can VR-meet with people across continents if you want. &#x1F30E;
@@ -45,10 +47,16 @@ Run server-side physics &#x269B;, scrape Youtube videos &#x1F39E;, upload models
 
 You can even code things live without leaving the page, since modules get [hotloaded](https://en.wikipedia.org/wiki/Hot_swapping) when you save them.
 
-### A boring API
+### An API you (probably) already know
 
-We tried our best to keep the surprises _inside_ the VR and _out of_ the code. &#x1F913;
+<img src="/img/github-circle.svg" width=100 height=100>
 
-Everything is an `npm` module, and modules export functions that add stuff to the THREE.js scene graph or handle HTTP routes. That's it; if you've coded for the browser or `node` before then you'll feel right at home with [the API](/docs/api).
+We tried to keep the surprises _inside_ the VR and _out of_ the code. &#x1F913;
+
+Everything is an `npm` module, and modules export functions that add stuff to the THREE.js scene graph or handle HTTP routes. That's basically it; if you've coded for the browser or `node` before then you'll feel right at home with [the API](/docs/api).
 
 To make your stuff configurable from the VR world, just specify the JSON Entity-Component schema: "the sky has a color and it's controlled by this material". The VR UI is automagically generated for you. &#x1F984;
+
+If that sounds complicated, we've got your back with the [docs](/docs/api) and plenty of [exiting modules](/modules) for you to learn from and steal (if you feel so inclinded).
+
+<a href="/docs/contact" style="display: inline-flex; margin: 10px 0; padding: 10px 15px; border: 2px solid; color: #000; font-weight: 400; text-decoration: none; justify-content: center; align-items: center;">Next: Contact &#x1F449;</a>
