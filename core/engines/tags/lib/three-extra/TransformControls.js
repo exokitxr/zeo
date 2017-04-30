@@ -10,8 +10,8 @@ module.exports = THREE => {
 
 		THREE.MeshBasicMaterial.call( this );
 
-		this.depthTest = false;
-		this.depthWrite = false;
+		// this.depthTest = false;
+		// this.depthWrite = false;
 		this.side = THREE.FrontSide;
 		this.transparent = true;
 
@@ -46,8 +46,8 @@ module.exports = THREE => {
 
 		THREE.LineBasicMaterial.call( this );
 
-		this.depthTest = false;
-		this.depthWrite = false;
+		// this.depthTest = false;
+		// this.depthWrite = false;
 		this.transparent = true;
 		this.linewidth = 1;
 
