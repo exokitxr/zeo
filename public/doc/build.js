@@ -13,12 +13,10 @@ const toc = marked(markdownToc(src).content);
 
 const content = `\
 <div class=toc>
-${toc}
+  ${toc}
 </div>
 <div class=body>
-  <div class=body-wrap>
-    ${md}
-  </div>
+  ${md}
 </div>
 `;
 const result = template.replace('<!-- CONTENT -->', content);

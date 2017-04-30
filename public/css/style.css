@@ -700,23 +700,10 @@ section.details {
   margin: 0 auto;
   margin-top: 20px;
 }
-.toc {
-  position: sticky;
-  top: 101px;
-  width: 160px;
-  height: 120px;
-}
-.toc-item {
-  display: block;
-  padding-left: 10px;
-  border-left: 3px solid transparent;
-  font-size: 12px;
-  line-height: 2;
+h1, h2, h3, h4, p {
+  margin: 10px 0;
   font-weight: 400;
-}
-.toc-item.selected {
-  border-left-color: #673AB7;
-  font-weight: 700;
+  line-height: 1.4;
 }
 .faq-content {
   width: 640px;
@@ -877,7 +864,11 @@ section.list {
 .grid-item .grid-button:last-child {
   margin-right: auto;
 }
-section.pricing {
+.grid-item-header {
+  font-size: 30px;
+  font-weight: 400;
+}
+/* section.pricing {
   display: flex;
   background-color: #03A9F4;
   justify-content: center;
@@ -979,13 +970,7 @@ section.pricing {
 }
 .dollars {
   font-size: 30px;
-}
-h1, h2, h3, h4, p {
-  margin: 10px 0;
-  font-size: 30px;
-  font-weight: 400;
-  line-height: 1.4;
-}
+} */
 .login-loader {
   display: flex;
   width: 350px;
