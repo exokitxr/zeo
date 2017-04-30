@@ -25,8 +25,8 @@ const plusBoxImg = require('../img/plus-box');
 const plusBoxImgSrc = 'data:image/svg+xml;base64,' + btoa(plusBoxImg);
 const idImg = require('../img/id');
 const idImgSrc = 'data:image/svg+xml;base64,' + btoa(idImg);
-const targetImg = require('../img/target');
-const targetImgSrc = 'data:image/svg+xml;base64,' + btoa(targetImg);
+const arrowAllImg = require('../img/arrow-all');
+const arrowAllImgSrc = 'data:image/svg+xml;base64,' + btoa(arrowAllImg);
 const linkImg = require('../img/link');
 const linkImgSrc = 'data:image/svg+xml;base64,' + btoa(linkImg);
 const upImg = require('../img/up');
@@ -244,7 +244,7 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
         return `\
           <div style="display: flex; width: ${WIDTH}px; justify-content: flex-end;">
             <a style="display: flex; width: 80px; justify-content: center; align-items: center;" onclick="attribute:${id}:${name}:position">
-              <img src="${targetImgSrc}" width="50" height="50" style="margin: 10px; image-rendering: pixelated;" />
+              <img src="${arrowAllImgSrc}" width="50" height="50" style="margin: 10px; image-rendering: pixelated;" />
             </a>
           </div>
         `;
