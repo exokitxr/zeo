@@ -8,59 +8,52 @@
   .toc {
     display: flex;
     width: 100%;
-    background-color: #EEE;
+    border-bottom: 1px solid #eee;
     box-sizing: border-box;
   }
-  .toc ul {
-    display: flex;
-    margin: 0;
-    list-style-type: none;
-    padding: 0;
-  }
-  .toc ul > li {
-    margin: 0;
-  }
-  .toc > ul > li > a {
+  .toc a {
     display: block;
-    margin-right: 20px;
-    border-bottom: 5px solid transparent;
+    // margin-right: 20px;
+    padding: 0 15px;
+    // border-bottom: 5px solid transparent;
     font-size: 30px;
     font-weight: 300;
     line-height: 2.5;
     color: #BBB;
     text-decoration: none;
   }
-  .toc > ul > li:first-child > a {
-    border-bottom-color: #000;
+  .toc a.selected {
+    background-color: #EEE;
+    // border-bottom-color: #000;
   }
-  .toc > ul > li:hover > a,
-  .toc > ul > li:first-child > a {
+  .toc a:hover,
+  .toc a.selected {
     color: #000;
     text-decoration: none;
   }
-  .toc > ul > li > ul {
-    display: none;
+  .toc a:first-child {
+    margin-left: -15px;
   }
 
   .markdown-body {}
-  .markdown-body a {
-    color: #2196F3;
-  }
-  .markdown-body a:hover > code {
-    text-decoration: underline;
-  }
   .markdown-body iframe {
     margin: 16px 0;
   }
 
   .toc, .body {
-    padding: 0 50px;
+    padding: 0 70px;
   }
   .body {
     width: 640px;
   }
-  .body > h1 {
+  .body > .section > h1 {
     display: none;
+  }
+  .body a {
+    color: #2196F3;
+  }
+  .body a:hover > code {
+    text-decoration: underline;
   }
 </style>
 </head>
@@ -90,21 +83,22 @@
 <script>
 const $ = s => document.querySelectorAll(s);
 
-const _updateHash = () => {
-  $('a').forEach(a => {
-    a.classList.remove('active');
-  });
+let page = document.location.pathname.match(/^\/docs(?:\/(.*))?/)[1];
+if (['tutorials', 'manual', 'api', 'features', 'contact'].indexOf(page) === -1) {
+  page = 'tutorials';
+}
 
-  const {hash} = window.location;
-  $('a[href="' + hash + '"').forEach(a => {
-    a.classList.add('active');
-  });
-};
-_updateHash();
-
-window.addEventListener('hashchange', e => {
-  _updateHash();
+$('.toc > a').forEach(e => {
+  if (e.classList.contains(page)) {
+    e.classList.add('selected');
+  }
 });
+$('.section').forEach(e => {
+  if (!e.classList.contains(page)) {
+    e.parentNode.removeChild(e);
+  }
+});
+
 </script>
 </body>
 </html>

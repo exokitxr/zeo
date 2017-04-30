@@ -7,9 +7,13 @@ const markdownToc = require('markdown-toc');
 const docs = require(path.join(__dirname, '..', '..', 'docs'));
 
 const template = docs.getTemplate();
-const src = docs.getMarkdown();
-const md = marked(src);
-const toc = marked(markdownToc(src).content);
+const srcs = docs.getMarkdowns();
+const md = srcs.map(({name, data}) => `\
+<div class="section ${name}">
+  ${marked(data)}
+</div>
+`).join('\n');
+const toc = srcs.map(({name}) => `<a href="/docs/${name}" class="${name}">${name.slice(0, 1).toUpperCase() + name.slice(1)}</a>`).join('\n');
 
 const content = `\
 <div class=toc>

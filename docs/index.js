@@ -5,11 +5,16 @@ module.exports = {
     return '' +
       fs.readFileSync(__dirname + '/template.html');
   },
-  getMarkdown() {
-    return '' +
-      fs.readFileSync(__dirname + '/introduction.md') + '\n' +
-      fs.readFileSync(__dirname + '/user-manual.md') + '\n' +
-      fs.readFileSync(__dirname + '/module-specification.md') + '\n' +
-      fs.readFileSync(__dirname + '/api-docs.md') + '\n';
+  getMarkdowns() {
+    return [
+      'tutorials',
+      'manual',
+      'api',
+      'features',
+      'contact',
+    ].map(name => ({
+      name: name,
+      data: fs.readFileSync(__dirname + `/${name}.md`, 'utf8')
+    }));
   },
 };

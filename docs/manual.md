@@ -1,4 +1,4 @@
-# User manual
+# Manual
 
 ## Getting started
 

@@ -1,4 +1,4 @@
-# API docs
+# API
 
 ## API introduction
 
