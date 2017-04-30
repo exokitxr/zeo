@@ -1,5 +1,72 @@
 # Features
 
+### In-VR world builder
+
+<div style="display: flex; background-color: #CCC; width: 560px; height: 315px; margin: 20px 0; justify-content: center; align-items: center; font-size: 30px; font-weight: 400;">Video goes here</div>
+
+We built this thing from the ground up to work in VR. Whether you're 3D modeling, animating, chatting, or typing text, it's designed to work without you ever taking off your headset. &#x1F60E;
+
+In fact there is no VR-less interface at all. The only way to _not_ use a headset and controllers is to fake them with your mouse and keyboard!
+
+But don't worry, that's fully supported! We even made a tutorial for you to familiarize yourself with controlling your avatar when you're without VR gear. &#x1F50C;
+
+### In-browser multiplayer
+
+Every world automatically supports other avatars joining anytime. Just paste others the URL -- it fits in a tweet. All they need is a browser.
+
+There is of course positioned voice chat support, whether you're using a headset or not. Since it's server based, there's no weird connection stuff to worry about. You can VR-meet with people across continents if you want. &#x1F30E;
+
+And if you're feeling lonesome, you can browse servers and explore other people's worlds. Servers automatically broadcast their presence to share the VR love. &#x1F497;
+
+### Pure Javascript
+
+<img src="https://transfer.sh/16bjNs/nodejs.svg" width=100 height=100>
+
+Time for some geek talk. This crud is built with the world's most popular programming language. &#x1F468;&#x200D;&#x1F4BB;
+
+If you know Javascript you'll feel right at home hacking your world. If you know [THREE.js](https://threejs.org/) then you have nothing to learn.
+
+There's no secrets in the code; it's just a bunch of readable `npm` modules stuck together. To get it running, run
+
+```
+npm install modulesio/zeo
+```
+
+wherever `node` is found.
+
+### Backend and frontend
+### Hotloading
+### Unopinionated deploy
+### Unopinionated deploy
+### Npm in VR
+### THREE.js API
+### Entity-component system
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 **Zeo VR** is a [`node.js`](https://nodejs.org) web server that runs virtual worlds built out of [`npm`](https://npmjs.org) modules.
 
 You can access the VR world from any modern web browser. Most headsets and controllers are supported via [`WebVR`](https://webvr.info/). You don't need a headset, though; there's mouse and keyboard emulation.
