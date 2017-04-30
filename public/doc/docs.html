@@ -28,9 +28,6 @@
     color: #000;
     text-decoration: none;
   }
-  .toc a:first-child {
-    margin-left: -15px;
-  }
 
   .markdown-body {}
   .markdown-body iframe {
@@ -38,10 +35,10 @@
   }
 
   .toc, .body {
-    padding: 0 70px;
+    padding-left: 150px;
   }
   .body {
-    width: 640px;
+    width: 780px;
   }
   .body > .section > h1 {
     display: none;
@@ -110,7 +107,7 @@
 <p>If you&#39;re technically inclined, a whole new world opens up to you.</p>
 <p>If you know <a href="https://en.wikipedia.org/wiki/JavaScript">Javascript</a>, <a href="https://nodejs.org/">node</a>, and <a href="https://threejs.org/">THREE.js</a>, you can build and publish VR modules to <a href="https://npmjs.org/"><code>npm</code></a> and load them directly to your face. Or literally throw them at someone else&#39;s.</p>
 <p>There&#39;s extensive <a href="/docs/api">API docs and walkthroughs</a> when you&#39;re ready to get started. And our crack team is <a href="/docs/contact">here to help</a>. &#x1F917;</p>
-<p><a href="/docs/tutorials" style="display: inline-flex; margin: 10px 0; padding: 5px 10px; border: 2px solid; color: #000; font-weight: 400; text-decoration: none; justify-content: center; align-items: center;">Next: Tutorials &#x1F449;</a></p>
+<p><a href="/docs/tutorials" style="display: inline-flex; margin: 10px 0; padding: 10px 15px; border: 2px solid; color: #000; font-weight: 400; text-decoration: none; justify-content: center; align-items: center;">Next: Tutorials &#x1F449;</a></p>
 
 </div>
 
@@ -1246,6 +1243,12 @@ module.exports = archae =&gt; ({
 </div>
 
   </div>
+  <footer class=footer>
+    <div class=footer-wrap>
+      <div class=footer-left><a href="/" class="link soft">Home</a> | <a href="https://github.com/modulesio/zeo" class="link soft">Github</a> | <a href="mailto:hello@zeovr.io" class="link soft">Contact</a></div>
+      <div class=footer-right>&copy; 2017 <a href="mailto:a@zeovr.io">Zeo VR</a></div>
+    </div>
+  </footer>
 <script>
 const $ = s => document.querySelectorAll(s);
 

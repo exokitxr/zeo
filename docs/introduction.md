@@ -39,4 +39,4 @@ If you know [Javascript](https://en.wikipedia.org/wiki/JavaScript), [node](https
 
 There's extensive [API docs and walkthroughs](/docs/api) when you're ready to get started. And our crack team is [here to help](/docs/contact). &#x1F917;
 
-<a href="/docs/tutorials" style="display: inline-flex; margin: 10px 0; padding: 5px 10px; border: 2px solid; color: #000; font-weight: 400; text-decoration: none; justify-content: center; align-items: center;">Next: Tutorials &#x1F449;</a>
+<a href="/docs/tutorials" style="display: inline-flex; margin: 10px 0; padding: 10px 15px; border: 2px solid; color: #000; font-weight: 400; text-decoration: none; justify-content: center; align-items: center;">Next: Tutorials &#x1F449;</a>
