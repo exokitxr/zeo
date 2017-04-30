@@ -20,6 +20,16 @@ There is of course positioned voice chat support, whether you're using a headset
 
 And if you're feeling lonesome, you can browse servers and explore other people's worlds. Servers automatically broadcast their presence to share the VR love. &#x1F497;
 
+### Serverless VR server
+
+<img src="/img/google-chrome.svg" width=100 height=100>
+
+We designed this thing to deploy to [Heroku](https://heroku.com/), [Glitch](https://glitch.com/), and [now](https://zeit.co/now) easily, for free.
+
+Even if you're not a l33t vr haxxor, you can start up a VR server and invite people to join on a dime's notice. All you need is a basic understanding of how the internet works, and if you screw up it doesn't matter: it wasn't your machine anyway! &#x1F468;&#x200D;&#x1F52C; &#x1F4A5;
+
+Move your worlds around by uploading and downloading the `zip` files. &#x1F5DC;
+
 ### Pure Javascript
 
 <div style="display: flex;"?>
