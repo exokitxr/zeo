@@ -27,6 +27,8 @@ const idImg = require('../img/id');
 const idImgSrc = 'data:image/svg+xml;base64,' + btoa(idImg);
 const arrowAllImg = require('../img/arrow-all');
 const arrowAllImgSrc = 'data:image/svg+xml;base64,' + btoa(arrowAllImg);
+const arrowAllWhiteImg = require('../img/arrow-all-white');
+const arrowAllWhiteImgSrc = 'data:image/svg+xml;base64,' + btoa(arrowAllWhiteImg);
 const linkImg = require('../img/link');
 const linkImgSrc = 'data:image/svg+xml;base64,' + btoa(linkImg);
 const upImg = require('../img/up');
@@ -35,7 +37,7 @@ const downImg = require('../img/down');
 const AXES = ['x', 'y', 'z'];
 
 const makeRenderer = ({menuUtils, creatureUtils}) => {
-  const getModuleSrc = ({item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec}) => {
+  const getModuleSrc = ({item, inputText, inputValue}) => {
     const {id, name, displayName, description, instancing, metadata: {isStatic, exists}} = item;
     const tagName = isStatic ? 'a' : 'div';
     const linkTagName = isStatic ? 'div' : 'a';
@@ -209,10 +211,9 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
     `;
   };
 
-  const getAttributeSrc = ({item, attribute, inputText, inputValue, focusAttributeSpec}) => {
+  const getAttributeSrc = ({item, attribute, inputText, inputValue, focus, transform}) => {
     const {id} = item;
     const {name, type, value, min, max, step, options} = attribute;
-    const focus = focusAttributeSpec ? (id === focusAttributeSpec.tagId && name === focusAttributeSpec.attributeName) : false;
 
     const headerSrc = `\
       <div style="display: flex; font-size: 28px; line-height: 2;">
@@ -223,7 +224,7 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
       </div>
     `;
     const bodySrc = `\
-      ${getAttributeInputSrc(id, name, type, value, min, max, step, options, inputText, inputValue, focus)}
+      ${getAttributeInputSrc(id, name, type, value, min, max, step, options, inputText, inputValue, focus, transform)}
     `;
 
     return `\
@@ -236,15 +237,15 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
     `;
   };
 
-  const getAttributeInputSrc = (id, name, type, value, min, max, step, options, inputText, inputValue, focus) => {
+  const getAttributeInputSrc = (id, name, type, value, min, max, step, options, inputText, inputValue, focus, transform) => {
     const focusValue = !focus ? value : menuUtils.castValueStringToValue(inputText, type, min, max, step, options);
 
     switch (type) {
       case 'matrix': {
         return `\
           <div style="display: flex; width: ${WIDTH}px; justify-content: flex-end;">
-            <a style="display: flex; width: 80px; justify-content: center; align-items: center;" onclick="attribute:${id}:${name}:position">
-              <img src="${arrowAllImgSrc}" width="50" height="50" style="margin: 10px; image-rendering: pixelated;" />
+            <a style="display: flex; width: 80px; ${transform ? 'background-color: #2196F3;' : ''} justify-content: center; align-items: center;" onclick="attribute:${id}:${name}:${!transform ? 'transform' : 'untransform'}">
+              <img src="${!transform ? arrowAllImgSrc : arrowAllWhiteImgSrc}" width="50" height="50" style="margin: 10px; image-rendering: pixelated;" />
             </a>
           </div>
         `;

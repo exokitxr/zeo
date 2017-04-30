@@ -131,12 +131,12 @@ class Tags {
             THREETransformGizmoScale,
           } = THREETransformControls;
 
-          const _makeTranslateGizmo = () => {
+          const _makeTranslateGizmo = ({tagId, attributeName}) => {
             const translateGizmo = new THREETransformGizmoTranslate();
             translateGizmo.position.x = -2;
             translateGizmo.position.y = 1.5;
-
-            const {pickerGizmos} = translateGizmo;
+            translateGizmo.tagId = tagId;
+            translateGizmo.attributeName = attributeName;
 
             let boxAnchors = null;
             const _removeBoxTargets = () => {
@@ -161,7 +161,7 @@ class Tags {
                     new THREE.Vector3(0.2, 0.1, 0.1)
                   ),
                   anchor: {
-                    onmousedown: 'translate:x',
+                    onmousedown: `translate:${tagId}:${attributeName}:x`,
                   },
                 },
                 {
@@ -172,7 +172,7 @@ class Tags {
                     new THREE.Vector3(0.1, 0.2, 0.1)
                   ),
                   anchor: {
-                    onmousedown: 'translate:y',
+                    onmousedown: `translate:${tagId}:${attributeName}:y`,
                   },
                 },
                 {
@@ -183,7 +183,7 @@ class Tags {
                     new THREE.Vector3(0.1, 0.1, 0.2)
                   ),
                   anchor: {
-                    onmousedown: 'translate:z',
+                    onmousedown: `translate:${tagId}:${attributeName}:z`,
                   },
                 },
                 {
@@ -194,7 +194,7 @@ class Tags {
                     new THREE.Vector3(0.2, 0.2, 0.2)
                   ),
                   anchor: {
-                    onmousedown: 'translate:xyz',
+                    onmousedown: `translate:${tagId}:${attributeName}:xyz`,
                   },
                 },
                 {
@@ -205,7 +205,7 @@ class Tags {
                     new THREE.Vector3(0.3, 0.3, 0.01)
                   ),
                   anchor: {
-                    onmousedown: 'translate:xy',
+                    onmousedown: `translate:${tagId}:${attributeName}:xy`,
                   },
                 },
                 {
@@ -216,7 +216,7 @@ class Tags {
                     new THREE.Vector3(0.01, 0.3, 0.3)
                   ),
                   anchor: {
-                    onmousedown: 'translate:yz',
+                    onmousedown: `translate:${tagId}:${attributeName}:yz`,
                   },
                 },
                 {
@@ -227,7 +227,7 @@ class Tags {
                     new THREE.Vector3(0.3, 0.01, 0.3)
                   ),
                   anchor: {
-                    onmousedown: 'translate:xz',
+                    onmousedown: `translate:${tagId}:${attributeName}:xz`,
                   },
                 },
               ];
@@ -237,6 +237,10 @@ class Tags {
               }
             };
             translateGizmo.updateBoxTargets = _updateBoxTargets;
+
+            translateGizmo.destroy = () => {
+              _removeBoxTargets();
+            };
 
             /* const rotateGizmo = new THREETransformGizmoRotate();
             rotateGizmo.position.x = 0;
@@ -250,9 +254,7 @@ class Tags {
 
             return translateGizmo;
           };
-          const translateGizmo = _makeTranslateGizmo();
-          scene.add(translateGizmo);
-          translateGizmo.updateBoxTargets();
+          const translateGizmos = [];
 
           const transparentImg = biolumi.getTransparentImg();
 
@@ -941,8 +943,7 @@ class Tags {
             inputText: '',
             inputIndex: 0,
             inputValue: 0,
-            positioningId: null,
-            positioningName: null,
+            transforms: [],
             page: 0,
           };
           const focusState = {
@@ -1516,7 +1517,7 @@ class Tags {
                 const onclick = (anchor && anchor.onclick) || '';
 
                 let match;
-                if (match = onclick.match(/^attribute:([^:]+):([^:]+)(?::([^:]+))?:(position|focus|set|tweak|toggle|choose)(?::([^:]+))?$/)) {
+                if (match = onclick.match(/^attribute:([^:]+):([^:]+)(?::([^:]+))?:((?:un)?transform|focus|set|tweak|toggle|choose)(?::([^:]+))?$/)) {
                   const tagId = match[1];
                   const attributeName = match[2];
                   const key = match[3];
@@ -1534,9 +1535,34 @@ class Tags {
                     attributesMesh.update();
                   };
 
-                  if (action === 'position') {
-                    detailsState.positioningId = tagId;
-                    detailsState.positioningName = attributeName;
+                  if (action === 'transform') {
+                    detailsState.transforms.push({
+                      tagId,
+                      attributeName,
+                    })
+                    
+                    _updateAttributes();
+
+                    const translateGizmo = _makeTranslateGizmo({
+                      tagId,
+                      attributeName,
+                    });
+                    scene.add(translateGizmo);
+                    translateGizmo.updateBoxTargets();
+                    translateGizmos.push(translateGizmo);
+
+                    keyboard.tryBlur();
+                  } else if (action === 'untransform') {
+                    const transformIndex = detailsState.transforms.findIndex(transform => transform.tagId === tagId && transform.attributeName === attributeName);
+                    detailsState.transforms.splice(transformIndex, 1);
+
+                    _updateAttributes();
+
+                    const translateGizmoIndex = translateGizmos.findIndex(translateGizmo => translateGizmo.tagId === tagId && translateGizmo.attributeName === attributeName);
+                    const translateGizmo = translateGizmos[translateGizmoIndex];
+                    scene.remove(translateGizmo);
+                    translateGizmo.destroy();
+                    translateGizmos.splice(translateGizmoIndex, 1);
 
                     keyboard.tryBlur();
                   } else if (action === 'focus') {
@@ -1733,15 +1759,20 @@ class Tags {
                 const onmousedown = (anchor && anchor.onmousedown) || '';
 
                 let match;
-                if (match = onmousedown.match(/^translate:(x|y|z|xyz|xy|yz|xz)$/)) {
-                  const mode = match[1];
+                if (match = onmousedown.match(/^translate:([^:]+):([^:]+):(x|y|z|xyz|xy|yz|xz)$/)) {
+                  const tagId = match[1];
+                  const attributeName = match[2];
+                  const mode = match[3];
 
                   const dragState = dragStates[side];
                   const {gamepads} = webvr.getStatus();
                   const gamepad = gamepads[side];
                   const {position: controllerPosition, rotation: controllerRotation} = gamepad;
+                  const translateGizmo = translateGizmos.find(translateGizmo => translateGizmo.tagId === tagId && translateGizmo.attributeName === attributeName);
                   dragState.src = {
                     type: 'translate',
+                    tagId: tagId,
+                    attributeName: attributeName,
                     mode: mode,
                     startControllerPosition: controllerPosition.clone(),
                     startControllerRotation: controllerRotation.clone(),
@@ -2003,6 +2034,9 @@ class Tags {
 
               return true;
             } else if (srcType === 'translate') {
+              const {tagId, attributeName} = src;
+              const translateGizmo = translateGizmos.find(translateGizmo => translateGizmo.tagId === tagId && translateGizmo.attributeName === attributeName);
+
               translateGizmo.updateBoxTargets();
 
               dragState.src = null;
@@ -2139,7 +2173,8 @@ class Tags {
                           dragState.dst = null;
                         }
                       } else if (srcType === 'translate') {
-                        const {mode, startControllerPosition, startControllerRotation, startIntersectionPoint, startPosition} = src;
+                        const {tagId, attributeName, mode, startControllerPosition, startControllerRotation, startIntersectionPoint, startPosition} = src;
+                        const translateGizmo = translateGizmos.find(translateGizmo => translateGizmo.tagId === tagId && translateGizmo.attributeName === attributeName);
 
                         if (mode === 'x') {
                           const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 0, 1), startIntersectionPoint);
@@ -2328,7 +2363,6 @@ class Tags {
             SIDES.forEach(side => {
               scene.remove(grabBoxMeshes[side]);
             });
-            scene.remove(positioningMesh);
             scene.remove(linesMesh);
 
             input.removeListener('trigger', _trigger);
@@ -2895,10 +2929,6 @@ class Tags {
 
                 const mesh = uiManager.makePage(({
                   item,
-                  details: {
-                    positioningId,
-                    positioningName,
-                  },
                   focus: {
                     keyboardFocusState,
                   },
@@ -2910,15 +2940,7 @@ class Tags {
                     switch (itemType) {
                       case 'module': {
                         if (!details) {
-                          const focusAttributeSpec = (() => {
-                            const match = focusType.match(/^attribute:(.+?):(.+?)$/);
-                            return match && {
-                              tagId: match[1],
-                              attributeName: match[2],
-                            };
-                          })();
-
-                          return tagsRenderer.getModuleSrc({item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec});
+                          return tagsRenderer.getModuleSrc({item, inputText, inputValue});
                         } else {
                           const focusVersionSpec = (() => {
                             const match = focusType.match(/^version:(.+?)$/);
@@ -2954,7 +2976,6 @@ class Tags {
                   type: 'tag',
                   state: {
                     item: item,
-                    details: detailsState,
                     focus: focusState,
                   },
                   worldWidth: open ? WORLD_OPEN_WIDTH : details ? WORLD_DETAILS_WIDTH : WORLD_WIDTH,
@@ -3135,26 +3156,28 @@ class Tags {
                         } else {
                           const state = {
                             attribute: attribute,
+                            details: detailsState,
                             focus: focusState,
                           };
                           const newAttributeMesh = uiAttributeManager.makePage(({
                             attribute,
+                            details: {
+                              transforms,
+                            },
                             focus: {
                               keyboardFocusState,
                             },
                           }) => {
                             const {type: focusType = '', inputText = '', inputValue = 0} = keyboardFocusState || {};
-                            const focusAttributeSpec = (() => {
+                            const focus = (() => {
                               const match = focusType.match(/^attribute:(.+?):(.+?)$/);
-                              return match && {
-                                tagId: match[1],
-                                attributeName: match[2],
-                              };
+                              return Boolean(match) && match[1] === item.id && match[2] === item.name;
                             })();
+                            const transform = transforms.some(transform => transform.tagId === item.id && transform.attributeName === attribute.name);
 
                             return {
                               type: 'html',
-                              src: tagsRenderer.getAttributeSrc({item, attribute, inputText, inputValue, focusAttributeSpec}),
+                              src: tagsRenderer.getAttributeSrc({item, attribute, inputText, inputValue, focus, transform}),
                               w: WIDTH,
                               h: HEIGHT,
                             };
