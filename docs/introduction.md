@@ -6,7 +6,7 @@ It's a realtime virtual reality world builder that runs your browser. &#x1F47E;
 
 Wanna geek out on buzzwords? <i>100% JS/HTML5, hotloaded npm modules, node backend, WebVR, THREE.js, Entity-Component System.</i>
 
-Basically you run this thing on a server, and then you build, run, and share VR content with anyone just by giving them the URL (<i>Tweet friendly!</i> &#x1F426;).
+Basically you run this thing on a server, and then you build, run, and share VR content with anyone just by giving them the URL (<i>fits in a tweet!</i> &#x1F426;).
 
 It works with a mouse and keyboard, but supports true VR headets with [WebVR](https://webvr.info/). &#x1F3AE;
 

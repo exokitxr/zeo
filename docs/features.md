@@ -6,15 +6,15 @@
 
 We built this thing from the ground up to work in VR. Whether you're 3D modeling, animating, chatting, or typing text, it's designed to work without you ever taking off your headset. &#x1F60E;
 
-In fact there is no VR-less interface at all. The only way to _not_ use a headset and controllers is to fake them with your mouse and keyboard!
+In fact there is no VR-less interface at all -- the only way to _not_ use a headset and controllers is to fake them with your mouse and keyboard!
 
-But don't worry, that's fully supported! We even made a tutorial for you to familiarize yourself with controlling your avatar when you're without VR gear. &#x1F50C;
+But don't worry, that's fully supported! We even made a [tutorial](/docs/tutorial) for you to familiarize yourself with controlling your avatar when you're without VR gear. &#x1F50C;
 
 ### In-browser multiplayer
 
 <img src="/img/minecraft.svg" width=100 height=100>
 
-Every world automatically supports other avatars joining anytime. Just paste others the URL -- it fits in a tweet. All they need is a browser.
+Every world automatically supports other avatars joining in. Just paste people the URL -- it fits in a tweet. All they need is a browser.
 
 There is of course positioned voice chat support, whether you're using a headset or not. Since it's server based, there's no weird connection stuff to worry about. You can VR-meet with people across continents if you want. &#x1F30E;
 
