@@ -3108,8 +3108,14 @@ class Tags {
 
                         if (!attribute) {
                           attributesMesh.remove(attributeMesh);
-
                           attributeMesh.destroy();
+
+                          const transformGizmoIndex = transformGizmos.findIndex(transformGizmo => transformGizmo.tagId === item.id && transformGizmo.attributeName === attributeName);
+                          if (transformGizmoIndex !== -1) {
+                            const transformGizmo = transformGizmos[transformGizmoIndex];
+                            transformGizmo.destroy();
+                            transformGizmos.splice(transformGizmoIndex, 1);
+                          }
                         } else {
                           index[attributeName] = attributeMesh;
                         }
