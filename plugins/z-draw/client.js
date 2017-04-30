@@ -384,7 +384,7 @@ class ZDraw {
 
               const _triggerdown = e => {
                 const {side} = e;
-                const hoverState = render.getHoverState(side);
+                const hoverState = ui.getHoverState(side);
                 const {anchor} = hoverState;
                 const onclick = (anchor && anchor.onclick) || '';
 
