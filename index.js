@@ -119,7 +119,7 @@ const config = {
       enabled: flags.home,
     },
     hub: {
-      url: fullUrl,
+      url: hubUrl,
       enabled: flags.hub,
     },
     server: {

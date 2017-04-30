@@ -79,6 +79,7 @@ class Bootstrap {
           } else {
             const err = new Error('server announce returned error status code: ' + statusCode);
             err.code = 'EHTTP';
+            err.statusCode = statusCode;
             err.options = options;
             reject(err);
           }
@@ -96,18 +97,17 @@ class Bootstrap {
       });
     });
 
-    const _makeTryAnnounce = announceFn => () => new Promise((accept, reject) => {
-      announceFn()
+    const _tryServerAnnounce = () => new Promise((accept, reject) => {
+      _announceServer()
         .then(() => {
           accept(true);
         })
         .catch(err => {
-          console.warn('server announce failed: ', err.code, JSON.stringify(err.options));
+          console.warn('server announce failed', err.code, JSON.stringify({statusCode: err.statusCode, options: err.options}));
 
           accept(false);
         });
     });
-    const _tryServerAnnounce = _makeTryAnnounce(_announceServer);
 
     const _makeQueueAnnounce = tryAnnounceFn => {
       const recurse = _debounce(next => {
