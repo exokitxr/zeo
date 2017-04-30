@@ -107,6 +107,7 @@ class Rend {
         const auxObjects = {
           tagMeshes: null,
           tagsLinesMesh: null,
+          translateGizmos: null,
           controllerMeshes: null,
         };
 
@@ -363,7 +364,7 @@ class Rend {
               const factor = animation.getValue();
               const value = ((1 - factor) * startValue) + (factor * endValue);
 
-              const {tagMeshes} = auxObjects;
+              const {tagMeshes, translateGizmos} = auxObjects;
               const animatedMeshSpecs = [
                 {
                   mesh: menuMesh,
@@ -376,7 +377,10 @@ class Rend {
               ].concat(tagMeshes.map(tagMesh => ({
                 mesh: tagMesh,
                 direction: 'y',
-              })));
+              }))).concat(translateGizmos.map(translateGizmo => ({
+                mesh: translateGizmo,
+                direction: 'xyz',
+              })))
 
               if (factor < 1) {
                 if (value > 0.001) {
@@ -392,6 +396,9 @@ class Rend {
                         break;
                       case 'z':
                         mesh.scale.set(1, 1, value);
+                        break;
+                      case 'xyz':
+                        mesh.scale.set(value, value, value);
                         break;
                     }
 

@@ -131,6 +131,9 @@ class Tags {
             THREETransformGizmoScale,
           } = THREETransformControls;
 
+          const translateGizmos = [];
+          rend.registerAuxObject('translateGizmos', translateGizmos);
+
           const _makeTranslateGizmo = ({tagId, attributeName}) => {
             const translateGizmo = new THREETransformGizmoTranslate();
             translateGizmo.tagId = tagId;
@@ -252,7 +255,6 @@ class Tags {
 
             return translateGizmo;
           };
-          const translateGizmos = [];
 
           const transparentImg = biolumi.getTransparentImg();
 
