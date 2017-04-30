@@ -84,7 +84,7 @@
 const $ = s => document.querySelectorAll(s);
 
 let page = document.location.pathname.match(/^\/docs(?:\/(.*))?/)[1];
-if (['introduction', 'tutorials', 'manual', 'api', 'features', 'contact'].indexOf(page) === -1) {
+if (['introduction', 'manual', 'api', 'features', 'contact'].indexOf(page) === -1) {
   page = 'introduction';
 }
 
