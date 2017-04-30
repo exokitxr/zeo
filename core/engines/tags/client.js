@@ -133,8 +133,6 @@ class Tags {
 
           const _makeTranslateGizmo = ({tagId, attributeName}) => {
             const translateGizmo = new THREETransformGizmoTranslate();
-            translateGizmo.position.x = -2;
-            translateGizmo.position.y = 1.5;
             translateGizmo.tagId = tagId;
             translateGizmo.attributeName = attributeName;
 
@@ -1547,6 +1545,7 @@ class Tags {
                       tagId,
                       attributeName,
                     });
+                    translateGizmo.position.set(attributeValue[0], attributeValue[1], attributeValue[2]);
                     scene.add(translateGizmo);
                     translateGizmo.updateBoxTargets();
                     translateGizmos.push(translateGizmo);
