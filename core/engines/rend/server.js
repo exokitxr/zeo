@@ -19,6 +19,7 @@ class Rend {
 
   mount() {
     const {_archae: archae} = this;
+    const {metadata: {site: {url: siteUrl}}} = archae;
     const {app, dirname} = archae.getCore();
 
     let live = true;
@@ -233,6 +234,8 @@ class Rend {
               return _getModSpecs(mods);
             });
           function serveSearch(req, res, next) {
+            res.set('Access-Control-Allow-Origin', '*');
+
             const {q = ''} = req.query;
 
             Promise.all([
@@ -253,6 +256,8 @@ class Rend {
           }
           app.get('/archae/rend/search', serveSearch);
           function serveMods(req, res, next) {
+            res.set('Access-Control-Allow-Origin', '*');
+
             const {q = ''} = req.query;
 
             _getModSpec(q)
