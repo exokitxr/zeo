@@ -11,7 +11,7 @@ module.exports = {
       'manual',
       'api',
       'features',
-      'contact',
+      'faq',
     ].map(name => ({
       name: name,
       data: fs.readFileSync(__dirname + `/${name}.md`, 'utf8')

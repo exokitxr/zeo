@@ -69,4 +69,4 @@ To make your stuff configurable from the VR world, just specify the JSON Entity-
 
 If that sounds complicated, we've got your back with the [docs](/docs/api) and plenty of [exiting modules](/modules) for you to learn from and steal (if you feel so inclinded).
 
-<a href="/docs/contact" style="display: inline-flex; margin: 10px 0; padding: 10px 15px; border: 2px solid; color: #000; font-weight: 400; text-decoration: none; justify-content: center; align-items: center;">Next: Contact &#x1F449;</a>
+<a href="/docs/contact" style="display: inline-flex; margin: 10px 0; padding: 10px 15px; border: 2px solid; color: #000; font-weight: 400; text-decoration: none; justify-content: center; align-items: center;">Next: FAQ &#x1F449;</a>

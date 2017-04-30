@@ -8,20 +8,23 @@
   .toc {
     display: flex;
     width: 100%;
-    border-bottom: 1px solid #eee;
+    border-bottom: 2px solid #EEE;
     box-sizing: border-box;
   }
   .toc a {
     display: block;
     padding: 0 15px;
-    font-size: 26px;
-    font-weight: 300;
-    line-height: 2.5;
-    color: #BBB;
+    margin-bottom: -2px;
+    font-size: 18px;
+    font-weight: 400;
+    line-height: 3;
+    color: #CCC;
     text-decoration: none;
   }
   .toc a.selected {
-    background-color: #EEE;
+    background-color: #F8F8F8;
+    border-bottom: 2px solid #2196F3;
+    color: #2196F3 !important;
   }
   .toc a:hover,
   .toc a.selected {
@@ -48,6 +51,9 @@
   }
   .body a:hover > code {
     text-decoration: underline;
+  }
+  .toc > .faq {
+    text-transform: uppercase;
   }
 </style>
 </head>
@@ -84,7 +90,7 @@
 const $ = s => document.querySelectorAll(s);
 
 let page = document.location.pathname.match(/^\/docs(?:\/(.*))?/)[1];
-if (['introduction', 'manual', 'api', 'features', 'contact'].indexOf(page) === -1) {
+if (['introduction', 'manual', 'api', 'features', 'faq'].indexOf(page) === -1) {
   page = 'introduction';
 }
 

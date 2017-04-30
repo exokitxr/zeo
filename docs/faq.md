@@ -1,4 +1,4 @@
-# Contact
+# FAQ
 
 **Zeo VR** is a [`node.js`](https://nodejs.org) web server that runs virtual worlds built out of [`npm`](https://npmjs.org) modules.
 

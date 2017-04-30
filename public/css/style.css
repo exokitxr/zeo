@@ -695,7 +695,7 @@ section.details {
   font-size: 14px;
   line-height: 1.6;
 }
-.faq {
+/* .faq {
   width: 640px;
   margin: 0 auto;
   margin-top: 20px;
@@ -740,7 +740,7 @@ h1, h2, h3, h4, p {
 }
 .faq-card-item > .a {
   font-weight: 400;
-}
+} */
 .videos-wrapper {
   width: 270px;
 }
