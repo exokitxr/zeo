@@ -52,26 +52,27 @@ code {
   justify-content: flex-end;
 }
 .header .header-github-anchor {
-  display: flex;
-  width: 50px;
-  height: 50px;
-  margin-left: 100px;
-  color: #FFF;
+  display: inline-flex;
+  padding: 5px 10px;
+  border: 2px solid;
   justify-content: center;
   align-items: center;
 }
-.header .header-github-anchor i {
-  display: block;
-  position: relative;
-  font-size: 30px !important;
+.header .header-github-anchor svg {
+  margin-right: 5px;
 }
-.header .header-github-anchor .header-github-anchor-notch {
-  position: absolute;
-  top: 0;
-  right: 0;
-  border-width: 0 150px 150px 0;
-  border-style: solid;
-  border-color: transparent #2196F3 transparent transparent;
+.header .header-github-anchor,
+.header .header-github-anchor svg path {
+  color: #673AB7;
+  fill: #673AB7;
+}
+.header .header-github-anchor:hover {
+  background-color: #673AB7;
+  border-color: transparent;
+  color: #FFF;
+}
+.header .header-github-anchor:hover svg path {
+  fill: #FFF;
 }
 .header-icon {
   margin-right: 10px;
@@ -82,7 +83,7 @@ code {
   align-items: center;
 }
 .header-logo-anchor:hover {
-  color: #FFF;
+  color: #4CAF50;
 }
 
 .body {
