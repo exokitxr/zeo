@@ -5,9 +5,7 @@
   "client": "client.js",
   "server": "server.js",
   "dependencies": {
-    "body-parser": "^1.16.0",
-    "mkdirp": "^0.5.1",
-    "pretty-bytes": "^4.0.2",
-    "showdown": "^1.5.1"
+    "marked": "^0.3.6",
+    "pretty-bytes": "^4.0.2"
   }
 }

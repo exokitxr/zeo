@@ -1,9 +1,6 @@
 const path = require('path');
 const fs = require('fs');
 
-const mkdirp = require('mkdirp');
-const bodyParser = require('body-parser');
-const bodyParserJson = bodyParser.json();
 const marked = require('marked');
 
 const DEFAULT_TAG_MATRIX = [
