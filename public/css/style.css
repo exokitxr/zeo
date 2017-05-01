@@ -454,9 +454,11 @@ code {
 .servers-body {
   display: flex;
   width: 980px;
-  min-height: calc(100vh - (80px * 2));
+  // min-height: calc(100vh - (80px * 2));
+  flex-grow: 1;
   padding: 30px;
   flex-direction: column;
+  flex-grow: 1;
   box-sizing: border-box;
 }
 .servers-body .server {
@@ -970,12 +972,29 @@ section.list {
 }
 .dollars {
   font-size: 30px;
-} */
+}
 .login-loader {
   display: flex;
   width: 350px;
   height: 230px;
   flex-direction: column;
+} */
+
+.content {
+  display: flex;
+  min-height: calc(100vh - 80px);
+  flex-direction: column;
+}
+.load-status, .load-placeholder {
+  padding: 15px 30px;
+  flex-grow: 1;
+  font-size: 30px;
+  box-sizing: border-box;
+}
+.load-placeholder {
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .footer {

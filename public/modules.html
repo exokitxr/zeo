@@ -25,6 +25,8 @@
     </div>
   </header>
   <div class=content>
+    <div class=load-status>Loading...</div>
+    <div class=load-placeholder>No modules :(</div>
     <div class=modules-body id=modules-body></div>
     <footer class=footer>
       <div class="footer-wrap full">
@@ -38,6 +40,8 @@
 const $ = s => document.querySelectorAll(s);
 const $$ = (e, s) => e.querySelectorAll(s);
 
+const loadStatus = $('.load-status')[0];
+const loadPlaceholder = $('.load-placeholder')[0];
 const modulesBody = $('#modules-body')[0];
 
 const _makeModuleElement = module => {
@@ -65,19 +69,27 @@ const _makeModuleElement = module => {
   return moduleElement;
 };
 const _update = () => {
+  loadStatus.style.display = 'block';
+  loadPlaceholder.style.display = 'none';
+
   while (modulesBody.hasChildNodes()) {
     modulesBody.removeChild(modulesBody.lastChild);
   }
+  modulesBody.style.display = 'none';
 
   fetch('/modules/modules.json')
     .then(res =>
       res.json()
         .then(modules => {
+          loadStatus.style.display = 'none';
+          loadPlaceholder.style.display = modules.length === 0 ? 'flex' : 'none';
+
           for (let i = 0; i < modules.length; i++) {
             const module = modules[i];
             const moduleElement = _makeModuleElement(module);
             modulesBody.appendChild(moduleElement);
           }
+          modulesBody.style.display = servers.length > 0 ? 'flex' : 'none';
         })
     );
 };
