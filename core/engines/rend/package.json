@@ -5,7 +5,7 @@
   "client": "client.js",
   "server": "server.js",
   "dependencies": {
-    "marked": "^0.3.6",
+    "modulequery": "0.0.3",
     "pretty-bytes": "^4.0.2"
   }
 }
