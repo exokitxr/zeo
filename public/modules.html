@@ -69,7 +69,7 @@ const _makeModuleElement = module => {
   return moduleElement;
 };
 const _update = () => {
-  loadStatus.style.display = 'block';
+  loadStatus.style.display = 'flex';
   loadPlaceholder.style.display = 'none';
 
   while (modulesBody.hasChildNodes()) {
@@ -89,7 +89,7 @@ const _update = () => {
             const moduleElement = _makeModuleElement(module);
             modulesBody.appendChild(moduleElement);
           }
-          modulesBody.style.display = servers.length > 0 ? 'flex' : 'none';
+          modulesBody.style.display = modules.length > 0 ? 'flex' : 'none';
         })
     );
 };

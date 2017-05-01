@@ -26,7 +26,12 @@
   </header>
   <div class=content>
     <div class=load-status>Loading...</div>
-    <div class=load-placeholder>No servers :(</div>
+    <div class=load-placeholder>
+      <div class=load-wrap>
+        <h1>No servers :(</h1>
+        <a href="/docs/tutorials" class=button>Create one</a>
+      </div>
+    </div>
     <div class=servers-body id=servers-body></div>
     <footer class=footer>
       <div class="footer-wrap full">
@@ -72,7 +77,7 @@ const _makeServerElement = server => {
   return serverElement;
 };
 const _update = () => {
-  loadStatus.style.display = 'block';
+  loadStatus.style.display = 'flex';
   loadPlaceholder.style.display = 'none';
 
   while (serversBody.hasChildNodes()) {

@@ -232,6 +232,10 @@ code {
   align-items: center;
 }
 
+b {
+  font-weight: 600;
+}
+
 .button {
   display: inline-flex;
   height: 38px;
@@ -239,8 +243,7 @@ code {
   background-color: transparent;
   border: 2px solid;
   font-family: var(--fonts);
-  font-size: 16px;
-  font-weight: 400;
+  font-size: 13px;
   white-space: nowrap;
   justify-content: center;
   align-items: center;
@@ -986,15 +989,30 @@ section.list {
   flex-direction: column;
 }
 .load-status, .load-placeholder {
+  display: flex;
   padding: 15px 30px;
   flex-grow: 1;
   font-size: 30px;
-  box-sizing: border-box;
-}
-.load-placeholder {
-  display: flex;
   justify-content: center;
   align-items: center;
+  box-sizing: border-box;
+}
+.load-placeholder .load-wrap {
+  display: flex;
+  width: 400px;
+  padding: 30px;
+  background-color: #EEE;
+  color: #666;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  box-sizing: border-box;
+}
+.load-placeholder h1 {
+  margin: 0;
+  margin-bottom: 20px;
+  font-size: inherit;
+  font-weight: inherit;
 }
 
 .footer {
