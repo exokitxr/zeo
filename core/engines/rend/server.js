@@ -17,7 +17,7 @@ class Rend {
       modulePath: path.join('/', 'plugins'),
     });
     function serveSearch(req, res, next) {
-      res.set('Access-Control-Allow-Origin', '*');
+      res.set('Access-Control-Allow-Origin', '*'); // XXX this should be ported directly to the site lib
 
       const {q = ''} = req.query;
 
