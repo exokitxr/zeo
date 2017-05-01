@@ -64,7 +64,6 @@ class Fs {
               const fullPath = path.join(fsPath, dirname);
 
               const _serveMultiple = () => {
-
                 res.type('application/octet-stream');
                 res.set('Content-Disposition', 'attachment; filename="' + dirname + '.zip"');
 
