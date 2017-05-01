@@ -17,8 +17,6 @@ class Rend {
       modulePath: path.join('/', 'plugins'),
     });
     function serveSearch(req, res, next) {
-      res.set('Access-Control-Allow-Origin', '*'); // XXX this should be ported directly to the site lib
-
       const {q = ''} = req.query;
 
       mq.search(q, {
@@ -34,8 +32,6 @@ class Rend {
     }
     app.get('/archae/rend/search', serveSearch);
     function serveMods(req, res, next) {
-      res.set('Access-Control-Allow-Origin', '*');
-
       const {q = ''} = req.query;
 
       mq.getModule(q)
