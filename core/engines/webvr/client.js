@@ -950,6 +950,8 @@ class WebVR {
                 if (needsGamepadUpdate) {
                   this.updateGamepads();
                 }
+
+                e.preventDefault(); // prevent things like Ctrl-F from hijacking input
               }
             };
             const keyup = e => {
