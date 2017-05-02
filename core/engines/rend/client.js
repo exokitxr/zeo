@@ -490,7 +490,7 @@ class Rend {
               sides: (() => {
                 const mode = webvr.getMode();
 
-                if (mode !== null) {
+                if (mode !== 'center') {
                   return [mode];
                 } else {
                   return SIDES;

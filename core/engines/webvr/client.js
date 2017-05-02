@@ -1013,7 +1013,7 @@ class WebVR {
             };
             const mousemove = e => {
               if (this.isPresenting) {
-                const _handleGamepad = () => this.isPresenting && SIDES.indexOf(this.mode) !== -1 && (e.ctrlKey || e.altKey || keys.touch); // handled by the fake gamepad
+                const _handleGamepad = () => this.isPresenting && (e.ctrlKey || e.altKey || keys.touch); // handled by the fake gamepad
                 const _handleDisplay = () => {
                   const {rotation: quaternion} = this;
 
@@ -1294,7 +1294,7 @@ class WebVR {
           displayIsInControllerMode() {
             const {_parent: parent, _index: index} = this;
             const mode = parent.getMode();
-            return parent.isPresenting && ((mode === 'left' && index === 0) || (mode === 'right' && index === 1));
+            return parent.isPresenting && ((mode === 'center') || (mode === 'left' && index === 0) || (mode === 'right' && index === 1));
           }
 
           move(x, y, z) {
