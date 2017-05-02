@@ -893,7 +893,7 @@ class WebVR {
             const gamepads = [new FakeVRGamepad(this, 0), new FakeVRGamepad(this, 1)];
             this.gamepads = gamepads;
 
-            this.mode = 'left';
+            this.mode = 'center';
 
             const keydown = e => {
               if (this.isPresenting) {
@@ -932,6 +932,10 @@ class WebVR {
                     needsGamepadUpdate = true;
                     e.preventDefault(); // prevent losing page focus
                     break;
+                  case 86: // V
+                    keys.touch = true;
+                    needsGamepadUpdate = true;
+                    break;
                   case 90: // Z
                     this.mode = 'left';
                     break;
@@ -939,8 +943,7 @@ class WebVR {
                     this.mode = 'right';
                     break;
                   case 88: // X
-                    keys.touch = true;
-                    needsGamepadUpdate = true;
+                    this.mode = 'center';
                     break;
                 }
 
@@ -978,7 +981,7 @@ class WebVR {
                     keys.grip = false;
                     needsGamepadUpdate = true;
                     break;
-                  case 88: // X
+                  case 86: // V
                     keys.touch = false;
                     needsGamepadUpdate = true;
                     break;
