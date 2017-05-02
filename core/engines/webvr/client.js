@@ -1275,12 +1275,18 @@ class WebVR {
 
             const mousemove = e => {
               if (this.displayIsInControllerMode()) {
+                const _isReversed = () => {
+                  const {_parent: parent, _index: index} = this;
+                  const mode = parent.getMode();
+                  return mode === 'center' && index === 1;
+                };
+
                 if (e.ctrlKey) {
-                  this.move(-e.movementX, -e.movementY, 0);
+                  this.move(-e.movementX, -e.movementY, 0, _isReversed());
                 } else if (e.altKey) {
-                  this.move(-e.movementX, 0, -e.movementY);
+                  this.move(-e.movementX, 0, -e.movementY, _isReversed());
                 } else if (this._parent.keys.touch) {
-                  this.touch(-e.movementX, -e.movementY);
+                  this.touch(-e.movementX, -e.movementY, _isReversed());
                 }
               }
             };
@@ -1297,25 +1303,27 @@ class WebVR {
             return parent.isPresenting && ((mode === 'center') || (mode === 'left' && index === 0) || (mode === 'right' && index === 1));
           }
 
-          move(x, y, z) {
+          move(x, y, z, reverse) {
             const {positionOffset} = this;
 
             const moveFactor = 0.001;
-            positionOffset.x += -x * moveFactor;
-            positionOffset.y += y * moveFactor;
-            positionOffset.z += -z * moveFactor;
+            const reverseFactor = !reverse ? 1 : -1;
+            positionOffset.x += -x * moveFactor * reverseFactor;
+            positionOffset.y += y * moveFactor * reverseFactor;
+            positionOffset.z += -z * moveFactor * reverseFactor;
 
             this.updateProperties();
           }
 
-          touch(x, y) {
+          touch(x, y, reverse) {
             const {axes} = this;
 
             const _clampAxis = v => Math.min(Math.max(v, -1), 1);
 
             const moveFactor = 0.01;
-            axes[0] = _clampAxis(axes[0] - (x * moveFactor));
-            axes[1] = _clampAxis(axes[1] + (y * moveFactor));
+            const reverseFactor = !reverse ? 1 : -1;
+            axes[0] = _clampAxis(axes[0] - (x * moveFactor * reverseFactor));
+            axes[1] = _clampAxis(axes[1] + (y * moveFactor * reverseFactor));
 
             this.updateProperties();
           }
