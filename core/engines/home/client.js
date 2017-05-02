@@ -584,7 +584,7 @@ class Home {
             result.xzMoveMesh = xzMoveMesh;
 
             const padMesh = (() => {
-              const walkthroughMesh = _makeWalkthroughMesh('X + $MOUSE');
+              const walkthroughMesh = _makeWalkthroughMesh('V + $MOUSE');
               walkthroughMesh.position.y = 0.1;
 
               const {left: leftControllerMesh} = controllerMeshes;
