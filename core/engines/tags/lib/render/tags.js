@@ -551,7 +551,7 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
         <div style="display: flex; height: 80px; margin-bottom: 10px; margin-right: auto; font-size: 28px; font-weight: 400; justify-content: center; align-items: center;">
           <div style="margin-right: 15px;">${displayName}</div>
           <div style="display: flex; justify-content: center; align-items: center;">
-            <div style="padding: 5px 10px; border: 2px solid;">&#164; ${quantityString}</div>
+            <div style="padding: 5px 10px; border: 2px solid; font-size: 22px;">&#164; ${quantityString}</div>
           </div>
         </div>
         <a style="display: flex; width: 80px; justify-content: center; align-items: center;" onclick="module:close:${id}">
