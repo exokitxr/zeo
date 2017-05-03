@@ -509,9 +509,10 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
       </div>
     `;
   };
+  const _commaize = n => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
   const getAssetSrc = ({item}) => {
     const {id, name, displayName, quantity} = item;
-    const quantityString = String(quantity).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    const quantityString = _commaize(quantity);
 
     const headerSrc = `\
       <a style="position: relative; display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; background-color: #EEE; padding-left: 30px; text-decoration: none; overflow: hidden; box-sizing: border-box;" onclick="module:main:${id}">
@@ -543,7 +544,7 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
   };
   const getAssetDetailsSrc = ({item}) => {
     const {id, name, displayName, quantity} = item;
-    const quantityString = String(quantity).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    const quantityString = _commaize(quantity);
 
     const headerSrc = `\
       <div style="display: flex; height: 100px; justify-content: center; align-items: center;">
@@ -559,7 +560,16 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
         </a>
       </div>
     `;
-    const bodySrc = `<div style="display: flex; height: ${DETAILS_HEIGHT - 100}px; overflow: hidden;"></div>`;
+    const bodySrc = `<div style="display: flex; height: ${DETAILS_HEIGHT - 100}px; overflow: hidden; flex-wrap: wrap;">
+      ${[1, 5, 10, 20, 50, 100, 500, 1000].map(quantity => getAssetSrc({
+        item: {
+          id,
+          name,
+          displayName,
+          quantity,
+        },
+      })).join('\n')}
+    </div>`;
 
     return `\
       <div style="display: block; width: ${DETAILS_WIDTH}px; height: ${DETAILS_HEIGHT}px; background-color: #FFF; text-decoration: none;">
