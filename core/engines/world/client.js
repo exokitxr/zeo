@@ -195,21 +195,6 @@ class World {
         }
         const elementManager = new ElementManager();
 
-        class NpmManager {
-          constructor() {
-            this.tagMeshes = [];
-          }
-
-          getTagMeshes() {
-            return this.tagMeshes;
-          }
-
-          setTagMeshes(tagMeshes) {
-            this.tagMeshes = tagMeshes;
-          }
-        }
-        const npmManager = new NpmManager();
-
         class GrabManager {
           constructor() {
             this.left = null;
@@ -291,6 +276,8 @@ class World {
           }
         }
         const remoteGrabManager = new RemoteGrabManager();
+
+        const npmTagMeshes = [];
 
         const requestHandlers = new Map();
         const _request = (method, args, cb) => {
@@ -554,7 +541,7 @@ class World {
               if (type === 'world') {
                 return elementManager.getTagMesh(id);
               } else if (type === 'npm') {
-                return npmManager.getTagMeshes().find(tagMesh => tagMesh.item.id === id);
+                return npmTagMeshes.find(tagMesh => tagMesh.item.id === id);
               } else {
                 return null;
               }
@@ -575,7 +562,7 @@ class World {
               if (type === 'world') {
                 return elementManager.getTagMesh(id);
               } else if (type === 'npm') {
-                return npmManager.getTagMeshes().find(tagMesh => tagMesh.item.id === id);
+                return npmTagMeshes.find(tagMesh => tagMesh.item.id === id);
               } else {
                 return null;
               }
@@ -840,7 +827,7 @@ class World {
         const npmCancels = [];
         const _updateNpmTagMeshContainer = () => {
           // hide old
-          const oldTagMeshes = npmManager.getTagMeshes();
+          const oldTagMeshes = npmTagMeshes;
           for (let i = 0; i < oldTagMeshes.length; i++) {
             const oldTagMesh = oldTagMeshes[i];
             oldTagMesh.visible = false;
@@ -892,7 +879,7 @@ class World {
             newTagMeshes.push(newTagMesh);
             npmCancels.push(npmCancel);
           }
-          npmManager.setTagMeshes(newTagMeshes);
+          npmTagMeshes = newTagMeshes;
         };
 
         const _tabchange = tab => {
@@ -1051,7 +1038,6 @@ class World {
 
               if (grabMesh) {
                 const elementsTagMeshes = elementManager.getTagMeshes();
-                const npmTagMeshes = npmManager.getTagMeshes();
                 const {npmMesh} = worldMesh;
                 const {newEntityTagMesh} = npmMesh;
 
@@ -1136,7 +1122,7 @@ class World {
           const _getWorldSrc = () => {
             if (elementManager.getTagMeshes().some(tagMesh => tagMesh.item.id === id)) {
               return 'world:' + id;
-            } else if (npmManager.getTagMeshes().some(tagMesh => tagMesh.item.id === id)) {
+            } else if (npmTagMeshes.some(tagMesh => tagMesh.item.id === id)) {
               return 'npm:' + id;
             } else {
               return null;
