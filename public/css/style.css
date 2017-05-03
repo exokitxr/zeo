@@ -10,6 +10,7 @@ body {
   font-family: var(--fonts);
   flex-direction: column;
   overflow-x: hidden;
+  overflow-y: scroll;
 }
 a {
   color: inherit;
