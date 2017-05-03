@@ -513,7 +513,7 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
     const {id, name, displayName} = item;
 
     const headerSrc = `\
-      <div style="position: relative; display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; background-color: #EEE; padding-left: 30px; text-decoration: none; overflow: hidden; box-sizing: border-box; ${instancing ? 'filter: brightness(75%);' : ''}">
+      <div style="position: relative; display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; background-color: #EEE; padding-left: 30px; text-decoration: none; overflow: hidden; box-sizing: border-box;">
         <div style="display: flex; position: absolute; top: 60px; left: -60px; width: ${HEIGHT}px; height: 30px; background-color: #673AB7; justify-content: center; align-items: center; box-sizing: border-box; transform: rotate(-90deg);">Asset</div>
         <div style="display: flex; flex-grow: 1; flex-direction: column;">
           <div style="display: flex; flex-grow: 1;">

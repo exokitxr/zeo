@@ -18,6 +18,11 @@ const TAGS_PER_ROW = 4;
 const TAGS_ROWS_PER_PAGE = 6;
 const TAGS_PER_PAGE = TAGS_PER_ROW * TAGS_ROWS_PER_PAGE;
 const ASSET_TAG_MESH_SCALE = 1.5;
+const DEFAULT_MATRIX = [
+  0, 0, 0,
+  0, 0, 0, 1,
+  1, 1, 1,
+];
 
 const SIDES = ['left', 'right'];
 
@@ -231,18 +236,15 @@ class Wallet {
               (WORLD_HEIGHT / 2) - (height / 2) - (y * (height + padding)) - 0.23,
               0
             );
-            newTagMesh.planeDetailsMesh.position.copy(
-              newTagMesh.planeDetailsMesh.initialOffset.clone().sub(newTagMesh.position)
-            );
             newTagMesh.visible = true;
             newTagMesh.initialVisible = true;
 
             const {planeMesh: newTagMeshPlaneMesh} = newTagMesh;
             const {page: newTagMeshPage} = newTagMeshPlaneMesh;
-            const npmCancel = newTagMeshPage.initialUpdate();
+            const walletCancel = newTagMeshPage.initialUpdate();
 
             newTagMeshes.push(newTagMesh);
-            npmCancels.push(npmCancel);
+            walletCancels.push(walletCancel);
           }
           walletTagMeshes = newTagMeshes;
         };
@@ -274,10 +276,8 @@ class Wallet {
               const {error} = data;
 
               if (!error) {
-                const {result} = data; // XXX should filter by the query string here
-                console.log('got result', result);
-                accept([]);
-                // accept(result);
+                const {result} = data;
+                accept(result);
               } else {
                 reject(error);
               }
@@ -293,7 +293,16 @@ class Wallet {
 
           _searchAssets(inputText)
             .then(itemSpecs => itemSpecs.map(itemSpec => {
-              const assetTagMesh = tags.makeTag(itemSpec, {
+              const {asset, quantity} = itemSpec;
+
+              const assetTagMesh = tags.makeTag({
+                type: 'asset',
+                id: asset,
+                name: asset,
+                displayName: asset,
+                quantity: quantity,
+                matrix: DEFAULT_MATRIX,
+              }, {
                 initialUpdate: false,
               });
               assetTagMesh.planeMesh.scale.set(ASSET_TAG_MESH_SCALE, ASSET_TAG_MESH_SCALE, 1);
