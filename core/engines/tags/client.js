@@ -2369,6 +2369,7 @@ class Tags {
               matrix,
               attributes,
               mimeType,
+              quantity,
               open,
               details,
               paused,
@@ -2389,6 +2390,7 @@ class Tags {
               this.matrix = matrix;
               this.attributes = attributes;
               this.mimeType = mimeType;
+              this.quantity = quantity;
               this.open = open;
               this.details = details;
               this.paused = paused;
@@ -2895,6 +2897,7 @@ class Tags {
                 itemSpec.matrix,
                 itemSpec.attributes,
                 itemSpec.mimeType,
+                itemSpec.quantity,
                 itemSpec.open,
                 itemSpec.details,
                 itemSpec.paused,

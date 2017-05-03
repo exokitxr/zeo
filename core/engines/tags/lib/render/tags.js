@@ -510,7 +510,7 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
     `;
   };
   const getAssetSrc = ({item}) => {
-    const {id, name, displayName} = item;
+    const {id, name, displayName, quantity} = item;
 
     const headerSrc = `\
       <div style="position: relative; display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; background-color: #EEE; padding-left: 30px; text-decoration: none; overflow: hidden; box-sizing: border-box;">
@@ -523,7 +523,8 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
             </div>
           </div>
           <div style="display: flex; margin-bottom: 10px;">
-            <a style="display: flex; margin-right: auto; padding: 10px 30px; border: 2px solid; font-weight: 400; text-decoration: none;" onclick="asset:dump:${id}">Place here</a>
+            <a style="display: flex; margin-left: 20px; padding: 10px 30px; border: 2px solid; font-weight: 400; text-decoration: none;" onclick="asset:dump:${id}">Place</a>
+            <div style="display: flex; margin-left: auto; font-size: 28px; font-weight: 400; justify-content: flex-end; align-items: center;">${quantity}</div>
           </div>
         </div>
         <div style="display: flex;">
