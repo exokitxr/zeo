@@ -1,0 +1,137 @@
+body {
+  --fonts: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  --monospace-fonts: Consolas, "Liberation Mono", Menlo, Courier, monospace;
+}
+.header {
+  display: flex;
+  height: 80px;
+  padding-left: 30px;
+  font-family: var(--fonts);
+  box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.5);
+  align-items: center;
+  box-sizing: border-box;
+  z-index: 1;
+}
+.header-left, .header-right {
+  display: flex;
+  align-items: center;
+}
+.header-left {
+  margin-right: 20px;
+}
+.header-right {
+  margin-left: auto;
+  justify-content: flex-end;
+}
+.header a {
+  color: inherit;
+  text-decoration: none;
+}
+.header .header-anchor {
+  display: inline-flex;
+  margin: 0 10px;
+  margin-top: 5px;
+  padding: 5px 10px;
+  border: 2px solid;
+  justify-content: center;
+  align-items: center;
+}
+.header .header-anchor svg {
+  margin-right: 5px;
+}
+.header .header-anchor svg {
+  margin-right: 5px;
+}
+.header .header-anchor:hover {
+  border-color: transparent;
+  color: #FFF;
+}
+.header .header-anchor.github,
+.header .header-anchor.github svg path {
+  color: #673AB7;
+  fill: #673AB7;
+}
+.header .header-anchor.github:hover {
+  background-color: #673AB7;
+}
+.header .header-anchor.wallet,
+.header .header-anchor.wallet svg path {
+  color: #673AB7;
+  fill: #673AB7;
+}
+.header .header-anchor.wallet:hover {
+  background-color: #673AB7;
+}
+.header .header-anchor:hover,
+.header .header-anchor:hover svg path {
+  color: #FFF;
+  fill: #FFF;
+}
+.header-icon {
+  margin-right: 10px;
+}
+.header-logo-anchor {
+  display: flex;
+  font-size: 20px;
+  align-items: center;
+}
+.header-logo-anchor:hover {
+  color: #03A9F4;
+}
+
+navbar {
+  display: flex;
+  height: 80px;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 400;
+}
+navbar > a {
+  display: flex;
+  position: relative;
+  height: 100%;
+  padding: 0 20px;
+  padding-top: 10px;
+  border-bottom: 5px solid transparent;
+  align-items: center;
+  box-sizing: border-box;
+  cursor: pointer;
+}
+navbar > a.selected::after {
+  position: absolute;
+  bottom: -16px;
+  left: 50%;
+  margin-left: -11px;
+  border-style: solid;
+  border-width: 12px 12px 0 12px;
+}
+navbar > a.blue.selected, navbar > a.blue:hover {
+  border-bottom-color: #03A9F4;
+}
+navbar > a.blue.selected {
+  background-color: #000;
+  color: #FFF;
+}
+navbar > a.blue.selected::after {
+  border-color: #4CAF50 transparent transparent transparent;
+}
+navbar > a.green {
+  font-weight: 600;
+}
+navbar > a.green.selected,
+navbar > a.green.selected svg path,
+navbar > a.green:hover,
+navbar > a.green:hover svg path {
+  border-bottom-color: #4CAF50;
+  color: #4CAF50;
+  fill: #4CAF50;
+}
+navbar > a.green.selected {
+  background-color: #000;
+}
+navbar > a.green.selected::after {
+  border-color: #4CAF50 transparent transparent transparent;
+}
+navbar > a > svg {
+  margin-right: 5px;
+}
