@@ -224,6 +224,9 @@ class Wallet {
               (WORLD_HEIGHT / 2) - (height / 2) - (y * (height + padding)) - 0.23,
               0
             );
+            newTagMesh.planeDetailsMesh.position.copy(
+              newTagMesh.planeDetailsMesh.initialOffset.clone().sub(newTagMesh.position)
+            );
             newTagMesh.visible = true;
             newTagMesh.initialVisible = true;
 
