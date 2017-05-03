@@ -87,6 +87,7 @@ const getNavbarSrc = ({tab}) => {
           tabContent('status', 'Status', true),
           tabContent('world', 'World', false),
           tabContent('servers', 'Servers', false),
+          tabContent('wallet', 'Wallet', false),
           tabContent('options', 'Options', false)
         ].join('\n')
       }

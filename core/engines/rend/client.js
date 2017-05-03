@@ -178,6 +178,7 @@ class Rend {
           object.tutorialMesh = null;
           object.worldMesh = null;
           object.serversMesh = null;
+          object.walletMesh = null;
           object.configMesh = null;
           object.statsMesh = null;
 
@@ -537,6 +538,7 @@ class Rend {
                 case 'status': return menuMesh.statusMesh;
                 case 'world': return menuMesh.worldMesh;
                 case 'servers': return menuMesh.serversMesh;
+                case 'wallet': return menuMesh.walletMesh;
                 case 'options': return menuMesh.configMesh;
                 default: return null;
               }

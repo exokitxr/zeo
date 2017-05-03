@@ -70,14 +70,6 @@ class Servers {
         const transparentImg = biolumi.getTransparentImg();
         const transparentMaterial = biolumi.getTransparentMaterial();
 
-        const mainFontSpec = {
-          fonts: biolumi.getFonts(),
-          fontSize: 30,
-          lineHeight: 1.4,
-          fontWeight: biolumi.getFontWeight(),
-          fontStyle: biolumi.getFontStyle(),
-        };
-
         const serversState = {
           remoteServers: [],
           page: 0,
