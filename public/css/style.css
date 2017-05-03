@@ -51,27 +51,40 @@ code {
   margin-left: auto;
   justify-content: flex-end;
 }
-.header .header-github-anchor {
+.header .header-anchor {
   display: inline-flex;
+  margin-right: 10px;
   padding: 5px 10px;
   border: 2px solid;
   justify-content: center;
   align-items: center;
 }
-.header .header-github-anchor svg {
+.header .header-anchor svg {
   margin-right: 5px;
 }
-.header .header-github-anchor,
-.header .header-github-anchor svg path {
-  color: #673AB7;
-  fill: #673AB7;
-}
-.header .header-github-anchor:hover {
-  background-color: #673AB7;
+.header .header-anchor:hover {
   border-color: transparent;
   color: #FFF;
 }
-.header .header-github-anchor:hover svg path {
+.header .header-anchor.github,
+.header .header-anchor.github svg path {
+  color: #673AB7;
+  fill: #673AB7;
+}
+.header .header-anchor.github:hover {
+  background-color: #673AB7;
+}
+.header .header-anchor.wallet,
+.header .header-anchor.wallet svg path {
+  color: #673AB7;
+  fill: #673AB7;
+}
+.header .header-anchor.wallet:hover {
+  background-color: #673AB7;
+}
+.header .header-anchor:hover,
+.header .header-anchor:hover svg path {
+  color: #FFF;
   fill: #FFF;
 }
 .header-icon {
