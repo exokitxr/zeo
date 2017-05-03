@@ -29,6 +29,7 @@ cp -ralf installed data/hub/servers/server_two/
   installDirectory='installed' installDirectorySrc='installed' &
 ./index.js server \
   port=7777 secure=true \
+  siteUrl='https://zeovr.io:8080' \
   hubUrl='https://zeovr.io:8000' \
   homeUrl='https://zeovr.io:8081' \
   worldname='server_one' \
@@ -37,6 +38,7 @@ cp -ralf installed data/hub/servers/server_two/
   installDirectory='data/hub/servers/server_one/installed' installDirectorySrc='installed' &
 ./index.js server \
   port=7778 secure=true \
+  siteUrl='https://zeovr.io:8080' \
   hubUrl='https://zeovr.io:8000' \
   homeUrl='https://zeovr.io:8081' \
   worldname='server_two' \

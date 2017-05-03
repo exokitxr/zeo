@@ -29,6 +29,7 @@ cp -ralf installed data/hub/servers/server_two/
   installDirectory='installed' installDirectorySrc='installed' &
 ./index.js server \
   port=7777 \
+  siteUrl='http://127.0.0.1:8080' \
   hubUrl='http://127.0.0.1:8000' \
   homeUrl='http://127.0.0.1:8081' \
   worldname='server_one' \
@@ -37,6 +38,7 @@ cp -ralf installed data/hub/servers/server_two/
   installDirectory='data/hub/servers/server_one/installed' installDirectorySrc='installed' &
 ./index.js server \
   port=7778 \
+  siteUrl='http://127.0.0.1:8080' \
   hubUrl='http://127.0.0.1:8000' \
   homeUrl='http://127.0.0.1:8081' \
   worldname='server_two' \

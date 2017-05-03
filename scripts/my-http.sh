@@ -7,6 +7,7 @@ export NODE_TLS_REJECT_UNAUTHORIZED=0
 
 ./index.js home my \
   port=8080 \
+  siteUrl='https://zeovr.io' \
   hubUrl='https://hub.zeovr.io:8000' \
   dataDirectorySrc='defaults/data' \
   cryptoDirectorySrc='defaults/crypto' \
