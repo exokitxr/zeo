@@ -1151,16 +1151,24 @@ class Tags {
                     if (match = onclick.match(/^module:main:(.+)$/)) {
                       const id = match[1];
 
+                      const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
+                      const isStatic = Boolean(tagMesh.item.metadata && tagMesh.item.metadata.isStatic);
+
                       tagsApi.emit('openDetails', {
                         id: id,
+                        isStatic,
                       });
 
                       return true;
                     } else if (match = onclick.match(/^module:close:(.+)$/)) {
                       const id = match[1];
 
+                      const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
+                      const isStatic = Boolean(tagMesh.item.metadata && tagMesh.item.metadata.isStatic);
+
                       tagsApi.emit('closeDetails', {
                         id: id,
+                        isStatic: isStatic,
                       });
 
                       return true;
@@ -2947,7 +2955,11 @@ class Tags {
                         return tagsRenderer.getFileSrc({item, mode, open});
                       }
                       case 'asset': {
-                        return tagsRenderer.getAssetSrc({item});
+                        if (!details) {
+                          return tagsRenderer.getAssetSrc({item});
+                        } else {
+                          return tagsRenderer.getAssetDetailsSrc({item});
+                        }
                       }
                       default: {
                         return null;
@@ -3029,14 +3041,30 @@ class Tags {
                 const planeDetailsMesh = _addUiManagerPage(uiDetailsManager);
                 if (itemSpec.metadata && itemSpec.metadata.isStatic) {
                   planeDetailsMesh.position.x = -((2 - WORLD_DETAILS_WIDTH) / 2);
-                  // planeDetailsMesh.position.y = ((WORLD_DETAILS_WIDTH - WORLD_HEIGHT) / 2);
                   planeDetailsMesh.position.z = 0.01;
 
                   planeDetailsMesh.initialOffset = planeDetailsMesh.position.clone();
-                } /* else {
-                  planeDetailsMesh.position.x = -(WORLD_DETAILS_WIDTH - WORLD_WIDTH) / 2;
-                  planeDetailsMesh.position.y = (WORLD_DETAILS_HEIGHT - WORLD_HEIGHT) / 2;
-                } */
+                }
+                planeDetailsMesh.visible = Boolean(item.details);
+                object.add(planeDetailsMesh);
+                object.planeDetailsMesh = planeDetailsMesh;
+              } else if (itemSpec.type === 'asset') {
+                const planeMesh = _addUiManagerPage(uiStaticManager);
+                if (initialUpdate) {
+                  const {page} = planeMesh;
+                  page.initialUpdate();
+                }
+                planeMesh.visible = !item.details;
+                object.add(planeMesh);
+                object.planeMesh = planeMesh;
+
+                const planeDetailsMesh = _addUiManagerPage(uiDetailsManager);
+                if (itemSpec.metadata && itemSpec.metadata.isStatic) {
+                  planeDetailsMesh.position.x = -((2 - WORLD_DETAILS_WIDTH) / 2);
+                  planeDetailsMesh.position.z = 0.01;
+
+                  planeDetailsMesh.initialOffset = planeDetailsMesh.position.clone();
+                }
                 planeDetailsMesh.visible = Boolean(item.details);
                 object.add(planeDetailsMesh);
                 object.planeDetailsMesh = planeDetailsMesh;
@@ -3309,6 +3337,23 @@ class Tags {
                 if (item.paused === false) {
                   object.play();
                 }
+              }
+              if (itemSpec.type === 'asset') {
+                object.openDetails = () => {
+                  const tagMesh = object;
+                  const {planeMesh, planeDetailsMesh} = tagMesh;
+                  planeMesh.visible = false;
+                  planeDetailsMesh.visible = true;
+
+                  const {page} = planeDetailsMesh;
+                  page.initialUpdate();
+                };
+                object.closeDetails = () => {
+                  const tagMesh = object;
+                  const {planeMesh, planeDetailsMesh} = tagMesh;
+                  planeMesh.visible = true;
+                  planeDetailsMesh.visible = false;
+                };
               }
 
               object.destroy = () => {

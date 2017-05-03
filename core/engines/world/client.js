@@ -69,6 +69,7 @@ class World {
         '/core/engines/multiplayer',
         '/core/engines/biolumi',
         '/core/engines/rend',
+        '/core/engines/wallet',
         '/core/engines/keyboard',
         '/core/engines/loader',
         '/core/engines/tags',
@@ -86,6 +87,7 @@ class World {
         multiplayer,
         biolumi,
         rend,
+        wallet,
         keyboard,
         loader,
         tags,
@@ -533,7 +535,7 @@ class World {
         const _handleTagOpenDetails = (userId, src) => {
           // same for local and remote user ids
           let match;
-          if (match = src.match(/^(world|npm):(.+)$/)) {
+          if (match = src.match(/^(world|npm|asset):(.+)$/)) {
             const type = match[1];
             const id = match[2];
 
@@ -542,6 +544,8 @@ class World {
                 return elementManager.getTagMesh(id);
               } else if (type === 'npm') {
                 return npmTagMeshes.find(tagMesh => tagMesh.item.id === id);
+              } else if (type === 'asset') {
+                return wallet.getAssetTagMeshes().find(tagMesh => tagMesh.item.id === id);
               } else {
                 return null;
               }
@@ -554,7 +558,7 @@ class World {
         const _handleTagCloseDetails = (userId, src) => {
           // same for local and remote user ids
           let match;
-          if (match = src.match(/^(world|npm):(.+)$/)) {
+          if (match = src.match(/^(world|npm|asset):(.+)$/)) {
             const type = match[1];
             const id = match[2];
 
@@ -563,13 +567,15 @@ class World {
                 return elementManager.getTagMesh(id);
               } else if (type === 'npm') {
                 return npmTagMeshes.find(tagMesh => tagMesh.item.id === id);
+              } else if (type === 'asset') {
+                return wallet.getAssetTagMeshes().find(tagMesh => tagMesh.item.id === id);
               } else {
                 return null;
               }
             })();
             tagMesh.closeDetails();
           } else {
-            console.warn('invalid tag open details arguments', {src});
+            console.warn('invalid tag close details arguments', {src});
           }
         };
         const _handleTagPlay = (userId, src) => {
@@ -1124,6 +1130,8 @@ class World {
               return 'world:' + id;
             } else if (npmTagMeshes.some(tagMesh => tagMesh.item.id === id)) {
               return 'npm:' + id;
+            } else if (wallet.getAssetTagMeshes().some(tagMesh => tagMesh.item.id === id)) {
+              return 'asset:' + id;
             } else {
               return null;
             }
@@ -1249,18 +1257,22 @@ class World {
           _handleTagClose(localUserId, src);
         };
         tags.on('close', _tagsClose);
-        const _tagsOpenDetails = ({id}) => {
+        const _tagsOpenDetails = ({id, isStatic}) => {
           const src = _getTagIdSrc(id);
 
-          _request('tagOpenDetails', [localUserId, src], _warnError);
+          if (!isStatic) {
+            _request('tagOpenDetails', [localUserId, src], _warnError);
+          }
 
           _handleTagOpenDetails(localUserId, src);
         };
         tags.on('openDetails', _tagsOpenDetails);
-        const _tagsCloseDetails = ({id}) => {
+        const _tagsCloseDetails = ({id, isStatic}) => {
           const src = _getTagIdSrc(id);
 
-          _request('tagCloseDetails', [localUserId, src], _warnError);
+          if (!isStatic) {
+            _request('tagCloseDetails', [localUserId, src], _warnError);
+          }
 
           _handleTagCloseDetails(localUserId, src);
         };

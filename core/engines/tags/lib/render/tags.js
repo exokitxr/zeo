@@ -514,7 +514,7 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
     const quantityString = String(quantity).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 
     const headerSrc = `\
-      <div style="position: relative; display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; background-color: #EEE; padding-left: 30px; text-decoration: none; overflow: hidden; box-sizing: border-box;">
+      <a style="position: relative; display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; background-color: #EEE; padding-left: 30px; text-decoration: none; overflow: hidden; box-sizing: border-box;" onclick="module:main:${id}">
         <div style="display: flex; position: absolute; top: 60px; left: -60px; width: ${HEIGHT}px; height: 30px; background-color: #673AB7; justify-content: center; align-items: center; box-sizing: border-box; transform: rotate(-90deg);">Asset</div>
         <div style="display: flex; flex-grow: 1; flex-direction: column;">
           <div style="display: flex; flex-grow: 1;">
@@ -528,16 +528,41 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
           </div>
         </div>
         <div style="display: flex;">
-          <a style="display: flex; margin-bottom: auto; padding: 15px; text-decoration: none; justify-content: center; align-items: center;" onclick="tag:remove:${id}">
+          <div style="display: flex; margin-bottom: auto; padding: 15px; text-decoration: none; justify-content: center; align-items: center;">
             <img src="${closeOutlineSrc}" width="30" height="30" />
-          </a>
+          </div>
         </div>
-      </div>
+      </a>
     `;
 
     return `\
       <div>
         ${headerSrc}
+      </div>
+    `;
+  };
+  const getAssetDetailsSrc = ({item}) => {
+    const {id, name, displayName, quantity} = item;
+
+    const headerSrc = `\
+      <div style="display: flex; height: 100px; justify-content: center; align-items: center;">
+        <img src="${creatureUtils.makeStaticCreature('module:' + name)}" width="80" height="80" style="width: 80px; height: 80px; margin: 10px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;" />
+        <div style="display: flex; margin-right: auto; flex-direction: column; justify-content: center;">
+          <div style="display: flex; margin-bottom: 10px; align-items: flex-end; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+            <div style="margin-right: 15px; font-size: 28px; font-weight: 400;">${displayName}</div>
+          </div>
+        </div>
+        <a style="display: flex; width: 80px; justify-content: center; align-items: center;" onclick="module:close:${id}">
+          <img src="${closeBoxOutlineSrc}" width="40" height="40">
+        </a>
+      </div>
+    `;
+    const bodySrc = `<div style="display: flex; height: ${DETAILS_HEIGHT - 100}px; overflow: hidden;"></div>`;
+
+    return `\
+      <div style="display: block; width: ${DETAILS_WIDTH}px; height: ${DETAILS_HEIGHT}px; background-color: #FFF; text-decoration: none;">
+        ${headerSrc}
+        ${bodySrc}
       </div>
     `;
   };
@@ -550,6 +575,7 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
     getAttributeInputSrc,
     getFileSrc,
     getAssetSrc,
+    getAssetDetailsSrc,
   };
 };
 

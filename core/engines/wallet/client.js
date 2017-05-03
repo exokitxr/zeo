@@ -51,29 +51,17 @@ class Wallet {
     return archae.requestPlugins([
       '/core/engines/three',
       '/core/engines/input',
-      '/core/engines/webvr',
-      '/core/engines/cyborg',
-      '/core/engines/multiplayer',
       '/core/engines/biolumi',
       '/core/engines/rend',
       '/core/engines/keyboard',
-      '/core/engines/loader',
       '/core/engines/tags',
-      '/core/engines/fs',
-      '/core/utils/geometry-utils',
     ]).then(([
       three,
       input,
-      webvr,
-      cyborg,
-      multiplayer,
       biolumi,
       rend,
       keyboard,
-      loader,
       tags,
-      fs,
-      geometryUtils,
     ]) => {
       if (live) {
         const {THREE, scene, camera} = three;
@@ -194,11 +182,11 @@ class Wallet {
         };
         _updatePages();
 
-        let walletTagMeshes = [];
+        let assetTagMeshes = [];
         const walletCancels = [];
         const _updateAssetsTagMeshContainer = () => {
           // hide old
-          const oldTagMeshes = walletTagMeshes;
+          const oldTagMeshes = assetTagMeshes;
           for (let i = 0; i < oldTagMeshes.length; i++) {
             const oldTagMesh = oldTagMeshes[i];
             oldTagMesh.visible = false;
@@ -246,7 +234,7 @@ class Wallet {
             newTagMeshes.push(newTagMesh);
             walletCancels.push(walletCancel);
           }
-          walletTagMeshes = newTagMeshes;
+          assetTagMeshes = newTagMeshes;
         };
 
         const _searchAssets = (q = '') => new Promise((accept, reject) => {
@@ -302,6 +290,9 @@ class Wallet {
                 displayName: asset,
                 quantity: quantity,
                 matrix: DEFAULT_MATRIX,
+                metadata: {
+                  isStatic: true,
+                },
               }, {
                 initialUpdate: false,
               });
@@ -380,6 +371,12 @@ class Wallet {
           input.removeListener('trigger', _trigger);
           input.removeListener('triggerdown', _triggerdown);
         });
+
+        const _getAssetTagMeshes = () => assetTagMeshes;
+
+        return {
+          getAssetTagMeshes: _getAssetTagMeshes,
+        };
       }
     });
   }
