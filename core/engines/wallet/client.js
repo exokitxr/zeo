@@ -18,11 +18,6 @@ const TAGS_PER_ROW = 4;
 const TAGS_ROWS_PER_PAGE = 6;
 const TAGS_PER_PAGE = TAGS_PER_ROW * TAGS_ROWS_PER_PAGE;
 const ASSET_TAG_MESH_SCALE = 1.5;
-const DEFAULT_MATRIX = [
-  0, 0, 0,
-  0, 0, 0, 1,
-  1, 1, 1,
-];
 
 const SIDES = ['left', 'right'];
 

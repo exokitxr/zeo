@@ -11,7 +11,7 @@ const getWalletPageSrc = ({loading, inputText, inputValue, numTags, page, focus}
       <a style="position: relative; display: block; border-bottom: 2px solid; text-decoration: none;" onclick="npm:focus">
         ${focus ? `<div style="position: absolute; width: 2px; top: 2px; bottom: 2px; left: ${inputValue}px; background-color: #000;"></div>` : ''}
         <div>${inputText}</div>
-        ${!inputText ? `<div>Search npm modules</div>` : ''}
+        ${!inputText ? `<div>Search my assets</div>` : ''}
       </a>
       ${loading ? `<div style="display: flex; margin-bottom: 100px; font-size: 30px; align-items: center; justify-content: center; flex-grow: 1;">Loading...</div>` : ''}
     </div>
