@@ -213,10 +213,11 @@ class Wallet {
         };
         _updatePages();
 
+        const walletTagMeshes = [];
         const walletCancels = [];
         const _updateAssetsTagMeshContainer = () => {
           // hide old
-          const oldTagMeshes = npmManager.getTagMeshes();
+          const oldTagMeshes = walletTagMeshes;
           for (let i = 0; i < oldTagMeshes.length; i++) {
             const oldTagMesh = oldTagMeshes[i];
             oldTagMesh.visible = false;
@@ -267,28 +268,48 @@ class Wallet {
             newTagMeshes.push(newTagMesh);
             npmCancels.push(npmCancel);
           }
-          npmManager.setTagMeshes(newTagMeshes);
+          walletTagMeshes = newTagMeshes;
         };
 
         const _searchAssets = (q = '') => new Promise((accept, reject) => {
           const iframe = document.createElement('iframe');
+          const requestId = _makeId();
 
           const _cleanup = () => {
+            iframe.removeEventListener('error', _error);
+            window.removeEventListener('message', _message);
+
             document.body.removeChild(iframe);
           };
 
-          iframe.addEventListener('error', err => {
+          const _error = err => {
             _cleanup();
 
             reject(err);
-          });
-          window.addEventListener('message', e => {
-            _cleanup();
+          };
+          iframe.addEventListener('error', _error);
+          const _message = e => {
+            const {data} = e;
+            const {id} = data;
 
-            console.log('got message', e);
-          });
+            if (id === requestId) {
+              _cleanup();
 
-          iframe.src = '/wallet?x=status'; // XXX add an id here to handle concurrency
+              const {error} = data;
+
+              if (!error) {
+                const {result} = data; // XXX should filter by the query string here
+                console.log('got result', result);
+                accept([]);
+                // accept(result);
+              } else {
+                reject(error);
+              }
+            }
+          };
+          window.addEventListener('message', _message);
+
+          iframe.src = `/wallet?x=status&i=${requestId}`;
           document.body.appendChild(iframe);
         });
         const _updateWallet = menuUtils.debounce(next => {
@@ -382,5 +403,7 @@ class Wallet {
     this._cleanup();
   }
 }
+
+const _makeId = () => Math.random().toString(36).substring(7);
 
 module.exports = Wallet;
