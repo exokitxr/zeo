@@ -543,13 +543,15 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
   };
   const getAssetDetailsSrc = ({item}) => {
     const {id, name, displayName, quantity} = item;
+    const quantityString = String(quantity).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 
     const headerSrc = `\
       <div style="display: flex; height: 100px; justify-content: center; align-items: center;">
         <img src="${creatureUtils.makeStaticCreature('module:' + name)}" width="80" height="80" style="width: 80px; height: 80px; margin: 10px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;" />
-        <div style="display: flex; margin-right: auto; flex-direction: column; justify-content: center;">
-          <div style="display: flex; margin-bottom: 10px; align-items: flex-end; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-            <div style="margin-right: 15px; font-size: 28px; font-weight: 400;">${displayName}</div>
+        <div style="display: flex; height: 80px; margin-bottom: 10px; margin-right: auto; font-size: 28px; font-weight: 400; justify-content: center; align-items: center;">
+          <div style="margin-right: 15px;">${displayName}</div>
+          <div style="display: flex; justify-content: center; align-items: center;">
+            <div style="padding: 5px 10px; border: 2px solid;">&#164; ${quantityString}</div>
           </div>
         </div>
         <a style="display: flex; width: 80px; justify-content: center; align-items: center;" onclick="module:close:${id}">
