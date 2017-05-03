@@ -28,7 +28,7 @@ class Wallet {
 
   mount() {
     const {_archae: archae} = this;
-    const {metadata: {home: {enabled: homeEnabled}, server: {enabled: serverEnabled}}} = archae;
+    const {metadata: {site: {url: siteUrl}, home: {enabled: homeEnabled}, server: {enabled: serverEnabled}}} = archae;
 
     const cleanups = [];
     this._cleanup = () => {
@@ -74,25 +74,6 @@ class Wallet {
         const {THREE, scene, camera} = three;
 
         const transparentMaterial = biolumi.getTransparentMaterial();
-
-        const wireframeHighlightMaterial = new THREE.MeshBasicMaterial({
-          color: 0x0000FF,
-          wireframe: true,
-          opacity: 0.5,
-          transparent: true,
-        });
-
-        const mainFontSpec = {
-          fonts: biolumi.getFonts(),
-          fontSize: 36,
-          lineHeight: 1.4,
-          fontWeight: biolumi.getFontWeight(),
-          fontStyle: biolumi.getFontStyle(),
-        };
-
-        const oneVector = new THREE.Vector3(1, 1, 1);
-        const zeroVector = new THREE.Vector3(0, 0, 0);
-        const zeroQuaternion = new THREE.Quaternion();
 
         const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
         const _decomposeMatrix = matrix => {
@@ -208,7 +189,7 @@ class Wallet {
         };
         _updatePages();
 
-        const walletTagMeshes = [];
+        let walletTagMeshes = [];
         const walletCancels = [];
         const _updateAssetsTagMeshContainer = () => {
           // hide old
@@ -304,7 +285,7 @@ class Wallet {
           };
           window.addEventListener('message', _message);
 
-          iframe.src = `/wallet?x=status&i=${requestId}`;
+          iframe.src = `${siteUrl}/wallet?x=status&i=${requestId}`;
           document.body.appendChild(iframe);
         });
         const _updateWallet = menuUtils.debounce(next => {
