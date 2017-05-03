@@ -277,7 +277,7 @@ class World {
         }
         const remoteGrabManager = new RemoteGrabManager();
 
-        const npmTagMeshes = [];
+        let npmTagMeshes = [];
 
         const requestHandlers = new Map();
         const _request = (method, args, cb) => {
