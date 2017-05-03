@@ -924,13 +924,12 @@ class WebVR {
                     keys.grip = true;
                     needsGamepadUpdate = true;
                     break;
-                  case 16: // shift
+                  case 16: // Shift
                     keys.shift = true;
                     break;
-                  case 18: // alt
+                  case 18: // Alt
                     keys.alt = true;
                     needsGamepadUpdate = true;
-                    e.preventDefault(); // prevent losing page focus
                     break;
                   case 86: // V
                     keys.touch = true;
@@ -951,7 +950,13 @@ class WebVR {
                   this.updateGamepads();
                 }
 
-                e.preventDefault(); // prevent things like Ctrl-F from hijacking input
+                // prevent some key combinations from hijacking input
+                if (
+                  (e.keyCode === 18) || // Alt
+                  (e.ctrlKey && e.keyCode === 70) // Ctrl-F
+                ) {
+                  e.preventDefault();
+                }
               }
             };
             const keyup = e => {
@@ -987,7 +992,7 @@ class WebVR {
                     keys.touch = false;
                     needsGamepadUpdate = true;
                     break;
-                  case 16: // shift
+                  case 16: // Shift
                     keys.shift = false;
                     break;
                 }
