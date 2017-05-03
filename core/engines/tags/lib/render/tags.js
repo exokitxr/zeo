@@ -520,11 +520,10 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
             <img src="${creatureUtils.makeStaticCreature('asset:' + displayName)}" width="80" height="80" style="margin: 10px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;" />
             <div style="display: flex; max-width: ${WIDTH - (30) - (80 + (10 * 2)) - (30 + (15 * 2))}px; flew-grow: 1; flex-direction: column; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">
               <h1 style="margin: 0; margin-top: 10px; font-size: 28px; font-weight: 400; line-height: 1.4;">${name}</h1>
+              <div style="display: flex; flex-grow: 1; align-items: center;">
+                <div style="padding: 10px; border: 2px solid; font-size: 28px; font-weight: 400;">${quantity}</div>
+              </div>
             </div>
-          </div>
-          <div style="display: flex; margin-bottom: 10px;">
-            <a style="display: flex; margin-left: 20px; padding: 10px 30px; border: 2px solid; font-weight: 400; text-decoration: none;" onclick="asset:dump:${id}">Place</a>
-            <div style="display: flex; margin-left: auto; font-size: 28px; font-weight: 400; justify-content: flex-end; align-items: center;">${quantity}</div>
           </div>
         </div>
         <div style="display: flex;">
