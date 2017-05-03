@@ -25,6 +25,8 @@ body {
 }
 .header a {
   color: inherit;
+}
+.header a:hover {
   text-decoration: none;
 }
 .header .header-anchor {
