@@ -511,6 +511,7 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
   };
   const getAssetSrc = ({item}) => {
     const {id, name, displayName, quantity} = item;
+    const quantityString = String(quantity).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 
     const headerSrc = `\
       <div style="position: relative; display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; background-color: #EEE; padding-left: 30px; text-decoration: none; overflow: hidden; box-sizing: border-box;">
@@ -521,7 +522,7 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
             <div style="display: flex; max-width: ${WIDTH - (30) - (80 + (10 * 2)) - (30 + (15 * 2))}px; flew-grow: 1; flex-direction: column; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">
               <h1 style="margin: 0; margin-top: 10px; font-size: 28px; font-weight: 400; line-height: 1.4;">${name}</h1>
               <div style="display: flex; flex-grow: 1; align-items: center;">
-                <div style="padding: 10px; border: 2px solid; font-size: 28px; font-weight: 400;">${quantity}</div>
+                <div style="padding: 5px 10px; border: 2px solid; font-size: 28px; font-weight: 400;">&#164; ${quantityString}</div>
               </div>
             </div>
           </div>
