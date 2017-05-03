@@ -246,7 +246,7 @@ class Rend {
             const onclick = (anchor && anchor.onclick) || '';
 
             let match;
-            if (match = onclick.match(/^navbar:(tutorial|status|world|servers|options)$/)) {
+            if (match = onclick.match(/^navbar:(tutorial|status|world|servers|wallet|options)$/)) {
               const newTab = match[1];
 
               rendApi.setTab(newTab);

@@ -10,8 +10,8 @@ import {
   TAGS_WORLD_WIDTH,
   TAGS_WORLD_HEIGHT,
   TAGS_WORLD_DEPTH,
-} from './lib/constants/world';
-import worldRenderer from './lib/render/world';
+} from './lib/constants/wallet';
+import walletRenderer from './lib/render/wallet';
 import menuUtils from './lib/utils/menu';
 
 const TAGS_PER_ROW = 4;
@@ -150,7 +150,7 @@ class Wallet {
 
                 return {
                   type: 'html',
-                  src: walletRenderer.getWorldPageSrc({loading, inputText, inputValue, numTags, page, focus}),
+                  src: walletRenderer.getWalletPageSrc({loading, inputText, inputValue, numTags, page, focus}),
                   x: 0,
                   y: 0,
                   w: WIDTH,
@@ -370,7 +370,7 @@ class Wallet {
             if (!loaded) {
               _updateWallet();
 
-              walletCacheState;.loaded = true;
+              walletCacheState.loaded = true;
             }
           }
         };

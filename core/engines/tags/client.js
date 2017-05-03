@@ -2943,6 +2943,9 @@ class Tags {
 
                         return tagsRenderer.getFileSrc({item, mode, open});
                       }
+                      case 'asset': {
+                        return tagsRenderer.getAssetSrc({item});
+                      }
                       default: {
                         return null;
                       }

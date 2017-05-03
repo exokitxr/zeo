@@ -509,6 +509,37 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
       </div>
     `;
   };
+  const getAssetSrc = ({item}) => {
+    const {id, name, displayName} = item;
+
+    const headerSrc = `\
+      <div style="position: relative; display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; background-color: #EEE; padding-left: 30px; text-decoration: none; overflow: hidden; box-sizing: border-box; ${instancing ? 'filter: brightness(75%);' : ''}">
+        <div style="display: flex; position: absolute; top: 60px; left: -60px; width: ${HEIGHT}px; height: 30px; background-color: #673AB7; justify-content: center; align-items: center; box-sizing: border-box; transform: rotate(-90deg);">Asset</div>
+        <div style="display: flex; flex-grow: 1; flex-direction: column;">
+          <div style="display: flex; flex-grow: 1;">
+            <img src="${creatureUtils.makeStaticCreature('asset:' + displayName)}" width="80" height="80" style="margin: 10px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;" />
+            <div style="display: flex; max-width: ${WIDTH - (30) - (80 + (10 * 2)) - (30 + (15 * 2))}px; flew-grow: 1; flex-direction: column; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">
+              <h1 style="margin: 0; margin-top: 10px; font-size: 28px; font-weight: 400; line-height: 1.4;">${name}</h1>
+            </div>
+          </div>
+          <div style="display: flex; margin-bottom: 10px;">
+            <a style="display: flex; margin-right: auto; padding: 10px 30px; border: 2px solid; font-weight: 400; text-decoration: none;" onclick="asset:dump:${id}">Place here</a>
+          </div>
+        </div>
+        <div style="display: flex;">
+          <a style="display: flex; margin-bottom: auto; padding: 15px; text-decoration: none; justify-content: center; align-items: center;" onclick="tag:remove:${id}">
+            <img src="${closeOutlineSrc}" width="30" height="30" />
+          </a>
+        </div>
+      </div>
+    `;
+
+    return `\
+      <div>
+        ${headerSrc}
+      </div>
+    `;
+  };
 
   return {
     getModuleSrc,
@@ -517,6 +548,7 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
     getAttributeSrc,
     getAttributeInputSrc,
     getFileSrc,
+    getAssetSrc,
   };
 };
 

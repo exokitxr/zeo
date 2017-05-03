@@ -1,11 +1,11 @@
 const {
   HEIGHT,
-} = require('../constants/world');
+} = require('../constants/wallet');
 
 const upImg = require('../img/up');
 const downImg = require('../img/down');
 
-const getWorldPageSrc = ({loading, inputText, inputValue, numTags, page, focus}) => {
+const getWalletPageSrc = ({loading, inputText, inputValue, numTags, page, focus}) => {
   const leftSrc = `\
     <div style="display: flex; padding: 30px; font-size: 36px; line-height: 1.4; flex-grow: 1; flex-direction: column;">
       <a style="position: relative; display: block; border-bottom: 2px solid; text-decoration: none;" onclick="npm:focus">
@@ -46,5 +46,5 @@ const getWorldPageSrc = ({loading, inputText, inputValue, numTags, page, focus})
 };
 
 module.exports = {
-  getWorldPageSrc,
+  getWalletPageSrc,
 };
