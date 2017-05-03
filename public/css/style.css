@@ -38,7 +38,6 @@ code {
 }
 .header-left, .header-right {
   display: flex;
-  width: 100px;
   align-items: center;
 }
 .header-left {
@@ -50,7 +49,8 @@ code {
 }
 .header .header-anchor {
   display: inline-flex;
-  margin-right: 10px;
+  margin: 0 10px;
+  margin-top: 5px;
   padding: 5px 10px;
   border: 2px solid;
   justify-content: center;
@@ -102,90 +102,6 @@ code {
   flex-grow: 1;
   flex-direction: column;
 }
-
-.slides {
-  display: flex;
-  position: relative;
-  flex-grow: 1;
-  justify-content: center;
-}
-.slides-navbar {
-  display: flex;
-  display: none;
-  position: absolute;
-  top: 0;
-  width: 540px;
-}
-.slides-navbar .slides-nav {
-  width: 200px;
-  padding: 5px 0;
-  border: 2px solid;
-  border-top: 0;
-  color: #FFF;
-  font-family: var(--monospace-fonts);
-  text-align: center;
-  cursor: pointer;
-}
-.slides-navbar .slides-nav.green {
-  background-color: #4CAF50;
-}
-.slides-navbar .slides-nav.green.selected {
-  color: #4CAF50;
-}
-.slides-navbar .slides-nav.selected {
-  background-color: #FFF;
-  border-color: transparent;
-  cursor: default;
-}
-.slides-navbar .slides-nav + .slides-nav {
-  border-left: 0;
-}
-.slide {
-  display: flex;
-  margin-bottom: auto;
-  flex-direction: column;
-}
-.slide.green {
-  background-color: #4CAF50;
-}
-.slide.blue {
-  background-color: #2196F3;
-}
-.slide.purple {
-  background-color: #673AB7;
-}
-.slide-wrap {
-  padding: 20px;
-}
-.slide-wrap .icons {
-  display: flex;
-  justify-content: flex-start;
-  align-items: center;
-}
-.slide-wrap .icon {
-  text-align: center;
-}
-.slide-wrap .icon:not(.octicon) {
-  width: 70px;
-  font-size: 17px;
-  font-family: var(--monospace-fonts);
-}
-.slide-wrap .icon.octicon {
-  height: 120px;
-  padding-top: 20px;
-  font-size: 80px;
-  box-sizing: border-box;
-}
-.slide-wrap h3, .slide-wrap p {
-  margin-bottom: 10px;
-}
-.slide-wrap h3 {
-  font-size: 17px;
-}
-.slide-wrap p {
-  font-size: 12px;
-}
-
 .hub-iframe {
   position: absolute;
   top: 0;
@@ -608,25 +524,25 @@ section.container {
   background-color: #000;
   transform: rotateZ(-10deg);
 }
-.demographics > navbar {
+navbar {
   display: flex;
   height: 80px;
   align-items: center;
   font-size: 13px;
   font-weight: 400;
 }
-.demographics > navbar > a {
+navbar > a {
   display: flex;
   position: relative;
   height: 100%;
   padding: 0 20px;
-  padding-top: 15px;
+  padding-top: 10px;
   border-bottom: 5px solid transparent;
   align-items: center;
   box-sizing: border-box;
   cursor: pointer;
 }
-.demographics > navbar > a.selected::after {
+navbar > a.selected::after {
   position: absolute;
   bottom: -16px;
   left: 50%;
@@ -634,32 +550,35 @@ section.container {
   border-style: solid;
   border-width: 12px 12px 0 12px;
 }
-.demographics > navbar > a.red.selected {
-  color: #E91E63;
-  border-bottom-color: #E91E63;
-}
-.demographics > navbar > a.red.selected::after {
-  border-color: #E91E63 transparent transparent transparent;
-}
-.demographics > navbar > a.green.selected, .demographics > navbar > a:hover {
+navbar > a.blue.selected, navbar > a.blue:hover {
   border-bottom-color: #03A9F4;
 }
-.demographics > navbar > a.green.selected {
+navbar > a.blue.selected {
   background-color: #000;
   color: #FFF;
 }
-.demographics > navbar > a.green.selected::after {
+navbar > a.blue.selected::after {
   border-color: #4CAF50 transparent transparent transparent;
 }
-.demographics > navbar > a.purple.selected {
-  color: #7E57C2;
-  border-bottom-color: #7E57C2;
+navbar > a.green {
+  font-weight: 600;
 }
-.demographics > navbar > a.purple.selected::after {
-  border-color: #7E57C2 transparent transparent transparent;
+navbar > a.green.selected,
+navbar > a.green.selected svg path,
+navbar > a.green:hover,
+navbar > a.green:hover svg path {
+  border-bottom-color: #4CAF50;
+  color: #4CAF50;
+  fill: #4CAF50;
 }
-.demographics > navbar > a > i {
-  margin-right: 10px;
+navbar > a.green.selected {
+  background-color: #000;
+}
+navbar > a.green.selected::after {
+  border-color: #4CAF50 transparent transparent transparent;
+}
+navbar > a > svg {
+  margin-right: 5px;
 }
 section.details {
   display: flex;
