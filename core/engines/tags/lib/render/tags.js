@@ -409,7 +409,7 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
         <div style="display: flex; flex-grow: 1; flex-direction: column;">
           <div style="display: flex; flex-grow: 1;">
             <img src="${creatureUtils.makeStaticCreature('file:' + displayName)}" width="80" height="80" style="margin: 10px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;" />
-            <div style="display: flex; max-width: ${WIDTH - (30) - (80 + (10 * 2)) - (30 + (15 * 2))}px; flew-grow: 1; flex-direction: column; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">
+            <div style="display: flex; max-width: ${WIDTH - (30) - (80 + (10 * 2)) - (30 + (15 * 2))}px; flex-grow: 1; flex-direction: column; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">
               <h1 style="margin: 0; margin-top: 10px; font-size: 28px; font-weight: 400; line-height: 1.4;">${name}</h1>
               <p style="margin: 0; margin-bottom: 10px; font-size: 15px; line-height: 1.4;">${mimeType}</p>
             </div>
@@ -517,11 +517,11 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
 
     return `\
       <a style="position: relative; display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; background-color: #EEE; padding-left: 30px; text-decoration: none; overflow: hidden; box-sizing: border-box;" onclick="module:main:${id}">
-        <div style="display: flex; position: absolute; top: 60px; left: -60px; width: ${HEIGHT}px; height: 30px; background-color: #673AB7; justify-content: center; align-items: center; box-sizing: border-box; transform: rotate(-90deg);">Asset</div>
+        <div style="display: flex; position: absolute; top: 60px; left: -60px; width: ${HEIGHT}px; height: 30px; background-color: #FFC107; justify-content: center; align-items: center; box-sizing: border-box; transform: rotate(-90deg);">Asset</div>
         <div style="display: flex; flex-grow: 1; flex-direction: column;">
           <div style="display: flex; flex-grow: 1;">
             <img src="${creatureUtils.makeStaticCreature('asset:' + displayName)}" width="80" height="80" style="margin: 10px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;" />
-            <div style="display: flex; max-width: ${WIDTH - (30) - (80 + (10 * 2)) - (30 + (15 * 2))}px; flew-grow: 1; flex-direction: column; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">
+            <div style="display: flex; max-width: ${WIDTH - (30) - (80 + (10 * 2)) - (30 + (15 * 2))}px; flex-grow: 1; flex-direction: column; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">
               <h1 style="margin: 0; margin-top: 10px; font-size: 28px; font-weight: 400; line-height: 1.4;">${name}</h1>
               <div style="display: flex; flex-grow: 1; align-items: center;">
                 <div style="padding: 5px 10px; border: 2px solid; font-size: 28px; font-weight: 400;">&#164; ${quantityString}</div>
@@ -541,6 +541,8 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
     const {id, name, displayName, quantity} = item;
     const quantityString = _commaize(quantity);
 
+    const width = 200;
+    const height = width / ASPECT_RATIO;
     const _getAssetGridItemSrc = ({
       id,
       name,
@@ -549,26 +551,19 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
     }) => {
       const quantityString = _commaize(quantity);
 
-      const width = 200;
-      const height = width / ASPECT_RATIO;
-
       return `\
-        <a style="position: relative; display: flex; width: ${width}px; height: ${height}px; margin: 10px; background-color: #EEE; padding-left: 15px; text-decoration: none; overflow: hidden; box-sizing: border-box;" onclick="module:main:${id}">
-          <div style="display: flex; position: absolute; top: 30px; left: -30px; width: ${height}px; height: 15px; background-color: #673AB7; font-size: 13px; justify-content: center; align-items: center; box-sizing: border-box; transform: rotate(-90deg);">Asset</div>
-          <div style="display: flex; flex-grow: 1; flex-direction: column;">
-            <div style="display: flex; flex-grow: 1;">
-              <img src="${creatureUtils.makeStaticCreature('asset:' + displayName)}" width="40" height="40" style="margin: 4px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;" />
-              <div style="display: flex; flew-grow: 1; flex-direction: column; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">
-                <h1 style="margin: 0; margin-top: 10px; font-size: 13px; font-weight: 400; line-height: 1.4;">${name}</h1>
-                <div style="display: flex; flex-grow: 1; align-items: center;">
-                  <div style="padding: 1px 8px; border: 2px solid; font-size: 16px; font-weight: 400;">&#164; ${quantityString}</div>
-                </div>
-              </div>
+        <a style="position: relative; display: flex; width: ${width}px; height: ${height}px; margin-right: 15px; margin-bottom: 15px; background-color: #EEE; padding-left: 15px; text-decoration: none; overflow: hidden; box-sizing: border-box;" onclick="module:main:${id}">
+          <div style="display: flex; position: absolute; top: 30px; left: -30px; width: ${height}px; height: 15px; background-color: #FFC107; font-size: 10px; justify-content: center; align-items: center; box-sizing: border-box; transform: rotate(-90deg);">Asset</div>
+          <img src="${creatureUtils.makeStaticCreature('asset:' + displayName)}" width="40" height="40" style="margin: 4px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;" />
+          <div style="display: flex; max-width: ${width - (15) - (40 + (4 * 2)) - (14 + (8 * 2))}px; flex-grow: 1; flex-direction: column; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">
+            <h1 style="margin: 0; margin-top: 10px; font-size: 13px; font-weight: 400; line-height: 1.4;">${name}</h1>
+            <div style="display: flex; flex-grow: 1; align-items: center;">
+              <div style="padding: 2px 7px; border: 2px solid; font-size: 13px; font-weight: 400;">&#164; ${quantityString}</div>
             </div>
           </div>
           <div style="display: flex;">
             <div style="display: flex; margin-bottom: auto; padding: 8px; text-decoration: none; justify-content: center; align-items: center;">
-              <img src="${closeOutlineSrc}" width="16" height="16" />
+              <img src="${closeOutlineSrc}" width="14" height="14" />
             </div>
           </div>
         </a>
@@ -589,13 +584,19 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
         </a>
       </div>
     `;
-    const bodySrc = `<div style="display: flex; height: ${DETAILS_HEIGHT - 100}px; overflow: hidden; flex-wrap: wrap; justify-content: flex-start; align-items: flex-start; align-content: flex-start;">
-      ${[1, 5, 10, 20, 50, 100, 200, 500, 1000].map(quantity => _getAssetGridItemSrc({
-        id,
-        name,
-        displayName,
-        quantity,
-      })).join('\n')}
+    const bodySrc = `<div style="display: flex; width: ${(width + 15) * 3}px; height: ${DETAILS_HEIGHT - 100}px; margin-left: 15px; justify-content: flex-start; align-items: flex-start; align-content: flex-start; flex-wrap: wrap; overflow: hidden;">
+      ${[1, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 50000, 100000, 200000, 500000, 1000000].map(billQuantity => {
+        if (quantity >= billQuantity) {
+          return _getAssetGridItemSrc({
+            id,
+            name,
+            displayName,
+            quantity: billQuantity,
+          });
+        } else {
+          return null;
+        }
+      }).filter(bill => bill !== null).join('\n')}
     </div>`;
 
     return `\
