@@ -51,6 +51,7 @@ class Wallet {
     return archae.requestPlugins([
       '/core/engines/three',
       '/core/engines/input',
+      '/core/engines/webvr',
       '/core/engines/biolumi',
       '/core/engines/rend',
       '/core/engines/keyboard',
@@ -58,6 +59,7 @@ class Wallet {
     ]).then(([
       three,
       input,
+      webvr,
       biolumi,
       rend,
       keyboard,
@@ -67,6 +69,14 @@ class Wallet {
         const {THREE, scene, camera} = three;
 
         const transparentMaterial = biolumi.getTransparentMaterial();
+
+        const mainFontSpec = {
+          fonts: biolumi.getFonts(),
+          fontSize: 36,
+          lineHeight: 1.4,
+          fontWeight: biolumi.getFontWeight(),
+          fontStyle: biolumi.getFontStyle(),
+        };
 
         const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
         const _decomposeMatrix = matrix => {
@@ -334,15 +344,56 @@ class Wallet {
         rend.on('tabchange', _tabchange);
 
         const _trigger = e => {
-          // XXX
+          const {side} = e;
+          const hoverState = rend.getHoverState(side);
+          const {intersectionPoint} = hoverState;
+
+          if (intersectionPoint) {
+            const {anchor} = hoverState;
+            const onclick = (anchor && anchor.onclick) || '';
+
+            if (onclick === 'wallet:focus') {
+              const {inputText} = walletState;
+              const {value} = hoverState;
+              const valuePx = value * (WIDTH - (250 + (30 * 2)));
+              const {index, px} = biolumi.getTextPropertiesFromCoord(inputText, mainFontSpec, valuePx);
+              const {hmd: {position: hmdPosition, rotation: hmdRotation}} = webvr.getStatus();
+              const keyboardFocusState = keyboard.focus({
+                type: 'wallet',
+                position: hmdPosition,
+                rotation: hmdRotation,
+                inputText: inputText,
+                inputIndex: index,
+                inputValue: px,
+                fontSpec: mainFontSpec,
+              });
+              focusState.keyboardFocusState = keyboardFocusState;
+
+              keyboardFocusState.on('update', () => {
+                const {inputText: keyboardInputText} = keyboardFocusState;
+                const {inputText: walletInputText} = walletState;
+
+                if (keyboardInputText !== walletInputText) {
+                  walletState.inputText = keyboardInputText;
+
+                  _updateWallet();
+
+                  _updatePages();
+                }
+              });
+              keyboardFocusState.on('blur', () => {
+                focusState.keyboardFocusState = null;
+
+                _updatePages();
+              });
+
+              _updatePages();
+            } else if (onclick === 'wallet:login') {
+              document.location = `${siteUrl}/wallet`;
+            }
+          }
         };
         input.on('trigger', _trigger, {
-          priority: 1,
-        });
-        const _triggerdown = e => {
-          // XXX
-        };
-        input.on('triggerdown', _triggerdown, {
           priority: 1,
         });
 
@@ -350,7 +401,6 @@ class Wallet {
           rend.removeListener('tabchange', _tabchange);
 
           input.removeListener('trigger', _trigger);
-          input.removeListener('triggerdown', _triggerdown);
         });
 
         const _getAssetTagMeshes = () => assetTagMeshes;

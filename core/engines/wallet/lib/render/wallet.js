@@ -9,7 +9,7 @@ const getWalletPageSrc = ({loading, loggedIn, inputText, inputValue, numTags, pa
   const leftSrc = `\
     <div style="display: flex; padding: 30px; font-size: 36px; line-height: 1.4; flex-grow: 1; flex-direction: column;">
       ${loggedIn ? `\
-        <a style="position: relative; display: block; border-bottom: 2px solid; text-decoration: none;" onclick="npm:focus">
+        <a style="position: relative; display: block; border-bottom: 2px solid; text-decoration: none;" onclick="wallet:focus">
           ${focus ? `<div style="position: absolute; width: 2px; top: 2px; bottom: 2px; left: ${inputValue}px; background-color: #000;"></div>` : ''}
           <div>${inputText}</div>
           ${!inputText ? `<div>Search my assets</div>` : ''}
