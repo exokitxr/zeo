@@ -552,7 +552,7 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
       const quantityString = _commaize(quantity);
 
       return `\
-        <a style="position: relative; display: flex; width: ${width}px; height: ${height}px; margin-right: 15px; margin-bottom: 15px; background-color: #EEE; padding-left: 15px; text-decoration: none; overflow: hidden; box-sizing: border-box;" onclick="module:main:${id}">
+        <a style="position: relative; display: flex; width: ${width}px; height: ${height}px; margin-right: 15px; margin-bottom: 15px; background-color: #EEE; padding-left: 15px; text-decoration: none; overflow: hidden; box-sizing: border-box;" onclick="asset:bill:${id}:${quantity}">
           <div style="display: flex; position: absolute; top: 30px; left: -30px; width: ${height}px; height: 15px; background-color: #FFC107; font-size: 10px; justify-content: center; align-items: center; box-sizing: border-box; transform: rotate(-90deg);">Asset</div>
           <img src="${creatureUtils.makeStaticCreature('asset:' + displayName)}" width="40" height="40" style="margin: 4px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;" />
           <div style="display: flex; max-width: ${width - (15) - (40 + (4 * 2)) - (14 + (8 * 2))}px; flex-grow: 1; flex-direction: column; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">

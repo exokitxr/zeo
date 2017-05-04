@@ -1159,10 +1159,23 @@ class World {
             const item = _clone(tagMesh.item);
             item.id = _makeId();
             item.metadata.isStatic = false;
+
             _addTag(item, 'hand:' + side);
           }
         };
         tags.on('grabNpmTag', _grabNpmTag);
+        const _grabAssetBill = ({side, tagMesh, quantity}) => {
+          const grabMesh = grabManager.getMesh(side);
+
+          if (!grabMesh) {
+            const item = _clone(tagMesh.item);
+            item.id = _makeId();
+            item.metadata.isStatic = false;
+
+            _addTag(item, 'hand:' + side);
+          }
+        };
+        tags.on('grabAssetBill', _grabAssetBill);
         const _grabWorldTag = ({side, tagMesh}) => {
           const grabMesh = grabManager.getMesh(side);
 
@@ -1599,6 +1612,7 @@ class World {
 
           tags.removeListener('download', _download);
           tags.removeListener('grabNpmTag', _grabNpmTag);
+          tags.removeListener('grabAssetBill', _grabAssetBill);
           tags.removeListener('grabWorldTag', _grabWorldTag);
           tags.removeListener('mutateAddModule', _mutateAddModule);
           tags.removeListener('mutateRemoveModule', _mutateRemoveModule);

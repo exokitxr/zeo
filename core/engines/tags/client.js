@@ -1297,13 +1297,26 @@ class Tags {
                       ) {
                         tagsApi.emit('grabNpmTag', { // XXX handle the multi-{user,controller} conflict cases
                           side,
-                          tagMesh
+                          tagMesh,
                         });
 
                         return true;
                       } else {
                         return false;
                       }
+                    } else if (match = onclick.match(/^asset:bill:(.+):(.+)$/)) {
+                      const id = match[1];
+                      const quantity = match[2];
+
+                      const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
+
+                      tagsApi.emit('grabAssetBill', {
+                        side,
+                        tagMesh,
+                        quantity,
+                      });
+
+                      return true;
                     } else {
                       return false;
                     }
