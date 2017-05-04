@@ -58,7 +58,7 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
     const headerSrc = `\
       <div style="position: relative; display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; background-color: #EEE; padding-left: 30px; text-decoration: none; overflow: hidden; box-sizing: border-box; ${(instancing || staticExists) ? 'filter: brightness(75%);' : ''}">
         <div style="display: flex; position: absolute; top: 60px; left: -60px; width: ${HEIGHT}px; height: 30px; background-color: #4CAF50; font-weight: 300; justify-content: center; align-items: center; box-sizing: border-box; transform: rotate(-90deg);">Module</div>
-        <${linkTagName} style="display: flex; flex-grow: 1; text-decoration: none;" onclick="module:main:${id}" onmousedown="module:main:${id}">
+        <${linkTagName} style="display: flex; margin-left: -30px; padding-left: 30px; flex-grow: 1; text-decoration: none; box-sizing: border-box;" onclick="module:main:${id}" onmousedown="module:main:${id}">
           <img src="${creatureUtils.makeStaticCreature('module:' + name)}" width="80" height="80" style="width: 80px; height: 80px; margin: 10px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;" />
           <div style="margin-right: 10px; flex-grow: 1;">
             <div style="display: flex; height: 150px; flex-direction: column;">
@@ -512,13 +512,15 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
   };
   const _commaize = n => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
   const getAssetSrc = ({item}) => {
-    const {id, name, displayName, quantity} = item;
+    const {id, name, displayName, quantity, metadata: {isStatic}} = item;
     const quantityString = _commaize(quantity);
+    const tagName = isStatic ? 'a' : 'div';
+    const linkTagName = isStatic ? 'div' : 'a';
 
     return `\
-      <a style="position: relative; display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; background-color: #EEE; padding-left: 30px; text-decoration: none; overflow: hidden; box-sizing: border-box;" onclick="module:main:${id}">
+      <${tagName} style="position: relative; display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; background-color: #EEE; padding-left: 30px; text-decoration: none; overflow: hidden; box-sizing: border-box;" onclick="module:main:${id}">
         <div style="display: flex; position: absolute; top: 60px; left: -60px; width: ${HEIGHT}px; height: 30px; background-color: #FFC107; justify-content: center; align-items: center; box-sizing: border-box; transform: rotate(-90deg);">Asset</div>
-        <div style="display: flex; flex-grow: 1; flex-direction: column;">
+        <${linkTagName} style="display: flex; margin-left: -30px; padding-left: 30px; flex-grow: 1; flex-direction: column; box-sizing: border-box;" onclick="module:main:${id}">
           <div style="display: flex; flex-grow: 1;">
             <img src="${creatureUtils.makeStaticCreature('asset:' + displayName)}" width="80" height="80" style="margin: 10px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;" />
             <div style="display: flex; max-width: ${WIDTH - (30) - (80 + (10 * 2)) - (30 + (15 * 2))}px; flex-grow: 1; flex-direction: column; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">
@@ -528,13 +530,13 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
               </div>
             </div>
           </div>
-        </div>
+        </${linkTagName}>
         <div style="display: flex;">
-          <div style="display: flex; margin-bottom: auto; padding: 15px; text-decoration: none; justify-content: center; align-items: center;">
+          <${linkTagName} style="display: flex; margin-bottom: auto; padding: 15px; text-decoration: none; justify-content: center; align-items: center;" onclick="tag:remove:${id}">
             <img src="${closeOutlineSrc}" width="30" height="30" />
-          </div>
+          </${linkTagName}>
         </div>
-      </a>
+      </${tagName}>
     `;
   };
   const getAssetDetailsSrc = ({item}) => {
