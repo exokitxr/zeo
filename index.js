@@ -227,9 +227,9 @@ const _loadSign = () => new Promise((accept, reject) => {
 });
 
 const _loadUserDb = () => {
-  if (flags.hub || flags.server) {
+  if (flags.server) {
     const db = require('./lib/db');
-    return db.requestUserDb(path.join(__dirname, dataDirectory, 'db', 'users.db'));
+    return db.requestUserDb(path.join(__dirname, dataDirectory, 'db', 'users.json'));
   } else {
     return Promise.resolve();
   }
