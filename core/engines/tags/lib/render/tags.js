@@ -520,7 +520,7 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
     return `\
       <${tagName} style="position: relative; display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; background-color: #EEE; padding-left: 30px; text-decoration: none; overflow: hidden; box-sizing: border-box;" onclick="module:main:${id}">
         <div style="display: flex; position: absolute; top: 60px; left: -60px; width: ${HEIGHT}px; height: 30px; background-color: #FFC107; justify-content: center; align-items: center; box-sizing: border-box; transform: rotate(-90deg);">Asset</div>
-        <${linkTagName} style="display: flex; margin-left: -30px; padding-left: 30px; flex-grow: 1; flex-direction: column; box-sizing: border-box;" onclick="module:main:${id}">
+        <div style="display: flex; margin-left: -30px; padding-left: 30px; flex-grow: 1; flex-direction: column; box-sizing: border-box;">
           <div style="display: flex; flex-grow: 1;">
             <img src="${creatureUtils.makeStaticCreature('asset:' + displayName)}" width="80" height="80" style="margin: 10px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;" />
             <div style="display: flex; max-width: ${WIDTH - (30) - (80 + (10 * 2)) - (30 + (15 * 2))}px; flex-grow: 1; flex-direction: column; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">
@@ -530,7 +530,7 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
               </div>
             </div>
           </div>
-        </${linkTagName}>
+        </div>
         <div style="display: flex;">
           <${linkTagName} style="display: flex; margin-bottom: auto; padding: 15px; text-decoration: none; justify-content: center; align-items: center;" onclick="tag:remove:${id}">
             <img src="${closeOutlineSrc}" width="30" height="30" />
