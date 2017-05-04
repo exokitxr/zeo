@@ -79,6 +79,7 @@ class Wallet {
 
         const walletState = {
           loading: false,
+          loggedIn: false,
           inputText: '',
           numTags: 0,
           page: 0,
@@ -106,6 +107,7 @@ class Wallet {
               const mesh = worldUi.makePage(({
                 wallet: {
                   loading,
+                  loggedIn,
                   inputText,
                   numTags,
                   page,
@@ -119,7 +121,7 @@ class Wallet {
 
                 return {
                   type: 'html',
-                  src: walletRenderer.getWalletPageSrc({loading, inputText, inputValue, numTags, page, focus}),
+                  src: walletRenderer.getWalletPageSrc({loading, loggedIn, inputText, inputValue, numTags, page, focus}),
                   x: 0,
                   y: 0,
                   w: WIDTH,
@@ -240,39 +242,49 @@ class Wallet {
           assetTagMeshes = newTagMeshes;
         };
 
-        const _searchAssets = (q = '') => fetch(`${siteUrl}/wallet/api/status`, {
+        const _requestStatus = () => fetch(`${siteUrl}/wallet/api/status`, {
           credentials: 'include',
         })
-          .then(res => res.json())
-          .then(result => result.assets);
+          .then(res => res.json());
         const _updateWallet = menuUtils.debounce(next => {
           const {inputText} = walletState;
 
-          _searchAssets(inputText)
-            .then(itemSpecs => itemSpecs.map(itemSpec => {
-              const {asset, quantity} = itemSpec;
+          _requestStatus()
+            .then(status => {
+              const {address, assets: itemSpecs} = status;
 
-              const assetTagMesh = tags.makeTag({
-                type: 'asset',
-                id: asset,
-                name: asset,
-                displayName: asset,
-                quantity: quantity,
-                matrix: DEFAULT_MATRIX,
-                metadata: {
-                  isStatic: true,
-                },
-              }, {
-                initialUpdate: false,
-              });
-              assetTagMesh.planeMesh.scale.set(ASSET_TAG_MESH_SCALE, ASSET_TAG_MESH_SCALE, 1);
+              return {
+                address: address,
+                tagMeshes: itemSpecs
+                  .filter(itemSpec => !inputText || itemSpec.asset.indexOf(inputText) !== -1)
+                  .map(itemSpec => {
+                    const {asset, quantity} = itemSpec;
 
-              return assetTagMesh;
-            }))
-            .then(tagMeshes => {
+                    const assetTagMesh = tags.makeTag({
+                      type: 'asset',
+                      id: asset,
+                      name: asset,
+                      displayName: asset,
+                      quantity: quantity,
+                      matrix: DEFAULT_MATRIX,
+                      metadata: {
+                        isStatic: true,
+                      },
+                    }, {
+                      initialUpdate: false,
+                    });
+                    assetTagMesh.planeMesh.scale.set(ASSET_TAG_MESH_SCALE, ASSET_TAG_MESH_SCALE, 1);
+
+                    return assetTagMesh;
+                  }),
+              };
+            })
+            .then(status => {
+              const {address, tagMeshes} = status;
               const {tagMeshes: oldTagMeshes} = walletCacheState;
 
               walletState.loading = false;
+              walletState.loggedIn = address !== null;
               walletState.page = 0;
               walletState.numTags = tagMeshes.length;
               walletCacheState.tagMeshes = tagMeshes;
