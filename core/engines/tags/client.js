@@ -1148,7 +1148,7 @@ class Tags {
                     const onclick = (anchor && anchor.onclick) || '';
 
                     let match;
-                    if (match = onclick.match(/^module:main:(.+)$/)) {
+                    if (match = onclick.match(/^(?:module|asset):main:(.+)$/)) {
                       const id = match[1];
 
                       const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
@@ -1160,7 +1160,7 @@ class Tags {
                       });
 
                       return true;
-                    } else if (match = onclick.match(/^module:close:(.+)$/)) {
+                    } else if (match = onclick.match(/^(?:module|asset):close:(.+)$/)) {
                       const id = match[1];
 
                       const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
@@ -1285,7 +1285,7 @@ class Tags {
                     const onclick = (anchor && anchor.onclick) || '';
 
                     let match;
-                    if (match = onclick.match(/^(module|entity):main:(.+?)$/)) {
+                    if (match = onclick.match(/^(module|entity|asset):main:(.+?)$/)) {
                       const type = match[1];
                       const id = match[2];
 
@@ -1293,7 +1293,8 @@ class Tags {
 
                       if (
                         Boolean(tagMesh.item.metadata && tagMesh.item.metadata.isStatic) &&
-                        !(type === 'module' && (tagMesh.item.metadata.exists || tagMesh.item.instancing))
+                        !(type === 'module' && (tagMesh.item.metadata.exists || tagMesh.item.instancing)) &&
+                        type !== 'asset'
                       ) {
                         tagsApi.emit('grabNpmTag', { // XXX handle the multi-{user,controller} conflict cases
                           side,

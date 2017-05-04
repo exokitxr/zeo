@@ -518,7 +518,7 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
     const linkTagName = isStatic ? 'div' : 'a';
 
     return `\
-      <${tagName} style="position: relative; display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; background-color: #EEE; padding-left: 30px; text-decoration: none; overflow: hidden; box-sizing: border-box;" onclick="module:main:${id}">
+      <${tagName} style="position: relative; display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; background-color: #EEE; padding-left: 30px; text-decoration: none; overflow: hidden; box-sizing: border-box;" onclick="asset:main:${id}">
         <div style="display: flex; position: absolute; top: 60px; left: -60px; width: ${HEIGHT}px; height: 30px; background-color: #FFC107; justify-content: center; align-items: center; box-sizing: border-box; transform: rotate(-90deg);">Asset</div>
         <div style="display: flex; margin-left: -30px; padding-left: 30px; flex-grow: 1; flex-direction: column; box-sizing: border-box;">
           <div style="display: flex; flex-grow: 1;">
@@ -574,14 +574,14 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
 
     const headerSrc = `\
       <div style="display: flex; height: 100px; justify-content: center; align-items: center;">
-        <img src="${creatureUtils.makeStaticCreature('module:' + name)}" width="80" height="80" style="width: 80px; height: 80px; margin: 10px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;" />
+        <img src="${creatureUtils.makeStaticCreature('asset:' + name)}" width="80" height="80" style="width: 80px; height: 80px; margin: 10px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;" />
         <div style="display: flex; height: 80px; margin-bottom: 10px; margin-right: auto; font-size: 24px; font-weight: 400; justify-content: center; align-items: center;">
           <div style="margin-right: 15px;">${displayName}</div>
           <div style="display: flex; justify-content: center; align-items: center;">
             <div style="padding: 5px 10px; border: 2px solid; font-size: 22px;">&#164; ${quantityString}</div>
           </div>
         </div>
-        <a style="display: flex; width: 80px; justify-content: center; align-items: center;" onclick="module:close:${id}">
+        <a style="display: flex; width: 80px; justify-content: center; align-items: center;" onclick="asset:close:${id}">
           <img src="${closeBoxOutlineSrc}" width="40" height="40">
         </a>
       </div>
