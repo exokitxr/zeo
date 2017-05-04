@@ -690,7 +690,7 @@ class World {
         });
 
         const npmState = {
-          loading: false,
+          loading: true,
           inputText: '',
           numTags: 0,
           page: 0,

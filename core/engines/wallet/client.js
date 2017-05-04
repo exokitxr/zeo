@@ -88,7 +88,7 @@ class Wallet {
         };
 
         const walletState = {
-          loading: false,
+          loading: true,
           loggedIn: false,
           inputText: '',
           numTags: 0,
