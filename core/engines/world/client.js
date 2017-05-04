@@ -1170,6 +1170,7 @@ class World {
           if (!grabMesh) {
             const item = _clone(tagMesh.item);
             item.id = _makeId();
+            item.quantity = quantity;
             item.metadata.isStatic = false;
 
             _addTag(item, 'hand:' + side);
