@@ -1348,28 +1348,23 @@ class Tags {
                     if (mesh[tagMeshSymbol]) {
                       const {tagMesh} = mesh;
                       const {item} = tagMesh;
-                      const {type} = item;
+                      const {type, metadata} = item;
 
-                      if (type === 'module' || type === 'entity' || type === 'file') {
-                        const {metadata} = item;
+                      if (
+                        (type === 'module' && !(metadata && metadata.isStatic)) ||
+                        (type === 'entity' && !(metadata && metadata.isStatic)) ||
+                        (type === 'file') ||
+                        (type === 'asset' && !(metadata && metadata.isStatic))
+                      ) {
+                        tagsApi.emit('grabWorldTag', {
+                          side,
+                          tagMesh
+                        });
 
-                        if (
-                          (type === 'module' && !(metadata && metadata.isStatic)) ||
-                          (type === 'entity' && !(metadata && metadata.isStatic)) ||
-                          (type === 'file')
-                        ) {
-                          tagsApi.emit('grabWorldTag', {
-                            side,
-                            tagMesh
-                          });
-
-                          return true;
-                        } else {
-                          return false;
-                        }
+                        return true;
+                      } else {
+                        return false;
                       }
-                    } else {
-                      return false;
                     }
                   } else {
                     return false;
