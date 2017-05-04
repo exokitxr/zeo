@@ -240,45 +240,11 @@ class Wallet {
           assetTagMeshes = newTagMeshes;
         };
 
-        const _searchAssets = (q = '') => new Promise((accept, reject) => {
-          const iframe = document.createElement('iframe');
-          const requestId = _makeId();
-
-          const _cleanup = () => {
-            iframe.removeEventListener('error', _error);
-            window.removeEventListener('message', _message);
-
-            document.body.removeChild(iframe);
-          };
-
-          const _error = err => {
-            _cleanup();
-
-            reject(err);
-          };
-          iframe.addEventListener('error', _error);
-          const _message = e => {
-            const {data} = e;
-            const {id} = data;
-
-            if (id === requestId) {
-              _cleanup();
-
-              const {error} = data;
-
-              if (!error) {
-                const {result} = data;
-                accept(result);
-              } else {
-                reject(error);
-              }
-            }
-          };
-          window.addEventListener('message', _message);
-
-          iframe.src = `${siteUrl}/wallet?x=status&i=${requestId}`;
-          document.body.appendChild(iframe);
-        });
+        const _searchAssets = (q = '') => fetch(`${siteUrl}/wallet/api/status`, {
+          credentials: 'include',
+        })
+          .then(res => res.json())
+          .then(result => result.assets);
         const _updateWallet = menuUtils.debounce(next => {
           const {inputText} = walletState;
 
