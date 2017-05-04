@@ -194,6 +194,14 @@ class Wallet {
         };
         _updatePages();
 
+        const walletIframe = (() => {
+          const iframe = document.createElement('iframe');
+          iframe.src = `${siteUrl}/wallet`;
+          iframe.style.cssText = 'display: none; position: absolute; bottom: 0; left: 0; right: 0; width: 100vw;';
+          return iframe;
+        })();
+        document.body.appendChild(walletIframe);
+
         let assetTagMeshes = [];
         const walletCancels = [];
         const _updateAssetsTagMeshContainer = () => {
@@ -399,8 +407,9 @@ class Wallet {
         });
 
         cleanups.push(() => {
-          rend.removeListener('tabchange', _tabchange);
+          document.body.removeChild(walletIframe);
 
+          rend.removeListener('tabchange', _tabchange);
           input.removeListener('trigger', _trigger);
         });
 
