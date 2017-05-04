@@ -258,6 +258,7 @@ class Wallet {
           .then(res => res.json());
         const _updateWallet = menuUtils.debounce(next => {
           const {inputText} = walletState;
+          const searchText = inputText.toLowerCase();
 
           _requestStatus()
             .then(status => {
@@ -266,7 +267,7 @@ class Wallet {
               return {
                 address: address,
                 tagMeshes: itemSpecs
-                  .filter(itemSpec => !inputText || itemSpec.asset.indexOf(inputText) !== -1)
+                  .filter(itemSpec => !searchText || itemSpec.asset.toLowerCase().indexOf(searchText) !== -1)
                   .map(itemSpec => {
                     const {asset, quantity} = itemSpec;
 
