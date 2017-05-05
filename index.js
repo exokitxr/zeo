@@ -57,7 +57,7 @@ const flags = {
   siteUrl: _findArg('siteUrl'),
   hubUrl: _findArg('hubUrl'),
   homeUrl: _findArg('homeUrl'),
-  maxUsers: args.includes('maxUsers'),
+  maxUsers: _findArg('maxUsers'),
 };
 const hasSomeFlag = (() => {
   for (const k in flags) {
@@ -128,6 +128,7 @@ const config = {
       enabled: flags.server,
     },
     maxUsers: maxUsers,
+    transient: {},
   },
 };
 const a = archae(config);

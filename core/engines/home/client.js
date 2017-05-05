@@ -65,7 +65,7 @@ class Home {
 
   mount() {
     const {_archae: archae} = this;
-    const {metadata: {my: {enabled: myEnabled}, hub: {url: hubUrl}}} = archae;
+    const {metadata: {hub: {url: hubUrl}}} = archae;
 
     const cleanups = [];
     this._cleanup = () => {

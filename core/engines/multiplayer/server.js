@@ -7,7 +7,8 @@ class Multiplayer {
 
   mount() {
     const {_archae: archae} = this;
-    const {express, ws, app, wss, metadata: {maxUsers}} = archae.getCore();
+    const {express, ws, app, wss} = archae.getCore();
+    const {metadata: {maxUsers, transient}} = archae;
 
     const connections = [];
     const statuses = new Map();
@@ -17,7 +18,7 @@ class Multiplayer {
         statuses: _getAllStatuses(),
       });
     }
-    app.use('/archae/multiplayer/statuses.json', serverMultiplayerStatuses);
+    app.get('/archae/multiplayer/statuses.json', serverMultiplayerStatuses);
 
     const _getAllStatuses = () => {
       const result = [];
@@ -126,11 +127,19 @@ class Multiplayer {
       }
     });
 
+    const _getNumUsers = () => connections.length;
+
+    transient.multiplayer = {
+      getNumUsers: _getNumUsers,
+    };
+
     this._cleanup = () => {
       for (let i = 0; i < connections.length; i++) {
         const connection = connections[i];
         connection.close();
       }
+
+      delete transient.multiplayer;
     };
   }
 
