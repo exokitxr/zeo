@@ -117,13 +117,11 @@ class Rend {
           rotation: null,
           animation: null,
         };
-        const loginResult = bootstrap.getLoginResult();
         const statusState = {
           url: bootstrap.getInitialPath(),
-          username: loginResult ? loginResult.username : null,
+          username: 'Fake name', // XXX actually generate fake names here
           worldname: serverWorldname,
           users: [],
-          authToken: loginResult ? loginResult.authToken : '',
           flags: {
             hub: Boolean(hubSpec),
             server: serverEnabled,
@@ -287,22 +285,12 @@ class Rend {
             const onclick = (anchor && anchor.onclick) || '';
 
             if (onclick === 'status:token') {
-              const {url, authToken} = statusState;
-              const clipboardText = url + '?t=' + authToken;
+              const {url} = statusState;
+              const clipboardText = url;
 
               const ok = _copyToClipboard(clipboardText);
               if (ok) {
                 console.log('copied to clipboard: ' + clipboardText);
-
-                _proxyLogin()
-                  .then(token => {
-                    statusState.authToken = token;
-
-                    _updateMenuPage();
-                  })
-                  .catch(err => {
-                    console.warn(err);
-                  });
               } else {
                 console.warn('failed to copy URL:\n' + clipboardText);
               }

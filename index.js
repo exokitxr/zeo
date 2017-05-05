@@ -171,84 +171,6 @@ const _preload = () => {
   }
 };
 
-const _loadSign = () => new Promise((accept, reject) => {
-  if (flags.hub || flags.server) {
-    const signDirectory = path.join(__dirname, cryptoDirectory, 'sign');
-    const keyPath = path.join(signDirectory, 'key.pem');
-
-    const _getFile = p => new Promise((accept, reject) => {
-      fs.readFile(p, (err, d) => {
-        if (!err) {
-          accept(d);
-        } else {
-          reject(err);
-        }
-      });
-    });
-    const _setFile = (p, d) => new Promise((accept, reject) => {
-      fs.writeFile(p, d, err => {
-        if (!err) {
-          accept();
-        } else {
-          reject(err);
-        }
-      });
-    });
-
-    _getFile(keyPath)
-      .then(key => {
-        accept(key);
-      })
-      .catch(err => {
-        if (err.code === 'ENOENT') {
-          mkdirp(signDirectory, err => {
-            if (!err) {
-              const auth = require('./lib/auth');
-              const key = auth.makeKey();
-
-              _setFile(keyPath, key)
-                .then(() => {
-                  accept(key);
-                })
-                .catch(err => {
-                  reject(err);
-                });
-            } else {
-              reject(err);
-            }
-          });
-        } else {
-          reject(err);
-        }
-      })
-  } else {
-    accept();
-  }
-});
-
-const _loadUserDb = () => {
-  if (flags.server) {
-    const db = require('./lib/db');
-    return db.requestUserDb(path.join(__dirname, dataDirectory, 'db', 'users.json'));
-  } else {
-    return Promise.resolve();
-  }
-};
-
-const _load = () => Promise.all([
-  _install(),
-  _loadSign(),
-  _loadUserDb(),
-])
-  .then(([
-    installResult,
-    key,
-    userDb,
-  ]) => ({
-    key,
-    userDb,
-  }));
-
 const _getAllPlugins = () => {
   const _flatten = a => {
     const result = [];
@@ -300,24 +222,24 @@ const _getAllPlugins = () => {
     );
 };
 
-const _listenLibs = ({key, userDb}) => {
+const _listenLibs = () => {
   const listenPromises = [];
 
   if (flags.site) {
     const site = require('./lib/site');
-    listenPromises.push(site.listen(a, config, {key, userDb}));
+    listenPromises.push(site.listen(a, config));
   }
   if (flags.home) {
     const home = require('./lib/home');
-    listenPromises.push(home.listen(a, config, {key, userDb}));
+    listenPromises.push(home.listen(a, config));
   }
   if (flags.hub) {
     const hub = require('./lib/hub');
-    listenPromises.push(hub.listen(a, config, {key, userDb}));
+    listenPromises.push(hub.listen(a, config));
   }
   if (flags.server) {
     const server = require('./lib/server');
-    listenPromises.push(server.listen(a, config, {key, userDb}));
+    listenPromises.push(server.listen(a, config));
   }
 
   return Promise.all(listenPromises);
@@ -352,7 +274,7 @@ const _listenArchae = () => {
   }
 };
 
-const _boot = ({key}) => {
+const _boot = () => {
   const bootPromises = [];
 
   if (flags.hub || flags.server) {
@@ -403,31 +325,26 @@ const _launch = () => {
 _checkArgs()
   .then(() => _configure())
   .then(() => _preload())
-  .then(() => _load())
-  .then(({
-    key,
-    userDb,
-  }) => _listenLibs({key, userDb})
-    .then(() => _lockArchae())
-    .then(() => _listenArchae())
-    .then(() => _boot({key}))
-    .then(() => {
-      if (flags.site) {
-        console.log('Site: ' + config.metadata.site.url + '/');
-      }
-      if (flags.home) {
-        console.log('Home: ' + config.metadata.home.url + '/');
-      }
-      if (flags.hub) {
-        console.log('Hub: ' + config.metadata.hub.url + '/');
-      }
-      if (flags.server) {
-        const auth = require('./lib/auth');
-        console.log('Server: ' + config.metadata.server.url + '/?t=' + encodeURIComponent(auth.makeToken({key})));
-      }
-    })
-    .then(() => _launch())
-  )
+  .then(() => _install())
+  .then(() => _listenLibs())
+  .then(() => _lockArchae())
+  .then(() => _listenArchae())
+  .then(() => _boot())
+  .then(() => {
+    if (flags.site) {
+      console.log('Site: ' + config.metadata.site.url + '/');
+    }
+    if (flags.home) {
+      console.log('Home: ' + config.metadata.home.url + '/');
+    }
+    if (flags.hub) {
+      console.log('Hub: ' + config.metadata.hub.url + '/');
+    }
+    if (flags.server) {
+      console.log('Server: ' + config.metadata.server.url + '/');
+    }
+  })
+  .then(() => _launch())
   .catch(err => {
     console.warn(err);
 
