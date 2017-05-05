@@ -164,8 +164,8 @@ const _configure = () => {
 
 const _preload = () => {
   if (flags.hub || flags.home || flags.server) {
-    const crypto = require('./lib/crypto');
-    return crypto.preload(a, config);
+    const preload = require('./lib/preload');
+    return preload.preload(a, config);
   } else {
     return Promise.resolve();
   }
