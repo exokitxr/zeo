@@ -26,6 +26,12 @@ Runs in your browser, using either headset or mouse + keyboard. The goal is to _
 - HMD + controller emulation with keyboard + mouse
 - It's just Javascript, so change whatever you like
 
+## Quick run (Docker)
+
+```bash
+docker run -ti --rm -p 8000:8000 -v /tmp/.zeo/data:/root/zeo/data modulesio/zeo
+```
+
 ## Quick install (Linux)
 
 ```bash

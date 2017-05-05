@@ -10,8 +10,6 @@ export NODE_TLS_REJECT_UNAUTHORIZED=0
   hubUrl='https://hub.zeovr.io:8000' \
   dataDirectorySrc='defaults/data' \
   cryptoDirectorySrc='defaults/crypto' \
-  installDirectorySrc='installed' &
-
-sleep infinity;
+  installDirectorySrc='installed'
 
 popd;
