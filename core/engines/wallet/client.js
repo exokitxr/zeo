@@ -194,46 +194,41 @@ class Wallet {
         };
         _updatePages();
 
-        const walletIframe = (() => {
-          const iframe = document.createElement('iframe');
-          iframe.src = `${siteUrl}/wallet/iframe`;
-          iframe.style.cssText = 'display: none; position: absolute; bottom: 0; left: 0; right: 0; width: 100vw; border: 0; box-shadow: 0 0 5px rgba(0, 0, 0, 0.25);';
-          return iframe;
-        })();
-        document.body.appendChild(walletIframe);
+        const _openWalletWindow = req => {
+          const width = 800;
+          const height = 600;
 
-        const _requestWalletIframe = (req, cb) => {
-          const requestId = _makeId();
-          req.i = requestId;
+          return window.open(
+            `${siteUrl}/wallet/iframe?${_formatQueryString(req)}`,
+            'wallet',
+            `left=${(screen.width - width) / 2},top=${(screen.height - height) / 2},width=${width},height=${height}`
+          );
+        }
+
+        const _requestWallet = (req, cb) => {
+          const walletWindow = _openWalletWindow(req);
 
           const _cleanup = () => {
             window.removeEventListener('message', _onmessage);
 
-            walletIframe.style.display = 'none';
+            walletWindow.close();
           };
 
-          walletIframe.contentWindow.postMessage(req, '*');
           const _onmessage = e => {
+            _cleanup();
+
             const {data} = e;
-            const {id} = data;
+            const {error} = data;
 
-            if (id === requestId) {
-              _cleanup();
+            if (!error) {
+              const {result} = data;
 
-              const {error} = data;
-
-              if (!error) {
-                const {result} = data;
-
-                cb(null, result);
-              } else {
-                cb(err);
-              }
+              cb(null, result);
+            } else {
+              cb(error);
             }
           };
           window.addEventListener('message', _onmessage);
-
-          walletIframe.style.display = 'block';
         };
 
         let assetTagMeshes = [];
@@ -435,7 +430,7 @@ class Wallet {
 
               _updatePages();
             } else if (onclick === 'wallet:login') {
-              _requestWalletIframe({
+              _requestWallet({
                 x: 'login',
               }, (err, result) => {
                 if (!err) {
@@ -449,7 +444,7 @@ class Wallet {
                 }
               });
             } else if (onclick === 'wallet:logout') {
-              _requestWalletIframe({
+              _requestWallet({
                 x: 'logout',
               }, (err, result) => {
                 if (!err) {
@@ -493,6 +488,12 @@ class Wallet {
   }
 }
 
-const _makeId = () => Math.random().toString(36).substring(7);
+const _formatQueryString = o => {
+  const result = [];
+  for (const k in o) {
+    result.push(encodeURIComponent(k) + '=' + encodeURIComponent(o[k]));
+  }
+  return result.join('&');
+};
 
 module.exports = Wallet;
