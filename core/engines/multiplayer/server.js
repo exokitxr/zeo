@@ -7,7 +7,7 @@ class Multiplayer {
 
   mount() {
     const {_archae: archae} = this;
-    const {express, ws, app, wss} = archae.getCore();
+    const {express, ws, app, wss, metadata: {maxUsers}} = archae.getCore();
 
     const connections = [];
     const statuses = new Map();
@@ -46,49 +46,67 @@ class Multiplayer {
 
       let match;
       if (match = url.match(/^\/archae\/multiplayerWs\?id=(.+?)&username=(.+?)$/)) {
-        const id = decodeURIComponent(match[1]);
-        const username = decodeURIComponent(match[2]);
+        if (connections.length < maxUsers) {
+          const id = decodeURIComponent(match[1]);
+          const username = decodeURIComponent(match[2]);
 
-        const remoteAddress = c.upgradeReq.connection.remoteAddress.replace(/^::ffff:/, '');
-        console.log('multiplayer connection', {id, username, remoteAddress});
+          const remoteAddress = c.upgradeReq.connection.remoteAddress.replace(/^::ffff:/, '');
+          console.log('multiplayer connection', {id, username, remoteAddress});
 
-        const _sendInit = () => {
-          const e = {
-            type: 'init',
-            statuses: _getAllStatuses(),
-          };
-          const es = JSON.stringify(e);
-          c.send(es);
-        };
-        _sendInit();
-
-        c.on('message', s => {
-          const m = JSON.parse(s);
-          if (typeof m === 'object' && m && m.type === 'status' && ('status' in m)) {
-            const {status} = m;
-            const {hmd, controllers, metadata} = status;
-
-            let newStatus = statuses.get(id);
-            const hadStatus = Boolean(newStatus);
-            if (hadStatus) {
-              newStatus.hmd = hmd;
-              newStatus.controllers = controllers;
-              newStatus.metadata = metadata;
-            } else {
-              newStatus = new Status(username, hmd, controllers, metadata);
-              statuses.set(id, newStatus);
-            }
-
-            const statusUpdate = {
-              username: username,
-              hmd: newStatus.hmd,
-              controllers: newStatus.controllers,
-              metadata: newStatus.metadata,
+          const _sendInit = () => {
+            const e = {
+              type: 'init',
+              statuses: _getAllStatuses(),
             };
+            const es = JSON.stringify(e);
+            c.send(es);
+          };
+          _sendInit();
+
+          c.on('message', s => {
+            const m = JSON.parse(s);
+            if (typeof m === 'object' && m && m.type === 'status' && ('status' in m)) {
+              const {status} = m;
+              const {hmd, controllers, metadata} = status;
+
+              let newStatus = statuses.get(id);
+              const hadStatus = Boolean(newStatus);
+              if (hadStatus) {
+                newStatus.hmd = hmd;
+                newStatus.controllers = controllers;
+                newStatus.metadata = metadata;
+              } else {
+                newStatus = new Status(username, hmd, controllers, metadata);
+                statuses.set(id, newStatus);
+              }
+
+              const statusUpdate = {
+                username: username,
+                hmd: newStatus.hmd,
+                controllers: newStatus.controllers,
+                metadata: newStatus.metadata,
+              };
+              const e = {
+                type: 'status',
+                id,
+                status: statusUpdate,
+              };
+              const es = JSON.stringify(e);
+              for (let i = 0; i < connections.length; i++) {
+                const connection = connections[i];
+                if (connection.readyState === ws.OPEN && connection !== c) {
+                  connection.send(es);
+                }
+              }
+            }
+          });
+          c.on('close', () => {
+            statuses.delete(id);
+
             const e = {
               type: 'status',
               id,
-              status: statusUpdate,
+              status: null,
             };
             const es = JSON.stringify(e);
             for (let i = 0; i < connections.length; i++) {
@@ -97,28 +115,14 @@ class Multiplayer {
                 connection.send(es);
               }
             }
-          }
-        });
-        c.on('close', () => {
-          statuses.delete(id);
 
-          const e = {
-            type: 'status',
-            id,
-            status: null,
-          };
-          const es = JSON.stringify(e);
-          for (let i = 0; i < connections.length; i++) {
-            const connection = connections[i];
-            if (connection.readyState === ws.OPEN && connection !== c) {
-              connection.send(es);
-            }
-          }
+            connections.splice(connections.indexOf(c), 1);
+          });
 
-          connections.splice(connections.indexOf(c), 1);
-        });
-
-        connections.push(c);
+          connections.push(c);
+        } else {
+          connection.close();
+        }
       }
     });
 
