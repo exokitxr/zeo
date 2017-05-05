@@ -9,11 +9,14 @@ const getWalletPageSrc = ({loading, loggedIn, inputText, inputValue, numTags, pa
   const leftSrc = `\
     <div style="display: flex; min-height: ${HEIGHT}px; padding: 30px; font-size: 36px; line-height: 1.4; flex-grow: 1; flex-direction: column; box-sizing: border-box;">
       ${loggedIn ? `\
-        <a style="position: relative; display: block; border-bottom: 2px solid; text-decoration: none;" onclick="wallet:focus">
-          ${focus ? `<div style="position: absolute; width: 2px; top: 2px; bottom: 2px; left: ${inputValue}px; background-color: #000;"></div>` : ''}
-          <div>${inputText}</div>
-          ${!inputText ? `<div>Search my assets</div>` : ''}
-        </a>
+        <div style="display: flex; justify-content: center; align-items: center;">
+          <a style="position: relative; display: block; margin-right: 20px; border-bottom: 2px solid; flex-grow: 1; text-decoration: none;" onclick="wallet:focus">
+            ${focus ? `<div style="position: absolute; width: 2px; top: 2px; bottom: 2px; left: ${inputValue}px; background-color: #000;"></div>` : ''}
+            <div>${inputText}</div>
+            ${!inputText ? `<div>Search my assets</div>` : ''}
+          </a>
+          <a style="padding: 10px 15px; border: 2px solid; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="wallet:logout">Log out</a>
+        </div>
         ${loading ? `<div style="display: flex; margin-bottom: 100px; font-size: 30px; align-items: center; justify-content: center; flex-grow: 1;">Loading...</div>` : ''}
       ` : `\
         ${loading ? `\

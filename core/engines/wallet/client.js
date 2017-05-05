@@ -196,11 +196,45 @@ class Wallet {
 
         const walletIframe = (() => {
           const iframe = document.createElement('iframe');
-          iframe.src = `${siteUrl}/wallet`;
-          iframe.style.cssText = 'display: none; position: absolute; bottom: 0; left: 0; right: 0; width: 100vw;';
+          iframe.src = `${siteUrl}/wallet/iframe`;
+          iframe.style.cssText = 'display: none; position: absolute; bottom: 0; left: 0; right: 0; width: 100vw; border: 0; box-shadow: 0 0 5px rgba(0, 0, 0, 0.25);';
           return iframe;
         })();
         document.body.appendChild(walletIframe);
+
+        const _requestWalletIframe = (req, cb) => {
+          const requestId = _makeId();
+          req.i = requestId;
+
+          const _cleanup = () => {
+            window.removeEventListener('message', _onmessage);
+
+            walletIframe.style.display = 'none';
+          };
+
+          walletIframe.contentWindow.postMessage(req, '*');
+          const _onmessage = e => {
+            const {data} = e;
+            const {id} = data;
+
+            if (id === requestId) {
+              _cleanup();
+
+              const {error} = data;
+
+              if (!error) {
+                const {result} = data;
+
+                cb(null, result);
+              } else {
+                cb(err);
+              }
+            }
+          };
+          window.addEventListener('message', _onmessage);
+
+          walletIframe.style.display = 'block';
+        };
 
         let assetTagMeshes = [];
         const walletCancels = [];
@@ -299,30 +333,7 @@ class Wallet {
               };
             })
             .then(status => {
-              const {address, tagMeshes} = status;
-              const {tagMeshes: oldTagMeshes} = walletCacheState;
-
-              walletState.loading = false;
-              walletState.loggedIn = address !== null;
-              walletState.page = 0;
-              walletState.numTags = tagMeshes.length;
-              walletCacheState.tagMeshes = tagMeshes;
-
-              const {assetsMesh} = walletMesh;
-              for (let i = 0; i < oldTagMeshes.length; i++) {
-                const oldTagMesh = oldTagMeshes[i];
-                assetsMesh.remove(oldTagMesh);
-                tags.destroyTag(oldTagMesh);
-              }
-              for (let i = 0; i < tagMeshes.length; i++) {
-                const tagMesh = tagMeshes[i];
-                tagMesh.visible = false;
-                tagMesh.initialVisible = false;
-                assetsMesh.add(tagMesh);
-              }
-
-              _updateAssetsTagMeshContainer();
-              _updatePages();
+              _updateStatus(status);
 
               next();
             })
@@ -337,6 +348,32 @@ class Wallet {
 
           _updatePages();
         });
+        const _updateStatus = status => {
+          const {address, tagMeshes} = status;
+          const {tagMeshes: oldTagMeshes} = walletCacheState;
+
+          walletState.loading = false;
+          walletState.loggedIn = address !== null;
+          walletState.page = 0;
+          walletState.numTags = tagMeshes.length;
+          walletCacheState.tagMeshes = tagMeshes;
+
+          const {assetsMesh} = walletMesh;
+          for (let i = 0; i < oldTagMeshes.length; i++) {
+            const oldTagMesh = oldTagMeshes[i];
+            assetsMesh.remove(oldTagMesh);
+            tags.destroyTag(oldTagMesh);
+          }
+          for (let i = 0; i < tagMeshes.length; i++) {
+            const tagMesh = tagMeshes[i];
+            tagMesh.visible = false;
+            tagMesh.initialVisible = false;
+            assetsMesh.add(tagMesh);
+          }
+
+          _updateAssetsTagMeshContainer();
+          _updatePages();
+        };
 
         const _tabchange = tab => {
           if (tab === 'wallet') {
@@ -398,7 +435,36 @@ class Wallet {
 
               _updatePages();
             } else if (onclick === 'wallet:login') {
-              document.location = `${siteUrl}/wallet`;
+              _requestWalletIframe({
+                x: 'login',
+              }, (err, result) => {
+                if (!err) {
+                  if (result) {
+                    _updateWallet();
+                  } else {
+                    console.warn('login cancelled');
+                  }
+                } else {
+                  console.warn(err);
+                }
+              });
+            } else if (onclick === 'wallet:logout') {
+              _requestWalletIframe({
+                x: 'logout',
+              }, (err, result) => {
+                if (!err) {
+                  if (result) {
+                    _updateStatus({
+                      address: null,
+                      tagMeshes: [],
+                    });
+                  } else {
+                    console.warn('logout cancelled');
+                  }
+                } else {
+                  console.warn(err);
+                }
+              });
             }
           }
         };

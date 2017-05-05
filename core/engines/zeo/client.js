@@ -245,7 +245,7 @@ class Zeo {
                       font-family: ${biolumi.getFonts()};
                     `;
                     overlay.innerHTML = `\
-                      <div style="display: flex; width: 100%; margin: auto 0; padding: 20px 0; background-color: #FFF; border-width: 3px 0 3px 0; border-style: solid; border-color: #EEE; justify-content: center;">
+                      <div style="display: flex; width: 100%; margin: auto 0; padding: 20px 0; background-color: rgba(255, 255, 255, 0.8); box-shadow: 0 0 5px rgba(0, 0, 0, 0.25); justify-content: center;">
                         <div style="display: flex; flex-direction: column; justify-content: center; align-items: center;" class=overlay-content></div>
                       </div>
                     `;
