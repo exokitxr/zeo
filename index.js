@@ -58,7 +58,6 @@ const flags = {
   hubUrl: _findArg('hubUrl'),
   homeUrl: _findArg('homeUrl'),
   my: args.includes('my'),
-  launch: _findArg('launch'),
 };
 const hasSomeFlag = (() => {
   for (const k in flags) {
@@ -287,41 +286,6 @@ const _boot = () => {
   return Promise.all(bootPromises);
 };
 
-const _launch = () => {
-  if (flags.launch) {
-    console.log('launch command: ' + JSON.stringify(flags.launch));
-
-    const launchProcess = child_process.exec(flags.launch);
-    launchProcess.stdout.pipe(process.stdout);
-    launchProcess.stderr.pipe(process.stderr);
-    launchProcess.on('error', err => {
-      console.warn(err);
-    });
-
-    let live = true;
-    launchProcess.on('exit', code => {
-      console.log('launch process exited with code: ' + JSON.stringify(code));
-
-      if (live) {
-        process.exit();
-
-        live = false;
-      }
-    });
-    process.on('exit', () => {
-      if (live) {
-        console.log('terminating launch process');
-
-        launchProcess.kill();
-
-        live = false;
-      }
-    });
-  }
-
-  return Promise.resolve();
-};
-
 _checkArgs()
   .then(() => _configure())
   .then(() => _preload())
@@ -344,7 +308,6 @@ _checkArgs()
       console.log('Server: ' + config.metadata.server.url + '/');
     }
   })
-  .then(() => _launch())
   .catch(err => {
     console.warn(err);
 
