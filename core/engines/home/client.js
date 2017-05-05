@@ -1340,7 +1340,4 @@ class Home {
   }
 }
 
-const _clone = o => JSON.parse(JSON.stringify(o));
-const _makeId = () => Math.random().toString(36).substring(7);
-
 module.exports = Home;
