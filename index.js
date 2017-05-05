@@ -57,7 +57,7 @@ const flags = {
   siteUrl: _findArg('siteUrl'),
   hubUrl: _findArg('hubUrl'),
   homeUrl: _findArg('homeUrl'),
-  my: args.includes('my'),
+  maxUsers: args.includes('maxUsers'),
 };
 const hasSomeFlag = (() => {
   for (const k in flags) {
@@ -91,6 +91,7 @@ const siteUrl = flags.siteUrl || (protocolString + '://' + hostname + ':' + port
 const hubUrl = flags.hubUrl || (protocolString + '://hub.' + hostname + ':' + port);
 const homeUrl = flags.homeUrl || (protocolString + '://127.0.0.1:' + port);
 const fullUrl = protocolString + '://127.0.0.1:' + port;
+const maxUsers = (flags.maxUsers && parseInt(flags.maxUsers, 10)) || 4;
 const config = {
   dirname: __dirname,
   hostname: hostname,
@@ -126,9 +127,7 @@ const config = {
       worldname: worldname,
       enabled: flags.server,
     },
-    my: {
-      enabled: flags.my || false,
-    },
+    maxUsers: maxUsers,
   },
 };
 const a = archae(config);
