@@ -14,6 +14,7 @@ const {
   DEFAULT_USER_HEIGHT,
   TRANSITION_TIME,
 } = require('./lib/constants/menu');
+const names = require('./lib/constants/names.json');
 const menuUtils = require('./lib/utils/menu');
 const menuRender = require('./lib/render/menu');
 
@@ -119,7 +120,7 @@ class Rend {
         };
         const statusState = {
           url: bootstrap.getInitialPath(),
-          username: 'Fake name', // XXX actually generate fake names here
+          username: names[Math.floor(Math.random() * names.length)],
           worldname: serverWorldname,
           users: [],
           flags: {
