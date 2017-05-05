@@ -114,8 +114,8 @@ class Rend {
 
         const menuState = {
           open: true,
-          position: null,
-          rotation: null,
+          position: [0, DEFAULT_USER_HEIGHT, -1.5],
+          rotation: new THREE.Quaternion().toArray(),
           animation: null,
         };
         const statusState = {
@@ -134,7 +134,8 @@ class Rend {
 
         const menuMesh = (() => {
           const object = new THREE.Object3D();
-          object.position.set(0, DEFAULT_USER_HEIGHT, -1.5);
+          object.position.fromArray(menuState.position);
+          object.quaternion.fromArray(menuState.rotation);
           object.visible = menuState.open;
 
           const statusMesh = (() => {
