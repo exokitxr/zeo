@@ -245,7 +245,7 @@ class Zeo {
                       font-family: ${biolumi.getFonts()};
                     `;
                     overlay.innerHTML = `\
-                      <div style="display: flex; width: 100%; margin: auto 0; padding: 20px 0; background-color: rgba(255, 255, 255, 0.8); box-shadow: 0 0 5px rgba(0, 0, 0, 0.25); justify-content: center;">
+                      <div style="display: flex; width: 100%; margin: auto 0; padding: 20px 0; background-color: #000; color: #FFF; justify-content: center;">
                         <div style="display: flex; flex-direction: column; justify-content: center; align-items: center;" class=overlay-content></div>
                       </div>
                     `;
@@ -269,19 +269,17 @@ class Zeo {
                     });
 
                     const enterHelperContent = document.createElement('div');
+                    enterHelperContent.style.cssText = `display: flex; width: 500px; margin-bottom: 20px;`;
                     enterHelperContent.innerHTML = `\
-                      <div style="display: flex; width: 500px; margin-bottom: 20px;">
-                        <button style="display: inline-block; position: relative; height: 42px; margin-right: 10px; padding: 10px 20px; background-color: transparent; border: 1px solid; color: #000; font-family: ${fonts}; font-size: 13px; font-weight: 600; cursor: pointer; outline: none; box-sizing: border-box;" class=headset-button>Headset</button>
-                        <button style="display: inline-block; position: relative; height: 42px; padding: 10px 20px; background-color: transparent; border: 1px solid; color: #000; font-family: ${fonts}; font-size: 13px; font-weight: 600; cursor: pointer; outline: none; box-sizing: border-box;" class=keyboard-button>Mouse + Keyboard</button>
-                      </div>
+                      <button style="display: inline-block; position: relative; height: 42px; margin-right: 10px; padding: 10px 20px; background-color: transparent; border: 1px solid; color: #FFF; font-family: ${fonts}; font-size: 13px; font-weight: 600; cursor: pointer; outline: none; box-sizing: border-box;" class=headset-button>Headset</button>
+                      <button style="display: inline-block; position: relative; height: 42px; padding: 10px 20px; background-color: transparent; border: 1px solid; color: #FFF; font-family: ${fonts}; font-size: 13px; font-weight: 600; cursor: pointer; outline: none; box-sizing: border-box;" class=keyboard-button>Mouse + Keyboard</button>
                     `;
 
                     const errorMessage = document.createElement('div');
+                    errorMessage.style.cssText = `width: 100%; height: 80px;`;
                     errorMessage.innerHTML = `\
-                      <div style="height: 80px;">
-                        <div style="margin-bottom: 15px; font-size: 18px; line-height: 1;">No WebVR</div>
-                        <div style="font-size: 13px;">WebVR is not supported by your browser, so you can't use a headset. <a href="#" style="color: inherit; text-decoration: underline;">Learn more</a>
-                      </div>
+                      <div style="margin-bottom: 15px; font-size: 18px; line-height: 1;">No WebVR</div>
+                      <div style="font-size: 13px;">WebVR is not supported by your browser, so you can't use a headset. <a href="#" style="color: inherit; text-decoration: underline;">Learn more</a>
                     `;
 
                     const _enterHeadsetVR = () => {
@@ -315,14 +313,14 @@ class Zeo {
 
                     const _styleButton = button => {
                       button.addEventListener('mouseover', e => {
-                        button.style.backgroundColor = '#000';
+                        button.style.backgroundColor = '#FFF';
                         button.style.borderColor = 'transparent';
-                        button.style.color = '#FFF';
+                        button.style.color = '#000';
                       });
                       button.addEventListener('mouseout', e => {
                         button.style.backgroundColor = 'transparent';
                         button.style.borderColor = 'currentColor';
-                        button.style.color = '#000';
+                        button.style.color = '#FFF';
                       });
                     };
 
