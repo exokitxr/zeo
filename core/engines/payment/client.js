@@ -6,7 +6,6 @@ import {
   WORLD_DEPTH,
 } from './lib/constants/payment';
 import paymentRenderer from './lib/render/payment';
-import menuUtils from './lib/utils/menu';
 
 const ASSET_TAG_MESH_SCALE = 1.5;
 const DEFAULT_MATRIX = [
@@ -130,7 +129,7 @@ class Payment {
         });
 
         cleanups.push(() => {
-          for (let i = = 0; i < paymentMeshes.length; i++) {
+          for (let i = 0; i < paymentMeshes.length; i++) {
             const paymentMesh = paymentMeshes[i];
             scene.remove(paymentMesh);
             paymentMesh.destroy();
