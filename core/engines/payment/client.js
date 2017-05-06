@@ -25,18 +25,10 @@ class Payment {
     const {_archae: archae} = this;
     const {metadata: {site: {url: siteUrl}, home: {enabled: homeEnabled}, server: {enabled: serverEnabled}}} = archae;
 
-    const cleanups = [];
-    this._cleanup = () => {
-      for (let i = 0; i < cleanups.length; i++) {
-        const cleanup = cleanups[i];
-        cleanup();
-      }
-    };
-
     let live = true;
-    cleanups.push(() => {
+    this._cleanup = () => {
       live = false;
-    });
+    };
 
     return archae.requestPlugins([
       '/core/engines/three',
@@ -44,7 +36,6 @@ class Payment {
       '/core/engines/webvr',
       '/core/engines/biolumi',
       '/core/engines/rend',
-      '/core/engines/keyboard',
       '/core/engines/tags',
     ]).then(([
       three,
@@ -52,7 +43,6 @@ class Payment {
       webvr,
       biolumi,
       rend,
-      keyboard,
       tags,
     ]) => {
       if (live) {
@@ -94,9 +84,19 @@ class Payment {
             worldWidth: WORLD_WIDTH,
             worldHeight: WORLD_HEIGHT,
           });
+
+          const {hmd: hmdStatus} = webvr.getStatus();
+          mesh.position.copy(
+            hmdStatus.position.clone()
+              .add(new THREE.Vector3(0, -0.5, -0.5))
+          );
+          const hmdRotation = new THREE.Euler().setFromQuaternion(hmdStatus.rotation, camera.rotation.order);
+          mesh.rotation.set(-Math.PI / 4, hmdRotation.y, 0, camera.rotation.order);
+
           mesh.receiveShadow = true;
 
           const {page} = mesh;
+          page.initialUpdate();
           rend.addPage(page);
 
           mesh.destroy = (destroy => function() {
@@ -128,16 +128,17 @@ class Payment {
           priority: 1,
         });
 
-        cleanups.push(() => {
+        this._cleanup = () => {
           for (let i = 0; i < paymentMeshes.length; i++) {
             const paymentMesh = paymentMeshes[i];
             scene.remove(paymentMesh);
             paymentMesh.destroy();
           }
-        });
+        };
 
         const _requestPayment = () => new Promise((accept, reject) => {
           const paymentMesh = _makePaymentMesh();
+          scene.add(paymentMesh);
           paymentMeshes.push(paymentMesh);
         });
 
