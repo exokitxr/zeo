@@ -60,7 +60,9 @@ class Payment {
         };
 
         const paymentMeshes = [];
-        const _makePaymentMesh = () => {
+        const _makePaymentMesh = cb => {
+          const id = _makeId();
+
           const paymentUi = biolumi.makeUi({
             width: WIDTH,
             height: HEIGHT,
@@ -70,7 +72,7 @@ class Payment {
           }) => {
             return {
               type: 'html',
-              src: paymentRenderer.getPaymentSrc(),
+              src: paymentRenderer.getPaymentSrc({id}),
               x: 0,
               y: 0,
               w: WIDTH,
@@ -92,8 +94,16 @@ class Payment {
           );
           const hmdRotation = new THREE.Euler().setFromQuaternion(hmdStatus.rotation, camera.rotation.order);
           mesh.rotation.set(-Math.PI / 4, hmdRotation.y, 0, camera.rotation.order);
-
           mesh.receiveShadow = true;
+
+          mesh.paymentId = id;
+          mesh.confirm = () => {
+            cb();
+          };
+          mesh.cancel = () => {
+            const err = new Error('user canceled payment');
+            cb(err);
+          };
 
           const {page} = mesh;
           page.initialUpdate();
@@ -117,10 +127,23 @@ class Payment {
             const {anchor} = hoverState;
             const onclick = (anchor && anchor.onclick) || '';
 
-            if (onclick === 'payment:confirm') {
-              // XXX
-            } else if (onclick === 'payment:cancel') {
-              // XXX
+            let match;
+            if (match = onclick.match(/^payment:confirm:(.+)$/)) {
+              const id = match[1];
+              const paymentMesh = paymentMeshes.find(paymentMesh => paymentMesh.paymentId === id);
+
+              console.log('confirm', {id, paymentMesh}); // XXX
+
+              scene.remove(paymentMesh);
+              paymentMesh.destroy();
+            } else if (match = onclick.match(/^payment:cancel:(.+)$/)) {
+              const id = match[1];
+              const paymentMesh = paymentMeshes.find(paymentMesh => paymentMesh.paymentId === id);
+
+              console.log('cancel', {id, paymentMesh}); // XXX
+
+              scene.remove(paymentMesh);
+              paymentMesh.destroy();
             }
           }
         };
@@ -136,8 +159,14 @@ class Payment {
           }
         };
 
-        const _requestPayment = () => new Promise((accept, reject) => {
-          const paymentMesh = _makePaymentMesh();
+        const _requestPayment = ({srcAsset, srcQuantity, dstAsset, dstQuantity}) => new Promise((accept, reject) => {
+          const paymentMesh = _makePaymentMesh(err => {
+            if (!err) {
+              accept();
+            } else {
+              reject(err);
+            }
+          });
           scene.add(paymentMesh);
           paymentMeshes.push(paymentMesh);
         });
@@ -153,5 +182,6 @@ class Payment {
     this._cleanup();
   }
 }
+const _makeId = () => Math.random().toString(36).substring(7);
 
 module.exports = Payment;

@@ -61,10 +61,18 @@ class Test {
 
     const keypress = e => {
       if (e.keyCode === 112) { // P
-        console.log('request payment');
+        console.log('request payment', {
+          srcAsset: 'SRCASSET',
+          srcQuantity: 10,
+          dstAsset: 'DSTASSET',
+          dstQuantity: 1,
+        });
 
         payment.requestPayment({
-          lol: 'zol',
+          srcAsset: 'SRCASSET',
+          srcQuantity: 10,
+          dstAsset: 'DSTASSET',
+          dstQuantity: 1,
         })
           .then(result => {
             console.warn('payment result', result);
