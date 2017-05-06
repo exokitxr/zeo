@@ -1,6 +1,6 @@
 class Test {
   mount() {
-    const {elements} = zeo;
+    const {elements, input, payment} = zeo;
 
     console.log('mount');
 
@@ -59,8 +59,27 @@ class Test {
     };
     elements.registerComponent(this, testComponent);
 
+    const keypress = e => {
+      if (e.keyCode === 112) { // P
+        console.log('request payment');
+
+        payment.requestPayment({
+          lol: 'zol',
+        })
+          .then(result => {
+            console.warn('payment result', result);
+          })
+          .catch(err => {
+            console.warn('payment error', err);
+          });
+      }
+    };
+    input.on('keypress', keypress);
+
     this._cleanup = () => {
       elements.unregisterComponent(this, testComponent);
+
+      input.removeListener('keypress', keypress);
     };
   }
 
