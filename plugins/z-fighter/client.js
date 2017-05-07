@@ -58,6 +58,18 @@ class ZFighter {
                   1, 1, 1,
                 ],
               },
+              grabbable: {
+                type: 'checkbox',
+                value: true,
+              },
+              holdable: {
+                type: 'checkbox',
+                value: true,
+              },
+              size: {
+                type: 'vector',
+                value: [0.2, 0.2, 0.2],
+              },
             },
             entityAddedCallback(entityElement) {
               const entityApi = entityElement.getComponentApi();
