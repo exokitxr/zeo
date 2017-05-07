@@ -236,10 +236,16 @@ class ZFighter {
                   const {bladeMesh} = lightsaberMesh;
                   bladeMesh.visible = false;
 
-                  soundBodies[0].audio.pause();
-                  soundBodies[1].audio.pause();
-                  soundBodies[2].audio.currentTime = 0;
-                  soundBodies[2].audio.play();
+                  if (!soundBodies[0].audio.paused) {
+                    soundBodies[0].audio.pause();
+                  }
+                  if (!soundBodies[1].audio.paused) {
+                    soundBodies[1].audio.pause();
+                  }
+                  if (soundBodies[2].audio.paused) {
+                    soundBodies[2].audio.currentTime = 0;
+                    soundBodies[2].audio.play();
+                  }
                 }
               };
               entityElement.addEventListener('release', _release);
@@ -256,9 +262,13 @@ class ZFighter {
                     const {bladeMesh} = lightsaberMesh;
                     bladeMesh.visible = true;
 
-                    soundBodies[0].audio.currentTime = 0;
-                    soundBodies[0].audio.play();
-                    soundBodies[1].audio.play();
+                    if (soundBodies[0].audio.paused) {
+                      soundBodies[0].audio.currentTime = 0;
+                      soundBodies[0].audio.play();
+                    }
+                    if (soundBodies[1].audio.paused) {
+                      soundBodies[1].audio.play();
+                    }
                   }
                 }
               };
@@ -276,10 +286,16 @@ class ZFighter {
                     const {bladeMesh} = lightsaberMesh;
                     bladeMesh.visible = false;
 
-                    soundBodies[0].audio.pause();
-                    soundBodies[1].audio.pause();
-                    soundBodies[2].audio.currentTime = 0;
-                    soundBodies[2].audio.play();
+                    if (!soundBodies[0].audio.paused) {
+                      soundBodies[0].audio.pause();
+                    }
+                    if (!soundBodies[1].audio.paused) {
+                      soundBodies[1].audio.pause();
+                    }
+                    if (soundBodies[2].audio.paused) {
+                      soundBodies[2].audio.currentTime = 0;
+                      soundBodies[2].audio.play();
+                    }
                   }
                 }
               };
