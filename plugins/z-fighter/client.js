@@ -249,6 +249,18 @@ class ZFighter {
                 }
               };
               entityElement.addEventListener('release', _release);
+              const _trigger = e => {
+                const {side} = e;
+                const lightsaberState = lightsaberStates[side];
+                const {grabbed} = lightsaberState;
+
+                if (grabbed) {
+                  e.stopImmediatePropagation();
+                }
+              };
+              input.on('trigger', _trigger, {
+                priority: 1,
+              });
               const _triggerdown = e => {
                 const {side} = e;
                 const lightsaberState = lightsaberStates[side];
@@ -256,6 +268,7 @@ class ZFighter {
 
                 if (grabbed) {
                   const {ignited} = lightsaberState;
+
                   if (!ignited) {
                     lightsaberState.ignited = true;
 
@@ -270,9 +283,13 @@ class ZFighter {
                       soundBodies[1].audio.play();
                     }
                   }
+
+                  e.stopImmediatePropagation();
                 }
               };
-              input.on('triggerdown', _triggerdown);
+              input.on('triggerdown', _triggerdown, {
+                priority: 1,
+              });
               const _triggerup = e => {
                 const {side} = e;
                 const lightsaberState = lightsaberStates[side];
@@ -280,6 +297,7 @@ class ZFighter {
 
                 if (grabbed) {
                   const {ignited} = lightsaberState;
+
                   if (ignited) {
                     lightsaberState.ignited = false;
 
@@ -297,9 +315,13 @@ class ZFighter {
                       soundBodies[2].audio.play();
                     }
                   }
+
+                  e.stopImmediatePropagation();
                 }
               };
-              input.on('triggerup', _triggerup);
+              input.on('triggerup', _triggerup, {
+                priority: 1,
+              });
 
               const _update = () => {
                 // XXX
@@ -313,6 +335,7 @@ class ZFighter {
                 entityElement.removeEventListener('grab', _grab);
                 entityElement.removeEventListener('release', _release);
 
+                input.removeListener('trigger', _trigger);
                 input.removeListener('triggerdown', _triggerdown);
                 input.removeListener('triggerup', _triggerup);
 
