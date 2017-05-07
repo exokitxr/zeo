@@ -7,7 +7,7 @@ const SIDES = ['left', 'right'];
 
 class ZFighter {
   mount() {
-    const {three: {THREE, scene}, elements, input, pose, world, render, player, utils: {geometry: geometryUtils}} = zeo;
+    const {three: {THREE, scene}, elements, input, pose, world, render, player, sound, utils: {geometry: geometryUtils}} = zeo;
 
     let live = true;
     this.cleanup = () => {
@@ -38,7 +38,11 @@ class ZFighter {
 
     return Promise.all([
       _requestAudio('archae/z-fighter/audio/kylo1.ogg'),
-      _requestAudio('archae/z-fighter/audio/kylo2.ogg'),
+      _requestAudio('archae/z-fighter/audio/kylo2.ogg')
+        .then(audio => {
+          audio.loop = true;
+          return audio;
+        }),
       _requestAudio('archae/z-fighter/audio/kylo3.ogg'),
     ])
       .then(([
@@ -129,6 +133,23 @@ class ZFighter {
               })();
               entityObject.add(lightsaberMesh);
 
+              const soundBodies = [
+                kylo1Audio,
+                kylo2Audio,
+                kylo3Audio,
+              ].map(audio => {
+                const result = sound.makeBody();
+
+                const localAudio = audio.cloneNode();
+                result.setInputElement(localAudio);
+                result.audio = localAudio;
+
+                result.setObject(lightsaberMesh);
+
+                return result;
+              });
+              entityApi.soundBodies = soundBodies;
+
               entityApi.color = new THREE.Color(0x000000);
               entityApi.render = () => {
                 const {color} = entityApi;
@@ -158,7 +179,19 @@ class ZFighter {
                 const lightsaberState = lightsaberStates[side];
 
                 lightsaberState.grabbed = false;
-                lightsaberState.ignited = false;
+
+                const {ignited} = lightsaberState;
+                if (ignited) {
+                  lightsaberState.ignited = false;
+
+                  const {bladeMesh} = lightsaberMesh;
+                  bladeMesh.visible = false;
+
+                  soundBodies[0].audio.pause();
+                  soundBodies[1].audio.pause();
+                  soundBodies[2].audio.currentTime = 0;
+                  soundBodies[2].audio.play();
+                }
               };
               entityElement.addEventListener('release', _release);
               const _triggerdown = e => {
@@ -167,10 +200,17 @@ class ZFighter {
                 const {grabbed} = lightsaberState;
 
                 if (grabbed) {
-                  lightsaberState.ignited = true;
+                  const {ignited} = lightsaberState;
+                  if (!ignited) {
+                    lightsaberState.ignited = true;
 
-                  const {bladeMesh} = lightsaberMesh;
-                  bladeMesh.visible = true;
+                    const {bladeMesh} = lightsaberMesh;
+                    bladeMesh.visible = true;
+
+                    soundBodies[0].audio.currentTime = 0;
+                    soundBodies[0].audio.play();
+                    soundBodies[1].audio.play();
+                  }
                 }
               };
               input.on('triggerdown', _triggerdown);
@@ -180,10 +220,18 @@ class ZFighter {
                 const {grabbed} = lightsaberState;
 
                 if (grabbed) {
-                  lightsaberState.ignited = false;
+                  const {ignited} = lightsaberState;
+                  if (ignited) {
+                    lightsaberState.ignited = false;
 
-                  const {bladeMesh} = lightsaberMesh;
-                  bladeMesh.visible = false;
+                    const {bladeMesh} = lightsaberMesh;
+                    bladeMesh.visible = false;
+
+                    soundBodies[0].audio.pause();
+                    soundBodies[1].audio.pause();
+                    soundBodies[2].audio.currentTime = 0;
+                    soundBodies[2].audio.play();
+                  }
                 }
               };
               input.on('triggerup', _triggerup);
