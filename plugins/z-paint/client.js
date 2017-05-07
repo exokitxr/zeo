@@ -86,8 +86,6 @@ class ZPaint {
 
                 const coreMesh = (() => {
                   const geometry = (() => {
-                    const sq = n => Math.sqrt((n * n) + (n * n));
-
                     const coreGeometry = new THREE.BoxBufferGeometry(0.02, 0.02, 0.05);
                     const jointGeometry = new THREE.BoxBufferGeometry(0.1, 0.03, 0.03)
                       .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -(0.05 / 2) - (0.03 / 2)));

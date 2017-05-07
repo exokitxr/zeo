@@ -1,3 +1,6 @@
+const BULLET_RATE = 1000 / 2;
+const BULLET_SPEED = 0.005;
+const BULLET_TTL = 10 * 1000;
 const DEFAULT_MATRIX = [
   0, 0, 0,
   0, 0, 0, 1,
@@ -7,22 +10,31 @@ const SIDES = ['left', 'right'];
 
 class ZFighter {
   mount() {
-    const {three: {THREE, scene}, elements, input, pose, world, render, player, sound, utils: {geometry: geometryUtils}} = zeo;
+    const {three: {THREE, scene, camera}, elements, input, pose, world, render, player, sound, utils: {geometry: geometryUtils}} = zeo;
 
     let live = true;
     this.cleanup = () => {
       live = false;
     };
 
+    const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
+    const _decomposeMatrix = matrix => {
+      const position = new THREE.Vector3();
+      const rotation = new THREE.Quaternion();
+      const scale = new THREE.Vector3();
+      matrix.decompose(position, rotation, scale);
+      return {position, rotation, scale};
+    };
+
     const _requestAudio = src => new Promise((accept, reject) => {
       const audio = document.createElement('audio');
 
       const _cleanup = () => {
-        audio.oncanplaythrough = null;
+        audio.oncanplay = null;
         audio.onerror = null;
       };
 
-      audio.oncanplaythrough = () => {
+      audio.oncanplay = () => {
         _cleanup();
 
         accept(audio);
@@ -51,6 +63,23 @@ class ZFighter {
         kylo3Audio,
       ]) => {
         if (live) {
+          const bulletGeometry = new THREE.BoxBufferGeometry(0.01, 0.01, 0.1);
+          const bulletMaterial = new THREE.MeshPhongMaterial({
+            color: 0x2196F3,
+            shading: THREE.FlatShading,
+            transparent: true,
+            opacity: 0.5,
+          });
+          const _makeBulletMesh = () => {
+            const geometry = bulletGeometry;
+            const material = bulletMaterial;
+
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.startTime = Date.now();
+            mesh.lastTime = mesh.lastTime;
+            return mesh;
+          };
+
           const fighterComponent = {
             selector: 'fighter[position]',
             attributes: {
@@ -150,29 +179,33 @@ class ZFighter {
 
                 const eyeballMesh = (() => {
                   const geometry = new THREE.CylinderBufferGeometry(0.1, 0.1, 0.03, 8, 1)
-                    .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
-                    .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, 0.25 - 0.03));
+                    .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
                   const material = new THREE.MeshPhongMaterial({
                     color: 0xEEEEEE,
                     shading: THREE.FlatShading,
                   });
 
                   const mesh = new THREE.Mesh(geometry, material);
+                  mesh.position.z = 0.25 - 0.03;
+                  mesh.rotation.y = Math.PI;
+                  mesh.rotation.order = camera.rotation.order;
                   return mesh;
                 })();
                 object.add(eyeballMesh);
                 object.eyeballMesh = eyeballMesh;
 
                 const pupilMesh = (() => {
-                  const geometry = new THREE.CylinderBufferGeometry(0.07, 0.07, 0.03, 8, 1)
-                    .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
-                    .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, 0.25 + -0.015));
+                  const geometry = new THREE.CylinderBufferGeometry(0.06, 0.06, 0.03, 8, 1)
+                    .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
                   const material = new THREE.MeshPhongMaterial({
                     color: 0x333333,
                     shading: THREE.FlatShading,
                   });
 
                   const mesh = new THREE.Mesh(geometry, material);
+                  mesh.position.z = 0.25 + -0.015;
+                  mesh.rotation.y = Math.PI;
+                  mesh.rotation.order = camera.rotation.order;
                   return mesh;
                 })();
                 object.add(pupilMesh);
@@ -323,17 +356,74 @@ class ZFighter {
                 priority: 1,
               });
 
-              const _update = () => {
-                const {hmd: hmdStatus} = pose.getStatus();
-                const {position: hmdPosition} = hmdStatus;
+              const bullets = [];
+              let lastBulletTime = Date.now();
 
-                droneMesh.lookAt(hmdPosition);
+              const _update = () => {
+                const _updateDrone = () => {
+                  const {hmd: hmdStatus} = pose.getStatus();
+                  const {position: hmdPosition} = hmdStatus;
+
+                  droneMesh.lookAt(hmdPosition);
+                };
+                const _addBullets = () => {
+                  const now = Date.now();
+                  const timeDiff = now - lastBulletTime;
+
+                  if (timeDiff >= BULLET_RATE) {
+                    const {pupilMesh} = droneMesh;
+                    const {position, rotation, scale} = _decomposeObjectMatrixWorld(pupilMesh);
+
+                    const bullet = _makeBulletMesh();
+                    bullet.position.copy(position);
+                    bullet.quaternion.copy(rotation);
+                    bullet.scale.copy(scale);
+                    scene.add(bullet);
+                    bullets.push(bullet);
+
+                    lastBulletTime = now;
+                  }
+                };
+                const _updateBullets = () => {
+                  const now = Date.now();
+
+                  const oldBullets = bullets.slice();
+                  for (let i = 0; i < oldBullets.length; i++) {
+                    const bullet = oldBullets[i];
+                    const {startTime} = bullet;
+                    const timeSinceStart = now - startTime;
+
+                    if (timeSinceStart < BULLET_TTL) {
+                      const {lastTime} = bullet;
+                      const timeDiff = now - lastTime;
+
+                      bullet.position.add(
+                        new THREE.Vector3(0, 0, -BULLET_SPEED * timeDiff)
+                          .applyQuaternion(bullet.quaternion)
+                      );
+
+                      bullet.lastTime = now;
+                    } else {
+                      scene.remove(bullet);
+                      bullets.splice(bullets.indexOf(bullet), 1);
+                    }
+                  }
+                };
+
+                _updateDrone();
+                _addBullets();
+                _updateBullets();
               };
               render.on('update', _update);
 
               entityApi._cleanup = () => {
                 entityObject.remove(lightsaberMesh);
                 scene.remove(droneMesh);
+
+                for (let i = 0; i < bullets.length; i++) {
+                  const bullet = bullets[i];
+                  scene.remove(bullet);
+                }
 
                 entityElement.removeEventListener('grab', _grab);
                 entityElement.removeEventListener('release', _release);
@@ -389,5 +479,7 @@ class ZFighter {
     this._cleanup();
   }
 }
+
+const sq = n => Math.sqrt((n * n) + (n * n));
 
 module.exports = ZFighter;
