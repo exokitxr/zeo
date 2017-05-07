@@ -1,0 +1,9 @@
+{
+  "name": "z-fighter",
+  "description": "Fight robots and other players.",
+  "version": "0.0.1",
+  "keywords": [],
+  "client": "client.js",
+  "server": "server.js",
+  "dependencies": {}
+}
