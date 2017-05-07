@@ -151,7 +151,7 @@ class ZFighter {
                 const eyeballMesh = (() => {
                   const geometry = new THREE.CylinderBufferGeometry(0.1, 0.1, 0.03, 8, 1)
                     .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
-                    .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -0.25 + 0.03));
+                    .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, 0.25 - 0.03));
                   const material = new THREE.MeshPhongMaterial({
                     color: 0xEEEEEE,
                     shading: THREE.FlatShading,
@@ -166,7 +166,7 @@ class ZFighter {
                 const pupilMesh = (() => {
                   const geometry = new THREE.CylinderBufferGeometry(0.07, 0.07, 0.03, 8, 1)
                     .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
-                    .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -0.25 + 0.015));
+                    .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, 0.25 + -0.015));
                   const material = new THREE.MeshPhongMaterial({
                     color: 0x333333,
                     shading: THREE.FlatShading,
@@ -324,7 +324,10 @@ class ZFighter {
               });
 
               const _update = () => {
-                // XXX
+                const {hmd: hmdStatus} = pose.getStatus();
+                const {position: hmdPosition} = hmdStatus;
+
+                droneMesh.lookAt(hmdPosition);
               };
               render.on('update', _update);
 
