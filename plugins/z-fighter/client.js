@@ -82,9 +82,9 @@ class ZFighter {
                   const geometry = (() => {
                     const sq = n => Math.sqrt((n * n) + (n * n));
 
-                    const handleGeometry = new THREE.BoxBufferGeometry(0.02, 0.02, 0.05);
-                    const crossguardGeometry = new THREE.BoxBufferGeometry(0.05, 0.02, 0.02)
-                      .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -(0.05 / 2) - (0.02 / 2)));
+                    const handleGeometry = new THREE.BoxBufferGeometry(0.02, 0.02, 0.1);
+                    const crossguardGeometry = new THREE.BoxBufferGeometry(0.1, 0.02, 0.02)
+                      .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -(0.1 / 2) - (0.02 / 2)));
 
                     return geometryUtils.concatBufferGeometry([handleGeometry, crossguardGeometry]);
                   })();
@@ -103,11 +103,11 @@ class ZFighter {
                     const sq = n => Math.sqrt((n * n) + (n * n));
 
                     const coreGeometry = new THREE.BoxBufferGeometry(0.02, 0.02, 1)
-                      .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -(0.05 / 2) - (1 / 2)));
+                      .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -(0.1 / 2) - 0.02 - (1 / 2)));
                     const leftGeometry = new THREE.BoxBufferGeometry(0.1, 0.02, 0.02)
-                      .applyMatrix(new THREE.Matrix4().makeTranslation(-0.1 / 2, 0, -(0.05 / 2) - (0.02 / 2)));;
+                      .applyMatrix(new THREE.Matrix4().makeTranslation(-(0.1 / 2) - (0.1 / 2), 0, -(0.1 / 2) - (0.02 / 2)));
                     const rightGeometry = new THREE.BoxBufferGeometry(0.1, 0.02, 0.02)
-                      .applyMatrix(new THREE.Matrix4().makeTranslation(0.1 / 2, 0, -(0.05 / 2) - (0.02 / 2)));;
+                      .applyMatrix(new THREE.Matrix4().makeTranslation((0.1 / 2) + (0.1 / 2), 0, -(0.1 / 2) - (0.02 / 2)));
 
                     return geometryUtils.concatBufferGeometry([coreGeometry, leftGeometry, rightGeometry]);
                   })();
