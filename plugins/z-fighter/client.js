@@ -156,6 +156,22 @@ class ZFighter {
                 object.add(bladeMesh);
                 object.bladeMesh = bladeMesh;
 
+                const hitMesh = (() => {
+                  const geometry = new THREE.BoxBufferGeometry(0.1, 0.1, 1);
+                  const material = new THREE.MeshPhongMaterial({
+                    color: 0x666666,
+                    shading: THREE.FlatShading,
+                    transparent: true,
+                    opacity: 0.25,
+                  });
+
+                  const mesh = new THREE.Mesh(geometry, material);
+                  mesh.position.set(0, 0, -(0.1 / 2) - 0.02 - (1 / 2));
+                  return mesh;
+                })();
+                object.add(hitMesh);
+                object.hitMesh = hitMesh;
+
                 return object;
               })();
               entityObject.add(lightsaberMesh);
