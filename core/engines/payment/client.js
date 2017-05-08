@@ -60,7 +60,7 @@ class Payment {
         };
 
         const paymentMeshes = [];
-        const _makePaymentMesh = cb => {
+        const _makePayMesh = cb => {
           const id = _makeId();
 
           const paymentUi = biolumi.makeUi({
@@ -72,7 +72,64 @@ class Payment {
           }) => {
             return {
               type: 'html',
-              src: paymentRenderer.getPaymentSrc({id}),
+              src: paymentRenderer.getPayPageSrc({id}),
+              x: 0,
+              y: 0,
+              w: WIDTH,
+              h: HEIGHT,
+            };
+          }, {
+            type: 'payment',
+            state: {
+              // nothing
+            },
+            worldWidth: WORLD_WIDTH,
+            worldHeight: WORLD_HEIGHT,
+          });
+
+          const {hmd: hmdStatus} = webvr.getStatus();
+          mesh.position.copy(
+            hmdStatus.position.clone()
+              .add(new THREE.Vector3(0, -0.5, -0.5))
+          );
+          const hmdRotation = new THREE.Euler().setFromQuaternion(hmdStatus.rotation, camera.rotation.order);
+          mesh.rotation.set(-Math.PI / 4, hmdRotation.y, 0, camera.rotation.order);
+          mesh.receiveShadow = true;
+
+          mesh.paymentId = id;
+          mesh.confirm = () => {
+            cb();
+          };
+          mesh.cancel = () => {
+            const err = new Error('user canceled payment');
+            cb(err);
+          };
+
+          const {page} = mesh;
+          page.initialUpdate();
+          rend.addPage(page);
+
+          mesh.destroy = (destroy => function() {
+            destroy.apply(this, arguments);
+
+            rend.removePage(page);
+          })(mesh.destroy);
+
+          return mesh;
+        };
+        const _makeBuyMesh = cb => {
+          const id = _makeId();
+
+          const paymentUi = biolumi.makeUi({
+            width: WIDTH,
+            height: HEIGHT,
+          });
+          const mesh = paymentUi.makePage(({
+            // nothing
+          }) => {
+            return {
+              type: 'html',
+              src: paymentRenderer.getBuyPageSrc({id}),
               x: 0,
               y: 0,
               w: WIDTH,
@@ -159,8 +216,19 @@ class Payment {
           }
         };
 
-        const _requestPayment = ({srcAsset, srcQuantity, dstAsset, dstQuantity}) => new Promise((accept, reject) => {
-          const paymentMesh = _makePaymentMesh(err => {
+        const _requestPay = ({srcAsset, srcQuantity}) => new Promise((accept, reject) => {
+          const paymentMesh = _makePayMesh(err => {
+            if (!err) {
+              accept();
+            } else {
+              reject(err);
+            }
+          });
+          scene.add(paymentMesh);
+          paymentMeshes.push(paymentMesh);
+        });
+        const _requestBuy = ({srcAsset, srcQuantity, dstAsset, dstQuantity}) => new Promise((accept, reject) => {
+          const paymentMesh = _makeBuyMesh(err => {
             if (!err) {
               accept();
             } else {
@@ -172,7 +240,8 @@ class Payment {
         });
 
         return {
-          requestPayment: _requestPayment,
+          requestPay: _requestPay,
+          requestBuy: _requestBuy,
         };
       }
     });

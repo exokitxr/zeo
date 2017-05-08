@@ -60,25 +60,29 @@ class Test {
     elements.registerComponent(this, testComponent);
 
     const keypress = e => {
-      if (e.keyCode === 112) { // P
-        console.log('request payment', {
-          srcAsset: 'SRCASSET',
-          srcQuantity: 10,
-          dstAsset: 'DSTASSET',
-          dstQuantity: 1,
-        });
-
-        payment.requestPayment({
+      if (e.keyCode === 98) { // B
+        payment.requestBuy({
+          asset: 'SRCASSET',
+          quantity: 10,
+        })
+          .then(result => {
+            console.warn('buy result', result);
+          })
+          .catch(err => {
+            console.warn('buy error', err);
+          });
+      } else if (e.keyCode === 112) { // P
+        payment.requestPay({
           srcAsset: 'SRCASSET',
           srcQuantity: 10,
           dstAsset: 'DSTASSET',
           dstQuantity: 1,
         })
           .then(result => {
-            console.warn('payment result', result);
+            console.warn('pay result', result);
           })
           .catch(err => {
-            console.warn('payment error', err);
+            console.warn('pay error', err);
           });
       }
     };
