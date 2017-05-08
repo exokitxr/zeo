@@ -598,11 +598,16 @@ class ZFighter {
               });
 
               const bullets = [];
-              let lastUpdateTime = Date.now();
-              let lastBulletUpdateTime = Date.now();
+              let now = Date.now();
+              let lastUpdateTime = now;
+              let lastBulletUpdateTime = now;
+              const lastEyeUpdateTimes = {
+                left: now,
+                right: now,
+              };
 
               const _update = () => {
-                const now = Date.now();
+                now = Date.now();
 
                 const _updateLightsaber = () => {
                   SIDES.forEach(side => {
@@ -800,17 +805,26 @@ class ZFighter {
               };
               render.on('update', _update);
               const _updateEye = camera => {
+                const {side} = camera;
+                const lastEyeUpdateTime = lastEyeUpdateTimes[side];
+
                 const _updateHudMesh = () => {
                   const {position: cameraPosition, quaternion: cameraRotation} = camera;
+                  const targetPosition = cameraPosition.clone().add(new THREE.Vector3(0, 0, -0.5).applyQuaternion(cameraRotation));
+                  const targetRotation = cameraRotation;
+                  const distance = cameraPosition.distanceTo(targetPosition);
+                  const timeDiff = now - lastEyeUpdateTime;
+                  const lerpFactor = timeDiff * 0.005;
 
-                  hudMesh.position.copy(
-                    cameraPosition.clone()
-                      .add(new THREE.Vector3(0, 0, -0.3).applyQuaternion(cameraRotation))
+                  hudMesh.position.add(
+                    targetPosition.clone().sub(hudMesh.position).multiplyScalar(distance * lerpFactor)
                   );
-                  hudMesh.quaternion.copy(cameraRotation);
+                  hudMesh.quaternion.slerp(targetRotation, lerpFactor);
                 };
 
                 _updateHudMesh();
+
+                lastEyeUpdateTimes[side] = now;
               };
               render.on('updateEye', _updateEye);
 
