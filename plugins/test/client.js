@@ -73,10 +73,9 @@ class Test {
           });
       } else if (e.keyCode === 112) { // P
         payment.requestPay({
-          srcAsset: 'SRCASSET',
-          srcQuantity: 10,
-          dstAsset: 'DSTASSET',
-          dstQuantity: 1,
+          address: 'address',
+          asset: 'ASSET',
+          quantity: 10,
         })
           .then(result => {
             console.warn('pay result', result);

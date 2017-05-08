@@ -591,6 +591,10 @@ class Zeo {
                     }
 
                     class ZeoPaymentApi {
+                      requestBalances() {
+                        return payment.requestBalances();
+                      }
+
                       requestPay(options) {
                         return payment.requestPay(options);
                       }

@@ -60,7 +60,7 @@ class Payment {
         };
 
         const paymentMeshes = [];
-        const _makePayMesh = cb => {
+        const _makePayMesh = ({address, asset, quantity}, cb) => {
           const id = _makeId();
 
           const paymentUi = biolumi.makeUi({
@@ -118,7 +118,7 @@ class Payment {
 
           return mesh;
         };
-        const _makeBuyMesh = cb => {
+        const _makeBuyMesh = ({srcAsset, srcQuantity, dstAsset, dstQuantity}, cb) => {
           const id = _makeId();
 
           const paymentUi = biolumi.makeUi({
@@ -187,16 +187,18 @@ class Payment {
             const onclick = (anchor && anchor.onclick) || '';
 
             let match;
-            if (match = onclick.match(/^payment:confirm:(.+)$/)) {
-              const id = match[1];
+            if (match = onclick.match(/^payment:(pay|buy):confirm:(.+)$/)) {
+              const type = match[1];
+              const id = match[2];
               const paymentMesh = paymentMeshes.find(paymentMesh => paymentMesh.paymentId === id);
 
-              paymentMesh.confirm();
+              paymentMesh.confirm(); // XXX actually perform the payment here
 
               scene.remove(paymentMesh);
               paymentMesh.destroy();
-            } else if (match = onclick.match(/^payment:cancel:(.+)$/)) {
-              const id = match[1];
+            } else if (match = onclick.match(/^payment:(pay|buy):cancel:(.+)$/)) {
+              const type = match[1];
+              const id = match[2];
               const paymentMesh = paymentMeshes.find(paymentMesh => paymentMesh.paymentId === id);
 
               paymentMesh.cancel();
@@ -218,10 +220,17 @@ class Payment {
           }
         };
 
-        const _requestPay = ({srcAsset, srcQuantity}) => new Promise((accept, reject) => {
-          const paymentMesh = _makePayMesh(err => {
+        const _requestBalances = () => new Promise((accept, reject) => {
+          accept([]); // XXX actually fetch balances here
+        });
+        const _requestPay = ({address, asset, quantity}) => new Promise((accept, reject) => {
+          const paymentMesh = _makePayMesh({
+            address,
+            asset,
+            quantity,
+          }, (err, result) => {
             if (!err) {
-              accept();
+              accept(result);
             } else {
               reject(err);
             }
@@ -230,9 +239,14 @@ class Payment {
           paymentMeshes.push(paymentMesh);
         });
         const _requestBuy = ({srcAsset, srcQuantity, dstAsset, dstQuantity}) => new Promise((accept, reject) => {
-          const paymentMesh = _makeBuyMesh(err => {
+          const paymentMesh = _makeBuyMesh({
+            srcAsset,
+            srcQuantity,
+            dstAsset,
+            dstQuantity,
+          }, (err, result) => {
             if (!err) {
-              accept();
+              accept(result);
             } else {
               reject(err);
             }
@@ -242,6 +256,7 @@ class Payment {
         });
 
         return {
+          requestBalances: _requestBalances,
           requestPay: _requestPay,
           requestBuy: _requestBuy,
         };
