@@ -21,6 +21,7 @@ class Cyborg {
     };
 
     return archae.requestPlugins([
+      '/core/engines/bootstrap',
       '/core/engines/three',
       '/core/engines/webvr',
       '/core/engines/assets',
@@ -31,6 +32,7 @@ class Cyborg {
       '/core/utils/geometry-utils',
     ])
       .then(([
+        bootstrap,
         three,
         webvr,
         assets,
@@ -276,27 +278,34 @@ class Cyborg {
               const _updateHmdMesh = () => {
                 const {hudMesh} = this;
 
-                const someButtonTouched = SIDES.some(side => {
-                  const gamepad = gamepadStatus[side];
+                const vrMode = bootstrap.getVrMode();
+                if (vrMode === 'keyboard') {
+                  const touched = SIDES.some(side => {
+                    const gamepad = gamepadStatus[side];
 
-                  if (gamepad && gamepad.buttons.pad.touched) {
-                    hudMesh.position.copy(hmdStatus.position);
-                    hudMesh.quaternion.copy(hmdStatus.rotation);
-                    hudMesh.scale.copy(hmdStatus.scale);
+                    if (gamepad && gamepad.buttons.pad.touched) {
+                      hudMesh.position.copy(hmdStatus.position);
+                      hudMesh.quaternion.copy(hmdStatus.rotation);
+                      hudMesh.scale.copy(hmdStatus.scale);
 
-                    const {circleMesh} = hudMesh;
-                    const {notchMesh} = circleMesh;
-                    const {axes} = gamepad;
-                    notchMesh.position.set(axes[0] * 0.043, axes[1] * 0.043, (1 - new THREE.Vector2(axes[0], axes[1]).length()) * (-0.005));
+                      const {circleMesh} = hudMesh;
+                      const {notchMesh} = circleMesh;
+                      const {axes} = gamepad;
+                      notchMesh.position.set(axes[0] * 0.043, axes[1] * 0.043, (1 - new THREE.Vector2(axes[0], axes[1]).length()) * (-0.005));
 
-                    return true;
+                      return true;
+                    } else {
+                      return false;
+                    }
+                  });
+                  if (touched) {
+                    if (!hudMesh.visible) {
+                      hudMesh.visible = true;
+                    }
                   } else {
-                    return false;
-                  }
-                });
-                if (someButtonTouched) {
-                  if (!hudMesh.visible) {
-                    hudMesh.visible = true;
+                    if (hudMesh.visible) {
+                      hudMesh.visible = false;
+                    }
                   }
                 } else {
                   if (hudMesh.visible) {
