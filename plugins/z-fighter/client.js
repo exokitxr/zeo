@@ -223,6 +223,7 @@ class ZFighter {
                   coreMesh.scale.set(1, 1, value);
                   leftMesh.scale.set(value, 1, 1);
                   rightMesh.scale.set(value, 1, 1);
+                  hitMesh.scale.set(1, 1, value);
                 };
 
                 object.destroy = () => {
@@ -560,63 +561,68 @@ class ZFighter {
                   const {mesh: lightsaberMeshMesh} = lightsaberMesh;
 
                   if (lightsaberMeshMesh) {
-                    const {hitMesh} = lightsaberMeshMesh;
-                    hitMesh.visible = true;
-                    const hitMeshRotation = hitMesh.getWorldQuaternion();
-                    const raycaster = new THREE.Raycaster();
-                    raycaster.near = 0.01;
-                    raycaster.far = 100000;
+                    const {bladeMesh} = lightsaberMeshMesh;
 
-                    for (let i = 0; i < bullets.length; i++) {
-                      const bullet = bullets[i];
+                    if (bladeMesh.visible) {
+                      const {hitMesh} = lightsaberMeshMesh;
+                      hitMesh.visible = true;
 
-                      if (!bullet.intersected) {
-                        const {position: bulletPosition, rotation: bulletRotation} = _decomposeObjectMatrixWorld(bullet);
-                        const ray = new THREE.Ray(
-                          bulletPosition,
-                          forwardVector.clone()
-                            .multiplyScalar(0.01)
-                            .applyQuaternion(bulletRotation)
-                        );
-                        raycaster.ray = ray;
-                        const intersections = raycaster.intersectObject(hitMesh);
+                      const hitMeshRotation = hitMesh.getWorldQuaternion();
+                      const raycaster = new THREE.Raycaster();
+                      raycaster.near = 0.01;
+                      raycaster.far = 100000;
 
-                        if (intersections.length > 0) {
-                          const intersection = intersections[0];
-                          const {face} = intersection;
-                          const {normal} = face;
-                          const worldNormal = normal.clone().applyQuaternion(hitMeshRotation);
-                          const controllerLinearVelocity = (() => {
-                            let result = zeroVector;
+                      for (let i = 0; i < bullets.length; i++) {
+                        const bullet = bullets[i];
 
-                            SIDES.some(side => {
-                              const lightsaberState = lightsaberStates[side]
-                              const {grabbed} = lightsaberState;
-
-                              if (grabbed) {
-                                result = pose.getControllerLinearVelocity(side);
-                                return true;
-                              } else {
-                                return false;
-                              }
-                            });
-
-                            return result;
-                          })();
-                          const reflectionVector = worldNormal.clone()
-                            .add(controllerLinearVelocity.clone().multiplyScalar(2))
-                            .normalize();
-
-                          bullet.quaternion.setFromUnitVectors(
-                            forwardVector,
-                            reflectionVector
+                        if (!bullet.intersected) {
+                          const {position: bulletPosition, rotation: bulletRotation} = _decomposeObjectMatrixWorld(bullet);
+                          const ray = new THREE.Ray(
+                            bulletPosition,
+                            forwardVector.clone()
+                              .multiplyScalar(0.01)
+                              .applyQuaternion(bulletRotation)
                           );
-                          bullet.intersected = true;
+                          raycaster.ray = ray;
+                          const intersections = raycaster.intersectObject(hitMesh);
+
+                          if (intersections.length > 0) {
+                            const intersection = intersections[0];
+                            const {face} = intersection;
+                            const {normal} = face;
+                            const worldNormal = normal.clone().applyQuaternion(hitMeshRotation);
+                            const controllerLinearVelocity = (() => {
+                              let result = zeroVector;
+
+                              SIDES.some(side => {
+                                const lightsaberState = lightsaberStates[side]
+                                const {grabbed} = lightsaberState;
+
+                                if (grabbed) {
+                                  result = pose.getControllerLinearVelocity(side);
+                                  return true;
+                                } else {
+                                  return false;
+                                }
+                              });
+
+                              return result;
+                            })();
+                            const reflectionVector = worldNormal.clone()
+                              .add(controllerLinearVelocity.clone().multiplyScalar(2))
+                              .normalize();
+
+                            bullet.quaternion.setFromUnitVectors(
+                              forwardVector,
+                              reflectionVector
+                            );
+                            bullet.intersected = true;
+                          }
                         }
                       }
-                    }
 
-                    hitMesh.visible = false;
+                      hitMesh.visible = false;
+                    }
                   }
                 }
                 const _updateBullets = () => {
