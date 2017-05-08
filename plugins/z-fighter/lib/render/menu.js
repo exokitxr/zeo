@@ -16,7 +16,7 @@ const getHudSrc = ({live, health}) => {
     </div>`;
   } else {
     return `<div style="display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; color: #FFF; align-items: center;">
-      <div style="display: flex; font-family: Consolas, 'Liberationn Mono', Menlo, Courier, monospace; font-size: 100px; font-weight: 600;">Insert coin to play</div>
+      <div style="display: flex; font-family: Consolas, 'Liberationn Mono', Menlo, Courier, monospace; font-size: 100px; font-weight: 600;">Insert coins</div>
     </div>`;
   }
 };

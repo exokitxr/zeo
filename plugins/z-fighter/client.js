@@ -553,7 +553,7 @@ class ZFighter {
                 lightsaberState.grabbed = true;
 
                 if (!liveState.live) {
-                  payment.requestBuy({
+                  payment.requestPay({
                     asset: 'CRAPCOIN',
                     quantity: 1,
                     address: 'xxxxxxxxxxxxxxxxxxxx',

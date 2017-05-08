@@ -63,118 +63,124 @@ class Payment {
         const _makePayMesh = ({address, asset, quantity, hasAvailableBalance}, cb) => {
           const id = _makeId();
 
-          const paymentUi = biolumi.makeUi({
-            width: WIDTH,
-            height: HEIGHT,
-          });
-          const mesh = paymentUi.makePage(({
-            // nothing
-          }) => {
-            return {
-              type: 'html',
-              src: paymentRenderer.getPayPageSrc({id, hasAvailableBalance}),
-              x: 0,
-              y: 0,
-              w: WIDTH,
-              h: HEIGHT,
-            };
-          }, {
-            type: 'payment',
-            state: {
+          const object = new THREE.Object3D();
+
+          const menuMesh = (() => {
+            const paymentUi = biolumi.makeUi({
+              width: WIDTH,
+              height: HEIGHT,
+            });
+            const mesh = paymentUi.makePage(({
               // nothing
-            },
-            worldWidth: WORLD_WIDTH,
-            worldHeight: WORLD_HEIGHT,
-          });
+            }) => {
+              return {
+                type: 'html',
+                src: paymentRenderer.getPayPageSrc({id, hasAvailableBalance}),
+                x: 0,
+                y: 0,
+                w: WIDTH,
+                h: HEIGHT,
+              };
+            }, {
+              type: 'payment',
+              state: {
+                // nothing
+              },
+              worldWidth: WORLD_WIDTH,
+              worldHeight: WORLD_HEIGHT,
+            });
+            mesh.position.set(0, -0.5, -0.5);
+
+            return mesh;
+          })();
+          object.add(menuMesh);
+          object.menuMesh = menuMesh;
 
           const {hmd: hmdStatus} = webvr.getStatus();
           const {position: hmdPosition, rotation: hmdRotation} = hmdStatus;
-          mesh.position.copy(
-            hmdPosition.clone()
-              .add(new THREE.Vector3(0, -0.5, -0.5).applyQuaternion(hmdRotation))
-          );
+          object.position.copy(hmdPosition);
           const hmdEuler = new THREE.Euler().setFromQuaternion(hmdRotation, camera.rotation.order);
-          mesh.rotation.set(-Math.PI / 4, hmdEuler.y, 0, camera.rotation.order);
-          mesh.receiveShadow = true;
+          object.rotation.set(-Math.PI / 4, hmdEuler.y, 0, camera.rotation.order);
 
-          mesh.paymentId = id;
-          mesh.confirm = () => {
+          object.paymentId = id;
+          object.confirm = () => {
             cb();
           };
-          mesh.cancel = () => {
+          object.cancel = () => {
             const err = new Error('user canceled payment');
             cb(err);
           };
 
-          const {page} = mesh;
+          const {page} = menuMesh;
           page.initialUpdate();
           rend.addPage(page);
 
-          mesh.destroy = (destroy => function() {
-            destroy.apply(this, arguments);
+          object.destroy = () => {
+            menuMesh.destroy();
 
             rend.removePage(page);
-          })(mesh.destroy);
+          };
 
-          return mesh;
+          return object;
         };
-        const _makeBuyMesh = ({srcAsset, srcQuantity, dstAsset, dstQuantity}, cb) => {
+        const _makeBuyMesh = ({srcAsset, srcQuantity, dstAsset, dstQuantity, hasAvailableBalance}, cb) => {
           const id = _makeId();
 
-          const paymentUi = biolumi.makeUi({
-            width: WIDTH,
-            height: HEIGHT,
-          });
-          const mesh = paymentUi.makePage(({
-            // nothing
-          }) => {
-            return {
-              type: 'html',
-              src: paymentRenderer.getBuyPageSrc({id, hasAvailableBalance}),
-              x: 0,
-              y: 0,
-              w: WIDTH,
-              h: HEIGHT,
-            };
-          }, {
-            type: 'payment',
-            state: {
+          const menuMesh = (() => {
+            const paymentUi = biolumi.makeUi({
+              width: WIDTH,
+              height: HEIGHT,
+            });
+            const mesh = paymentUi.makePage(({
               // nothing
-            },
-            worldWidth: WORLD_WIDTH,
-            worldHeight: WORLD_HEIGHT,
-          });
+            }) => {
+              return {
+                type: 'html',
+                src: paymentRenderer.getBuyPageSrc({id, hasAvailableBalance}),
+                x: 0,
+                y: 0,
+                w: WIDTH,
+                h: HEIGHT,
+              };
+            }, {
+              type: 'payment',
+              state: {
+                // nothing
+              },
+              worldWidth: WORLD_WIDTH,
+              worldHeight: WORLD_HEIGHT,
+            });
+            mesh.position.set(0, -0.5, -0.5);
+
+            return mesh;
+          })();
 
           const {hmd: hmdStatus} = webvr.getStatus();
           const {position: hmdPosition, rotation: hmdRotation} = hmdStatus;
-          mesh.position.copy(
-            hmdPosition.clone()
-              .add(new THREE.Vector3(0, -0.5, -0.5).applyQuaternion(hmdRotation))
-          );
+          object.position.copy(hmdPosition);
           const hmdEuler = new THREE.Euler().setFromQuaternion(hmdRotation, camera.rotation.order);
-          mesh.rotation.set(-Math.PI / 4, hmdEuler.y, 0, camera.rotation.order);
-          mesh.receiveShadow = true;
+          object.rotation.set(-Math.PI / 4, hmdEuler.y, 0, camera.rotation.order);
 
-          mesh.paymentId = id;
-          mesh.confirm = () => {
+          object.paymentId = id;
+          object.confirm = () => {
             cb();
           };
-          mesh.cancel = () => {
+          object.cancel = () => {
             const err = new Error('user canceled payment');
             cb(err);
           };
 
-          const {page} = mesh;
+          const {page} = menuMesh;
           page.initialUpdate();
           rend.addPage(page);
 
-          mesh.destroy = (destroy => function() {
-            destroy.apply(this, arguments);
+          object.destroy = () => {
+            menuMesh.destroy();
 
             rend.removePage(page);
-          })(mesh.destroy);
+          };
 
-          return mesh;
+          return object;
         };
 
         const _trigger = e => {
@@ -212,19 +218,39 @@ class Payment {
           priority: 1,
         });
 
+        const _update = () => {
+          const {hmd: hmdStatus} = webvr.getStatus();
+          const {position: hmdPosition} = hmdStatus;
+
+          const oldPaymentMeshes = paymentMeshes.slice();
+          for (let i = 0; i < oldPaymentMeshes.length; i++) {
+            const paymentMesh = paymentMeshes[i];
+
+            if (paymentMesh.position.distanceTo(hmdPosition) >= 1) {
+              scene.remove(paymentMesh);
+              paymentMesh.destroy();
+              paymentMeshes.splice(paymentMeshes.indexOf(paymentMesh), 1);
+            }
+          }
+        };
+        rend.on('update', _update);
+
         this._cleanup = () => {
           for (let i = 0; i < paymentMeshes.length; i++) {
             const paymentMesh = paymentMeshes[i];
             scene.remove(paymentMesh);
             paymentMesh.destroy();
           }
+
+          input.removeListener('trigger', _trigger);
+          rend.removeListener('update', _update);
         };
 
         const _requestBalances = () => new Promise((accept, reject) => {
           accept([ // XXX actually fetch balances here
             {
               asset: 'CRAPCOIN',
-              value: 100,
+              quantity: 100,
             }
           ]);
         });

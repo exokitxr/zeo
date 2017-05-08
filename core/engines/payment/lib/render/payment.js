@@ -28,7 +28,7 @@ const getPayPageSrc = ({id, hasAvailableBalance}) => {
           <a style="display: flex; margin-right: 40px; padding: 10px 20px; border: 3px solid; color: #F44336; justify-content: center; align-items: center; box-sizing: border-box;" onclick="payment:pay:cancel:${id}">Reject</a>
         </div>
       ` : `\
-        <div style="display: flex; margin-bottom: 20px; color: #673AB7; font-size: 40px; font-weight: 400;">Whoops, not enough funds :/</div>
+        <div style="display: flex; margin-bottom: 20px; margin-right: auto; padding: 5px 10px; background-color: #673AB7; color: #FFF; font-size: 40px; font-weight: 400; box-sizing: border-box;">Whoops! Not enough funds!</div>
       `}
     </div>
   `;
@@ -55,7 +55,7 @@ const getBuyPageSrc = ({id, hasAvailableBalance}) => {
           <a style="display: flex; margin-right: 40px; padding: 10px 20px; border: 3px solid; color: #F44336; justify-content: center; align-items: center; box-sizing: border-box;" onclick="payment:buy:cancel:${id}">Reject</a>
         </div>
       ` : `\
-        <div style="display: flex; margin-bottom: 20px; color: #673AB7; font-size: 40px; font-weight: 400;">Whoops, not enough funds :/</div>
+        <div style="display: flex; margin-bottom: 20px; margin-right: auto; padding: 5px 10px; background-color: #673AB7; color: #FFF; font-size: 40px; font-weight: 400; box-sizing: border-box;">Whoops! Not enough funds!</div>
       `}
     </div>
   `;
