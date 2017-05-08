@@ -60,7 +60,7 @@ class Payment {
         };
 
         const paymentMeshes = [];
-        const _makePayMesh = ({address, asset, quantity, hasAvailableBalance}, cb, cleanup) => {
+        const _makePayMesh = ({address, asset, quantity, hasAvailableBalance}, cb, cleanup) => { // XXX
           const id = _makeId();
 
           const object = new THREE.Object3D();
@@ -83,7 +83,7 @@ class Payment {
             }) => {
               return {
                 type: 'html',
-                src: paymentRenderer.getPayPageSrc({id, hasAvailableBalance, paying, done}),
+                src: paymentRenderer.getPayPageSrc({id, address, hasAvailableBalance, paying, done}),
                 x: 0,
                 y: 0,
                 w: WIDTH,
@@ -100,6 +100,26 @@ class Payment {
             mesh.position.set(0, -0.5, -1);
             mesh.rotation.x = -Math.PI / 4;
             mesh.rotation.order = camera.rotation.order;
+
+            const tagMesh = (() => {
+              const mesh = tags.makeTag({
+                type: 'asset',
+                id: asset + ':fake',
+                name: asset,
+                displayName: asset,
+                quantity: quantity,
+                matrix: DEFAULT_MATRIX,
+                metadata: {
+                  isStatic: true,
+                },
+              });
+              mesh.position.set(-WORLD_WIDTH * 0.285, 0, 0.001);
+              // mesh.planeMesh.scale.set(ASSET_TAG_MESH_SCALE, ASSET_TAG_MESH_SCALE, 1);
+
+              return mesh;
+            })();
+            mesh.add(tagMesh);
+            mesh.tagMesh = tagMesh;
 
             return mesh;
           })();
@@ -152,6 +172,9 @@ class Payment {
 
           object.destroy = () => {
             menuMesh.destroy();
+
+            const {tagMesh} = menuMesh;
+            tagMesh.destroy();
 
             rend.removePage(page);
           };

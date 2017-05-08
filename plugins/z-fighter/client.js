@@ -657,7 +657,7 @@ class ZFighter {
                     payment.requestPay({
                       asset: 'CRAPCOIN',
                       quantity: 1,
-                      address: 'xxxxxxxxxxxxxxxxxxxx',
+                      address: Array(34 + 1).join('x'),
                     })
                       .then(() => {
                         liveState.live = true;
