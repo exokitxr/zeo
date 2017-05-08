@@ -488,7 +488,7 @@ class ZFighter {
                             const {grabbed} = lightsaberState;
 
                             if (grabbed) {
-                              result = pose.controllerLinearVelocity(side);
+                              result = pose.getControllerLinearVelocity(side);
                               return true;
                             } else {
                               return false;
