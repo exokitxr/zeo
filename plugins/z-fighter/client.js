@@ -67,6 +67,10 @@ class ZFighter {
         kylo3Audio,
       ]) => {
         if (live) {
+          const bladeMaterial = new THREE.MeshBasicMaterial({
+            color: 0xF44336,
+            shading: THREE.FlatShading,
+          });
           const bulletGeometry = new THREE.BoxBufferGeometry(0.01, 0.01, 0.1);
           const bulletMaterial = new THREE.MeshBasicMaterial({
             color: 0x2196F3,
@@ -149,12 +153,7 @@ class ZFighter {
 
                     return geometryUtils.concatBufferGeometry([coreGeometry, leftGeometry, rightGeometry]);
                   })();
-                  const material = new THREE.MeshPhongMaterial({
-                    color: 0xF44336,
-                    shading: THREE.FlatShading,
-                    transparent: true,
-                    opacity: 0.5,
-                  });
+                  const material = bladeMaterial;
 
                   const mesh = new THREE.Mesh(geometry, material);
                   mesh.visible = false;
@@ -615,6 +614,7 @@ class ZFighter {
           elements.registerComponent(this, fighterComponent);
 
           this._cleanup = () => {
+            bladeMaterial.dispose();
             bulletGeometry.dispose();
             bulletMaterial.dispose();
 
