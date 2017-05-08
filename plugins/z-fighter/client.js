@@ -231,11 +231,11 @@ class ZFighter {
                   const geometry = (() => {
                     const sq = n => Math.sqrt((n * n) + (n * n));
 
-                    const handleGeometry = new THREE.BoxBufferGeometry(0.02, 0.02, 0.1);
+                    const handleGeometry = new THREE.BoxBufferGeometry(0.02, 0.02, 0.2);
                     const topGeometry = new THREE.BoxBufferGeometry(0.04, 0.04, 0.02)
-                      .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -(0.1 / 2) - (0.02 / 2)));
+                      .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -(0.2 / 2) - (0.02 / 2)));
                     const bottomGeometry = new THREE.BoxBufferGeometry(0.04, 0.04, 0.02)
-                      .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, (0.1 / 2) + (0.02 / 2)));
+                      .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, (0.2 / 2) + (0.02 / 2)));
 
                     return geometryUtils.concatBufferGeometry([handleGeometry, topGeometry, bottomGeometry]);
                   })();
@@ -255,7 +255,7 @@ class ZFighter {
 
                   const topMesh = (() => {
                     const geometry = new THREE.BoxBufferGeometry(0.02 * 0.9, 0.02 * 0.9, 1)
-                      .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -(0.1 / 2) - 0.02 - (1 / 2)));
+                      .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -(0.2 / 2) - 0.02 - (1 / 2)));
                     const material = bladeMaterial;
 
                     return new THREE.Mesh(geometry, material);
@@ -265,7 +265,7 @@ class ZFighter {
 
                   const bottomMesh = (() => {
                     const geometry = new THREE.BoxBufferGeometry(0.02 * 0.9, 0.02 * 0.9, 1)
-                      .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, (0.1 / 2) + 0.02 + (1 / 2)));
+                      .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, (0.2 / 2) + 0.02 + (1 / 2)));
                     const material = bladeMaterial;
 
                     return new THREE.Mesh(geometry, material);
@@ -279,7 +279,7 @@ class ZFighter {
                 object.bladeMesh = bladeMesh;
 
                 const hitMesh = (() => {
-                  const object = new THREEE.Object3D();
+                  const object = new THREE.Object3D();
                   object.visible = false;
 
                   const topHitMesh = (() => {
@@ -287,7 +287,7 @@ class ZFighter {
                     const material = whiteMaterial;
 
                     const mesh = new THREE.Mesh(geometry, material);
-                    mesh.position.set(0, 0, -(0.1 / 2) - 0.02 - (1 / 2));
+                    mesh.position.set(0, 0, -(0.2 / 2) - 0.02 - (1 / 2));
                     return mesh;
                   })();
                   object.add(topHitMesh);
@@ -298,11 +298,11 @@ class ZFighter {
                     const material = whiteMaterial;
 
                     const mesh = new THREE.Mesh(geometry, material);
-                    mesh.position.set(0, 0, (0.1 / 2) + 0.02 + (1 / 2));
+                    mesh.position.set(0, 0, (0.2 / 2) + 0.02 + (1 / 2));
                     return mesh;
                   })();
-                  object.add(topHitMesh);
-                  object.topHitMesh = topHitMesh;
+                  object.add(bottomHitMesh);
+                  object.bottomHitMesh = bottomHitMesh;
 
                   return object;
                 })();
@@ -793,7 +793,7 @@ class ZFighter {
                   break;
                 }
                 case 'type': {
-                  entityApi.type = newValue;
+                  entityApi.bladeType = newValue;
 
                   entityApi.remesh();
 
