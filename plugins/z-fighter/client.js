@@ -670,8 +670,8 @@ class ZFighter {
                         console.warn(err);
                       });
                   } else {
-                    liveState.live = true;
-                    liveState.health = 100;
+                    liveState.live = false;
+                    liveState.health = 0;
 
                     const {page} = hudMesh;
                     page.update();
