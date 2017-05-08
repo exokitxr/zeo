@@ -67,6 +67,9 @@ class ZFighter {
         kylo3Audio,
       ]) => {
         if (live) {
+          const whiteMaterial = new THREE.MeshBasicMaterial({
+            color: 0xFFFFFF,
+          });
           const bulletGeometry = new THREE.BoxBufferGeometry(0.01, 0.01, 0.1);
           const bulletMaterial = new THREE.MeshBasicMaterial({
             color: 0x2196F3,
@@ -196,18 +199,7 @@ class ZFighter {
 
                 const hitMesh = (() => {
                   const geometry = new THREE.BoxBufferGeometry(0.1, 0.1, 1);
-                  /* const material = new THREE.MeshPhongMaterial({
-                    color: 0x666666,
-                    shading: THREE.FlatShading,
-                    transparent: true,
-                    opacity: 0.25,
-                  }); */
-                  const material = new THREE.MeshBasicMaterial({
-                    color: 0xFFFFFF,
-                    // transparent: true,
-                    // opacity: 0,
-                  });
-                  // material.colorWrite = false;
+                  const material = whiteMaterial;
 
                   const mesh = new THREE.Mesh(geometry, material);
                   mesh.position.set(0, 0, -(0.1 / 2) - 0.02 - (1 / 2));
@@ -223,6 +215,105 @@ class ZFighter {
                   coreMesh.scale.set(1, 1, value);
                   leftMesh.scale.set(value, 1, 1);
                   rightMesh.scale.set(value, 1, 1);
+                  hitMesh.scale.set(1, 1, value);
+                };
+
+                object.destroy = () => {
+                  // XXX
+                };
+
+                return object;
+              };
+              const _makeDualLightsaberMesh = () => {
+                const object = new THREE.Object3D();
+
+                const handleMesh = (() => {
+                  const geometry = (() => {
+                    const sq = n => Math.sqrt((n * n) + (n * n));
+
+                    const handleGeometry = new THREE.BoxBufferGeometry(0.02, 0.02, 0.1);
+                    const topGeometry = new THREE.BoxBufferGeometry(0.04, 0.04, 0.02)
+                      .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -(0.1 / 2) - (0.02 / 2)));
+                    const bottomGeometry = new THREE.BoxBufferGeometry(0.04, 0.04, 0.02)
+                      .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, (0.1 / 2) + (0.02 / 2)));
+
+                    return geometryUtils.concatBufferGeometry([handleGeometry, topGeometry, bottomGeometry]);
+                  })();
+                  const material = new THREE.MeshPhongMaterial({
+                    color: 0x808080,
+                  });
+
+                  const mesh = new THREE.Mesh(geometry, material);
+                  return mesh;
+                })();
+                object.add(handleMesh);
+                object.handleMesh = handleMesh;
+
+                const bladeMesh = (() => {
+                  const object = new THREE.Object3D();
+                  object.visible = false;
+
+                  const topMesh = (() => {
+                    const geometry = new THREE.BoxBufferGeometry(0.02 * 0.9, 0.02 * 0.9, 1)
+                      .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -(0.1 / 2) - 0.02 - (1 / 2)));
+                    const material = bladeMaterial;
+
+                    return new THREE.Mesh(geometry, material);
+                  })();
+                  object.add(topMesh);
+                  object.topMesh = topMesh;
+
+                  const bottomMesh = (() => {
+                    const geometry = new THREE.BoxBufferGeometry(0.02 * 0.9, 0.02 * 0.9, 1)
+                      .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, (0.1 / 2) + 0.02 + (1 / 2)));
+                    const material = bladeMaterial;
+
+                    return new THREE.Mesh(geometry, material);
+                  })();
+                  object.add(bottomMesh);
+                  object.bottomMesh = bottomMesh;
+
+                  return object;
+                })();
+                object.add(bladeMesh);
+                object.bladeMesh = bladeMesh;
+
+                const hitMesh = (() => {
+                  const object = new THREEE.Object3D();
+                  object.visible = false;
+
+                  const topHitMesh = (() => {
+                    const geometry = new THREE.BoxBufferGeometry(0.1, 0.1, 1);
+                    const material = whiteMaterial;
+
+                    const mesh = new THREE.Mesh(geometry, material);
+                    mesh.position.set(0, 0, -(0.1 / 2) - 0.02 - (1 / 2));
+                    return mesh;
+                  })();
+                  object.add(topHitMesh);
+                  object.topHitMesh = topHitMesh;
+
+                  const bottomHitMesh = (() => {
+                    const geometry = new THREE.BoxBufferGeometry(0.1, 0.1, 1);
+                    const material = whiteMaterial;
+
+                    const mesh = new THREE.Mesh(geometry, material);
+                    mesh.position.set(0, 0, (0.1 / 2) + 0.02 + (1 / 2));
+                    return mesh;
+                  })();
+                  object.add(topHitMesh);
+                  object.topHitMesh = topHitMesh;
+
+                  return object;
+                })();
+                object.add(hitMesh);
+                object.hitMesh = hitMesh;
+
+                object.setValue = value => {
+                  const {topMesh, bottomMesh} = bladeMesh;
+
+                  topMesh.scale.set(1, 1, value);
+                  bottomMesh.scale.set(1, 1, value);
                   hitMesh.scale.set(1, 1, value);
                 };
 
@@ -584,7 +675,7 @@ class ZFighter {
                               .applyQuaternion(bulletRotation)
                           );
                           raycaster.ray = ray;
-                          const intersections = raycaster.intersectObject(hitMesh);
+                          const intersections = raycaster.intersectObject(hitMesh, true);
 
                           if (intersections.length > 0) {
                             const intersection = intersections[0];
@@ -726,6 +817,7 @@ class ZFighter {
           elements.registerComponent(this, fighterComponent);
 
           this._cleanup = () => {
+            whiteMaterial.dispose();
             bulletGeometry.dispose();
             bulletMaterial.dispose();
 
