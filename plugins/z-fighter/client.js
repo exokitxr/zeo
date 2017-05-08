@@ -1,5 +1,5 @@
-const BULLET_RATE = 1000 / 2;
-const BULLET_SPEED = 0.005;
+const BULLET_RATE = 200;
+const BULLET_SPEED = 0.002;
 const BULLET_TTL = 10 * 1000;
 const DRONE_DISTANCE = 3;
 const DEFAULT_MATRIX = [
@@ -222,7 +222,7 @@ class ZFighter {
                   const geometry = new THREE.CylinderBufferGeometry(0.06, 0.06, 0.03, 8, 1)
                     .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
                   const material = new THREE.MeshPhongMaterial({
-                    color: 0x333333,
+                    color: 0x111111,
                     shading: THREE.FlatShading,
                   });
 
@@ -243,6 +243,7 @@ class ZFighter {
                 const dronePosition = droneMesh.getWorldPosition();
                 const now = Date.now();
                 return {
+                  direction: forwardVector.clone(),
                   startPosition: dronePosition,
                   endPosition: dronePosition,
                   startTime: now,
@@ -402,13 +403,24 @@ class ZFighter {
                     const {hmd: hmdStatus} = pose.getStatus();
                     const {position: hmdPosition} = hmdStatus;
 
+                    const _getNearbyDirection = oldDirection => {
+                      for (;;) {
+                        const randomDirection = new THREE.Vector3(-0.5 + Math.random(), (-0.5 + Math.random()) * 0.2, -0.5 + Math.random()).normalize();
+
+                        if (randomDirection.distanceTo(oldDirection) <= 1.5) {
+                          return randomDirection;
+                        }
+                      }
+                    };
+
+                    droneState.direction = _getNearbyDirection(droneState.direction);
                     droneState.startPosition = droneMesh.position.clone();
                     droneState.endPosition = hmdPosition.clone().add(
                       forwardVector.clone()
                         .multiplyScalar(DRONE_DISTANCE)
                         .applyQuaternion(new THREE.Quaternion().setFromUnitVectors(
                           forwardVector,
-                          new THREE.Vector3(-0.5 + Math.random(), (-0.5 + Math.random()) * 0.3, -0.5 + Math.random()).normalize()
+                          droneState.direction
                         ))
                     );
                     droneState.startTime = now;
