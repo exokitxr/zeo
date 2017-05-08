@@ -60,7 +60,7 @@ class Payment {
         };
 
         const paymentMeshes = [];
-        const _makePayMesh = ({address, asset, quantity, hasAvailableBalance}, cb) => {
+        const _makePayMesh = ({address, asset, quantity, hasAvailableBalance}, cb, cleanup) => {
           const id = _makeId();
 
           const object = new THREE.Object3D();
@@ -126,8 +126,10 @@ class Payment {
                 payState.done = true;
                 page.update();
 
+                cb();
+
                 setTimeout(() => {
-                  cb();
+                  cleanup();
                 }, 5000);
               }, 2000);
 
@@ -142,6 +144,8 @@ class Payment {
               const err = new Error('user canceled payment');
               cb(err);
 
+              cleanup();
+
               live = false;
             }
           };
@@ -154,7 +158,7 @@ class Payment {
 
           return object;
         };
-        const _makeBuyMesh = ({srcAsset, srcQuantity, dstAsset, dstQuantity, hasAvailableBalance}, cb) => {
+        const _makeBuyMesh = ({srcAsset, srcQuantity, dstAsset, dstQuantity, hasAvailableBalance}, cb, cleanup) => {
           const id = _makeId();
 
           const menuMesh = (() => {
@@ -201,10 +205,14 @@ class Payment {
           object.paymentId = id;
           object.confirm = () => {
             cb();
+
+            cleanup();
           };
           object.cancel = () => {
             const err = new Error('user canceled payment');
             cb(err);
+
+            cleanup();
           };
 
           object.destroy = () => {
@@ -301,10 +309,11 @@ class Payment {
                 } else {
                   reject(err);
                 }
-
+              }, () => {
                 scene.remove(paymentMesh);
                 paymentMesh.destroy();
               });
+
               scene.add(paymentMesh);
               paymentMeshes.push(paymentMesh)
             })
@@ -326,10 +335,11 @@ class Payment {
                 } else {
                   reject(err);
                 }
-
+              }, () => {
                 scene.remove(paymentMesh);
                 paymentMesh.destroy();
               });
+
               scene.add(paymentMesh);
               paymentMeshes.push(paymentMesh);
             })
