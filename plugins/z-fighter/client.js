@@ -140,6 +140,10 @@ class ZFighter {
               const entityApi = entityElement.getComponentApi();
               const entityObject = entityElement.getObject();
 
+              const healthState = {
+                health: 85,
+              };
+
               const bladeMaterial = new THREE.MeshBasicMaterial({
                 color: 0xF44336,
                 shading: THREE.FlatShading,
@@ -432,10 +436,12 @@ class ZFighter {
                   color: [1, 1, 1, 0],
                 });
                 const mesh = menuUi.makePage(({
-                  // XXX
+                  health: {
+                    health,
+                  },
                 }) => ({
                   type: 'html',
-                  src: menuRenderer.getHudSrc(),
+                  src: menuRenderer.getHudSrc({health}),
                   x: 0,
                   y: 0,
                   w: WIDTH,
@@ -443,7 +449,7 @@ class ZFighter {
                 }), {
                   type: 'fighter',
                   state: {
-                    // XXX
+                    health: healthState,
                   },
                   worldWidth: WORLD_WIDTH,
                   worldHeight: WORLD_HEIGHT,
