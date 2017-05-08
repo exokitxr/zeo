@@ -27,6 +27,7 @@ class ZFighter {
       return {position, rotation, scale};
     };
 
+    const zeroVector = new THREE.Vector3();
     const forwardVector = new THREE.Vector3(0, 0, -1);
 
     const _requestAudio = src => new Promise((accept, reject) => {
@@ -479,10 +480,30 @@ class ZFighter {
                         const {face} = intersection;
                         const {normal} = face;
                         const worldNormal = normal.clone().applyQuaternion(hitMeshRotation);
+                        const controllerLinearVelocity = (() => {
+                          let result = zeroVector;
+
+                          SIDES.some(side => {
+                            const lightsaberState = lightsaberStates[side]
+                            const {grabbed} = lightsaberState;
+
+                            if (grabbed) {
+                              result = pose.controllerLinearVelocity(side);
+                              return true;
+                            } else {
+                              return false;
+                            }
+                          });
+
+                          return result;
+                        })();
+                        const reflectionVector = worldNormal.clone()
+                          .add(controllerLinearVelocity.clone().multiplyScalar(2))
+                          .normalize();
 
                         bullet.quaternion.setFromUnitVectors(
                           forwardVector,
-                          worldNormal
+                          reflectionVector
                         );
                         bullet.intersected = true;
                       }
