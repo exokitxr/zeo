@@ -669,9 +669,13 @@ class ZFighter {
                         if (!bullet.intersected) {
                           const {position: bulletPosition, rotation: bulletRotation} = _decomposeObjectMatrixWorld(bullet);
                           const ray = new THREE.Ray(
-                            bulletPosition,
+                            bulletPosition.add(
+                              forwardVector.clone()
+                                .multiplyScalar(-0.05)
+                                .applyQuaternion(bulletRotation)
+                            ),
                             forwardVector.clone()
-                              .multiplyScalar(0.01)
+                              .multiplyScalar(0.1)
                               .applyQuaternion(bulletRotation)
                           );
                           raycaster.ray = ray;
