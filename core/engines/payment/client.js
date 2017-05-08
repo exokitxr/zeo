@@ -191,7 +191,7 @@ class Payment {
               const id = match[1];
               const paymentMesh = paymentMeshes.find(paymentMesh => paymentMesh.paymentId === id);
 
-              console.log('confirm', {id, paymentMesh}); // XXX
+              paymentMesh.confirm();
 
               scene.remove(paymentMesh);
               paymentMesh.destroy();
@@ -199,7 +199,7 @@ class Payment {
               const id = match[1];
               const paymentMesh = paymentMeshes.find(paymentMesh => paymentMesh.paymentId === id);
 
-              console.log('cancel', {id, paymentMesh}); // XXX
+              paymentMesh.cancel();
 
               scene.remove(paymentMesh);
               paymentMesh.destroy();
