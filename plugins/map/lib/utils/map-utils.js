@@ -232,7 +232,7 @@ const makeMapChunk = ({position}) => {
 
   return new Chunk(
     position,
-    points,
+    points
   );
 };
 const getBiomeColor = biome => BIOME_COLORS[biome];

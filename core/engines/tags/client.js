@@ -2218,7 +2218,7 @@ class Tags {
                             const endIntersectionPoint = new THREE.Vector3(
                               startIntersectionPoint.x,
                               startIntersectionPoint.y,
-                              controllerIntersectionPoint.z,
+                              controllerIntersectionPoint.z
                             );
                             const positionDiff = endIntersectionPoint.clone().sub(startIntersectionPoint);
                             const endPosition = startPosition.clone().add(positionDiff);
