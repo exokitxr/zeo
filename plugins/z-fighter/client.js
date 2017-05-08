@@ -39,6 +39,7 @@ class ZFighter {
 
     const zeroVector = new THREE.Vector3();
     const forwardVector = new THREE.Vector3(0, 0, -1);
+    const zeroQuaternion = new THREE.Quaternion();
 
     const _requestAudio = src => new Promise((accept, reject) => {
       const audio = document.createElement('audio');
@@ -145,8 +146,10 @@ class ZFighter {
               const entityApi = entityElement.getComponentApi();
               const entityObject = entityElement.getObject();
 
-              const healthState = {
+              const liveState = {
+                live: false,
                 health: 0,
+                paused: true,
               };
 
               const bladeMaterial = new THREE.MeshBasicMaterial({
@@ -434,6 +437,10 @@ class ZFighter {
                 };
               })();
 
+              const _isEnabled = () => liveState.health !== 0;
+              const _isLive = () => liveState.live;
+              const _isPaused = () => liveState.paused;
+
               const hudMesh = (() => {
                 const menuUi = ui.makeUi({
                   width: WIDTH,
@@ -441,7 +448,7 @@ class ZFighter {
                   color: [1, 1, 1, 0],
                 });
                 const mesh = menuUi.makePage(({
-                  health: {
+                  live: {
                     health,
                   },
                 }) => ({
@@ -454,13 +461,13 @@ class ZFighter {
                 }), {
                   type: 'fighter',
                   state: {
-                    health: healthState,
+                    live: liveState,
                   },
                   worldWidth: WORLD_WIDTH,
                   worldHeight: WORLD_HEIGHT,
                 });
                 // mesh.rotation.order = camera.rotation.order;
-                // mesh.visible = false;
+                mesh.visible = _isEnabled();
 
                 const _align = (position, rotation, scale, lerpFactor) => {
                   const targetPosition = position.clone().add(
@@ -543,6 +550,13 @@ class ZFighter {
                 const lightsaberState = lightsaberStates[side];
 
                 lightsaberState.grabbed = true;
+
+                liveState.live = true; // XXX trigger this via payment
+                liveState.health = 100;
+                liveState.paused = false;
+
+                const {page} = hudMesh;
+                page.update();
               };
               entityElement.addEventListener('grab', _grab);
               const _release = e => {
@@ -566,6 +580,8 @@ class ZFighter {
                     soundBodies[2].audio.play();
                   }
                 }
+
+                liveState.paused = true;
               };
               entityElement.addEventListener('release', _release);
               const _trigger = e => {
@@ -649,6 +665,10 @@ class ZFighter {
                   const timeDiff = now - lastUpdateTime;
                   const lerpFactor = timeDiff * 0.005;
                   hudMesh.align(cameraPosition, cameraRotation, cameraScale, lerpFactor);
+
+                  if (!hudMesh.visible) {
+                    hudMesh.visible = true;
+                  }
                 };
                 const _updateLightsaber = () => {
                   SIDES.forEach(side => {
@@ -835,13 +855,58 @@ class ZFighter {
                   }
                 };
 
-                _updateHudMesh();
-                _updateLightsaber();
-                _updateDroneMove();
-                _updateDroneLook();
-                _addBullets();
-                _intersectBullets();
-                _updateBullets();
+                const _resetHudMesh = () => {
+                  const {position: cameraPosition, rotation: cameraRotation, scale: cameraScale} = _decomposeObjectMatrixWorld(camera);
+                  hudMesh.align(cameraPosition, cameraRotation, cameraScale, 1);
+
+                  if (hudMesh.visible) {
+                    hudMesh.visible = false;
+                  }
+                };
+                const _resetLightsaber = () => {
+                  const {mesh: lightsaberMeshMesh} = lightsaberMesh;
+
+                  if (lightsaberMeshMesh) {
+                    const {bladeMesh} = lightsaberMeshMesh;
+
+                    if (bladeMesh.visible) {
+                      bladeMesh.visible = false;
+                    }
+                  };
+                };
+                const _resetDrone = () => {
+                  droneMesh.position.set(0, 1.5, 0);
+                  droneMesh.quaternion.copy(zeroQuaternion);
+                };
+                const _resetBullets = () => {
+                  if (bullets.length > 0) {
+                    for (let i = 0; i < bullets.length; i++) {
+                      const bullet = bullets[i];
+                      scene.remove(bullet);
+                    }
+                    bullets.length = 0;
+                  }
+                };
+
+                if (_isLive()) {
+                  _updateLightsaber();
+
+                  if (!_isPaused()) {
+                    _updateHudMesh();
+                    _updateDroneMove();
+                    _updateDroneLook();
+                    _addBullets();
+                    _intersectBullets();
+                    _updateBullets();
+                  } else {
+                    _resetHudMesh();
+                  }
+                } else {
+                  _resetHudMesh();
+                  _resetLightsaber();
+                  _resetDrone();
+                  _resetBullets();
+                }
 
                 lastUpdateTime = now;
               };
