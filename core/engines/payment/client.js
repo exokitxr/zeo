@@ -65,55 +65,86 @@ class Payment {
 
           const object = new THREE.Object3D();
 
+          const payState = {
+            paying: false,
+            done: false,
+          };
+
           const menuMesh = (() => {
             const paymentUi = biolumi.makeUi({
               width: WIDTH,
               height: HEIGHT,
             });
             const mesh = paymentUi.makePage(({
-              // nothing
+              pay: {
+                paying,
+                done,
+              },
             }) => {
               return {
                 type: 'html',
-                src: paymentRenderer.getPayPageSrc({id, hasAvailableBalance}),
+                src: paymentRenderer.getPayPageSrc({id, hasAvailableBalance, paying, done}),
                 x: 0,
                 y: 0,
                 w: WIDTH,
                 h: HEIGHT,
               };
             }, {
-              type: 'payment',
+              type: 'pay',
               state: {
-                // nothing
+                pay: payState,
               },
               worldWidth: WORLD_WIDTH,
               worldHeight: WORLD_HEIGHT,
             });
-            mesh.position.set(0, -0.5, -0.5);
+            mesh.position.set(0, -0.5, -1);
+            mesh.rotation.x = -Math.PI / 4;
+            mesh.rotation.order = camera.rotation.order;
 
             return mesh;
           })();
           object.add(menuMesh);
           object.menuMesh = menuMesh;
 
+          const {page} = menuMesh;
+          page.initialUpdate();
+          rend.addPage(page);
+
           const {hmd: hmdStatus} = webvr.getStatus();
           const {position: hmdPosition, rotation: hmdRotation} = hmdStatus;
           object.position.copy(hmdPosition);
           const hmdEuler = new THREE.Euler().setFromQuaternion(hmdRotation, camera.rotation.order);
-          object.rotation.set(-Math.PI / 4, hmdEuler.y, 0, camera.rotation.order);
+          object.rotation.set(0, hmdEuler.y, 0, camera.rotation.order);
 
           object.paymentId = id;
+
+          let live = true;
           object.confirm = () => {
-            cb();
+            if (live) {
+              setTimeout(() => {
+                payState.paying = false;
+                payState.done = true;
+                page.update();
+
+                setTimeout(() => {
+                  cb();
+                }, 5000);
+              }, 2000);
+
+              payState.paying = true;
+              page.update();
+
+              live = false;
+            }
           };
           object.cancel = () => {
-            const err = new Error('user canceled payment');
-            cb(err);
-          };
+            if (live) {
+              const err = new Error('user canceled payment');
+              cb(err);
 
-          const {page} = menuMesh;
-          page.initialUpdate();
-          rend.addPage(page);
+              live = false;
+            }
+          };
 
           object.destroy = () => {
             menuMesh.destroy();
@@ -143,23 +174,29 @@ class Payment {
                 h: HEIGHT,
               };
             }, {
-              type: 'payment',
+              type: 'buy',
               state: {
                 // nothing
               },
               worldWidth: WORLD_WIDTH,
               worldHeight: WORLD_HEIGHT,
             });
-            mesh.position.set(0, -0.5, -0.5);
+            mesh.position.set(0, -0.5, -1);
+            mesh.rotation.x = -Math.PI / 4;
+            mesh.rotation.order = camera.rotation.order;
 
             return mesh;
           })();
+
+          const {page} = menuMesh;
+          page.initialUpdate();
+          rend.addPage(page);
 
           const {hmd: hmdStatus} = webvr.getStatus();
           const {position: hmdPosition, rotation: hmdRotation} = hmdStatus;
           object.position.copy(hmdPosition);
           const hmdEuler = new THREE.Euler().setFromQuaternion(hmdRotation, camera.rotation.order);
-          object.rotation.set(-Math.PI / 4, hmdEuler.y, 0, camera.rotation.order);
+          object.rotation.set(0, hmdEuler.y, 0, camera.rotation.order);
 
           object.paymentId = id;
           object.confirm = () => {
@@ -169,10 +206,6 @@ class Payment {
             const err = new Error('user canceled payment');
             cb(err);
           };
-
-          const {page} = menuMesh;
-          page.initialUpdate();
-          rend.addPage(page);
 
           object.destroy = () => {
             menuMesh.destroy();
@@ -198,19 +231,13 @@ class Payment {
               const id = match[2];
               const paymentMesh = paymentMeshes.find(paymentMesh => paymentMesh.paymentId === id);
 
-              paymentMesh.confirm(); // XXX actually perform the payment here
-
-              scene.remove(paymentMesh);
-              paymentMesh.destroy();
+              paymentMesh.confirm();
             } else if (match = onclick.match(/^payment:(pay|buy):cancel:(.+)$/)) {
               const type = match[1];
               const id = match[2];
               const paymentMesh = paymentMeshes.find(paymentMesh => paymentMesh.paymentId === id);
 
               paymentMesh.cancel();
-
-              scene.remove(paymentMesh);
-              paymentMesh.destroy();
             }
           }
         };
@@ -224,7 +251,7 @@ class Payment {
 
           const oldPaymentMeshes = paymentMeshes.slice();
           for (let i = 0; i < oldPaymentMeshes.length; i++) {
-            const paymentMesh = paymentMeshes[i];
+            const paymentMesh = oldPaymentMeshes[i];
 
             if (paymentMesh.position.distanceTo(hmdPosition) >= 1) {
               scene.remove(paymentMesh);
@@ -274,6 +301,9 @@ class Payment {
                 } else {
                   reject(err);
                 }
+
+                scene.remove(paymentMesh);
+                paymentMesh.destroy();
               });
               scene.add(paymentMesh);
               paymentMeshes.push(paymentMesh)
@@ -296,6 +326,9 @@ class Payment {
                 } else {
                   reject(err);
                 }
+
+                scene.remove(paymentMesh);
+                paymentMesh.destroy();
               });
               scene.add(paymentMesh);
               paymentMeshes.push(paymentMesh);
