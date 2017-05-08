@@ -615,6 +615,9 @@ class ZFighter {
           elements.registerComponent(this, fighterComponent);
 
           this._cleanup = () => {
+            bulletGeometry.dispose();
+            bulletMaterial.dispose();
+
             elements.unregisterComponent(this, fighterComponent);
           };
         }
