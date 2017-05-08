@@ -26,6 +26,8 @@ class ZFighter {
       return {position, rotation, scale};
     };
 
+    const forwardVector = new THREE.Vector3(0, 0, -1);
+
     const _requestAudio = src => new Promise((accept, reject) => {
       const audio = document.createElement('audio');
 
@@ -413,7 +415,7 @@ class ZFighter {
 
                     if (!bullet.intersected) {
                       const {position: bulletPosition, rotation: bulletRotation} = _decomposeObjectMatrixWorld(bullet);
-                      const ray = new THREE.Ray(bulletPosition, new THREE.Vector3(0, 0, -1).applyQuaternion(bulletRotation));
+                      const ray = new THREE.Ray(bulletPosition, forwardVector.clone().applyQuaternion(bulletRotation));
                       raycaster.ray = ray;
                       const intersections = raycaster.intersectObject(hitMesh);
 
@@ -424,7 +426,7 @@ class ZFighter {
                         const worldNormal = normal.clone().applyQuaternion(hitMeshRotation);
 
                         bullet.quaternion.setFromUnitVectors(
-                          new THREE.Vector3(0, 0, -1),
+                          forwardVector,
                           worldNormal
                         );
                         bullet.intersected = true;
