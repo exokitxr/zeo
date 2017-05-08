@@ -84,7 +84,7 @@ class ZFighter {
           };
 
           const fighterComponent = {
-            selector: 'fighter[position]',
+            selector: 'fighter[position][type]',
             attributes: {
               position: {
                 type: 'matrix',
@@ -93,6 +93,18 @@ class ZFighter {
                   0, 0, 0, 1,
                   1, 1, 1,
                 ],
+              },
+              type: {
+                type: 'select',
+                value: 'crossguard',
+                options: [
+                  'crossguard',
+                  'dual',
+                ],
+              },
+              color: {
+                type: 'color',
+                value: '#F44336',
               },
               grabbable: {
                 type: 'checkbox',
@@ -120,7 +132,7 @@ class ZFighter {
                 shading: THREE.FlatShading,
               });
 
-              const lightsaberMesh = (() => {
+              const _makeCrossguardLightsaberMesh = () => {
                 const object = new THREE.Object3D();
 
                 const handleMesh = (() => {
@@ -205,6 +217,24 @@ class ZFighter {
                 object.add(hitMesh);
                 object.hitMesh = hitMesh;
 
+                object.setValue = value => {
+                  const {coreMesh, leftMesh, rightMesh} = bladeMesh;
+
+                  coreMesh.scale.set(1, 1, value);
+                  leftMesh.scale.set(value, 1, 1);
+                  rightMesh.scale.set(value, 1, 1);
+                };
+
+                object.destroy = () => {
+                  // XXX
+                };
+
+                return object;
+              };
+
+              const lightsaberMesh = (() => {
+                const object = new THREE.Object3D();
+                object.mesh = null;
                 return object;
               })();
               entityObject.add(lightsaberMesh);
@@ -293,8 +323,30 @@ class ZFighter {
               });
               entityApi.soundBodies = soundBodies;
 
+              entityApi.bladeType = 'crossguard';
+              entityApi.remesh = () => {
+                const {mesh: oldMesh} = lightsaberMesh;
+                if (oldMesh) {
+                  lightsaberMesh.remove(oldMesh);
+                  oldMesh.destroy();
+
+                  lightsaberMesh.mesh = null;
+                }
+
+                const {bladeType} = entityApi;
+                if (bladeType === 'crossguard') {
+                  const mesh = _makeCrossguardLightsaberMesh();
+                  lightsaberMesh.add(mesh);
+                  lightsaberMesh.mesh = mesh;
+                } else if (bladeType === 'dual') {
+                  const mesh = _makeDualLightsaberMesh();
+                  lightsaberMesh.add(mesh);
+                  lightsaberMesh.mesh = mesh;
+                }
+              };
+
               entityApi.color = new THREE.Color(0x000000);
-              entityApi.render = () => {
+              entityApi.recolor = () => {
                 const {color} = entityApi;
 
                 bladeMaterial.color.copy(color);
@@ -428,19 +480,20 @@ class ZFighter {
                   });
 
                   const value = Math.max(lightsaberStates.left.value, lightsaberStates.right.value);
-                  const {bladeMesh} = lightsaberMesh;
-                  const {coreMesh, leftMesh, rightMesh} = bladeMesh;
-                  if (value < 0.001) {
-                    if (bladeMesh.visible) {
-                      bladeMesh.visible = false;
-                    }
-                  } else {
-                    coreMesh.scale.set(1, 1, value);
-                    leftMesh.scale.set(value, 1, 1);
-                    rightMesh.scale.set(value, 1, 1);
+                  const {mesh: lightsaberMeshMesh} = lightsaberMesh;
+                  if (lightsaberMeshMesh) {
+                    const {bladeMesh} = lightsaberMeshMesh;
 
-                    if (!bladeMesh.visible) {
-                      bladeMesh.visible = true;
+                    if (value < 0.001) {
+                      if (bladeMesh.visible) {
+                        bladeMesh.visible = false;
+                      }
+                    } else {
+                      lightsaberMeshMesh.setValue(value);
+
+                      if (!bladeMesh.visible) {
+                        bladeMesh.visible = true;
+                      }
                     }
                   }
                 };
@@ -504,63 +557,67 @@ class ZFighter {
                   }
                 };
                 const _intersectBullets = () => {
-                  const {hitMesh} = lightsaberMesh;
-                  hitMesh.visible = true;
-                  const hitMeshRotation = hitMesh.getWorldQuaternion();
-                  const raycaster = new THREE.Raycaster();
-                  raycaster.near = 0.01;
-                  raycaster.far = 100000;
+                  const {mesh: lightsaberMeshMesh} = lightsaberMesh;
 
-                  for (let i = 0; i < bullets.length; i++) {
-                    const bullet = bullets[i];
+                  if (lightsaberMeshMesh) {
+                    const {hitMesh} = lightsaberMeshMesh;
+                    hitMesh.visible = true;
+                    const hitMeshRotation = hitMesh.getWorldQuaternion();
+                    const raycaster = new THREE.Raycaster();
+                    raycaster.near = 0.01;
+                    raycaster.far = 100000;
 
-                    if (!bullet.intersected) {
-                      const {position: bulletPosition, rotation: bulletRotation} = _decomposeObjectMatrixWorld(bullet);
-                      const ray = new THREE.Ray(
-                        bulletPosition,
-                        forwardVector.clone()
-                          .multiplyScalar(0.01)
-                          .applyQuaternion(bulletRotation)
-                      );
-                      raycaster.ray = ray;
-                      const intersections = raycaster.intersectObject(hitMesh);
+                    for (let i = 0; i < bullets.length; i++) {
+                      const bullet = bullets[i];
 
-                      if (intersections.length > 0) {
-                        const intersection = intersections[0];
-                        const {face} = intersection;
-                        const {normal} = face;
-                        const worldNormal = normal.clone().applyQuaternion(hitMeshRotation);
-                        const controllerLinearVelocity = (() => {
-                          let result = zeroVector;
-
-                          SIDES.some(side => {
-                            const lightsaberState = lightsaberStates[side]
-                            const {grabbed} = lightsaberState;
-
-                            if (grabbed) {
-                              result = pose.getControllerLinearVelocity(side);
-                              return true;
-                            } else {
-                              return false;
-                            }
-                          });
-
-                          return result;
-                        })();
-                        const reflectionVector = worldNormal.clone()
-                          .add(controllerLinearVelocity.clone().multiplyScalar(2))
-                          .normalize();
-
-                        bullet.quaternion.setFromUnitVectors(
-                          forwardVector,
-                          reflectionVector
+                      if (!bullet.intersected) {
+                        const {position: bulletPosition, rotation: bulletRotation} = _decomposeObjectMatrixWorld(bullet);
+                        const ray = new THREE.Ray(
+                          bulletPosition,
+                          forwardVector.clone()
+                            .multiplyScalar(0.01)
+                            .applyQuaternion(bulletRotation)
                         );
-                        bullet.intersected = true;
+                        raycaster.ray = ray;
+                        const intersections = raycaster.intersectObject(hitMesh);
+
+                        if (intersections.length > 0) {
+                          const intersection = intersections[0];
+                          const {face} = intersection;
+                          const {normal} = face;
+                          const worldNormal = normal.clone().applyQuaternion(hitMeshRotation);
+                          const controllerLinearVelocity = (() => {
+                            let result = zeroVector;
+
+                            SIDES.some(side => {
+                              const lightsaberState = lightsaberStates[side]
+                              const {grabbed} = lightsaberState;
+
+                              if (grabbed) {
+                                result = pose.getControllerLinearVelocity(side);
+                                return true;
+                              } else {
+                                return false;
+                              }
+                            });
+
+                            return result;
+                          })();
+                          const reflectionVector = worldNormal.clone()
+                            .add(controllerLinearVelocity.clone().multiplyScalar(2))
+                            .normalize();
+
+                          bullet.quaternion.setFromUnitVectors(
+                            forwardVector,
+                            reflectionVector
+                          );
+                          bullet.intersected = true;
+                        }
                       }
                     }
-                  }
 
-                  hitMesh.visible = false;
+                    hitMesh.visible = false;
+                  }
                 }
                 const _updateBullets = () => {
                   const oldBullets = bullets.slice();
@@ -638,10 +695,17 @@ class ZFighter {
 
                   break;
                 }
+                case 'type': {
+                  entityApi.type = newValue;
+
+                  entityApi.remesh();
+
+                  break;
+                }
                 case 'color': {
                   entityApi.color = new THREE.Color(newValue);
 
-                  entityApi.render();
+                  entityApi.recolor();
 
                   break;
                 }
