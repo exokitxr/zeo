@@ -1,6 +1,7 @@
 const BULLET_RATE = 1000 / 2;
 const BULLET_SPEED = 0.005;
 const BULLET_TTL = 10 * 1000;
+const DRONE_DISTANCE = 3;
 const DEFAULT_MATRIX = [
   0, 0, 0,
   0, 0, 0, 1,
@@ -99,6 +100,10 @@ class ZFighter {
                 value: true,
               },
               holdable: {
+                type: 'checkbox',
+                value: true,
+              },
+              live: {
                 type: 'checkbox',
                 value: true,
               },
@@ -233,6 +238,17 @@ class ZFighter {
                 return object;
               })();
               scene.add(droneMesh);
+
+              const droneState = (() => {
+                const dronePosition = droneMesh.getWorldPosition();
+                const now = Date.now();
+                return {
+                  startPosition: dronePosition,
+                  endPosition: dronePosition,
+                  startTime: now,
+                  endTime: now,
+                };
+              })();
 
               const soundBodies = [
                 kylo1Audio,
@@ -379,7 +395,34 @@ class ZFighter {
               let lastBulletTime = Date.now();
 
               const _update = () => {
-                const _updateDrone = () => {
+                const _updateDroneMove = () => {
+                  const now = Date.now();
+
+                  if (now >= droneState.endTime) {
+                    const {hmd: hmdStatus} = pose.getStatus();
+                    const {position: hmdPosition} = hmdStatus;
+
+                    droneState.startPosition = droneMesh.position.clone();
+                    droneState.endPosition = hmdPosition.clone().add(
+                      forwardVector.clone()
+                        .multiplyScalar(DRONE_DISTANCE)
+                        .applyQuaternion(new THREE.Quaternion().setFromUnitVectors(
+                          forwardVector,
+                          new THREE.Vector3(-0.5 + Math.random(), (-0.5 + Math.random()) * 0.3, -0.5 + Math.random()).normalize()
+                        ))
+                    );
+                    droneState.startTime = now;
+                    droneState.endTime = now + ((0.5 + (Math.random() * 0.5)) * 2000);
+                  }
+
+                  const {startPosition, endPosition, startTime, endTime} = droneState;
+                  const newPosition = startPosition.clone().add(
+                    endPosition.clone().sub(startPosition)
+                      .multiplyScalar((now - startTime) / (endTime - startTime))
+                  );
+                  droneMesh.position.copy(newPosition);
+                };
+                const _updateDroneLook = () => {
                   const {hmd: hmdStatus} = pose.getStatus();
                   const {position: hmdPosition} = hmdStatus;
 
@@ -460,7 +503,8 @@ class ZFighter {
                   }
                 };
 
-                _updateDrone();
+                _updateDroneMove();
+                _updateDroneLook();
                 _addBullets();
                 _intersectBullets();
                 _updateBullets();
@@ -511,6 +555,11 @@ class ZFighter {
                   entityApi.color = new THREE.Color(newValue);
 
                   entityApi.render();
+
+                  break;
+                }
+                case 'live': {
+                  // XXX handle this
 
                   break;
                 }
