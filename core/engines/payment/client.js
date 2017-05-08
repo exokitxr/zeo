@@ -88,12 +88,13 @@ class Payment {
           });
 
           const {hmd: hmdStatus} = webvr.getStatus();
+          const {position: hmdPosition, rotation: hmdRotation} = hmdStatus;
           mesh.position.copy(
-            hmdStatus.position.clone()
-              .add(new THREE.Vector3(0, -0.5, -0.5))
+            hmdPosition.clone()
+              .add(new THREE.Vector3(0, -0.5, -0.5).applyQuaternion(hmdRotation))
           );
-          const hmdRotation = new THREE.Euler().setFromQuaternion(hmdStatus.rotation, camera.rotation.order);
-          mesh.rotation.set(-Math.PI / 4, hmdRotation.y, 0, camera.rotation.order);
+          const hmdEuler = new THREE.Euler().setFromQuaternion(hmdRotation, camera.rotation.order);
+          mesh.rotation.set(-Math.PI / 4, hmdEuler.y, 0, camera.rotation.order);
           mesh.receiveShadow = true;
 
           mesh.paymentId = id;
@@ -145,12 +146,13 @@ class Payment {
           });
 
           const {hmd: hmdStatus} = webvr.getStatus();
+          const {position: hmdPosition, rotation: hmdRotation} = hmdStatus;
           mesh.position.copy(
-            hmdStatus.position.clone()
-              .add(new THREE.Vector3(0, -0.5, -0.5))
+            hmdPosition.clone()
+              .add(new THREE.Vector3(0, -0.5, -0.5).applyQuaternion(hmdRotation))
           );
-          const hmdRotation = new THREE.Euler().setFromQuaternion(hmdStatus.rotation, camera.rotation.order);
-          mesh.rotation.set(-Math.PI / 4, hmdRotation.y, 0, camera.rotation.order);
+          const hmdEuler = new THREE.Euler().setFromQuaternion(hmdRotation, camera.rotation.order);
+          mesh.rotation.set(-Math.PI / 4, hmdEuler.y, 0, camera.rotation.order);
           mesh.receiveShadow = true;
 
           mesh.paymentId = id;
