@@ -1,3 +1,13 @@
+const {
+  WIDTH,
+  HEIGHT,
+
+  WORLD_WIDTH,
+  WORLD_HEIGHT,
+  WORLD_DEPTH,
+} = require('./lib/constants/constants');
+const menuRenderer = require('./lib/render/menu');
+
 const BULLET_RATE = 200;
 const BULLET_SPEED = 0.002;
 const BULLET_TTL = 10 * 1000;
@@ -11,7 +21,7 @@ const SIDES = ['left', 'right'];
 
 class ZFighter {
   mount() {
-    const {three: {THREE, scene, camera}, elements, input, pose, world, render, player, sound, utils: {geometry: geometryUtils}} = zeo;
+    const {three: {THREE, scene, camera}, elements, input, pose, render, sound, ui, utils: {geometry: geometryUtils}} = zeo;
 
     let live = true;
     this.cleanup = () => {
@@ -331,6 +341,23 @@ class ZFighter {
               })();
               entityObject.add(lightsaberMesh);
 
+              const soundBodies = [
+                kylo1Audio,
+                kylo2Audio,
+                kylo3Audio,
+              ].map(audio => {
+                const result = sound.makeBody();
+
+                const localAudio = audio.cloneNode();
+                result.setInputElement(localAudio);
+                result.audio = localAudio;
+
+                result.setObject(lightsaberMesh);
+
+                return result;
+              });
+              entityApi.soundBodies = soundBodies;
+
               const droneMesh = (() => {
                 const object = new THREE.Object3D();
                 object.position.y = 2;
@@ -398,22 +425,40 @@ class ZFighter {
                 };
               })();
 
-              const soundBodies = [
-                kylo1Audio,
-                kylo2Audio,
-                kylo3Audio,
-              ].map(audio => {
-                const result = sound.makeBody();
+              const hudMesh = (() => {
+                const menuUi = ui.makeUi({
+                  width: WIDTH,
+                  height: HEIGHT,
+                  color: [1, 1, 1, 0],
+                });
+                const mesh = menuUi.makePage(({
+                  // XXX
+                }) => ({
+                  type: 'html',
+                  src: menuRenderer.getHudSrc(),
+                  x: 0,
+                  y: 0,
+                  w: WIDTH,
+                  h: HEIGHT,
+                }), {
+                  type: 'fighter',
+                  state: {
+                    // XXX
+                  },
+                  worldWidth: WORLD_WIDTH,
+                  worldHeight: WORLD_HEIGHT,
+                });
+                // mesh.rotation.order = camera.rotation.order;
+                // mesh.visible = false;
 
-                const localAudio = audio.cloneNode();
-                result.setInputElement(localAudio);
-                result.audio = localAudio;
+                const {page} = mesh;
+                ui.addPage(page);
+                page.update();
 
-                result.setObject(lightsaberMesh);
-
-                return result;
-              });
-              entityApi.soundBodies = soundBodies;
+                return mesh;
+              })();
+              scene.add(hudMesh);
+              entityApi.hudMesh = hudMesh;
 
               entityApi.bladeType = 'crossguard';
               entityApi.remesh = () => {
@@ -754,6 +799,20 @@ class ZFighter {
                 lastUpdateTime = now;
               };
               render.on('update', _update);
+              const _updateEye = camera => {
+                const _updateHudMesh = () => {
+                  const {position: cameraPosition, quaternion: cameraRotation} = camera;
+
+                  hudMesh.position.copy(
+                    cameraPosition.clone()
+                      .add(new THREE.Vector3(0, 0, -0.3).applyQuaternion(cameraRotation))
+                  );
+                  hudMesh.quaternion.copy(cameraRotation);
+                };
+
+                _updateHudMesh();
+              };
+              render.on('updateEye', _updateEye);
 
               entityApi._cleanup = () => {
                 entityObject.remove(lightsaberMesh);
@@ -762,6 +821,11 @@ class ZFighter {
                   const bullet = bullets[i];
                   scene.remove(bullet);
                 }
+
+                scene.remove(hudMesh);
+                hudMesh.destroy();
+                const {page} = hudMesh;
+                ui.removePage(page);
 
                 bladeMaterial.dispose();
 
@@ -773,6 +837,7 @@ class ZFighter {
                 input.removeListener('triggerup', _triggerup);
 
                 render.removeListener('update', _update);
+                render.removeListener('updateEye', _updateEye);
               };
             },
             entityRemovedCallback(entityElement) {
