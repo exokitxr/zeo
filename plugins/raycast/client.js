@@ -4,15 +4,6 @@ class Raycast {
   mount() {
     const {three: {THREE, scene, camera}, elements, render, pose, input, world, ui, sound, utils: {geometry: geometryUtils}} = zeo;
 
-    const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
-    const _decomposeMatrix = matrix => {
-      const position = new THREE.Vector3();
-      const rotation = new THREE.Quaternion();
-      const scale = new THREE.Vector3();
-      matrix.decompose(position, rotation, scale);
-      return {position, rotation, scale};
-    };
-
     const forwardVector = new THREE.Vector3(0, 1, 0);
     const normalMaterial = new THREE.MeshPhongMaterial({
       color: 0xF44336,
@@ -66,7 +57,7 @@ class Raycast {
               const intersection = intersections[0];
               const {point: intersectionPoint, face: intersectionFace, object: intersectionObject} = intersection;
               const {normal} = intersectionFace;
-              const {rotation: intersectionObjectRotation} = _decomposeObjectMatrixWorld(intersectionObject);
+              const intersectionObjectRotation = intersectionObject.getWorldQuaternion();
               const worldNormal = normal.clone().applyQuaternion(intersectionObjectRotation);
 
               dotMesh.position.copy(intersectionPoint);
