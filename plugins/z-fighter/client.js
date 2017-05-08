@@ -46,9 +46,11 @@ class ZFighter {
       const _cleanup = () => {
         audio.oncanplay = null;
         audio.onerror = null;
+
+        document.body.removeChild(audio);
       };
 
-      audio.oncanplay = () => {
+      audio.oncanplaythrough = () => {
         _cleanup();
 
         accept(audio);
@@ -60,6 +62,9 @@ class ZFighter {
       };
       audio.crossOrigin = 'Anonymous';
       audio.src = src;
+
+      audio.style.cssText = 'position: absolute; visibility: hidden';
+      document.body.appendChild(audio);
     });
 
     return Promise.all([
@@ -141,7 +146,7 @@ class ZFighter {
               const entityObject = entityElement.getObject();
 
               const healthState = {
-                health: 85,
+                health: 0,
               };
 
               const bladeMaterial = new THREE.MeshBasicMaterial({
@@ -457,6 +462,34 @@ class ZFighter {
                 // mesh.rotation.order = camera.rotation.order;
                 // mesh.visible = false;
 
+                const _align = (position, rotation, scale, lerpFactor) => {
+                  const targetPosition = position.clone().add(
+                    new THREE.Vector3(
+                      0,
+                      (((WIDTH - HEIGHT) / 2) / HEIGHT * WORLD_HEIGHT) + WORLD_HEIGHT,
+                      -0.5
+                    ).applyQuaternion(rotation)
+                  );
+                  const targetRotation = rotation;
+                  const distance = position.distanceTo(targetPosition);
+
+                  if (lerpFactor < 1) {
+                    mesh.position.add(
+                      targetPosition.clone().sub(mesh.position).multiplyScalar(distance * lerpFactor)
+                    );
+                    mesh.quaternion.slerp(targetRotation, lerpFactor);
+                    mesh.scale.copy(scale);
+                  } else {
+                    mesh.position.copy(targetPosition);
+                    mesh.quaternion.copy(targetRotation);
+                    mesh.scale.copy(scale);
+                  }
+                };
+                mesh.align = _align;
+
+                const {position: cameraPosition, rotation: cameraRotation, scale: cameraScale} = _decomposeObjectMatrixWorld(camera);
+                mesh.align(cameraPosition, cameraRotation, cameraScale, 1);
+
                 const {page} = mesh;
                 ui.addPage(page);
                 page.update();
@@ -607,14 +640,16 @@ class ZFighter {
               let now = Date.now();
               let lastUpdateTime = now;
               let lastBulletUpdateTime = now;
-              const lastEyeUpdateTimes = {
-                left: now,
-                right: now,
-              };
 
               const _update = () => {
                 now = Date.now();
 
+                const _updateHudMesh = () => {
+                  const {position: cameraPosition, rotation: cameraRotation, scale: cameraScale} = _decomposeObjectMatrixWorld(camera);
+                  const timeDiff = now - lastUpdateTime;
+                  const lerpFactor = timeDiff * 0.005;
+                  hudMesh.align(cameraPosition, cameraRotation, cameraScale, lerpFactor);
+                };
                 const _updateLightsaber = () => {
                   SIDES.forEach(side => {
                     const lightsaberState = lightsaberStates[side]
@@ -800,6 +835,7 @@ class ZFighter {
                   }
                 };
 
+                _updateHudMesh();
                 _updateLightsaber();
                 _updateDroneMove();
                 _updateDroneLook();
@@ -810,35 +846,6 @@ class ZFighter {
                 lastUpdateTime = now;
               };
               render.on('update', _update);
-              const _updateEye = camera => {
-                const {side} = camera;
-                const lastEyeUpdateTime = lastEyeUpdateTimes[side];
-
-                const _updateHudMesh = () => {
-                  const {position: cameraPosition, quaternion: cameraRotation} = camera;
-                  const targetPosition = cameraPosition.clone().add(
-                    new THREE.Vector3(
-                      0,
-                      (((WIDTH - HEIGHT) / 2) / HEIGHT * WORLD_HEIGHT) + WORLD_HEIGHT,
-                      -0.5
-                    ).applyQuaternion(cameraRotation)
-                  );
-                  const targetRotation = cameraRotation;
-                  const distance = cameraPosition.distanceTo(targetPosition);
-                  const timeDiff = now - lastEyeUpdateTime;
-                  const lerpFactor = timeDiff * 0.005;
-
-                  hudMesh.position.add(
-                    targetPosition.clone().sub(hudMesh.position).multiplyScalar(distance * lerpFactor)
-                  );
-                  hudMesh.quaternion.slerp(targetRotation, lerpFactor);
-                };
-
-                _updateHudMesh();
-
-                lastEyeUpdateTimes[side] = now;
-              };
-              render.on('updateEye', _updateEye);
 
               entityApi._cleanup = () => {
                 entityObject.remove(lightsaberMesh);
@@ -863,7 +870,6 @@ class ZFighter {
                 input.removeListener('triggerup', _triggerup);
 
                 render.removeListener('update', _update);
-                render.removeListener('updateEye', _updateEye);
               };
             },
             entityRemovedCallback(entityElement) {
