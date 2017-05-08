@@ -67,10 +67,6 @@ class ZFighter {
         kylo3Audio,
       ]) => {
         if (live) {
-          const bladeMaterial = new THREE.MeshBasicMaterial({
-            color: 0xF44336,
-            shading: THREE.FlatShading,
-          });
           const bulletGeometry = new THREE.BoxBufferGeometry(0.01, 0.01, 0.1);
           const bulletMaterial = new THREE.MeshBasicMaterial({
             color: 0x2196F3,
@@ -119,6 +115,11 @@ class ZFighter {
               const entityApi = entityElement.getComponentApi();
               const entityObject = entityElement.getObject();
 
+              const bladeMaterial = new THREE.MeshBasicMaterial({
+                color: 0xF44336,
+                shading: THREE.FlatShading,
+              });
+
               const lightsaberMesh = (() => {
                 const object = new THREE.Object3D();
 
@@ -143,21 +144,40 @@ class ZFighter {
                 object.handleMesh = handleMesh;
 
                 const bladeMesh = (() => {
-                  const geometry = (() => {
-                    const coreGeometry = new THREE.BoxBufferGeometry(0.02, 0.02, 1)
+                  const object = new THREE.Object3D();
+                  object.visible = false;
+
+                  const coreMesh = (() => {
+                    const geometry = new THREE.BoxBufferGeometry(0.02 * 0.9, 0.02 * 0.9, 1)
                       .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -(0.1 / 2) - 0.02 - (1 / 2)));
-                    const leftGeometry = new THREE.BoxBufferGeometry(0.1, 0.02, 0.02)
-                      .applyMatrix(new THREE.Matrix4().makeTranslation(-(0.1 / 2) - (0.1 / 2), 0, -(0.1 / 2) - (0.02 / 2)));
-                    const rightGeometry = new THREE.BoxBufferGeometry(0.1, 0.02, 0.02)
-                      .applyMatrix(new THREE.Matrix4().makeTranslation((0.1 / 2) + (0.1 / 2), 0, -(0.1 / 2) - (0.02 / 2)));
+                    const material = bladeMaterial;
 
-                    return geometryUtils.concatBufferGeometry([coreGeometry, leftGeometry, rightGeometry]);
+                    return new THREE.Mesh(geometry, material);
                   })();
-                  const material = bladeMaterial;
+                  object.add(coreMesh);
+                  object.coreMesh = coreMesh;
 
-                  const mesh = new THREE.Mesh(geometry, material);
-                  mesh.visible = false;
-                  return mesh;
+                  const leftMesh = (() => {
+                    const geometry = new THREE.BoxBufferGeometry(0.1, 0.02 * 0.9, 0.02 * 0.9)
+                      .applyMatrix(new THREE.Matrix4().makeTranslation(-(0.1 / 2) - (0.1 / 2), 0, -(0.1 / 2) - (0.02 / 2)));
+                    const material = bladeMaterial;
+
+                    return new THREE.Mesh(geometry, material);
+                  })();
+                  object.add(leftMesh);
+                  object.leftMesh = leftMesh;
+
+                  const rightMesh = (() => {
+                    const geometry = new THREE.BoxBufferGeometry(0.1, 0.02 * 0.9, 0.02 * 0.9)
+                      .applyMatrix(new THREE.Matrix4().makeTranslation((0.1 / 2) + (0.1 / 2), 0, -(0.1 / 2) - (0.02 / 2)));
+                    const material = bladeMaterial;
+
+                    return new THREE.Mesh(geometry, material);
+                  })();
+                  object.add(rightMesh);
+                  object.rightMesh = rightMesh;
+
+                  return object;
                 })();
                 object.add(bladeMesh);
                 object.bladeMesh = bladeMesh;
@@ -276,14 +296,14 @@ class ZFighter {
               entityApi.color = new THREE.Color(0x000000);
               entityApi.render = () => {
                 const {color} = entityApi;
-                const {bladeMesh} = lightsaberMesh;
 
-                bladeMesh.material.color.copy(color);
+                bladeMaterial.color.copy(color);
               };
 
               const _makeLightsaberState = () => ({
                 grabbed: false,
                 ignited: false,
+                value: 0,
               });
               const lightsaberStates = {
                 left: _makeLightsaberState(),
@@ -306,9 +326,6 @@ class ZFighter {
                 const {ignited} = lightsaberState;
                 if (ignited) {
                   lightsaberState.ignited = false;
-
-                  const {bladeMesh} = lightsaberMesh;
-                  bladeMesh.visible = false;
 
                   if (!soundBodies[0].audio.paused) {
                     soundBodies[0].audio.pause();
@@ -346,9 +363,6 @@ class ZFighter {
                   if (!ignited) {
                     lightsaberState.ignited = true;
 
-                    const {bladeMesh} = lightsaberMesh;
-                    bladeMesh.visible = true;
-
                     if (soundBodies[0].audio.paused) {
                       soundBodies[0].audio.currentTime = 0;
                       soundBodies[0].audio.play();
@@ -375,9 +389,6 @@ class ZFighter {
                   if (ignited) {
                     lightsaberState.ignited = false;
 
-                    const {bladeMesh} = lightsaberMesh;
-                    bladeMesh.visible = false;
-
                     if (!soundBodies[0].audio.paused) {
                       soundBodies[0].audio.pause();
                     }
@@ -398,12 +409,42 @@ class ZFighter {
               });
 
               const bullets = [];
-              let lastBulletTime = Date.now();
+              let lastUpdateTime = Date.now();
+              let lastBulletUpdateTime = Date.now();
 
               const _update = () => {
-                const _updateDroneMove = () => {
-                  const now = Date.now();
+                const now = Date.now();
 
+                const _updateLightsaber = () => {
+                  SIDES.forEach(side => {
+                    const lightsaberState = lightsaberStates[side]
+                    const {ignited} = lightsaberState;
+
+                    if (ignited) {
+                      lightsaberState.value = Math.min(lightsaberState.value + ((now - lastUpdateTime) / 1000 * 25), 1);
+                    } else {
+                      lightsaberState.value = Math.max(lightsaberState.value - ((now - lastUpdateTime) / 1000 * 2), 0);
+                    }
+                  });
+
+                  const value = Math.max(lightsaberStates.left.value, lightsaberStates.right.value);
+                  const {bladeMesh} = lightsaberMesh;
+                  const {coreMesh, leftMesh, rightMesh} = bladeMesh;
+                  if (value < 0.001) {
+                    if (bladeMesh.visible) {
+                      bladeMesh.visible = false;
+                    }
+                  } else {
+                    coreMesh.scale.set(1, 1, value);
+                    leftMesh.scale.set(value, 1, 1);
+                    rightMesh.scale.set(value, 1, 1);
+
+                    if (!bladeMesh.visible) {
+                      bladeMesh.visible = true;
+                    }
+                  }
+                };
+                const _updateDroneMove = () => {
                   if (now >= droneState.endTime) {
                     const {hmd: hmdStatus} = pose.getStatus();
                     const {position: hmdPosition} = hmdStatus;
@@ -446,8 +487,7 @@ class ZFighter {
                   droneMesh.lookAt(hmdPosition);
                 };
                 const _addBullets = () => {
-                  const now = Date.now();
-                  const timeDiff = now - lastBulletTime;
+                  const timeDiff = now - lastBulletUpdateTime;
 
                   if (timeDiff >= BULLET_RATE) {
                     const {pupilMesh} = droneMesh;
@@ -460,7 +500,7 @@ class ZFighter {
                     scene.add(bullet);
                     bullets.push(bullet);
 
-                    lastBulletTime = now;
+                    lastBulletUpdateTime = now;
                   }
                 };
                 const _intersectBullets = () => {
@@ -523,8 +563,6 @@ class ZFighter {
                   hitMesh.visible = false;
                 }
                 const _updateBullets = () => {
-                  const now = Date.now();
-
                   const oldBullets = bullets.slice();
                   for (let i = 0; i < oldBullets.length; i++) {
                     const bullet = oldBullets[i];
@@ -548,22 +586,26 @@ class ZFighter {
                   }
                 };
 
+                _updateLightsaber();
                 _updateDroneMove();
                 _updateDroneLook();
                 _addBullets();
                 _intersectBullets();
                 _updateBullets();
+
+                lastUpdateTime = now;
               };
               render.on('update', _update);
 
               entityApi._cleanup = () => {
                 entityObject.remove(lightsaberMesh);
                 scene.remove(droneMesh);
-
                 for (let i = 0; i < bullets.length; i++) {
                   const bullet = bullets[i];
                   scene.remove(bullet);
                 }
+
+                bladeMaterial.dispose();
 
                 entityElement.removeEventListener('grab', _grab);
                 entityElement.removeEventListener('release', _release);
@@ -614,7 +656,6 @@ class ZFighter {
           elements.registerComponent(this, fighterComponent);
 
           this._cleanup = () => {
-            bladeMaterial.dispose();
             bulletGeometry.dispose();
             bulletMaterial.dispose();
 
