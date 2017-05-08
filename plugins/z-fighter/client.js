@@ -336,7 +336,7 @@ class ZFighter {
                 object.position.y = 2;
 
                 const coreMesh = (() => {
-                  const geometry = new THREE.SphereBufferGeometry(0.25, 8, 6);
+                  const geometry = new THREE.SphereBufferGeometry(0.1, 8, 6);
                   const material = new THREE.MeshPhongMaterial({
                     color: 0xCCCCCC,
                     shading: THREE.FlatShading,
@@ -349,7 +349,7 @@ class ZFighter {
                 object.coreMesh = coreMesh;
 
                 const eyeballMesh = (() => {
-                  const geometry = new THREE.CylinderBufferGeometry(0.1, 0.1, 0.03, 8, 1)
+                  const geometry = new THREE.CylinderBufferGeometry(0.05, 0.05, 0.015, 8, 1)
                     .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
                   const material = new THREE.MeshPhongMaterial({
                     color: 0xEEEEEE,
@@ -357,7 +357,7 @@ class ZFighter {
                   });
 
                   const mesh = new THREE.Mesh(geometry, material);
-                  mesh.position.z = 0.25 - 0.03;
+                  mesh.position.z = 0.1 - 0.015;
                   mesh.rotation.y = Math.PI;
                   mesh.rotation.order = camera.rotation.order;
                   return mesh;
@@ -366,7 +366,7 @@ class ZFighter {
                 object.eyeballMesh = eyeballMesh;
 
                 const pupilMesh = (() => {
-                  const geometry = new THREE.CylinderBufferGeometry(0.06, 0.06, 0.03, 8, 1)
+                  const geometry = new THREE.CylinderBufferGeometry(0.03, 0.03, 0.015, 8, 1)
                     .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
                   const material = new THREE.MeshPhongMaterial({
                     color: 0x111111,
@@ -374,7 +374,7 @@ class ZFighter {
                   });
 
                   const mesh = new THREE.Mesh(geometry, material);
-                  mesh.position.z = 0.25 + -0.015;
+                  mesh.position.z = 0.1 - 0.005;
                   mesh.rotation.y = Math.PI;
                   mesh.rotation.order = camera.rotation.order;
                   return mesh;
