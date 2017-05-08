@@ -810,7 +810,13 @@ class ZFighter {
 
                 const _updateHudMesh = () => {
                   const {position: cameraPosition, quaternion: cameraRotation} = camera;
-                  const targetPosition = cameraPosition.clone().add(new THREE.Vector3(0, 0, -0.5).applyQuaternion(cameraRotation));
+                  const targetPosition = cameraPosition.clone().add(
+                    new THREE.Vector3(
+                      0,
+                      (((WIDTH - HEIGHT) / 2) / HEIGHT * WORLD_HEIGHT) + WORLD_HEIGHT,
+                      -0.5
+                    ).applyQuaternion(cameraRotation)
+                  );
                   const targetRotation = cameraRotation;
                   const distance = cameraPosition.distanceTo(targetPosition);
                   const timeDiff = now - lastEyeUpdateTime;

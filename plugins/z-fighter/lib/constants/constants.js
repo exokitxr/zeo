@@ -1,5 +1,5 @@
 export const WIDTH = 1024;
-export const HEIGHT = WIDTH;
+export const HEIGHT = 114;
 export const ASPECT_RATIO = WIDTH / HEIGHT;
 export const WORLD_WIDTH = 0.5;
 export const WORLD_HEIGHT = WORLD_WIDTH / ASPECT_RATIO;
