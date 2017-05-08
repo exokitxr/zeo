@@ -68,11 +68,9 @@ class ZFighter {
       ]) => {
         if (live) {
           const bulletGeometry = new THREE.BoxBufferGeometry(0.01, 0.01, 0.1);
-          const bulletMaterial = new THREE.MeshPhongMaterial({
+          const bulletMaterial = new THREE.MeshBasicMaterial({
             color: 0x2196F3,
             shading: THREE.FlatShading,
-            transparent: true,
-            opacity: 0.5,
           });
           const _makeBulletMesh = () => {
             const geometry = bulletGeometry;
@@ -155,7 +153,7 @@ class ZFighter {
                     color: 0xF44336,
                     shading: THREE.FlatShading,
                     transparent: true,
-                    opacity: 0.9,
+                    opacity: 0.5,
                   });
 
                   const mesh = new THREE.Mesh(geometry, material);
@@ -167,15 +165,22 @@ class ZFighter {
 
                 const hitMesh = (() => {
                   const geometry = new THREE.BoxBufferGeometry(0.1, 0.1, 1);
-                  const material = new THREE.MeshPhongMaterial({
+                  /* const material = new THREE.MeshPhongMaterial({
                     color: 0x666666,
                     shading: THREE.FlatShading,
                     transparent: true,
                     opacity: 0.25,
+                  }); */
+                  const material = new THREE.MeshBasicMaterial({
+                    color: 0xFFFFFF,
+                    // transparent: true,
+                    // opacity: 0,
                   });
+                  // material.colorWrite = false;
 
                   const mesh = new THREE.Mesh(geometry, material);
                   mesh.position.set(0, 0, -(0.1 / 2) - 0.02 - (1 / 2));
+                  mesh.visible = false;
                   return mesh;
                 })();
                 object.add(hitMesh);
@@ -461,6 +466,7 @@ class ZFighter {
                 };
                 const _intersectBullets = () => {
                   const {hitMesh} = lightsaberMesh;
+                  hitMesh.visible = true;
                   const hitMeshRotation = hitMesh.getWorldQuaternion();
                   const raycaster = new THREE.Raycaster();
                   raycaster.near = 0.01;
@@ -471,7 +477,12 @@ class ZFighter {
 
                     if (!bullet.intersected) {
                       const {position: bulletPosition, rotation: bulletRotation} = _decomposeObjectMatrixWorld(bullet);
-                      const ray = new THREE.Ray(bulletPosition, forwardVector.clone().applyQuaternion(bulletRotation));
+                      const ray = new THREE.Ray(
+                        bulletPosition,
+                        forwardVector.clone()
+                          .multiplyScalar(0.01)
+                          .applyQuaternion(bulletRotation)
+                      );
                       raycaster.ray = ray;
                       const intersections = raycaster.intersectObject(hitMesh);
 
@@ -509,6 +520,8 @@ class ZFighter {
                       }
                     }
                   }
+
+                  hitMesh.visible = false;
                 }
                 const _updateBullets = () => {
                   const now = Date.now();
