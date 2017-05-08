@@ -60,7 +60,7 @@ class Payment {
         };
 
         const paymentMeshes = [];
-        const _makePayMesh = ({address, asset, quantity}, cb) => {
+        const _makePayMesh = ({address, asset, quantity, hasAvailableBalance}, cb) => {
           const id = _makeId();
 
           const paymentUi = biolumi.makeUi({
@@ -72,7 +72,7 @@ class Payment {
           }) => {
             return {
               type: 'html',
-              src: paymentRenderer.getPayPageSrc({id}),
+              src: paymentRenderer.getPayPageSrc({id, hasAvailableBalance}),
               x: 0,
               y: 0,
               w: WIDTH,
@@ -130,7 +130,7 @@ class Payment {
           }) => {
             return {
               type: 'html',
-              src: paymentRenderer.getBuyPageSrc({id}),
+              src: paymentRenderer.getBuyPageSrc({id, hasAvailableBalance}),
               x: 0,
               y: 0,
               w: WIDTH,
@@ -221,38 +221,60 @@ class Payment {
         };
 
         const _requestBalances = () => new Promise((accept, reject) => {
-          accept([]); // XXX actually fetch balances here
-        });
-        const _requestPay = ({address, asset, quantity}) => new Promise((accept, reject) => {
-          const paymentMesh = _makePayMesh({
-            address,
-            asset,
-            quantity,
-          }, (err, result) => {
-            if (!err) {
-              accept(result);
-            } else {
-              reject(err);
+          accept([ // XXX actually fetch balances here
+            {
+              asset: 'CRAPCOIN',
+              value: 100,
             }
-          });
-          scene.add(paymentMesh);
-          paymentMeshes.push(paymentMesh);
+          ]);
         });
-        const _requestBuy = ({srcAsset, srcQuantity, dstAsset, dstQuantity}) => new Promise((accept, reject) => {
-          const paymentMesh = _makeBuyMesh({
-            srcAsset,
-            srcQuantity,
-            dstAsset,
-            dstQuantity,
-          }, (err, result) => {
-            if (!err) {
-              accept(result);
-            } else {
-              reject(err);
-            }
+        const _hasAvailableBalance = (asset, quantity) => _requestBalances()
+          .then(balances => {
+            const balanceSpec = balances.find(balance => balance.asset === asset);
+            return balanceSpec && balanceSpec.quantity >= quantity;
           });
-          scene.add(paymentMesh);
-          paymentMeshes.push(paymentMesh);
+        const _requestPay = ({address, asset, quantity, message}) => new Promise((accept, reject) => {
+          _hasAvailableBalance(asset, quantity)
+            .then(hasAvailableBalance => {
+              const paymentMesh = _makePayMesh({
+                address,
+                asset,
+                quantity,
+                message,
+                hasAvailableBalance,
+              }, (err, result) => {
+                if (!err) {
+                  accept(result);
+                } else {
+                  reject(err);
+                }
+              });
+              scene.add(paymentMesh);
+              paymentMeshes.push(paymentMesh)
+            })
+            .catch(reject);
+        });
+        const _requestBuy = ({srcAsset, srcQuantity, dstAsset, dstQuantity, message}) => new Promise((accept, reject) => {
+          _hasAvailableBalance(srcQuantity, srcQuantity)
+            .then(hasAvailableBalance => {
+              const paymentMesh = _makeBuyMesh({
+                srcAsset,
+                srcQuantity,
+                dstAsset,
+                dstQuantity,
+                message,
+                hasAvailableBalance,
+              }, (err, result) => {
+                if (!err) {
+                  accept(result);
+                } else {
+                  reject(err);
+                }
+              });
+              scene.add(paymentMesh);
+              paymentMeshes.push(paymentMesh);
+            })
+            .catch(reject);
         });
 
         return {

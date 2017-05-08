@@ -73,7 +73,7 @@ class Test {
           });
       } else if (e.keyCode === 112) { // P
         payment.requestPay({
-          address: 'address',
+          address: 'xxxxxxxxxxxxxxxxxxxxxx',
           asset: 'ASSET',
           quantity: 10,
         })

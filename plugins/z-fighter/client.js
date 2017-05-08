@@ -21,7 +21,7 @@ const SIDES = ['left', 'right'];
 
 class ZFighter {
   mount() {
-    const {three: {THREE, scene, camera}, elements, input, pose, render, sound, ui, utils: {geometry: geometryUtils}} = zeo;
+    const {three: {THREE, scene, camera}, elements, input, pose, render, sound, ui, payment, utils: {geometry: geometryUtils}} = zeo;
 
     let live = true;
     this.cleanup = () => {
@@ -449,11 +449,12 @@ class ZFighter {
                 });
                 const mesh = menuUi.makePage(({
                   live: {
+                    live,
                     health,
                   },
                 }) => ({
                   type: 'html',
-                  src: menuRenderer.getHudSrc({health}),
+                  src: menuRenderer.getHudSrc({live, health}),
                   x: 0,
                   y: 0,
                   w: WIDTH,
@@ -551,12 +552,25 @@ class ZFighter {
 
                 lightsaberState.grabbed = true;
 
-                liveState.live = true; // XXX trigger this via payment
-                liveState.health = 100;
-                liveState.paused = false;
+                if (!liveState.live) {
+                  payment.requestBuy({
+                    asset: 'CRAPCOIN',
+                    quantity: 1,
+                    address: 'xxxxxxxxxxxxxxxxxxxx',
+                  })
+                    .then(() => {
+                      liveState.live = true; // XXX trigger this via payment
+                      liveState.health = 100;
 
-                const {page} = hudMesh;
-                page.update();
+                      const {page} = hudMesh;
+                      page.update();
+                    })
+                    .catch(err => {
+                      console.warn(err);
+                    });
+                }
+
+                liveState.paused = false;
               };
               entityElement.addEventListener('grab', _grab);
               const _release = e => {
