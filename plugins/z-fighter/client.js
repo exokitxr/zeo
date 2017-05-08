@@ -552,14 +552,14 @@ class ZFighter {
 
                 lightsaberState.grabbed = true;
 
-                if (!liveState.live) {
+                if (!_isLive()) {
                   payment.requestPay({
                     asset: 'CRAPCOIN',
                     quantity: 1,
                     address: 'xxxxxxxxxxxxxxxxxxxx',
                   })
                     .then(() => {
-                      liveState.live = true; // XXX trigger this via payment
+                      liveState.live = true;
                       liveState.health = 100;
 
                       const {page} = hudMesh;
@@ -615,7 +615,7 @@ class ZFighter {
                 const lightsaberState = lightsaberStates[side];
                 const {grabbed} = lightsaberState;
 
-                if (grabbed) {
+                if (grabbed && _isLive()) {
                   const {ignited} = lightsaberState;
 
                   if (!ignited) {
