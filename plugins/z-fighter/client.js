@@ -552,24 +552,6 @@ class ZFighter {
 
                 lightsaberState.grabbed = true;
 
-                if (!_isLive()) {
-                  payment.requestPay({
-                    asset: 'CRAPCOIN',
-                    quantity: 1,
-                    address: 'xxxxxxxxxxxxxxxxxxxx',
-                  })
-                    .then(() => {
-                      liveState.live = true;
-                      liveState.health = 100;
-
-                      const {page} = hudMesh;
-                      page.update();
-                    })
-                    .catch(err => {
-                      console.warn(err);
-                    });
-                }
-
                 liveState.paused = false;
               };
               entityElement.addEventListener('grab', _grab);
@@ -663,6 +645,42 @@ class ZFighter {
                 }
               };
               input.on('triggerup', _triggerup, {
+                priority: 1,
+              });
+              const _menudown = e => {
+                const {side} = e;
+                const lightsaberState = lightsaberStates[side];
+                const {grabbed} = lightsaberState;
+
+                if (grabbed) {
+                  if (!_isLive()) {
+                    payment.requestPay({
+                      asset: 'CRAPCOIN',
+                      quantity: 1,
+                      address: 'xxxxxxxxxxxxxxxxxxxx',
+                    })
+                      .then(() => {
+                        liveState.live = true;
+                        liveState.health = 100;
+
+                        const {page} = hudMesh;
+                        page.update();
+                      })
+                      .catch(err => {
+                        console.warn(err);
+                      });
+                  } else {
+                    liveState.live = true;
+                    liveState.health = 100;
+
+                    const {page} = hudMesh;
+                    page.update();
+                  }
+
+                  e.stopImmediatePropagation();
+                }
+              };
+              input.on('menudown', _menudown, {
                 priority: 1,
               });
 
@@ -916,10 +934,15 @@ class ZFighter {
                     _resetHudMesh();
                   }
                 } else {
-                  _resetHudMesh();
                   _resetLightsaber();
                   _resetDrone();
                   _resetBullets();
+
+                  if (!_isPaused()) {
+                    _updateHudMesh();
+                  } else {
+                    _resetHudMesh();
+                  }
                 }
 
                 lastUpdateTime = now;
@@ -947,6 +970,7 @@ class ZFighter {
                 input.removeListener('trigger', _trigger);
                 input.removeListener('triggerdown', _triggerdown);
                 input.removeListener('triggerup', _triggerup);
+                input.removeListener('menudown', _menudown);
 
                 render.removeListener('update', _update);
               };
