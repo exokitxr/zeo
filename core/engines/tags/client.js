@@ -3203,7 +3203,7 @@ class Tags {
                             const {type: focusType = '', inputText = '', inputValue = 0} = keyboardFocusState || {};
                             const focus = (() => {
                               const match = focusType.match(/^attribute:(.+?):(.+?)$/);
-                              return Boolean(match) && match[1] === item.id && match[2] === item.name;
+                              return Boolean(match) && match[1] === item.id && match[2] === attribute.name;
                             })();
                             const transform = transforms.some(transform => transform.tagId === item.id && transform.attributeName === attribute.name);
 
