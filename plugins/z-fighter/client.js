@@ -77,6 +77,7 @@ class ZFighter {
             const mesh = new THREE.Mesh(geometry, material);
             mesh.startTime = Date.now();
             mesh.lastTime = mesh.lastTime;
+            mesh.intersected = false;
             return mesh;
           };
 
@@ -400,6 +401,37 @@ class ZFighter {
                     lastBulletTime = now;
                   }
                 };
+                const _intersectBullets = () => {
+                  const {hitMesh} = lightsaberMesh;
+                  const hitMeshRotation = hitMesh.getWorldQuaternion();
+                  const raycaster = new THREE.Raycaster();
+                  raycaster.near = 0.01;
+                  raycaster.far = 100000;
+
+                  for (let i = 0; i < bullets.length; i++) {
+                    const bullet = bullets[i];
+
+                    if (!bullet.intersected) {
+                      const {position: bulletPosition, rotation: bulletRotation} = _decomposeObjectMatrixWorld(bullet);
+                      const ray = new THREE.Ray(bulletPosition, new THREE.Vector3(0, 0, -1).applyQuaternion(bulletRotation));
+                      raycaster.ray = ray;
+                      const intersections = raycaster.intersectObject(hitMesh);
+
+                      if (intersections.length > 0) {
+                        const intersection = intersections[0];
+                        const {face} = intersection;
+                        const {normal} = face;
+                        const worldNormal = normal.clone().applyQuaternion(hitMeshRotation);
+
+                        bullet.quaternion.setFromUnitVectors(
+                          new THREE.Vector3(0, 0, -1),
+                          worldNormal
+                        );
+                        bullet.intersected = true;
+                      }
+                    }
+                  }
+                }
                 const _updateBullets = () => {
                   const now = Date.now();
 
@@ -428,6 +460,7 @@ class ZFighter {
 
                 _updateDrone();
                 _addBullets();
+                _intersectBullets();
                 _updateBullets();
               };
               render.on('update', _update);
