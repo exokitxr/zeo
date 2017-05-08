@@ -4,14 +4,23 @@ class Raycast {
   mount() {
     const {three: {THREE, scene, camera}, elements, render, pose, input, world, ui, sound, utils: {geometry: geometryUtils}} = zeo;
 
-    const forwardVector = new THREE.Vector3(0, 1, 0);
+    const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
+    const _decomposeMatrix = matrix => {
+      const position = new THREE.Vector3();
+      const rotation = new THREE.Quaternion();
+      const scale = new THREE.Vector3();
+      matrix.decompose(position, rotation, scale);
+      return {position, rotation, scale};
+    };
 
+    const forwardVector = new THREE.Vector3(0, 1, 0);
     const normalMaterial = new THREE.MeshPhongMaterial({
       color: 0xF44336,
       shading: THREE.FlatShading,
       transparent: true,
       opacity: 0.5,
     });
+
     const _makeDotMesh = () => {
       const geometry = geometryUtils.concatBufferGeometry([
         new THREE.CylinderBufferGeometry(0, 0.015, 0.05, 5)
@@ -55,10 +64,16 @@ class Raycast {
 
             if (intersections.length > 0) {
               const intersection = intersections[0];
-              const {point: intersectionPoint, face: intersectionFace} = intersection;
+              const {point: intersectionPoint, face: intersectionFace, object: intersectionObject} = intersection;
+              const {normal} = intersectionFace;
+              const {rotation: intersectionObjectRotation} = _decomposeObjectMatrixWorld(intersectionObject);
+              const worldNormal = normal.clone().applyQuaternion(intersectionObjectRotation);
 
               dotMesh.position.copy(intersectionPoint);
-              dotMesh.quaternion.copy(new THREE.Quaternion().setFromUnitVectors(forwardVector, intersectionFace.normal));
+              dotMesh.quaternion.setFromUnitVectors(
+                forwardVector,
+                worldNormal
+              );
 
               if (!dotMesh.visible) {
                 dotMesh.visible = true;
