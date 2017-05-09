@@ -146,11 +146,14 @@ class Payment {
                 payState.done = true;
                 page.update();
 
+                const {tagMesh} = menuMesh;
+                tagMesh.visible = false;
+
                 cb();
 
                 setTimeout(() => {
                   cleanup();
-                }, 5000);
+                }, 2000);
               }, 2000);
 
               payState.paying = true;
