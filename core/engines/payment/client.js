@@ -177,7 +177,7 @@ class Payment {
             menuMesh.destroy();
 
             const {tagMesh} = menuMesh;
-            tagMesh.destroy();
+            tags.destroyTag(tagMesh);
 
             rend.removePage(page);
           };
@@ -314,6 +314,10 @@ class Payment {
 
           object.destroy = () => {
             menuMesh.destroy();
+
+            const {dstTagMesh, srcTagMesh} = menuMesh;
+            tags.destroyTag(dstTagMesh);
+            tags.destroyTag(srcTagMesh);
 
             rend.removePage(page);
           };
