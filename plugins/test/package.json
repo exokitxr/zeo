@@ -3,5 +3,11 @@
   "version": "0.0.1",
   "description": "Test zeo components.",
   "client": "client.js",
+  "asset": {
+    "srcAsset": "CRAPCOIN",
+    "srcQuantity": 10,
+    "dstAsset": "CRAPCOIN2",
+    "dstQuantity": 1
+  },
   "dependencies": {}
 }

@@ -43,7 +43,7 @@
     "markdown-toc": "^1.1.0",
     "marked": "^0.3.6",
     "mkdirp": "^0.5.1",
-    "modulequery": "0.0.3",
+    "modulequery": "0.0.4",
     "password-hash-and-salt": "^0.1.4",
     "rnd": "^1.0.10",
     "transclude": "0.0.2",
