@@ -41,7 +41,7 @@ const _getAssetSrc = asset => {
   return `\
     <div class=row>
       <h4 class=label>Buy this module</h4>
-      <a class=button>&#164; ${srcQuantityString} ${srcAsset}</a>
+      <a class=button href="/buy?srcAsset=${encodeURIComponent(srcAsset)}&srcQuantity=${encodeURIComponent(srcQuantity)}&dstAsset=${encodeURIComponent(dstAsset)}&dstQuantity=${encodeURIComponent(dstQuantity)}">&#164; ${srcQuantityString} ${srcAsset}</a>
     </div>
     <div class=asset style="position: relative; display: flex; width: 300px; height: 100px; background-color: #EEE; padding-left: 30px; text-decoration: none; overflow: hidden; box-sizing: border-box;">
       <div style="display: flex; position: absolute; top: 40px; left: -40px; width: 100px; height: 20px; background-color: #FFC107; font-size: 13px; justify-content: center; align-items: center; box-sizing: border-box; transform: rotate(-90deg);">Asset</div>
