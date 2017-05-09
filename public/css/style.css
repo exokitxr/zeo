@@ -124,10 +124,15 @@ b {
 .button.invert:hover img {
   filter: invert(100%);
 }
+.button.static:hover {
+  background-color: transparent;
+  border-color: currentColor;
+  cursor: auto;
+}
 .button.primary {
   color: #4CAF50;
 }
-.button.primary:hover {
+.button.primary:not(.static):hover {
   background-color: #4CAF50;
   border-color: transparent;
   color: #FFF;
@@ -135,7 +140,7 @@ b {
 .button.secondary {
   color: #F44336;
 }
-.button.secondary:hover {
+.button.secondary:not(.static):hover {
   background-color: #F44336;
   border-color: transparent;
   color: #FFF;
