@@ -187,17 +187,27 @@ class Payment {
         const _makeBuyMesh = ({srcAsset, srcQuantity, dstAsset, dstQuantity, hasAvailableBalance}, cb, cleanup) => {
           const id = _makeId();
 
+          const object = new THREE.Object3D();
+
+           const payState = {
+            paying: false,
+            done: false,
+          };
+
           const menuMesh = (() => {
             const paymentUi = biolumi.makeUi({
               width: WIDTH,
               height: HEIGHT,
             });
             const mesh = paymentUi.makePage(({
-              // nothing
+              pay: {
+                paying,
+                done,
+              },
             }) => {
               return {
                 type: 'html',
-                src: paymentRenderer.getBuyPageSrc({id, hasAvailableBalance}),
+                src: paymentRenderer.getBuyPageSrc({id, hasAvailableBalance, paying, done}),
                 x: 0,
                 y: 0,
                 w: WIDTH,
@@ -206,7 +216,7 @@ class Payment {
             }, {
               type: 'buy',
               state: {
-                // nothing
+                pay: payState,
               },
               worldWidth: WORLD_WIDTH,
               worldHeight: WORLD_HEIGHT,
@@ -215,8 +225,50 @@ class Payment {
             mesh.rotation.x = -Math.PI / 4;
             mesh.rotation.order = camera.rotation.order;
 
+            const dstTagMesh = (() => {
+              const mesh = tags.makeTag({
+                type: 'asset',
+                id: id + ':dst',
+                name: dstAsset,
+                displayName: dstAsset,
+                quantity: dstQuantity,
+                matrix: DEFAULT_MATRIX,
+                metadata: {
+                  isStatic: true,
+                },
+              });
+              mesh.position.set(-WORLD_WIDTH * 0.285, 0, 0.001);
+              // mesh.planeMesh.scale.set(ASSET_TAG_MESH_SCALE, ASSET_TAG_MESH_SCALE, 1);
+
+              return mesh;
+            })();
+            mesh.add(dstTagMesh);
+            mesh.dstTagMesh = dstTagMesh;
+
+            const srcTagMesh = (() => {
+              const mesh = tags.makeTag({
+                type: 'asset',
+                id: id + ':src',
+                name: srcAsset,
+                displayName: srcAsset,
+                quantity: srcQuantity,
+                matrix: DEFAULT_MATRIX,
+                metadata: {
+                  isStatic: true,
+                },
+              });
+              mesh.position.set(0, 0, 0.001);
+              // mesh.planeMesh.scale.set(ASSET_TAG_MESH_SCALE, ASSET_TAG_MESH_SCALE, 1);
+
+              return mesh;
+            })();
+            mesh.add(srcTagMesh);
+            mesh.srcTagMesh = srcTagMesh;
+
             return mesh;
           })();
+          object.add(menuMesh);
+          object.menuMesh = menuMesh;
 
           const {page} = menuMesh;
           page.initialUpdate();
@@ -230,9 +282,27 @@ class Payment {
 
           object.paymentId = id;
           object.confirm = () => {
-            cb();
+            if (live) {
+              setTimeout(() => {
+                payState.paying = false;
+                payState.done = true;
+                page.update();
 
-            cleanup();
+                const {tagMesh} = menuMesh;
+                tagMesh.visible = false;
+
+                cb();
+
+                setTimeout(() => {
+                  cleanup();
+                }, 2000);
+              }, 2000);
+
+              payState.paying = true;
+              page.update();
+
+              live = false;
+            }
           };
           object.cancel = () => {
             const err = new Error('user canceled payment');

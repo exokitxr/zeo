@@ -62,8 +62,10 @@ class Test {
     const keypress = e => {
       if (e.keyCode === 98) { // B
         payment.requestBuy({
-          asset: 'SRCASSET',
-          quantity: 10,
+          srcAsset: 'SRCASSET',
+          srcQuantity: 10,
+          dstAsset: 'DSTASSET',
+          dstQuantity: 10,
         })
           .then(result => {
             console.warn('buy result', result);
