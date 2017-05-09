@@ -33,6 +33,32 @@ $('navbar > a').forEach(el => {
 const moduleBody = $('#module-body')[0];
 
 const _commaize = n => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+const _getAssetSrc = asset => {
+  const {srcAsset, srcQuantity, dstAsset, dstQuantity} = asset;
+  const srcQuantityString = _commaize(srcQuantity);
+  const dstQuantityString = _commaize(dstQuantity);
+
+  return `\
+    <div class=row>
+      <h4 class=label>Buy this module</h4>
+      <a class=button>&#164; ${srcQuantityString} ${srcAsset}</a>
+    </div>
+    <div class=asset style="position: relative; display: flex; width: 300px; height: 100px; background-color: #EEE; padding-left: 30px; text-decoration: none; overflow: hidden; box-sizing: border-box;">
+      <div style="display: flex; position: absolute; top: 40px; left: -40px; width: 100px; height: 20px; background-color: #FFC107; font-size: 13px; justify-content: center; align-items: center; box-sizing: border-box; transform: rotate(-90deg);">Asset</div>
+      <div style="display: flex; margin-left: -30px; padding-left: 20px; flex-grow: 1; flex-direction: column; box-sizing: border-box;">
+        <div style="display: flex; flex-grow: 1;">
+          <img class=asset-image width="50" height="50" style="margin: 10px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;" />
+          <div style="display: flex; max-width: ${300 - (20) - (50 + (10 * 2)) - (30 + (15 * 2))}px; flex-grow: 1; flex-direction: column; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">
+            <h1 style="margin: 0; margin-top: 15px; padding: 0; font-size: 16px; font-weight: 600; line-height: 1.4;">${dstAsset}</h1>
+            <div style="display: flex; flex-grow: 1; align-items: center;">
+              <div style="padding: 0 7px; border: 2px solid; font-size: 16px; font-weight: 400;">&#164; ${dstQuantityString}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+};
 const _makeModuleElement = module => {
   const {name, readme, asset} = module;
 
@@ -58,32 +84,7 @@ const _makeModuleElement = module => {
       }
     </div>
     <div class=readme-sidebar>
-      ${asset ? (() => {
-        const {srcAsset, srcQuantity, dstAsset, dstQuantity} = asset;
-        const srcQuantityString = _commaize(srcQuantity);
-        const dstQuantityString = _commaize(dstQuantity);
-
-        return `\
-          <div class=row>
-            <h4 class=label>Buy this module</h4>
-            <a class=button>&#164; ${srcQuantityString} ${srcAsset}</a>
-          </div>
-          <div class=asset style="position: relative; display: flex; width: 300px; height: 100px; background-color: #EEE; padding-left: 30px; text-decoration: none; overflow: hidden; box-sizing: border-box;">
-            <div style="display: flex; position: absolute; top: 40px; left: -40px; width: 100px; height: 20px; background-color: #FFC107; font-size: 13px; justify-content: center; align-items: center; box-sizing: border-box; transform: rotate(-90deg);">Asset</div>
-            <div style="display: flex; margin-left: -30px; padding-left: 20px; flex-grow: 1; flex-direction: column; box-sizing: border-box;">
-              <div style="display: flex; flex-grow: 1;">
-                <img class=asset-image width="50" height="50" style="margin: 10px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;" />
-                <div style="display: flex; max-width: ${300 - (20) - (50 + (10 * 2)) - (30 + (15 * 2))}px; flex-grow: 1; flex-direction: column; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">
-                  <h1 style="margin: 0; margin-top: 15px; padding: 0; font-size: 16px; font-weight: 600; line-height: 1.4;">${dstAsset}</h1>
-                  <div style="display: flex; flex-grow: 1; align-items: center;">
-                    <div style="padding: 0 7px; border: 2px solid; font-size: 16px; font-weight: 400;">&#164; ${dstQuantityString}</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        `;
-      })() : ''}
+      ${asset ? _getAssetSrc(asset) : ''}
       <h4 class=label>Install this module</h4>
       <pre class=code>&lt;module src="${module.name}"&gt;&lt;/module&gt;</pre>
       <div class=hint><b>Hint:
