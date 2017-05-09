@@ -152,6 +152,7 @@ b {
 
 .modules-body {
   display: flex;
+  width: 980px;
   min-height: calc(100vh - (80px * 2));
   padding: 20px;
   padding-right: 0;
@@ -160,22 +161,22 @@ b {
 }
 .modules-body .module {
   display: flex;
-  width: calc(((100vw - 20px - 17px) / 3) - 20px);
+  width: calc(((980px - 20px - 17px) / 3) - 20px);
   margin-right: 20px;
   margin-bottom: 10px;
   padding-bottom: 10px;
   border-bottom: 1px solid #EEE;
 }
 .modules-body .module-image {
-  width: 100px;
-  height: 100px;
+  width: 50px;
+  height: 50px;
   image-rendering: -moz-crisp-edges;
   image-rendering: pixelated;
 }
 .modules-body .module-content {
   display: flex;
   width: calc((((100vw - 20px - 17px) / 3) - 20px) - 100px);
-  padding: 5px 10px;
+  padding: 0 10px;
   flex-direction: column;
   box-sizing: border-box;
 }
@@ -206,7 +207,10 @@ b {
   font-weight: 400;
 }
 .modules-body .module-content .description {
+  height: 52px;
   font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .module-body {
@@ -230,11 +234,31 @@ b {
   width: 300px;
   margin-top: 30px;
 }
+.readme-sidebar .row {
+  display: flex;
+  align-items: center;
+}
+.readme-sidebar .row .label {
+  margin-right: auto;
+}
 .readme-sidebar .label {
   display: flex;
   height: 20px;
   margin: 0;
   align-items: center;
+}
+.readme-sidebar .button {
+  height: 30px;
+  padding: 0 7px;
+  border-radius: 5px;
+  font-weight: 600;
+}
+.markdown-body .readme-sidebar .button {
+  color: #4CAF50;
+}
+.markdown-body .readme-sidebar .button:hover {
+  background-color: #4CAF50;
+  color: #FFF;
 }
 .readme-sidebar .code {
   display: flex;
@@ -267,23 +291,23 @@ b {
 .readme-header .back-link {
   display: flex;
   position: relative;
-  width: 60px;
-  height: 80px;
+  width: 40px;
+  height: 50px;
   overflow: hidden;
 }
 .readme-header .back-link-wrap {
   position: absolute;
-  width: 60px;
-  height: 60px;
-  top: 10px;
+  width: 40px;
+  height: 40px;
+  top: 7px;
 }
 .readme-header .back-image {
   width: inherit;
   height: inherit;
 }
 .readme-header .readme-image {
-  width: 80px;
-  height: 80px;
+  width: 50px;
+  height: 50px;
   margin-right: 15px;
   image-rendering: -moz-crisp-edges;
   image-rendering: pixelated;
@@ -294,13 +318,13 @@ b {
 }
 .readme-header .readme-header-wrap .name {
   margin-right: 15px;
-  font-size: 40px;
+  font-size: 30px;
   line-height: 1;
   flex-grow: 1;
 }
 .readme-header .readme-header-wrap .version {
   color: #808080;
-  font-size: 30px;
+  font-size: 20px;
   line-height: 1;
   font-weight: 400;
 }
@@ -331,8 +355,8 @@ b {
 }
 .servers-body .server .server-image {
   display: flex;
-  width: 80px;
-  height: 80px;
+  width: 50px;
+  height: 50px;
   margin-right: 10px;
   image-rendering: -moz-crisp-edges;
   image-rendering: pixelated;
@@ -340,7 +364,6 @@ b {
 .servers-body .server .server-wrap {
   display: flex;
   margin-right: auto;
-  padding: 5px;
   flex-direction: column;
 }
 .servers-body .server .server-wrap .name {
@@ -376,8 +399,8 @@ b {
   align-items: center;
 }
 .servers-body .server .server-arrow img {
-  width: 36px;
-  height: 36px;
+  width: 30px;
+  height: 30px;
 }
 
 .details-wrap {}
@@ -845,6 +868,10 @@ section.list {
 }
 footer a:hover {
   text-decoration: underline;
+}
+
+.markdown-body .readme img {
+  background-color: transparent;
 }
 
 .loader,

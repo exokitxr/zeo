@@ -32,8 +32,18 @@ $('navbar > a').forEach(el => {
   <script>
 const moduleBody = $('#module-body')[0];
 
+const _commaize = n => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 const _makeModuleElement = module => {
   const {name, readme} = module;
+  const asset = { // XXX source this from the module
+    srcAsset: 'CRAPCOIN',
+    srcQuantity: 10,
+    dstAsset: 'TOKEN',
+    dstQuantity: 1,
+  };
+  const {srcAsset, srcQuantity, dstAsset, dstQuantity} = asset;
+  const srcQuantityString = _commaize(srcQuantity);
+  const dstQuantityString = _commaize(dstQuantity);
 
   const div = document.createElement('div');
   div.innerHTML = `<div class=readme>
@@ -57,6 +67,24 @@ const _makeModuleElement = module => {
       }
     </div>
     <div class=readme-sidebar>
+      <div class=row>
+        <h4 class=label>Buy this module</h4>
+        <a class=button>&#164; ${srcQuantityString} ${srcAsset}</a>
+      </div>
+      <div style="position: relative; display: flex; width: 400px; height: 150px; background-color: #EEE; padding-left: 30px; text-decoration: none; overflow: hidden; box-sizing: border-box;">
+        <div style="display: flex; position: absolute; top: 60px; left: -60px; width: 150px; height: 30px; background-color: #FFC107; justify-content: center; align-items: center; box-sizing: border-box; transform: rotate(-90deg);">Asset</div>
+        <div style="display: flex; margin-left: -30px; padding-left: 30px; flex-grow: 1; flex-direction: column; box-sizing: border-box;">
+          <div style="display: flex; flex-grow: 1;">
+            <img class=asset-image width="80" height="80" style="margin: 10px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;" />
+            <div style="display: flex; max-width: ${400 - (30) - (80 + (10 * 2)) - (30 + (15 * 2))}px; flex-grow: 1; flex-direction: column; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">
+              <h1 style="margin: 0; margin-top: 10px; font-size: 28px; font-weight: 400; line-height: 1.4;">${dstAsset}</h1>
+              <div style="display: flex; flex-grow: 1; align-items: center;">
+                <div style="padding: 5px 10px; border: 2px solid; font-size: 28px; font-weight: 400;">&#164; ${dstQuantityString}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
       <h4 class=label>Install this module</h4>
       <pre class=code>&lt;module src="${module.name}"&gt;&lt;/module&gt;</pre>
       <div class=hint><b>Hint:
@@ -82,6 +110,7 @@ const _makeModuleElement = module => {
 
   setTimeout(() => {
     moduleElement.querySelectorAll('.readme-image')[0].src = creaturejs.makeStaticCreature('module:' + name);
+    moduleElement.querySelectorAll('.asset-image')[0].src = creaturejs.makeStaticCreature('asset:' + dstAsset);
   });
 
   return moduleElement;
