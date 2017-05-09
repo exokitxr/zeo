@@ -288,8 +288,9 @@ class Payment {
                 payState.done = true;
                 page.update();
 
-                const {tagMesh} = menuMesh;
-                tagMesh.visible = false;
+                const {dstTagMesh, srcTagMesh} = menuMesh;
+                dstTagMesh.visible = false;
+                srcTagMesh.visible = false;
 
                 cb();
 
