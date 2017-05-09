@@ -62,9 +62,9 @@ class Test {
     const keypress = e => {
       if (e.keyCode === 98) { // B
         payment.requestBuy({
-          srcAsset: 'SRCASSET',
+          srcAsset: 'CRAPCOIN',
           srcQuantity: 10,
-          dstAsset: 'DSTASSET',
+          dstAsset: 'CRAPCOIN2',
           dstQuantity: 10,
         })
           .then(result => {
@@ -76,7 +76,7 @@ class Test {
       } else if (e.keyCode === 112) { // P
         payment.requestPay({
           address: 'xxxxxxxxxxxxxxxxxxxxxx',
-          asset: 'ASSET',
+          asset: 'CRAPCOIN',
           quantity: 10,
         })
           .then(result => {

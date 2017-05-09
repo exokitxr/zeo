@@ -417,7 +417,7 @@ class Payment {
             .catch(reject);
         });
         const _requestBuy = ({srcAsset, srcQuantity, dstAsset, dstQuantity, message}) => new Promise((accept, reject) => {
-          _hasAvailableBalance(srcQuantity, srcQuantity)
+          _hasAvailableBalance(srcAsset, srcQuantity)
             .then(hasAvailableBalance => {
               const paymentMesh = _makeBuyMesh({
                 srcAsset,

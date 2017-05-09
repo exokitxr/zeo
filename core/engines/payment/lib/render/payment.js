@@ -63,7 +63,7 @@ const getBuyPageSrc = ({id, hasAvailableBalance, paying, done}) => {
         </div>
         ${hasAvailableBalance ? `\
           <div style="display: flex; margin-bottom: 20px; font-size: 30px; font-weight: 400;">
-            ${paying ? `\
+            ${!paying ? `\
               <a style="display: flex; margin-right: 30px; padding: 10px 20px; border: 3px solid; color: #4CAF50; justify-content: center; align-items: center; box-sizing: border-box;" onclick="payment:buy:confirm:${id}">Confirm</a>
               <a style="display: flex; margin-right: 30px; padding: 10px 20px; border: 3px solid; color: #F44336; justify-content: center; align-items: center; box-sizing: border-box;" onclick="payment:buy:cancel:${id}">Reject</a>
             ` : `\
