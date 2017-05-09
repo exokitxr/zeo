@@ -236,10 +236,14 @@ b {
 }
 .readme-sidebar .row {
   display: flex;
+  margin-bottom: 10px;
   align-items: center;
 }
 .readme-sidebar .row .label {
   margin-right: auto;
+}
+.readme-sidebar .asset {
+  margin-bottom: 10px;
 }
 .readme-sidebar .label {
   display: flex;
