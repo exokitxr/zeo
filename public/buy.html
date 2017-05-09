@@ -17,15 +17,21 @@ $('navbar > a').forEach(el => {
   </script>
   <div class=content>
     <div class=buy-body>
-      <h1>Confirm payment</h1>
-      <div class=row>
-        <div id=buy-src-body></div>
-        <img src="/img/arrow-right.svg">
-        <div id=buy-dst-body></div>
+      <div class=confirm-body id=confirm-body>
+        <h1>Confirm payment</h1>
+        <div class=row>
+          <div id=buy-src-body></div>
+          <img src="/img/arrow-right.svg">
+          <div id=buy-dst-body></div>
+        </div>
+        <div class=row>
+          <a class="button primary" id=confirm-button>Confirm</a>
+          <a class=button id=cancel-button>Cancel</a>
+          <a class="button primary" style="display: none;" id=paying-button>Paying...</a>
+        </div>
       </div>
-      <div class=row>
-        <a class="button primary" id=confirm-button>Confirm</a>
-        <a class=button id=cancel-button>Cancel</a>
+      <div class=success-body style="display: none;" id=success-body>
+        <h1>Payment successful!</h1>
       </div>
     </div>
     <footer class=footer>
@@ -81,10 +87,25 @@ const _update = () => {
     dstBuyElement.querySelectorAll('.asset-image')[0].src = creaturejs.makeStaticCreature('asset:' + dstAsset);
   });
 
-  $('#confirm-button')[0].addEventListener('click', () => {
+
+  const confirmBody = $('#confirm-body')[0];
+  const successBody = $('#success-body')[0];
+  const confirmButton = $('#confirm-button')[0];
+  const cancelButton = $('#cancel-button')[0];
+  const payingButton = $('#paying-button')[0];
+  confirmButton.addEventListener('click', () => {
     console.log('confirm', {srcAsset, srcQuantity, dstAsset, dstQuantity}); // XXX actually perform the payment here
+
+    confirmButton.style.display = 'none';
+    cancelButton.style.display = 'none';
+    payingButton.style.display = 'flex';
+
+    setTimeout(() => {
+      confirmBody.style.display = 'none';
+      successBody.style.display = 'block';
+    }, 2000);
   });
-  $('#cancel-button')[0].addEventListener('click', () => {
+  cancelButton.addEventListener('click', () => {
     window.history.back();
   });
 };
