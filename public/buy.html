@@ -24,8 +24,8 @@ $('navbar > a').forEach(el => {
         <div id=buy-dst-body></div>
       </div>
       <div class=row>
-        <a class="button primary">Confirm</a>
-        <a class=button>Cancel</a>
+        <a class="button primary" id=confirm-button>Confirm</a>
+        <a class=button id=cancel-button>Cancel</a>
       </div>
     </div>
     <footer class=footer>
@@ -73,13 +73,19 @@ const _update = () => {
 
   const srcBuyElement = _makeAssetElement(srcAsset, srcQuantity);
   buySrcBody.appendChild(srcBuyElement);
-
   const dstBuyElement = _makeAssetElement(dstAsset, dstQuantity);
   buyDstBody.appendChild(dstBuyElement);
 
   setTimeout(() => {
     srcBuyElement.querySelectorAll('.asset-image')[0].src = creaturejs.makeStaticCreature('asset:' + srcAsset);
     dstBuyElement.querySelectorAll('.asset-image')[0].src = creaturejs.makeStaticCreature('asset:' + dstAsset);
+  });
+
+  $('#confirm-button')[0].addEventListener('click', () => {
+    console.log('confirm', {srcAsset, srcQuantity, dstAsset, dstQuantity}); // XXX actually perform the payment here
+  });
+  $('#cancel-button')[0].addEventListener('click', () => {
+    window.history.back();
   });
 };
 _update();
