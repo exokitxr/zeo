@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Module - Zeo</title>
+  <title>Buy - Zeo</title>
   <link href="/css/style.css" rel=stylesheet>
   <link href="/css/header.css" rel=stylesheet>
   <link href="/css/github-markdown.css" rel=stylesheet>
@@ -35,9 +35,6 @@ $('navbar > a').forEach(el => {
         <div class=row>
           <div class=error>Whoops! Not enough funds :/</div>
         </div>
-      </div>
-      <div class=success-body style="display: none;" id=success-body>
-        <h1>Payment successful!</h1>
       </div>
     </div>
     <footer class=footer>
@@ -92,7 +89,6 @@ const _update = () => {
 
       const confirmBody = $('#confirm-body')[0];
       const errorBody = $('#error-body')[0];
-      const successBody = $('#success-body')[0];
       const confirmButton = $('#confirm-button')[0];
       const cancelButton = $('#cancel-button')[0];
       const payingButton = $('#paying-button')[0];
@@ -120,8 +116,7 @@ const _update = () => {
           payingButton.style.display = 'flex';
 
           setTimeout(() => {
-            confirmBody.style.display = 'none';
-            successBody.style.display = 'block';
+            window.location.href = '/buy-success';
           }, 2000);
         });
         cancelButton.addEventListener('click', () => {

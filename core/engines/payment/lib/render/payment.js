@@ -77,7 +77,7 @@ const getBuyPageSrc = ({id, hasAvailableBalance, paying, done}) => {
     ` : `\
       <div style="display: flex; margin-bottom: 20px; flex-grow: 1; flex-direction: column; justify-content: center; align-items: center;">
         <img src="${checkImgSrc}" width="120" height="120">
-        <div style="font-size: 60px; font-weight: 40px;">Payment successful</div>
+        <div style="font-size: 60px; font-weight: 40px;">Purchase successful</div>
       </div>
     `}
   `;
