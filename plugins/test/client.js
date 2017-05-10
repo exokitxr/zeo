@@ -64,8 +64,8 @@ class Test {
         payment.requestBuy({
           srcAsset: 'CRAPCOIN',
           srcQuantity: 10,
-          dstAsset: 'CRAPCOIN2',
-          dstQuantity: 10,
+          dstAsset: 'CRAPCOINB',
+          dstQuantity: 1,
         })
           .then(result => {
             console.warn('buy result', result);

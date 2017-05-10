@@ -6,7 +6,7 @@
   "asset": {
     "srcAsset": "CRAPCOIN",
     "srcQuantity": 10,
-    "dstAsset": "CRAPCOIN2",
+    "dstAsset": "CRAPCOINB",
     "dstQuantity": 1
   },
   "dependencies": {}

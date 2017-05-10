@@ -109,8 +109,6 @@ const _update = () => {
         confirmBody.style.display = 'block';
 
         confirmButton.addEventListener('click', () => {
-          console.log('confirm', {srcAsset, srcQuantity, dstAsset, dstQuantity}); // XXX actually perform the payment here
-
           confirmButton.style.display = 'none';
           cancelButton.style.display = 'none';
           payingButton.style.display = 'flex';
@@ -142,6 +140,7 @@ const _update = () => {
                 return Promise.reject(err);
               }
             })
+            .then(result => result.txid)
             .then(txid => {
               window.location.href = `/buy-success?txid=${encodeURIComponent(txid)}`;
             })

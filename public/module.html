@@ -119,7 +119,7 @@ const _makeModuleElement = (moduleJson, {owned}) => {
   setTimeout(() => {
     moduleElement.querySelectorAll('.readme-image')[0].src = creaturejs.makeStaticCreature('module:' + name);
 
-    if (asset) {
+    if (asset && owned) {
       const {dstAsset} = asset;
       moduleElement.querySelectorAll('.asset-image')[0].src = creaturejs.makeStaticCreature('asset:' + dstAsset);
     }
