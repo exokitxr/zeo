@@ -56,6 +56,7 @@ class Wallet {
       '/core/engines/rend',
       '/core/engines/keyboard',
       '/core/engines/tags',
+      '/core/utils/geometry-utils',
     ]).then(([
       three,
       input,
@@ -64,11 +65,14 @@ class Wallet {
       rend,
       keyboard,
       tags,
+      geometryUtils,
     ]) => {
       if (live) {
         const {THREE, scene, camera} = three;
 
         const transparentMaterial = biolumi.getTransparentMaterial();
+
+        const oneVector = new THREE.Vector3(1, 1, 1);
 
         const mainFontSpec = {
           fonts: biolumi.getFonts(),
@@ -193,6 +197,37 @@ class Wallet {
           page.update();
         };
         _updatePages();
+
+        let boxAnchor = null;
+        const _removeBoxAnchor = () => {
+          if (boxAnchor) {
+            rend.removeBoxAnchor(boxAnchor);
+            boxAnchor = null;
+          }
+        };
+        const _addBoxAnchor = ({position = null, rotation = null} = {}) => {
+          _removeBoxAnchor();
+
+          if (!position || !rotation) {
+            const {menuMesh} = walletMesh;
+            const {position: menuMeshPosition, rotation: menuMeshRotation} = _decomposeObjectMatrixWorld(menuMesh);
+            position = menuMeshPosition;
+            rotation = menuMeshRotation;
+          }
+
+          boxAnchor = {
+            boxTarget: geometryUtils.makeBoxTarget(
+              position,
+              rotation,
+              oneVector,
+              new THREE.Vector3(WORLD_WIDTH, WORLD_HEIGHT, 0.01)
+            ),
+            anchor: {
+              onmousedown: 'wallet',
+            },
+          };
+          rend.addBoxAnchor(boxAnchor);
+        };
 
         const _openWalletWindow = req => {
           const width = 800;
@@ -380,9 +415,21 @@ class Wallet {
 
               walletCacheState.loaded = true;
             }
+
+            _addBoxAnchor();
+          } else {
+            _removeBoxAnchor();
           }
         };
         rend.on('tabchange', _tabchange);
+        const _open = ({position, rotation}) => {
+          _addBoxAnchor({position, rotation});
+        };
+        rend.on('open', _open);
+        const _close = () => {
+          _removeBoxAnchor();
+        };
+        rend.on('close', _close);
 
         const _trigger = e => {
           const {side} = e;
@@ -471,7 +518,11 @@ class Wallet {
           document.body.removeChild(walletIframe);
 
           rend.removeListener('tabchange', _tabchange);
+          rend.removeListener('open', _open);
+          rend.removeListener('close', _close);
           input.removeListener('trigger', _trigger);
+
+          _removeBoxAnchor();
         });
 
         const _getAssetTagMeshes = () => assetTagMeshes;

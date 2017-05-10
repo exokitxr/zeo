@@ -336,8 +336,8 @@ class Rend {
             tagsLinesMesh.visible = true;
 
             rendApi.emit('open', {
-              position: newCameraPosition,
-              rotation: newCameraRotation,
+              position: newMenuPosition,
+              rotation: newMenuRotation,
             });
           }
         };
