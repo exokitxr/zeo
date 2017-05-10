@@ -34,6 +34,11 @@ const itemPreviewSymbol = Symbol();
 const itemTempSymbol = Symbol();
 const itemMediaPromiseSymbol = Symbol();
 const MODULE_TAG_NAME = 'module'.toUpperCase();
+const DEFAULT_MATRIX = [
+  0, 0, 0,
+  0, 0, 0, 1,
+  1, 1, 1,
+];
 
 class Tags {
   constructor(archae) {
@@ -3067,16 +3072,60 @@ class Tags {
                 object.add(planeMesh);
                 object.planeMesh = planeMesh;
 
-                const planeDetailsMesh = _addUiManagerPage(uiDetailsManager);
-                if (itemSpec.metadata && itemSpec.metadata.isStatic) {
-                  planeDetailsMesh.position.x = -((2 - WORLD_DETAILS_WIDTH) / 2);
-                  planeDetailsMesh.position.z = 0.01;
+                if (!(itemSpec.metadata && itemSpec.metadata.isSub)) {
+                  const planeDetailsMesh = _addUiManagerPage(uiDetailsManager);
 
-                  planeDetailsMesh.initialOffset = planeDetailsMesh.position.clone();
+                  if (itemSpec.metadata && itemSpec.metadata.isStatic) {
+                    planeDetailsMesh.position.x = -((2 - WORLD_DETAILS_WIDTH) / 2);
+                    planeDetailsMesh.position.z = 0.01;
+
+                    planeDetailsMesh.initialOffset = planeDetailsMesh.position.clone();
+
+                    const subTagMeshes = [
+                      1, 5, 10,
+                      20, 50, 100,
+                      200, 500, 1000,
+                      2000, 5000, 10000,
+                      20000, 50000, 100000,
+                      200000, 500000, 1000000,
+                    ].map((billQuantity, index) => {
+                      if (itemSpec.quantity >= billQuantity) {
+                        const subTagMesh = tagsApi.makeTag({
+                          type: 'asset',
+                          id: itemSpec.id + ':bill:' + billQuantity,
+                          name: itemSpec.name,
+                          displayName: itemSpec.name,
+                          quantity: itemSpec.quantity,
+                          matrix: DEFAULT_MATRIX,
+                          metadata: {
+                            isStatic: true,
+                            isSub: true,
+                          },
+                        }, {
+                          initialUpdate: false,
+                        });
+                        const col = index % 3;
+                        const row = Math.floor(index / 3);
+                        subTagMesh.position.set(
+                          -(WORLD_DETAILS_WIDTH / 2) + (WORLD_WIDTH / 2) + (WORLD_WIDTH * col),
+                          (WORLD_DETAILS_HEIGHT / 2) - (WORLD_HEIGHT / 2) - (WORLD_HEIGHT * row),
+                          0.001
+                        );
+                        return subTagMesh;
+                      } else {
+                        return null;
+                      }
+                    }).filter(subTagMesh => subTagMesh !== null);
+                    for (let i = 0; i < subTagMeshes.length; i++) {
+                      const subTagMesh = subTagMeshes[i];
+                      planeDetailsMesh.add(subTagMesh);
+                    }
+                    planeDetailsMesh.subTagMeshes = subTagMeshes;
+                  }
+                  planeDetailsMesh.visible = Boolean(item.details);
+                  object.add(planeDetailsMesh);
+                  object.planeDetailsMesh = planeDetailsMesh;
                 }
-                planeDetailsMesh.visible = Boolean(item.details);
-                object.add(planeDetailsMesh);
-                object.planeDetailsMesh = planeDetailsMesh;
               } else {
                 const planeMesh = _addUiManagerPage(uiStaticManager);
                 if (initialUpdate) {
@@ -3356,6 +3405,14 @@ class Tags {
 
                   const {page} = planeDetailsMesh;
                   page.initialUpdate();
+
+                  const {subTagMeshes} = planeDetailsMesh;
+                  for (let i = 0; i < subTagMeshes.length; i++) {
+                    const subTagMesh = subTagMeshes[i];
+                    const {planeMesh: subPlaneMesh} = subTagMesh;
+                    const {page: subPage} = subPlaneMesh;
+                    subPage.initialUpdate();
+                  }
                 };
                 object.closeDetails = () => {
                   const tagMesh = object;

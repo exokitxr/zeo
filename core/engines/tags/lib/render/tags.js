@@ -546,6 +546,7 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
       displayName,
       quantity,
     }) => {
+      return ''; // XXX delete this
       const quantityString = _commaize(quantity);
 
       return `\
