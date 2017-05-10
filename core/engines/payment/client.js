@@ -258,7 +258,7 @@ class Payment {
                   isStatic: true,
                 },
               });
-              mesh.position.set(-WORLD_WIDTH * 0.285, 0, 0.001);
+              mesh.position.set(-WORLD_WIDTH * 0.28, 0, 0.001);
               // mesh.planeMesh.scale.set(ASSET_TAG_MESH_SCALE, ASSET_TAG_MESH_SCALE, 1);
 
               return mesh;
