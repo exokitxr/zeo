@@ -33,34 +33,42 @@ $('navbar > a').forEach(el => {
 const moduleBody = $('#module-body')[0];
 
 const _commaize = n => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-const _getAssetSrc = asset => {
+const _getAssetBuySrc = (asset, owned) => {
   const {srcAsset, srcQuantity, dstAsset, dstQuantity} = asset;
   const srcQuantityString = _commaize(srcQuantity);
   const dstQuantityString = _commaize(dstQuantity);
 
-  return `\
-    <div class=row>
-      <h4 class=label>Buy this module</h4>
-      <a class=button href="/buy?srcAsset=${encodeURIComponent(srcAsset)}&srcQuantity=${encodeURIComponent(srcQuantity)}&dstAsset=${encodeURIComponent(dstAsset)}&dstQuantity=${encodeURIComponent(dstQuantity)}">&#164; ${srcQuantityString} ${srcAsset}</a>
-    </div>
-    <div class=asset style="position: relative; display: flex; width: 300px; height: 100px; background-color: #EEE; padding-left: 30px; text-decoration: none; overflow: hidden; box-sizing: border-box;">
-      <div style="display: flex; position: absolute; top: 40px; left: -40px; width: 100px; height: 20px; background-color: #FFC107; font-size: 13px; justify-content: center; align-items: center; box-sizing: border-box; transform: rotate(-90deg);">Asset</div>
-      <div style="display: flex; margin-left: -30px; padding-left: 20px; flex-grow: 1; flex-direction: column; box-sizing: border-box;">
-        <div style="display: flex; flex-grow: 1;">
-          <img class=asset-image width="50" height="50" style="margin: 10px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;" />
-          <div style="display: flex; max-width: ${300 - (20) - (50 + (10 * 2)) - (30 + (15 * 2))}px; flex-grow: 1; flex-direction: column; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">
-            <h1 style="margin: 0; margin-top: 15px; padding: 0; font-size: 16px; font-weight: 600; line-height: 1.4;">${dstAsset}</h1>
-            <div style="display: flex; flex-grow: 1; align-items: center;">
-              <div style="padding: 0 7px; border: 2px solid; font-size: 16px; font-weight: 400;">&#164; ${dstQuantityString}</div>
+  if (!owned) {
+    return `\
+      <div class=row>
+        <h4 class=label>Buy this module</h4>
+        <a class=button href="/buy?srcAsset=${encodeURIComponent(srcAsset)}&srcQuantity=${encodeURIComponent(srcQuantity)}&dstAsset=${encodeURIComponent(dstAsset)}&dstQuantity=${encodeURIComponent(dstQuantity)}">&#164; ${srcQuantityString} ${srcAsset}</a>
+      </div>
+      <div class=asset style="position: relative; display: flex; width: 300px; height: 100px; background-color: #EEE; padding-left: 30px; text-decoration: none; overflow: hidden; box-sizing: border-box;">
+        <div style="display: flex; position: absolute; top: 40px; left: -40px; width: 100px; height: 20px; background-color: #FFC107; font-size: 13px; justify-content: center; align-items: center; box-sizing: border-box; transform: rotate(-90deg);">Asset</div>
+        <div style="display: flex; margin-left: -30px; padding-left: 20px; flex-grow: 1; flex-direction: column; box-sizing: border-box;">
+          <div style="display: flex; flex-grow: 1;">
+            <img class=asset-image width="50" height="50" style="margin: 10px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;" />
+            <div style="display: flex; max-width: ${300 - (20) - (50 + (10 * 2)) - (30 + (15 * 2))}px; flex-grow: 1; flex-direction: column; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">
+              <h1 style="margin: 0; margin-top: 15px; padding: 0; font-size: 16px; font-weight: 600; line-height: 1.4;">${dstAsset}</h1>
+              <div style="display: flex; flex-grow: 1; align-items: center;">
+                <div style="padding: 0 7px; border: 2px solid; font-size: 16px; font-weight: 400;">&#164; ${dstQuantityString}</div>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
-  `;
+    `;
+  } else {
+    return `\
+      <div class=row>
+        <a class="button dim">&#x2713;&nbsp;&nbsp;You own this module. Enjoy!</a>
+      </div>
+    `;
+  }
 };
-const _makeModuleElement = module => {
-  const {name, readme, asset} = module;
+const _makeModuleElement = (moduleJson, {owned}) => {
+  const {name, displayName, version, readme, asset} = moduleJson;
 
   const div = document.createElement('div');
   div.innerHTML = `<div class=readme>
@@ -73,8 +81,8 @@ const _makeModuleElement = module => {
         </a>
         <img class=readme-image />
         <div class=readme-header-wrap>
-          <div href="/modules/${module.name}" class=name>${module.displayName}</div>
-          <div class=version>${module.version}</div>
+          <div href="/modules/${name}" class=name>${displayName}</div>
+          <div class=version>${version}</div>
         </div>
       </h1>
       ${readme ?
@@ -84,9 +92,9 @@ const _makeModuleElement = module => {
       }
     </div>
     <div class=readme-sidebar>
-      ${asset ? _getAssetSrc(asset) : ''}
+      ${asset ? _getAssetBuySrc(asset, owned) : ''}
       <h4 class=label>Install this module</h4>
-      <pre class=code>&lt;module src="${module.name}"&gt;&lt;/module&gt;</pre>
+      <pre class=code>&lt;module src="${name}"&gt;&lt;/module&gt;</pre>
       <div class=hint><b>Hint:
           <i>To install this module...</i></b>
         <ul>
@@ -123,14 +131,33 @@ const _update = () => {
   const match = window.location.pathname.match(/^\/modules\/(.*)$/);
   const mod = match[1];
 
-  fetch('/modules/module.json?q=' + mod)
-    .then(res =>
-      res.json()
-        .then(module => {
-          const moduleElement = _makeModuleElement(module);
-          moduleBody.appendChild(moduleElement);
-        })
-    );
+  const _requestModule = () => fetch('/modules/module.json?q=' + mod)
+    .then(res => res.json());
+  const _requestStatus = () => fetch('/wallet/api/status', {
+    credentials: 'include',
+  })
+    .then(res => res.json());
+
+  return Promise.all([
+    _requestModule(),
+    _requestStatus(),
+  ])
+    .then(([
+      moduleJson,
+      walletStatus,
+    ]) => {
+      const owned = (() => {
+        const {asset} = moduleJson;
+        if (asset) {
+          const {dstAsset, dstQuantity} = asset;
+          return walletStatus.assets.some(({asset, quantity}) => asset === dstAsset && quantity >= dstQuantity);
+        } else {
+          return false;
+        }
+      })();
+      const moduleElement = _makeModuleElement(moduleJson, {owned});
+      moduleBody.appendChild(moduleElement);
+    });
 };
 _update();
   </script>

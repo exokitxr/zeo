@@ -269,6 +269,14 @@ b {
   color: #FFF;
   text-decoration: none;
 }
+.markdown-body .readme-sidebar .button.dim {
+  color: #673AB7;
+}
+.markdown-body .readme-sidebar .button.dim:hover {
+  background-color: transparent;
+  border-color: currentColor;
+  cursor: auto;
+}
 .readme-sidebar .code {
   display: flex;
   height: 38px;
