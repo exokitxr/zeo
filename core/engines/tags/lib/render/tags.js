@@ -523,18 +523,13 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
         <div style="display: flex; margin-left: -30px; padding-left: 30px; flex-grow: 1; flex-direction: column; box-sizing: border-box;">
           <div style="display: flex; flex-grow: 1;">
             <img src="${creatureUtils.makeStaticCreature('asset:' + displayName)}" width="80" height="80" style="margin: 10px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;" />
-            <div style="display: flex; max-width: ${WIDTH - (30) - (80 + (10 * 2)) - (30 + (15 * 2))}px; flex-grow: 1; flex-direction: column; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">
-              <h1 style="margin: 0; margin-top: 10px; font-size: 28px; font-weight: 400; line-height: 1.4;">${name}</h1>
+            <div style="display: flex; max-width: ${WIDTH - (30) - (80 + (10 * 2))}px; flex-grow: 1; flex-direction: column; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">
+              <h1 style="margin: 0; margin-top: 10px; font-size: 28px; font-weight: 400; line-height: 1.4; text-overflow: ellipsis; overflow: hidden;">${name}</h1>
               <div style="display: flex; flex-grow: 1; align-items: center;">
                 <div style="padding: 5px 10px; border: 2px solid; font-size: 28px; font-weight: 400;">&#164; ${quantityString}</div>
               </div>
             </div>
           </div>
-        </div>
-        <div style="display: flex;">
-          <${linkTagName} style="display: flex; margin-bottom: auto; padding: 15px; text-decoration: none; justify-content: center; align-items: center;" onclick="tag:remove:${id}">
-            <img src="${closeOutlineSrc}" width="30" height="30" />
-          </${linkTagName}>
         </div>
       </${tagName}>
     `;
@@ -557,15 +552,10 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
         <a style="position: relative; display: flex; width: ${width}px; height: ${height}px; margin-right: 15px; margin-bottom: 15px; background-color: #EEE; padding-left: 15px; text-decoration: none; overflow: hidden; box-sizing: border-box;" onclick="asset:bill:${id}:${quantity}">
           <div style="display: flex; position: absolute; top: 30px; left: -30px; width: ${height}px; height: 15px; background-color: #FFC107; font-size: 10px; justify-content: center; align-items: center; box-sizing: border-box; transform: rotate(-90deg);">Asset</div>
           <img src="${creatureUtils.makeStaticCreature('asset:' + displayName)}" width="40" height="40" style="margin: 4px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;" />
-          <div style="display: flex; max-width: ${width - (15) - (40 + (4 * 2)) - (14 + (8 * 2))}px; flex-grow: 1; flex-direction: column; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">
-            <h1 style="margin: 0; margin-top: 10px; font-size: 13px; font-weight: 400; line-height: 1.4;">${name}</h1>
+          <div style="display: flex; max-width: ${width - (15) - (40 + (4 * 2))}px; flex-grow: 1; flex-direction: column; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">
+            <h1 style="margin: 0; margin-top: 10px; font-size: 13px; font-weight: 400; line-height: 1.4; text-overflow: ellipsis; overflow: hidden;">${name}</h1>
             <div style="display: flex; flex-grow: 1; align-items: center;">
               <div style="padding: 2px 7px; border: 2px solid; font-size: 13px; font-weight: 400;">&#164; ${quantityString}</div>
-            </div>
-          </div>
-          <div style="display: flex;">
-            <div style="display: flex; margin-bottom: auto; padding: 8px; text-decoration: none; justify-content: center; align-items: center;">
-              <img src="${closeOutlineSrc}" width="14" height="14" />
             </div>
           </div>
         </a>
