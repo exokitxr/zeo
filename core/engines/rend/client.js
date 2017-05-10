@@ -597,6 +597,14 @@ class Rend {
             this.emit('renderEnd');
           }
 
+          grab(options) {
+            this.emit('grab', options);
+          }
+
+          release(options) {
+            this.emit('release', options);
+          }
+
           registerElement(pluginInstance, elementApi) {
             const tag = archae.getName(pluginInstance);
 

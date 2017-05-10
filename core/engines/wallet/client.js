@@ -53,8 +53,8 @@ class Wallet {
       '/core/engines/input',
       '/core/engines/webvr',
       '/core/engines/biolumi',
-      '/core/engines/rend',
       '/core/engines/keyboard',
+      '/core/engines/rend',
       '/core/engines/tags',
       '/core/utils/geometry-utils',
     ]).then(([
@@ -62,8 +62,8 @@ class Wallet {
       input,
       webvr,
       biolumi,
-      rend,
       keyboard,
+      rend,
       tags,
       geometryUtils,
     ]) => {
@@ -208,25 +208,27 @@ class Wallet {
         const _addBoxAnchor = ({position = null, rotation = null} = {}) => {
           _removeBoxAnchor();
 
-          if (!position || !rotation) {
-            const {menuMesh} = walletMesh;
-            const {position: menuMeshPosition, rotation: menuMeshRotation} = _decomposeObjectMatrixWorld(menuMesh);
-            position = menuMeshPosition;
-            rotation = menuMeshRotation;
-          }
+          if (rend.getTab() === 'wallet' && (grabStates.left || grabStates.right)) {
+            if (!position || !rotation) {
+              const {menuMesh} = walletMesh;
+              const {position: menuMeshPosition, rotation: menuMeshRotation} = _decomposeObjectMatrixWorld(menuMesh);
+              position = menuMeshPosition;
+              rotation = menuMeshRotation;
+            }
 
-          boxAnchor = {
-            boxTarget: geometryUtils.makeBoxTarget(
-              position,
-              rotation,
-              oneVector,
-              new THREE.Vector3(WORLD_WIDTH, WORLD_HEIGHT, 0.01)
-            ),
-            anchor: {
-              onclick: 'wallet',
-            },
-          };
-          rend.addBoxAnchor(boxAnchor);
+            boxAnchor = {
+              boxTarget: geometryUtils.makeBoxTarget(
+                position,
+                rotation,
+                oneVector,
+                new THREE.Vector3(WORLD_WIDTH, WORLD_HEIGHT, 0.01)
+              ),
+              anchor: {
+                onclick: 'wallet',
+              },
+            };
+            rend.addBoxAnchor(boxAnchor);
+          }
         };
 
         const _openWalletWindow = req => {
@@ -405,6 +407,10 @@ class Wallet {
           _updatePages();
         };
 
+        const grabStates = {
+          left: false,
+          right: false,
+        };
         const _tabchange = tab => {
           if (tab === 'wallet') {
             keyboard.tryBlur();
@@ -430,6 +436,20 @@ class Wallet {
           _removeBoxAnchor();
         };
         rend.on('close', _close);
+        const _grab = ({side, mesh}) => {
+          const {item} = mesh;
+          const {type} = item;
+          grabStates[side] = type === 'asset';
+
+          _addBoxAnchor();
+        };
+        rend.on('grab', _grab);
+        const _release = ({side}) => {
+          grabStates[side] = false;
+
+          _removeBoxAnchor();
+        };
+        rend.on('release', _release);
 
         const _trigger = e => {
           const {side} = e;
@@ -520,6 +540,8 @@ class Wallet {
           rend.removeListener('tabchange', _tabchange);
           rend.removeListener('open', _open);
           rend.removeListener('close', _close);
+          rend.removeListener('grab', _grab);
+          rend.removeListener('release', _release);
           input.removeListener('trigger', _trigger);
 
           _removeBoxAnchor();

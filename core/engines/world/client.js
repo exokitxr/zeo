@@ -208,7 +208,21 @@ class World {
           }
 
           setMesh(side, mesh) {
+            const oldMesh = this[side];
             this[side] = mesh;
+
+            if (oldMesh) {
+              rend.release({
+                side: side,
+                mesh: oldMesh,
+              });
+            }
+            if (mesh) {
+              rend.grab({
+                side: side,
+                mesh: mesh,
+              });
+            }
           }
 
           isGrabbed() {
