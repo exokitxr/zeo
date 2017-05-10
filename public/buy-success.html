@@ -18,8 +18,9 @@ $('navbar > a').forEach(el => {
   <div class=content>
     <div class=buy-body>
       <h1>Purchase successful!</h1>
+      <pre id=output></pre>
       <div class=row>
-        <a class=button id=cancel-button>Cancel</a>
+        <a class=button id=cancel-button>Back</a>
       </div>
     </div>
     <footer class=footer>
@@ -32,6 +33,15 @@ $('navbar > a').forEach(el => {
   <script src="/js/lib/creaturejs.js"></script>
   <script>
 const _update = () => {
+  const match = window.location.pathname.match(/(?:\?([\s\S]+))?$/);
+  const queryString = match[1] || '';
+  const query = parseQueryString(queryString);
+  const {txid} = query;
+
+  $('#output')[0].innerText = JSON.stringify({
+    txid,
+  }, null, 2);
+
   const cancelButton = $('#cancel-button')[0];
 
   cancelButton.addEventListener('click', () => {
@@ -39,6 +49,17 @@ const _update = () => {
   });
 };
 _update();
+
+function parseQueryString(s) {
+  const result = {};
+  const query = window.location.search.substring(1);
+  const vars = query.split('&');
+  for (let i = 0; i < vars.length; i++) {
+    const pair = vars[i].split('=');
+    result[decodeURIComponent(pair[0])] = decodeURIComponent(pair[1]);
+  }
+  return result;
+}
   </script>
 </body>
 </html/>

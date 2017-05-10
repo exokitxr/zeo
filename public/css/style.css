@@ -355,6 +355,7 @@ b {
 }
 
 .buy-body {
+  width: 980px;
   min-height: calc(100vh - (80px * 2));
   padding: 20px 30px;
   box-sizing: border-box;
@@ -382,6 +383,13 @@ b {
   padding: 10px 20px;
   background-color: #673AB7;
   color: #FFF;
+}
+.buy-body pre {
+  padding: 20px;
+  background-color: #EEE;
+  border-radius: 3px;
+  font-family: var(--monospace-fonts);
+  font-size: 13px;
 }
 
 .servers-body {

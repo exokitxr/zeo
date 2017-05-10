@@ -116,7 +116,7 @@ const _update = () => {
           payingButton.style.display = 'flex';
 
           setTimeout(() => {
-            window.location.href = '/buy-success';
+            window.location.href = `/buy-success?txid=${encodeURIComponent('lol')}`;
           }, 2000);
         });
         cancelButton.addEventListener('click', () => {
