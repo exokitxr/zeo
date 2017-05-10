@@ -6,16 +6,20 @@ export const OPEN_HEIGHT = HEIGHT * 4;
 export const DETAILS_WIDTH = 1024 - 250;
 export const DETAILS_HEIGHT = Math.round(1024 / 1.5);
 export const DETAILS_ASPECT_RATIO = DETAILS_WIDTH / DETAILS_HEIGHT;
+export const MENU_WIDTH = 1024;
+export const MENU_HEIGHT = Math.round(MENU_WIDTH / 1.5);
+export const MENU_ASPECT_RATIO = MENU_WIDTH / MENU_HEIGHT;
 
 export const WORLD_WIDTH = 0.2;
 export const WORLD_HEIGHT = WORLD_WIDTH / ASPECT_RATIO;
 export const WORLD_DEPTH = 0.005;
-
 export const WORLD_OPEN_WIDTH = WORLD_WIDTH;
 export const WORLD_OPEN_HEIGHT = WORLD_HEIGHT * 4;
-
 export const WORLD_DETAILS_WIDTH = 2 * ((1024 - 250) / 1024);
 export const WORLD_DETAILS_HEIGHT = WORLD_DETAILS_WIDTH / DETAILS_ASPECT_RATIO;
+export const WORLD_MENU_WIDTH = 2;
+export const WORLD_MENU_HEIGHT = WORLD_MENU_WIDTH / MENU_ASPECT_RATIO;
+export const WORLD_MENU_DEPTH = WORLD_MENU_WIDTH / 50;
 
 export default {
   WIDTH,

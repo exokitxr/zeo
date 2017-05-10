@@ -6,10 +6,13 @@ const cssSelectorParser = new CssSelectorParser.CssSelectorParser();
 import {
   WIDTH,
   HEIGHT,
+  ASPECT_RATIO,
   OPEN_WIDTH,
   OPEN_HEIGHT,
   DETAILS_WIDTH,
   DETAILS_HEIGHT,
+  MENU_WIDTH,
+  MENU_HEIGHT,
 
   WORLD_WIDTH,
   WORLD_HEIGHT,
@@ -17,7 +20,9 @@ import {
   WORLD_OPEN_WIDTH,
   WORLD_OPEN_HEIGHT,
   WORLD_DETAILS_WIDTH,
-  WORLD_DETAILS_HEIGHT
+  WORLD_DETAILS_HEIGHT,
+  WORLD_MENU_WIDTH,
+  WORLD_MENU_HEIGHT,
 } from './lib/constants/tags';
 import menuUtilser from './lib/utils/menu';
 import tagsRender from './lib/render/tags';
@@ -34,6 +39,8 @@ const itemPreviewSymbol = Symbol();
 const itemTempSymbol = Symbol();
 const itemMediaPromiseSymbol = Symbol();
 const MODULE_TAG_NAME = 'module'.toUpperCase();
+const NPM_TAG_MESH_SCALE = 1.5;
+const TAGS_PER_ROW = 4;
 const DEFAULT_MATRIX = [
   0, 0, 0,
   0, 0, 0, 1,
@@ -3082,12 +3089,12 @@ class Tags {
                     planeDetailsMesh.initialOffset = planeDetailsMesh.position.clone();
 
                     const subTagMeshes = [
-                      1, 5, 10,
-                      20, 50, 100,
-                      200, 500, 1000,
-                      2000, 5000, 10000,
-                      20000, 50000, 100000,
-                      200000, 500000, 1000000,
+                      1, 5, 10, 20,
+                      10, 20, 50, 100,
+                      100, 200, 500, 1000,
+                      1000, 2000, 5000, 10000,
+                      10000, 20000, 50000, 100000,
+                      100000, 200000, 500000, 1000000,
                     ].map((billQuantity, index) => {
                       if (itemSpec.quantity >= billQuantity) {
                         const subTagMesh = tagsApi.makeTag({
@@ -3095,7 +3102,7 @@ class Tags {
                           id: itemSpec.id + ':bill:' + billQuantity,
                           name: itemSpec.name,
                           displayName: itemSpec.name,
-                          quantity: itemSpec.quantity,
+                          quantity: billQuantity,
                           matrix: DEFAULT_MATRIX,
                           metadata: {
                             isStatic: true,
@@ -3104,13 +3111,21 @@ class Tags {
                         }, {
                           initialUpdate: false,
                         });
-                        const col = index % 3;
-                        const row = Math.floor(index / 3);
+
+                        const width = WORLD_WIDTH * NPM_TAG_MESH_SCALE;
+                        const height = width / ASPECT_RATIO;
+                        const leftClip = ((30 / DETAILS_WIDTH) * WORLD_DETAILS_WIDTH);
+                        const rightClip = ((30 / DETAILS_WIDTH) * WORLD_DETAILS_WIDTH);
+                        const padding = (WORLD_DETAILS_WIDTH - (leftClip + rightClip) - (TAGS_PER_ROW * width)) / (TAGS_PER_ROW - 1);
+                        const x = index % TAGS_PER_ROW;
+                        const y = Math.floor(index / TAGS_PER_ROW);
                         subTagMesh.position.set(
-                          -(WORLD_DETAILS_WIDTH / 2) + (WORLD_WIDTH / 2) + (WORLD_WIDTH * col),
-                          (WORLD_DETAILS_HEIGHT / 2) - (WORLD_HEIGHT / 2) - (WORLD_HEIGHT * row),
+                          -(WORLD_DETAILS_WIDTH / 2) + (leftClip + (width / 2)) + (x * (width + padding)),
+                          (WORLD_DETAILS_HEIGHT / 2) - (height / 2) - (y * (height + padding)) - 0.23,
                           0.001
                         );
+                        subTagMesh.planeMesh.scale.set(NPM_TAG_MESH_SCALE, NPM_TAG_MESH_SCALE, 1);
+
                         return subTagMesh;
                       } else {
                         return null;
