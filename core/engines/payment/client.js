@@ -141,20 +141,41 @@ class Payment {
           let live = true;
           object.confirm = () => {
             if (live) {
-              setTimeout(() => {
-                payState.paying = false;
-                payState.done = true;
-                page.update();
+              fetch(`${siteUrl}/wallet/api/pay`, {
+                method: 'POST',
+                headers: (() => {
+                  const headers = new Headers();
+                  headers.append('Content-Type', 'application/json');
+                  return headers;
+                })(),
+                body: JSON.stringify({
+                  address,
+                  asset,
+                  quantity,
+                }),
+                credentials: 'include',
+              })
+                .then(res => {
+                  if (res.status >= 200 && res.status < 300) {
+                    return res.json();
+                  } else {
+                    return null;
+                  }
+                })
+                .then(() => {
+                  payState.paying = false;
+                  payState.done = true;
+                  page.update();
 
-                const {tagMesh} = menuMesh;
-                tagMesh.visible = false;
+                  const {tagMesh} = menuMesh;
+                  tagMesh.visible = false;
 
-                cb();
+                  cb();
 
-                setTimeout(() => {
-                  cleanup();
-                }, 2000);
-              }, 2000);
+                  setTimeout(() => {
+                    cleanup();
+                  }, 2000);
+                });
 
               payState.paying = true;
               page.update();

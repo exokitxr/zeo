@@ -75,7 +75,7 @@ class Test {
           });
       } else if (e.keyCode === 112) { // P
         payment.requestPay({
-          address: 'xxxxxxxxxxxxxxxxxxxxxx',
+          address: 'n3W1ExUh7Somt28Qe7DT5FUfY127MY4r1X',
           asset: 'CRAPCOIN',
           quantity: 10,
         })

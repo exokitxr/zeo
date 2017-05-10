@@ -655,9 +655,9 @@ class ZFighter {
                 if (grabbed) {
                   if (!_isLive()) {
                     payment.requestPay({
+                      address: 'n3W1ExUh7Somt28Qe7DT5FUfY127MY4r1X',
                       asset: 'CRAPCOIN',
                       quantity: 1,
-                      address: Array(34 + 1).join('x'),
                     })
                       .then(() => {
                         liveState.live = true;
