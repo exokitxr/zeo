@@ -378,6 +378,11 @@ b {
 .buy-body .row .button {
   margin-right: 20px;
 }
+.buy-body .row .error {
+  padding: 10px 20px;
+  background-color: #673AB7;
+  color: #FFF;
+}
 
 .servers-body {
   display: flex;

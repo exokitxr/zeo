@@ -17,7 +17,7 @@ $('navbar > a').forEach(el => {
   </script>
   <div class=content>
     <div class=buy-body>
-      <div class=confirm-body id=confirm-body>
+      <div class=confirm-body style="display: none;" id=confirm-body>
         <h1>Confirm payment</h1>
         <div class=row>
           <div id=buy-src-body></div>
@@ -28,6 +28,12 @@ $('navbar > a').forEach(el => {
           <a class="button primary" id=confirm-button>Confirm</a>
           <a class=button id=cancel-button>Cancel</a>
           <a class="button primary static" style="display: none;" id=paying-button>Paying...</a>
+        </div>
+      </div>
+      <div class=error-body style="display: none;" id=error-body>
+        <h1>Confirm payment</h1>
+        <div class=row>
+          <div class=error>Whoops! Not enough funds :/</div>
         </div>
       </div>
       <div class=success-body style="display: none;" id=success-body>
@@ -70,44 +76,61 @@ const _makeAssetElement = (asset, quantity) => {
   return el;
 };
 const _update = () => {
-  const match = window.location.pathname.match(/(?:\?([\s\S]+))?$/);
-  const queryString = match[1] || '';
-  const query = parseQueryString(queryString);
-  const {srcAsset, srcQuantity: srcQuantityString, dstAsset, dstQuantity: dstQuantityString} = query;
-  const srcQuantity = parseInt(srcQuantityString, 10);
-  const dstQuantity = parseInt(dstQuantityString, 10);
+  const _requestStatus = () => fetch('/wallet/api/status', {
+    credentials: 'include',
+  })
+    .then(res => res.json());
 
-  const srcBuyElement = _makeAssetElement(srcAsset, srcQuantity);
-  buySrcBody.appendChild(srcBuyElement);
-  const dstBuyElement = _makeAssetElement(dstAsset, dstQuantity);
-  buyDstBody.appendChild(dstBuyElement);
+  _requestStatus()
+    .then(walletStatus => {
+      const match = window.location.pathname.match(/(?:\?([\s\S]+))?$/);
+      const queryString = match[1] || '';
+      const query = parseQueryString(queryString);
+      const {srcAsset, srcQuantity: srcQuantityString, dstAsset, dstQuantity: dstQuantityString} = query;
+      const srcQuantity = parseInt(srcQuantityString, 10);
+      const dstQuantity = parseInt(dstQuantityString, 10);
 
-  setTimeout(() => {
-    srcBuyElement.querySelectorAll('.asset-image')[0].src = creaturejs.makeStaticCreature('asset:' + srcAsset);
-    dstBuyElement.querySelectorAll('.asset-image')[0].src = creaturejs.makeStaticCreature('asset:' + dstAsset);
-  });
+      const confirmBody = $('#confirm-body')[0];
+      const errorBody = $('#error-body')[0];
+      const successBody = $('#success-body')[0];
+      const confirmButton = $('#confirm-button')[0];
+      const cancelButton = $('#cancel-button')[0];
+      const payingButton = $('#paying-button')[0];
 
+      const hasAvailableFunds = walletStatus.assets.some(({asset, quantity}) => asset === srcAsset && quantity >= srcQuantity);
 
-  const confirmBody = $('#confirm-body')[0];
-  const successBody = $('#success-body')[0];
-  const confirmButton = $('#confirm-button')[0];
-  const cancelButton = $('#cancel-button')[0];
-  const payingButton = $('#paying-button')[0];
-  confirmButton.addEventListener('click', () => {
-    console.log('confirm', {srcAsset, srcQuantity, dstAsset, dstQuantity}); // XXX actually perform the payment here
+      if (hasAvailableFunds) {
+        const srcBuyElement = _makeAssetElement(srcAsset, srcQuantity);
+        buySrcBody.appendChild(srcBuyElement);
+        const dstBuyElement = _makeAssetElement(dstAsset, dstQuantity);
+        buyDstBody.appendChild(dstBuyElement);
 
-    confirmButton.style.display = 'none';
-    cancelButton.style.display = 'none';
-    payingButton.style.display = 'flex';
+        setTimeout(() => {
+          srcBuyElement.querySelectorAll('.asset-image')[0].src = creaturejs.makeStaticCreature('asset:' + srcAsset);
+          dstBuyElement.querySelectorAll('.asset-image')[0].src = creaturejs.makeStaticCreature('asset:' + dstAsset);
+        });
 
-    setTimeout(() => {
-      confirmBody.style.display = 'none';
-      successBody.style.display = 'block';
-    }, 2000);
-  });
-  cancelButton.addEventListener('click', () => {
-    window.history.back();
-  });
+        confirmBody.style.display = 'block';
+
+        confirmButton.addEventListener('click', () => {
+          console.log('confirm', {srcAsset, srcQuantity, dstAsset, dstQuantity}); // XXX actually perform the payment here
+
+          confirmButton.style.display = 'none';
+          cancelButton.style.display = 'none';
+          payingButton.style.display = 'flex';
+
+          setTimeout(() => {
+            confirmBody.style.display = 'none';
+            successBody.style.display = 'block';
+          }, 2000);
+        });
+        cancelButton.addEventListener('click', () => {
+          window.history.back();
+        });
+      } else {
+        errorBody.style.display = 'block';
+      }
+    });
 };
 _update();
 
