@@ -512,13 +512,20 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
   };
   const _commaize = n => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
   const getAssetSrc = ({item}) => {
-    const {id, name, displayName, quantity, metadata: {isStatic}} = item;
+    const {id, name, displayName, quantity, metadata: {isStatic, isSub}} = item;
     const quantityString = _commaize(quantity);
     const tagName = isStatic ? 'a' : 'div';
     const linkTagName = isStatic ? 'div' : 'a';
+    const onclick = (() => {
+      if (!isSub) {
+        return `asset:main:${id}`;
+      } else {
+        return `asset:bill:${id}:${quantity}`;
+      }
+    })();
 
     return `\
-      <${tagName} style="position: relative; display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; background-color: #EEE; padding-left: 30px; text-decoration: none; overflow: hidden; box-sizing: border-box;" onclick="asset:main:${id}">
+      <${tagName} style="position: relative; display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; background-color: #EEE; padding-left: 30px; text-decoration: none; overflow: hidden; box-sizing: border-box;" onclick="${onclick}">
         <div style="display: flex; position: absolute; top: 60px; left: -60px; width: ${HEIGHT}px; height: 30px; background-color: #FFC107; justify-content: center; align-items: center; box-sizing: border-box; transform: rotate(-90deg);">Asset</div>
         <div style="display: flex; margin-left: -30px; padding-left: 30px; flex-grow: 1; flex-direction: column; box-sizing: border-box;">
           <div style="display: flex; flex-grow: 1;">

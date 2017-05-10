@@ -3062,7 +3062,7 @@ class Tags {
                 const planeDetailsMesh = _addUiManagerPage(uiDetailsManager);
                 if (itemSpec.metadata && itemSpec.metadata.isStatic) {
                   planeDetailsMesh.position.x = -((2 - WORLD_DETAILS_WIDTH) / 2);
-                  planeDetailsMesh.position.z = 0.01;
+                  planeDetailsMesh.position.z = 0.001;
 
                   planeDetailsMesh.initialOffset = planeDetailsMesh.position.clone();
                 }

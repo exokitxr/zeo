@@ -221,7 +221,7 @@ class Wallet {
                 position,
                 rotation,
                 oneVector,
-                new THREE.Vector3(WORLD_WIDTH, WORLD_HEIGHT, 0.01)
+                new THREE.Vector3(WORLD_WIDTH, WORLD_HEIGHT, 0.1)
               ),
               anchor: {
                 onclick: 'wallet',
