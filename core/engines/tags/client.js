@@ -2063,6 +2063,25 @@ class Tags {
             }
           };
           input.on('triggerup', _triggerup);
+          const _grab = () => {
+            const _closeWalletTagMeshes = () => {
+              tagMeshes.forEach(tagMesh => {
+                const {item} = tagMesh;
+                const {type, metadata} = item;
+
+                if (type === 'asset' && metadata && metadata.isStatic && !metadata.isSub) {
+                  const {planeDetailsMesh} = tagMesh;
+
+                  if (planeDetailsMesh.visible) {
+                    tagMesh.closeDetails();
+                  }
+                }
+              });
+            };
+
+            _closeWalletTagMeshes();
+          };
+          rend.on('grab', _grab);
 
           const _update = () => {
             const _updateControllers = () => {
@@ -2380,7 +2399,7 @@ class Tags {
             input.removeListener('trigger', _trigger);
             input.removeListener('triggerdown', _triggerdown);
             input.removeListener('triggerup', _triggerup);
-
+            rend.removeListener('grab', _grab);
             rend.removeListener('update', _update);
           });
 
