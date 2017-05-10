@@ -31,7 +31,7 @@
   },
   "dependencies": {
     "archae": "0.0.71",
-    "assetwallet": "0.0.20",
+    "assetwallet": "0.0.21",
     "base128": "^0.2.1",
     "body-parser": "^1.16.1",
     "cookie": "^0.3.1",

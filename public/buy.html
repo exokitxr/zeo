@@ -115,9 +115,43 @@ const _update = () => {
           cancelButton.style.display = 'none';
           payingButton.style.display = 'flex';
 
-          setTimeout(() => {
-            window.location.href = `/buy-success?txid=${encodeURIComponent('lol')}`;
-          }, 2000);
+          fetch('/wallet/api/buy', {
+            method: 'POST',
+            headers: (() => {
+              const headers = new Headers();
+              headers.append('Content-Type', 'application/json');
+              return headers;
+            })(),
+            body: JSON.stringify({
+              srcAsset,
+              srcQuantity,
+              dstAsset,
+              dstQuantity,
+            }),
+            credentials: 'include',
+            mode: 'cors',
+          })
+            .then(res => {
+              if (res.status >= 200 && res.status < 300) {
+                return res.json();
+              } else if (res.status === 412) { // precondition failed
+                const err = new Error('could not find immediate counterorder');
+                return Promise.reject(err);
+              } else {
+                const err = new Error('API returned failure status code: ' + res.status);
+                return Promise.reject(err);
+              }
+            })
+            .then(txid => {
+              window.location.href = `/buy-success?txid=${encodeURIComponent(txid)}`;
+            })
+            .catch(err => {
+              console.warn(err);
+
+              confirmButton.style.display = 'flex';
+              cancelButton.style.display = 'flex';
+              payingButton.style.display = 'none';
+            });
         });
         cancelButton.addEventListener('click', () => {
           window.history.back();
