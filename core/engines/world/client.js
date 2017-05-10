@@ -905,6 +905,34 @@ class World {
         const _trigger = e => {
           const {side} = e;
 
+          const _clickUnpack = () => {
+            const grabMesh = grabManager.getMesh(side);
+
+            if (grabMesh) {
+              const hoverState = rend.getHoverState(side);
+              const {intersectionPoint} = hoverState;
+
+              if (intersectionPoint) {
+                const {anchor} = hoverState;
+                const onclick = (anchor && anchor.onclick) || '';
+
+                if (onclick === 'wallet') {
+                  const {item} = grabMesh;
+                  console.log('unpack', {item}); // XXX
+
+                  _removeTag('hand:' + side);
+
+                  return true;
+                } else {
+                  return false;
+                }
+              } else {
+                return false;
+              }
+            } else {
+              return false;
+            }
+          };
           const _clickCast = () => {
             const isOpen = rend.isOpen();
 
@@ -1001,7 +1029,7 @@ class World {
             }
           };
 
-          if (_clickCast() || _clickMenu()) {
+          if (_clickUnpack() || _clickCast() || _clickMenu()) {
             e.stopImmediatePropagation();
           }
         };

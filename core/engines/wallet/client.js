@@ -223,7 +223,7 @@ class Wallet {
               new THREE.Vector3(WORLD_WIDTH, WORLD_HEIGHT, 0.01)
             ),
             anchor: {
-              onmousedown: 'wallet',
+              onclick: 'wallet',
             },
           };
           rend.addBoxAnchor(boxAnchor);
