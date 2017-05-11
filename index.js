@@ -58,6 +58,7 @@ const flags = {
   hubUrl: _findArg('hubUrl'),
   homeUrl: _findArg('homeUrl'),
   maxUsers: _findArg('maxUsers'),
+  allowInsecureModules: _findArg('allowInsecureModules'),
 };
 const hasSomeFlag = (() => {
   for (const k in flags) {
@@ -125,6 +126,7 @@ const config = {
     server: {
       url: fullUrl,
       worldname: worldname,
+      allowInsecureModules: flags.allowInsecureModules === String(true),
       enabled: flags.server,
     },
     maxUsers: maxUsers,

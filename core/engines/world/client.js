@@ -34,7 +34,7 @@ class World {
 
   mount() {
     const {_archae: archae} = this;
-    const {metadata: {home: {enabled: homeEnabled}, server: {enabled: serverEnabled}}} = archae;
+    const {metadata: {home: {enabled: homeEnabled}, server: {allowInsecureModules, enabled: serverEnabled}}} = archae;
 
     const cleanups = [];
     this._cleanup = () => {
@@ -644,7 +644,7 @@ class World {
           tags.message(detail);
         };
 
-        const _searchNpm = (q = '') => fetch('archae/rend/search?q=' + encodeURIComponent(q))
+        const _searchNpm = (q = '') => fetch(`archae/rend/search?q=${encodeURIComponent(q)}&i=${allowInsecureModules}`)
           .then(res => res.json());
         const _updateNpm = menuUtils.debounce(next => {
           const {inputText} = npmState;

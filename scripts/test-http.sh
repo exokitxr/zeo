@@ -11,23 +11,23 @@ cp -ralf installed data/hub/servers/server_one/
 mkdir -p data/hub/servers/server_two
 cp -ralf installed data/hub/servers/server_two/
 
-./index.js site my \
+./index.js site \
   port=8080 \
   siteUrl='http://127.0.0.1:8080' \
   homeUrl='http://127.0.0.1:8081' \
   hubUrl='http://127.0.0.1:8000' &
-./index.js home my \
+./index.js home \
   port=8081 \
   hubUrl='http://127.0.0.1:8000' \
   dataDirectory='data' dataDirectorySrc='defaults/data' \
   cryptoDirectory='crypto-test' cryptoDirectorySrc='defaults/crypto' \
   installDirectory='installed' installDirectorySrc='installed' &
-./index.js hub my \
+./index.js hub \
   port=8000 \
   hubUrl='http://test.zeovr.io:8000' \
   cryptoDirectory='crypto-test-hub' cryptoDirectorySrc='defaults/crypto' \
   installDirectory='installed' installDirectorySrc='installed' &
-./index.js server \
+./index.js server allowInsecureModules \
   port=7777 \
   siteUrl='http://127.0.0.1:8080' \
   hubUrl='http://127.0.0.1:8000' \
@@ -36,7 +36,7 @@ cp -ralf installed data/hub/servers/server_two/
   dataDirectory='data/hub/servers/server_one/data' dataDirectorySrc='defaults/data' \
   cryptoDirectory='data/hub/servers/server_one/crypto' cryptoDirectorySrc='crypto-test' \
   installDirectory='data/hub/servers/server_one/installed' installDirectorySrc='installed' &
-./index.js server \
+./index.js server allowInsecureModules \
   port=7778 \
   siteUrl='http://127.0.0.1:8080' \
   hubUrl='http://127.0.0.1:8000' \

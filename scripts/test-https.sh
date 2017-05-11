@@ -11,12 +11,12 @@ cp -ralf installed data/hub/servers/server_one/
 mkdir -p data/hub/servers/server_two
 cp -ralf installed data/hub/servers/server_two/
 
-./index.js site my \
+./index.js site \
   port=8080 secure=true \
   siteUrl='https://zeovr.io:8080' \
   homeUrl='https://zeovr.io:8081' \
   hubUrl='https://zeovr.io:8000' &
-./index.js home my \
+./index.js home \
   port=8081 secure=true \
   hubUrl='https://zeovr.io:8000' \
   dataDirectory='data' dataDirectorySrc='defaults/data' \
@@ -27,7 +27,7 @@ cp -ralf installed data/hub/servers/server_two/
   hubUrl='https://zeovr.io:8000' \
   cryptoDirectory='crypto-test-hub' cryptoDirectorySrc='defaults/crypto' \
   installDirectory='installed' installDirectorySrc='installed' &
-./index.js server \
+./index.js server allowInsecureModules \
   port=7777 secure=true \
   siteUrl='https://zeovr.io:8080' \
   hubUrl='https://zeovr.io:8000' \
@@ -36,7 +36,7 @@ cp -ralf installed data/hub/servers/server_two/
   dataDirectory='data/hub/servers/server_one/data' dataDirectorySrc='defaults/data' \
   cryptoDirectory='data/hub/servers/server_one/crypto' cryptoDirectorySrc='crypto-test' \
   installDirectory='data/hub/servers/server_one/installed' installDirectorySrc='installed' &
-./index.js server \
+./index.js server allowInsecureModules \
   port=7778 secure=true \
   siteUrl='https://zeovr.io:8080' \
   hubUrl='https://zeovr.io:8000' \
