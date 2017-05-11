@@ -518,47 +518,117 @@ b {
 section.story {
   position: relative;
   display: flex;
-  width: 700px;
+  width: 980px;
   margin: 0 auto;
 }
 section.story .story-side {
   display: flex;
-  padding-right: 100px;
+  padding-right: 120px;
   flex-direction: column;
-  justify-content: center;
   align-items: center;
+  flex: 1;
 }
-section.story .story-arrow + .story-side {
-  padding-left: 100px;
+section.story .story-divider {
+  margin-top: 100px;
+  height: 500px;
+  width: 1px;
+  background-color: #EEE;
+}
+section.story .story-divider + .story-side {
+  padding-left: 120px;
   padding-right: 0;
 }
 section.story .story-arrow.left {
   position: absolute;
-  top: 0;
+  top: -100px;
   bottom: 0;
-  left: 300px;
-  width: 5px;
-  background-color: #2196F3;
+  left: 375px;
+  width: 3px;
+  background-color: #4CAF50;
 }
 section.story .story-arrow.right {
   position: absolute;
-  top: 0;
+  top: -50px;
   bottom: 0;
-  right: 300px;
-  width: 5px;
+  right: 375px;
+  width: 3px;
   background-color: #673AB7;
 }
+section.story .story-side .arrow {
+  position: absolute;
+  width: 150px;
+  background-color: transparent;
+}
 section.story h1,
+section.story h2,
+section.story img,
 section.story p {
+  margin: 0;
   margin-bottom: 30px;
 }
 section.story h1 {
+  margin: 30px 0;
   font-size: 30px;
-  font-weight: 300;
+  font-weight: 400;
+}
+section.story h2 {
+  margin-bottom: 10px;
+  margin-right: auto;
+  font-size: 20px;
+  font-weight: 400;
+}
+section.story img {
+  width: 100%;
+  padding: 10px;
+  background-color: #EEE;
+  border-radius: 5px;
+  box-sizing: border-box;
 }
 section.story p {
   font-size: 14px;
   line-height: 1.6;
+}
+section.story .link {
+  color: #2196F3;
+  text-decoration: none;
+}
+section.story .link:hover {
+  text-decoration: underline;
+}
+section.story .button-wrap {
+  margin-top: 30px;
+  padding: 10px;
+  background-color: #EEE;
+  border-radius: 5px;
+}
+section.story .button {
+  position: relative;
+  padding: 5px 20px;
+  font-size: 24px;
+  border: 0;
+  border-bottom: 3px solid rgba(0, 0, 0, 0.2);
+  color: #FFF;
+  // animation: blink 1s infinite ease-in-out 0s;
+}
+section.story .story-side.left .button {
+  background-color: #4CAF50;
+}
+section.story .story-side.left .button:hover {
+  background-color: #388E3C;
+}
+section.story .story-side.right .button {
+  background-color: #673AB7;
+}
+section.story .story-side.right .button:hover {
+  background-color: #512DA8;
+}
+
+section.story-footer {
+  display: flex;
+}
+section.story-footer img {
+  margin: 0 auto;
+  margin-top: -200px;
 }
 
 section.details {
@@ -828,7 +898,7 @@ section.list {
 }
 .footer-wrap {
   display: flex;
-  width: 640px;
+  width: 980px;
   justify-content: center;
   align-items: center;
 }
@@ -876,10 +946,8 @@ footer a:hover {
   border-radius: 10.2em 0 0 10.2em;
   top: -0.1em;
   left: -0.1em;
-  -webkit-transform-origin: 5.2em 5.1em;
   transform-origin: 5.2em 5.1em;
-  -webkit-animation: load2 1s infinite ease 0.75s;
-  animation: load2 1s infinite ease 0.75s;
+  animation: load 1s infinite ease 0.75s;
 }
 .loader:after {
   width: 5.2em;
@@ -888,28 +956,37 @@ footer a:hover {
   border-radius: 0 10.2em 10.2em 0;
   top: -0.1em;
   left: 5.1em;
-  -webkit-transform-origin: 0px 5.1em;
   transform-origin: 0px 5.1em;
-  -webkit-animation: load2 1s infinite ease;
-  animation: load2 1s infinite ease;
+  animation: load 1s infinite ease;
 }
-@-webkit-keyframes load2 {
+@keyframes load {
   0% {
-    -webkit-transform: rotate(0deg);
     transform: rotate(0deg);
   }
   100% {
-    -webkit-transform: rotate(360deg);
     transform: rotate(360deg);
   }
 }
-@keyframes load2 {
+/* @keyframes blink {
   0% {
-    -webkit-transform: rotate(0deg);
-    transform: rotate(0deg);
+    filter: none;
+  }
+  49% {
+    filter: none;
+  }
+  51% {
+    filter: brightness(110%);
   }
   100% {
-    -webkit-transform: rotate(360deg);
-    transform: rotate(360deg);
+    filter: brightness(110%);
   }
 }
+@keyframes emit {
+  0% {
+    transform: none;
+  }
+  100% {
+    transform: scale(1.4, 2);
+    opacity: 0;
+  }
+} */
