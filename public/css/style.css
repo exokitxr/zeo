@@ -23,9 +23,10 @@ a {
 }
 code {
   display: inline-block;
+  margin: 0 2px;
   padding: 0 5px;
   font-family: var(--monospace-fonts);
-  background-color: rgba(255, 255, 255, 0.15);
+  background-color: #EEE;
   border-radius: 3px;
 }
 
@@ -514,83 +515,52 @@ b {
   height: 30px;
 }
 
-.details-wrap {}
-.details-wrap h4 {
-  margin-left: 115px;
-  margin-bottom: 20px;
-}
-.details-wrap input[type=text], .details-wrap input[type=email], .details-wrap input[type=month] {
-  width: 300px;
-  margin-bottom: 10px;
-  background-color: #DDD;
-}
-.details-wrap input[type=text]::-webkit-input-placeholder, .details-wrap input[type=email]::-webkit-input-placeholder, .details-wrap input[type=password]::-webkit-input-placeholder {
-  color: #AAA;
-}
-.details-wrap .header-button {
-  margin-left: 115px;
-  margin-top: 10px;
-  color: #FFF;
-}
-.details-wrap label {
+section.story {
+  position: relative;
   display: flex;
+  width: 700px;
+  margin: 0 auto;
 }
-.details-wrap .left {
+section.story .story-side {
   display: flex;
-  margin-right: 10px;
-  width: 105px;
-  font-size: 13px;
-  line-height: 37px;
-  justify-content: flex-end;
-}
-.details-wrap input[type=text].ccn {
-  margin-right: 10px;
-  width: 240px;
-}
-.details-wrap input[type=text].cvc {
-  width: 50px;
-}
-.canvas-login-arrow {
-  position: absolute;
-  width: 600px;
-  height: 600px;
-  filter: brightness(1000000%);
-  pointer-events: none;
-  z-index: 2;
-}
-.logged-in .container {
-  height: 300px;
-}
-section.container {
-  display: flex;
-  width: 100%;
-  margin-top: -80px;
-  padding-top: 80px;
-  justify-content: flex-start;
-  align-items: center;
+  padding-right: 100px;
   flex-direction: column;
-  box-sizing: border-box;
-}
-.container-wrapper {
-  display: flex;
-  width: 640px;
-  color: #FFF;
+  justify-content: center;
   align-items: center;
-  flex-direction: column;
 }
-.container-wrapper > h1 {
-  margin: 30px 0;
-  text-align: center;
+section.story .story-arrow + .story-side {
+  padding-left: 100px;
+  padding-right: 0;
 }
-.container-footer {
-  width: 200%;
-  height: 400px;
-  margin-left: -50%;
-  margin-top: -200px;
+section.story .story-arrow.left {
   position: absolute;
-  background-color: #000;
-  transform: rotateZ(-10deg);
+  top: 0;
+  bottom: 0;
+  left: 300px;
+  width: 5px;
+  background-color: #2196F3;
 }
+section.story .story-arrow.right {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 300px;
+  width: 5px;
+  background-color: #673AB7;
+}
+section.story h1,
+section.story p {
+  margin-bottom: 30px;
+}
+section.story h1 {
+  font-size: 30px;
+  font-weight: 300;
+}
+section.story p {
+  font-size: 14px;
+  line-height: 1.6;
+}
+
 section.details {
   display: flex;
   width: 100%;
