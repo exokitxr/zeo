@@ -21,6 +21,13 @@ $('navbar > a').forEach(el => {
   <div class=content>
     <div class=load-status>Loading...</div>
     <div class=load-placeholder>No modules :(</div>
+    <div class=search-bar id=search-bar>
+      <input type=text placeholder="Search modules" id=search-input>
+      <a class=checkbox id=show-insecure-checkbox>
+        <div class=checkbox-box></div>
+        <div class=checkbox-label>Show insecure modules</div>
+      </a>
+    </div>
     <div class=modules-body id=modules-body></div>
     <footer class=footer>
       <div class="footer-wrap full">
@@ -34,6 +41,9 @@ $('navbar > a').forEach(el => {
 const loadStatus = $('.load-status')[0];
 const loadPlaceholder = $('.load-placeholder')[0];
 const modulesBody = $('#modules-body')[0];
+const searchBar = $('#search-bar')[0];
+const searchInput = $('#search-input')[0];
+const showInsecureCheckbox = $('#show-insecure-checkbox')[0];
 
 const _makeModuleElement = module => {
   const {name} = module;
@@ -67,6 +77,7 @@ const _update = () => {
     modulesBody.removeChild(modulesBody.lastChild);
   }
   modulesBody.style.display = 'none';
+  searchBar.style.display = 'none';
 
   fetch('/modules/modules.json')
     .then(res =>
@@ -80,9 +91,27 @@ const _update = () => {
             const moduleElement = _makeModuleElement(module);
             modulesBody.appendChild(moduleElement);
           }
-          modulesBody.style.display = modules.length > 0 ? 'flex' : 'none';
+          const visible = modules.length > 0 ? 'flex' : 'none';
+          modulesBody.style.display = visible;
+          searchBar.style.display = visible;
         })
     );
+
+  searchInput.addEventListener('input', e => {
+    const q = e.target.value;
+    console.log('search', {q});
+  });
+
+  let showInsecure = false;
+  showInsecureCheckbox.addEventListener('click', () => {
+    showInsecure = !showInsecure;
+
+    if (showInsecure) {
+      showInsecureCheckbox.classList.add('checked');
+    } else {
+      showInsecureCheckbox.classList.remove('checked');
+    }
+  });
 };
 _update();
   </script>
