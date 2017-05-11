@@ -60,7 +60,7 @@ class Payment {
         };
 
         const paymentMeshes = [];
-        const _makePayMesh = ({address, asset, quantity, hasAvailableBalance}, cb, cleanup) => { // XXX
+        const _makePayMesh = ({address, asset, quantity, hasAvailableBalance}, cb, cleanup) => {
           const id = _makeId();
 
           const object = new THREE.Object3D();
@@ -403,14 +403,11 @@ class Payment {
           rend.removeListener('update', _update);
         };
 
-        const _requestBalances = () => new Promise((accept, reject) => {
-          accept([ // XXX actually fetch balances here
-            {
-              asset: 'CRAPCOIN',
-              quantity: 100,
-            }
-          ]);
-        });
+        const _requestBalances = () => fetch(`${siteUrl}/wallet/api/status`, {
+          credentials: 'include',
+        })
+          .then(res => res.json())
+          .then(status => status.assets);
         const _hasAvailableBalance = (asset, quantity) => _requestBalances()
           .then(balances => {
             const balanceSpec = balances.find(balance => balance.asset === asset);
