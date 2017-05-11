@@ -8,8 +8,13 @@
 <body>
   <!-- header.html -->
   <div class="body home-body" id=home-body>
-    <iframe class=hub-iframe id=hub-iframe></iframe>
-    <section class=hero></section>
+    <section class=hero>
+      <div class=hero-wrap>
+        <h1>Multiplayer WebVR<br/>app store</h1>
+        <p>Build live VR worlds in your browser with Bitcoin-backed components.</p>
+        <a href="#" class="button solid">Find server &rsaquo;</a>
+      </div>
+    </section>
     <section class=details>
       <div class=details-wrapper id=demographics-details-2>
         <div class=details-card>
@@ -85,13 +90,5 @@
     </footer>
   </div>
   <div class="body modules-body" id=modules-body style="display: none;"></div>
-  <script>
-const $ = s => document.querySelectorAll(s);
-const $$ = (e, s) => e.querySelectorAll(s);
-
-const hubIframe = $('#hub-iframe')[0];
-hubIframe.contentWindow.location.replace(document.location.protocol + '//' + document.location.host + document.location.pathname + 'home' + document.location.search + document.location.hash);
-
-  </script>
 </body>
 </html/>
