@@ -69,37 +69,68 @@ const _makeModuleElement = module => {
 
   return moduleElement;
 };
+const _cancelableFetch = (url, options) => {
+  let live = true;
+  const result = new Promise((accept, reject) => {
+    fetch(url, options)
+      .then(res => {
+        if (live) {
+          return res.json();
+        } else {
+          return Promise.resolve();
+        }
+      })
+      .then(json => {
+        if (live) {
+          accept(json);
+        }
+      })
+      .catch(err => {
+        if (live) {
+          reject(err);
+        }
+      });
+  });
+  result.cancel = () => {
+    live = false;
+  };
+  return result;
+};
 const _update = () => {
   loadStatus.style.display = 'flex';
   loadPlaceholder.style.display = 'none';
 
-  while (modulesBody.hasChildNodes()) {
-    modulesBody.removeChild(modulesBody.lastChild);
-  }
   modulesBody.style.display = 'none';
   searchBar.style.display = 'none';
 
-  fetch('/modules/modules.json')
-    .then(res =>
-      res.json()
-        .then(modules => {
-          loadStatus.style.display = 'none';
-          loadPlaceholder.style.display = modules.length === 0 ? 'flex' : 'none';
+  let searchPromise = null;
+  const _search = (q = '') => {
+    if (searchPromise) {
+      searchPromise.cancel();
+    }
 
-          for (let i = 0; i < modules.length; i++) {
-            const module = modules[i];
-            const moduleElement = _makeModuleElement(module);
-            modulesBody.appendChild(moduleElement);
-          }
-          const visible = modules.length > 0 ? 'flex' : 'none';
-          modulesBody.style.display = visible;
-          searchBar.style.display = visible;
-        })
-    );
+    searchPromise = _cancelableFetch(`/modules/modules.json?q=${encodeURIComponent(q)}`);
+    searchPromise
+      .then(modules => {
+        while (modulesBody.hasChildNodes()) {
+          modulesBody.removeChild(modulesBody.lastChild);
+        }
+        for (let i = 0; i < modules.length; i++) {
+          const module = modules[i];
+          const moduleElement = _makeModuleElement(module);
+          modulesBody.appendChild(moduleElement);
+        }
+        modulesBody.style.display = modules.length > 0 ? 'flex' : 'none';
+        loadPlaceholder.style.display = modules.length === 0 ? 'flex' : 'none';
+
+        loadStatus.style.display = 'none';
+        searchBar.style.display = 'flex';
+      });
+  };
+  _search();
 
   searchInput.addEventListener('input', e => {
-    const q = e.target.value;
-    console.log('search', {q});
+    _search(e.target.value);
   });
 
   let showInsecure = false;
