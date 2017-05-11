@@ -932,9 +932,34 @@ class World {
 
                 if (onclick === 'wallet') {
                   const {item} = grabMesh;
-                  console.log('unpack', {item}); // XXX
+                  const {name: asset, quantity, words} = item; // XXX support words as an item value
 
-                  _removeTag('hand:' + side);
+                  fetch('/wallet/api/unpack', {
+                    method: 'POST',
+                    headers: (() => {
+                      const headers = new Headers();
+                      headers.append('Content-Type', 'application/json');
+                      return headers;
+                    })(),
+                    body: JSON.stringify({
+                      words,
+                      asset,
+                      quantity,
+                    }),
+                    credentials: 'include',
+                  })
+                    .then(res => {
+                      if (res.status >= 200 && res.status < 300) {
+                        return res.json();
+                      } else {
+                        return null;
+                      }
+                    })
+                    .catch(err => {
+                      console.warn(err);
+                    });
+
+                  _removeTag('hand:' + side); // XXX figure out the best time to remove the tag
 
                   return true;
                 } else {
@@ -1210,7 +1235,34 @@ class World {
           const grabMesh = grabManager.getMesh(side);
 
           if (!grabMesh) {
-            const item = _clone(tagMesh.item);
+            const {item} = tagMesh;
+            const {name: asset, quantity} = item;
+
+            fetch('/wallet/api/pack', {
+              method: 'POST',
+              headers: (() => {
+                const headers = new Headers();
+                headers.append('Content-Type', 'application/json');
+                return headers;
+              })(),
+              body: JSON.stringify({
+                asset,
+                quantity,
+              }),
+              credentials: 'include',
+            })
+              .then(res => {
+                if (res.status >= 200 && res.status < 300) {
+                  return res.json();
+                } else {
+                  return null;
+                }
+              })
+              .catch(err => {
+                console.warn(err);
+              });
+
+            const item = _clone(tagMesh.item); // XXX figure out how/when to reify the tag
             item.id = _makeId();
             item.quantity = quantity;
             item.metadata.isStatic = false;
