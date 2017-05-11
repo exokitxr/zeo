@@ -1,182 +1,182 @@
 {
-  "agent": [
+  "/plugins/agent": [
     "0.0.1"
   ],
-  "ambient-light": [
+  "/plugins/ambient-light": [
     "0.0.1"
   ],
-  "ar": [
+  "/plugins/ar": [
     "0.0.1"
   ],
-  "avatar": [
+  "/plugins/avatar": [
     "0.0.1"
   ],
-  "build": [
+  "/plugins/build": [
     "0.0.1"
   ],
-  "camera": [
+  "/plugins/camera": [
     "0.0.1"
   ],
-  "cloud": [
+  "/plugins/cloud": [
     "0.0.1"
   ],
-  "comment": [
+  "/plugins/comment": [
     "0.0.1"
   ],
-  "day-night-skybox": [
+  "/plugins/day-night-skybox": [
     "0.0.1"
   ],
-  "delete.me": [
+  "/plugins/delete.me": [
     "0.0.1"
   ],
-  "demo": [
+  "/plugins/demo": [
     "0.0.1"
   ],
-  "demo-ad": [
+  "/plugins/demo-ad": [
     "0.0.1"
   ],
-  "directional-light": [
+  "/plugins/directional-light": [
     "0.0.1"
   ],
-  "egg": [
+  "/plugins/egg": [
     "0.0.1"
   ],
-  "fire": [
+  "/plugins/fire": [
     "0.0.1"
   ],
-  "floor": [
+  "/plugins/floor": [
     "0.0.1"
   ],
-  "fog": [
+  "/plugins/fog": [
     "0.0.1"
   ],
-  "grass": [
+  "/plugins/grass": [
     "0.0.1"
   ],
-  "heightfield": [
+  "/plugins/heightfield": [
     "0.0.1"
   ],
-  "highlight": [
+  "/plugins/highlight": [
     "0.0.1"
   ],
-  "house": [
+  "/plugins/house": [
     "0.0.1"
   ],
-  "land": [
+  "/plugins/land": [
     "0.0.1"
   ],
-  "lens": [
+  "/plugins/lens": [
     "0.0.1"
   ],
-  "link": [
+  "/plugins/link": [
     "0.0.1"
   ],
-  "map": [
+  "/plugins/map": [
     "0.0.1"
   ],
-  "mc": [
+  "/plugins/mc": [
     "0.0.1"
   ],
-  "mirror": [
+  "/plugins/mirror": [
     "0.0.1"
   ],
-  "ocean": [
+  "/plugins/ocean": [
     "0.0.1"
   ],
-  "particle": [
+  "/plugins/particle": [
     "0.0.1"
   ],
-  "physics": [
+  "/plugins/physics": [
     "0.0.1"
   ],
-  "portal": [
+  "/plugins/portal": [
     "0.0.1"
   ],
-  "procedural-skybox": [
+  "/plugins/procedural-skybox": [
     "0.0.1"
   ],
-  "rain": [
+  "/plugins/rain": [
     "0.0.1"
   ],
-  "raptor": [
+  "/plugins/raptor": [
     "0.0.1"
   ],
-  "rarepepe": [
+  "/plugins/rarepepe": [
     "0.0.1"
   ],
-  "raycast": [
+  "/plugins/raycast": [
     "0.0.1"
   ],
-  "shell": [
+  "/plugins/shell": [
     "0.0.1"
   ],
-  "skybox": [
+  "/plugins/skybox": [
     "0.0.1"
   ],
-  "sprite": [
+  "/plugins/sprite": [
     "0.0.1"
   ],
-  "terrain": [
+  "/plugins/terrain": [
     "0.0.1"
   ],
-  "test": [
+  "/plugins/test": [
     "0.0.1"
   ],
-  "tree": [
+  "/plugins/tree": [
     "0.0.1"
   ],
-  "voxel": [
+  "/plugins/voxel": [
     "0.0.1"
   ],
-  "weapons": [
+  "/plugins/weapons": [
     "0.0.1"
   ],
-  "youtube": [
+  "/plugins/youtube": [
     "0.0.1"
   ],
-  "z-animate": [
+  "/plugins/z-animate": [
     "0.0.1"
   ],
-  "z-backpack": [
+  "/plugins/z-backpack": [
     "0.0.1"
   ],
-  "z-bag": [
+  "/plugins/z-bag": [
     "0.0.1"
   ],
-  "z-build": [
+  "/plugins/z-build": [
     "0.0.1"
   ],
-  "z-cake": [
+  "/plugins/z-cake": [
     "0.0.1"
   ],
-  "z-draw": [
+  "/plugins/z-draw": [
     "0.0.1"
   ],
-  "z-eat": [
+  "/plugins/z-eat": [
     "0.0.1"
   ],
-  "z-fighter": [
+  "/plugins/z-fighter": [
     "0.0.1"
   ],
-  "z-grabbable": [
+  "/plugins/z-grabbable": [
     "0.0.1"
   ],
-  "z-gun": [
+  "/plugins/z-gun": [
     "0.0.1"
   ],
-  "z-model": [
+  "/plugins/z-model": [
     "0.0.1"
   ],
-  "z-mp-physics": [
+  "/plugins/z-mp-physics": [
     "0.0.1"
   ],
-  "z-paint": [
+  "/plugins/z-paint": [
     "0.0.1"
   ],
-  "z-sp-physics": [
+  "/plugins/z-sp-physics": [
     "0.0.1"
   ],
-  "z-sword": [
+  "/plugins/z-sword": [
     "0.0.1"
   ]
 }
