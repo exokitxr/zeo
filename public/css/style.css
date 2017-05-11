@@ -94,11 +94,11 @@ code {
   width: 980px;
 }
 .documentation .markdown-body .toc {
-  width: 250px;
+  width: 240px;
   background-color: rgba(255, 255, 255, 0.8);
 }
 .documentation .markdown-body .body {
-  width: calc(980px - 250px);
+  width: calc(980px - 240px);
   padding: 0 50px;
   background-color: rgba(255, 255, 255, 0.9);
   box-sizing: border-box;
