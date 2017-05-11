@@ -36,7 +36,7 @@ code {
   flex-grow: 1;
   flex-direction: column;
 }
-.hero-background {
+.background {
   position: fixed;
   top: 0;
   bottom: 0;
@@ -587,8 +587,9 @@ section.story h2 {
 }
 section.story img {
   width: 100%;
-  border-radius: 5px;
-  box-sizing: border-box;
+  margin-bottom: 50px;
+  // border-radius: 5px;
+  // box-sizing: border-box;
 }
 section.story p {
   font-size: 14px;
