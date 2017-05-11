@@ -2418,6 +2418,7 @@ class Tags {
               attributes,
               mimeType,
               quantity,
+              words,
               open,
               details,
               paused,
@@ -2439,6 +2440,7 @@ class Tags {
               this.attributes = attributes;
               this.mimeType = mimeType;
               this.quantity = quantity;
+              this.words = words;
               this.open = open;
               this.details = details;
               this.paused = paused;
@@ -2946,6 +2948,7 @@ class Tags {
                 itemSpec.attributes,
                 itemSpec.mimeType,
                 itemSpec.quantity,
+                itemSpec.words,
                 itemSpec.open,
                 itemSpec.details,
                 itemSpec.paused,

@@ -932,7 +932,7 @@ class World {
 
                 if (onclick === 'wallet') {
                   const {item} = grabMesh;
-                  const {name: asset, quantity, words} = item; // XXX support words as an item value
+                  const {name: asset, quantity, words} = item;
 
                   fetch('/wallet/api/unpack', {
                     method: 'POST',
