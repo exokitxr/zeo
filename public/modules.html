@@ -104,12 +104,12 @@ const _update = () => {
   searchBar.style.display = 'none';
 
   let searchPromise = null;
-  const _search = (q = '') => {
+  const _search = (q = '', i = false) => {
     if (searchPromise) {
       searchPromise.cancel();
     }
 
-    searchPromise = _cancelableFetch(`/modules/modules.json?q=${encodeURIComponent(q)}`);
+    searchPromise = _cancelableFetch(`/modules/modules.json?q=${encodeURIComponent(q)}&i=${i}`);
     searchPromise
       .then(modules => {
         while (modulesBody.hasChildNodes()) {
@@ -129,8 +129,12 @@ const _update = () => {
   };
   _search();
 
-  searchInput.addEventListener('input', e => {
-    _search(e.target.value);
+  const _refreshSearch = () => {
+    _search(searchInput.value, showInsecure);
+  };
+
+  searchInput.addEventListener('input', () => {
+    _refreshSearch();
   });
 
   let showInsecure = false;
@@ -142,6 +146,8 @@ const _update = () => {
     } else {
       showInsecureCheckbox.classList.remove('checked');
     }
+
+    _refreshSearch();
   });
 };
 _update();
