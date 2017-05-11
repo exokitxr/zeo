@@ -39,6 +39,8 @@
   <script>
 window.$ = s => document.querySelectorAll(s);
 
+document.addEventListener('DOMContentLoaded', () => {
+
 $('navbar > a').forEach(el => {
   if (el.classList.contains('documentation')) {
     el.classList.add('selected');
@@ -46,63 +48,36 @@ $('navbar > a').forEach(el => {
     el.classList.remove('selected');
   }
 });
+
+let page = document.location.pathname.match(/^\/docs(?:\/(.*))?/)[1];
+if (['introduction', 'manual', 'api', 'features', 'faq'].indexOf(page) === -1) {
+  page = 'introduction';
+}
+
+$('.toc > a').forEach(e => {
+  if (e.classList.contains(page)) {
+    e.classList.add('selected');
+  }
+
+  const img = new Image();
+  img.src = '/img/minecraft.svg';
+  img.classList.add('icon');
+  e.insertBefore(img, e.firstChild);
+});
+$('.section').forEach(e => {
+  if (!e.classList.contains(page)) {
+    e.parentNode.removeChild(e);
+  }
+});
+
+});
   </script>
-  <style>
-.toc {
-  display: flex;
-  width: 100%;
-  border-bottom: 2px solid #EEE;
-  box-sizing: border-box;
-}
-.toc a {
-  display: block;
-  padding: 0 15px;
-  margin-bottom: -2px;
-  font-size: 18px;
-  font-weight: 400;
-  line-height: 3;
-  color: #CCC;
-  text-decoration: none;
-}
-.toc a.selected {
-  background-color: #F8F8F8;
-  border-bottom: 2px solid #2196F3;
-  color: #2196F3 !important;
-}
-.toc a:hover,
-.toc a.selected {
-  color: #000;
-  text-decoration: none;
-}
-
-.markdown-body {}
-.markdown-body iframe {
-  margin: 16px 0;
-}
-
-.toc, .body {
-  padding-left: 150px;
-}
-.body {
-  width: 780px;
-}
-.body > .section > h1 {
-  display: none;
-}
-.body a {
-  color: #2196F3;
-}
-.body a:hover > code {
-  text-decoration: underline;
-}
-.toc > .faq {
-  text-transform: uppercase;
-}
-  </style>
 </head>
 <body>
-  <div class=markdown-body>
-    <div class=toc>
+  <div class=background></div>
+  <div class=documentation>
+    <div class=markdown-body>
+      <div class=toc>
   <a href="/docs/introduction" class="introduction">Introduction</a>
 <a href="/docs/manual" class="manual">Manual</a>
 <a href="/docs/api" class="api">Api</a>
@@ -1052,6 +1027,7 @@ module.exports = archae =&gt; ({
 
 </div>
 
+    </div>
   </div>
   <footer class=footer>
     <div class=footer-wrap>
@@ -1059,22 +1035,5 @@ module.exports = archae =&gt; ({
       <div class=footer-right>&copy; 2017 <a href="mailto:a@zeovr.io">Zeo VR</a></div>
     </div>
   </footer>
-<script>
-let page = document.location.pathname.match(/^\/docs(?:\/(.*))?/)[1];
-if (['introduction', 'manual', 'api', 'features', 'faq'].indexOf(page) === -1) {
-  page = 'introduction';
-}
-
-$('.toc > a').forEach(e => {
-  if (e.classList.contains(page)) {
-    e.classList.add('selected');
-  }
-});
-$('.section').forEach(e => {
-  if (!e.classList.contains(page)) {
-    e.parentNode.removeChild(e);
-  }
-});
-</script>
 </body>
 </html>
