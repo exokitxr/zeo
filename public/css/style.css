@@ -200,7 +200,6 @@ b {
   width: 980px;
   padding: 20px;
   box-sizing: border-box;
-  // align-items: center;
 }
 .search-bar input[type=text] {
   padding: 10px;
@@ -211,6 +210,9 @@ b {
   font-size: 20px;
   flex-grow: 1;
   outline: none;
+}
+.search-bar input[type=text]::-webkit-input-placeholder {
+  color: #AAA;
 }
 .modules-body {
   display: flex;
