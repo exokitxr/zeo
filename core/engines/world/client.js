@@ -955,6 +955,9 @@ class World {
                         return null;
                       }
                     })
+                    .then(({txid}) => {
+                      // XXX
+                    })
                     .catch(err => {
                       console.warn(err);
                     });
@@ -1257,6 +1260,9 @@ class World {
                 } else {
                   return null;
                 }
+              })
+              .then(({words, asset, quantity, txid}) => {
+                // XXX
               })
               .catch(err => {
                 console.warn(err);
