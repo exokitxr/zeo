@@ -60,12 +60,14 @@ class Payment {
         };
 
         const paymentMeshes = [];
-        const _makePayMesh = ({address, asset, quantity, hasAvailableBalance}, cb, cleanup) => {
+        const _makePayMesh = ({address, asset, quantity}, cb, cleanup) => {
           const id = _makeId();
 
           const object = new THREE.Object3D();
 
           const payState = {
+            loading: true,
+            hasAvailableBalance: false,
             paying: false,
             done: false,
           };
@@ -77,13 +79,15 @@ class Payment {
             });
             const mesh = paymentUi.makePage(({
               pay: {
+                loading,
+                hasAvailableBalance,
                 paying,
                 done,
               },
             }) => {
               return {
                 type: 'html',
-                src: paymentRenderer.getPayPageSrc({id, address, hasAvailableBalance, paying, done}),
+                src: paymentRenderer.getPayPageSrc({id, address, loading, paying, done, hasAvailableBalance}),
                 x: 0,
                 y: 0,
                 w: WIDTH,
@@ -114,7 +118,7 @@ class Payment {
                 },
               });
               mesh.position.set(-WORLD_WIDTH * 0.28, 0, 0.001);
-              // mesh.planeMesh.scale.set(ASSET_TAG_MESH_SCALE, ASSET_TAG_MESH_SCALE, 1);
+              mesh.visible = false;
 
               return mesh;
             })();
@@ -129,6 +133,28 @@ class Payment {
           const {page} = menuMesh;
           page.initialUpdate();
           rend.addPage(page);
+
+          _hasAvailableBalance(asset, quantity)
+            .then(hasAvailableBalance => {
+              payState.loading = false;
+              payState.hasAvailableBalance = hasAvailableBalance;
+
+              page.update();
+
+              const {tagMesh} = menuMesh;
+              tagMesh.visible = true;
+            })
+            .catch(err => {
+              console.warn(err);
+
+              payState.loading = false;
+              payState.hasAvailableBalance = false;
+
+              page.update();
+
+              const {tagMesh} = menuMesh;
+              tagMesh.visible = true;
+            });
 
           const {hmd: hmdStatus} = webvr.getStatus();
           const {position: hmdPosition, rotation: hmdRotation} = hmdStatus;
@@ -205,12 +231,14 @@ class Payment {
 
           return object;
         };
-        const _makeBuyMesh = ({srcAsset, srcQuantity, dstAsset, dstQuantity, hasAvailableBalance}, cb, cleanup) => {
+        const _makeBuyMesh = ({srcAsset, srcQuantity, dstAsset, dstQuantity}, cb, cleanup) => {
           const id = _makeId();
 
           const object = new THREE.Object3D();
 
            const payState = {
+            loading: true,
+            hasAvailableBalance: false,
             paying: false,
             done: false,
           };
@@ -222,13 +250,15 @@ class Payment {
             });
             const mesh = paymentUi.makePage(({
               pay: {
+                loading,
+                hasAvailableBalance,
                 paying,
                 done,
               },
             }) => {
               return {
                 type: 'html',
-                src: paymentRenderer.getBuyPageSrc({id, hasAvailableBalance, paying, done}),
+                src: paymentRenderer.getBuyPageSrc({id, loading, hasAvailableBalance, paying, done}),
                 x: 0,
                 y: 0,
                 w: WIDTH,
@@ -259,7 +289,7 @@ class Payment {
                 },
               });
               mesh.position.set(-WORLD_WIDTH * 0.28, 0, 0.001);
-              // mesh.planeMesh.scale.set(ASSET_TAG_MESH_SCALE, ASSET_TAG_MESH_SCALE, 1);
+              mesh.visible = false;
 
               return mesh;
             })();
@@ -279,7 +309,7 @@ class Payment {
                 },
               });
               mesh.position.set(0, 0, 0.001);
-              // mesh.planeMesh.scale.set(ASSET_TAG_MESH_SCALE, ASSET_TAG_MESH_SCALE, 1);
+              mesh.visible = false;
 
               return mesh;
             })();
@@ -294,6 +324,30 @@ class Payment {
           const {page} = menuMesh;
           page.initialUpdate();
           rend.addPage(page);
+
+          _hasAvailableBalance(srcAsset, srcQuantity)
+            .then(hasAvailableBalance => {
+              payState.loading = false;
+              payState.hasAvailableBalance = hasAvailableBalance;
+
+              page.update();
+
+              const {srcTagMesh, dstTagMesh} = menuMesh;
+              srcTagMesh.visible = true;
+              dstTagMesh.visible = true;
+            })
+            .catch(err => {
+              console.warn(err);
+
+              payState.loading = false;
+              payState.hasAvailableBalance = false;
+
+              page.update();
+
+              const {srcTagMesh, dstTagMesh} = menuMesh;
+              srcTagMesh.visible = true;
+              dstTagMesh.visible = true;
+            });
 
           const {hmd: hmdStatus} = webvr.getStatus();
           const {position: hmdPosition, rotation: hmdRotation} = hmdStatus;
@@ -414,55 +468,45 @@ class Payment {
             return balanceSpec && balanceSpec.quantity >= quantity;
           });
         const _requestPay = ({address, asset, quantity, message}) => new Promise((accept, reject) => {
-          _hasAvailableBalance(asset, quantity)
-            .then(hasAvailableBalance => {
-              const paymentMesh = _makePayMesh({
-                address,
-                asset,
-                quantity,
-                message,
-                hasAvailableBalance,
-              }, (err, result) => {
-                if (!err) {
-                  accept(result);
-                } else {
-                  reject(err);
-                }
-              }, () => {
-                scene.remove(paymentMesh);
-                paymentMesh.destroy();
-              });
+          const paymentMesh = _makePayMesh({
+            address,
+            asset,
+            quantity,
+            message,
+          }, (err, result) => {
+            if (!err) {
+              accept(result);
+            } else {
+              reject(err);
+            }
+          }, () => {
+            scene.remove(paymentMesh);
+            paymentMesh.destroy();
+          });
 
-              scene.add(paymentMesh);
-              paymentMeshes.push(paymentMesh)
-            })
-            .catch(reject);
+          scene.add(paymentMesh);
+          paymentMeshes.push(paymentMesh)
         });
         const _requestBuy = ({srcAsset, srcQuantity, dstAsset, dstQuantity, message}) => new Promise((accept, reject) => {
-          _hasAvailableBalance(srcAsset, srcQuantity)
-            .then(hasAvailableBalance => {
-              const paymentMesh = _makeBuyMesh({
-                srcAsset,
-                srcQuantity,
-                dstAsset,
-                dstQuantity,
-                message,
-                hasAvailableBalance,
-              }, (err, result) => {
-                if (!err) {
-                  accept(result);
-                } else {
-                  reject(err);
-                }
-              }, () => {
-                scene.remove(paymentMesh);
-                paymentMesh.destroy();
-              });
+          const paymentMesh = _makeBuyMesh({
+            srcAsset,
+            srcQuantity,
+            dstAsset,
+            dstQuantity,
+            message,
+          }, (err, result) => {
+            if (!err) {
+              accept(result);
+            } else {
+              reject(err);
+            }
+          }, () => {
+            scene.remove(paymentMesh);
+            paymentMesh.destroy();
+          });
 
-              scene.add(paymentMesh);
-              paymentMeshes.push(paymentMesh);
-            })
-            .catch(reject);
+          scene.add(paymentMesh);
+          paymentMeshes.push(paymentMesh);
         });
 
         return {
