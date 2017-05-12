@@ -314,16 +314,17 @@ class Rend {
 
             rendApi.emit('close');
           } else {
-            const newCameraPosition = camera.position.clone();
-            const newCameraRotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(
-              0,
-              camera.rotation.y,
-              0,
-              camera.rotation.order
-            ));
-            const newMenuPosition = newCameraPosition.clone()
-              .add(new THREE.Vector3(0, 0, -1.5).applyQuaternion(newCameraRotation));
-            const newMenuRotation = newCameraRotation;
+            const {hmd: hmdStatus} = webvr.getStatus();
+            const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmdStatus;
+
+            const newMenuRotation = (() => {
+              const euler = new THREE.Euler().setFromQuaternion(hmdRotation, camera.rotation.order);
+              euler.x = 0;
+              euler.z = 0;
+              return new THREE.Quaternion().setFromEuler(euler);
+            })();
+            const newMenuPosition = hmdPosition.clone()
+              .add(new THREE.Vector3(0, 0, -1.5).applyQuaternion(newMenuRotation));
             menuMesh.position.copy(newMenuPosition);
             menuMesh.quaternion.copy(newMenuRotation);
 
