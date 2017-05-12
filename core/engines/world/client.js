@@ -34,7 +34,7 @@ class World {
 
   mount() {
     const {_archae: archae} = this;
-    const {metadata: {home: {enabled: homeEnabled}, server: {allowInsecureModules, enabled: serverEnabled}}} = archae;
+    const {metadata: {home: {enabled: homeEnabled}, site: {url: siteUrl}, server: {allowInsecureModules, enabled: serverEnabled}}} = archae;
 
     const cleanups = [];
     this._cleanup = () => {
@@ -931,10 +931,18 @@ class World {
                 const onclick = (anchor && anchor.onclick) || '';
 
                 if (onclick === 'wallet') {
+                  // XXX should only allow this when the wallet is logged in
+
                   const {item} = grabMesh;
                   const {name: asset, quantity, words} = item;
 
-                  fetch('/wallet/api/unpack', {
+                  // fake local asset tag mesh removal
+                  elementManager.remove(grabMesh);
+                  tags.destroyTag(grabMesh);
+                  grabManager.setMesh(side, null);
+
+                  // perform the unpack
+                  fetch(`${siteUrl}/wallet/api/unpack`, {
                     method: 'POST',
                     headers: (() => {
                       const headers = new Headers();
@@ -956,13 +964,13 @@ class World {
                       }
                     })
                     .then(({txid}) => {
-                      // XXX
+                      // real remote asset tag mesh removal
+                      const src = 'hand:' + side;
+                      _request('removeTag', [localUserId, src], _warnError);
                     })
                     .catch(err => {
                       console.warn(err);
                     });
-
-                  _removeTag('hand:' + side); // XXX figure out the best time to remove the tag
 
                   return true;
                 } else {
@@ -1238,10 +1246,32 @@ class World {
           const grabMesh = grabManager.getMesh(side);
 
           if (!grabMesh) {
-            const {item} = tagMesh;
-            const {name: asset, quantity} = item;
+            // add temp tag mesh
+            const itemSpec = _clone(tagMesh.item);
+            itemSpec.id = _makeId();
+            itemSpec.matrix = DEFAULT_MATRIX;
+            itemSpec.quantity = quantity;
+            itemSpec.metadata.isStatic = false;
+            _handleAddTag(localUserId, itemSpec, 'hand:' + side);
+            const tempTagMesh = grabManager.getMesh(side);
+            const {item: tempItem} = tempTagMesh;
+            tempItem.instancing = true;
+            tempItem.temp = true;
 
-            fetch('/wallet/api/pack', {
+            const _cleanupTempTagMesh = () => {
+              elementManager.remove(tempTagMesh);
+
+              SIDES.forEach(side => {
+                if (grabManager.getMesh(side) === tempTagMesh) {
+                  grabManager.setMesh(side, null);
+                }
+              });
+
+              tags.destroyTag(tempTagMesh);
+            };
+
+            // perform the pack
+            fetch(`${siteUrl}/wallet/api/pack`, {
               method: 'POST',
               headers: (() => {
                 const headers = new Headers();
@@ -1249,8 +1279,8 @@ class World {
                 return headers;
               })(),
               body: JSON.stringify({
-                asset,
-                quantity,
+                asset: itemSpec.name,
+                quantity: itemSpec.quantity,
               }),
               credentials: 'include',
             })
@@ -1262,18 +1292,22 @@ class World {
                 }
               })
               .then(({words, asset, quantity, txid}) => {
-                // XXX
+                // remove temp tag mesh
+                _cleanupTempTagMesh();
+
+                // add real tag mesh
+                itemSpec.words = words;
+                _addTag(itemSpec, 'hand:' + side);
+                const tagMesh = grabManager.getMesh(side);
+                if (!rend.isOpen()) {
+                  tagMesh.visible = false;
+                }
               })
               .catch(err => {
                 console.warn(err);
+
+                _cleanupTempTagMesh();
               });
-
-            const item = _clone(tagMesh.item); // XXX figure out how/when to reify the tag
-            item.id = _makeId();
-            item.quantity = quantity;
-            item.metadata.isStatic = false;
-
-            _addTag(item, 'hand:' + side);
           }
         };
         tags.on('grabAssetBill', _grabAssetBill);
@@ -1499,7 +1533,6 @@ class World {
 
               _addTag(itemSpec, 'world');
 
-              const elementTagMeshes = elementManager.getTagMeshes();
               const tagMesh = elementTagMeshes.find(tagMesh => tagMesh.item.id === id);
               if (!rend.isOpen()) {
                 tagMesh.visible = false;
