@@ -500,7 +500,7 @@ class Keyboard {
                   const gamepad = gamepads[side];
 
                   if (gamepad) {
-                    const {position: controllerPosition, rotation: controllerRotation} = gamepad;
+                    const {worldPosition: controllerPosition, worldRotation: controllerRotation} = gamepad;
                     const controllerEnd = controllerPosition.clone()
                       .add(
                         new THREE.Vector3(
@@ -522,7 +522,7 @@ class Keyboard {
                 const gamepad = gamepads[side];
 
                 if (gamepad) {
-                  const {position: controllerPosition, rotation: controllerRotation, scale: controllerScale} = gamepad;
+                  const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale} = gamepad;
 
                   const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation, controllerScale);
                   const {planeMesh} = keyboardMesh;

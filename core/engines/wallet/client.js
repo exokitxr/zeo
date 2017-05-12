@@ -465,7 +465,8 @@ class Wallet {
               const {value} = hoverState;
               const valuePx = value * (WIDTH - (250 + (30 * 2)));
               const {index, px} = biolumi.getTextPropertiesFromCoord(inputText, mainFontSpec, valuePx);
-              const {hmd: {position: hmdPosition, rotation: hmdRotation}} = webvr.getStatus();
+              const {hmd: hmdStatus} = webvr.getStatus();
+              const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmdStatus;
               const keyboardFocusState = keyboard.focus({
                 type: 'wallet',
                 position: hmdPosition,

@@ -492,10 +492,10 @@ class Cyborg {
           const _getControllers = () => controllers;
           const _update = () => {
             // update camera
-            const status = webvr.getStatus();
-            const {hmd: hmdStatus, gamepads: gamepadsStatus} = status;
+            const {hmd: hmdStatus, gamepads: gamepadsStatus} = webvr.getStatus();
             camera.position.copy(hmdStatus.position);
             camera.quaternion.copy(hmdStatus.rotation);
+            camera.scale.copy(hmdStatus.scale);
             camera.parent.matrix.copy(webvr.getStageMatrix());
             camera.parent.updateMatrixWorld();
 

@@ -115,9 +115,8 @@ class Teleport {
         input.on('padup', _padup);
 
         const _update = () => {
-          const status = webvr.getStatus();
-          const {hmd, gamepads} = status;
-          const {position: hmdPosition, rotation: hmdRotation, scale: hmdScale} = hmd;
+          const {hmd, gamepads} = webvr.getStatus();
+          const {worldPosition: hmdPosition, worldRotation: hmdRotation, worldScale: hmdScale} = hmd;
           const hmdAbsPosition = hmdPosition.clone().multiply(hmdScale);
 
           SIDES.forEach(side => {
@@ -130,7 +129,7 @@ class Teleport {
               const teleportAirMesh = teleportAirMeshes[side];
 
               if (teleporting) {
-                const {position: controllerPosition, rotation: controllerRotation, scale: controllerScale, axes} = gamepad;
+                const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale, axes} = gamepad;
 
                 const controllerAbsPosition = controllerPosition.clone().multiply(controllerScale);
                 const ray = new THREE.Vector3(0, 0, -1)

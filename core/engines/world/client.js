@@ -143,10 +143,10 @@ class World {
         };
 
         const _getInFrontOfCameraMatrix = () => {
-          const {hmd} = webvr.getStatus();
-          const {position, rotation} = hmd;
+          const {hmd: hmdStatus} = webvr.getStatus();
+          const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmdStatus;
 
-          const newPosition = position.clone().add(new THREE.Vector3(0, 0, -0.5).applyQuaternion(rotation));
+          const newPosition = hmdPosition.clone().add(new THREE.Vector3(0, 0, -0.5).applyQuaternion(hmdRotation));
           const newRotation = rotation;
           const newScale = oneVector;
 
@@ -1025,7 +1025,8 @@ class World {
                   const {value} = hoverState;
                   const valuePx = value * (WIDTH - (250 + (30 * 2)));
                   const {index, px} = biolumi.getTextPropertiesFromCoord(inputText, mainFontSpec, valuePx); // XXX this can be folded into the keyboard engine
-                  const {hmd: {position: hmdPosition, rotation: hmdRotation}} = webvr.getStatus();
+                  const {hmd: hmdStatus} = webvr.getStatus();
+                  const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmdStatus;
                   const keyboardFocusState = keyboard.focus({
                     type: 'npm',
                     position: hmdPosition,

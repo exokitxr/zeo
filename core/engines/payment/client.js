@@ -157,7 +157,7 @@ class Payment {
             });
 
           const {hmd: hmdStatus} = webvr.getStatus();
-          const {position: hmdPosition, rotation: hmdRotation} = hmdStatus;
+          const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmdStatus;
           object.position.copy(hmdPosition);
           const hmdEuler = new THREE.Euler().setFromQuaternion(hmdRotation, camera.rotation.order);
           object.rotation.set(0, hmdEuler.y, 0, camera.rotation.order);
@@ -350,7 +350,7 @@ class Payment {
             });
 
           const {hmd: hmdStatus} = webvr.getStatus();
-          const {position: hmdPosition, rotation: hmdRotation} = hmdStatus;
+          const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmdStatus;
           object.position.copy(hmdPosition);
           const hmdEuler = new THREE.Euler().setFromQuaternion(hmdRotation, camera.rotation.order);
           object.rotation.set(0, hmdEuler.y, 0, camera.rotation.order);
@@ -431,7 +431,7 @@ class Payment {
 
         const _update = () => {
           const {hmd: hmdStatus} = webvr.getStatus();
-          const {position: hmdPosition} = hmdStatus;
+          const {worldPosition: hmdPosition} = hmdStatus;
 
           const oldPaymentMeshes = paymentMeshes.slice();
           for (let i = 0; i < oldPaymentMeshes.length; i++) {

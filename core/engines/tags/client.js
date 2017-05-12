@@ -1772,7 +1772,7 @@ class Tags {
                   const dragState = dragStates[side];
                   const {gamepads} = webvr.getStatus();
                   const gamepad = gamepads[side];
-                  const {position: controllerPosition, rotation: controllerRotation} = gamepad;
+                  const {worldPosition: controllerPosition, worldRotation: controllerRotation} = gamepad;
                   const translateGizmo = translateGizmos.find(translateGizmo => translateGizmo.tagId === tagId && translateGizmo.attributeName === attributeName);
                   dragState.src = {
                     type: 'translate',
@@ -1943,7 +1943,7 @@ class Tags {
                     const {item} = srcTagMesh;
 
                     if (!item.instancing) {
-                      const {position: controllerPosition, rotation: controllerRotation, scale: controllerScale} = gamepad;
+                      const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale} = gamepad;
 
                       _linkModule(srcTagMesh, null, {
                         controllerPosition,
@@ -1977,7 +1977,7 @@ class Tags {
 
                     if (!item.instancing) {
                       const {tagMesh: dstTagMesh} = dst;
-                      const {position: controllerPosition, rotation: controllerRotation, scale: controllerScale} = gamepad;
+                      const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale} = gamepad;
 
                       _linkModule(srcTagMesh, dstTagMesh, {
                         controllerPosition,
@@ -2096,7 +2096,7 @@ class Tags {
 
                     const hoverMesh = (() => {
                       if (gamepad) {
-                        const {position: controllerPosition, scale: controllerScale} = gamepad;
+                        const {worldPosition: controllerPosition, worldScale: controllerScale} = gamepad;
                         const absPosition = controllerPosition.clone().multiply(controllerScale);
 
                         let closestTagMesh = null;
@@ -2209,7 +2209,7 @@ class Tags {
 
                         if (mode === 'x') {
                           const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 0, 1), startIntersectionPoint);
-                          const {position: controllerPosition, rotation: controllerRotation, scale: controllerScale} = gamepad;
+                          const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale} = gamepad;
                           const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation, controllerScale);
                           const controllerIntersectionPoint = plane.intersectLine(controllerLine);
 
@@ -2225,7 +2225,7 @@ class Tags {
                           }
                         } else if (mode === 'y') {
                           const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 0, 1), startIntersectionPoint);
-                          const {position: controllerPosition, rotation: controllerRotation, scale: controllerScale} = gamepad;
+                          const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale} = gamepad;
                           const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation, controllerScale);
                           const controllerIntersectionPoint = plane.intersectLine(controllerLine);
 
@@ -2257,7 +2257,7 @@ class Tags {
                           }
                         } else if (mode === 'xy') {
                           const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 0, 1), startIntersectionPoint);
-                          const {position: controllerPosition, rotation: controllerRotation, scale: controllerScale} = gamepad;
+                          const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale} = gamepad;
                           const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation, controllerScale);
                           const endIntersectionPoint = plane.intersectLine(controllerLine);
 
@@ -2268,7 +2268,7 @@ class Tags {
                           }
                         } else if (mode === 'yz') {
                           const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(1, 0, 0), startIntersectionPoint);
-                          const {position: controllerPosition, rotation: controllerRotation, scale: controllerScale} = gamepad;
+                          const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale} = gamepad;
                           const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation, controllerScale);
                           const endIntersectionPoint = plane.intersectLine(controllerLine);
 
@@ -2279,7 +2279,7 @@ class Tags {
                           }
                         } else if (mode === 'xz') {
                           const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 1, 0), startIntersectionPoint);
-                          const {position: controllerPosition, rotation: controllerRotation, scale: controllerScale} = gamepad;
+                          const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale} = gamepad;
                           const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation, controllerScale);
                           const endIntersectionPoint = plane.intersectLine(controllerLine);
 
@@ -2289,7 +2289,7 @@ class Tags {
                             translateGizmo.position.copy(endPosition);
                           }
                         } else if (mode === 'xyz') {
-                          const {position: controllerPosition, rotation: controllerRotation} = gamepad;
+                          const {worldPosition: controllerPosition, worldRotation: controllerRotation} = gamepad;
                           const endPosition = controllerPosition.clone()
                             .add(
                               new THREE.Vector3(0, 0, -1)

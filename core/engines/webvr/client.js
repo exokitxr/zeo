@@ -106,6 +106,7 @@ class WebVR {
           matrix.decompose(position, rotation, scale);
           return {position, rotation, scale};
         };
+        const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
 
         const zeroVector = new THREE.Vector3();
         const zeroQuaternion = new THREE.Quaternion();
@@ -121,11 +122,11 @@ class WebVR {
           }
         })[0];
 
-        const _getMatrixFromPose = pose => {
+        const _getPropertiesFromPose = pose => {
           const position = (pose && pose.position !== null) ? new THREE.Vector3().fromArray(pose.position) : new THREE.Vector3(0, 0, 0);
           const rotation = (pose && pose.orientation !== null) ? new THREE.Quaternion().fromArray(pose.orientation) : new THREE.Quaternion(0, 0, 0, 1);
           const scale = new THREE.Vector3(1, 1, 1);
-          return new THREE.Matrix4().compose(position, rotation, scale);
+          return {position, rotation, scale};
         };
         const _getPropertiesFromMatrix = matrix => {
           const position = new THREE.Vector3();
@@ -140,11 +141,14 @@ class WebVR {
         };
 
         class HmdStatus {
-          constructor(pose, position, rotation, scale) {
+          constructor(pose, position, rotation, scale, worldPosition, worldRotation, worldScale) {
             this.pose = pose;
             this.position = position;
             this.rotation = rotation;
             this.scale = scale;
+            this.worldPosition = worldPosition;
+            this.worldRotation = worldRotation;
+            this.worldScale = worldScale;
           }
         }
         class GamepadsStatus {
@@ -154,11 +158,14 @@ class WebVR {
           }
         }
         class GamepadStatus {
-          constructor(pose, position, rotation, scale, buttons, axes) {
+          constructor(pose, position, rotation, scale, worldPosition, worldRotation, worldScale, buttons, axes) {
             this.pose = pose;
             this.position = position;
             this.rotation = rotation;
             this.scale = scale;
+            this.worldPosition = worldPosition;
+            this.worldRotation = worldRotation;
+            this.worldScale = worldScale;
             this.buttons = buttons;
             this.axes = axes;
           }
@@ -179,19 +186,27 @@ class WebVR {
           }
         }
 
-        const _makeDefaultHmdStatus = () => new HmdStatus(
-          null,
-          camera.position.clone(),
-          camera.quaternion.clone(),
-          camera.scale.clone()
-        );
-        const _makeDefaultGamepadStatus = index => {
+        const _makeDefaultHmdStatus = () => (() => {
+          const {position: worldPosition, rotation: worldRotation, scale: worldScale} = _decomposeObjectMatrixWorld(camera);
+
+          return new HmdStatus(
+            null,
+            camera.position.clone(),
+            camera.quaternion.clone(),
+            camera.scale.clone(),
+            worldPosition,
+            worldRotation,
+            worldScale
+          );
+        })();
+        const _makeDefaultGamepadStatus = (index, stageMatrix) => {
           const pose = {
             position: [CONTROLLER_DEFAULT_OFFSETS[0] * ((index === 0) ? -1 : 1), CONTROLLER_DEFAULT_OFFSETS[1], CONTROLLER_DEFAULT_OFFSETS[2]],
             orientation: [0, 0, 0, 1],
           };
-          const matrix = _getMatrixFromPose(pose);
-          const {position: newPosition, rotation: newRotation, scale: newScale} = _getPropertiesFromMatrix(matrix);
+          const {position, rotation, scale} = _getPropertiesFromPose(pose);
+          const {position: worldPosition, rotation: worldRotation, scale: worldScale} =
+            _decomposeMatrix(new THREE.Matrix4().compose(position, rotation, scale).premultiply(stageMatrix));
 
           const _makeDefaultButtonStatus = () => new GamepadButton(false, false, 0);
           const buttons = new GamepadButtons(
@@ -204,9 +219,12 @@ class WebVR {
 
           return new GamepadStatus(
             pose,
-            newPosition,
-            newRotation,
-            newScale,
+            position,
+            rotation,
+            scale,
+            worldPosition,
+            worldRotation,
+            worldScale,
             buttons,
             axes
           );
@@ -230,8 +248,8 @@ class WebVR {
             this.status = {
               hmd: _makeDefaultHmdStatus(),
               gamepads: new GamepadsStatus(
-                _makeDefaultGamepadStatus(0),
-                _makeDefaultGamepadStatus(1)
+                _makeDefaultGamepadStatus(0, stageMatrix),
+                _makeDefaultGamepadStatus(1, stageMatrix)
               ),
             };
 
@@ -604,24 +622,27 @@ class WebVR {
 
           updateStatus() {
             const _getHmdStatus = () => {
-              const {display, _frameData: frameData} = this;
+              const {display, stageMatrix, _frameData: frameData} = this;
               if (display && frameData) {
                 display.getFrameData(frameData);
               }
               const pose = frameData && frameData.pose;
-
-              const matrix = _getMatrixFromPose(pose);
-              const {position: newPosition, rotation: newRotation, scale: newScale} = _getPropertiesFromMatrix(matrix);
+              const {position, rotation, scale} = _getPropertiesFromPose(pose);
+              const {position: worldPosition, rotation: worldRotation, scale: worldScale} =
+                _decomposeMatrix(new THREE.Matrix4().compose(position, rotation, scale).premultiply(stageMatrix));
 
               return new HmdStatus(
                 pose,
-                newPosition,
-                newRotation,
-                newScale
+                position,
+                rotation,
+                scale,
+                worldPosition,
+                worldRotation,
+                worldScale
               );
             };
             const _getGamepadsStatus = () => {
-              const {display} = this;
+              const {display, stageMatrix} = this;
               const gamepads = (() => {
                 if (display) {
                   if (display.getGamepads) {
@@ -668,8 +689,9 @@ class WebVR {
                   }
                 };
 
-                const matrix = _getMatrixFromPose(pose);
-                const {position: newPosition, rotation: newRotation, scale: newScale} = _getPropertiesFromMatrix(matrix);
+                const {position, rotation, scale} = _getPropertiesFromPose(pose);
+                const {position: worldPosition, rotation: worldRotation, scale: worldScale} =
+                  _decomposeMatrix(new THREE.Matrix4().compose(position, rotation, scale).premultiply(stageMatrix));
                 const buttons = new GamepadButtons(
                   _getGamepadButtonStatus(padButton),
                   _getGamepadButtonStatus(triggerButton),
@@ -680,9 +702,12 @@ class WebVR {
 
                 return new GamepadStatus(
                   pose,
-                  newPosition,
-                  newRotation,
-                  newScale,
+                  position,
+                  rotation,
+                  scale,
+                  worldPosition,
+                  worldRotation,
+                  worldScale,
                   buttons,
                   axes
                 );

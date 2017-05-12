@@ -652,7 +652,7 @@ class Biolumi {
                 const gamepad = gamepads[side];
 
                 if (enabled && sides.indexOf(side) !== -1 && gamepad) {
-                  const {position: controllerPosition, rotation: controllerRotation, scale: controllerScale} = gamepad;
+                  const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale} = gamepad;
                   const hoverState = hoverStates[side];
                   const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation, controllerScale);
 

@@ -42,12 +42,12 @@ class Raycast {
           const gamepad = gamepads[side];
 
           if (gamepad) {
-            const {position, rotation, scale} = gamepad;
+            const {worldPosition: controllerPosition, worldRotation: controllerRotation} = gamepad;
             const dotMesh = dotMeshes[side];
 
             const raycaster = new THREE.Raycaster(
-              position,
-              new THREE.Vector3(0, 0, -1).applyQuaternion(rotation),
+              controllerPosition,
+              new THREE.Vector3(0, 0, -1).applyQuaternion(controllerRotation),
               camera.near,
               camera.far
             );

@@ -149,7 +149,7 @@ class Analytics {
 
           for (let i = 0; i < hmdTrackers.length; i++) {
             const hmdTracker = hmdTrackers[i];
-            const distance = hmd.position.distanceTo(hmdTracker.position);
+            const distance = hmd.worldPosition.distanceTo(hmdTracker.position);
             hmdTracker.tick(distance);
           }
           if (activeGamepads.length > 0) {
@@ -161,14 +161,14 @@ class Analytics {
                 let minAcc = Infinity;
                 for (let j = 0; j < activeGamepads.length; j++) {
                   const activeGamepad = activeGamepads[j];
-                  minAcc = Math.min(activeGamepad.position.distanceTo(controllerTracker.position), minAcc);
+                  minAcc = Math.min(activeGamepad.worldPosition.distanceTo(controllerTracker.position), minAcc);
                 }
                 controllerTracker.tick(minAcc);
               } else if (numControllers === 2) {
                 let sumAcc = 0;
                 for (let j = 0; j < activeGamepads.length; j++) {
                   const activeGamepad = activeGamepads[j];
-                  sumAcc += activeGamepad.position.distanceTo(controllerTracker.position);
+                  sumAcc += activeGamepad.worldPosition.distanceTo(controllerTracker.position);
                 }
                 controllerTracker.tick(sumAcc / activeGamepads.length);
               } else {
@@ -180,7 +180,7 @@ class Analytics {
             const cameraTracker = cameraTrackers[i];
             const requiredRotation = new THREE.Quaternion.setFromUnitVectors(
               new THREE.Vector3(0, 0, -1),
-              cameraTracker.position.clone().sub(hmd.position).normalize()
+              cameraTracker.position.clone().sub(hmd.worldPosition).normalize()
             );
             const angle = (2 * Math.acos(hmd.rotation.clone().multiply(requiredRotation.clone().inverse()).x)) % Math.PI;
             cameraTracker.tick(angle);

@@ -1257,7 +1257,7 @@ class Home {
               const {hmd, gamepads} = webvr.getStatus();
 
               const {goalMesh} = walkthroughMeshes;
-              const {position: hmdPosition} = hmd;
+              const {worldPosition: hmdPosition} = hmd;
               [goalMesh].forEach(targetMesh => {
                 const {boxTarget} = targetMesh;
 
@@ -1271,7 +1271,7 @@ class Home {
                 const gamepad = gamepads[side];
 
                 if (gamepad) {
-                  const {position: controllerPosition} = gamepad;
+                  const {worldPosition: controllerPosition} = gamepad;
 
                   [touchMesh1, touchMesh2, legoOuterMesh, legoInnerMesh].forEach(targetMesh => {
                     const {boxTarget} = targetMesh;

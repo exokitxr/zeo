@@ -260,11 +260,11 @@ class Multiplayer {
           let updated = false;
           const _updateHmd = () => {
             const {hmd} = status;
-            const {position, rotation} = hmd;
+            const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmd;
 
-            if (!lastStatus || !lastStatus.hmd.position.equals(position) || !lastStatus.hmd.rotation.equals(rotation)) {
-              localStatus.hmd.position = position.toArray();
-              localStatus.hmd.rotation = rotation.toArray();
+            if (!lastStatus || !lastStatus.hmd.position.equals(hmdPosition) || !lastStatus.hmd.rotation.equals(hmdRotation)) {
+              localStatus.hmd.position = hmdPosition.toArray();
+              localStatus.hmd.rotation = hmdRotation.toArray();
 
               updated = true;
             }
@@ -276,11 +276,11 @@ class Multiplayer {
               const gamepad = gamepads[side];
 
               if (gamepad) {
-                const {position, rotation} = gamepad;
+                const {worldPosition: controllerPosition, worldRotation: controllerRotation} = gamepad;
 
                 const _updateGamepad = () => {
-                  localStatus.controllers[side].position = position.toArray();
-                  localStatus.controllers[side].rotation = rotation.toArray();
+                  localStatus.controllers[side].position = controllerPosition.toArray();
+                  localStatus.controllers[side].rotation = controllerRotation.toArray();
 
                   updated = true;
                 };
@@ -290,7 +290,7 @@ class Multiplayer {
                 } else {
                   const lastGamepadStatus = lastStatus.gamepads[side];
 
-                  if (!lastGamepadStatus || !lastGamepadStatus.position.equals(position) || !lastGamepadStatus.rotation.equals(rotation)) {
+                  if (!lastGamepadStatus || !lastGamepadStatus.position.equals(controllerPosition) || !lastGamepadStatus.rotation.equals(controllerRotation)) {
                     _updateGamepad();
                   }
                 }
