@@ -43,7 +43,7 @@ class Cyborg {
         geometryUtils,
       ]) => {
         if (live) {
-          const {THREE, scene, camera} = three;
+          const {THREE, camera} = three;
           const {models: {hmdModelMesh, controllerModelMesh}} = assets;
           const {events} = jsUtils;
           const {EventEmitter} = events;
@@ -440,7 +440,7 @@ class Cyborg {
 
               mesh.position.copy(gamepadStatus.position);
               mesh.quaternion.copy(gamepadStatus.rotation);
-              // mesh.scale.copy(gamepadStatus.scale);
+              mesh.scale.copy(gamepadStatus.scale);
 
               const {buttons} = gamepadStatus;
               mesh.padMesh.visible = buttons.pad.touched;
@@ -496,8 +496,8 @@ class Cyborg {
             const {hmd: hmdStatus, gamepads: gamepadsStatus} = status;
             camera.position.copy(hmdStatus.position);
             camera.quaternion.copy(hmdStatus.rotation);
-            camera.parent.scale.copy(hmdStatus.scale);
-            camera.updateMatrixWorld();
+            camera.parent.matrix.copy(webvr.getStageMatrix());
+            camera.parent.updateMatrixWorld();
 
             // update hmd
             hmd.update(hmdStatus, gamepadsStatus);
@@ -508,7 +508,7 @@ class Cyborg {
               const gamepadStatus = gamepadsStatus[side];
 
               if (gamepadStatus) {
-                controller.update(gamepadStatus);
+                controller.update(gamepadStatus, hmdStatus);
               }
             });
 

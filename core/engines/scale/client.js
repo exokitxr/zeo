@@ -98,31 +98,27 @@ class Scale {
               const scaleDistance = new THREE.Vector3().fromArray(gamepads.left.pose.position)
                 .distanceTo(new THREE.Vector3().fromArray(gamepads.right.pose.position));
 
-              let {startScaleMid, startScaleDistance, startScale, startStageMatrix} = scaleState;
-              if (!startScaleMid) {
+              let {startScaleMid, startScaleDistance, startStageMatrix} = scaleState;
+              if (startScaleMid === null) {
                 startScaleMid = scaleMid;
                 scaleState.startScaleMid = scaleMid;
               }
-              if (!startScaleDistance) {
+              if (startScaleDistance === null) {
                 startScaleDistance = scaleDistance;
                 scaleState.startScaleDistance = scaleDistance;
               }
-              if (!startStageMatrix) {
-                startStageMatrix = _decomposeMatrix(webvr.getStageMatrix());
-                scaleState.startStageMatrix = startStageMatrix;
-              }
-              if (!startStageMatrix) {
-                startStageMatrix = _decomposeMatrix(webvr.getStageMatrix());
+              if (startStageMatrix === null) {
+                startStageMatrix = webvr.getStageMatrix();
                 scaleState.startStageMatrix = startStageMatrix;
               }
 
               const scaleMidDiff = scaleMid.clone().sub(startScaleMid);
-              const scaleDistanceFactor = scaleDistance / startScaleDistance;
-              const {position, rotation, scale} = startStageMatrix;
-              const newPosition = position.clone().sub(scaleMidDiff.clone().applyQuaternion(rotation));
-              const newRotation = rotation;
-              const newScale = scale.clone().divideScalar(scaleDistanceFactor);
-              const newStageMatrix = new THREE.Matrix4().compose(newPosition, newRotation, newScale);
+              const scaleDistanceRatio = startScaleDistance / scaleDistance;
+              const newStageMatrix = startStageMatrix.clone()
+                .multiply(new THREE.Matrix4().makeTranslation(-scaleMidDiff.x, -scaleMidDiff.y, -scaleMidDiff.z))
+                .multiply(new THREE.Matrix4().makeTranslation(scaleMid.x, scaleMid.y, scaleMid.z))
+                .multiply(new THREE.Matrix4().makeScale(scaleDistanceRatio, scaleDistanceRatio, scaleDistanceRatio))
+                .multiply(new THREE.Matrix4().makeTranslation(-scaleMid.x, -scaleMid.y, -scaleMid.z));
               webvr.setStageMatrix(newStageMatrix);
 
               // webvr.updateStatus();

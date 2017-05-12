@@ -51,6 +51,7 @@ class Three {
           return result;
         })();
         const cameraParent = new THREE.Object3D();
+        cameraParent.matrixAutoUpdate = false;
         cameraParent.add(camera);
         scene.add(cameraParent);
 

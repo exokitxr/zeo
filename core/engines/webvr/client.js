@@ -121,12 +121,11 @@ class WebVR {
           }
         })[0];
 
-        const _getMatrixFromPose = (pose, stageMatrix) => {
+        const _getMatrixFromPose = pose => {
           const position = (pose && pose.position !== null) ? new THREE.Vector3().fromArray(pose.position) : new THREE.Vector3(0, 0, 0);
           const rotation = (pose && pose.orientation !== null) ? new THREE.Quaternion().fromArray(pose.orientation) : new THREE.Quaternion(0, 0, 0, 1);
           const scale = new THREE.Vector3(1, 1, 1);
-          const matrix = stageMatrix.clone().multiply(new THREE.Matrix4().compose(position, rotation, scale));
-          return matrix;
+          return new THREE.Matrix4().compose(position, rotation, scale);
         };
         const _getPropertiesFromMatrix = matrix => {
           const position = new THREE.Vector3();
@@ -186,17 +185,12 @@ class WebVR {
           camera.quaternion.clone(),
           camera.scale.clone()
         );
-        const _makeDefaultGamepadStatus = (stageMatrix, index) => {
+        const _makeDefaultGamepadStatus = index => {
           const pose = {
             position: [CONTROLLER_DEFAULT_OFFSETS[0] * ((index === 0) ? -1 : 1), CONTROLLER_DEFAULT_OFFSETS[1], CONTROLLER_DEFAULT_OFFSETS[2]],
             orientation: [0, 0, 0, 1],
           };
-          const position = new THREE.Vector3();
-          const rotation = new THREE.Quaternion();
-          const scale = new THREE.Vector3();
-          stageMatrix.decompose(position, rotation, scale);
-          const stageMatrix2 = new THREE.Matrix4().compose(position, rotation, new THREE.Vector3(1, 1, 1)); // XXX clean these up
-          const matrix = _getMatrixFromPose(pose, stageMatrix2);
+          const matrix = _getMatrixFromPose(pose);
           const {position: newPosition, rotation: newRotation, scale: newScale} = _getPropertiesFromMatrix(matrix);
 
           const _makeDefaultButtonStatus = () => new GamepadButton(false, false, 0);
@@ -212,7 +206,7 @@ class WebVR {
             pose,
             newPosition,
             newRotation,
-            scale,
+            newScale,
             buttons,
             axes
           );
@@ -236,8 +230,8 @@ class WebVR {
             this.status = {
               hmd: _makeDefaultHmdStatus(),
               gamepads: new GamepadsStatus(
-                _makeDefaultGamepadStatus(stageMatrix, 0),
-                _makeDefaultGamepadStatus(stageMatrix, 1)
+                _makeDefaultGamepadStatus(0),
+                _makeDefaultGamepadStatus(1)
               ),
             };
 
@@ -384,7 +378,15 @@ class WebVR {
                       update(); // update plugins
 
                       if (effect) {
-                        effect.scale = (camera.parent.scale.x + camera.parent.scale.y + camera.parent.scale.z) / 3;
+                        const scale = (() => {
+                          const vector = new THREE.Vector3();
+                          const {elements} = camera.parent.matrix;
+                          const sx = vector.set(elements[0], elements[1], elements[2]).length();
+                          const sy = vector.set(elements[4], elements[5], elements[6]).length();
+                          const sz = vector.set(elements[8], elements[9], elements[10]).length();
+                          return vector.set(sx, sy, sz);
+                        })();
+                        effect.scale = (scale.x + scale.y + scale.z) / 3;
                         effect.render(scene, camera); // perform binocular render
                       } else {
                         // manual events since the effect won't call them
@@ -601,29 +603,24 @@ class WebVR {
           }
 
           updateStatus() {
-            const _getHmdStatus = ({stageMatrix}) => {
+            const _getHmdStatus = () => {
               const {display, _frameData: frameData} = this;
               if (display && frameData) {
                 display.getFrameData(frameData);
               }
               const pose = frameData && frameData.pose;
 
-              const position = new THREE.Vector3();
-              const rotation = new THREE.Quaternion();
-              const scale = new THREE.Vector3();
-              stageMatrix.decompose(position, rotation, scale);
-              const stageMatrix2 = new THREE.Matrix4().compose(position, rotation, new THREE.Vector3(1, 1, 1));
-              const matrix = _getMatrixFromPose(pose, stageMatrix2);
-              const {position: newPosition, rotation: newRotation} = _getPropertiesFromMatrix(matrix);
+              const matrix = _getMatrixFromPose(pose);
+              const {position: newPosition, rotation: newRotation, scale: newScale} = _getPropertiesFromMatrix(matrix);
 
               return new HmdStatus(
                 pose,
                 newPosition,
                 newRotation,
-                scale
+                newScale
               );
             };
-            const _getGamepadsStatus = ({stageMatrix}) => {
+            const _getGamepadsStatus = () => {
               const {display} = this;
               const gamepads = (() => {
                 if (display) {
@@ -671,12 +668,7 @@ class WebVR {
                   }
                 };
 
-                const position = new THREE.Vector3();
-                const rotation = new THREE.Quaternion();
-                const scale = new THREE.Vector3();
-                stageMatrix.decompose(position, rotation, scale);
-                const stageMatrix2 = new THREE.Matrix4().compose(position, rotation, new THREE.Vector3(1, 1, 1));
-                const matrix = _getMatrixFromPose(pose, stageMatrix2);
+                const matrix = _getMatrixFromPose(pose);
                 const {position: newPosition, rotation: newRotation, scale: newScale} = _getPropertiesFromMatrix(matrix);
                 const buttons = new GamepadButtons(
                   _getGamepadButtonStatus(padButton),
@@ -690,7 +682,7 @@ class WebVR {
                   pose,
                   newPosition,
                   newRotation,
-                  scale,
+                  newScale,
                   buttons,
                   axes
                 );
@@ -705,8 +697,8 @@ class WebVR {
             const {status: oldStatus} = this;
             const stageMatrix = this.getStageMatrix();
             const newStatus = {
-              hmd: _getHmdStatus({stageMatrix}),
-              gamepads: _getGamepadsStatus({stageMatrix}),
+              hmd: _getHmdStatus(),
+              gamepads: _getGamepadsStatus(),
             };
             this.setStatus(newStatus);
 
