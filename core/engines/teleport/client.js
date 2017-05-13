@@ -158,7 +158,8 @@ class Teleport {
                   }
                 } else {
                   const destinationPoint = controllerLine.end.clone();
-                  destinationPoint.y = Math.max(destinationPoint.y, hmdPosition.y, 0);
+                  const basePosition = new THREE.Vector3(0, 0, 0).applyMatrix4(webvr.getSittingToStandingTransform());
+                  destinationPoint.y = Math.max(destinationPoint.y, basePosition.y, 0);
                   teleportAirMesh.position.copy(destinationPoint);
                   const controllerEuler = new THREE.Euler().setFromQuaternion(controllerRotation, camera.rotation.order);
                   teleportAirMesh.rotation.y = controllerEuler.y;
@@ -177,7 +178,8 @@ class Teleport {
                 const {teleportFloorPoint, teleportAirPoint} = teleportState;
 
                 if (teleportFloorPoint) {
-                  const destinationPoint = teleportFloorPoint.clone().add(new THREE.Vector3(0, hmdPosition.y, 0));
+                  const basePosition = new THREE.Vector3(0, 0, 0).applyMatrix4(webvr.getSittingToStandingTransform());
+                  const destinationPoint = teleportFloorPoint.clone().add(basePosition);
                   const positionDiff = destinationPoint.clone().sub(hmdPosition);
 
                   const stageMatrix = webvr.getStageMatrix();

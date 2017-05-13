@@ -819,6 +819,16 @@ class WebVR {
             }
           }
 
+          getSittingToStandingTransform() {
+            const {display} = this;
+
+            const result = new THREE.Matrix4();
+            if (display) {
+              result.fromArray(display.stageParameters.sittingToStandingTransform);
+            }
+            return result;
+          }
+
           vibrate(side, value, time) {
             let left = null;
             let right = null;
@@ -871,7 +881,6 @@ class WebVR {
             this.isPresenting = false;
 
             const sittingToStandingTransform = new THREE.Matrix4().makeTranslation(0, DEFAULT_USER_HEIGHT, 0);
-            const standingToSittingTransform = new THREE.Matrix4().getInverse(sittingToStandingTransform);
             this.position = new THREE.Vector3();
             this.rotation = new THREE.Quaternion();
             this.scale = new THREE.Vector3(1, 1, 1);
