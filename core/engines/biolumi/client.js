@@ -654,7 +654,7 @@ class Biolumi {
                 if (enabled && sides.indexOf(side) !== -1 && gamepad) {
                   const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale} = gamepad;
                   const hoverState = hoverStates[side];
-                  const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation, new THREE.Vector3(1, 1, 1)); // XXX geometryUtils.makeControllerLine() doesn't need a scale parameter
+                  const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation, controllerScale);
 
                   const intersectionSpec = (() => {
                     let closestIntersectionSpec = null;
