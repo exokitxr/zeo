@@ -51,7 +51,10 @@ class Teleport {
           transparent: true,
         });
 
-        const floorPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, 0));
+        const floorPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(
+          new THREE.Vector3(0, 1, 0),
+          new THREE.Vector3(0, 0, 0)
+        );
 
         const _makeTeleportFloorMesh = () => {
           const geometry = new THREE.TorusBufferGeometry(0.5, 0.15, 3, 5);
@@ -97,8 +100,6 @@ class Teleport {
           right: _makeTeleportState(),
         };
 
-        let airHeight = 0;
-
         const _paddown = e => {
           const {side} = e;
 
@@ -117,7 +118,6 @@ class Teleport {
         const _update = () => {
           const {hmd, gamepads} = webvr.getStatus();
           const {worldPosition: hmdPosition, worldRotation: hmdRotation, worldScale: hmdScale} = hmd;
-          const hmdAbsPosition = hmdPosition.clone().multiply(hmdScale);
 
           SIDES.forEach(side => {
             const gamepad = gamepads[side];
@@ -158,7 +158,7 @@ class Teleport {
                   }
                 } else {
                   const destinationPoint = controllerLine.end.clone();
-                  destinationPoint.y = Math.max(destinationPoint.y, hmdAbsPosition.y - airHeight, 0);
+                  destinationPoint.y = Math.max(destinationPoint.y, hmdPosition.y, 0);
                   teleportAirMesh.position.copy(destinationPoint);
                   const controllerEuler = new THREE.Euler().setFromQuaternion(controllerRotation, camera.rotation.order);
                   teleportAirMesh.rotation.y = controllerEuler.y;
@@ -177,17 +177,13 @@ class Teleport {
                 const {teleportFloorPoint, teleportAirPoint} = teleportState;
 
                 if (teleportFloorPoint) {
-                  const destinationPoint = teleportFloorPoint.clone().add(new THREE.Vector3(0, hmdAbsPosition.y - airHeight, 0));
-                  const positionAbsDiff = destinationPoint.clone().sub(hmdAbsPosition);
-                  const positionDiff = positionAbsDiff.clone().divide(hmdScale);
-
-                  airHeight = 0;
+                  const destinationPoint = teleportFloorPoint.clone().add(new THREE.Vector3(0, hmdPosition.y, 0));
+                  const positionDiff = destinationPoint.clone().sub(hmdPosition);
 
                   const stageMatrix = webvr.getStageMatrix();
-                  const {position, quaternion, scale} = _decomposeMatrix(stageMatrix);
-                  position.add(positionDiff);
-                  stageMatrix.compose(position, quaternion, scale);
-                  webvr.setStageMatrix(stageMatrix);
+                  const newStageMatrix = stageMatrix.clone()
+                    .multiply(new THREE.Matrix4().makeTranslation(positionDiff.x, positionDiff.y, positionDiff.z));
+                  webvr.setStageMatrix(newStageMatrix);
 
                   webvr.updateStatus();
                   webvr.updateUserStageMatrix();
@@ -196,16 +192,12 @@ class Teleport {
                   teleportState.teleportFloorPoint = null;
                 } else if (teleportAirPoint) {
                   const destinationPoint = teleportAirPoint.clone();
-                  const positionAbsDiff = destinationPoint.clone().sub(hmdAbsPosition);
-                  const positionDiff = positionAbsDiff.clone().divide(hmdScale);
-
-                  airHeight += destinationPoint.y - hmdAbsPosition.y;
+                  const positionDiff = destinationPoint.clone().sub(hmdPosition);
 
                   const stageMatrix = webvr.getStageMatrix();
-                  const {position, quaternion, scale} = _decomposeMatrix(stageMatrix);
-                  position.add(positionDiff);
-                  stageMatrix.compose(position, quaternion, scale);
-                  webvr.setStageMatrix(stageMatrix);
+                  const newStageMatrix = stageMatrix.clone()
+                    .multiply(new THREE.Matrix4().makeTranslation(positionDiff.x, positionDiff.y, positionDiff.z));
+                  webvr.setStageMatrix(newStageMatrix);
 
                   webvr.updateStatus();
                   webvr.updateUserStageMatrix();
