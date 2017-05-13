@@ -146,6 +146,9 @@
   "/plugins/z-bag": [
     "0.0.1"
   ],
+  "/plugins/z-bow": [
+    "0.0.1"
+  ],
   "/plugins/z-build": [
     "0.0.1"
   ],
