@@ -654,7 +654,7 @@ class Biolumi {
                 if (enabled && sides.indexOf(side) !== -1 && gamepad) {
                   const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale} = gamepad;
                   const hoverState = hoverStates[side];
-                  const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation, controllerScale);
+                  const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation, new THREE.Vector3(1, 1, 1)); // XXX geometryUtils.makeControllerLine() doesn't need a scale parameter
 
                   const intersectionSpec = (() => {
                     let closestIntersectionSpec = null;
@@ -840,7 +840,8 @@ class Biolumi {
                         dotMesh.visible = true;
                       }
 
-                      rayMesh.scale.z = intersectionPoint.distanceTo(controllerLine.start);
+                      const controllerScaleFactor = (controllerScale.x + controllerScale.y + controllerScale.z) / 3;
+                      rayMesh.scale.z = intersectionPoint.distanceTo(controllerLine.start) / controllerScaleFactor;
                       if (!rayMesh.visible) {
                         rayMesh.visible = true;
                       }
