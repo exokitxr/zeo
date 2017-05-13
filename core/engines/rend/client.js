@@ -82,8 +82,6 @@ class Rend {
         };
         const hubSpec = _parseUrlSpec(hubUrl);
 
-        const oneVector = new THREE.Vector3(1, 1, 1);
-
         const menuRenderer = menuRender.makeRenderer({
           creatureUtils,
         });
