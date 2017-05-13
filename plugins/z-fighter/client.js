@@ -735,7 +735,7 @@ class ZFighter {
                 const _updateDroneMove = () => {
                   if (now >= droneState.endTime) {
                     const {hmd: hmdStatus} = pose.getStatus();
-                    const {position: hmdPosition} = hmdStatus;
+                    const {worldPosition: hmdPosition} = hmdStatus;
 
                     const _getNearbyDirection = oldDirection => {
                       for (;;) {
@@ -770,7 +770,7 @@ class ZFighter {
                 };
                 const _updateDroneLook = () => {
                   const {hmd: hmdStatus} = pose.getStatus();
-                  const {position: hmdPosition} = hmdStatus;
+                  const {worldPosition: hmdPosition} = hmdStatus;
 
                   droneMesh.lookAt(hmdPosition);
                 };

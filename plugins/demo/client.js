@@ -59,10 +59,8 @@ module.exports = archae => ({ // `archae` is the Zeo plugin loader
             const gamepad = gamepads[side];
 
             if (gamepad) {
-              const {position: controllerPosition, scale: controllerScale} = gamepad;
-              const absPosition = controllerPosition.clone().multiply(controllerScale);
-
-              return new THREE.Line3(absPosition.clone(), sphere.position.clone());
+              const {worldPosition: controllerPosition} = gamepad;
+              return new THREE.Line3(controllerPosition.clone(), sphere.position.clone());
             } else {
               return null;
             }

@@ -167,14 +167,13 @@ class ZGrabbable {
           const gamepad = gamepads[side];
 
           if (gamepad) {
-            const {position: controllerPosition, scale: controllerScale} = gamepad;
-            const absPosition = controllerPosition.clone().multiply(controllerScale);
+            const {worldPosition: controllerPosition} = gamepad;
             const {object, size} = this;
             const {position: objectPosition} = _decomposeObjectMatrixWorld(object);
             const radius = Math.max.apply(Math, size) / 2;
             const sphere = new THREE.Sphere(objectPosition, radius);
 
-            if (sphere.containsPoint(absPosition)) {
+            if (sphere.containsPoint(worldPosition)) {
               const grabEvent = new CustomEvent('grab', {
                 detail: {
                   side,
@@ -295,9 +294,7 @@ class ZGrabbable {
         const gamepad = gamepads[side];
 
         if (gamepad) {
-          const {position: controllerPosition, scale: controllerScale} = gamepad;
-          const absPosition = controllerPosition.clone().multiply(controllerScale);
-
+          const {worldPosition: controllerPosition} = gamepad;
           const otherSide = side === 'left' ? 'right' : 'left';
           const otherGlobalGrabState = globalGrabStates[otherSide];
           const {grabbable: otherGlobalGrabbable} = otherGlobalGrabState;
@@ -309,8 +306,8 @@ class ZGrabbable {
               const radius = Math.max.apply(Math, size) / 2;
               const sphere = new THREE.Sphere(objectPosition, radius);
 
-              if (sphere.containsPoint(absPosition)) {
-                const distance = absPosition.distanceTo(objectPosition);
+              if (sphere.containsPoint(controllerPosition)) {
+                const distance = controllerPosition.distanceTo(objectPosition);
 
                 return {
                   grabbable,
@@ -331,7 +328,7 @@ class ZGrabbable {
 
                   if (otherGamepad) {
                     const {position: otherControllerPosition} = otherGamepad;
-                    const distance = absPosition.distanceTo(otherControllerPosition);
+                    const distance = controllerPosition.distanceTo(otherControllerPosition);
 
                     if (distance < 0.2) {
                       return {

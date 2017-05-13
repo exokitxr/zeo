@@ -744,7 +744,7 @@ class ZDraw {
                         const gamepad = gamepads[side];
 
                         if (gamepad) {
-                          const {position: controllerPosition, rotation: controllerRotation, scale: controllerScale} = gamepad;
+                          const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale} = gamepad;
                           const pencilLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation, controllerScale);
                           const planePoint = planeTarget.intersectLine(pencilLine);
 

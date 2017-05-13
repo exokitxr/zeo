@@ -168,10 +168,8 @@ class Agent {
                   const gamepadStatus = gamepadsStatus[side];
 
                   if (gamepadStatus) {
-                    const {position: controllerPosition, scale: controllerScale} = gamepadStatus;
-                    const absPosition = controllerPosition.clone().multiply(controllerScale);
-
-                    return absPosition.distanceTo(mesh.position) <= 0.1;
+                    const {worldPosition: controllerPosition} = gamepadStatus;
+                    return controllerPosition.distanceTo(mesh.position) <= 0.1;
                   } else {
                     return false;
                   }

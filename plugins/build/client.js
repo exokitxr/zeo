@@ -74,10 +74,10 @@ class Build {
 
           const _getPointIndex = point => (point.x * chunkSize * chunkSize) + (point.y * chunkSize) + point.z;
           const _getCurrentPoint = side => {
-            const {gamepads} = pose.getStatus();
-            const gamepadStatus = gamepads[side];
+            const {gamepads: gamepadsStatus} = pose.getStatus();
+            const gamepadStatus = gamepadsStatus[side];
             if (gamepadStatus) {
-              const {position: controllerPosition} = gamepadStatus;
+              const {worldPosition: controllerPosition} = gamepadStatus;
               return controllerPosition.clone();
             } else {
               return null;

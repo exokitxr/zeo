@@ -40,11 +40,9 @@ class Highlight {
       const gamepad = gamepads[side];
 
       if (gamepad) {
-        const {position: controllerPosition, scale: controllerScale} = gamepad;
-        const absPosition = controllerPosition.clone().multiply(controllerScale);
-
+        const {worldPosition: controllerPosition} = gamepad;
         const highlightState = highlightStates[side];
-        highlightState.startPoint = absPosition.clone();
+        highlightState.startPoint = controllerPosition.clone();
       }
     };
     input.on('gripdown', _gripdown, {
@@ -75,7 +73,7 @@ class Highlight {
 
           const highlightBoxMesh = highlightBoxMeshes[side];
           if (startPoint) {
-            const {position: currentPoint} = gamepad;
+            const {worldPosition: currentPoint} = gamepad;
 
             const size = currentPoint.clone()
               .sub(startPoint);

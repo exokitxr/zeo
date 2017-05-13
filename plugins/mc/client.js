@@ -373,9 +373,8 @@ class Mc {
                 const gamepad = gamepads[side];
 
                 if (gamepad) {
-                  const {position: controllerPosition, scale: controllerScale} = gamepad;
-                  const absPosition = controllerPosition.clone().multiply(controllerScale);
-                  const itemMeshIndex = _getClosestItemMeshIndex(absPosition);
+                  const {worldPosition: controllerPosition} = gamepad;
+                  const itemMeshIndex = _getClosestItemMeshIndex(controllerPosition);
                   const itemMesh = itemMeshes[itemMeshIndex];
 
                   if (hands.canGrab(side, itemMesh, {radius: ITEM_SIZE * ITEM_PIXEL_SIZE})) {

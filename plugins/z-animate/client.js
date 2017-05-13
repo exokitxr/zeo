@@ -709,9 +709,8 @@ class ZAnimate {
                     const controllerMesh = controllerMeshes[index];
 
                     const gamepad = gamepads[side];
-                    const {position: controllerPosition, rotation: controllerRotation, scale: controllerScale} = gamepad;
-                    const absPosition = controllerPosition.clone().multiply(controllerScale);
-                    const toolTipPosition = absPosition.clone()
+                    const {worldPosition: controllerPosition, worldRotation: controllerRotation} = gamepad;
+                    const toolTipPosition = controllerPosition.clone()
                       .add(new THREE.Vector3(0, 0, -0.05 - (0.02 / 2)).applyQuaternion(controllerRotation));
                     const toolTipRotation = controllerRotation;
 
@@ -727,7 +726,7 @@ class ZAnimate {
                 });
 
                 if (mode === 'hmd') {
-                  const {position: hmdPosition, rotation: hmdRotation} = hmd;
+                  const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmd;
                   _draw({
                     position: hmdPosition,
                     rotation: hmdRotation,

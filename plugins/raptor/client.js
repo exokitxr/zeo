@@ -509,7 +509,7 @@ class Raptor {
                         const gamepad = gamepads[side];
 
                         if (gamepad) {
-                          const {position: controllerPosition, rotation: controllerRotation, scale: controllerScale} = gamepad;
+                          const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale} = gamepad;
                           const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation, controllerScale);
 
                           const intersectionPoint = boxTarget.intersectLine(controllerLine);

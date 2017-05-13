@@ -78,12 +78,15 @@ class ZBackpack {
 
     const _update = e => {
       const _updateHoverStates = () => {
-        const {gamepads} = pose.getStatus();
+        const {hmd, gamepads} = pose.getStatus();
+        const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmd;
 
         const behindCameraBoxTarget = geometryUtils.makeBoxTarget(
-          camera.position.clone()
-            .add(new THREE.Vector3(0, (-0.5 / 2) + 0.15, (0.5 / 2) + 0.15).applyQuaternion(camera.quaternion)),
-          camera.quaternion,
+          hmdPosition.clone().add(
+            new THREE.Vector3(0, (-0.5 / 2) + 0.15, (0.5 / 2) + 0.15)
+              .applyQuaternion(hmdRotation)
+          ),
+          hmdRotation,
           oneVector,
           backVector,
           false
@@ -109,11 +112,10 @@ class ZBackpack {
               return closestItemBoxMeshIndex;
             };
 
-            const {position: controllerPosition, scale: controllerScale} = gamepad;
-            const absPosition = controllerPosition.clone().multiply(controllerScale);
-            const hovered = _isBehindCamera(absPosition);
+            const {worldPosition: controllerPosition} = gamepad;
+            const hovered = _isBehindCamera(controllerPosition);
             hoverState.hovered = hovered;
-            const targetItemIndex = hovered ? _getClosestItemMeshIndex(absPosition) : -1;
+            const targetItemIndex = hovered ? _getClosestItemMeshIndex(controllerPosition) : -1;
             hoverState.targetItemIndex = targetItemIndex;
           }
         });
@@ -122,11 +124,11 @@ class ZBackpack {
         const hovered = SIDES.some(side => hoverStates[side].hovered);
 
         if (hovered) {
-          const {hmd} = pose.getStatus();
-          const {position, rotation} = hmd;
+          const {hmd: hmdStatus} = pose.getStatus();
+          const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmdStatus;
 
-          backpackMesh.position.copy(position.clone().add(new THREE.Vector3(0, 0, -0.5).applyQuaternion(rotation)));
-          backpackMesh.quaternion.copy(rotation);
+          backpackMesh.position.copy(hmdPosition.clone().add(new THREE.Vector3(0, 0, -0.5).applyQuaternion(hmdRotation)));
+          backpackMesh.quaternion.copy(hmdRotation);
 
           const {itemBoxMeshes} = backpackMesh;
           for (let i = 0; i < NUM_ITEMS; i++) {

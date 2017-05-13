@@ -500,9 +500,8 @@ class ZPaint {
                         const uvs = uvsAttribute.array;
 
                         const gamepad = gamepads[side];
-                        const {position: controllerPosition, rotation: controllerRotation, scale: controllerScale} = gamepad;
-                        const absPosition = controllerPosition.clone().multiply(controllerScale);
-                        const paintbrushTipPosition = absPosition.clone()
+                        const {worldPosition: controllerPosition, worldRotation: controllerRotation} = gamepad;
+                        const paintbrushTipPosition = controllerPosition.clone()
                           .add(new THREE.Vector3(0, 0, -(0.05 / 2) - (0.03 / 2) - (0.1 / 2)).applyQuaternion(controllerRotation));
 
                         const brushSize = 0.1;

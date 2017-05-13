@@ -110,11 +110,12 @@ class ZBag {
 
     const _update = () => {
       const _updateBagMesh = () => {
-        const {hmd} = pose.getStatus();
+        const {hmd: hmdStatus} = pose.getStatus();
+        const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmdStatus;
 
-        bagMesh.position.copy(hmd.position);
-        const hmdRotation = new THREE.Euler().setFromQuaternion(hmd.rotation, camera.rotation.order);
-        bagMesh.rotation.y = hmdRotation.y;
+        bagMesh.position.copy(hmdPosition);
+        const hmdEuler = new THREE.Euler().setFromQuaternion(hmdRotation, camera.rotation.order);
+        bagMesh.rotation.y = hmdEuler.y;
       };
       const _updateEquipmentBoxMeshes = () => {
         const {gamepads} = pose.getStatus();
@@ -124,7 +125,7 @@ class ZBag {
           const gamepad = gamepads[side];
 
           if (gamepad) {
-            const {position: controllerPosition} = gamepad;
+            const {worldPosition: controllerPosition} = gamepad;
             const equipmentHoverState = equipmentHoverStates[side];
 
             const equipmentBoxMeshSpecs = equipmentBoxMeshes.map((equipmentBoxMesh, i) => {

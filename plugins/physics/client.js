@@ -190,9 +190,8 @@ class Physics {
           const gamepad = gamepads[side];
 
           if (gamepad) {
-            const {position: controllerPosition, scale: controllerScale} = gamepad;
-            const absPosition = controllerPosition.clone().multiply(controllerScale);
-            const boxMeshIndex = _getClosestBoxMeshIndex(absPosition);
+            const {worldPosition: controllerPosition} = gamepad;
+            const boxMeshIndex = _getClosestBoxMeshIndex(controllerPosition);
             const boxMesh = boxMeshes[boxMeshIndex];
 
             if (hands.canGrab(side, boxMesh, {radius: 0.1})) {
