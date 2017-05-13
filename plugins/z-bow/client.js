@@ -29,6 +29,10 @@ class ZBow {
       color: 0x808080,
       shading: THREE.FlatShading,
     });
+    const stringMaterial = new THREE.LineBasicMaterial({
+      color: 0x000000,
+      // transparent: true,
+    });
     const arrowMaterial = new THREE.MeshPhongMaterial({
       color: 0xCCCCCC,
       shading: THREE.FlatShading,
@@ -73,6 +77,22 @@ class ZBow {
             return mesh;
           })();
           mesh.add(coreMesh);
+
+          const stringMesh = (() => {
+            const geometry = new THREE.Geometry();
+            geometry.vertices.push(
+              new THREE.Vector3(0, 0.7, 0.3),
+              new THREE.Vector3(0, 0, 0.3),
+              new THREE.Vector3(0, 0, 0.3),
+              new THREE.Vector3(0, -0.7, 0.3),
+            );
+            const material = stringMaterial;
+
+            const mesh = new THREE.LineSegments(geometry, material);
+            mesh.frustumCulled = false;
+            return mesh;
+          })();
+          mesh.add(stringMesh);
 
           return mesh;
         })();
