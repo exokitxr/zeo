@@ -108,14 +108,16 @@ class Assets {
               mesh.rotation.order = camera.rotation.order;
 
               mesh.update = ({hmdStatus, username}) => {
-                const labelPosition = new THREE.Vector3().fromArray(hmdStatus.position).add(new THREE.Vector3(0, WORLD_LABEL_HEIGHT, 0));
+                const {position: hmdPosition, rotation: hmdRotation, scale: hmdScale} = hmdStatus;
+                const labelPosition = new THREE.Vector3().fromArray(hmdPosition).add(new THREE.Vector3(0, WORLD_LABEL_HEIGHT, 0));
                 mesh.position.copy(labelPosition);
-                const labelRotation = new THREE.Euler().setFromQuaternion(new THREE.Quaternion().fromArray(hmdStatus.rotation), camera.rotation.order);
-                labelRotation.x = 0;
-                labelRotation.z = 0;
-                const labelQuaternion = new THREE.Quaternion().setFromEuler(labelRotation);
-                mesh.quaternion.copy(labelQuaternion);
-                // mesh.scale.copy(labelScale);
+                const labelEuler = new THREE.Euler().setFromQuaternion(new THREE.Quaternion().fromArray(hmdRotation), camera.rotation.order);
+                labelEuler.x = 0;
+                labelEuler.z = 0;
+                const labelRotation = new THREE.Quaternion().setFromEuler(labelEuler);
+                mesh.quaternion.copy(labelRotation);
+                const labelScale = hmdScale;
+                mesh.scale.copy(labelScale);
 
                 if (username !== labelState.username) {
                   labelState.username = username;
@@ -162,11 +164,11 @@ class Assets {
                 const {open} = menuStatus;
 
                 if (open) {
-                  const {position, rotation} = menuStatus;
+                  const {position, rotation, scale} = menuStatus;
 
                   mesh.position.fromArray(position);
                   mesh.quaternion.fromArray(rotation);
-                  // mesh.scale.fromArray(scale);
+                  mesh.scale.fromArray(scale);
 
                   if (username !== menuState.username) {
                     menuState.username = username;

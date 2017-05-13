@@ -258,7 +258,7 @@ class Cyborg {
 
                 mesh.position.copy(hmdStatus.position);
                 mesh.quaternion.copy(hmdStatus.rotation);
-                // mesh.scale.copy(hmdStatus.scale);
+                mesh.scale.copy(hmdStatus.scale);
                 mesh.updateMatrixWorld();
 
                 const {labelMesh} = this;
@@ -270,7 +270,7 @@ class Cyborg {
                       euler.y += Math.PI;
                       return new THREE.Quaternion().setFromEuler(euler).toArray();
                     })(),
-                    // scale: hmdStatus.scale.toArray(),
+                    scale: hmdStatus.scale.toArray(),
                   },
                   username: rend.getStatus('username'),
                 });

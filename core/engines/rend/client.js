@@ -114,6 +114,7 @@ class Rend {
           open: true,
           position: [0, DEFAULT_USER_HEIGHT, -1.5],
           rotation: new THREE.Quaternion().toArray(),
+          scale: new THREE.Vector3(1, 1, 1).toArray(),
           animation: null,
         };
         const statusState = {
@@ -134,6 +135,7 @@ class Rend {
           const object = new THREE.Object3D();
           object.position.fromArray(menuState.position);
           object.quaternion.fromArray(menuState.rotation);
+          object.scale.fromArray(menuState.scale);
           object.visible = menuState.open;
 
           const statusMesh = (() => {
@@ -235,12 +237,12 @@ class Rend {
         })();
         scene.add(menuMesh);
 
-        const vrModeChange = vrMode => {
+        /* const vrModeChange = vrMode => {
           if (vrMode === null) {
             rendApi.update();
           }
         };
-        bootstrap.on('vrModeChange', vrModeChange);
+        bootstrap.on('vrModeChange', vrModeChange); */
 
         const trigger = e => {
           const {side} = e;
@@ -312,6 +314,7 @@ class Rend {
             menuState.open = false; // XXX need to cancel other menu states as well
             menuState.position = null;
             menuState.rotation = null;
+            menuState.scale = null;
             menuState.animation = anima.makeAnimation(TRANSITION_TIME);
 
             const {tagsLinesMesh} = auxObjects;
@@ -323,19 +326,22 @@ class Rend {
             const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmdStatus;
 
             const newMenuRotation = (() => {
-              const euler = new THREE.Euler().setFromQuaternion(hmdRotation, camera.rotation.order);
-              euler.x = 0;
-              euler.z = 0;
-              return new THREE.Quaternion().setFromEuler(euler);
+              const hmdEuler = new THREE.Euler().setFromQuaternion(hmdRotation, camera.rotation.order);
+              hmdEuler.x = 0;
+              hmdEuler.z = 0;
+              return new THREE.Quaternion().setFromEuler(hmdEuler);
             })();
             const newMenuPosition = hmdPosition.clone()
               .add(new THREE.Vector3(0, 0, -1.5).applyQuaternion(newMenuRotation));
+            const newMenuScale = new THREE.Vector3(1, 1, 1);
             menuMesh.position.copy(newMenuPosition);
             menuMesh.quaternion.copy(newMenuRotation);
+            menuMesh.scale.copy(newMenuScale);
 
             menuState.open = true;
             menuState.position = newMenuPosition.toArray();
             menuState.rotation = newMenuRotation.toArray();
+            menuState.scale = newMenuScale.toArray();
             menuState.animation = anima.makeAnimation(TRANSITION_TIME);
 
             const {tagsLinesMesh} = auxObjects;
@@ -344,6 +350,7 @@ class Rend {
             rendApi.emit('open', {
               position: newMenuPosition,
               rotation: newMenuRotation,
+              scale: newMenuScale,
             });
           }
         };
@@ -441,7 +448,7 @@ class Rend {
             scene.remove(boxMeshes[side]);
           });
 
-          bootstrap.removeListener('vrModeChange', vrModeChange);
+          // bootstrap.removeListener('vrModeChange', vrModeChange);
           input.removeListener('trigger', trigger);
           input.removeListener('click', click);
           input.removeListener('menudown', menudown);
@@ -515,12 +522,13 @@ class Rend {
           }
 
           getMenuState() {
-            const {open, position, rotation} = menuState;
+            const {open, position, rotation, scale} = menuState;
 
             return {
               open,
               position,
-              rotation
+              rotation,
+              scale,
             };
           }
 

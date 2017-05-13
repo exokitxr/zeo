@@ -48,6 +48,7 @@ class Multiplayer {
 
         const zeroVector = new THREE.Vector3();
         const zeroQuaternion = new THREE.Quaternion();
+        const oneVector = new THREE.Vector3(1, 1, 1);
 
         class MutiplayerInterface extends EventEmitter {
           constructor(id) {
@@ -146,6 +147,7 @@ class Multiplayer {
 
               hmd.position.fromArray(hmdStatus.position);
               hmd.quaternion.fromArray(hmdStatus.rotation);
+              hmd.scale.fromArray(hmdStatus.scale);
             };
             const _updateControllers = () => {
               const {left: leftController, right: rightController} = controllers;
@@ -155,9 +157,11 @@ class Multiplayer {
 
               leftController.position.fromArray(leftControllerStatus.position);
               leftController.quaternion.fromArray(leftControllerStatus.rotation);
+              leftController.scale.fromArray(leftControllerStatus.scale);
 
               rightController.position.fromArray(rightControllerStatus.position);
               rightController.quaternion.fromArray(rightControllerStatus.rotation);
+              rightController.scale.fromArray(rightControllerStatus.scale);
             };
             const _updateLabel = () => {
               const {hmd: hmdStatus, username} = status;
@@ -231,15 +235,18 @@ class Multiplayer {
           hmd: {
             position: zeroVector.toArray(),
             rotation: zeroQuaternion.toArray(),
+            scale: oneVector.toArray(),
           },
           controllers: {
             left: {
               position: zeroVector.toArray(),
               rotation: zeroQuaternion.toArray(),
+              scale: oneVector.toArray(),
             },
             right: {
               position: zeroVector.toArray(),
               rotation: zeroQuaternion.toArray(),
+              scale: oneVector.toArray(),
             },
           },
           metadata: {
@@ -247,6 +254,7 @@ class Multiplayer {
               open: false,
               position: null,
               rotation: null,
+              scale: null,
             },
           },
         };
@@ -260,11 +268,12 @@ class Multiplayer {
           let updated = false;
           const _updateHmd = () => {
             const {hmd} = status;
-            const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmd;
+            const {worldPosition: hmdPosition, worldRotation: hmdRotation, worldScale: hmdScale} = hmd;
 
             if (!lastStatus || !lastStatus.hmd.position.equals(hmdPosition) || !lastStatus.hmd.rotation.equals(hmdRotation)) {
               localStatus.hmd.position = hmdPosition.toArray();
               localStatus.hmd.rotation = hmdRotation.toArray();
+              localStatus.hmd.scale = hmdScale.toArray();
 
               updated = true;
             }
@@ -276,11 +285,12 @@ class Multiplayer {
               const gamepad = gamepads[side];
 
               if (gamepad) {
-                const {worldPosition: controllerPosition, worldRotation: controllerRotation} = gamepad;
+                const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale} = gamepad;
 
                 const _updateGamepad = () => {
                   localStatus.controllers[side].position = controllerPosition.toArray();
                   localStatus.controllers[side].rotation = controllerRotation.toArray();
+                  localStatus.controllers[side].scale = controllerScale.toArray();
 
                   updated = true;
                 };
@@ -290,7 +300,12 @@ class Multiplayer {
                 } else {
                   const lastGamepadStatus = lastStatus.gamepads[side];
 
-                  if (!lastGamepadStatus || !lastGamepadStatus.position.equals(controllerPosition) || !lastGamepadStatus.rotation.equals(controllerRotation)) {
+                  if (
+                    !lastGamepadStatus ||
+                    !lastGamepadStatus.position.equals(controllerPosition) ||
+                    !lastGamepadStatus.rotation.equals(controllerRotation) ||
+                    !lastGamepadStatus.scale.equals(controllerScale)
+                  ) {
                     _updateGamepad();
                   }
                 }
@@ -307,7 +322,12 @@ class Multiplayer {
             if (!lastMenuState) {
               _updateMetadata();
             } else {
-              if (menuState.open !== lastMenuState.open || !_arrayEquals(menuState.position, lastMenuState.position) || !_arrayEquals(menuState.rotation, lastMenuState.rotation)) {
+              if (
+                menuState.open !== lastMenuState.open ||
+                !_arrayEquals(menuState.position, lastMenuState.position) ||
+                !_arrayEquals(menuState.rotation, lastMenuState.rotation) ||
+                !_arrayEquals(menuState.scale, lastMenuState.scale)
+              ) {
                 _updateMetadata();
               }
             }
