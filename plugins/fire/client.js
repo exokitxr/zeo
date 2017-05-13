@@ -13,10 +13,20 @@ class Fire {
       const audio = document.createElement('audio');
       audio.src = src;
       audio.loop = true;
+
+      const _cleanup = () => {
+        audio.oncanplaythrough = null;
+        audio.onerror = null;
+      };
+
       audio.oncanplaythrough = () => {
+        _cleanup();
+
         accept(audio);
       };
       audio.onerror = err => {
+        _cleanup();
+
         reject(err);
       };
     });
