@@ -1141,6 +1141,51 @@ class Tags {
           const _requestFileItemModelMesh = item => fs.makeFile('fs/' + item.id + item.name)
             .read({type: 'model'});
 
+          const _menudown = e => {
+            const {side} = e;
+            const {gamepads} = webvr.getStatus();
+            const gamepad = gamepads[side];
+
+            if (gamepad) {
+              const {buttons: {grip: {pressed: gripPressed}}} = gamepad;
+
+              if (gripPressed) {
+                const {hmd: hmdStatus} = webvr.getStatus();
+                const {worldPosition: hmdPosition, worldRotation: hmdRotation, worldScale: hmdScale} = hmdStatus;
+                const size = Math.ceil(Math.sqrt(tagMeshes.length));
+                const width = WORLD_WIDTH;
+                const height = WORLD_HEIGHT;
+                const padding = width * 0.2;
+                const fullWidth = (width * size) + (padding * (size - 1));
+                const fullHeight = (height * size) + (padding * (size - 1));
+
+                for (let i = 0; i < tagMeshes.length; i++) {
+                  const tagMesh = tagMeshes[i];
+                  const col = i % size;
+                  const row = Math.floor(i / size);
+                  tagMesh.position.copy(
+                    hmdPosition.clone()
+                      .add(
+                        new THREE.Vector3(
+                          -(fullWidth / 2) + (width / 2) + (col * (width + padding)),
+                          (fullHeight / 2) - (height / 2) - (row * (height + padding)),
+                          -1.5
+                        ).applyQuaternion(hmdRotation)
+                      )
+                  );
+                  tagMesh.quaternion.copy(hmdRotation);
+                  tagMesh.scale.copy(hmdScale);
+                }
+
+                linesMesh.render();
+
+                e.stopImmediatePropagation();
+              }
+            }
+          };
+          input.on('menudown', _menudown, {
+            priority: 1,
+          });
           const _trigger = e => {
             const {side} = e;
 
@@ -2084,116 +2129,112 @@ class Tags {
           rend.on('grab', _grab);
 
           const _update = () => {
-            const _updateControllers = () => {
-              const _updateElementGrabbables = () => {
-                if (rend.isOpen() || homeEnabled) {
-                  const {gamepads} = webvr.getStatus();
+            const _updateElementGrabbables = () => {
+              if (rend.isOpen() || homeEnabled) {
+                const {gamepads} = webvr.getStatus();
 
-                  SIDES.forEach(side => {
-                    const grabHoverState = grabHoverStates[side];
-                    const gamepad = gamepads[side];
-                    const grabBoxMesh = grabBoxMeshes[side];
+                SIDES.forEach(side => {
+                  const grabHoverState = grabHoverStates[side];
+                  const gamepad = gamepads[side];
+                  const grabBoxMesh = grabBoxMeshes[side];
 
-                    const hoverMesh = (() => {
-                      if (gamepad) {
-                        const {worldPosition: controllerPosition, worldScale: controllerScale} = gamepad;
-                        const absPosition = controllerPosition.clone().multiply(controllerScale);
+                  const hoverMesh = (() => {
+                    if (gamepad) {
+                      const {worldPosition: controllerPosition, worldScale: controllerScale} = gamepad;
+                      const absPosition = controllerPosition.clone().multiply(controllerScale);
 
-                        let closestTagMesh = null;
-                        let closestTagMeshDistance = Infinity;
-                        for (let i = 0; i < tagMeshes.length; i++) {
-                          const tagMesh = tagMeshes[i];
-                          const distance = absPosition.distanceTo(tagMesh.getWorldPosition());
+                      let closestTagMesh = null;
+                      let closestTagMeshDistance = Infinity;
+                      for (let i = 0; i < tagMeshes.length; i++) {
+                        const tagMesh = tagMeshes[i];
+                        const distance = absPosition.distanceTo(tagMesh.getWorldPosition());
 
-                          if (distance <= 0.2) {
-                            if (distance < closestTagMeshDistance) {
-                              closestTagMesh = tagMesh;
-                              closestTagMeshDistance = distance;
-                            }
+                        if (distance <= 0.2) {
+                          if (distance < closestTagMeshDistance) {
+                            closestTagMesh = tagMesh;
+                            closestTagMeshDistance = distance;
                           }
                         }
-                        return closestTagMesh;
-                      } else {
-                        return null;
                       }
-                    })();
-                    grabHoverState.tagMesh = hoverMesh;
-
-                    if (hoverMesh) {
-                      const {planeMesh} = hoverMesh;
-                      const {position: tagMeshPosition, rotation: tagMeshRotation, scale: tagMeshScale} = _decomposeObjectMatrixWorld(planeMesh);
-                      grabBoxMesh.position.copy(tagMeshPosition);
-                      grabBoxMesh.quaternion.copy(tagMeshRotation);
-                      grabBoxMesh.scale.copy(tagMeshScale);
-
-                      if (!grabBoxMesh.visible) {
-                        grabBoxMesh.visible = true;
-                      }
+                      return closestTagMesh;
                     } else {
-                      if (grabBoxMesh.visible) {
-                        grabBoxMesh.visible = false;
-                      }
+                      return null;
                     }
-                  });
-                }
-              };
-              const _updateDragStates = () => {
-                if (rend.isOpen() || homeEnabled) {
-                  SIDES.forEach(side => {
-                    const dragState = dragStates[side];
-                    const {src} = dragState;
-                    const {gamepads} = webvr.getStatus();
-                    const gamepad = gamepads[side];
+                  })();
+                  grabHoverState.tagMesh = hoverMesh;
 
-                    if (src) {
-                      const {type: srcType} = src;
+                  if (hoverMesh) {
+                    const {planeMesh} = hoverMesh;
+                    const {position: tagMeshPosition, rotation: tagMeshRotation, scale: tagMeshScale} = _decomposeObjectMatrixWorld(planeMesh);
+                    grabBoxMesh.position.copy(tagMeshPosition);
+                    grabBoxMesh.quaternion.copy(tagMeshRotation);
+                    grabBoxMesh.scale.copy(tagMeshScale);
 
-                      if (srcType === 'module' || srcType === 'entity' || srcType === 'file' || srcType === 'attribute') {
-                        const hoverState = rend.getHoverState(side);
-                        const {type} = hoverState;
+                    if (!grabBoxMesh.visible) {
+                      grabBoxMesh.visible = true;
+                    }
+                  } else {
+                    if (grabBoxMesh.visible) {
+                      grabBoxMesh.visible = false;
+                    }
+                  }
+                });
+              }
+            };
+            const _updateDragStates = () => {
+              if (rend.isOpen() || homeEnabled) {
+                SIDES.forEach(side => {
+                  const dragState = dragStates[side];
+                  const {src} = dragState;
+                  const {gamepads} = webvr.getStatus();
+                  const gamepad = gamepads[side];
 
-                        if (type === 'page') {
-                          const {target: page} = hoverState;
-                          const {mesh} = page;
+                  if (src) {
+                    const {type: srcType} = src;
 
-                          if (mesh[tagMeshSymbol]) {
-                            const {tagMesh: hoverTagMesh} = mesh;
-                            const {tagMesh: srcTagMesh} = src;
-                            const {item: hoverItem} = hoverTagMesh;
-                            const {type: hoverType} = hoverItem;
+                    if (srcType === 'module' || srcType === 'entity' || srcType === 'file' || srcType === 'attribute') {
+                      const hoverState = rend.getHoverState(side);
+                      const {type} = hoverState;
 
-                            if (srcType === 'module' && hoverType === 'module' && srcTagMesh === hoverTagMesh) {
+                      if (type === 'page') {
+                        const {target: page} = hoverState;
+                        const {mesh} = page;
+
+                        if (mesh[tagMeshSymbol]) {
+                          const {tagMesh: hoverTagMesh} = mesh;
+                          const {tagMesh: srcTagMesh} = src;
+                          const {item: hoverItem} = hoverTagMesh;
+                          const {type: hoverType} = hoverItem;
+
+                          if (srcType === 'module' && hoverType === 'module' && srcTagMesh === hoverTagMesh) {
+                            dragState.dst = {
+                              type: 'module',
+                              tagMesh: hoverTagMesh,
+                            };
+                          } else if (srcType === 'module' && hoverType === 'entity') {
+                            dragState.dst = {
+                              type: 'entity',
+                              tagMesh: hoverTagMesh,
+                            };
+                          } else if (srcType === 'attribute' && hoverType === 'file') {
+                            dragState.dst = {
+                              type: 'file',
+                              tagMesh: hoverTagMesh,
+                            };
+                          } else if (srcType === 'file' && hoverType === 'attribute') {
+                            const {attributeName} = hoverTagMesh;
+                            const attributeSpec = _getAttributeSpec(attributeName);
+                            const attributeType = attributeSpec && attributeSpec.type;
+
+                            if (attributeType === 'file') {
+                              const {itemId} = hoverTagMesh;
+
                               dragState.dst = {
-                                type: 'module',
+                                type: 'attribute',
                                 tagMesh: hoverTagMesh,
+                                itemId: itemId,
+                                attributeName: attributeName,
                               };
-                            } else if (srcType === 'module' && hoverType === 'entity') {
-                              dragState.dst = {
-                                type: 'entity',
-                                tagMesh: hoverTagMesh,
-                              };
-                            } else if (srcType === 'attribute' && hoverType === 'file') {
-                              dragState.dst = {
-                                type: 'file',
-                                tagMesh: hoverTagMesh,
-                              };
-                            } else if (srcType === 'file' && hoverType === 'attribute') {
-                              const {attributeName} = hoverTagMesh;
-                              const attributeSpec = _getAttributeSpec(attributeName);
-                              const attributeType = attributeSpec && attributeSpec.type;
-
-                              if (attributeType === 'file') {
-                                const {itemId} = hoverTagMesh;
-
-                                dragState.dst = {
-                                  type: 'attribute',
-                                  tagMesh: hoverTagMesh,
-                                  itemId: itemId,
-                                  attributeName: attributeName,
-                                };
-                              } else {
-                                dragState.dst = null;
-                              }
                             } else {
                               dragState.dst = null;
                             }
@@ -2203,176 +2244,174 @@ class Tags {
                         } else {
                           dragState.dst = null;
                         }
-                      } else if (srcType === 'translate') {
-                        const {tagId, attributeName, mode, startControllerPosition, startControllerRotation, startIntersectionPoint, startPosition} = src;
-                        const translateGizmo = translateGizmos.find(translateGizmo => translateGizmo.tagId === tagId && translateGizmo.attributeName === attributeName);
+                      } else {
+                        dragState.dst = null;
+                      }
+                    } else if (srcType === 'translate') {
+                      const {tagId, attributeName, mode, startControllerPosition, startControllerRotation, startIntersectionPoint, startPosition} = src;
+                      const translateGizmo = translateGizmos.find(translateGizmo => translateGizmo.tagId === tagId && translateGizmo.attributeName === attributeName);
 
-                        if (mode === 'x') {
-                          const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 0, 1), startIntersectionPoint);
-                          const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale} = gamepad;
-                          const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation, controllerScale);
-                          const controllerIntersectionPoint = plane.intersectLine(controllerLine);
+                      if (mode === 'x') {
+                        const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 0, 1), startIntersectionPoint);
+                        const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale} = gamepad;
+                        const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation, controllerScale);
+                        const controllerIntersectionPoint = plane.intersectLine(controllerLine);
 
-                          if (controllerIntersectionPoint) {
-                            const endIntersectionPoint = new THREE.Vector3(
-                              controllerIntersectionPoint.x,
-                              startIntersectionPoint.y,
-                              startIntersectionPoint.z
-                            );
-                            const positionDiff = endIntersectionPoint.clone().sub(startIntersectionPoint);
-                            const endPosition = startPosition.clone().add(positionDiff);
-                            translateGizmo.position.copy(endPosition);
-                          }
-                        } else if (mode === 'y') {
-                          const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 0, 1), startIntersectionPoint);
-                          const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale} = gamepad;
-                          const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation, controllerScale);
-                          const controllerIntersectionPoint = plane.intersectLine(controllerLine);
-
-                          if (controllerIntersectionPoint) {
-                            const endIntersectionPoint = new THREE.Vector3(
-                              startIntersectionPoint.x,
-                              controllerIntersectionPoint.y,
-                              startIntersectionPoint.z
-                            );
-                            const positionDiff = endIntersectionPoint.clone().sub(startIntersectionPoint);
-                            const endPosition = startPosition.clone().add(positionDiff);
-                            translateGizmo.position.copy(endPosition);
-                          }
-                        } else if (mode === 'z') {
-                          const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(1, 0, 0), startIntersectionPoint);
-                          const {position: controllerPosition, rotation: controllerRotation, scale: controllerScale} = gamepad;
-                          const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation, controllerScale);
-                          const controllerIntersectionPoint = plane.intersectLine(controllerLine);
-
-                          if (controllerIntersectionPoint) {
-                            const endIntersectionPoint = new THREE.Vector3(
-                              startIntersectionPoint.x,
-                              startIntersectionPoint.y,
-                              controllerIntersectionPoint.z
-                            );
-                            const positionDiff = endIntersectionPoint.clone().sub(startIntersectionPoint);
-                            const endPosition = startPosition.clone().add(positionDiff);
-                            translateGizmo.position.copy(endPosition);
-                          }
-                        } else if (mode === 'xy') {
-                          const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 0, 1), startIntersectionPoint);
-                          const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale} = gamepad;
-                          const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation, controllerScale);
-                          const endIntersectionPoint = plane.intersectLine(controllerLine);
-
-                          if (endIntersectionPoint) {
-                            const positionDiff = endIntersectionPoint.clone().sub(startIntersectionPoint);
-                            const endPosition = startPosition.clone().add(positionDiff);
-                            translateGizmo.position.copy(endPosition);
-                          }
-                        } else if (mode === 'yz') {
-                          const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(1, 0, 0), startIntersectionPoint);
-                          const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale} = gamepad;
-                          const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation, controllerScale);
-                          const endIntersectionPoint = plane.intersectLine(controllerLine);
-
-                          if (endIntersectionPoint) {
-                            const positionDiff = endIntersectionPoint.clone().sub(startIntersectionPoint);
-                            const endPosition = startPosition.clone().add(positionDiff);
-                            translateGizmo.position.copy(endPosition);
-                          }
-                        } else if (mode === 'xz') {
-                          const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 1, 0), startIntersectionPoint);
-                          const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale} = gamepad;
-                          const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation, controllerScale);
-                          const endIntersectionPoint = plane.intersectLine(controllerLine);
-
-                          if (endIntersectionPoint) {
-                            const positionDiff = endIntersectionPoint.clone().sub(startIntersectionPoint);
-                            const endPosition = startPosition.clone().add(positionDiff);
-                            translateGizmo.position.copy(endPosition);
-                          }
-                        } else if (mode === 'xyz') {
-                          const {worldPosition: controllerPosition, worldRotation: controllerRotation} = gamepad;
-                          const endPosition = controllerPosition.clone()
-                            .add(
-                              new THREE.Vector3(0, 0, -1)
-                                .applyQuaternion(controllerRotation)
-                                .multiplyScalar(startIntersectionPoint.clone().sub(startControllerPosition).length())
-                            )
-                            .add(
-                              startPosition.clone().sub(startIntersectionPoint)
-                            );
+                        if (controllerIntersectionPoint) {
+                          const endIntersectionPoint = new THREE.Vector3(
+                            controllerIntersectionPoint.x,
+                            startIntersectionPoint.y,
+                            startIntersectionPoint.z
+                          );
+                          const positionDiff = endIntersectionPoint.clone().sub(startIntersectionPoint);
+                          const endPosition = startPosition.clone().add(positionDiff);
                           translateGizmo.position.copy(endPosition);
                         }
+                      } else if (mode === 'y') {
+                        const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 0, 1), startIntersectionPoint);
+                        const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale} = gamepad;
+                        const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation, controllerScale);
+                        const controllerIntersectionPoint = plane.intersectLine(controllerLine);
 
-                        dragState.dst = null;
-                      } else {
-                        dragState.dst = null;
+                        if (controllerIntersectionPoint) {
+                          const endIntersectionPoint = new THREE.Vector3(
+                            startIntersectionPoint.x,
+                            controllerIntersectionPoint.y,
+                            startIntersectionPoint.z
+                          );
+                          const positionDiff = endIntersectionPoint.clone().sub(startIntersectionPoint);
+                          const endPosition = startPosition.clone().add(positionDiff);
+                          translateGizmo.position.copy(endPosition);
+                        }
+                      } else if (mode === 'z') {
+                        const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(1, 0, 0), startIntersectionPoint);
+                        const {position: controllerPosition, rotation: controllerRotation, scale: controllerScale} = gamepad;
+                        const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation, controllerScale);
+                        const controllerIntersectionPoint = plane.intersectLine(controllerLine);
+
+                        if (controllerIntersectionPoint) {
+                          const endIntersectionPoint = new THREE.Vector3(
+                            startIntersectionPoint.x,
+                            startIntersectionPoint.y,
+                            controllerIntersectionPoint.z
+                          );
+                          const positionDiff = endIntersectionPoint.clone().sub(startIntersectionPoint);
+                          const endPosition = startPosition.clone().add(positionDiff);
+                          translateGizmo.position.copy(endPosition);
+                        }
+                      } else if (mode === 'xy') {
+                        const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 0, 1), startIntersectionPoint);
+                        const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale} = gamepad;
+                        const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation, controllerScale);
+                        const endIntersectionPoint = plane.intersectLine(controllerLine);
+
+                        if (endIntersectionPoint) {
+                          const positionDiff = endIntersectionPoint.clone().sub(startIntersectionPoint);
+                          const endPosition = startPosition.clone().add(positionDiff);
+                          translateGizmo.position.copy(endPosition);
+                        }
+                      } else if (mode === 'yz') {
+                        const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(1, 0, 0), startIntersectionPoint);
+                        const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale} = gamepad;
+                        const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation, controllerScale);
+                        const endIntersectionPoint = plane.intersectLine(controllerLine);
+
+                        if (endIntersectionPoint) {
+                          const positionDiff = endIntersectionPoint.clone().sub(startIntersectionPoint);
+                          const endPosition = startPosition.clone().add(positionDiff);
+                          translateGizmo.position.copy(endPosition);
+                        }
+                      } else if (mode === 'xz') {
+                        const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 1, 0), startIntersectionPoint);
+                        const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale} = gamepad;
+                        const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation, controllerScale);
+                        const endIntersectionPoint = plane.intersectLine(controllerLine);
+
+                        if (endIntersectionPoint) {
+                          const positionDiff = endIntersectionPoint.clone().sub(startIntersectionPoint);
+                          const endPosition = startPosition.clone().add(positionDiff);
+                          translateGizmo.position.copy(endPosition);
+                        }
+                      } else if (mode === 'xyz') {
+                        const {worldPosition: controllerPosition, worldRotation: controllerRotation} = gamepad;
+                        const endPosition = controllerPosition.clone()
+                          .add(
+                            new THREE.Vector3(0, 0, -1)
+                              .applyQuaternion(controllerRotation)
+                              .multiplyScalar(startIntersectionPoint.clone().sub(startControllerPosition).length())
+                          )
+                          .add(
+                            startPosition.clone().sub(startIntersectionPoint)
+                          );
+                        translateGizmo.position.copy(endPosition);
                       }
+
+                      dragState.dst = null;
+                    } else {
+                      dragState.dst = null;
                     }
-                  });
-                }
-              };
-              const _updateDragLines = () => {
-                if (rend.isOpen()) {
-                  SIDES.forEach(side => {
-                    const dragState = dragStates[side];
-                    const {src, line} = dragState;
+                  }
+                });
+              }
+            };
+            const _updateDragLines = () => {
+              if (rend.isOpen()) {
+                SIDES.forEach(side => {
+                  const dragState = dragStates[side];
+                  const {src, line} = dragState;
 
-                    const _clearLine = () => {
-                      if (line) {
-                        linesMesh.removeLine(line);
-                        linesMesh.render();
+                  const _clearLine = () => {
+                    if (line) {
+                      linesMesh.removeLine(line);
+                      linesMesh.render();
 
-                        dragState.line = null;
-                      }
-                    };
+                      dragState.line = null;
+                    }
+                  };
 
-                    if (src) {
-                      const {type: srcType} = src;
+                  if (src) {
+                    const {type: srcType} = src;
 
-                      if (srcType === 'module' || srcType === 'entity' || srcType === 'file' || srcType === 'attribute') {
-                        const localLine = (() => {
-                          if (line) {
-                            return line;
-                          } else {
-                            const newLine = linesMesh.addLine();
-                            dragState.line = newLine;
-                            return newLine;
-                          }
-                        })();
+                    if (srcType === 'module' || srcType === 'entity' || srcType === 'file' || srcType === 'attribute') {
+                      const localLine = (() => {
+                        if (line) {
+                          return line;
+                        } else {
+                          const newLine = linesMesh.addLine();
+                          dragState.line = newLine;
+                          return newLine;
+                        }
+                      })();
 
-                        const {tagMesh: srcObject} = src;
-                        const dstObject = (() => {
-                          const {dst} = dragState;
+                      const {tagMesh: srcObject} = src;
+                      const dstObject = (() => {
+                        const {dst} = dragState;
 
-                          if (dst) {
-                            const {tagMesh: dstTagMesh} = dst;
-                            return dstTagMesh;
-                          } else {
-                            return srcObject;
-                          }
-                        })();
-                        localLine.set(srcObject, dstObject);
-                        linesMesh.render();
-                      } else {
-                        _clearLine();
-                      }
+                        if (dst) {
+                          const {tagMesh: dstTagMesh} = dst;
+                          return dstTagMesh;
+                        } else {
+                          return srcObject;
+                        }
+                      })();
+                      localLine.set(srcObject, dstObject);
+                      linesMesh.render();
                     } else {
                       _clearLine();
                     }
-                  });
+                  } else {
+                    _clearLine();
+                  }
+                });
 
-                  if (!linesMesh.visible) {
-                    linesMesh.visible = true;
-                  }
-                } else {
-                  if (linesMesh.visible) {
-                    linesMesh.visible = false;
-                  }
+                if (!linesMesh.visible) {
+                  linesMesh.visible = true;
                 }
-              };
-
-              _updateElementGrabbables();
-              _updateDragStates();
-              _updateDragLines();
+              } else {
+                if (linesMesh.visible) {
+                  linesMesh.visible = false;
+                }
+              }
             };
             const _updateLocal = () => {
               for (let i = 0; i < localUpdates.length; i++) {
@@ -2381,7 +2420,9 @@ class Tags {
               }
             };
 
-            _updateControllers();
+            _updateElementGrabbables();
+            _updateDragStates();
+            _updateDragLines();
             _updateLocal();
           };
           rend.on('update', _update);
