@@ -72,18 +72,21 @@ class Fs {
             THREENURBSUtils,
             NURBSCurve,
           ]) => NURBSCurve(THREE, THREENURBSUtils));
+        const _requestZlib = () => _requestLib('three-extra/zlib_and_gzip.js');
         const _requestOBJLoader = () => _requestLib('three-extra/OBJLoader.js')
           .then(OBJLoader => OBJLoader(THREE));
         const _requestColladaLoader = () => _requestLib('three-extra/ColladaLoader.js')
           .then(ColladaLoader => ColladaLoader(THREE));
         const _requestFBXLoader = () => Promise.all([
           _requestNURBSCurve(),
+          _requestZlib(),
           _requestLib('three-extra/FBXLoader2.js'),
         ])
           .then(([
             THREENURBSCurve,
+            Zlib,
             FBXLoader,
-          ]) => FBXLoader(THREE, THREENURBSCurve));
+          ]) => FBXLoader(THREE, THREENURBSCurve, Zlib));
         const _requestGLTFLoader = () => _requestLib('three-extra/GLTFLoader.js')
           .then(GLTFLoader => GLTFLoader(THREE));
 
@@ -211,9 +214,9 @@ class Fs {
                 })
                   .then(_validateResponse)
                   .then(res => {
-                    if (ext === 'obj' || ext === 'dae' || ext === 'fbx') {
+                    if (ext === 'obj' || ext === 'dae') {
                       return res.text();
-                    } else if (ext === 'gltf') {
+                    } else if (ext === 'fbx' || ext === 'gltf') {
                       return res.arrayBuffer();
                     } else if (ext === 'json') {
                       return res.json()
