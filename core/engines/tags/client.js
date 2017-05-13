@@ -2,6 +2,7 @@ import deepEqual from 'deep-equal';
 import MultiMutex from 'multimutex';
 import CssSelectorParser from 'css-selector-parser';
 const cssSelectorParser = new CssSelectorParser.CssSelectorParser();
+import binPack from 'bin-pack';
 
 import {
   WIDTH,
@@ -1152,34 +1153,71 @@ class Tags {
               if (gripPressed) {
                 const {hmd: hmdStatus} = webvr.getStatus();
                 const {worldPosition: hmdPosition, worldRotation: hmdRotation, worldScale: hmdScale} = hmdStatus;
-                const size = Math.ceil(Math.sqrt(tagMeshes.length));
-                const width = WORLD_WIDTH;
-                const height = WORLD_HEIGHT;
-                const padding = width * 0.2;
-                const fullWidth = (width * size) + (padding * (size - 1));
-                const fullHeight = (height * size) + (padding * (size - 1));
+                const scaleFactor = (hmdScale.x + hmdScale.y + hmdScale.z) / 3;
+                const padding = WORLD_WIDTH * 0.1;
 
-                for (let i = 0; i < tagMeshes.length; i++) {
-                  const tagMesh = tagMeshes[i];
-                  const col = i % size;
-                  const row = Math.floor(i / size);
-                  tagMesh.position.copy(
-                    hmdPosition.clone()
-                      .add(
-                        new THREE.Vector3(
-                          -(fullWidth / 2) + (width / 2) + (col * (width + padding)),
-                          (fullHeight / 2) - (height / 2) - (row * (height + padding)),
-                          -1.5
-                        ).applyQuaternion(hmdRotation)
-                      )
-                  );
-                  tagMesh.quaternion.copy(hmdRotation);
-                  tagMesh.scale.copy(hmdScale);
+                if (tagMeshes.length > 0) {
+                  const newTagMeshes = tagMeshes.slice()
+                    .sort((a, b) => a.name.localeCompare(b.name))
+                    .map(tagMesh => {
+                      return {
+                        x: 0,
+                        y: 0,
+                        width: (
+                          (
+                            (tagMesh.attributesMesh && tagMesh.attributesMesh.attributeMeshes.length > 0) ?
+                              2
+                            :
+                              1
+                          ) * ((tagMesh.planeOpenMesh && tagMesh.planeOpenMesh.visible) ? (WORLD_OPEN_WIDTH * scaleFactor) : (WORLD_WIDTH * scaleFactor))) +
+                          (padding * 2),
+                        height: (
+                          (
+                            (tagMesh.attributesMesh && tagMesh.attributesMesh.attributeMeshes.length > 0) ?
+                              tagMesh.attributesMesh.attributeMeshes.length
+                            :
+                              1
+                          ) * ((tagMesh.planeOpenMesh && tagMesh.planeOpenMesh.visible) ? (WORLD_OPEN_HEIGHT * scaleFactor) : (WORLD_HEIGHT * scaleFactor))) +
+                          (padding * 2),
+                        item: tagMesh,
+                      };
+                    });
+                  binPack(newTagMeshes, {inPlace: true});
+
+                  let fullWidth = 0;
+                  let fullHeight = 0;
+                  for (let i = 0; i < newTagMeshes.length; i++) {
+                    const {x, y, width, height} = newTagMeshes[i];
+                    fullWidth = Math.max(fullWidth, x + width);
+                    fullHeight = Math.max(fullHeight, y + height);
+                  }
+                  const {width: firstWidth, height: firstHeight} = newTagMeshes[0];
+
+                  const hmdEuler = new THREE.Euler().setFromQuaternion(hmdRotation, camera.rotation.order);
+                  hmdEuler.x = 0;
+                  hmdEuler.z = 0;
+                  const tagRotation = new THREE.Quaternion().setFromEuler(hmdEuler);
+
+                  for (let i = 0; i < newTagMeshes.length; i++) {
+                    const {x, y, item: tagMesh} = newTagMeshes[i];
+                    tagMesh.position.copy(
+                      hmdPosition.clone()
+                        .add(
+                          new THREE.Vector3(
+                            -(fullWidth / 2) + (firstWidth / 2) + x,
+                            (fullHeight / 2) - (firstHeight / 2) - y,
+                            -1.5
+                          ).applyQuaternion(tagRotation)
+                        )
+                    );
+                    tagMesh.quaternion.copy(tagRotation);
+                    tagMesh.scale.copy(hmdScale);
+                  }
+
+                  linesMesh.render();
+
+                  e.stopImmediatePropagation();
                 }
-
-                linesMesh.render();
-
-                e.stopImmediatePropagation();
               }
             }
           };
