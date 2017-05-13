@@ -3318,11 +3318,13 @@ class Tags {
                           attributesMesh.remove(attributeMesh);
                           attributeMesh.destroy();
 
-                          const transformGizmoIndex = transformGizmos.findIndex(transformGizmo => transformGizmo.tagId === item.id && transformGizmo.attributeName === attributeName);
-                          if (transformGizmoIndex !== -1) {
-                            const transformGizmo = transformGizmos[transformGizmoIndex];
-                            transformGizmo.destroy();
-                            transformGizmos.splice(transformGizmoIndex, 1);
+                          const translateGizmoIndex = translateGizmos.findIndex(translateGizmo =>
+                            translateGizmo.tagId === item.id && translateGizmo.attributeName === attributeName
+                          );
+                          if (translateGizmoIndex !== -1) {
+                            const translateGizmo = translateGizmos[translateGizmoIndex];
+                            translateGizmo.destroy();
+                            translateGizmo.splice(translateGizmoIndex, 1);
                           }
                         } else {
                           index[attributeName] = attributeMesh;
