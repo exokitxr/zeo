@@ -235,6 +235,13 @@ class Rend {
         })();
         scene.add(menuMesh);
 
+        const vrModeChange = vrMode => {
+          if (vrMode === null) {
+            rendApi.update();
+          }
+        };
+        bootstrap.on('vrModeChange', vrModeChange);
+
         const trigger = e => {
           const {side} = e;
 
@@ -434,6 +441,7 @@ class Rend {
             scene.remove(boxMeshes[side]);
           });
 
+          bootstrap.removeListener('vrModeChange', vrModeChange);
           input.removeListener('trigger', trigger);
           input.removeListener('click', click);
           input.removeListener('menudown', menudown);
