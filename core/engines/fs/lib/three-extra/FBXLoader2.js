@@ -20,20 +20,20 @@
  * 	PreRotation support.
  */
 
-( function () {
+module.exports = (THREE, THREENURBSCurve, Zlib) => {
 
 	/**
 	 * Generates a loader for loading FBX files from URL and parsing into
 	 * a THREE.Group.
 	 * @param {THREE.LoadingManager} manager - Loading Manager for loader to use.
 	 */
-	THREE.FBXLoader = function ( manager ) {
+	const THREEFBXLoader = function ( manager ) {
 
 		this.manager = ( manager !== undefined ) ? manager : THREE.DefaultLoadingManager;
 
 	};
 
-	Object.assign( THREE.FBXLoader.prototype, {
+	Object.assign( THREEFBXLoader.prototype, {
 
 		/**
 		 * Loads an ASCII/Binary FBX file from URL and parses into a THREE.Group.
@@ -1202,7 +1202,7 @@
 	 */
 	function parseNurbsGeometry( geometryNode ) {
 
-		if ( THREE.NURBSCurve === undefined ) {
+		if ( THREENURBSCurve === undefined ) {
 
 			console.error( "THREE.FBXLoader relies on THREE.NURBSCurve for any nurbs present in the model.  Nurbs will show up as empty geometry." );
 			return new THREE.BufferGeometry();
@@ -1249,7 +1249,7 @@
 
 		}
 
-		var curve = new THREE.NURBSCurve( degree, knots, controlPoints, startKnot, endKnot );
+		var curve = new THREENURBSCurve( degree, knots, controlPoints, startKnot, endKnot );
 		var vertices = curve.getPoints( controlPoints.length * 7 );
 
 		var positions = new Float32Array( vertices.length * 3 );
@@ -4250,7 +4250,7 @@
 
 					}
 
-					if ( window.Zlib === undefined ) {
+					if ( Zlib === undefined ) {
 
 						throw new Error( 'FBXLoader: Import https://github.com/imaya/zlib.js' );
 
@@ -5013,4 +5013,6 @@
 
 	}
 
-} )();
+  return THREEFBXLoader;
+
+};
