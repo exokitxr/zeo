@@ -714,8 +714,8 @@ class WebVR {
               };
 
               return new GamepadsStatus(
-                _isGamepadAvailable(gamepads.left) ? _getGamepadPose(gamepads.left) : null,
-                _isGamepadAvailable(gamepads.right) ? _getGamepadPose(gamepads.right) : null
+                _isGamepadAvailable(gamepads.left) ? _getGamepadPose(gamepads.left) : _makeDefaultGamepadStatus(0, stageMatrix),
+                _isGamepadAvailable(gamepads.right) ? _getGamepadPose(gamepads.right) : _makeDefaultGamepadStatus(1, stageMatrix)
               );
             };
 
