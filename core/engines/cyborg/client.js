@@ -508,7 +508,7 @@ class Cyborg {
               const gamepadStatus = gamepadsStatus[side];
 
               if (gamepadStatus) {
-                controller.update(gamepadStatus, hmdStatus);
+                controller.update(gamepadStatus);
               }
             });
 
