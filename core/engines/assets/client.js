@@ -107,16 +107,23 @@ class Assets {
               mesh.geometry.applyMatrix(new THREE.Matrix4().makeRotationY(Math.PI));
               mesh.rotation.order = camera.rotation.order;
 
+              const {page} = mesh;
+              page.initialUpdate();
+
               mesh.update = ({hmdStatus, username}) => {
                 const {position: hmdPosition, rotation: hmdRotation, scale: hmdScale} = hmdStatus;
-                const labelPosition = new THREE.Vector3().fromArray(hmdPosition).add(new THREE.Vector3(0, WORLD_LABEL_HEIGHT, 0));
+                const labelPosition = new THREE.Vector3().fromArray(hmdPosition);
+                const labelRotation = (() => {
+                  const labelEuler = new THREE.Euler().setFromQuaternion(new THREE.Quaternion().fromArray(hmdRotation), camera.rotation.order);
+                  labelEuler.x = 0;
+                  labelEuler.z = 0;
+                  return new THREE.Quaternion().setFromEuler(labelEuler);
+                })();
+                const labelScale = new THREE.Vector3().fromArray(hmdScale);
+                labelPosition.add(new THREE.Vector3(0, WORLD_LABEL_HEIGHT, 0).multiply(labelScale));
+
                 mesh.position.copy(labelPosition);
-                const labelEuler = new THREE.Euler().setFromQuaternion(new THREE.Quaternion().fromArray(hmdRotation), camera.rotation.order);
-                labelEuler.x = 0;
-                labelEuler.z = 0;
-                const labelRotation = new THREE.Quaternion().setFromEuler(labelEuler);
                 mesh.quaternion.copy(labelRotation);
-                const labelScale = hmdScale;
                 mesh.scale.copy(labelScale);
 
                 if (username !== labelState.username) {
