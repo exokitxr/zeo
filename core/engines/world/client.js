@@ -144,11 +144,11 @@ class World {
 
         const _getInFrontOfCameraMatrix = () => {
           const {hmd: hmdStatus} = webvr.getStatus();
-          const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmdStatus;
+          const {worldPosition: hmdPosition, worldRotation: hmdRotation, worldScale: hmdScale} = hmdStatus;
 
           const newPosition = hmdPosition.clone().add(new THREE.Vector3(0, 0, -0.5).applyQuaternion(hmdRotation));
-          const newRotation = rotation;
-          const newScale = oneVector;
+          const newRotation = hmdRotation;
+          const newScale = hmdScale;
 
           return newPosition.toArray().concat(newRotation.toArray()).concat(newScale.toArray());
         };
