@@ -113,6 +113,9 @@
   "/plugins/skybox": [
     "0.0.1"
   ],
+  "/plugins/speaker": [
+    "0.0.1"
+  ],
   "/plugins/sprite": [
     "0.0.1"
   ],
