@@ -72,14 +72,16 @@ class Mc {
 
       const _requestImage = url => new Promise((accept, reject) => {
         const img = new Image();
-        img.crossOrigin = 'Anonymous';
-        img.src = url;
+
         img.onload = () => {
           accept(img);
         };
         img.onerror = err => {
           reject(img);
         };
+
+        img.crossOrigin = 'Anonymous';
+        img.src = url;
       });
 
       for (let i = 0; i < textureNames.length; i++) {
