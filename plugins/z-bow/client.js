@@ -160,16 +160,17 @@ class ZBow {
 
           mesh.updatePull = (position = null) => {
             if (position !== null) {
-              const pullPosition = position.clone().applyMatrix4(new THREE.Matrix4().getInverse(mesh.parent.matrixWorld));
+              const {stringMesh} = mesh;
+              const pullPosition = stringMesh.getWorldPosition();
               mesh.position.copy(pullPosition);
 
-              /* const pullAngle = new THREE.Vector3(0, 0, -0.26)
+              const pullAngle = mesh.getWorldPosition()
                 .sub(pullPosition)
                 .normalize();
               mesh.quaternion.setFromUnitVectors(
                 new THREE.Vector3(0, 1, 0),
                 pullAngle
-              ); */
+              );
             } else {
               mesh.position.copy(zeroVector);
               mesh.quaternion.copy(backQuaternion);
@@ -226,7 +227,7 @@ class ZBow {
               bowState.drawnArrowMesh = null;
             }
             if (nockedArrowMesh) {
-              nockedArrowMesh.parent.remove(nockedArrowMesh);
+              scene.remove(nockedArrowMesh);
               bowState.nockedArrowMesh = null;
             }
           });
@@ -303,7 +304,7 @@ class ZBow {
                   bowState.drawnArrowMesh = null;
 
                   const nockedArrowMesh = drawnArrowMesh;
-                  stringMesh.add(nockedArrowMesh);
+                  scene.add(nockedArrowMesh);
                   otherBowState.nockedArrowMesh = nockedArrowMesh;
                 }
               }
