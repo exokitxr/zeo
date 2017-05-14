@@ -133,35 +133,17 @@ class Grid {
             );
             displacementMapTexture.needsUpdate = true;
 
-            /* const normalMapTexture = new THREE.Texture(
-              displacementMapCanvas,
-              THREE.UVMapping,
-              THREE.ClampToEdgeWrapping,
-              THREE.ClampToEdgeWrapping,
-              THREE.LinearFilter,
-              THREE.LinearFilter,
-              THREE.RGBAFormat,
-              THREE.UnsignedByteType,
-              1
-            );
-            normalMapTexture.needsUpdate = true; */
-
             const material = new THREE.MeshPhongMaterial({
-              // color: 0xFFFFFF,
               map: mapTexture,
               displacementMap: displacementMapTexture,
               displacementScale: 100,
-              // normalMap: normalMapTexture,
-              // normalMap: normalMapTexture,
-              // lightMap: normalMapTexture,
-              // lightMapIntensity: 10,
               shininess: 10,
-              /// shading: THREE.FlatShading,
               wireframe: true,
             });
 
             const mesh = new THREE.Mesh(geometry, material);
             mesh.position.set(position.x * WORLD_WIDTH, 0, position.y * WORLD_HEIGHT);
+            mesh.frustumCulled = false;
             return mesh;
           });
           meshes.forEach(mesh => {
