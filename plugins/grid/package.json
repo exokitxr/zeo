@@ -1,6 +1,6 @@
 {
-  "name": "map",
-  "description": "Procedurally generated pixel map floor.",
+  "name": "grid",
+  "description": "Procedurally generated wireframe terrain grid.",
   "version": "0.0.1",
   "client": "client.js",
   "dependencies": {

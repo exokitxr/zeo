@@ -5,12 +5,10 @@ import {
   WORLD_HEIGHT,
   RESOLUTION,
   NUM_CELLS,
-} from './lib/constants/map';
+} from './lib/constants/grid';
 import mapUtilsMaker from './lib/utils/map-utils';
 
-const SIDES = ['left', 'right'];
-
-class Map {
+class Grid {
   mount() {
     const {three: {THREE, scene, camera}, elements, ui, utils: {random: randomUtils}} = zeo;
     const {alea} = randomUtils;
@@ -83,7 +81,7 @@ class Map {
       position,
     })));
 
-    const mapComponent = {
+    const gridComponent = {
       selector: 'map[position]',
       attributes: {
         position: {
@@ -201,10 +199,10 @@ class Map {
         }
       },
     };
-    elements.registerComponent(this, mapComponent);
+    elements.registerComponent(this, gridComponent);
 
     this._cleanup = () => {
-      elements.unregisterComponent(this, mapComponent);
+      elements.unregisterComponent(this, gridComponent);
     };
   }
 
@@ -213,4 +211,4 @@ class Map {
   }
 }
 
-module.exports = Map;
+module.exports = Grid;

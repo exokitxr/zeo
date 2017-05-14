@@ -2,7 +2,7 @@ import indev from 'indev';
 
 import {
   NUM_CELLS,
-} from '../constants/map';
+} from '../constants/grid';
 
 export class Point {
   constructor(
@@ -270,12 +270,11 @@ const _getBiome = p => {
   }
 };
 
-const api = {
+return {
   getCoordIndex,
   makeMapChunk,
   getBiomeColor,
 };
-return api;
 
 };
 

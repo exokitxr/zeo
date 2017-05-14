@@ -3,9 +3,9 @@
     "3sef39": {
       "type": "module",
       "id": "3sef39",
-      "name": "/plugins/map",
-      "displayName": "map",
-      "description": "Procedurally generated pixel map floor.",
+      "name": "/plugins/grid",
+      "displayName": "grid",
+      "description": "Procedurally generated wireframe terrain grid.",
       "version": "0.0.1",
       "readme": null,
       "matrix": [
@@ -53,9 +53,9 @@
     "nc0r9": {
       "type": "entity",
       "id": "nc0r9",
-      "name": "map",
-      "displayName": "map",
-      "description": "Procedurally generated pixel map floor.",
+      "name": "grid",
+      "displayName": "grid",
+      "description": "Procedurally generated wireframe terrain grid.",
       "version": "0.0.1",
       "readme": null,
       "matrix": [
@@ -74,7 +74,7 @@
         "isStatic": false,
         "exists": false
       },
-      "tagName": "map",
+      "tagName": "grid",
       "attributes": {
         "position": {
           "value": [

@@ -53,6 +53,9 @@
   "/plugins/grass": [
     "0.0.1"
   ],
+  "/plugins/grid": [
+    "0.0.1"
+  ],
   "/plugins/heightfield": [
     "0.0.1"
   ],
