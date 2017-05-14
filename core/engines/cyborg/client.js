@@ -517,13 +517,15 @@ class Cyborg {
           };
           rend.on('update', _update);
           const _renderStart = () => {
-            const {mesh: hmdMesh} = hmd;
+            const {mesh: hmdMesh, labelMesh: hmdLabelMesh} = hmd;
             hmdMesh.visible = false;
+            hmdLabelMesh.visible = false;
           };
           rend.on('renderStart', _renderStart);
           const _renderEnd = () => {
-            const {mesh: hmdMesh} = hmd;
+            const {mesh: hmdMesh, labelMesh: hmdLabelMesh} = hmd;
             hmdMesh.visible = true;
+            hmdLabelMesh.visible = true;
           };
           rend.on('renderEnd', _renderEnd);
 
