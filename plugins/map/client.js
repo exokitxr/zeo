@@ -3,6 +3,7 @@ import {
   HEIGHT,
   WORLD_WIDTH,
   WORLD_HEIGHT,
+  RESOLUTION,
   NUM_CELLS,
 } from './lib/constants/map';
 import mapUtilsMaker from './lib/utils/map-utils';
@@ -14,11 +15,6 @@ class Map {
     const {three: {THREE, scene, camera}, elements, ui, utils: {random: randomUtils}} = zeo;
     const {alea} = randomUtils;
 
-    let live = true;
-    this._cleanup = () => {
-      live = false;
-    };
-
     const _decomposeObjectMatrixWorld = object => {
       const position = new THREE.Vector3();
       const rotation = new THREE.Quaternion();
@@ -28,168 +24,196 @@ class Map {
     };
 
     const mapUtils = mapUtilsMaker.makeUtils({
-      rng: new alea(''),
+      rng: new alea('z1'),
     });
 
-    const _requestImage = url => new Promise((accept, reject) => {
-      const img = new Image();
+    const _renderMapChunk = mapChunk => {
+      const {position, points} = mapChunk;
 
-      img.onload = () => {
-        accept(img);
-      };
-      img.onerror = err => {
-        reject(img);
-      };
+      const mapCanvas = document.createElement('canvas');
+      mapCanvas.width = NUM_CELLS;
+      mapCanvas.height = NUM_CELLS;
+      mapCanvas.position = position;
+      const mapCanvasCtx = mapCanvas.getContext('2d');
+      const mapCanvasImageData = mapCanvasCtx.getImageData(0, 0, mapCanvas.width, mapCanvas.height);
+      const {data: mapCanvasImageDataData} = mapCanvasImageData;
 
-      img.crossOrigin = 'Anonymous';
-      img.src = url;
-    });
+      const displacementMapCanvas = document.createElement('canvas');
+      displacementMapCanvas.width = NUM_CELLS;
+      displacementMapCanvas.height = NUM_CELLS;
+      displacementMapCanvas.position = position;
+      const displacementMapCanvasCtx = displacementMapCanvas.getContext('2d');
+      const displacementMapCanvasImageData = displacementMapCanvasCtx.getImageData(0, 0, mapCanvas.width, mapCanvas.height);
+      const {data: displacementMapCanvasImageDataData} = displacementMapCanvasImageData;
 
-    return _requestImage('archae/map/img/bumpmap.jpg')
-      .then(bumpMapImg => {
-        if (live) {
-          const _renderMapChunk = mapChunk => {
-            const {position, points} = mapChunk;
+      for (let y = 0; y < NUM_CELLS; y++) {
+        for (let x = 0; x < NUM_CELLS; x++) {
+          const baseIndex = mapUtils.getCoordIndex(x, y);
+          const baseImageDataIndex = baseIndex * 4;
 
-            const canvas = document.createElement('canvas');
-            canvas.width = NUM_CELLS;
-            canvas.height = NUM_CELLS;
-            canvas.position = position;
+          const point = points[baseIndex];
+          const {biome} = point;
+          const colorHex = mapUtils.getBiomeColor(biome);
+          const color = new THREE.Color(colorHex);
+          mapCanvasImageDataData[baseImageDataIndex + 0] = color.r * 255;
+          mapCanvasImageDataData[baseImageDataIndex + 1] = color.g * 255;
+          mapCanvasImageDataData[baseImageDataIndex + 2] = color.b * 255;
+          mapCanvasImageDataData[baseImageDataIndex + 3] = 255;
 
-            const ctx = canvas.getContext('2d');
-            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            const {data: imageDataData} = imageData;
-            for (let y = 0; y < NUM_CELLS; y++) {
-              for (let x = 0; x < NUM_CELLS; x++) {
-                const baseIndex = mapUtils.getCoordIndex(x, y);
-                const baseImageDataIndex = baseIndex * 4;
-
-                const point = points[baseIndex];
-                const {biome} = point;
-                const colorHex = mapUtils.getBiomeColor(biome);
-                const color = new THREE.Color(colorHex);
-                imageDataData[baseImageDataIndex + 0] = color.r * 255;
-                imageDataData[baseImageDataIndex + 1] = color.g * 255;
-                imageDataData[baseImageDataIndex + 2] = color.b * 255;
-                imageDataData[baseImageDataIndex + 3] = 255;
-              }
-            }
-            ctx.putImageData(imageData, 0, 0);
-
-            return canvas;
-          };
-
-          const mapChunks = [
-            new THREE.Vector2(0, 0),
-          ].map(position => _renderMapChunk(mapUtils.makeMapChunk({
-            position,
-          })));
-
-          const mapComponent = {
-            selector: 'map[position]',
-            attributes: {
-              position: {
-                type: 'matrix',
-                value: [
-                  0, 1.2, 0,
-                  0, 0, 0, 1,
-                  1, 1, 1,
-                ],
-              },
-            },
-            entityAddedCallback(entityElement) {
-              const entityApi = entityElement.getComponentApi();
-              const entityObject = entityElement.getObject();
-
-              const mesh = (() => {
-                const object = new THREE.Object3D();
-
-                const meshes = mapChunks.map(canvas => {
-                  const {position} = canvas;
-
-                  const geometry = new THREE.PlaneBufferGeometry(WORLD_WIDTH, WORLD_HEIGHT)
-                    .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
-
-                  const mapTexture = new THREE.Texture(
-                    canvas,
-                    THREE.UVMapping,
-                    THREE.ClampToEdgeWrapping,
-                    THREE.ClampToEdgeWrapping,
-                    THREE.NearestFilter,
-                    THREE.NearestFilter,
-                    THREE.RGBAFormat,
-                    THREE.UnsignedByteType,
-                    1
-                  );
-                  mapTexture.needsUpdate = true;
-
-                  const normalMapTexture = new THREE.Texture(
-                    bumpMapImg,
-                    THREE.UVMapping,
-                    THREE.RepeatWrapping,
-                    THREE.RepeatWrapping,
-                    THREE.NearestFilter,
-                    THREE.NearestFilter,
-                    THREE.RGBAFormat,
-                    THREE.UnsignedByteType,
-                    1
-                  );
-                  normalMapTexture.needsUpdate = true;
-
-                  const material = new THREE.MeshPhongMaterial({
-                    // color: 0xFFFFFF,
-                    map: mapTexture,
-                    bumpMap: mapTexture,
-                    normalMap: normalMapTexture,
-                    shininess: 10,
-                  });
-
-                  const mesh = new THREE.Mesh(geometry, material);
-                  mesh.position.set(position.x * WORLD_WIDTH, 0, position.y * WORLD_HEIGHT);
-                  return mesh;
-                });
-                meshes.forEach(mesh => {
-                  object.add(mesh);
-                });
-
-                return object;
-              })();
-              entityObject.add(mesh);
-
-              entityApi.align = () => {
-                // XXX implement this
-              };
-
-              entityApi._cleanup = () => {
-                entityObject.remove(mesh);
-              };
-            },
-            entityRemovedCallback(entityElement) {
-              const entityApi = entityElement.getComponentApi();
-
-              entityApi._cleanup();
-            },
-            entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-              const entityApi = entityElement.getComponentApi();
-
-              switch (name) {
-                case 'position': {
-                  entityApi.position = newValue;
-
-                  entityApi.align();
-
-                  break;
-                }
-              }
-            },
-          };
-          elements.registerComponent(this, mapComponent);
-
-          this._cleanup = () => {
-            elements.unregisterComponent(this, mapComponent);
-          };
+          const {elevation} = point;
+          const elevationFactor = elevation / 10 * 255;
+          displacementMapCanvasImageDataData[baseImageDataIndex + 0] = elevationFactor;
+          displacementMapCanvasImageDataData[baseImageDataIndex + 1] = elevationFactor;
+          displacementMapCanvasImageDataData[baseImageDataIndex + 2] = elevationFactor;
+          displacementMapCanvasImageDataData[baseImageDataIndex + 3] = elevationFactor;
         }
-      });
+      }
+      mapCanvasCtx.putImageData(mapCanvasImageData, 0, 0);
+      displacementMapCanvasCtx.putImageData(displacementMapCanvasImageData, 0, 0);
+
+      return {
+        map: mapCanvas,
+        displacementMap: displacementMapCanvas,
+      };
+    };
+
+    const mapChunks = [
+      new THREE.Vector2(0, 0),
+    ].map(position => _renderMapChunk(mapUtils.makeMapChunk({
+      position,
+    })));
+
+    const mapComponent = {
+      selector: 'map[position]',
+      attributes: {
+        position: {
+          type: 'matrix',
+          value: [
+            0, 1.2, 0,
+            0, 0, 0, 1,
+            1, 1, 1,
+          ],
+        },
+      },
+      entityAddedCallback(entityElement) {
+        const entityApi = entityElement.getComponentApi();
+        const entityObject = entityElement.getObject();
+
+        const mesh = (() => {
+          const object = new THREE.Object3D();
+
+          const meshes = mapChunks.map(({map: mapCanvas, displacementMap: displacementMapCanvas}) => {
+            const {position} = mapCanvas;
+
+            const geometry = new THREE.PlaneBufferGeometry(WORLD_WIDTH, WORLD_HEIGHT, WIDTH, HEIGHT)
+              .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
+            /* const uvsAttribute = geometry.getAttribute('uv');
+            const {array: uvs} = uvsAttribute;
+            const numUvs = uvs.length / 2;
+            for (let i = 0; i < numUvs; i++) {
+              const baseIndex = i * 2;
+              uvs[baseIndex + 0] *= 64;
+              uvs[baseIndex + 1] *= 64;
+            } */
+            // geometry.addAttribute('uv2', geometry.getAttribute('uv'));
+
+            const mapTexture = new THREE.Texture(
+              mapCanvas,
+              THREE.UVMapping,
+              THREE.ClampToEdgeWrapping,
+              THREE.ClampToEdgeWrapping,
+              THREE.NearestFilter,
+              THREE.NearestFilter,
+              THREE.RGBAFormat,
+              THREE.UnsignedByteType,
+              1
+            );
+            mapTexture.needsUpdate = true;
+
+            const displacementMapTexture = new THREE.Texture(
+              displacementMapCanvas,
+              THREE.UVMapping,
+              THREE.ClampToEdgeWrapping,
+              THREE.ClampToEdgeWrapping,
+              THREE.NearestFilter,
+              THREE.NearestFilter,
+              THREE.RGBAFormat,
+              THREE.UnsignedByteType,
+              1
+            );
+            displacementMapTexture.needsUpdate = true;
+
+            /* const normalMapTexture = new THREE.Texture(
+              displacementMapCanvas,
+              THREE.UVMapping,
+              THREE.ClampToEdgeWrapping,
+              THREE.ClampToEdgeWrapping,
+              THREE.LinearFilter,
+              THREE.LinearFilter,
+              THREE.RGBAFormat,
+              THREE.UnsignedByteType,
+              1
+            );
+            normalMapTexture.needsUpdate = true; */
+
+            const material = new THREE.MeshPhongMaterial({
+              // color: 0xFFFFFF,
+              map: mapTexture,
+              displacementMap: displacementMapTexture,
+              displacementScale: 100,
+              // normalMap: normalMapTexture,
+              // normalMap: normalMapTexture,
+              // lightMap: normalMapTexture,
+              // lightMapIntensity: 10,
+              shininess: 10,
+              /// shading: THREE.FlatShading,
+              wireframe: true,
+            });
+
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.position.set(position.x * WORLD_WIDTH, 0, position.y * WORLD_HEIGHT);
+            return mesh;
+          });
+          meshes.forEach(mesh => {
+            object.add(mesh);
+          });
+
+          return object;
+        })();
+        entityObject.add(mesh);
+
+        entityApi.align = () => {
+          // XXX implement this
+        };
+
+        entityApi._cleanup = () => {
+          entityObject.remove(mesh);
+        };
+      },
+      entityRemovedCallback(entityElement) {
+        const entityApi = entityElement.getComponentApi();
+
+        entityApi._cleanup();
+      },
+      entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
+        const entityApi = entityElement.getComponentApi();
+
+        switch (name) {
+          case 'position': {
+            entityApi.position = newValue;
+
+            entityApi.align();
+
+            break;
+          }
+        }
+      },
+    };
+    elements.registerComponent(this, mapComponent);
+
+    this._cleanup = () => {
+      elements.unregisterComponent(this, mapComponent);
+    };
   }
 
   unmount() {
