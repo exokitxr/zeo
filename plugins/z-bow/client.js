@@ -12,10 +12,19 @@ class ZBow {
   mount() {
     const {three: {THREE, scene}, input, elements, render, pose, player, utils: {geometry: geometryUtils}} = zeo;
 
-    const bowGeometry = new THREE.TorusBufferGeometry(1, 0.02, 3, 3, Math.PI / 2)
-      .applyMatrix(new THREE.Matrix4().makeRotationZ(-Math.PI / 4))
-      .applyMatrix(new THREE.Matrix4().makeRotationY(Math.PI / 2))
-      .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, 1));
+    const bowGeometry = (() => {
+      const coreGeometry = new THREE.TorusBufferGeometry(1, 0.02, 3, 3, Math.PI / 2)
+        .applyMatrix(new THREE.Matrix4().makeRotationZ(-Math.PI / 4))
+        .applyMatrix(new THREE.Matrix4().makeRotationY(Math.PI / 2))
+        .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, 1));
+      const topGeometry = new THREE.BoxBufferGeometry(0.035, 0.1, 0.02)
+        .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.7 + (0.1 / 2), 0.3 - (0.02 / 2)));
+      const bottomGeometry = new THREE.BoxBufferGeometry(0.035, 0.1, 0.02)
+        .applyMatrix(new THREE.Matrix4().makeTranslation(0, -0.7 - (0.1 / 2), 0.3 - (0.02 / 2)));
+
+      return geometryUtils.concatBufferGeometry([coreGeometry, topGeometry, bottomGeometry])
+        .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
+    })();
     const weaponMaterial = new THREE.MeshPhongMaterial({
       color: 0x808080,
       shading: THREE.FlatShading,
@@ -72,10 +81,10 @@ class ZBow {
           const stringMesh = (() => {
             const geometry = new THREE.Geometry();
             geometry.vertices.push(
-              new THREE.Vector3(0, 0.7, 0.3),
-              new THREE.Vector3(0, 0, 0.3),
-              new THREE.Vector3(0, 0, 0.3),
-              new THREE.Vector3(0, -0.7, 0.3)
+              new THREE.Vector3(0, 0.3, 0.7),
+              new THREE.Vector3(0, 0.3, 0),
+              new THREE.Vector3(0, 0.3, 0),
+              new THREE.Vector3(0, 0.3, -0.7)
             );
             const material = stringMaterial;
 
