@@ -21,6 +21,8 @@ class ZBow {
       return {position, rotation, scale};
     };
 
+    const zeroVector = new THREE.Vector3();
+
     const bowGeometry = (() => {
       const coreGeometry = new THREE.TorusBufferGeometry(1, 0.02, 3, 3, Math.PI / 2)
         .applyMatrix(new THREE.Matrix4().makeRotationZ(-Math.PI / 4))
@@ -91,8 +93,8 @@ class ZBow {
             const geometry = new THREE.Geometry();
             geometry.vertices.push(
               new THREE.Vector3(0, 0, 0.7),
-              new THREE.Vector3(0, 0, 0),
-              new THREE.Vector3(0, 0, 0),
+              zeroVector,
+              zeroVector,
               new THREE.Vector3(0, 0, -0.7)
             );
             const material = stringMaterial;
@@ -100,6 +102,24 @@ class ZBow {
             const mesh = new THREE.LineSegments(geometry, material);
             mesh.position.y = 0.26;
             mesh.frustumCulled = false;
+
+            mesh.update = (position = null) => {
+              if (position !== null) {
+                const stringPosition = mesh.getWorldPosition();
+                const pullPosition = position.clone().sub(stringPosition);
+
+                for (let i = 1; i <= 2; i++) {
+                  geometry.vertices[i] = pullPosition;
+                }
+              } else {
+                for (let i = 1; i <= 2; i++) {
+                  geometry.vertices[i] = zeroVector;
+                }
+              }
+
+              geometry.verticesNeedUpdate = true;
+            };
+
             return mesh;
           })();
           mesh.add(stringMesh);
@@ -150,6 +170,7 @@ class ZBow {
 
         const _makeArrowState = () => ({
           grabbed: false,
+          pulling: false,
           drawnArrowMesh: null,
           nockedArrowMesh: null,
         });
@@ -173,40 +194,52 @@ class ZBow {
 
           bowState.grabbed = false;
 
-          const otherSide = _getOtherSide(side);
-          const otherBowState = bowStates[otherSide];
-          const {drawnArrowMesh, nockedArrowMesh} = otherBowState;
-          if (drawnArrowMesh) {
-            drawnArrowMesh.parent.remove(drawnArrowMesh);
-            otherBowState.drawnArrowMesh = null;
-          }
-          if (nockedArrowMesh) {
-            nockedArrowMesh.parent.remove(nockedArrowMesh);
-            otherBowState.nockedArrowMesh = null;
-          }
+          SIDES.forEach(side => {
+            const bowState = bowStates[side];
+            const {pulling, drawnArrowMesh, nockedArrowMesh} = bowState;
+
+            if (pulling) {
+              bowState.pulling = false;
+            }
+            if (drawnArrowMesh) {
+              drawnArrowMesh.parent.remove(drawnArrowMesh);
+              bowState.drawnArrowMesh = null;
+            }
+            if (nockedArrowMesh) {
+              nockedArrowMesh.parent.remove(nockedArrowMesh);
+              bowState.nockedArrowMesh = null;
+            }
+          });
         };
         entityElement.addEventListener('release', _release);
         const _gripdown = e => {
           const {side} = e;
           const otherSide = _getOtherSide(side);
           const otherBowState = bowStates[otherSide];
-          const {grabbed} = otherBowState;
+          const {grabbed: otherGrabbed} = otherBowState;
 
-          if (grabbed) {
+          if (otherGrabbed) {
             const {gamepads} = pose.getStatus();
             const gamepad = gamepads[side];
 
             if (gamepad) {
-              const controllerMeshes = player.getControllerMeshes();
-              const controllerMesh = controllerMeshes[side];
+              const {worldPosition: controllerPosition} = gamepad;
+              const {stringMesh} = mesh;
+              const stringMeshPosition = stringMesh.getWorldPosition();
               const bowState = bowStates[side];
 
-              const arrow = _makeArrowMesh();
-              controllerMesh.add(arrow);
+              if (controllerPosition.distanceTo(stringMeshPosition) < 0.1) {
+                bowState.pulling = true;
+              } else {
+                const controllerMeshes = player.getControllerMeshes();
+                const controllerMesh = controllerMeshes[side];
 
-              bowState.drawnArrowMesh = arrow;
+                const arrow = _makeArrowMesh();
+                controllerMesh.add(arrow);
+                bowState.drawnArrowMesh = arrow;
 
-              // input.vibrate(side, 1, 20);
+                // input.vibrate(side, 1, 20);
+              }
 
               e.stopImmediatePropagation();
             }
@@ -241,13 +274,34 @@ class ZBow {
                 const drawnArrowPosition = drawnArrowMesh.getWorldPosition();
 
                 if (drawnArrowPosition.distanceTo(stringPosition) < 0.1) {
-                  stringMesh.add(drawnArrowMesh);
                   bowState.drawnArrowMesh = null;
 
                   const nockedArrowMesh = drawnArrowMesh;
+                  stringMesh.add(nockedArrowMesh);
                   nockedArrowMesh.rotation.x = -Math.PI / 2;
                   bowState.nockedArrowMesh = nockedArrowMesh;
                 }
+              }
+            });
+          };
+          const _updateString = () => {
+            SIDES.forEach(side => {
+              const bowState = bowStates[side];
+              const {pulling} = bowState;
+              const {stringMesh} = mesh;
+
+              if (pulling) {
+                const {gamepads} = pose.getStatus();
+                const gamepad = gamepads[side];
+
+                if (gamepad) {
+                  const {worldPosition: controllerPosition} = gamepad;
+                  stringMesh.update(controllerPosition);
+                } else {
+                  stringMesh.update();
+                }
+              } else {
+                stringMesh.update();
               }
             });
           };
@@ -278,6 +332,7 @@ class ZBow {
           };
 
           _updateNock();
+          _updateString();
           _updateArrows();
         };
         render.on('update', _update);
