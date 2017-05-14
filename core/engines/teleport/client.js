@@ -31,15 +31,14 @@ class Teleport {
       if (live) {
         const {THREE, scene, camera} = three;
 
-        const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
         const _decomposeMatrix = matrix => {
           const position = new THREE.Vector3();
-          const quaternion = new THREE.Quaternion();
+          const rotation = new THREE.Quaternion();
           const scale = new THREE.Vector3();
-          matrix.decompose(position, quaternion, scale);
+          matrix.decompose(position, rotation, scale);
           return {
             position,
-            quaternion,
+            rotation,
             scale,
           };
         };
@@ -178,13 +177,13 @@ class Teleport {
                 const {teleportFloorPoint, teleportAirPoint} = teleportState;
 
                 if (teleportFloorPoint) {
-                  const basePosition = new THREE.Vector3(0, 0, 0).applyMatrix4(webvr.getSittingToStandingTransform());
-                  const destinationPoint = teleportFloorPoint.clone().add(basePosition);
+                  const destinationPoint = teleportFloorPoint.clone().add(new THREE.Vector3(0, hmdPosition.y, 0));
                   const positionDiff = destinationPoint.clone().sub(hmdPosition);
 
                   const stageMatrix = webvr.getStageMatrix();
-                  const newStageMatrix = stageMatrix.clone()
-                    .multiply(new THREE.Matrix4().makeTranslation(positionDiff.x, positionDiff.y, positionDiff.z));
+                  const {position, rotation, scale} = _decomposeMatrix(stageMatrix);
+                  position.add(positionDiff);
+                  const newStageMatrix = new THREE.Matrix4().compose(position, rotation, scale);
                   webvr.setStageMatrix(newStageMatrix);
 
                   webvr.updateStatus();
@@ -197,8 +196,9 @@ class Teleport {
                   const positionDiff = destinationPoint.clone().sub(hmdPosition);
 
                   const stageMatrix = webvr.getStageMatrix();
-                  const newStageMatrix = stageMatrix.clone()
-                    .multiply(new THREE.Matrix4().makeTranslation(positionDiff.x, positionDiff.y, positionDiff.z));
+                  const {position, rotation, scale} = _decomposeMatrix(stageMatrix);
+                  position.add(positionDiff);
+                  const newStageMatrix = new THREE.Matrix4().compose(position, rotation, scale);
                   webvr.setStageMatrix(newStageMatrix);
 
                   webvr.updateStatus();
