@@ -727,13 +727,16 @@ class WebVR {
             };
             this.setStatus(newStatus);
 
-            SIDES.forEach(side => {
+            for (let s = 0; s < SIDES.length; s++) {
+              const side = SIDES[s];
               const {gamepads: oldGamepadsStatus} = oldStatus;
               const oldGamepadStatus = oldGamepadsStatus[side];
               const {gamepads: newGamepadsStatus} = newStatus;
               const newGamepadStatus = newGamepadsStatus[side];
 
-              EVENT_SPECS.forEach(({buttonName, rootName, downName, upName}) => {
+              for (let e = 0; e < EVENT_SPECS.length; e++) {
+                const eventSpec = EVENT_SPECS[e];
+                const {buttonName, rootName, downName, upName} = eventSpec
                 const oldPressed = Boolean(oldGamepadStatus) && oldGamepadStatus.buttons[buttonName].pressed;
                 const newPressed = Boolean(newGamepadStatus) && newGamepadStatus.buttons[buttonName].pressed;
 
@@ -753,8 +756,8 @@ class WebVR {
                   input.triggerEvent(upName, _makeEventSpec());
                   input.triggerEvent(rootName, _makeEventSpec());
                 }
-              });
-            });
+              }
+            }
 
             return newStatus;
           }
