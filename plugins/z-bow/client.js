@@ -105,8 +105,8 @@ class ZBow {
 
             mesh.update = (position = null) => {
               if (position !== null) {
-                const stringPosition = mesh.getWorldPosition();
-                const pullPosition = position.clone().sub(stringPosition);
+                const pullPosition = position.clone()
+                  .applyMatrix4(new THREE.Matrix4().getInverse(mesh.matrixWorld));
 
                 for (let i = 1; i <= 2; i++) {
                   geometry.vertices[i] = pullPosition;
@@ -251,8 +251,11 @@ class ZBow {
         const _gripup = e => {
           const {side} = e;
           const bowState = bowStates[side];
-          const {drawnArrowMesh} = bowState;
+          const {pulled, drawnArrowMesh} = bowState;
 
+          if (pulled) {
+            bowState.pulled = false;
+          }
           if (drawnArrowMesh) {
             drawnArrowMesh.parent.remove(drawnArrowMesh);
             bowState.drawnArrowMesh = null;
