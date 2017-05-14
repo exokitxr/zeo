@@ -493,12 +493,18 @@ class Rend {
               pose: webvr.getStatus(),
               enabled: rendApi.isOpen() || homeEnabled,
               sides: (() => {
-                const mode = webvr.getMode();
+                const vrMode = bootstrap.getVrMode();
 
-                if (mode !== 'center') {
-                  return [mode];
-                } else {
+                if (vrMode === 'hmd') {
                   return SIDES;
+                } else {
+                  const mode = webvr.getMode();
+
+                  if (mode !== 'center') {
+                    return [mode];
+                  } else {
+                    return SIDES;
+                  }
                 }
               })(),
               controllerMeshes: auxObjects.controllerMeshes,
