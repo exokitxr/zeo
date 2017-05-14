@@ -301,6 +301,7 @@ class WebVR {
 
                   this._frameData = (display instanceof FakeVRDisplay) ? new VRFrameDataFake() : new VRFrameData();
 
+                  const {userStageMatrix} = this;
                   if (display && stereoscopic) {
                     const {getVRDisplays} = navigator; // HACK to prevent VREffect from initializing VR displays
                     navigator.getVRDisplays = null;
@@ -320,6 +321,8 @@ class WebVR {
                     effect.isPresenting = true;
                     effect.autoSubmitFrame = false;
 
+                    userStageMatrix.copy(new THREE.Matrix4());
+
                     const resize = () => {
                       effect.setSize(window.innerWidth, window.innerHeight);
                     };
@@ -335,12 +338,13 @@ class WebVR {
                       renderer.setSize(window.innerWidth, window.innerHeight);
                       renderer.setPixelRatio(window.devicePixelRatio);
 
+                      userStageMatrix.copy(new THREE.Matrix4().makeTranslation(0, DEFAULT_USER_HEIGHT, 0));
+
                       window.removeEventListener('resize', resize);
                       window.removeEventListener('vrdisplaypresentchange', resize);
                     });
                   }
 
-                  const {userStageMatrix} = this;
                   const displayStageMatrix = new THREE.Matrix4();
                   if (display && display.stageParameters) {
                     displayStageMatrix.fromArray(display.stageParameters.sittingToStandingTransform);
