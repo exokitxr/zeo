@@ -1,4 +1,4 @@
-const BULLET_SPEED = 0.05;
+const BULLET_SPEED = 0.01;
 const BULLET_TTL = 5 * 1000;
 
 const DEFAULT_MATRIX = [
@@ -117,11 +117,11 @@ class ZGun {
               const bullets = [];
 
               const bulletGeometry = (() => {
-                const coreGeometry = new THREE.BoxBufferGeometry(0.01, 0.01, 0.02);
-                const tipGeometry = new THREE.CylinderBufferGeometry(0, sq(0.005), 0.02, 4, 1)
+                const coreGeometry = new THREE.BoxBufferGeometry(0.02, 0.02, 0.04);
+                const tipGeometry = new THREE.CylinderBufferGeometry(0, sq(0.02 / 2), 0.04, 4, 1)
                   .applyMatrix(new THREE.Matrix4().makeRotationY(-Math.PI * (3 / 12)))
                   .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
-                  .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -(0.02 / 2) - (0.02 / 2)));
+                  .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -(0.04 / 2) - (0.04 / 2)));
 
                 return geometryUtils.concatBufferGeometry([coreGeometry, tipGeometry]);
               })();
