@@ -10,16 +10,7 @@ const SIDES = ['left', 'right'];
 
 class ZBow {
   mount() {
-    const {three: {THREE, scene}, input, elements, render, pose, utils: {geometry: geometryUtils}} = zeo;
-
-    /* const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
-    const _decomposeMatrix = matrix => {
-      const position = new THREE.Vector3();
-      const rotation = new THREE.Quaternion();
-      const scale = new THREE.Vector3();
-      matrix.decompose(position, rotation, scale);
-      return {position, rotation, scale};
-    }; */
+    const {three: {THREE, scene}, input, elements, render, pose, player, utils: {geometry: geometryUtils}} = zeo;
 
     const bowGeometry = new THREE.TorusBufferGeometry(1, 0.02, 3, 3, Math.PI / 2)
       .applyMatrix(new THREE.Matrix4().makeRotationZ(-Math.PI / 4))
@@ -101,13 +92,21 @@ class ZBow {
         const arrows = [];
 
         const arrowGeometry = (() => {
-          const coreGeometry = new THREE.BoxBufferGeometry(0.01, 0.01, 0.3);
-          const tipGeometry = new THREE.CylinderBufferGeometry(0, sq(0.005), 0.02, 4, 1)
-            .applyMatrix(new THREE.Matrix4().makeRotationY(-Math.PI * (3 / 12)))
+          const coreGeometry = new THREE.BoxBufferGeometry(0.01, 0.01, 0.7);
+          const tipGeometry = new THREE.CylinderBufferGeometry(0, 0.015, 0.04, 3, 1)
             .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
-            .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -(0.02 / 2) - (0.02 / 2)));
+            .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -(0.7 / 2) - (0.04 / 2)));
+          const fletchingGeometry1 = new THREE.CylinderBufferGeometry(0, 0.015, 0.2, 2, 1)
+            .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
+            // .applyMatrix(new THREE.Matrix4().makeRotationZ(-Math.PI / 4))
+            .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, (0.7 / 2) - (0.2 / 2) - 0.01));
+          const fletchingGeometry2 = new THREE.CylinderBufferGeometry(0, 0.015, 0.2, 2, 1)
+            .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
+            .applyMatrix(new THREE.Matrix4().makeRotationZ(Math.PI / 2))
+            .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, (0.7 / 2) - (0.2 / 2) - 0.01));
 
-          return geometryUtils.concatBufferGeometry([coreGeometry, tipGeometry]);
+          return geometryUtils.concatBufferGeometry([coreGeometry, tipGeometry, fletchingGeometry1, fletchingGeometry2])
+            .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -0.7 / 2));
         })();
         const _makeArrowMesh = () => {
           const geometry = arrowGeometry;
@@ -130,11 +129,14 @@ class ZBow {
 
         const _makeArrowState = () => ({
           grabbed: false,
+          drawnArrowMesh: null,
         });
         const bowStates = {
           left: _makeArrowState(),
           right: _makeArrowState(),
         };
+
+        const _getOtherSide = side => side === 'left' ? 'right' : 'left';
 
         const _grab = e => {
           const {detail: {side}} = e;
@@ -148,26 +150,35 @@ class ZBow {
           const bowState = bowStates[side];
 
           bowState.grabbed = false;
+
+          const otherSide = _getOtherSide(side);
+          const otherBowState = bowStates[otherSide];
+          const {drawnArrowMesh} = otherBowState;
+          if (drawnArrowMesh) {
+            drawnArrowMesh.parent.remove(drawnArrowMesh);
+            otherBowState.drawnArrowMesh = null;
+          }
         };
         entityElement.addEventListener('release', _release);
-        const _triggerdown = e => {
+        const _gripdown = e => {
           const {side} = e;
-          const bowState = bowStates[side];
-          const {grabbed} = bowState;
+          const otherSide = _getOtherSide(side);
+          const otherBowState = bowStates[otherSide];
+          const {grabbed} = otherBowState;
 
           if (grabbed) {
             const {gamepads} = pose.getStatus();
             const gamepad = gamepads[side];
 
             if (gamepad) {
-              const {position, rotation, scale} = _decomposeObjectMatrixWorld(mesh);
+              const controllerMeshes = player.getControllerMeshes();
+              const controllerMesh = controllerMeshes[side];
+              const bowState = bowStates[side];
 
               const arrow = _makeArrowMesh();
-              arrow.position.copy(position);
-              arrow.quaternion.copy(rotation);
-              arrow.scale.copy(scale);
-              scene.add(arrow);
-              arrows.push(arrow);
+              controllerMesh.add(arrow);
+
+              bowState.drawnArrowMesh = arrow;
 
               // input.vibrate(side, 1, 20);
 
@@ -175,7 +186,20 @@ class ZBow {
             }
           }
         };
-        input.on('triggerdown', _triggerdown, {
+        input.on('gripdown', _gripdown, {
+          priority: 1,
+        });
+        const _gripup = e => {
+          const {side} = e;
+          const bowState = bowStates[side];
+          const {drawnArrowMesh} = bowState;
+
+          if (drawnArrowMesh) {
+            drawnArrowMesh.parent.remove(drawnArrowMesh);
+            bowState.drawnArrowMesh = null;
+          }
+        };
+        input.on('gripup', _gripup, {
           priority: 1,
         });
 
@@ -211,7 +235,8 @@ class ZBow {
 
           entityElement.removeEventListener('grab', _grab);
           entityElement.removeEventListener('release', _release);
-          input.removeListener('triggerdown', _triggerdown);
+          input.removeListener('gripdown', _gripdown);
+          input.removeListener('gripup', _gripup);
 
           render.removeListener('update', _update);
         };
