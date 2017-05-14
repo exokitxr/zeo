@@ -10,17 +10,26 @@ const SIDES = ['left', 'right'];
 
 class ZBow {
   mount() {
-    const {three: {THREE, scene}, input, elements, render, pose, player, utils: {geometry: geometryUtils}} = zeo;
+    const {three: {THREE, scene, camera}, input, elements, render, pose, player, utils: {geometry: geometryUtils}} = zeo;
+
+    const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
+    const _decomposeMatrix = matrix => {
+      const position = new THREE.Vector3();
+      const rotation = new THREE.Quaternion();
+      const scale = new THREE.Vector3();
+      matrix.decompose(position, rotation, scale);
+      return {position, rotation, scale};
+    };
 
     const bowGeometry = (() => {
       const coreGeometry = new THREE.TorusBufferGeometry(1, 0.02, 3, 3, Math.PI / 2)
         .applyMatrix(new THREE.Matrix4().makeRotationZ(-Math.PI / 4))
         .applyMatrix(new THREE.Matrix4().makeRotationY(Math.PI / 2))
-        .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, 1));
+        .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, 1 - 0.04, 0));
       const topGeometry = new THREE.BoxBufferGeometry(0.035, 0.1, 0.02)
-        .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.7 + (0.1 / 2), 0.3 - (0.02 / 2)));
+        .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.7 + (0.1 / 2), 0.26 - (0.02 / 2)));
       const bottomGeometry = new THREE.BoxBufferGeometry(0.035, 0.1, 0.02)
-        .applyMatrix(new THREE.Matrix4().makeTranslation(0, -0.7 - (0.1 / 2), 0.3 - (0.02 / 2)));
+        .applyMatrix(new THREE.Matrix4().makeTranslation(0, -0.7 - (0.1 / 2), 0.26 - (0.02 / 2)));
 
       return geometryUtils.concatBufferGeometry([coreGeometry, topGeometry, bottomGeometry])
         .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
@@ -81,18 +90,20 @@ class ZBow {
           const stringMesh = (() => {
             const geometry = new THREE.Geometry();
             geometry.vertices.push(
-              new THREE.Vector3(0, 0.3, 0.7),
-              new THREE.Vector3(0, 0.3, 0),
-              new THREE.Vector3(0, 0.3, 0),
-              new THREE.Vector3(0, 0.3, -0.7)
+              new THREE.Vector3(0, 0, 0.7),
+              new THREE.Vector3(0, 0, 0),
+              new THREE.Vector3(0, 0, 0),
+              new THREE.Vector3(0, 0, -0.7)
             );
             const material = stringMaterial;
 
             const mesh = new THREE.LineSegments(geometry, material);
+            mesh.position.y = 0.26;
             mesh.frustumCulled = false;
             return mesh;
           })();
           mesh.add(stringMesh);
+          mesh.stringMesh = stringMesh;
 
           return mesh;
         })();
@@ -122,6 +133,7 @@ class ZBow {
           const material = arrowMaterial;
 
           const mesh = new THREE.Mesh(geometry, material);
+          mesh.rotation.order = camera.rotation.order;
           mesh.startTime = Date.now();
           mesh.lastTime = mesh.lastTime;
           return mesh;
@@ -139,6 +151,7 @@ class ZBow {
         const _makeArrowState = () => ({
           grabbed: false,
           drawnArrowMesh: null,
+          nockedArrowMesh: null,
         });
         const bowStates = {
           left: _makeArrowState(),
@@ -162,10 +175,14 @@ class ZBow {
 
           const otherSide = _getOtherSide(side);
           const otherBowState = bowStates[otherSide];
-          const {drawnArrowMesh} = otherBowState;
+          const {drawnArrowMesh, nockedArrowMesh} = otherBowState;
           if (drawnArrowMesh) {
             drawnArrowMesh.parent.remove(drawnArrowMesh);
             otherBowState.drawnArrowMesh = null;
+          }
+          if (nockedArrowMesh) {
+            nockedArrowMesh.parent.remove(nockedArrowMesh);
+            otherBowState.nockedArrowMesh = null;
           }
         };
         entityElement.addEventListener('release', _release);
@@ -213,29 +230,55 @@ class ZBow {
         });
 
         const _update = () => {
-          const now = Date.now();
+          const _updateNock = () => {
+            SIDES.forEach(side => {
+              const bowState = bowStates[side];
+              const {drawnArrowMesh} = bowState;
 
-          const oldArrows = arrows.slice();
-          for (let i = 0; i < oldArrows.length; i++) {
-            const arrow = oldArrows[i];
-            const {startTime} = bullet;
-            const timeSinceStart = now - startTime;
+              if (drawnArrowMesh) {
+                const {stringMesh} = mesh;
+                const stringPosition = stringMesh.getWorldPosition();
+                const drawnArrowPosition = drawnArrowMesh.getWorldPosition();
 
-            if (timeSinceStart < ARROW_TTL) {
-              const {lastTime} = arrow;
-              const timeDiff = now - lastTime;
+                if (drawnArrowPosition.distanceTo(stringPosition) < 0.1) {
+                  stringMesh.add(drawnArrowMesh);
+                  bowState.drawnArrowMesh = null;
 
-              arrow.position.add(
-                new THREE.Vector3(0, 0, -ARROW_SPEED * timeDiff)
-                  .applyQuaternion(arrow.quaternion)
-              );
+                  const nockedArrowMesh = drawnArrowMesh;
+                  nockedArrowMesh.rotation.x = -Math.PI / 2;
+                  bowState.nockedArrowMesh = nockedArrowMesh;
+                }
+              }
+            });
+          };
+          const _updateArrows = () => {
+            const now = Date.now();
 
-              arrow.lastTime = now;
-            } else {
-              scene.remove(arrow);
-              arrows.splice(arrows.indexOf(bullet), 1);
+            const oldArrows = arrows.slice();
+            for (let i = 0; i < oldArrows.length; i++) {
+              const arrow = oldArrows[i];
+              const {startTime} = bullet;
+              const timeSinceStart = now - startTime;
+
+              if (timeSinceStart < ARROW_TTL) {
+                const {lastTime} = arrow;
+                const timeDiff = now - lastTime;
+
+                arrow.position.add(
+                  new THREE.Vector3(0, 0, -ARROW_SPEED * timeDiff)
+                    .applyQuaternion(arrow.quaternion)
+                );
+
+                arrow.lastTime = now;
+              } else {
+                scene.remove(arrow);
+                arrows.splice(arrows.indexOf(bullet), 1);
+              }
             }
-          }
+          };
+
+          _updateNock();
+          _updateArrows();
         };
         render.on('update', _update);
 
