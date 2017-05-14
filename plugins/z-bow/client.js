@@ -22,10 +22,6 @@ class ZBow {
     };
 
     const zeroVector = new THREE.Vector3();
-    const backQuaternion = new THREE.Quaternion().setFromUnitVectors(
-      new THREE.Vector3(0, 1, 0),
-      new THREE.Vector3(0, 0, -1)
-    );
 
     const bowGeometry = (() => {
       const coreGeometry = new THREE.TorusBufferGeometry(1, 0.02, 3, 3, Math.PI / 2)
@@ -135,49 +131,45 @@ class ZBow {
         const arrows = [];
 
         const arrowGeometry = (() => {
-          const coreGeometry = new THREE.BoxBufferGeometry(0.01, 0.01, 0.7);
+          const coreGeometry = new THREE.BoxBufferGeometry(0.01, 0.01, 0.75);
           const tipGeometry = new THREE.CylinderBufferGeometry(0, 0.015, 0.04, 3, 1)
             .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
-            .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -(0.7 / 2) - (0.04 / 2)));
+            .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -(0.75 / 2) - (0.04 / 2)));
           const fletchingGeometry1 = new THREE.CylinderBufferGeometry(0, 0.015, 0.2, 2, 1)
             .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
-            .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, (0.7 / 2) - (0.2 / 2) - 0.01));
+            .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, (0.75 / 2) - (0.2 / 2) - 0.01));
           const fletchingGeometry2 = new THREE.CylinderBufferGeometry(0, 0.015, 0.2, 2, 1)
             .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
             .applyMatrix(new THREE.Matrix4().makeRotationZ(Math.PI / 2))
-            .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, (0.7 / 2) - (0.2 / 2) - 0.01));
+            .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, (0.75 / 2) - (0.2 / 2) - 0.01));
 
           return geometryUtils.concatBufferGeometry([coreGeometry, tipGeometry, fletchingGeometry1, fletchingGeometry2])
-            .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -0.7 / 2));
+            .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -0.75 / 2));
         })();
         const _makeArrowMesh = () => {
           const geometry = arrowGeometry;
           const material = arrowMaterial;
 
-          const mesh = new THREE.Mesh(geometry, material);
-          mesh.startTime = Date.now();
-          mesh.lastTime = mesh.lastTime;
+          const arrowMesh = new THREE.Mesh(geometry, material);
+          arrowMesh.startTime = Date.now();
+          arrowMesh.lastTime = arrowMesh.startTime;
 
-          mesh.updatePull = (position = null) => {
-            if (position !== null) {
-              const {stringMesh} = mesh;
-              const pullPosition = stringMesh.getWorldPosition();
-              mesh.position.copy(pullPosition);
+          arrowMesh.updatePull = (position = null) => {
+            const {stringMesh} = mesh;
 
-              const pullAngle = mesh.getWorldPosition()
-                .sub(pullPosition)
-                .normalize();
-              mesh.quaternion.setFromUnitVectors(
-                new THREE.Vector3(0, 1, 0),
-                pullAngle
-              );
-            } else {
-              mesh.position.copy(zeroVector);
-              mesh.quaternion.copy(backQuaternion);
-            }
+            const pullPosition = position !== null ? position : stringMesh.getWorldPosition();
+            arrowMesh.position.copy(pullPosition);
+
+            const pullAngle = mesh.getWorldPosition()
+              .sub(pullPosition)
+              .normalize();
+            arrowMesh.quaternion.setFromUnitVectors(
+              new THREE.Vector3(0, 0, -1),
+              pullAngle
+            );
           };
 
-          return mesh;
+          return arrowMesh;
         };
 
         entityApi.position = DEFAULT_MATRIX;
