@@ -1,0 +1,8 @@
+{
+  "name": "z-bow",
+  "description": "Shoot VR bows and arrows.",
+  "version": "0.0.1",
+  "keywords": [],
+  "client": "client.js",
+  "dependencies": {}
+}
