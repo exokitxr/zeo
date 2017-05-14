@@ -130,8 +130,9 @@ class ZGun {
                 const material = bulletMaterial;
 
                 const mesh = new THREE.Mesh(geometry, material);
-                mesh.startTime = Date.now();
-                mesh.lastTime = mesh.lastTime;
+                const now = Date.now();
+                mesh.startTime = now;
+                mesh.lastTime = now;
                 return mesh;
               };
 

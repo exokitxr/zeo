@@ -1,4 +1,6 @@
 const ARROW_SPEED = 0.05;
+const ARROW_GRAVITY = -10 / 1000 * 0.001;
+const ARROW_TERMINAL_VELOCITY = -10;
 const ARROW_TTL = 5 * 1000;
 
 const DEFAULT_MATRIX = [
@@ -22,6 +24,7 @@ class ZBow {
     };
 
     const zeroVector = new THREE.Vector3();
+    const backVector = new THREE.Vector3(0, 0, -1);
 
     const bowGeometry = (() => {
       const coreGeometry = new THREE.TorusBufferGeometry(1, 0.02, 3, 3, Math.PI / 2)
@@ -103,20 +106,15 @@ class ZBow {
             mesh.position.y = 0.26;
             mesh.frustumCulled = false;
 
+            mesh.pullPosition = zeroVector;
             mesh.updatePull = (position = null) => {
-              if (position !== null) {
-                const pullPosition = position.clone().applyMatrix4(new THREE.Matrix4().getInverse(mesh.matrixWorld));
-
-                for (let i = 1; i <= 2; i++) {
-                  geometry.vertices[i] = pullPosition;
-                }
-              } else {
-                for (let i = 1; i <= 2; i++) {
-                  geometry.vertices[i] = zeroVector;
-                }
+              const pullPosition = position !== null ? position.clone().applyMatrix4(new THREE.Matrix4().getInverse(mesh.matrixWorld)) : zeroVector;
+              for (let i = 1; i <= 2; i++) {
+                geometry.vertices[i] = pullPosition;
               }
-
               geometry.verticesNeedUpdate = true;
+
+              mesh.pullPosition = pullPosition;
             };
 
             return mesh;
@@ -151,8 +149,9 @@ class ZBow {
           const material = arrowMaterial;
 
           const arrowMesh = new THREE.Mesh(geometry, material);
-          arrowMesh.startTime = Date.now();
-          arrowMesh.lastTime = arrowMesh.startTime;
+          arrowMesh.startTime = 0;
+          arrowMesh.lastTime = 0;
+          arrowMesh.velocity = null;
 
           arrowMesh.updatePull = (position = null) => {
             const {stringMesh} = mesh;
@@ -268,6 +267,23 @@ class ZBow {
 
           if (pulling) {
             bowState.pulling = false;
+
+            const otherSide = _getOtherSide(side);
+            const otherBowState = bowStates[otherSide];
+            const {nockedArrowMesh} = otherBowState;
+            if (nockedArrowMesh) {
+              const arrow = nockedArrowMesh;
+              arrows.push(arrow);
+
+              const now = Date.now();
+              arrow.startTime = now;
+              arrow.lastTime = now;
+              const {stringMesh} = mesh;
+              const {pullPosition} = stringMesh;
+              arrow.velocity = new THREE.Vector3(0, 0, -ARROW_SPEED * pullPosition.length()).applyQuaternion(arrow.quaternion);
+
+              otherBowState.nockedArrowMesh = null;
+            }
           }
           if (drawnArrowMesh) {
             drawnArrowMesh.parent.remove(drawnArrowMesh);
@@ -361,22 +377,25 @@ class ZBow {
             const oldArrows = arrows.slice();
             for (let i = 0; i < oldArrows.length; i++) {
               const arrow = oldArrows[i];
-              const {startTime} = bullet;
+              const {startTime} = arrow;
               const timeSinceStart = now - startTime;
 
               if (timeSinceStart < ARROW_TTL) {
                 const {lastTime} = arrow;
                 const timeDiff = now - lastTime;
 
-                arrow.position.add(
-                  new THREE.Vector3(0, 0, -ARROW_SPEED * timeDiff)
-                    .applyQuaternion(arrow.quaternion)
+                const {velocity} = arrow;
+                arrow.position.add(velocity.clone().multiplyScalar(timeDiff))
+                arrow.quaternion.setFromUnitVectors(
+                  backVector,
+                  velocity.clone().normalize()
                 );
+                velocity.y = Math.max(velocity.y + (ARROW_GRAVITY * timeDiff), ARROW_TERMINAL_VELOCITY);
 
                 arrow.lastTime = now;
               } else {
                 scene.remove(arrow);
-                arrows.splice(arrows.indexOf(bullet), 1);
+                arrows.splice(arrows.indexOf(arrow), 1);
               }
             }
           };
