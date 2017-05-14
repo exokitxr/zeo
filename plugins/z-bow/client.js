@@ -287,17 +287,23 @@ class ZBow {
               const otherBowState = bowStates[otherSide];
               const {nockedArrowMesh} = otherBowState;
 
-              if (drawnArrowMesh && !nockedArrowMesh) {
-                const {stringMesh} = mesh;
-                const stringPosition = stringMesh.getWorldPosition();
-                const drawnArrowPosition = drawnArrowMesh.getWorldPosition();
+              if (drawnArrowMesh) {
+                if (!nockedArrowMesh) {
+                  const {stringMesh} = mesh;
+                  const stringPosition = stringMesh.getWorldPosition();
+                  const drawnArrowPosition = drawnArrowMesh.getWorldPosition();
 
-                if (drawnArrowPosition.distanceTo(stringPosition) < 0.1) {
+                  if (drawnArrowPosition.distanceTo(stringPosition) < 0.1) {
+                    bowState.drawnArrowMesh = null;
+
+                    const nockedArrowMesh = drawnArrowMesh;
+                    scene.add(nockedArrowMesh);
+                    otherBowState.nockedArrowMesh = nockedArrowMesh;
+                  }
+                } else {
+                  drawnArrowMesh.parent.remove(drawnArrowMesh);
+
                   bowState.drawnArrowMesh = null;
-
-                  const nockedArrowMesh = drawnArrowMesh;
-                  scene.add(nockedArrowMesh);
-                  otherBowState.nockedArrowMesh = nockedArrowMesh;
                 }
               }
             });
