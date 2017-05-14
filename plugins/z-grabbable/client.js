@@ -173,7 +173,7 @@ class ZGrabbable {
             const radius = Math.max.apply(Math, size) / 2;
             const sphere = new THREE.Sphere(objectPosition, radius);
 
-            if (sphere.containsPoint(worldPosition)) {
+            if (sphere.containsPoint(controllerPosition)) {
               const grabEvent = new CustomEvent('grab', {
                 detail: {
                   side,
