@@ -177,7 +177,8 @@ class Teleport {
                 const {teleportFloorPoint, teleportAirPoint} = teleportState;
 
                 if (teleportFloorPoint) {
-                  const destinationPoint = teleportFloorPoint.clone().add(new THREE.Vector3(0, hmdPosition.y, 0));
+                  const basePosition = new THREE.Vector3(0, 0, 0).applyMatrix4(webvr.getSittingToStandingTransform());
+                  const destinationPoint = teleportFloorPoint.clone().add(new THREE.Vector3(0, basePosition.y, 0));
                   const positionDiff = destinationPoint.clone().sub(hmdPosition);
 
                   const stageMatrix = webvr.getStageMatrix();
