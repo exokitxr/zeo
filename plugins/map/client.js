@@ -24,7 +24,7 @@ class Map {
     };
 
     const mapUtils = mapUtilsMaker.makeUtils({
-      rng: new alea('z1'),
+      rng: new alea('z16'),
     });
 
     const _renderMapChunk = mapChunk => {
@@ -106,16 +106,8 @@ class Map {
             const {position} = mapCanvas;
 
             const geometry = new THREE.PlaneBufferGeometry(WORLD_WIDTH, WORLD_HEIGHT, WIDTH, HEIGHT)
-              .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
-            /* const uvsAttribute = geometry.getAttribute('uv');
-            const {array: uvs} = uvsAttribute;
-            const numUvs = uvs.length / 2;
-            for (let i = 0; i < numUvs; i++) {
-              const baseIndex = i * 2;
-              uvs[baseIndex + 0] *= 64;
-              uvs[baseIndex + 1] *= 64;
-            } */
-            // geometry.addAttribute('uv2', geometry.getAttribute('uv'));
+              .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
+              .applyMatrix(new THREE.Matrix4().makeRotationY(-Math.PI / 2));
 
             const mapTexture = new THREE.Texture(
               mapCanvas,
