@@ -156,12 +156,20 @@ class Biolumi {
         if (live) {
           const {THREE, renderer} = three;
 
+          class MatrixProperties {
+            constructor(position, rotation, scale) {
+              this.position = position;
+              this.rotation = rotation;
+              this.scale = scale;
+            }
+          }
+
           const _decomposeObjectMatrixWorld = object => {
             const position = new THREE.Vector3();
             const rotation = new THREE.Quaternion();
             const scale = new THREE.Vector3();
             object.matrixWorld.decompose(position, rotation, scale);
-            return {position, rotation, scale};
+            return new MatrixProperties(position, rotation, scale);
           };
 
           const RAY_COLOR = 0x44c2ff;
@@ -243,6 +251,7 @@ class Biolumi {
               this.mesh = mesh;
               this.layer = null;
               this.rendered = false;
+              this.boxTarget = null;
             }
 
             update() {
@@ -644,7 +653,8 @@ class Biolumi {
               const {gamepads} = pose;
               const {pages, boxAnchors, hoverStates, dotMeshes, boxMeshes} = this;
 
-              SIDES.forEach(side => {
+              for (let s = 0; s < SIDES.length; s++) {
+                const side = SIDES[s];
                 const dotMesh = dotMeshes[side];
                 const boxMesh = boxMeshes[side];
                 const controllerMesh = controllerMeshes[side];
@@ -665,21 +675,26 @@ class Biolumi {
                       const {mesh} = page;
 
                       if (_isWorldVisible(mesh)) {
-                        const {width, height, worldWidth, worldHeight} = page;
+                        let {boxTarget} = page;
                         const {position, rotation, scale} = _decomposeObjectMatrixWorld(mesh);
 
-                        const boxTarget = geometryUtils.makeBoxTarget(
-                          position,
-                          rotation,
-                          scale,
-                          new THREE.Vector3(worldWidth, worldHeight, 0)
-                        );
+                        if (boxTarget === null || !boxTarget.position.equals(position) || !boxTarget.quaternion.equals(rotation) || !boxTarget.scale.equals(scale)) {
+                          const {worldWidth, worldHeight} = page;
+                          boxTarget = geometryUtils.makeBoxTarget(
+                            position,
+                            rotation,
+                            scale,
+                            new THREE.Vector3(worldWidth, worldHeight, 0)
+                          );
+                          page.boxTarget = boxTarget;
+                        }
                         const intersectionPoint = boxTarget.intersectLine(controllerLine);
 
                         if (intersectionPoint) {
                           const distance = controllerPosition.distanceTo(intersectionPoint);
 
                           if (distance < closestIntersectionSpecDistance) {
+                            const {width, height, worldWidth, worldHeight} = page;
                             closestIntersectionSpec = new IntersectionSpec(
                               'page',
                               {
@@ -913,7 +928,7 @@ class Biolumi {
                     rayMesh.visible = false;
                   }
                 }
-              });
+              }
             }
           }
 
