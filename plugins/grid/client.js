@@ -31,18 +31,9 @@ class Grid {
       const mapCanvas = document.createElement('canvas');
       mapCanvas.width = NUM_CELLS;
       mapCanvas.height = NUM_CELLS;
-      mapCanvas.position = position;
       const mapCanvasCtx = mapCanvas.getContext('2d');
       const mapCanvasImageData = mapCanvasCtx.getImageData(0, 0, mapCanvas.width, mapCanvas.height);
       const {data: mapCanvasImageDataData} = mapCanvasImageData;
-
-      const displacementMapCanvas = document.createElement('canvas');
-      displacementMapCanvas.width = NUM_CELLS;
-      displacementMapCanvas.height = NUM_CELLS;
-      displacementMapCanvas.position = position;
-      const displacementMapCanvasCtx = displacementMapCanvas.getContext('2d');
-      const displacementMapCanvasImageData = displacementMapCanvasCtx.getImageData(0, 0, mapCanvas.width, mapCanvas.height);
-      const {data: displacementMapCanvasImageDataData} = displacementMapCanvasImageData;
 
       for (let y = 0; y < NUM_CELLS; y++) {
         for (let x = 0; x < NUM_CELLS; x++) {
@@ -57,21 +48,14 @@ class Grid {
           mapCanvasImageDataData[baseImageDataIndex + 1] = color.g * 255;
           mapCanvasImageDataData[baseImageDataIndex + 2] = color.b * 255;
           mapCanvasImageDataData[baseImageDataIndex + 3] = 255;
-
-          const {elevation} = point;
-          const elevationFactor = elevation / 10 * 255;
-          displacementMapCanvasImageDataData[baseImageDataIndex + 0] = elevationFactor;
-          displacementMapCanvasImageDataData[baseImageDataIndex + 1] = elevationFactor;
-          displacementMapCanvasImageDataData[baseImageDataIndex + 2] = elevationFactor;
-          displacementMapCanvasImageDataData[baseImageDataIndex + 3] = elevationFactor;
         }
       }
       mapCanvasCtx.putImageData(mapCanvasImageData, 0, 0);
-      displacementMapCanvasCtx.putImageData(displacementMapCanvasImageData, 0, 0);
 
       return {
-        map: mapCanvas,
-        displacementMap: displacementMapCanvas,
+        position: position,
+        points: points,
+        mapImage: mapCanvas,
       };
     };
 
@@ -82,7 +66,7 @@ class Grid {
     })));
 
     const gridComponent = {
-      selector: 'map[position]',
+      selector: 'grid[position]',
       attributes: {
         position: {
           type: 'matrix',
@@ -92,6 +76,10 @@ class Grid {
             1, 1, 1,
           ],
         },
+        raycastable: {
+          type: 'checkbox',
+          value: true,
+        },
       },
       entityAddedCallback(entityElement) {
         const entityApi = entityElement.getComponentApi();
@@ -100,15 +88,32 @@ class Grid {
         const mesh = (() => {
           const object = new THREE.Object3D();
 
-          const meshes = mapChunks.map(({map: mapCanvas, displacementMap: displacementMapCanvas}) => {
-            const {position} = mapCanvas;
+          const meshes = mapChunks.map(({position, points, mapImage}) => {
+            const geometry = new THREE.PlaneBufferGeometry(WORLD_WIDTH, WORLD_HEIGHT, WIDTH, HEIGHT);
+            const positionAttribute = geometry.getAttribute('position');
+            const {array: positions} = positionAttribute;
+            const numPositions = positions.length / 3;
+            for (let i = 0; i < numPositions; i++) {
+              const positionIndex = i * 3;
+              const x = Math.round((positions[positionIndex + 0] + WORLD_WIDTH / 2) / WORLD_WIDTH * NUM_CELLS);
+              const y = Math.round(-(positions[positionIndex + 1] - WORLD_HEIGHT / 2) / WORLD_HEIGHT * NUM_CELLS);
 
-            const geometry = new THREE.PlaneBufferGeometry(WORLD_WIDTH, WORLD_HEIGHT, WIDTH, HEIGHT)
+              if (x < NUM_CELLS && y < NUM_CELLS) {
+                const pointIndex = mapUtils.getCoordIndex(x, y);
+                const point = points[pointIndex];
+                const {elevation} = point;
+
+                const elevationFactor = Math.max(elevation, 0) * 10;
+                positions[positionIndex + 2] = elevationFactor;
+              }
+            }
+            geometry
               .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
               .applyMatrix(new THREE.Matrix4().makeRotationY(-Math.PI / 2));
+            geometry.computeBoundingBox();
 
             const mapTexture = new THREE.Texture(
-              mapCanvas,
+              mapImage,
               THREE.UVMapping,
               THREE.ClampToEdgeWrapping,
               THREE.ClampToEdgeWrapping,
@@ -120,30 +125,14 @@ class Grid {
             );
             mapTexture.needsUpdate = true;
 
-            const displacementMapTexture = new THREE.Texture(
-              displacementMapCanvas,
-              THREE.UVMapping,
-              THREE.ClampToEdgeWrapping,
-              THREE.ClampToEdgeWrapping,
-              THREE.NearestFilter,
-              THREE.NearestFilter,
-              THREE.RGBAFormat,
-              THREE.UnsignedByteType,
-              1
-            );
-            displacementMapTexture.needsUpdate = true;
-
             const material = new THREE.MeshPhongMaterial({
               map: mapTexture,
-              displacementMap: displacementMapTexture,
-              displacementScale: 100,
               shininess: 10,
               wireframe: true,
             });
 
             const mesh = new THREE.Mesh(geometry, material);
             mesh.position.set(position.x * WORLD_WIDTH, 0, position.y * WORLD_HEIGHT);
-            mesh.frustumCulled = false;
             return mesh;
           });
           meshes.forEach(mesh => {
