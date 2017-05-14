@@ -3,6 +3,7 @@
   "description": "Procedurally generated pixel map floor.",
   "version": "0.0.1",
   "client": "client.js",
+  "server": "server.js",
   "dependencies": {
     "indev": "^3.0.10"
   }
