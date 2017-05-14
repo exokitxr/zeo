@@ -84,7 +84,7 @@ class ZBow {
               new THREE.Vector3(0, 0.7, 0.3),
               new THREE.Vector3(0, 0, 0.3),
               new THREE.Vector3(0, 0, 0.3),
-              new THREE.Vector3(0, -0.7, 0.3),
+              new THREE.Vector3(0, -0.7, 0.3)
             );
             const material = stringMaterial;
 
