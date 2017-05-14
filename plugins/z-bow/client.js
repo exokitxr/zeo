@@ -10,7 +10,7 @@ const SIDES = ['left', 'right'];
 
 class ZBow {
   mount() {
-    const {three: {THREE, scene, camera}, input, elements, render, pose, player, utils: {geometry: geometryUtils}} = zeo;
+    const {three: {THREE, scene}, input, elements, render, pose, player, utils: {geometry: geometryUtils}} = zeo;
 
     const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
     const _decomposeMatrix = matrix => {
@@ -22,6 +22,10 @@ class ZBow {
     };
 
     const zeroVector = new THREE.Vector3();
+    const backQuaternion = new THREE.Quaternion().setFromUnitVectors(
+      new THREE.Vector3(0, 1, 0),
+      new THREE.Vector3(0, 0, -1)
+    );
 
     const bowGeometry = (() => {
       const coreGeometry = new THREE.TorusBufferGeometry(1, 0.02, 3, 3, Math.PI / 2)
@@ -103,10 +107,9 @@ class ZBow {
             mesh.position.y = 0.26;
             mesh.frustumCulled = false;
 
-            mesh.update = (position = null) => {
+            mesh.updatePull = (position = null) => {
               if (position !== null) {
-                const pullPosition = position.clone()
-                  .applyMatrix4(new THREE.Matrix4().getInverse(mesh.matrixWorld));
+                const pullPosition = position.clone().applyMatrix4(new THREE.Matrix4().getInverse(mesh.matrixWorld));
 
                 for (let i = 1; i <= 2; i++) {
                   geometry.vertices[i] = pullPosition;
@@ -138,7 +141,6 @@ class ZBow {
             .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -(0.7 / 2) - (0.04 / 2)));
           const fletchingGeometry1 = new THREE.CylinderBufferGeometry(0, 0.015, 0.2, 2, 1)
             .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
-            // .applyMatrix(new THREE.Matrix4().makeRotationZ(-Math.PI / 4))
             .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, (0.7 / 2) - (0.2 / 2) - 0.01));
           const fletchingGeometry2 = new THREE.CylinderBufferGeometry(0, 0.015, 0.2, 2, 1)
             .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
@@ -153,9 +155,27 @@ class ZBow {
           const material = arrowMaterial;
 
           const mesh = new THREE.Mesh(geometry, material);
-          mesh.rotation.order = camera.rotation.order;
           mesh.startTime = Date.now();
           mesh.lastTime = mesh.lastTime;
+
+          mesh.updatePull = (position = null) => {
+            if (position !== null) {
+              const pullPosition = position.clone().applyMatrix4(new THREE.Matrix4().getInverse(mesh.parent.matrixWorld));
+              mesh.position.copy(pullPosition);
+
+              /* const pullAngle = new THREE.Vector3(0, 0, -0.26)
+                .sub(pullPosition)
+                .normalize();
+              mesh.quaternion.setFromUnitVectors(
+                new THREE.Vector3(0, 1, 0),
+                pullAngle
+              ); */
+            } else {
+              mesh.position.copy(zeroVector);
+              mesh.quaternion.copy(backQuaternion);
+            }
+          };
+
           return mesh;
         };
 
@@ -251,10 +271,10 @@ class ZBow {
         const _gripup = e => {
           const {side} = e;
           const bowState = bowStates[side];
-          const {pulled, drawnArrowMesh} = bowState;
+          const {pulling, drawnArrowMesh} = bowState;
 
-          if (pulled) {
-            bowState.pulled = false;
+          if (pulling) {
+            bowState.pulling = false;
           }
           if (drawnArrowMesh) {
             drawnArrowMesh.parent.remove(drawnArrowMesh);
@@ -270,8 +290,11 @@ class ZBow {
             SIDES.forEach(side => {
               const bowState = bowStates[side];
               const {drawnArrowMesh} = bowState;
+              const otherSide = _getOtherSide(side);
+              const otherBowState = bowStates[otherSide];
+              const {nockedArrowMesh} = otherBowState;
 
-              if (drawnArrowMesh) {
+              if (drawnArrowMesh && !nockedArrowMesh) {
                 const {stringMesh} = mesh;
                 const stringPosition = stringMesh.getWorldPosition();
                 const drawnArrowPosition = drawnArrowMesh.getWorldPosition();
@@ -281,17 +304,37 @@ class ZBow {
 
                   const nockedArrowMesh = drawnArrowMesh;
                   stringMesh.add(nockedArrowMesh);
-                  nockedArrowMesh.rotation.x = -Math.PI / 2;
-                  bowState.nockedArrowMesh = nockedArrowMesh;
+                  otherBowState.nockedArrowMesh = nockedArrowMesh;
                 }
               }
             });
           };
           const _updateString = () => {
-            SIDES.forEach(side => {
+            const _updatePull = (position = null) => {
+              const {stringMesh} = mesh;
+              stringMesh.updatePull(position);
+
+              const nockedArrowMesh = (() => {
+                for (let s = 0; s < SIDES.length; s++) {
+                  const side = SIDES[s];
+                  const bowState = bowStates[side];
+                  const {nockedArrowMesh} = bowState;
+
+                  if (nockedArrowMesh) {
+                    return nockedArrowMesh;
+                  }
+                }
+
+                return null;
+              })();
+              if (nockedArrowMesh) {
+                nockedArrowMesh.updatePull(position);
+              }
+            };
+
+            const somePulling = SIDES.some(side => {
               const bowState = bowStates[side];
               const {pulling} = bowState;
-              const {stringMesh} = mesh;
 
               if (pulling) {
                 const {gamepads} = pose.getStatus();
@@ -299,14 +342,19 @@ class ZBow {
 
                 if (gamepad) {
                   const {worldPosition: controllerPosition} = gamepad;
-                  stringMesh.update(controllerPosition);
+                  _updatePull(controllerPosition);
                 } else {
-                  stringMesh.update();
+                  _updatePull();
                 }
+
+                return true;
               } else {
-                stringMesh.update();
+                return false;
               }
             });
+            if (!somePulling) {
+              _updatePull();
+            }
           };
           const _updateArrows = () => {
             const now = Date.now();
