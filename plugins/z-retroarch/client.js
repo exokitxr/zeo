@@ -21,13 +21,22 @@ class Retroarch {
       return {position, rotation, scale};
     };
 
+    const consoleMaterial = new THREE.MeshPhongMaterial({
+      color: 0x333333,
+      // shading: THREE.FlatShading,
+    });
+    const cartridgeMaterial = new THREE.MeshPhongMaterial({
+      color: 0x808080,
+      // shading: THREE.FlatShading,
+    });
+
     const retroarchComponent = {
       selector: 'retroarch[position]',
       attributes: {
         position: {
           type: 'matrix',
           value: [
-            0, 1.5, 0,
+            0, 1.5, -0.5,
             0, 0, 0, 1,
             1, 1, 1,
           ],
@@ -81,9 +90,86 @@ class Retroarch {
           });
 
           const mesh = new THREE.Mesh(geometry, material);
+
+          mesh.destroy = () => {
+            c.disconnect();
+          };
+
           return mesh;
         })();
         entityObject.add(screenMesh);
+
+        const consoleMesh = (() => {
+          const object = new THREE.Object3D();
+          object.position.z = 0.5;
+
+          const coreMesh = (() => {
+            const geometry = geometryUtils.concatBufferGeometry([
+              new THREE.BoxBufferGeometry(0.2, 0.05, 0.2),
+              new THREE.BoxBufferGeometry(0.05, 0.02, 0.05)
+                .applyMatrix(new THREE.Matrix4().makeTranslation(-(0.2 / 2) + (0.05 / 4), -0.05 / 2, -(0.2 / 2) + (0.05 / 4))),
+              new THREE.BoxBufferGeometry(0.05, 0.02, 0.05)
+                .applyMatrix(new THREE.Matrix4().makeTranslation(-(0.2 / 2) + (0.05 / 4), -0.05 / 2, (0.2 / 2) - (0.05 / 4))),
+              new THREE.BoxBufferGeometry(0.05, 0.02, 0.05)
+                .applyMatrix(new THREE.Matrix4().makeTranslation((0.2 / 2) - (0.05 / 4), -0.05 / 2, -(0.2 / 2) + (0.05 / 4))),
+              new THREE.BoxBufferGeometry(0.05, 0.02, 0.05)
+                .applyMatrix(new THREE.Matrix4().makeTranslation((0.2 / 2) - (0.05 / 4), -0.05 / 2, (0.2 / 2) - (0.05 / 4))),
+            ]);
+            const material = consoleMaterial;
+
+            const mesh = new THREE.Mesh(geometry, material);
+            return mesh;
+          })();
+          object.add(coreMesh);
+
+          const cartridgeMesh = (() => {
+            const geometry = new THREE.BoxBufferGeometry(0.08, 0.05, 0.015)
+              .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.05 / 2, 0));
+            const material = cartridgeMaterial;
+
+            const mesh = new THREE.Mesh(geometry, material);
+            return mesh;
+          })();
+          object.add(cartridgeMesh);
+
+          return object;
+        })();
+        entityObject.add(consoleMesh);
+
+        const gamepadMeshes = (() => {
+          const leftGamepadMesh = (() => {
+            const geometry = geometryUtils.concatBufferGeometry([
+              new THREE.BoxBufferGeometry(0.05, 0.02, 0.1),
+              new THREE.BoxBufferGeometry(0.04, 0.02 / 2, 0.02)
+                .applyMatrix(new THREE.Matrix4().makeTranslation(-(0.05 / 2) + (0.04 / 2) - 0.005, 0, -(0.1 / 2) + (0.02 / 4))),
+            ]);
+            const material = consoleMaterial;
+
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.position.x = -0.5;
+            mesh.position.z = 0.5;
+            return mesh;
+          })();
+
+          const rightGamepadMesh = (() => {
+            const geometry = geometryUtils.concatBufferGeometry([
+              new THREE.BoxBufferGeometry(0.05, 0.02, 0.1),
+              new THREE.BoxBufferGeometry(0.04, 0.02 / 2, 0.02)
+                .applyMatrix(new THREE.Matrix4().makeTranslation((0.05 / 2) - (0.04 / 2) + 0.005, 0, -(0.1 / 2) + (0.02 / 4))),
+            ]);
+            const material = consoleMaterial;
+
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.position.x = 0.5;
+            mesh.position.z = 0.5;
+            return mesh;
+          })();
+
+          return [leftGamepadMesh, rightGamepadMesh];
+        })();
+        gamepadMeshes.forEach(gamepadMesh => {
+          entityObject.add(gamepadMesh);
+        });
 
         const _update = () => {
           const {
@@ -97,6 +183,11 @@ class Retroarch {
 
         entityApi._cleanup = () => {
           entityObject.remove(screenMesh);
+          screenMesh.destroy();
+          entityObject.remove(consoleMesh);
+          gamepadMeshes.forEach(gamepadMesh => {
+            entityObject.remove(gamepadMesh);
+          });
 
           render.removeListener('update', _update);
         };
