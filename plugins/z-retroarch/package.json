@@ -6,6 +6,6 @@
   "client": "client.js",
   "server": "server.js",
   "dependencies": {
-    "retroarch": "0.0.8"
+    "retroarch": "0.0.9"
   }
 }
