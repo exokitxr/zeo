@@ -678,7 +678,7 @@ class Biolumi {
                         let {boxTarget} = page;
                         const {position, rotation, scale} = _decomposeObjectMatrixWorld(mesh);
 
-                        if (boxTarget === null || !boxTarget.position.equals(position) || !boxTarget.quaternion.equals(rotation) || !boxTarget.scale.equals(scale)) {
+                        if (!boxTarget || !boxTarget.position.equals(position) || !boxTarget.quaternion.equals(rotation) || !boxTarget.scale.equals(scale)) {
                           const {worldWidth, worldHeight} = page;
                           boxTarget = geometryUtils.makeBoxTarget(
                             position,
