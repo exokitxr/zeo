@@ -1,0 +1,19 @@
+const WIDTH = 1024;
+const ASPECT_RATIO = 320 / 240;
+const HEIGHT = Math.round(WIDTH / ASPECT_RATIO);
+const WORLD_WIDTH = 2;
+const WORLD_HEIGHT = WORLD_WIDTH / ASPECT_RATIO;
+const WORLD_DEPTH = WORLD_WIDTH / 50;
+
+const PORT = 9999;
+
+module.exports = {
+  WIDTH,
+  HEIGHT,
+  ASPECT_RATIO,
+  WORLD_WIDTH,
+  WORLD_HEIGHT,
+  WORLD_DEPTH,
+
+  PORT,
+};

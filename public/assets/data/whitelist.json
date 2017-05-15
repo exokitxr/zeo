@@ -182,6 +182,9 @@
   "/plugins/z-paint": [
     "0.0.1"
   ],
+  "/plugins/z-retroarch": [
+    "0.0.1"
+  ],
   "/plugins/z-sp-physics": [
     "0.0.1"
   ],

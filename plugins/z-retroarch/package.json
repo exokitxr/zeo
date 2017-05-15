@@ -1,0 +1,11 @@
+{
+  "name": "z-retroarch",
+  "description": "Retroarch console emulation in VR.",
+  "version": "0.0.1",
+  "keywords": [],
+  "client": "client.js",
+  "server": "server.js",
+  "dependencies": {
+    "retroarch": "0.0.6"
+  }
+}
