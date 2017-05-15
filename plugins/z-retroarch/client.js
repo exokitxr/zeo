@@ -138,31 +138,73 @@ class Retroarch {
 
         const gamepadMeshes = (() => {
           const leftGamepadMesh = (() => {
-            const geometry = geometryUtils.concatBufferGeometry([
-              new THREE.BoxBufferGeometry(0.05, 0.02, 0.1),
-              new THREE.BoxBufferGeometry(0.04, 0.02 / 2, 0.02)
-                .applyMatrix(new THREE.Matrix4().makeTranslation(-(0.05 / 2) + (0.04 / 2) - 0.005, 0, -(0.1 / 2) + (0.02 / 4))),
-            ]);
-            const material = consoleMaterial;
+            const object = new THREE.Object3D();
+            object.position.x = -0.5;
+            object.position.z = 0.5;
 
-            const mesh = new THREE.Mesh(geometry, material);
-            mesh.position.x = -0.5;
-            mesh.position.z = 0.5;
-            return mesh;
+            const coreMesh = (() => {
+              const geometry = new THREE.BoxBufferGeometry(0.05, 0.02, 0.1);
+              const material = consoleMaterial;
+
+              const mesh = new THREE.Mesh(geometry, material);
+              return mesh;
+            })();
+            object.add(coreMesh);
+
+            const buttonsMesh = (() => {
+              const geometry = geometryUtils.concatBufferGeometry([
+                new THREE.BoxBufferGeometry(0.005, 0.005, 0.0075)
+                  .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.02 / 2, -0.0075)),
+                new THREE.BoxBufferGeometry(0.0075, 0.005, 0.005)
+                  .applyMatrix(new THREE.Matrix4().makeTranslation(-0.0075, 0.02 / 2, 0)),
+                new THREE.BoxBufferGeometry(0.005, 0.005, 0.0075)
+                  .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.02 / 2, 0.0075)),
+                new THREE.BoxBufferGeometry(0.0075, 0.005, 0.005)
+                  .applyMatrix(new THREE.Matrix4().makeTranslation(0.0075, 0.02 / 2, 0)),
+                new THREE.BoxBufferGeometry(0.04, 0.02 / 2, 0.02)
+                  .applyMatrix(new THREE.Matrix4().makeTranslation(-(0.05 / 2) + (0.04 / 2) - 0.005, 0, -(0.1 / 2) + (0.02 / 4))),
+              ]);
+              const material = cartridgeMaterial;
+
+              const mesh = new THREE.Mesh(geometry, material);
+              return mesh;
+            })();
+            object.add(buttonsMesh);
+
+            return object;
           })();
 
           const rightGamepadMesh = (() => {
-            const geometry = geometryUtils.concatBufferGeometry([
-              new THREE.BoxBufferGeometry(0.05, 0.02, 0.1),
-              new THREE.BoxBufferGeometry(0.04, 0.02 / 2, 0.02)
-                .applyMatrix(new THREE.Matrix4().makeTranslation((0.05 / 2) - (0.04 / 2) + 0.005, 0, -(0.1 / 2) + (0.02 / 4))),
-            ]);
-            const material = consoleMaterial;
+            const object = new THREE.Object3D();
+            object.position.x = 0.5;
+            object.position.z = 0.5;
 
-            const mesh = new THREE.Mesh(geometry, material);
-            mesh.position.x = 0.5;
-            mesh.position.z = 0.5;
-            return mesh;
+            const coreMesh = (() => {
+              const geometry = new THREE.BoxBufferGeometry(0.05, 0.02, 0.1);
+              const material = consoleMaterial;
+
+              const mesh = new THREE.Mesh(geometry, material);
+              return mesh;
+            })();
+            object.add(coreMesh);
+
+            const buttonsMesh = (() => {
+              const geometry = geometryUtils.concatBufferGeometry([
+                new THREE.BoxBufferGeometry(0.01, 0.005, 0.01)
+                  .applyMatrix(new THREE.Matrix4().makeTranslation(0.01 * 3 / 4, 0.02 / 2, -0.01 * 3 / 4)),
+                new THREE.BoxBufferGeometry(0.01, 0.005, 0.01)
+                  .applyMatrix(new THREE.Matrix4().makeTranslation(-0.01 * 3 / 4, 0.02 / 2, 0.01 * 3 / 4)),
+                new THREE.BoxBufferGeometry(0.04, 0.02 / 2, 0.02)
+                  .applyMatrix(new THREE.Matrix4().makeTranslation((0.05 / 2) - (0.04 / 2) + 0.005, 0, -(0.1 / 2) + (0.02 / 4))),
+              ]);
+              const material = cartridgeMaterial;
+
+              const mesh = new THREE.Mesh(geometry, material);
+              return mesh;
+            })();
+            object.add(buttonsMesh);
+
+            return object;
           })();
 
           return [leftGamepadMesh, rightGamepadMesh];
