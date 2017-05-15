@@ -75,7 +75,7 @@ class Rarepepe {
             return material;
           })();
 
-          const commentComponent = {
+          const rarepepeComponent = {
             selector: 'rarepepe[position][index]',
             attributes: {
               position: {
@@ -255,14 +255,14 @@ class Rarepepe {
               entityApi._cleanup();
             },
           };
-          elements.registerComponent(this, commentComponent);
+          elements.registerComponent(this, rarepepeComponent);
 
           this._cleanup = () => {
             cardfrontGeometry.dispose();
             cardbackGeometry.dispose();
             cardbackMaterial.dispose();
 
-            elements.unregisterComponent(this, commentComponent);
+            elements.unregisterComponent(this, rarepepeComponent);
           };
         }
       });
