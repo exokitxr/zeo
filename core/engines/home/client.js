@@ -168,12 +168,6 @@ class Home {
             return {position, rotation, scale};
           };
 
-          const wireframeHighlightMaterial = new THREE.MeshBasicMaterial({
-            color: 0x0000FF,
-            wireframe: true,
-            opacity: 0.5,
-            transparent: true,
-          });
           const _makeSolidMaterial = color => new THREE.MeshPhongMaterial({
             color: color,
             // shininess: 0,
