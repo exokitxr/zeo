@@ -41,17 +41,15 @@ class Retroarch {
           const canvas = document.createElement('canvas');
           canvas.width = WIDTH;
           canvas.height = HEIGHT;
-          setTimeout(() => {
-            const c = novnc.connect({
-              canvas: canvas,
-              host: document.location.hostname,
-              port: PORT,
-              path: '/',
-              ondisconnect: () => {
-                console.warn('disconnected');
-              },
-            });
-          }, 1000);
+          const c = novnc.connect({
+            canvas: canvas,
+            host: document.location.hostname,
+            port: PORT,
+            path: '/',
+            ondisconnect: () => {
+              console.warn('disconnected');
+            },
+          });
 
           // XXX
           /* document.body.addEventListener('keydown', e => {
