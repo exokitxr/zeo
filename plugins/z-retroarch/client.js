@@ -254,27 +254,32 @@ class Retroarch {
           const {gamepads} = pose.getStatus();
           const gamepad = gamepads[side];
           const gamepadState = gamepadStates[side];
-          const {grabSide} = gamepadState;
 
-          if (gamepad && !grabSide) {
-            const {worldPosition: controllerPosition} = gamepad;
+          if (gamepad) {
+            const {grabSide} = gamepadState;
 
-            const gamepadDistanceSpecs = SIDES.map(gamepadSide => {
-              const gamepadMesh = gamepadMeshes[gamepadSide];
-              const gamepadMeshPosition = gamepadMesh.getWorldPosition();
-              const distance = gamepadMeshPosition.distanceTo(controllerPosition);
-              return {
-                gamepadSide,
-                distance,
-              };
-            }).filter(({distance}) => distance < 0.1).sort((a, b) => a.distance - b.distance);
+            if (!grabSide) {
+              const {worldPosition: controllerPosition} = gamepad;
 
-            if (gamepadDistanceSpecs.length > 0) {
-              const gamepadDistanceSpec = gamepadDistanceSpecs[0];
-              const {gamepadSide} = gamepadDistanceSpec;
-              gamepadState.grabSide = gamepadSide;
-              gamepadState.grabbing = true;
+              const gamepadDistanceSpecs = SIDES.map(gamepadSide => {
+                const gamepadMesh = gamepadMeshes[gamepadSide];
+                const gamepadMeshPosition = gamepadMesh.getWorldPosition();
+                const distance = gamepadMeshPosition.distanceTo(controllerPosition);
+                return {
+                  gamepadSide,
+                  distance,
+                };
+              }).filter(({distance}) => distance < 0.1).sort((a, b) => a.distance - b.distance);
 
+              if (gamepadDistanceSpecs.length > 0) {
+                const gamepadDistanceSpec = gamepadDistanceSpecs[0];
+                const {gamepadSide} = gamepadDistanceSpec;
+                gamepadState.grabSide = gamepadSide;
+                gamepadState.grabbing = true;
+
+                e.stopImmediatePropagation();
+              }
+            } else {
               e.stopImmediatePropagation();
             }
           }
