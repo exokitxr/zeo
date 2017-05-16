@@ -130,13 +130,14 @@ class Teleport {
               if (teleporting) {
                 const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale, axes} = gamepad;
 
-                const controllerAbsPosition = controllerPosition.clone().multiply(controllerScale);
-                const ray = new THREE.Vector3(0, 0, -1)
-                  .applyQuaternion(controllerRotation);
                 const axisFactor = (axes[1] - (-1)) / 2;
                 const controllerLine = new THREE.Line3(
-                  controllerAbsPosition.clone(),
-                  controllerAbsPosition.clone().add(ray.clone().multiplyScalar(axisFactor * TELEPORT_DISTANCE))
+                  controllerPosition.clone(),
+                  controllerPosition.clone().add(
+                    new THREE.Vector3(0, 0, -axisFactor * TELEPORT_DISTANCE)
+                      .multiply(controllerScale)
+                      .applyQuaternion(controllerRotation)
+                  )
                 );
                 const intersectionPoint = floorPlane.intersectLine(controllerLine);
 
@@ -145,6 +146,7 @@ class Teleport {
                   teleportFloorMesh.position.copy(destinationPoint);
                   const controllerEuler = new THREE.Euler().setFromQuaternion(controllerRotation, camera.rotation.order);
                   teleportFloorMesh.rotation.y = controllerEuler.y;
+                  teleportFloorMesh.scale.copy(controllerScale);
 
                   teleportState.teleportFloorPoint = destinationPoint;
                   teleportState.teleportAirPoint = null;
@@ -162,6 +164,7 @@ class Teleport {
                   teleportAirMesh.position.copy(destinationPoint);
                   const controllerEuler = new THREE.Euler().setFromQuaternion(controllerRotation, camera.rotation.order);
                   teleportAirMesh.rotation.y = controllerEuler.y;
+                  teleportAirMesh.scale.copy(controllerScale);
 
                   teleportState.teleportAirPoint = destinationPoint;
                   teleportState.teleportFloorPoint = null;
