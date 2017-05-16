@@ -27,7 +27,7 @@ class Rend {
 
   mount() {
     const {_archae: archae} = this;
-    const {metadata: {home: {enabled: homeEnabled}, server: {worldname: serverWorldname, enabled: serverEnabled}, hub: {url: hubUrl}}} = archae;
+    const {metadata: {server: {worldname: serverWorldname, enabled: serverEnabled}, hub: {url: hubUrl}}} = archae;
 
     const cleanups = [];
     this._cleanup = () => {
@@ -86,14 +86,6 @@ class Rend {
           creatureUtils,
         });
 
-        const _decomposeObjectMatrixWorld = object => {
-          const position = new THREE.Vector3();
-          const rotation = new THREE.Quaternion();
-          const scale = new THREE.Vector3();
-          object.matrixWorld.decompose(position, rotation, scale);
-          return {position, rotation, scale};
-        };
-
         const uiTracker = biolumi.makeUiTracker();
         const {dotMeshes, boxMeshes} = uiTracker;
         SIDES.forEach(side => {
@@ -111,7 +103,7 @@ class Rend {
         };
 
         const menuState = {
-          open: true,
+          open: !bootstrap.getTutorialFlag(),
           position: [0, DEFAULT_USER_HEIGHT, -1.5],
           rotation: new THREE.Quaternion().toArray(),
           scale: new THREE.Vector3(1, 1, 1).toArray(),
@@ -128,7 +120,7 @@ class Rend {
           }
         };
         const navbarState = {
-          tab: bootstrap.getTutorialFlag() ? 'tutorial' : 'status',
+          tab: 'status',
         };
 
         const menuMesh = (() => {
@@ -175,7 +167,6 @@ class Rend {
           object.add(statusMesh);
           object.statusMesh = statusMesh;
 
-          object.tutorialMesh = null;
           object.worldMesh = null;
           object.serversMesh = null;
           object.walletMesh = null;
@@ -237,13 +228,6 @@ class Rend {
         })();
         scene.add(menuMesh);
 
-        /* const vrModeChange = vrMode => {
-          if (vrMode === null) {
-            rendApi.update();
-          }
-        };
-        bootstrap.on('vrModeChange', vrModeChange); */
-
         const trigger = e => {
           const {side} = e;
 
@@ -253,7 +237,7 @@ class Rend {
             const onclick = (anchor && anchor.onclick) || '';
 
             let match;
-            if (match = onclick.match(/^navbar:(tutorial|status|world|servers|wallet|options)$/)) {
+            if (match = onclick.match(/^navbar:(status|world|servers|wallet|options)$/)) {
               const newTab = match[1];
 
               rendApi.setTab(newTab);
@@ -448,7 +432,6 @@ class Rend {
             scene.remove(boxMeshes[side]);
           });
 
-          // bootstrap.removeListener('vrModeChange', vrModeChange);
           input.removeListener('trigger', trigger);
           input.removeListener('click', click);
           input.removeListener('menudown', menudown);
@@ -491,7 +474,7 @@ class Rend {
           const _updateUiTracker = () => {
             uiTracker.update({
               pose: webvr.getStatus(),
-              enabled: rendApi.isOpen() || homeEnabled,
+              enabled: rendApi.isOpen() || bootstrap.getTutorialFlag(),
               sides: (() => {
                 const vrMode = bootstrap.getVrMode();
 
@@ -545,7 +528,6 @@ class Rend {
           setTab(newTab) {
             const _getTabMesh = tab => {
               switch (tab) {
-                case 'tutorial': return menuMesh.tutorialMesh;
                 case 'status': return menuMesh.statusMesh;
                 case 'world': return menuMesh.worldMesh;
                 case 'servers': return menuMesh.serversMesh;

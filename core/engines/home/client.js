@@ -5,28 +5,9 @@ import {
   WORLD_HEIGHT,
   WORLD_DEPTH,
 
-  TAGS_WIDTH,
-  TAGS_HEIGHT,
-  TAGS_ASPECT_RATIO,
-  TAGS_WORLD_WIDTH,
-  TAGS_WORLD_HEIGHT,
-  TAGS_WORLD_DEPTH,
-
-  SERVER_WIDTH,
-  SERVER_HEIGHT,
-  SERVER_WORLD_WIDTH,
-  SERVER_WORLD_HEIGHT,
-
-  WALKTHROUGH_WIDTH,
-  WALKTHROUGH_HEIGHT,
-  WALKTHROUGH_WORLD_WIDTH,
-  WALKTHROUGH_WORLD_HEIGHT,
-
-  SPHERE_RADIUS,
-
   DEFAULT_USER_HEIGHT,
 } from './lib/constants/menu';
-import menuRender from './lib/render/menu';
+import menuRenderer from './lib/render/menu';
 
 const VIDEOS = [
   {
@@ -117,11 +98,7 @@ class Home {
         '/core/engines/cyborg',
         '/core/engines/somnifer',
         '/core/engines/rend',
-        '/core/engines/keyboard',
         '/core/engines/tags',
-        '/core/utils/js-utils',
-        '/core/utils/geometry-utils',
-        '/core/utils/creature-utils',
       ]),
       _requestVideoSpecs(),
     ])
@@ -135,45 +112,16 @@ class Home {
           cyborg,
           somnifer,
           rend,
-          keyboard,
           tags,
-          jsUtils,
-          geometryUtils,
-          creatureUtils,
         ],
         videos,
       ]) => {
         if (live) {
-          const {THREE, scene, camera, renderer} = three;
-          const {events} = jsUtils;
-          const {EventEmitter} = events;
-
-          const menuRenderer = menuRender.makeRenderer({
-            creatureUtils,
-          });
+          const {THREE, scene, renderer} = three;
 
           const transparentMaterial = biolumi.getTransparentMaterial();
           const transparentImg = biolumi.getTransparentImg();
 
-          const _decomposeObjectMatrixWorld = object => {
-            const position = new THREE.Vector3();
-            const rotation = new THREE.Quaternion();
-            const scale = new THREE.Vector3();
-            object.matrixWorld.decompose(position, rotation, scale);
-            return {position, rotation, scale};
-          };
-
-          const _makeSolidMaterial = color => new THREE.MeshPhongMaterial({
-            color: color,
-            // shininess: 0,
-            shading: THREE.FlatShading,
-          });
-          const solidMaterials = {
-            red: _makeSolidMaterial(0xF44336),
-            white: _makeSolidMaterial(0xFFFFFF),
-            blue: _makeSolidMaterial(0x2196F3),
-            green: _makeSolidMaterial(0x4CAF50),
-          };
           const _makeTransparentMaterial = color => new THREE.MeshPhongMaterial({
             color: color,
             // shininess: 0,
@@ -185,50 +133,19 @@ class Home {
             red: _makeTransparentMaterial(0xF44336),
           };
 
-          const controllerMeshOffset = new THREE.Vector3(0, 0, -0.02);
-          const controllerMeshQuaternion = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, -1));
-          const oneVector = new THREE.Vector3(1, 1, 1);
-          const backVector = new THREE.Vector3(0, 0, 1);
-          const sphereDiameterVector = new THREE.Vector3(SPHERE_RADIUS * 2, SPHERE_RADIUS * 2, SPHERE_RADIUS * 2);
-
-          const mainFontSpec = {
-            fonts: biolumi.getFonts(),
-            fontSize: 40,
-            lineHeight: 1.4,
-            fontWeight: biolumi.getFontWeight(),
-            fontStyle: biolumi.getFontStyle(),
-          };
           const homeState = {
             page: '',
             username: '',
-            inputText: '',
-            loading: false,
             vrMode: bootstrap.getVrMode(),
           };
           const mediaState = {
             paused: true,
             value: 0,
           };
-          const focusState = {
-            keyboardFocusState: null,
-          };
-          const _makeTargetState = () => ({
-            pointed: false,
-          });
-          const targetStates = {
-            left: _makeTargetState(),
-            right: _makeTargetState(),
-          };
-
-          /* const _vrModeChange = vrMode => { // XXX we might not need this with the
-            homeState.vrMode = vrMode;
-
-            _updatePages();
-          };
-          bootstrap.on('vrModeChange', _vrModeChange); */
 
           const tutorialMesh = (() => {
             const object = new THREE.Object3D();
+            object.position.set(0, DEFAULT_USER_HEIGHT, -1.5);
             object.visible = bootstrap.getTutorialFlag();
 
             const planeMesh = (() => {
@@ -239,27 +156,15 @@ class Home {
               const mesh = menuUi.makePage(({
                 home: {
                   page,
-                  inputText,
-                  loading,
                   vrMode,
                 },
                 videos,
-                focus: {
-                  keyboardFocusState,
-                },
               }) => {
-                const {type: focusType = '', inputIndex = 0, inputValue = 0} = keyboardFocusState || {};
-
                 return {
                   type: 'html',
                   src: menuRenderer.getHomeMenuSrc({
                     page,
-                    inputText,
-                    inputIndex,
-                    inputValue,
-                    loading,
                     vrMode,
-                    focusType,
                     videos,
                   }),
                   x: 0,
@@ -272,7 +177,6 @@ class Home {
                 state: {
                   home: homeState,
                   videos: videos,
-                  focus: focusState,
                 },
                 worldWidth: WORLD_WIDTH,
                 worldHeight: WORLD_HEIGHT,
@@ -441,593 +345,7 @@ class Home {
 
             return object;
           })();
-          rend.registerMenuMesh('tutorialMesh', tutorialMesh);
-
-          const walkthroughMeshes = (() => {
-            const result = {};
-
-            const _makeWalkthroughMesh = label => {
-              const menuUi = biolumi.makeUi({
-                width: WALKTHROUGH_WIDTH,
-                height: WALKTHROUGH_HEIGHT,
-                color: [0, 0, 0, 0],
-              });
-              const mesh = menuUi.makePage(({
-                // nothing
-              }) => {
-                return {
-                  type: 'html',
-                  src: menuRenderer.getWalkthroughSrc({
-                    label: label,
-                  }),
-                  x: 0,
-                  y: 0,
-                  w: WALKTHROUGH_WIDTH,
-                  h: WALKTHROUGH_HEIGHT,
-                };
-              }, {
-                type: 'home',
-                state: {},
-                worldWidth: WALKTHROUGH_WORLD_WIDTH,
-                worldHeight: WALKTHROUGH_WORLD_HEIGHT,
-              });
-              mesh.visible = false;
-
-              const {page} = mesh;
-              page.update();
-
-              return mesh;
-            };
-
-            const hmd = cyborg.getHmd();
-            const {hudMesh} = hmd;
-            const controllers = cyborg.getControllers();
-            const controllerMeshes = {
-              left: controllers.left.mesh,
-              right: controllers.right.mesh,
-            };
-
-            const _makeControllerWalkthroughMesh = side => {
-              const walkthroughMesh = _makeWalkthroughMesh(side === 'left' ? 'Z' : 'C');
-              walkthroughMesh.position.y = 0.1;
-
-              const controllerMesh = controllerMeshes[side];
-              controllerMesh.add(walkthroughMesh);
-
-              return walkthroughMesh;
-            };
-            const controllerLabelMeshes = {
-              left: _makeControllerWalkthroughMesh('left'),
-              right: _makeControllerWalkthroughMesh('right'),
-            };
-            result.controllerLabelMeshes = controllerLabelMeshes;
-
-            const clickLabelMesh = (() => {
-              const walkthroughMesh = _makeWalkthroughMesh('Click');
-              walkthroughMesh.position.y = 0.1;
-
-              const {left: leftControllerMesh} = controllerMeshes;
-              leftControllerMesh.add(walkthroughMesh);
-              return walkthroughMesh;
-            })();
-            result.clickLabelMesh = clickLabelMesh;
-
-            const menuButtonMesh1 = (() => {
-              const walkthroughMesh = _makeWalkthroughMesh('E');
-              walkthroughMesh.position.y = 0.1;
-
-              const {left: leftControllerMesh} = controllerMeshes;
-              leftControllerMesh.add(walkthroughMesh);
-              return walkthroughMesh;
-            })();
-            result.menuButtonMesh1 = menuButtonMesh1;
-
-            const menuButtonMesh2 = (() => {
-              const walkthroughMesh = _makeWalkthroughMesh('E (again)');
-              walkthroughMesh.position.y = 0.1;
-
-              const {left: leftControllerMesh} = controllerMeshes;
-              leftControllerMesh.add(walkthroughMesh);
-              return walkthroughMesh;
-            })();
-            result.menuButtonMesh2 = menuButtonMesh2;
-
-            const padButtonMesh = (() => {
-              const walkthroughMesh = _makeWalkthroughMesh('Q');
-              walkthroughMesh.position.y = 0.1;
-
-              const {left: leftControllerMesh} = controllerMeshes;
-              leftControllerMesh.add(walkthroughMesh);
-              return walkthroughMesh;
-            })();
-            result.padButtonMesh = padButtonMesh;
-
-            const gripButtonMesh = (() => {
-              const walkthroughMesh = _makeWalkthroughMesh('F');
-              walkthroughMesh.position.y = 0.1;
-
-              const {left: leftControllerMesh} = controllerMeshes;
-              leftControllerMesh.add(walkthroughMesh);
-              return walkthroughMesh;
-            })();
-            result.gripButtonMesh = gripButtonMesh;
-
-            const xyMoveMesh = (() => {
-              const walkthroughMesh = _makeWalkthroughMesh('<span>Ctrl + </span>$MOUSE');
-              walkthroughMesh.position.y = 0.1;
-
-              const {left: leftControllerMesh} = controllerMeshes;
-              leftControllerMesh.add(walkthroughMesh);
-              return walkthroughMesh;
-            })();
-            result.xyMoveMesh = xyMoveMesh;
-
-            const xzMoveMesh = (() => {
-              const walkthroughMesh = _makeWalkthroughMesh('Alt + $MOUSE');
-              walkthroughMesh.position.y = 0.1;
-
-              const {left: leftControllerMesh} = controllerMeshes;
-              leftControllerMesh.add(walkthroughMesh);
-              return walkthroughMesh;
-            })();
-            result.xzMoveMesh = xzMoveMesh;
-
-            const padMesh = (() => {
-              const walkthroughMesh = _makeWalkthroughMesh('V + $MOUSE');
-              walkthroughMesh.position.y = 0.1;
-
-              const {left: leftControllerMesh} = controllerMeshes;
-              leftControllerMesh.add(walkthroughMesh);
-              return walkthroughMesh;
-            })();
-            result.padMesh = padMesh;
-
-            const targetMesh = (() => {
-              const object = new THREE.Object3D();
-              object.position.y = 2;
-              object.position.z = -0.5;
-              object.visible = false;
-
-              const numRings = 4;
-              for (let i = 0; i < numRings; i++) {
-                const ringMesh = (() => {
-                  const geometry = new THREE.TorusBufferGeometry(0.05 * (i + 0.5), 0.05, 3, 8);
-                  const material = solidMaterials[(i % 2) === 0 ? 'red' : 'white'];
-
-                  const mesh = new THREE.Mesh(geometry, material);
-                  return mesh;
-                })();
-                object.add(ringMesh);
-              }
-
-              scene.add(object);
-
-              object.updateMatrixWorld();
-              const {position, rotation, scale} = _decomposeObjectMatrixWorld(object);
-              const boxTarget = geometryUtils.makeBoxTarget(
-                position,
-                rotation,
-                scale,
-                new THREE.Vector3((0.05 * (numRings + 0.5)) * 2, (0.05 * (numRings + 0.5)) * 2, 0.05 * 2)
-              );
-              object.boxTarget = boxTarget;
-
-              return object;
-            })();
-            result.targetMesh = targetMesh;
-
-            const goalMesh = (() => {
-              const object = new THREE.Object3D();
-              object.position.y = 5 / 2;
-              object.position.z = -5;
-              object.visible = false;
-
-              const cylinderMesh = (() => {
-                const geometry = new THREE.CylinderBufferGeometry(1, 1, 5, 10, 1, true);
-                const material = transparentMaterials.red;
-
-                const mesh = new THREE.Mesh(geometry, material);
-                mesh.rotation.order = camera.rotation.order;
-                return mesh;
-              })();
-              object.add(cylinderMesh);
-              object.cylinderMesh = cylinderMesh;
-
-              scene.add(object);
-
-              object.updateMatrixWorld();
-              const {position, rotation, scale} = _decomposeObjectMatrixWorld(object);
-              const boxTarget = geometryUtils.makeBoxTarget(
-                position,
-                rotation,
-                scale,
-                new THREE.Vector3(1 * 2, 5, 1 * 2)
-              );
-              object.boxTarget = boxTarget;
-
-              return object;
-            })();
-            result.goalMesh = goalMesh;
-
-            const touchMesh1 = (() => {
-              const geometry = new THREE.BoxBufferGeometry(0.1, 0.1, 0.1);
-              const material = transparentMaterials.red;
-
-              const mesh = new THREE.Mesh(geometry, material);
-              mesh.rotation.order = camera.rotation.order;
-              mesh.position.set(0.5, 2, 0);
-              mesh.visible = false;
-
-              scene.add(mesh);
-
-              mesh.updateMatrixWorld();
-              const {position, rotation, scale} = _decomposeObjectMatrixWorld(mesh);
-              const boxTarget = geometryUtils.makeBoxTarget(
-                position,
-                rotation,
-                scale,
-                new THREE.Vector3(0.1, 0.1, 0.1)
-              );
-              mesh.boxTarget = boxTarget;
-
-              return mesh;
-            })();
-            result.touchMesh1 = touchMesh1;
-
-            const touchMesh2 = (() => {
-              const geometry = new THREE.BoxBufferGeometry(0.1, 0.1, 0.1);
-              const material = transparentMaterials.red;
-
-              const mesh = new THREE.Mesh(geometry, material);
-              mesh.rotation.order = camera.rotation.order;
-              mesh.position.set(0.5, 2, -0.5);
-              mesh.visible = false;
-
-              scene.add(mesh);
-
-              mesh.updateMatrixWorld();
-              const {position, rotation, scale} = _decomposeObjectMatrixWorld(mesh);
-              const boxTarget = geometryUtils.makeBoxTarget(
-                position,
-                rotation,
-                scale,
-                new THREE.Vector3(0.1, 0.1, 0.1)
-              );
-              mesh.boxTarget = boxTarget;
-
-              return mesh;
-            })();
-            result.touchMesh2 = touchMesh2;
-
-            const legoMesh = (() => {
-              const object = new THREE.Object3D();
-              object.position.y = 1.5;
-              object.position.x = 1;
-              object.visible = false;
-
-              const outerMesh = (() => {
-                const result = new THREE.Object3D();
-                result.position.x = -0.05 / 2;
-
-                [
-                  [0, 0],
-                  [-1, 1],
-                  [-1, 0],
-                  [-1, -1],
-                ].forEach(coord => {
-                  const boxMesh = (() => {
-                    const geometry = new THREE.BoxBufferGeometry(0.05, 0.05, 0.05);
-                    const material = solidMaterials.blue;
-
-                    const mesh = new THREE.Mesh(geometry, material);
-                    mesh.position.x = coord[0] * 0.05;
-                    mesh.position.y = coord[1] * 0.05;
-                    return mesh;
-                  })();
-                  result.add(boxMesh);
-                });
-
-                return result;
-              })();
-              object.add(outerMesh);
-              object.outerMesh = outerMesh;
-
-              const innerMesh = (() => {
-                const result = new THREE.Object3D();
-
-                [
-                  [0, 1],
-                  [1, 1],
-                  [1, 0],
-                  [1, -1],
-                  [0, -1],
-                ].forEach(coord => {
-                  const boxMesh = (() => {
-                    const geometry = new THREE.BoxBufferGeometry(0.05, 0.05, 0.05);
-                    const material = solidMaterials.green;
-
-                    const mesh = new THREE.Mesh(geometry, material);
-                    mesh.position.x = coord[0] * 0.05;
-                    mesh.position.y = coord[1] * 0.05;
-                    return mesh;
-                  })();
-                  result.add(boxMesh);
-                });
-
-                return result;
-              })();
-              object.add(innerMesh);
-              object.innerMesh = innerMesh;
-
-              scene.add(object);
-
-              object.updateMatrixWorld();
-
-              [outerMesh, innerMesh].forEach(subMesh => {
-                const {position, rotation, scale} = _decomposeObjectMatrixWorld(subMesh);
-                const boxTarget = geometryUtils.makeBoxTarget(
-                  position,
-                  rotation,
-                  scale,
-                  new THREE.Vector3(0.05, 0.05, 0.05)
-                );
-                subMesh.boxTarget = boxTarget;
-              });
-
-              return object;
-            })();
-            result.legoMesh = legoMesh;
-
-            const padTargetMesh = (() => {
-              const geometry = new THREE.BoxBufferGeometry(0.043, 0.043 / 4, 0.043 / 4);
-              const material = transparentMaterials.red;
-
-              const mesh = new THREE.Mesh(geometry, material);
-              mesh.position.y = 0.046 - ((0.043 / 4) / 2);
-              mesh.visible = false;
-
-              const {circleMesh} = hudMesh;
-              circleMesh.add(mesh);
-
-              return mesh;
-            })();
-            result.padTargetMesh = padTargetMesh;
-
-            return result;
-          })();
-          const walkthroughEmitter = new EventEmitter();
-          const WALKTHROUGH_SCRIPTS = [
-            () => {
-              const mesh = walkthroughMeshes.controllerLabelMeshes.right;
-              mesh.visible = true;
-
-              const keydown = e => {
-                if (e.keyCode === 67) { // C
-                  _setNextWalkthroughIndex();
-                }
-              };
-              input.on('keydown', keydown);
-
-              return () => {
-                input.removeListener('keydown', keydown);
-
-                mesh.visible = false;
-              };
-            },
-            () => {
-              const mesh = walkthroughMeshes.controllerLabelMeshes.left;
-              mesh.visible = true;
-
-              const keydown = e => {
-                if (e.keyCode === 90) { // Z
-                  _setNextWalkthroughIndex();
-                }
-              };
-              input.on('keydown', keydown);
-
-              return () => {
-                input.removeListener('keydown', keydown);
-
-                mesh.visible = false;
-              };
-            },
-            () => {
-              const meshes = [walkthroughMeshes.clickLabelMesh, walkthroughMeshes.targetMesh];
-              meshes.forEach(mesh => {
-                mesh.visible = true;
-              });
-
-              const boxAnchor = {
-                boxTarget: walkthroughMeshes.targetMesh.boxTarget,
-                anchor: {
-                  onclick: 'tutorial:target',
-                },
-              };
-              rend.addBoxAnchor(boxAnchor);
-
-              const triggerdown = e => {
-                const {side} = e;
-                const hoverState = rend.getHoverState(side);
-                const {type} = hoverState;
-
-                if (type === 'boxAnchor') {
-                  const {anchor} = hoverState;
-                  const onclick = (anchor && anchor.onclick) || '';
-
-                  if (onclick === 'tutorial:target') {
-                    _setNextWalkthroughIndex();
-                  }
-                }
-              };
-              input.on('triggerdown', triggerdown);
-
-              return () => {
-                input.removeListener('triggerdown', triggerdown);
-
-                meshes.forEach(mesh => {
-                  mesh.visible = false;
-                });
-
-                rend.removeBoxAnchor(boxAnchor);
-              };
-            },
-            () => {
-              const mesh = walkthroughMeshes.menuButtonMesh1;
-              mesh.visible = true;
-
-              const keydown = e => {
-                if (e.keyCode === 69) { // E
-                  _setNextWalkthroughIndex();
-                }
-              };
-              input.on('keydown', keydown);
-
-              return () => {
-                input.removeListener('keydown', keydown);
-
-                mesh.visible = false;
-              };
-            },
-            () => {
-              const mesh = walkthroughMeshes.menuButtonMesh2;
-              mesh.visible = true;
-
-              const keydown = e => {
-                if (e.keyCode === 69) { // E
-                  _setNextWalkthroughIndex();
-                }
-              };
-              input.on('keydown', keydown);
-
-              return () => {
-                input.removeListener('keydown', keydown);
-
-                mesh.visible = false;
-              };
-            },
-            () => {
-              const meshes = [walkthroughMeshes.padButtonMesh, walkthroughMeshes.goalMesh];
-              meshes.forEach(mesh => {
-                mesh.visible = true;
-              });
-
-              const intersect = mesh => {
-                if (mesh === walkthroughMeshes.goalMesh) {
-                  _setNextWalkthroughIndex();
-                }
-              };
-              walkthroughEmitter.on('intersect', intersect);
-
-              return () => {
-                walkthroughEmitter.removeListener('intersect', intersect);
-
-                meshes.forEach(mesh => {
-                  mesh.visible = false;
-                });
-              };
-            },
-            () => {
-              const meshes = [walkthroughMeshes.gripButtonMesh, walkthroughMeshes.legoMesh];
-              meshes.forEach(mesh => {
-                mesh.visible = true;
-              });
-
-              const intersect = mesh => {
-                if (mesh === walkthroughMeshes.legoMesh.innerMesh) {
-                  _setNextWalkthroughIndex();
-                }
-              };
-              walkthroughEmitter.on('intersect', intersect);
-
-              return () => {
-                walkthroughEmitter.removeListener('intersect', intersect);
-
-                meshes.forEach(mesh => {
-                  mesh.visible = false;
-                });
-              };
-            },
-            () => {
-              const meshes = [walkthroughMeshes.xyMoveMesh, walkthroughMeshes.touchMesh1];
-              meshes.forEach(mesh => {
-                mesh.visible = true;
-              });
-
-              const intersect = mesh => {
-                if (mesh === walkthroughMeshes.touchMesh1) {
-                  _setNextWalkthroughIndex();
-                }
-              };
-              walkthroughEmitter.on('intersect', intersect);
-
-              return () => {
-                walkthroughEmitter.removeListener('intersect', intersect);
-
-                meshes.forEach(mesh => {
-                  mesh.visible = false;
-                });
-              };
-            },
-            () => {
-              const meshes = [walkthroughMeshes.xzMoveMesh, walkthroughMeshes.touchMesh2];
-              meshes.forEach(mesh => {
-                mesh.visible = true;
-              });
-
-              const intersect = mesh => {
-                if (mesh === walkthroughMeshes.touchMesh2) {
-                  _setNextWalkthroughIndex();
-                }
-              };
-              walkthroughEmitter.on('intersect', intersect);
-
-              return () => {
-                walkthroughEmitter.removeListener('intersect', intersect);
-
-                meshes.forEach(mesh => {
-                  mesh.visible = false;
-                });
-              };
-            },
-            () => {
-              const meshes = [walkthroughMeshes.padMesh, walkthroughMeshes.padTargetMesh];
-              meshes.forEach(mesh => {
-                mesh.visible = true;
-              });
-
-              const intersect = mesh => {
-                if (mesh === walkthroughMeshes.padTargetMesh) {
-                  _setPage('video:' + 0);
-                }
-              };
-              walkthroughEmitter.on('intersect', intersect);
-
-              return () => {
-                walkthroughEmitter.removeListener('intersect', intersect);
-
-                meshes.forEach(mesh => {
-                  mesh.visible = false;
-                });
-              };
-            },
-            null,
-          ];
-          let walkthroughIndex = 0;
-          let walkthroughCancel = null;
-          const _setWalkthroughIndex = n => {
-            if (walkthroughCancel) {
-              walkthroughCancel();
-              walkthroughCancel = null;
-            }
-
-            walkthroughIndex = n;
-
-            const script = WALKTHROUGH_SCRIPTS[n];
-            if (script) {
-              walkthroughCancel = script();
-            }
-          };
-          const _setNextWalkthroughIndex = () => _setWalkthroughIndex(walkthroughIndex + 1);
+          scene.add(tutorialMesh);
 
           const _updatePages = () => {
             const {planeMesh} = tutorialMesh;
@@ -1046,16 +364,11 @@ class Home {
             };
           };
           const _setPage = page => {
-            const isTutorialPage = /^(?:controls|videos|video:[0-9]+)$/.test(page);
+            const isTutorialPage = /^(?:videos|video:[0-9]+)$/.test(page);
             if (isTutorialPage && !bootstrap.getTutorialFlag()) {
               bootstrap.setTutorialFlag(true);
             } else if (!isTutorialPage && bootstrap.getTutorialFlag()) {
               bootstrap.setTutorialFlag(false);
-            }
-            if (page === 'controls') {
-              _setWalkthroughIndex(0);
-            } else {
-              _setWalkthroughIndex(10);
             }
 
             const {videoMesh} = tutorialMesh;
@@ -1110,7 +423,7 @@ class Home {
               rend.setTab('status');
             }
           };
-          _setPage(bootstrap.getTutorialFlag() ? 'controls' : 'done');
+          _setPage(bootstrap.getTutorialFlag() ? 'videos' : 'done');
 
           const _trigger = e => {
             const {side} = e;
@@ -1126,9 +439,7 @@ class Home {
                 const pageSpec = _parsePage(page);
                 const {name} = pageSpec;
 
-                if (name === 'controls') {
-                  _setPage('video:' + 0);
-                } else if (name === 'videos') {
+                if (name === 'videos') {
                   _setPage('video:' + 0);
                 } else if (name === 'video') {
                   const n = parseInt(pageSpec.args[0], 10);
@@ -1146,9 +457,7 @@ class Home {
                 const pageSpec = _parsePage(page);
                 const {name} = pageSpec;
 
-                if (name === 'videos') {
-                  _setPage('controls');
-                } else if (name === 'video') {
+                if (name === 'video') {
                   const n = parseInt(pageSpec.args[0], 10);
 
                   if (n > 0) {
@@ -1218,106 +527,32 @@ class Home {
             priority: 1,
           });
 
-          const _tabchange = tab => {
-            if (tab === 'tutorial') {
-              _setPage('controls');
-            }
-          };
-          rend.on('tabchange', _tabchange);
           const _update = () => {
-            const _updateWalkthroughMeshes = () => {
-              const uiTime = biolumi.getUiTime();
+            const {videoMesh} = tutorialMesh;
+            const {viewportMesh: {material: {map: texture}}} = videoMesh;
+            const {image: media} = texture;
 
-              const v = (uiTime / 1000 * Math.PI * 0.1) % (Math.PI * 2);
+            if (videoMesh.visible && media.tagName === 'VIDEO') {
+              const {value: prevValue} = mediaState;
+              const nextValue = media.currentTime / media.duration;
 
-              const {targetMesh} = walkthroughMeshes;
-              targetMesh.rotation.z = v;
+              if (Math.abs(nextValue - prevValue) >= (1 / 1000)) { // to reduce the frequency of texture updates
+                mediaState.value = nextValue;
 
-              const {goalMesh} = walkthroughMeshes;
-              goalMesh.rotation.y = v;
-
-              const {touchMesh1, touchMesh2} = walkthroughMeshes;
-              [touchMesh1, touchMesh2].forEach(touchMesh => {
-                touchMesh.rotation.x = v;
-                touchMesh.rotation.y = v;
-              });
-            };
-            const _updateWalkthroughEmitter = () => {
-              const {hmd, gamepads} = webvr.getStatus();
-
-              const {goalMesh} = walkthroughMeshes;
-              const {worldPosition: hmdPosition} = hmd;
-              [goalMesh].forEach(targetMesh => {
-                const {boxTarget} = targetMesh;
-
-                if (boxTarget.containsPoint(hmdPosition)) {
-                  walkthroughEmitter.emit('intersect', targetMesh);
-                }
-              });
-
-              const {touchMesh1, touchMesh2, legoMesh: {outerMesh: legoOuterMesh, innerMesh: legoInnerMesh}} = walkthroughMeshes;
-              SIDES.forEach(side => {
-                const gamepad = gamepads[side];
-
-                if (gamepad) {
-                  const {worldPosition: controllerPosition} = gamepad;
-
-                  [touchMesh1, touchMesh2, legoOuterMesh, legoInnerMesh].forEach(targetMesh => {
-                    const {boxTarget} = targetMesh;
-
-                    if (boxTarget.containsPoint(controllerPosition)) {
-                      walkthroughEmitter.emit('intersect', targetMesh);
-                    }
-                  });
-                }
-              });
-
-              const {padTargetMesh} = walkthroughMeshes;
-              SIDES.forEach(side => {
-                const gamepad = gamepads[side];
-
-                if (gamepad) {
-                  const {axes} = gamepad;
-
-                  if (Math.abs(axes[0]) < 0.5 && axes[1] > 0.8) {
-                    walkthroughEmitter.emit('intersect', padTargetMesh);
-                  }
-                }
-              });
-            };
-            const _updateVideo = () => {
-              const {videoMesh} = tutorialMesh;
-              const {viewportMesh: {material: {map: texture}}} = videoMesh;
-              const {image: media} = texture;
-
-              if (videoMesh.visible && media.tagName === 'VIDEO') {
-                const {value: prevValue} = mediaState;
-                const nextValue = media.currentTime / media.duration;
-
-                if (Math.abs(nextValue - prevValue) >= (1 / 1000)) { // to reduce the frequency of texture updates
-                  mediaState.value = nextValue;
-
-                  const {barMesh} = videoMesh;
-                  const {page} = barMesh;
-                  page.update();
-                }
-
-                texture.needsUpdate = true;
+                const {barMesh} = videoMesh;
+                const {page} = barMesh;
+                page.update();
               }
-            };
 
-            _updateWalkthroughMeshes();
-            _updateWalkthroughEmitter();
-            _updateVideo();
+              texture.needsUpdate = true;
+            }
           };
           rend.on('update', _update);
 
           cleanups.push(() => {
-            // bootstrap.removeListener('vrModeChange', _vrModeChange);
+            scene.remove(tutorialMesh);
 
             input.removeListener('trigger', _trigger);
-
-            rend.removeListener('tabchange', _tabchange);
             rend.removeListener('update', _update);
           });
         }

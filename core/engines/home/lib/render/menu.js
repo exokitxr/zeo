@@ -1,36 +1,26 @@
 const {
   WIDTH,
   HEIGHT,
-
-  SERVER_WIDTH,
-  SERVER_HEIGHT,
-
-  WALKTHROUGH_WIDTH,
-  WALKTHROUGH_HEIGHT,
 } = require('../constants/menu');
 
-const SERVERS_PER_PAGE = 8;
-
-const closeBoxImg = require('../img/close-box');
-const closeBoxImgSrc = 'data:image/svg+xml;base64,' + btoa(closeBoxImg);
-const serverPlusImg = require('../img/server-plus');
-const serverPlusImgSrc = 'data:image/svg+xml;base64,' + btoa(serverPlusImg);
+// const closeBoxImg = require('../img/close-box');
+// const closeBoxImgSrc = 'data:image/svg+xml;base64,' + btoa(closeBoxImg);
+// const serverPlusImg = require('../img/server-plus');
+// const serverPlusImgSrc = 'data:image/svg+xml;base64,' + btoa(serverPlusImg);
 const chevronLeftImg = require('../img/chevron-left');
 const chevronLeftImgSrc = 'data:image/svg+xml;base64,' + btoa(chevronLeftImg);
-const lanConnectImg = require('../img/lan-connect');
-const lanConnectImgSrc = 'data:image/svg+xml;base64,' + btoa(lanConnectImg);
-const lanDisconnectImg = require('../img/lan-disconnect');
-const lanDisconnectImgSrc = 'data:image/svg+xml;base64,' + btoa(lanDisconnectImg);
-const mouseImg = require('../img/mouse');
-const mouseImgSrc = 'data:image/svg+xml;base64,' + btoa(mouseImg);
+// const lanConnectImg = require('../img/lan-connect');
+// const lanConnectImgSrc = 'data:image/svg+xml;base64,' + btoa(lanConnectImg);
+// const lanDisconnectImg = require('../img/lan-disconnect');
+// const lanDisconnectImgSrc = 'data:image/svg+xml;base64,' + btoa(lanDisconnectImg);
+// const mouseImg = require('../img/mouse');
+// const mouseImgSrc = 'data:image/svg+xml;base64,' + btoa(mouseImg);
 const playImg = require('../img/play');
 const playImgSrc = 'data:image/svg+xml;base64,' + btoa(playImg);
 const upImg = require('../img/up');
 const downImg = require('../img/down');
 
-const makeRenderer = ({creatureUtils}) => {
-
-const getHomeMenuSrc = ({page, inputText, inputIndex, inputValue, loading, vrMode, focusType, videos}) => {
+const getHomeMenuSrc = ({page, vrMode, videos}) => {
   const pageSpec = (() => {
     const split = page.split(':');
     const name = split[0];
@@ -42,9 +32,7 @@ const getHomeMenuSrc = ({page, inputText, inputIndex, inputValue, loading, vrMod
   })();
 
   const {name} = pageSpec;
-  if (name === 'controls') {
-    return getControlsPageSrc();
-  } else if (name === 'videos') {
+  if (name === 'videos') {
     return getVideosPageSrc(videos);
   } else if (name === 'video') {
     const {args} = pageSpec;
@@ -201,16 +189,6 @@ const getTutorialPageSrc = (pageIndex, vrMode) => {
   return getHeaderWrappedSrc(content, headerText, {back: true});
 };
 
-const getControlsPageSrc = () => {
-  return `<div style="display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; justify-content: center; align-items: center; flex-direction: column;">
-    <div style="display: flex; font-size: 40px; margin: auto 0; justify-content: center; align-items: center;">Controls tutorial in progress</div>
-    <div style="display: flex; width: 100%; height: 100px; padding: 0 50px; justify-content: center; align-items: center; box-sizing: border-box;">
-      <a style="display: flex; margin-left: auto; margin-right: 40px; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:skipAll">Skip all tutorials</a>
-      <a style="display: flex; padding: 10px 15px; border: 2px solid; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:next">Skip controls tutorial</a>
-    </div>
-  </div>`;
-};
-
 const getVideosPageSrc = videos => {
   return getHeaderWrappedSrc(`\
     <div style="display: flex; flex-direction: column; flex-grow: 1;">
@@ -245,62 +223,6 @@ const getHeaderWrappedSrc = (content, headerText, {back = false} = {}) => `\
     ${content}
   </div>
 `;
-
-const getServerSrc = (server, index, prefix) => {
-  const {worldname, url, running, users} = server;
-
-  return `\
-    <a style="display: flex; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid #EEE; text-decoration: none;" onclick="${prefix}:${index}">
-      <img src="${creatureUtils.makeStaticCreature('server:' + worldname)}" width="80" height="80" style="display: flex; width: 80px; height: 80px; margin-right: 10px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;" />
-      <div style="display: flex; margin-right: auto; padding: 5px; flex-direction: column;">
-        <div style="font-size: 20px; font-weight: 600;">${worldname}</div>
-        <div style="font-size: 13px; font-weight: 400;">
-          ${url ?
-            `<i>${url}</i>`
-          :
-            ''
-          }
-        </div>
-      </div>
-      <div style="width: 300px; padding: 5px; box-sizing: border-box;">
-        ${users.length > 0 ?
-          users.map(user =>
-            `<div style="display: inline-block; margin-right: 5px; padding: 2px 10px; background-color: #F7F7F7; font-size: 13px; font-weight: 400;">${user}</div>`
-          ).join('')
-        :
-          'No users'
-        }
-      </div>
-      <div style="display: flex; width: 80px; height: 80px; justify-content: center; align-items: center;">
-        <img src="${running ? lanConnectImgSrc : lanDisconnectImgSrc}" width="24px" height="24px" />
-      </div>
-    </a>
-  `;
-};
-const getServersSrc = (servers, loading, prefix) => {
-  if (!loading) {
-    if (servers.length > 0) {
-      return `<div style="display: flex; width: ${WIDTH - 250}px; height: ${HEIGHT - 100}px; padding: 0 30px; flex-direction: column; box-sizing: border-box;">
-        ${servers.map((server, index) => getServerSrc(server, index, prefix)).join('')}
-      </div>`;
-    } else {
-      return `<div style="padding: 0 30px; font-size: 30px;">No servers</div>`;
-    }
-  } else {
-    return `<div style="padding: 0 30px; font-size: 30px;">Loading...</div>`;
-  }
-};
-
-const getWalkthroughSrc = ({label}) => {
-  label = label.replace(/\$MOUSE/g, `<img src="${mouseImgSrc}" width="24" height="24">`);
-
-  return `<div style="display: flex; width: ${WALKTHROUGH_WIDTH}px; height: ${WALKTHROUGH_HEIGHT}px; color: #FFF; flex-direction: column;">
-    <div style="display: flex; margin: 10px; height: 150px; background-color: #000; font-size: 24px; font-weight: 400; justify-content: center; align-items: center;">${label}</div>
-    <div style="position: relative; width: 100%; height: 50px;">
-      <div style="position: absolute; bottom: 5px; left: ${(WALKTHROUGH_WIDTH / 2) - (50 / 2)}px; border-style: solid; border-width: 50px 25px 0 25px; border-color: #000 transparent transparent transparent;"></div>
-    </div>
-  </div>`;
-};
 
 const getMediaPlaySrc = ({paused}) => {
   const buttonSrc = (() => {
@@ -341,15 +263,8 @@ const getMediaBarSrc = ({value}) => {
   </div>`;
 };
 
-return {
+module.exports = {
   getHomeMenuSrc,
-  getWalkthroughSrc,
   getMediaPlaySrc,
   getMediaBarSrc,
-};
-
-};
-
-module.exports = {
-  makeRenderer,
 };

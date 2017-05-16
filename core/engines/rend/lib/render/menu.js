@@ -80,17 +80,13 @@ const getNavbarSrc = ({tab}) => {
 
   return `\
     <div style="display: flex; width: 1024px; height: 50px; background-color: #CCC;">
-      ${tab === 'tutorial' ?
-        tabContent('tutorial', 'Tutorial', true)
-      :
-        [
-          tabContent('status', 'Status', true),
-          tabContent('world', 'World', false),
-          tabContent('servers', 'Servers', false),
-          tabContent('wallet', 'Wallet', false),
-          tabContent('options', 'Options', false)
-        ].join('\n')
-      }
+      ${[
+        tabContent('status', 'Status', true),
+        tabContent('world', 'World', false),
+        tabContent('servers', 'Servers', false),
+        tabContent('wallet', 'Wallet', false),
+        tabContent('options', 'Options', false)
+      ].join('\n')}
       </a>
     </div>
   `;
