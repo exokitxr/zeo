@@ -769,7 +769,7 @@ class WebVR {
                 const newTouched = Boolean(newGamepadStatus) && newGamepadStatus.buttons[buttonName].touched;
                 if (!oldTouched && newTouched) {
                   input.triggerEvent(touchdownName, _makeEvent(side, rootName, newGamepadStatus));
-                } else if (oldPressed && !newTouched) {
+                } else if (oldTouched && !newTouched) {
                   input.triggerEvent(touchupName, _makeEvent(side, rootName, newGamepadStatus));
                   input.triggerEvent(touchName, _makeEvent(side, rootName, newGamepadStatus));
                 }
