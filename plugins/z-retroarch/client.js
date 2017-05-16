@@ -8,6 +8,8 @@ const {
 } = require('./lib/constants/constants');
 const novnc = require('retroarch/client.js');
 
+const SIDES = ['left', 'right'];
+
 class Retroarch {
   mount() {
     const {three: {THREE, scene}, elements, render, pose, input, world, ui, sound, utils: {geometry: geometryUtils}} = zeo;
@@ -45,6 +47,14 @@ class Retroarch {
       entityAddedCallback(entityElement) {
         const entityApi = entityElement.getComponentApi();
         const entityObject = entityElement.getObject();
+
+        const _makeGamepadState = () => ({
+          grabSide: null,
+        });
+        const gamepadStates = {
+          left: _makeGamepadState(),
+          right: _makeGamepadState(),
+        };
 
         const screenMesh = (() => {
           const canvas = document.createElement('canvas');
@@ -139,8 +149,7 @@ class Retroarch {
         const gamepadMeshes = (() => {
           const leftGamepadMesh = (() => {
             const object = new THREE.Object3D();
-            object.position.x = -0.5;
-            object.position.z = 0.5;
+            object.position.set(-0.5, 1.5, 0.5);
 
             const coreMesh = (() => {
               const geometry = new THREE.BoxBufferGeometry(0.05, 0.02, 0.1);
@@ -176,8 +185,7 @@ class Retroarch {
 
           const rightGamepadMesh = (() => {
             const object = new THREE.Object3D();
-            object.position.x = 0.5;
-            object.position.z = 0.5;
+            object.position.set(0.5, 1.5, 0.5);
 
             const coreMesh = (() => {
               const geometry = new THREE.BoxBufferGeometry(0.05, 0.02, 0.1);
@@ -207,19 +215,92 @@ class Retroarch {
             return object;
           })();
 
-          return [leftGamepadMesh, rightGamepadMesh];
+          return {
+            left: leftGamepadMesh,
+            right: rightGamepadMesh,
+          };
         })();
-        gamepadMeshes.forEach(gamepadMesh => {
-          entityObject.add(gamepadMesh);
+        SIDES.forEach(side => {
+          const gamepadMesh = gamepadMeshes[side];
+          scene.add(gamepadMesh);
+        });
+
+        const _gripdown = e => {
+          const {side} = e;
+          const {gamepads} = pose.getStatus();
+          const gamepad = gamepads[side];
+
+          if (gamepad) {
+            const {worldPosition: controllerPosition} = gamepad;
+
+            const gamepadDistanceSpecs = SIDES.map(gamepadSide => {
+              const gamepadMesh = gamepadMeshes[gamepadSide];
+              const gamepadMeshPosition = gamepadMesh.getWorldPosition();
+              const distance = gamepadMeshPosition.distanceTo(controllerPosition);
+              return {
+                gamepadSide,
+                distance,
+              };
+            }).filter(({distance}) => distance < 0.1).sort((a, b) => a.distance - b.distance);
+
+            if (gamepadDistanceSpecs.length > 0) {
+              const gamepadState = gamepadStates[side];
+              const gamepadDistanceSpec = gamepadDistanceSpecs[0];
+              const {gamepadSide} = gamepadDistanceSpec;
+              gamepadState.grabSide = gamepadSide;
+
+              e.stopImmediatePropagation();
+            }
+          }
+        };
+        input.on('gripdown', _gripdown, {
+          priority: 1,
+        });
+        const _gripup = e => {
+          const {side} = e;
+          const gamepadState = gamepadStates[side];
+          const {grabSide} = gamepadState;
+
+          if (grabSide) {
+            gamepadState.grabSide = null;
+
+            e.stopImmediatePropagation();
+          }
+        };
+        input.on('gripup', _gripup, {
+          priority: 1,
         });
 
         const _update = () => {
-          const {
-            material: {
-              map: texture,
-            },
-          } = screenMesh;
-          texture.needsUpdate = true;
+          const _updateScreen = () => {
+            const {
+              material: {
+                map: texture,
+              },
+            } = screenMesh;
+            texture.needsUpdate = true;
+          };
+          const _updateGamepads = () => {
+            const {gamepads} = pose.getStatus();
+
+            SIDES.forEach(side => {
+              const gamepadState = gamepadStates[side];
+              const {grabSide} = gamepadState;
+
+              if (grabSide) {
+                const gamepad = gamepads[side];
+                const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale} = gamepad;
+
+                const gamepadMesh = gamepadMeshes[grabSide];
+                gamepadMesh.position.copy(controllerPosition);
+                gamepadMesh.quaternion.copy(controllerRotation);
+                gamepadMesh.scale.copy(controllerScale);
+              }
+            });
+          };
+
+          _updateScreen();
+          _updateGamepads();
         };
         render.on('update', _update);
 
@@ -227,10 +308,13 @@ class Retroarch {
           entityObject.remove(screenMesh);
           screenMesh.destroy();
           entityObject.remove(consoleMesh);
-          gamepadMeshes.forEach(gamepadMesh => {
-            entityObject.remove(gamepadMesh);
+          SIDES.forEach(side => {
+            const gamepadMesh = gamepadMeshes[side];
+            scene.remove(gamepadMesh);
           });
 
+          input.removeListener('gripdown', _gripdown);
+          input.removeListener('gripup', _gripup);
           render.removeListener('update', _update);
         };
       },
