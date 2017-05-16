@@ -106,10 +106,6 @@ class Home {
           })
         )
     ));
-    const _requestDefaultTags = () => fetch('/archae/home/defaults/data/world/tags.json')
-      .then(res => res.json()
-        .then(({tags}) => Object.keys(tags).map(id => tags[id]))
-      );
 
     return Promise.all([
       archae.requestPlugins([
@@ -128,7 +124,6 @@ class Home {
         '/core/utils/creature-utils',
       ]),
       _requestVideoSpecs(),
-      _requestDefaultTags(),
     ])
       .then(([
         [
