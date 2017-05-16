@@ -3,22 +3,10 @@ const {
   HEIGHT,
 } = require('../constants/menu');
 
-// const closeBoxImg = require('../img/close-box');
-// const closeBoxImgSrc = 'data:image/svg+xml;base64,' + btoa(closeBoxImg);
-// const serverPlusImg = require('../img/server-plus');
-// const serverPlusImgSrc = 'data:image/svg+xml;base64,' + btoa(serverPlusImg);
 const chevronLeftImg = require('../img/chevron-left');
 const chevronLeftImgSrc = 'data:image/svg+xml;base64,' + btoa(chevronLeftImg);
-// const lanConnectImg = require('../img/lan-connect');
-// const lanConnectImgSrc = 'data:image/svg+xml;base64,' + btoa(lanConnectImg);
-// const lanDisconnectImg = require('../img/lan-disconnect');
-// const lanDisconnectImgSrc = 'data:image/svg+xml;base64,' + btoa(lanDisconnectImg);
-// const mouseImg = require('../img/mouse');
-// const mouseImgSrc = 'data:image/svg+xml;base64,' + btoa(mouseImg);
 const playImg = require('../img/play');
 const playImgSrc = 'data:image/svg+xml;base64,' + btoa(playImg);
-const upImg = require('../img/up');
-const downImg = require('../img/down');
 
 const getHomeMenuSrc = ({page, vrMode, videos}) => {
   const pageSpec = (() => {

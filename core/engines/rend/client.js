@@ -152,7 +152,6 @@ class Rend {
               worldWidth: WORLD_WIDTH,
               worldHeight: WORLD_HEIGHT,
             });
-            mesh.visible = !bootstrap.getTutorialFlag();
             mesh.receiveShadow = true;
 
             const {page} = mesh;
