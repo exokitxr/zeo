@@ -36,13 +36,7 @@ class Bootstrap {
       credentials: 'include',
     })
       .then(res => res.json())
-      .then(j => {
-        if (j === null) {
-          return true;
-        } else {
-          return j;
-        }
-      })
+      .then(({result}) => result)
       .catch(err => {
         console.warn(err);
 
@@ -92,6 +86,14 @@ class Bootstrap {
           const _saveTutorialFlag = _debounce(next => {
             fetch(`${siteUrl}/wallet/api/cookie/tutorialFlag`, {
               method: 'POST',
+              headers: (() => {
+                const headers = new Headers();
+                headers.append('Content-Type', 'application/json');
+                return headers;
+              })(),
+              body: JSON.stringify({
+                value: tutorialFlag,
+              }),
               credentials: 'include',
             })
               .then(() => {
