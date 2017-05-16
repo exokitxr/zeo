@@ -72,6 +72,7 @@ class Retroarch {
 
         const _makeGamepadState = () => ({
           grabSide: null,
+          grabbing: false,
           menuPressed: false,
         });
         const gamepadStates = {
@@ -253,8 +254,10 @@ class Retroarch {
           const {side} = e;
           const {gamepads} = pose.getStatus();
           const gamepad = gamepads[side];
+          const gamepadState = gamepadStates[side];
+          const {grabSide} = gamepadState;
 
-          if (gamepad) {
+          if (gamepad && !grabSide) {
             const {worldPosition: controllerPosition} = gamepad;
 
             const gamepadDistanceSpecs = SIDES.map(gamepadSide => {
@@ -268,10 +271,10 @@ class Retroarch {
             }).filter(({distance}) => distance < 0.1).sort((a, b) => a.distance - b.distance);
 
             if (gamepadDistanceSpecs.length > 0) {
-              const gamepadState = gamepadStates[side];
               const gamepadDistanceSpec = gamepadDistanceSpecs[0];
               const {gamepadSide} = gamepadDistanceSpec;
               gamepadState.grabSide = gamepadSide;
+              gamepadState.grabbing = true;
 
               e.stopImmediatePropagation();
             }
@@ -286,7 +289,13 @@ class Retroarch {
           const {grabSide} = gamepadState;
 
           if (grabSide) {
-            gamepadState.grabSide = null;
+            const {grabbing} = gamepadState;
+
+            if (!grabbing) {
+              gamepadState.grabSide = null;
+            } else {
+              gamepadState.grabbing = null;
+            }
 
             e.stopImmediatePropagation();
           }
@@ -296,7 +305,7 @@ class Retroarch {
         });
 
         const _getGamepadDirection = side => {
-          const {gamepads} = post.getStatus();
+          const {gamepads} = pose.getStatus();
           const gamepad = gamepads[side];
           const {axes} = gamepad;
           const [x, y] = axes;
@@ -358,13 +367,15 @@ class Retroarch {
 
         const _paddown = e => {
           const {side} = e;
+          const gamepadState = gamepadStates[side];
           const {grabSide} = gamepadState;
 
           if (grabSide) {
-            const key = _getGamepadKey(side, grabSide);
-            const keyboardEvent = {
-              key,
-            };
+            const keyboardEvent = new KeyboardEvent({
+              type: 'keydown',
+            }, {
+              key: _getGamepadKey(side, grabSide),
+            });
             const {connection} = screenMesh;
             connection.handleKeydown(keyboardEvent);
 
@@ -376,13 +387,15 @@ class Retroarch {
         });
         const _pad = e => {
           const {side} = e;
+          const gamepadState = gamepadStates[side];
           const {grabSide} = gamepadState;
 
           if (grabSide) {
-            const key = _getGamepadKey(side, grabSide);
-            const keyboardEvent = {
-              key,
-            };
+            const keyboardEvent = new KeyboardEvent({
+              type: 'keypress',
+            }, {
+              key: _getGamepadKey(side, grabSide),
+            });
             const {connection} = screenMesh;
             connection.handleKeypress(keyboardEvent);
 
@@ -394,13 +407,15 @@ class Retroarch {
         });
         const _padup = e => {
           const {side} = e;
+          const gamepadState = gamepadStates[side];
           const {grabSide} = gamepadState;
 
           if (grabSide) {
-            const key = _getGamepadKey(side, grabSide);
-            const keyboardEvent = {
-              key,
-            };
+            const keyboardEvent = new KeyboardEvent({
+              type: 'keyup',
+            }, {
+              key: _getGamepadKey(side, grabSide),
+            });
             const {connection} = screenMesh;
             connection.handleKeyup(keyboardEvent);
 
@@ -412,12 +427,15 @@ class Retroarch {
         });
         const _menudown = e => {
           const {side} = e;
+          const gamepadState = gamepadStates[side];
           const {grabSide} = gamepadState;
 
           if (grabSide) {
-            const keyboardEvent = {
+            const keyboardEvent = new KeyboardEvent({
+              type: 'keydown',
+            }, {
               key: 'Enter',
-            };
+            });
             connection.handleKeydown(keyboardEvent);
 
             gamepadState.menuPressed = true;
@@ -430,12 +448,15 @@ class Retroarch {
         });
         const _menu = e => {
           const {side} = e;
+          const gamepadState = gamepadStates[side];
           const {grabSide} = gamepadState;
 
           if (grabSide) {
-            const keyboardEvent = {
+            const keyboardEvent = new KeyboardEvent({
+              type: 'keypress',
+            }, {
               key: 'Enter',
-            };
+            });
             const {connection} = screenMesh;
             connection.handleKeypress(keyboardEvent);
 
@@ -447,12 +468,15 @@ class Retroarch {
         });
         const _menuup = e => {
           const {side} = e;
+          const gamepadState = gamepadStates[side];
           const {grabSide} = gamepadState;
 
           if (grabSide) {
-            const keyboardEvent = {
+            const keyboardEvent = new KeyboardEvent({
+              type: 'keyup',
+            }, {
               key: 'Enter',
-            };
+            });
             const {connection} = screenMesh;
             connection.handleKeyup(keyboardEvent);
 
