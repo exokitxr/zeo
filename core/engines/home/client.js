@@ -420,7 +420,7 @@ class Home {
 
               _updatePages();
             } else {
-              rend.setTab('status');
+              tutorialMesh.visible = false;
             }
           };
           _setPage(bootstrap.getTutorialFlag() ? 'videos' : 'done');
