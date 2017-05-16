@@ -18,7 +18,7 @@ class Bootstrap {
 
   mount() {
     const {_archae: archae} = this;
-    const {metadata: {site: {url: siteUrl}, hub: {url: hubUrl, enabled: hubEnabled}, home: {enabled: homeEnabled}, server: {enabled: serverEnabled}}} = archae;
+    const {metadata: {site: {url: siteUrl}, hub: {url: hubUrl, enabled: hubEnabled}, server: {enabled: serverEnabled}}} = archae;
 
     let live = true;
     this._cleanup = () => {
@@ -32,18 +32,36 @@ class Bootstrap {
       .then(res => res.json()
         .then(({startTime}) => startTime)
       );
+    const _requestTutorialFlag = () => fetch(`${siteUrl}/wallet/api/cookie/tutorialFlag`, {
+      credentials: 'include',
+    })
+      .then(res => res.json())
+      .then(j => {
+        if (j === null) {
+          return true;
+        } else {
+          return j;
+        }
+      })
+      .catch(err => {
+        console.warn(err);
+
+        return Promise.resolve(true);
+      });
 
     return Promise.all([
       archae.requestPlugins([
         '/core/utils/js-utils',
       ]),
       _requestStartTime(),
+      _requestTutorialFlag(),
     ])
       .then(([
         [
           jsUtils,
         ],
         startTime,
+        tutorialFlag,
       ]) => {
         if (live) {
           const {events} = jsUtils;
@@ -57,7 +75,6 @@ class Bootstrap {
             }
           })();
           let vrMode = null;
-          let tutorialFlag = homeEnabled && localStorage.getItem('tutorial') !== JSON.stringify(false);
           class WorldTimer {
             constructor(startTime = 0) {
               this.startTime = startTime;
@@ -71,6 +88,21 @@ class Bootstrap {
             }
           }
           const worldTimer = new WorldTimer(startTime);
+
+          const _saveTutorialFlag = _debounce(next => {
+            fetch(`${siteUrl}/wallet/api/cookie/tutorialFlag`, {
+              method: 'POST',
+              credentials: 'include',
+            })
+              .then(() => {
+                next();
+              })
+              .catch(err => {
+                console.warn(err);
+
+                next();
+              });
+          });
 
           class BootstrapApi extends EventEmitter {
             getInitialUrl() {
@@ -101,7 +133,8 @@ class Bootstrap {
 
             setTutorialFlag(newTutorialFlag) {
               tutorialFlag = newTutorialFlag;
-              localStorage.setItem('tutorial', JSON.stringify(tutorialFlag));
+
+              _saveTutorialFlag();
             }
 
             getWorldTime() {
@@ -161,6 +194,29 @@ const _getQueryVariable = (url, variable) => {
     }
   }
   return null;
+};
+const _debounce = fn => {
+  let running = false;
+  let queued = false;
+
+  const _go = () => {
+    if (!running) {
+      running = true;
+
+      fn(() => {
+        running = false;
+
+        if (queued) {
+          queued = false;
+
+          _go();
+        }
+      });
+    } else {
+      queued = true;
+    }
+  };
+  return _go;
 };
 
 module.exports = Bootstrap;
