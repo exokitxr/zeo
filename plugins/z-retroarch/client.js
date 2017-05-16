@@ -94,7 +94,6 @@ class Retroarch {
             },
           });
 
-          // XXX
           /* document.body.addEventListener('keydown', e => {
             c.handleKeydown(e);
           });
@@ -136,7 +135,7 @@ class Retroarch {
 
         const consoleMesh = (() => {
           const object = new THREE.Object3D();
-          object.position.z = 0.5;
+          object.position.set(0, 1.5, 0.5);
 
           const coreMesh = (() => {
             const geometry = geometryUtils.concatBufferGeometry([
@@ -169,7 +168,7 @@ class Retroarch {
 
           return object;
         })();
-        entityObject.add(consoleMesh);
+        scene.add(consoleMesh);
 
         const gamepadMeshes = (() => {
           const leftGamepadMesh = (() => {
@@ -304,6 +303,14 @@ class Retroarch {
           priority: 1,
         });
 
+        const _getGamepadEventKeyboardEventType = eventName => {
+          switch (eventName) {
+            case 'paddown': return 'keydown';
+            case 'pad': return 'keypress';
+            case 'padup': return 'keyup';
+            default: return null;
+          }
+        };
         const _getGamepadDirection = side => {
           const {gamepads} = pose.getStatus();
           const gamepad = gamepads[side];
@@ -321,48 +328,105 @@ class Retroarch {
             };
           }).sort((a, b) => a.distance - b.distance)[0].direction;
         };
-        const _getGamepadKey = (side, grabSide) => {
+        const _getGamepadKey = (eventName, side, grabSide) => {
           const direction = _getGamepadDirection(side);
 
-          if (grabSide === 'left') {
-            switch (direction) {
-              case 'left': return 'a';
-              case 'right': return 'd';
-              case 'up': return 'w';
-              case 'down': return 's';
-              default: return null;
-            }
-          } else if (grabSide === 'right') {
-            const leftGamepadMenuPressed = SIDES.some(side => {
-              const gamepadState = gamepadStates[side];
-              const {grabSide, menuPressed} = gamepadState;
-
-              return grabSide === 'left' && menuPressed;
-            });
-
-            if (!leftGamepadMenuPressed) {
+          if (eventName === 'paddown' || eventName === 'pad' || eventName === 'padup') {
+            if (grabSide === 'left') {
               switch (direction) {
-                case 'down':
-                case 'right':
-                  return 'x';
-                case 'up':
-                case 'left':
-                  return 'z';
-                default:
-                  return null;
+                case 'left': return 'ArrowLeft';
+                case 'right': return 'ArrowRight';
+                case 'up': return 'ArrowUp';
+                case 'down': return 'ArrowDown';
+                default: return null;
+              }
+            } else if (grabSide === 'right') {
+              const leftGamepadMenuPressed = SIDES.some(side => {
+                const gamepadState = gamepadStates[side];
+                const {grabSide, menuPressed} = gamepadState;
+
+                return grabSide === 'left' && menuPressed;
+              });
+
+              if (!leftGamepadMenuPressed) {
+                switch (direction) {
+                  case 'down': return 'x';
+                  case 'left': return 'z';
+                  case 'up': return 'c';
+                  case 'right': return 'v';
+                  default: return null;
+                }
+              } else {
+                switch (direction) {
+                  case 'left': return 'f';
+                  case 'right': return 'h';
+                  case 'up': return 't';
+                  case 'down': return 's';
+                  default: return null;
+                }
               }
             } else {
+              return null;
+            }
+          } else if (eventName === 'padtouchdown' || eventName === 'padtouch' || eventName === 'padtouchup') {
+            if (grabSide === 'left') {
               switch (direction) {
-                case 'left': return 'f';
-                case 'right': return 'h';
-                case 'up': return 't';
+                case 'left': return 'a';
+                case 'right': return 'd';
+                case 'up': return 'w';
                 case 'down': return 's';
                 default: return null;
               }
+            } else if (grabSide === 'right') {
+              const leftGamepadMenuPressed = SIDES.some(side => {
+                const gamepadState = gamepadStates[side];
+                const {grabSide, menuPressed} = gamepadState;
+
+                return grabSide === 'left' && menuPressed;
+              });
+
+              if (!leftGamepadMenuPressed) {
+                switch (direction) {
+                  case 'down': return 'x';
+                  case 'left': return 'z';
+                  case 'up': return 'c';
+                  case 'right': return 'v';
+                  default: return null;
+                }
+              } else {
+                switch (direction) {
+                  case 'left': return 'f';
+                  case 'right': return 'h';
+                  case 'up': return 't';
+                  case 'down': return 's';
+                  default: return null;
+                }
+              }
+            } else {
+              return null;
             }
           } else {
             return null;
           }
+        };
+        const _getCode = key => {
+          if (/^[a-z]$/i.test(key)) {
+            return 'Key' + key.toUpperCase();
+          } else {
+            return key;
+          }
+        }
+        const _getGamepadKeyboardEvent = (eventName, side, grabSide) => {
+          const type = _getGamepadEventKeyboardEventType(eventName);
+          const key = _getGamepadKey(eventName, side, grabSide);
+          const code = _getCode(key);
+
+          return new KeyboardEvent({
+            type: type,
+          }, {
+            key: key,
+            code: code,
+          });
         };
 
         const _paddown = e => {
@@ -371,11 +435,7 @@ class Retroarch {
           const {grabSide} = gamepadState;
 
           if (grabSide) {
-            const keyboardEvent = new KeyboardEvent({
-              type: 'keydown',
-            }, {
-              key: _getGamepadKey(side, grabSide),
-            });
+            const keyboardEvent = _getGamepadKeyboardEvent('paddown', side, grabSide);
             const {connection} = screenMesh;
             connection.handleKeydown(keyboardEvent);
 
@@ -391,11 +451,7 @@ class Retroarch {
           const {grabSide} = gamepadState;
 
           if (grabSide) {
-            const keyboardEvent = new KeyboardEvent({
-              type: 'keypress',
-            }, {
-              key: _getGamepadKey(side, grabSide),
-            });
+            const keyboardEvent = _getGamepadKeyboardEvent('pad', side, grabSide);
             const {connection} = screenMesh;
             connection.handleKeypress(keyboardEvent);
 
@@ -411,11 +467,7 @@ class Retroarch {
           const {grabSide} = gamepadState;
 
           if (grabSide) {
-            const keyboardEvent = new KeyboardEvent({
-              type: 'keyup',
-            }, {
-              key: _getGamepadKey(side, grabSide),
-            });
+            const keyboardEvent = _getGamepadKeyboardEvent('padup', side, grabSide);
             const {connection} = screenMesh;
             connection.handleKeyup(keyboardEvent);
 
@@ -434,6 +486,7 @@ class Retroarch {
             const keyboardEvent = new KeyboardEvent({
               type: 'keydown',
             }, {
+              code: 'Enter',
               key: 'Enter',
             });
             connection.handleKeydown(keyboardEvent);
@@ -455,6 +508,7 @@ class Retroarch {
             const keyboardEvent = new KeyboardEvent({
               type: 'keypress',
             }, {
+              code: 'Enter',
               key: 'Enter',
             });
             const {connection} = screenMesh;
@@ -475,6 +529,7 @@ class Retroarch {
             const keyboardEvent = new KeyboardEvent({
               type: 'keyup',
             }, {
+              code: 'Enter',
               key: 'Enter',
             });
             const {connection} = screenMesh;
@@ -525,7 +580,8 @@ class Retroarch {
         entityApi._cleanup = () => {
           entityObject.remove(screenMesh);
           screenMesh.destroy();
-          entityObject.remove(consoleMesh);
+
+          scene.remove(consoleMesh);
           SIDES.forEach(side => {
             const gamepadMesh = gamepadMeshes[side];
             scene.remove(gamepadMesh);
