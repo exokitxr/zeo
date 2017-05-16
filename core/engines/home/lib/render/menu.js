@@ -110,7 +110,7 @@ const getVideosPageSrc = videos => {
         <a style="display: flex; padding: 10px 15px; border: 2px solid; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="home:next">Next: Controls</a>
       </div>
     </div>
-  `, 'Introduction videos', {back: true});
+  `, 'Tutorials');
 };
 
 const getHeaderWrappedSrc = (content, headerText, {back = false} = {}) => `\
@@ -121,7 +121,7 @@ const getHeaderWrappedSrc = (content, headerText, {back = false} = {}) => `\
           <img src="${chevronLeftImgSrc}" width="80" height="80" />
         </a>`
       :
-        `<div style="width: 50px; height: 100px;"></div>`
+        `<div style="width: 30px; height: 100px;"></div>`
       }
       <div style="margin-right: auto; font-size: 32px; font-weight: 400;">${headerText}</div>
     </div>
