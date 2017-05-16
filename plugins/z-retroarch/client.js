@@ -74,6 +74,9 @@ class Retroarch {
           grabSide: null,
           grabbing: false,
           menuPressed: false,
+          triggerKey: null,
+          padTouchKey: null,
+          padKey: null,
         });
         const gamepadStates = {
           left: _makeGamepadState(),
@@ -297,6 +300,8 @@ class Retroarch {
 
             if (!grabbing) {
               gamepadState.grabSide = null;
+              gamepadState.padTouchKey = null;
+              gamepadState.padKey = null;
             } else {
               gamepadState.grabbing = null;
             }
@@ -342,8 +347,15 @@ class Retroarch {
         };
         const _getGamepadKey = (eventName, side, grabSide) => {
           const direction = _getGamepadDirection(side);
-
-          if (eventName === 'padtouchdown' || eventName === 'padtouch' || eventName === 'padtouchup') {
+          if (eventName === 'triggerdown' || eventName === 'trigger' || eventName === 'triggerup') {
+            if (grabSide === 'left') {
+              return 'q';
+            } else if (grabside === 'right') {
+              return 'e';
+            } else {
+              return null;
+            }
+          } else if (eventName === 'padtouchdown' || eventName === 'padtouch' || eventName === 'padtouchup') {
             if (grabSide === 'left') {
               switch (direction) {
                 case 'left': return 'ArrowLeft';
@@ -351,31 +363,6 @@ class Retroarch {
                 case 'up': return 'ArrowUp';
                 case 'down': return 'ArrowDown';
                 default: return null;
-              }
-            } else if (grabSide === 'right') {
-              const leftGamepadMenuPressed = SIDES.some(side => {
-                const gamepadState = gamepadStates[side];
-                const {grabSide, menuPressed} = gamepadState;
-
-                return grabSide === 'left' && menuPressed;
-              });
-
-              if (!leftGamepadMenuPressed) {
-                switch (direction) {
-                  case 'down': return 'x';
-                  case 'left': return 'z';
-                  case 'up': return 'c';
-                  case 'right': return 'v';
-                  default: return null;
-                }
-              } else {
-                switch (direction) {
-                  case 'left': return 'f';
-                  case 'right': return 'h';
-                  case 'up': return 't';
-                  case 'down': return 's';
-                  default: return null;
-                }
               }
             } else {
               return null;
@@ -428,99 +415,147 @@ class Retroarch {
             return key;
           }
         }
-        const _getGamepadKeyboardEvent = (eventName, side, grabSide) => {
-          const type = _getGamepadEventKeyboardEventType(eventName);
-          const key = _getGamepadKey(eventName, side, grabSide);
-          const code = _getCode(key);
-
-          return new KeyboardEvent({
-            type: type,
-          }, {
-            key: key,
-            code: code,
-          });
-        };
-
-        const _padtouchdown = e => {
+        const _emitGamepadKeyboardEvent = (eventName, e) => {
           const {side} = e;
           const gamepadState = gamepadStates[side];
           const {grabSide} = gamepadState;
 
           if (grabSide) {
-            screenMesh.connection.handleKeydown(_getGamepadKeyboardEvent('padtouchdown', side, grabSide));
+            if (eventName === 'triggerdown' || eventName === 'padtouchdown' || eventName === 'paddown') {
+              const key = _getGamepadKey(eventName, side, grabSide);
 
-            e.stopImmediatePropagation();
+              if (key) {
+                const type = _getGamepadEventKeyboardEventType(eventName);
+                const code = _getCode(key);
+
+                const keyboardEvent = new KeyboardEvent({
+                  type: type,
+                }, {
+                  key: key,
+                  code: code,
+                });
+                screenMesh.connection.handleKeydown(keyboardEvent);
+
+                if (eventName === 'triggerdown') {
+                  gamepadState.triggerKey = key;
+                } else if (eventName === 'padtouchdown') {
+                  gamepadState.padTouchKey = key;
+                } else if (eventName === 'paddown') {
+                  gamepadState.padKey = key;
+                }
+
+                e.stopImmediatePropagation();
+              }
+            } else {
+              if (eventName === 'trigger' || eventName === 'triggerup') {
+                const {triggerKey: key} = gamepadState;
+                const type = _getGamepadEventKeyboardEventType(eventName);
+                const code = _getCode(key);
+
+                const keyboardEvent = new KeyboardEvent({
+                  type: type,
+                }, {
+                  key: key,
+                  code: code,
+                });
+                if (eventName === 'trigger') {
+                  screenMesh.connection.handleKeypress(keyboardEvent);
+
+                  gamepadState.triggerKey = null;
+                } else if (eventName === 'triggerup') {
+                  screenMesh.connection.handleKeyup(keyboardEvent);
+                }
+              } else if (eventName === 'padtouch' || eventName === 'padtouchup') {
+                const {padTouchKey: key} = gamepadState;
+                const type = _getGamepadEventKeyboardEventType(eventName);
+                const code = _getCode(key);
+
+                const keyboardEvent = new KeyboardEvent({
+                  type: type,
+                }, {
+                  key: key,
+                  code: code,
+                });
+                if (eventName === 'padtouch') {
+                  screenMesh.connection.handleKeypress(keyboardEvent);
+
+                  gamepadState.padTouchKey = null;
+                } else if (eventName === 'padtouchup') {
+                  screenMesh.connection.handleKeyup(keyboardEvent);
+                }
+              } else if (eventName === 'pad' || eventName === 'padup') {
+                const {padKey: key} = gamepadState;
+                const type = _getGamepadEventKeyboardEventType(eventName);
+                const code = _getCode(key);
+
+                const keyboardEvent = new KeyboardEvent({
+                  type: type,
+                }, {
+                  key: key,
+                  code: code,
+                });
+                if (eventName === 'pad') {
+                  screenMesh.connection.handleKeypress(keyboardEvent);
+
+                  gamepadState.padKey = null;
+                } else if (eventName === 'padup') {
+                  screenMesh.connection.handleKeyup(keyboardEvent);
+                }
+              }
+            }
           }
+        };
+
+        const _triggerdown = e => {
+          _emitGamepadKeyboardEvent('triggerdown', e);
+        };
+        input.on('triggerdown', _triggerdown, {
+          priority: 1,
+        });
+        const _trigger = e => {
+          _emitGamepadKeyboardEvent('trigger', e);
+        };
+        input.on('trigger', _trigger, {
+          priority: 1,
+        });
+        const _triggerup = e => {
+          _emitGamepadKeyboardEvent('triggerup', e);
+        };
+        input.on('triggerup', _triggerup, {
+          priority: 1,
+        });
+        const _padtouchdown = e => {
+          _emitGamepadKeyboardEvent('padtouchdown', e);
         };
         input.on('padtouchdown', _padtouchdown, {
           priority: 1,
         });
         const _padtouch = e => {
-          const {side} = e;
-          const gamepadState = gamepadStates[side];
-          const {grabSide} = gamepadState;
-
-          if (grabSide) {
-            screenMesh.connection.handleKeypress(_getGamepadKeyboardEvent('padtouch', side, grabSide));
-
-            e.stopImmediatePropagation();
-          }
+          _emitGamepadKeyboardEvent('padtouch', e);
         };
         input.on('padtouch', _padtouch, {
           priority: 1,
         });
         const _padtouchup = e => {
-          const {side} = e;
-          const gamepadState = gamepadStates[side];
-          const {grabSide} = gamepadState;
-
-          if (grabSide) {
-            screenMesh.connection.handleKeyup(_getGamepadKeyboardEvent('padtouchup', side, grabSide));
-
-            e.stopImmediatePropagation();
-          }
+          _emitGamepadKeyboardEvent('padtouchup', e);
         };
         input.on('padtouchup', _padtouchup, {
           priority: 1,
         });
         const _paddown = e => {
-          const {side} = e;
-          const gamepadState = gamepadStates[side];
-          const {grabSide} = gamepadState;
-
-          if (grabSide) {
-            screenMesh.connection.handleKeypress(_getGamepadKeyboardEvent('paddown', side, grabSide));
-
-            e.stopImmediatePropagation();
-          }
+          _emitGamepadKeyboardEvent('paddown', e);
         };
         input.on('paddown', _paddown, {
           priority: 1,
         });
         const _pad = e => {
-          const {side} = e;
-          const gamepadState = gamepadStates[side];
-          const {grabSide} = gamepadState;
-
-          if (grabSide) {
-            screenMesh.connection.handleKeypress(_getGamepadKeyboardEvent('pad', side, grabSide));
-
-            e.stopImmediatePropagation();
-          }
+          _emitGamepadKeyboardEvent('pad', e);
         };
         input.on('pad', _pad, {
           priority: 1,
         });
         const _padup = e => {
-          const {side} = e;
-          const gamepadState = gamepadStates[side];
-          const {grabSide} = gamepadState;
-
-          if (grabSide) {
-            screenMesh.connection.handleKeypress(_getGamepadKeyboardEvent('padup', side, grabSide));
-
-            e.stopImmediatePropagation();
-          }
+          _emitGamepadKeyboardEvent('padup', e);
         };
         input.on('padup', _padup, {
           priority: 1,
@@ -637,6 +672,9 @@ class Retroarch {
 
           input.removeListener('gripdown', _gripdown);
           input.removeListener('gripup', _gripup);
+          input.removeListener('triggerdown', _triggerdown);
+          input.removeListener('trigger', _trigger);
+          input.removeListener('triggerup', _triggerup);
           input.removeListener('padtouchdown', _padtouchdown);
           input.removeListener('padtouch', _padtouch);
           input.removeListener('padtouchup', _padtouchup);
