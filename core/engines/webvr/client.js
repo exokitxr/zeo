@@ -831,9 +831,17 @@ class WebVR {
 
           getMode() {
             const {display} = this;
-
             if (display instanceof FakeVRDisplay) {
               return display.getMode();
+            } else {
+              return null;
+            }
+          }
+
+          getKeys() {
+            const {display} = this;
+            if (display instanceof FakeVRDisplay) {
+              return display.getKeys();
             } else {
               return null;
             }
@@ -920,6 +928,7 @@ class WebVR {
               grip: false,
               menu: false,
               shift: false,
+              axis: false,
             };
             this.keys = keys;
 
@@ -933,6 +942,8 @@ class WebVR {
               keys.trigger = false;
               keys.grip = false;
               keys.menu = false;
+              keys.shift = false;
+              keys.axis = false;
             };
 
             const gamepads = [new FakeVRGamepad(this, 0), new FakeVRGamepad(this, 1)];
@@ -969,6 +980,10 @@ class WebVR {
                     keys.grip = true;
                     needsGamepadUpdate = true;
                     break;
+                  case 82: // R
+                    keys.touch = true;
+                    needsGamepadUpdate = true;
+                    break;
                   case 16: // Shift
                     keys.shift = true;
                     break;
@@ -977,8 +992,7 @@ class WebVR {
                     needsGamepadUpdate = true;
                     break;
                   case 86: // V
-                    keys.touch = true;
-                    needsGamepadUpdate = true;
+                    keys.axis = true;
                     break;
                   case 90: // Z
                     this.mode = 'left';
@@ -1035,9 +1049,12 @@ class WebVR {
                     keys.grip = false;
                     needsGamepadUpdate = true;
                     break;
-                  case 86: // V
+                  case 82: // R
                     keys.touch = false;
                     needsGamepadUpdate = true;
+                    break;
+                  case 86: // V
+                    keys.axis = false;
                     break;
                   case 16: // Shift
                     keys.shift = false;
@@ -1067,7 +1084,7 @@ class WebVR {
             };
             const mousemove = e => {
               if (this.isPresenting) {
-                const _handleGamepad = () => this.isPresenting && (e.ctrlKey || e.altKey || keys.touch); // handled by the fake gamepad
+                const _handleGamepad = () => this.isPresenting && (e.ctrlKey || e.altKey || keys.axis); // handled by the fake gamepad
                 const _handleDisplay = () => {
                   const {rotation: quaternion} = this;
 
@@ -1257,6 +1274,10 @@ class WebVR {
             return this.mode;
           }
 
+          getKeys() {
+            return this.keys;
+          }
+
           updateMatrix() {
             const {position, rotation, scale, matrix} = this;
 
@@ -1339,8 +1360,8 @@ class WebVR {
                   this.move(-e.movementX, -e.movementY, 0, _isReversed());
                 } else if (e.altKey) {
                   this.move(-e.movementX, 0, -e.movementY, _isReversed());
-                } else if (this._parent.keys.touch) {
-                  this.touch(-e.movementX, -e.movementY, _isReversed());
+                } else if (this._parent.keys.axis) {
+                  this.axis(-e.movementX, -e.movementY, _isReversed());
                 }
               }
             };
@@ -1369,7 +1390,7 @@ class WebVR {
             this.updateProperties();
           }
 
-          touch(x, y, reverse) {
+          axis(x, y, reverse) {
             const {axes} = this;
 
             const _clampAxis = v => Math.min(Math.max(v, -1), 1);

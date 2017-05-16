@@ -279,26 +279,22 @@ class Cyborg {
                 const {hudMesh} = this;
 
                 const vrMode = bootstrap.getVrMode();
-                if (vrMode === 'keyboard') {
-                  const touched = SIDES.some(side => {
-                    const gamepad = gamepadStatus[side];
+                const mode = webvr.getMode()
+                const keys = webvr.getKeys();
+                if (vrMode === 'keyboard' && mode !== null && keys !== null) {
+                  const {axis} = keys;
 
-                    if (gamepad && gamepad.buttons.pad.touched) {
-                      hudMesh.position.copy(hmdStatus.position);
-                      hudMesh.quaternion.copy(hmdStatus.rotation);
-                      hudMesh.scale.copy(hmdStatus.scale);
+                  if (axis) {
+                    hudMesh.position.copy(hmdStatus.position);
+                    hudMesh.quaternion.copy(hmdStatus.rotation);
+                    hudMesh.scale.copy(hmdStatus.scale);
 
-                      const {circleMesh} = hudMesh;
-                      const {notchMesh} = circleMesh;
-                      const {axes} = gamepad;
-                      notchMesh.position.set(axes[0] * 0.043, axes[1] * 0.043, (1 - new THREE.Vector2(axes[0], axes[1]).length()) * (-0.005));
+                    const {circleMesh} = hudMesh;
+                    const {notchMesh} = circleMesh;
+                    const gamepad = gamepadStatus[mode === 'center' ? 'left' : mode];
+                    const {axes} = gamepad;
+                    notchMesh.position.set(axes[0] * 0.043, axes[1] * 0.043, (1 - new THREE.Vector2(axes[0], axes[1]).length()) * (-0.005));
 
-                      return true;
-                    } else {
-                      return false;
-                    }
-                  });
-                  if (touched) {
                     if (!hudMesh.visible) {
                       hudMesh.visible = true;
                     }
