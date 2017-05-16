@@ -48,19 +48,28 @@ const BUTTONS = {
 const SIDES = ['left', 'right'];
 
 class EventSpec {
-  constructor(buttonName, rootName, downName, upName) {
+  constructor(buttonName, rootName, downName, upName, touchName, touchdownName, touchupName) {
     this.buttonName = buttonName;
     this.rootName = rootName;
     this.downName = downName;
     this.upName = upName;
+    this.touchName = touchName;
+    this.touchdownName = touchdownName;
+    this.touchupName = touchupName;
+  }
+}
+class VrEvent {
+  constructor(side, axes) {
+    this.side = side;
+    this.axes = axes;
   }
 }
 
 const EVENT_SPECS = [
-  new EventSpec('trigger', 'trigger', 'triggerdown', 'triggerup'),
-  new EventSpec('pad', 'pad', 'paddown', 'padup'),
-  new EventSpec('grip', 'grip', 'gripdown', 'gripup'),
-  new EventSpec('menu', 'menu', 'menudown', 'menuup'),
+  new EventSpec('trigger', 'trigger', 'triggerdown', 'triggerup', 'triggertouch', 'triggertouchdown', 'triggertouchup'),
+  new EventSpec('pad', 'pad', 'paddown', 'padup', 'padtouch', 'padtouchdown', 'padtouchup'),
+  new EventSpec('grip', 'grip', 'gripdown', 'gripup', 'griptouch', 'griptouchdown', 'griptouchup'),
+  new EventSpec('menu', 'menu', 'menudown', 'menuup', 'menutouch', 'menutouchdown', 'menutouchup'),
 ];
 
 class WebVR {
@@ -731,6 +740,11 @@ class WebVR {
             };
             this.setStatus(newStatus);
 
+            const _makeEvent = (side, rootName, gamepadStatus) => new VrEvent(
+              side,
+              (rootName === 'pad') ? (gamepadStatus ? [gamepadStatus.axes[0], gamepadStatus.axes[1]] : [0, 0]) : null
+            );
+
             for (let s = 0; s < SIDES.length; s++) {
               const side = SIDES[s];
               const {gamepads: oldGamepadsStatus} = oldStatus;
@@ -740,25 +754,24 @@ class WebVR {
 
               for (let e = 0; e < EVENT_SPECS.length; e++) {
                 const eventSpec = EVENT_SPECS[e];
-                const {buttonName, rootName, downName, upName} = eventSpec
+                const {buttonName, rootName, downName, upName, touchName, touchdownName, touchupName} = eventSpec;
+
                 const oldPressed = Boolean(oldGamepadStatus) && oldGamepadStatus.buttons[buttonName].pressed;
                 const newPressed = Boolean(newGamepadStatus) && newGamepadStatus.buttons[buttonName].pressed;
-
-                const _makeEventSpec = () => {
-                  const eventSpec = {
-                    side,
-                  };
-                  if (rootName === 'pad') {
-                    eventSpec.axes = newGamepadStatus ? newGamepadStatus.axes.slice() : [0, 0];
-                  }
-                  return eventSpec;
-                };
-
                 if (!oldPressed && newPressed) {
-                  input.triggerEvent(downName, _makeEventSpec());
+                  input.triggerEvent(downName, _makeEvent(side, rootName, newGamepadStatus));
                 } else if (oldPressed && !newPressed) {
-                  input.triggerEvent(upName, _makeEventSpec());
-                  input.triggerEvent(rootName, _makeEventSpec());
+                  input.triggerEvent(upName, _makeEvent(side, rootName, newGamepadStatus));
+                  input.triggerEvent(rootName, _makeEvent(side, rootName, newGamepadStatus));
+                }
+
+                const oldTouched = Boolean(oldGamepadStatus) && oldGamepadStatus.buttons[buttonName].touched;
+                const newTouched = Boolean(newGamepadStatus) && newGamepadStatus.buttons[buttonName].touched;
+                if (!oldTouched && newTouched) {
+                  input.triggerEvent(touchdownName, _makeEvent(side, rootName, newGamepadStatus));
+                } else if (oldPressed && !newTouched) {
+                  input.triggerEvent(touchupName, _makeEvent(side, rootName, newGamepadStatus));
+                  input.triggerEvent(touchName, _makeEvent(side, rootName, newGamepadStatus));
                 }
               }
             }
