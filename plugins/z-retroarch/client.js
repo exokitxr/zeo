@@ -9,6 +9,28 @@ const {
 const novnc = require('retroarch/client.js');
 
 const SIDES = ['left', 'right'];
+const DIRECTIONS = [
+  {
+    direction: 'left',
+    x: -1,
+    y: 0,
+  },
+  {
+    direction: 'right',
+    x: 1,
+    y: 0,
+  },
+  {
+    direction: 'up',
+    x: 0,
+    y: 1,
+  },
+  {
+    direction: 'down',
+    x: 0,
+    y: -1,
+  },
+];
 
 class Retroarch {
   mount() {
@@ -101,6 +123,7 @@ class Retroarch {
 
           const mesh = new THREE.Mesh(geometry, material);
 
+          mesh.connection = c;
           mesh.destroy = () => {
             c.disconnect();
           };
@@ -271,6 +294,99 @@ class Retroarch {
           priority: 1,
         });
 
+        const _getGamepadDirection = side => {
+          const {gamepads} = post.getStatus();
+          const gamepad = gamepads[side];
+          const {axes} = gamepad;
+          const [x, y] = axes;
+
+          return DIRECTIONS.map(directionSpec => {
+            const {direction, x: ax, y: ay} = directionSpec;
+            const dx = x - ax;
+            const dy = y - ay;
+            const distance = Math.sqrt((dx * dx) + (dy * dy));
+            return {
+              direction,
+              distance,
+            };
+          }).sort((a, b) => a.distance - b.distance)[0].direction;
+        };
+        const _getGamepadKey = (side, grabSide) => {
+          const direction = _getGamepadDirection(side);
+
+          if (grabSide === 'left') {
+            switch (direction) {
+              case 'left': return 'a';
+              case 'right': return 'd';
+              case 'up': return 'w';
+              case 'down': return 's';
+              default: return null;
+            }
+          } else if (grabSide === 'right') {
+            switch (direction) {
+              case 'down':
+              case 'right':
+                return 'x';
+              case 'up':
+              case 'left':
+                return 'z';
+              default:
+                return null;
+            }
+          } else {
+            return null;
+          }
+        };
+
+        const _paddown = e => {
+          const {side} = e;
+          const {grabSide} = gamepadState;
+
+          if (grabSide) {
+            const key = _getGamepadKey(side, grabSide);
+            const e = {
+              key,
+            };
+            const {connection} = screenMesh;
+            connection.handleKeydown(e);
+          }
+        };
+        input.on('paddown', _paddown, {
+          priority: 1,
+        });
+        const _pad = e => {
+          const {side} = e;
+          const {grabSide} = gamepadState;
+
+          if (grabSide) {
+            const key = _getGamepadKey(side, grabSide);
+            const e = {
+              key,
+            };
+            const {connection} = screenMesh;
+            connection.handleKeypress(e);
+          }
+        };
+        input.on('pad', _pad, {
+          priority: 1,
+        });
+        const _padup = e => {
+          const {side} = e;
+          const {grabSide} = gamepadState;
+
+          if (grabSide) {
+            const key = _getGamepadKey(side, grabSide);
+            const e = {
+              key,
+            };
+            const {connection} = screenMesh;
+            connection.handleKeyup(e);
+          }
+        };
+        input.on('padup', _padup, {
+          priority: 1,
+        });
+
         const _update = () => {
           const _updateScreen = () => {
             const {
@@ -315,6 +431,9 @@ class Retroarch {
 
           input.removeListener('gripdown', _gripdown);
           input.removeListener('gripup', _gripup);
+          input.removeListener('paddown', _paddown);
+          input.removeListener('pad', _pad);
+          input.removeListener('padup', _padup);
           render.removeListener('update', _update);
         };
       },
