@@ -305,10 +305,17 @@ class Retroarch {
 
         const _getGamepadEventKeyboardEventType = eventName => {
           switch (eventName) {
-            case 'paddown': return 'keydown';
-            case 'pad': return 'keypress';
-            case 'padup': return 'keyup';
-            default: return null;
+            case 'paddown':
+            case 'padtouchdown':
+              return 'keydown';
+            case 'pad':
+            case 'padtouch':
+              return 'keypress';
+            case 'padup':
+            case 'padtouchup':
+              return 'keyup';
+            default:
+              return null;
           }
         };
         const _getGamepadDirection = side => {
@@ -331,7 +338,7 @@ class Retroarch {
         const _getGamepadKey = (eventName, side, grabSide) => {
           const direction = _getGamepadDirection(side);
 
-          if (eventName === 'paddown' || eventName === 'pad' || eventName === 'padup') {
+          if (eventName === 'padtouchdown' || eventName === 'padtouch' || eventName === 'padtouchup') {
             if (grabSide === 'left') {
               switch (direction) {
                 case 'left': return 'ArrowLeft';
@@ -368,7 +375,7 @@ class Retroarch {
             } else {
               return null;
             }
-          } else if (eventName === 'padtouchdown' || eventName === 'padtouch' || eventName === 'padtouchup') {
+          } else if (eventName === 'paddown' || eventName === 'pad' || eventName === 'padup') {
             if (grabSide === 'left') {
               switch (direction) {
                 case 'left': return 'a';
@@ -429,15 +436,55 @@ class Retroarch {
           });
         };
 
+        const _padtouchdown = e => {
+          const {side} = e;
+          const gamepadState = gamepadStates[side];
+          const {grabSide} = gamepadState;
+
+          if (grabSide) {
+            screenMesh.connection.handleKeydown(_getGamepadKeyboardEvent('padtouchdown', side, grabSide));
+
+            e.stopImmediatePropagation();
+          }
+        };
+        input.on('padtouchdown', _padtouchdown, {
+          priority: 1,
+        });
+        const _padtouch = e => {
+          const {side} = e;
+          const gamepadState = gamepadStates[side];
+          const {grabSide} = gamepadState;
+
+          if (grabSide) {
+            screenMesh.connection.handleKeypress(_getGamepadKeyboardEvent('padtouch', side, grabSide));
+
+            e.stopImmediatePropagation();
+          }
+        };
+        input.on('padtouch', _padtouch, {
+          priority: 1,
+        });
+        const _padtouchup = e => {
+          const {side} = e;
+          const gamepadState = gamepadStates[side];
+          const {grabSide} = gamepadState;
+
+          if (grabSide) {
+            screenMesh.connection.handleKeyup(_getGamepadKeyboardEvent('padtouchup', side, grabSide));
+
+            e.stopImmediatePropagation();
+          }
+        };
+        input.on('padtouchup', _padtouchup, {
+          priority: 1,
+        });
         const _paddown = e => {
           const {side} = e;
           const gamepadState = gamepadStates[side];
           const {grabSide} = gamepadState;
 
           if (grabSide) {
-            const keyboardEvent = _getGamepadKeyboardEvent('paddown', side, grabSide);
-            const {connection} = screenMesh;
-            connection.handleKeydown(keyboardEvent);
+            screenMesh.connection.handleKeypress(_getGamepadKeyboardEvent('paddown', side, grabSide));
 
             e.stopImmediatePropagation();
           }
@@ -451,9 +498,7 @@ class Retroarch {
           const {grabSide} = gamepadState;
 
           if (grabSide) {
-            const keyboardEvent = _getGamepadKeyboardEvent('pad', side, grabSide);
-            const {connection} = screenMesh;
-            connection.handleKeypress(keyboardEvent);
+            screenMesh.connection.handleKeypress(_getGamepadKeyboardEvent('pad', side, grabSide));
 
             e.stopImmediatePropagation();
           }
@@ -467,9 +512,7 @@ class Retroarch {
           const {grabSide} = gamepadState;
 
           if (grabSide) {
-            const keyboardEvent = _getGamepadKeyboardEvent('padup', side, grabSide);
-            const {connection} = screenMesh;
-            connection.handleKeyup(keyboardEvent);
+            screenMesh.connection.handleKeypress(_getGamepadKeyboardEvent('padup', side, grabSide));
 
             e.stopImmediatePropagation();
           }
@@ -589,6 +632,9 @@ class Retroarch {
 
           input.removeListener('gripdown', _gripdown);
           input.removeListener('gripup', _gripup);
+          input.removeListener('padtouchdown', _padtouchdown);
+          input.removeListener('padtouch', _padtouch);
+          input.removeListener('padtouchup', _padtouchup);
           input.removeListener('paddown', _paddown);
           input.removeListener('pad', _pad);
           input.removeListener('padup', _padup);
