@@ -336,11 +336,17 @@ class Wallet {
 
           _requestStatus()
             .then(status => {
-              const {address, assets: itemSpecs} = status;
+              const {address, balance, assets: itemSpecs} = status;
 
               return {
                 address: address,
                 tagMeshes: itemSpecs
+                  .concat(balance > 0 ? [
+                    {
+                      asset: 'BTC',
+                      quantity: balance,
+                    }
+                  ] : [])
                   .filter(itemSpec => !searchText || itemSpec.asset.toLowerCase().indexOf(searchText) !== -1)
                   .map(itemSpec => {
                     const {asset, quantity} = itemSpec;
