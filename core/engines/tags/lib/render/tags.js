@@ -513,7 +513,13 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
   const _commaize = n => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
   const getAssetSrc = ({item}) => {
     const {id, name, displayName, quantity, metadata: {isStatic, isSub}} = item;
-    const quantityString = _commaize(quantity);
+    const quantityString = (() => {
+      if (name === 'BTC') {
+        return quantity.toFixed(8);
+      } else {
+        return _commaize(quantity);
+      }
+    })();
     const tagName = isStatic ? 'a' : 'div';
     const linkTagName = isStatic ? 'div' : 'a';
     const onclick = (() => {
