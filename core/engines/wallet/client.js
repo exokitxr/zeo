@@ -198,39 +198,6 @@ class Wallet {
         };
         _updatePages();
 
-        let boxAnchor = null;
-        const _removeBoxAnchor = () => {
-          if (boxAnchor) {
-            rend.removeBoxAnchor(boxAnchor);
-            boxAnchor = null;
-          }
-        };
-        const _addBoxAnchor = ({position = null, rotation = null} = {}) => {
-          _removeBoxAnchor();
-
-          if (rend.getTab() === 'wallet' && (grabStates.left || grabStates.right)) {
-            if (!position || !rotation) {
-              const {menuMesh} = walletMesh;
-              const {position: menuMeshPosition, rotation: menuMeshRotation} = _decomposeObjectMatrixWorld(menuMesh);
-              position = menuMeshPosition;
-              rotation = menuMeshRotation;
-            }
-
-            boxAnchor = {
-              boxTarget: geometryUtils.makeBoxTarget(
-                position,
-                rotation,
-                oneVector,
-                new THREE.Vector3(WORLD_WIDTH, WORLD_HEIGHT, 0.1)
-              ),
-              anchor: {
-                onclick: 'wallet',
-              },
-            };
-            rend.addBoxAnchor(boxAnchor);
-          }
-        };
-
         const _openWalletWindow = req => {
           const width = 800;
           const height = 600;
@@ -427,35 +394,9 @@ class Wallet {
 
               walletCacheState.loaded = true;
             }
-
-            _addBoxAnchor();
-          } else {
-            _removeBoxAnchor();
           }
         };
         rend.on('tabchange', _tabchange);
-        const _open = ({position, rotation}) => {
-          _addBoxAnchor({position, rotation});
-        };
-        rend.on('open', _open);
-        const _close = () => {
-          _removeBoxAnchor();
-        };
-        rend.on('close', _close);
-        const _grab = ({side, mesh}) => {
-          const {item} = mesh;
-          const {type} = item;
-          grabStates[side] = type === 'asset';
-
-          _addBoxAnchor();
-        };
-        rend.on('grab', _grab);
-        const _release = ({side}) => {
-          grabStates[side] = false;
-
-          _removeBoxAnchor();
-        };
-        rend.on('release', _release);
 
         const _trigger = e => {
           const {side} = e;
@@ -545,10 +486,6 @@ class Wallet {
           document.body.removeChild(walletIframe);
 
           rend.removeListener('tabchange', _tabchange);
-          rend.removeListener('open', _open);
-          rend.removeListener('close', _close);
-          rend.removeListener('grab', _grab);
-          rend.removeListener('release', _release);
           input.removeListener('trigger', _trigger);
 
           _removeBoxAnchor();
