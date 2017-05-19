@@ -34,7 +34,7 @@ class World {
 
   mount() {
     const {_archae: archae} = this;
-    const {metadata: {home: {enabled: homeEnabled}, site: {url: siteUrl}, server: {allowInsecureModules, enabled: serverEnabled}}} = archae;
+    const {metadata: {site: {url: siteUrl}, server: {allowInsecureModules, enabled: serverEnabled}}} = archae;
 
     const cleanups = [];
     this._cleanup = () => {
@@ -49,53 +49,36 @@ class World {
       live = false;
     });
 
-    const _requestDefaultTags = () => {
-      if (homeEnabled) {
-        return fetch('/archae/home/defaults/data/world/tags.json')
-          .then(res => res.json()
-            .then(({tags}) => Object.keys(tags).map(id => tags[id]))
-          );
-      } else {
-        return Promise.resolve();
-      }
-    };
-
-    return Promise.all([
-      archae.requestPlugins([
-        '/core/engines/three',
-        '/core/engines/input',
-        '/core/engines/webvr',
-        '/core/engines/cyborg',
-        '/core/engines/multiplayer',
-        '/core/engines/biolumi',
-        '/core/engines/rend',
-        '/core/engines/wallet',
-        '/core/engines/keyboard',
-        '/core/engines/loader',
-        '/core/engines/tags',
-        '/core/engines/fs',
-        '/core/utils/network-utils',
-        '/core/utils/geometry-utils',
-      ]),
-      _requestDefaultTags(),
+    return archae.requestPlugins([
+      '/core/engines/three',
+      '/core/engines/input',
+      '/core/engines/webvr',
+      '/core/engines/cyborg',
+      '/core/engines/multiplayer',
+      '/core/engines/biolumi',
+      '/core/engines/rend',
+      '/core/engines/wallet',
+      '/core/engines/keyboard',
+      '/core/engines/loader',
+      '/core/engines/tags',
+      '/core/engines/fs',
+      '/core/utils/network-utils',
+      '/core/utils/geometry-utils',
     ]).then(([
-      [
-        three,
-        input,
-        webvr,
-        cyborg,
-        multiplayer,
-        biolumi,
-        rend,
-        wallet,
-        keyboard,
-        loader,
-        tags,
-        fs,
-        networkUtils,
-        geometryUtils,
-      ],
-      defaultTags,
+      three,
+      input,
+      webvr,
+      cyborg,
+      multiplayer,
+      biolumi,
+      rend,
+      wallet,
+      keyboard,
+      loader,
+      tags,
+      fs,
+      networkUtils,
+      geometryUtils,
     ]) => {
       if (live) {
         const {THREE, scene, camera} = three;
@@ -1729,10 +1712,6 @@ class World {
             return null;
           }
         })();
-
-        if (homeEnabled) {
-          tags.loadTags(defaultTags);
-        }
 
         cleanups.push(() => {
           remoteGrabManager.destroy();
