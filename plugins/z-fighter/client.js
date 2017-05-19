@@ -681,7 +681,7 @@ class ZFighter {
                 }
               };
               input.on('menudown', _menudown, {
-                priority: 1,
+                priority: 2,
               });
 
               const bullets = [];
