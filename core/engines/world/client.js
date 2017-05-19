@@ -976,10 +976,16 @@ class World {
 
               if (grabMesh && triggered) {
                 const tagMesh = grabMesh;
+                const {item} = tagMesh;
+                const {temp} = item;
                 const {position, rotation, scale} = _decomposeObjectMatrixWorld(tagMesh);
-
                 const matrixArray = position.toArray().concat(rotation.toArray()).concat(scale.toArray());
-                _moveTag('hand:' + side, 'world:' + JSON.stringify(matrixArray));
+
+                if (!temp) {
+                  _moveTag('hand:' + side, 'world:' + JSON.stringify(matrixArray));
+                } else {
+                  _handleMoveTag(localUserId, 'hand:' + side, 'world:' + JSON.stringify(matrixArray));
+                }
 
                 triggerState.triggered = false;
 
@@ -1169,10 +1175,16 @@ class World {
 
             if (grabMesh) {
               const tagMesh = grabMesh;
+              const {item} = tagMesh;
+              const {temp} = item;
               const {position, rotation, scale} = _decomposeObjectMatrixWorld(tagMesh);
-
               const matrixArray = position.toArray().concat(rotation.toArray()).concat(scale.toArray());
-              _moveTag('hand:' + side, 'world:' + JSON.stringify(matrixArray));
+
+              if (!temp) {
+                _moveTag('hand:' + side, 'world:' + JSON.stringify(matrixArray));
+              } else {
+                _handleMoveTag(localUserId, 'hand:' + side, 'world:' + JSON.stringify(matrixArray));
+              }
 
               const triggerState = triggerStates[side];
               const {triggered} = triggerState;
