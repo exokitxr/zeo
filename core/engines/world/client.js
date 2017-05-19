@@ -911,62 +911,53 @@ class World {
           const {side} = e;
 
           const _clickUnpack = () => {
-            const grabMesh = grabManager.getMesh(side);
+            const hoverState = rend.getHoverState(side);
+            const {intersectionPoint} = hoverState;
 
-            if (grabMesh) {
-              const hoverState = rend.getHoverState(side);
-              const {intersectionPoint} = hoverState;
+            if (intersectionPoint) {
+              const {anchor} = hoverState;
+              const onclick = (anchor && anchor.onclick) || '';
 
-              if (intersectionPoint) {
-                const {anchor} = hoverState;
-                const onclick = (anchor && anchor.onclick) || '';
+              let match;
+              if (match = onclick.match(/^asset:claim:(.+)$/)) {
+                const id = match[1];
 
-                if (onclick === 'wallet') {
-                  // XXX should only allow this when the wallet is logged in
+                // XXX should only allow this when the wallet is logged in
+                const tagMesh = elementManager.getTagMesh(id);
+                const {item} = tagMesh;
+                const {name: asset, quantity, words} = item;
+                const src = _getTagIdSrc(id);
+                _removeTag(src);
 
-                  const {item} = grabMesh;
-                  const {name: asset, quantity, words} = item;
-
-                  // fake local asset tag mesh removal
-                  elementManager.remove(grabMesh);
-                  tags.destroyTag(grabMesh);
-                  grabManager.setMesh(side, null);
-
-                  // perform the unpack
-                  fetch(`${siteUrl}/wallet/api/unpack`, {
-                    method: 'POST',
-                    headers: (() => {
-                      const headers = new Headers();
-                      headers.append('Content-Type', 'application/json');
-                      return headers;
-                    })(),
-                    body: JSON.stringify({
-                      words,
-                      asset,
-                      quantity,
-                    }),
-                    credentials: 'include',
+                fetch(`${siteUrl}/wallet/api/unpack`, {
+                  method: 'POST',
+                  headers: (() => {
+                    const headers = new Headers();
+                    headers.append('Content-Type', 'application/json');
+                    return headers;
+                  })(),
+                  body: JSON.stringify({
+                    words,
+                    asset,
+                    quantity,
+                  }),
+                  credentials: 'include',
+                })
+                  .then(res => {
+                    if (res.status >= 200 && res.status < 300) {
+                      return res.json();
+                    } else {
+                      return null;
+                    }
                   })
-                    .then(res => {
-                      if (res.status >= 200 && res.status < 300) {
-                        return res.json();
-                      } else {
-                        return null;
-                      }
-                    })
-                    .then(({txid}) => {
-                      // real remote asset tag mesh removal
-                      const src = 'hand:' + side;
-                      _request('removeTag', [localUserId, src], _warnError);
-                    })
-                    .catch(err => {
-                      console.warn(err);
-                    });
+                  .then(({txid}) => {
+                    console.log('unpacked', {txid});
+                  })
+                  .catch(err => {
+                    console.warn(err);
+                  });
 
-                  return true;
-                } else {
-                  return false;
-                }
+                return true;
               } else {
                 return false;
               }
