@@ -537,7 +537,7 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
         <div style="display: flex; margin-left: -30px; margin-right: -80px; padding-left: 30px; padding-right: 80px; flex-grow: 1; flex-direction: column; box-sizing: border-box;">
           <div style="display: flex; flex-grow: 1;">
             <img src="${creatureUtils.makeStaticCreature('asset:' + displayName)}" width="80" height="80" style="margin: 10px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;" />
-            <div style="display: flex; max-width: ${WIDTH - (30) - (80 + (10 * 2))}px; flex-grow: 1; flex-direction: column; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">
+            <div style="display: flex; max-width: ${WIDTH - (30) - (80 + (10 * 2)) - (80)}px; flex-grow: 1; flex-direction: column; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">
               <h1 style="margin: 0; margin-top: 10px; font-size: 28px; font-weight: 400; line-height: 1.4; text-overflow: ellipsis; overflow: hidden;">${name}</h1>
               <div style="display: flex; flex-grow: 1; align-items: center;">
                 <div style="padding: 5px 10px; border: 2px solid; font-size: 28px; font-weight: 400;">&#164; ${quantityString}</div>
@@ -545,7 +545,7 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
             </div>
           </div>
         </div>
-        <${linkTagName} style="display: flex; position: absolute; top: 80px; right: -80px; width: ${HEIGHT}px; height: 80px; background-color: #EEE; border-top: 2px solid; font-size: 22px; font-weight: 400; justify-content: center; align-items: center; box-sizing: border-box; transform: rotate(-90deg);" onclick="asset:claim">Claim</${linkTagName}>
+        <${linkTagName} style="display: flex; position: absolute; top: 35px; right: -30px; width: ${HEIGHT}px; height: 80px; background-color: #EEE; border-top: 2px solid; font-size: 22px; font-weight: 400; justify-content: center; align-items: center; box-sizing: border-box; transform: rotate(-90deg);" onclick="asset:claim">Claim</${linkTagName}>
       </${tagName}>
     `;
   };
