@@ -925,7 +925,6 @@ class World {
                 // XXX should only allow this when the wallet is logged in
                 const tagMesh = elementManager.getTagMesh(id);
                 const {item} = tagMesh;
-                const {name: asset, quantity, words} = item;
                 const src = _getTagIdSrc(id);
                 _removeTag(src);
 
@@ -936,11 +935,20 @@ class World {
                     headers.append('Content-Type', 'application/json');
                     return headers;
                   })(),
-                  body: JSON.stringify({
-                    words,
-                    asset,
-                    quantity,
-                  }),
+                  body: JSON.stringify((() => {
+                    if (item.name === 'BTC') {
+                      return {
+                        words: item.words,
+                        value: item.quantity,
+                      };
+                    } else {
+                      return {
+                        words: item.words,
+                        asset: item.name,
+                        quantity: item.quantity,
+                      };
+                    }
+                  })()),
                   credentials: 'include',
                 })
                   .then(res => {
@@ -953,7 +961,7 @@ class World {
                   .then(({txid}) => {
                     console.log('unpacked', {txid});
 
-                    const assetName = itemSpec.name || 'BTC';
+                    const assetName = item.name || 'BTC';
                     const assetTagMesh = wallet.getAssetTagMeshes()
                       .find(tagMesh =>
                         tagMesh.item.type === 'asset' &&
@@ -1270,11 +1278,20 @@ class World {
                 headers.append('Content-Type', 'application/json');
                 return headers;
               })(),
-              body: JSON.stringify({
-                words: itemSpec.words,
-                asset: itemSpec.name,
-                quantity: itemSpec.quantity,
-              }),
+              body: JSON.stringify((() => {
+                if (itemSpec.name === 'BTC') {
+                  return {
+                    words: itemSpec.words,
+                    value: itemSpec.value,
+                  };
+                } else {
+                  return {
+                    words: itemSpec.words,
+                    asset: itemSpec.name,
+                    quantity: itemSpec.quantity,
+                  };
+                }
+              })()),
               credentials: 'include',
             })
               .then(res => {
