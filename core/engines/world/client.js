@@ -952,6 +952,15 @@ class World {
                   })
                   .then(({txid}) => {
                     console.log('unpacked', {txid});
+
+                    const assetName = itemSpec.name || 'BTC';
+                    const assetTagMesh = wallet.getAssetTagMeshes()
+                      .find(tagMesh =>
+                        tagMesh.item.type === 'asset' &&
+                        tagMesh.item.name === assetName &&
+                        (tagMesh.item.metadata && tagMesh.item.metadata.isStatic)
+                      );
+                    assetTagMesh.update();
                   })
                   .catch(err => {
                     console.warn(err);
@@ -1277,6 +1286,15 @@ class World {
               })
               .then(({words, asset, quantity, txid}) => {
                 console.log('packed', {words, asset, quantity, txid});
+
+                const assetName = itemSpec.name || 'BTC';
+                const assetTagMesh = wallet.getAssetTagMeshes()
+                  .find(tagMesh =>
+                    tagMesh.item.type === 'asset' &&
+                    tagMesh.item.name === assetName &&
+                    (tagMesh.item.metadata && tagMesh.item.metadata.isStatic)
+                  );
+                assetTagMesh.update();
               })
               .catch(err => {
                 console.warn(err);

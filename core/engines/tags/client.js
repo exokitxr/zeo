@@ -3173,6 +3173,12 @@ class Tags {
                   page.initialUpdate();
                 }
                 planeMesh.visible = !item.details;
+                planeMesh.update = () => {
+                  console.log('update asset plane mesh', {itemSpec, planeMesh}); // XXX
+
+                  const {page} = planeMesh;
+                  page.update();
+                };
                 object.add(planeMesh);
                 object.planeMesh = planeMesh;
 
@@ -3235,6 +3241,10 @@ class Tags {
                       planeDetailsMesh.add(subTagMesh);
                     }
                     planeDetailsMesh.subTagMeshes = subTagMeshes;
+
+                    planeDetailsMesh.update = () => {
+                      console.log('update asset plane details mesh', {itemSpec, planeDetailsMesh}); // XXX
+                    };
                   }
                   planeDetailsMesh.visible = Boolean(item.details);
                   object.add(planeDetailsMesh);

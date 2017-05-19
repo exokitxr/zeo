@@ -235,11 +235,11 @@ class Wallet {
           window.addEventListener('message', _onmessage);
         };
 
-        let assetTagMeshes = [];
+        let visibleAssetTagMeshes = [];
         const walletCancels = [];
-        const _updateAssetsTagMeshContainer = () => {
+        const _alignAssetTagMeshes = () => {
           // hide old
-          const oldTagMeshes = assetTagMeshes;
+          const oldTagMeshes = visibleAssetTagMeshes;
           for (let i = 0; i < oldTagMeshes.length; i++) {
             const oldTagMesh = oldTagMeshes[i];
             oldTagMesh.visible = false;
@@ -290,7 +290,7 @@ class Wallet {
             newTagMeshes.push(newTagMesh);
             walletCancels.push(walletCancel);
           }
-          assetTagMeshes = newTagMeshes;
+          visibleAssetTagMeshes = newTagMeshes;
         };
 
         const _requestStatus = () => fetch(`${siteUrl}/wallet/api/status`, {
@@ -302,41 +302,6 @@ class Wallet {
           const searchText = inputText.toLowerCase();
 
           _requestStatus()
-            .then(status => {
-              const {address, balance, assets: itemSpecs} = status;
-
-              return {
-                address: address,
-                tagMeshes: itemSpecs
-                  .concat(balance > 0 ? [
-                    {
-                      asset: 'BTC',
-                      quantity: balance,
-                    }
-                  ] : [])
-                  .filter(itemSpec => !searchText || itemSpec.asset.toLowerCase().indexOf(searchText) !== -1)
-                  .map(itemSpec => {
-                    const {asset, quantity} = itemSpec;
-
-                    const assetTagMesh = tags.makeTag({
-                      type: 'asset',
-                      id: asset,
-                      name: asset,
-                      displayName: asset,
-                      quantity: quantity,
-                      matrix: DEFAULT_MATRIX,
-                      metadata: {
-                        isStatic: true,
-                      },
-                    }, {
-                      initialUpdate: false,
-                    });
-                    assetTagMesh.planeMesh.scale.set(ASSET_TAG_MESH_SCALE, ASSET_TAG_MESH_SCALE, 1);
-
-                    return assetTagMesh;
-                  }),
-              };
-            })
             .then(status => {
               _updateStatus(status);
 
@@ -354,14 +319,36 @@ class Wallet {
           _updatePages();
         });
         const _updateStatus = status => {
-          const {address, tagMeshes} = status;
-          const {tagMeshes: oldTagMeshes} = walletCacheState;
+          const {address, balance, assets: itemSpecs} = status;
+          const tagMeshes = itemSpecs
+            .concat(balance > 0 ? [
+              {
+                asset: 'BTC',
+                quantity: balance,
+              }
+            ] : [])
+            .filter(itemSpec => !searchText || itemSpec.asset.toLowerCase().indexOf(searchText) !== -1)
+            .map(itemSpec => {
+              const {asset, quantity} = itemSpec;
 
-          walletState.loading = false;
-          walletState.loggedIn = address !== null;
-          walletState.page = 0;
-          walletState.numTags = tagMeshes.length;
-          walletCacheState.tagMeshes = tagMeshes;
+              const assetTagMesh = tags.makeTag({
+                type: 'asset',
+                id: asset,
+                name: asset,
+                displayName: asset,
+                quantity: quantity,
+                matrix: DEFAULT_MATRIX,
+                metadata: {
+                  isStatic: true,
+                },
+              }, {
+                initialUpdate: false,
+              });
+              assetTagMesh.planeMesh.scale.set(ASSET_TAG_MESH_SCALE, ASSET_TAG_MESH_SCALE, 1);
+
+              return assetTagMesh;
+            });
+          const {tagMeshes: oldTagMeshes} = walletCacheState;
 
           const {assetsMesh} = walletMesh;
           for (let i = 0; i < oldTagMeshes.length; i++) {
@@ -375,8 +362,14 @@ class Wallet {
             tagMesh.initialVisible = false;
             assetsMesh.add(tagMesh);
           }
+          _alignAssetTagMeshes();
 
-          _updateAssetsTagMeshContainer();
+          walletState.loading = false;
+          walletState.loggedIn = address !== null;
+          walletState.page = 0;
+          walletState.numTags = tagMeshes.length;
+          walletCacheState.tagMeshes = tagMeshes;
+
           _updatePages();
         };
 
