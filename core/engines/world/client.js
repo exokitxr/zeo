@@ -1609,6 +1609,18 @@ class World {
         };
         fs.on('upload', _upload);
 
+        const initPromise = (() => {
+          let _accept = null;
+          let _reject = null;
+          const result = new Promise((accept, reject) => {
+            _accept = accept;
+            _reject = reject;
+          });
+          result.resolve = _accept;
+          result.reject = _reject;
+          return result;
+        })();
+
         const connection = (() => {
           if (serverEnabled) {
             const connection = new AutoWs(_relativeWsUrl('archae/worldWs?id=' + localUserId));
@@ -1619,11 +1631,14 @@ class World {
 
               if (type === 'init') {
                 if (!initialized) { // XXX temporary hack until we correctly unload tags on disconnect
-                  const {args: [itemSpecs]} = m;
+                  initPromise // wait for core to be loaded before initializing user plugins
+                    .then(() => {
+                      const {args: [itemSpecs]} = m;
 
-                  tags.loadTags(itemSpecs);
+                      tags.loadTags(itemSpecs);
 
-                  initialized = true;
+                      initialized = true;
+                    });
                 }
               } else if (type === 'addTag') {
                 const {args: [userId, itemSpec, dst]} = m;
@@ -1753,6 +1768,10 @@ class World {
         });
 
         class WorldApi {
+          init() {
+            initPromise.resolve();
+          }
+
           makeFile({ext = 'txt'} = {}) {
             const id = _makeId();
             const name = id + '.' + ext;

@@ -644,6 +644,8 @@ class Zeo {
                     const zeoApi = new ZeoApi();
                     window.zeo = zeoApi;
 
+                    world.init();
+
                     return zeoApi;
                   }
                 })
