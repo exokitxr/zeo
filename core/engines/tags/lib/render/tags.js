@@ -511,15 +511,16 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
     `;
   };
   const _commaize = n => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  const _commaizeAssetQuantity = (asset, quantity) => {
+    if (asset === 'BTC') {
+      return quantity.toFixed(8).replace(/(\..*?)0+$/, '$1').replace(/\.$/, '');
+    } else {
+      return _commaize(quantity);
+    }
+  };
   const getAssetSrc = ({item}) => {
     const {id, name, displayName, quantity, metadata: {isStatic, isSub}} = item;
-    const quantityString = (() => {
-      if (name === 'BTC') {
-        return quantity.toFixed(8);
-      } else {
-        return _commaize(quantity);
-      }
-    })();
+    const quantityString = _commaizeAssetQuantity(name, quantity);
     const tagName = isStatic ? 'a' : 'div';
     const linkTagName = isStatic ? 'div' : 'a';
     const onclick = (() => {
@@ -549,7 +550,7 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
   };
   const getAssetDetailsSrc = ({item}) => {
     const {id, name, displayName, quantity} = item;
-    const quantityString = _commaize(quantity);
+    const quantityString = _commaizeAssetQuantity(name, quantity);
 
     return `\
       <div style="display: block; width: ${DETAILS_WIDTH}px; height: ${DETAILS_HEIGHT}px; background-color: #FFF; text-decoration: none;">
