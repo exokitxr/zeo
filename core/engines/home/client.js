@@ -27,55 +27,33 @@ class Home {
       live = false;
     });
 
-    const _requestVideo = () => new Promise((accept, reject) => {
+    const video = (() => {
       const video = document.createElement('video');
-
-      const _cleanup = () => {
-        video.oncanplaythrough = null;
-        video.onerror = null;
-      };
-      video.oncanplaythrough = () => {
-        _cleanup();
-
-        accept(video);
-      };
-      video.onerror = err => {
-        _cleanup();
-
-        reject(err);
-      };
-
       video.crossOrigin = 'Anonymous';
       video.src = VIDEO_SRC;
-    });
+      return video;
+    })();
 
-    return Promise.all([
-      archae.requestPlugins([
-        '/core/engines/bootstrap',
-        '/core/engines/input',
-        '/core/engines/three',
-        '/core/engines/webvr',
-        '/core/engines/biolumi',
-        '/core/engines/somnifer',
-        '/core/engines/rend',
-      ]),
-      _requestVideo(),
+    return archae.requestPlugins([
+      '/core/engines/bootstrap',
+      '/core/engines/input',
+      '/core/engines/three',
+      '/core/engines/webvr',
+      '/core/engines/biolumi',
+      '/core/engines/somnifer',
+      '/core/engines/rend',
     ])
       .then(([
-        [
-          bootstrap,
-          input,
-          three,
-          webvr,
-          biolumi,
-          somnifer,
-          rend,
-        ],
-        video,
+        bootstrap,
+        input,
+        three,
+        webvr,
+        biolumi,
+        somnifer,
+        rend,
       ]) => {
         if (live) {
           const {THREE, scene, renderer} = three;
-
           const transparentMaterial = biolumi.getTransparentMaterial();
 
           const mediaState = {
