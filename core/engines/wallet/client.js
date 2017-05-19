@@ -302,6 +302,17 @@ class Wallet {
           const searchText = inputText.toLowerCase();
 
           _requestStatus()
+            .then(status => ({
+              address: status.address,
+              assets: status.assets
+                .concat(status.balance > 0 ? [
+                  {
+                    asset: 'BTC',
+                    quantity: status.balance,
+                  }
+                ] : [])
+                .filter(itemSpec => !searchText || itemSpec.asset.toLowerCase().indexOf(searchText) !== -1)
+            }))
             .then(status => {
               _updateStatus(status);
 
@@ -319,17 +330,10 @@ class Wallet {
           _updatePages();
         });
         const _updateStatus = status => {
-          const {address, balance, assets: itemSpecs} = status;
-          const tagMeshes = itemSpecs
-            .concat(balance > 0 ? [
-              {
-                asset: 'BTC',
-                quantity: balance,
-              }
-            ] : [])
-            .filter(itemSpec => !searchText || itemSpec.asset.toLowerCase().indexOf(searchText) !== -1)
-            .map(itemSpec => {
-              const {asset, quantity} = itemSpec;
+          const {address, assets: assetSpecs} = status;
+          const tagMeshes = assetSpecs
+            .map(assetSpec => {
+              const {asset, quantity} = assetSpec;
 
               const assetTagMesh = tags.makeTag({
                 type: 'asset',
@@ -362,7 +366,6 @@ class Wallet {
             tagMesh.initialVisible = false;
             assetsMesh.add(tagMesh);
           }
-          _alignAssetTagMeshes();
 
           walletState.loading = false;
           walletState.loggedIn = address !== null;
@@ -370,6 +373,7 @@ class Wallet {
           walletState.numTags = tagMeshes.length;
           walletCacheState.tagMeshes = tagMeshes;
 
+          _alignAssetTagMeshes();
           _updatePages();
         };
 
@@ -484,7 +488,7 @@ class Wallet {
           _removeBoxAnchor();
         });
 
-        const _getAssetTagMeshes = () => assetTagMeshes;
+        const _getAssetTagMeshes = () => walletCacheState.tagMeshes;
 
         return {
           getAssetTagMeshes: _getAssetTagMeshes,
