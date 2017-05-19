@@ -2607,6 +2607,14 @@ class Tags {
 
                         previewMesh.add(imageMesh);
 
+                        previewMesh.destroy = () => {
+                          const {geometry, material} = imageMesh;
+                          geometry.dispose();
+                          material.dispose();
+                          const {map} = material;
+                          map.dispose();
+                        };
+
                         return Promise.resolve(imageMesh);
                       })
                       .then(imageMesh => {
@@ -2625,6 +2633,8 @@ class Tags {
                         audio.addEventListener('ended', () => {
                           this.pause();
                         });
+
+                        previewMesh.destroy = () => {};
 
                         return Promise.resolve(audioMesh);
                       })
@@ -2646,6 +2656,8 @@ class Tags {
                         video.addEventListener('ended', () => {
                           this.pause();
                         });
+
+                        previewMesh.destroy = () => {};
 
                         return Promise.resolve(videoMesh);
                       })
@@ -2673,6 +2685,10 @@ class Tags {
                         const boundingBoxCenter = boundingBox.getCenter();
                         modelMeshWrap.position.y = -(WORLD_HEIGHT / 2) - (boundingBoxCenter.y * meshScaleFactor);
                         modelMeshWrap.position.z = (WORLD_OPEN_HEIGHT - WORLD_HEIGHT) / 2;
+
+                        previewMesh.destroy = () => {
+                          // XXX figure out how to dispose of the model here
+                        };
 
                         return Promise.resolve(modelMesh);
                       })
