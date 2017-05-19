@@ -966,8 +966,9 @@ class World {
                       .find(tagMesh =>
                         tagMesh.item.type === 'asset' &&
                         tagMesh.item.name === assetName &&
-                        (tagMesh.item.metadata && tagMesh.item.metadata.isStatic)
+                        (tagMesh.item.metadata && tagMesh.item.metadata.isStatic && !tagMesh.item.metadata.isSub)
                       );
+                    // XXX update the quantity here
                     assetTagMesh.update();
                   })
                   .catch(err => {
@@ -1309,8 +1310,9 @@ class World {
                   .find(tagMesh =>
                     tagMesh.item.type === 'asset' &&
                     tagMesh.item.name === assetName &&
-                    (tagMesh.item.metadata && tagMesh.item.metadata.isStatic)
+                    (tagMesh.item.metadata && tagMesh.item.metadata.isStatic && !tagMesh.item.metadata.isSub)
                   );
+                // XXX update the quantity here
                 assetTagMesh.update();
               })
               .catch(err => {

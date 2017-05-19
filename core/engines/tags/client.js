@@ -3173,14 +3173,22 @@ class Tags {
                   page.initialUpdate();
                 }
                 planeMesh.visible = !item.details;
-                planeMesh.update = () => {
-                  console.log('update asset plane mesh', {itemSpec, planeMesh}); // XXX
-
-                  const {page} = planeMesh;
-                  page.update();
-                };
                 object.add(planeMesh);
                 object.planeMesh = planeMesh;
+
+                const updates = [];
+                object.update = () => {
+                  console.log('update asset plane mesh', {itemSpec, planeMesh}); // XXX
+
+                  for (let i = 0; i < updates.length; i++) {
+                    const update = updates[i];
+                    update();
+                  }
+                };
+                updates.push(() => {
+                  const {page} = planeMesh;
+                  page.initialUpdate();
+                });
 
                 if (!(itemSpec.metadata && itemSpec.metadata.isSub)) {
                   const planeDetailsMesh = _addUiManagerPage(uiDetailsManager);
@@ -3242,9 +3250,9 @@ class Tags {
                     }
                     planeDetailsMesh.subTagMeshes = subTagMeshes;
 
-                    planeDetailsMesh.update = () => {
+                    updates.push(() => {
                       console.log('update asset plane details mesh', {itemSpec, planeDetailsMesh}); // XXX
-                    };
+                    });
                   }
                   planeDetailsMesh.visible = Boolean(item.details);
                   object.add(planeDetailsMesh);
