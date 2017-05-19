@@ -1283,7 +1283,7 @@ class World {
                 if (itemSpec.name === 'BTC') {
                   return {
                     words: itemSpec.words,
-                    value: itemSpec.value,
+                    value: itemSpec.quantity,
                   };
                 } else {
                   return {

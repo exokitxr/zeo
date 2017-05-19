@@ -1400,9 +1400,9 @@ class Tags {
                       } else {
                         return false;
                       }
-                    } else if (match = onclick.match(/^asset:bill:(.+):([0-9]+)$/)) {
+                    } else if (match = onclick.match(/^asset:bill:(.+):([0-9.]+)$/)) {
                       const id = match[1];
-                      const quantity = parseInt(match[2], 10);
+                      const quantity = parseFloat(match[2]);
 
                       const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
 
