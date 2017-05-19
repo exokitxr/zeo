@@ -3207,7 +3207,7 @@ class Tags {
                       10000, 20000, 50000, 100000,
                       100000, 200000, 500000, 1000000,
                     ]
-                    .map((itemSpec.name === 'BTC') ? (billQuantity => billQuantity / 1e5) : (billQuantity => billQuantity))
+                    .map((itemSpec.name === 'BTC') ? (billQuantity => billQuantity / 1e2) : (billQuantity => billQuantity))
                     .map((billQuantity, index) => {
                       if (itemSpec.quantity >= billQuantity) {
                         const subTagMesh = tagsApi.makeTag({
