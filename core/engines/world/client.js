@@ -1,3 +1,11 @@
+import assetWalletStaticLib from 'assetwallet-static';
+const assetwalletStatic = assetWalletStaticLib({
+  random: () => {
+    const array = new Uint32Array(1);
+    crypto.getRandomValues(array);
+    return Math.abs(array[0] / 0xFFFFFFFF);
+  },
+});
 import {
   WIDTH,
   HEIGHT,
@@ -1242,29 +1250,17 @@ class World {
           const grabMesh = grabManager.getMesh(side);
 
           if (!grabMesh) {
-            // add temp tag mesh
+            // add tag mesh
             const itemSpec = _clone(tagMesh.item);
             itemSpec.id = _makeId();
             itemSpec.matrix = DEFAULT_MATRIX;
             itemSpec.quantity = quantity;
+            itemSpec.words = assetwalletStatic.makeWords();
             itemSpec.metadata.isStatic = false;
-            _handleAddTag(localUserId, itemSpec, 'hand:' + side);
-            const tempTagMesh = grabManager.getMesh(side);
-            const {item: tempItem} = tempTagMesh;
-            tempItem.instancing = true;
-            tempItem.temp = true;
-
-            const _cleanupTempTagMesh = () => {
-              elementManager.remove(tempTagMesh);
-
-              SIDES.forEach(side => {
-                if (grabManager.getMesh(side) === tempTagMesh) {
-                  grabManager.setMesh(side, null);
-                }
-              });
-
-              tags.destroyTag(tempTagMesh);
-            };
+            _addTag(itemSpec, 'hand:' + side);
+            const billTagMesh = grabManager.getMesh(side);
+            const {item: billItem} = billTagMesh;
+            billItem.instancing = true;
 
             // perform the pack
             fetch(`${siteUrl}/wallet/api/pack`, {
@@ -1275,6 +1271,7 @@ class World {
                 return headers;
               })(),
               body: JSON.stringify({
+                words: itemSpec.words,
                 asset: itemSpec.name,
                 quantity: itemSpec.quantity,
               }),
@@ -1288,21 +1285,10 @@ class World {
                 }
               })
               .then(({words, asset, quantity, txid}) => {
-                // remove temp tag mesh
-                _cleanupTempTagMesh();
-
-                // add real tag mesh
-                itemSpec.words = words;
-                _addTag(itemSpec, 'hand:' + side);
-                const tagMesh = grabManager.getMesh(side);
-                if (!rend.isOpen()) {
-                  tagMesh.visible = false;
-                }
+                console.log('packed', {words, asset, quantity, txid});
               })
               .catch(err => {
                 console.warn(err);
-
-                _cleanupTempTagMesh();
               });
           }
         };

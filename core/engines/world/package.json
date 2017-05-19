@@ -6,6 +6,7 @@
   "client": "client.js",
   "server": "server.js",
   "dependencies": {
+    "assetwallet-static": "0.0.4",
     "mkdirp": "^0.5.1"
   }
 }
