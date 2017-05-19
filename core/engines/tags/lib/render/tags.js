@@ -545,7 +545,7 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
             </div>
           </div>
         </div>
-        <${linkTagName} style="display: flex; position: absolute; top: 35px; right: -30px; width: ${HEIGHT}px; height: 80px; background-color: #EEE; border-top: 2px solid; font-size: 22px; font-weight: 400; justify-content: center; align-items: center; box-sizing: border-box; transform: rotate(-90deg);" onclick="asset:claim:${id}">Claim</${linkTagName}>
+        <${linkTagName} style="display: flex; position: absolute; top: 35px; right: -35px; width: ${HEIGHT}px; height: 80px; background-color: #EEE; border-top: 2px solid; font-size: 22px; font-weight: 400; justify-content: center; align-items: center; box-sizing: border-box; transform: rotate(-90deg);" onclick="asset:claim:${id}">Claim</${linkTagName}>
       </${tagName}>
     `;
   };
