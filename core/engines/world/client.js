@@ -42,7 +42,7 @@ class World {
 
   mount() {
     const {_archae: archae} = this;
-    const {metadata: {site: {url: siteUrl}, server: {allowInsecureModules, enabled: serverEnabled}}} = archae;
+    const {metadata: {site: {url: siteUrl}, server: {url: serverUrl, allowInsecureModules, enabled: serverEnabled}}} = archae;
 
     const cleanups = [];
     this._cleanup = () => {
@@ -1255,65 +1255,184 @@ class World {
           }
         };
         tags.on('grabNpmTag', _grabNpmTag);
+
+        const authorizedState = {
+          loading: false,
+          loaded: false,
+          loadCbs: [],
+          authorized: false,
+        };
+        const _requestCheckAuthorized = () => new Promise((accept, reject) => {
+          const {loaded} = authorizedState;
+
+          if (!loaded) {
+            const {loading, loadCbs} = authorizedState;
+
+            if (!loading) {
+              const _finish = authorized => {
+                authorizedState.authorized = authorized;
+                authorizedState.loading = false;
+                authorizedState.loaded = true;
+
+                const {loadCbs} = authorizedState;
+                for (let i = 0; i < loadCbs.length; i++) {
+                  const loadCb = loadCbs[i];
+                  loadCb(authorized);
+                }
+                loadCbs.length = 0;
+              };
+
+              fetch(`${siteUrl}/wallet/api/authorized`, {
+                credentials: 'include',
+              })
+                .then(res => {
+                  if (res.status >= 200 && res.status < 300) {
+                    return res.json();
+                  } else {
+                    return null;
+                  }
+                })
+                .then(body => {
+                  _finish(body.authorized);
+                })
+                .catch(err => {
+                  console.warn(err);
+
+                  _finish(false);
+                });
+
+              authorizedState.loading = true;
+            }
+
+            loadCbs.push(authorized => {
+              accept(authorized);
+            });
+          } else {
+            const {authorized} = authorizedState;
+            accept(authorized);
+          }
+        });
+        const _openWalletWindow = req => {
+          const width = 800;
+          const height = 600;
+
+          return window.open(
+            `${siteUrl}/wallet/iframe?${_formatQueryString(req)}`,
+            'wallet',
+            `left=${(screen.width - width) / 2},top=${(screen.height - height) / 2},width=${width},height=${height}`
+          );
+        }
+        const _requestWallet = req => new Promise((accept, reject) => {
+          const walletWindow = _openWalletWindow(req);
+
+          const _cleanup = () => {
+            window.removeEventListener('message', _onmessage);
+
+            walletWindow.close();
+          };
+
+          const _onmessage = e => {
+            _cleanup();
+
+            const {data} = e;
+            const {error} = data;
+
+            if (!error) {
+              const {result} = data;
+              accept(result);
+            } else {
+              reject(error);
+            }
+          };
+          window.addEventListener('message', _onmessage);
+        });
+        const _requestAuthorize = () => _requestCheckAuthorized()
+          .then(authorized => {
+            if (authorized) {
+              return Promise.resolve(true);
+            } else {
+              return _requestWallet({
+                x: 'authorize',
+                u: serverUrl,
+              })
+                .then(result => {
+                  if (result === 'accept') {
+                    authorizedState.authorized = true;
+
+                    return Promise.resolve(false);
+                  } else {
+                    const err = new Error('authorization rejected');
+                    return Promise.reject(err);
+                  }
+                })
+            }
+          });
+        _requestCheckAuthorized(); // trigger initial load
+
         const _grabAssetBill = ({side, tagMesh, quantity}) => {
           const grabMesh = grabManager.getMesh(side);
 
           if (!grabMesh) {
-            // add tag mesh
-            const itemSpec = _clone(tagMesh.item);
-            itemSpec.id = _makeId();
-            itemSpec.matrix = DEFAULT_MATRIX;
-            itemSpec.quantity = quantity;
-            itemSpec.words = assetwalletStatic.makeWords();
-            itemSpec.metadata.isStatic = false;
-            _addTag(itemSpec, 'hand:' + side);
-            const billTagMesh = grabManager.getMesh(side);
-            const {item: billItem} = billTagMesh;
-            billItem.instancing = true;
+            _requestAuthorize()
+              .then(wasAlreadyAuthorized => {
+                if (wasAlreadyAuthorized) {
+                  // add tag mesh
+                  const itemSpec = _clone(tagMesh.item);
+                  itemSpec.id = _makeId();
+                  itemSpec.matrix = DEFAULT_MATRIX;
+                  itemSpec.quantity = quantity;
+                  itemSpec.words = assetwalletStatic.makeWords();
+                  itemSpec.metadata.isStatic = false;
+                  _addTag(itemSpec, 'hand:' + side);
+                  const billTagMesh = grabManager.getMesh(side);
+                  const {item: billItem} = billTagMesh;
+                  billItem.instancing = true;
 
-            // perform the pack
-            fetch(`${siteUrl}/wallet/api/pack`, {
-              method: 'POST',
-              headers: (() => {
-                const headers = new Headers();
-                headers.append('Content-Type', 'application/json');
-                return headers;
-              })(),
-              body: JSON.stringify((() => {
-                if (itemSpec.name === 'BTC') {
-                  return {
-                    words: itemSpec.words,
-                    value: itemSpec.quantity,
-                  };
-                } else {
-                  return {
-                    words: itemSpec.words,
-                    asset: itemSpec.name,
-                    quantity: itemSpec.quantity,
-                  };
-                }
-              })()),
-              credentials: 'include',
-            })
-              .then(res => {
-                if (res.status >= 200 && res.status < 300) {
-                  return res.json();
-                } else {
-                  return null;
-                }
-              })
-              .then(({words, asset, quantity, txid}) => {
-                console.log('packed', {words, asset, quantity, txid});
+                  // perform the pack
+                  return fetch(`${siteUrl}/wallet/api/pack`, {
+                    method: 'POST',
+                    headers: (() => {
+                      const headers = new Headers();
+                      headers.append('Content-Type', 'application/json');
+                      return headers;
+                    })(),
+                    body: JSON.stringify((() => {
+                      if (itemSpec.name === 'BTC') {
+                        return {
+                          words: itemSpec.words,
+                          value: itemSpec.quantity,
+                        };
+                      } else {
+                        return {
+                          words: itemSpec.words,
+                          asset: itemSpec.name,
+                          quantity: itemSpec.quantity,
+                        };
+                      }
+                    })()),
+                    credentials: 'include',
+                  })
+                    .then(res => {
+                      if (res.status >= 200 && res.status < 300) {
+                        return res.json();
+                      } else {
+                        return null;
+                      }
+                    })
+                    .then(({words, asset, quantity, txid}) => {
+                      console.log('packed', {words, asset, quantity, txid});
 
-                const assetName = itemSpec.name || 'BTC';
-                const assetTagMesh = wallet.getAssetTagMeshes()
-                  .find(tagMesh =>
-                    tagMesh.item.type === 'asset' &&
-                    tagMesh.item.name === assetName &&
-                    (tagMesh.item.metadata && tagMesh.item.metadata.isStatic && !tagMesh.item.metadata.isSub)
-                  );
-                // XXX update the quantity here
-                assetTagMesh.update();
+                      const assetName = itemSpec.name || 'BTC';
+                      const assetTagMesh = wallet.getAssetTagMeshes()
+                        .find(tagMesh =>
+                          tagMesh.item.type === 'asset' &&
+                          tagMesh.item.name === assetName &&
+                          (tagMesh.item.metadata && tagMesh.item.metadata.isStatic && !tagMesh.item.metadata.isSub)
+                        );
+                      // XXX update the quantity here
+                      assetTagMesh.update();
+                    });
+                }
               })
               .catch(err => {
                 console.warn(err);
@@ -1855,6 +1974,13 @@ const _warnError = err => {
   if (err) {
     console.warn(err);
   }
+};
+const _formatQueryString = o => {
+  const result = [];
+  for (const k in o) {
+    result.push(encodeURIComponent(k) + '=' + encodeURIComponent(o[k]));
+  }
+  return result.join('&');
 };
 
 module.exports = World;
