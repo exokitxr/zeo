@@ -968,8 +968,10 @@ class World {
                         tagMesh.item.name === assetName &&
                         (tagMesh.item.metadata && tagMesh.item.metadata.isStatic && !tagMesh.item.metadata.isSub)
                       );
-                    // XXX update the quantity here
-                    assetTagMesh.update();
+                    if (assetTagMesh) {
+                      // XXX update the quantity here
+                      assetTagMesh.update();
+                    }
                   })
                   .catch(err => {
                     console.warn(err);
@@ -1430,8 +1432,10 @@ class World {
                           tagMesh.item.name === assetName &&
                           (tagMesh.item.metadata && tagMesh.item.metadata.isStatic && !tagMesh.item.metadata.isSub)
                         );
-                      // XXX update the quantity here
-                      assetTagMesh.update();
+                      if (assetTagMesh) {
+                        // XXX update the quantity here
+                        assetTagMesh.update();
+                      }
                     });
                 }
               })
