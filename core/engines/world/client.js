@@ -1293,7 +1293,7 @@ class World {
                   }
                 })
                 .then(body => {
-                  _finish(body.authorized);
+                  _finish(body.result);
                 })
                 .catch(err => {
                   console.warn(err);
