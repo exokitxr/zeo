@@ -1282,7 +1282,7 @@ class World {
                 loadCbs.length = 0;
               };
 
-              fetch(`${siteUrl}/wallet/api/authorized`, {
+              fetch(`${siteUrl}/wallet/api/authorizedServers`, {
                 credentials: 'include',
               })
                 .then(res => {
@@ -1293,7 +1293,8 @@ class World {
                   }
                 })
                 .then(body => {
-                  _finish(body.result);
+                  const {result: authorizedServers} = body;
+                  _finish(authorizedServers.includes(serverUrl));
                 })
                 .catch(err => {
                   console.warn(err);
