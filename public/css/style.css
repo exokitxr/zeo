@@ -58,7 +58,7 @@ code {
 .hero .hero-wrap {
   display: flex;
   position: relative;
-  width: 500px;
+  width: 600px;
   padding: 25px;
   background-color: rgba(74, 74, 74, 0.5);
   border-radius: 10px;
@@ -69,19 +69,20 @@ code {
 }
 .hero .hero-wrap h1,
 .hero .hero-wrap p {
+  width: 100%;
   margin: 0;
 }
 .hero .hero-wrap h1 {
-  margin-bottom: 30px;
+  margin-bottom: 50px;
   font-size: 60px;
-  line-height: 1;
+  line-height: 1.2;
   font-weight: 300;
 }
 .hero .hero-wrap p {
   margin-bottom: 20px;
-  font-size: 20px;
-  line-height: 1.4;
-  font-weight: 400;
+  font-size: 18px;
+  line-height: 1.8;
+  font-weight: 300;
 }
 .hero .hero-wrap .button {
   margin-right: auto;
@@ -587,29 +588,9 @@ section.story {
 }
 .story-wrap {
   display: flex;
-  width: 980px;
+  width: 600px;
   margin: 0 auto;
-  margin-bottom: 100px;
-}
-section.story .story-side {
-  display: flex;
   flex-direction: column;
-  align-items: center;
-  flex: 1;
-}
-section.story .story-side.left {
-  padding-right: 100px;
-}
-section.story .story-side.right {
-  padding-left: 100px;
-}
-section.story .story-divider {
-  position: relative;
-  width: 2px;
-  margin-top: -50px;
-  margin-bottom: -50px;
-  // background-color: rgba(0,0,0,0.5);
-  background-color: #000;
 }
 section.story .story-item {
   display: flex;
@@ -640,9 +621,9 @@ section.story p {
   margin-bottom: 30px;
 }
 section.story h1 {
-  margin: 30px 0;
+  margin: 50px 0;
   margin-right: auto;
-  font-size: 30px;
+  font-size: 32px;
   font-weight: 600;
 }
 section.story h2 {
