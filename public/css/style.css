@@ -49,23 +49,27 @@ code {
 }
 .hero {
   display: flex;
-  width: calc(100vw);
-  height: calc(100vh - 80px - 200px);
+  position: relative;
+  // width: calc(100vw);
+  margin-bottom: 100px;
+  padding: 100px 0;
+  // height: calc(100vh - 80px - 200px);
+  background-color: rgba(0, 0, 0, 0.2);
   justify-content: center;
   align-items: center;
   flex-direction: column;
 }
 .hero .hero-wrap {
   display: flex;
-  position: relative;
-  width: 600px;
-  padding: 25px;
-  background-color: rgba(74, 74, 74, 0.5);
-  border-radius: 10px;
+  width: 650px;
+  // padding: 25px;
+  // background-color: rgba(74, 74, 74, 0.5);
+  // border-radius: 10px;
   color: #FFF;
   flex-direction: column;
   justify-content: center;
   align-items: center;
+  // box-sizing: border-box;
 }
 .hero .hero-wrap h1,
 .hero .hero-wrap p {
@@ -84,9 +88,13 @@ code {
   line-height: 1.8;
   font-weight: 300;
 }
-.hero .hero-wrap .button {
+.hero .hero-wrap .buttons {
+  display: flex;
   margin-right: auto;
   font-size: 16px;
+}
+.hero .hero-wrap .button + .button {
+  margin-left: 10px;
 }
 
 .documentation .markdown-body {
@@ -584,13 +592,23 @@ b {
 
 section.story {
   position: relative;
-  background-color: rgba(255, 255, 255, 0.6);
 }
 .story-wrap {
   display: flex;
-  width: 600px;
+  width: 650px;
   margin: 0 auto;
+  padding-right: 50px;
   flex-direction: column;
+  box-sizing: border-box;
+}
+.story-wrap {
+  margin-bottom: 100px;
+  background-color: rgba(255, 255, 255, 0.6);
+}
+.story-line {
+  display: flex;
+  background-color: rgba(0, 0, 0, 0.2);
+  justify-content: center;
 }
 section.story .story-item {
   display: flex;
@@ -600,7 +618,7 @@ section.story .story-item .story-item-icon {
   padding: 10px;
   width: 50px;
   height: 50px;
-  margin-right: 15px;
+  margin-right: 20px;
   // background-color: rgba(0, 0, 0, 0.1);
   // background-color: rgba(255, 255, 255, 0.5);
   background-color: rgb(220, 236, 195);
@@ -621,7 +639,7 @@ section.story p {
   margin-bottom: 30px;
 }
 section.story h1 {
-  margin: 50px 0;
+  margin: 40px 65px;
   margin-right: auto;
   font-size: 32px;
   font-weight: 600;
@@ -650,7 +668,58 @@ section.story .link {
 section.story .link:hover {
   text-decoration: underline;
 }
-section.story .button {
+section.story .tiles {
+  display: flex;
+  width: 650px;
+}
+section.story .tile {
+  display: flex;
+  margin: 30px 0;
+  margin-right: auto;
+  padding: 20px;
+  font-size: 20px;
+  // color: #FFF;
+  // background-color: #000;
+  // background-color: rgb(220, 236, 195);
+  border-radius: 5px;
+  flex: 1;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+section.story .tile:hover {
+  color: #FFF;
+}
+section.story .tile:hover .icon {
+  filter: invert(100%);
+}
+section.story .tile + .tile {
+  // margin-left: 10px;
+}
+section.story .tile:nth-child(1):hover {
+  background-color: #4CAF50;
+}
+section.story .tile:nth-child(2):hover {
+  background-color: #2196F3;
+}
+section.story .tile:nth-child(3):hover {
+  background-color: #E91E63;
+}
+section.story .tile:nth-child(4):hover {
+  background-color: #673AB7;
+}
+section.story .tile .icon {
+  width: 60px;
+  height: 60px;
+  margin: 10px auto;
+}
+section.story .tile .label {
+  margin-bottom: 10px;
+  line-height: 1;
+}
+section.story .tile .sub {
+  font-size: 13px;
+}
+/* section.story .button {
   position: relative;
   // width: 100%;
   height: auto;
@@ -665,7 +734,7 @@ section.story .button {
   justify-content: flex-start;
   box-sizing: border-box;
 }
-/* section.story .story-side.left .button {
+section.story .story-side.left .button {
   background-color: #4CAF50;
 }
 section.story .story-side.left .button:hover {
