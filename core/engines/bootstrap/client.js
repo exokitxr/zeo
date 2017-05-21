@@ -32,7 +32,7 @@ class Bootstrap {
       .then(res => res.json()
         .then(({startTime}) => startTime)
       );
-    const _requestTutorialFlag = () => fetch(`${siteUrl}/wallet/api/cookie/tutorialFlag`, {
+    /* const _requestTutorialFlag = () => fetch(`${siteUrl}/wallet/api/cookie/tutorialFlag`, { // XXX re-enable this
       credentials: 'include',
     })
       .then(res => res.json())
@@ -41,7 +41,8 @@ class Bootstrap {
         console.warn(err);
 
         return Promise.resolve(true);
-      });
+      }); */
+    const _requestTutorialFlag = () => Promise.resolve(false);
 
     return Promise.all([
       archae.requestPlugins([
