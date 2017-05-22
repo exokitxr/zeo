@@ -2,41 +2,38 @@
 
 ### What is Zeo VR?
 
-It's a realtime virtual reality world builder that runs your browser. &#x1F47E;
+It's a multiplayer VR web server that lets you hotload magic into your world with npm modules. On top of that it has a distributed programmable blockchain currency you can hold and use in the world to unlock even more magic. &#x2728; &#x1F984; &#x2728; &#x1F47E;
 
-Wanna geek out on buzzwords? <i>100% JS/HTML5, hotloaded npm modules, node backend, WebVR, THREE.js, Entity-Component System.</i>
+It's been asked whether this is a joke. &#x1F639;
 
-Basically you run this thing on a server, and then you build, run, and share VR content with anyone just by giving them the URL (<i>fits in a tweet!</i> &#x1F426;).
+### How do I get in on this?
 
-It works with a mouse and keyboard, but supports true VR headets with [WebVR](https://webvr.info/). &#x1F3AE;
+If you're feeling adventurous, find a server [here](/servers). Expect treasures and horrors.
 
-<div style="display: flex; background-color: #CCC; width: 560px; height: 315px; margin: 20px 0; justify-content: center; align-items: center; font-size: 30px; font-weight: 400;">Video goes here</div>
+To join a VR world all you need is to open the URL in your web browser (<i>fits in a tweet!</i> &#x1F426;). You can use a mouse and keyboard to emulate the controls. Of course, it also supports true VR headsets with WebVR. Batteries include: voice chat, in-VR node configurator, models/audio/video media drag-and-drop, and other goodness comes in the box. It's all open source, and almost 100% Javascript.
 
-### Actually we lied
+To run your own server all you need is `node`. [Learn how to get started](run-a-server).
 
-You don't even need a server.
+### How do I make my own content?
 
-We built in one-click deploys to a bunch of free deployment services like [Heroku](https://heroku.com/), [Glitch](https://glitch.com/), and [now](https://zeit.co/now). You don't need to pay anyone anything, and you don't need to be a genius. &#x1F913;
+It's literally just `npm` modules. If you publish with the `zeo-module` keyword your module is instantly avialable to load on any server.
 
-### That's just the boring stuff
+Modules can contain arbitrary browser-side and server-side Javascript code, and you can of course depend on any module on `npm`. Modules are automatically hotloaded and unloaded.
 
-Things really get interesting when you try the growing collection of modules that add _3D painting_, _sword fighting_, _DJ booths_, and _flyabble spaceships_ to your world. &#x1F680;
+For how to make your module hotloadable (super easy!), see [here]().
 
-It's all built with a drag-and-drop interface with your tracked controllers. Of course, you can drop in your own 3d models, video, and music files too.
+To see all of the VR apis you can hook into, see [here]().
 
-<div style="display: flex; margin: 20px 0;">
-  <div style="display: flex; background-color: #CCC; width: 120px; height: 120px; margin-right: 20px; justify-content: center; align-items: center; font-size: 16px; font-weight: 400;">Screenshot</div>
-  <div style="display: flex; background-color: #CCC; width: 120px; height: 120px; margin-right: 20px; justify-content: center; align-items: center; font-size: 16px; font-weight: 400;">Screenshot</div>
-  <div style="display: flex; background-color: #CCC; width: 120px; height: 120px; margin-right: 20px; justify-content: center; align-items: center; font-size: 16px; font-weight: 400;">Screenshot</div>
-  <div style="display: flex; background-color: #CCC; width: 120px; height: 120px; justify-content: center; align-items: center; font-size: 16px; font-weight: 400;">Screenshot</div>
-</div>
+### How do I manage my coins?
 
-### Also great for nerds
+Short answer: use the (webwallet)[/wallet].
 
-If you're technically inclined, a whole new world opens up to you.
+Long answer: there's a distributed blockchain mining network running in the background. It's a `bitcoind` fork with tweaked (much faster) parameters. (Yes, you can totally mine it yourself!)
 
-If you know [Javascript](https://en.wikipedia.org/wiki/JavaScript), [node](https://nodejs.org/), and [THREE.js](https://threejs.org/), you can build and publish VR modules to [`npm`](https://npmjs.org/) and load them directly to your face. Or literally throw them at someone else's.
+Just as in Bitcoin, the blockchain is a distributed global ledger of who owns which coins. Nobody can spend coins without having the mathematical keys to them -- it's computationally impossible. Your keys are just a set of English words.
 
-There's extensive [API docs and walkthroughs](/docs/api) when you're ready to get started. And our crack team is [here to help](/docs/contact). &#x1F917;
+A webwallet is a webpage that stores these keywords in a local-only browser cookie and looks up which things you own. And it has exposes a limited API that allows servers to look at your wallet and authorize transactions. VR servers gather this information and display it in the form of avatars holding coins in the world.
 
-<a href="/docs/tutorials" style="display: inline-flex; margin: 10px 0; padding: 10px 15px; border: 2px solid; color: #000; font-weight: 400; text-decoration: none; justify-content: center; align-items: center;">Next: Tutorials &#x1F449;</a>
+Although we host the webwallet software, it's just for convenience. We have no control over the blockchain network; it runs on P2P internet consensus magic.
+
+You can use your own wallet if you like. The code is open source.
