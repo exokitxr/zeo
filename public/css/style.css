@@ -85,8 +85,8 @@ code {
 }
 .hero .hero-wrap aside {
   position: absolute;
-  right: -90px;
-  top: 105px;
+  right: 130px;
+  top: 150px;
   color: #FFC107;
   font-family: var(--monospace-fonts);
   font-size: 20px;
