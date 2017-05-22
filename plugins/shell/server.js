@@ -14,7 +14,7 @@ class Shell {
 
   mount() {
     const {_archae: archae} = this;
-    const {server, app} = archae.getCore();
+    const {app, wss} = archae.getCore();
 
     let cleanups = [];
     this._cleanup = () => {
@@ -77,15 +77,16 @@ class Shell {
                     shellProxy.web(req, res);
                   }
                   app.all(regex, serveShellProxy);
-                  const upgradeHandler = (req, socket, head) => {
+                  const upgradeHandler = e => {
+                    const {req, socket, head} = e;
+
                     if (regex.test(req.url)) {
                       shellProxy.ws(req, socket, head);
-                      return false;
-                    } else {
-                      return true;
+
+                      e.stopImmediatePropagation();
                     }
                   };
-                  server.addUpgradeHandler(upgradeHandler);
+                  wss.on('upgrade', upgradeHandler);
 
                   cleanups.push(() => {
                     shellProxy.close();
@@ -100,7 +101,7 @@ class Shell {
                     }
                     app._router.stack.forEach(removeMiddlewares);
 
-                    server.removeUpgradeHandler(upgradeHandler);
+                    server.removeListener(upgradeHandler);
                   });
 
                   accept();

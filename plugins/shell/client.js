@@ -52,7 +52,7 @@ class Shell {
           ],
         },
       },
-      entityAddedCallback(entityElenent) {
+      entityAddedCallback(entityElement) {
         const entityApi = entityElement.getComponentApi();
         const entityObject = entityElement.getObject();
 
