@@ -50,10 +50,8 @@ code {
 .hero {
   display: flex;
   position: relative;
-  // width: calc(100vw);
   margin-bottom: 100px;
   padding: 100px 0;
-  // height: calc(100vh - 80px - 200px);
   background-color: rgba(0, 0, 0, 0.2);
   justify-content: center;
   align-items: center;
@@ -61,15 +59,12 @@ code {
 }
 .hero .hero-wrap {
   display: flex;
+  position: relative;
   width: 650px;
-  // padding: 25px;
-  // background-color: rgba(74, 74, 74, 0.5);
-  // border-radius: 10px;
   color: #FFF;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  // box-sizing: border-box;
 }
 .hero .hero-wrap h1,
 .hero .hero-wrap p {
@@ -87,6 +82,20 @@ code {
   font-size: 18px;
   line-height: 1.8;
   font-weight: 300;
+}
+.hero .hero-wrap aside {
+  position: absolute;
+  right: -90px;
+  top: 105px;
+  color: #FFC107;
+  font-family: var(--monospace-fonts);
+  font-size: 20px;
+  text-shadow:
+     -2px -2px 0 #000,
+      2px -2px 0 #000,
+      -2px 2px 0 #000,
+       2px 2px 0 #000;
+  transform: rotate(-15deg);
 }
 .hero .hero-wrap .buttons {
   display: flex;
@@ -174,9 +183,9 @@ b {
   cursor: pointer;
 }
 .button:hover {
-  background-color: #000;
+  background-color: #FFF;
   border-color: transparent;
-  color: #FFF;
+  color: #000;
 }
 .button.invert {
   color: #FFF;
