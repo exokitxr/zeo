@@ -1,12 +1,6 @@
 const BAG_Y_OFFSET = -0.5;
 const BAG_Z_OFFSET = -0.05;
 
-const DEFAULT_MATRIX = [
-  0, 0, 0,
-  0, 0, 0, 1,
-  1, 1, 1,
-];
-
 const SIDES = ['left', 'right'];
 
 class ZBag {
