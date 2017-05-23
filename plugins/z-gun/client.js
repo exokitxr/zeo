@@ -27,16 +27,28 @@ class ZGun {
     };
 
     const _requestAudio = url => new Promise((accept, reject) => {
-      const eatAudio = document.createElement('audio');
-      eatAudio.src = url;
-      eatAudio.oncanplaythrough = () => {
-        accept({
-          eatAudio,
-        });
+      const audio = document.createElement('audio');
+
+      const _cleanup = () => {
+        audio.oncanplay = null;
+        audio.onerror = null;
+
+        document.body.removeChild(audio);
       };
-      eatAudio.onerror = err => {
+      audio.oncanplay = () => {
+        _cleanup();
+
+        accept(audio);
+      };
+      audio.onerror = err => {
+        _cleanup();
+
         reject(err);
       };
+
+      audio.crossOrigin = 'Anonymous';
+      audio.src = url;
+      document.body.appendChild(audio);
     });
 
     return _requestAudio('archae/gun/sfx/gun.ogg')
