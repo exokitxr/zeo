@@ -22,10 +22,6 @@ $('navbar > a').forEach(el => {
     <div class=load-status>Loading...</div>
     <div class=search-bar id=search-bar>
       <input type=text placeholder="Search modules" id=search-input>
-      <a class=checkbox id=show-insecure-checkbox>
-        <div class=checkbox-box></div>
-        <div class=checkbox-label>Show insecure modules</div>
-      </a>
     </div>
     <div class=load-placeholder>Sorry, I got nothin' :(</div>
     <div class=modules-body id=modules-body></div>
@@ -43,7 +39,6 @@ const loadPlaceholder = $('.load-placeholder')[0];
 const modulesBody = $('#modules-body')[0];
 const searchBar = $('#search-bar')[0];
 const searchInput = $('#search-input')[0];
-const showInsecureCheckbox = $('#show-insecure-checkbox')[0];
 
 const _makeModuleElement = module => {
   const {name} = module;
@@ -104,12 +99,12 @@ const _update = () => {
   searchBar.style.display = 'none';
 
   let searchPromise = null;
-  const _search = (q = '', i = false) => {
+  const _search = (q = '') => {
     if (searchPromise) {
       searchPromise.cancel();
     }
 
-    searchPromise = _cancelableFetch(`/modules/modules.json?q=${encodeURIComponent(q)}&i=${i}`);
+    searchPromise = _cancelableFetch(`/modules/modules.json?q=${encodeURIComponent(q)}`);
     searchPromise
       .then(modules => {
         while (modulesBody.hasChildNodes()) {
@@ -129,25 +124,8 @@ const _update = () => {
   };
   _search();
 
-  const _refreshSearch = () => {
-    _search(searchInput.value, showInsecure);
-  };
-
   searchInput.addEventListener('input', () => {
-    _refreshSearch();
-  });
-
-  let showInsecure = false;
-  showInsecureCheckbox.addEventListener('click', () => {
-    showInsecure = !showInsecure;
-
-    if (showInsecure) {
-      showInsecureCheckbox.classList.add('checked');
-    } else {
-      showInsecureCheckbox.classList.remove('checked');
-    }
-
-    _refreshSearch();
+    _search(searchInput.value);
   });
 };
 _update();

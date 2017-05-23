@@ -42,7 +42,7 @@ class World {
 
   mount() {
     const {_archae: archae} = this;
-    const {metadata: {site: {url: siteUrl}, server: {url: serverUrl, allowInsecureModules, enabled: serverEnabled}}} = archae;
+    const {metadata: {site: {url: siteUrl}, server: {url: serverUrl, enabled: serverEnabled}}} = archae;
 
     const cleanups = [];
     this._cleanup = () => {
@@ -635,7 +635,7 @@ class World {
           tags.message(detail);
         };
 
-        const _searchNpm = (q = '') => fetch(`archae/rend/search?q=${encodeURIComponent(q)}&i=${allowInsecureModules}`)
+        const _searchNpm = (q = '') => fetch(`archae/rend/search?q=${encodeURIComponent(q)}`)
           .then(res => res.json());
         const _updateNpm = menuUtils.debounce(next => {
           const {inputText} = npmState;
