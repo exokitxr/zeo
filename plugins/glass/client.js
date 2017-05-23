@@ -26,6 +26,8 @@ class Glass {
       return {position, rotation, scale};
     };
 
+    const forwardVector = new THREE.Vector3(0, 0, -1);
+
     const globalGlassState = {
       mode: 'picture',
     };
@@ -109,19 +111,22 @@ class Glass {
         mode: 'picture',
         x: 0.25,
         y: 0.25,
-        size: 0.25,
+        counterplanarSize: 0.1,
+        coplanarSize: 0.25,
       },
       {
         mode: 'audio',
         x: 0.25,
         y: 0,
-        size: 0.25,
+        counterplanarSize: 0.1,
+        coplanarSize: 0.25,
       },
       {
         mode: 'video',
         x: 0.25,
         y: -0.25,
-        size: 0.25,
+        counterplanarSize: 0.1,
+        coplanarSize: 0.25,
       },
     ];
 
@@ -161,6 +166,7 @@ class Glass {
       };
       const _updateHover = () => {
         const {gamepads} = pose.getStatus();
+        const cameraPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(forwardVector.clone().applyQuaternion(cameraRotation), cameraPosition.clone());
 
         SIDES.forEach(side => {
           const gamepad = gamepads[side];
@@ -170,16 +176,23 @@ class Glass {
             const glassState = glassStates[side];
 
             const distanceSpecs = highlightSpecs.map(highlightSpec => {
-              const {mode, x, y, size} = highlightSpec;
+              const {mode, x, y, counterplanarSize, coplanarSize} = highlightSpec;
               const highlightPosition = cameraPosition.clone()
                 .add(new THREE.Vector3(x, y).applyQuaternion(cameraRotation));
-              const distance = controllerPosition.distanceTo(highlightPosition);
+              const counterplanarDistance = Math.abs(cameraPlane.distanceToPoint(controllerPosition));
 
-              if (distance <= size) {
-                return {
-                  mode,
-                  distance,
-                };
+              if (counterplanarDistance <= counterplanarSize) {
+                const planePoint = cameraPlane.projectPoint(controllerPosition);
+                const coplanarDistance = planePoint.distanceTo(highlightPosition);
+
+                if (coplanarDistance <= coplanarSize) {
+                  return {
+                    mode,
+                    distance: coplanarDistance,
+                  };
+                } else {
+                  return null;
+                }
               } else {
                 return null;
               }
