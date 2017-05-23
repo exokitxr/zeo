@@ -227,6 +227,8 @@ class Glass {
 
       _updateHudMesh();
       _updateHover();
+
+      lastUpdateTime = now;
     };
     render.on('update', _update);
 
