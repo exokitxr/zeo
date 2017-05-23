@@ -50,6 +50,9 @@
   "/plugins/fog": [
     "0.0.1"
   ],
+  "/plugins/glass": [
+    "0.0.1"
+  ],
   "/plugins/grass": [
     "0.0.1"
   ],
