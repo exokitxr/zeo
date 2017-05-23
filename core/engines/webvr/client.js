@@ -365,10 +365,10 @@ class WebVR {
                   cleanups.push(() => {
                     this.updateUserStageMatrix();
 
-                    const {display} = this;
+                    /* const {display} = this;
                     if (display) {
                       display.resetPoseHard();
-                    }
+                    } */
 
                     this.setStageMatrix(new THREE.Matrix4());
                     this.updateStatus();
@@ -811,7 +811,7 @@ class WebVR {
               }
 
               const localUserStageMatrix = stageMatrix.clone().multiply(new THREE.Matrix4().getInverse(displayStageMatrix));
-              const {position: userPosition, rotation: userQuaternion, scale: userScale} = _getPropertiesFromMatrix(localUserStageMatrix);
+              const {rotation: userQuaternion, scale: userScale} = _getPropertiesFromMatrix(localUserStageMatrix);
               const userRotationY = new THREE.Euler().setFromQuaternion(userQuaternion, camera.rotation.order).y;
 
               const {_frameData: frameData} = this;
@@ -822,7 +822,7 @@ class WebVR {
 
               const {userStageMatrix} = this;
               userStageMatrix.compose(
-                userPosition.clone().add(displayPosition.clone().applyQuaternion(userQuaternion)),
+                displayPosition.clone().applyMatrix4(localUserStageMatrix),
                 new THREE.Quaternion().setFromEuler(new THREE.Euler(0, userRotationY + displayRotationY, 0, camera.rotation.order)),
                 userScale
               );
@@ -1205,13 +1205,13 @@ class WebVR {
             this.updateGamepads();
           }
 
-          resetPoseHard() {
+          /* resetPoseHard() {
             this.position.copy(new THREE.Vector3());
             this.rotation.copy(new THREE.Quaternion());
 
             this.updateMatrix();
             this.updateGamepads();
-          }
+          } */
 
           getFrameData(frameData) {
             const eyeCamera = new THREE.PerspectiveCamera(camera.fov, camera.aspect, camera.near, camera.far);
