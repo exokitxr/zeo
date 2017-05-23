@@ -28,6 +28,8 @@ import {
 import menuUtilser from './lib/utils/menu';
 import tagsRender from './lib/render/tags';
 import TransformControls from './lib/three-extra/TransformControls';
+import LineSegmentsGeometry from './lib/three-extra/LineSegmentsGeometry';
+import LineMaterial from './lib/three-extra/LineMaterial';
 
 const SIDES = ['left', 'right'];
 const AXES = ['x', 'y', 'z'];
@@ -143,6 +145,8 @@ class Tags {
             THREETransformGizmoRotate,
             THREETransformGizmoScale,
           } = THREETransformControls;
+          const THREELineSegmentsGeometry = LineSegmentsGeometry(THREE);
+          const THREELineMaterial = LineMaterial(THREE);
 
           const translateGizmos = [];
           rend.registerAuxObject('translateGizmos', translateGizmos);
@@ -283,19 +287,11 @@ class Tags {
             return {position, rotation, scale};
           };
 
-          const oneVector = new THREE.Vector3(1, 1, 1);
-
-          const wireframeMaterial = new THREE.MeshBasicMaterial({
-            color: 0x0000FF,
-            wireframe: true,
-            opacity: 0.5,
-            transparent: true,
-          });
-          const lineMaterial = new THREE.LineBasicMaterial({
-            color: 0x000000,
-            // linewidth: 1,
-            transparent: true,
-            opacity: 0.5,
+          const lineMaterial = new THREELineMaterial({
+            color: 0x0D47A1,
+            linewidth: 0.001,
+            // transparent: true,
+            // opacity: 0.1,
           });
 
           const subcontentFontSpec = {
@@ -548,9 +544,11 @@ class Tags {
                   tagMesh.item.name === componentApiTagName &&
                   !(tagMesh.item.metadata && tagMesh.item.metadata.isStatic)
                 );
+                const {tipMesh: moduleTipMesh} = moduleTagMesh;
                 const entityId = entityElement.item.id;
                 const entityTagMesh = tagMeshes.find(tagMesh => tagMesh.item.type === 'entity' && tagMesh.item.id === entityId);
-                line.set(moduleTagMesh, entityTagMesh);
+                const {tipMesh: entityTipMesh} = entityTagMesh;
+                line.set(moduleTipMesh, entityTipMesh);
                 return line;
               })();
               linesMesh.render();
@@ -860,17 +858,11 @@ class Tags {
           const linesMesh = (() => {
             const maxNumLines = 256;
 
-            const geometry = (() => {
-              const geometry = new THREE.BufferGeometry();
-              geometry.addAttribute('position', new THREE.BufferAttribute(new Float32Array(maxNumLines * 3 * 2), 3));
-              geometry.setDrawRange(0, 0);
-              return geometry;
-            })();
+            const geometry = new THREELineSegmentsGeometry();
             const material = lineMaterial;
 
-            const mesh = new THREE.LineSegments(geometry, material);
+            const mesh = new THREE.Mesh(geometry, material);
             mesh.visible = false;
-            mesh.frustumCulled = false;
 
             class Line {
               constructor() {
@@ -901,9 +893,7 @@ class Tags {
               }
             };
             mesh.render = () => {
-              const positionsAttribute = geometry.getAttribute('position');
-              const {array: positions} = positionsAttribute;
-
+              const positions = Array(lines.length * 3 * 2);
               for (let i = 0; i < lines.length; i++) {
                 const line = lines[i];
                 const {start, end} = line;
@@ -919,9 +909,7 @@ class Tags {
                 positions[baseIndex + 5] = endPosition.z;
               }
 
-              positionsAttribute.needsUpdate = true;
-
-              geometry.setDrawRange(0, lines.length * 2);
+              geometry.setPositions(positions);
             };
 
             return mesh;
@@ -1212,6 +1200,7 @@ class Tags {
                     );
                     tagMesh.quaternion.copy(tagRotation);
                     tagMesh.scale.copy(hmdScale);
+                    tagMesh.updateMatrixWorld();
                   }
 
                   linesMesh.render();
@@ -3554,6 +3543,14 @@ class Tags {
                   planeDetailsMesh.visible = false;
                 };
               }
+
+              const tipMesh = (() => {
+                const object = new THREE.Object3D();
+                object.position.x = -WORLD_WIDTH / 2;
+                return object;
+              })();
+              object.add(tipMesh);
+              object.tipMesh = tipMesh;
 
               object.destroy = () => {
                 const {item} = object;
