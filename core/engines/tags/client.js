@@ -288,7 +288,7 @@ class Tags {
           };
 
           const lineMaterial = new THREELineMaterial({
-            color: 0x0D47A1,
+            color: 0x000000,
             linewidth: 0.001,
             // transparent: true,
             // opacity: 0.1,
