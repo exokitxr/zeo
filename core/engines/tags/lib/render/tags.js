@@ -83,7 +83,7 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
   };
 
   const getModuleDetailsSrc = ({item, focusVersionSpec}) => {
-    const {id, name, displayName, version, versions, description, readme, page, metadata: {exists}} = item;
+    const {id, name, displayName, version, versions, description, page, metadata: {exists}} = item;
     const focus = focusVersionSpec ? (id === focusVersionSpec.tagId) : false;
     const imgSrc = (() => {
       if (exists) {
@@ -92,6 +92,17 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
         return packageVariantClosedSrc;
       }
     })();
+
+const readme = `\
+<h1>Ambient light</h1>
+<p>Ambient light is the general light that illuminates the entire scene. It has a uniform intensity and is uniformly diffuse. It has no discernible source and no discernible direction.</p>
+<p>By default, there's no ambient light in a scene. If you examine the darkest shadows on your model with the default ambient light setting, you cannot make out the surface because it's unlit by any light. Shadows in your scene will not appear any darker than the ambient light color, which is why you usually keep ambient light set to black (or a very dark color).</p>
+<p>
+If you use photometric lights and a radiosity solution, ambient light is accurately calculated. The other advanced lighting option, light tracing, also generates ambient lighting.</p>
+<p>
+If you use standard lights a good lighting test is to set your ambient lighting to black (the default), set up all your lights, and then decide at the end if you need to increase the ambient light.</p>
+</h1>
+`
 
     const headerSrc = `\
       <div style="display: flex; height: 100px; justify-content: center; align-items: center;">
