@@ -7,8 +7,8 @@ body {
   height: 80px;
   padding-left: 30px;
   font-family: var(--fonts);
-  background-color: rgba(255, 255, 255, 0.8);
-  box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.5);
+  background-color: rgba(255, 255, 255, 0.9);
+  border-bottom: 2px solid #CCC;
   align-items: center;
   box-sizing: border-box;
   z-index: 1;
@@ -85,9 +85,10 @@ body {
 navbar {
   display: flex;
   height: 80px;
-  align-items: center;
+  margin-bottom: -2px;
   font-size: 16px;
   font-weight: 400;
+  align-items: center;
 }
 navbar > a {
   display: flex;

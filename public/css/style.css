@@ -106,33 +106,38 @@ code {
   margin-left: 10px;
 }
 
-.documentation .markdown-body {
+.documentation-body {
   position: relative;
-  display: flex;
-  width: 980px;
-}
-.documentation .markdown-body .toc {
-  width: 240px;
-  background-color: rgba(255, 255, 255, 0.8);
-}
-.documentation .markdown-body .body {
-  width: calc(980px - 240px);
-  padding: 0 50px;
   background-color: rgba(255, 255, 255, 0.9);
+}
+.documentation-body .markdown-body {
+  display: flex;
+  // width: 840px;
+}
+.documentation-body .markdown-body .toc {
+  width: 220px;
+}
+.documentation-body .markdown-body .body {
+  width: calc(800px - 220px);
+  flex: 0 1 auto;
   box-sizing: border-box;
 }
-.documentation .markdown-body h1,
-.documentation .markdown-body h2 {
+.documentation-body .markdown-body h1,
+.documentation-body .markdown-body h2 {
+  border-bottom-width: 2px;
   border-bottom-color: rgba(0, 0, 0, 0.1);
 }
-.documentation .markdown-body iframe {
+.documentation-body .markdown-body img {
+  background-color: transparent;
+}
+.documentation-body .markdown-body iframe {
   margin: 16px 0;
 }
-.documentation .toc {
+.documentation-body .toc {
   display: flex;
   flex-direction: column;
 }
-.documentation .toc a {
+.documentation-body .toc a {
   display: flex;
   padding: 0 30px;
   color: #000;
@@ -143,7 +148,7 @@ code {
   // justify-content: center;
   align-items: center;
 }
-.documentation .toc a .icon {
+.documentation-body .toc a .icon {
   display: block;
   width: 26px;
   height: 26px;
@@ -152,15 +157,17 @@ code {
   // background-color: rgba(0, 0, 0, 0.5);
   background-color: rgba(255, 255, 255, 0.5);
 }
-.documentation .toc a.selected {
-  background-color: #000;
-  color: #FFF;
+.documentation-body .toc a {
+  border-left: 2px solid transparent;
 }
-.documentation .toc a:not(.selected):hover {
-  background-color: rgba(0, 0, 0, 0.2);
-  // color: #FFF;
+.documentation-body .toc a.selected {
+  color: #2196F3;
+  border-left-color: #000;
 }
-.documentation .toc a:hover {
+.documentation-body .toc a:hover {
+  color: #2196F3;
+}
+.documentation-body .toc a:hover {
   text-decoration: none;
 }
 

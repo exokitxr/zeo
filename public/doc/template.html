@@ -58,11 +58,6 @@ $('.toc > a').forEach(e => {
   if (e.classList.contains(page)) {
     e.classList.add('selected');
   }
-
-  const img = new Image();
-  img.src = '/img/minecraft.svg';
-  img.classList.add('icon');
-  e.insertBefore(img, e.firstChild);
 });
 $('.section').forEach(e => {
   if (!e.classList.contains(page)) {
@@ -75,7 +70,7 @@ $('.section').forEach(e => {
 </head>
 <body>
   <div class=background></div>
-  <div class=documentation>
+  <div class=documentation-body>
     <div class=markdown-body>
       <!-- CONTENT -->
     </div>
