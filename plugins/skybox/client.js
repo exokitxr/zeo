@@ -7,12 +7,9 @@ const DEFAULT_MATRIX = [
 
 class Skybox {
   mount() {
-    const {three: {THREE, scene}, elements} = zeo;
+    const {three: {THREE, scene}, elements, ui} = zeo;
 
-    let live = true;
-    this._cleanup = () => {
-      live = false;
-    };
+    const transparentImg = ui.getTransparentImg();
 
     const _requestImage = src => new Promise((accept, reject) => {
       const img = new Image();
@@ -24,7 +21,7 @@ class Skybox {
         reject(err);
       };
     });
-    const _requestCubeMapImgs = () => Promise.all(FACES.map((face, index) => _requestImage('archae/skybox/img/skybox-dark-' + (index + 1) + '.png')))
+    const _requestCubeMapImgs = type => Promise.all(FACES.map((face, index) => _requestImage('archae/skybox/img/skybox-' + type + '-' + (index + 1) + '.png')))
       .then(cubeMapImgs => {
         const result = {};
         for (let i = 0; i < cubeMapImgs.length; i++) {
@@ -35,94 +32,133 @@ class Skybox {
         return result;
       });
 
-    return _requestCubeMapImgs()
-      .then(cubeMapImgs => {
-        if (live) {
-          const skyboxComponent = {
-            selector: 'skybox[position]',
-            attributes: {
-              position: {
-                type: 'matrix',
-                value: DEFAULT_MATRIX,
-              },
-            },
-            entityAddedCallback(entityElement) {
-              const entityApi = entityElement.getComponentApi();
-              const entityObject = entityElement.getObject();
+    const skyboxComponent = {
+      selector: 'skybox[position]',
+      attributes: {
+        position: {
+          type: 'matrix',
+          value: DEFAULT_MATRIX,
+        },
+        type: {
+          type: 'select',
+          value: 'dark',
+          options: [
+            'dark',
+            'light',
+          ],
+        },
+      },
+      entityAddedCallback(entityElement) {
+        const entityApi = entityElement.getComponentApi();
+        const entityObject = entityElement.getObject();
 
-              const skyboxMesh = (() => {
-                const geometry = new THREE.BoxBufferGeometry(10000, 10000, 10000)
-                  .applyMatrix(new THREE.Matrix4().makeRotationY(Math.PI));
+        const skyboxMesh = (() => {
+          const geometry = new THREE.BoxBufferGeometry(10000, 10000, 10000)
+            .applyMatrix(new THREE.Matrix4().makeRotationY(Math.PI));
 
-                const skyboxImgs = [
-                  'right',
-                  'left',
-                  'top',
-                  'bottom',
-                  'front',
-                  'back',
-                ].map(face => cubeMapImgs[face]);
-                const materials = skyboxImgs.map(skyboxImg => {
-                  const texture = new THREE.Texture(
-                    skyboxImg,
-                    THREE.UVMapping,
-                    THREE.ClampToEdgeWrapping,
-                    THREE.ClampToEdgeWrapping,
-                    THREE.NearestFilter,
-                    THREE.NearestFilter,
-                    THREE.RGBAFormat,
-                    THREE.UnsignedByteType,
-                    1
-                  );
-                  texture.needsUpdate = true;
+          const _makeMaterial = () => {
+            const texture = new THREE.Texture(
+              transparentImg,
+              THREE.UVMapping,
+              THREE.ClampToEdgeWrapping,
+              THREE.ClampToEdgeWrapping,
+              THREE.NearestFilter,
+              THREE.NearestFilter,
+              THREE.RGBAFormat,
+              THREE.UnsignedByteType,
+              1
+            );
+            texture.needsUpdate = true;
 
-                  const material = new THREE.MeshBasicMaterial({
-                    map: texture,
-                    color: 0xFFFFFF,
-                    side: THREE.BackSide,
-                  });
-                  return  material;
-                });
-
-                const mesh = new THREE.Mesh(geometry, materials);
-                return mesh;
-              })();
-              entityObject.add(skyboxMesh);
-
-              entityApi._cleanup = () => {
-                entityObject.remove(skyboxMesh);
-              };
-            },
-            entityRemovedCallback(entityElement) {
-              const entityApi = entityElement.getComponentApi();
-
-              entityApi._cleanup();
-            },
-            entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-              const entityObject = entityElement.getObject();
-
-              switch (name) {
-                case 'position': {
-                  const position = newValue;
-
-                  if (position) {
-                    entityObject.position.set(position[0], position[1], position[2]);
-                    entityObject.quaternion.set(position[3], position[4], position[5], position[6]);
-                    entityObject.scale.set(position[7], position[8], position[9]);
-                  }
-
-                  break;
-                }
-              }
+            const material = new THREE.MeshBasicMaterial({
+              map: texture,
+              color: 0xFFFFFF,
+              side: THREE.BackSide,
+            });
+            return material;
+          };
+          const materials = (() => {
+            const result = Array(6);
+            for (let i = 0; i < result.length; i++) {
+              result[i] = _makeMaterial();
             }
-          };
-          elements.registerComponent(this, skyboxComponent);
+            return result;
+          })();
 
-          this._cleanup = () => {
-            elements.registerComponent(this, skyboxComponent);
-          };
+          const mesh = new THREE.Mesh(geometry, materials);
+          return mesh;
+        })();
+        entityObject.add(skyboxMesh);
+
+        entityApi.type = 'dark';
+        entityApi.render = () => {
+          const {type} = entityApi;
+
+          _requestCubeMapImgs(type)
+            .then(cubeMapImgs => {
+              const {material: materials} = skyboxMesh;
+
+              const skyboxImgs = [
+                'right',
+                'left',
+                'top',
+                'bottom',
+                'front',
+                'back',
+              ].map(face => cubeMapImgs[face]);
+              for (let i = 0; i < skyboxImgs.length; i++) {
+                const skyboxImg = skyboxImgs[i];
+                const material = materials[i];
+                const {map: texture} = material;
+                texture.image = skyboxImg;
+                texture.needsUpdate = true;
+              }
+            })
+            .catch(err => {
+              console.warn(err);
+            });
+        };
+
+        entityApi._cleanup = () => {
+          entityObject.remove(skyboxMesh);
+        };
+      },
+      entityRemovedCallback(entityElement) {
+        const entityApi = entityElement.getComponentApi();
+
+        entityApi._cleanup();
+      },
+      entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
+        const entityApi = entityElement.getComponentApi();
+        const entityObject = entityElement.getObject();
+
+        switch (name) {
+          case 'position': {
+            const position = newValue;
+
+            if (position) {
+              entityObject.position.set(position[0], position[1], position[2]);
+              entityObject.quaternion.set(position[3], position[4], position[5], position[6]);
+              entityObject.scale.set(position[7], position[8], position[9]);
+            }
+
+            break;
+          }
+          case 'type': {
+            entityApi.type = newValue;
+
+            entityApi.render();
+
+            break;
+          }
         }
-      });
+      }
+    };
+    elements.registerComponent(this, skyboxComponent);
+
+    this._cleanup = () => {
+      elements.registerComponent(this, skyboxComponent);
+    };
   }
 
   unmount() {
