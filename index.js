@@ -246,19 +246,6 @@ const _listenLibs = () => {
   return Promise.all(listenPromises);
 };
 
-const _lockArchae = () => {
-  if (flags.hub) {
-    a.lock();
-
-    return _getAllPlugins()
-      .then(plugins => {
-        a.setWhitelist(plugins);
-      });
-  } else {
-    return Promise.resolve();
-  }
-};
-
 const _listenArchae = () => {
   if (flags.site || flags.home || flags.hub || flags.server) {
     return new Promise((accept, reject) => {
@@ -293,7 +280,6 @@ _checkArgs()
   .then(() => _preload())
   .then(() => _install())
   .then(() => _listenLibs())
-  .then(() => _lockArchae())
   .then(() => _listenArchae())
   .then(() => _boot())
   .then(() => {
