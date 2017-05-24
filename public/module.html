@@ -133,7 +133,7 @@ const _update = () => {
 
   const _requestModule = () => fetch('/modules/module.json?q=' + mod)
     .then(res => res.json());
-  const _requestStatus = () => fetch('/wallet/api/status', {
+  const _requestStatus = () => fetch('/id/api/status', {
     credentials: 'include',
   })
     .then(res => res.json());
@@ -144,13 +144,13 @@ const _update = () => {
   ])
     .then(([
       moduleJson,
-      walletStatus,
+      idStatus,
     ]) => {
       const owned = (() => {
         const {asset} = moduleJson;
         if (asset) {
           const {dstAsset, dstQuantity} = asset;
-          return walletStatus.assets.some(({asset, quantity}) => asset === dstAsset && quantity >= dstQuantity);
+          return idStatus.assets.some(({asset, quantity}) => asset === dstAsset && quantity >= dstQuantity);
         } else {
           return false;
         }

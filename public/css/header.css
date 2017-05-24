@@ -56,16 +56,16 @@ body {
 .header .header-anchor.github:hover {
   background-color: #673AB7;
 }
-.header .header-anchor.wallet,
-.header .header-anchor.wallet svg path {
+.header .header-anchor.id,
+.header .header-anchor.id svg .outline {
   color: #673AB7;
   fill: #673AB7;
 }
-.header .header-anchor.wallet:hover {
+.header .header-anchor.id:hover {
   background-color: #673AB7;
 }
 .header .header-anchor:hover,
-.header .header-anchor:hover svg path {
+.header .header-anchor:hover svg .outline {
   color: #FFF;
   fill: #FFF;
 }
@@ -121,9 +121,9 @@ navbar > a.green {
   font-weight: 600;
 }
 navbar > a.green.selected,
-navbar > a.green.selected svg path,
+navbar > a.green.selected svg .outline,
 navbar > a.green:hover,
-navbar > a.green:hover svg path {
+navbar > a.green:hover svg .outline {
   border-bottom-color: #4CAF50;
   color: #4CAF50;
   fill: #4CAF50;

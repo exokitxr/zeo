@@ -167,7 +167,7 @@ class Payment {
           let live = true;
           object.confirm = () => {
             if (live) {
-              fetch(`${siteUrl}/wallet/api/pay`, {
+              fetch(`${siteUrl}/id/api/pay`, {
                 method: 'POST',
                 headers: (() => {
                   const headers = new Headers();
@@ -457,7 +457,7 @@ class Payment {
           rend.removeListener('update', _update);
         };
 
-        const _requestBalances = () => fetch(`${siteUrl}/wallet/api/status`, {
+        const _requestBalances = () => fetch(`${siteUrl}/id/api/status`, {
           credentials: 'include',
         })
           .then(res => res.json())

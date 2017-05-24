@@ -32,7 +32,7 @@ class Bootstrap {
       .then(res => res.json()
         .then(({startTime}) => startTime)
       );
-    /* const _requestTutorialFlag = () => fetch(`${siteUrl}/wallet/api/cookie/tutorialFlag`, { // XXX re-enable this
+    /* const _requestTutorialFlag = () => fetch(`${siteUrl}/id/api/cookie/tutorialFlag`, { // XXX re-enable this
       credentials: 'include',
     })
       .then(res => res.json())
@@ -85,7 +85,7 @@ class Bootstrap {
           const worldTimer = new WorldTimer(startTime);
 
           const _saveTutorialFlag = _debounce(next => {
-            fetch(`${siteUrl}/wallet/api/cookie/tutorialFlag`, {
+            fetch(`${siteUrl}/id/api/cookie/tutorialFlag`, {
               method: 'POST',
               headers: (() => {
                 const headers = new Headers();

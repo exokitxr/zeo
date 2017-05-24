@@ -203,7 +203,7 @@ class Wallet {
           const height = 600;
 
           return window.open(
-            `${siteUrl}/wallet/iframe?${_formatQueryString(req)}`,
+            `${siteUrl}/id/iframe?${_formatQueryString(req)}`,
             'wallet',
             `left=${(screen.width - width) / 2},top=${(screen.height - height) / 2},width=${width},height=${height}`
           );
@@ -293,7 +293,7 @@ class Wallet {
           visibleAssetTagMeshes = newTagMeshes;
         };
 
-        const _requestStatus = () => fetch(`${siteUrl}/wallet/api/status`, {
+        const _requestStatus = () => fetch(`${siteUrl}/id/api/status`, {
           credentials: 'include',
         })
           .then(res => res.json());

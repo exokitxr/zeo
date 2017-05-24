@@ -928,7 +928,7 @@ class World {
                 const src = _getTagIdSrc(id);
                 _removeTag(src);
 
-                fetch(`${siteUrl}/wallet/api/unpack`, {
+                fetch(`${siteUrl}/id/api/unpack`, {
                   method: 'POST',
                   headers: (() => {
                     const headers = new Headers();
@@ -1284,7 +1284,7 @@ class World {
                 loadCbs.length = 0;
               };
 
-              fetch(`${siteUrl}/wallet/api/authorizedServers`, {
+              fetch(`${siteUrl}/id/api/authorizedServers`, {
                 credentials: 'include',
               })
                 .then(res => {
@@ -1320,7 +1320,7 @@ class World {
           const height = 600;
 
           return window.open(
-            `${siteUrl}/wallet/iframe?${_formatQueryString(req)}`,
+            `${siteUrl}/id/iframe?${_formatQueryString(req)}`,
             'wallet',
             `left=${(screen.width - width) / 2},top=${(screen.height - height) / 2},width=${width},height=${height}`
           );
@@ -1392,7 +1392,7 @@ class World {
                   billItem.instancing = true;
 
                   // perform the pack
-                  return fetch(`${siteUrl}/wallet/api/pack`, {
+                  return fetch(`${siteUrl}/id/api/pack`, {
                     method: 'POST',
                     headers: (() => {
                       const headers = new Headers();
