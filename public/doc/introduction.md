@@ -2,17 +2,39 @@
 
 ### What is Zeo VR?
 
-It's a multiplayer VR web server that lets you hotload magic into your world with npm modules. On top of that it has a distributed programmable blockchain currency you can hold and use in the world to unlock even more magic. &#x2728; &#x1F984; &#x2728; &#x1F47E;
+A multiplayer VR web server that lets you hot-load things into your world. These things are Javascript code (npm modules) and it all runs in your browser.
 
-It's been asked whether this is a joke. &#x1F639;
+It's distributed and anyone can run their own world. Your identity is stored on a blockchain so your virtual credits and self-worth travel with you across servers. &#x2728; &#x1F984; &#x2728;
 
-### How do I get in on this?
+It's been asked whether this is a joke. The answer is yes. But you can use it anyway!
 
-If you're feeling adventurous, find a server [here](/servers). Expect treasures and horrors.
+### Cool, how's I get in on this?
 
-To join a VR world all you need is to open the URL in your web browser (<i>fits in a tweet!</i> &#x1F426;). You can use a mouse and keyboard to emulate the controls. Of course, it also supports true VR headsets with WebVR. Batteries include: voice chat, in-VR node configurator, models/audio/video media drag-and-drop, and other goodness comes in the box. It's all open source, and almost 100% Javascript.
+###### Join a server
 
-To run your own server all you need is `node`. [Learn how to get started](run-a-server).
+List of servers [here](/servers). You join at the pleasure of the server admin. Expect treasures and horrors.
+
+To join a world all you need is to open the server URL (<i>fits in a tweet!</i>) in a web browser with WebGL support. You can use a mouse and keyboard to emulate the controls, but you can also use a true headset with WebVR.
+
+If you have the hardware and grant the serv permission, you can even use voice and video chat.
+
+###### Run a server
+
+If you don't want to play by someone else's rules, you can [run your own server](/docs/run).
+
+###### Manage my identity
+
+Your VR identity (VRID) runs on a distributed blockchain, so it follows you around servers automatically.
+
+Your VRID is just a browser cookie on your machine, so you're in control. You can export your VRID anytime -- it's just a set of English words you can write down.
+
+Manage your VRID with a convenient webwallet [here](/id). _Or [run your own](/webwallet)._
+
+###### Make my own VR content
+
+Modules are just Javascript based on [THREE.js](https://threejs.org). To make your module available form VR, just publish to [npm](https://npmjs.org) with the `zeo-module` keyword. Your module can run code in both the browser and the server, and even accept payments.
+
+[Learn the API](/docs/api) to see all of the things your module can do.
 
 ### How do I make my own content?
 
