@@ -1,39 +1,51 @@
-# Introduction
+# Run a server
 
-### What is Zeo VR?
+A server is a VR world. Anyone can run a server. The code is [open source on Github](https://github.com/modulesio/zeo).
 
-It's a multiplayer VR web server that lets you hotload magic into your world with npm modules. On top of that it has a distributed programmable blockchain currency you can hold and use in the world to unlock even more magic. &#x2728; &#x1F984; &#x2728; &#x1F47E;
+The only requirement is `Node.js` running on a unix-like environment. You can use Linux, Mac OSX, or even Windows 10 with [WSL](https://en.wikipedia.org/wiki/Windows_Subsystem_for_Linux). You can get Node.js [here](https://nodejs.org), or use [`nvm`](https://github.com/creationix/nvm).
 
-It's been asked whether this is a joke. &#x1F639;
+#### Couple of notes
 
-### How do I get in on this?
+Keep in mind that by design, servers allow installing third-party mods, which can run code on the server. These are all open source (npm modules), but unless you're going to check each module you install (_you're not!_), you probably don't want to give them access to your machine.
 
-If you're feeling adventurous, find a server [here](/servers). Expect treasures and horrors.
+There's an easy solution: run in a container. The recommended way to run a server is with [Docker](https://docker.io), and that's fully supported.
 
-To join a VR world all you need is to open the URL in your web browser (<i>fits in a tweet!</i> &#x1F426;). You can use a mouse and keyboard to emulate the controls. Of course, it also supports true VR headsets with WebVR. Batteries include: voice chat, in-VR node configurator, models/audio/video media drag-and-drop, and other goodness comes in the box. It's all open source, and almost 100% Javascript.
+#### Docker (recommended)
 
-To run your own server all you need is `node`. [Learn how to get started](run-a-server).
+```
+docker run -p 8000:8000 modulesio/zeo
+```
 
-### How do I make my own content?
+Get `docker`:
 
-It's literally just `npm` modules. If you publish with the `zeo-module` keyword your module is instantly avialable to load on any server.
+```
+curl -sSL https://get.docker.com/ | sh
+```
 
-Modules can contain arbitrary browser-side and server-side Javascript code, and you can of course depend on any module on `npm`. Modules are automatically hotloaded and unloaded.
+#### Heroku
 
-For how to make your module hotloadable (super easy!), see [here]().
+[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
 
-To see all of the VR apis you can hook into, see [here]().
+You can use the free tier.
 
-### How do I manage my coins?
+#### Now.sh
 
-Short answer: use the (webwallet)[/wallet].
+```
+now modulesio/zeo
+```
 
-Long answer: there's a distributed blockchain mining network running in the background. It's a `bitcoind` fork with tweaked (much faster) parameters. (Yes, you can totally mine it yourself!)
+Get `now`:
 
-Just as in Bitcoin, the blockchain is a distributed global ledger of who owns which coins. Nobody can spend coins without having the mathematical keys to them -- it's computationally impossible. Your keys are just a set of English words.
+```
+npm i -g now
+```
 
-A webwallet is a webpage that stores these keywords in a local-only browser cookie and looks up which things you own. And it has exposes a limited API that allows servers to look at your wallet and authorize transactions. VR servers gather this information and display it in the form of avatars holding coins in the world.
+You can use the free tier.
 
-Although we host the webwallet software, it's just for convenience. We have no control over the blockchain network; it runs on P2P internet consensus magic.
+#### Bare server
 
-You can use your own wallet if you like. The code is open source.
+```
+npm i modulesio/zeo
+```
+
+Be careful with this. Any modules you install will have access to your server. If you don't want that, use Docker instead. It's just as easy, and has the same performance. See above.

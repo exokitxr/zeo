@@ -1,16 +1,16 @@
 # Introduction
 
-### What is Zeo VR?
+## What's this
 
-A multiplayer VR web server that lets you hot-load things into your world. These things are Javascript code (npm modules) and it all runs in your browser.
+It's multiplayer server that runs VR in your browser and lets you hotload mods. Mods are just Javascript code (npm modules).
 
-It's distributed and anyone can run their own world. Your identity is stored on a blockchain so your virtual credits and self-worth travel with you across servers. &#x2728; &#x1F984; &#x2728;
+Your VR identity (VRID) is stored on a blockchain so your virtual credits (self-worth) travel with you across servers. Anyone can run a server or make their own mods. It's all open source.
 
-It's been asked whether this is a joke. The answer is yes. But you can use it anyway!
+It's been asked whether this is a joke; the answer is yes. But you can use it anyway!
 
-### Cool, how's I get in on this?
+## How's I get in on it?
 
-###### Join a server
+#### Join a server
 
 List of servers [here](/servers). You join at the pleasure of the server admin. Expect treasures and horrors.
 
@@ -18,19 +18,17 @@ To join a world all you need is to open the server URL (<i>fits in a tweet!</i>)
 
 If you have the hardware and grant the serv permission, you can even use voice and video chat.
 
-###### Run a server
+#### Run a server
 
 If you don't want to play by someone else's rules, you can [run your own server](/docs/run).
 
-###### Manage my identity
+#### Manage my identity
 
-Your VR identity (VRID) runs on a distributed blockchain, so it follows you around servers automatically.
+Your VR identity (VRID) runs on a distributed blockchain. It's just a browser cookie on your machine, so you're in control. Your VRID follows you across servers automatically. You can export your VRID anytime -- it's just a set of English words you can write down.
 
-Your VRID is just a browser cookie on your machine, so you're in control. You can export your VRID anytime -- it's just a set of English words you can write down.
+Manage your VRID with a webwallet [here](/id), _but that's just for conveniece. You can totally [run your own](/webwallet)._
 
-Manage your VRID with a convenient webwallet [here](/id). _Or [run your own](/webwallet)._
-
-###### Make my own VR content
+#### Make my own VR content
 
 Modules are just Javascript based on [THREE.js](https://threejs.org). To make your module available form VR, just publish to [npm](https://npmjs.org) with the `zeo-module` keyword. Your module can run code in both the browser and the server, and even accept payments.
 
