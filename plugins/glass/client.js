@@ -15,7 +15,7 @@ const SIDES = ['left', 'right'];
 
 class Glass {
   mount() {
-    const {three: {THREE, scene, camera}, pose, input, render, ui} = zeo;
+    const {three: {THREE, scene, camera, renderer}, pose, input, render, ui} = zeo;
 
     const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
     const _decomposeMatrix = matrix => {
@@ -29,7 +29,7 @@ class Glass {
     const forwardVector = new THREE.Vector3(0, 0, -1);
 
     const globalGlassState = {
-      mode: 'picture',
+      mode: null,
     };
     const _makeGlassState = () => ({
       highlight: 'audio',
@@ -130,6 +130,141 @@ class Glass {
       },
     ];
 
+    let cancelRecording = null;
+    const _setMode = mode => {
+      switch (mode) {
+        case 'picture': {
+          const {domElement: canvas} = renderer;
+          const dataUrl = canvas.toDataURL();
+
+console.log('save picture', dataUrl.length); // XXX
+
+          break;
+        }
+        case 'audio': {
+          let live = true;
+          const cancels = [];
+          cancelRecording = () => {
+            for (let i = 0; i < cancels.length; i++) {
+              const cancel = cancels[i];
+              cancel();
+            }
+          };
+          cancels.push(() => {
+            live = false;
+
+            globalGlassState.mode = null;
+            const {page} = hudMesh;
+            page.update();
+          });
+
+          navigator.mediaDevices.getUserMedia({
+            audio: true,
+          })
+            .then(mediaStream => {
+              const mediaRecorder = new MediaRecorder(mediaStream, {
+                mimeType: 'audio/webm',
+              });
+              mediaRecorder.ondataavailable = e => {
+                const {data} = e;
+console.log('save audio', data.size); // XXX
+              };
+              mediaRecorder.start(100);
+
+              const cancelMedia = () => {
+                const tracks = mediaStream.getTracks();
+                for (let i = 0; i < tracks.length; i++) {
+                  const track = tracks[i];
+                  track.stop();
+                }
+                mediaRecorder.stop();
+              };
+
+              if (live) {
+                cancels.push(cancelMedia);
+              } else {
+                cancelMedia();
+              }
+            })
+            .catch(err => {
+              console.warn(err);
+
+              if (live) {
+                cancelRecording();
+                cancelRecording = null;
+              }
+            });
+
+          globalGlassState.mode = 'audio';
+          const {page} = hudMesh;
+          page.update();
+
+          break;
+        }
+        case 'video': {
+          let live = true;
+          const cancels = [];
+          cancelRecording = () => {
+            for (let i = 0; i < cancels.length; i++) {
+              const cancel = cancels[i];
+              cancel();
+            }
+          };
+          cancels.push(() => {
+            live = false;
+
+            globalGlassState.mode = null;
+            const {page} = hudMesh;
+            page.update();
+          });
+
+          navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: true,
+          })
+            .then(mediaStream => {
+              const mediaRecorder = new MediaRecorder(mediaStream, {
+                mimeType: 'video/webm',
+              });
+              mediaRecorder.ondataavailable = e => {
+                const {data} = e;
+console.log('save video', data.size); // XXX
+              };
+              mediaRecorder.start(100);
+
+              const cancelMedia = () => {
+                const tracks = mediaStream.getTracks();
+                for (let i = 0; i < tracks.length; i++) {
+                  const track = tracks[i];
+                  track.stop();
+                }
+                mediaRecorder.stop();
+              };
+
+              if (live) {
+                cancels.push(cancelMedia);
+              } else {
+                cancelMedia();
+              }
+            })
+            .catch(err => {
+              console.warn(err);
+
+              if (live) {
+                cancelRecording();
+                cancelRecording = null;
+              }
+            });
+
+          globalGlassState.mode = 'video';
+          const {page} = hudMesh;
+          page.update();
+
+          break;
+        }
+      }
+    };
+
     const _trigger = e => {
       const {side} = e;
       const glassState = glassStates[side];
@@ -137,13 +272,12 @@ class Glass {
 
       if (highlight !== null) {
         const {mode: oldMode} = globalGlassState;
-        const newMode = highlight;
 
-        if (newMode !== oldMode) {
-          globalGlassState.mode = newMode;
-
-          const {page} = hudMesh;
-          page.update();
+        if (oldMode === null) {
+          _setMode(highlight);
+        } else {
+          cancelRecording();
+          cancelRecording = null;
         }
       }
     };
