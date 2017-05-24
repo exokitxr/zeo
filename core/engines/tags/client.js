@@ -28,8 +28,6 @@ import {
 import menuUtilser from './lib/utils/menu';
 import tagsRender from './lib/render/tags';
 import TransformControls from './lib/three-extra/TransformControls';
-import LineSegmentsGeometry from './lib/three-extra/LineSegmentsGeometry';
-import LineMaterial from './lib/three-extra/LineMaterial';
 
 const SIDES = ['left', 'right'];
 const AXES = ['x', 'y', 'z'];
@@ -118,8 +116,9 @@ class Tags {
             THREETransformGizmoRotate,
             THREETransformGizmoScale,
           } = THREETransformControls;
-          const THREELineSegmentsGeometry = LineSegmentsGeometry(THREE);
-          const THREELineMaterial = LineMaterial(THREE);
+
+          const upVector = new THREE.Vector3(0, 1, 0);
+          const lineGeometry = geometryUtils.unindexBufferGeometry(new THREE.BoxBufferGeometry(1, 1, 1));
 
           const translateGizmos = [];
           rend.registerAuxObject('translateGizmos', translateGizmos);
@@ -260,11 +259,10 @@ class Tags {
             return {position, rotation, scale};
           };
 
-          const lineMaterial = new THREELineMaterial({
+          const lineMaterial = new THREE.MeshBasicMaterial({
             color: 0x000000,
-            linewidth: 0.001,
-            // transparent: true,
-            // opacity: 0.1,
+            transparent: true,
+            opacity: 0.5,
           });
 
           const subcontentFontSpec = {
@@ -829,12 +827,19 @@ class Tags {
           };
 
           const linesMesh = (() => {
-            const maxNumLines = 256;
+            const maxNumLines = 100;
+            const numBoxPoints = 36;
 
-            const geometry = new THREELineSegmentsGeometry();
+            const geometry = (() => {
+              const geometry = new THREE.BufferGeometry();
+              geometry.addAttribute('position', new THREE.BufferAttribute(new Float32Array(maxNumLines * numBoxPoints * 3), 3));
+              geometry.setDrawRange(0, 0);
+              return geometry;
+            })();
             const material = lineMaterial;
 
             const mesh = new THREE.Mesh(geometry, material);
+            mesh.frustumCulled = false;
             mesh.visible = false;
 
             class Line {
@@ -866,23 +871,33 @@ class Tags {
               }
             };
             mesh.render = () => {
-              const positions = Array(lines.length * 3 * 2);
+              const positionsAttribute = geometry.getAttribute('position');
+              const {array: positions} = positionsAttribute;
+
               for (let i = 0; i < lines.length; i++) {
                 const line = lines[i];
                 const {start, end} = line;
                 const startPosition = _getWorldPosition(start);
                 const endPosition = _getWorldPosition(end);
+                const midpoint = startPosition.clone().add(endPosition).divideScalar(2);
+                const diffVector = endPosition.clone().sub(startPosition);
+                const diffVectorLength = diffVector.length();
+                const quaternion = new THREE.Quaternion().setFromUnitVectors(
+                  upVector,
+                  diffVector.clone().divideScalar(diffVectorLength)
+                );
 
-                const baseIndex = i * 3 * 2;
-                positions[baseIndex + 0] = startPosition.x;
-                positions[baseIndex + 1] = startPosition.y;
-                positions[baseIndex + 2] = startPosition.z;
-                positions[baseIndex + 3] = endPosition.x;
-                positions[baseIndex + 4] = endPosition.y;
-                positions[baseIndex + 5] = endPosition.z;
+                const localLineGeometry = lineGeometry.clone()
+                  .applyMatrix(new THREE.Matrix4().makeScale(0.002, diffVectorLength, 0.002))
+                  .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(quaternion))
+                  .applyMatrix(new THREE.Matrix4().makeTranslation(midpoint.x, midpoint.y, midpoint.z));
+                const localPositions = localLineGeometry.getAttribute('position').array;
+                const baseIndex = i * numBoxPoints * 3;
+                positions.set(localPositions, baseIndex);
               }
+              positionsAttribute.needsUpdate = true;
 
-              geometry.setPositions(positions);
+              geometry.setDrawRange(0, lines.length * numBoxPoints);
             };
 
             return mesh;
