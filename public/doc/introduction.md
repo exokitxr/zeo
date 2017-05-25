@@ -2,11 +2,11 @@
 
 ## What's this
 
-It's multiplayer server that runs VR in your browser and lets you hotload mods. Mods are just Javascript code (npm modules).
+*Zeo* is a multiplayer VR server for your browser that you can extend with a mods in realtime. Mods are just Javascript (node modules) that run in the browser or on the server. There's already a large collection of mods for you to play with, but you can also make your own, it's pretty easy. 
 
-Your VR identity (VRID) is stored on a blockchain so your virtual credits (self-worth) travel with you across servers. Anyone can run a server or make their own mods. It's all open source.
+Modded or not, anyone can join your Zeo server if you give them the URL. That could get confusing, but luckily there's a magic Virtual Reality IDentity (VRID) system baked in that tracks your avatar and the digital things you _regardless of which server you're on_, because your VRID lives in a distributed blockchain. Oh yeah, and your avatar can own real credits and other digital assets. And by real we mean fake.
 
-It's been asked whether this is a joke; the answer is yes. But you can use it anyway!
+It's been asked whether this whole thing is a joke. The answer is yes. But you can use it anyway!
 
 ## How's I get in on it?
 
@@ -42,18 +42,4 @@ Modules can contain arbitrary browser-side and server-side Javascript code, and 
 
 For how to make your module hotloadable (super easy!), see [here]().
 
-To see all of the VR apis you can hook into, see [here]().
-
-### How do I manage my coins?
-
-Short answer: use the (webwallet)[/wallet].
-
-Long answer: there's a distributed blockchain mining network running in the background. It's a `bitcoind` fork with tweaked (much faster) parameters. (Yes, you can totally mine it yourself!)
-
-Just as in Bitcoin, the blockchain is a distributed global ledger of who owns which coins. Nobody can spend coins without having the mathematical keys to them -- it's computationally impossible. Your keys are just a set of English words.
-
-A webwallet is a webpage that stores these keywords in a local-only browser cookie and looks up which things you own. And it has exposes a limited API that allows servers to look at your wallet and authorize transactions. VR servers gather this information and display it in the form of avatars holding coins in the world.
-
-Although we host the webwallet software, it's just for convenience. We have no control over the blockchain network; it runs on P2P internet consensus magic.
-
-You can use your own wallet if you like. The code is open source.
+To see all of the VR APIss you can hook into, see [here]().

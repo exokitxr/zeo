@@ -1,6 +1,6 @@
 # Run a server
 
-A server is a VR world. Anyone can run a server. The code is [open source on Github](https://github.com/modulesio/zeo).
+A server is a VR world. Anyone can run one. The code is [open source on Github](https://github.com/modulesio/zeo).
 
 The only requirement is `Node.js` running on a unix-like environment. You can use Linux, Mac OSX, or even Windows 10 with [WSL](https://en.wikipedia.org/wiki/Windows_Subsystem_for_Linux). You can get Node.js [here](https://nodejs.org), or use [`nvm`](https://github.com/creationix/nvm).
 
