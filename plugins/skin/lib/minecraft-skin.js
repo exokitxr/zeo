@@ -397,21 +397,27 @@ Skin.prototype.createPlayerObject = function(scene) {
 
   playerModel.add(rotatedHead);
   playerModel.position.y = 6;
+
+  var eyes = new THREE.Object3D();
+  eyes.position.z = -3;
+  eyes.position.y = 3;
+  headgroup.add(eyes);
+  headgroup.eyes = eyes;
+  eyes.updateMatrixWorld();
   
   var playerGroup = new THREE.Object3D();
-  playerGroup.cameraInside = new THREE.Object3D()
+  /* playerGroup.cameraInside = new THREE.Object3D()
   playerGroup.cameraOutside = new THREE.Object3D()
 
   playerGroup.cameraInside.position.x = 0;
   playerGroup.cameraInside.position.y = 2;
-  playerGroup.cameraInside.position.z = 0; 
+  playerGroup.cameraInside.position.z = 0;  */
 
   playerGroup.head = headgroup
-  headgroup.add(playerGroup.cameraInside)
+  /* headgroup.add(playerGroup.cameraInside)
   playerGroup.cameraInside.add(playerGroup.cameraOutside)
 
-  playerGroup.cameraOutside.position.z = 100
-
+  playerGroup.cameraOutside.position.z = 100 */
   
   playerGroup.add(playerRotation);
   playerGroup.scale.copy(this.scale)

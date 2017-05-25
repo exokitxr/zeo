@@ -486,6 +486,12 @@ class Zeo {
                         rend.on('updateEye', camera => {
                           this.emit('updateEye', camera);
                         });
+                        rend.on('renderStart', () => {
+                          this.emit('renderStart');
+                        });
+                        rend.on('renderEnd', () => {
+                          this.emit('renderEnd');
+                        });
                         tags.on('mutate', () => {
                           this.emit('mutate');
                         });
@@ -544,6 +550,21 @@ class Zeo {
                         return controllerMeshes;
                       }
 
+                      getRemoteStatus(userId) {
+                        return multiplayer.getPlayerStatuses().get(userId);
+                      }
+
+                      getRemoteHmdMesh(userId) {
+                        const remotePlayerMesh = multiplayer.getRemotePlayerMesh(userId);
+
+                        if (remotePlayerMesh) {
+                          const {hmd: hmdMesh} = remotePlayerMesh;
+                          return hmdMesh;
+                        } else {
+                          return null;
+                        }
+                      }
+
                       getRemoteControllerMeshes(userId) {
                         const remotePlayerMesh = multiplayer.getRemotePlayerMesh(userId);
 
@@ -553,6 +574,18 @@ class Zeo {
                         } else {
                           return null;
                         }
+                      }
+
+                      on(event, handler) {
+                        return multiplayer.on(event, handler);
+                      }
+
+                      removeListener(event, handler) {
+                        return multiplayer.removeListener(event, handler);
+                      }
+
+                      removeAllListeners(event) {
+                        return multiplayer.removeAllListeners(event);
                       }
                     }
 
