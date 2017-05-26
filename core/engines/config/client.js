@@ -131,9 +131,9 @@ class Config {
 
         const configState = {
           resolutionValue: browserConfigSpec.resolution,
-          voiceChatCheckboxValue: serverConfigSpec.locked,
+          voiceChatCheckboxValue: browserConfigSpec.voiceChat,
           statsCheckboxValue: browserConfigSpec.stats,
-          lockedCheckboxValue: serverConfigSpec.locked,
+          maxPlayersValue: serverConfigSpec.maxPlayers,
           flags: {
             server: serverEnabled,
           },
@@ -177,7 +177,7 @@ class Config {
                 resolutionValue,
                 voiceChatCheckboxValue,
                 statsCheckboxValue,
-                lockedCheckboxValue,
+                maxPlayersValue,
                 flags,
               },
             }) => ({
@@ -186,7 +186,7 @@ class Config {
                 resolutionValue,
                 voiceChatCheckboxValue,
                 statsCheckboxValue,
-                lockedCheckboxValue,
+                maxPlayersValue,
                 flags,
               }),
               x: 0,
@@ -348,10 +348,10 @@ class Config {
                 configApi.updateConfig();
 
                 _updatePages();
-              } else if (onclick === 'config:lock') {
-                const {lockedCheckboxValue} = configState;
+              } else if (onclick === 'config:maxPlayers') {
+                const {value} = hoverState;
 
-                configState.lockedCheckboxValue = !lockedCheckboxValue;
+                configState.maxPlayersValue = 1 + Math.round(value * (8 - 1));
 
                 _saveServerConfig();
                 configApi.updateConfig();
@@ -395,7 +395,7 @@ class Config {
             return {
               voiceChat: configState.voiceChatCheckboxValue,
               stats: configState.statsCheckboxValue,
-              locked: configState.lockedCheckboxValue,
+              maxPlayers: configState.maxPlayersValue,
             };
           }
 
@@ -404,12 +404,13 @@ class Config {
               resolution: configState.resolutionValue,
               voiceChat: configState.voiceChatCheckboxValue,
               stats: configState.statsCheckboxValue,
+              maxPlayers: configState.maxPlayersValue,
             };
           }
 
           getServerConfig() {
             return {
-              locked: configState.lockedCheckboxValue,
+              maxPlayers: configState.maxPlayersValue,
             };
           }
 

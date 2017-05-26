@@ -6,7 +6,7 @@ const bodyParser = require('body-parser');
 const bodyParserJson = bodyParser.json();
 
 const DEFAULT_SERVER_CONFIG = {
-  locked: false,
+  maxPlayers: 4,
 };
 
 class Config {

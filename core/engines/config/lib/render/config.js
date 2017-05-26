@@ -2,23 +2,25 @@ const {
   WIDTH,
 } = require('../constants/config');
 
-const getConfigPageSrc = ({/*focus, */resolutionValue, voiceChatCheckboxValue, statsCheckboxValue, lockedCheckboxValue, flags}) => `\
+const getConfigPageSrc = ({/*focus, */resolutionValue, voiceChatCheckboxValue, statsCheckboxValue, maxPlayersValue, flags}) => {
+  console.log('max players', {maxPlayersValue});
+  return `\
   <div style="width: ${WIDTH}px;">
     <div style="display: flex; width: 640px; padding: 0 30px; box-sizing: border-box; flex-direction: column;">
       <h1 style="margin: 15px 0; font-size: 40px; font-weight: 400;">Browser settings</h1>
       ${/*getInputSrc(inputText, '', inputValue, focus, 'config:input') */''}
-      ${getSliderSrc('Resolution', resolutionValue)}
+      ${getSliderSrc('Resolution', resolutionValue, 'config:resolution')}
       ${flags.server ? getCheckboxSrc('Voice chat', voiceChatCheckboxValue, 'config:voiceChat') : ''}
       ${getCheckboxSrc('Stats', statsCheckboxValue, 'config:stats')}
       ${flags.server ? `\
         <h1 style="margin: 15px 0; font-size: 40px; font-weight: 400;">Server settings</h1>
-        ${getCheckboxSrc('Lock mode', lockedCheckboxValue, 'config:lock')}
+        ${getSliderSrc('Max players', (maxPlayersValue - 1) / (8 - 1), 'config:maxPlayers')}
       ` : ''}
       <h1 style="margin: 15px 0; font-size: 40px; font-weight: 400;">Help</h1>
       ${getButtonSrc('Run tutorial', 'config:tutorial')}
     </div>
   </div>
-`;
+`; }
 
 /* const getInputSrc = (inputText, inputPlaceholder, inputValue, focus, onclick) => `\
   <div style='position: relative; margin-bottom: 5px; font-size: 30px; line-height: 1.4;'>
@@ -30,11 +32,11 @@ const getConfigPageSrc = ({/*focus, */resolutionValue, voiceChatCheckboxValue, s
   </div>
 `; */
 
-const getSliderSrc = (label, sliderValue) => `\
+const getSliderSrc = (label, sliderValue, onclick) => `\
   <div style="display: flex; height: 50px; margin-bottom: 5px; justify-content: center; align-items: center;">
     <h1 style="margin: 0; margin-right: 30px; font-size: 30px; font-weight: 300;">${label}</h1>
     <div style="position: relative; height: 100%; flex-grow: 1;">
-      <a style="display: block; position: absolute; top: 0; bottom: 0; left: 0; right: 0;" onclick="config:resolution">
+      <a style="display: block; position: absolute; top: 0; bottom: 0; left: 0; right: 0;" onclick="${onclick}">
         <div style="position: absolute; top: ${(50 - 6) / 2}px; left: 0; right: 0; height: 6px; background-color: #CCC;">
           <div style="position: absolute; top: -${(50 - 6) / 2}px; bottom: -${(50 - 6) / 2}px; left: ${sliderValue * 100}%; margin-left: -${6 / 2}px; width: 6px; background-color: #F00;"></div>
         </div>
