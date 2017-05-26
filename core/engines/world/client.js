@@ -1331,7 +1331,9 @@ class World {
           const _cleanup = () => {
             window.removeEventListener('message', _onmessage);
 
-            walletWindow.close();
+            if (walletWindow) {
+              walletWindow.close();
+            }
           };
 
           const _onmessage = e => {
