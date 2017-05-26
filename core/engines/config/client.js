@@ -86,6 +86,7 @@ class Config {
         '/core/engines/input',
         '/core/engines/three',
         '/core/engines/webvr',
+        '/core/engines/keyboard',
         '/core/engines/biolumi',
         '/core/engines/rend',
         '/core/utils/js-utils',
@@ -98,6 +99,7 @@ class Config {
         input,
         three,
         webvr,
+        keyboard,
         biolumi,
         rend,
         jsUtils,
@@ -133,7 +135,9 @@ class Config {
           resolutionValue: browserConfigSpec.resolution,
           voiceChatCheckboxValue: browserConfigSpec.voiceChat,
           statsCheckboxValue: browserConfigSpec.stats,
+          passwordValue: serverConfigSpec.password,
           maxPlayersValue: serverConfigSpec.maxPlayers,
+          keyboardFocusState: null,
           flags: {
             server: serverEnabled,
           },
@@ -177,16 +181,21 @@ class Config {
                 resolutionValue,
                 voiceChatCheckboxValue,
                 statsCheckboxValue,
+                passwordValue,
                 maxPlayersValue,
+                keyboardFocusState,
                 flags,
               },
             }) => ({
               type: 'html',
               src: configRenderer.getConfigPageSrc({
+                focus: keyboardFocusState !== null,
                 resolutionValue,
                 voiceChatCheckboxValue,
                 statsCheckboxValue,
+                passwordValue,
                 maxPlayersValue,
+                inputValue: keyboardFocusState ? keyboardFocusState.inputValue : 0,
                 flags,
               }),
               x: 0,
@@ -348,6 +357,44 @@ class Config {
                 configApi.updateConfig();
 
                 _updatePages();
+              } else if (onclick === 'config:password') {
+                const {passwordValue: inputText} = configState;
+                const {value} = hoverState;
+                const valuePx = value * (640 - (150 + (30 * 2) + 30));
+                const {index, px} = biolumi.getTextPropertiesFromCoord(inputText, mainFontSpec, valuePx);
+                const {hmd: hmdStatus} = webvr.getStatus();
+                const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmdStatus;
+                const keyboardFocusState = keyboard.focus({
+                  type: 'npm',
+                  position: hmdPosition,
+                  rotation: hmdRotation,
+                  inputText: inputText,
+                  inputIndex: index,
+                  inputValue: px,
+                  fontSpec: mainFontSpec,
+                });
+                keyboardFocusState.on('update', () => {
+                  const {inputText: keyboardInputText} = keyboardFocusState;
+                  const {passwordValue: passwordInputText} = configState;
+
+                  if (keyboardInputText !== passwordInputText) {
+                    configState.passwordValue = keyboardInputText;
+
+                    _saveServerConfig();
+                    configApi.updateConfig();
+
+                    _updatePages();
+                  }
+                });
+                keyboardFocusState.on('blur', () => {
+                  configState.keyboardFocusState = null;
+
+                  _updatePages();
+                });
+
+                configState.keyboardFocusState = keyboardFocusState;
+
+                _updatePages();
               } else if (onclick === 'config:maxPlayers') {
                 const {value} = hoverState;
 
@@ -410,6 +457,7 @@ class Config {
 
           getServerConfig() {
             return {
+              password: configState.passwordValue,
               maxPlayers: configState.maxPlayersValue,
             };
           }

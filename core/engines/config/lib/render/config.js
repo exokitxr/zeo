@@ -2,39 +2,38 @@ const {
   WIDTH,
 } = require('../constants/config');
 
-const getConfigPageSrc = ({/*focus, */resolutionValue, voiceChatCheckboxValue, statsCheckboxValue, maxPlayersValue, flags}) => {
-  console.log('max players', {maxPlayersValue});
-  return `\
+const getConfigPageSrc = ({focus, resolutionValue, voiceChatCheckboxValue, statsCheckboxValue, passwordValue, maxPlayersValue, inputValue, flags}) => `\
   <div style="width: ${WIDTH}px;">
     <div style="display: flex; width: 640px; padding: 0 30px; box-sizing: border-box; flex-direction: column;">
       <h1 style="margin: 15px 0; font-size: 40px; font-weight: 400;">Browser settings</h1>
-      ${/*getInputSrc(inputText, '', inputValue, focus, 'config:input') */''}
       ${getSliderSrc('Resolution', resolutionValue, 'config:resolution')}
       ${flags.server ? getCheckboxSrc('Voice chat', voiceChatCheckboxValue, 'config:voiceChat') : ''}
       ${getCheckboxSrc('Stats', statsCheckboxValue, 'config:stats')}
       ${flags.server ? `\
         <h1 style="margin: 15px 0; font-size: 40px; font-weight: 400;">Server settings</h1>
+        ${getInputSrc('Password', passwordValue, 'Enter password', inputValue, focus, 'config:password')}
         ${getSliderSrc('Max players', (maxPlayersValue - 1) / (8 - 1), 'config:maxPlayers')}
       ` : ''}
       <h1 style="margin: 15px 0; font-size: 40px; font-weight: 400;">Help</h1>
       ${getButtonSrc('Run tutorial', 'config:tutorial')}
     </div>
   </div>
-`; }
+`;
 
-/* const getInputSrc = (inputText, inputPlaceholder, inputValue, focus, onclick) => `\
-  <div style='position: relative; margin-bottom: 5px; font-size: 30px; line-height: 1.4;'>
-    <a style='display: block; background-color: #EEE; border-radius: 5px; text-decoration: none;' onclick="${onclick}">
-      ${focus ? `<div style="position: absolute; width: 2px; top: 0; bottom: 20px; left: ${inputValue}px; background-color: #333;"></div>` : ''}
+const getInputSrc = (label, inputText, inputPlaceholder, inputValue, focus, onclick) => `\
+  <div style='display: flex; margin-bottom: 5px; font-size: 30px; line-height: 1.4; justify-content: center; align-items: center;'>
+    <h1 style="width: 150px; margin: 0; margin-right: 30px; font-size: 30px; font-weight: 300;">${label}</h1>
+    <a style='display: block; position: relative; background-color: #EEE; flex-grow: 1; text-decoration: none;' onclick="${onclick}">
+      ${focus ? `<div style="position: absolute; width: 2px; top: 0; bottom: 0; left: ${inputValue}px; background-color: #333;"></div>` : ''}
       <div>${inputText}</div>
       ${!inputText ? `<div style="color: #CCC;">${inputPlaceholder}</div>` : ''}
     </a>
   </div>
-`; */
+`;
 
 const getSliderSrc = (label, sliderValue, onclick) => `\
   <div style="display: flex; height: 50px; margin-bottom: 5px; justify-content: center; align-items: center;">
-    <h1 style="margin: 0; margin-right: 30px; font-size: 30px; font-weight: 300;">${label}</h1>
+    <h1 style="width: 150px; margin: 0; margin-right: 30px; font-size: 30px; font-weight: 300;">${label}</h1>
     <div style="position: relative; height: 100%; flex-grow: 1;">
       <a style="display: block; position: absolute; top: 0; bottom: 0; left: 0; right: 0;" onclick="${onclick}">
         <div style="position: absolute; top: ${(50 - 6) / 2}px; left: 0; right: 0; height: 6px; background-color: #CCC;">
