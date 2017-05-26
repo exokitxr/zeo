@@ -550,6 +550,10 @@ class Zeo {
                         return controllerMeshes;
                       }
 
+                      getRemoteStatuses() {
+                        return multiplayer.getPlayerStatuses();
+                      }
+
                       getRemoteStatus(userId) {
                         return multiplayer.getPlayerStatuses().get(userId);
                       }

@@ -4,7 +4,7 @@ const SIDES = ['left', 'right'];
 
 class Skin {
   mount() {
-    const {three: {THREE, camera}, elements, pose, render} = zeo;
+    const {three: {THREE, camera}, elements, pose, render, player} = zeo;
 
     let live = true;
     this._cleanup = () => {
@@ -32,13 +32,37 @@ class Skin {
     });
     const meshes = [];
 
+    class FakeStatus {
+      constructor(hmd, controllers) {
+        this.hmd = hmd;
+        this.controllers = controllers;
+      }
+    }
+    class FakeStatusProperties {
+      constructor(position, rotation, scale) {
+        this.position = position;
+        this.rotation = rotation;
+        this.scale = scale;
+      }
+    }
+    class FakeControllersStatus {
+      constructor(left, right) {
+        this.left = left;
+        this.right = right;
+      }
+    }
+
     return _requestImage('/archae/skin/img/groot.png')
     // return _requestImage('/archae/skin/img/natsuwithfire.png')
       .then(skinImg => {
         if (live) {
-          const _makeMesh = () => minecraftSkin(THREE, skinImg, {
-            scale: scaleVector,
-          }).mesh;
+          const _makeMesh = (playerId = null) => {
+            const {mesh} = minecraftSkin(THREE, skinImg, {
+              scale: scaleVector,
+            });
+            mesh.playerId = playerId;
+            return mesh;
+          };
 
           const skinComponent = {
             selector: 'skin',
@@ -60,20 +84,72 @@ class Skin {
               entityObject.add(localMesh);
               meshes.push(localMesh);
 
-              const _update = () => {
-                const {head, body, arms} = localMesh;
-                const {eyes} = head;
-                const {hmd: hmdStatus, gamepads: gamepadsStatus} = pose.getStatus();
-                const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmdStatus;
+              const _addMesh = playerId => {
+                const mesh = _makeMesh(playerId);
+                entityObject.add(mesh);
+                meshes.push(mesh);
+              };
+              const _removeMesh = playerId => {
+                const meshIndex = meshes.findIndex(mesh => mesh.playerId === playerId);
+                const mesh = meshes[meshIndex];
+                entityObject.remove(mesh);
+                meshes.splice(meshIndex, 1);
+              };
+              player.getRemoteStatuses().forEach((status, playerId) => {
+                _addMesh(playerId);
+              });
 
-                localMesh.position.copy(hmdPosition.clone().sub(
-                  eyes.getWorldPosition().sub(localMesh.getWorldPosition())
+              const _updateMesh = mesh => {
+                const {head, body, arms} = mesh;
+                const {eyes} = head;
+                const status = (() => {
+                  const {playerId} = mesh;
+
+                  if (playerId === null) {
+                    const status = pose.getStatus();
+                    const {hmd, gamepads} = status;
+                    return new FakeStatus(
+                      new FakeStatusProperties(hmd.worldPosition, hmd.worldRotation, hmd.worldScale),
+                      new FakeControllersStatus(
+                        new FakeStatusProperties(gamepads.left.worldPosition, gamepads.left.worldRotation, gamepads.left.worldScale),
+                        new FakeStatusProperties(gamepads.right.worldPosition, gamepads.right.worldRotation, gamepads.right.worldScale)
+                      ),
+                    );
+                  } else {
+                    const status = player.getRemoteStatus(playerId);
+                    const {hmd, controllers} = status;
+                    return new FakeStatus(
+                      new FakeStatusProperties(
+                        new THREE.Vector3().fromArray(hmd.position),
+                        new THREE.Quaternion().fromArray(hmd.rotation),
+                        new THREE.Vector3().fromArray(hmd.scale)
+                      ),
+                      new FakeControllersStatus(
+                        new FakeStatusProperties(
+                          new THREE.Vector3().fromArray(controllers.left.position),
+                          new THREE.Quaternion().fromArray(controllers.left.rotation),
+                          new THREE.Vector3().fromArray(controllers.left.scale)
+                        ),
+                        new FakeStatusProperties(
+                          new THREE.Vector3().fromArray(controllers.right.position),
+                          new THREE.Quaternion().fromArray(controllers.right.rotation),
+                          new THREE.Vector3().fromArray(controllers.right.scale)
+                        )
+                      )
+                    );
+                  }
+                })();
+                const {hmd: hmdStatus, controllers: controllersStatus} = status;
+                const {position: hmdPosition, rotation: hmdRotation} = hmdStatus;
+
+                mesh.position.copy(hmdPosition.clone().sub(
+                  eyes.getWorldPosition().sub(mesh.getWorldPosition())
                 ));
-                head.quaternion.copy(hmdRotation.clone().multiply(localMesh.getWorldQuaternion()));
+                head.quaternion.copy(hmdRotation.clone().multiply(mesh.getWorldQuaternion()));
 
                 SIDES.forEach((side, index) => {
-                  const gamepadStatus = gamepadsStatus[side];
-                  const {worldPosition: controllerPosition, worldRotation: controllerRotation} = gamepadStatus;
+                  const controllerStatus = controllersStatus[side];
+                  const {position: controllerPosition, rotation: controllerRotation} = controllerStatus;
                   const arm = arms[side];
                   const upVector = new THREE.Vector3(0, index === 0 ? -1 : 1, 0).applyQuaternion(controllerRotation);
                   const rotationMatrix = new THREE.Matrix4().lookAt(controllerPosition, arm.getWorldPosition(), upVector)
@@ -83,7 +159,15 @@ class Skin {
                     .premultiply(body.getWorldQuaternion().inverse());
                 });
               };
+              const _update = () => {
+                for (let i = 0; i < meshes.length; i++) {
+                  const mesh = meshes[i];
+                  _updateMesh(mesh);
+                }
+              };
               render.on('update', _update);
+              _update();
+
               const _renderStart = () => {
                  const {head} = localMesh;
                  head.visible = false;
@@ -95,6 +179,15 @@ class Skin {
               };
               render.on('renderEnd', _renderEnd);
 
+              const _playerEnter = ({id}) => {
+                _addMesh(id);
+              };
+              player.on('playerEnter', _playerEnter);
+              const _playerLeave = ({id}) => {
+                _removeMesh(id);
+              };
+              player.on('playerLeave', _playerLeave);
+
               entityApi._cleanup = () => {
                 for (let i = 0; i < meshes.length; i++) {
                   const mesh = meshes[i];
@@ -105,6 +198,8 @@ class Skin {
                 render.removeListener('update', _update);
                 render.removeListener('renderStart', _renderStart);
                 render.removeListener('renderEnd', _renderEnd);
+                player.removeListener('playerEnter', _playerEnter);
+                player.removeListener('playerLeave', _playerLeave);
               };
             },
             entityRemovedCallback(entityElement) {
