@@ -352,7 +352,7 @@ class Fs {
                 return 'audio';
               } else if (/^video\/(?:mp4|webm|ogg)$/.test(mimeType)) {
                 return 'video';
-              } else if (/^mime\/(?:obj|dae|fbx|gltf)$/.test(mimeType)) {
+              } else if (/^mime\/(?:json|obj|dae|fbx|gltf)$/.test(mimeType)) {
                 return 'model';
               } else {
                 return null;
