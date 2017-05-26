@@ -21,6 +21,8 @@ export const WORLD_MENU_WIDTH = 2;
 export const WORLD_MENU_HEIGHT = WORLD_MENU_WIDTH / MENU_ASPECT_RATIO;
 export const WORLD_MENU_DEPTH = WORLD_MENU_WIDTH / 50;
 
+export const CREDIT_ASSET_NAME = 'CRD';
+
 export default {
   WIDTH,
   HEIGHT,
@@ -37,4 +39,5 @@ export default {
   WORLD_OPEN_HEIGHT,
   WORLD_DETAILS_WIDTH,
   WORLD_DETAILS_HEIGHT,
+  CREDIT_ASSET_NAME,
 };

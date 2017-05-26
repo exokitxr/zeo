@@ -31,7 +31,7 @@
   },
   "dependencies": {
     "archae": "0.0.72",
-    "vrid": "0.0.2",
+    "vrid": "0.0.3",
     "base128": "^0.2.1",
     "body-parser": "^1.16.1",
     "cookie": "^0.3.1",

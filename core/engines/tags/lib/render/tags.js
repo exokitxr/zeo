@@ -6,6 +6,7 @@ const {
   OPEN_HEIGHT,
   DETAILS_WIDTH,
   DETAILS_HEIGHT,
+  CREDIT_ASSET_NAME,
 } = require('../constants/tags');
 
 const vectorPolygonImg = require('../img/vector-polygon');
@@ -510,6 +511,7 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
       </div>
     `;
   };
+  const _normalizeAssetName = name => name === 'BTC' ? CREDIT_ASSET_NAME : name;
   const _commaize = n => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
   const _commaizeAssetQuantity = (asset, quantity) => {
     if (asset === 'BTC') {
@@ -538,7 +540,7 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
           <div style="display: flex; flex-grow: 1;">
             <img src="${creatureUtils.makeStaticCreature('asset:' + displayName)}" width="80" height="80" style="margin: 10px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;" />
             <div style="display: flex; max-width: ${WIDTH - (30) - (80 + (10 * 2)) - (80)}px; flex-grow: 1; flex-direction: column; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">
-              <h1 style="margin: 0; margin-top: 10px; font-size: 28px; font-weight: 400; line-height: 1.4; text-overflow: ellipsis; overflow: hidden;">${name}</h1>
+              <h1 style="margin: 0; margin-top: 10px; font-size: 28px; font-weight: 400; line-height: 1.4; text-overflow: ellipsis; overflow: hidden;">${_normalizeAssetName(name)}</h1>
               <div style="display: flex; flex-grow: 1; align-items: center;">
                 <div style="padding: 5px 10px; border: 2px solid; font-size: 28px; font-weight: 400;">&#164; ${quantityString}</div>
               </div>
@@ -558,7 +560,7 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
         <div style="display: flex; height: 100px; justify-content: center; align-items: center;">
           <img src="${creatureUtils.makeStaticCreature('asset:' + name)}" width="80" height="80" style="width: 80px; height: 80px; margin: 10px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;" />
           <div style="display: flex; height: 80px; margin-bottom: 10px; margin-right: auto; font-size: 24px; font-weight: 400; justify-content: center; align-items: center;">
-            <div style="margin-right: 15px;">${displayName}</div>
+            <div style="margin-right: 15px;">${_normalizeAssetName(name)}</div>
             <div style="display: flex; justify-content: center; align-items: center;">
               <div style="padding: 5px 10px; border: 2px solid; font-size: 22px;">&#164; ${quantityString}</div>
             </div>
