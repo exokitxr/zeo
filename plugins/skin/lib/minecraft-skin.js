@@ -380,6 +380,7 @@ Skin.prototype.createPlayerObject = function(scene) {
   headgroup.position.y = 8;
   
   var playerModel = this.playerModel = new THREE.Object3D();
+  playerModel.rotation.y = Math.PI / 2
   
   playerModel.add(leftleg);
   playerModel.add(rightleg);
@@ -387,12 +388,12 @@ Skin.prototype.createPlayerObject = function(scene) {
   playerModel.add(upperbody);
   
   var playerRotation = new THREE.Object3D();
-  playerRotation.rotation.y = Math.PI / 2
+  // playerRotation.rotation.y = Math.PI / 2
   playerRotation.position.y = 12
   playerRotation.add(playerModel)
 
   var rotatedHead = new THREE.Object3D();
-  rotatedHead.rotation.y = -Math.PI/2;
+  // rotatedHead.rotation.y = -Math.PI/2;
   rotatedHead.add(headgroup);
 
   playerModel.add(rotatedHead);
@@ -414,7 +415,8 @@ Skin.prototype.createPlayerObject = function(scene) {
   playerGroup.cameraInside.position.z = 0;  */
 
   playerGroup.head = headgroup
-  playerGroup.body = upperbody
+  playerGroup.playerModel = playerModel
+  playerGroup.playerRotation = playerRotation
   /* headgroup.add(playerGroup.cameraInside)
   playerGroup.cameraInside.add(playerGroup.cameraOutside)
 

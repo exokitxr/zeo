@@ -1,3 +1,4 @@
+const mod = require('mod-loop');
 const minecraftSkin = require('./lib/minecraft-skin');
 
 const SIDES = ['left', 'right'];
@@ -11,7 +12,6 @@ class Skin {
       live = false;
     };
 
-    const armQuaternion = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, -1));
     const scaleVector = (() => {
       const scale = 1 / 18;
       return new THREE.Vector3(scale, scale, scale);
@@ -100,7 +100,7 @@ class Skin {
               });
 
               const _updateMesh = mesh => {
-                const {head, body, arms} = mesh;
+                const {head, playerRotation, playerModel, arms} = mesh;
                 const {eyes} = head;
                 const status = (() => {
                   const {playerId} = mesh;
@@ -142,10 +142,23 @@ class Skin {
                 const {hmd: hmdStatus, controllers: controllersStatus} = status;
                 const {position: hmdPosition, rotation: hmdRotation} = hmdStatus;
 
+                const hmdEuler = new THREE.Euler().setFromQuaternion(hmdRotation, camera.rotation.order);
+                const angleDiff = _angleDiff(hmdEuler.y, playerRotation.rotation.y);
+                const angleDiffAbs = Math.abs(angleDiff);
+                if (angleDiffAbs > Math.PI / 2) {
+                  playerRotation.rotation.y += (angleDiffAbs - (Math.PI / 2)) * (angleDiff < 0 ? 1 : -1);
+                  playerRotation.updateMatrix();
+                  playerRotation.updateMatrixWorld();
+                }
+
                 mesh.position.copy(hmdPosition.clone().sub(
                   eyes.getWorldPosition().sub(mesh.getWorldPosition())
                 ));
-                head.quaternion.copy(hmdRotation.clone().multiply(mesh.getWorldQuaternion()));
+                const playerQuaternionInverse = playerModel.getWorldQuaternion().inverse();
+                head.quaternion.copy(
+                  hmdRotation.clone()
+                  .premultiply(playerQuaternionInverse)
+                );
 
                 SIDES.forEach((side, index) => {
                   const controllerStatus = controllersStatus[side];
@@ -153,10 +166,11 @@ class Skin {
                   const arm = arms[side];
                   const upVector = new THREE.Vector3(0, index === 0 ? -1 : 1, 0).applyQuaternion(controllerRotation);
                   const rotationMatrix = new THREE.Matrix4().lookAt(controllerPosition, arm.getWorldPosition(), upVector)
+                  const armQuaternion = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, -1));
                   arm.quaternion
                     .setFromRotationMatrix(rotationMatrix)
                     .multiply(armQuaternion)
-                    .premultiply(body.getWorldQuaternion().inverse());
+                    .premultiply(playerQuaternionInverse);
                 });
               };
               const _update = () => {
@@ -238,5 +252,9 @@ class Skin {
     this._cleanup();
   }
 }
+const _angleDiff = (a, b) => {
+  let diff = b - a;
+  return mod(diff + Math.PI, Math.PI * 2) - Math.PI;
+};
 
 module.exports = Skin;
