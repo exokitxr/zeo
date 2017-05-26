@@ -71,14 +71,15 @@ class Skin {
                 ));
                 head.quaternion.copy(hmdRotation.clone().multiply(localMesh.getWorldQuaternion()));
 
-                SIDES.forEach(side => {
+                SIDES.forEach((side, index) => {
                   const gamepadStatus = gamepadsStatus[side];
                   const {worldPosition: controllerPosition} = gamepadStatus;
                   const arm = arms[side];
-                  arm.quaternion.setFromUnitVectors(
-                    new THREE.Vector3(0, -1, 0),
-                    controllerPosition.sub(arm.getWorldPosition()).normalize()
-                  ).premultiply(body.getWorldQuaternion().inverse());
+                  const rotationMatrix = new THREE.Matrix4().lookAt(controllerPosition, arm.getWorldPosition(), new THREE.Vector3(0, index === 0 ? -1 : 1, 0))
+                  arm.quaternion
+                    .setFromRotationMatrix(rotationMatrix)
+                    .multiply(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, -1)))
+                    .premultiply(body.getWorldQuaternion().inverse());
                 });
               };
               render.on('update', _update);
