@@ -293,7 +293,7 @@ Skin.prototype.createPlayerObject = function(scene) {
   var leftarm = this.leftArm = new THREE.Mesh(leftarmgeo, this.charMaterial);
   leftarm.position.z = -6;
   leftarm.position.y = 4;
-  leftarm.rotation.x = Math.PI/32;
+  // leftarm.rotation.x = Math.PI/32;
   this.UVMap(leftarm, 0, 48 - 12, 20 + 32, 4, 12);
   this.UVMap(leftarm, 1, 56 - 12, 20 + 32, 4, 12);
   this.UVMap(leftarm, 2, 48 - 12, 16 + 32, 4, 4, 3, false, true);
@@ -310,7 +310,7 @@ Skin.prototype.createPlayerObject = function(scene) {
   var rightarm =this.rightArm = new THREE.Mesh(rightarmgeo, this.charMaterial);
   rightarm.position.z = 6;
   rightarm.position.y = 4;
-  rightarm.rotation.x = -Math.PI/32;
+  // rightarm.rotation.x = -Math.PI/32;
   this.UVMap(rightarm, 0, 44, 20, 4, 12);
   this.UVMap(rightarm, 1, 52, 20, 4, 12);
   this.UVMap(rightarm, 2, 44, 16, 4, 4, 3, false, true);
@@ -414,10 +414,17 @@ Skin.prototype.createPlayerObject = function(scene) {
   playerGroup.cameraInside.position.z = 0;  */
 
   playerGroup.head = headgroup
+  playerGroup.body = upperbody
   /* headgroup.add(playerGroup.cameraInside)
   playerGroup.cameraInside.add(playerGroup.cameraOutside)
 
   playerGroup.cameraOutside.position.z = 100 */
+
+  var arms = {
+    left: leftarm,
+    right: rightarm,
+  };
+  playerGroup.arms = arms;
   
   playerGroup.add(playerRotation);
   playerGroup.scale.copy(this.scale)

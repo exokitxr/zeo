@@ -1,8 +1,10 @@
 const minecraftSkin = require('./lib/minecraft-skin');
 
+const SIDES = ['left', 'right'];
+
 class Skin {
   mount() {
-    const {three: {THREE}, elements, pose, render} = zeo;
+    const {three: {THREE, camera}, elements, pose, render} = zeo;
 
     let live = true;
     this._cleanup = () => {
@@ -59,19 +61,25 @@ class Skin {
               meshes.push(localMesh);
 
               const _update = () => {
-                const {head} = localMesh;
+                const {head, body, arms} = localMesh;
                 const {eyes} = head;
-                head.updateMatrixWorld();
-                eyes.updateMatrixWorld();
-                // localMesh.updateMatrixWorld();
-                // const localMeshMatrixWorldInverse = new THREE.Matrix4().getInverse(localMesh.matrixWorld);
-                const {hmd: hmdStatus} = pose.getStatus();
+                const {hmd: hmdStatus, gamepads: gamepadsStatus} = pose.getStatus();
                 const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmdStatus;
 
                 localMesh.position.copy(hmdPosition.clone().sub(
                   eyes.getWorldPosition().sub(localMesh.getWorldPosition())
                 ));
                 head.quaternion.copy(hmdRotation.clone().multiply(localMesh.getWorldQuaternion()));
+
+                SIDES.forEach(side => {
+                  const gamepadStatus = gamepadsStatus[side];
+                  const {worldPosition: controllerPosition} = gamepadStatus;
+                  const arm = arms[side];
+                  arm.quaternion.setFromUnitVectors(
+                    new THREE.Vector3(0, -1, 0),
+                    controllerPosition.sub(arm.getWorldPosition()).normalize()
+                  ).premultiply(body.getWorldQuaternion().inverse());
+                });
               };
               render.on('update', _update);
               const _renderStart = () => {
