@@ -11,7 +11,7 @@ class Skin {
       live = false;
     };
 
-    const forwardVector = new THREE.Vector3(0, 0, -10 * 1024);
+    const armQuaternion = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, -1));
     const scaleVector = (() => {
       const scale = 1 / 18;
       return new THREE.Vector3(scale, scale, scale);
@@ -73,12 +73,13 @@ class Skin {
 
                 SIDES.forEach((side, index) => {
                   const gamepadStatus = gamepadsStatus[side];
-                  const {worldPosition: controllerPosition} = gamepadStatus;
+                  const {worldPosition: controllerPosition, worldRotation: controllerRotation} = gamepadStatus;
                   const arm = arms[side];
-                  const rotationMatrix = new THREE.Matrix4().lookAt(controllerPosition, arm.getWorldPosition(), new THREE.Vector3(0, index === 0 ? -1 : 1, 0))
+                  const upVector = new THREE.Vector3(0, index === 0 ? -1 : 1, 0).applyQuaternion(controllerRotation);
+                  const rotationMatrix = new THREE.Matrix4().lookAt(controllerPosition, arm.getWorldPosition(), upVector)
                   arm.quaternion
                     .setFromRotationMatrix(rotationMatrix)
-                    .multiply(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, -1)))
+                    .multiply(armQuaternion)
                     .premultiply(body.getWorldQuaternion().inverse());
                 });
               };
