@@ -519,6 +519,7 @@ class Tags {
                         const {id: entityId} = entityElement;
                         tagsApi.emit('attributeValueChanged', {
                           entityId: entityId,
+                          attributeName: matchingAttribute,
                           type: attributeType,
                           oldValue: oldValue,
                           newValue: newValue,
@@ -612,6 +613,7 @@ class Tags {
                             componentElement.entityAttributeValueChangedCallback(entityElement, attributeName, oldAttributeValue, newAttributeValue);
                             tagsApi.emit('attributeValueChanged', {
                               entityId: entityId,
+                              attributeName: attributeName,
                               type: attributeType,
                               oldValue: oldAttributeValue,
                               newValue: newAttributeValue,
@@ -624,6 +626,7 @@ class Tags {
                             componentElement.entityAttributeValueChangedCallback(entityElement, attributeName, oldAttributeValue, newAttributeValue);
                             tagsApi.emit('attributeValueChanged', {
                               entityId: entityId,
+                              attributeName: attributeName,
                               type: attributeType,
                               oldValue: oldAttributeValue,
                               newValue: newAttributeValue,
@@ -2691,6 +2694,7 @@ class Tags {
                   const {id: entityId} = entityItem;
                   tagsApi.emit('attributeValueChanged', {
                     entityId: entityId,
+                    attributeName: matchingAttribute,
                     type: attributeType,
                     oldValue: oldValue,
                     newValue: newValue,

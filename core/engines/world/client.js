@@ -125,6 +125,15 @@ class World {
         };
 
         const localUserId = multiplayer.getId();
+
+        class MatrixAttribute {
+          constructor(entityId, attributeName) {
+            this.entityId = entityId;
+            this.attributeName = attributeName;
+          }
+        }
+        const matrixAttributes = [];
+
         const _makeTriggerState = () => ({
           triggered: false,
         });
@@ -1525,9 +1534,19 @@ class World {
           _handleRemoveTag(localUserId, src);
         };
         tags.on('remove', _tagsRemove);
-        const _tagsAttributeValueChanged = ({entityId, type, oldValue, newValue}) => {
+        const _tagsAttributeValueChanged = attributeSpec => {
+          const {type} = attributeSpec;
+
           if (type === 'matrix') {
-            console.log('matrix type', entityId, oldValue, newValue); // XXX
+            const {entityId, attributeName, newValue} = attributeSpec;
+
+            if (newValue !== null) {
+              const matrixAttribte = new MatrixAttribute(entityId, attributeName);
+              matrixAttributes.push(matrixAttribte);
+            } else {
+              const index = matrixAttributes.findIndex(matrixAttribute => matrixAttribute.entityId === entityId && matrixAttribute.attributeName === attributeName);
+              matrixAttributes.splice(index, 1);
+            }
           }
         };
         tags.on('attributeValueChanged', _tagsAttributeValueChanged);
