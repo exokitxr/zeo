@@ -244,13 +244,7 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
 
     switch (type) {
       case 'matrix': {
-        return `\
-          <div style="display: flex; width: ${WIDTH}px; justify-content: flex-end;">
-            <a style="display: flex; width: 80px; ${transform ? 'background-color: #2196F3;' : ''} justify-content: center; align-items: center;" onclick="attribute:${id}:${name}:${!transform ? 'transform' : 'untransform'}">
-              <img src="${!transform ? arrowAllImgSrc : arrowAllWhiteImgSrc}" width="50" height="50" style="margin: 10px; image-rendering: pixelated;" />
-            </a>
-          </div>
-        `;
+        return '';
       }
       case 'vector': {
         if (min === undefined) {
