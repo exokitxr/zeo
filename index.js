@@ -25,6 +25,7 @@ const flags = {
   site: args.includes('site'),
   home: args.includes('home'),
   hub: args.includes('hub'),
+  forum: args.includes('forum'),
   install: args.includes('install'),
   host: _findArg('host'),
   port: (() => {
@@ -57,6 +58,7 @@ const flags = {
   siteUrl: _findArg('siteUrl'),
   hubUrl: _findArg('hubUrl'),
   homeUrl: _findArg('homeUrl'),
+  forumUrl: _findArg('forumUrl'),
   maxUsers: _findArg('maxUsers'),
 };
 const hasSomeFlag = (() => {
@@ -90,6 +92,7 @@ const protocolString = !secure ? 'http' : 'https';
 const siteUrl = flags.siteUrl || (protocolString + '://' + hostname + ':' + port);
 const hubUrl = flags.hubUrl || (protocolString + '://hub.' + hostname + ':' + port);
 const homeUrl = flags.homeUrl || (protocolString + '://127.0.0.1:' + port);
+const forumUrl = flags.forumUrl || (protocolString + '://forum.' + hostname + ':' + port);
 const fullUrl = protocolString + '://127.0.0.1:' + port;
 const maxUsers = (flags.maxUsers && parseInt(flags.maxUsers, 10)) || 4;
 const config = {
@@ -121,6 +124,10 @@ const config = {
     hub: {
       url: hubUrl,
       enabled: flags.hub,
+    },
+    forum: {
+      url: forumUrl,
+      enabled: flags.forum,
     },
     server: {
       url: fullUrl,

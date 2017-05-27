@@ -15,7 +15,8 @@ cp -ralf installed data/hub/servers/server_two/
   port=8080 \
   siteUrl='http://127.0.0.1:8080' \
   homeUrl='http://127.0.0.1:8081' \
-  hubUrl='http://127.0.0.1:8000' &
+  hubUrl='http://127.0.0.1:8000' \
+  forumUrl='http://127.0.0.1:8089' &
 ./index.js hub \
   port=8000 \
   hubUrl='http://test.zeovr.io:8000' \
