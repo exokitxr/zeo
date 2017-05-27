@@ -126,10 +126,43 @@ class World {
 
         const localUserId = multiplayer.getId();
 
+        const boundingBoxGeometry = new THREE.BoxBufferGeometry(1, 1, 1);
+        const boundingBoxMaterial = new THREE.MeshPhongMaterial({
+          color: 0xFFFF00,
+          shading: THREE.FlatShading,
+          transparent: true,
+          opacity: 0.5,
+        });
         class MatrixAttribute {
           constructor(entityId, attributeName) {
             this.entityId = entityId;
             this.attributeName = attributeName;
+
+            this._boundingBox = null;
+          }
+
+          updateBoundingBox(newValue) {
+            const {_boundingBox: oldBoundingBox} = this;
+            if (oldBoundingBox) {
+              scene.remove(oldBoundingBox);
+            }
+
+            const boundingBox = (() => {
+              const geometry = boundingBoxGeometry;
+              const material = boundingBoxMaterial;
+              const mesh = new THREE.Mesh(geometry, material);
+              mesh.position.set(newValue[0], newValue[1], newValue[2]);
+              return mesh;
+            })();
+            scene.add(boundingBox);
+            this._boundingBox = boundingBox;
+          }
+
+          destroy() {
+            const {_boundingBox: oldBoundingBox} = this;
+            if (oldBoundingBox) {
+              scene.remove(oldBoundingBox);
+            }
           }
         }
         const matrixAttributes = [];
@@ -1538,14 +1571,20 @@ class World {
           const {type} = attributeSpec;
 
           if (type === 'matrix') {
-            const {entityId, attributeName, newValue} = attributeSpec;
+            const {entityId, attributeName, oldValue, newValue} = attributeSpec;
 
-            if (newValue !== null) {
-              const matrixAttribte = new MatrixAttribute(entityId, attributeName);
-              matrixAttributes.push(matrixAttribte);
-            } else {
+            if (oldValue === null && newValue !== null) {
+              const matrixAttribute = new MatrixAttribute(entityId, attributeName);
+              matrixAttribute.updateBoundingBox(newValue);
+              matrixAttributes.push(matrixAttribute);
+            } else if (oldValue !== null && newValue === null) {
               const index = matrixAttributes.findIndex(matrixAttribute => matrixAttribute.entityId === entityId && matrixAttribute.attributeName === attributeName);
+              const matrixAttribute = matrixAttributes[index];
+              matrixAttribute.destroy();
               matrixAttributes.splice(index, 1);
+            } else if (oldValue !== null && newValue !== null) {
+              const matrixAttribute = matrixAttributes.find(matrixAttribute => matrixAttribute.entityId === entityId && matrixAttribute.attributeName === attributeName);
+              matrixAttribute.updateBoundingBox(newValue);
             }
           }
         };
