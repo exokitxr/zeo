@@ -118,7 +118,6 @@ class Tags {
           } = THREETransformControls;
 
           const upVector = new THREE.Vector3(0, 1, 0);
-          const backVector = new THREE.Vector3(0, 0, 1);
           const oneVector = new THREE.Vector3(1, 1, 1);
           const lineGeometry = geometryUtils.unindexBufferGeometry(new THREE.BoxBufferGeometry(1, 1, 1));
 
@@ -2417,12 +2416,12 @@ class Tags {
                           );
                         const endSpherePoint = new THREE.Sphere(startPosition.clone(), rotateScale)
                           .clampPoint(endPosition);
-                        const endVector = endSpherePoint.clone().sub(startPosition).normalize();
-                        const quaternion = new THREE.Quaternion().setFromUnitVectors(
-                          backVector,
-                          endVector
+                        const rotationMatrix = new THREE.Matrix4().lookAt(
+                          endSpherePoint,
+                          startPosition,
+                          upVector.clone().applyQuaternion(controllerRotation)
                         );
-                        transformGizmo.rotateGizmo.quaternion.copy(quaternion);
+                        transformGizmo.rotateGizmo.quaternion.setFromRotationMatrix(rotationMatrix);
                       } else if (mode === 'scale') {
                         const {worldPosition: controllerPosition, worldRotation: controllerRotation} = gamepad;
                         const endPosition = controllerPosition.clone()
