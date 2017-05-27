@@ -129,7 +129,6 @@ class World {
 
         const localUserId = multiplayer.getId();
 
-        const boundingBoxSize = new THREE.Vector3(1, 1, 1);
         const boundingBoxGeometry = new THREE.BoxBufferGeometry(1, 1, 1);
         const boundingBoxMaterial = new THREE.MeshPhongMaterial({
           color: 0xFFFF00,
@@ -145,7 +144,10 @@ class World {
             const boundingBox = new THREE.Box3();
             this._boundingBox = boundingBox;
             const transformGizmo = transform.makeTransformGizmo({
-              onupdate: ({position, rotation, scale}) => {
+              onpreview: (position, rotation, scale) => {
+                this.updateBoundingBox(position, rotation, scale);
+              },
+              onupdate: (position, rotation, scale) => {
                 tags.emit('setAttribute', {
                   id: entityId,
                   name: attributeName,
@@ -157,16 +159,31 @@ class World {
             this._transformGizmo = transformGizmo;
           }
 
-          updateMatrix(newValue) {
-            const position = new THREE.Vector3(newValue[0], newValue[1], newValue[2]);
-            this._boundingBox.setFromCenterAndSize(position, boundingBoxSize);
+          updateBoundingBox(position, rotation, scale) {
+            const scalePosition = scale.clone().divideScalar(this._transformGizmo.scaleGizmo.scaleFactor);
+            const sizeFactor = Math.max(scalePosition.x, scalePosition.y, scalePosition.z, 1) * 2 * 1.1;
+            const size = new THREE.Vector3(sizeFactor, sizeFactor, sizeFactor);
 
-            const rotation = new THREE.Quaternion(newValue[3], newValue[4], newValue[5], newValue[6]);
-            const scale = new THREE.Vector3(newValue[7], newValue[8], newValue[9]);
+            this._boundingBox.setFromCenterAndSize(position, size);
+          }
+
+          updateTransformGizmo(position, rotation, scale) {
+            const scalePosition = scale.clone().divideScalar(this._transformGizmo.scaleGizmo.scaleFactor);
+
             this._transformGizmo.position.copy(position);
             this._transformGizmo.rotateGizmo.quaternion.copy(rotation);
-            this._transformGizmo.scaleGizmo.position.copy(scale.clone().divideScalar(this._transformGizmo.scaleGizmo.scaleFactor));
+            this._transformGizmo.scaleGizmo.position.copy(scalePosition);
+
             this._transformGizmo.updateBoxTargets();
+          }
+
+          updateMatrix(newValue) {
+            const position = new THREE.Vector3(newValue[0], newValue[1], newValue[2]);
+            const rotation = new THREE.Quaternion(newValue[3], newValue[4], newValue[5], newValue[6]);
+            const scale = new THREE.Vector3(newValue[7], newValue[8], newValue[9]);
+
+            this.updateBoundingBox(position, rotation, scale);
+            this.updateTransformGizmo(position, rotation, scale);
           }
 
           checkIntersection(controllerLine) {

@@ -85,12 +85,23 @@ class Transform {
 
           const rotateScale = 0.5;
           const scaleScale = 0.5;
-          const _makeTransformGizmo = ({onupdate}) => {
+          const _makeTransformGizmo = ({onpreview, onupdate}) => {
             const transformId = _makeId();
 
             const transformGizmo = (() => {
               const object = new THREE.Object3D();
               object.transformId = transformId;
+              object.getProperties = () => {
+                const {position} = object;
+                const {quaternion: rotation} = rotateGizmo;
+                const scale = scaleGizmo.position.clone().multiplyScalar(scaleGizmo.scaleFactor);
+                return {
+                  position,
+                  rotation,
+                  scale,
+                };
+              }
+              object.onpreview = onpreview;
               object.onupdate = onupdate;
 
               const transformGizmo = new THREETransformGizmoTranslate();
@@ -317,15 +328,12 @@ class Transform {
               const {transformId} = src;
               const transformGizmo = transformGizmos.find(transformGizmo => transformGizmo.transformId === transformId);
 
-              const {position} = transformGizmo;
-              const {quaternion: rotation} = transformGizmo.rotateGizmo;
-              const scale = transformGizmo.scaleGizmo.position.clone().multiplyScalar(transformGizmo.scaleGizmo.scaleFactor);
-
-              transformGizmo.onupdate({
+              const {position, rotation, scale} = transformGizmo.getProperties();
+              transformGizmo.onupdate(
                 position,
                 rotation,
-                scale,
-              });
+                scale
+              );
 
               transformGizmo.updateBoxTargets();
 
@@ -357,6 +365,11 @@ class Transform {
                     const {transformId, mode, startControllerPosition, startControllerRotation, startIntersectionPoint, startPosition} = src;
                     const transformGizmo = transformGizmos.find(transformGizmo => transformGizmo.transformId === transformId);
 
+                    const _preview = () => {
+                      const {position, rotation, scale} = transformGizmo.getProperties();
+                      transformGizmo.onpreview(position, rotation, scale);
+                    };
+
                     if (mode === 'x') {
                       const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 0, 1), startIntersectionPoint);
                       const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale} = gamepad;
@@ -372,6 +385,8 @@ class Transform {
                         const positionDiff = endIntersectionPoint.clone().sub(startIntersectionPoint);
                         const endPosition = startPosition.clone().add(positionDiff);
                         transformGizmo.position.copy(endPosition);
+
+                        _preview();
                       }
                     } else if (mode === 'y') {
                       const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 0, 1), startIntersectionPoint);
@@ -388,6 +403,8 @@ class Transform {
                         const positionDiff = endIntersectionPoint.clone().sub(startIntersectionPoint);
                         const endPosition = startPosition.clone().add(positionDiff);
                         transformGizmo.position.copy(endPosition);
+
+                        _preview();
                       }
                     } else if (mode === 'z') {
                       const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(1, 0, 0), startIntersectionPoint);
@@ -404,6 +421,8 @@ class Transform {
                         const positionDiff = endIntersectionPoint.clone().sub(startIntersectionPoint);
                         const endPosition = startPosition.clone().add(positionDiff);
                         transformGizmo.position.copy(endPosition);
+
+                        _preview();
                       }
                     } else if (mode === 'xy') {
                       const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 0, 1), startIntersectionPoint);
@@ -415,6 +434,8 @@ class Transform {
                         const positionDiff = endIntersectionPoint.clone().sub(startIntersectionPoint);
                         const endPosition = startPosition.clone().add(positionDiff);
                         transformGizmo.position.copy(endPosition);
+
+                        _preview();
                       }
                     } else if (mode === 'yz') {
                       const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(1, 0, 0), startIntersectionPoint);
@@ -426,6 +447,8 @@ class Transform {
                         const positionDiff = endIntersectionPoint.clone().sub(startIntersectionPoint);
                         const endPosition = startPosition.clone().add(positionDiff);
                         transformGizmo.position.copy(endPosition);
+
+                        _preview();
                       }
                     } else if (mode === 'xz') {
                       const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 1, 0), startIntersectionPoint);
@@ -437,6 +460,8 @@ class Transform {
                         const positionDiff = endIntersectionPoint.clone().sub(startIntersectionPoint);
                         const endPosition = startPosition.clone().add(positionDiff);
                         transformGizmo.position.copy(endPosition);
+
+                        _preview();
                       }
                     } else if (mode === 'xyz') {
                       const {worldPosition: controllerPosition, worldRotation: controllerRotation} = gamepad;
@@ -450,6 +475,8 @@ class Transform {
                           startPosition.clone().sub(startIntersectionPoint)
                         );
                       transformGizmo.position.copy(endPosition);
+
+                      _preview();
                     } else if (mode === 'rotate') {
                       const {worldPosition: controllerPosition, worldRotation: controllerRotation} = gamepad;
                       const endPosition = controllerPosition.clone()
@@ -465,6 +492,8 @@ class Transform {
                         upVector.clone().applyQuaternion(controllerRotation)
                       );
                       transformGizmo.rotateGizmo.quaternion.setFromRotationMatrix(rotationMatrix);
+
+                      _preview();
                     } else if (mode === 'scale') {
                       const {worldPosition: controllerPosition, worldRotation: controllerRotation} = gamepad;
                       const endPosition = controllerPosition.clone()
@@ -476,6 +505,8 @@ class Transform {
                         .closestPointToPoint(endPosition, false);
                       const endScalePoint = endLinePoint.clone().sub(startPosition);
                       transformGizmo.scaleGizmo.position.copy(endScalePoint);
+
+                      _preview();
                     }
 
                     dragState.dst = null;
