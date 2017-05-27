@@ -27,7 +27,6 @@ import {
 } from './lib/constants/tags';
 import menuUtilser from './lib/utils/menu';
 import tagsRender from './lib/render/tags';
-import TransformControls from './lib/three-extra/TransformControls';
 
 const SIDES = ['left', 'right'];
 const AXES = ['x', 'y', 'z'];
@@ -79,6 +78,7 @@ class Tags {
       '/core/engines/cyborg',
       '/core/engines/biolumi',
       '/core/engines/keyboard',
+      '/core/engines/transform',
       '/core/engines/loader',
       '/core/engines/fs',
       '/core/engines/somnifer',
@@ -96,6 +96,7 @@ class Tags {
         cyborg,
         biolumi,
         keyboard,
+        transform,
         loader,
         fs,
         somnifer,
@@ -110,15 +111,7 @@ class Tags {
           const {events} = jsUtils;
           const {EventEmitter} = events;
 
-          const THREETransformControls = TransformControls(THREE);
-          const {
-            THREETransformGizmoTranslate,
-            THREETransformGizmoRotate,
-            THREETransformGizmoScale,
-          } = THREETransformControls;
-
           const upVector = new THREE.Vector3(0, 1, 0);
-          const oneVector = new THREE.Vector3(1, 1, 1);
           const lineGeometry = geometryUtils.unindexBufferGeometry(new THREE.BoxBufferGeometry(1, 1, 1));
 
           const nubbinMaterial = new THREE.MeshBasicMaterial({
@@ -133,185 +126,6 @@ class Tags {
           cleanups.push(() => {
             scalerMaterial.dispose();
           });
-
-          const transformGizmos = [];
-          rend.registerAuxObject('transformGizmos', transformGizmos);
-
-          const rotateScale = 0.5;
-          const scaleScale = 0.5;
-          const _makeTransformGizmo = ({tagId, attributeName}) => {
-            const transformGizmo = (() => {
-              const object = new THREE.Object3D();
-              object.tagId = tagId;
-              object.attributeName = attributeName;
-
-              const transformGizmo = new THREETransformGizmoTranslate();
-              object.add(transformGizmo);
-              object.transformGizmo = transformGizmo;
-
-              const rotateGizmo = new THREETransformGizmoRotate();
-              const rotateGizmoNubbin = (() => {
-                const geometry = new THREE.SphereBufferGeometry(0.1 / 2 / rotateScale, 8, 8);
-                const material = nubbinMaterial;
-                const mesh = new THREE.Mesh(geometry, material);
-                mesh.position.z = 1;
-                return mesh;
-              })();
-              rotateGizmo.add(rotateGizmoNubbin);
-              rotateGizmo.scale.set(rotateScale, rotateScale, rotateScale);
-              object.add(rotateGizmo);
-              object.rotateGizmo = rotateGizmo;
-
-              const scaleGizmo = (() => {
-                const geometry = new THREE.BoxBufferGeometry(0.075, 0.075, 0.075);
-                const material = scalerMaterial;
-                const mesh = new THREE.Mesh(geometry, material);
-                mesh.position.set(scaleScale, scaleScale, scaleScale);
-                mesh.scaleFactor = mesh.position.length();
-                return mesh;
-              })();
-              object.add(scaleGizmo);
-              object.scaleGizmo = scaleGizmo;
-
-              return object;
-            })();
-
-            let boxAnchors = null;
-            const _removeBoxTargets = () => {
-              if (boxAnchors) {
-                for (let i = 0; i < boxAnchors.length; i++) {
-                  const boxAnchor = boxAnchors[i];
-                  rend.removeBoxAnchor(boxAnchor);
-                }
-                boxAnchors = null;
-              }
-            };
-            transformGizmo.removeBoxTargets = _removeBoxTargets;
-            const _updateBoxTargets = () => {
-              _removeBoxTargets();
-
-              boxAnchors = [
-                {
-                  boxTarget: geometryUtils.makeBoxTarget(
-                    transformGizmo.position.clone().add(new THREE.Vector3(1, 0, 0)),
-                    new THREE.Quaternion(),
-                    new THREE.Vector3(1, 1, 1),
-                    new THREE.Vector3(0.2, 0.1, 0.1)
-                  ),
-                  anchor: {
-                    onmousedown: `transform:${tagId}:${attributeName}:x`,
-                  },
-                },
-                {
-                  boxTarget: geometryUtils.makeBoxTarget(
-                    transformGizmo.position.clone().add(new THREE.Vector3(0, 1, 0)),
-                    new THREE.Quaternion(),
-                    new THREE.Vector3(1, 1, 1),
-                    new THREE.Vector3(0.1, 0.2, 0.1)
-                  ),
-                  anchor: {
-                    onmousedown: `transform:${tagId}:${attributeName}:y`,
-                  },
-                },
-                {
-                  boxTarget: geometryUtils.makeBoxTarget(
-                    transformGizmo.position.clone().add(new THREE.Vector3(0, 0, 1)),
-                    new THREE.Quaternion(),
-                    new THREE.Vector3(1, 1, 1),
-                    new THREE.Vector3(0.1, 0.1, 0.2)
-                  ),
-                  anchor: {
-                    onmousedown: `transform:${tagId}:${attributeName}:z`,
-                  },
-                },
-                {
-                  boxTarget: geometryUtils.makeBoxTarget(
-                    transformGizmo.position.clone(),
-                    new THREE.Quaternion(),
-                    new THREE.Vector3(1, 1, 1),
-                    new THREE.Vector3(0.2, 0.2, 0.2)
-                  ),
-                  anchor: {
-                    onmousedown: `transform:${tagId}:${attributeName}:xyz`,
-                  },
-                },
-                {
-                  boxTarget: geometryUtils.makeBoxTarget(
-                    transformGizmo.position.clone().add(new THREE.Vector3(0.3 / 2, 0.3 / 2, 0)),
-                    new THREE.Quaternion(),
-                    new THREE.Vector3(1, 1, 1),
-                    new THREE.Vector3(0.3, 0.3, 0.01)
-                  ),
-                  anchor: {
-                    onmousedown: `transform:${tagId}:${attributeName}:xy`,
-                  },
-                },
-                {
-                  boxTarget: geometryUtils.makeBoxTarget(
-                    transformGizmo.position.clone().add(new THREE.Vector3(0, 0.3 / 2, 0.3 / 2)),
-                    new THREE.Quaternion(),
-                    new THREE.Vector3(1, 1, 1),
-                    new THREE.Vector3(0.01, 0.3, 0.3)
-                  ),
-                  anchor: {
-                    onmousedown: `transform:${tagId}:${attributeName}:yz`,
-                  },
-                },
-                {
-                  boxTarget: geometryUtils.makeBoxTarget(
-                    transformGizmo.position.clone().add(new THREE.Vector3(0.3 / 2, 0, 0.3 / 2)),
-                    new THREE.Quaternion(),
-                    new THREE.Vector3(1, 1, 1),
-                    new THREE.Vector3(0.3, 0.01, 0.3)
-                  ),
-                  anchor: {
-                    onmousedown: `transform:${tagId}:${attributeName}:xz`,
-                  },
-                },
-                {
-                  boxTarget: geometryUtils.makeBoxTarget(
-                    transformGizmo.position.clone().add(
-                      new THREE.Vector3(0, 0, rotateScale)
-                        .applyQuaternion(transformGizmo.rotateGizmo.quaternion)
-                    ),
-                    new THREE.Quaternion(),
-                    new THREE.Vector3(1, 1, 1),
-                    new THREE.Vector3(0.1, 0.1, 0.1)
-                  ),
-                  anchor: {
-                    onmousedown: `transform:${tagId}:${attributeName}:rotate`,
-                  },
-                },
-                {
-                  boxTarget: geometryUtils.makeBoxTarget(
-                    transformGizmo.position.clone().add(transformGizmo.scaleGizmo.position),
-                    new THREE.Quaternion(),
-                    new THREE.Vector3(1, 1, 1),
-                    new THREE.Vector3(0.1, 0.1, 0.1)
-                  ),
-                  anchor: {
-                    onmousedown: `transform:${tagId}:${attributeName}:scale`,
-                  },
-                },
-              ];
-              for (let i = 0; i < boxAnchors.length; i++) {
-                const boxAnchor = boxAnchors[i];
-                rend.addBoxAnchor(boxAnchor);
-              }
-            };
-            transformGizmo.updateBoxTargets = _updateBoxTargets;
-
-            transformGizmo.destroy = () => {
-              _removeBoxTargets();
-            };
-
-            /* const scaleGizmo = new THREETransformGizmoScale();
-            scaleGizmo.position.x = 2;
-            scaleGizmo.position.y = 1.5;
-            scene.add(scaleGizmo); */
-
-            return transformGizmo;
-          };
 
           const transparentImg = biolumi.getTransparentImg();
 
@@ -1671,20 +1485,26 @@ class Tags {
                     detailsState.transforms.push({
                       tagId,
                       attributeName,
-                    })
+                    });
                     
                     _updateAttributes();
 
-                    const transformGizmo = _makeTransformGizmo({
-                      tagId,
-                      attributeName,
+                    const transformGizmo = transform.makeTransformGizmo({
+                      onupdate: ({position, rotation, scale}) => {
+                        tagsApi.emit('setAttribute', {
+                          id: tagId,
+                          name: attributeName,
+                          value: position.toArray().concat(rotation.toArray()).concat(scale.toArray()),
+                        });
+                      },
                     });
+                    transformGizmo.tagId = tagId;
+                    transformGizmo.attributeName = attributeName;
                     transformGizmo.position.set(attributeValue[0], attributeValue[1], attributeValue[2]);
                     transformGizmo.rotateGizmo.quaternion.set(attributeValue[3], attributeValue[4], attributeValue[5], attributeValue[6]);
                     transformGizmo.scaleGizmo.position.set(attributeValue[7], attributeValue[8], attributeValue[9]).divideScalar(transformGizmo.scaleGizmo.scaleFactor);
                     scene.add(transformGizmo);
                     transformGizmo.updateBoxTargets();
-                    transformGizmos.push(transformGizmo);
 
                     keyboard.tryBlur();
                   } else if (action === 'untransform') {
@@ -1693,11 +1513,9 @@ class Tags {
 
                     _updateAttributes();
 
-                    const transformGizmoIndex = transformGizmos.findIndex(transformGizmo => transformGizmo.tagId === tagId && transformGizmo.attributeName === attributeName);
-                    const transformGizmo = transformGizmos[transformGizmoIndex];
+                    const transformGizmo = transform.getTransformGizmos().find(transformGizmo => transformGizmo.tagId === tagId && transformGizmo.attributeName === attributeName);
                     scene.remove(transformGizmo);
-                    transformGizmo.destroy();
-                    transformGizmos.splice(transformGizmoIndex, 1);
+                    transform.destroyTransformGizmo(transformGizmo);
 
                     keyboard.tryBlur();
                   } else if (action === 'focus') {
@@ -1885,48 +1703,8 @@ class Tags {
                 return false;
               }
             };
-            const _doClickTransformGizmo = () => {
-              const hoverState = rend.getHoverState(side);
-              const {intersectionPoint} = hoverState;
 
-              if (intersectionPoint) {
-                const {anchor} = hoverState;
-                const onmousedown = (anchor && anchor.onmousedown) || '';
-
-                let match;
-                if (match = onmousedown.match(/^transform:([^:]+):([^:]+):(x|y|z|xyz|xy|yz|xz|rotate|scale)$/)) {
-                  const tagId = match[1];
-                  const attributeName = match[2];
-                  const mode = match[3];
-
-                  const dragState = dragStates[side];
-                  const {gamepads} = webvr.getStatus();
-                  const gamepad = gamepads[side];
-                  const {worldPosition: controllerPosition, worldRotation: controllerRotation} = gamepad;
-                  const transformGizmo = transformGizmos.find(transformGizmo => transformGizmo.tagId === tagId && transformGizmo.attributeName === attributeName);
-                  dragState.src = {
-                    type: 'transform',
-                    tagId: tagId,
-                    attributeName: attributeName,
-                    mode: mode,
-                    startControllerPosition: controllerPosition.clone(),
-                    startControllerRotation: controllerRotation.clone(),
-                    startIntersectionPoint: intersectionPoint.clone(),
-                    startPosition: transformGizmo.position.clone(),
-                  };
-
-                  transformGizmo.removeBoxTargets();
-
-                  return true;
-                } else {
-                  return false;
-                }
-              } else {
-                return false;
-              }
-            };
-
-            if (_doClickTag() || _doClickTransformGizmo()) {
+            if (_doClickTag()) {
               e.stopImmediatePropagation();
             }
           };
@@ -2168,25 +1946,6 @@ class Tags {
               dragState.dst = null;
 
               return true;
-            } else if (srcType === 'transform') {
-              const {tagId, attributeName} = src;
-              const transformGizmo = transformGizmos.find(transformGizmo => transformGizmo.tagId === tagId && transformGizmo.attributeName === attributeName);
-              const {position} = transformGizmo;
-              const {quaternion: rotation} = transformGizmo.rotateGizmo;
-              const scale = transformGizmo.scaleGizmo.position.clone().multiplyScalar(transformGizmo.scaleGizmo.scaleFactor);
-
-              tagsApi.emit('setAttribute', {
-                id: tagId,
-                name: attributeName,
-                value: position.toArray().concat(rotation.toArray()).concat(scale.toArray()),
-              });
-
-              transformGizmo.updateBoxTargets();
-
-              dragState.src = null;
-              dragState.dst = null;
-
-              return true;
             } else {
               dragState.src = null;
               dragState.dst = null;
@@ -2315,132 +2074,6 @@ class Tags {
                       } else {
                         dragState.dst = null;
                       }
-                    } else if (srcType === 'transform') {
-                      const {tagId, attributeName, mode, startControllerPosition, startControllerRotation, startIntersectionPoint, startPosition} = src;
-                      const transformGizmo = transformGizmos.find(transformGizmo => transformGizmo.tagId === tagId && transformGizmo.attributeName === attributeName);
-
-                      if (mode === 'x') {
-                        const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 0, 1), startIntersectionPoint);
-                        const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale} = gamepad;
-                        const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation, controllerScale);
-                        const controllerIntersectionPoint = plane.intersectLine(controllerLine);
-
-                        if (controllerIntersectionPoint) {
-                          const endIntersectionPoint = new THREE.Vector3(
-                            controllerIntersectionPoint.x,
-                            startIntersectionPoint.y,
-                            startIntersectionPoint.z
-                          );
-                          const positionDiff = endIntersectionPoint.clone().sub(startIntersectionPoint);
-                          const endPosition = startPosition.clone().add(positionDiff);
-                          transformGizmo.position.copy(endPosition);
-                        }
-                      } else if (mode === 'y') {
-                        const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 0, 1), startIntersectionPoint);
-                        const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale} = gamepad;
-                        const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation, controllerScale);
-                        const controllerIntersectionPoint = plane.intersectLine(controllerLine);
-
-                        if (controllerIntersectionPoint) {
-                          const endIntersectionPoint = new THREE.Vector3(
-                            startIntersectionPoint.x,
-                            controllerIntersectionPoint.y,
-                            startIntersectionPoint.z
-                          );
-                          const positionDiff = endIntersectionPoint.clone().sub(startIntersectionPoint);
-                          const endPosition = startPosition.clone().add(positionDiff);
-                          transformGizmo.position.copy(endPosition);
-                        }
-                      } else if (mode === 'z') {
-                        const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(1, 0, 0), startIntersectionPoint);
-                        const {position: controllerPosition, rotation: controllerRotation, scale: controllerScale} = gamepad;
-                        const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation, controllerScale);
-                        const controllerIntersectionPoint = plane.intersectLine(controllerLine);
-
-                        if (controllerIntersectionPoint) {
-                          const endIntersectionPoint = new THREE.Vector3(
-                            startIntersectionPoint.x,
-                            startIntersectionPoint.y,
-                            controllerIntersectionPoint.z
-                          );
-                          const positionDiff = endIntersectionPoint.clone().sub(startIntersectionPoint);
-                          const endPosition = startPosition.clone().add(positionDiff);
-                          transformGizmo.position.copy(endPosition);
-                        }
-                      } else if (mode === 'xy') {
-                        const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 0, 1), startIntersectionPoint);
-                        const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale} = gamepad;
-                        const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation, controllerScale);
-                        const endIntersectionPoint = plane.intersectLine(controllerLine);
-
-                        if (endIntersectionPoint) {
-                          const positionDiff = endIntersectionPoint.clone().sub(startIntersectionPoint);
-                          const endPosition = startPosition.clone().add(positionDiff);
-                          transformGizmo.position.copy(endPosition);
-                        }
-                      } else if (mode === 'yz') {
-                        const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(1, 0, 0), startIntersectionPoint);
-                        const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale} = gamepad;
-                        const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation, controllerScale);
-                        const endIntersectionPoint = plane.intersectLine(controllerLine);
-
-                        if (endIntersectionPoint) {
-                          const positionDiff = endIntersectionPoint.clone().sub(startIntersectionPoint);
-                          const endPosition = startPosition.clone().add(positionDiff);
-                          transformGizmo.position.copy(endPosition);
-                        }
-                      } else if (mode === 'xz') {
-                        const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 1, 0), startIntersectionPoint);
-                        const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale} = gamepad;
-                        const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation, controllerScale);
-                        const endIntersectionPoint = plane.intersectLine(controllerLine);
-
-                        if (endIntersectionPoint) {
-                          const positionDiff = endIntersectionPoint.clone().sub(startIntersectionPoint);
-                          const endPosition = startPosition.clone().add(positionDiff);
-                          transformGizmo.position.copy(endPosition);
-                        }
-                      } else if (mode === 'xyz') {
-                        const {worldPosition: controllerPosition, worldRotation: controllerRotation} = gamepad;
-                        const endPosition = controllerPosition.clone()
-                          .add(
-                            new THREE.Vector3(0, 0, -1)
-                              .applyQuaternion(controllerRotation)
-                              .multiplyScalar(startIntersectionPoint.clone().sub(startControllerPosition).length())
-                          )
-                          .add(
-                            startPosition.clone().sub(startIntersectionPoint)
-                          );
-                        transformGizmo.position.copy(endPosition);
-                      } else if (mode === 'rotate') {
-                        const {worldPosition: controllerPosition, worldRotation: controllerRotation} = gamepad;
-                        const endPosition = controllerPosition.clone()
-                          .add(
-                            new THREE.Vector3(0, 0, -1)
-                              .applyQuaternion(controllerRotation)
-                          );
-                        const endSpherePoint = new THREE.Sphere(startPosition.clone(), rotateScale)
-                          .clampPoint(endPosition);
-                        const rotationMatrix = new THREE.Matrix4().lookAt(
-                          endSpherePoint,
-                          startPosition,
-                          upVector.clone().applyQuaternion(controllerRotation)
-                        );
-                        transformGizmo.rotateGizmo.quaternion.setFromRotationMatrix(rotationMatrix);
-                      } else if (mode === 'scale') {
-                        const {worldPosition: controllerPosition, worldRotation: controllerRotation} = gamepad;
-                        const endPosition = controllerPosition.clone()
-                          .add(
-                            new THREE.Vector3(0, 0, -1)
-                              .applyQuaternion(controllerRotation)
-                          );
-                        const endLinePoint = new THREE.Line3(startPosition.clone(), startPosition.clone().add(oneVector))
-                          .closestPointToPoint(endPosition, false);
-                        const endScalePoint = endLinePoint.clone().sub(startPosition);
-                        transformGizmo.scaleGizmo.position.copy(endScalePoint);
-                      }
-
-                      dragState.dst = null;
                     } else {
                       dragState.dst = null;
                     }
@@ -3406,13 +3039,10 @@ class Tags {
                           attributesMesh.remove(attributeMesh);
                           attributeMesh.destroy();
 
-                          const transformGizmoIndex = transformGizmos.findIndex(transformGizmo =>
-                            transformGizmo.tagId === item.id && transformGizmo.attributeName === attributeName
-                          );
-                          if (transformGizmoIndex !== -1) {
-                            const transformGizmo = transformGizmos[transformGizmoIndex];
-                            transformGizmo.destroy();
-                            transformGizmo.splice(transformGizmoIndex, 1);
+                          const transformGizmo = transform.getTransformGizmos()
+                            .find(transformGizmo => transformGizmo.tagId === item.id && transformGizmo.attributeName === attributeName);
+                          if (transformGizmo) {
+                            transform.destroyTransformGizmo(transformGizmo);
                           }
                         } else {
                           index[attributeName] = attributeMesh;
