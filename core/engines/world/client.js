@@ -67,6 +67,7 @@ class World {
       '/core/engines/rend',
       '/core/engines/wallet',
       '/core/engines/keyboard',
+      '/core/engines/transform',
       '/core/engines/loader',
       '/core/engines/tags',
       '/core/engines/fs',
@@ -82,6 +83,7 @@ class World {
       rend,
       wallet,
       keyboard,
+      transform,
       loader,
       tags,
       fs,
@@ -142,21 +144,29 @@ class World {
 
             const boundingBox = new THREE.Box3();
             this._boundingBox = boundingBox;
-            const boundingBoxMesh = (() => {
-              const geometry = boundingBoxGeometry;
-              const material = boundingBoxMaterial;
-              const mesh = new THREE.Mesh(geometry, material);
-              mesh.visible = false;
-              return mesh;
-            })();
-            scene.add(boundingBoxMesh);
-            this._boundingBoxMesh = boundingBoxMesh;
+            const transformGizmo = transform.makeTransformGizmo({
+              onupdate: ({position, rotation, scale}) => {
+                tags.emit('setAttribute', {
+                  id: entityId,
+                  name: attributeName,
+                  value: position.toArray().concat(rotation.toArray()).concat(scale.toArray()),
+                });
+              },
+            });
+            scene.add(transformGizmo);
+            this._transformGizmo = transformGizmo;
           }
 
-          updatePosition(newValue) {
+          updateMatrix(newValue) {
             const position = new THREE.Vector3(newValue[0], newValue[1], newValue[2]);
             this._boundingBox.setFromCenterAndSize(position, boundingBoxSize);
-            this._boundingBoxMesh.position.copy(position);
+
+            const rotation = new THREE.Quaternion(newValue[3], newValue[4], newValue[5], newValue[6]);
+            const scale = new THREE.Vector3(newValue[7], newValue[8], newValue[9])
+              .divideScalar(this._transformGizmo.scaleGizmo.scaleFactor);
+            this._transformGizmo.position.copy(position);
+            this._transformGizmo.rotateGizmo.quaternion.copy(rotation);
+            this._transformGizmo.scaleGizmo.scale.copy(scale);
           }
 
           checkIntersection(controllerLine) {
@@ -164,15 +174,16 @@ class World {
           }
 
           setVisibility(visible) {
-            if (visible && !this._boundingBoxMesh.visible) {
-              this._boundingBoxMesh.visible = true;
-            } else if (!visible && this._boundingBoxMesh.visible) {
-              this._boundingBoxMesh.visible = false;
+            if (visible && !this._transformGizmo.visible) {
+              this._transformGizmo.visible = true;
+            } else if (!visible && this._transformGizmo.visible) {
+              this._transformGizmo.visible = false;
             }
           }
 
           destroy() {
-            scene.remove(this._boundingBoxMesh);
+            scene.remove(this._transformGizmo);
+            transform.destroyTransformGizmo(this._transformGizmo);
           }
         }
         const matrixAttributes = [];
@@ -1606,7 +1617,7 @@ class World {
 
             if (oldValue === null && newValue !== null) {
               const matrixAttribute = new MatrixAttribute(entityId, attributeName);
-              matrixAttribute.updatePosition(newValue);
+              matrixAttribute.updateMatrix(newValue);
               matrixAttributes.push(matrixAttribute);
             } else if (oldValue !== null && newValue === null) {
               const index = matrixAttributes.findIndex(matrixAttribute => matrixAttribute.entityId === entityId && matrixAttribute.attributeName === attributeName);
@@ -1615,7 +1626,7 @@ class World {
               matrixAttributes.splice(index, 1);
             } else if (oldValue !== null && newValue !== null) {
               const matrixAttribute = matrixAttributes.find(matrixAttribute => matrixAttribute.entityId === entityId && matrixAttribute.attributeName === attributeName);
-              matrixAttribute.updatePosition(newValue);
+              matrixAttribute.updateMatrix(newValue);
             }
           }
         };

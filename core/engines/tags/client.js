@@ -78,7 +78,6 @@ class Tags {
       '/core/engines/cyborg',
       '/core/engines/biolumi',
       '/core/engines/keyboard',
-      '/core/engines/transform',
       '/core/engines/loader',
       '/core/engines/fs',
       '/core/engines/somnifer',
@@ -96,7 +95,6 @@ class Tags {
         cyborg,
         biolumi,
         keyboard,
-        transform,
         loader,
         fs,
         somnifer,
@@ -1487,7 +1485,7 @@ class Tags {
                 const onclick = (anchor && anchor.onclick) || '';
 
                 let match;
-                if (match = onclick.match(/^attribute:([^:]+):([^:]+)(?::([^:]+))?:((?:un)?transform|focus|set|tweak|toggle|choose)(?::([^:]+))?$/)) {
+                if (match = onclick.match(/^attribute:([^:]+):([^:]+)(?::([^:]+))?:(focus|set|tweak|toggle|choose)(?::([^:]+))?$/)) {
                   const tagId = match[1];
                   const attributeName = match[2];
                   const key = match[3];
@@ -1505,44 +1503,7 @@ class Tags {
                     attributesMesh.update();
                   };
 
-                  if (action === 'transform') {
-                    detailsState.transforms.push({
-                      tagId,
-                      attributeName,
-                    });
-                    
-                    _updateAttributes();
-
-                    const transformGizmo = transform.makeTransformGizmo({
-                      onupdate: ({position, rotation, scale}) => {
-                        tagsApi.emit('setAttribute', {
-                          id: tagId,
-                          name: attributeName,
-                          value: position.toArray().concat(rotation.toArray()).concat(scale.toArray()),
-                        });
-                      },
-                    });
-                    transformGizmo.tagId = tagId;
-                    transformGizmo.attributeName = attributeName;
-                    transformGizmo.position.set(attributeValue[0], attributeValue[1], attributeValue[2]);
-                    transformGizmo.rotateGizmo.quaternion.set(attributeValue[3], attributeValue[4], attributeValue[5], attributeValue[6]);
-                    transformGizmo.scaleGizmo.position.set(attributeValue[7], attributeValue[8], attributeValue[9]).divideScalar(transformGizmo.scaleGizmo.scaleFactor);
-                    scene.add(transformGizmo);
-                    transformGizmo.updateBoxTargets();
-
-                    keyboard.tryBlur();
-                  } else if (action === 'untransform') {
-                    const transformIndex = detailsState.transforms.findIndex(transform => transform.tagId === tagId && transform.attributeName === attributeName);
-                    detailsState.transforms.splice(transformIndex, 1);
-
-                    _updateAttributes();
-
-                    const transformGizmo = transform.getTransformGizmos().find(transformGizmo => transformGizmo.tagId === tagId && transformGizmo.attributeName === attributeName);
-                    scene.remove(transformGizmo);
-                    transform.destroyTransformGizmo(transformGizmo);
-
-                    keyboard.tryBlur();
-                  } else if (action === 'focus') {
+                  if (action === 'focus') {
                     const {value: hoverValue} = hoverState;
                     const {type} = _getAttributeSpec(attributeName);
 
@@ -3071,12 +3032,6 @@ class Tags {
                         if (!attribute) {
                           attributesMesh.remove(attributeMesh);
                           attributeMesh.destroy();
-
-                          const transformGizmo = transform.getTransformGizmos()
-                            .find(transformGizmo => transformGizmo.tagId === item.id && transformGizmo.attributeName === attributeName);
-                          if (transformGizmo) {
-                            transform.destroyTransformGizmo(transformGizmo);
-                          }
                         } else {
                           index[attributeName] = attributeMesh;
                         }
