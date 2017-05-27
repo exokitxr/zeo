@@ -167,6 +167,7 @@ class World {
             this._transformGizmo.position.copy(position);
             this._transformGizmo.rotateGizmo.quaternion.copy(rotation);
             this._transformGizmo.scaleGizmo.scale.copy(scale);
+            this._transformGizmo.updateBoxTargets();
           }
 
           checkIntersection(controllerLine) {
