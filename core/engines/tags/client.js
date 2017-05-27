@@ -167,6 +167,7 @@ class Tags {
                 const material = scalerMaterial;
                 const mesh = new THREE.Mesh(geometry, material);
                 mesh.position.set(scaleScale, scaleScale, scaleScale);
+                mesh.scaleFactor = mesh.position.length();
                 return mesh;
               })();
               object.add(scaleGizmo);
@@ -1679,6 +1680,8 @@ class Tags {
                       attributeName,
                     });
                     transformGizmo.position.set(attributeValue[0], attributeValue[1], attributeValue[2]);
+                    transformGizmo.rotateGizmo.quaternion.set(attributeValue[3], attributeValue[4], attributeValue[5], attributeValue[6]);
+                    transformGizmo.scaleGizmo.position.set(attributeValue[7], attributeValue[8], attributeValue[9]).divideScalar(transformGizmo.scaleGizmo.scaleFactor);
                     scene.add(transformGizmo);
                     transformGizmo.updateBoxTargets();
                     transformGizmos.push(transformGizmo);
@@ -2168,7 +2171,9 @@ class Tags {
             } else if (srcType === 'transform') {
               const {tagId, attributeName} = src;
               const transformGizmo = transformGizmos.find(transformGizmo => transformGizmo.tagId === tagId && transformGizmo.attributeName === attributeName);
-              const {position, rotation, scale} = _decomposeObjectMatrixWorld(transformGizmo);
+              const {position} = transformGizmo;
+              const {quaternion: rotation} = transformGizmo.rotateGizmo;
+              const scale = transformGizmo.scaleGizmo.position.clone().multiplyScalar(transformGizmo.scaleGizmo.scaleFactor);
 
               tagsApi.emit('setAttribute', {
                 id: tagId,
