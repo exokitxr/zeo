@@ -1525,6 +1525,12 @@ class World {
           _handleRemoveTag(localUserId, src);
         };
         tags.on('remove', _tagsRemove);
+        const _tagsAttributeValueChanged = ({entityId, type, oldValue, newValue}) => {
+          if (type === 'matrix') {
+            console.log('matrix type', entityId, oldValue, newValue); // XXX
+          }
+        };
+        tags.on('attributeValueChanged', _tagsAttributeValueChanged);
         const _tagsOpen = ({id}) => {
           const src = _getTagIdSrc(id);
 
@@ -1903,6 +1909,7 @@ class World {
           tags.removeListener('addTag', _tagsAddTag);
           tags.removeListener('setAttribute', _tagsSetAttribute);
           tags.removeListener('remove', _tagsRemove);
+          tags.removeListener('attributeValueChanged', _tagsAttributeValueChanged);
           tags.removeListener('open', _tagsOpen);
           tags.removeListener('close', _tagsClose);
           tags.removeListener('openDetails', _tagsOpenDetails);

@@ -511,9 +511,18 @@ class Tags {
                         const {value: attributeValueJson} = entityAttribute;
                         const componentAttribute = componentAttributes[matchingAttribute];
                         const {type: attributeType} = componentAttribute;
-                        const attributeValue = menuUtils.castValueToCallbackValue(attributeValueJson, attributeType);
+                        const oldValue = null;
+                        const newValue = menuUtils.castValueToCallbackValue(attributeValueJson, attributeType);
 
-                        componentElement.entityAttributeValueChangedCallback(entityElement, matchingAttribute, null, attributeValue);
+                        componentElement.entityAttributeValueChangedCallback(entityElement, matchingAttribute, oldValue, newValue);
+                        const {item} = entityElement;
+                        const {id: entityId} = entityElement;
+                        tagsApi.emit('attributeValueChanged', {
+                          entityId: entityId,
+                          type: attributeType,
+                          oldValue: oldValue,
+                          newValue: newValue,
+                        });
                       }
                     }
                   }
@@ -601,12 +610,24 @@ class Tags {
                           }
                           if (newElementMatches) {
                             componentElement.entityAttributeValueChangedCallback(entityElement, attributeName, oldAttributeValue, newAttributeValue);
+                            tagsApi.emit('attributeValueChanged', {
+                              entityId: entityId,
+                              type: attributeType,
+                              oldValue: oldAttributeValue,
+                              newValue: newAttributeValue,
+                            });
                           }
                         } else { // removing attribute
                           if (oldElementMatches && !newElementMatches) { // if this is the last attribute that applied, unmount the component from the entity
                             _removeEntityCallback(componentElement, entityElement);
                           } else {
                             componentElement.entityAttributeValueChangedCallback(entityElement, attributeName, oldAttributeValue, newAttributeValue);
+                            tagsApi.emit('attributeValueChanged', {
+                              entityId: entityId,
+                              type: attributeType,
+                              oldValue: oldAttributeValue,
+                              newValue: newAttributeValue,
+                            });
                           }
                         }
                       }
@@ -2663,9 +2684,17 @@ class Tags {
                   const {value: attributeValueJson} = entityAttribute;
                   const componentAttribute = componentAttributes[matchingAttribute];
                   const {type: attributeType} = componentAttribute;
-                  const attributeValue = menuUtils.castValueToCallbackValue(attributeValueJson, attributeType);
+                  const oldValue = null;
+                  const newValue = menuUtils.castValueToCallbackValue(attributeValueJson, attributeType);
 
-                  componentElement.entityAttributeValueChangedCallback(entityElement, matchingAttribute, null, attributeValue);
+                  componentElement.entityAttributeValueChangedCallback(entityElement, matchingAttribute, oldValue, newValue);
+                  const {id: entityId} = entityItem;
+                  tagsApi.emit('attributeValueChanged', {
+                    entityId: entityId,
+                    type: attributeType,
+                    oldValue: oldValue,
+                    newValue: newValue,
+                  });
                 }
               }
 
