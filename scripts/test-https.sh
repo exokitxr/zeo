@@ -16,12 +16,6 @@ cp -ralf installed data/hub/servers/server_two/
   siteUrl='https://zeovr.io:8080' \
   homeUrl='https://zeovr.io:8081' \
   hubUrl='https://zeovr.io:8000' &
-./index.js home \
-  port=8081 secure=true \
-  hubUrl='https://zeovr.io:8000' \
-  dataDirectory='data' dataDirectorySrc='defaults/data' \
-  cryptoDirectory='crypto-test' cryptoDirectorySrc='defaults/crypto' \
-  installDirectory='installed' installDirectorySrc='installed' &
 ./index.js hub my \
   port=8000 secure=true \
   hubUrl='https://zeovr.io:8000' \
