@@ -162,11 +162,10 @@ class World {
             this._boundingBox.setFromCenterAndSize(position, boundingBoxSize);
 
             const rotation = new THREE.Quaternion(newValue[3], newValue[4], newValue[5], newValue[6]);
-            const scale = new THREE.Vector3(newValue[7], newValue[8], newValue[9])
-              .divideScalar(this._transformGizmo.scaleGizmo.scaleFactor);
+            const scale = new THREE.Vector3(newValue[7], newValue[8], newValue[9]);
             this._transformGizmo.position.copy(position);
             this._transformGizmo.rotateGizmo.quaternion.copy(rotation);
-            this._transformGizmo.scaleGizmo.scale.copy(scale);
+            this._transformGizmo.scaleGizmo.position.copy(scale.clone().divideScalar(this._transformGizmo.scaleGizmo.scaleFactor));
             this._transformGizmo.updateBoxTargets();
           }
 
