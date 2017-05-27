@@ -607,18 +607,6 @@ class Rend {
             this.emit('release', options);
           }
 
-          registerElement(pluginInstance, elementApi) {
-            const tag = archae.getName(pluginInstance);
-
-            _addModApiElement(tag, elementApi);
-          }
-
-          unregisterElement(pluginInstance) {
-            const tag = archae.getName(pluginInstance);
-
-            _removeModApiElement(tag);
-          }
-
           addPage(page) {
             uiTracker.addPage(page);
           }
