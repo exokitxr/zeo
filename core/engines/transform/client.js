@@ -55,6 +55,7 @@ class Transform {
 
           const upVector = new THREE.Vector3(0, 1, 0);
           const oneVector = new THREE.Vector3(1, 1, 1);
+          const scaleNormalVector = new THREE.Vector3(-1, 0, 1).normalize();
 
           const nubbinMaterial = new THREE.MeshBasicMaterial({
             color: 0xCCCCCC,
@@ -84,7 +85,8 @@ class Transform {
           const _getTransformGizmos = () => transformGizmos;
 
           const rotateScale = 0.5;
-          const scaleScale = 0.5;
+          const scaleScale = 0.3;
+          const scaleFactor = new THREE.Vector3(scaleScale, scaleScale, scaleScale).length();
           const _makeTransformGizmo = ({onpreview, onupdate}) => {
             const transformId = _makeId();
 
@@ -94,7 +96,7 @@ class Transform {
               object.getProperties = () => {
                 const {position} = object;
                 const {quaternion: rotation} = rotateGizmo;
-                const scale = scaleGizmo.position.clone().multiplyScalar(scaleGizmo.scaleFactor);
+                const scale = scaleGizmo.position.clone().divideScalar(scaleGizmo.scaleFactor);
                 return {
                   position,
                   rotation,
@@ -125,8 +127,7 @@ class Transform {
                 const geometry = new THREE.BoxBufferGeometry(0.075, 0.075, 0.075);
                 const material = scalerMaterial;
                 const mesh = new THREE.Mesh(geometry, material);
-                mesh.position.set(scaleScale, scaleScale, scaleScale);
-                mesh.scaleFactor = mesh.position.length();
+                mesh.scaleFactor = scaleFactor;
                 return mesh;
               })();
               object.add(scaleGizmo);
@@ -496,17 +497,22 @@ class Transform {
                       _preview();
                     } else if (mode === 'scale') {
                       const {worldPosition: controllerPosition, worldRotation: controllerRotation} = gamepad;
-                      const endPosition = controllerPosition.clone()
-                        .add(
-                          new THREE.Vector3(0, 0, -1)
-                            .applyQuaternion(controllerRotation)
+                      const endPlanePoint = new THREE.Plane()
+                        .setFromNormalAndCoplanarPoint(scaleNormalVector.clone(), startPosition.clone())
+                        .intersectLine(
+                          new THREE.Line3(
+                            controllerPosition.clone(),
+                            controllerPosition.clone().add(new THREE.Vector3(0, 0, -15).applyQuaternion(controllerRotation))
+                          )
                         );
-                      const endLinePoint = new THREE.Line3(startPosition.clone(), startPosition.clone().add(oneVector))
-                        .closestPointToPoint(endPosition, false);
-                      const endScalePoint = endLinePoint.clone().sub(startPosition);
-                      transformGizmo.scaleGizmo.position.copy(endScalePoint);
+                      if (endPlanePoint) {
+                        const endLinePoint = new THREE.Line3(startPosition.clone(), startPosition.clone().add(oneVector))
+                          .closestPointToPoint(endPlanePoint, false);
+                        const endScalePoint = endLinePoint.clone().sub(startPosition);
+                        transformGizmo.scaleGizmo.position.copy(endScalePoint);
 
-                      _preview();
+                        _preview();
+                      }
                     }
 
                     dragState.dst = null;
