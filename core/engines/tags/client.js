@@ -120,13 +120,57 @@ class Tags {
           const upVector = new THREE.Vector3(0, 1, 0);
           const lineGeometry = geometryUtils.unindexBufferGeometry(new THREE.BoxBufferGeometry(1, 1, 1));
 
-          const translateGizmos = [];
-          rend.registerAuxObject('translateGizmos', translateGizmos);
+          const nubbinMaterial = new THREE.MeshBasicMaterial({
+            color: 0xCCCCCC,
+          });
+          cleanups.push(() => {
+            nubbinMaterial.dispose();
+          });
+          const scalerMaterial = new THREE.MeshBasicMaterial({
+            color: 0xFFFF00,
+          });
+          cleanups.push(() => {
+            scalerMaterial.dispose();
+          });
 
-          const _makeTranslateGizmo = ({tagId, attributeName}) => {
-            const translateGizmo = new THREETransformGizmoTranslate();
-            translateGizmo.tagId = tagId;
-            translateGizmo.attributeName = attributeName;
+          const transformGizmos = [];
+          rend.registerAuxObject('transformGizmos', transformGizmos);
+
+          const _makeTransformGizmo = ({tagId, attributeName}) => {
+            const rotateScale = 0.5;
+            const scaleScale = 0.5;
+
+            const transformGizmo = (() => {
+              const object = new THREE.Object3D();
+              object.tagId = tagId;
+              object.attributeName = attributeName;
+
+              const transformGizmo = new THREETransformGizmoTranslate();
+              object.add(transformGizmo);
+
+              const rotateGizmo = new THREETransformGizmoRotate();
+              const rotateGizmoNubbin = (() => {
+                const geometry = new THREE.SphereBufferGeometry(0.1 / 2 / rotateScale, 8, 8);
+                const material = nubbinMaterial;
+                const mesh = new THREE.Mesh(geometry, material);
+                mesh.position.z = 1;
+                return mesh;
+              })();
+              rotateGizmo.add(rotateGizmoNubbin);
+              rotateGizmo.scale.set(rotateScale, rotateScale, rotateScale);
+              object.add(rotateGizmo);
+
+              const scaler = (() => {
+                const geometry = new THREE.BoxBufferGeometry(0.075, 0.075, 0.075);
+                const material = scalerMaterial;
+                const mesh = new THREE.Mesh(geometry, material);
+                mesh.position.set(scaleScale, scaleScale, scaleScale);
+                return mesh;
+              })();
+              object.add(scaler);
+
+              return object;
+            })();
 
             let boxAnchors = null;
             const _removeBoxTargets = () => {
@@ -138,86 +182,113 @@ class Tags {
                 boxAnchors = null;
               }
             };
-            translateGizmo.removeBoxTargets = _removeBoxTargets;
+            transformGizmo.removeBoxTargets = _removeBoxTargets;
             const _updateBoxTargets = () => {
               _removeBoxTargets();
 
               boxAnchors = [
                 {
                   boxTarget: geometryUtils.makeBoxTarget(
-                    translateGizmo.position.clone().add(new THREE.Vector3(1, 0, 0)),
+                    transformGizmo.position.clone().add(new THREE.Vector3(1, 0, 0)),
                     new THREE.Quaternion(),
                     new THREE.Vector3(1, 1, 1),
                     new THREE.Vector3(0.2, 0.1, 0.1)
                   ),
                   anchor: {
-                    onmousedown: `translate:${tagId}:${attributeName}:x`,
+                    onmousedown: `transform:${tagId}:${attributeName}:x`,
                   },
                 },
                 {
                   boxTarget: geometryUtils.makeBoxTarget(
-                    translateGizmo.position.clone().add(new THREE.Vector3(0, 1, 0)),
+                    transformGizmo.position.clone().add(new THREE.Vector3(0, 1, 0)),
                     new THREE.Quaternion(),
                     new THREE.Vector3(1, 1, 1),
                     new THREE.Vector3(0.1, 0.2, 0.1)
                   ),
                   anchor: {
-                    onmousedown: `translate:${tagId}:${attributeName}:y`,
+                    onmousedown: `transform:${tagId}:${attributeName}:y`,
                   },
                 },
                 {
                   boxTarget: geometryUtils.makeBoxTarget(
-                    translateGizmo.position.clone().add(new THREE.Vector3(0, 0, 1)),
+                    transformGizmo.position.clone().add(new THREE.Vector3(0, 0, 1)),
                     new THREE.Quaternion(),
                     new THREE.Vector3(1, 1, 1),
                     new THREE.Vector3(0.1, 0.1, 0.2)
                   ),
                   anchor: {
-                    onmousedown: `translate:${tagId}:${attributeName}:z`,
+                    onmousedown: `transform:${tagId}:${attributeName}:z`,
                   },
                 },
                 {
                   boxTarget: geometryUtils.makeBoxTarget(
-                    translateGizmo.position.clone(),
+                    transformGizmo.position.clone(),
                     new THREE.Quaternion(),
                     new THREE.Vector3(1, 1, 1),
                     new THREE.Vector3(0.2, 0.2, 0.2)
                   ),
                   anchor: {
-                    onmousedown: `translate:${tagId}:${attributeName}:xyz`,
+                    onmousedown: `transform:${tagId}:${attributeName}:xyz`,
                   },
                 },
                 {
                   boxTarget: geometryUtils.makeBoxTarget(
-                    translateGizmo.position.clone().add(new THREE.Vector3(0.3 / 2, 0.3 / 2, 0)),
+                    transformGizmo.position.clone().add(new THREE.Vector3(0.3 / 2, 0.3 / 2, 0)),
                     new THREE.Quaternion(),
                     new THREE.Vector3(1, 1, 1),
                     new THREE.Vector3(0.3, 0.3, 0.01)
                   ),
                   anchor: {
-                    onmousedown: `translate:${tagId}:${attributeName}:xy`,
+                    onmousedown: `transform:${tagId}:${attributeName}:xy`,
                   },
                 },
                 {
                   boxTarget: geometryUtils.makeBoxTarget(
-                    translateGizmo.position.clone().add(new THREE.Vector3(0, 0.3 / 2, 0.3 / 2)),
+                    transformGizmo.position.clone().add(new THREE.Vector3(0, 0.3 / 2, 0.3 / 2)),
                     new THREE.Quaternion(),
                     new THREE.Vector3(1, 1, 1),
                     new THREE.Vector3(0.01, 0.3, 0.3)
                   ),
                   anchor: {
-                    onmousedown: `translate:${tagId}:${attributeName}:yz`,
+                    onmousedown: `transform:${tagId}:${attributeName}:yz`,
                   },
                 },
                 {
                   boxTarget: geometryUtils.makeBoxTarget(
-                    translateGizmo.position.clone().add(new THREE.Vector3(0.3 / 2, 0, 0.3 / 2)),
+                    transformGizmo.position.clone().add(new THREE.Vector3(0.3 / 2, 0, 0.3 / 2)),
                     new THREE.Quaternion(),
                     new THREE.Vector3(1, 1, 1),
                     new THREE.Vector3(0.3, 0.01, 0.3)
                   ),
                   anchor: {
-                    onmousedown: `translate:${tagId}:${attributeName}:xz`,
+                    onmousedown: `transform:${tagId}:${attributeName}:xz`,
+                  },
+                },
+                {
+                  boxTarget: geometryUtils.makeBoxTarget(
+                    transformGizmo.position.clone().add(
+                      new THREE.Vector3(0, 0, rotateScale)
+                        .applyQuaternion(new THREE.Quaternion())
+                    ),
+                    new THREE.Quaternion(),
+                    new THREE.Vector3(1, 1, 1),
+                    new THREE.Vector3(0.1, 0.1, 0.1)
+                  ),
+                  anchor: {
+                    onmousedown: `transform:${tagId}:${attributeName}:rotate`,
+                  },
+                },
+                {
+                  boxTarget: geometryUtils.makeBoxTarget(
+                    transformGizmo.position.clone().add(
+                      new THREE.Vector3(scaleScale, scaleScale, scaleScale)
+                    ),
+                    new THREE.Quaternion(),
+                    new THREE.Vector3(1, 1, 1),
+                    new THREE.Vector3(0.1, 0.1, 0.1)
+                  ),
+                  anchor: {
+                    onmousedown: `transform:${tagId}:${attributeName}:scale`,
                   },
                 },
               ];
@@ -226,23 +297,18 @@ class Tags {
                 rend.addBoxAnchor(boxAnchor);
               }
             };
-            translateGizmo.updateBoxTargets = _updateBoxTargets;
+            transformGizmo.updateBoxTargets = _updateBoxTargets;
 
-            translateGizmo.destroy = () => {
+            transformGizmo.destroy = () => {
               _removeBoxTargets();
             };
 
-            /* const rotateGizmo = new THREETransformGizmoRotate();
-            rotateGizmo.position.x = 0;
-            rotateGizmo.position.y = 1.5;
-            scene.add(rotateGizmo);
-
-            const scaleGizmo = new THREETransformGizmoScale();
+            /* const scaleGizmo = new THREETransformGizmoScale();
             scaleGizmo.position.x = 2;
             scaleGizmo.position.y = 1.5;
             scene.add(scaleGizmo); */
 
-            return translateGizmo;
+            return transformGizmo;
           };
 
           const transparentImg = biolumi.getTransparentImg();
@@ -1607,14 +1673,14 @@ class Tags {
                     
                     _updateAttributes();
 
-                    const translateGizmo = _makeTranslateGizmo({
+                    const transformGizmo = _makeTransformGizmo({
                       tagId,
                       attributeName,
                     });
-                    translateGizmo.position.set(attributeValue[0], attributeValue[1], attributeValue[2]);
-                    scene.add(translateGizmo);
-                    translateGizmo.updateBoxTargets();
-                    translateGizmos.push(translateGizmo);
+                    transformGizmo.position.set(attributeValue[0], attributeValue[1], attributeValue[2]);
+                    scene.add(transformGizmo);
+                    transformGizmo.updateBoxTargets();
+                    transformGizmos.push(transformGizmo);
 
                     keyboard.tryBlur();
                   } else if (action === 'untransform') {
@@ -1623,11 +1689,11 @@ class Tags {
 
                     _updateAttributes();
 
-                    const translateGizmoIndex = translateGizmos.findIndex(translateGizmo => translateGizmo.tagId === tagId && translateGizmo.attributeName === attributeName);
-                    const translateGizmo = translateGizmos[translateGizmoIndex];
-                    scene.remove(translateGizmo);
-                    translateGizmo.destroy();
-                    translateGizmos.splice(translateGizmoIndex, 1);
+                    const transformGizmoIndex = transformGizmos.findIndex(transformGizmo => transformGizmo.tagId === tagId && transformGizmo.attributeName === attributeName);
+                    const transformGizmo = transformGizmos[transformGizmoIndex];
+                    scene.remove(transformGizmo);
+                    transformGizmo.destroy();
+                    transformGizmos.splice(transformGizmoIndex, 1);
 
                     keyboard.tryBlur();
                   } else if (action === 'focus') {
@@ -1824,7 +1890,7 @@ class Tags {
                 const onmousedown = (anchor && anchor.onmousedown) || '';
 
                 let match;
-                if (match = onmousedown.match(/^translate:([^:]+):([^:]+):(x|y|z|xyz|xy|yz|xz)$/)) {
+                if (match = onmousedown.match(/^transform:([^:]+):([^:]+):(x|y|z|xyz|xy|yz|xz)$/)) {
                   const tagId = match[1];
                   const attributeName = match[2];
                   const mode = match[3];
@@ -1833,19 +1899,19 @@ class Tags {
                   const {gamepads} = webvr.getStatus();
                   const gamepad = gamepads[side];
                   const {worldPosition: controllerPosition, worldRotation: controllerRotation} = gamepad;
-                  const translateGizmo = translateGizmos.find(translateGizmo => translateGizmo.tagId === tagId && translateGizmo.attributeName === attributeName);
+                  const transformGizmo = transformGizmos.find(transformGizmo => transformGizmo.tagId === tagId && transformGizmo.attributeName === attributeName);
                   dragState.src = {
-                    type: 'translate',
+                    type: 'transform',
                     tagId: tagId,
                     attributeName: attributeName,
                     mode: mode,
                     startControllerPosition: controllerPosition.clone(),
                     startControllerRotation: controllerRotation.clone(),
                     startIntersectionPoint: intersectionPoint.clone(),
-                    startPosition: translateGizmo.position.clone(),
+                    startPosition: transformGizmo.position.clone(),
                   };
 
-                  translateGizmo.removeBoxTargets();
+                  transformGizmo.removeBoxTargets();
 
                   return true;
                 } else {
@@ -2098,10 +2164,10 @@ class Tags {
               dragState.dst = null;
 
               return true;
-            } else if (srcType === 'translate') {
+            } else if (srcType === 'transform') {
               const {tagId, attributeName} = src;
-              const translateGizmo = translateGizmos.find(translateGizmo => translateGizmo.tagId === tagId && translateGizmo.attributeName === attributeName);
-              const {position, rotation, scale} = _decomposeObjectMatrixWorld(translateGizmo);
+              const transformGizmo = transformGizmos.find(transformGizmo => transformGizmo.tagId === tagId && transformGizmo.attributeName === attributeName);
+              const {position, rotation, scale} = _decomposeObjectMatrixWorld(transformGizmo);
 
               tagsApi.emit('setAttribute', {
                 id: tagId,
@@ -2109,7 +2175,7 @@ class Tags {
                 value: position.toArray().concat(rotation.toArray()).concat(scale.toArray()),
               });
 
-              translateGizmo.updateBoxTargets();
+              transformGizmo.updateBoxTargets();
 
               dragState.src = null;
               dragState.dst = null;
@@ -2243,9 +2309,9 @@ class Tags {
                       } else {
                         dragState.dst = null;
                       }
-                    } else if (srcType === 'translate') {
+                    } else if (srcType === 'transform') {
                       const {tagId, attributeName, mode, startControllerPosition, startControllerRotation, startIntersectionPoint, startPosition} = src;
-                      const translateGizmo = translateGizmos.find(translateGizmo => translateGizmo.tagId === tagId && translateGizmo.attributeName === attributeName);
+                      const transformGizmo = transformGizmos.find(transformGizmo => transformGizmo.tagId === tagId && transformGizmo.attributeName === attributeName);
 
                       if (mode === 'x') {
                         const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 0, 1), startIntersectionPoint);
@@ -2261,7 +2327,7 @@ class Tags {
                           );
                           const positionDiff = endIntersectionPoint.clone().sub(startIntersectionPoint);
                           const endPosition = startPosition.clone().add(positionDiff);
-                          translateGizmo.position.copy(endPosition);
+                          transformGizmo.position.copy(endPosition);
                         }
                       } else if (mode === 'y') {
                         const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 0, 1), startIntersectionPoint);
@@ -2277,7 +2343,7 @@ class Tags {
                           );
                           const positionDiff = endIntersectionPoint.clone().sub(startIntersectionPoint);
                           const endPosition = startPosition.clone().add(positionDiff);
-                          translateGizmo.position.copy(endPosition);
+                          transformGizmo.position.copy(endPosition);
                         }
                       } else if (mode === 'z') {
                         const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(1, 0, 0), startIntersectionPoint);
@@ -2293,7 +2359,7 @@ class Tags {
                           );
                           const positionDiff = endIntersectionPoint.clone().sub(startIntersectionPoint);
                           const endPosition = startPosition.clone().add(positionDiff);
-                          translateGizmo.position.copy(endPosition);
+                          transformGizmo.position.copy(endPosition);
                         }
                       } else if (mode === 'xy') {
                         const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 0, 1), startIntersectionPoint);
@@ -2304,7 +2370,7 @@ class Tags {
                         if (endIntersectionPoint) {
                           const positionDiff = endIntersectionPoint.clone().sub(startIntersectionPoint);
                           const endPosition = startPosition.clone().add(positionDiff);
-                          translateGizmo.position.copy(endPosition);
+                          transformGizmo.position.copy(endPosition);
                         }
                       } else if (mode === 'yz') {
                         const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(1, 0, 0), startIntersectionPoint);
@@ -2315,7 +2381,7 @@ class Tags {
                         if (endIntersectionPoint) {
                           const positionDiff = endIntersectionPoint.clone().sub(startIntersectionPoint);
                           const endPosition = startPosition.clone().add(positionDiff);
-                          translateGizmo.position.copy(endPosition);
+                          transformGizmo.position.copy(endPosition);
                         }
                       } else if (mode === 'xz') {
                         const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 1, 0), startIntersectionPoint);
@@ -2326,7 +2392,7 @@ class Tags {
                         if (endIntersectionPoint) {
                           const positionDiff = endIntersectionPoint.clone().sub(startIntersectionPoint);
                           const endPosition = startPosition.clone().add(positionDiff);
-                          translateGizmo.position.copy(endPosition);
+                          transformGizmo.position.copy(endPosition);
                         }
                       } else if (mode === 'xyz') {
                         const {worldPosition: controllerPosition, worldRotation: controllerRotation} = gamepad;
@@ -2339,7 +2405,7 @@ class Tags {
                           .add(
                             startPosition.clone().sub(startIntersectionPoint)
                           );
-                        translateGizmo.position.copy(endPosition);
+                        transformGizmo.position.copy(endPosition);
                       }
 
                       dragState.dst = null;
@@ -3308,13 +3374,13 @@ class Tags {
                           attributesMesh.remove(attributeMesh);
                           attributeMesh.destroy();
 
-                          const translateGizmoIndex = translateGizmos.findIndex(translateGizmo =>
-                            translateGizmo.tagId === item.id && translateGizmo.attributeName === attributeName
+                          const transformGizmoIndex = transformGizmos.findIndex(transformGizmo =>
+                            transformGizmo.tagId === item.id && transformGizmo.attributeName === attributeName
                           );
-                          if (translateGizmoIndex !== -1) {
-                            const translateGizmo = translateGizmos[translateGizmoIndex];
-                            translateGizmo.destroy();
-                            translateGizmo.splice(translateGizmoIndex, 1);
+                          if (transformGizmoIndex !== -1) {
+                            const transformGizmo = transformGizmos[transformGizmoIndex];
+                            transformGizmo.destroy();
+                            transformGizmo.splice(transformGizmoIndex, 1);
                           }
                         } else {
                           index[attributeName] = attributeMesh;

@@ -98,7 +98,7 @@ class Rend {
         const auxObjects = {
           tagMeshes: null,
           tagsLinesMesh: null,
-          translateGizmos: null,
+          transformGizmos: null,
           controllerMeshes: null,
         };
 
@@ -351,7 +351,7 @@ class Rend {
               const factor = animation.getValue();
               const value = ((1 - factor) * startValue) + (factor * endValue);
 
-              const {tagMeshes, translateGizmos} = auxObjects;
+              const {tagMeshes, transformGizmos} = auxObjects;
               const animatedMeshSpecs = [
                 {
                   mesh: menuMesh,
@@ -364,8 +364,8 @@ class Rend {
               ].concat(tagMeshes.map(tagMesh => ({
                 mesh: tagMesh,
                 direction: 'y',
-              }))).concat(translateGizmos.map(translateGizmo => ({
-                mesh: translateGizmo,
+              }))).concat(transformGizmos.map(transformGizmo => ({
+                mesh: transformGizmo,
                 direction: 'xyz',
               })))
 
