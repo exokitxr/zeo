@@ -111,6 +111,7 @@ class World {
 
         const oneVector = new THREE.Vector3(1, 1, 1);
         const zeroVector = new THREE.Vector3(0, 0, 0);
+        const controllerForwardVector = new THREE.Vector3(0, 0, -15);
         const zeroQuaternion = new THREE.Quaternion();
         const controllerMeshOffset = new THREE.Vector3(0, 0, -0.02);
         const controllerMeshQuaternion = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, -1));
@@ -126,6 +127,7 @@ class World {
 
         const localUserId = multiplayer.getId();
 
+        const boundingBoxSize = new THREE.Vector3(1, 1, 1);
         const boundingBoxGeometry = new THREE.BoxBufferGeometry(1, 1, 1);
         const boundingBoxMaterial = new THREE.MeshPhongMaterial({
           color: 0xFFFF00,
@@ -138,31 +140,39 @@ class World {
             this.entityId = entityId;
             this.attributeName = attributeName;
 
-            this._boundingBox = null;
-          }
-
-          updateBoundingBox(newValue) {
-            const {_boundingBox: oldBoundingBox} = this;
-            if (oldBoundingBox) {
-              scene.remove(oldBoundingBox);
-            }
-
-            const boundingBox = (() => {
+            const boundingBox = new THREE.Box3();
+            this._boundingBox = boundingBox;
+            const boundingBoxMesh = (() => {
               const geometry = boundingBoxGeometry;
               const material = boundingBoxMaterial;
               const mesh = new THREE.Mesh(geometry, material);
-              mesh.position.set(newValue[0], newValue[1], newValue[2]);
+              mesh.visible = false;
               return mesh;
             })();
-            scene.add(boundingBox);
-            this._boundingBox = boundingBox;
+            scene.add(boundingBoxMesh);
+            this._boundingBoxMesh = boundingBoxMesh;
+          }
+
+          updatePosition(newValue) {
+            const position = new THREE.Vector3(newValue[0], newValue[1], newValue[2]);
+            this._boundingBox.setFromCenterAndSize(position, boundingBoxSize);
+            this._boundingBoxMesh.position.copy(position);
+          }
+
+          checkIntersection(controllerLine) {
+            return controllerLine.intersectBox(this._boundingBox);
+          }
+
+          setVisibility(visible) {
+            if (visible && !this._boundingBoxMesh.visible) {
+              this._boundingBoxMesh.visible = true;
+            } else if (!visible && this._boundingBoxMesh.visible) {
+              this._boundingBoxMesh.visible = false;
+            }
           }
 
           destroy() {
-            const {_boundingBox: oldBoundingBox} = this;
-            if (oldBoundingBox) {
-              scene.remove(oldBoundingBox);
-            }
+            scene.remove(this._boundingBoxMesh);
           }
         }
         const matrixAttributes = [];
@@ -872,8 +882,29 @@ class World {
               tags.updateLinesMesh();
             }
           };
+          const _updateMatrixAttributes = () => {
+            if (matrixAttributes.length > 0) {
+              const {gamepads} = webvr.getStatus();
+              const _getControllerLine = gamepad => {
+                const {worldPosition: controllerPosition, worldRotation: controllerRotation} = gamepad;
+                const controllerLine = new THREE.Ray(controllerPosition, controllerForwardVector.clone().applyQuaternion(controllerRotation));
+                return controllerLine;
+              };
+              const controllerLines = {
+                left: _getControllerLine(gamepads.left),
+                right: _getControllerLine(gamepads.right),
+              };
+
+              for (let i = 0; i < matrixAttributes.length; i++) {
+                const matrixAttribute = matrixAttributes[i];
+                const intersected = SIDES.some(side => matrixAttribute.checkIntersection(controllerLines[side]));
+                matrixAttribute.setVisibility(intersected);
+              }
+            }
+          };
 
           _updateTagsLinesMesh();
+          _updateMatrixAttributes();
         };
         rend.on('update', _update);
 
@@ -1575,7 +1606,7 @@ class World {
 
             if (oldValue === null && newValue !== null) {
               const matrixAttribute = new MatrixAttribute(entityId, attributeName);
-              matrixAttribute.updateBoundingBox(newValue);
+              matrixAttribute.updatePosition(newValue);
               matrixAttributes.push(matrixAttribute);
             } else if (oldValue !== null && newValue === null) {
               const index = matrixAttributes.findIndex(matrixAttribute => matrixAttribute.entityId === entityId && matrixAttribute.attributeName === attributeName);
@@ -1584,7 +1615,7 @@ class World {
               matrixAttributes.splice(index, 1);
             } else if (oldValue !== null && newValue !== null) {
               const matrixAttribute = matrixAttributes.find(matrixAttribute => matrixAttribute.entityId === entityId && matrixAttribute.attributeName === attributeName);
-              matrixAttribute.updateBoundingBox(newValue);
+              matrixAttribute.updatePosition(newValue);
             }
           }
         };
