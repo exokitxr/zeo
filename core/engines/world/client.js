@@ -911,7 +911,7 @@ class World {
             }
           };
           const _updateMatrixAttributes = () => {
-            if (matrixAttributes.length > 0) {
+            if (rend.isOpen() && matrixAttributes.length > 0) {
               const {gamepads} = webvr.getStatus();
               const _getControllerLine = gamepad => {
                 const {worldPosition: controllerPosition, worldRotation: controllerRotation} = gamepad;
