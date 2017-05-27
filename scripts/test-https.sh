@@ -15,7 +15,8 @@ cp -ralf installed data/hub/servers/server_two/
   port=8080 secure=true \
   siteUrl='https://zeovr.io:8080' \
   homeUrl='https://zeovr.io:8081' \
-  hubUrl='https://zeovr.io:8000' &
+  hubUrl='https://zeovr.io:8000' \
+  forumUrl='http://127.0.0.1:8089' &
 ./index.js hub my \
   port=8000 secure=true \
   hubUrl='https://zeovr.io:8000' \
