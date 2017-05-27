@@ -165,7 +165,7 @@ class Skin {
                   const {position: controllerPosition, rotation: controllerRotation} = controllerStatus;
                   const arm = arms[side];
                   const upVector = new THREE.Vector3(0, index === 0 ? -1 : 1, 0).applyQuaternion(controllerRotation);
-                  const rotationMatrix = new THREE.Matrix4().lookAt(controllerPosition, arm.getWorldPosition(), upVector)
+                  const rotationMatrix = new THREE.Matrix4().lookAt(controllerPosition, arm.getWorldPosition(), upVector);
                   const armQuaternion = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, -1));
                   arm.quaternion
                     .setFromRotationMatrix(rotationMatrix)
