@@ -51,10 +51,12 @@ class Color {
           const colorWheels = [];
           rend.registerAuxObject('colorWheels', colorWheels);
 
-          const _makeColorWheel = () => {
+          const _makeColorWheel = ({onpreview, onupdate}) => {
             const object = new THREE.Object3D();
             const colorId = _makeId();
             object.colorId = colorId;
+            object.onpreview = onpreview;
+            object.onupdate = onupdate;
 
             const colorWheelMesh = (() => {
               const object = new THREE.Object3D();
@@ -155,6 +157,10 @@ class Color {
             object.add(colorBarMesh);
             object.colorBarMesh = colorBarMesh;
 
+            object.getColor = () => {
+              return 0xFF0000;
+            };
+
             let boxAnchors = null;
             const _removeBoxTargets = () => {
               if (boxAnchors) {
@@ -200,6 +206,8 @@ class Color {
             };
             object.updateBoxTargets = _updateBoxTargets;
 
+            colorWheels.push(object);
+
             return object;
           };
           const _destroyColorWheel = colorWheel => {
@@ -211,7 +219,7 @@ class Color {
           const _triggerdown = e => {
             const {side} = e;
 
-            const _doClickTransformGizmo = () => {
+            const _doClickColorWheel = () => {
               const hoverState = rend.getHoverState(side);
               const {intersectionPoint} = hoverState;
 
@@ -236,6 +244,7 @@ class Color {
                     startControllerRotation: controllerRotation.clone(),
                     startIntersectionPoint: intersectionPoint.clone(),
                     startPosition: colorWheel.position.clone(),
+                    startRotation: colorWheel.quaternion.clone(),
                   };
 
                   colorWheel.removeBoxTargets();
@@ -249,7 +258,7 @@ class Color {
               }
             };
 
-            if (_doClickTransformGizmo()) {
+            if (_doClickColorWheel()) {
               e.stopImmediatePropagation();
             }
           };
@@ -263,12 +272,8 @@ class Color {
               const {colorId} = src;
               const colorWheel = colorWheels.find(colorWheel => colorWheel.colorId === colorId);
 
-              const {position, rotation, scale} = colorWheel.getProperties();
-              colorWheel.onupdate(
-                position,
-                rotation,
-                scale
-              );
+              const color = colorWheel.getColor();
+              colorWheel.onupdate(color);
 
               colorWheel.updateBoxTargets();
 
@@ -285,47 +290,69 @@ class Color {
                 const gamepad = gamepads[side];
 
                 if (src) {
-                  const {colorId, mode, startControllerPosition, startControllerRotation, startIntersectionPoint, startPosition} = src;
+                  const {colorId, mode, startControllerPosition, startControllerRotation, startIntersectionPoint, startPosition, startRotation} = src;
                   const colorWheel = colorWheels.find(colorWheel => colorWheel.colorId === colorId);
 
                   const _preview = () => {
-                    const {position, rotation, scale} = colorWheel.getProperties();
-                    colorWheel.onpreview(position, rotation, scale);
+                    const color = colorWheel.getColor();
+                    colorWheel.onpreview(color);
                   };
 
                   if (mode === 'wheel') {
-                    const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 0, 1), startIntersectionPoint);
-                    const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale} = gamepad;
-                    const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation, controllerScale);
-                    const controllerIntersectionPoint = plane.intersectLine(controllerLine);
-
-                    if (controllerIntersectionPoint) {
-                      const endIntersectionPoint = new THREE.Vector3(
-                        controllerIntersectionPoint.x,
-                        startIntersectionPoint.y,
-                        startIntersectionPoint.z
+                    const {worldPosition: controllerPosition, worldRotation: controllerRotation} = gamepad;
+                    const intersectionPoint = new THREE.Plane().setFromNormalAndCoplanarPoint(
+                      new THREE.Vector3(0, 0, -1).applyQuaternion(startRotation),
+                      startPosition.clone()
+                    )
+                      .intersectLine(
+                        new THREE.Line3(
+                          controllerPosition.clone(),
+                          controllerPosition.clone().add(new THREE.Vector3(0, 0, -15).applyQuaternion(controllerRotation))
+                        )
                       );
-                      const positionDiff = endIntersectionPoint.clone().sub(startIntersectionPoint);
-                      const endPosition = startPosition.clone().add(positionDiff);
-                      colorWheel.position.copy(endPosition);
+                    const yPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(
+                      new THREE.Vector3(1, 0, 0),
+                      startPosition.clone().add(
+                        new THREE.Vector3(-SIZE / 2, -SIZE / 2, 0).applyQuaternion(startRotation)
+                      )
+                    );
+                    const xPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(
+                      new THREE.Vector3(0, 1, 0),
+                      startPosition.clone().add(
+                        new THREE.Vector3(-SIZE / 2, -SIZE / 2, 0).applyQuaternion(startRotation)
+                      )
+                    );
+                    const x = yPlane.distanceToPoint(intersectionPoint) / SIZE;
+                    const y = xPlane.distanceToPoint(intersectionPoint) / SIZE;
+
+                    if (x >= 0 && x <= 1 && y >= 0 && y <= 1) {
+                      colorWheel.colorWheelMesh.notchMesh.position.x = -(SIZE / 2) + (x * SIZE);
+                      colorWheel.colorWheelMesh.notchMesh.position.y = -(SIZE / 2) + (y * SIZE);
 
                       _preview();
                     }
                   } else if (mode === 'bar') {
-                    const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 0, 1), startIntersectionPoint);
-                    const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale} = gamepad;
-                    const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation, controllerScale);
-                    const controllerIntersectionPoint = plane.intersectLine(controllerLine);
-
-                    if (controllerIntersectionPoint) {
-                      const endIntersectionPoint = new THREE.Vector3(
-                        controllerIntersectionPoint.x,
-                        startIntersectionPoint.y,
-                        startIntersectionPoint.z
+                    const {worldPosition: controllerPosition, worldRotation: controllerRotation} = gamepad;
+                    const intersectionPoint = new THREE.Plane().setFromNormalAndCoplanarPoint(
+                      new THREE.Vector3(0, 0, -1).applyQuaternion(startRotation),
+                      startPosition.clone()
+                    )
+                      .intersectLine(
+                        new THREE.Line3(
+                          controllerPosition.clone(),
+                          controllerPosition.clone().add(new THREE.Vector3(0, 0, -15).applyQuaternion(controllerRotation))
+                        )
                       );
-                      const positionDiff = endIntersectionPoint.clone().sub(startIntersectionPoint);
-                      const endPosition = startPosition.clone().add(positionDiff);
-                      colorWheel.position.copy(endPosition);
+                    const xPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(
+                      new THREE.Vector3(0, 1, 0),
+                      startPosition.clone().add(
+                        new THREE.Vector3(SIZE / 2, -SIZE / 2, 0).applyQuaternion(startRotation)
+                      )
+                    );
+                    const y = xPlane.distanceToPoint(intersectionPoint) / SIZE;
+
+                    if (y >= 0 && y <= 1) {
+                      colorWheel.colorBarMesh.notchMesh.position.y = -(SIZE / 2) + (y * SIZE);
 
                       _preview();
                     }
@@ -346,10 +373,10 @@ class Color {
 
           (() => { // XXX
             const colorWheel = _makeColorWheel({
-              onpreview: (position, rotation, scale) => {
+              onpreview: color => {
                 console.log('preview');
               },
-              onupdate: (position, rotation, scale) => {
+              onupdate: color => {
                 console.log('update');
               },
             });

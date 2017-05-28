@@ -126,11 +126,12 @@ const menuUtils = () => ({
       const {data: imageDataData} = imageData;
       for (let i = 0; i < height; i++) {
         const baseIndex = i * 4;
-        const value = (height - i) / height;
-        imageData[baseIndex + 0] = value * 255;
-        imageData[baseIndex + 1] = value * 255;
-        imageData[baseIndex + 2] = value * 255;
-        imageData[baseIndex + 3] = value * 255;
+        const valueFactor = (height - i) / height;
+        const value = Math.round(valueFactor * 255);
+        imageDataData[baseIndex + 0] = value;
+        imageDataData[baseIndex + 1] = value;
+        imageDataData[baseIndex + 2] = value;
+        imageDataData[baseIndex + 3] = 255;
       }
       ctx.putImageData(imageData, 0, 0);
 
