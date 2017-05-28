@@ -30,11 +30,13 @@ class ZBuild {
     const shapeSize = 0.02;
     const shapeScaleVector = new THREE.Vector3(shapeSize, shapeSize, shapeSize);
     const selectedShapeScaleVector = shapeScaleVector.clone().multiplyScalar(1.5);
+    const controllerForwardVector = new THREE.Vector3(0, 0, -15);
 
     class ShapeControl {
       constructor(object) {
         this.object = object;
 
+        this._enabled = false;
         this._boundingBox = new THREE.Box3();
         const transformGizmo = transform.makeTransformGizmo({
           onpreview: (position, rotation, scale) => {
@@ -46,6 +48,18 @@ class ZBuild {
         });
         scene.add(transformGizmo);
         this._transformGizmo = transformGizmo;
+      }
+
+      isEnabled() {
+        return this._enabled;
+      }
+
+      enable() {
+        this._enabled = true;
+      }
+
+      disable() {
+        this._enabled = false;
       }
 
       checkIntersection(controllerLine) {
@@ -74,9 +88,19 @@ class ZBuild {
         this._boundingBox.setFromCenterAndSize(position, size);
       }
 
+      updateTransformGizmo(position, rotation, scale) {
+        const scalePosition = scale.clone().multiplyScalar(this._transformGizmo.scaleGizmo.scaleFactor);
+
+        this._transformGizmo.position.copy(position);
+        this._transformGizmo.rotateGizmo.quaternion.copy(rotation);
+        this._transformGizmo.scaleGizmo.position.copy(scalePosition);
+        this._transformGizmo.updateBoxTargets();
+      }
+
       update(position, rotation, scale) {
         this.updateObject(position, rotation, scale);
         this.updateBoundingBox(position, rotation, scale);
+        this.updateTransformGizmo(position, rotation, scale);
       }
 
       destroy() {
@@ -507,8 +531,6 @@ class ZBuild {
         };
 
         const _makeBuildMesh = () => {
-          const object = new THREE.Object3D();
-
           let mesh = null;
           const state = {
             shape: null,
@@ -516,6 +538,8 @@ class ZBuild {
             color: null,
             target: null,
           };
+
+          const object = new THREE.Object3D();
           object.setShape = shape => {
             if (shape !== state.shape) {
               state.shape = shape;
@@ -568,13 +592,17 @@ class ZBuild {
                   const {shapeMeshContainer} = toolMesh;
                   shapeMeshContainer.add(object);
 
+                  shapeControl.disable();
+
                   break;
                 }
                 case 'scene': {
                   scene.add(object);
 
-                  const shapeControl = new ShapeControl(object);
-                  shapeControls.push(shapeControl);
+                  shapeControl.enable();
+                  const {position, quaternion: rotation, scale} = object;
+                  shapeControl.updateBoundingBox(position.clone(), rotation.clone(), scale.clone());
+                  shapeControl.updateTransformGizmo(position.clone(), rotation.clone(), scale.clone());
 
                   break;
                 }
@@ -585,10 +613,11 @@ class ZBuild {
           object.destroy = () => {
             const {target} = state;
 
-            if (target === 'scene') {
-              shapeControls.splice(shapeControls.indexOf(shapeControl), 1);
-            }
+            shapeControls.splice(shapeControls.indexOf(shapeControl), 1);
           };
+
+          const shapeControl = new ShapeControl(object);
+          shapeControls.push(shapeControl);
 
           return object;
         };
@@ -851,8 +880,13 @@ class ZBuild {
 
               for (let i = 0; i < shapeControls.length; i++) {
                 const shapeControl = shapeControls[i];
-                const intersected = SIDES.some(side => shapeControl.checkIntersection(controllerLines[side]));
-                shapeControl.setVisibility(intersected);
+
+                if (shapeControl.isEnabled()) {
+                  const intersected = SIDES.some(side => shapeControl.checkIntersection(controllerLines[side]));
+                  shapeControl.setVisibility(intersected);
+                } else {
+                  shapeControl.setVisibility(false);
+                }
               }
             }
           };
