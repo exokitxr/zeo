@@ -78,6 +78,7 @@ class Tags {
       '/core/engines/cyborg',
       '/core/engines/biolumi',
       '/core/engines/keyboard',
+      '/core/engines/color',
       '/core/engines/loader',
       '/core/engines/fs',
       '/core/engines/somnifer',
@@ -95,6 +96,7 @@ class Tags {
         cyborg,
         biolumi,
         keyboard,
+        color,
         loader,
         fs,
         somnifer,
@@ -1485,7 +1487,7 @@ class Tags {
                 const onclick = (anchor && anchor.onclick) || '';
 
                 let match;
-                if (match = onclick.match(/^attribute:([^:]+):([^:]+)(?::([^:]+))?:(focus|set|tweak|toggle|choose)(?::([^:]+))?$/)) {
+                if (match = onclick.match(/^attribute:([^:]+):([^:]+)(?::([^:]+))?:(focus|set|tweak|pick|toggle|choose)(?::([^:]+))?$/)) {
                   const tagId = match[1];
                   const attributeName = match[2];
                   const key = match[3];
@@ -1607,6 +1609,30 @@ class Tags {
 
                       keyboard.tryBlur();
                     }
+                  } else if (action === 'pick') {
+                    const colorWheel = color.makeColorWheel({
+                      onpreview: colorString => {
+                        // XXX
+                      },
+                      onupdate: colorString => {
+                        tagsApi.emit('setAttribute', {
+                          id: tagId,
+                          name: attributeName,
+                          value: '#' + colorString,
+                        });
+                      },
+                    });
+                    scene.add(colorWheel);
+
+                    const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === tagId);
+                    const {attributesMesh} = tagMesh;
+                    const {attributeMeshes} = attributesMesh;
+                    const attributeMesh = attributeMeshes.find(attributeMesh => attributeMesh.attributeName === attributeName);
+                    const {position, rotation, scale} = _decomposeObjectMatrixWorld(attributeMesh);
+                    colorWheel.position.copy(position.clone().add(new THREE.Vector3(0, -0.125, 0.001).applyQuaternion(rotation)));
+                    colorWheel.quaternion.copy(rotation);
+                    colorWheel.scale.copy(scale);
+                    colorWheel.updateBoxTargets();
                   } else if (action === 'toggle') {
                     const newValue = !attributeValue;
 

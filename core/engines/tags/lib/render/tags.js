@@ -344,7 +344,7 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
 
         return `\
           <div style="display: flex; padding: 20px; justify-content: center; align-items: center;">
-            <div style="width: 40px; height: 40px; margin-right: 10px; background-color: ${color};"></div>
+            <a style="display: block; width: 40px; height: 40px; margin-right: 10px; background-color: ${color};" onclick="attribute:${id}:${name}:pick"></a>
             <a style="display: flex; position: relative; height: 40px; border: 2px solid #333; font-size: 24px; text-decoration: none; flex-grow: 1; align-items: center; overflow: hidden; box-sizing: border-box;" onclick="attribute:${id}:${name}:focus" onmousedown="attribute:${id}:${name}:focus">
               ${focus ? `<div style="position: absolute; width: 2px; top: 0; bottom: 10px; left: ${inputValue}px; background-color: #333;"></div>` : ''}
               <div>${string}</div>

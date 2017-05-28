@@ -13,7 +13,6 @@ class Color {
       '/core/engines/input',
       '/core/engines/webvr',
       '/core/engines/biolumi',
-      '/core/engines/keyboard',
       '/core/engines/rend',
       '/core/utils/geometry-utils',
       '/core/utils/menu-utils',
@@ -23,7 +22,6 @@ class Color {
         input,
         webvr,
         biolumi,
-        keyboard,
         rend,
         geometryUtils,
         menuUtils,
@@ -160,10 +158,10 @@ class Color {
 
             object.getColor = () => {
               const {x, y} = colorWheelMesh;
-              const baseColor = new THREE.Color(colorWheelImg.getColor(x, y));
+              const baseColor = new THREE.Color(colorWheelImg.getColor(x, 1 - y));
               const {y: v} = colorBarMesh;
               const valueColor = new THREE.Color(colorBarImg.getColor(v));
-              return baseColor.clone().multiply(valueColor).getHex();
+              return baseColor.clone().multiply(valueColor).getHexString();
             };
 
             let boxAnchors = null;
@@ -252,8 +250,6 @@ class Color {
                     startRotation: colorWheel.quaternion.clone(),
                   };
 
-                  colorWheel.removeBoxTargets();
-
                   return true;
                 } else {
                   return false;
@@ -279,8 +275,6 @@ class Color {
 
               const color = colorWheel.getColor();
               colorWheel.onupdate(color);
-
-              colorWheel.updateBoxTargets();
 
               dragState.src = null;
             }
@@ -316,13 +310,13 @@ class Color {
                         )
                       );
                     const yPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(
-                      new THREE.Vector3(1, 0, 0),
+                      new THREE.Vector3(1, 0, 0).applyQuaternion(startRotation),
                       startPosition.clone().add(
                         new THREE.Vector3(-SIZE / 2, -SIZE / 2, 0).applyQuaternion(startRotation)
                       )
                     );
                     const xPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(
-                      new THREE.Vector3(0, 1, 0),
+                      new THREE.Vector3(0, 1, 0).applyQuaternion(startRotation),
                       startPosition.clone().add(
                         new THREE.Vector3(-SIZE / 2, -SIZE / 2, 0).applyQuaternion(startRotation)
                       )
@@ -352,7 +346,7 @@ class Color {
                         )
                       );
                     const xPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(
-                      new THREE.Vector3(0, 1, 0),
+                      new THREE.Vector3(0, 1, 0).applyQuaternion(startRotation),
                       startPosition.clone().add(
                         new THREE.Vector3(SIZE / 2, -SIZE / 2, 0).applyQuaternion(startRotation)
                       )
@@ -380,20 +374,6 @@ class Color {
             input.removeListener('triggerup', _triggerup);
             rend.removeListener('update', _update);
           };
-
-          (() => { // XXX
-            const colorWheel = _makeColorWheel({
-              onpreview: color => {
-                // console.log('preview', '0x' + color.toString(16));
-              },
-              onupdate: color => {
-                console.log('update', '0x' + color.toString(16));
-              },
-            });
-            colorWheel.position.set(0, 2, -5);
-            scene.add(colorWheel);
-            colorWheel.updateBoxTargets();
-          })();
 
           return {
             makeColorWheel: _makeColorWheel,
