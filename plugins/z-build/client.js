@@ -48,6 +48,18 @@ class ZBuild {
         this._transformGizmo = transformGizmo;
       }
 
+      checkIntersection(controllerLine) {
+        return controllerLine.intersectBox(this._boundingBox);
+      }
+
+      setVisibility(visible) {
+        if (visible && !this._transformGizmo.visible) {
+          this._transformGizmo.visible = true;
+        } else if (!visible && this._transformGizmo.visible) {
+          this._transformGizmo.visible = false;
+        }
+      }
+
       updateObject(position, rotation, scale) {
         this.object.position.copy(position);
         this.object.quaternion.copy(rotation);
@@ -754,73 +766,98 @@ class ZBuild {
           },
         ];
         const _update = () => {
-          const {gamepads} = pose.getStatus();
+          const _updateGrabs = () => {
+            const {gamepads} = pose.getStatus();
 
-          SIDES.forEach(side => {
-            const gamepad = gamepads[side];
+            SIDES.forEach(side => {
+              const gamepad = gamepads[side];
 
-            if (gamepad) {
-              const buildState = buildStates[side];
-              const {grabbed} = buildState;
+              if (gamepad) {
+                const buildState = buildStates[side];
+                const {grabbed} = buildState;
 
-              if (grabbed) {
-                const {pressStart} = buildState;
-
-                const {menu} = buildState;
-                if (menu === 'shape') {
+                if (grabbed) {
                   const {pressStart} = buildState;
 
-                  if (pressStart) {
-                    const {axes} = gamepad;
-
-                    const x = Math.round(((((axes[0] / 2) + 0.5) * shapesWidth) - (shapeWidth / 2)) / shapeWidth);
-                    const y = Math.round((((-(axes[1] / 2) + 0.5) * shapesHeight) - (shapeHeight / 2)) / shapeHeight);
-                    const shapeIndex = (y * shapesPerRow) + x;
-
-                    const {
-                      menuMesh: {
-                        shapeMesh: {
-                          shapeMeshes,
-                        },
-                      },
-                    } = toolMesh;
-                    for (let i = 0; i < shapeMeshes.length; i++) {
-                      const shapeMesh = shapeMeshes[i];
-                      const selected = i !== shapeIndex;
-                      shapeMesh.scale.copy(selected ? shapeScaleVector : selectedShapeScaleVector);
-                      shapeMesh.material.color.setHex(selected ? 0x808080 : 0xFF0000);
-                    }
-
-                    const shapeMesh = shapeMeshes[shapeIndex];
-                    const {shapeType} = shapeMesh;
-                    buildState.shape = shapeType;
-                  }
-                } else if (menu === 'color') {
-                  const gamepad = gamepads[side];
-
-                  if (gamepad) {
+                  const {menu} = buildState;
+                  if (menu === 'shape') {
                     const {pressStart} = buildState;
 
                     if (pressStart) {
-                      const {menuMesh} = toolMesh;
-                      const {colorMesh} = menuMesh;
-                      const {colorWheelMesh} = colorMesh;
-                      const {size, notchMesh} = colorWheelMesh;
                       const {axes} = gamepad;
 
-                      notchMesh.position.x = -(size / 2) + (((axes[0] / 2) + 0.5) * size);
-                      notchMesh.position.z = (size / 2) - (((axes[1] / 2) + 0.5) * size);
+                      const x = Math.round(((((axes[0] / 2) + 0.5) * shapesWidth) - (shapeWidth / 2)) / shapeWidth);
+                      const y = Math.round((((-(axes[1] / 2) + 0.5) * shapesHeight) - (shapeHeight / 2)) / shapeHeight);
+                      const shapeIndex = (y * shapesPerRow) + x;
 
-                      const colorHex = colorWheelImg.getColor((axes[0] / 2) + 0.5, (-axes[1] / 2) + 0.5);
-                      buildState.color = colorHex;
+                      const {
+                        menuMesh: {
+                          shapeMesh: {
+                            shapeMeshes,
+                          },
+                        },
+                      } = toolMesh;
+                      for (let i = 0; i < shapeMeshes.length; i++) {
+                        const shapeMesh = shapeMeshes[i];
+                        const selected = i !== shapeIndex;
+                        shapeMesh.scale.copy(selected ? shapeScaleVector : selectedShapeScaleVector);
+                        shapeMesh.material.color.setHex(selected ? 0x808080 : 0xFF0000);
+                      }
 
-                      notchMesh.material.color.setHex(colorHex);
+                      const shapeMesh = shapeMeshes[shapeIndex];
+                      const {shapeType} = shapeMesh;
+                      buildState.shape = shapeType;
+                    }
+                  } else if (menu === 'color') {
+                    const gamepad = gamepads[side];
+
+                    if (gamepad) {
+                      const {pressStart} = buildState;
+
+                      if (pressStart) {
+                        const {menuMesh} = toolMesh;
+                        const {colorMesh} = menuMesh;
+                        const {colorWheelMesh} = colorMesh;
+                        const {size, notchMesh} = colorWheelMesh;
+                        const {axes} = gamepad;
+
+                        notchMesh.position.x = -(size / 2) + (((axes[0] / 2) + 0.5) * size);
+                        notchMesh.position.z = (size / 2) - (((axes[1] / 2) + 0.5) * size);
+
+                        const colorHex = colorWheelImg.getColor((axes[0] / 2) + 0.5, (-axes[1] / 2) + 0.5);
+                        buildState.color = colorHex;
+
+                        notchMesh.material.color.setHex(colorHex);
+                      }
                     }
                   }
                 }
               }
+            });
+          };
+          const _updateShapeControls = () => {
+            if (shapeControls.length > 0) {
+              const {gamepads} = pose.getStatus();
+              const _getControllerLine = gamepad => {
+                const {worldPosition: controllerPosition, worldRotation: controllerRotation} = gamepad;
+                const controllerLine = new THREE.Ray(controllerPosition, controllerForwardVector.clone().applyQuaternion(controllerRotation));
+                return controllerLine;
+              };
+              const controllerLines = {
+                left: _getControllerLine(gamepads.left),
+                right: _getControllerLine(gamepads.right),
+              };
+
+              for (let i = 0; i < shapeControls.length; i++) {
+                const shapeControl = shapeControls[i];
+                const intersected = SIDES.some(side => shapeControl.checkIntersection(controllerLines[side]));
+                shapeControl.setVisibility(intersected);
+              }
             }
-          });
+          };
+
+          _updateGrabs();
+          _updateShapeControls();
         };
         render.on('update', _update);
 
