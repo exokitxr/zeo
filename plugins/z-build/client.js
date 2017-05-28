@@ -613,6 +613,7 @@ class ZBuild {
           object.destroy = () => {
             const {target} = state;
 
+            shapeControl.destroy();
             shapeControls.splice(shapeControls.indexOf(shapeControl), 1);
           };
 
