@@ -30,7 +30,6 @@ class Transform {
       '/core/engines/input',
       '/core/engines/webvr',
       '/core/engines/biolumi',
-      '/core/engines/keyboard',
       '/core/engines/rend',
       '/core/utils/geometry-utils',
     ])
@@ -39,7 +38,6 @@ class Transform {
         input,
         webvr,
         biolumi,
-        keyboard,
         rend,
         geometryUtils,
       ]) => {
