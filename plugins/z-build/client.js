@@ -401,6 +401,8 @@ class ZBuild {
                   const {meshId, data} = e;
 
                   _loadMesh({meshId, data});
+                } else if (type === 'clear') {
+                  _clearMeshes();
                 } else {
                   console.warn('build unknown message type', JSON.stringify(type));
                 }
@@ -432,7 +434,14 @@ class ZBuild {
 
           connection.send(es);
         };
-        entityApi.broadcastUpdate = _broadcastUpdate;
+        const _broadcastClear = () => {
+          const e = {
+            type: 'clear',
+          };
+          const es = JSON.stringify(e);
+
+          connection.send(es);
+        };
 
         const _makeBuildMesh = () => {
           const object = new THREE.Object3D();
@@ -673,6 +682,12 @@ class ZBuild {
         input.on('padup', _padup, {
           priority: 1,
         });
+        const _menu = () => {
+          _clearMeshes();
+
+          _broadcastClear();
+        };
+        input.on('menu', _menu);
 
         const menuRotationSpecs = [
           {
@@ -770,6 +785,7 @@ class ZBuild {
           input.removeListener('triggerup', _triggerup);
           input.removeListener('paddown', _paddown);
           input.removeListener('padup', _padup);
+          input.removeListener('menu', _menu);
 
           render.removeListener('update', _update);
         };
