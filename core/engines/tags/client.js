@@ -1633,6 +1633,18 @@ class Tags {
                     colorWheel.quaternion.copy(rotation);
                     colorWheel.scale.copy(scale);
                     colorWheel.updateBoxTargets();
+
+                    const keyboardFocusState = keyboard.fakeFocus({
+                      type: 'color',
+                    });
+                    focusState.keyboardFocusState = keyboardFocusState;
+
+                    keyboardFocusState.on('blur', () => {
+                      focusState.keyboardFocusState = null;
+
+                      scene.remove(colorWheel);
+                      color.destroyColorWheel(colorWheel);
+                    });
                   } else if (action === 'toggle') {
                     const newValue = !attributeValue;
 
