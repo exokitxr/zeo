@@ -129,6 +129,16 @@ class ZBuild {
           return Promise.resolve(null);
         }
       });
+   const _requestBuildIndexFile = ({buildId}) => _requestBuildMeshFileSpec({buildId})
+      .then(fileSpec => {
+        if (fileSpec) {
+          const {id, pathname} = fileSpec;
+          const indexFile = fs.makeFile(id, pathname);
+          return Promise.resolve(indexFile);
+        } else {
+          return Promise.resolve(null);
+        }
+      });
 
     const connections = [];
 
@@ -143,6 +153,19 @@ class ZBuild {
       for (let i = 0; i < connections.length; i++) {
         const connection = connections[i];
         if ((!thisPeerOnly ? (connection.peerId !== peerId) : (connection.peerId === peerId)) && connection.buildId === buildId) {
+          connection.send(es);
+        }
+      }
+    };
+    const _broadcastClear = ({peerId, buildId}) => {
+      const e = {
+        type: 'clear',
+      };
+      const es = JSON.stringify(e);
+
+      for (let i = 0; i < connections.length; i++) {
+        const connection = connections[i];
+        if (connection.peerId !== peerId && connection.buildId === buildId) {
           connection.send(es);
         }
       }
@@ -167,6 +190,32 @@ class ZBuild {
                 ]);
               } else {
                 console.warn('build server could not find file for saving for build id', {buildId});
+
+                return Promise.resolve();
+              }
+            })
+            .then(() => {
+              unlock();
+            })
+            .catch(err => {
+              console.warn(err);
+
+              unlock();
+            });
+        });
+    };
+    const _saveClear = ({buildId}) => {
+      filesMutex.lock(buildId)
+        .then(unlock => {
+          _requestBuildIndexFile({buildId})
+            .then(indexFile => {
+              if (indexFile) {
+                return _writeFile({
+                  file: indexFile,
+                  data: '',
+                });
+              } else {
+                console.warn('build server could not find file for clearing for build id', {buildId});
 
                 return Promise.resolve();
               }
@@ -241,6 +290,15 @@ class ZBuild {
                   buildId,
                   meshId,
                   data,
+                });
+              } else if (type === 'clear') {
+                _broadcastClear({
+                  peerId,
+                  buildId,
+                });
+
+                _saveClear({
+                  buildId,
                 });
               } else {
                 console.warn('build invalid message type', {type});

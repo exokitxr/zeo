@@ -778,10 +778,16 @@ class ZBuild {
         input.on('padup', _padup, {
           priority: 1,
         });
-        const _menu = () => {
-          _clearMeshes();
+        const _menu = e => {
+          const {side} = e;
+          const buildState = buildStates[side];
+          const {grabbed} = buildState;
 
-          _broadcastClear();
+          if (grabbed) {
+            _clearMeshes();
+
+            _broadcastClear();
+          }
         };
         input.on('menu', _menu);
 
