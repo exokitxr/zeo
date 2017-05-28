@@ -1,10 +1,10 @@
 const DIRTY_TIME = 1000;
 const DEFAULT_MATRIX = [
-  0, 1, 0,
+  0, 0, -2,
   0, 0, 0, 1,
   1, 1, 1,
-]
-;
+];
+
 const SIDES = ['left', 'right'];
 
 class ZBuild {
@@ -27,7 +27,9 @@ class ZBuild {
     const zeroVector = new THREE.Vector3();
     const zeroQuaternion = new THREE.Quaternion();
     const oneVector = new THREE.Vector3(1, 1, 1);
-    const oneAndHalfVector = new THREE.Vector3(1.5, 1.5, 1.5);
+    const shapeSize = 0.02;
+    const shapeScaleVector = new THREE.Vector3(shapeSize, shapeSize, shapeSize);
+    const selectedShapeScaleVector = shapeScaleVector.clone().multiplyScalar(1.5);
 
     const _makeShapeMaterial = ({
       color = 0x808080,
@@ -85,7 +87,6 @@ class ZBuild {
         const shapesPerCol = 2;
         const shapeWidth = shapesWidth / shapesPerRow;
         const shapeHeight = shapesHeight / shapesPerCol;
-        const shapeSize = 0.02;
         const toolMesh = (() => {
           const object = new THREE.Object3D();
 
@@ -190,18 +191,18 @@ class ZBuild {
               object.add(backgroundMesh);
 
               const boxMesh = (() => {
-                const geometry = new THREE.BoxBufferGeometry(0.02, 0.02, 0.02)
+                const geometry = new THREE.BoxBufferGeometry(1, 1, 1)
                   .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
                 const material = _makeShapeMaterial({
                   color: 0xFF0000,
                 });
                 const mesh = new THREE.Mesh(geometry, material);
-                mesh.scale.copy(oneAndHalfVector);
+                mesh.scale.copy(selectedShapeScaleVector);
                 mesh.shapeType = 'box';
                 return mesh;
               })();
               const rectangleMesh = (() => {
-                const geometry = new THREE.BoxBufferGeometry(0.02, 0.04, 0.02)
+                const geometry = new THREE.BoxBufferGeometry(1, 2, 1)
                   .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
                 const material = _makeShapeMaterial();
                 const mesh = new THREE.Mesh(geometry, material);
@@ -209,7 +210,7 @@ class ZBuild {
                 return mesh;
               })();
               const triangularPyramidMesh = (() => {
-                const geometry = new THREE.CylinderBufferGeometry(0, sq(0.01), 0.02, 3, 1)
+                const geometry = new THREE.CylinderBufferGeometry(0, sq(0.5), 1, 3, 1)
                   .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
                 const material = _makeShapeMaterial();
                 const mesh = new THREE.Mesh(geometry, material);
@@ -217,7 +218,7 @@ class ZBuild {
                 return mesh;
               })();
               const rectangularPyramidMesh = (() => {
-                const geometry = new THREE.CylinderBufferGeometry(0, sq(0.01), 0.02, 4, 1)
+                const geometry = new THREE.CylinderBufferGeometry(0, sq(0.5), 1, 4, 1)
                   .applyMatrix(new THREE.Matrix4().makeRotationY(-Math.PI * (3 / 12)))
                   .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
                 const material = _makeShapeMaterial();
@@ -226,7 +227,7 @@ class ZBuild {
                 return mesh;
               })();
               const planeMesh = (() => {
-                const geometry = new THREE.PlaneBufferGeometry(0.03, 0.03);
+                const geometry = new THREE.PlaneBufferGeometry(1.5, 1.5);
                   // .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
                   // .applyMatrix(new THREE.Matrix4().makeRotationZ(-Math.PI / 2));
                 const material = _makeShapeMaterial();
@@ -235,7 +236,7 @@ class ZBuild {
                 return mesh;
               })();
               const sphereMesh = (() => {
-                const geometry = new THREE.SphereBufferGeometry(0.015, 8, 8)
+                const geometry = new THREE.SphereBufferGeometry(0.75, 8, 8)
                   .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
                 const material = _makeShapeMaterial();
                 const mesh = new THREE.Mesh(geometry, material);
@@ -243,7 +244,7 @@ class ZBuild {
                 return mesh;
               })();
               const cylinderMesh = (() => {
-                const geometry = new THREE.CylinderBufferGeometry(0.015, 0.015, 0.03, 8, 1)
+                const geometry = new THREE.CylinderBufferGeometry(0.75, 0.75, 1.5, 8, 1)
                   .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
                 const material = _makeShapeMaterial();
                 const mesh = new THREE.Mesh(geometry, material);
@@ -251,7 +252,7 @@ class ZBuild {
                 return mesh;
               })();
               const torusMesh = (() => {
-                const geometry = new THREE.TorusBufferGeometry(0.015, 0.02 / 4, 4, 8)
+                const geometry = new THREE.TorusBufferGeometry(0.75, 0.25, 4, 8)
                   .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
                 const material = _makeShapeMaterial();
                 const mesh = new THREE.Mesh(geometry, material);
@@ -717,7 +718,7 @@ class ZBuild {
                     for (let i = 0; i < shapeMeshes.length; i++) {
                       const shapeMesh = shapeMeshes[i];
                       const selected = i !== shapeIndex;
-                      shapeMesh.scale.copy(selected ? oneVector : oneAndHalfVector);
+                      shapeMesh.scale.copy(selected ? shapeScaleVector : selectedShapeScaleVector);
                       shapeMesh.material.color.setHex(selected ? 0x808080 : 0xFF0000);
                     }
 
