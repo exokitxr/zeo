@@ -92,6 +92,7 @@ class Rend {
           scene.add(dotMeshes[side]);
           scene.add(boxMeshes[side]);
         });
+        let uiRefCount = 1; // either we start with menu open or tutorial open; either way it's one ref
 
         const localUpdates = [];
 
@@ -304,6 +305,8 @@ class Rend {
             const {tagsLinesMesh} = auxObjects;
             tagsLinesMesh.visible = false;
 
+            rendApi.removeUiRef();
+
             rendApi.emit('close');
           } else {
             const {hmd: hmdStatus} = webvr.getStatus();
@@ -330,6 +333,8 @@ class Rend {
 
             const {tagsLinesMesh} = auxObjects;
             tagsLinesMesh.visible = true;
+
+            rendApi.addUiRef();
 
             rendApi.emit('open', {
               position: newMenuPosition,
@@ -480,7 +485,7 @@ class Rend {
           const _updateUiTracker = () => {
             uiTracker.update({
               pose: webvr.getStatus(),
-              enabled: rendApi.isOpen() || bootstrap.getTutorialFlag(),
+              enabled: uiRefCount > 0,
               sides: (() => {
                 const vrMode = bootstrap.getVrMode();
 
@@ -628,6 +633,14 @@ class Rend {
 
           removeBoxAnchor(boxAnchor) {
             uiTracker.removeBoxAnchor(boxAnchor);
+          }
+
+          addUiRef() {
+            uiRefCount++;
+          }
+
+          removeUiRef() {
+            uiRefCount--;
           }
 
           getHoverState(side) {

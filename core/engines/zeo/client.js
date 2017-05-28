@@ -500,6 +500,14 @@ class Zeo {
                           this.emit('mutate');
                         });
                       }
+
+                      addUiRef() {
+                        rend.addUiRef();
+                      }
+
+                      removeUiRef() {
+                        rend.removeUiRef();
+                      }
                     }
 
                     class ZeoElementsApi {

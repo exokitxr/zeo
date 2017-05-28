@@ -55,11 +55,19 @@ class ZBuild {
       }
 
       enable() {
-        this._enabled = true;
+        if (!this ._enabled) {
+          this._enabled = true;
+
+          render.addUiRef();
+        }
       }
 
       disable() {
-        this._enabled = false;
+        if (this._enabled) {
+          this._enabled = false;
+
+          render.removeUiRef();
+        }
       }
 
       checkIntersection(controllerLine) {
@@ -104,6 +112,8 @@ class ZBuild {
       }
 
       destroy() {
+        this.disable();
+
         scene.remove(this._transformGizmo);
         transform.destroyTransformGizmo(this._transformGizmo);
       }

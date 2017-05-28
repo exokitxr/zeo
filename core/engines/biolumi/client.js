@@ -857,9 +857,6 @@ class Biolumi {
 
                       const controllerScaleFactor = (controllerScale.x + controllerScale.y + controllerScale.z) / 3;
                       rayMesh.scale.z = intersectionPoint.distanceTo(controllerLine.start) / controllerScaleFactor;
-                      if (!rayMesh.visible) {
-                        rayMesh.visible = true;
-                      }
                     } else if (type === 'boxAnchor') {
                       const {boxAnchor, boxTarget, anchor} = metadata;
 
@@ -891,9 +888,6 @@ class Biolumi {
                       }
 
                       rayMesh.scale.z = intersectionPoint.distanceTo(controllerLine.start);
-                      if (!rayMesh.visible) {
-                        rayMesh.visible = true;
-                      }
                     } else {
                       const err = new Error('unknown anchor intersection spec type: ' + JSON.stringify(type));
                       console.warn(err);
@@ -913,9 +907,10 @@ class Biolumi {
                     }
 
                     rayMesh.scale.z = controllerLine.distance();
-                    if (!rayMesh.visible) {
-                      rayMesh.visible = true;
-                    }
+                  }
+
+                  if (!rayMesh.visible) {
+                    rayMesh.visible = true;
                   }
                 } else {
                   hoverState.intersectionPoint = null;
