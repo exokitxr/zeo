@@ -388,7 +388,8 @@ class ZBuild {
                 object.add(planeMesh);
 
                 const notchMesh = (() => {
-                  const geometry = new THREE.TorusBufferGeometry(size / 20, size / 80, 3, 8);
+                  const geometry = new THREE.TorusBufferGeometry(size / 20, size / 80, 3, 8)
+                    .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
                   const material = new THREE.MeshPhongMaterial({
                     color: 0xFFFFFF,
                     shading: THREE.FlatShading,
