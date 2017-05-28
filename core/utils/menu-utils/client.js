@@ -135,6 +135,11 @@ const menuUtils = () => ({
       }
       ctx.putImageData(imageData, 0, 0);
 
+      canvas.getColor = y => {
+        const v = y * 255;
+        return (v << (8 * 2)) | (v << (8 * 1)) | (v << (8 * 0));
+      };
+
       return canvas;
     };
     let colorBarImg = null;

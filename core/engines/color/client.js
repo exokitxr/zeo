@@ -60,6 +60,8 @@ class Color {
 
             const colorWheelMesh = (() => {
               const object = new THREE.Object3D();
+              object.x = 0.5;
+              object.y = 0.5;
 
               const planeMesh = (() => {
                 const geometry = new THREE.PlaneBufferGeometry(SIZE, SIZE)
@@ -90,9 +92,7 @@ class Color {
               object.add(planeMesh);
 
               const notchMesh = (() => {
-                const geometry = new THREE.TorusBufferGeometry(SIZE / 15, SIZE / 50, 3, 8)
-                  // .applyMatrix(new THREE.Matrix4().makeRotationY(-Math.PI * (3 / 12)))
-                  // .applyMatrix(new THREE.Matrix4().makeRotationX(Math.PI));
+                const geometry = new THREE.TorusBufferGeometry(SIZE / 20, SIZE / 80, 3, 8);
                 const material = notchMaterial;
 
                 const mesh = new THREE.Mesh(geometry, material);
@@ -109,6 +109,7 @@ class Color {
 
             const colorBarMesh = (() => {
               const object = new THREE.Object3D();
+              object.y = 0.5;
 
               const planeMesh = (() => {
                 const geometry = new THREE.PlaneBufferGeometry(SIZE / 10, SIZE)
@@ -158,7 +159,11 @@ class Color {
             object.colorBarMesh = colorBarMesh;
 
             object.getColor = () => {
-              return 0xFF0000;
+              const {x, y} = colorWheelMesh;
+              const baseColor = new THREE.Color(colorWheelImg.getColor(x, y));
+              const {y: v} = colorBarMesh;
+              const valueColor = new THREE.Color(colorBarImg.getColor(v));
+              return baseColor.clone().multiply(valueColor).getHex();
             };
 
             let boxAnchors = null;
@@ -326,6 +331,9 @@ class Color {
                     const y = xPlane.distanceToPoint(intersectionPoint) / SIZE;
 
                     if (x >= 0 && x <= 1 && y >= 0 && y <= 1) {
+                      colorWheel.colorWheelMesh.x = x;
+                      colorWheel.colorWheelMesh.y = y;
+
                       colorWheel.colorWheelMesh.notchMesh.position.x = -(SIZE / 2) + (x * SIZE);
                       colorWheel.colorWheelMesh.notchMesh.position.y = -(SIZE / 2) + (y * SIZE);
 
@@ -352,6 +360,8 @@ class Color {
                     const y = xPlane.distanceToPoint(intersectionPoint) / SIZE;
 
                     if (y >= 0 && y <= 1) {
+                      colorWheel.colorBarMesh.y = y;
+
                       colorWheel.colorBarMesh.notchMesh.position.y = -(SIZE / 2) + (y * SIZE);
 
                       _preview();
@@ -374,10 +384,10 @@ class Color {
           (() => { // XXX
             const colorWheel = _makeColorWheel({
               onpreview: color => {
-                console.log('preview');
+                // console.log('preview', '0x' + color.toString(16));
               },
               onupdate: color => {
-                console.log('update');
+                console.log('update', '0x' + color.toString(16));
               },
             });
             colorWheel.position.set(0, 2, -5);
