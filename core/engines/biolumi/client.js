@@ -660,10 +660,10 @@ class Biolumi {
                 const controllerMesh = controllerMeshes[side];
                 const {rayMesh} = controllerMesh;
                 const gamepad = gamepads[side];
+                const hoverState = hoverStates[side];
 
                 if (enabled && sides.indexOf(side) !== -1 && gamepad) {
                   const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale} = gamepad;
-                  const hoverState = hoverStates[side];
                   const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation, controllerScale);
 
                   const intersectionSpec = (() => {
@@ -899,6 +899,7 @@ class Biolumi {
                       console.warn(err);
                     }
                   } else {
+                    hoverState.intersectionPoint = null;
                     hoverState.type = '';
                     hoverState.target = null;
                     hoverState.anchor = null;
@@ -917,6 +918,12 @@ class Biolumi {
                     }
                   }
                 } else {
+                  hoverState.intersectionPoint = null;
+                  hoverState.type = '';
+                  hoverState.target = null;
+                  hoverState.anchor = null;
+                  hoverState.value = 0;
+
                   if (boxMesh.visible) {
                     boxMesh.visible = false;
                   }
