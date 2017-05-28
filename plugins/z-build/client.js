@@ -261,6 +261,7 @@ class ZBuild {
                   .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
                 const material = _makeShapeMaterial();
                 const mesh = new THREE.Mesh(geometry, material);
+                mesh.scale.copy(shapeScaleVector);
                 mesh.shapeType = 'rectangle';
                 return mesh;
               })();
@@ -269,6 +270,7 @@ class ZBuild {
                   .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
                 const material = _makeShapeMaterial();
                 const mesh = new THREE.Mesh(geometry, material);
+                mesh.scale.copy(shapeScaleVector);
                 mesh.shapeType = 'triangularPyramid';
                 return mesh;
               })();
@@ -278,6 +280,7 @@ class ZBuild {
                   .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
                 const material = _makeShapeMaterial();
                 const mesh = new THREE.Mesh(geometry, material);
+                mesh.scale.copy(shapeScaleVector);
                 mesh.shapeType = 'rectangularPyramid';
                 return mesh;
               })();
@@ -287,6 +290,7 @@ class ZBuild {
                   // .applyMatrix(new THREE.Matrix4().makeRotationZ(-Math.PI / 2));
                 const material = _makeShapeMaterial();
                 const mesh = new THREE.Mesh(geometry, material);
+                mesh.scale.copy(shapeScaleVector);
                 mesh.shapeType = 'plane';
                 return mesh;
               })();
@@ -295,6 +299,7 @@ class ZBuild {
                   .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
                 const material = _makeShapeMaterial();
                 const mesh = new THREE.Mesh(geometry, material);
+                mesh.scale.copy(shapeScaleVector);
                 mesh.shapeType = 'sphere';
                 return mesh;
               })();
@@ -303,6 +308,7 @@ class ZBuild {
                   .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
                 const material = _makeShapeMaterial();
                 const mesh = new THREE.Mesh(geometry, material);
+                mesh.scale.copy(shapeScaleVector);
                 mesh.shapeType = 'cylinder';
                 return mesh;
               })();
@@ -311,6 +317,7 @@ class ZBuild {
                   .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
                 const material = _makeShapeMaterial();
                 const mesh = new THREE.Mesh(geometry, material);
+                mesh.scale.copy(shapeScaleVector);
                 mesh.shapeType = 'torus';
                 return mesh;
               })();
