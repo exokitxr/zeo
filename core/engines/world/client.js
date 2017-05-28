@@ -174,7 +174,6 @@ class World {
             this._transformGizmo.position.copy(position);
             this._transformGizmo.rotateGizmo.quaternion.copy(rotation);
             this._transformGizmo.scaleGizmo.position.copy(scalePosition);
-
             this._transformGizmo.updateBoxTargets();
           }
 

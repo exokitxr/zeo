@@ -9,7 +9,7 @@ const SIDES = ['left', 'right'];
 
 class ZBuild {
   mount() {
-    const {three: {THREE, scene, camera}, elements, input, pose, render, player, utils: {network: networkUtils, geometry: geometryUtils, menu: menuUtils}} = zeo;
+    const {three: {THREE, scene, camera}, elements, input, pose, render, player, transform, utils: {network: networkUtils, geometry: geometryUtils, menu: menuUtils}} = zeo;
     const {AutoWs} = networkUtils;
 
     const targetPlaneImg = menuUtils.getTargetPlaneImg();
@@ -30,6 +30,49 @@ class ZBuild {
     const shapeSize = 0.02;
     const shapeScaleVector = new THREE.Vector3(shapeSize, shapeSize, shapeSize);
     const selectedShapeScaleVector = shapeScaleVector.clone().multiplyScalar(1.5);
+
+    class ShapeControl {
+      constructor(object) {
+        this.object = object;
+
+        this._boundingBox = new THREE.Box3();
+        const transformGizmo = transform.makeTransformGizmo({
+          onpreview: (position, rotation, scale) => {
+            this.updateBoundingBox(position, rotation, scale);
+          },
+          onupdate: (position, rotation, scale) => {
+            this.update(position, rotation, scale);
+          },
+        });
+        scene.add(transformGizmo);
+        this._transformGizmo = transformGizmo;
+      }
+
+      updateObject(position, rotation, scale) {
+        this.object.position.copy(position);
+        this.object.quaternion.copy(rotation);
+        this.object.scale.copy(scale);
+      }
+
+      updateBoundingBox(position, rotation, scale) {
+        const scalePosition = scale.clone().multiplyScalar(this._transformGizmo.scaleGizmo.scaleFactor);
+        const sizeFactor = Math.max(scalePosition.x, scalePosition.y, scalePosition.z, 1) * 2 * 1.1;
+        const size = new THREE.Vector3(sizeFactor, sizeFactor, sizeFactor);
+
+        this._boundingBox.setFromCenterAndSize(position, size);
+      }
+
+      update(position, rotation, scale) {
+        this.updateObject(position, rotation, scale);
+        this.updateBoundingBox(position, rotation, scale);
+      }
+
+      destroy() {
+        scene.remove(this._transformGizmo);
+        transform.destroyTransformGizmo(this._transformGizmo);
+      }
+    }
+    const shapeControls = [];
 
     const _makeShapeMaterial = ({
       color = 0x808080,
@@ -510,12 +553,22 @@ class ZBuild {
                 case 'scene': {
                   scene.add(object);
 
+                  const shapeControl = new ShapeControl(object);
+                  shapeControls.push(shapeControl);
+
                   break;
                 }
              }
             }
           };
           object.getJson = () => state;
+          object.destroy = () => {
+            const {target} = state;
+
+            if (target === 'scene') {
+              shapeControls.splice(shapeControls.indexOf(shapeControl), 1);
+            }
+          };
 
           return object;
         };
@@ -542,6 +595,7 @@ class ZBuild {
           for (const meshId in meshes) {
             const mesh = meshes[meshId];
             mesh.parent.remove(mesh);
+            mesh.destroy();
           }
           meshes = {};
         };

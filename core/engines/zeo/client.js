@@ -625,6 +625,26 @@ class Zeo {
                       }
                     }
 
+                    class ZeoTransformApi {
+                      makeTransformGizmo(spec) {
+                        return transform.makeTransformGizmo(spec);
+                      }
+
+                      destroyTransformGizmo(transformGizmo) {
+                        return transform.destroyTransformGizmo(transformGizmo);
+                      }
+                    }
+
+                    class ZeoColorApi {
+                      makeColorWheel(spec) {
+                        return color.makeColorWheel(spec);
+                      }
+
+                      destroyColorWheel(colorWheel) {
+                        return color.destroyColorWheel(colorWheel);
+                      }
+                    }
+
                     class ZeoAnimationApi {
                       makeAnimation(duration) {
                         return anima.makeAnimation(duration);
@@ -677,6 +697,8 @@ class Zeo {
                         this.player = new ZeoPlayerApi();
                         this.ui = new ZeoUiApi();
                         this.sound = new ZeoSoundApi();
+                        this.transform = new ZeoTransformApi();
+                        this.color = new ZeoColorApi();
                         this.animation = new ZeoAnimationApi();
                         this.payment = new ZeoPaymentApi();
                         this.utils = new ZeoUtilsApi();
