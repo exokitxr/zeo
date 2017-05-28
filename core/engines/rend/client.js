@@ -99,6 +99,7 @@ class Rend {
           tagMeshes: null,
           tagsLinesMesh: null,
           transformGizmos: null,
+          colorWheels: null,
           controllerMeshes: null,
         };
 
@@ -351,7 +352,7 @@ class Rend {
               const factor = animation.getValue();
               const value = ((1 - factor) * startValue) + (factor * endValue);
 
-              const {tagMeshes, transformGizmos} = auxObjects;
+              const {tagMeshes, transformGizmos, colorWheels} = auxObjects;
               const animatedMeshSpecs = [
                 {
                   mesh: menuMesh,
@@ -361,13 +362,19 @@ class Rend {
                   mesh: keyboardMesh,
                   direction: 'x',
                 }, */
-              ].concat(tagMeshes.map(tagMesh => ({
-                mesh: tagMesh,
-                direction: 'y',
-              }))).concat(transformGizmos.map(transformGizmo => ({
-                mesh: transformGizmo,
-                direction: 'xyz',
-              })))
+              ]
+                .concat(tagMeshes.map(tagMesh => ({
+                  mesh: tagMesh,
+                  direction: 'y',
+                })))
+                .concat(transformGizmos.map(transformGizmo => ({
+                  mesh: transformGizmo,
+                  direction: 'xyz',
+                })))
+                .concat(colorWheels.map(colorWheel => ({
+                  mesh: colorWheel,
+                  direction: 'y',
+                })));
 
               if (factor < 1) {
                 if (value > 0.001) {

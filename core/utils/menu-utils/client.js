@@ -56,8 +56,9 @@ const menuUtils = () => ({
     };
 
     const _makeColorWheelImg = () => {
+      const size = 256;
       const width = size;
-      const height = width;
+      const height = size;
       const halfWidth = width / 2;
       const halfHeight = height / 2;
 
@@ -120,7 +121,7 @@ const menuUtils = () => ({
       canvas.width = width;
       canvas.height = height;
 
-      const ctx = canvas.getContent('2d');
+      const ctx = canvas.getContext('2d');
       const imageData = ctx.getImageData(0, 0, width, height);
       const {data: imageDataData} = imageData;
       for (let i = 0; i < height; i++) {
