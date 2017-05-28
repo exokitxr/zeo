@@ -626,10 +626,7 @@ class ZBuild {
           pressStart: null,
           pressCurrent: null,
           menu: 'shape',
-          angle: 0,
           shape: 'box',
-          rotation: new THREE.Quaternion(),
-          scaleValue: 0,
           color: '',
         });
         const buildStates = {
@@ -663,7 +660,7 @@ class ZBuild {
             if (grabbed) {
               buildState.building = true;
 
-              const {shape, rotation} = buildState;
+              const {shape} = buildState;
               const {color} = entityApi;
 
               currentMeshId = _makeId();
@@ -724,10 +721,6 @@ class ZBuild {
             const {axes} = gamepad;
             buildState.pressStart = new THREE.Vector2().fromArray(axes);
 
-            const {menuMesh} = toolMesh;
-            const {angle} = buildState;
-            menuMesh.rotation.z = angle;
-
             e.stopImmediatePropagation();
           }
         };
@@ -766,11 +759,11 @@ class ZBuild {
         const menuRotationSpecs = [
           {
             menu: 'shape',
-            angle: 0,
+            // angle: 0,
           },
           {
             menu: 'color',
-            angle: Math.PI / 2,
+            // angle: Math.PI / 2,
           },
         ];
         const _update = () => {
