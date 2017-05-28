@@ -77,14 +77,15 @@ class Transform {
           };
 
           const transformGizmos = [];
-          rend.registerAuxObject('transformGizmos', transformGizmos);
+          const menuTransformGizmos = [];
+          rend.registerAuxObject('transformGizmos', menuTransformGizmos);
 
           const _getTransformGizmos = () => transformGizmos;
 
           const rotateScale = 0.5;
           const scaleScale = 0.3;
           const scaleFactor = new THREE.Vector3(scaleScale, scaleScale, scaleScale).length();
-          const _makeTransformGizmo = ({onpreview, onupdate}) => {
+          const _makeTransformGizmo = ({onpreview, onupdate, menu = false}) => {
             const transformId = _makeId();
 
             const transformGizmo = (() => {
@@ -102,6 +103,7 @@ class Transform {
               }
               object.onpreview = onpreview;
               object.onupdate = onupdate;
+              object.menu = menu;
 
               const transformGizmo = new THREETransformGizmoTranslate();
               object.add(transformGizmo);
@@ -260,12 +262,19 @@ class Transform {
 
             transformGizmos.push(transformGizmo);
 
+            if (menu) {
+              menuTransformGizmos.push(transformGizmo);
+            }
+
             return transformGizmo;
           };
           const _destroyTransformGizmo = transformGizmo => {
             transformGizmo.removeBoxTargets();
-
             transformGizmos.splice(transformGizmos.indexOf(transformGizmo), 1);
+
+            if (transformGizmo.menu) {
+              menuTransformGizmos.splice(menuTransformGizmos.indexOf(transformGizmo), 1);
+            }
           };
 
           const _triggerdown = e => {

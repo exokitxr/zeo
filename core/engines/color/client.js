@@ -47,14 +47,16 @@ class Color {
           };
 
           const colorWheels = [];
-          rend.registerAuxObject('colorWheels', colorWheels);
+          const menuColorWheels = [];
+          rend.registerAuxObject('colorWheels', menuColorWheels);
 
-          const _makeColorWheel = ({onpreview, onupdate}) => {
+          const _makeColorWheel = ({onpreview, onupdate, menu = false}) => {
             const object = new THREE.Object3D();
             const colorId = _makeId();
             object.colorId = colorId;
             object.onpreview = onpreview;
             object.onupdate = onupdate;
+            object.menu = menu;
 
             const colorWheelMesh = (() => {
               const object = new THREE.Object3D();
@@ -211,12 +213,20 @@ class Color {
 
             colorWheels.push(object);
 
+            if (menu) {
+              menuColorWheels.push(colorWheel);
+            }
+
             return object;
           };
           const _destroyColorWheel = colorWheel => {
             colorWheel.removeBoxTargets();
 
             colorWheels.splice(colorWheels.indexOf(colorWheel), 1);
+
+            if (colorWheel.menu) {
+              menuColorWheels.splice(menuColorWheels.indexOf(colorWheel), 1);
+            }
           };
 
           const _triggerdown = e => {

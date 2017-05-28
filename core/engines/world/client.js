@@ -154,6 +154,7 @@ class World {
                   value: position.toArray().concat(rotation.toArray()).concat(scale.toArray()),
                 });
               },
+              menu: true,
             });
             scene.add(transformGizmo);
             this._transformGizmo = transformGizmo;

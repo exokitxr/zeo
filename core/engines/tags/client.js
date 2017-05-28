@@ -1622,6 +1622,7 @@ class Tags {
                           value: '#' + colorString,
                         });
                       },
+                      menu: true,
                     });
                     scene.add(colorWheel);
 
