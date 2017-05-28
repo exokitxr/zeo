@@ -1525,7 +1525,8 @@ class Tags {
                     })();
                     const keyboardFocusState = (() => {
                       if (textProperties) {
-                        const {hmd: {position: hmdPosition, rotation: hmdRotation}} = webvr.getStatus();
+                        const {hmd: hmdStatus} = webvr.getStatus();
+                        const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmdStatus;
                         const inputText = menuUtils.castValueValueToString(attributeValue, type);
                         const {index, px} = textProperties;
                         return keyboard.focus({
