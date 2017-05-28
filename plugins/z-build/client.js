@@ -9,7 +9,7 @@ const SIDES = ['left', 'right'];
 
 class ZBuild {
   mount() {
-    const {three: {THREE, scene, camera}, elements, input, pose, world, render, player, utils: {network: networkUtils, geometry: geometryUtils, menu: menuUtils}} = zeo;
+    const {three: {THREE, scene, camera}, elements, input, pose, render, player, utils: {network: networkUtils, geometry: geometryUtils, menu: menuUtils}} = zeo;
     const {AutoWs} = networkUtils;
 
     const targetPlaneImg = menuUtils.getTargetPlaneImg();
@@ -91,8 +91,6 @@ class ZBuild {
 
           const coreMesh = (() => {
             const geometry = (() => {
-              const sq = n => Math.sqrt((n * n) + (n * n));
-
               const coreGeometry = new THREE.BoxBufferGeometry(0.04, 0.04, 0.2);
               const tipsGeometries = [
                 new THREE.BoxBufferGeometry(0.02, 0.02, 0.05)
@@ -829,21 +827,5 @@ const _relativeWsUrl = s => {
 const _makeId = () => Math.random().toString(36).substring(7);
 const sq = n => Math.sqrt((n * n) + (n * n));
 const _arrayEquals = (a, b) => Array.isArray(a) && Array.isArray(b) && a.length === b.length && a.every((ae, i) => b[i] === ae);
-const _concatArrayBuffers = as => {
-  let length = 0;
-  for (let i = 0; i < as.length; i++) {
-    const e = as[i];
-    length += e.length;
-  }
-
-  const result = new Uint8Array(length);
-  let index = 0;
-  for (let i = 0; i < as.length; i++) {
-    const e = as[i];
-    result.set(e, index);
-    index += e.length;
-  }
-  return result;
-};
 
 module.exports = ZBuild;
