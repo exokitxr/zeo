@@ -64,7 +64,7 @@ class ZBuild {
       }
 
       checkIntersection(controllerLine) {
-        return controllerLine.intersectBox(this._boundingBox);
+        return controllerLine.intersectBox(this._boundingBox) !== null;
       }
 
       setBound() {

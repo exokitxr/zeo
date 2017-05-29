@@ -113,8 +113,8 @@ class World {
 
         const oneVector = new THREE.Vector3(1, 1, 1);
         const zeroVector = new THREE.Vector3(0, 0, 0);
-        const controllerForwardVector = new THREE.Vector3(0, 0, -15);
         const zeroQuaternion = new THREE.Quaternion();
+        const forwardVector = new THREE.Vector3(0, 0, -1);
         const controllerMeshOffset = new THREE.Vector3(0, 0, -0.02);
         const controllerMeshQuaternion = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, -1));
         const matrixAttributeSizeVector = oneVector.clone().multiplyScalar(2 * 1.1);
@@ -185,8 +185,19 @@ class World {
             this.updateTransformGizmo(position, rotation, scale);
           }
 
-          getIntersection(controllerLine) {
-            return controllerLine.intersectBox(this._boundingBox);
+          getIntersectionDistance(controllerLine) {
+            if (controllerLine.intersectsBox(this._boundingBox)) {
+              const boundingBoxCenter = this._boundingBox.getCenter();
+              const closestPoint = controllerLine.closestPointToPoint(boundingBoxCenter);
+
+              if (controllerLine.origin.distanceTo(closestPoint) < 15) {
+                return closestPoint.distanceTo(boundingBoxCenter);
+              } else {
+                return NaN;
+              }
+            } else {
+              return NaN;
+            }
           }
 
           setHovered(hovered) {
@@ -917,7 +928,7 @@ class World {
               const {gamepads} = webvr.getStatus();
               const _getControllerLine = gamepad => {
                 const {worldPosition: controllerPosition, worldRotation: controllerRotation} = gamepad;
-                const controllerLine = new THREE.Ray(controllerPosition, controllerForwardVector.clone().applyQuaternion(controllerRotation));
+                const controllerLine = new THREE.Ray(controllerPosition, forwardVector.clone().applyQuaternion(controllerRotation));
                 return controllerLine;
               };
               const controllerLines = {
@@ -925,41 +936,27 @@ class World {
                 right: _getControllerLine(gamepads.right),
               };
 
-              let closestIntersectionSpec = null;
-              for (let i = 0; i < matrixAttributes.length; i++) {
-                const matrixAttribute = matrixAttributes[i];
+              const intersectedMatrixAttributes = SIDES.map(side => {
+                const controllerLine = controllerLines[side];
 
-                const intersectionSpecs = [];
-                for (let j = 0; j < SIDES.length; j++) {
-                  const side = SIDES[j];
-                  const controllerLine = controllerLines[side];
-                  const intersectionPoint = matrixAttribute.getIntersection(controllerLine);
+                let closestIntersectionSpec = null;
+                for (let i = 0; i < matrixAttributes.length; i++) {
+                  const matrixAttribute = matrixAttributes[i];
+                  const distance = matrixAttribute.getIntersectionDistance(controllerLine);
 
-                  if (intersectionPoint) {
-                    intersectionSpecs.push({
-                      controllerLine,
-                      intersectionPoint,
-                    });
-                  }
-                }
-
-                for (let j = 0; j < intersectionSpecs.length; j++) {
-                  const intersectionSpec = intersectionSpecs[j];
-                  const {controllerLine, intersectionPoint} = intersectionSpec;
-                  const distance = controllerLine.origin.distanceTo(intersectionPoint);
-
-                  if (!closestIntersectionSpec || (distance < closestIntersectionSpec.distance)) {
+                  if (!isNaN(distance) && (!closestIntersectionSpec || (distance < closestIntersectionSpec.distance))) {
                     closestIntersectionSpec = {
                       matrixAttribute,
                       distance,
                     };
                   }
                 }
-              }
-              const closestIntersectedMatrixAttribute = closestIntersectionSpec ? closestIntersectionSpec.matrixAttribute : null;
+                const closestIntersectedMatrixAttribute = closestIntersectionSpec ? closestIntersectionSpec.matrixAttribute : null;
+                return closestIntersectedMatrixAttribute;
+              });
               for (let i = 0; i < matrixAttributes.length; i++) {
                 const matrixAttribute = matrixAttributes[i];
-                matrixAttribute.setHovered(matrixAttribute === closestIntersectedMatrixAttribute);
+                matrixAttribute.setHovered(intersectedMatrixAttributes.includes(matrixAttribute));
               }
             }
           };
