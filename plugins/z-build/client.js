@@ -1,3 +1,13 @@
+const {
+  WIDTH,
+  HEIGHT,
+
+  WORLD_WIDTH,
+  WORLD_HEIGHT,
+  WORLD_DEPTH,
+} = require('./lib/constants/constants');
+const menuRenderer = require('./lib/render/menu');
+
 const DIRTY_TIME = 1000;
 const DEFAULT_MATRIX = [
   0, 0, -2,
@@ -9,7 +19,7 @@ const SIDES = ['left', 'right'];
 
 class ZBuild {
   mount() {
-    const {three: {THREE, scene, camera}, elements, input, pose, render, player, transform, color, utils} = zeo;
+    const {three: {THREE, scene, camera}, elements, input, pose, render, player, transform, color, ui, utils} = zeo;
     const {network: networkUtils, geometry: geometryUtils, menu: menuUtils} = utils;
     const {AutoWs} = networkUtils;
 
@@ -569,8 +579,7 @@ class ZBuild {
 
                   shapeControl.setBound(true);
                   const {position, quaternion: rotation, scale} = object;
-                  shapeControl.updateBoundingBox(position.clone(), rotation.clone(), scale.clone());
-                  shapeControl.updateTransformGizmo(position.clone(), rotation.clone(), scale.clone());
+                  shapeControl.update(position, rotation, scale);
 
                   break;
                 }
@@ -647,6 +656,42 @@ class ZBuild {
             scene.add(colorWheel);
             this._colorWheel = colorWheel;
 
+            const planeMesh = (() => {
+              const menuUi = ui.makeUi({
+                width: WIDTH,
+                height: HEIGHT,
+              });
+              const mesh = menuUi.makePage(({
+                // nothing
+              }) => ({
+                type: 'html',
+                src: menuRenderer.getShapeCloseSrc(),
+                x: 0,
+                y: 0,
+                w: WIDTH,
+                h: HEIGHT,
+              }), {
+                type: 'build',
+                state: {
+                  // nothing
+                },
+                worldWidth: WORLD_WIDTH,
+                worldHeight: WORLD_HEIGHT,
+                menu: false,
+                isEnabled: () => this.isEnabled(),
+              });
+              mesh.rotation.order = camera.rotation.order;
+              mesh.visible = false;
+
+              const {page} = mesh;
+              ui.addPage(page);
+              page.update();
+
+              return mesh;
+            })();
+            scene.add(planeMesh);
+            this._planeMesh = planeMesh;
+
             this._bound = false;
             this._hovered = false;
           }
@@ -687,12 +732,18 @@ class ZBuild {
               if (!this._colorWheel.visible) {
                 this._colorWheel.visible = true;
               }
+              if (!this._planeMesh.visible) {
+                this._planeMesh.visible = true;
+              }
             } else if (!hovered) {
               if (this._transformGizmo.visible) {
                 this._transformGizmo.visible = false;
               }
               if (this._colorWheel.visible) {
                 this._colorWheel.visible = false;
+              }
+              if (this._planeMesh.visible) {
+                this._planeMesh.visible = false;
               }
             }
           }
@@ -706,17 +757,23 @@ class ZBuild {
           }
 
           updateColorWheel(position, rotation, scale) {
-            const newPosition = position.clone().add(new THREE.Vector3(1 - (color.getSize() / 2), 1 - (color.getSize() / 2), 0.7));
+            const newPosition = position.clone().add(new THREE.Vector3(1 - (color.getWidth() / 2), 1 - (color.getHeight() / 2), 0.7));
             const newRotation = zeroQuaternion;
             const newScale = oneVector;
 
             this._colorWheel.update(newPosition, newRotation, newScale);
           }
 
+          updatePlaneMesh(position, rotation, scale) {
+            const newPosition = position.clone().add(new THREE.Vector3(1 - (WORLD_WIDTH / 2), 1 + (WORLD_HEIGHT / 2), 0.7));
+            this._planeMesh.position.copy(newPosition);
+          }
+
           update(position, rotation, scale) {
             this.updateBoundingBox(position, rotation, scale);
             this.updateTransformGizmo(position, rotation, scale);
             this.updateColorWheel(position, rotation, scale);
+            this.updatePlaneMesh(position, rotation, scale);
           }
 
           destroy() {
@@ -725,6 +782,10 @@ class ZBuild {
 
             scene.remove(this._colorWheel);
             color.destroyColorWheel(this._colorWheel);
+
+            scene.remove(this._planeMesh);
+            const {page} = this._planeMesh;
+            ui.removePage(page);
           }
         }
         const shapeControls = [];

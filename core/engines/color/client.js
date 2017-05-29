@@ -1,4 +1,6 @@
 const SIZE = 0.2;
+const WIDTH = SIZE + (SIZE / 10);
+const HEIGHT = SIZE;
 
 const SIDES = ['left', 'right'];
 
@@ -51,7 +53,8 @@ class Color {
           const menuColorWheels = [];
           rend.registerAuxObject('colorWheels', menuColorWheels);
 
-          const _getSize = () => SIZE;
+          const _getWidth = () => WIDTH;
+          const _getHeight = () => HEIGHT;
           const _makeColorWheel = ({onpreview, onupdate, menu = false, isEnabled = yes}) => {
             const object = new THREE.Object3D();
             const colorId = _makeId();
@@ -392,7 +395,8 @@ class Color {
           };
 
           return {
-            getSize: _getSize,
+            getWidth: _getWidth,
+            getHeight: _getHeight,
             makeColorWheel: _makeColorWheel,
             destroyColorWheel: _destroyColorWheel,
           };

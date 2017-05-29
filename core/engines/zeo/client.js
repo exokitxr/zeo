@@ -636,8 +636,12 @@ class Zeo {
                     }
 
                     class ZeoColorApi {
-                      getSize() {
-                        return color.getSize();
+                      getWidth() {
+                        return color.getWidth();
+                      }
+
+                      getHeight() {
+                        return color.getHeight();
                       }
 
                       makeColorWheel(spec) {
