@@ -913,7 +913,7 @@ class ZBuild {
                     }
                   }
                 }
-                return closestIntersectedShapeControl = closestIntersectionSpec && closestIntersectionSpec.shapeControl;
+                const closestIntersectedShapeControl = closestIntersectionSpec && closestIntersectionSpec.shapeControl;
                 return closestIntersectedShapeControl;
               });
               for (let i = 0; i < shapeControls.length; i++) {
