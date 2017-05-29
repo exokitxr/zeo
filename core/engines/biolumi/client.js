@@ -460,43 +460,13 @@ class Biolumi {
           }
 
           class Layer {
-            constructor(parent) {
-              this.parent = parent;
+            constructor(width, height) {
+              this.width = width;
+              this.height = height;
 
               this.img = null;
               this.anchors = [];
               this.makeAnchors = null;
-              this.medias = null;
-
-              const {parent: {width, height}} = parent;
-              this.x = 0;
-              this.y = 0;
-              this.w = width;
-              this.h = height;
-            }
-
-            getPosition() {
-              const {parent: {parent: {width, height}}} = this;
-
-              return new Position(
-                this.x / width,
-                this.y / height,
-                this.w / width,
-                this.h / height
-              );
-            }
-
-            getRect() {
-              const position = this.getPosition();
-              const {x: px, y: py, w: pw, h: ph} = position;
-              const {parent: {parent: {width, height}}} = this;
-
-              return new Rect(
-                clamp(py * height, 0, height),
-                clamp((py + ph) * height, 0, height),
-                clamp(px * width, 0, width),
-                clamp((px + pw) * width, 0, width)
-              );
             }
 
             getAnchors() {
@@ -507,10 +477,7 @@ class Biolumi {
                 this.anchors = anchors;
                 this.makeAnchors = null;
               }
-
-              const position = this.getPosition();
-              const {x: px, y: py, w: pw, h: ph} = position;
-              const {parent: {parent: {width, height}}} = this;
+              const {width, height} = this;
 
               return anchors.map(anchor => {
                 const {rect, onclick, onmousedown, onmouseup} = anchor;
@@ -518,10 +485,10 @@ class Biolumi {
 
                 return new Anchor(
                   new Rect(
-                    clamp((py * height) + top, 0, (py + ph) * height),
-                    clamp((py * height) + bottom, 0, (py + ph) * height),
-                    clamp((px * width) + left, 0, (px + pw) * width),
-                    clamp((px * width) + right, 0, (px + pw) * width)
+                    clamp(top, 0, height),
+                    clamp(bottom, 0, height),
+                    clamp(left, 0, width),
+                    clamp(right, 0, width)
                   ),
                   onclick,
                   onmousedown,
@@ -544,22 +511,6 @@ class Biolumi {
               this.onclick = onclick;
               this.onmousedown = onmousedown;
               this.onmouseup = onmouseup;
-            }
-          }
-
-          class Media {
-            constructor(rect, media) {
-              this.rect = rect;
-              this.media = media;
-            }
-          }
-
-          class Position {
-            constructor(x, y, w, h) {
-              this.x = x; // x position
-              this.y = y; // y position
-              this.w = w; // texture width
-              this.h = h; // texture height
             }
           }
 
