@@ -30,6 +30,7 @@ class ZBuild {
     const shapeSize = 0.02;
     const shapeScaleVector = new THREE.Vector3(shapeSize, shapeSize, shapeSize);
     const selectedShapeScaleVector = shapeScaleVector.clone().multiplyScalar(1.5);
+    const shapeControlSizeVector = oneVector.clone().multiplyScalar(2 * 1.1);
     const controllerForwardVector = new THREE.Vector3(0, 0, -15);
 
     class ShapeControl {
@@ -82,11 +83,7 @@ class ZBuild {
       }
 
       updateBoundingBox(position, rotation, scale) {
-        const scalePosition = scale.clone().multiplyScalar(this._transformGizmo.scaleGizmo.scaleFactor);
-        const sizeFactor = Math.max(scalePosition.x, scalePosition.y, scalePosition.z, 1) * 2 * 1.1;
-        const size = new THREE.Vector3(sizeFactor, sizeFactor, sizeFactor);
-
-        this._boundingBox.setFromCenterAndSize(position, size);
+        this._boundingBox.setFromCenterAndSize(position, shapeControlSizeVector);
       }
 
       updateTransformGizmo(position, rotation, scale) {
