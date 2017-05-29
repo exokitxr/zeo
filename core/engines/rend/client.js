@@ -306,8 +306,6 @@ class Rend {
             const {tagsLinesMesh} = auxObjects;
             tagsLinesMesh.visible = false;
 
-            rendApi.removeUiRef();
-
             rendApi.emit('close');
           } else {
             const {hmd: hmdStatus} = webvr.getStatus();
@@ -334,8 +332,6 @@ class Rend {
 
             const {tagsLinesMesh} = auxObjects;
             tagsLinesMesh.visible = true;
-
-            rendApi.addUiRef();
 
             rendApi.emit('open', {
               position: newMenuPosition,
