@@ -463,7 +463,11 @@ class ZBuild {
                 if (type === 'buildSpec') {
                   const {meshId, data} = e;
 
-                  _loadMesh({meshId, data});
+                  if (data !== null) {
+                    _loadMesh({meshId, data});
+                  } else {
+                    _removeMesh({meshId});
+                  }
                 } else if (type === 'clear') {
                   _clearMeshes();
                 } else {
@@ -662,18 +666,18 @@ class ZBuild {
                 height: HEIGHT,
               });
               const mesh = menuUi.makePage(({
-                // nothing
+                meshId,
               }) => ({
                 type: 'html',
-                src: menuRenderer.getShapeCloseSrc(),
+                src: menuRenderer.getShapeCloseSrc({meshId}),
                 x: 0,
                 y: 0,
                 w: WIDTH,
                 h: HEIGHT,
               }), {
-                type: 'build',
+                type: 'buildShape',
                 state: {
-                  // nothing
+                  meshId,
                 },
                 worldWidth: WORLD_WIDTH,
                 worldHeight: WORLD_HEIGHT,
@@ -805,6 +809,16 @@ class ZBuild {
 
           return mesh;
         };
+        const _removeMesh = ({meshId}) => {
+          const mesh = meshes[meshId];
+
+          mesh.parent.remove(mesh);
+          mesh.destroy();
+
+          delete meshes[meshId];
+
+          return mesh;
+        };
         const _updateMeshMatrix = ({meshId, matrix}) => {
           const mesh = meshes[meshId];
           mesh.setMatrix(matrix);
@@ -853,6 +867,35 @@ class ZBuild {
           buildState.building = false;
         };
         entityElement.addEventListener('release', _release);
+        const _trigger = e => {
+          const {side} = e;
+
+          const _doPlaneClick = () => {
+            const hoverState = ui.getHoverState(side);
+            const {anchor} = hoverState;
+            const onclick = (anchor && anchor.onclick) || '';
+
+            let match;
+            if (match = onclick.match(/^buildShape:close:(.+)$/)) {
+              const meshId = match[1];
+
+              _removeMesh({meshId});
+              _broadcastUpdate({
+                meshId: meshId,
+                data: null,
+              });
+
+              return true;
+            } else {
+              return false;
+            }
+          };
+
+          if (_doPlaneClick()) {
+            e.stopImmediatePropagation();
+          }
+        };
+        input.on('trigger', _trigger);
         const _triggerdown = e => {
           const {side} = e;
           const {file} = entityApi;
@@ -953,7 +996,7 @@ class ZBuild {
         input.on('padup', _padup, {
           priority: 1,
         });
-        const _menu = e => {
+        const _menudown = e => {
           const {side} = e;
           const buildState = buildStates[side];
           const {grabbed} = buildState;
@@ -966,7 +1009,7 @@ class ZBuild {
             e.stopImmediatePropagation();
           }
         };
-        input.on('menu', _menu, {
+        input.on('menudown', _menudown, {
           priority: 1,
         });
 
@@ -1103,11 +1146,12 @@ class ZBuild {
           entityElement.removeEventListener('grab', _grab);
           entityElement.removeEventListener('release', _release);
 
+          input.removeListener('trigger', _trigger);
           input.removeListener('triggerdown', _triggerdown);
           input.removeListener('triggerup', _triggerup);
           input.removeListener('paddown', _paddown);
           input.removeListener('padup', _padup);
-          input.removeListener('menu', _menu);
+          input.removeListener('menudown', _menudown);
 
           render.removeListener('update', _update);
         };

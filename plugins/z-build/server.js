@@ -80,6 +80,20 @@ class ZBuild {
 
         return file.write(JSON.stringify(j, null, 2));
       });
+    const _ensureFileArrayExcludesEntry = ({file, entry}) => file.read('utf8')
+      .then(s => {
+        let j = _jsonParse(s);
+        if (!Array.isArray(j)) {
+          j = [];
+        }
+
+        const index = j.indexOf(entry);
+        if (index !== -1) {
+          j.splice(index, 1);
+        }
+
+        return file.write(JSON.stringify(j, null, 2));
+      });
     const _writeFile = ({file, data}) => new Promise((accept, reject) => {
       const ws = file.createWriteStream();
       ws.end(data);
@@ -129,7 +143,7 @@ class ZBuild {
           return Promise.resolve(null);
         }
       });
-   const _requestBuildIndexFile = ({buildId}) => _requestBuildMeshFileSpec({buildId})
+    const _requestBuildIndexFile = ({buildId}) => _requestBuildMeshFileSpec({buildId})
       .then(fileSpec => {
         if (fileSpec) {
           const {id, pathname} = fileSpec;
@@ -173,35 +187,59 @@ class ZBuild {
     const _saveUpdate = ({buildId, meshId, data}) => {
       filesMutex.lock(buildId)
         .then(unlock => {
-          _requestBuildIndexAndMeshFile({buildId, meshId})
-            .then(files => {
-              if (files) {
-                const {indexFile, meshFile} = files;
+          if (data !== null) {
+            _requestBuildIndexAndMeshFile({buildId, meshId})
+              .then(files => {
+                if (files) {
+                  const {indexFile, meshFile} = files;
 
-                return Promise.all([
-                  _ensureFileArrayIncludesEntry({
+                  return Promise.all([
+                    _ensureFileArrayIncludesEntry({
+                      file: indexFile,
+                      entry: meshId,
+                    }),
+                    _writeFile({
+                      file: meshFile,
+                      data: JSON.stringify(data, null, 2),
+                    }),
+                  ]);
+                } else {
+                  console.warn('build server could not find file for saving for build id', {buildId});
+
+                  return Promise.resolve();
+                }
+              })
+              .then(() => {
+                unlock();
+              })
+              .catch(err => {
+                console.warn(err);
+
+                unlock();
+              });
+          } else {
+            _requestBuildIndexFile({buildId, meshId})
+              .then(indexFile => {
+                if (indexFile) {
+                  return _ensureFileArrayExcludesEntry({
                     file: indexFile,
                     entry: meshId,
-                  }),
-                  _writeFile({
-                    file: meshFile,
-                    data: JSON.stringify(data, null, 2),
-                  }),
-                ]);
-              } else {
-                console.warn('build server could not find file for saving for build id', {buildId});
+                  });
+                } else {
+                  console.warn('build server could not find file for removing for build id', {buildId});
 
-                return Promise.resolve();
-              }
-            })
-            .then(() => {
-              unlock();
-            })
-            .catch(err => {
-              console.warn(err);
+                  return Promise.resolve();
+                }
+              })
+              .then(() => {
+                unlock();
+              })
+              .catch(err => {
+                console.warn(err);
 
-              unlock();
-            });
+                unlock();
+              });
+          }
         });
     };
     const _saveClear = ({buildId}) => {
