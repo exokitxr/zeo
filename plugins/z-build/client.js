@@ -33,93 +33,6 @@ class ZBuild {
     const selectedShapeScaleVector = shapeScaleVector.clone().multiplyScalar(1.5);
     const shapeControlSizeVector = oneVector.clone().multiplyScalar(2 * 1.1);
 
-    class ShapeControl {
-      constructor(object) {
-        this.object = object;
-
-        this._boundingBox = new THREE.Box3();
-        const transformGizmo = transform.makeTransformGizmo({
-          onpreview: (position, rotation, scale) => {
-            this.updateBoundingBox(position, rotation, scale);
-          },
-          onupdate: (position, rotation, scale) => {
-            this.update(position, rotation, scale);
-          },
-          menu: false,
-          isEnabled: () => this.isEnabled(),
-        });
-        scene.add(transformGizmo);
-        this._transformGizmo = transformGizmo;
-
-        this._bound = false;
-        this._hovered = false;
-      }
-
-      isEnabled() {
-        return this._bound && this._hovered;
-      }
-
-      isBound() {
-        return this._bound;
-      }
-
-      getIntersectionDistance(controllerLine) {
-        if (controllerLine.intersectsBox(this._boundingBox)) {
-          const boundingBoxCenter = this._boundingBox.getCenter();
-
-          if (controllerLine.origin.distanceTo(boundingBoxCenter) < 15) {
-            return controllerLine.closestPointToPoint(boundingBoxCenter).distanceTo(boundingBoxCenter);
-          } else {
-            return NaN;
-          }
-        } else {
-          return NaN;
-        }
-      }
-
-      setBound() {
-        this._bound = true;
-      }
-
-      setHovered(hovered) {
-        this._hovered = hovered;
-
-        if (hovered && !this._transformGizmo.visible) {
-          this._transformGizmo.visible = true;
-        } else if (!hovered && this._transformGizmo.visible) {
-          this._transformGizmo.visible = false;
-        }
-      }
-
-      updateObject(position, rotation, scale) {
-        this.object.position.copy(position);
-        this.object.quaternion.copy(rotation);
-        this.object.scale.copy(scale);
-      }
-
-      updateBoundingBox(position, rotation, scale) {
-        this._boundingBox.setFromCenterAndSize(position, shapeControlSizeVector);
-      }
-
-      updateTransformGizmo(position, rotation, scale) {
-        this._transformGizmo.update(position, rotation, scale);
-      }
-
-      update(position, rotation, scale) {
-        this.updateObject(position, rotation, scale);
-        this.updateBoundingBox(position, rotation, scale);
-        this.updateTransformGizmo(position, rotation, scale);
-      }
-
-      destroy() {
-        this.disable();
-
-        scene.remove(this._transformGizmo);
-        transform.destroyTransformGizmo(this._transformGizmo);
-      }
-    }
-    const shapeControls = [];
-
     const _makeShapeMaterial = ({
       color = 0x808080,
     } = {}) => new THREE.MeshPhongMaterial({
@@ -540,7 +453,7 @@ class ZBuild {
           connection.send(es);
         };
 
-        const _makeBuildMesh = () => {
+        const _makeBuildMesh = meshId => {
           let mesh = null;
           const state = {
             shape: null,
@@ -584,6 +497,8 @@ class ZBuild {
               object.position.set(matrix[0], matrix[1], matrix[2]);
               object.quaternion.set(matrix[3], matrix[4], matrix[5], matrix[6]);
               object.scale.set(matrix[7], matrix[8], matrix[9]);
+
+              shapeControl.update(object.position, object.quaternion, object.scale);
             }
           };
           object.setColor = color => {
@@ -627,7 +542,7 @@ class ZBuild {
             shapeControls.splice(shapeControls.indexOf(shapeControl), 1);
           };
 
-          const shapeControl = new ShapeControl(object);
+          const shapeControl = new ShapeControl(meshId, object);
           shapeControls.push(shapeControl);
 
           return object;
@@ -636,10 +551,99 @@ class ZBuild {
         let currentMeshId = null;
         let meshes = {};
 
+        class ShapeControl {
+          constructor(meshId, object) {
+            this.meshId = meshId;
+            this.object = object;
+
+            this._boundingBox = new THREE.Box3();
+            const transformGizmo = transform.makeTransformGizmo({
+              onpreview: (position, rotation, scale) => {
+                this.updateBoundingBox(position, rotation, scale);
+              },
+              onupdate: (position, rotation, scale) => {
+                const {meshId} = this;
+                const matrix = position.toArray().concat(rotation.toArray()).concat(scale.toArray());
+
+                const mesh = _updateMesh({meshId, matrix});
+
+                _broadcastUpdate({
+                  meshId: meshId,
+                  data: mesh.getJson(),
+                });
+              },
+              menu: false,
+              isEnabled: () => this.isEnabled(),
+            });
+            scene.add(transformGizmo);
+            this._transformGizmo = transformGizmo;
+
+            this._bound = false;
+            this._hovered = false;
+          }
+
+          isEnabled() {
+            return this._bound && this._hovered;
+          }
+
+          isBound() {
+            return this._bound;
+          }
+
+          getIntersectionDistance(controllerLine) {
+            if (controllerLine.intersectsBox(this._boundingBox)) {
+              const boundingBoxCenter = this._boundingBox.getCenter();
+
+              if (controllerLine.origin.distanceTo(boundingBoxCenter) < 15) {
+                return controllerLine.closestPointToPoint(boundingBoxCenter).distanceTo(boundingBoxCenter);
+              } else {
+                return NaN;
+              }
+            } else {
+              return NaN;
+            }
+          }
+
+          setBound() {
+            this._bound = true;
+          }
+
+          setHovered(hovered) {
+            this._hovered = hovered;
+
+            if (hovered && !this._transformGizmo.visible) {
+              this._transformGizmo.visible = true;
+            } else if (!hovered && this._transformGizmo.visible) {
+              this._transformGizmo.visible = false;
+            }
+          }
+
+          updateBoundingBox(position, rotation, scale) {
+            this._boundingBox.setFromCenterAndSize(position, shapeControlSizeVector);
+          }
+
+          updateTransformGizmo(position, rotation, scale) {
+            this._transformGizmo.update(position, rotation, scale);
+          }
+
+          update(position, rotation, scale) {
+            this.updateBoundingBox(position, rotation, scale);
+            this.updateTransformGizmo(position, rotation, scale);
+          }
+
+          destroy() {
+            this.disable();
+
+            scene.remove(this._transformGizmo);
+            transform.destroyTransformGizmo(this._transformGizmo);
+          }
+        }
+        const shapeControls = [];
+
         const _loadMesh = ({meshId, data}) => {
           let mesh = meshes[meshId];
           if (!mesh) {
-            mesh = _makeBuildMesh();
+            mesh = _makeBuildMesh(meshId);
             meshes[meshId] = mesh;
           }
 
@@ -649,6 +653,11 @@ class ZBuild {
           mesh.setColor(color);
           mesh.setTarget(target);
 
+          return mesh;
+        };
+        const _updateMesh = ({meshId, matrix}) => {
+          const mesh = meshes[meshId];
+          mesh.setMatrix(matrix);
           return mesh;
         };
         const _clearMeshes = () => {

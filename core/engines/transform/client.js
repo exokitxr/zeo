@@ -379,186 +379,184 @@ class Transform {
           input.on('triggerup', _triggerup);
 
           const _update = () => {
-            if (rend.isOpen()) {
-              SIDES.forEach(side => {
-                const dragState = dragStates[side];
-                const {src} = dragState;
-                const {gamepads} = webvr.getStatus();
-                const gamepad = gamepads[side];
+            SIDES.forEach(side => {
+              const dragState = dragStates[side];
+              const {src} = dragState;
+              const {gamepads} = webvr.getStatus();
+              const gamepad = gamepads[side];
 
-                if (src) {
-                  const {transformId, mode, startControllerPosition, startControllerRotation, startIntersectionPoint, startPosition} = src;
-                  const transformGizmo = transformGizmos.find(transformGizmo => transformGizmo.transformId === transformId);
+              if (src) {
+                const {transformId, mode, startControllerPosition, startControllerRotation, startIntersectionPoint, startPosition} = src;
+                const transformGizmo = transformGizmos.find(transformGizmo => transformGizmo.transformId === transformId);
 
-                  const _preview = () => {
-                    const {position, rotation, scale} = transformGizmo.getProperties();
-                    transformGizmo.onpreview(position, rotation, scale);
-                  };
+                const _preview = () => {
+                  const {position, rotation, scale} = transformGizmo.getProperties();
+                  transformGizmo.onpreview(position, rotation, scale);
+                };
 
-                  if (mode === 'x') {
-                    const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 0, 1), startIntersectionPoint);
-                    const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale} = gamepad;
-                    const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation, controllerScale);
-                    const controllerIntersectionPoint = plane.intersectLine(controllerLine);
+                if (mode === 'x') {
+                  const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 0, 1), startIntersectionPoint);
+                  const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale} = gamepad;
+                  const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation, controllerScale);
+                  const controllerIntersectionPoint = plane.intersectLine(controllerLine);
 
-                    if (controllerIntersectionPoint) {
-                      const endIntersectionPoint = new THREE.Vector3(
-                        controllerIntersectionPoint.x,
-                        startIntersectionPoint.y,
-                        startIntersectionPoint.z
-                      );
-                      const positionDiff = endIntersectionPoint.clone().sub(startIntersectionPoint);
-                      const endPosition = startPosition.clone().add(positionDiff);
-                      transformGizmo.position.copy(endPosition);
-
-                      transformGizmo.syncPosition();
-
-                      _preview();
-                    }
-                  } else if (mode === 'y') {
-                    const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 0, 1), startIntersectionPoint);
-                    const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale} = gamepad;
-                    const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation, controllerScale);
-                    const controllerIntersectionPoint = plane.intersectLine(controllerLine);
-
-                    if (controllerIntersectionPoint) {
-                      const endIntersectionPoint = new THREE.Vector3(
-                        startIntersectionPoint.x,
-                        controllerIntersectionPoint.y,
-                        startIntersectionPoint.z
-                      );
-                      const positionDiff = endIntersectionPoint.clone().sub(startIntersectionPoint);
-                      const endPosition = startPosition.clone().add(positionDiff);
-                      transformGizmo.position.copy(endPosition);
-
-                      transformGizmo.syncPosition();
-
-                      _preview();
-                    }
-                  } else if (mode === 'z') {
-                    const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(1, 0, 0), startIntersectionPoint);
-                    const {position: controllerPosition, rotation: controllerRotation, scale: controllerScale} = gamepad;
-                    const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation, controllerScale);
-                    const controllerIntersectionPoint = plane.intersectLine(controllerLine);
-
-                    if (controllerIntersectionPoint) {
-                      const endIntersectionPoint = new THREE.Vector3(
-                        startIntersectionPoint.x,
-                        startIntersectionPoint.y,
-                        controllerIntersectionPoint.z
-                      );
-                      const positionDiff = endIntersectionPoint.clone().sub(startIntersectionPoint);
-                      const endPosition = startPosition.clone().add(positionDiff);
-                      transformGizmo.position.copy(endPosition);
-
-                      transformGizmo.syncPosition();
-
-                      _preview();
-                    }
-                  } else if (mode === 'xy') {
-                    const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 0, 1), startIntersectionPoint);
-                    const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale} = gamepad;
-                    const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation, controllerScale);
-                    const endIntersectionPoint = plane.intersectLine(controllerLine);
-
-                    if (endIntersectionPoint) {
-                      const positionDiff = endIntersectionPoint.clone().sub(startIntersectionPoint);
-                      const endPosition = startPosition.clone().add(positionDiff);
-                      transformGizmo.position.copy(endPosition);
-
-                      transformGizmo.syncPosition();
-
-                      _preview();
-                    }
-                  } else if (mode === 'yz') {
-                    const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(1, 0, 0), startIntersectionPoint);
-                    const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale} = gamepad;
-                    const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation, controllerScale);
-                    const endIntersectionPoint = plane.intersectLine(controllerLine);
-
-                    if (endIntersectionPoint) {
-                      const positionDiff = endIntersectionPoint.clone().sub(startIntersectionPoint);
-                      const endPosition = startPosition.clone().add(positionDiff);
-                      transformGizmo.position.copy(endPosition);
-
-                      transformGizmo.syncPosition();
-
-                      _preview();
-                    }
-                  } else if (mode === 'xz') {
-                    const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 1, 0), startIntersectionPoint);
-                    const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale} = gamepad;
-                    const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation, controllerScale);
-                    const endIntersectionPoint = plane.intersectLine(controllerLine);
-
-                    if (endIntersectionPoint) {
-                      const positionDiff = endIntersectionPoint.clone().sub(startIntersectionPoint);
-                      const endPosition = startPosition.clone().add(positionDiff);
-                      transformGizmo.position.copy(endPosition);
-
-                      transformGizmo.syncPosition();
-
-                      _preview();
-                    }
-                  } else if (mode === 'xyz') {
-                    const {worldPosition: controllerPosition, worldRotation: controllerRotation} = gamepad;
-                    const endPosition = controllerPosition.clone()
-                      .add(
-                        new THREE.Vector3(0, 0, -1)
-                          .applyQuaternion(controllerRotation)
-                          .multiplyScalar(startIntersectionPoint.clone().sub(startControllerPosition).length())
-                      )
-                      .add(
-                        startPosition.clone().sub(startIntersectionPoint)
-                      );
+                  if (controllerIntersectionPoint) {
+                    const endIntersectionPoint = new THREE.Vector3(
+                      controllerIntersectionPoint.x,
+                      startIntersectionPoint.y,
+                      startIntersectionPoint.z
+                    );
+                    const positionDiff = endIntersectionPoint.clone().sub(startIntersectionPoint);
+                    const endPosition = startPosition.clone().add(positionDiff);
                     transformGizmo.position.copy(endPosition);
 
                     transformGizmo.syncPosition();
 
                     _preview();
-                  } else if (mode === 'rotate') {
-                    const {worldPosition: controllerPosition, worldRotation: controllerRotation} = gamepad;
-                    const endPosition = controllerPosition.clone()
-                      .add(
-                        new THREE.Vector3(0, 0, -1)
-                          .applyQuaternion(controllerRotation)
-                      );
-                    const endSpherePoint = new THREE.Sphere(startPosition.clone(), rotateScale)
-                      .clampPoint(endPosition);
-                    const rotationMatrix = new THREE.Matrix4().lookAt(
-                      endSpherePoint,
-                      startPosition,
-                      upVector.clone().applyQuaternion(controllerRotation)
-                    );
-                    transformGizmo.rotateGizmo.quaternion.setFromRotationMatrix(rotationMatrix);
+                  }
+                } else if (mode === 'y') {
+                  const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 0, 1), startIntersectionPoint);
+                  const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale} = gamepad;
+                  const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation, controllerScale);
+                  const controllerIntersectionPoint = plane.intersectLine(controllerLine);
 
-                    transformGizmo.syncRotation();
+                  if (controllerIntersectionPoint) {
+                    const endIntersectionPoint = new THREE.Vector3(
+                      startIntersectionPoint.x,
+                      controllerIntersectionPoint.y,
+                      startIntersectionPoint.z
+                    );
+                    const positionDiff = endIntersectionPoint.clone().sub(startIntersectionPoint);
+                    const endPosition = startPosition.clone().add(positionDiff);
+                    transformGizmo.position.copy(endPosition);
+
+                    transformGizmo.syncPosition();
 
                     _preview();
-                  } else if (mode === 'scale') {
-                    const {worldPosition: controllerPosition, worldRotation: controllerRotation} = gamepad;
-                    const endPlanePoint = new THREE.Plane()
-                      .setFromNormalAndCoplanarPoint(scaleNormalVector.clone(), startPosition.clone())
-                      .intersectLine(
-                        new THREE.Line3(
-                          controllerPosition.clone(),
-                          controllerPosition.clone().add(new THREE.Vector3(0, 0, -15).applyQuaternion(controllerRotation))
-                        )
-                      );
-                    if (endPlanePoint) {
-                      const endLinePoint = new THREE.Line3(startPosition.clone(), startPosition.clone().add(oneVector))
-                        .closestPointToPoint(endPlanePoint, false);
-                      const endScalePoint = endLinePoint.clone().sub(startPosition);
-                      transformGizmo.scaleGizmo.position.copy(endScalePoint);
+                  }
+                } else if (mode === 'z') {
+                  const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(1, 0, 0), startIntersectionPoint);
+                  const {position: controllerPosition, rotation: controllerRotation, scale: controllerScale} = gamepad;
+                  const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation, controllerScale);
+                  const controllerIntersectionPoint = plane.intersectLine(controllerLine);
 
-                      transformGizmo.syncScale();
+                  if (controllerIntersectionPoint) {
+                    const endIntersectionPoint = new THREE.Vector3(
+                      startIntersectionPoint.x,
+                      startIntersectionPoint.y,
+                      controllerIntersectionPoint.z
+                    );
+                    const positionDiff = endIntersectionPoint.clone().sub(startIntersectionPoint);
+                    const endPosition = startPosition.clone().add(positionDiff);
+                    transformGizmo.position.copy(endPosition);
 
-                      _preview();
-                    }
+                    transformGizmo.syncPosition();
+
+                    _preview();
+                  }
+                } else if (mode === 'xy') {
+                  const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 0, 1), startIntersectionPoint);
+                  const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale} = gamepad;
+                  const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation, controllerScale);
+                  const endIntersectionPoint = plane.intersectLine(controllerLine);
+
+                  if (endIntersectionPoint) {
+                    const positionDiff = endIntersectionPoint.clone().sub(startIntersectionPoint);
+                    const endPosition = startPosition.clone().add(positionDiff);
+                    transformGizmo.position.copy(endPosition);
+
+                    transformGizmo.syncPosition();
+
+                    _preview();
+                  }
+                } else if (mode === 'yz') {
+                  const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(1, 0, 0), startIntersectionPoint);
+                  const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale} = gamepad;
+                  const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation, controllerScale);
+                  const endIntersectionPoint = plane.intersectLine(controllerLine);
+
+                  if (endIntersectionPoint) {
+                    const positionDiff = endIntersectionPoint.clone().sub(startIntersectionPoint);
+                    const endPosition = startPosition.clone().add(positionDiff);
+                    transformGizmo.position.copy(endPosition);
+
+                    transformGizmo.syncPosition();
+
+                    _preview();
+                  }
+                } else if (mode === 'xz') {
+                  const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 1, 0), startIntersectionPoint);
+                  const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale} = gamepad;
+                  const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation, controllerScale);
+                  const endIntersectionPoint = plane.intersectLine(controllerLine);
+
+                  if (endIntersectionPoint) {
+                    const positionDiff = endIntersectionPoint.clone().sub(startIntersectionPoint);
+                    const endPosition = startPosition.clone().add(positionDiff);
+                    transformGizmo.position.copy(endPosition);
+
+                    transformGizmo.syncPosition();
+
+                    _preview();
+                  }
+                } else if (mode === 'xyz') {
+                  const {worldPosition: controllerPosition, worldRotation: controllerRotation} = gamepad;
+                  const endPosition = controllerPosition.clone()
+                    .add(
+                      new THREE.Vector3(0, 0, -1)
+                        .applyQuaternion(controllerRotation)
+                        .multiplyScalar(startIntersectionPoint.clone().sub(startControllerPosition).length())
+                    )
+                    .add(
+                      startPosition.clone().sub(startIntersectionPoint)
+                    );
+                  transformGizmo.position.copy(endPosition);
+
+                  transformGizmo.syncPosition();
+
+                  _preview();
+                } else if (mode === 'rotate') {
+                  const {worldPosition: controllerPosition, worldRotation: controllerRotation} = gamepad;
+                  const endPosition = controllerPosition.clone()
+                    .add(
+                      new THREE.Vector3(0, 0, -1)
+                        .applyQuaternion(controllerRotation)
+                    );
+                  const endSpherePoint = new THREE.Sphere(startPosition.clone(), rotateScale)
+                    .clampPoint(endPosition);
+                  const rotationMatrix = new THREE.Matrix4().lookAt(
+                    endSpherePoint,
+                    startPosition,
+                    upVector.clone().applyQuaternion(controllerRotation)
+                  );
+                  transformGizmo.rotateGizmo.quaternion.setFromRotationMatrix(rotationMatrix);
+
+                  transformGizmo.syncRotation();
+
+                  _preview();
+                } else if (mode === 'scale') {
+                  const {worldPosition: controllerPosition, worldRotation: controllerRotation} = gamepad;
+                  const endPlanePoint = new THREE.Plane()
+                    .setFromNormalAndCoplanarPoint(scaleNormalVector.clone(), startPosition.clone())
+                    .intersectLine(
+                      new THREE.Line3(
+                        controllerPosition.clone(),
+                        controllerPosition.clone().add(new THREE.Vector3(0, 0, -15).applyQuaternion(controllerRotation))
+                      )
+                    );
+                  if (endPlanePoint) {
+                    const endLinePoint = new THREE.Line3(startPosition.clone(), startPosition.clone().add(oneVector))
+                      .closestPointToPoint(endPlanePoint, false);
+                    const endScalePoint = endLinePoint.clone().sub(startPosition);
+                    transformGizmo.scaleGizmo.position.copy(endScalePoint);
+
+                    transformGizmo.syncScale();
+
+                    _preview();
                   }
                 }
-              });
-            }
+              }
+            });
           };
           rend.on('update', _update);
 
