@@ -37,7 +37,6 @@ class ZBuild {
       constructor(object) {
         this.object = object;
 
-        this._enabled = false;
         this._boundingBox = new THREE.Box3();
         const transformGizmo = transform.makeTransformGizmo({
           onpreview: (position, rotation, scale) => {
@@ -47,31 +46,37 @@ class ZBuild {
             this.update(position, rotation, scale);
           },
           menu: false,
+          isEnabled: () => this.isEnabled(),
         });
         scene.add(transformGizmo);
         this._transformGizmo = transformGizmo;
+
+        this._bound = false;
+        this._hovered = false;
       }
 
       isEnabled() {
-        return this._enabled;
+        return this._bound && this._hovered;
       }
 
-      enable() {
-        this._enabled = true;
-      }
-
-      disable() {
-        this._enabled = false;
+      isBound() {
+        return this._bound;
       }
 
       checkIntersection(controllerLine) {
         return controllerLine.intersectBox(this._boundingBox);
       }
 
-      setVisibility(visible) {
-        if (visible && !this._transformGizmo.visible) {
+      setBound() {
+        this._bound = true;
+      }
+
+      setHovered(hovered) {
+        this._hovered = hovered;
+
+        if (hovered && !this._transformGizmo.visible) {
           this._transformGizmo.visible = true;
-        } else if (!visible && this._transformGizmo.visible) {
+        } else if (!hovered && this._transformGizmo.visible) {
           this._transformGizmo.visible = false;
         }
       }
@@ -594,7 +599,7 @@ class ZBuild {
                 case 'scene': {
                   scene.add(object);
 
-                  shapeControl.enable();
+                  shapeControl.setBound();
                   const {position, quaternion: rotation, scale} = object;
                   shapeControl.updateBoundingBox(position.clone(), rotation.clone(), scale.clone());
                   shapeControl.updateTransformGizmo(position.clone(), rotation.clone(), scale.clone());
@@ -883,11 +888,11 @@ class ZBuild {
               for (let i = 0; i < shapeControls.length; i++) {
                 const shapeControl = shapeControls[i];
 
-                if (shapeControl.isEnabled()) {
+                if (shapeControl.isBound()) {
                   const intersected = SIDES.some(side => shapeControl.checkIntersection(controllerLines[side]));
-                  shapeControl.setVisibility(intersected);
+                  shapeControl.setHovered(intersected);
                 } else {
-                  shapeControl.setVisibility(false);
+                  shapeControl.setHovered(false);
                 }
               }
             }
