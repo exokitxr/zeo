@@ -155,6 +155,7 @@ class World {
                 });
               },
               menu: true,
+              isEnabled: () => rend.isOpen(),
             });
             scene.add(transformGizmo);
             this._transformGizmo = transformGizmo;
