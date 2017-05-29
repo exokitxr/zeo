@@ -197,8 +197,7 @@ class Biolumi {
           };
 
           class Page {
-            constructor(parent, spec, type, state, color, width, height, worldWidth, worldHeight, isEnabled) {
-              this.parent = parent;
+            constructor(spec, type, state, color, width, height, worldWidth, worldHeight, isEnabled) {
               this.spec = spec;
               this.type = type;
               this.state = state;
@@ -273,7 +272,7 @@ class Biolumi {
                 const {layerSpec} = cache;
                 const {type = 'html'} = layerSpec;
                 if (type === 'html') {
-                  const {parent: {width, height}} = this;
+                  const {width, height} = this;
                   const {src, x = 0, y = 0, w = width, h = height, pixelated = false} = layerSpec;
 
                   cache.htmlSrc = (() => {
@@ -309,7 +308,7 @@ class Biolumi {
                 const {layerSpec} = cache;
                 const {type = 'html'} = layerSpec;
                 if (type === 'html') {
-                  const {parent: {width, height}} = this;
+                  const {width, height} = this;
                   const {w = width, h = height} = layerSpec;
 
                   const img = new Image();
@@ -367,7 +366,7 @@ class Biolumi {
                 const {type = 'html'} = layerSpec;
 
                 if (type === 'html') {
-                  const {parent: {width, height}} = this;
+                  const {width, height} = this;
                   const {src, x = 0, y = 0, w = width, h = height} = layerSpec;
 
                   const _renderTempElement = fn => {
@@ -414,7 +413,7 @@ class Biolumi {
 
                   this.layer = layer;
                 } else if (type === 'image') {
-                  const {parent: {width, height}} = this;
+                  const {width, height} = this;
                   const {x = 0, y = 0, w = width, h = height} = layerSpec;
 
                   const layer = new Layer(this);
@@ -974,6 +973,8 @@ if (!page.isEnabled) {
           }
 
           const _makeUi = ({width, height, color = [1, 1, 1, 1]}) => new Ui(width, height, color);
+          const _makePage = (spec, {type = null, state = null, color = [1, 1, 1, 1], width, height, worldWidth, worldHeight, isEnabled = yes}) =>
+            new Page(this, spec, type, state, color, width, height, worldWidth, worldHeight, isEnabled);
           const _makeBoxAnchor = ({boxTarget, anchor, isEnabled = yes}) => new BoxAnchor(boxTarget, anchor, isEnabled);
 
           const _updateUiTimer = () => {
@@ -1161,6 +1162,7 @@ if (!page.isEnabled) {
 
           return {
             makeUi: _makeUi,
+            makePage: _makePage,
             makeBoxAnchor: _makeBoxAnchor,
 
             updateUiTimer: _updateUiTimer,
