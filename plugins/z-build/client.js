@@ -805,9 +805,13 @@ class ZBuild {
             _clearMeshes();
 
             _broadcastClear();
+
+            e.stopImmediatePropagation();
           }
         };
-        input.on('menu', _menu);
+        input.on('menu', _menu, {
+          priority: 1,
+        });
 
         const menuRotationSpecs = [
           {
