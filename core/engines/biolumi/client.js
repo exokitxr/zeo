@@ -499,6 +499,9 @@ class Biolumi {
           }
           class BoxAnchor {
             constructor(boxTarget, anchor, isEnabled) {
+if (!boxTarget) { // XXX
+  console.warn('bad box target', boxTarget, new Error().stack);
+}
               this.boxTarget = boxTarget;
               this.anchor = anchor;
               this.isEnabled = isEnabled;
@@ -537,7 +540,7 @@ class Biolumi {
 
               if (!page) {
                 const {width, height, color} = this;
-                const page = new Page(this, spec, type, state, color, width, height, worldWidth, worldHeight, isEnabled);
+                const page = new Page(spec, type, state, color, width, height, worldWidth, worldHeight, isEnabled);
                 this.page = page;
 
                 const {mesh} = page;
@@ -607,7 +610,7 @@ class Biolumi {
             }
 
             addPage(page) {
-if (!page.isEnabled) {
+if (!page.isEnabled) { // XXX
   console.warn('bad page', page, new Error().stack);
 }
               this.pages.push(page);
@@ -665,7 +668,7 @@ if (!page.isEnabled) {
                 };
 
                 const enabledPages = pages.filter(page => page.isEnabled());
-                const enabledBoxAnchors = pages.filter(boxAnchor => boxAnchor.isEnabled());
+                const enabledBoxAnchors = boxAnchors.filter(boxAnchor => boxAnchor.isEnabled());
 
                 if (enabledPages.length > 0 || enabledBoxAnchors.length > 0) {
                   const gamepad = gamepads[side];
@@ -925,7 +928,7 @@ if (!page.isEnabled) {
 
           const _makeUi = ({width, height, color = [1, 1, 1, 1]}) => new Ui(width, height, color);
           const _makePage = (spec, {type = null, state = null, color = [1, 1, 1, 1], width, height, worldWidth, worldHeight, isEnabled = yes}) =>
-            new Page(this, spec, type, state, color, width, height, worldWidth, worldHeight, isEnabled);
+            new Page(spec, type, state, color, width, height, worldWidth, worldHeight, isEnabled);
           const _makeBoxAnchor = ({boxTarget, anchor, isEnabled = yes}) => new BoxAnchor(boxTarget, anchor, isEnabled);
 
           const _updateUiTimer = () => {

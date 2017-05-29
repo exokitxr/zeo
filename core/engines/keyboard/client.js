@@ -206,23 +206,25 @@ class Keyboard {
           object.add(planeMesh);
           object.planeMesh = planeMesh;
 
-          const keyboardPage = {
-            mesh: planeMesh,
+          const keyboardPage = biolumi.makePage(null, {
             width: KEYBOARD_WIDTH,
             height: KEYBOARD_HEIGHT,
             worldWidth: KEYBOARD_WORLD_WIDTH,
             worldHeight: KEYBOARD_WORLD_HEIGHT,
-          };
+            isEnabled: () => rend.isOpen(),
+          });
+          // keyboardPage.mesh = planeMesh;
           rend.addPage(keyboardPage);
 
           const {headerSolidMesh} = planeMesh;
-          const keyboardHeaderPage = {
-            mesh: headerSolidMesh,
+          const keyboardHeaderPage = biolumi.makePage(null, {
             width: KEYBOARD_HEADER_WIDTH,
             height: KEYBOARD_HEADER_HEIGHT,
             worldWidth: KEYBOARD_HEADER_WORLD_WIDTH,
             worldHeight: KEYBOARD_HEADER_WORLD_HEIGHT,
-          };
+            isEnabled: () => rend.isOpen(),
+          });
+          // keyboardHeaderPage.mesh = headerSolidMesh;
           rend.addPage(keyboardHeaderPage);
 
           cleanups.push(() => {
