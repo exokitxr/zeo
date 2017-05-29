@@ -403,24 +403,16 @@ class Biolumi {
                       .filter(anchor => anchor !== null)
                   );
 
-                  const layer = new Layer(this);
+                  const layer = new Layer(w, h);
                   layer.anchors = null;
                   layer.makeAnchors = _makeAnchors;
-                  layer.x = x;
-                  layer.y = y;
-                  layer.w = w;
-                  layer.h = h;
 
                   this.layer = layer;
                 } else if (type === 'image') {
                   const {width, height} = this;
                   const {x = 0, y = 0, w = width, h = height} = layerSpec;
 
-                  const layer = new Layer(this);
-                  layer.x = x;
-                  layer.y = y;
-                  layer.w = w;
-                  layer.h = h;
+                  const layer = new Layer(w, h);
 
                   this.layer = layer;
                 } else {
