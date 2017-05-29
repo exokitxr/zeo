@@ -117,6 +117,7 @@ class World {
         const zeroQuaternion = new THREE.Quaternion();
         const controllerMeshOffset = new THREE.Vector3(0, 0, -0.02);
         const controllerMeshQuaternion = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, -1));
+        const matrixAttributeSizeVector = oneVector.clone().multiplyScalar(2 * 1.1);
 
         const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
         const _decomposeMatrix = matrix => {
@@ -162,7 +163,7 @@ class World {
           }
 
           updateBoundingBox(position, rotation, scale) {
-            this._boundingBox.setFromCenterAndSize(position, oneVector);
+            this._boundingBox.setFromCenterAndSize(position, matrixAttributeSizeVector);
           }
 
           updateTransformGizmo(position, rotation, scale) {
