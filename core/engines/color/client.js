@@ -1,5 +1,6 @@
-const SIDES = ['left', 'right'];
 const SIZE = 0.2;
+
+const SIDES = ['left', 'right'];
 
 class Color {
   mount() {
@@ -50,6 +51,7 @@ class Color {
           const menuColorWheels = [];
           rend.registerAuxObject('colorWheels', menuColorWheels);
 
+          const _getSize = () => SIZE;
           const _makeColorWheel = ({onpreview, onupdate, menu = false, isEnabled = yes}) => {
             const object = new THREE.Object3D();
             const colorId = _makeId();
@@ -165,6 +167,13 @@ class Color {
               const valueColor = new THREE.Color(colorBarImg.getColor(v));
               return baseColor.clone().multiply(valueColor).getHexString();
             };
+            object.update = (position, rotation, scale) => {
+              object.position.copy(position);
+              object.quaternion.copy(rotation);
+              object.scale.copy(scale);
+
+              _updateBoxTargets();
+            };
 
             let boxAnchors = null;
             const _removeBoxTargets = () => {
@@ -255,9 +264,6 @@ class Color {
                   dragState.src = {
                     colorId: colorId,
                     mode: mode,
-                    startControllerPosition: controllerPosition.clone(),
-                    startControllerRotation: controllerRotation.clone(),
-                    startIntersectionPoint: intersectionPoint.clone(),
                     startPosition: colorWheel.position.clone(),
                     startRotation: colorWheel.quaternion.clone(),
                   };
@@ -301,7 +307,7 @@ class Color {
                 const gamepad = gamepads[side];
 
                 if (src) {
-                  const {colorId, mode, startControllerPosition, startControllerRotation, startIntersectionPoint, startPosition, startRotation} = src;
+                  const {colorId, mode, startPosition, startRotation} = src;
                   const colorWheel = colorWheels.find(colorWheel => colorWheel.colorId === colorId);
 
                   const _preview = () => {
@@ -388,6 +394,7 @@ class Color {
           };
 
           return {
+            getSize: _getSize,
             makeColorWheel: _makeColorWheel,
             destroyColorWheel: _destroyColorWheel,
           };

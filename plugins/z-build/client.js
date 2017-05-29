@@ -9,7 +9,7 @@ const SIDES = ['left', 'right'];
 
 class ZBuild {
   mount() {
-    const {three: {THREE, scene, camera}, elements, input, pose, render, player, transform, utils: {network: networkUtils, geometry: geometryUtils, menu: menuUtils}} = zeo;
+    const {three: {THREE, scene, camera}, elements, input, pose, render, player, transform, color, utils: {network: networkUtils, geometry: geometryUtils, menu: menuUtils}} = zeo;
     const {AutoWs} = networkUtils;
 
     const targetPlaneImg = menuUtils.getTargetPlaneImg();
@@ -557,6 +557,7 @@ class ZBuild {
             this.object = object;
 
             this._boundingBox = new THREE.Box3();
+
             const transformGizmo = transform.makeTransformGizmo({
               onpreview: (position, rotation, scale) => {
                 this.updateBoundingBox(position, rotation, scale);
@@ -565,8 +566,10 @@ class ZBuild {
                 const {meshId} = this;
                 const matrix = position.toArray().concat(rotation.toArray()).concat(scale.toArray());
 
-                const mesh = _updateMesh({meshId, matrix});
-
+                const mesh = _updateMeshMatrix({
+                  meshId,
+                  matrix,
+                });
                 _broadcastUpdate({
                   meshId: meshId,
                   data: mesh.getJson(),
@@ -577,6 +580,29 @@ class ZBuild {
             });
             scene.add(transformGizmo);
             this._transformGizmo = transformGizmo;
+
+            const colorWheel = color.makeColorWheel({
+              onpreview: colorString => {
+                // this.updateBoundingBox(position, rotation, scale);
+              },
+              onupdate: colorString => {
+                const {meshId} = this;
+                const color = '#' + colorString;
+
+                const mesh = _updateMeshColor({
+                  meshId,
+                  color,
+                });
+                _broadcastUpdate({
+                  meshId: meshId,
+                  data: mesh.getJson(),
+                });
+              },
+              menu: false,
+              isEnabled: () => this.isEnabled(),
+            });
+            scene.add(colorWheel);
+            this._colorWheel = colorWheel;
 
             this._bound = false;
             this._hovered = false;
@@ -611,10 +637,20 @@ class ZBuild {
           setHovered(hovered) {
             this._hovered = hovered;
 
-            if (hovered && !this._transformGizmo.visible) {
-              this._transformGizmo.visible = true;
-            } else if (!hovered && this._transformGizmo.visible) {
-              this._transformGizmo.visible = false;
+            if (hovered) {
+              if (!this._transformGizmo.visible) {
+                this._transformGizmo.visible = true;
+              }
+              if (!this._colorWheel.visible) {
+                this._colorWheel.visible = true;
+              }
+            } else if (!hovered) {
+              if (this._transformGizmo.visible) {
+                this._transformGizmo.visible = false;
+              }
+              if (this._colorWheel.visible) {
+                this._colorWheel.visible = false;
+              }
             }
           }
 
@@ -626,14 +662,26 @@ class ZBuild {
             this._transformGizmo.update(position, rotation, scale);
           }
 
+          updateColorWheel(position, rotation, scale) {
+            const newPosition = position.clone().add(new THREE.Vector3(1 - (color.getSize() / 2), 1 - (color.getSize() / 2), 0.7));
+            const newRotation = zeroQuaternion;
+            const newScale = oneVector;
+
+            this._colorWheel.update(newPosition, newRotation, newScale);
+          }
+
           update(position, rotation, scale) {
             this.updateBoundingBox(position, rotation, scale);
             this.updateTransformGizmo(position, rotation, scale);
+            this.updateColorWheel(position, rotation, scale);
           }
 
           destroy() {
             scene.remove(this._transformGizmo);
             transform.destroyTransformGizmo(this._transformGizmo);
+
+            scene.remove(this._colorWheel);
+            color.destroyColorWheel(this._colorWheel);
           }
         }
         const shapeControls = [];
@@ -653,9 +701,14 @@ class ZBuild {
 
           return mesh;
         };
-        const _updateMesh = ({meshId, matrix}) => {
+        const _updateMeshMatrix = ({meshId, matrix}) => {
           const mesh = meshes[meshId];
           mesh.setMatrix(matrix);
+          return mesh;
+        };
+        const _updateMeshColor = ({meshId, color}) => {
+          const mesh = meshes[meshId];
+          mesh.setColor(color);
           return mesh;
         };
         const _clearMeshes = () => {
