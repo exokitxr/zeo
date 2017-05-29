@@ -27,11 +27,11 @@ class ZBuild {
     const zeroVector = new THREE.Vector3();
     const zeroQuaternion = new THREE.Quaternion();
     const oneVector = new THREE.Vector3(1, 1, 1);
+    const forwardVector = new THREE.Vector3(0, 0, -1);
     const shapeSize = 0.02;
     const shapeScaleVector = new THREE.Vector3(shapeSize, shapeSize, shapeSize);
     const selectedShapeScaleVector = shapeScaleVector.clone().multiplyScalar(1.5);
     const shapeControlSizeVector = oneVector.clone().multiplyScalar(2 * 1.1);
-    const controllerForwardVector = new THREE.Vector3(0, 0, -15);
 
     class ShapeControl {
       constructor(object) {
@@ -63,8 +63,18 @@ class ZBuild {
         return this._bound;
       }
 
-      checkIntersection(controllerLine) {
-        return controllerLine.intersectsBox(this._boundingBox);
+      getIntersectionDistance(controllerLine) {
+        if (controllerLine.intersectsBox(this._boundingBox)) {
+          const boundingBoxCenter = this._boundingBox.getCenter();
+
+          if (controllerLine.origin.distanceTo(boundingBoxCenter) < 15) {
+            return controllerLine.closestPointToPoint(boundingBoxCenter).distanceTo(boundingBoxCenter);
+          } else {
+            return NaN;
+          }
+        } else {
+          return NaN;
+        }
       }
 
       setBound() {
@@ -877,7 +887,7 @@ class ZBuild {
               const {gamepads} = pose.getStatus();
               const _getControllerLine = gamepad => {
                 const {worldPosition: controllerPosition, worldRotation: controllerRotation} = gamepad;
-                const controllerLine = new THREE.Ray(controllerPosition, controllerForwardVector.clone().applyQuaternion(controllerRotation));
+                const controllerLine = new THREE.Ray(controllerPosition, forwardVector.clone().applyQuaternion(controllerRotation));
                 return controllerLine;
               };
               const controllerLines = {
@@ -885,15 +895,30 @@ class ZBuild {
                 right: _getControllerLine(gamepads.right),
               };
 
+              const intersectedShapeControls = SIDES.map(side => {
+                const controllerLine = controllerLines[side];
+
+                let closestIntersectionSpec = null;
+                for (let i = 0; i < shapeControls.length; i++) {
+                  const shapeControl = shapeControls[i];
+
+                  if (shapeControl.isBound()) {
+                    const distance = shapeControl.getIntersectionDistance(controllerLine);
+
+                    if (!isNaN(distance) && (!closestIntersectionSpec || (distance < closestIntersectionSpec.distance))) {
+                      closestIntersectionSpec = {
+                        shapeControl,
+                        distance,
+                      };
+                    }
+                  }
+                }
+                return closestIntersectedShapeControl = closestIntersectionSpec && closestIntersectionSpec.shapeControl;
+                return closestIntersectedShapeControl;
+              });
               for (let i = 0; i < shapeControls.length; i++) {
                 const shapeControl = shapeControls[i];
-
-                if (shapeControl.isBound()) {
-                  const intersected = SIDES.some(side => shapeControl.checkIntersection(controllerLines[side]));
-                  shapeControl.setHovered(intersected);
-                } else {
-                  shapeControl.setHovered(false);
-                }
+                shapeControl.setHovered(intersectedShapeControls.includes(shapeControl));
               }
             }
           };

@@ -951,7 +951,7 @@ class World {
                     };
                   }
                 }
-                const closestIntersectedMatrixAttribute = closestIntersectionSpec ? closestIntersectionSpec.matrixAttribute : null;
+                const closestIntersectedMatrixAttribute = closestIntersectionSpec && closestIntersectionSpec.matrixAttribute;
                 return closestIntersectedMatrixAttribute;
               });
               for (let i = 0; i < matrixAttributes.length; i++) {
