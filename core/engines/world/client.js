@@ -156,10 +156,16 @@ class World {
                 });
               },
               menu: true,
-              isEnabled: () => rend.isOpen(),
+              isEnabled: () => this.isEnabled(),
             });
             scene.add(transformGizmo);
             this._transformGizmo = transformGizmo;
+
+            this._hovered = false;
+          }
+
+          isEnabled() {
+            return rend.isOpen() && this._hovered;
           }
 
           updateBoundingBox(position, rotation, scale) {
@@ -179,14 +185,16 @@ class World {
             this.updateTransformGizmo(position, rotation, scale);
           }
 
-          checkIntersection(controllerLine) {
+          getIntersection(controllerLine) {
             return controllerLine.intersectBox(this._boundingBox);
           }
 
-          setVisibility(visible) {
-            if (visible && !this._transformGizmo.visible) {
+          setHovered(hovered) {
+            this._hovered = hovered;
+
+            if (hovered && !this._transformGizmo.visible) {
               this._transformGizmo.visible = true;
-            } else if (!visible && this._transformGizmo.visible) {
+            } else if (!hovered && this._transformGizmo.visible) {
               this._transformGizmo.visible = false;
             }
           }
@@ -917,10 +925,41 @@ class World {
                 right: _getControllerLine(gamepads.right),
               };
 
+              let closestIntersectionSpec = null;
               for (let i = 0; i < matrixAttributes.length; i++) {
                 const matrixAttribute = matrixAttributes[i];
-                const intersected = SIDES.some(side => matrixAttribute.checkIntersection(controllerLines[side]));
-                matrixAttribute.setVisibility(intersected);
+
+                const intersectionSpecs = [];
+                for (let j = 0; j < SIDES.length; j++) {
+                  const side = SIDES[j];
+                  const controllerLine = controllerLines[side];
+                  const intersectionPoint = matrixAttribute.getIntersection(controllerLine);
+
+                  if (intersectionPoint) {
+                    intersectionSpecs.push({
+                      controllerLine,
+                      intersectionPoint,
+                    });
+                  }
+                }
+
+                for (let j = 0; j < intersectionSpecs.length; j++) {
+                  const intersectionSpec = intersectionSpecs[j];
+                  const {controllerLine, intersectionPoint} = intersectionSpec;
+                  const distance = controllerLine.origin.distanceTo(intersectionPoint);
+
+                  if (!closestIntersectionSpec || (distance < closestIntersectionSpec.distance)) {
+                    closestIntersectionSpec = {
+                      matrixAttribute,
+                      distance,
+                    };
+                  }
+                }
+              }
+              const closestIntersectedMatrixAttribute = closestIntersectionSpec ? closestIntersectionSpec.matrixAttribute : null;
+              for (let i = 0; i < matrixAttributes.length; i++) {
+                const matrixAttribute = matrixAttributes[i];
+                matrixAttribute.setHovered(matrixAttribute === closestIntersectedMatrixAttribute);
               }
             }
           };
