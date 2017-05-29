@@ -197,7 +197,7 @@ class Biolumi {
           };
 
           class Page {
-            constructor(parent, spec, type, state, color, width, height, worldWidth, worldHeight) {
+            constructor(parent, spec, type, state, color, width, height, worldWidth, worldHeight, isEnabled) {
               this.parent = parent;
               this.spec = spec;
               this.type = type;
@@ -207,6 +207,7 @@ class Biolumi {
               this.height = height;
               this.worldWidth = worldWidth;
               this.worldHeight = worldHeight;
+              this.isEnabled = isEnabled;
 
               const mesh = (() => {
                 const geometry = new THREE.PlaneBufferGeometry(worldWidth, worldHeight);
@@ -530,6 +531,13 @@ class Biolumi {
               });
             }
           }
+          class BoxAnchor {
+            constructor(boxTarget, anchor, isEnabled) {
+              this.boxTarget = boxTarget;
+              this.anchor = anchor;
+              this.isEnabled = isEnabled;
+            }
+          }
 
           class Anchor {
             constructor(rect, onclick, onmousedown, onmouseup) {
@@ -574,12 +582,12 @@ class Biolumi {
               this.page = null;
             }
 
-            makePage(spec, {type = null, state = null, worldWidth, worldHeight} = {}) {
+            makePage(spec, {type = null, state = null, worldWidth, worldHeight, isEnabled = yes} = {}) {
               const {page} = this;
 
               if (!page) {
                 const {width, height, color} = this;
-                const page = new Page(this, spec, type, state, color, width, height, worldWidth, worldHeight);
+                const page = new Page(this, spec, type, state, color, width, height, worldWidth, worldHeight, isEnabled);
                 this.page = page;
 
                 const {mesh} = page;
@@ -599,6 +607,25 @@ class Biolumi {
               this.type = type;
               this.metadata = metadata;
               this.intersectionPoint = intersectionPoint;
+            }
+          }
+          class PageIntersectionSpecMetadata {
+            constructor(page, position, rotation, scale, width, height, worldWidth, worldHeight) {
+              this.page = page;
+              this.position = position;
+              this.rotation = rotation;
+              this.scale = scale;
+              this.width = width;
+              this.height = height;
+              this.worldWidth = worldWidth;
+              this.worldHeight = worldHeight;
+            }
+          }
+          class BoxAnchorIntersectionSpecMetadata {
+            constructor(boxAnchor, boxTarget, anchor) {
+              this.boxAnchor = boxAnchor;
+              this.boxTarget = boxTarget;
+              this.anchor = anchor;
             }
           }
 
@@ -630,6 +657,9 @@ class Biolumi {
             }
 
             addPage(page) {
+if (!page.isEnabled) {
+  console.warn('bad page', page, new Error().stack);
+}
               this.pages.push(page);
             }
 
@@ -649,7 +679,7 @@ class Biolumi {
               return this.hoverStates[side];
             }
 
-            update({pose, enabled, sides, controllerMeshes}) {
+            update({pose, sides, controllerMeshes}) {
               const {gamepads} = pose;
               const {pages, boxAnchors, hoverStates, dotMeshes, boxMeshes} = this;
 
@@ -657,12 +687,38 @@ class Biolumi {
                 const side = SIDES[s];
                 const dotMesh = dotMeshes[side];
                 const boxMesh = boxMeshes[side];
+                const hoverState = hoverStates[side];
                 const controllerMesh = controllerMeshes[side];
                 const {rayMesh} = controllerMesh;
-                const gamepad = gamepads[side];
-                const hoverState = hoverStates[side];
 
-                if (enabled && sides.indexOf(side) !== -1 && gamepad) {
+                const _show = () => {
+                  if (!rayMesh.visible) {
+                    rayMesh.visible = true;
+                  }
+                };
+                const _hide = () => {
+                  hoverState.intersectionPoint = null;
+                  hoverState.type = '';
+                  hoverState.target = null;
+                  hoverState.anchor = null;
+                  hoverState.value = 0;
+
+                  if (dotMesh.visible) {
+                    dotMesh.visible = false;
+                  }
+                  if (boxMesh.visible) {
+                    boxMesh.visible = false;
+                  }
+                  if (rayMesh.visible) {
+                    rayMesh.visible = false;
+                  }
+                };
+
+                const enabledPages = pages.filter(page => page.isEnabled());
+                const enabledBoxAnchors = pages.filter(boxAnchor => boxAnchor.isEnabled());
+
+                if (enabledPages.length > 0 || enabledBoxAnchors.length > 0) {
+                  const gamepad = gamepads[side];
                   const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale} = gamepad;
                   const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation, controllerScale);
 
@@ -670,8 +726,8 @@ class Biolumi {
                     let closestIntersectionSpec = null;
                     let closestIntersectionSpecDistance = Infinity;
 
-                    for (let i = 0; i < pages.length; i++) {
-                      const page = pages[i];
+                    for (let i = 0; i < enabledPages.length; i++) {
+                      const page = enabledPages[i];
                       const {mesh} = page;
 
                       if (_isWorldVisible(mesh)) {
@@ -697,7 +753,7 @@ class Biolumi {
                             const {width, height, worldWidth, worldHeight} = page;
                             closestIntersectionSpec = new IntersectionSpec(
                               'page',
-                              {
+                              new PageIntersectionSpecMetadata(
                                 page,
                                 position,
                                 rotation,
@@ -705,8 +761,8 @@ class Biolumi {
                                 width,
                                 height,
                                 worldWidth,
-                                worldHeight,
-                              },
+                                worldHeight
+                              ),
                               intersectionPoint
                             );
                             closestIntersectionSpecDistance = distance;
@@ -714,8 +770,8 @@ class Biolumi {
                         }
                       }
                     }
-                    for (let i = 0; i < boxAnchors.length; i++) {
-                      const boxAnchor = boxAnchors[i];
+                    for (let i = 0; i < enabledBoxAnchors.length; i++) {
+                      const boxAnchor = enabledBoxAnchors[i];
                       const {boxTarget, anchor} = boxAnchor;
                       const intersectionPoint = boxTarget.intersectLine(controllerLine);
 
@@ -725,11 +781,11 @@ class Biolumi {
                         if (distance < closestIntersectionSpecDistance) {
                           closestIntersectionSpec = new IntersectionSpec(
                             'boxAnchor',
-                            {
+                            new BoxAnchorIntersectionSpecMetadata(
                               boxAnchor,
                               boxTarget,
-                              anchor,
-                            },
+                              anchor
+                            ),
                             intersectionPoint
                           );
                           closestIntersectionSpecDistance = distance;
@@ -909,32 +965,16 @@ class Biolumi {
                     rayMesh.scale.z = controllerLine.distance();
                   }
 
-                  if (!rayMesh.visible) {
-                    rayMesh.visible = true;
-                  }
+                  _show();
                 } else {
-                  hoverState.intersectionPoint = null;
-                  hoverState.type = '';
-                  hoverState.target = null;
-                  hoverState.anchor = null;
-                  hoverState.value = 0;
-
-                  if (boxMesh.visible) {
-                    boxMesh.visible = false;
-                  }
-                  if (dotMesh.visible) {
-                    dotMesh.visible = false;
-                  }
-
-                  if (rayMesh.visible) {
-                    rayMesh.visible = false;
-                  }
+                  _hide();
                 }
               }
             }
           }
 
           const _makeUi = ({width, height, color = [1, 1, 1, 1]}) => new Ui(width, height, color);
+          const _makeBoxAnchor = ({boxTarget, anchor, isEnabled = yes}) => new BoxAnchor(boxTarget, anchor, isEnabled);
 
           const _updateUiTimer = () => {
             uiTimer.update();
@@ -1121,6 +1161,7 @@ class Biolumi {
 
           return {
             makeUi: _makeUi,
+            makeBoxAnchor: _makeBoxAnchor,
 
             updateUiTimer: _updateUiTimer,
             getUiTime: _getUiTime,
@@ -1183,5 +1224,6 @@ const debounce = fn => {
 };
 const clamp = (n, min, max) => Math.min(Math.max(n, min), max);
 const nop = () => {};
+const yes = () => true;
 
 module.exports = Biolumi;

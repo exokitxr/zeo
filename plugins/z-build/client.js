@@ -55,19 +55,11 @@ class ZBuild {
       }
 
       enable() {
-        if (!this ._enabled) {
-          this._enabled = true;
-
-          render.addUiRef();
-        }
+        this._enabled = true;
       }
 
       disable() {
-        if (this._enabled) {
-          this._enabled = false;
-
-          render.removeUiRef();
-        }
+        this._enabled = false;
       }
 
       checkIntersection(controllerLine) {

@@ -100,6 +100,7 @@ class Payment {
               },
               worldWidth: WORLD_WIDTH,
               worldHeight: WORLD_HEIGHT,
+              isEnabled: () => rend.isOpen(),
             });
             mesh.position.set(0, -0.5, -1);
             mesh.rotation.x = -Math.PI / 4;
@@ -271,6 +272,7 @@ class Payment {
               },
               worldWidth: WORLD_WIDTH,
               worldHeight: WORLD_HEIGHT,
+              isEnabled: () => rend.isOpen(),
             });
             mesh.position.set(0, -0.5, -1);
             mesh.rotation.x = -Math.PI / 4;

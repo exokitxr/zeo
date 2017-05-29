@@ -129,6 +129,7 @@ class Servers {
               },
               worldWidth: WORLD_WIDTH,
               worldHeight: WORLD_HEIGHT,
+              isEnabled: () => rend.isOpen(),
             });
             mesh.receiveShadow = true;
 

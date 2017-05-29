@@ -89,6 +89,7 @@ class Home {
                 },
                 worldWidth: WORLD_WIDTH,
                 worldHeight: WORLD_HEIGHT,
+                isEnabled: () => rend.isOpen(),
               });
               mesh.receiveShadow = true;
 
@@ -167,6 +168,7 @@ class Home {
                   },
                   worldWidth: worldWidth,
                   worldHeight: worldHeight,
+                 isEnabled: () => rend.isOpen(),
                 });
                 mesh.position.y = (WORLD_HEIGHT / 2) - (worldHeight / 2);
                 mesh.position.z = 0.002;
@@ -214,6 +216,7 @@ class Home {
                   },
                   worldWidth: worldWidth,
                   worldHeight: worldHeight,
+                  isEnabled: () => rend.isOpen(),
                 });
                 mesh.position.y = -(WORLD_HEIGHT / 2) + (worldHeight / 2) + (WORLD_HEIGHT * (100 / HEIGHT));
                 mesh.position.z = 0.002;

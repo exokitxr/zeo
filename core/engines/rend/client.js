@@ -92,7 +92,6 @@ class Rend {
           scene.add(dotMeshes[side]);
           scene.add(boxMeshes[side]);
         });
-        let uiRefCount = 1; // either we start with menu open or tutorial open; either way it's one ref
 
         const localUpdates = [];
 
@@ -153,6 +152,7 @@ class Rend {
               },
               worldWidth: WORLD_WIDTH,
               worldHeight: WORLD_HEIGHT,
+              isEnabled: () => rendApi.isOpen(),
             });
             mesh.receiveShadow = true;
 
@@ -197,6 +197,7 @@ class Rend {
               },
               worldWidth: NAVBAR_WORLD_WIDTH,
               worldHeight: NAVBAR_WORLD_HEIGHT,
+              isEnabled: () => rendApi.isOpen(),
             });
             mesh.position.y = (WORLD_HEIGHT / 2) + (NAVBAR_WORLD_HEIGHT / 2);
             mesh.receiveShadow = true;
@@ -485,7 +486,6 @@ class Rend {
           const _updateUiTracker = () => {
             uiTracker.update({
               pose: webvr.getStatus(),
-              enabled: uiRefCount > 0,
               sides: (() => {
                 const vrMode = bootstrap.getVrMode();
 
@@ -633,14 +633,6 @@ class Rend {
 
           removeBoxAnchor(boxAnchor) {
             uiTracker.removeBoxAnchor(boxAnchor);
-          }
-
-          addUiRef() {
-            uiRefCount++;
-          }
-
-          removeUiRef() {
-            uiRefCount--;
           }
 
           getHoverState(side) {

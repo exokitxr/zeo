@@ -209,6 +209,7 @@ class Config {
               },
               worldWidth: WORLD_WIDTH,
               worldHeight: WORLD_HEIGHT,
+              isEnabled: () => rend.isOpen(),
             });
             mesh.receiveShadow = true;
 
@@ -264,6 +265,7 @@ class Config {
               },
               worldWidth: STATS_WORLD_WIDTH,
               worldHeight: STATS_WORLD_HEIGHT,
+              isEnabled: () => rend.isOpen(),
             });
             mesh.position.z = 0.002;
             mesh.receiveShadow = true;

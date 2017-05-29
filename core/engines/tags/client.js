@@ -2839,6 +2839,7 @@ class Tags {
                   },
                   worldWidth: open ? WORLD_OPEN_WIDTH : details ? WORLD_DETAILS_WIDTH : WORLD_WIDTH,
                   worldHeight: open ? WORLD_OPEN_HEIGHT : details ? WORLD_DETAILS_HEIGHT : WORLD_HEIGHT,
+                  isEnabled: () => rend.isOpen(),
                 });
                 mesh.receiveShadow = true;
                 mesh[tagMeshSymbol] = true;
@@ -3131,6 +3132,7 @@ class Tags {
                             state: state,
                             worldWidth: WORLD_WIDTH,
                             worldHeight: WORLD_HEIGHT,
+                            isEnabled: () => rend.isOpen(),
                           });
                           newAttributeMesh.receiveShadow = true;
 

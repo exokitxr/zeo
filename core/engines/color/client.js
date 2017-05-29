@@ -50,7 +50,7 @@ class Color {
           const menuColorWheels = [];
           rend.registerAuxObject('colorWheels', menuColorWheels);
 
-          const _makeColorWheel = ({onpreview, onupdate, menu = false}) => {
+          const _makeColorWheel = ({onpreview, onupdate, menu = false, isEnabled = yes}) => {
             const object = new THREE.Object3D();
             const colorId = _makeId();
             object.colorId = colorId;
@@ -181,7 +181,7 @@ class Color {
               _removeBoxTargets();
 
               boxAnchors = [
-                {
+                biolumi.makeBoxAnchor({
                   boxTarget: geometryUtils.makeBoxTarget(
                     object.position.clone().add(new THREE.Vector3(-SIZE / 10 / 2, 0, 0).applyQuaternion(object.quaternion)),
                     object.quaternion.clone(),
@@ -191,8 +191,9 @@ class Color {
                   anchor: {
                     onmousedown: `color:${colorId}:wheel`,
                   },
-                },
-                {
+                  isEnabled: isEnabled,
+                }),
+                biolumi.makeBoxAnchor({
                   boxTarget: geometryUtils.makeBoxTarget(
                     object.position.clone().add(new THREE.Vector3(SIZE / 2, 0, 0).applyQuaternion(object.quaternion)),
                     object.quaternion.clone(),
@@ -202,7 +203,8 @@ class Color {
                   anchor: {
                     onmousedown: `color:${colorId}:bar`,
                   },
-                },
+                  isEnabled: isEnabled,
+                }),
               ];
               for (let i = 0; i < boxAnchors.length; i++) {
                 const boxAnchor = boxAnchors[i];
@@ -398,5 +400,6 @@ class Color {
   }
 }
 const _makeId = () => Math.random().toString(36).substring(7);
+const yes = () => true;
 
 module.exports = Color;

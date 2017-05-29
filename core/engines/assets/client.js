@@ -28,6 +28,7 @@ class Assets {
       archae.requestPlugins([
         '/core/engines/three',
         '/core/engines/biolumi',
+        '/core/engines/rend',
         '/core/utils/creature-utils',
       ]),
       _requestJson(hmdModelPath),
@@ -37,6 +38,7 @@ class Assets {
         [
           three,
           biolumi,
+          rend,
           creatureUtils,
         ],
         hmdModelJson,
@@ -103,6 +105,7 @@ class Assets {
                 },
                 worldWidth: WORLD_LABEL_WIDTH,
                 worldHeight: WORLD_LABEL_HEIGHT,
+                isEnabled: () => rend.isOpen(),
               });
               mesh.geometry.applyMatrix(new THREE.Matrix4().makeRotationY(Math.PI));
               mesh.rotation.order = camera.rotation.order;
@@ -164,6 +167,7 @@ class Assets {
                 },
                 worldWidth: WORLD_MENU_WIDTH,
                 worldHeight: WORLD_MENU_HEIGHT,
+                isEnabled: () => rend.isOpen(),
               });
               mesh.rotation.order = camera.rotation.order;
 

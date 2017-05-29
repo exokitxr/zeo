@@ -85,7 +85,7 @@ class Transform {
           const rotateScale = 0.5;
           const scaleScale = 0.3;
           const scaleFactor = new THREE.Vector3(scaleScale, scaleScale, scaleScale).length();
-          const _makeTransformGizmo = ({onpreview, onupdate, menu = false}) => {
+          const _makeTransformGizmo = ({onpreview, onupdate, menu = false, isEnabled = yes}) => {
             const transformId = _makeId();
 
             const transformGizmo = (() => {
@@ -150,7 +150,7 @@ class Transform {
               _removeBoxTargets();
 
               boxAnchors = [
-                {
+                biolumi.makeBoxAnchor({
                   boxTarget: geometryUtils.makeBoxTarget(
                     transformGizmo.position.clone().add(new THREE.Vector3(1, 0, 0)),
                     new THREE.Quaternion(),
@@ -160,8 +160,9 @@ class Transform {
                   anchor: {
                     onmousedown: `transform:${transformId}:x`,
                   },
-                },
-                {
+                  isEnabled: isEnabled,
+                }),
+                biolumi.makeBoxAnchor({
                   boxTarget: geometryUtils.makeBoxTarget(
                     transformGizmo.position.clone().add(new THREE.Vector3(0, 1, 0)),
                     new THREE.Quaternion(),
@@ -171,8 +172,9 @@ class Transform {
                   anchor: {
                     onmousedown: `transform:${transformId}:y`,
                   },
-                },
-                {
+                  isEnabled: isEnabled,
+                }),
+                biolumi.makeBoxAnchor({
                   boxTarget: geometryUtils.makeBoxTarget(
                     transformGizmo.position.clone().add(new THREE.Vector3(0, 0, 1)),
                     new THREE.Quaternion(),
@@ -182,8 +184,9 @@ class Transform {
                   anchor: {
                     onmousedown: `transform:${transformId}:z`,
                   },
-                },
-                {
+                  isEnabled: isEnabled,
+                }),
+                biolumi.makeBoxAnchor({
                   boxTarget: geometryUtils.makeBoxTarget(
                     transformGizmo.position.clone(),
                     new THREE.Quaternion(),
@@ -193,8 +196,9 @@ class Transform {
                   anchor: {
                     onmousedown: `transform:${transformId}:xyz`,
                   },
-                },
-                {
+                  isEnabled: isEnabled,
+                }),
+                biolumi.makeBoxAnchor({
                   boxTarget: geometryUtils.makeBoxTarget(
                     transformGizmo.position.clone().add(new THREE.Vector3(0.3 / 2, 0.3 / 2, 0)),
                     new THREE.Quaternion(),
@@ -204,8 +208,9 @@ class Transform {
                   anchor: {
                     onmousedown: `transform:${transformId}:xy`,
                   },
-                },
-                {
+                  isEnabled: isEnabled,
+                }),
+                biolumi.makeBoxAnchor({
                   boxTarget: geometryUtils.makeBoxTarget(
                     transformGizmo.position.clone().add(new THREE.Vector3(0, 0.3 / 2, 0.3 / 2)),
                     new THREE.Quaternion(),
@@ -215,8 +220,9 @@ class Transform {
                   anchor: {
                     onmousedown: `transform:${transformId}:yz`,
                   },
-                },
-                {
+                  isEnabled: isEnabled,
+                }),
+                biolumi.makeBoxAnchor({
                   boxTarget: geometryUtils.makeBoxTarget(
                     transformGizmo.position.clone().add(new THREE.Vector3(0.3 / 2, 0, 0.3 / 2)),
                     new THREE.Quaternion(),
@@ -226,8 +232,9 @@ class Transform {
                   anchor: {
                     onmousedown: `transform:${transformId}:xz`,
                   },
-                },
-                {
+                  isEnabled: isEnabled,
+                }),
+                biolumi.makeBoxAnchor({
                   boxTarget: geometryUtils.makeBoxTarget(
                     transformGizmo.position.clone().add(
                       new THREE.Vector3(0, 0, rotateScale)
@@ -240,8 +247,9 @@ class Transform {
                   anchor: {
                     onmousedown: `transform:${transformId}:rotate`,
                   },
-                },
-                {
+                  isEnabled: isEnabled,
+                }),
+                biolumi.makeBoxAnchor({
                   boxTarget: geometryUtils.makeBoxTarget(
                     transformGizmo.position.clone().add(transformGizmo.scaleGizmo.position),
                     new THREE.Quaternion(),
@@ -251,7 +259,8 @@ class Transform {
                   anchor: {
                     onmousedown: `transform:${transformId}:scale`,
                   },
-                },
+                  isEnabled: isEnabled,
+                }),
               ];
               for (let i = 0; i < boxAnchors.length; i++) {
                 const boxAnchor = boxAnchors[i];
@@ -532,5 +541,6 @@ class Transform {
   }
 }
 const _makeId = () => Math.random().toString(36).substring(7);
+const yes = () => true;
 
 module.exports = Transform;
