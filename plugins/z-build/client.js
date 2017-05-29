@@ -9,7 +9,8 @@ const SIDES = ['left', 'right'];
 
 class ZBuild {
   mount() {
-    const {three: {THREE, scene, camera}, elements, input, pose, render, player, transform, color, utils: {network: networkUtils, geometry: geometryUtils, menu: menuUtils}} = zeo;
+    const {three: {THREE, scene, camera}, elements, input, pose, render, player, transform, color, utils} = zeo;
+    const {network: networkUtils, geometry: geometryUtils, menu: menuUtils} = utils;
     const {AutoWs} = networkUtils;
 
     const targetPlaneImg = menuUtils.getTargetPlaneImg();
@@ -23,6 +24,29 @@ class ZBuild {
       matrix.decompose(position, rotation, scale);
       return {position, rotation, scale};
     };
+    const _addColorAttribute = geometry => {
+      const positions = geometry.getAttribute('position').array;
+      const colors = new Float32Array(positions.length);
+      geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+      _setColorAttribute(geometry, 0x808080);
+    };
+    const _setColorAttribute = (geometry, color) => {
+      const r = ((color >> (8 * 2)) & 0xFF) / 0xFF;
+      const g = ((color >> (8 * 1)) & 0xFF) / 0xFF;
+      const b = ((color >> (8 * 0)) & 0xFF) / 0xFF;
+
+      const colorAttribute = geometry.getAttribute('color');
+      const {array: colors} = colorAttribute;
+      const numColors = colors.length / 3;
+      for (let i = 0; i < numColors; i++) {
+        const baseIndex = i * 3;
+        colors[baseIndex + 0] = r;
+        colors[baseIndex + 1] = g;
+        colors[baseIndex + 2] = b;
+      }
+      colorAttribute.needsUpdate = true;
+    };
 
     const zeroVector = new THREE.Vector3();
     const zeroQuaternion = new THREE.Quaternion();
@@ -33,11 +57,10 @@ class ZBuild {
     const selectedShapeScaleVector = shapeScaleVector.clone().multiplyScalar(1.5);
     const shapeControlSizeVector = oneVector.clone().multiplyScalar(2 * 1.1);
 
-    const _makeShapeMaterial = ({
-      color = 0x808080,
-    } = {}) => new THREE.MeshPhongMaterial({
-      color,
+    const shapeMaterial = new THREE.MeshPhongMaterial({
+      color: 0x808080,
       shading: THREE.FlatShading,
+      vertexColors: THREE.VertexColors,
       side: THREE.DoubleSide,
     });
 
@@ -181,88 +204,108 @@ class ZBuild {
               object.position.y = 0.1;
 
               const backgroundMesh = (() => {
-                const geometry = new THREE.PlaneBufferGeometry(0.18, 0.18)
-                  .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
-                const material = new THREE.MeshPhongMaterial({
-                  color: 0x808080,
-                  shading: THREE.FlatShading,
-                  side: THREE.DoubleSide,
-                });
+                const geometry = geometryUtils.unindexBufferGeometry(
+                  new THREE.PlaneBufferGeometry(0.18, 0.18)
+                    .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
+                );
+                _addColorAttribute(geometry);
+                const material = shapeMaterial;
                 return new THREE.Mesh(geometry, material);
               })();
               object.add(backgroundMesh);
 
               const boxMesh = (() => {
-                const geometry = new THREE.BoxBufferGeometry(1, 1, 1)
-                  .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
-                const material = _makeShapeMaterial({
-                  color: 0xFF0000,
-                });
+                const geometry = geometryUtils.unindexBufferGeometry(
+                  new THREE.BoxBufferGeometry(1, 1, 1)
+                    .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
+                );
+                _addColorAttribute(geometry);
+                 _setColorAttribute(geometry, 0xFF0000);
+                const material = shapeMaterial;
                 const mesh = new THREE.Mesh(geometry, material);
                 mesh.scale.copy(selectedShapeScaleVector);
                 mesh.shapeType = 'box';
                 return mesh;
               })();
               const rectangleMesh = (() => {
-                const geometry = new THREE.BoxBufferGeometry(1, 2, 1)
-                  .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
-                const material = _makeShapeMaterial();
+                const geometry = geometryUtils.unindexBufferGeometry(
+                  new THREE.BoxBufferGeometry(1, 2, 1)
+                    .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
+                );
+                _addColorAttribute(geometry);
+                const material = shapeMaterial;
                 const mesh = new THREE.Mesh(geometry, material);
                 mesh.scale.copy(shapeScaleVector);
                 mesh.shapeType = 'rectangle';
                 return mesh;
               })();
               const triangularPyramidMesh = (() => {
-                const geometry = new THREE.CylinderBufferGeometry(0, sq(0.5), 1, 3, 1)
-                  .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
-                const material = _makeShapeMaterial();
+                const geometry = geometryUtils.unindexBufferGeometry(
+                  new THREE.CylinderBufferGeometry(0, sq(0.5), 1, 3, 1)
+                    .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
+                );
+                _addColorAttribute(geometry);
+                const material = shapeMaterial;
                 const mesh = new THREE.Mesh(geometry, material);
                 mesh.scale.copy(shapeScaleVector);
                 mesh.shapeType = 'triangularPyramid';
                 return mesh;
               })();
               const rectangularPyramidMesh = (() => {
-                const geometry = new THREE.CylinderBufferGeometry(0, sq(0.5), 1, 4, 1)
-                  .applyMatrix(new THREE.Matrix4().makeRotationY(-Math.PI * (3 / 12)))
-                  .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
-                const material = _makeShapeMaterial();
+                const geometry = geometryUtils.unindexBufferGeometry(
+                  new THREE.CylinderBufferGeometry(0, sq(0.5), 1, 4, 1)
+                    .applyMatrix(new THREE.Matrix4().makeRotationY(-Math.PI * (3 / 12)))
+                    .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
+                );
+                _addColorAttribute(geometry);
+                const material = shapeMaterial;
                 const mesh = new THREE.Mesh(geometry, material);
                 mesh.scale.copy(shapeScaleVector);
                 mesh.shapeType = 'rectangularPyramid';
                 return mesh;
               })();
               const planeMesh = (() => {
-                const geometry = new THREE.PlaneBufferGeometry(1.5, 1.5);
-                  // .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
-                  // .applyMatrix(new THREE.Matrix4().makeRotationZ(-Math.PI / 2));
-                const material = _makeShapeMaterial();
+                const geometry = geometryUtils.unindexBufferGeometry(
+                  new THREE.PlaneBufferGeometry(1.5, 1.5)
+                );
+                _addColorAttribute(geometry);
+                const material = shapeMaterial;
                 const mesh = new THREE.Mesh(geometry, material);
                 mesh.scale.copy(shapeScaleVector);
                 mesh.shapeType = 'plane';
                 return mesh;
               })();
               const sphereMesh = (() => {
-                const geometry = new THREE.SphereBufferGeometry(0.75, 8, 8)
-                  .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
-                const material = _makeShapeMaterial();
+                const geometry = geometryUtils.unindexBufferGeometry(
+                  new THREE.SphereBufferGeometry(0.75, 8, 8)
+                    .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
+                );
+                _addColorAttribute(geometry);
+                const material = shapeMaterial;
                 const mesh = new THREE.Mesh(geometry, material);
                 mesh.scale.copy(shapeScaleVector);
                 mesh.shapeType = 'sphere';
                 return mesh;
               })();
               const cylinderMesh = (() => {
-                const geometry = new THREE.CylinderBufferGeometry(0.75, 0.75, 1.5, 8, 1)
-                  .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
-                const material = _makeShapeMaterial();
+                const geometry = geometryUtils.unindexBufferGeometry(
+                  new THREE.CylinderBufferGeometry(0.75, 0.75, 1.5, 8, 1)
+                    .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
+                );
+                _addColorAttribute(geometry);
+                const material = shapeMaterial;
                 const mesh = new THREE.Mesh(geometry, material);
                 mesh.scale.copy(shapeScaleVector);
                 mesh.shapeType = 'cylinder';
                 return mesh;
               })();
               const torusMesh = (() => {
-                const geometry = new THREE.TorusBufferGeometry(0.75, 0.25, 4, 8)
-                  .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
-                const material = _makeShapeMaterial();
+                const geometry = geometryUtils.unindexBufferGeometry(
+                  new THREE.TorusBufferGeometry(0.75, 0.25, 4, 8)
+                    .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
+                );
+                _addColorAttribute(geometry);
+                const material = shapeMaterial;
                 const mesh = new THREE.Mesh(geometry, material);
                 mesh.scale.copy(shapeScaleVector);
                 mesh.shapeType = 'torus';
@@ -481,7 +524,7 @@ class ZBuild {
                 object.remove(oldMesh);
               }
 
-              const newMesh = shapeMesh.clone();
+              const newMesh = new THREE.Mesh(shapeMesh.geometry.clone(), shapeMesh.material);
               newMesh.position.copy(zeroVector);
               newMesh.quaternion.copy(zeroQuaternion);
               newMesh.scale.copy(oneVector);
@@ -505,7 +548,7 @@ class ZBuild {
             if (color !== state.color) {
               state.color = color;
 
-              mesh.material.color = new THREE.Color(color);
+              _setColorAttribute(mesh.geometry, new THREE.Color(color).getHex());
             }
           };
           object.setTarget = target => {
@@ -910,7 +953,7 @@ class ZBuild {
                         const shapeMesh = shapeMeshes[i];
                         const selected = i !== shapeIndex;
                         shapeMesh.scale.copy(selected ? shapeScaleVector : selectedShapeScaleVector);
-                        shapeMesh.material.color.setHex(selected ? 0x808080 : 0xFF0000);
+                        _setColorAttribute(shapeMesh.geometry, selected ? 0x808080 : 0xFF0000);
                       }
 
                       const shapeMesh = shapeMeshes[shapeIndex];
@@ -1046,6 +1089,8 @@ class ZBuild {
     elements.registerComponent(this, buildComponent);
 
     this._cleanup = () => {
+      shapeMaterial.dispose();
+
       elements.unregisterComponent(this, buildComponent);
     };
   }
