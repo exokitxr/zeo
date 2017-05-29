@@ -162,20 +162,11 @@ class World {
           }
 
           updateBoundingBox(position, rotation, scale) {
-            const scalePosition = scale.clone().multiplyScalar(this._transformGizmo.scaleGizmo.scaleFactor);
-            const sizeFactor = Math.max(scalePosition.x, scalePosition.y, scalePosition.z, 1) * 2 * 1.1;
-            const size = new THREE.Vector3(sizeFactor, sizeFactor, sizeFactor);
-
-            this._boundingBox.setFromCenterAndSize(position, size);
+            this._boundingBox.setFromCenterAndSize(position, oneVector);
           }
 
           updateTransformGizmo(position, rotation, scale) {
-            const scalePosition = scale.clone().multiplyScalar(this._transformGizmo.scaleGizmo.scaleFactor);
-
-            this._transformGizmo.position.copy(position);
-            this._transformGizmo.rotateGizmo.quaternion.copy(rotation);
-            this._transformGizmo.scaleGizmo.position.copy(scalePosition);
-            this._transformGizmo.updateBoxTargets();
+            this._transformGizmo.update(position, rotation, scale);
           }
 
           updateMatrix(newValue) {

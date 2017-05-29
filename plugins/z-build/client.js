@@ -45,6 +45,7 @@ class ZBuild {
           onupdate: (position, rotation, scale) => {
             this.update(position, rotation, scale);
           },
+          menu: false,
         });
         scene.add(transformGizmo);
         this._transformGizmo = transformGizmo;
@@ -89,12 +90,7 @@ class ZBuild {
       }
 
       updateTransformGizmo(position, rotation, scale) {
-        const scalePosition = scale.clone().multiplyScalar(this._transformGizmo.scaleGizmo.scaleFactor);
-
-        this._transformGizmo.position.copy(position);
-        this._transformGizmo.rotateGizmo.quaternion.copy(rotation);
-        this._transformGizmo.scaleGizmo.position.copy(scalePosition);
-        this._transformGizmo.updateBoxTargets();
+        this._transformGizmo.update(position, rotation, scale);
       }
 
       update(position, rotation, scale) {

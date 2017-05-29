@@ -51,8 +51,8 @@ class Transform {
             THREETransformGizmoScale,
           } = THREETransformControls;
 
-          const upVector = new THREE.Vector3(0, 1, 0);
           const oneVector = new THREE.Vector3(1, 1, 1);
+          const upVector = new THREE.Vector3(0, 1, 0);
           const scaleNormalVector = new THREE.Vector3(-1, 0, 1).normalize();
 
           const nubbinMaterial = new THREE.MeshBasicMaterial({
@@ -84,23 +84,47 @@ class Transform {
 
           const rotateScale = 0.5;
           const scaleScale = 0.3;
-          const scaleFactor = new THREE.Vector3(scaleScale, scaleScale, scaleScale).length();
+          const scaleVector = new THREE.Vector3(scaleScale, scaleScale, scaleScale);
+          const scaleFactor = scaleVector.length();
           const _makeTransformGizmo = ({onpreview, onupdate, menu = false, isEnabled = yes}) => {
             const transformId = _makeId();
 
             const transformGizmo = (() => {
               const object = new THREE.Object3D();
               object.transformId = transformId;
-              object.getProperties = () => {
-                const {position} = object;
-                const {quaternion: rotation} = rotateGizmo;
-                const scale = scaleGizmo.position.clone().divideScalar(scaleGizmo.scaleFactor);
-                return {
-                  position,
-                  rotation,
-                  scale,
-                };
-              }
+              const properties = {
+                position: new THREE.Vector3(),
+                rotation: new THREE.Quaternion(),
+                scale: new THREE.Vector3(1, 1, 1),
+              };
+              const state = {
+                initialScale: new THREE.Vector3(1, 1, 1),
+              };
+              object.getProperties = () => properties;
+              object.update = (position, rotation, scale) => {
+                properties.position.copy(position);
+                properties.rotation.copy(rotation);
+                properties.scale.copy(scale);
+                state.initialScale.copy(scale);
+
+                object.position.copy(position);
+                rotateGizmo.quaternion.copy(rotation);
+                scaleGizmo.position.copy(scaleVector);
+
+                _updateBoxTargets();
+              };
+              object.syncPosition = () => {
+                properties.position.copy(object.position);
+              };
+              object.syncRotation = () => {
+                properties.rotation.copy(rotateGizmo.quaternion);
+              };
+              object.syncScale = () => {
+                properties.scale.copy(
+                  state.initialScale.clone()
+                    .multiply(scaleGizmo.position.clone().divideScalar(scaleFactor))
+                );
+              };
               object.onpreview = onpreview;
               object.onupdate = onupdate;
               object.menu = menu;
@@ -126,7 +150,7 @@ class Transform {
                 const geometry = new THREE.BoxBufferGeometry(0.075, 0.075, 0.075);
                 const material = scalerMaterial;
                 const mesh = new THREE.Mesh(geometry, material);
-                mesh.scaleFactor = scaleFactor;
+                mesh.position.copy(scaleVector);
                 return mesh;
               })();
               object.add(scaleGizmo);
@@ -272,6 +296,7 @@ class Transform {
             transformGizmos.push(transformGizmo);
 
             if (menu) {
+              transformGizmo.visible = isEnabled();
               menuTransformGizmos.push(transformGizmo);
             }
 
@@ -348,8 +373,6 @@ class Transform {
                 scale
               );
 
-              transformGizmo.updateBoxTargets();
-
               dragState.src = null;
             }
           };
@@ -388,6 +411,8 @@ class Transform {
                       const endPosition = startPosition.clone().add(positionDiff);
                       transformGizmo.position.copy(endPosition);
 
+                      transformGizmo.syncPosition();
+
                       _preview();
                     }
                   } else if (mode === 'y') {
@@ -405,6 +430,8 @@ class Transform {
                       const positionDiff = endIntersectionPoint.clone().sub(startIntersectionPoint);
                       const endPosition = startPosition.clone().add(positionDiff);
                       transformGizmo.position.copy(endPosition);
+
+                      transformGizmo.syncPosition();
 
                       _preview();
                     }
@@ -424,6 +451,8 @@ class Transform {
                       const endPosition = startPosition.clone().add(positionDiff);
                       transformGizmo.position.copy(endPosition);
 
+                      transformGizmo.syncPosition();
+
                       _preview();
                     }
                   } else if (mode === 'xy') {
@@ -436,6 +465,8 @@ class Transform {
                       const positionDiff = endIntersectionPoint.clone().sub(startIntersectionPoint);
                       const endPosition = startPosition.clone().add(positionDiff);
                       transformGizmo.position.copy(endPosition);
+
+                      transformGizmo.syncPosition();
 
                       _preview();
                     }
@@ -450,6 +481,8 @@ class Transform {
                       const endPosition = startPosition.clone().add(positionDiff);
                       transformGizmo.position.copy(endPosition);
 
+                      transformGizmo.syncPosition();
+
                       _preview();
                     }
                   } else if (mode === 'xz') {
@@ -462,6 +495,8 @@ class Transform {
                       const positionDiff = endIntersectionPoint.clone().sub(startIntersectionPoint);
                       const endPosition = startPosition.clone().add(positionDiff);
                       transformGizmo.position.copy(endPosition);
+
+                      transformGizmo.syncPosition();
 
                       _preview();
                     }
@@ -477,6 +512,8 @@ class Transform {
                         startPosition.clone().sub(startIntersectionPoint)
                       );
                     transformGizmo.position.copy(endPosition);
+
+                    transformGizmo.syncPosition();
 
                     _preview();
                   } else if (mode === 'rotate') {
@@ -495,6 +532,8 @@ class Transform {
                     );
                     transformGizmo.rotateGizmo.quaternion.setFromRotationMatrix(rotationMatrix);
 
+                    transformGizmo.syncRotation();
+
                     _preview();
                   } else if (mode === 'scale') {
                     const {worldPosition: controllerPosition, worldRotation: controllerRotation} = gamepad;
@@ -511,6 +550,8 @@ class Transform {
                         .closestPointToPoint(endPlanePoint, false);
                       const endScalePoint = endLinePoint.clone().sub(startPosition);
                       transformGizmo.scaleGizmo.position.copy(endScalePoint);
+
+                      transformGizmo.syncScale();
 
                       _preview();
                     }
