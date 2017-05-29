@@ -491,9 +491,6 @@ class Biolumi {
           }
           class BoxAnchor {
             constructor(boxTarget, anchor, isEnabled) {
-if (!boxTarget) { // XXX
-  console.warn('bad box target', boxTarget, new Error().stack);
-}
               this.boxTarget = boxTarget;
               this.anchor = anchor;
               this.isEnabled = isEnabled;
@@ -602,9 +599,6 @@ if (!boxTarget) { // XXX
             }
 
             addPage(page) {
-if (!page.isEnabled) { // XXX
-  console.warn('bad page', page, new Error().stack);
-}
               this.pages.push(page);
             }
 
