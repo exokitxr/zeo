@@ -816,11 +816,9 @@ class ZBuild {
         const menuRotationSpecs = [
           {
             menu: 'shape',
-            // angle: 0,
           },
           {
             menu: 'color',
-            // angle: Math.PI / 2,
           },
         ];
         const _update = () => {
