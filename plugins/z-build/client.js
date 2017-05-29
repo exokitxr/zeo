@@ -517,14 +517,14 @@ class ZBuild {
                   const {shapeMeshContainer} = toolMesh;
                   shapeMeshContainer.add(object);
 
-                  shapeControl.disable();
+                  shapeControl.setBound(false);
 
                   break;
                 }
                 case 'scene': {
                   scene.add(object);
 
-                  shapeControl.setBound();
+                  shapeControl.setBound(true);
                   const {position, quaternion: rotation, scale} = object;
                   shapeControl.updateBoundingBox(position.clone(), rotation.clone(), scale.clone());
                   shapeControl.updateTransformGizmo(position.clone(), rotation.clone(), scale.clone());
@@ -604,8 +604,8 @@ class ZBuild {
             }
           }
 
-          setBound() {
-            this._bound = true;
+          setBound(bound) {
+            this._bound = bound;
           }
 
           setHovered(hovered) {
@@ -632,8 +632,6 @@ class ZBuild {
           }
 
           destroy() {
-            this.disable();
-
             scene.remove(this._transformGizmo);
             transform.destroyTransformGizmo(this._transformGizmo);
           }
@@ -940,10 +938,8 @@ class ZBuild {
         entityApi._cleanup = () => {
           entityObject.remove(toolMesh);
 
-          for (const meshId in meshes) {
-            const mesh = meshes[meshId];
-            mesh.parent.remove(mesh);
-          }
+          connection.destroy();
+          _clearMeshes();
 
           entityElement.removeEventListener('grab', _grab);
           entityElement.removeEventListener('release', _release);
