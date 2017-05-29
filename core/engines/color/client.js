@@ -299,89 +299,87 @@ class Color {
           };
           input.on('triggerup', _triggerup);
           const _update = () => {
-            if (rend.isOpen()) {
-              SIDES.forEach(side => {
-                const dragState = dragStates[side];
-                const {src} = dragState;
-                const {gamepads} = webvr.getStatus();
-                const gamepad = gamepads[side];
+            SIDES.forEach(side => {
+              const dragState = dragStates[side];
+              const {src} = dragState;
+              const {gamepads} = webvr.getStatus();
+              const gamepad = gamepads[side];
 
-                if (src) {
-                  const {colorId, mode, startPosition, startRotation} = src;
-                  const colorWheel = colorWheels.find(colorWheel => colorWheel.colorId === colorId);
+              if (src) {
+                const {colorId, mode, startPosition, startRotation} = src;
+                const colorWheel = colorWheels.find(colorWheel => colorWheel.colorId === colorId);
 
-                  const _preview = () => {
-                    const color = colorWheel.getColor();
-                    colorWheel.onpreview(color);
-                  };
+                const _preview = () => {
+                  const color = colorWheel.getColor();
+                  colorWheel.onpreview(color);
+                };
 
-                  if (mode === 'wheel') {
-                    const {worldPosition: controllerPosition, worldRotation: controllerRotation} = gamepad;
-                    const intersectionPoint = new THREE.Plane().setFromNormalAndCoplanarPoint(
-                      new THREE.Vector3(0, 0, -1).applyQuaternion(startRotation),
-                      startPosition.clone()
+                if (mode === 'wheel') {
+                  const {worldPosition: controllerPosition, worldRotation: controllerRotation} = gamepad;
+                  const intersectionPoint = new THREE.Plane().setFromNormalAndCoplanarPoint(
+                    new THREE.Vector3(0, 0, -1).applyQuaternion(startRotation),
+                    startPosition.clone()
+                  )
+                    .intersectLine(
+                      new THREE.Line3(
+                        controllerPosition.clone(),
+                        controllerPosition.clone().add(new THREE.Vector3(0, 0, -15).applyQuaternion(controllerRotation))
+                      )
+                    );
+                  const yPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(
+                    new THREE.Vector3(1, 0, 0).applyQuaternion(startRotation),
+                    startPosition.clone().add(
+                      new THREE.Vector3(-SIZE / 2, -SIZE / 2, 0).applyQuaternion(startRotation)
                     )
-                      .intersectLine(
-                        new THREE.Line3(
-                          controllerPosition.clone(),
-                          controllerPosition.clone().add(new THREE.Vector3(0, 0, -15).applyQuaternion(controllerRotation))
-                        )
-                      );
-                    const yPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(
-                      new THREE.Vector3(1, 0, 0).applyQuaternion(startRotation),
-                      startPosition.clone().add(
-                        new THREE.Vector3(-SIZE / 2, -SIZE / 2, 0).applyQuaternion(startRotation)
-                      )
-                    );
-                    const xPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(
-                      new THREE.Vector3(0, 1, 0).applyQuaternion(startRotation),
-                      startPosition.clone().add(
-                        new THREE.Vector3(-SIZE / 2, -SIZE / 2, 0).applyQuaternion(startRotation)
-                      )
-                    );
-                    const x = yPlane.distanceToPoint(intersectionPoint) / SIZE;
-                    const y = xPlane.distanceToPoint(intersectionPoint) / SIZE;
-
-                    if (x >= 0 && x <= 1 && y >= 0 && y <= 1) {
-                      colorWheel.colorWheelMesh.x = x;
-                      colorWheel.colorWheelMesh.y = y;
-
-                      colorWheel.colorWheelMesh.notchMesh.position.x = -(SIZE / 2) + (x * SIZE);
-                      colorWheel.colorWheelMesh.notchMesh.position.y = -(SIZE / 2) + (y * SIZE);
-
-                      _preview();
-                    }
-                  } else if (mode === 'bar') {
-                    const {worldPosition: controllerPosition, worldRotation: controllerRotation} = gamepad;
-                    const intersectionPoint = new THREE.Plane().setFromNormalAndCoplanarPoint(
-                      new THREE.Vector3(0, 0, -1).applyQuaternion(startRotation),
-                      startPosition.clone()
+                  );
+                  const xPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(
+                    new THREE.Vector3(0, 1, 0).applyQuaternion(startRotation),
+                    startPosition.clone().add(
+                      new THREE.Vector3(-SIZE / 2, -SIZE / 2, 0).applyQuaternion(startRotation)
                     )
-                      .intersectLine(
-                        new THREE.Line3(
-                          controllerPosition.clone(),
-                          controllerPosition.clone().add(new THREE.Vector3(0, 0, -15).applyQuaternion(controllerRotation))
-                        )
-                      );
-                    const xPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(
-                      new THREE.Vector3(0, 1, 0).applyQuaternion(startRotation),
-                      startPosition.clone().add(
-                        new THREE.Vector3(SIZE / 2, -SIZE / 2, 0).applyQuaternion(startRotation)
+                  );
+                  const x = yPlane.distanceToPoint(intersectionPoint) / SIZE;
+                  const y = xPlane.distanceToPoint(intersectionPoint) / SIZE;
+
+                  if (x >= 0 && x <= 1 && y >= 0 && y <= 1) {
+                    colorWheel.colorWheelMesh.x = x;
+                    colorWheel.colorWheelMesh.y = y;
+
+                    colorWheel.colorWheelMesh.notchMesh.position.x = -(SIZE / 2) + (x * SIZE);
+                    colorWheel.colorWheelMesh.notchMesh.position.y = -(SIZE / 2) + (y * SIZE);
+
+                    _preview();
+                  }
+                } else if (mode === 'bar') {
+                  const {worldPosition: controllerPosition, worldRotation: controllerRotation} = gamepad;
+                  const intersectionPoint = new THREE.Plane().setFromNormalAndCoplanarPoint(
+                    new THREE.Vector3(0, 0, -1).applyQuaternion(startRotation),
+                    startPosition.clone()
+                  )
+                    .intersectLine(
+                      new THREE.Line3(
+                        controllerPosition.clone(),
+                        controllerPosition.clone().add(new THREE.Vector3(0, 0, -15).applyQuaternion(controllerRotation))
                       )
                     );
-                    const y = xPlane.distanceToPoint(intersectionPoint) / SIZE;
+                  const xPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(
+                    new THREE.Vector3(0, 1, 0).applyQuaternion(startRotation),
+                    startPosition.clone().add(
+                      new THREE.Vector3(SIZE / 2, -SIZE / 2, 0).applyQuaternion(startRotation)
+                    )
+                  );
+                  const y = xPlane.distanceToPoint(intersectionPoint) / SIZE;
 
-                    if (y >= 0 && y <= 1) {
-                      colorWheel.colorBarMesh.y = y;
+                  if (y >= 0 && y <= 1) {
+                    colorWheel.colorBarMesh.y = y;
 
-                      colorWheel.colorBarMesh.notchMesh.position.y = -(SIZE / 2) + (y * SIZE);
+                    colorWheel.colorBarMesh.notchMesh.position.y = -(SIZE / 2) + (y * SIZE);
 
-                      _preview();
-                    }
+                    _preview();
                   }
                 }
-              });
-            }
+              }
+            });
           };
           rend.on('update', _update);
 
