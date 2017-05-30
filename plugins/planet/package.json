@@ -6,6 +6,6 @@
   "server": "server.js",
   "dependencies": {
     "indev": "^3.0.10",
-    "marchingcubes": "0.0.5"
+    "marchingcubes": "0.0.6"
   }
 }

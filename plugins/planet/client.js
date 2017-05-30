@@ -10,12 +10,12 @@ class Planet {
     const {three: {THREE, scene, camera}, render, utils: {random: randomUtils}} = zeo;
     const {alea} = randomUtils;
 
-    const rng = new alea('');
+    const rng = new alea('zeo');
     const generator = indev({
       random: rng,
     });
     const elevationNoise = generator.uniform({
-      frequency: 0.02,
+      frequency: 0.03,
       octaves: 8,
     });
 
@@ -23,27 +23,74 @@ class Planet {
     const width = size;
     const height = size;
     const depth = size;
-    const _makeHeightField = (x, y) => {
-      const result = new Float32Array(size * size);
-
+    const _sum = v => v.x + v.y + v.z;
+    const _makeSideGenerator = ({normal, u, v, uv}) => {
+      const heightmap = new Float32Array(size * size);
       for (let i = 0; i < size; i++) {
         for (let j = 0; j < size; j++) {
           const index = i + (j * size);
-          result[index] = elevationNoise.in2D((x * size) + i, (y * size) + j) * 20;
+          heightmap[index] = elevationNoise.in2D((uv.x * size) + i, (uv.y * size) + j) * 20;
         }
       }
 
-      return result;
+      return (x, y, z) => {
+        const vector = new THREE.Vector3(x, y, z);
+        const length = vector.length();
+
+        if (length > 0) {
+          const angle = vector.angleTo(normal);
+          const angleFactor = 1 - (angle / Math.PI);
+          const uValue = _sum(u.clone().multiply(vector)) + (size / 2);
+          const vValue = _sum(v.clone().multiply(vector)) + (size / 2);
+          const index = uValue + (vValue * size);
+          const heightValue = heightmap[index];
+          const insideOutsideValue = (length <= heightValue ? -1 : 1);
+          const etherValue = insideOutsideValue * angleFactor;
+          return etherValue;
+        } else {
+          return -1;
+        }
+      };
     };
 
-    const heightFields = {
-      front: _makeHeightField(0, 0),
-      top: _makeHeightField(0, -1),
-      bottom: _makeHeightField(0, 1),
-      left: _makeHeightField(-1, 0),
-      right: _makeHeightField(1, 0),
-      back: _makeHeightField(2, 0),
-    };
+    const sideGenerators = [
+      _makeSideGenerator({ // front
+        normal: new THREE.Vector3(0, 0, 1),
+        u: new THREE.Vector3(1, 0, 0),
+        v: new THREE.Vector3(0, 1, 0),
+        uv: new THREE.Vector2(0, 0),
+      }),
+      _makeSideGenerator({ // top
+        normal: new THREE.Vector3(0, 1, 0),
+        u: new THREE.Vector3(1, 0, 0),
+        v: new THREE.Vector3(0, 0, 1),
+        uv: new THREE.Vector2(0, -1),
+      }),
+      _makeSideGenerator({ // bottom
+        normal: new THREE.Vector3(0, -1, 0),
+        u: new THREE.Vector3(1, 0, 0),
+        v: new THREE.Vector3(0, 0, 1),
+        uv: new THREE.Vector2(0, 1),
+      }),
+      _makeSideGenerator({ // left
+        normal: new THREE.Vector3(-1, 0, 0),
+        u: new THREE.Vector3(0, 0, 1),
+        v: new THREE.Vector3(0, 1, 0),
+        uv: new THREE.Vector2(-1, 0),
+      }),
+      _makeSideGenerator({ // right
+        normal: new THREE.Vector3(1, 0, 0),
+        u: new THREE.Vector3(0, 0, 1),
+        v: new THREE.Vector3(0, 1, 0),
+        uv: new THREE.Vector2(1, 0),
+      }),
+      _makeSideGenerator({ // back
+        normal: new THREE.Vector3(0, 0, -1),
+        u: new THREE.Vector3(1, 0, 0),
+        v: new THREE.Vector3(0, 1, 0),
+        uv: new THREE.Vector2(2, 0),
+      }),
+    ];
 
     const cleanups = [];
     this._cleanup = () => {
@@ -67,8 +114,6 @@ class Planet {
     });
 
     const _requestMarchingCubes = () => {
-      // const ellipseFn = (x, y, z) => Math.sqrt(Math.pow(x * 2, 2) + Math.pow(y, 2) + Math.pow(z, 2)) - 0.2;
-
       const _getCoordIndex = (x, y, z) => x + (y * width) + (z * width * height);
       const body = (() => {
         const result = new Uint8Array((3 * 4) + (width * height * depth * 4));
@@ -85,52 +130,11 @@ class Planet {
               const dx = x - (width / 2);
               const dy = y - (height / 2);
               const dz = z - (depth / 2);
-// console.log('got dx', dx);
-              const ax = Math.abs(dx);
-              const ay = Math.abs(dy);
-              const az = Math.abs(dz);
-              const d = Math.sqrt(dx * dx + dy * dy + dz * dz);
-              const v = (() => {
-                if (dx >= 0 && ax >= ay && ax >= az) { // right
-                  if (heightFields.right[y + (z * size)] >= d) {
-                    return -1;
-                  } else {
-                    return 1;
-                  }
-                } else if (dx < 0 && ax > ay && ax > az) { // left
-                  if (heightFields.left[y + (z * size)] >= d) {
-                    return -1;
-                  } else {
-                    return 1;
-                  }
-                } else if (dy >= 0 && ay >= ax && ay >= az) { // top
-                  if (heightFields.top[x + (z * size)] >= d) {
-                    return -1;
-                  } else {
-                    return 1;
-                  }
-                } else if (dy < 0 && ay > ax && ay > az) { // bottom
-                  if (heightFields.bottom[x + (z * size)] >= d) {
-                    return -1;
-                  } else {
-                    return 1;
-                  }
-                } else if (dz >= 0 && az >= ax && az >= ay) { // front
-                  if (heightFields.front[x + (y * size)] >= d) {
-                    return -1;
-                  } else {
-                    return 1;
-                  }
-                } else if (dz < 0 && az > ax && az > ay) { // back
-                  if (heightFields.back[x + (y * size)] >= d) {
-                    return -1;
-                  } else {
-                    return 1;
-                  }
-                } else {
-                  return 1;
-                }
-              })();
+
+              let v = 0;
+              for (let i = 0; i < sideGenerators.length; i++) {
+                v += sideGenerators[i](dx, dy, dz);
+              }
               data[index] = v;
             }
           }
