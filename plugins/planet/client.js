@@ -10,12 +10,12 @@ class Planet {
     const {three: {THREE, scene, camera}, render, utils: {random: randomUtils}} = zeo;
     const {alea} = randomUtils;
 
-    const rng = new alea('zeo');
+    const rng = new alea('q');
     const generator = indev({
       random: rng,
     });
     const elevationNoise = generator.uniform({
-      frequency: 0.03,
+      frequency: 0.04,
       octaves: 8,
     });
 
@@ -44,7 +44,7 @@ class Planet {
           const vValue = _sum(v.clone().multiply(vector)) + (size / 2);
           const index = uValue + (vValue * size);
           const heightValue = heightmap[index];
-          const insideOutsideValue = (length <= heightValue ? -1 : 1);
+          const insideOutsideValue = (length <= heightValue) ? -1 : 1;
           const etherValue = insideOutsideValue * angleFactor;
           return etherValue;
         } else {
@@ -67,15 +67,15 @@ class Planet {
         uv: new THREE.Vector2(0, -1),
       }),
       _makeSideGenerator({ // bottom
-        normal: new THREE.Vector3(0, -1, 0),
+        normal: new THREE.Vector3(0, 1, 0),
         u: new THREE.Vector3(1, 0, 0),
         v: new THREE.Vector3(0, 0, 1),
         uv: new THREE.Vector2(0, 1),
       }),
       _makeSideGenerator({ // left
-        normal: new THREE.Vector3(-1, 0, 0),
+        normal: new THREE.Vector3(1, 0, 0),
         u: new THREE.Vector3(0, 0, 1),
-        v: new THREE.Vector3(0, 1, 0),
+        v: new THREE.Vector3(0, -1, 0),
         uv: new THREE.Vector2(-1, 0),
       }),
       _makeSideGenerator({ // right
@@ -85,7 +85,7 @@ class Planet {
         uv: new THREE.Vector2(1, 0),
       }),
       _makeSideGenerator({ // back
-        normal: new THREE.Vector3(0, 0, -1),
+        normal: new THREE.Vector3(0, 0, 1),
         u: new THREE.Vector3(1, 0, 0),
         v: new THREE.Vector3(0, 1, 0),
         uv: new THREE.Vector2(2, 0),
