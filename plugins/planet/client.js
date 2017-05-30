@@ -15,7 +15,7 @@ class Planet {
       random: rng,
     });
     const elevationNoise = generator.uniform({
-      frequency: 0.1,
+      frequency: 0.02,
       octaves: 8,
     });
 
@@ -23,15 +23,13 @@ class Planet {
     const width = size;
     const height = size;
     const depth = size;
-    const innerRadius = 8;
-    const innerSize = innerRadius * 2;
     const _makeHeightField = (x, y) => {
-      const result = new Float32Array(innerSize * innerSize);
+      const result = new Float32Array(size * size);
 
-      for (let i = 0; i < innerSize; i++) {
-        for (let j = 0; j < innerSize; j++) {
-          const index = i + (j * innerSize);
-          result[index] = elevationNoise.in2D((x * innerSize) + i, (y * innerSize) + j) * 10;
+      for (let i = 0; i < size; i++) {
+        for (let j = 0; j < size; j++) {
+          const index = i + (j * size);
+          result[index] = elevationNoise.in2D((x * size) + i, (y * size) + j) * 20;
         }
       }
 
@@ -87,62 +85,44 @@ class Planet {
               const dx = x - (width / 2);
               const dy = y - (height / 2);
               const dz = z - (depth / 2);
+// console.log('got dx', dx);
               const ax = Math.abs(dx);
               const ay = Math.abs(dy);
               const az = Math.abs(dz);
+              const d = Math.sqrt(dx * dx + dy * dy + dz * dz);
               const v = (() => {
-                if (ax <= innerRadius && ay <= innerRadius && az <= innerRadius) {
-                  return -1;
-                } else if (dx > innerRadius && ay <= innerRadius && az <= innerRadius) { // right
-                  const ox = dx - innerRadius;
-                  const oy = dy + innerRadius;
-                  const oz = dz + innerRadius;
-                  if (heightFields.right[oy + (oz * innerSize)] >= ox) {
+                if (dx >= 0 && ax >= ay && ax >= az) { // right
+                  if (heightFields.right[y + (z * size)] >= d) {
                     return -1;
                   } else {
                     return 1;
                   }
-                } else if (dx < innerRadius && ay <= innerRadius && az <= innerRadius) { // left
-                  const ox = - dx - innerRadius;
-                  const oy = dy + innerRadius;
-                  const oz = dz + innerRadius;
-                  if (heightFields.left[oy + (oz * innerSize)] >= ox) {
+                } else if (dx < 0 && ax > ay && ax > az) { // left
+                  if (heightFields.left[y + (z * size)] >= d) {
                     return -1;
                   } else {
                     return 1;
                   }
-                } else if (dy > innerRadius && ax <= innerRadius && az <= innerRadius) { // top
-                  const ox = dx + innerRadius;
-                  const oy = dy - innerRadius;
-                  const oz = dz + innerRadius;
-                  if (heightFields.top[ox + (oz * innerSize)] >= oy) {
+                } else if (dy >= 0 && ay >= ax && ay >= az) { // top
+                  if (heightFields.top[x + (z * size)] >= d) {
                     return -1;
                   } else {
                     return 1;
                   }
-                } else if (dy < innerRadius && ax <= innerRadius && az <= innerRadius) { // bottom
-                  const ox = dx + innerRadius;
-                  const oy = - dy - innerRadius;
-                  const oz = dz + innerRadius;
-                  if (heightFields.bottom[ox + (oz * innerSize)] >= oy) {
+                } else if (dy < 0 && ay > ax && ay > az) { // bottom
+                  if (heightFields.bottom[x + (z * size)] >= d) {
                     return -1;
                   } else {
                     return 1;
                   }
-                } else if (dz > innerRadius && ax <= innerRadius && ay <= innerRadius) { // front
-                  const ox = dx + innerRadius;
-                  const oy = dy + innerRadius;
-                  const oz = dz - innerRadius;
-                  if (heightFields.front[ox + (oy * innerSize)] >= oz) {
+                } else if (dz >= 0 && az >= ax && az >= ay) { // front
+                  if (heightFields.front[x + (y * size)] >= d) {
                     return -1;
                   } else {
                     return 1;
                   }
-                } else if (dz < innerRadius && ax <= innerRadius && ay <= innerRadius) { // back
-                  const ox = dx + innerRadius;
-                  const oy = dy + innerRadius;
-                  const oz = -dz - innerRadius;
-                  if (heightFields.back[ox + (oy * innerSize)] >= oz) {
+                } else if (dz < 0 && az > ax && az > ay) { // back
+                  if (heightFields.back[x + (y * size)] >= d) {
                     return -1;
                   } else {
                     return 1;
