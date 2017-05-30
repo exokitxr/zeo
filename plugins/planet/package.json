@@ -1,0 +1,10 @@
+{
+  "name": "planet",
+  "version": "0.0.1",
+  "description": "Procedurally genetarated planets.",
+  "client": "client.js",
+  "server": "server.js",
+  "dependencies": {
+    "marchingcubes": "0.0.5"
+  }
+}
