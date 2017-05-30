@@ -1044,7 +1044,10 @@ class ZBuild {
 
                       const x = Math.round(((((axes[0] / 2) + 0.5) * shapesWidth) - (shapeWidth / 2)) / shapeWidth);
                       const y = Math.round((((-(axes[1] / 2) + 0.5) * shapesHeight) - (shapeHeight / 2)) / shapeHeight);
-                      const shapeIndex = (y * shapesPerRow) + x;
+                      let shapeIndex = (y * shapesPerRow) + x;
+                      if (shapeIndex >= shapeMeshes.length) {
+                        shapeIndex = shapeMeshes.length - 1;
+                      }
 
                       const {
                         menuMesh: {
