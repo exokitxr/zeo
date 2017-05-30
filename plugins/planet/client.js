@@ -1,3 +1,5 @@
+const indev = require('indev');
+
 class Planet {
   constructor(archae) {
     this._archae = archae;
@@ -5,7 +7,45 @@ class Planet {
 
   mount() {
     const {_archae: archae} = this;
-    const {three: {THREE, scene, camera}, render} = zeo;
+    const {three: {THREE, scene, camera}, render, utils: {random: randomUtils}} = zeo;
+    const {alea} = randomUtils;
+
+    const rng = new alea('');
+    const generator = indev({
+      random: rng,
+    });
+    const elevationNoise = generator.uniform({
+      frequency: 0.1,
+      octaves: 8,
+    });
+
+    const size = 50;
+    const width = size;
+    const height = size;
+    const depth = size;
+    const innerRadius = 8;
+    const innerSize = innerRadius * 2;
+    const _makeHeightField = (x, y) => {
+      const result = new Float32Array(innerSize * innerSize);
+
+      for (let i = 0; i < innerSize; i++) {
+        for (let j = 0; j < innerSize; j++) {
+          const index = i + (j * innerSize);
+          result[index] = elevationNoise.in2D((x * innerSize) + i, (y * innerSize) + j) * 10;
+        }
+      }
+
+      return result;
+    };
+
+    const heightFields = {
+      front: _makeHeightField(0, 0),
+      top: _makeHeightField(0, -1),
+      bottom: _makeHeightField(0, 1),
+      left: _makeHeightField(-1, 0),
+      right: _makeHeightField(1, 0),
+      back: _makeHeightField(2, 0),
+    };
 
     const cleanups = [];
     this._cleanup = () => {
@@ -29,12 +69,8 @@ class Planet {
     });
 
     const _requestMarchingCubes = () => {
-      const ellipseFn = (x, y, z) => Math.sqrt(Math.pow(x * 2, 2) + Math.pow(y, 2) + Math.pow(z, 2)) - 0.2;
+      // const ellipseFn = (x, y, z) => Math.sqrt(Math.pow(x * 2, 2) + Math.pow(y, 2) + Math.pow(z, 2)) - 0.2;
 
-      const size = 50;
-      const width = size;
-      const height = size;
-      const depth = size;
       const _getCoordIndex = (x, y, z) => x + (y * width) + (z * width * height);
       const body = (() => {
         const result = new Uint8Array((3 * 4) + (width * height * depth * 4));
@@ -48,11 +84,74 @@ class Planet {
           for (let y = 0; y < height; y++) {
             for (let z = 0; z < depth; z++) {
               const index = _getCoordIndex(x, y, z);
-              data[index] = ellipseFn(
-                (x - (width / 2)) / width,
-                (y - (height / 2)) / height,
-                (z - (depth / 2)) / depth
-              );
+              const dx = x - (width / 2);
+              const dy = y - (height / 2);
+              const dz = z - (depth / 2);
+              const ax = Math.abs(dx);
+              const ay = Math.abs(dy);
+              const az = Math.abs(dz);
+              const v = (() => {
+                if (ax <= innerRadius && ay <= innerRadius && az <= innerRadius) {
+                  return -1;
+                } else if (dx > innerRadius && ay <= innerRadius && az <= innerRadius) { // right
+                  const ox = dx - innerRadius;
+                  const oy = dy + innerRadius;
+                  const oz = dz + innerRadius;
+                  if (heightFields.right[oy + (oz * innerSize)] >= ox) {
+                    return -1;
+                  } else {
+                    return 1;
+                  }
+                } else if (dx < innerRadius && ay <= innerRadius && az <= innerRadius) { // left
+                  const ox = - dx - innerRadius;
+                  const oy = dy + innerRadius;
+                  const oz = dz + innerRadius;
+                  if (heightFields.left[oy + (oz * innerSize)] >= ox) {
+                    return -1;
+                  } else {
+                    return 1;
+                  }
+                } else if (dy > innerRadius && ax <= innerRadius && az <= innerRadius) { // top
+                  const ox = dx + innerRadius;
+                  const oy = dy - innerRadius;
+                  const oz = dz + innerRadius;
+                  if (heightFields.top[ox + (oz * innerSize)] >= oy) {
+                    return -1;
+                  } else {
+                    return 1;
+                  }
+                } else if (dy < innerRadius && ax <= innerRadius && az <= innerRadius) { // bottom
+                  const ox = dx + innerRadius;
+                  const oy = - dy - innerRadius;
+                  const oz = dz + innerRadius;
+                  if (heightFields.bottom[ox + (oz * innerSize)] >= oy) {
+                    return -1;
+                  } else {
+                    return 1;
+                  }
+                } else if (dz > innerRadius && ax <= innerRadius && ay <= innerRadius) { // front
+                  const ox = dx + innerRadius;
+                  const oy = dy + innerRadius;
+                  const oz = dz - innerRadius;
+                  if (heightFields.front[ox + (oy * innerSize)] >= oz) {
+                    return -1;
+                  } else {
+                    return 1;
+                  }
+                } else if (dz < innerRadius && ax <= innerRadius && ay <= innerRadius) { // back
+                  const ox = dx + innerRadius;
+                  const oy = dy + innerRadius;
+                  const oz = -dz - innerRadius;
+                  if (heightFields.back[ox + (oy * innerSize)] >= oz) {
+                    return -1;
+                  } else {
+                    return 1;
+                  }
+                } else {
+                  return 1;
+                }
+              })();
+              data[index] = v;
             }
           }
         }
