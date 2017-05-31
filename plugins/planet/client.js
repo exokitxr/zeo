@@ -1,7 +1,4 @@
-const size = 50;
-const width = size;
-const height = size;
-const depth = size;
+const size = 16;
 const SIDES = ['left', 'right'];
 
 class Planet {
@@ -91,11 +88,13 @@ class Planet {
       });
     });
 
-    const _requestMarchingCubes = ({seed = 0, holes = new Int32Array(0)} = {}) => {
-      const body = new Int32Array(2 + holes.length);
+    const _requestMarchingCubes = ({seed = 0, origin = new THREE.Vector3(0, 0, 0), holes = new Int32Array(0)} = {}) => {
+      const body = new Int32Array(5 + holes.length);
       new Uint32Array(body.buffer, 0, 1).set(Uint32Array.from([seed]), 0);
-      body.set(Int32Array.from([holes.length / 3]), 1);
-      body.set(holes, 2);
+      new Uint32Array(body.buffer, 4, 3)
+        .set(Uint32Array.from(origin.toArray()), 0);
+      body.set(Int32Array.from([holes.length / 3]), 4);
+      body.set(holes, 5);
 
       return fetch('/archae/planet/marchingcubes', {
         method: 'POST',
@@ -111,6 +110,7 @@ class Planet {
           const normals = new Float32Array(marchingCubesBuffer, (4 * 3) + (numPositions * 4), numNormals);
           const colors = new Float32Array(marchingCubesBuffer, (4 * 3) + (numPositions * 4) + (numNormals * 4), numColors);
           return {
+            origin,
             positions,
             normals,
             colors,
@@ -118,25 +118,47 @@ class Planet {
         });
     }
 
-    return _requestMarchingCubes({seed})
+    const chunks = (() => {
+      const result = [];
+
+      for (let i = 0; i < 3; i++) {
+        for (let j = 0; j < 3; j++) {
+          for (let k = 0; k < 3; k++) {
+            result.push(new THREE.Vector3(i, j, k));
+          }
+        }
+      }
+
+      return result;
+    })();
+
+    return Promise.all(chunks.map(origin => _requestMarchingCubes({seed, origin})))
       .then(marchingCubes => {
         if (live) {
-          const planetMesh = (() => {
+          const _makePlanetMesh = () => {
             const geometry = new THREE.BufferGeometry();
             const material = planetMaterial;
 
             const mesh = new THREE.Mesh(geometry, material);
-            mesh.render = marchingCubes => {
-              const {positions, normals, colors} = marchingCubes;
+            mesh.render = marchingCube => {
+              const {positions, normals, colors} = marchingCube;
 
               geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
               geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
               geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
             };
             return mesh;
-          })();
-          planetMesh.render(marchingCubes);
-          scene.add(planetMesh);
+          };
+          const planetMeshes = marchingCubes.map(marchingCube => {
+            const {origin} = marchingCube;
+            const planetMesh = _makePlanetMesh();
+            planetMesh.position.copy(origin.clone().multiplyScalar(size));
+            planetMesh.render(marchingCube);
+            return planetMesh;
+          });
+          planetMeshes.forEach(planetMesh => {
+            scene.add(planetMesh);
+          });
 
           const _trigger = e => {
             const {side} = e;
@@ -175,7 +197,7 @@ class Planet {
               const gamepad = gamepads[side];
               const {worldPosition: controllerPosition, worldRotation: controllerRotation} = gamepad;
               const raycaster = new THREE.Raycaster(controllerPosition, forwardVector.clone().applyQuaternion(controllerRotation));
-              const intersections = raycaster.intersectObject(planetMesh);
+              const intersections = raycaster.intersectObjects(planetMeshes);
               const dotMesh = dotMeshes[side];
 
               if (intersections.length > 0) {
@@ -204,7 +226,9 @@ class Planet {
           render.on('update', _update);
 
           cleanups.push(() => {
-            scene.remove(planetMesh);
+            planetMeshes.forEach(planetMesh => {
+              scene.remove(planetMesh);
+            });
 
             input.removeListener('trigger', _trigger);
             render.removeListener('update', _update);
