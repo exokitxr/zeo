@@ -45,42 +45,16 @@ class Planet {
     let holes = new Int32Array(4096);
     let holeIndex = 0;
     const _addHole = (x, y, z) => {
-      for (let i = -1; i <= 1; i++) {
-        const dx = x + i;
-
-        if (dx >= -(size / 2) && dx < (size / 2)) {
-          for (let j = -1; j <= 1; j++) {
-            const dy = y + j;
-
-            if (dy >= -(size / 2) && dy < (size / 2)) {
-              for (let k = -1; k <= 1; k++) {
-                const dz = z + k;
-
-                if (dz >= -(size / 2) && dz < (size / 2)) {
-                  const distance = Math.sqrt((i * i) + (j * j) + (k * k));
-                  const distanceFactor = distance / oneDistance;
-                  const valueFactor = 1 - distanceFactor;
-
-                  _addSubHole(dx, dy, dz, valueFactor);
-                }
-              }
-            }
-          }
-        }
-      }
-    };
-    const _addSubHole = (x, y, z, v) => {
-      if ((holeIndex * 4) >= holes.length) {
+      if ((holeIndex * 3) >= holes.length) {
         const oldHoles = holes;
         holes = new Int32Array(holes.length * 2);
         holes.set(oldHoles);
       }
 
-      const holeIndexBase = holeIndex * 4;
-      holes[holeIndexBase + 0] = x + size / 2;
-      holes[holeIndexBase + 1] = y + size / 2;
-      holes[holeIndexBase + 2] = z + size / 2;
-      holes[holeIndexBase + 3] = v;
+      const holeIndexBase = holeIndex * 3;
+      holes[holeIndexBase + 0] = x + (size / 2);
+      holes[holeIndexBase + 1] = y + (size / 2);
+      holes[holeIndexBase + 2] = z + (size / 2);
       holeIndex++;
     };
 
@@ -112,68 +86,9 @@ class Planet {
       });
     });
 
-    const _getCoordIndex = (x, y, z) => x + (y * width) + (z * width * height);
-    /* const _getInitialPlanetData = () => {
-      const result = new Uint8Array((3 * 4) + (width * height * depth * 4));
-
-      new Uint32Array(result.buffer, 4 * 0, 4 * 1, 1)[0] = width;
-      new Uint32Array(result.buffer, 4 * 1, 4 * 2, 1)[0] = height;
-      new Uint32Array(result.buffer, 4 * 2, 4 * 3, 1)[0] = depth;
-
-      const data = new Float32Array(result.buffer, 3 * 4);
-      for (let x = 0; x < width; x++) {
-        for (let y = 0; y < height; y++) {
-          for (let z = 0; z < depth; z++) {
-            const index = _getCoordIndex(x, y, z);
-            const dx = x - (width / 2);
-            const dy = y - (height / 2);
-            const dz = z - (depth / 2);
-
-            let v = 0;
-            for (let i = 0; i < sideGenerators.length; i++) {
-              v += sideGenerators[i](dx, dy, dz);
-            }
-            data[index] = v;
-          }
-        }
-      }
-
-      result.mine = (x, y, z) => {
-        const ax = x + (width / 2);
-        const ay = y + (height / 2);
-        const az = z + (depth / 2);
-        const data = new Float32Array(result.buffer, 3 * 4);
-
-        for (let i = -1; i <= 1; i++) {
-          const cx = ax + i;
-
-          if (cx >= 0 && cx < size) {
-            for (let j = -1; j <= 1; j++) {
-              const cy = ay + j;
-
-              if (cy >= 0 && cy < size) {
-                for (let k = -1; k <= 1; k++) {
-                  const cz = az + k;
-
-                  if (cz >= 0 && cz < size) {
-                    const distance = Math.sqrt((i * i) + (j * j) + (k * k));
-                    const distanceFactor = distance / oneDistance;
-                    const valueFactor = 1 - distanceFactor;
-                    const index = _getCoordIndex(cx, cy, cz);
-                    data[index] += valueFactor;
-                  }
-                }
-              }
-            }
-          }
-        }
-      };
-
-      return result;
-    }; */
     const _requestMarchingCubes = ({holes = new Int32Array(0)} = {}) => {
       const body = new Int32Array(1 + holes.length);
-      body.set(Int32Array.from([holes.length / 4]), 0);
+      body.set(Int32Array.from([holes.length / 3]), 0);
       body.set(holes, 1);
 
       return fetch('/archae/planet/marchingcubes', {
@@ -231,7 +146,7 @@ class Planet {
               );
 
               _requestMarchingCubes({
-                holes: new Int32Array(holes.buffer, 0, holeIndex * 4),
+                holes: new Int32Array(holes.buffer, 0, holeIndex * 3),
               })
                 .then(marchingCubes => {
                   console.log('rendered', holeIndex);
