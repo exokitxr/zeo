@@ -27,6 +27,8 @@ class Planet {
 
     const forwardVector = new THREE.Vector3(0, 0, -1);
     const upVector = new THREE.Vector3(0, 1, 0);
+    const oneDistance = Math.sqrt(3);
+
     const normalMaterial = new THREE.MeshPhongMaterial({
       color: 0xF44336,
       shading: THREE.FlatShading,
@@ -175,7 +177,34 @@ class Planet {
       }
 
       result.mine = (x, y, z) => {
-        // XXX
+        const ax = x + (width / 2);
+        const ay = y + (height / 2);
+        const az = z + (depth / 2);
+        const data = new Float32Array(result.buffer, 3 * 4);
+
+        for (let i = -1; i <= 1; i++) {
+          const cx = ax + i;
+
+          if (cx >= 0 && cx < size) {
+            for (let j = -1; j <= 1; j++) {
+              const cy = ay + j;
+
+              if (cy >= 0 && cy < size) {
+                for (let k = -1; k <= 1; k++) {
+                  const cz = az + k;
+
+                  if (cz >= 0 && cz < size) {
+                    const distance = Math.sqrt((i * i) + (j * j) + (k * k));
+                    const distanceFactor = distance / oneDistance;
+                    const valueFactor = 1 - distanceFactor;
+                    const index = _getCoordIndex(cx, cy, cz);
+                    data[index] += valueFactor;
+                  }
+                }
+              }
+            }
+          }
+        }
       };
 
       return result;
@@ -224,12 +253,14 @@ class Planet {
             if (dotMesh.visible) {
               const {position: targetPosition} = dotMesh;
               const planetPosition = targetPosition.clone().applyMatrix4(new THREE.Matrix4().getInverse(planetMesh.matrixWorld));
-              planetData.mine(planetPosition.x, planetPosition.y, planetPosition.z);
+              planetData.mine(
+                Math.round(planetPosition.x),
+                Math.round(planetPosition.y),
+                Math.round(planetPosition.z)
+              );
 
               _requestMarchingCubes(planetData)
                 .then(marchingCubes => {
-                  console.log('re-render');
-
                   planetMesh.render(marchingCubes);
                 })
                 .catch(err => {
