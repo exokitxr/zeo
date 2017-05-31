@@ -4,6 +4,37 @@ const height = size;
 const depth = size;
 const SIDES = ['left', 'right'];
 
+const holes = new Int32Array(4096);
+let holeIndex = 0;
+const _addHole = (x, y, z) => {
+  for (let i = -1; i <= 1; i++) {
+    const dx = x + i;
+
+    if (dx >= -(size / 2) && dx < (size / 2)) {
+      for (let j = -1; j <= 1; j++) {
+        const dy = y + j;
+
+        if (dy >= -(size / 2) && dy < (size / 2)) {
+          for (let k = -1; k <= 1; k++) {
+            const dz = z + k;
+
+            if (dz >= -(size / 2) && dz < (size / 2)) {
+              _addSubHole(dx, dy, dz);
+            }
+          }
+        }
+      }
+    }
+  }
+};
+const _addSubHole = (x, y, z) => {
+  const holeIndexBase = holeIndex * 3;
+  holes[holeIndexBase + 0] = x + size / 2;
+  holes[holeIndexBase + 1] = y + size / 2;
+  holes[holeIndexBase + 2] = z + size / 2;
+  holeIndex++;
+};
+
 class Planet {
   constructor(archae) {
     this._archae = archae;
@@ -71,7 +102,7 @@ class Planet {
     });
 
     const _getCoordIndex = (x, y, z) => x + (y * width) + (z * width * height);
-    const _getInitialPlanetData = () => {
+    /* const _getInitialPlanetData = () => {
       const result = new Uint8Array((3 * 4) + (width * height * depth * 4));
 
       new Uint32Array(result.buffer, 4 * 0, 4 * 1, 1)[0] = width;
@@ -128,26 +159,32 @@ class Planet {
       };
 
       return result;
-    };
-    const _requestMarchingCubes = () => fetch('/archae/planet/marchingcubes', {
-      method: 'POST',
-      body: '',
-    })
-      .then(res => res.arrayBuffer())
-      .then(marchingCubesBuffer => {
-        const marchingCubesArray = new Uint8Array(marchingCubesBuffer);
-        const numPositions = new Uint32Array(marchingCubesBuffer, 4 * 0, 1)[0];
-        const numNormals = new Uint32Array(marchingCubesBuffer, 4 * 1, 1)[0];
-        const numColors = new Uint32Array(marchingCubesBuffer, 4 * 2, 1)[0];
-        const positions = new Float32Array(marchingCubesBuffer, 4 * 3, numPositions);
-        const normals = new Float32Array(marchingCubesBuffer, (4 * 3) + (numPositions * 4), numNormals);
-        const colors = new Float32Array(marchingCubesBuffer, (4 * 3) + (numPositions * 4) + (numNormals * 4), numColors);
-        return {
-          positions,
-          normals,
-          colors,
-        };
-      });
+    }; */
+    const _requestMarchingCubes = ({holes = new Int32Array(0)} = {}) => {
+      const body = new Int32Array(1 + holes.length);
+      body.set(Int32Array.from([holes.length / 3]), 0);
+      body.set(holes, 1);
+
+      return fetch('/archae/planet/marchingcubes', {
+        method: 'POST',
+        body: body.buffer,
+      })
+        .then(res => res.arrayBuffer())
+        .then(marchingCubesBuffer => {
+          const marchingCubesArray = new Uint8Array(marchingCubesBuffer);
+          const numPositions = new Uint32Array(marchingCubesBuffer, 4 * 0, 1)[0];
+          const numNormals = new Uint32Array(marchingCubesBuffer, 4 * 1, 1)[0];
+          const numColors = new Uint32Array(marchingCubesBuffer, 4 * 2, 1)[0];
+          const positions = new Float32Array(marchingCubesBuffer, 4 * 3, numPositions);
+          const normals = new Float32Array(marchingCubesBuffer, (4 * 3) + (numPositions * 4), numNormals);
+          const colors = new Float32Array(marchingCubesBuffer, (4 * 3) + (numPositions * 4) + (numNormals * 4), numColors);
+          return {
+            positions,
+            normals,
+            colors,
+          };
+        });
+    }
 
     return _requestMarchingCubes()
       .then(marchingCubes => {
@@ -174,22 +211,25 @@ class Planet {
             const dotMesh = dotMeshes[side];
 
             if (dotMesh.visible) {
-              console.log('temporarily not mining');
-              /* const {position: targetPosition} = dotMesh;
+              const {position: targetPosition} = dotMesh;
               const planetPosition = targetPosition.clone().applyMatrix4(new THREE.Matrix4().getInverse(planetMesh.matrixWorld));
-              planetData.mine(
+              _addHole(
                 Math.round(planetPosition.x),
                 Math.round(planetPosition.y),
                 Math.round(planetPosition.z)
               );
 
-              _requestMarchingCubes(planetData)
+              _requestMarchingCubes({
+                holes: new Int32Array(holes.buffer, 0, holeIndex * 3),
+              })
                 .then(marchingCubes => {
+                  console.log('rendered', holeIndex);
+
                   planetMesh.render(marchingCubes);
                 })
                 .catch(err => {
                   console.warn(err);
-                }); */
+                });
 
               e.stopImmediatePropagation();
             }
