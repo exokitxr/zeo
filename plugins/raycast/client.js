@@ -4,7 +4,7 @@ class Raycast {
   mount() {
     const {three: {THREE, scene, camera}, elements, render, pose, input, world, ui, sound, utils: {geometry: geometryUtils}} = zeo;
 
-    const forwardVector = new THREE.Vector3(0, 1, 0);
+    const upVector = new THREE.Vector3(0, 1, 0);
     const normalMaterial = new THREE.MeshPhongMaterial({
       color: 0xF44336,
       shading: THREE.FlatShading,
@@ -62,7 +62,7 @@ class Raycast {
 
               dotMesh.position.copy(intersectionPoint);
               dotMesh.quaternion.setFromUnitVectors(
-                forwardVector,
+                upVector,
                 worldNormal
               );
 

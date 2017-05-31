@@ -1,5 +1,7 @@
 const indev = require('indev');
 
+const SIDES = ['left', 'right'];
+
 class Planet {
   constructor(archae) {
     this._archae = archae;
@@ -7,8 +9,53 @@ class Planet {
 
   mount() {
     const {_archae: archae} = this;
-    const {three: {THREE, scene, camera}, render, utils: {random: randomUtils}} = zeo;
+    const {three: {THREE, scene, camera}, pose, render, utils: {random: randomUtils, geometry: geometryUtils}} = zeo;
     const {alea} = randomUtils;
+
+    const cleanups = [];
+    this._cleanup = () => {
+      for (let i = 0; i < cleanups.length; i++) {
+        const cleanup = cleanups[i];
+        cleanup();
+      }
+    };
+
+    let live = true;
+    cleanups.push(() => {
+      live = false;
+    });
+
+    const forwardVector = new THREE.Vector3(0, 0, -1);
+    const upVector = new THREE.Vector3(0, 1, 0);
+    const normalMaterial = new THREE.MeshPhongMaterial({
+      color: 0xF44336,
+      shading: THREE.FlatShading,
+      transparent: true,
+      opacity: 0.5,
+    });
+    const planetMaterial = new THREE.MeshPhongMaterial({
+      color: 0x808080,
+      shading: THREE.FlatShading,
+    });
+
+    const _makeDotMesh = () => {
+      const geometry = geometryUtils.concatBufferGeometry([
+        new THREE.BoxBufferGeometry(0.02, 0.02, 0.02),
+        new THREE.TorusBufferGeometry(0.05, 0.01, 3, 6)
+         .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2)),
+      ])
+      const material = normalMaterial;
+
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.visible = false;
+      return mesh;
+    };
+    const dotMeshes = {
+      left: _makeDotMesh(),
+      right: _makeDotMesh(),
+    };
+    scene.add(dotMeshes.left);
+    scene.add(dotMeshes.right);
 
     const rng = new alea('q');
     const generator = indev({
@@ -92,25 +139,13 @@ class Planet {
       }),
     ];
 
-    const cleanups = [];
-    this._cleanup = () => {
-      for (let i = 0; i < cleanups.length; i++) {
-        const cleanup = cleanups[i];
-        cleanup();
-      }
-    };
-
-    let live = true;
     cleanups.push(() => {
-      live = false;
-    });
-
-    const planetMaterial = new THREE.MeshPhongMaterial({
-      color: 0x808080,
-      shading: THREE.FlatShading,
-    });
-    cleanups.push(() => {
+      normalMaterial.dispose();
       planetMaterial.dispose();
+
+      SIDES.forEach(side => {
+        scene.remove(dotMeshes[side]);
+      });
     });
 
     const _requestMarchingCubes = () => {
@@ -180,8 +215,45 @@ class Planet {
           })();
           scene.add(planetMesh);
 
+          const _update = () => {
+            const {gamepads} = pose.getStatus();
+
+            SIDES.forEach(side => {
+              const gamepad = gamepads[side];
+              const {worldPosition: controllerPosition, worldRotation: controllerRotation} = gamepad;
+              const raycaster = new THREE.Raycaster(controllerPosition, forwardVector.clone().applyQuaternion(controllerRotation));
+              const intersections = raycaster.intersectObject(planetMesh);
+              const dotMesh = dotMeshes[side];
+
+              if (intersections.length > 0) {
+                const intersection = intersections[0];
+                const {point: intersectionPoint, face: intersectionFace, object: intersectionObject} = intersection;
+                const {normal} = intersectionFace;
+                const intersectionObjectRotation = intersectionObject.getWorldQuaternion();
+                const worldNormal = normal.clone().applyQuaternion(intersectionObjectRotation);
+
+                dotMesh.position.copy(intersectionPoint);
+                dotMesh.quaternion.setFromUnitVectors(
+                  upVector,
+                  worldNormal
+                );
+
+                if (!dotMesh.visible) {
+                  dotMesh.visible = true;
+                }
+              } else {
+                if (dotMesh.visible) {
+                  dotMesh.visible = false;
+                }
+              }
+            });
+          };
+          render.on('update', _update);
+
           cleanups.push(() => {
             scene.remove(planetMesh);
+
+            render.removeListener('update', _update);
           });
         }
       });
