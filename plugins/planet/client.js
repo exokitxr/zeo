@@ -223,11 +223,14 @@ class Planet {
         const marchingCubesArray = new Uint8Array(marchingCubesBuffer);
         const numPositions = new Uint32Array(marchingCubesBuffer, 4 * 0, 1)[0];
         const numNormals = new Uint32Array(marchingCubesBuffer, 4 * 1, 1)[0];
-        const positions = new Float32Array(marchingCubesBuffer, 2 * 4, numPositions);
-        const normals = new Float32Array(marchingCubesBuffer, (2 * 4) + (numPositions * 4), numNormals);
+        const numColors = new Uint32Array(marchingCubesBuffer, 4 * 2, 1)[0];
+        const positions = new Float32Array(marchingCubesBuffer, 4 * 3, numPositions);
+        const normals = new Float32Array(marchingCubesBuffer, (4 * 3) + (numPositions * 4), numNormals);
+        const colors = new Float32Array(marchingCubesBuffer, (4 * 3) + (numPositions * 4) + (numNormals * 4), numColors);
         return {
           positions,
           normals,
+          colors,
         };
       });
 
@@ -242,40 +245,7 @@ class Planet {
 
             const mesh = new THREE.Mesh(geometry, material);
             mesh.render = marchingCubes => {
-              const {positions, normals} = marchingCubes;
-
-              const numPositions = positions.length / 3;
-              const numTriangles = numPositions / 3;
-              const colors = new Float32Array(positions.length);
-              for (let i = 0; i < numTriangles; i++) {
-                const triangleBaseIndex = i * 3 * 3;
-
-                const pa = new THREE.Vector3(positions[triangleBaseIndex + 0], positions[triangleBaseIndex + 1], positions[triangleBaseIndex + 2]);
-                const pb = new THREE.Vector3(positions[triangleBaseIndex + 3], positions[triangleBaseIndex + 4], positions[triangleBaseIndex + 5]);
-                const pc = new THREE.Vector3(positions[triangleBaseIndex + 6], positions[triangleBaseIndex + 7], positions[triangleBaseIndex + 9]);
-                const center = pa.clone().add(pb).add(pc).divideScalar(3);
-                const elevation = center.length();
-                const moisture = moistureNoise.in3D(center.x, center.y, center.z);
-                const p = new BiomePoint(
-                  elevation,
-                  moisture,
-                  false,
-                  false,
-                  false,
-                  false,
-                  0
-                );
-                const c = _getBiomeColor(p);
-                const r = ((c >> (8 * 2)) & 0xFF) / 0xFF;
-                const g = ((c >> (8 * 1)) & 0xFF) / 0xFF;
-                const b = ((c >> (8 * 0)) & 0xFF) / 0xFF;
-                for (let j = 0; j < 3; j++) {
-                  const positionBaseIndex = triangleBaseIndex + (j * 3);
-                  colors[positionBaseIndex + 0] = r;
-                  colors[positionBaseIndex + 1] = g;
-                  colors[positionBaseIndex + 2] = b;
-                }
-              }
+              const {positions, normals, colors} = marchingCubes;
 
               geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
               geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
@@ -360,119 +330,5 @@ class Planet {
     this._cleanup();
   }
 }
-
-const BIOME_COLORS = {
-  // Features
-  OCEAN: 0x44447a,
-  // OCEAN: 0x000000,
-  // COAST: 0x33335a,
-  COAST: 0x333333,
-  LAKESHORE: 0x225588,
-  LAKE: 0x336699,
-  RIVER: 0x225588,
-  MARSH: 0x2f6666,
-  // ICE: 0x99ffff,
-  ICE: 0x99dddd,
-  // BEACH: 0xa09077,
-  BEACH: 0xa0b077,
-  ROAD1: 0x442211,
-  ROAD2: 0x553322,
-  ROAD3: 0x664433,
-  BRIDGE: 0x686860,
-  LAVA: 0xcc3333,
-
-  // Terrain
-  SNOW: 0xffffff,
-  TUNDRA: 0xbbbbaa,
-  BARE: 0x888888,
-  SCORCHED: 0x555555,
-  TAIGA: 0x99aa77,
-  SHRUBLAND: 0x889977,
-  TEMPERATE_DESERT: 0xc9d29b,
-  TEMPERATE_RAIN_FOREST: 0x448855,
-  TEMPERATE_DECIDUOUS_FOREST: 0x679459,
-  GRASSLAND: 0x88aa55,
-  SUBTROPICAL_DESERT: 0xd2b98b,
-  TROPICAL_RAIN_FOREST: 0x337755,
-  TROPICAL_SEASONAL_FOREST: 0x559944,
-  MAGMA: 0xff3333,
-};
-class BiomePoint {
-  constructor(elevation, moisture, land, water, ocean, coast, lava) {
-    this.elevation = elevation;
-    this.moisture = moisture;
-    this.land = land;
-    this.water = water;
-    this.ocean = ocean;
-    this.coast = coast;
-    this.lava = lava;
-  }
-}
-const _getBiome = p => {
-  const {
-    elevation,
-    moisture,
-    land,
-    water,
-    ocean,
-    coast,
-    lava,
-  } = p;
-
-  if (coast) {
-    return 'BEACH';
-  } else if (ocean) {
-    return 'OCEAN';
-  } else if (p.water) {
-    if (elevation < (size * 0.1)) { return 'MARSH'; }
-    if (elevation > (size * 0.25)) { return 'ICE'; }
-    return 'LAKE';
-  } else if (lava > 2) {
-    return 'MAGMA';
-  } else if (elevation > (size * 0.3)) {
-    if (p.moisture > 0.50) { return 'SNOW'; }
-    else if (moisture > 0.33) { return 'TUNDRA'; }
-    else if (moisture > 0.16) { return 'BARE'; }
-    else { return 'SCORCHED'; }
-  } else if (elevation > (size * 0.25)) {
-    if (moisture > 0.66) { return 'TAIGA'; }
-    else if (moisture > 0.33) { return 'SHRUBLAND'; }
-    else { return 'TEMPERATE_DESERT'; }
-  } else if (elevation > (size * 0.1)) {
-    if (moisture > 0.83) { return 'TEMPERATE_RAIN_FOREST'; }
-    else if (moisture > 0.50) { return 'TEMPERATE_DECIDUOUS_FOREST'; }
-    else if (moisture > 0.16) { return 'GRASSLAND'; }
-    else { return 'TEMPERATE_DESERT'; }
-  } else {
-    if (moisture > 0.66) { return 'TROPICAL_RAIN_FOREST'; }
-    else if (moisture > 0.33) { return 'TROPICAL_SEASONAL_FOREST'; }
-    else if (moisture > 0.16) { return 'GRASSLAND'; }
-    else { return 'SUBTROPICAL_DESERT'; }
-  }
-};
-const _getBiomeColor = p => BIOME_COLORS[_getBiome(p)];
-/* const _getTriangleBiome = (ap, bp, cp) => {
-  const elevation = (ap.elevation + bp.elevation + cp.elevation) / 3;
-  const moisture = (ap.moisture + bp.moisture + cp.moisture) / 3;
-  const numLand = (+ap.land) + (+bp.land) + (+cp.land);
-  const land = numLand > 0;
-  const numWater = (+ap.water) + (+bp.water) + (+cp.water);
-  const water = numWater > 0;
-  const numOcean = (+ap.ocean) + (+bp.ocean) + (+cp.ocean);
-  const ocean = numOcean > 0;
-  const coast = numLand >= 1 && numOcean >= 1;
-  const lava = (ap.lava || 0) + (bp.lava || 0) + (cp.lava || 0);
-
-  const p = new BiomePoint(
-    elevation,
-    moisture,
-    land,
-    water,
-    ocean,
-    coast,
-    lava
-  );
-  return _getBiome(p);
-} */
 
 module.exports = Planet;
