@@ -17,7 +17,7 @@ class Planet {
       req.on('end', () => {
         const b = Buffer.concat(bs);
         const numHoles = new Int32Array(b.buffer, b.byteOffset + (4 * 0), 1)[0];
-        const holes = new Int32Array(b.buffer, b.byteOffset + (4 * 1), numHoles * 3);
+        const holes = new Int32Array(b.buffer, b.byteOffset + (4 * 1), numHoles * 4);
 
         const result = marchingcubes.marchCubesPlanet({
           holes: holes,
