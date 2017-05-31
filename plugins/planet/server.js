@@ -10,34 +10,19 @@ class Planet {
     const {express, app} = archae.getCore();
 
     function servePlanetMarchingCubes(req, res, next) {
-      const bs = [];
-      req.on('data', d => {
-        bs.push(d);
+      const result = marchingcubes.marchCubesPlanet({
+        // XXX
       });
-      req.on('end', () => {
-        const b = Buffer.concat(bs);
-        const width = new Uint32Array(b.buffer, 4 * 0, 1)[0];
-        const height = new Uint32Array(b.buffer, 4 * 1, 1)[0];
-        const depth = new Uint32Array(b.buffer, 4 * 2, 1)[0];
-        const data = new Float32Array(b.buffer, 4 * 3);
-
-        const result = marchingcubes.marchCubesPlanet({
-          width,
-          height,
-          depth,
-          data,
-        });
-        const {positions, normals, colors} = result;
-        const resultArray = new Uint8Array((3 * 4) + positions.byteLength + normals.byteLength + colors.byteLength);
-        resultArray.set(new Uint8Array(Uint32Array.from([positions.length]).buffer), 4 * 0);
-        resultArray.set(new Uint8Array(Uint32Array.from([normals.length]).buffer), 4 * 1);
-        resultArray.set(new Uint8Array(Uint32Array.from([colors.length]).buffer), 4 * 2);
-        resultArray.set(new Uint8Array(positions.buffer), 4 * 3);
-        resultArray.set(new Uint8Array(normals.buffer), (4 * 3) + positions.byteLength);
-        resultArray.set(new Uint8Array(colors.buffer), (4 * 3) + positions.byteLength + normals.byteLength);
-        res.type('application/octet-stream');
-        res.send(new Buffer(resultArray.buffer));
-      });
+      const {positions, normals, colors} = result;
+      const resultArray = new Uint8Array((3 * 4) + positions.byteLength + normals.byteLength + colors.byteLength);
+      resultArray.set(new Uint8Array(Uint32Array.from([positions.length]).buffer), 4 * 0);
+      resultArray.set(new Uint8Array(Uint32Array.from([normals.length]).buffer), 4 * 1);
+      resultArray.set(new Uint8Array(Uint32Array.from([colors.length]).buffer), 4 * 2);
+      resultArray.set(new Uint8Array(positions.buffer), 4 * 3);
+      resultArray.set(new Uint8Array(normals.buffer), (4 * 3) + positions.byteLength);
+      resultArray.set(new Uint8Array(colors.buffer), (4 * 3) + positions.byteLength + normals.byteLength);
+      res.type('application/octet-stream');
+      res.send(new Buffer(resultArray.buffer));
     }
     app.post('/archae/planet/marchingcubes', servePlanetMarchingCubes);
 

@@ -1,5 +1,3 @@
-const indev = require('indev');
-
 const size = 50;
 const width = size;
 const height = size;
@@ -13,8 +11,7 @@ class Planet {
 
   mount() {
     const {_archae: archae} = this;
-    const {three: {THREE, scene, camera}, pose, input, render, utils: {random: randomUtils, geometry: geometryUtils}} = zeo;
-    const {alea} = randomUtils;
+    const {three: {THREE, scene, camera}, pose, input, render, utils: {geometry: geometryUtils}} = zeo;
 
     const cleanups = [];
     this._cleanup = () => {
@@ -63,88 +60,6 @@ class Planet {
     };
     scene.add(dotMeshes.left);
     scene.add(dotMeshes.right);
-
-    const rng = new alea('q');
-    const generator = indev({
-      random: rng,
-    });
-    const elevationNoise = generator.uniform({
-      frequency: 0.04,
-      octaves: 8,
-    });
-    const moistureNoise = generator.simplex({
-      frequency: 0.1,
-      octaves: 6,
-    });
-
-    const _sum = v => v.x + v.y + v.z;
-    const _makeSideGenerator = ({normal, u, v, uv}) => {
-      const heightmap = new Float32Array(size * size);
-      for (let i = 0; i < size; i++) {
-        for (let j = 0; j < size; j++) {
-          const index = i + (j * size);
-          heightmap[index] = elevationNoise.in2D((uv.x * size) + i, (uv.y * size) + j) * 20;
-        }
-      }
-
-      return (x, y, z) => {
-        const vector = new THREE.Vector3(x, y, z);
-        const length = vector.length();
-
-        if (length > 0) {
-          const angle = vector.angleTo(normal);
-          const angleFactor = 1 - (angle / Math.PI);
-          const uValue = _sum(u.clone().multiply(vector)) + (size / 2);
-          const vValue = _sum(v.clone().multiply(vector)) + (size / 2);
-          const index = uValue + (vValue * size);
-          const heightValue = heightmap[index];
-          const insideOutsideValue = (length <= heightValue) ? -1 : 1;
-          const etherValue = insideOutsideValue * angleFactor;
-          return etherValue;
-        } else {
-          return -1;
-        }
-      };
-    };
-
-    const sideGenerators = [
-      _makeSideGenerator({ // front
-        normal: new THREE.Vector3(0, 0, 1),
-        u: new THREE.Vector3(1, 0, 0),
-        v: new THREE.Vector3(0, 1, 0),
-        uv: new THREE.Vector2(0, 0),
-      }),
-      _makeSideGenerator({ // top
-        normal: new THREE.Vector3(0, 1, 0),
-        u: new THREE.Vector3(1, 0, 0),
-        v: new THREE.Vector3(0, 0, 1),
-        uv: new THREE.Vector2(0, -1),
-      }),
-      _makeSideGenerator({ // bottom
-        normal: new THREE.Vector3(0, 1, 0),
-        u: new THREE.Vector3(1, 0, 0),
-        v: new THREE.Vector3(0, 0, 1),
-        uv: new THREE.Vector2(0, 1),
-      }),
-      _makeSideGenerator({ // left
-        normal: new THREE.Vector3(1, 0, 0),
-        u: new THREE.Vector3(0, 0, 1),
-        v: new THREE.Vector3(0, -1, 0),
-        uv: new THREE.Vector2(-1, 0),
-      }),
-      _makeSideGenerator({ // right
-        normal: new THREE.Vector3(1, 0, 0),
-        u: new THREE.Vector3(0, 0, 1),
-        v: new THREE.Vector3(0, 1, 0),
-        uv: new THREE.Vector2(1, 0),
-      }),
-      _makeSideGenerator({ // back
-        normal: new THREE.Vector3(0, 0, 1),
-        u: new THREE.Vector3(1, 0, 0),
-        v: new THREE.Vector3(0, 1, 0),
-        uv: new THREE.Vector2(2, 0),
-      }),
-    ];
 
     cleanups.push(() => {
       planetMaterial.dispose();
@@ -214,9 +129,9 @@ class Planet {
 
       return result;
     };
-    const _requestMarchingCubes = planetData => fetch('/archae/planet/marchingcubes', {
+    const _requestMarchingCubes = () => fetch('/archae/planet/marchingcubes', {
       method: 'POST',
-      body: planetData,
+      body: '',
     })
       .then(res => res.arrayBuffer())
       .then(marchingCubesBuffer => {
@@ -234,9 +149,7 @@ class Planet {
         };
       });
 
-    const planetData = _getInitialPlanetData();
-
-    return _requestMarchingCubes(planetData)
+    return _requestMarchingCubes()
       .then(marchingCubes => {
         if (live) {
           const planetMesh = (() => {
@@ -261,7 +174,8 @@ class Planet {
             const dotMesh = dotMeshes[side];
 
             if (dotMesh.visible) {
-              const {position: targetPosition} = dotMesh;
+              console.log('temporarily not mining');
+              /* const {position: targetPosition} = dotMesh;
               const planetPosition = targetPosition.clone().applyMatrix4(new THREE.Matrix4().getInverse(planetMesh.matrixWorld));
               planetData.mine(
                 Math.round(planetPosition.x),
@@ -275,7 +189,7 @@ class Planet {
                 })
                 .catch(err => {
                   console.warn(err);
-                });
+                }); */
 
               e.stopImmediatePropagation();
             }
