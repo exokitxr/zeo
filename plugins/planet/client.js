@@ -121,9 +121,9 @@ class Planet {
     const chunks = (() => {
       const result = [];
 
-      for (let i = 0; i < 3; i++) {
-        for (let j = 0; j < 3; j++) {
-          for (let k = 0; k < 3; k++) {
+      for (let i = -2; i <= 2; i++) {
+        for (let j = -2; j <= 2; j++) {
+          for (let k = -2; k <= 2; k++) {
             result.push(new THREE.Vector3(i, j, k));
           }
         }
