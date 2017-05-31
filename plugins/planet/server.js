@@ -16,10 +16,12 @@ class Planet {
       });
       req.on('end', () => {
         const b = Buffer.concat(bs);
-        const numHoles = new Int32Array(b.buffer, b.byteOffset + (4 * 0), 1)[0];
-        const holes = new Int32Array(b.buffer, b.byteOffset + (4 * 1), numHoles * 3);
+        const seed = new Uint32Array(b.buffer, b.byteOffset + (4 * 0), 1)[0];
+        const numHoles = new Int32Array(b.buffer, b.byteOffset + (4 * 1), 1)[0];
+        const holes = new Int32Array(b.buffer, b.byteOffset + (4 * 2), numHoles * 3);
 
         const result = marchingcubes.marchCubesPlanet({
+          seed: seed,
           holes: holes,
         });
         const {positions, normals, colors} = result;

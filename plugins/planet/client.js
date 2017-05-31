@@ -42,6 +42,11 @@ class Planet {
       opacity: 0.5,
     });
 
+    const seed = (() => {
+      const seedArray = new Uint32Array(1);
+      window.crypto.getRandomValues(seedArray);
+      return seedArray[0];
+    })();
     let holes = new Int32Array(4096);
     let holeIndex = 0;
     const _addHole = (x, y, z) => {
@@ -86,10 +91,11 @@ class Planet {
       });
     });
 
-    const _requestMarchingCubes = ({holes = new Int32Array(0)} = {}) => {
-      const body = new Int32Array(1 + holes.length);
-      body.set(Int32Array.from([holes.length / 3]), 0);
-      body.set(holes, 1);
+    const _requestMarchingCubes = ({seed = 0, holes = new Int32Array(0)} = {}) => {
+      const body = new Int32Array(2 + holes.length);
+      new Uint32Array(body.buffer, 0, 1).set(Uint32Array.from([seed]), 0);
+      body.set(Int32Array.from([holes.length / 3]), 1);
+      body.set(holes, 2);
 
       return fetch('/archae/planet/marchingcubes', {
         method: 'POST',
@@ -112,7 +118,7 @@ class Planet {
         });
     }
 
-    return _requestMarchingCubes()
+    return _requestMarchingCubes({seed})
       .then(marchingCubes => {
         if (live) {
           const planetMesh = (() => {
@@ -146,6 +152,7 @@ class Planet {
               );
 
               _requestMarchingCubes({
+                seed: seed,
                 holes: new Int32Array(holes.buffer, 0, holeIndex * 3),
               })
                 .then(marchingCubes => {
