@@ -9,7 +9,7 @@ class Planet {
 
   mount() {
     const {_archae: archae} = this;
-    const {three: {THREE, scene, camera}, pose, render, utils: {random: randomUtils, geometry: geometryUtils}} = zeo;
+    const {three: {THREE, scene, camera}, pose, input, render, utils: {random: randomUtils, geometry: geometryUtils}} = zeo;
     const {alea} = randomUtils;
 
     const cleanups = [];
@@ -148,73 +148,98 @@ class Planet {
       });
     });
 
-    const _requestMarchingCubes = () => {
-      const _getCoordIndex = (x, y, z) => x + (y * width) + (z * width * height);
-      const body = (() => {
-        const result = new Uint8Array((3 * 4) + (width * height * depth * 4));
+    const _getCoordIndex = (x, y, z) => x + (y * width) + (z * width * height);
+    const _getInitialPlanetData = () => {
+      const result = new Uint8Array((3 * 4) + (width * height * depth * 4));
 
-        new Uint32Array(result.buffer, 4 * 0, 4 * 1, 1)[0] = width;
-        new Uint32Array(result.buffer, 4 * 1, 4 * 2, 1)[0] = height;
-        new Uint32Array(result.buffer, 4 * 2, 4 * 3, 1)[0] = depth;
+      new Uint32Array(result.buffer, 4 * 0, 4 * 1, 1)[0] = width;
+      new Uint32Array(result.buffer, 4 * 1, 4 * 2, 1)[0] = height;
+      new Uint32Array(result.buffer, 4 * 2, 4 * 3, 1)[0] = depth;
 
-        const data = new Float32Array(result.buffer, 3 * 4);
-        for (let x = 0; x < width; x++) {
-          for (let y = 0; y < height; y++) {
-            for (let z = 0; z < depth; z++) {
-              const index = _getCoordIndex(x, y, z);
-              const dx = x - (width / 2);
-              const dy = y - (height / 2);
-              const dz = z - (depth / 2);
+      const data = new Float32Array(result.buffer, 3 * 4);
+      for (let x = 0; x < width; x++) {
+        for (let y = 0; y < height; y++) {
+          for (let z = 0; z < depth; z++) {
+            const index = _getCoordIndex(x, y, z);
+            const dx = x - (width / 2);
+            const dy = y - (height / 2);
+            const dz = z - (depth / 2);
 
-              let v = 0;
-              for (let i = 0; i < sideGenerators.length; i++) {
-                v += sideGenerators[i](dx, dy, dz);
-              }
-              data[index] = v;
+            let v = 0;
+            for (let i = 0; i < sideGenerators.length; i++) {
+              v += sideGenerators[i](dx, dy, dz);
             }
+            data[index] = v;
           }
         }
+      }
 
-        return result;
-      })();
+      result.mine = (x, y, z) => {
+        // XXX
+      };
 
-      return fetch('/archae/planet/marchingcubes', {
-        method: 'POST',
-        body: body,
-      })
-        .then(res => res.arrayBuffer())
-        .then(marchingCubesBuffer => {
-          const marchingCubesArray = new Uint8Array(marchingCubesBuffer);
-          const numPositions = new Uint32Array(marchingCubesBuffer, 4 * 0, 1)[0];
-          const numNormals = new Uint32Array(marchingCubesBuffer, 4 * 1, 1)[0];
-          const positions = new Float32Array(marchingCubesBuffer, 2 * 4, numPositions);
-          const normals = new Float32Array(marchingCubesBuffer, (2 * 4) + (numPositions * 4), numNormals);
-          return {
-            positions,
-            normals,
-          };
-        });
+      return result;
     };
+    const _requestMarchingCubes = planetData => fetch('/archae/planet/marchingcubes', {
+      method: 'POST',
+      body: planetData,
+    })
+      .then(res => res.arrayBuffer())
+      .then(marchingCubesBuffer => {
+        const marchingCubesArray = new Uint8Array(marchingCubesBuffer);
+        const numPositions = new Uint32Array(marchingCubesBuffer, 4 * 0, 1)[0];
+        const numNormals = new Uint32Array(marchingCubesBuffer, 4 * 1, 1)[0];
+        const positions = new Float32Array(marchingCubesBuffer, 2 * 4, numPositions);
+        const normals = new Float32Array(marchingCubesBuffer, (2 * 4) + (numPositions * 4), numNormals);
+        return {
+          positions,
+          normals,
+        };
+      });
 
-    return _requestMarchingCubes()
+    const planetData = _getInitialPlanetData();
+
+    return _requestMarchingCubes(planetData)
       .then(marchingCubes => {
         if (live) {
           const planetMesh = (() => {
-            const {positions, normals} = marchingCubes;
-
-            const geometry = (() => {
-              const geometry = new THREE.BufferGeometry();
-              geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
-              geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
-              return geometry;
-            })();
+            const geometry = new THREE.BufferGeometry();
             const material = planetMaterial;
 
             const mesh = new THREE.Mesh(geometry, material);
+            mesh.render = marchingCubes => {
+              const {positions, normals} = marchingCubes;
+              geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+              geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
+            };
             return mesh;
           })();
+          planetMesh.render(marchingCubes);
           scene.add(planetMesh);
 
+          const _trigger = e => {
+            const {side} = e;
+            const dotMesh = dotMeshes[side];
+
+            if (dotMesh.visible) {
+              const {position: targetPosition} = dotMesh;
+              const planetPosition = targetPosition.clone().applyMatrix4(new THREE.Matrix4().getInverse(planetMesh.matrixWorld));
+              planetData.mine(planetPosition.x, planetPosition.y, planetPosition.z);
+
+              _requestMarchingCubes(planetData)
+                .then(marchingCubes => {
+                  console.log('re-render');
+
+                  planetMesh.render(marchingCubes);
+                })
+                .catch(err => {
+                  console.warn(err);
+                });
+
+              e.stopImmediatePropagation();
+            }
+          };
+          input.on('trigger', _trigger);
           const _update = () => {
             const {gamepads} = pose.getStatus();
 
@@ -253,6 +278,7 @@ class Planet {
           cleanups.push(() => {
             scene.remove(planetMesh);
 
+            input.removeListener('trigger', _trigger);
             render.removeListener('update', _update);
           });
         }
