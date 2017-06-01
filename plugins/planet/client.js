@@ -89,11 +89,14 @@ class Planet {
     const _makeHoverState = () => ({
       intersectionObject: null,
       targetPosition: null,
+      targetColor: null,
     });
     const hoverStates = {
       left: _makeHoverState(),
       right: _makeHoverState(),
     };
+
+    const particleMeshes = [];
 
     cleanups.push(() => {
       planetMaterial.dispose();
@@ -295,7 +298,7 @@ class Planet {
             if (intersectionObject) {
               const planetMesh = intersectionObject;
               const {origin} = planetMesh;
-              const {targetPosition} = hoverState;
+              const {targetPosition, targetColor} = hoverState;
 
               const localPlanetPosition = targetPosition.clone()
                 .applyMatrix4(new THREE.Matrix4().getInverse(intersectionObject.matrixWorld))
@@ -353,19 +356,72 @@ class Planet {
                 })
               ))
                 .then(marchingCubes => {
-                  for (let i = 0; i < marchingCubes.length; i++) {
-                    const marchingCube = marchingCubes[i];
-                    const {origin} = marchingCube;
-                    const planetMesh = planetMeshes.find(planetMesh => planetMesh.origin.equals(origin));
-                    planetMesh.render(marchingCube);
-                  }
+                  const _updateGeometry = () => {
+                    for (let i = 0; i < marchingCubes.length; i++) {
+                      const marchingCube = marchingCubes[i];
+                      const {origin} = marchingCube;
+                      const planetMesh = planetMeshes.find(planetMesh => planetMesh.origin.equals(origin));
+                      planetMesh.render(marchingCube);
+                    }
+                  };
+                  const _makeParticles = () => {
+                    const _makeParticleMesh = targetColor => {
+                      const geometry = new THREE.TetrahedronBufferGeometry(0.1);
 
-                  soundObject.position.copy(targetPosition);
+                      const positions = geometry.getAttribute('position').array;
+                      const numPositions = positions.length / 3;
+                      const colors = new Float32Array(numPositions * 3);
+                      for (let i = 0; i < numPositions; i++) {
+                        const baseIndex = i * 3;
+                        colors[baseIndex + 0] = targetColor.r;
+                        colors[baseIndex + 1] = targetColor.g;
+                        colors[baseIndex + 2] = targetColor.b;
+                      }
+                      geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
 
-                  popAudio.currentTime = 0;
-                  if (popAudio.paused) {
-                    popAudio.play();
-                  }
+                      const material = planetMaterial;
+
+                      const mesh = new THREE.Mesh(geometry, material);
+                      return mesh;
+                    };
+
+                    for (let i = 0; i < 8; i++) {
+                      const particleMesh = _makeParticleMesh(targetColor);
+                      particleMesh.position.copy(
+                        targetPosition.clone()
+                          .add(
+                            new THREE.Vector3(
+                              (-0.5 + Math.random()) * 1,
+                              (-0.5 + Math.random()) * 1,
+                              (-0.5 + Math.random()) * 1
+                            )
+                          )
+                        );
+                      particleMesh.quaternion.setFromUnitVectors(
+                        forwardVector,
+                        new THREE.Vector3(
+                          -0.5 + Math.random(),
+                          -0.5 + Math.random(),
+                          -0.5 + Math.random()
+                        ).normalize()
+                      );
+                      particleMesh.startTime = Date.now();
+
+                      scene.add(particleMesh);
+                      particleMeshes.push(particleMesh);
+                    }
+                  };
+                  const _playSound = () => {
+                    soundObject.position.copy(targetPosition);
+                    popAudio.currentTime = 0;
+                    if (popAudio.paused) {
+                      popAudio.play();
+                    }
+                  };
+
+                  _updateGeometry();
+                  _makeParticles();
+                  _playSound();
                 })
                 .catch(err => {
                   console.warn(err);
@@ -376,49 +432,73 @@ class Planet {
           };
           input.on('trigger', _trigger);
           const _update = () => {
-            const {gamepads} = pose.getStatus();
+            const _updateHover = () => {
+              const {gamepads} = pose.getStatus();
 
-            SIDES.forEach(side => {
-              const gamepad = gamepads[side];
-              const {worldPosition: controllerPosition, worldRotation: controllerRotation} = gamepad;
-              const raycaster = new THREE.Raycaster(controllerPosition, forwardVector.clone().applyQuaternion(controllerRotation));
-              const intersections = raycaster.intersectObjects(planetTargetMeshes);
-              const dotMesh = dotMeshes[side];
-              const hoverState = hoverStates[side];
+              SIDES.forEach(side => {
+                const gamepad = gamepads[side];
+                const {worldPosition: controllerPosition, worldRotation: controllerRotation} = gamepad;
+                const raycaster = new THREE.Raycaster(controllerPosition, forwardVector.clone().applyQuaternion(controllerRotation));
+                const intersections = raycaster.intersectObjects(planetTargetMeshes);
+                const dotMesh = dotMeshes[side];
+                const hoverState = hoverStates[side];
 
-              if (intersections.length > 0) {
-                const intersection = intersections[0];
-                const {point: intersectionPoint, face: intersectionFace, object: intersectionObject} = intersection;
-                const {normal} = intersectionFace;
-                const intersectionObjectRotation = intersectionObject.getWorldQuaternion();
-                const worldNormal = normal.clone().applyQuaternion(intersectionObjectRotation);
+                if (intersections.length > 0) {
+                  const intersection = intersections[0];
+                  const {point: intersectionPoint, index: intersectionIndex, face: intersectionFace, object: intersectionObject} = intersection;
+                  const {normal} = intersectionFace;
+                  const {geometry} = intersectionObject;
 
-                dotMesh.position.copy(intersectionPoint);
-                dotMesh.quaternion.setFromUnitVectors(
-                  upVector,
-                  worldNormal
-                );
+                  const intersectionObjectRotation = intersectionObject.getWorldQuaternion();
+                  const worldNormal = normal.clone().applyQuaternion(intersectionObjectRotation);
+                  dotMesh.position.copy(intersectionPoint);
+                  dotMesh.quaternion.setFromUnitVectors(
+                    upVector,
+                    worldNormal
+                  );
 
-                const {parent: planetMesh} = intersectionObject;
-                const {origin} = planetMesh;
-                const targetPosition = intersectionPoint.clone()
-                  .sub(intersectionObject.getWorldPosition())
-                  .add(origin.clone().multiplyScalar(SIZE));
-                hoverState.intersectionObject = planetMesh;
-                hoverState.targetPosition = targetPosition;
+                  const {parent: planetMesh} = intersectionObject;
+                  const {origin} = planetMesh;
+                  const targetPosition = intersectionPoint.clone()
+                    .sub(intersectionObject.getWorldPosition())
+                    .add(origin.clone().multiplyScalar(SIZE));
+                  hoverState.intersectionObject = planetMesh;
+                  hoverState.targetPosition = targetPosition;
+                  hoverState.targetColor = new THREE.Color()
+                    .fromArray(geometry.getAttribute('color').array.slice(intersectionIndex * 3, (intersectionIndex + 1) * 3));
 
-                if (!dotMesh.visible) {
-                  dotMesh.visible = true;
+                  if (!dotMesh.visible) {
+                    dotMesh.visible = true;
+                  }
+                } else {
+                  hoverState.intersectionObject = null;
+                  hoverState.targetPosition = null;
+                  hoverState.targetColor = null;
+
+                  if (dotMesh.visible) {
+                    dotMesh.visible = false;
+                  }
                 }
-              } else {
-                hoverState.intersectionObject = null;
-                hoverState.targetPosition = null;
+              });
+            };
+            const _updateParticles = () => {
+              const now = Date.now();
 
-                if (dotMesh.visible) {
-                  dotMesh.visible = false;
+              const oldParticleMeshes = particleMeshes.slice();
+              for (let i = 0; i < oldParticleMeshes.length; i++) {
+                const particleMesh = oldParticleMeshes[i];
+                const {startTime} = particleMesh;
+                const timeDiff = now - startTime;
+
+                if (timeDiff > 2000) {
+                  scene.remove(particleMesh);
+                  particleMeshes.splice(particleMeshes.indexOf(particleMesh), 1);
                 }
               }
-            });
+            };
+
+            _updateHover();
+            _updateParticles();
           };
           render.on('update', _update);
 
@@ -427,6 +507,9 @@ class Planet {
               scene.remove(planetMesh);
             });
             scene.remove(soundObject);
+            particleMeshes.forEach(particleMesh => {
+              scene.remove(particleMesh);
+            });
 
             if (!popAudio.paused) {
               popAudio.pause();
