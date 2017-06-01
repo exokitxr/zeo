@@ -435,9 +435,9 @@ class Planet {
                       particleMesh.rayPosition = planetNormal.clone()
                         .add(
                           new THREE.Vector3(
-                            (-0.5 + Math.random()) * 2,
-                            (-0.5 + Math.random()) * 2,
-                            (-0.5 + Math.random()) * 2
+                            (-0.5 + Math.random()),
+                            (-0.5 + Math.random()),
+                            (-0.5 + Math.random())
                           )
                         ).normalize();
                       particleMesh.rayRotation = new THREE.Vector3(
@@ -448,6 +448,7 @@ class Planet {
                       particleMesh.linearVelocity = Math.random();
                       particleMesh.angularVelocity = Math.random();
                       particleMesh.startTime = Date.now();
+                      particleMesh.endTime = particleMesh.startTime + (Math.random() * 2000);
 
                       scene.add(particleMesh);
                       particleMeshes.push(particleMesh);
@@ -589,10 +590,11 @@ class Planet {
               const oldParticleMeshes = particleMeshes.slice();
               for (let i = 0; i < oldParticleMeshes.length; i++) {
                 const particleMesh = oldParticleMeshes[i];
-                const {startTime} = particleMesh;
-                const timeDiff = now - startTime;
+                const {endTime} = particleMesh;
 
-                if (timeDiff < 2000) {
+                if (now < endTime) {
+                  const {startTime} = particleMesh;
+                  const timeDiff = now - startTime;
                   const {rayPosition, rayRotation, linearVelocity, angularVelocity} = particleMesh;
                   particleMesh.position.add(rayPosition.clone().multiplyScalar(timeDiff * 0.0005 * linearVelocity));
                   particleMesh.rotation.x = (particleMesh.rotation.x + (rayRotation.x * timeDiff / (Math.PI * 2) * 0.001 * angularVelocity)) % (Math.PI * 2);
