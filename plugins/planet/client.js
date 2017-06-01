@@ -1,4 +1,5 @@
-const size = 16;
+const SIZE = 16;
+
 const SIDES = ['left', 'right'];
 
 class Planet {
@@ -60,9 +61,9 @@ class Planet {
       }
 
       const holeIndexBase = holeIndex * 3;
-      holes[holeIndexBase + 0] = x + (size / 2);
-      holes[holeIndexBase + 1] = y + (size / 2);
-      holes[holeIndexBase + 2] = z + (size / 2);
+      holes[holeIndexBase + 0] = x + (SIZE / 2);
+      holes[holeIndexBase + 1] = y + (SIZE / 2);
+      holes[holeIndexBase + 2] = z + (SIZE / 2);
       holeIndex++;
     };
 
@@ -227,7 +228,7 @@ class Planet {
             planetMesh.origin = origin;
             planetMesh.render(marchingCube);
 
-            planetMesh.position.copy(origin.clone().multiplyScalar(size));
+            planetMesh.position.copy(origin.clone().multiplyScalar(SIZE));
 
             return planetMesh;
           });
@@ -251,16 +252,23 @@ class Planet {
             const {intersectionObject} = hoverState;
 
             if (intersectionObject) {
-              const {targetPosition} = hoverState;
-              const planetPosition = targetPosition.clone().applyMatrix4(new THREE.Matrix4().getInverse(intersectionObject.matrixWorld));
-              _addHole(
-                Math.round(planetPosition.x),
-                Math.round(planetPosition.y),
-                Math.round(planetPosition.z)
-              );
-
               const planetMesh = intersectionObject;
               const {origin} = planetMesh;
+              const {targetPosition} = hoverState;
+
+              const localPosition = targetPosition.clone()
+                .applyMatrix4(new THREE.Matrix4().getInverse(intersectionObject.matrixWorld))
+              localPosition.x = Math.round(localPosition.x);
+              localPosition.y = Math.round(localPosition.y);
+              localPosition.z = Math.round(localPosition.z);
+              const absoluteTargetPosition = localPosition.clone()
+                .add(origin.clone().multiplyScalar(SIZE));
+              _addHole(
+                absoluteTargetPosition.x,
+                absoluteTargetPosition.y,
+                absoluteTargetPosition.z
+              );
+
               _requestMarchingCubes({
                 seed: seed,
                 origin: origin,
@@ -307,7 +315,7 @@ class Planet {
                 const {origin} = planetMesh;
                 const targetPosition = intersectionPoint.clone()
                   .sub(intersectionObject.getWorldPosition())
-                  .add(origin.clone().multiplyScalar(size));
+                  .add(origin.clone().multiplyScalar(SIZE));
                 hoverState.intersectionObject = planetMesh;
                 hoverState.targetPosition = targetPosition;
 
