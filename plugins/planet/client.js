@@ -401,6 +401,9 @@ class Planet {
                       const material = planetMaterial;
 
                       const mesh = new THREE.Mesh(geometry, material);
+                      mesh.destroy = () => {
+                        geometry.dispose();
+                      };
                       return mesh;
                     };
 
@@ -467,6 +470,11 @@ class Planet {
                       })();
                       object.add(innerMesh);
                       object.innerMesh = innerMesh;
+
+                      object.destroy = () => {
+                        outerMesh.geometry.dispose();
+                        innerMesh.geometry.dispose();
+                      };
 
                       return object;
                     };
@@ -564,6 +572,7 @@ class Planet {
 
                 if (timeDiff > 2000) {
                   scene.remove(particleMesh);
+                  particleMesh.destroy();
                   particleMeshes.splice(particleMeshes.indexOf(particleMesh), 1);
                 }
               }
@@ -582,6 +591,7 @@ class Planet {
 
                 if (distanceDiff < 0.1) {
                   scene.remove(itemMesh);
+                  itemMesh.destroy();
                   itemMeshes.splice(itemMeshes.indexOf(itemMesh), 1);
                 } else if (distanceDiff < 2) {
                   itemMesh.position.lerp(bodyPosition, timeDiff * 0.01);
