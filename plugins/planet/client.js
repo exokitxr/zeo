@@ -39,6 +39,12 @@ class Planet {
       transparent: true,
       opacity: 0.95,
     });
+    const glassMaterial = new THREE.MeshPhongMaterial({
+      color: 0xFFFFFF,
+      shading: THREE.FlatShading,
+      transparent: true,
+      opacity: 0.3,
+    });
     const normalMaterial = new THREE.MeshPhongMaterial({
       color: 0xF44336,
       shading: THREE.FlatShading,
@@ -98,9 +104,11 @@ class Planet {
     };
 
     const particleMeshes = [];
+    const itemMeshes = [];
 
     cleanups.push(() => {
       planetMaterial.dispose();
+      glassMaterial.dispose();
       waterMaterial.dispose();
       normalMaterial.dispose();
 
@@ -165,6 +173,8 @@ class Planet {
       const _cleanup = () => {
         audio.oncanplay = null;
         audio.onerror = null;
+
+        document.body.removeChild(audio);
       };
 
       audio.oncanplay = () => {
@@ -179,6 +189,8 @@ class Planet {
       };
 
       audio.src = src;
+
+      document.body.appendChild(audio);
     });
 
     const chunksRange = 2;
@@ -373,7 +385,7 @@ class Planet {
                   };
                   const _makeParticles = () => {
                     const _makeParticleMesh = targetColor => {
-                      const geometry = new THREE.TetrahedronBufferGeometry(0.1);
+                      const geometry = new THREE.TetrahedronBufferGeometry(0.1, 0);
 
                       const positions = geometry.getAttribute('position').array;
                       const numPositions = positions.length / 3;
@@ -418,6 +430,55 @@ class Planet {
                       particleMeshes.push(particleMesh);
                     }
                   };
+                  const _makeItems = () => {
+                    const _makeItemMesh = targetColor => {
+                      const object = new THREE.Object3D();
+
+                      const outerMesh = (() => {
+                        const geometry = new THREE.BoxBufferGeometry(0.2, 0.2, 0.2);
+                        const material = glassMaterial;
+
+                        const mesh = new THREE.Mesh(geometry, material);
+                        return mesh;
+                      })();
+                      object.add(outerMesh);
+                      object.outerMesh = outerMesh;
+
+                      const innerMesh = (() => {
+                        const geometry = new THREE.TetrahedronBufferGeometry(0.1, 1)
+                          .applyMatrix(new THREE.Matrix4().makeRotationZ(Math.PI * 3 / 12));
+
+                        const positions = geometry.getAttribute('position').array;
+                        const numPositions = positions.length / 3;
+                        const colors = new Float32Array(numPositions * 3);
+                        for (let i = 0; i < numPositions; i++) {
+                          const baseIndex = i * 3;
+                          colors[baseIndex + 0] = targetColor.r;
+                          colors[baseIndex + 1] = targetColor.g;
+                          colors[baseIndex + 2] = targetColor.b;
+                        }
+                        geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+                        const material = planetMaterial;
+
+                        const mesh = new THREE.Mesh(geometry, material);
+                        mesh.rotation.order = camera.rotation.order;
+                        return mesh;
+                      })();
+                      object.add(innerMesh);
+                      object.innerMesh = innerMesh;
+
+                      return object;
+                    };
+
+                    if (Math.random() < 0.5) {
+                      const itemMesh = _makeItemMesh(targetColor);
+                      itemMesh.position.copy(targetPosition);
+
+                      scene.add(itemMesh);
+                      itemMeshes.push(itemMesh);
+                    }
+                  };
                   const _playSound = () => {
                     soundObject.position.copy(targetPosition);
                     popAudio.currentTime = 0;
@@ -428,6 +489,7 @@ class Planet {
 
                   _updateGeometry();
                   _makeParticles();
+                  _makeItems();
                   _playSound();
                 })
                 .catch(err => {
@@ -438,7 +500,11 @@ class Planet {
             }
           };
           input.on('trigger', _trigger);
+
+          let lastUpdateTime = Date.now();
           const _update = () => {
+            const now = Date.now();
+
             const _updateHover = () => {
               const {gamepads} = pose.getStatus();
 
@@ -490,9 +556,8 @@ class Planet {
               });
             };
             const _updateParticles = () => {
-              const now = Date.now();
-
               const oldParticleMeshes = particleMeshes.slice();
+
               for (let i = 0; i < oldParticleMeshes.length; i++) {
                 const particleMesh = oldParticleMeshes[i];
                 const {startTime} = particleMesh;
@@ -504,9 +569,21 @@ class Planet {
                 }
               }
             };
+            const _updateItems = () => {
+              const timeDiff = now - lastUpdateTime;
+
+              for (let i = 0; i < itemMeshes.length; i++) {
+                const itemMesh = itemMeshes[i];
+                const {innerMesh} = itemMesh;
+                innerMesh.rotation.y = (innerMesh.rotation.y + (timeDiff / 100 / (Math.PI * 2))) % (Math.PI * 2);
+              }
+            };
 
             _updateHover();
             _updateParticles();
+            _updateItems();
+
+            lastUpdateTime = now;
           };
           render.on('update', _update);
 
@@ -517,6 +594,9 @@ class Planet {
             scene.remove(soundObject);
             particleMeshes.forEach(particleMesh => {
               scene.remove(particleMesh);
+            });
+            itemMeshes.forEach(itemMesh => {
+              scene.remove(itemMesh);
             });
 
             if (!popAudio.paused) {
