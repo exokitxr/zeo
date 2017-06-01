@@ -27,14 +27,51 @@ class Planet {
           origin: origin,
           holes: holes,
         });
-        const {positions, normals, colors} = result;
-        const resultArray = new Uint8Array((3 * 4) + positions.byteLength + normals.byteLength + colors.byteLength);
-        resultArray.set(new Uint8Array(Uint32Array.from([positions.length]).buffer), 4 * 0);
-        resultArray.set(new Uint8Array(Uint32Array.from([normals.length]).buffer), 4 * 1);
-        resultArray.set(new Uint8Array(Uint32Array.from([colors.length]).buffer), 4 * 2);
-        resultArray.set(new Uint8Array(positions.buffer), 4 * 3);
-        resultArray.set(new Uint8Array(normals.buffer), (4 * 3) + positions.byteLength);
-        resultArray.set(new Uint8Array(colors.buffer), (4 * 3) + positions.byteLength + normals.byteLength);
+        const {
+          land: {
+            positions: landPositions,
+            normals: landNormals,
+            colors: landColors,
+          },
+          water: {
+            positions: waterPositions,
+            normals: waterNormals,
+          },
+        } = result;
+
+        const resultArray = new Uint8Array(
+          (5 * 4) +
+          landPositions.byteLength +
+          landNormals.byteLength +
+          landColors.byteLength +
+          waterPositions.byteLength +
+          waterNormals.byteLength
+        );
+
+        let index = 0;
+        resultArray.set(new Uint8Array(Uint32Array.from([landPositions.length]).buffer), index);
+        index += 4;
+        resultArray.set(new Uint8Array(Uint32Array.from([landNormals.length]).buffer), index);
+        index += 4;
+        resultArray.set(new Uint8Array(Uint32Array.from([landColors.length]).buffer), index);
+        index += 4;
+        resultArray.set(new Uint8Array(Uint32Array.from([waterPositions.length]).buffer), index);
+        index += 4;
+        resultArray.set(new Uint8Array(Uint32Array.from([waterNormals.length]).buffer), index);
+        index += 4;
+
+        resultArray.set(new Uint8Array(landPositions.buffer), index);
+        index += landPositions.byteLength;
+        resultArray.set(new Uint8Array(landNormals.buffer), index);
+        index += landNormals.byteLength;
+        resultArray.set(new Uint8Array(landColors.buffer), index);
+        index += landColors.byteLength;
+
+        resultArray.set(new Uint8Array(waterPositions.buffer), index);
+        index += waterPositions.byteLength;
+        resultArray.set(new Uint8Array(waterNormals.buffer), index);
+        index += waterNormals.byteLength;
+
         res.type('application/octet-stream');
         res.send(new Buffer(resultArray.buffer));
       });

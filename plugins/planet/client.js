@@ -32,6 +32,12 @@ class Planet {
       shading: THREE.FlatShading,
       vertexColors: THREE.VertexColors,
     });
+    const waterMaterial = new THREE.MeshPhongMaterial({
+      color: 0x44447A,
+      shading: THREE.FlatShading,
+      transparent: true,
+      opacity: 0.95,
+    });
     const normalMaterial = new THREE.MeshPhongMaterial({
       color: 0xF44336,
       shading: THREE.FlatShading,
@@ -81,6 +87,7 @@ class Planet {
 
     cleanups.push(() => {
       planetMaterial.dispose();
+      waterMaterial.dispose();
       normalMaterial.dispose();
 
       SIDES.forEach(side => {
@@ -102,18 +109,39 @@ class Planet {
       })
         .then(res => res.arrayBuffer())
         .then(marchingCubesBuffer => {
-          const marchingCubesArray = new Uint8Array(marchingCubesBuffer);
-          const numPositions = new Uint32Array(marchingCubesBuffer, 4 * 0, 1)[0];
-          const numNormals = new Uint32Array(marchingCubesBuffer, 4 * 1, 1)[0];
-          const numColors = new Uint32Array(marchingCubesBuffer, 4 * 2, 1)[0];
-          const positions = new Float32Array(marchingCubesBuffer, 4 * 3, numPositions);
-          const normals = new Float32Array(marchingCubesBuffer, (4 * 3) + (numPositions * 4), numNormals);
-          const colors = new Float32Array(marchingCubesBuffer, (4 * 3) + (numPositions * 4) + (numNormals * 4), numColors);
+          let index = 0;
+          const numLandPositions = new Uint32Array(marchingCubesBuffer, index, 1)[0];
+          index += 4;
+          const numLandNormals = new Uint32Array(marchingCubesBuffer, index, 1)[0];
+          index += 4;
+          const numLandColors = new Uint32Array(marchingCubesBuffer, index, 1)[0];
+          index += 4;
+          const numWaterPositions = new Uint32Array(marchingCubesBuffer, index, 1)[0];
+          index += 4;
+          const numWaterNormals = new Uint32Array(marchingCubesBuffer, index, 1)[0];
+          index += 4;
+          const landPositions = new Float32Array(marchingCubesBuffer, index, numLandPositions);
+          index += numLandPositions * 4;
+          const landNormals = new Float32Array(marchingCubesBuffer, index, numLandNormals);
+          index += numLandNormals * 4;
+          const landColors = new Float32Array(marchingCubesBuffer, index, numLandColors);
+          index += numLandColors * 4;
+          const waterPositions = new Float32Array(marchingCubesBuffer, index, numWaterPositions);
+          index += numWaterPositions * 4;
+          const waterNormals = new Float32Array(marchingCubesBuffer, index, numWaterNormals);
+          index += numWaterNormals * 4;
+
           return {
             origin,
-            positions,
-            normals,
-            colors,
+            land: {
+              positions: landPositions,
+              normals: landNormals,
+              colors: landColors,
+            },
+            water: {
+              positions: waterPositions,
+              normals: waterNormals,
+            },
           };
         });
     }
@@ -136,18 +164,46 @@ class Planet {
       .then(marchingCubes => {
         if (live) {
           const _makePlanetMesh = () => {
-            const geometry = new THREE.BufferGeometry();
-            const material = planetMaterial;
+            const object = new THREE.Object3D();
 
-            const mesh = new THREE.Mesh(geometry, material);
-            mesh.render = marchingCube => {
-              const {positions, normals, colors} = marchingCube;
+            const landMesh = (() => {
+              const geometry = new THREE.BufferGeometry();
+              const material = planetMaterial;
+              const mesh = new THREE.Mesh(geometry, material);
+              return mesh;
+            })();
+            object.add(landMesh);
+            const waterMesh = (() => {
+              const geometry = new THREE.BufferGeometry();
+              const material = waterMaterial;
+              const mesh = new THREE.Mesh(geometry, material);
+              return mesh;
+            })();
+            object.add(waterMesh);
 
-              geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
-              geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
-              geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
+            object.render = marchingCube => {
+              const _renderLand = marchingCube => {
+                const {land} = marchingCube;
+                const {positions, normals, colors} = land;
+                const {geometry} = landMesh;
+
+                geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+                geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
+                geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
+              };
+              const _renderWater = marchingCube => {
+                const {water} = marchingCube;
+                const {positions, normals} = water;
+                const {geometry} = waterMesh;
+
+                geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+                geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
+              };
+
+              _renderLand(marchingCube);
+              _renderWater(marchingCube);
             };
-            return mesh;
+            return object;
           };
           const planetMeshes = marchingCubes.map(marchingCube => {
             const {origin} = marchingCube;
