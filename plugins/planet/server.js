@@ -1,3 +1,5 @@
+const path = require('path');
+
 const marchingcubes = require('marchingcubes');
 
 class Planet {
@@ -8,6 +10,12 @@ class Planet {
   mount() {
     const {_archae: archae} = this;
     const {express, app} = archae.getCore();
+
+    const planetAudioStatic = express.static(path.join(__dirname, 'lib/audio'));
+    function servePlanetAudio(req, res, next) {
+      planetAudioStatic(req, res, next);
+    }
+    app.use('/archae/planet/audio', servePlanetAudio);
 
     function servePlanetMarchingCubes(req, res, next) {
       const bs = [];
@@ -80,7 +88,7 @@ class Planet {
 
     this._cleanup = () => {
       function removeMiddlewares(route, i, routes) {
-        if (route.handle.name === 'servePlanetMarchingCubes') {
+        if (route.handle.name === 'servePlanetAudio' || route.handle.name === 'servePlanetMarchingCubes') {
           routes.splice(i, 1);
         }
         if (route.route) {

@@ -9,7 +9,7 @@ class Planet {
 
   mount() {
     const {_archae: archae} = this;
-    const {three: {THREE, scene, camera}, pose, input, render, utils: {geometry: geometryUtils}} = zeo;
+    const {three: {THREE, scene, camera}, pose, input, render, sound, utils: {geometry: geometryUtils}} = zeo;
 
     const cleanups = [];
     this._cleanup = () => {
@@ -155,6 +155,27 @@ class Planet {
           };
         });
     }
+    const _requestAudio = src => new Promise((accept, reject) => {
+      const audio = document.createElement('audio');
+
+      const _cleanup = () => {
+        audio.oncanplay = null;
+        audio.onerror = null;
+      };
+
+      audio.oncanplay = () => {
+        _cleanup();
+
+        accept(audio);
+      };
+      audio.onerror = err => {
+        _cleanup();
+
+        reject(err);
+      };
+
+      audio.src = src;
+    });
 
     const chunksRange = 2;
     const chunks = (() => {
@@ -172,8 +193,14 @@ class Planet {
     })();
     const holeRange = 3;
 
-    return Promise.all(chunks.map(origin => _requestMarchingCubes({seed, origin})))
-      .then(marchingCubes => {
+    return Promise.all([
+      _requestAudio('archae/planet/audio/pop.mp3'),
+      Promise.all(chunks.map(origin => _requestMarchingCubes({seed, origin}))),
+    ])
+      .then(([
+        popAudio,
+        marchingCubes,
+      ]) => {
         if (live) {
           const _makePlanetMesh = () => {
             const object = new THREE.Object3D();
@@ -248,6 +275,18 @@ class Planet {
             return result;
           })();
 
+          const soundObject = new THREE.Object3D();
+          scene.add(soundObject);
+
+          const soundBody = (() => {
+            const result = sound.makeBody();
+
+            result.setInputElement(popAudio);
+            result.setObject(soundObject);
+
+            return result;
+          })();
+
           const _trigger = e => {
             const {side} = e;
             const hoverState = hoverStates[side];
@@ -258,17 +297,17 @@ class Planet {
               const {origin} = planetMesh;
               const {targetPosition} = hoverState;
 
-              const localPosition = targetPosition.clone()
+              const localPlanetPosition = targetPosition.clone()
                 .applyMatrix4(new THREE.Matrix4().getInverse(intersectionObject.matrixWorld))
-              localPosition.x = Math.round(localPosition.x);
-              localPosition.y = Math.round(localPosition.y);
-              localPosition.z = Math.round(localPosition.z);
-              const absoluteTargetPosition = localPosition.clone()
+              localPlanetPosition.x = Math.round(localPlanetPosition.x);
+              localPlanetPosition.y = Math.round(localPlanetPosition.y);
+              localPlanetPosition.z = Math.round(localPlanetPosition.z);
+              const absolutePlanetPosition = localPlanetPosition.clone()
                 .add(origin.clone().multiplyScalar(SIZE));
               _addHole(
-                absoluteTargetPosition.x,
-                absoluteTargetPosition.y,
-                absoluteTargetPosition.z
+                absolutePlanetPosition.x,
+                absolutePlanetPosition.y,
+                absolutePlanetPosition.z
               );
 
               const originsToUpdate = (() => {
@@ -290,7 +329,7 @@ class Planet {
                   [1, 1, -1],
                   [1, 1, 1],
                 ].forEach(([x, y, z]) => {
-                  const checkPosition = absoluteTargetPosition.clone()
+                  const checkPosition = absolutePlanetPosition.clone()
                     .add(new THREE.Vector3(x * holeRange, y * holeRange, z * holeRange));
                   const origin = _getOrigin(checkPosition);
 
@@ -319,6 +358,13 @@ class Planet {
                     const {origin} = marchingCube;
                     const planetMesh = planetMeshes.find(planetMesh => planetMesh.origin.equals(origin));
                     planetMesh.render(marchingCube);
+                  }
+
+                  soundObject.position.copy(targetPosition);
+
+                  popAudio.currentTime = 0;
+                  if (popAudio.paused) {
+                    popAudio.play();
                   }
                 })
                 .catch(err => {
@@ -380,6 +426,11 @@ class Planet {
             planetMeshes.forEach(planetMesh => {
               scene.remove(planetMesh);
             });
+            scene.remove(soundObject);
+
+            if (!popAudio.paused) {
+              popAudio.pause();
+            }
 
             input.removeListener('trigger', _trigger);
             render.removeListener('update', _update);

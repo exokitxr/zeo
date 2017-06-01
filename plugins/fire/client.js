@@ -11,15 +11,13 @@ class Fire {
 
     const _requestAudio = src => new Promise((accept, reject) => {
       const audio = document.createElement('audio');
-      audio.src = src;
-      audio.loop = true;
 
       const _cleanup = () => {
-        audio.oncanplaythrough = null;
+        audio.oncanplay = null;
         audio.onerror = null;
       };
 
-      audio.oncanplaythrough = () => {
+      audio.oncanplay = () => {
         _cleanup();
 
         accept(audio);
@@ -29,6 +27,9 @@ class Fire {
 
         reject(err);
       };
+
+      audio.src = src;
+      audio.loop = true;
     });
 
     return _requestAudio('archae/fire/audio/fire.ogg')
