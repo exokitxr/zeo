@@ -557,7 +557,6 @@ class Planet {
             };
             const _updateParticles = () => {
               const oldParticleMeshes = particleMeshes.slice();
-
               for (let i = 0; i < oldParticleMeshes.length; i++) {
                 const particleMesh = oldParticleMeshes[i];
                 const {startTime} = particleMesh;
@@ -570,12 +569,26 @@ class Planet {
               }
             };
             const _updateItems = () => {
+              const {hmd} = pose.getStatus();
+              const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmd;
+              const bodyPosition = hmdPosition.clone()
+                .add(new THREE.Vector3(0, -0.25, 0).applyQuaternion(hmdRotation));
               const timeDiff = now - lastUpdateTime;
 
-              for (let i = 0; i < itemMeshes.length; i++) {
-                const itemMesh = itemMeshes[i];
+              const oldItemMeshes = itemMeshes.slice();
+              for (let i = 0; i < oldItemMeshes.length; i++) {
+                const itemMesh = oldItemMeshes[i];
+                const distanceDiff = bodyPosition.distanceTo(itemMesh.position);
+
+                if (distanceDiff < 0.1) {
+                  scene.remove(itemMesh);
+                  itemMeshes.splice(itemMeshes.indexOf(itemMesh), 1);
+                } else if (distanceDiff < 2) {
+                  itemMesh.position.lerp(bodyPosition, timeDiff * 0.01);
+                }
+
                 const {innerMesh} = itemMesh;
-                innerMesh.rotation.y = (innerMesh.rotation.y + (timeDiff / 100 / (Math.PI * 2))) % (Math.PI * 2);
+                innerMesh.rotation.y = (innerMesh.rotation.y + (timeDiff * 0.01 / (Math.PI * 2))) % (Math.PI * 2);
               }
             };
 
