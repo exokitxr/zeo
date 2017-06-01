@@ -87,9 +87,10 @@ class Planet {
     scene.add(dotMeshes.right);
 
     const _makeHoverState = () => ({
+      planetMesh: null,
       intersectionObject: null,
+      intersectionIndex: null,
       targetPosition: null,
-      targetColor: null,
     });
     const hoverStates = {
       left: _makeHoverState(),
@@ -293,15 +294,21 @@ class Planet {
           const _trigger = e => {
             const {side} = e;
             const hoverState = hoverStates[side];
-            const {intersectionObject} = hoverState;
+            const {planetMesh} = hoverState;
 
-            if (intersectionObject) {
-              const planetMesh = intersectionObject;
+            if (planetMesh) {
+              const {intersectionObject, intersectionIndex, targetPosition} = hoverState;
+              const {geometry: intersectionObjectGeometry} = intersectionObject;
               const {origin} = planetMesh;
-              const {targetPosition, targetColor} = hoverState;
+
+              const colorAttribute = intersectionObjectGeometry.getAttribute('color');
+              const targetColor = colorAttribute ?
+                new THREE.Color().fromArray(colorAttribute.array.slice(intersectionIndex * 3, (intersectionIndex + 1) * 3))
+              :
+                waterMaterial.color;
 
               const localPlanetPosition = targetPosition.clone()
-                .applyMatrix4(new THREE.Matrix4().getInverse(intersectionObject.matrixWorld))
+                .applyMatrix4(new THREE.Matrix4().getInverse(planetMesh.matrixWorld))
               localPlanetPosition.x = Math.round(localPlanetPosition.x);
               localPlanetPosition.y = Math.round(localPlanetPosition.y);
               localPlanetPosition.z = Math.round(localPlanetPosition.z);
@@ -462,18 +469,19 @@ class Planet {
                   const targetPosition = intersectionPoint.clone()
                     .sub(intersectionObject.getWorldPosition())
                     .add(origin.clone().multiplyScalar(SIZE));
-                  hoverState.intersectionObject = planetMesh;
+                  hoverState.planetMesh = planetMesh;
+                  hoverState.intersectionObject = intersectionObject;
+                  hoverState.intersectionIndex = intersectionIndex;
                   hoverState.targetPosition = targetPosition;
-                  hoverState.targetColor = new THREE.Color()
-                    .fromArray(geometry.getAttribute('color').array.slice(intersectionIndex * 3, (intersectionIndex + 1) * 3));
 
                   if (!dotMesh.visible) {
                     dotMesh.visible = true;
                   }
                 } else {
+                  hoverState.planetMesh = null;
                   hoverState.intersectionObject = null;
+                  hoverState.intersectionIndex = null;
                   hoverState.targetPosition = null;
-                  hoverState.targetColor = null;
 
                   if (dotMesh.visible) {
                     dotMesh.visible = false;
