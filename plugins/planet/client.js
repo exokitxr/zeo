@@ -85,6 +85,15 @@ class Planet {
     scene.add(dotMeshes.left);
     scene.add(dotMeshes.right);
 
+    const _makeHoverState = () => ({
+      intersectionObject: null,
+      targetPosition: null,
+    });
+    const hoverStates = {
+      left: _makeHoverState(),
+      right: _makeHoverState(),
+    };
+
     cleanups.push(() => {
       planetMaterial.dispose();
       waterMaterial.dispose();
@@ -165,6 +174,8 @@ class Planet {
         if (live) {
           const _makePlanetMesh = () => {
             const object = new THREE.Object3D();
+            object.isPlanetMesh = true;
+            object.origin = null;
 
             const landMesh = (() => {
               const geometry = new THREE.BufferGeometry();
@@ -173,6 +184,8 @@ class Planet {
               return mesh;
             })();
             object.add(landMesh);
+            object.landMesh = landMesh;
+
             const waterMesh = (() => {
               const geometry = new THREE.BufferGeometry();
               const material = waterMaterial;
@@ -180,6 +193,7 @@ class Planet {
               return mesh;
             })();
             object.add(waterMesh);
+            object.waterMesh = waterMesh;
 
             object.render = marchingCube => {
               const _renderLand = marchingCube => {
@@ -203,34 +217,53 @@ class Planet {
               _renderLand(marchingCube);
               _renderWater(marchingCube);
             };
+
             return object;
           };
           const planetMeshes = marchingCubes.map(marchingCube => {
             const {origin} = marchingCube;
+
             const planetMesh = _makePlanetMesh();
-            planetMesh.position.copy(origin.clone().multiplyScalar(size));
+            planetMesh.origin = origin;
             planetMesh.render(marchingCube);
+
+            planetMesh.position.copy(origin.clone().multiplyScalar(size));
+
             return planetMesh;
           });
           planetMeshes.forEach(planetMesh => {
             scene.add(planetMesh);
           });
+          const planetTargetMeshes = (() => {
+            const result = Array(planetMeshes.length * 2);
+            for (let i = 0; i < planetMeshes.length; i++) {
+              const planetMesh = planetMeshes[i];
+              const baseIndex = i * 2;
+              result[baseIndex + 0] = planetMesh.landMesh;
+              result[baseIndex + 1] = planetMesh.waterMesh;
+            }
+            return result;
+          })();
 
           const _trigger = e => {
             const {side} = e;
-            const dotMesh = dotMeshes[side];
+            const hoverState = hoverStates[side];
+            const {intersectionObject} = hoverState;
 
-            if (dotMesh.visible) {
-              const {position: targetPosition} = dotMesh;
-              const planetPosition = targetPosition.clone().applyMatrix4(new THREE.Matrix4().getInverse(planetMesh.matrixWorld));
+            if (intersectionObject) {
+              const {targetPosition} = hoverState;
+              const planetPosition = targetPosition.clone().applyMatrix4(new THREE.Matrix4().getInverse(intersectionObject.matrixWorld));
               _addHole(
                 Math.round(planetPosition.x),
                 Math.round(planetPosition.y),
                 Math.round(planetPosition.z)
               );
 
+              const planetMesh = intersectionObject;
+              const {origin} = planetMesh;
               _requestMarchingCubes({
                 seed: seed,
+                origin: origin,
                 holes: new Int32Array(holes.buffer, 0, holeIndex * 3),
               })
                 .then(marchingCubes => {
@@ -253,8 +286,9 @@ class Planet {
               const gamepad = gamepads[side];
               const {worldPosition: controllerPosition, worldRotation: controllerRotation} = gamepad;
               const raycaster = new THREE.Raycaster(controllerPosition, forwardVector.clone().applyQuaternion(controllerRotation));
-              const intersections = raycaster.intersectObjects(planetMeshes);
+              const intersections = raycaster.intersectObjects(planetTargetMeshes);
               const dotMesh = dotMeshes[side];
+              const hoverState = hoverStates[side];
 
               if (intersections.length > 0) {
                 const intersection = intersections[0];
@@ -269,10 +303,21 @@ class Planet {
                   worldNormal
                 );
 
+                const {parent: planetMesh} = intersectionObject;
+                const {origin} = planetMesh;
+                const targetPosition = intersectionPoint.clone()
+                  .sub(intersectionObject.getWorldPosition())
+                  .add(origin.clone().multiplyScalar(size));
+                hoverState.intersectionObject = planetMesh;
+                hoverState.targetPosition = targetPosition;
+
                 if (!dotMesh.visible) {
                   dotMesh.visible = true;
                 }
               } else {
+                hoverState.intersectionObject = null;
+                hoverState.targetPosition = null;
+
                 if (dotMesh.visible) {
                   dotMesh.visible = false;
                 }
