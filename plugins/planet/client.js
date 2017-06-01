@@ -156,12 +156,13 @@ class Planet {
         });
     }
 
+    const chunksRange = 2;
     const chunks = (() => {
       const result = [];
 
-      for (let i = -2; i <= 2; i++) {
-        for (let j = -2; j <= 2; j++) {
-          for (let k = -2; k <= 2; k++) {
+      for (let i = -chunksRange; i <= chunksRange; i++) {
+        for (let j = -chunksRange; j <= chunksRange; j++) {
+          for (let k = -chunksRange; k <= chunksRange; k++) {
             result.push(new THREE.Vector3(i, j, k));
           }
         }
@@ -169,6 +170,7 @@ class Planet {
 
       return result;
     })();
+    const holeRange = 3;
 
     return Promise.all(chunks.map(origin => _requestMarchingCubes({seed, origin})))
       .then(marchingCubes => {
@@ -269,15 +271,55 @@ class Planet {
                 absoluteTargetPosition.z
               );
 
-              _requestMarchingCubes({
-                seed: seed,
-                origin: origin,
-                holes: new Int32Array(holes.buffer, 0, holeIndex * 3),
-              })
-                .then(marchingCubes => {
-                  console.log('rendered', holeIndex);
+              const originsToUpdate = (() => {
+                const _getOrigin = p => new THREE.Vector3(
+                  Math.floor((p.x + (SIZE / 2)) / SIZE),
+                  Math.floor((p.y + (SIZE / 2)) / SIZE),
+                  Math.floor((p.z + (SIZE / 2)) / SIZE)
+                );
 
-                  planetMesh.render(marchingCubes);
+                const result = [];
+                [
+                  [0, 0, 0],
+                  [-1, -1, -1],
+                  [-1, -1, 1],
+                  [-1, 1, -1],
+                  [-1, 1, 1],
+                  [1, -1, -1],
+                  [1, -1, 1],
+                  [1, 1, -1],
+                  [1, 1, 1],
+                ].forEach(([x, y, z]) => {
+                  const checkPosition = absoluteTargetPosition.clone()
+                    .add(new THREE.Vector3(x * holeRange, y * holeRange, z * holeRange));
+                  const origin = _getOrigin(checkPosition);
+
+                  if (
+                    origin.x >= -chunksRange && origin.x <= chunksRange &&
+                    origin.y >= -chunksRange && origin.y <= chunksRange &&
+                    origin.z >= -chunksRange && origin.z <= chunksRange &&
+                    !result.some(o => o.equals(origin))
+                  ) {
+                    result.push(origin);
+                  }
+                });
+                return result;
+              })();
+
+              Promise.all(originsToUpdate.map(origin =>
+                _requestMarchingCubes({
+                  seed: seed,
+                  origin: origin,
+                  holes: new Int32Array(holes.buffer, 0, holeIndex * 3),
+                })
+              ))
+                .then(marchingCubes => {
+                  for (let i = 0; i < marchingCubes.length; i++) {
+                    const marchingCube = marchingCubes[i];
+                    const {origin} = marchingCube;
+                    const planetMesh = planetMeshes.find(planetMesh => planetMesh.origin.equals(origin));
+                    planetMesh.render(marchingCube);
+                  }
                 })
                 .catch(err => {
                   console.warn(err);
