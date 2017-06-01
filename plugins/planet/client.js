@@ -385,7 +385,7 @@ class Planet {
                   };
                   const _makeParticles = () => {
                     const _makeParticleMesh = targetColor => {
-                      const geometry = new THREE.TetrahedronBufferGeometry(0.1, 0);
+                      const geometry = new THREE.TetrahedronBufferGeometry(0.3, 0);
 
                       const positions = geometry.getAttribute('position').array;
                       const numPositions = positions.length / 3;
@@ -401,21 +401,23 @@ class Planet {
                       const material = planetMaterial;
 
                       const mesh = new THREE.Mesh(geometry, material);
+                      mesh.rotation.order = camera.rotation.order;
                       mesh.destroy = () => {
                         geometry.dispose();
                       };
                       return mesh;
                     };
 
-                    for (let i = 0; i < 8; i++) {
+                    const numParticleMeshes = 5 + Math.random() * 10;
+                    for (let i = 0; i < numParticleMeshes; i++) {
                       const particleMesh = _makeParticleMesh(targetColor);
                       particleMesh.position.copy(
                         targetPosition.clone()
                           .add(
                             new THREE.Vector3(
-                              (-0.5 + Math.random()) * 1,
-                              (-0.5 + Math.random()) * 1,
-                              (-0.5 + Math.random()) * 1
+                              (-0.5 + Math.random()) * 2,
+                              (-0.5 + Math.random()) * 2,
+                              (-0.5 + Math.random()) * 2
                             )
                           )
                         );
@@ -427,6 +429,24 @@ class Planet {
                           -0.5 + Math.random()
                         ).normalize()
                       );
+                      const planetNormal = planetMesh.position.clone().add(origin.clone().multiplyScalar(SIZE))
+                        .sub(particleMesh.position)
+                        .normalize();
+                      particleMesh.rayPosition = planetNormal.clone()
+                        .add(
+                          new THREE.Vector3(
+                            (-0.5 + Math.random()) * 2,
+                            (-0.5 + Math.random()) * 2,
+                            (-0.5 + Math.random()) * 2
+                          )
+                        ).normalize();
+                      particleMesh.rayRotation = new THREE.Vector3(
+                        -0.5 + Math.random(),
+                        -0.5 + Math.random(),
+                        -0.5 + Math.random()
+                      ).normalize();
+                      particleMesh.linearVelocity = Math.random();
+                      particleMesh.angularVelocity = Math.random();
                       particleMesh.startTime = Date.now();
 
                       scene.add(particleMesh);
@@ -436,6 +456,8 @@ class Planet {
                   const _makeItems = () => {
                     const _makeItemMesh = targetColor => {
                       const object = new THREE.Object3D();
+                      object.rotation.y = (Math.PI * 2) * Math.random();
+                      object.rotation.order = camera.rotation.order;
 
                       const outerMesh = (() => {
                         const geometry = new THREE.BoxBufferGeometry(0.2, 0.2, 0.2);
@@ -570,7 +592,13 @@ class Planet {
                 const {startTime} = particleMesh;
                 const timeDiff = now - startTime;
 
-                if (timeDiff > 2000) {
+                if (timeDiff < 2000) {
+                  const {rayPosition, rayRotation, linearVelocity, angularVelocity} = particleMesh;
+                  particleMesh.position.add(rayPosition.clone().multiplyScalar(timeDiff * 0.0005 * linearVelocity));
+                  particleMesh.rotation.x = (particleMesh.rotation.x + (rayRotation.x * timeDiff / (Math.PI * 2) * 0.001 * angularVelocity)) % (Math.PI * 2);
+                  particleMesh.rotation.y = (particleMesh.rotation.y + (rayRotation.y * timeDiff / (Math.PI * 2) * 0.001 * angularVelocity)) % (Math.PI * 2);
+                  particleMesh.rotation.z = (particleMesh.rotation.z + (rayRotation.z * timeDiff / (Math.PI * 2) * 0.001 * angularVelocity)) % (Math.PI * 2);
+                } else {
                   scene.remove(particleMesh);
                   particleMesh.destroy();
                   particleMeshes.splice(particleMeshes.indexOf(particleMesh), 1);
@@ -589,12 +617,25 @@ class Planet {
                 const itemMesh = oldItemMeshes[i];
                 const distanceDiff = bodyPosition.distanceTo(itemMesh.position);
 
-                if (distanceDiff < 0.1) {
+                const _removeItem = () => {
                   scene.remove(itemMesh);
                   itemMesh.destroy();
                   itemMeshes.splice(itemMeshes.indexOf(itemMesh), 1);
+                };
+
+                if (distanceDiff < 0.1) {
+                  _removeItem();
                 } else if (distanceDiff < 2) {
-                  itemMesh.position.lerp(bodyPosition, timeDiff * 0.01);
+                  const moveVector = bodyPosition.clone().sub(itemMesh.position);
+                  const moveVectorLength = moveVector.length();
+                  const moveDistance = timeDiff * 0.01;
+
+                  if (moveDistance < moveVectorLength) {
+                    const instantMoveVector = moveVector.clone().multiplyScalar(moveDistance / moveVectorLength);
+                    itemMesh.position.add(instantMoveVector);
+                  } else {
+                    _removeItem();
+                  }
                 }
 
                 const {innerMesh} = itemMesh;
