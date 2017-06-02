@@ -68,16 +68,16 @@ class Planet {
         resultArray.set(new Uint8Array(Uint32Array.from([waterNormals.length]).buffer), index);
         index += 4;
 
-        resultArray.set(new Uint8Array(landPositions.buffer), index);
+        resultArray.set(new Uint8Array(landPositions.buffer, 0, landPositions.byteLength), index);
         index += landPositions.byteLength;
-        resultArray.set(new Uint8Array(landNormals.buffer), index);
+        resultArray.set(new Uint8Array(landNormals.buffer, 0, landNormals.byteLength), index);
         index += landNormals.byteLength;
-        resultArray.set(new Uint8Array(landColors.buffer), index);
+        resultArray.set(new Uint8Array(landColors.buffer, 0, landColors.byteLength), index);
         index += landColors.byteLength;
 
-        resultArray.set(new Uint8Array(waterPositions.buffer), index);
+        resultArray.set(new Uint8Array(waterPositions.buffer, 0, waterPositions.byteLength), index);
         index += waterPositions.byteLength;
-        resultArray.set(new Uint8Array(waterNormals.buffer), index);
+        resultArray.set(new Uint8Array(waterNormals.buffer, 0, waterNormals.byteLength), index);
         index += waterNormals.byteLength;
 
         res.type('application/octet-stream');
