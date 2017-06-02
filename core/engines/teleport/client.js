@@ -157,7 +157,7 @@ class Teleport {
                           ).projectPoint(controllerPosition)
                         ).normalize()
                       ),
-                      intersectionNormal.clone(),
+                      intersectionNormal.clone()
                     )
                   );
                   teleportFloorMesh.scale.copy(controllerScale);
