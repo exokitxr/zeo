@@ -1040,15 +1040,6 @@ class ZBuild {
                     const {pressStart} = buildState;
 
                     if (pressStart) {
-                      const {axes} = gamepad;
-
-                      const x = Math.round(((((axes[0] / 2) + 0.5) * shapesWidth) - (shapeWidth / 2)) / shapeWidth);
-                      const y = Math.round((((-(axes[1] / 2) + 0.5) * shapesHeight) - (shapeHeight / 2)) / shapeHeight);
-                      let shapeIndex = (y * shapesPerRow) + x;
-                      if (shapeIndex >= shapeMeshes.length) {
-                        shapeIndex = shapeMeshes.length - 1;
-                      }
-
                       const {
                         menuMesh: {
                           shapeMesh: {
@@ -1056,6 +1047,14 @@ class ZBuild {
                           },
                         },
                       } = toolMesh;
+                      const {axes} = gamepad;
+                      const x = Math.round(((((axes[0] / 2) + 0.5) * shapesWidth) - (shapeWidth / 2)) / shapeWidth);
+                      const y = Math.round((((-(axes[1] / 2) + 0.5) * shapesHeight) - (shapeHeight / 2)) / shapeHeight);
+                      let shapeIndex = (y * shapesPerRow) + x;
+                      if (shapeIndex >= shapeMeshes.length) {
+                        shapeIndex = shapeMeshes.length - 1;
+                      }
+
                       for (let i = 0; i < shapeMeshes.length; i++) {
                         const shapeMesh = shapeMeshes[i];
                         const selected = i !== shapeIndex;
