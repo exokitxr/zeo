@@ -137,17 +137,6 @@ class WebVR {
           const scale = new THREE.Vector3(1, 1, 1);
           return {position, rotation, scale};
         };
-        const _getPropertiesFromMatrix = matrix => {
-          const position = new THREE.Vector3();
-          const rotation = new THREE.Quaternion();
-          const scale = new THREE.Vector3();
-          matrix.decompose(position, rotation, scale);
-          return {
-            position,
-            rotation,
-            scale,
-          };
-        };
 
         class HmdStatus {
           constructor(pose, position, rotation, scale, worldPosition, worldRotation, worldScale) {
@@ -251,8 +240,8 @@ class WebVR {
             const stageMatrix = new THREE.Matrix4();
             this.stageMatrix = stageMatrix;
 
-            const userStageMatrix = new THREE.Matrix4().makeTranslation(0, DEFAULT_USER_HEIGHT, 0);
-            this.userStageMatrix = userStageMatrix;
+            const lookMatrix = new THREE.Matrix4();
+            this.lookMatrix = lookMatrix;
 
             this.status = {
               hmd: _makeDefaultHmdStatus(),
@@ -310,7 +299,6 @@ class WebVR {
 
                   this._frameData = (display instanceof FakeVRDisplay) ? new VRFrameDataFake() : new VRFrameData();
 
-                  const {userStageMatrix} = this;
                   if (display && stereoscopic) {
                     const {getVRDisplays} = navigator; // HACK to prevent VREffect from initializing VR displays
                     navigator.getVRDisplays = null;
@@ -330,8 +318,6 @@ class WebVR {
                     effect.isPresenting = true;
                     effect.autoSubmitFrame = false;
 
-                    userStageMatrix.copy(new THREE.Matrix4());
-
                     const resize = () => {
                       effect.setSize(window.innerWidth, window.innerHeight);
                     };
@@ -347,8 +333,6 @@ class WebVR {
                       renderer.setSize(window.innerWidth, window.innerHeight);
                       renderer.setPixelRatio(window.devicePixelRatio);
 
-                      userStageMatrix.copy(new THREE.Matrix4().makeTranslation(0, DEFAULT_USER_HEIGHT, 0));
-
                       window.removeEventListener('resize', resize);
                       window.removeEventListener('vrdisplaypresentchange', resize);
                     });
@@ -358,18 +342,10 @@ class WebVR {
                   if (display && display.stageParameters) {
                     displayStageMatrix.fromArray(display.stageParameters.sittingToStandingTransform);
                   }
-                  const externalStageMatrix = userStageMatrix.clone().multiply(displayStageMatrix);
-                  this.setStageMatrix(externalStageMatrix);
+                  this.setStageMatrix(displayStageMatrix);
                   this.updateStatus();
 
                   cleanups.push(() => {
-                    this.updateUserStageMatrix();
-
-                    /* const {display} = this;
-                    if (display) {
-                      display.resetPoseHard();
-                    } */
-
                     this.setStageMatrix(new THREE.Matrix4());
                     this.updateStatus();
 
@@ -377,26 +353,25 @@ class WebVR {
                   });
 
                   if (!display) {
-                    const {stageMatrix} = this;
-                    const originalStageMatrix = stageMatrix.clone();
-                    const {position, rotation: quaternion, scale} = _decomposeMatrix(originalStageMatrix);
-                    const rotation = new THREE.Euler().setFromQuaternion(quaternion, camera.rotation.order);
+                    // const originalStageMatrix = stageMatrix.clone();
+                    const {lookMatrix} = this;
+                    const {position, rotation, scale} = _decomposeMatrix(lookMatrix);
+                    const euler = new THREE.Euler().setFromQuaternion(rotation, camera.rotation.order);
 
                     const mousemove = e => {
                       const xFactor = -0.5 + (e.clientX / window.innerWidth);
                       const yFactor = -0.5 + (e.clientY / window.innerHeight);
 
-                      const newRotation = rotation.clone();
+                      const newRotation = euler.clone();
                       newRotation.y -= xFactor * (Math.PI * 0.1);
                       newRotation.x -= yFactor * (Math.PI * 0.1);
 
-                      const newStageMatrix = new THREE.Matrix4().compose(position, new THREE.Quaternion().setFromEuler(newRotation), scale);
-                      this.setStageMatrix(newStageMatrix);
+                      lookMatrix.compose(position, new THREE.Quaternion().setFromEuler(newRotation), scale);
                     };
                     input.on('mousemove', mousemove);
 
                     cleanups.push(() => {
-                      this.setStageMatrix(originalStageMatrix);
+                      lookMatrix.identity();
 
                       input.removeListener('mousemove', mousemove);
                     });
@@ -651,7 +626,8 @@ class WebVR {
                 scale,
                 worldPosition,
                 worldRotation,
-                worldScale
+                worldScale,
+                // matrix,
               );
             };
             const _getGamepadsStatus = () => {
@@ -795,38 +771,24 @@ class WebVR {
             this.stageMatrix.copy(stageMatrix);
           }
 
-          resetPose() {
-            const {display} = this;
-            display.resetPose();
+          getSittingToStandingTransform() {
+            if (this.display) {
+              return new THREE.Matrix4().fromArray(this.display.stageParameters.sittingToStandingTransform);
+            } else {
+              return new THREE.Matrix4();
+            }
           }
 
-          updateUserStageMatrix() {
-            const {display} = this;
-
-            if (display) {
-              const {stageMatrix} = this;
-              const displayStageMatrix = new THREE.Matrix4();
-              if (display && display.stageParameters) {
-                displayStageMatrix.fromArray(display.stageParameters.sittingToStandingTransform);
-              }
-
-              const localUserStageMatrix = stageMatrix.clone().multiply(new THREE.Matrix4().getInverse(displayStageMatrix));
-              const {rotation: userQuaternion, scale: userScale} = _getPropertiesFromMatrix(localUserStageMatrix);
-              const userRotationY = new THREE.Euler().setFromQuaternion(userQuaternion, camera.rotation.order).y;
-
-              const {_frameData: frameData} = this;
-              display.getFrameData(frameData);
-              const displayPosition = frameData.pose.position ? new THREE.Vector3().fromArray(frameData.pose.position) : zeroVector;
-              const displayQuaternion = frameData.pose.orientation ? new THREE.Quaternion().fromArray(frameData.pose.orientation) : zeroQuaternion;
-              const displayRotationY = new THREE.Euler().setFromQuaternion(displayQuaternion, camera.rotation.order).y;
-
-              const {userStageMatrix} = this;
-              userStageMatrix.compose(
-                displayPosition.clone().applyMatrix4(localUserStageMatrix),
-                new THREE.Quaternion().setFromEuler(new THREE.Euler(0, userRotationY + displayRotationY, 0, camera.rotation.order)),
-                userScale
-              );
+          getExternalMatrix() {
+            if (this.display) {
+              return this.stageMatrix;
+            } else {
+              return this.stageMatrix.clone().multiply(this.lookMatrix);
             }
+          }
+
+          resetPose() {
+            this.display.resetPose();
           }
 
           getMode() {
@@ -914,7 +876,12 @@ class WebVR {
             this.matrix = new THREE.Matrix4();
 
             this.stageParameters = {
-              sittingToStandingTransform: new THREE.Matrix4().toArray(),
+              sittingToStandingTransform: new THREE.Matrix4()
+                .compose(
+                  new THREE.Vector3(0, DEFAULT_USER_HEIGHT, 0),
+                  new THREE.Quaternion(),
+                  new THREE.Vector3(1, 1, 1)
+                ).toArray(),
             };
 
             const keys = {
