@@ -10,7 +10,7 @@ import mapUtilsMaker from './lib/utils/map-utils';
 
 class Grid {
   mount() {
-    const {three: {THREE, scene, camera}, elements, ui, utils: {random: randomUtils}} = zeo;
+    const {three: {THREE, scene, camera}, elements, teleport, utils: {random: randomUtils}} = zeo;
     const {alea} = randomUtils;
 
     const _decomposeObjectMatrixWorld = object => {
@@ -142,6 +142,7 @@ class Grid {
           return object;
         })();
         entityObject.add(mesh);
+        teleport.addTarget(mesh);
 
         entityApi.align = () => {
           // XXX implement this
@@ -149,6 +150,7 @@ class Grid {
 
         entityApi._cleanup = () => {
           entityObject.remove(mesh);
+          teleport.removeTarget(mesh);
         };
       },
       entityRemovedCallback(entityElement) {

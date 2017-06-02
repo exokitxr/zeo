@@ -625,6 +625,16 @@ class Zeo {
                       }
                     }
 
+                    class ZeoTeleportApi {
+                      addTarget(object) {
+                        teleport.addTarget(object);
+                      }
+
+                      removeTarget(object) {
+                        teleport.removeTarget(object);
+                      }
+                    }
+
                     class ZeoTransformApi {
                       makeTransformGizmo(spec) {
                         return transform.makeTransformGizmo(spec);
@@ -705,6 +715,7 @@ class Zeo {
                         this.player = new ZeoPlayerApi();
                         this.ui = new ZeoUiApi();
                         this.sound = new ZeoSoundApi();
+                        this.teleport = new ZeoTeleportApi();
                         this.transform = new ZeoTransformApi();
                         this.color = new ZeoColorApi();
                         this.animation = new ZeoAnimationApi();

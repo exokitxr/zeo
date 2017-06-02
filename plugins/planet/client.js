@@ -9,7 +9,7 @@ class Planet {
 
   mount() {
     const {_archae: archae} = this;
-    const {three: {THREE, scene, camera}, pose, input, render, sound, utils: {geometry: geometryUtils}} = zeo;
+    const {three: {THREE, scene, camera}, pose, input, render, sound, teleport, utils: {geometry: geometryUtils}} = zeo;
 
     const cleanups = [];
     this._cleanup = () => {
@@ -279,6 +279,7 @@ class Planet {
           });
           planetMeshes.forEach(planetMesh => {
             scene.add(planetMesh);
+            teleport.addTarget(planetMesh);
           });
           const planetTargetMeshes = (() => {
             const result = Array(planetMeshes.length * 2);
@@ -656,6 +657,7 @@ class Planet {
           cleanups.push(() => {
             planetMeshes.forEach(planetMesh => {
               scene.remove(planetMesh);
+              teleport.removeTarget(planetMesh);
             });
             scene.remove(soundObject);
             particleMeshes.forEach(particleMesh => {

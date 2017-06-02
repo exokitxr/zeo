@@ -43,6 +43,8 @@ class Teleport {
           };
         };
 
+        const upVector = new THREE.Vector3(0, 1, 0);
+
         const teleportMeshMaterial = new THREE.MeshPhongMaterial({
           color: 0xFFC107,
           shading: THREE.FlatShading,
@@ -50,10 +52,8 @@ class Teleport {
           transparent: true,
         });
 
-        const floorPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(
-          new THREE.Vector3(0, 1, 0),
-          new THREE.Vector3(0, 0, 0)
-        );
+        const targets = [];
+        const raycaster = new THREE.Raycaster();
 
         const _makeTeleportFloorMesh = () => {
           const geometry = new THREE.TorusBufferGeometry(0.5, 0.15, 3, 5);
@@ -116,7 +116,8 @@ class Teleport {
 
         const _update = () => {
           const {hmd, gamepads} = webvr.getStatus();
-          const {worldPosition: hmdPosition, worldRotation: hmdRotation, worldScale: hmdScale} = hmd;
+          const {worldPosition: hmdPosition, worldRotation: hmdRotation, worldScale: hmdScale, rotation: hmdLocalRotation} = hmd;
+          const hmdLocalEuler = new THREE.Euler().setFromQuaternion(hmdLocalRotation, 'YXZ');
 
           SIDES.forEach(side => {
             const gamepad = gamepads[side];
@@ -131,21 +132,34 @@ class Teleport {
                 const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale, axes} = gamepad;
 
                 const axisFactor = (axes[1] - (-1)) / 2;
-                const controllerLine = new THREE.Line3(
+                raycaster.set(
                   controllerPosition.clone(),
-                  controllerPosition.clone().add(
-                    new THREE.Vector3(0, 0, -axisFactor * TELEPORT_DISTANCE)
-                      .multiply(controllerScale)
-                      .applyQuaternion(controllerRotation)
-                  )
+                  new THREE.Vector3(0, 0, -1).applyQuaternion(controllerRotation)
                 );
-                const intersectionPoint = floorPlane.intersectLine(controllerLine);
+                raycaster.far = axisFactor * TELEPORT_DISTANCE * ((controllerScale.x + controllerScale.y + controllerScale.z) / 3);
+                const intersections = raycaster.intersectObjects(targets, true);
 
-                if (intersectionPoint) {
+                if (intersections.length > 0) {
+                  const intersection = intersections[0];
+                  const {point: intersectionPoint, face: intersectionFace} = intersection;
+                  const {normal: intersectionNormal} = intersectionFace;
                   const destinationPoint = intersectionPoint;
+
                   teleportFloorMesh.position.copy(destinationPoint);
-                  const controllerEuler = new THREE.Euler().setFromQuaternion(controllerRotation, camera.rotation.order);
-                  teleportFloorMesh.rotation.y = controllerEuler.y;
+                  teleportFloorMesh.quaternion.setFromRotationMatrix(
+                    new THREE.Matrix4().lookAt(
+                      destinationPoint.clone(),
+                      destinationPoint.clone().add(
+                        destinationPoint.clone().sub(
+                          new THREE.Plane().setFromNormalAndCoplanarPoint(
+                            intersectionNormal,
+                            destinationPoint
+                          ).projectPoint(controllerPosition)
+                        ).normalize()
+                      ),
+                      intersectionNormal.clone(),
+                    )
+                  );
                   teleportFloorMesh.scale.copy(controllerScale);
 
                   teleportState.teleportFloorPoint = destinationPoint;
@@ -158,7 +172,11 @@ class Teleport {
                     teleportAirMesh.visible = false;
                   }
                 } else {
-                  const destinationPoint = controllerLine.end.clone();
+                  const destinationPoint = raycaster.ray.origin.clone()
+                    .add(
+                      raycaster.ray.direction.clone()
+                        .multiplyScalar(raycaster.far)
+                    );
                   const basePosition = new THREE.Vector3(0, 0, 0).applyMatrix4(webvr.getSittingToStandingTransform());
                   destinationPoint.y = Math.max(destinationPoint.y, basePosition.y, 0);
                   teleportAirMesh.position.copy(destinationPoint);
@@ -180,15 +198,13 @@ class Teleport {
                 const {teleportFloorPoint, teleportAirPoint} = teleportState;
 
                 if (teleportFloorPoint) {
-                  const basePosition = new THREE.Vector3(0, 0, 0).applyMatrix4(webvr.getSittingToStandingTransform());
-                  const destinationPoint = teleportFloorPoint.clone().add(new THREE.Vector3(0, basePosition.y, 0));
-                  const positionDiff = destinationPoint.clone().sub(hmdPosition);
-
-                  const stageMatrix = webvr.getStageMatrix();
-                  const {position, rotation, scale} = _decomposeMatrix(stageMatrix);
-                  position.add(positionDiff);
-                  const newStageMatrix = new THREE.Matrix4().compose(position, rotation, scale);
-                  webvr.setStageMatrix(newStageMatrix);
+                  const offsetVector = new THREE.Vector3(0, 1, 0).applyQuaternion(teleportFloorMesh.quaternion);
+                  webvr.setStageMatrix(
+                    camera.matrixWorldInverse.multiply(webvr.getStageMatrix()) // move back to origin
+                      .premultiply(new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(hmdLocalEuler.x, 0, hmdLocalEuler.z, 'YXZ'))) // rotate to HMD
+                      .premultiply(teleportFloorMesh.matrixWorld) // move to teleport location
+                      .premultiply(new THREE.Matrix4().makeTranslation(offsetVector.x, offsetVector.y, offsetVector.z)) // move above target
+                  );
 
                   webvr.updateStatus();
                   webvr.updateUserStageMatrix();
@@ -196,14 +212,13 @@ class Teleport {
 
                   teleportState.teleportFloorPoint = null;
                 } else if (teleportAirPoint) {
-                  const destinationPoint = teleportAirPoint.clone();
-                  const positionDiff = destinationPoint.clone().sub(hmdPosition);
-
-                  const stageMatrix = webvr.getStageMatrix();
-                  const {position, rotation, scale} = _decomposeMatrix(stageMatrix);
-                  position.add(positionDiff);
-                  const newStageMatrix = new THREE.Matrix4().compose(position, rotation, scale);
-                  webvr.setStageMatrix(newStageMatrix);
+                  const offsetVector = new THREE.Vector3(0, 1, 0).applyQuaternion(teleportAirMesh.quaternion);
+                  webvr.setStageMatrix(
+                    camera.matrixWorldInverse.multiply(webvr.getStageMatrix()) // move back to origin
+                      .premultiply(new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(hmdLocalEuler.x, 0, hmdLocalEuler.z, 'YXZ'))) // rotate to HMD
+                      .premultiply(teleportAirMesh.matrixWorld) // move to teleport location
+                      .premultiply(new THREE.Matrix4().makeTranslation(offsetVector.x, offsetVector.y, offsetVector.z)) // move above target
+                  );
 
                   webvr.updateStatus();
                   webvr.updateUserStageMatrix();
@@ -234,6 +249,18 @@ class Teleport {
           input.removeListener('padup', _padup);
 
           rend.removeListener('update', _update);
+        };
+
+        const _addTarget = object => {
+          targets.push(object);
+        };
+        const _removeTarget = object => {
+          targets.splice(targets.indexOf(object), 1);
+        };
+
+        return {
+          addTarget: _addTarget,
+          removeTarget: _removeTarget,
         };
       }
     });
