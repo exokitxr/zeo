@@ -16,12 +16,14 @@ class Teleport {
     };
 
     return archae.requestPlugins([
+      '/core/engines/bootstrap',
       '/core/engines/three',
       '/core/engines/webvr',
       '/core/engines/input',
       '/core/engines/rend',
       '/core/engines/cyborg',
     ]).then(([
+      bootstrap,
       three,
       webvr,
       input,
@@ -116,7 +118,7 @@ class Teleport {
 
         const _update = () => {
           const {hmd, gamepads} = webvr.getStatus();
-          const {worldPosition: hmdPosition, worldRotation: hmdRotation, worldScale: hmdScale, rotation: hmdLocalRotation} = hmd;
+          const {rotation: hmdLocalRotation} = hmd;
           const hmdLocalEuler = new THREE.Euler().setFromQuaternion(hmdLocalRotation, 'YXZ');
 
           SIDES.forEach(side => {
@@ -198,31 +200,67 @@ class Teleport {
                 const {teleportFloorPoint, teleportAirPoint} = teleportState;
 
                 if (teleportFloorPoint) {
-                  const offsetVector = new THREE.Vector3(0, 1, 0).applyQuaternion(teleportFloorMesh.quaternion);
-                  webvr.setStageMatrix(
-                    camera.matrixWorldInverse.multiply(webvr.getStageMatrix()) // move back to origin
-                      .premultiply(new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(hmdLocalEuler.x, 0, hmdLocalEuler.z, 'YXZ'))) // rotate to HMD
-                      .premultiply(teleportFloorMesh.matrixWorld) // move to teleport location
-                      .premultiply(new THREE.Matrix4().makeTranslation(offsetVector.x, offsetVector.y, offsetVector.z)) // move above target
-                  );
+                  const vrMode = bootstrap.getVrMode();
+                  if (vrMode === 'hmd') {
+                    const teleportMeshEuler = new THREE.Euler().setFromQuaternion(teleportFloorMesh.quaternion, 'XZY');
+                    teleportMeshEuler.y = 0;
+                    webvr.setStageMatrix(
+                      camera.matrixWorldInverse.clone()
+                        .multiply(webvr.getSittingToStandingTransform()) // move back to origin
+                        .premultiply(new THREE.Matrix4().makeRotationFromEuler(teleportMeshEuler))
+                        .premultiply(new THREE.Matrix4().makeTranslation(
+                          teleportFloorMesh.position.x,
+                          teleportFloorMesh.position.y,
+                          teleportFloorMesh.position.z
+                        )) // move to teleport location
+                    );
 
-                  webvr.updateStatus();
-                  webvr.updateUserStageMatrix();
-                  cyborg.update();
+                    webvr.updateStatus();
+                    cyborg.update();
+                  } else if (vrMode === 'keyboard') {
+                    webvr.setStageMatrix(
+                      camera.matrixWorldInverse.clone()
+                        .multiply(webvr.getStageMatrix()) // move back to origin
+                        .premultiply(new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(hmdLocalEuler.x, 0, hmdLocalEuler.z, 'YXZ'))) // rotate to HMD
+                        .premultiply(teleportFloorMesh.matrixWorld) // move to teleport location
+                        .premultiply(webvr.getSittingToStandingTransform()) // move above target
+                    );
+
+                    webvr.updateStatus();
+                    cyborg.update();
+                  }
 
                   teleportState.teleportFloorPoint = null;
                 } else if (teleportAirPoint) {
-                  const offsetVector = new THREE.Vector3(0, 1, 0).applyQuaternion(teleportAirMesh.quaternion);
-                  webvr.setStageMatrix(
-                    camera.matrixWorldInverse.multiply(webvr.getStageMatrix()) // move back to origin
-                      .premultiply(new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(hmdLocalEuler.x, 0, hmdLocalEuler.z, 'YXZ'))) // rotate to HMD
-                      .premultiply(teleportAirMesh.matrixWorld) // move to teleport location
-                      .premultiply(new THREE.Matrix4().makeTranslation(offsetVector.x, offsetVector.y, offsetVector.z)) // move above target
-                  );
+                  const vrMode = bootstrap.getVrMode();
+                  if (vrMode === 'hmd') {
+                    const teleportMeshEuler = new THREE.Euler().setFromQuaternion(teleportAirMesh.quaternion, 'XZY');
+                    teleportMeshEuler.y = 0;
+                    webvr.setStageMatrix(
+                      camera.matrixWorldInverse.clone()
+                        .multiply(webvr.getSittingToStandingTransform()) // move back to origin
+                        .premultiply(new THREE.Matrix4().makeRotationFromEuler(teleportMeshEuler))
+                        .premultiply(new THREE.Matrix4().makeTranslation(
+                          teleportAirMesh.position.x,
+                          teleportAirMesh.position.y,
+                          teleportAirMesh.position.z
+                        )) // move to teleport location
+                    );
 
-                  webvr.updateStatus();
-                  webvr.updateUserStageMatrix();
-                  cyborg.update();
+                    webvr.updateStatus();
+                    cyborg.update();
+                  } else if (vrMode === 'keyboard') {
+                    webvr.setStageMatrix(
+                      camera.matrixWorldInverse.clone()
+                        .multiply(webvr.getStageMatrix()) // move back to origin
+                        .premultiply(new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(hmdLocalEuler.x, 0, hmdLocalEuler.z, 'YXZ'))) // rotate to HMD
+                        .premultiply(teleportAirMesh.matrixWorld) // move to teleport location
+                        .premultiply(webvr.getSittingToStandingTransform()) // move above target
+                    );
+
+                    webvr.updateStatus();
+                    cyborg.update();
+                  }
 
                   teleportState.teleportAirPoint = null;
                 }
