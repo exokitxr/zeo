@@ -180,7 +180,6 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
   const getEntitySrc = ({item}) => {
     const {id, name, displayName, instancing, metadata: {isStatic}} = item;
     const tagName = isStatic ? 'a' : 'div';
-    const linkTagName = isStatic ? 'div' : 'a';
 
     const headerSrc = `\
       <div style="position: relative; display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; background-color: #EEE; padding-left: 30px; text-decoration: none; overflow: hidden; box-sizing: border-box;">
