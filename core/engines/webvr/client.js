@@ -628,8 +628,7 @@ class WebVR {
                 scale,
                 worldPosition,
                 worldRotation,
-                worldScale,
-                // matrix,
+                worldScale
               );
             };
             const _getGamepadsStatus = () => {
