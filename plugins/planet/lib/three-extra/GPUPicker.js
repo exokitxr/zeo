@@ -2,8 +2,7 @@
 /**
  * @author baoxuanxu https://github.com/brianxu
  */
-var THREE = THREE || {};
-( function ( THREE ) {
+module.exports = THREE => {
 	var FaceIDShader = {
 		vertexShader: [
 			"attribute float id;",
@@ -54,7 +53,7 @@ var THREE = THREE || {};
 					value: 400,
 				}
 			},
-			attributes: ["position", "id"],
+			// attributes: ["position", "id"],
 			vertexShader: FaceIDShader.vertexShader,
 			fragmentShader: FaceIDShader.fragmentShader
 
@@ -72,7 +71,7 @@ var THREE = THREE || {};
 		this.uniforms.scale.value = scale;
 	};
 
-	//add a originalObject to Object3D
+	/* //add a originalObject to Object3D
 	(function(clone) {
 	  THREE.Object3D.prototype.clone = function ( object, recursive ) {
 	    object = clone.call(this,  object, recursive);
@@ -227,16 +226,16 @@ var THREE = THREE || {};
 
 		};
 
-	}() );
+	}() ); */
 
-	THREE.GPUPicker = function(option) {
+	const GPUPicker = function(option) {
 		if (option === undefined){
 			option = {};
 		}
 		this.pickingScene = new THREE.Scene();
 		this.pickingTexture = new THREE.WebGLRenderTarget();
-		this.pickingTexture.minFilter = THREE.LinearFilter;
-		this.pickingTexture.generateMipmaps = false;
+		this.pickingTexture.texture.minFilter = THREE.LinearFilter;
+		this.pickingTexture.texture.generateMipmaps = false;
 		this.lineShell = option.lineShell !== undefined ? option.lineShell:4;
 		this.pointShell = option.pointShell !== undefined ? option.pointShell:0.1;
 		this.debug = option.debug !== undefined ? option.debug:false;
@@ -251,22 +250,22 @@ var THREE = THREE || {};
 		//default filter
 		this.setFilter();
 	};
-	THREE.GPUPicker.prototype.setRenderer = function(renderer) {
+	GPUPicker.prototype.setRenderer = function(renderer) {
 		this.renderer = renderer;
 		var size = renderer.getSize();
 		this.resizeTexture(size.width, size.height);
 		this.needUpdate = true;
 	};
-	THREE.GPUPicker.prototype.resizeTexture = function(width, height) {
+	GPUPicker.prototype.resizeTexture = function(width, height) {
 		this.pickingTexture.setSize(width, height);
 		this.pixelBuffer = new Uint8Array(4 * width * height);
 		this.needUpdate = true;
 	};
-	THREE.GPUPicker.prototype.setCamera = function(camera) {
+	GPUPicker.prototype.setCamera = function(camera) {
 		this.camera = camera;
 		this.needUpdate = true;
 	};
-	THREE.GPUPicker.prototype.update = function() {
+	GPUPicker.prototype.update = function() {
 		if (this.needUpdate){
 			this.renderer.render(this.pickingScene, this.camera, this.pickingTexture);
 			//read the rendering texture
@@ -275,7 +274,7 @@ var THREE = THREE || {};
 			if (this.debug) console.log("GPUPicker rendering updated");
 		}
 	};
-	THREE.GPUPicker.prototype.setFilter = function(func) {
+	GPUPicker.prototype.setFilter = function(func) {
 		if (func instanceof Function){
 			this.filterFunc = func;
 		} else {
@@ -286,16 +285,33 @@ var THREE = THREE || {};
 		}
 
 	};
-	THREE.GPUPicker.prototype.setScene = function(scene) {
-		this.pickingScene = scene.clone();
+	GPUPicker.prototype.setScene = function(scene) {
+    const _clone = oldObject => {
+      const newObject = oldObject.clone(false);
+
+      newObject.originalObject = oldObject;
+      newObject.priority = oldObject.priority;
+
+      for (let i = 0; i < oldObject.children.length; i++) {
+        const oldChild = oldObject.children[i];
+        const newChild = _clone(oldChild);
+        newObject.add(newChild);
+      }
+
+      return newObject;
+    };
+
+		this.pickingScene = _clone(scene);
+    this.pickingScene.updateMatrixWorld();
 		this._processObject(this.pickingScene, 0);
 		this.needUpdate = true;
 	};
 
 
-	THREE.GPUPicker.prototype.pick = function(mouse, raycaster) {
+	GPUPicker.prototype.pick = function(/*mouse, raycaster*/) {
 		this.update();
-		var index = mouse.x + (this.pickingTexture.height - mouse.y) * this.pickingTexture.width;
+		var index = (this.pickingTexture.width / 2) + ((this.pickingTexture.height / 2) * this.pickingTexture.width);
+		// var index = mouse.x + (this.pickingTexture.height - mouse.y) * this.pickingTexture.width;
 		//interpret the pixel as an ID
 		var id = (this.pixelBuffer[index*4+2] * 255 * 255) + (this.pixelBuffer[index*4+1] * 255) + (this.pixelBuffer[index*4+0]);
 		// get object with this id in range
@@ -304,7 +320,15 @@ var THREE = THREE || {};
 		var result = this._getObject(this.pickingScene, 0, id);
 		var object = result[1];
 		var elementId = id - result[0];
-		if (object) {
+    if (object) {
+      return {
+        object: object,
+        index: elementId,
+      };
+    } else {
+      return null;
+    }
+		/* if (object) {
 			if (object.raycastWithID) {
 				var intersect = object.raycastWithID(elementId, raycaster);
 				intersect.object = object.originalObject;
@@ -312,13 +336,13 @@ var THREE = THREE || {};
 			}
 
 		}
-		return;
+		return; */
 	};
 
 	/*
 	 * get object by id
 	 */
-	THREE.GPUPicker.prototype._getObject = function(object, baseId, id) {
+	GPUPicker.prototype._getObject = function(object, baseId, id) {
 		// if (this.debug) console.log("_getObject ",baseId);
 		if (object.elementsCount !== undefined && id >= baseId && id < baseId + object.elementsCount) {
 			return [baseId, object];
@@ -338,7 +362,7 @@ var THREE = THREE || {};
 	/*
 	 * process the object to add elementId information
 	 */
-	THREE.GPUPicker.prototype._processObject = function(object, baseId) {
+	GPUPicker.prototype._processObject = function(object, baseId) {
 		baseId += this._addElementID(object, baseId);
 		for ( var i = 0; i < object.children.length; i ++ ) {
 			baseId = this._processObject(object.children[ i ], baseId);
@@ -347,7 +371,7 @@ var THREE = THREE || {};
 		return baseId;
 	};
 
-	THREE.GPUPicker.prototype._addElementID = function(object, baseId) {
+	GPUPicker.prototype._addElementID = function(object, baseId) {
 		if (!this.filterFunc(object) && object.geometry !== undefined) {
 			object.visible = false;
 			return 0;
@@ -427,7 +451,7 @@ var THREE = THREE || {};
 				var attributes = __pickingGeometry.attributes;
 				var positions = attributes.position.array;
 				var vertexCount = positions.length/3;
-				var ids = new THREE.Float32Attribute(vertexCount, 1);
+				var ids = new THREE.BufferAttribute(new Float32Array(vertexCount), 1);
 				//set vertex id color
 
 				for (var i = 0, il = vertexCount/units; i < il; i++) {
@@ -456,4 +480,6 @@ var THREE = THREE || {};
 		}
 		return 0;
 	};
-}( THREE ) );
+
+  return GPUPicker;
+};
