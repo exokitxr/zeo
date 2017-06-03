@@ -297,7 +297,8 @@ class WebVR {
                     this.isOpen = false;
                   });
 
-                  this._frameData = (display instanceof FakeVRDisplay) ? new VRFrameDataFake() : new VRFrameData();
+                  const frameData = (display instanceof FakeVRDisplay) ? new VRFrameDataFake() : new VRFrameData();
+                  this._frameData = frameData;
 
                   if (display && stereoscopic) {
                     const {getVRDisplays} = navigator; // HACK to prevent VREffect from initializing VR displays
@@ -413,9 +414,10 @@ class WebVR {
                       display.cancelAnimationFrame(animationFrame)
                     :
                       cancelAnimationFrame(animationFrame);
-                    const _submitFrame = pose => {
+                    const _submitFrame = () => {
                       if (display && display.isPresenting) {
-                        display.submitFrame(pose);
+                        display.getFrameData(frameData); // prevent timeshifting
+                        display.submitFrame();
                       }
                     };
 
@@ -424,9 +426,9 @@ class WebVR {
                       animationFrame = _requestAnimationFrame(() => {
                         animationFrame = null;
 
-                        const status = this.updateStatus();
+                        this.updateStatus();
                         _render();
-                        _submitFrame(status.hmd.pose);
+                        _submitFrame();
 
                         _recurse();
                       });
@@ -751,8 +753,6 @@ class WebVR {
                 }
               }
             }
-
-            return newStatus;
           }
 
           getStatus() {
