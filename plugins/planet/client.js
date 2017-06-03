@@ -216,7 +216,7 @@ class Planet {
     const holeRange = 3;
 
     return Promise.all([
-      _requestAudio('archae/planet/audio/pop.mp3'),
+      _requestAudio('archae/planet/audio/pop.ogg'),
       Promise.all(chunks.map(origin => _requestMarchingCubes({seed, origin}))),
     ])
       .then(([
