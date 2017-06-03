@@ -303,16 +303,6 @@ class Planet {
               object.add(planetMesh);
               // teleport.addTarget(planetMesh);
             });
-            /* const planetTargetMeshes = (() => {
-              const result = Array(planetMeshes.length * 2);
-              for (let i = 0; i < planetMeshes.length; i++) {
-                const planetMesh = planetMeshes[i];
-                const baseIndex = i * 2;
-                result[baseIndex + 0] = planetMesh.landMesh;
-                result[baseIndex + 1] = planetMesh.waterMesh;
-              }
-              return result;
-            })(); */
 
             return object;
           })();
@@ -576,7 +566,7 @@ class Planet {
 
             const _updateHover = () => {
               const timeDiff = now - lastHoverUpdateTime;
-              if (timeDiff > 50) {
+              if (timeDiff > 100) {
                 const {gamepads} = pose.getStatus();
 
                 SIDES.forEach(side => {
@@ -587,6 +577,8 @@ class Planet {
                   gpuPicker.camera.quaternion.copy(controllerRotation);
                   gpuPicker.camera.updateMatrixWorld();
                   gpuPicker.needUpdate = true;
+                  gpuPicker.update();
+
                   const intersection = gpuPicker.pick();
                   const dotMesh = dotMeshes[side];
                   const hoverState = hoverStates[side];
@@ -601,7 +593,7 @@ class Planet {
                     const triangle = new THREE.Triangle(va, vb, vc);
                     const intersectionPoint = new THREE.Ray(
                       controllerPosition.clone(),
-                      forwardVector.clone().applyQuaternion(controllerRotation),
+                      forwardVector.clone().applyQuaternion(controllerRotation)
                     ).intersectPlane(triangle.plane());
 
                     if (intersectionPoint) {
@@ -652,56 +644,6 @@ class Planet {
                 lastHoverUpdateTime = now;
               }
             };
-            /* const _updateHover = () => {
-              const {gamepads} = pose.getStatus();
-
-              SIDES.forEach(side => {
-                const gamepad = gamepads[side];
-                const {worldPosition: controllerPosition, worldRotation: controllerRotation} = gamepad;
-                const raycaster = new THREE.Raycaster(controllerPosition, forwardVector.clone().applyQuaternion(controllerRotation));
-                const intersections = raycaster.intersectObjects(planetTargetMeshes);
-                const dotMesh = dotMeshes[side];
-                const hoverState = hoverStates[side];
-
-                if (intersections.length > 0) {
-                  const intersection = intersections[0];
-                  const {point: intersectionPoint, index: intersectionIndex, face: intersectionFace, object: intersectionObject} = intersection;
-                  const {normal} = intersectionFace;
-                  const {geometry} = intersectionObject;
-
-                  const intersectionObjectRotation = intersectionObject.getWorldQuaternion();
-                  const worldNormal = normal.clone().applyQuaternion(intersectionObjectRotation);
-                  dotMesh.position.copy(intersectionPoint);
-                  dotMesh.quaternion.setFromUnitVectors(
-                    upVector,
-                    worldNormal
-                  );
-
-                  const {parent: planetMesh} = intersectionObject;
-                  const {origin} = planetMesh;
-                  const targetPosition = intersectionPoint.clone()
-                    .sub(intersectionObject.getWorldPosition())
-                    .add(origin.clone().multiplyScalar(SIZE));
-                  hoverState.planetMesh = planetMesh;
-                  hoverState.intersectionObject = intersectionObject;
-                  hoverState.intersectionIndex = intersectionIndex;
-                  hoverState.targetPosition = targetPosition;
-
-                  if (!dotMesh.visible) {
-                    dotMesh.visible = true;
-                  }
-                } else {
-                  hoverState.planetMesh = null;
-                  hoverState.intersectionObject = null;
-                  hoverState.intersectionIndex = null;
-                  hoverState.targetPosition = null;
-
-                  if (dotMesh.visible) {
-                    dotMesh.visible = false;
-                  }
-                }
-              });
-            }; */
             const _updateParticles = () => {
               const oldParticleMeshes = particleMeshes.slice();
               for (let i = 0; i < oldParticleMeshes.length; i++) {

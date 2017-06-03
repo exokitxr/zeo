@@ -314,7 +314,7 @@ module.exports = THREE => {
 
 	GPUPicker.prototype.pick = function(/*mouse, raycaster*/) {
 		this.update();
-		var index = (this.pickingTexture.width / 2) + ((this.pickingTexture.height / 2) * this.pickingTexture.width);
+		var index = Math.round((this.pickingTexture.width / 2) + ((this.pickingTexture.height / 2) * this.pickingTexture.width));
 		// var index = mouse.x + (this.pickingTexture.height - mouse.y) * this.pickingTexture.width;
 		//interpret the pixel as an ID
 		var id = (this.pixelBuffer[index*4+2] * 255 * 255) + (this.pixelBuffer[index*4+1] * 255) + (this.pixelBuffer[index*4+0]);
