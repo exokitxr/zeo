@@ -571,6 +571,7 @@ class Planet {
 
                 gpuPicker.camera.position.copy(controllerPosition);
                 gpuPicker.camera.quaternion.copy(controllerRotation);
+                gpuPicker.camera.updateMatrixWorld();
                 gpuPicker.needUpdate = true;
                 const intersection = gpuPicker.pick();
                 const dotMesh = dotMeshes[side];
@@ -590,29 +591,24 @@ class Planet {
                   ).intersectPlane(triangle.plane());
 
                   if (intersectionPoint) {
-                    dotMesh.position.copy(intersectionPoint);
+                    const normal = triangle.normal();
 
-                    /* const {point: intersectionPoint, index: intersectionIndex, face: intersectionFace, object: intersectionObject} = intersection;
-                    const {normal} = intersectionFace;
-                    const {geometry} = intersectionObject;
-
-                    const intersectionObjectRotation = intersectionObject.getWorldQuaternion();
-                    const worldNormal = normal.clone().applyQuaternion(intersectionObjectRotation);
                     dotMesh.position.copy(intersectionPoint);
                     dotMesh.quaternion.setFromUnitVectors(
                       upVector,
-                      worldNormal
+                      normal
                     );
 
-                    const {parent: planetMesh} = intersectionObject;
+                    const planetMesh = object.parent;
                     const {origin} = planetMesh;
                     const targetPosition = intersectionPoint.clone()
-                      .sub(intersectionObject.getWorldPosition())
+                      .sub(object.getWorldPosition())
                       .add(origin.clone().multiplyScalar(SIZE));
+
                     hoverState.planetMesh = planetMesh;
-                    hoverState.intersectionObject = intersectionObject;
-                    hoverState.intersectionIndex = intersectionIndex;
-                    hoverState.targetPosition = targetPosition; */
+                    hoverState.intersectionObject = object;
+                    hoverState.intersectionIndex = index;
+                    hoverState.targetPosition = targetPosition;
 
                     if (!dotMesh.visible) {
                       dotMesh.visible = true;

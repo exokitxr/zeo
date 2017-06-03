@@ -319,10 +319,11 @@ module.exports = THREE => {
 		if (this.debug) console.log("pick id:",id);
 		var result = this._getObject(this.pickingScene, 0, id);
 		var object = result[1];
-		var elementId = id - result[0];
     if (object) {
+      var originalObject = object.originalObject;
+      var elementId = id - result[0];
       return {
-        object: object,
+        object: originalObject,
         index: elementId,
       };
     } else {
