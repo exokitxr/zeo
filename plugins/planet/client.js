@@ -256,6 +256,7 @@ class Planet {
                 geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
                 geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
                 geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
+                // geometry.computeBoundingBox();
 
                 if (geometry.__pickingGeometry) {
                   geometry.__pickingGeometry = null;
@@ -318,8 +319,9 @@ class Planet {
           scene.add(planetsMesh);
 
           const gpuPicker = new GPUPicker();
-          gpuPicker.renderer = renderer;
-          gpuPicker.resizeTexture(256, 256);
+          const renderer = new THREE.WebGLRenderer();
+          renderer.setSize(256, 256);
+          gpuPicker.setRenderer(renderer);
           const gpuPickerCamera = new THREE.PerspectiveCamera();
           scene.add(gpuPickerCamera);
           gpuPicker.setCamera(gpuPickerCamera);
@@ -566,60 +568,74 @@ class Planet {
           };
           input.on('trigger', _trigger);
 
-          let lastUpdateTime = Date.now();
+          const now = Date.now();
+          let lastUpdateTime = now;
+          let lastHoverUpdateTime = now;
           const _update = () => {
             const now = Date.now();
 
             const _updateHover = () => {
-              const {gamepads} = pose.getStatus();
+              const timeDiff = now - lastHoverUpdateTime;
+              if (timeDiff > 50) {
+                const {gamepads} = pose.getStatus();
 
-              SIDES.forEach(side => {
-                const gamepad = gamepads[side];
-                const {worldPosition: controllerPosition, worldRotation: controllerRotation} = gamepad;
+                SIDES.forEach(side => {
+                  const gamepad = gamepads[side];
+                  const {worldPosition: controllerPosition, worldRotation: controllerRotation} = gamepad;
 
-                gpuPicker.camera.position.copy(controllerPosition);
-                gpuPicker.camera.quaternion.copy(controllerRotation);
-                gpuPicker.camera.updateMatrixWorld();
-                gpuPicker.needUpdate = true;
-                const intersection = gpuPicker.pick();
-                const dotMesh = dotMeshes[side];
-                const hoverState = hoverStates[side];
+                  gpuPicker.camera.position.copy(controllerPosition);
+                  gpuPicker.camera.quaternion.copy(controllerRotation);
+                  gpuPicker.camera.updateMatrixWorld();
+                  gpuPicker.needUpdate = true;
+                  const intersection = gpuPicker.pick();
+                  const dotMesh = dotMeshes[side];
+                  const hoverState = hoverStates[side];
 
-                if (intersection) {
-                  const {object, index} = intersection;
-                  const positions = object.geometry.attributes.position.array;
-                  const baseIndex = index * 9;
-                  const va = new THREE.Vector3().fromArray(positions, baseIndex + 0).applyMatrix4(object.matrixWorld);
-                  const vb = new THREE.Vector3().fromArray(positions, baseIndex + 3).applyMatrix4(object.matrixWorld);
-                  const vc = new THREE.Vector3().fromArray(positions, baseIndex + 6).applyMatrix4(object.matrixWorld);
-                  const triangle = new THREE.Triangle(va, vb, vc);
-                  const intersectionPoint = new THREE.Ray(
-                    controllerPosition.clone(),
-                    forwardVector.clone().applyQuaternion(controllerRotation),
-                  ).intersectPlane(triangle.plane());
+                  if (intersection) {
+                    const {object, index} = intersection;
+                    const positions = object.geometry.attributes.position.array;
+                    const baseIndex = index * 9;
+                    const va = new THREE.Vector3().fromArray(positions, baseIndex + 0).applyMatrix4(object.matrixWorld);
+                    const vb = new THREE.Vector3().fromArray(positions, baseIndex + 3).applyMatrix4(object.matrixWorld);
+                    const vc = new THREE.Vector3().fromArray(positions, baseIndex + 6).applyMatrix4(object.matrixWorld);
+                    const triangle = new THREE.Triangle(va, vb, vc);
+                    const intersectionPoint = new THREE.Ray(
+                      controllerPosition.clone(),
+                      forwardVector.clone().applyQuaternion(controllerRotation),
+                    ).intersectPlane(triangle.plane());
 
-                  if (intersectionPoint) {
-                    const normal = triangle.normal();
+                    if (intersectionPoint) {
+                      const normal = triangle.normal();
 
-                    dotMesh.position.copy(intersectionPoint);
-                    dotMesh.quaternion.setFromUnitVectors(
-                      upVector,
-                      normal
-                    );
+                      dotMesh.position.copy(intersectionPoint);
+                      dotMesh.quaternion.setFromUnitVectors(
+                        upVector,
+                        normal
+                      );
 
-                    const planetMesh = object.parent;
-                    const {origin} = planetMesh;
-                    const targetPosition = intersectionPoint.clone()
-                      .sub(object.getWorldPosition())
-                      .add(origin.clone().multiplyScalar(SIZE));
+                      const planetMesh = object.parent;
+                      const {origin} = planetMesh;
+                      const targetPosition = intersectionPoint.clone()
+                        .sub(object.getWorldPosition())
+                        .add(origin.clone().multiplyScalar(SIZE));
 
-                    hoverState.planetMesh = planetMesh;
-                    hoverState.intersectionObject = object;
-                    hoverState.intersectionIndex = index;
-                    hoverState.targetPosition = targetPosition;
+                      hoverState.planetMesh = planetMesh;
+                      hoverState.intersectionObject = object;
+                      hoverState.intersectionIndex = index;
+                      hoverState.targetPosition = targetPosition;
 
-                    if (!dotMesh.visible) {
-                      dotMesh.visible = true;
+                      if (!dotMesh.visible) {
+                        dotMesh.visible = true;
+                      }
+                    } else {
+                      hoverState.planetMesh = null;
+                      hoverState.intersectionObject = null;
+                      hoverState.intersectionIndex = null;
+                      hoverState.targetPosition = null;
+
+                      if (dotMesh.visible) {
+                        dotMesh.visible = false;
+                      }
                     }
                   } else {
                     hoverState.planetMesh = null;
@@ -631,17 +647,10 @@ class Planet {
                       dotMesh.visible = false;
                     }
                   }
-                } else {
-                  hoverState.planetMesh = null;
-                  hoverState.intersectionObject = null;
-                  hoverState.intersectionIndex = null;
-                  hoverState.targetPosition = null;
+                });
 
-                  if (dotMesh.visible) {
-                    dotMesh.visible = false;
-                  }
-                }
-              });
+                lastHoverUpdateTime = now;
+              }
             };
             /* const _updateHover = () => {
               const {gamepads} = pose.getStatus();
