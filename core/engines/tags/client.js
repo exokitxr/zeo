@@ -129,7 +129,7 @@ class Tags {
 
           const transparentImg = biolumi.getTransparentImg();
 
-          const menuUtils = menuUtilser.makeUtils({fs});
+          const menuUtils = menuUtilser.makeUtils({THREE, scene, fs});
           const tagsRenderer = tagsRender.makeRenderer({menuUtils, creatureUtils});
 
           const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
@@ -372,14 +372,16 @@ class Tags {
 
           const _addEntityCallback = (componentElement, entityElement) => {
             const _updateObject = () => {
-              let {_numComponents: numComponents = 0} = entityElement;
+              let {_object: object, _numComponents: numComponents} = entityElement;
+
+              if (numComponents === undefined) {
+                numComponents = 0;
+              }
               numComponents++;
               entityElement._numComponents = numComponents;
 
               if (numComponents === 1) {
-                const object = new THREE.Object3D();
-                scene.add(object);
-                entityElement._object = object;
+                entityElement._object = null; // defer construction/add of the actual object until requested by the component
               }
             };
             const _updateLine = () => {
@@ -422,13 +424,13 @@ class Tags {
               componentLines.delete(line);
             };
             const _updateObject = () => {
-              let {_numComponents: numComponents = 0} = entityElement;
+              let {_object: object, _numComponents: numComponents} = entityElement;
+
               numComponents--;
               entityElement._numComponents = numComponents;
 
               if (numComponents === 0) {
-                const {_object: oldObject} = entityElement;
-                scene.remove(oldObject);
+                scene.remove(object);
                 entityElement._object = null;
               }
             };

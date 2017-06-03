@@ -1,4 +1,4 @@
-const makeUtils = ({fs}) => {
+const makeUtils = ({THREE, scene, fs}) => {
 
 const makeZeoComponentElement = baseObject => {
   const entityApis = new Map();
@@ -71,7 +71,18 @@ const makeZeoComponentElement = baseObject => {
           },
         },
         getObject: {
-          value: () => entityElement._object,
+          value: () => {
+            let {_object: object} = entityElement;
+
+            if (object === null) {
+              object = new THREE.Object3D();
+              scene.add(object);
+
+              entityElement._object = object;
+            }
+
+            return object;
+          },
         },
         getData: {
           value: () => _jsonParse(entityElement.innerHTML),
