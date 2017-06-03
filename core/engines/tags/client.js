@@ -54,7 +54,7 @@ class Tags {
 
   mount() {
     const {_archae: archae} = this;
-    const {metadata: {home: {enabled: homeEnabled}}} = archae;
+    // const {metadata} = archae;
 
     const cleanups = [];
     this._cleanup = () => {
@@ -1984,7 +1984,7 @@ class Tags {
 
           const _update = () => {
             const _updateElementGrabbables = () => {
-              if (rend.isOpen() || homeEnabled) {
+              if (rend.isOpen()) {
                 const {gamepads} = webvr.getStatus();
 
                 SIDES.forEach(side => {
@@ -2036,7 +2036,7 @@ class Tags {
               }
             };
             const _updateDragStates = () => {
-              if (rend.isOpen() || homeEnabled) {
+              if (rend.isOpen()) {
                 SIDES.forEach(side => {
                   const dragState = dragStates[side];
                   const {src} = dragState;
