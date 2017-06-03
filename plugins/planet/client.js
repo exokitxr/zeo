@@ -259,6 +259,8 @@ class Planet {
 
                 if (geometry.__pickingGeometry) {
                   geometry.__pickingGeometry = null;
+
+                  gpuPicker.reindexScene(planetsMesh);
                 }
               };
               const _renderWater = marchingCube => {
@@ -268,6 +270,12 @@ class Planet {
 
                 geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
                 geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
+
+                if (geometry.__pickingGeometry) {
+                  geometry.__pickingGeometry = null;
+
+                  gpuPicker.reindexScene(planetsMesh);
+                }
               };
 
               _renderLand(marchingCube);

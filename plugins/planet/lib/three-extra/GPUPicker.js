@@ -306,6 +306,10 @@ module.exports = THREE => {
 		this._processObject(this.pickingScene, 0);
 		this.needUpdate = true;
 	};
+  GPUPicker.prototype.reindexScene = function() {
+		this._processObject(this.pickingScene, 0);
+		this.needUpdate = true;
+	};
 
 
 	GPUPicker.prototype.pick = function(/*mouse, raycaster*/) {
