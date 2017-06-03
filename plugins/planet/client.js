@@ -1,3 +1,5 @@
+const GPUPickerLib = require('./lib/three-extra/GPUPicker.js');
+
 const SIZE = 16;
 
 const SIDES = ['left', 'right'];
@@ -9,7 +11,9 @@ class Planet {
 
   mount() {
     const {_archae: archae} = this;
-    const {three: {THREE, scene, camera}, pose, input, render, sound, teleport, utils: {geometry: geometryUtils}} = zeo;
+    const {three: {THREE, scene, camera, renderer}, pose, input, render, sound, teleport, utils: {geometry: geometryUtils}} = zeo;
+
+    const GPUPicker = GPUPickerLib(THREE);
 
     const cleanups = [];
     this._cleanup = () => {
@@ -32,12 +36,14 @@ class Planet {
       color: 0x808080,
       shading: THREE.FlatShading,
       vertexColors: THREE.VertexColors,
+      side: THREE.DoubleSide, // XXX
     });
     const waterMaterial = new THREE.MeshPhongMaterial({
       color: 0x44447A,
       shading: THREE.FlatShading,
       transparent: true,
       opacity: 0.95,
+      side: THREE.DoubleSide, // XXX
     });
     const glassMaterial = new THREE.MeshPhongMaterial({
       color: 0xFFFFFF,
@@ -250,6 +256,10 @@ class Planet {
                 geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
                 geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
                 geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+                if (geometry.__pickingGeometry) {
+                  geometry.__pickingGeometry = null;
+                }
               };
               const _renderWater = marchingCube => {
                 const {water} = marchingCube;
@@ -266,31 +276,46 @@ class Planet {
 
             return object;
           };
-          const planetMeshes = marchingCubes.map(marchingCube => {
-            const {origin} = marchingCube;
+          const planetsMesh = (() => {
+            const object = new THREE.Object3D();
 
-            const planetMesh = _makePlanetMesh();
-            planetMesh.origin = origin;
-            planetMesh.render(marchingCube);
+            const planetMeshes = marchingCubes.map(marchingCube => {
+              const {origin} = marchingCube;
 
-            planetMesh.position.copy(origin.clone().multiplyScalar(SIZE));
+              const planetMesh = _makePlanetMesh();
+              planetMesh.origin = origin;
+              planetMesh.render(marchingCube);
 
-            return planetMesh;
-          });
-          planetMeshes.forEach(planetMesh => {
-            scene.add(planetMesh);
-            teleport.addTarget(planetMesh);
-          });
-          const planetTargetMeshes = (() => {
-            const result = Array(planetMeshes.length * 2);
-            for (let i = 0; i < planetMeshes.length; i++) {
-              const planetMesh = planetMeshes[i];
-              const baseIndex = i * 2;
-              result[baseIndex + 0] = planetMesh.landMesh;
-              result[baseIndex + 1] = planetMesh.waterMesh;
-            }
-            return result;
+              planetMesh.position.copy(origin.clone().multiplyScalar(SIZE));
+
+              return planetMesh;
+            });
+            planetMeshes.forEach(planetMesh => {
+              object.add(planetMesh);
+              // teleport.addTarget(planetMesh);
+            });
+            /* const planetTargetMeshes = (() => {
+              const result = Array(planetMeshes.length * 2);
+              for (let i = 0; i < planetMeshes.length; i++) {
+                const planetMesh = planetMeshes[i];
+                const baseIndex = i * 2;
+                result[baseIndex + 0] = planetMesh.landMesh;
+                result[baseIndex + 1] = planetMesh.waterMesh;
+              }
+              return result;
+            })(); */
+
+            return object;
           })();
+          scene.add(planetsMesh);
+
+          const gpuPicker = new GPUPicker();
+          gpuPicker.renderer = renderer;
+          gpuPicker.resizeTexture(256, 256);
+          const gpuPickerCamera = new THREE.PerspectiveCamera();
+          scene.add(gpuPickerCamera);
+          gpuPicker.setCamera(gpuPickerCamera);
+          gpuPicker.setScene(planetsMesh);
 
           const soundObject = new THREE.Object3D();
           scene.add(soundObject);
@@ -380,7 +405,7 @@ class Planet {
                     for (let i = 0; i < marchingCubes.length; i++) {
                       const marchingCube = marchingCubes[i];
                       const {origin} = marchingCube;
-                      const planetMesh = planetMeshes.find(planetMesh => planetMesh.origin.equals(origin));
+                      const planetMesh = planetsMesh.children.find(planetMesh => planetMesh.origin.equals(origin));
                       planetMesh.render(marchingCube);
                     }
                   };
@@ -543,6 +568,83 @@ class Planet {
               SIDES.forEach(side => {
                 const gamepad = gamepads[side];
                 const {worldPosition: controllerPosition, worldRotation: controllerRotation} = gamepad;
+
+                gpuPicker.camera.position.copy(controllerPosition);
+                gpuPicker.camera.quaternion.copy(controllerRotation);
+                gpuPicker.needUpdate = true;
+                const intersection = gpuPicker.pick();
+                const dotMesh = dotMeshes[side];
+                const hoverState = hoverStates[side];
+
+                if (intersection) {
+                  const {object, index} = intersection;
+                  const positions = object.geometry.attributes.position.array;
+                  const baseIndex = index * 9;
+                  const va = new THREE.Vector3().fromArray(positions, baseIndex + 0).applyMatrix4(object.matrixWorld);
+                  const vb = new THREE.Vector3().fromArray(positions, baseIndex + 3).applyMatrix4(object.matrixWorld);
+                  const vc = new THREE.Vector3().fromArray(positions, baseIndex + 6).applyMatrix4(object.matrixWorld);
+                  const triangle = new THREE.Triangle(va, vb, vc);
+                  const intersectionPoint = new THREE.Ray(
+                    controllerPosition.clone(),
+                    forwardVector.clone().applyQuaternion(controllerRotation),
+                  ).intersectPlane(triangle.plane());
+
+                  if (intersectionPoint) {
+                    dotMesh.position.copy(intersectionPoint);
+
+                    /* const {point: intersectionPoint, index: intersectionIndex, face: intersectionFace, object: intersectionObject} = intersection;
+                    const {normal} = intersectionFace;
+                    const {geometry} = intersectionObject;
+
+                    const intersectionObjectRotation = intersectionObject.getWorldQuaternion();
+                    const worldNormal = normal.clone().applyQuaternion(intersectionObjectRotation);
+                    dotMesh.position.copy(intersectionPoint);
+                    dotMesh.quaternion.setFromUnitVectors(
+                      upVector,
+                      worldNormal
+                    );
+
+                    const {parent: planetMesh} = intersectionObject;
+                    const {origin} = planetMesh;
+                    const targetPosition = intersectionPoint.clone()
+                      .sub(intersectionObject.getWorldPosition())
+                      .add(origin.clone().multiplyScalar(SIZE));
+                    hoverState.planetMesh = planetMesh;
+                    hoverState.intersectionObject = intersectionObject;
+                    hoverState.intersectionIndex = intersectionIndex;
+                    hoverState.targetPosition = targetPosition; */
+
+                    if (!dotMesh.visible) {
+                      dotMesh.visible = true;
+                    }
+                  } else {
+                    hoverState.planetMesh = null;
+                    hoverState.intersectionObject = null;
+                    hoverState.intersectionIndex = null;
+                    hoverState.targetPosition = null;
+
+                    if (dotMesh.visible) {
+                      dotMesh.visible = false;
+                    }
+                  }
+                } else {
+                  hoverState.planetMesh = null;
+                  hoverState.intersectionObject = null;
+                  hoverState.intersectionIndex = null;
+                  hoverState.targetPosition = null;
+
+                  if (dotMesh.visible) {
+                    dotMesh.visible = false;
+                  }
+                }
+              });
+            };
+            /* const _updateHover = () => {
+              const {gamepads} = pose.getStatus();
+
+              SIDES.forEach(side => {
+                const gamepad = gamepads[side];
+                const {worldPosition: controllerPosition, worldRotation: controllerRotation} = gamepad;
                 const raycaster = new THREE.Raycaster(controllerPosition, forwardVector.clone().applyQuaternion(controllerRotation));
                 const intersections = raycaster.intersectObjects(planetTargetMeshes);
                 const dotMesh = dotMeshes[side];
@@ -586,7 +688,7 @@ class Planet {
                   }
                 }
               });
-            };
+            }; */
             const _updateParticles = () => {
               const oldParticleMeshes = particleMeshes.slice();
               for (let i = 0; i < oldParticleMeshes.length; i++) {
@@ -655,10 +757,11 @@ class Planet {
           render.on('update', _update);
 
           cleanups.push(() => {
-            planetMeshes.forEach(planetMesh => {
-              scene.remove(planetMesh);
-              teleport.removeTarget(planetMesh);
+            scene.remove(planetsMesh);
+            planetsMesh.children.forEach(planetMesh => {
+              // teleport.removeTarget(planetMesh);
             });
+            scene.remove(gpuPickerCamera);
             scene.remove(soundObject);
             particleMeshes.forEach(particleMesh => {
               scene.remove(particleMesh);
