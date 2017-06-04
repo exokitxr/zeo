@@ -229,6 +229,7 @@ class Config {
           return object;
         })();
         rend.registerMenuMesh('configMesh', configMesh);
+        configMesh.updateMatrixWorld();
 
         const statsMesh = (() => {
           const object = new THREE.Object3D();
