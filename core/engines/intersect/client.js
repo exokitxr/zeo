@@ -36,6 +36,7 @@ class Intersect {
 
         const _makeHoverState = () => ({
           object: null,
+          originalObject: null,
           position: null,
           normal: null,
           index: null,
@@ -77,11 +78,20 @@ class Intersect {
           }
 
           addTarget(object) {
-            this.pickerScene.add(object);
+            const intersectMesh = object.clone();
+            object._intersectMesh = intersectMesh;
+            intersectMesh.originalObject = object;
+
+            this.pickerScene.add(intersectMesh);
           }
 
           removeTarget(object) {
-            this.pickerScene.remove(object);
+            const {_intersectMesh: intersectMesh} = object;
+
+            this.pickerScene.remove(intersectMesh);
+
+            _destroyIntersectMesh(intersectMesh);
+            object._intersectMesh = null;
           }
 
           destroyTarget(object) {
@@ -111,6 +121,7 @@ class Intersect {
 
               const _clear = () => {
                 hoverState.object = null;
+                hoverState.originalObject = null;
                 hoverState.position = null;
                 hoverState.normal = null;
                 hoverState.index = null;
@@ -131,8 +142,14 @@ class Intersect {
 
                 if (position) {
                   const normal = triangle.normal();
+                  const originalObject = (() => {
+                    let o;
+                    for (o = object; o && !o.originalObject; o = o.parent) {}
+                    return o && o.originalObject;
+                  })();
 
                   hoverState.object = object;
+                  hoverState.originalObject = originalObject;
                   hoverState.position = position;
                   hoverState.normal = normal;
                   hoverState.index = index;
@@ -166,7 +183,7 @@ class Intersect {
     this._cleanup();
   }
 };
-const _destroyTargetObject = object => {
+const _destroyIntersectMesh = object => {
   if (object.geometry && object.geometry.__pickingGeometry) {
     object.geometry.__pickingGeometry.dispose();
     object.geometry.__pickingGeometry = null;
@@ -178,7 +195,7 @@ const _destroyTargetObject = object => {
   }
 
   for (let i = 0; i < object.children.length; i++) {
-    _destroyTargetObject(object.children[i]);
+    _destroyIntersectMesh(object.children[i]);
   }
 };
 
