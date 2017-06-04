@@ -1425,6 +1425,6 @@ class WebVR {
 }
 
 const _isPolyfillDisplay = vrDisplay => /polyfill/i.test(vrDisplay.displayName);
-const _canPresent = vrDisplay => vrDisplay.capabilities.canPresent;
+const _canPresent = vrDisplay => vrDisplay ? vrDisplay.capabilities.canPresent : false;
 
 module.exports = WebVR;
