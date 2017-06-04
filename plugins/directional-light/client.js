@@ -111,7 +111,10 @@ class DirectionalLight {
 
             const lookAtVector = new THREE.Vector3(newValue[0], newValue[1], newValue[2]);
             mesh.lookAt(lookAtVector);
+            mesh.updateMatrixWorld();
+
             light.lookAt(lookAtVector);
+            light.updateMatrixWorld();
 
             break;
           }

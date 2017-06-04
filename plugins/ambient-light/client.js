@@ -117,6 +117,7 @@ class AmbientLight {
             const {light} = entityApi;
 
             light.color.setStyle(newValue);
+            light.updateMatrixWorld();
 
             break;
           }
