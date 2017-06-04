@@ -386,6 +386,7 @@ class Keyboard {
           return object;
         })();
         scene.add(keyboardMesh);
+        keyboardMesh.updateMatrixWorld();
 
         const _makeKeyboardHoverState = () => ({
           key: null,
@@ -407,6 +408,7 @@ class Keyboard {
 
               const {subMesh} = keyMesh;
               subMesh.position.z = -0.02 / 2;
+              subMesh.updateMatrixWorld();
 
               input.triggerEvent('keyboarddown', {
                 key,
@@ -450,6 +452,7 @@ class Keyboard {
 
               const {subMesh} = keyMesh;
               subMesh.position.z = 0;
+              subMesh.updateMatrixWorld();
 
               input.triggerEvent('keyboardup', {
                 key,
@@ -511,6 +514,7 @@ class Keyboard {
                       );
                     keyboardMesh.position.copy(controllerEnd);
                     keyboardMesh.quaternion.copy(controllerRotation);
+                    keyboardMesh.updateMatrixWorld();
                   }
                 }
               });
@@ -617,6 +621,7 @@ class Keyboard {
                           height / fullHeight * worldHeight * highlightScale,
                           1
                         );
+                        keyMesh.updateMatrixWorld();
 
                         const {key: oldKey} = keyMesh;
                         if (oldKey) {
@@ -750,6 +755,7 @@ class Keyboard {
             keyboardMesh.quaternion.copy(
               new THREE.Quaternion().setFromEuler(new THREE.Euler(euler.x - Math.atan2(0.6, 0.4), euler.y, 0, camera.rotation.order))
             );
+            keyboardMesh.updateMatrixWorld();
             keyboardMesh.visible = true;
 
             newFocusState.on('blur', () => {
