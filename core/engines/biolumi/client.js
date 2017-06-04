@@ -828,6 +828,7 @@ class Biolumi {
                             Math.max(anchorBoxTarget.size.y * anchorBoxTarget.scale.y, 0.001),
                             Math.max(anchorBoxTarget.size.z * anchorBoxTarget.scale.z, 0.001)
                           );
+                          boxMesh.updateMatrixWorld();
                           if (!boxMesh.visible) {
                             boxMesh.visible = true;
                           }
@@ -842,6 +843,7 @@ class Biolumi {
 
                         dotMesh.position.copy(intersectionPoint);
                         dotMesh.quaternion.copy(rotation);
+                        dotMesh.updateMatrixWorld();
                         if (!gamepad.buttons.trigger.pressed && dotMesh.material.color.getHex() !== RAY_COLOR) {
                           dotMesh.material.color.setHex(RAY_COLOR);
                         } else if (gamepad.buttons.trigger.pressed && dotMesh.material.color.getHex() !== RAY_HIGHLIGHT_COLOR) {
@@ -853,6 +855,7 @@ class Biolumi {
 
                         const controllerScaleFactor = (controllerScale.x + controllerScale.y + controllerScale.z) / 3;
                         rayMesh.scale.z = intersectionPoint.distanceTo(controllerLine.start) / controllerScaleFactor;
+                        rayMesh.updateMatrixWorld();
                       } else if (type === 'boxAnchor') {
                         const {boxAnchor, boxTarget, anchor} = metadata;
 
@@ -863,6 +866,7 @@ class Biolumi {
 
                         dotMesh.position.copy(intersectionPoint);
                         dotMesh.quaternion.copy(controllerRotation);
+                        dotMesh.updateMatrixWorld();
                         if (!gamepad.buttons.trigger.pressed && dotMesh.material.color.getHex() !== RAY_COLOR) {
                           dotMesh.material.color.setHex(RAY_COLOR);
                         } else if (gamepad.buttons.trigger.pressed && dotMesh.material.color.getHex() !== RAY_HIGHLIGHT_COLOR) {
@@ -879,6 +883,7 @@ class Biolumi {
                           Math.max(boxTarget.size.y * boxTarget.scale.y, 0.001),
                           Math.max(boxTarget.size.z * boxTarget.scale.z, 0.001)
                         );
+                        boxMesh.updateMatrixWorld();
                         if (!boxMesh.visible) {
                           boxMesh.visible = true;
                         }
