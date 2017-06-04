@@ -229,6 +229,7 @@ class Rend {
           return object;
         })();
         scene.add(menuMesh);
+        menuMesh.updateMatrixWorld();
 
         const trigger = e => {
           const {side} = e;
