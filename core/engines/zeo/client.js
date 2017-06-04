@@ -87,6 +87,7 @@ class Zeo {
             '/core/engines/home',
             '/core/engines/rend',
             '/core/engines/keyboard',
+            '/core/engines/intersect',
             '/core/engines/teleport',
             '/core/engines/scale',
             '/core/engines/transform',
@@ -124,6 +125,7 @@ class Zeo {
             home,
             rend,
             keyboard,
+            intersect,
             teleport,
             scale,
             transform,
@@ -625,6 +627,16 @@ class Zeo {
                       }
                     }
 
+                    class ZeoIntersectApi {
+                      makeIntersecter() {
+                        return intersect.makeIntersecter();
+                      }
+
+                      destroyIntersecter(object) {
+                        intersect.destroyIntersecter(object);
+                      }
+                    }
+
                     class ZeoTeleportApi {
                       addTarget(object) {
                         teleport.addTarget(object);
@@ -715,6 +727,7 @@ class Zeo {
                         this.player = new ZeoPlayerApi();
                         this.ui = new ZeoUiApi();
                         this.sound = new ZeoSoundApi();
+                        this.intersect = new ZeoIntersectApi();
                         this.teleport = new ZeoTeleportApi();
                         this.transform = new ZeoTransformApi();
                         this.color = new ZeoColorApi();
