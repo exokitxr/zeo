@@ -149,6 +149,7 @@ class Servers {
           return object;
         })();
         rend.registerMenuMesh('serversMesh', serversMesh);
+        serversMesh.updateMatrixWorld();
 
         const _connectServer = serverUrl => {
           window.parent.location = serverUrl;
