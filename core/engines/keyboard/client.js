@@ -105,8 +105,6 @@ class Keyboard {
         const transparentImg = biolumi.getTransparentImg();
         const transparentMaterial = biolumi.getTransparentMaterial();
 
-        const oneVector = new THREE.Vector3(1, 1, 1);
-
         const _decomposeObjectMatrixWorld = object => {
           const position = new THREE.Vector3();
           const rotation = new THREE.Quaternion();
