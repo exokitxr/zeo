@@ -33,6 +33,7 @@ class Three {
       .then(THREE => {
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0xFFFFFF);
+        scene.autoUpdate = false;
         scene.fog = new THREE.FogExp2(0xFFFFFF, 0);
 
         const camera = (() => {
