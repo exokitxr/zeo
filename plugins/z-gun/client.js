@@ -125,6 +125,7 @@ class ZGun {
                 return mesh;
               })();
               entityObject.add(mesh);
+              mesh.updateMatrixWorld();
 
               const bullets = [];
 
@@ -155,6 +156,7 @@ class ZGun {
                 entityObject.position.set(position[0], position[1], position[2]);
                 entityObject.quaternion.set(position[3], position[4], position[5], position[6]);
                 entityObject.scale.set(position[7], position[8], position[9]);
+                entityObject.updateMatrixWorld();
               };
 
               const _makeGunState = () => ({
@@ -197,6 +199,8 @@ class ZGun {
                     bullet.quaternion.copy(rotation);
                     bullet.scale.copy(scale);
                     scene.add(bullet);
+                    bullet.updateMatrixWorld();
+
                     bullets.push(bullet);
 
                     input.vibrate(side, 1, 20);
@@ -228,6 +232,7 @@ class ZGun {
                       new THREE.Vector3(0, 0, -BULLET_SPEED * timeDiff)
                         .applyQuaternion(bullet.quaternion)
                     );
+                    bullet.updateMatrixWorld();
 
                     bullet.lastTime = now;
                   } else {
