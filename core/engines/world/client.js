@@ -260,6 +260,7 @@ class World {
             }
 
             scene.add(tagMesh);
+            tagMesh.updateMatrixWorld();
           }
 
           remove(tagMesh) {
@@ -901,6 +902,7 @@ class World {
           return result;
         })();
         rend.registerMenuMesh('worldMesh', worldMesh);
+        worldMesh.updateMatrixWorld();
 
         const _updatePages = () => {
           const {menuMesh} = worldMesh;
