@@ -21,6 +21,7 @@ class Teleport {
       '/core/engines/webvr',
       '/core/engines/input',
       '/core/engines/rend',
+      '/core/engines/intersect',
       '/core/engines/cyborg',
     ]).then(([
       bootstrap,
@@ -28,6 +29,7 @@ class Teleport {
       webvr,
       input,
       rend,
+      intersect,
       cyborg,
     ]) => {
       if (live) {
@@ -41,6 +43,7 @@ class Teleport {
           return {position, rotation, scale};
         };
 
+        const forwardVector = new THREE.Vector3(0, 0, -1);
         const teleportMeshMaterial = new THREE.MeshPhongMaterial({
           color: 0xFFC107,
           shading: THREE.FlatShading,
@@ -48,8 +51,7 @@ class Teleport {
           transparent: true,
         });
 
-        const targets = [];
-        const raycaster = new THREE.Raycaster();
+        const intersecter = intersect.makeIntersecter();
 
         const _makeTeleportFloorMesh = () => {
           const geometry = new THREE.TorusBufferGeometry(0.5, 0.15, 3, 5);
@@ -115,161 +117,159 @@ class Teleport {
           const {rotation: hmdLocalRotation} = hmd;
           const hmdLocalEuler = new THREE.Euler().setFromQuaternion(hmdLocalRotation, 'YXZ');
 
+          intersecter.update();
+
           SIDES.forEach(side => {
             const gamepad = gamepads[side];
+            const teleportState = teleportStates[side];
+            const {teleporting} = teleportState;
+            const teleportFloorMesh = teleportFloorMeshes[side];
+            const teleportAirMesh = teleportAirMeshes[side];
 
-            if (gamepad) {
-              const teleportState = teleportStates[side];
-              const {teleporting} = teleportState;
-              const teleportFloorMesh = teleportFloorMeshes[side];
-              const teleportAirMesh = teleportAirMeshes[side];
+            if (teleporting) {
+              const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale, axes} = gamepad;
 
-              if (teleporting) {
-                const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale, axes} = gamepad;
+              const axisFactor = (axes[1] - (-1)) / 2;
+              const teleportDistance = axisFactor * TELEPORT_DISTANCE * ((controllerScale.x + controllerScale.y + controllerScale.z) / 3);
 
-                const axisFactor = (axes[1] - (-1)) / 2;
-                raycaster.set(
-                  controllerPosition.clone(),
-                  new THREE.Vector3(0, 0, -1).applyQuaternion(controllerRotation)
+              const hoverState = intersecter.getHoverState(side);
+              const {position} = hoverState;
+
+              if (position !== null && position.distanceTo(controllerPosition) <= teleportDistance) {
+                const {position, normal} = hoverState;
+
+                teleportFloorMesh.position.copy(position);
+                teleportFloorMesh.quaternion.setFromRotationMatrix(
+                  new THREE.Matrix4().lookAt(
+                    position.clone(),
+                    position.clone().add(
+                      position.clone().sub(
+                        new THREE.Plane().setFromNormalAndCoplanarPoint(
+                          normal,
+                          position
+                        ).projectPoint(controllerPosition)
+                      ).normalize()
+                    ),
+                    normal.clone()
+                  )
                 );
-                raycaster.far = axisFactor * TELEPORT_DISTANCE * ((controllerScale.x + controllerScale.y + controllerScale.z) / 3);
-                const intersections = raycaster.intersectObjects(targets, true);
+                teleportFloorMesh.scale.copy(controllerScale);
 
-                if (intersections.length > 0) {
-                  const intersection = intersections[0];
-                  const {point: intersectionPoint, face: intersectionFace} = intersection;
-                  const {normal: intersectionNormal} = intersectionFace;
-                  const destinationPoint = intersectionPoint;
+                teleportState.teleportFloorPoint = position;
+                teleportState.teleportAirPoint = null;
 
-                  teleportFloorMesh.position.copy(destinationPoint);
-                  teleportFloorMesh.quaternion.setFromRotationMatrix(
-                    new THREE.Matrix4().lookAt(
-                      destinationPoint.clone(),
-                      destinationPoint.clone().add(
-                        destinationPoint.clone().sub(
-                          new THREE.Plane().setFromNormalAndCoplanarPoint(
-                            intersectionNormal,
-                            destinationPoint
-                          ).projectPoint(controllerPosition)
-                        ).normalize()
-                      ),
-                      intersectionNormal.clone()
-                    )
-                  );
-                  teleportFloorMesh.scale.copy(controllerScale);
-
-                  teleportState.teleportFloorPoint = destinationPoint;
-                  teleportState.teleportAirPoint = null;
-
-                  if (!teleportFloorMesh.visible) {
-                    teleportFloorMesh.visible = true;
-                  }
-                  if (teleportAirMesh.visible) {
-                    teleportAirMesh.visible = false;
-                  }
-                } else {
-                  const destinationPoint = raycaster.ray.origin.clone()
-                    .add(
-                      raycaster.ray.direction.clone()
-                        .multiplyScalar(raycaster.far)
-                    );
-                  teleportAirMesh.position.copy(destinationPoint);
-                  const controllerEuler = new THREE.Euler().setFromQuaternion(controllerRotation, camera.rotation.order);
-                  teleportAirMesh.rotation.y = controllerEuler.y;
-                  teleportAirMesh.scale.copy(controllerScale);
-
-                  teleportState.teleportAirPoint = destinationPoint;
-                  teleportState.teleportFloorPoint = null;
-
-                  if (!teleportAirMesh.visible) {
-                    teleportAirMesh.visible = true;
-                  }
-                  if (teleportFloorMesh.visible) {
-                    teleportFloorMesh.visible = false;
-                  }
-                }
-              } else {
-                const {teleportFloorPoint, teleportAirPoint} = teleportState;
-
-                if (teleportFloorPoint) {
-                  const vrMode = bootstrap.getVrMode();
-                  if (vrMode === 'hmd') {
-                    const teleportMeshEuler = new THREE.Euler().setFromQuaternion(teleportFloorMesh.quaternion, 'XZY');
-                    teleportMeshEuler.y = 0;
-                    webvr.setStageMatrix(
-                      camera.matrixWorldInverse.clone()
-                        .multiply(webvr.getSittingToStandingTransform()) // move back to origin
-                        .premultiply(new THREE.Matrix4().makeRotationFromEuler(teleportMeshEuler))
-                        .premultiply(new THREE.Matrix4().makeTranslation(
-                          teleportFloorMesh.position.x,
-                          teleportFloorMesh.position.y,
-                          teleportFloorMesh.position.z
-                        )) // move to teleport location
-                    );
-
-                    webvr.updateStatus();
-                    cyborg.update();
-                  } else if (vrMode === 'keyboard') {
-                    webvr.setStageMatrix(
-                      camera.matrixWorldInverse.clone()
-                        .multiply(webvr.getStageMatrix()) // move back to origin
-                        .premultiply(new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(hmdLocalEuler.x, 0, hmdLocalEuler.z, 'YXZ'))) // rotate to HMD
-                        .premultiply(teleportFloorMesh.matrixWorld) // move to teleport location
-                        .premultiply(webvr.getSittingToStandingTransform()) // move above target
-                    );
-
-                    webvr.updateStatus();
-                    cyborg.update();
-                  }
-
-                  teleportState.teleportFloorPoint = null;
-                } else if (teleportAirPoint) {
-                  const vrMode = bootstrap.getVrMode();
-                  if (vrMode === 'hmd') {
-                    const teleportMeshEuler = new THREE.Euler().setFromQuaternion(teleportAirMesh.quaternion, 'XZY');
-                    teleportMeshEuler.y = 0;
-                    webvr.setStageMatrix(
-                      camera.matrixWorldInverse.clone()
-                        .multiply(webvr.getSittingToStandingTransform()) // move back to origin
-                        .premultiply(new THREE.Matrix4().makeRotationFromEuler(teleportMeshEuler))
-                        .premultiply(new THREE.Matrix4().makeTranslation(
-                          teleportAirMesh.position.x,
-                          teleportAirMesh.position.y,
-                          teleportAirMesh.position.z
-                        )) // move to teleport location
-                    );
-
-                    webvr.updateStatus();
-                    cyborg.update();
-                  } else if (vrMode === 'keyboard') {
-                    webvr.setStageMatrix(
-                      camera.matrixWorldInverse.clone()
-                        .multiply(webvr.getStageMatrix()) // move back to origin
-                        .premultiply(new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(hmdLocalEuler.x, 0, hmdLocalEuler.z, 'YXZ'))) // rotate to HMD
-                        .premultiply(teleportAirMesh.matrixWorld) // move to teleport location
-                        .premultiply(webvr.getSittingToStandingTransform()) // move above target
-                    );
-
-                    webvr.updateStatus();
-                    cyborg.update();
-                  }
-
-                  teleportState.teleportAirPoint = null;
-                }
-
-                if (teleportFloorMesh.visible) {
-                  teleportFloorMesh.visible = false;
+                if (!teleportFloorMesh.visible) {
+                  teleportFloorMesh.visible = true;
                 }
                 if (teleportAirMesh.visible) {
                   teleportAirMesh.visible = false;
                 }
+              } else {
+                const position = controllerPosition.clone()
+                  .add(
+                    forwardVector.clone()
+                      .applyQuaternion(controllerRotation)
+                      .multiplyScalar(teleportDistance)
+                  );
+                teleportAirMesh.position.copy(position);
+                const controllerEuler = new THREE.Euler()
+                  .setFromQuaternion(controllerRotation, camera.rotation.order);
+                teleportAirMesh.rotation.y = controllerEuler.y;
+                teleportAirMesh.scale.copy(controllerScale);
+
+                teleportState.teleportAirPoint = position;
+                teleportState.teleportFloorPoint = null;
+
+                if (!teleportAirMesh.visible) {
+                  teleportAirMesh.visible = true;
+                }
+                if (teleportFloorMesh.visible) {
+                  teleportFloorMesh.visible = false;
+                }
+              }
+            } else {
+              const {teleportFloorPoint, teleportAirPoint} = teleportState;
+
+              if (teleportFloorPoint) {
+                const vrMode = bootstrap.getVrMode();
+                if (vrMode === 'hmd') {
+                  const teleportMeshEuler = new THREE.Euler().setFromQuaternion(teleportFloorMesh.quaternion, 'XZY');
+                  teleportMeshEuler.y = 0;
+                  webvr.setStageMatrix(
+                    camera.matrixWorldInverse.clone()
+                      .multiply(webvr.getSittingToStandingTransform()) // move back to origin
+                      .premultiply(new THREE.Matrix4().makeRotationFromEuler(teleportMeshEuler))
+                      .premultiply(new THREE.Matrix4().makeTranslation(
+                        teleportFloorMesh.position.x,
+                        teleportFloorMesh.position.y,
+                        teleportFloorMesh.position.z
+                      )) // move to teleport location
+                  );
+
+                  webvr.updateStatus();
+                  cyborg.update();
+                } else if (vrMode === 'keyboard') {
+                  webvr.setStageMatrix(
+                    camera.matrixWorldInverse.clone()
+                      .multiply(webvr.getStageMatrix()) // move back to origin
+                      .premultiply(new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(hmdLocalEuler.x, 0, hmdLocalEuler.z, 'YXZ'))) // rotate to HMD
+                      .premultiply(teleportFloorMesh.matrixWorld) // move to teleport location
+                      .premultiply(webvr.getSittingToStandingTransform()) // move above target
+                  );
+
+                  webvr.updateStatus();
+                  cyborg.update();
+                }
+
+                teleportState.teleportFloorPoint = null;
+              } else if (teleportAirPoint) {
+                const vrMode = bootstrap.getVrMode();
+                if (vrMode === 'hmd') {
+                  const teleportMeshEuler = new THREE.Euler().setFromQuaternion(teleportAirMesh.quaternion, 'XZY');
+                  teleportMeshEuler.y = 0;
+                  webvr.setStageMatrix(
+                    camera.matrixWorldInverse.clone()
+                      .multiply(webvr.getSittingToStandingTransform()) // move back to origin
+                      .premultiply(new THREE.Matrix4().makeRotationFromEuler(teleportMeshEuler))
+                      .premultiply(new THREE.Matrix4().makeTranslation(
+                        teleportAirMesh.position.x,
+                        teleportAirMesh.position.y,
+                        teleportAirMesh.position.z
+                      )) // move to teleport location
+                  );
+
+                  webvr.updateStatus();
+                  cyborg.update();
+                } else if (vrMode === 'keyboard') {
+                  webvr.setStageMatrix(
+                    camera.matrixWorldInverse.clone()
+                      .multiply(webvr.getStageMatrix()) // move back to origin
+                      .premultiply(new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(hmdLocalEuler.x, 0, hmdLocalEuler.z, 'YXZ'))) // rotate to HMD
+                      .premultiply(teleportAirMesh.matrixWorld) // move to teleport location
+                      .premultiply(webvr.getSittingToStandingTransform()) // move above target
+                  );
+
+                  webvr.updateStatus();
+                  cyborg.update();
+                }
+
+                teleportState.teleportAirPoint = null;
+              }
+
+              if (teleportFloorMesh.visible) {
+                teleportFloorMesh.visible = false;
+              }
+              if (teleportAirMesh.visible) {
+                teleportAirMesh.visible = false;
               }
             }
           });
         };
         rend.on('update', _update);
 
-        this._cleanup = () => {
+        this._cleanup = ()  => {
+          intersect.destroyIntersecter(intersecter);
+
           SIDES.forEach(side => {
             scene.remove(teleportFloorMeshes[side]);
             scene.remove(teleportAirMeshes[side]);
@@ -281,10 +281,12 @@ class Teleport {
         };
 
         const _addTarget = object => {
-          targets.push(object);
+          intersecter.addTarget(object);
+          intersecter.reindex();
         };
         const _removeTarget = object => {
-          targets.splice(targets.indexOf(object), 1);
+          intersecter.removeTarget(object);
+          intersecter.reindex();
         };
 
         return {
