@@ -38,14 +38,8 @@ class Teleport {
           const rotation = new THREE.Quaternion();
           const scale = new THREE.Vector3();
           matrix.decompose(position, rotation, scale);
-          return {
-            position,
-            rotation,
-            scale,
-          };
+          return {position, rotation, scale};
         };
-
-        const upVector = new THREE.Vector3(0, 1, 0);
 
         const teleportMeshMaterial = new THREE.MeshPhongMaterial({
           color: 0xFFC107,
@@ -179,8 +173,6 @@ class Teleport {
                       raycaster.ray.direction.clone()
                         .multiplyScalar(raycaster.far)
                     );
-                  const basePosition = new THREE.Vector3(0, 0, 0).applyMatrix4(webvr.getSittingToStandingTransform());
-                  destinationPoint.y = Math.max(destinationPoint.y, basePosition.y, 0);
                   teleportAirMesh.position.copy(destinationPoint);
                   const controllerEuler = new THREE.Euler().setFromQuaternion(controllerRotation, camera.rotation.order);
                   teleportAirMesh.rotation.y = controllerEuler.y;
@@ -285,7 +277,6 @@ class Teleport {
 
           input.removeListener('paddown', _paddown);
           input.removeListener('padup', _padup);
-
           rend.removeListener('update', _update);
         };
 
