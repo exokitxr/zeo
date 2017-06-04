@@ -190,6 +190,7 @@ class Wallet {
           return result;
         })();
         rend.registerMenuMesh('walletMesh', walletMesh);
+        walletMesh.updateMatrixWorld();
 
         const _updatePages = () => {
           const {menuMesh} = walletMesh;
