@@ -1,8 +1,8 @@
-const GPUPickerLib = require('./lib/three-extra/GPUPicker.js');
-
 const SIZE = 16;
+const NUM_POSITIONS = 4096;
 
 const SIDES = ['left', 'right'];
+const AXES = ['x', 'y', 'z'];
 
 class Planet {
   constructor(archae) {
@@ -11,9 +11,7 @@ class Planet {
 
   mount() {
     const {_archae: archae} = this;
-    const {three: {THREE, scene, camera, renderer}, pose, input, render, sound, teleport, utils: {geometry: geometryUtils}} = zeo;
-
-    const GPUPicker = GPUPickerLib(THREE);
+    const {three: {THREE, scene, camera, renderer}, pose, input, render, sound, intersect, teleport, utils: {geometry: geometryUtils}} = zeo;
 
     const cleanups = [];
     this._cleanup = () => {
@@ -30,6 +28,7 @@ class Planet {
 
     const forwardVector = new THREE.Vector3(0, 0, -1);
     const upVector = new THREE.Vector3(0, 1, 0);
+    const oneVector = new THREE.Vector3(1, 1, 1);
     const oneDistance = Math.sqrt(3);
 
     const planetMaterial = new THREE.MeshPhongMaterial({
@@ -98,6 +97,13 @@ class Planet {
     scene.add(dotMeshes.left);
     scene.add(dotMeshes.right);
 
+    const _makeTargetState = () => ({
+      targeting: false,
+    });
+    const targetStates = {
+      left: _makeTargetState(),
+      right: _makeTargetState(),
+    };
     const _makeHoverState = () => ({
       planetMesh: null,
       intersectionObject: null,
@@ -108,9 +114,6 @@ class Planet {
       left: _makeHoverState(),
       right: _makeHoverState(),
     };
-
-    const particleMeshes = [];
-    const itemMeshes = [];
 
     cleanups.push(() => {
       planetMaterial.dispose();
@@ -224,6 +227,10 @@ class Planet {
         marchingCubes,
       ]) => {
         if (live) {
+          const intersecter = intersect.makeIntersecter({
+            intersectMeshKey: '_planetIntersectMesh',
+          });
+
           const _makePlanetMesh = () => {
             const object = new THREE.Object3D();
             object.isPlanetMesh = true;
@@ -257,12 +264,6 @@ class Planet {
                 geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
                 geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
                 // geometry.computeBoundingBox();
-
-                if (geometry.__pickingGeometry) {
-                  geometry.__pickingGeometry = null;
-
-                  gpuPicker.reindexScene(planetsMesh);
-                }
               };
               const _renderWater = marchingCube => {
                 const {water} = marchingCube;
@@ -271,12 +272,6 @@ class Planet {
 
                 geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
                 geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
-
-                if (geometry.__pickingGeometry) {
-                  geometry.__pickingGeometry = null;
-
-                  gpuPicker.reindexScene(planetsMesh);
-                }
               };
 
               _renderLand(marchingCube);
@@ -296,26 +291,400 @@ class Planet {
               planetMesh.render(marchingCube);
 
               planetMesh.position.copy(origin.clone().multiplyScalar(SIZE));
-
               return planetMesh;
             });
             planetMeshes.forEach(planetMesh => {
               object.add(planetMesh);
-              // teleport.addTarget(planetMesh);
             });
 
             return object;
           })();
           scene.add(planetsMesh);
+          planetsMesh.updateMatrixWorld(true);
+          for (let i = 0; i < planetsMesh.children.length; i++) {
+            const planetMesh = planetsMesh.children[i];
+            intersecter.addTarget(planetMesh);
+            // teleport.addTarget(planetMesh);
+          }
+          intersecter.reindex();
+          // teleport.reindex();
 
-          const gpuPicker = new GPUPicker();
-          const renderer = new THREE.WebGLRenderer();
-          renderer.setSize(256, 256);
-          gpuPicker.setRenderer(renderer);
-          const gpuPickerCamera = new THREE.PerspectiveCamera();
-          scene.add(gpuPickerCamera);
-          gpuPicker.setCamera(gpuPickerCamera);
-          gpuPicker.setScene(planetsMesh);
+          const particlesMesh = (() => {
+            const geometry = new THREE.BufferGeometry();
+            const positions = new Float32Array(NUM_POSITIONS * 3);
+            const positionsAttribute = new THREE.BufferAttribute(positions, 3);
+            geometry.addAttribute('position', positionsAttribute);
+            const normals = new Float32Array(NUM_POSITIONS * 3);
+            const normalsAttribute = new THREE.BufferAttribute(normals, 3);
+            geometry.addAttribute('normal', normalsAttribute);
+            const colors = new Float32Array(NUM_POSITIONS * 3);
+            const colorsAttribute = new THREE.BufferAttribute(colors, 3);
+            geometry.addAttribute('color', colorsAttribute);
+            geometry.setDrawRange(0, 0);
+            geometry.boundingSphere = new THREE.Sphere(
+              new THREE.Vector3(0, 0, 0),
+              1
+            );
+            // geometry.computeBoundingSphere();
+
+            const material = planetMaterial;
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.frustumCulled = false;
+
+            const particleGeometry = geometryUtils.unindexBufferGeometry(new THREE.TetrahedronBufferGeometry(0.3, 0));
+            const numParticleGeometryVertices = particleGeometry.getAttribute('position').count;
+
+            class Particle {
+              constructor(
+                position,
+                normal,
+                scale,
+                color,
+                rotation,
+                rayPosition,
+                rayRotation,
+                linearVelocity,
+                angularVelocity,
+                startTime,
+                endTime
+              ) {
+                this.position = position;
+                this.normal = normal;
+                this.scale = scale;
+                this.color = color;
+                this.rotation = rotation;
+                this.rayPosition = rayPosition;
+                this.rayRotation = rayRotation;
+                this.linearVelocity = linearVelocity;
+                this.angularVelocity = angularVelocity;
+                this.startTime = startTime;
+                this.endTime = endTime;
+              }
+
+              isValid(now) {
+                return now < this.endTime;
+              }
+
+              getMatrix(now) {
+                const {position, rotation, scale, rayPosition, rayRotation, linearVelocity, angularVelocity, startTime} = this;
+                const timeDiff = now - startTime;
+                const newPosition = position.clone().add(rayPosition.clone().multiplyScalar(timeDiff * 0.001 * linearVelocity));
+                const newRotation = rotation.clone();
+                newRotation.x = (rotation.x + (rayRotation.x * timeDiff / (Math.PI * 2) * 0.001 * angularVelocity)) % (Math.PI * 2);
+                newRotation.y = (rotation.y + (rayRotation.y * timeDiff / (Math.PI * 2) * 0.001 * angularVelocity)) % (Math.PI * 2);
+                newRotation.z = (rotation.z + (rayRotation.z * timeDiff / (Math.PI * 2) * 0.001 * angularVelocity)) % (Math.PI * 2);
+                const newQuaternion = new THREE.Quaternion().setFromEuler(newRotation);
+                const newScale = scale;
+
+                return new THREE.Matrix4().compose(
+                  newPosition,
+                  newQuaternion,
+                  newScale
+                );
+              }
+            }
+
+            const particles = [];
+            mesh.addParticle = (
+              position,
+              normal,
+              scale,
+              color,
+              rotation,
+              rayPosition,
+              rayRotation,
+              linearVelocity,
+              angularVelocity,
+              startTime,
+              endTime,
+            ) => {
+              if (((particles.length + 1) * numParticleGeometryVertices * 3) > NUM_POSITIONS) {
+                particles.shift();
+              }
+
+              const particle = new Particle(
+                position,
+                normal,
+                scale,
+                color,
+                rotation,
+                rayPosition,
+                rayRotation,
+                linearVelocity,
+                angularVelocity,
+                startTime,
+                endTime
+              );
+              particles.push(particle);
+            };
+            mesh.update = () => {
+              const now = Date.now();
+
+              const oldParticles = particles.slice();
+              let index = 0;
+              for (let i = 0; i < oldParticles.length; i++) {
+                const particle = oldParticles[i];
+
+                if (particle.isValid(now)) {
+                  const matrix = particle.getMatrix(now);
+
+                  const newGeometry = particleGeometry.clone()
+                    .applyMatrix(matrix);
+                  const newPositions = newGeometry.getAttribute('position').array;
+                  const newNormals = newGeometry.getAttribute('normal').array;
+
+                  positions.set(newPositions, index * numParticleGeometryVertices * 3);
+                  normals.set(newNormals, index * numParticleGeometryVertices * 3);
+
+                  const {color: newColor} = particle;
+                  for (let j = 0; j < numParticleGeometryVertices; j++) {
+                    const baseIndex = (index * numParticleGeometryVertices * 3) + (j * 3);
+                    colors[baseIndex + 0] = newColor.r;
+                    colors[baseIndex + 1] = newColor.g;
+                    colors[baseIndex + 2] = newColor.b;
+                  }
+
+                  index++;
+                } else {
+                  particles.splice(particles.indexOf(particle), 1);
+                }
+              }
+
+              positionsAttribute.needsUpdate = true;
+              normalsAttribute.needsUpdate = true;
+              colorsAttribute.needsUpdate = true;
+
+              geometry.setDrawRange(0, particles.length * numParticleGeometryVertices);
+            };
+
+            // mesh.rotation.order = camera.rotation.order;
+            return mesh;
+          })();
+          scene.add(particlesMesh);
+          particlesMesh.updateMatrixWorld();
+
+          const itemsMesh = (() => {
+            const object = new THREE.Object3D();
+
+            const glassGeometry = geometryUtils.unindexBufferGeometry(new THREE.BoxBufferGeometry(0.2, 0.2, 0.2));
+            const numGlassGeometryVertices = glassGeometry.getAttribute('position').count;
+            const glassMesh = (() => {
+              const geometry = new THREE.BufferGeometry();
+              const positions = new Float32Array(NUM_POSITIONS * 3);
+              const positionsAttribute = new THREE.BufferAttribute(positions, 3);
+              geometry.addAttribute('position', positionsAttribute);
+              const normals = new Float32Array(NUM_POSITIONS * 3);
+              const normalsAttribute = new THREE.BufferAttribute(normals, 3);
+              geometry.addAttribute('normal', normalsAttribute);
+              geometry.setDrawRange(0, 0);
+              geometry.boundingSphere = new THREE.Sphere(
+                new THREE.Vector3(0, 0, 0),
+                1
+              );
+
+              const material = glassMaterial;
+
+              const mesh = new THREE.Mesh(geometry, material);
+              mesh.frustumCulled = false;
+              return mesh;
+            })();
+            object.add(glassMesh);
+
+            const coreGeometry = geometryUtils.unindexBufferGeometry(
+              new THREE.TetrahedronBufferGeometry(0.1, 1)
+                .applyMatrix(new THREE.Matrix4().makeRotationZ(Math.PI * 3 / 12))
+            );
+            const numCoreGeometryVertices = coreGeometry.getAttribute('position').count;
+            const coreMesh = (() => {
+              const geometry = new THREE.BufferGeometry();
+              const positions = new Float32Array(NUM_POSITIONS * 3);
+              const positionsAttribute = new THREE.BufferAttribute(positions, 3);
+              geometry.addAttribute('position', positionsAttribute);
+              const normals = new Float32Array(NUM_POSITIONS * 3);
+              const normalsAttribute = new THREE.BufferAttribute(normals, 3);
+              geometry.addAttribute('normal', normalsAttribute);
+              const colors = new Float32Array(NUM_POSITIONS * 3);
+              const colorsAttribute = new THREE.BufferAttribute(colors, 3);
+              geometry.addAttribute('color', colorsAttribute);
+              geometry.setDrawRange(0, 0);
+              geometry.boundingSphere = new THREE.Sphere(
+                new THREE.Vector3(0, 0, 0),
+                1
+              );
+
+              const material = planetMaterial;
+
+              const mesh = new THREE.Mesh(geometry, material);
+              mesh.frustumCulled = false;
+              return mesh;
+            })();
+            object.add(coreMesh);
+
+            class Item {
+              constructor(
+                position,
+                rotation,
+                color,
+                startTime
+              ) {
+                this.position = position;
+                this.rotation = rotation;
+                this.color = color;
+                this.startTime = startTime;
+              }
+
+              getOuterMatrix() {
+                const {position, rotation} = this;
+                const quaternion = new THREE.Quaternion().setFromEuler(rotation);
+
+                return new THREE.Matrix4().compose(
+                  position,
+                  quaternion,
+                  oneVector
+                );
+              }
+
+              getInnerMatrix(now) {
+                const {position, rotation, startTime} = this;
+                const timeDiff = now - startTime;
+                const newPosition = position;
+                const newRotation = rotation.clone();
+                newRotation.y = (rotation.y + (timeDiff / (Math.PI * 2) * 0.01)) % (Math.PI * 2);
+                const newQuaternion = new THREE.Quaternion().setFromEuler(newRotation);
+                const newScale = oneVector;
+
+                return new THREE.Matrix4().compose(
+                  newPosition,
+                  newQuaternion,
+                  newScale
+                );
+              }
+            }
+
+            const items = [];
+
+            object.addItem = (position, rotation, color, startTime) => {
+              if (
+                ((items.length + 1) * numGlassGeometryVertices * 3) > NUM_POSITIONS ||
+                ((items.length + 1) * numCoreGeometryVertices * 3) > NUM_POSITIONS
+              ) {
+                items.shift();
+              }
+
+              const item = new Item(position, rotation, color, startTime);
+              items.push(item);
+            };
+            let lastUpdateTime = Date.now();
+            object.update = bodyPosition => {
+              const now = Date.now();
+
+              const _updateItems = () => {
+                const {hmd} = pose.getStatus();
+                const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmd;
+                const bodyPosition = hmdPosition.clone()
+                  .add(new THREE.Vector3(0, -0.25, 0).applyQuaternion(hmdRotation));
+                const timeDiff = now - lastUpdateTime;
+
+                const oldItems = items.slice();
+                for (let i = 0; i < oldItems.length; i++) {
+                  const item = oldItems[i];
+                  const distanceDiff = bodyPosition.distanceTo(item.position);
+
+                  const _removeItem = () => {
+                    items.splice(items.indexOf(item), 1);
+                  };
+
+                  if (distanceDiff < 0.1) {
+                    _removeItem();
+                  } else if (distanceDiff < 2) {
+                    const moveVector = bodyPosition.clone().sub(item.position);
+                    const moveVectorLength = moveVector.length();
+                    const moveDistance = timeDiff * 0.01;
+
+                    if (moveDistance < moveVectorLength) {
+                      const instantMoveVector = moveVector.clone().multiplyScalar(moveDistance / moveVectorLength);
+                      item.position.add(instantMoveVector);
+                    } else {
+                      _removeItem();
+                    }
+                  }
+                }
+              };
+              const _updateGlass = () => {
+                const {geometry} = glassMesh;
+                const positionsAttribute = geometry.getAttribute('position');
+                const {array: positions} = positionsAttribute;
+                const normalsAttribute = geometry.getAttribute('normal');
+                const {array: normals} = normalsAttribute;
+
+                for (let i = 0; i < items.length; i++) {
+                  const item = items[i];
+                  const matrix = item.getOuterMatrix();
+
+                  const newGeometry = glassGeometry.clone()
+                    .applyMatrix(matrix);
+                  const newPositions = newGeometry.getAttribute('position').array;
+                  const newNormals = newGeometry.getAttribute('normal').array;
+
+                  positions.set(newPositions, i * numGlassGeometryVertices * 3);
+                  normals.set(newNormals, i * numGlassGeometryVertices * 3);
+                }
+
+                positionsAttribute.needsUpdate = true;
+                normalsAttribute.needsUpdate = true;
+
+                geometry.setDrawRange(0, items.length * numGlassGeometryVertices);
+              };
+              const _updateCore = () => {
+                const now = Date.now();
+
+                const {geometry} = coreMesh;
+                const positionsAttribute = geometry.getAttribute('position');
+                const {array: positions} = positionsAttribute;
+                const normalsAttribute = geometry.getAttribute('normal');
+                const {array: normals} = normalsAttribute;
+                const colorsAttribute = geometry.getAttribute('color');
+                const {array: colors} = colorsAttribute;
+
+                for (let i = 0; i < items.length; i++) {
+                  const item = items[i];
+                  const matrix = item.getInnerMatrix(now);
+
+                  const newGeometry = coreGeometry.clone()
+                    .applyMatrix(matrix);
+                  const newPositions = newGeometry.getAttribute('position').array;
+                  const newNormals = newGeometry.getAttribute('normal').array;
+
+                  positions.set(newPositions, i * numCoreGeometryVertices * 3);
+                  normals.set(newNormals, i * numCoreGeometryVertices * 3);
+
+                  const {color: newColor} = item;
+                  for (let j = 0; j < numCoreGeometryVertices; j++) {
+                    const baseIndex = (i * numCoreGeometryVertices * 3) + (j * 3);
+                    colors[baseIndex + 0] = newColor.r;
+                    colors[baseIndex + 1] = newColor.g;
+                    colors[baseIndex + 2] = newColor.b;
+                  }
+                }
+
+                positionsAttribute.needsUpdate = true;
+                normalsAttribute.needsUpdate = true;
+                colorsAttribute.needsUpdate = true;
+
+                geometry.setDrawRange(0, items.length * numCoreGeometryVertices);
+              };
+
+              _updateItems();
+              _updateGlass();
+              _updateCore();
+
+              lastUpdateTime = now;
+            };
+
+            return object;
+          })();
+          scene.add(itemsMesh);
+          itemsMesh.updateMatrixWorld();
 
           const soundObject = new THREE.Object3D();
           scene.add(soundObject);
@@ -329,6 +698,22 @@ class Planet {
             return result;
           })();
 
+          const _triggerdown = e => {
+            const {side} = e;
+            const targetState = targetStates[side];
+            targetState.targeting = true;
+          };
+          input.on('triggerdown', _triggerdown, {
+            priority: -1,
+          });
+          const _triggerup = e => {
+            const {side} = e;
+            const targetState = targetStates[side];
+            targetState.targeting = false;
+          };
+          input.on('triggerup', _triggerup, {
+            priority: -1,
+          });
           const _trigger = e => {
             const {side} = e;
             const hoverState = hoverStates[side];
@@ -339,12 +724,6 @@ class Planet {
               const {geometry: intersectionObjectGeometry} = intersectionObject;
               const {origin} = planetMesh;
 
-              const colorAttribute = intersectionObjectGeometry.getAttribute('color');
-              const targetColor = colorAttribute ?
-                new THREE.Color().fromArray(colorAttribute.array.slice(intersectionIndex * 3, (intersectionIndex + 1) * 3))
-              :
-                waterMaterial.color;
-
               const localPlanetPosition = targetPosition.clone()
                 .applyMatrix4(new THREE.Matrix4().getInverse(planetMesh.matrixWorld))
               localPlanetPosition.x = Math.round(localPlanetPosition.x);
@@ -352,6 +731,12 @@ class Planet {
               localPlanetPosition.z = Math.round(localPlanetPosition.z);
               const absolutePlanetPosition = localPlanetPosition.clone()
                 .add(origin.clone().multiplyScalar(SIZE));
+              const colorsAttribute = intersectionObjectGeometry.getAttribute('color');
+              const targetColor = colorsAttribute ?
+                new THREE.Color().fromArray(colorsAttribute.array.slice(intersectionIndex * 9, (intersectionIndex + 1) * 9))
+              :
+                waterMaterial.color;
+
               _addHole(
                 absolutePlanetPosition.x,
                 absolutePlanetPosition.y,
@@ -407,58 +792,45 @@ class Planet {
                       const {origin} = marchingCube;
                       const planetMesh = planetsMesh.children.find(planetMesh => planetMesh.origin.equals(origin));
                       planetMesh.render(marchingCube);
+
+                      intersecter.removeTarget(planetMesh);
+                      intersecter.addTarget(planetMesh);
+
+                      // teleport.removeTarget(planetMesh);
+                      // teleport.addTarget(planetMesh);
                     }
+
+                    intersecter.reindex();
+                    // teleport.reindex();
                   };
                   const _makeParticles = () => {
-                    const _makeParticleMesh = targetColor => {
-                      const geometry = new THREE.TetrahedronBufferGeometry(0.3, 0);
-
-                      const positions = geometry.getAttribute('position').array;
-                      const numPositions = positions.length / 3;
-                      const colors = new Float32Array(numPositions * 3);
-                      for (let i = 0; i < numPositions; i++) {
-                        const baseIndex = i * 3;
-                        colors[baseIndex + 0] = targetColor.r;
-                        colors[baseIndex + 1] = targetColor.g;
-                        colors[baseIndex + 2] = targetColor.b;
-                      }
-                      geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
-
-                      const material = planetMaterial;
-
-                      const mesh = new THREE.Mesh(geometry, material);
-                      mesh.rotation.order = camera.rotation.order;
-                      mesh.destroy = () => {
-                        geometry.dispose();
-                      };
-                      return mesh;
-                    };
-
                     const numParticleMeshes = 5 + Math.random() * 10;
                     for (let i = 0; i < numParticleMeshes; i++) {
-                      const particleMesh = _makeParticleMesh(targetColor);
-                      particleMesh.position.copy(
-                        targetPosition.clone()
-                          .add(
-                            new THREE.Vector3(
-                              (-0.5 + Math.random()) * 2,
-                              (-0.5 + Math.random()) * 2,
-                              (-0.5 + Math.random()) * 2
-                            )
+                      const position = targetPosition.clone()
+                        .add(
+                          new THREE.Vector3(
+                            (-0.5 + Math.random()) * 2,
+                            (-0.5 + Math.random()) * 2,
+                            (-0.5 + Math.random()) * 2
                           )
                         );
-                      particleMesh.quaternion.setFromUnitVectors(
-                        forwardVector,
-                        new THREE.Vector3(
-                          -0.5 + Math.random(),
-                          -0.5 + Math.random(),
-                          -0.5 + Math.random()
-                        ).normalize()
-                      );
-                      const planetNormal = planetMesh.position.clone().add(origin.clone().multiplyScalar(SIZE))
-                        .sub(particleMesh.position)
+                      const normal = planetMesh.position.clone().add(origin.clone().multiplyScalar(SIZE))
+                        .sub(position)
                         .normalize();
-                      particleMesh.rayPosition = planetNormal.clone()
+                      const axis = AXES[Math.floor(Math.random() * AXES.length)];
+                      const scale = new THREE.Vector3(
+                        0.5 + (Math.random() * (axis === 'x' ? 3 : 1)),
+                        0.5 + (Math.random() * (axis === 'y' ? 3 : 1)),
+                        0.5 + (Math.random() * (axis === 'z' ? 3 : 1))
+                      );
+                      const color = targetColor;
+                      const rotation = new THREE.Euler(
+                        -0.5 + Math.random(),
+                        -0.5 + Math.random(),
+                        -0.5 + Math.random(),
+                        camera.rotation.order
+                      );
+                      const rayPosition = normal.clone()
                         .add(
                           new THREE.Vector3(
                             (-0.5 + Math.random()),
@@ -466,18 +838,29 @@ class Planet {
                             (-0.5 + Math.random())
                           )
                         ).normalize();
-                      particleMesh.rayRotation = new THREE.Vector3(
+                      const rayRotation = new THREE.Vector3(
                         -0.5 + Math.random(),
                         -0.5 + Math.random(),
                         -0.5 + Math.random()
                       ).normalize();
-                      particleMesh.linearVelocity = Math.random();
-                      particleMesh.angularVelocity = Math.random();
-                      particleMesh.startTime = Date.now();
-                      particleMesh.endTime = particleMesh.startTime + (Math.random() * 2000);
+                      const linearVelocity = Math.random();
+                      const angularVelocity = Math.random();
+                      const startTime = Date.now();
+                      const endTime = startTime + (2 * 1000) + (Math.random() * 8 * 1000);
 
-                      scene.add(particleMesh);
-                      particleMeshes.push(particleMesh);
+                      particlesMesh.addParticle(
+                        position,
+                        normal,
+                        scale,
+                        color,
+                        rotation,
+                        rayPosition,
+                        rayRotation,
+                        linearVelocity,
+                        angularVelocity,
+                        startTime,
+                        endTime,
+                      );
                     }
                   };
                   const _makeItems = () => {
@@ -529,15 +912,23 @@ class Planet {
                     };
 
                     if (Math.random() < 0.5) {
-                      const itemMesh = _makeItemMesh(targetColor);
-                      itemMesh.position.copy(targetPosition);
+                      const position = targetPosition;
+                      const rotation = new THREE.Euler(0, Math.random(), 0, camera.rotation.order);
+                      const color = targetColor;
+                      const startTime = Date.now();
 
-                      scene.add(itemMesh);
-                      itemMeshes.push(itemMesh);
+                      itemsMesh.addItem(
+                        position,
+                        rotation,
+                        color,
+                        startTime
+                      );
                     }
                   };
                   const _playSound = () => {
                     soundObject.position.copy(targetPosition);
+                    soundObject.updateMatrixWorld();
+
                     popAudio.currentTime = 0;
                     if (popAudio.paused) {
                       popAudio.play();
@@ -556,158 +947,77 @@ class Planet {
               e.stopImmediatePropagation();
             }
           };
-          input.on('trigger', _trigger);
+          input.on('trigger', _trigger, {
+            priority: -1,
+          });
 
-          const now = Date.now();
-          let lastUpdateTime = now;
-          let lastHoverUpdateTime = now;
           const _update = () => {
-            const now = Date.now();
-
             const _updateHover = () => {
-              const timeDiff = now - lastHoverUpdateTime;
-              if (timeDiff > 100) {
-                const {gamepads} = pose.getStatus();
+              SIDES.forEach(side => {
+                const targetState = targetStates[side];
+                const {targeting} = targetState;
+                const hoverState = hoverStates[side];
+                const dotMesh = dotMeshes[side];
 
-                SIDES.forEach(side => {
-                  const gamepad = gamepads[side];
-                  const {worldPosition: controllerPosition, worldRotation: controllerRotation} = gamepad;
+                const _hide = () => {
+                  hoverState.planetMesh = null;
+                  hoverState.intersectionObject = null;
+                  hoverState.intersectionIndex = null;
+                  hoverState.targetPosition = null;
 
-                  gpuPicker.camera.position.copy(controllerPosition);
-                  gpuPicker.camera.quaternion.copy(controllerRotation);
-                  gpuPicker.camera.updateMatrixWorld();
-                  gpuPicker.needUpdate = true;
-                  gpuPicker.update();
-
-                  const intersection = gpuPicker.pick();
-                  const dotMesh = dotMeshes[side];
-                  const hoverState = hoverStates[side];
-
-                  if (intersection) {
-                    const {object, index} = intersection;
-                    const positions = object.geometry.attributes.position.array;
-                    const baseIndex = index * 9;
-                    const va = new THREE.Vector3().fromArray(positions, baseIndex + 0).applyMatrix4(object.matrixWorld);
-                    const vb = new THREE.Vector3().fromArray(positions, baseIndex + 3).applyMatrix4(object.matrixWorld);
-                    const vc = new THREE.Vector3().fromArray(positions, baseIndex + 6).applyMatrix4(object.matrixWorld);
-                    const triangle = new THREE.Triangle(va, vb, vc);
-                    const intersectionPoint = new THREE.Ray(
-                      controllerPosition.clone(),
-                      forwardVector.clone().applyQuaternion(controllerRotation)
-                    ).intersectPlane(triangle.plane());
-
-                    if (intersectionPoint) {
-                      const normal = triangle.normal();
-
-                      dotMesh.position.copy(intersectionPoint);
-                      dotMesh.quaternion.setFromUnitVectors(
-                        upVector,
-                        normal
-                      );
-
-                      const planetMesh = object.parent;
-                      const {origin} = planetMesh;
-                      const targetPosition = intersectionPoint.clone()
-                        .sub(object.getWorldPosition())
-                        .add(origin.clone().multiplyScalar(SIZE));
-
-                      hoverState.planetMesh = planetMesh;
-                      hoverState.intersectionObject = object;
-                      hoverState.intersectionIndex = index;
-                      hoverState.targetPosition = targetPosition;
-
-                      if (!dotMesh.visible) {
-                        dotMesh.visible = true;
-                      }
-                    } else {
-                      hoverState.planetMesh = null;
-                      hoverState.intersectionObject = null;
-                      hoverState.intersectionIndex = null;
-                      hoverState.targetPosition = null;
-
-                      if (dotMesh.visible) {
-                        dotMesh.visible = false;
-                      }
-                    }
-                  } else {
-                    hoverState.planetMesh = null;
-                    hoverState.intersectionObject = null;
-                    hoverState.intersectionIndex = null;
-                    hoverState.targetPosition = null;
-
-                    if (dotMesh.visible) {
-                      dotMesh.visible = false;
-                    }
+                  if (dotMesh.visible) {
+                    dotMesh.visible = false;
                   }
-                });
-
-                lastHoverUpdateTime = now;
-              }
-            };
-            const _updateParticles = () => {
-              const oldParticleMeshes = particleMeshes.slice();
-              for (let i = 0; i < oldParticleMeshes.length; i++) {
-                const particleMesh = oldParticleMeshes[i];
-                const {endTime} = particleMesh;
-
-                if (now < endTime) {
-                  const {startTime} = particleMesh;
-                  const timeDiff = now - startTime;
-                  const {rayPosition, rayRotation, linearVelocity, angularVelocity} = particleMesh;
-                  particleMesh.position.add(rayPosition.clone().multiplyScalar(timeDiff * 0.0005 * linearVelocity));
-                  particleMesh.rotation.x = (particleMesh.rotation.x + (rayRotation.x * timeDiff / (Math.PI * 2) * 0.001 * angularVelocity)) % (Math.PI * 2);
-                  particleMesh.rotation.y = (particleMesh.rotation.y + (rayRotation.y * timeDiff / (Math.PI * 2) * 0.001 * angularVelocity)) % (Math.PI * 2);
-                  particleMesh.rotation.z = (particleMesh.rotation.z + (rayRotation.z * timeDiff / (Math.PI * 2) * 0.001 * angularVelocity)) % (Math.PI * 2);
-                } else {
-                  scene.remove(particleMesh);
-                  particleMesh.destroy();
-                  particleMeshes.splice(particleMeshes.indexOf(particleMesh), 1);
-                }
-              }
-            };
-            const _updateItems = () => {
-              const {hmd} = pose.getStatus();
-              const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmd;
-              const bodyPosition = hmdPosition.clone()
-                .add(new THREE.Vector3(0, -0.25, 0).applyQuaternion(hmdRotation));
-              const timeDiff = now - lastUpdateTime;
-
-              const oldItemMeshes = itemMeshes.slice();
-              for (let i = 0; i < oldItemMeshes.length; i++) {
-                const itemMesh = oldItemMeshes[i];
-                const distanceDiff = bodyPosition.distanceTo(itemMesh.position);
-
-                const _removeItem = () => {
-                  scene.remove(itemMesh);
-                  itemMesh.destroy();
-                  itemMeshes.splice(itemMeshes.indexOf(itemMesh), 1);
                 };
 
-                if (distanceDiff < 0.1) {
-                  _removeItem();
-                } else if (distanceDiff < 2) {
-                  const moveVector = bodyPosition.clone().sub(itemMesh.position);
-                  const moveVectorLength = moveVector.length();
-                  const moveDistance = timeDiff * 0.01;
+                if (targeting) {
+                  intersecter.update(side);
 
-                  if (moveDistance < moveVectorLength) {
-                    const instantMoveVector = moveVector.clone().multiplyScalar(moveDistance / moveVectorLength);
-                    itemMesh.position.add(instantMoveVector);
+                  const intersecterHoverState = intersecter.getHoverState(side);
+                  const {object} = intersecterHoverState;
+
+                  if (object) {
+                    const {originalObject, position, normal, index} = intersecterHoverState;
+
+                    dotMesh.position.copy(position);
+                    dotMesh.quaternion.setFromUnitVectors(
+                      upVector,
+                      normal
+                    );
+                    dotMesh.updateMatrixWorld();
+
+                    const planetMesh = originalObject;
+                    const {origin} = planetMesh;
+                    const targetPosition = position.clone()
+                      .sub(new THREE.Vector3().setFromMatrixPosition(object.matrixWorld))
+                      .add(origin.clone().multiplyScalar(SIZE));
+
+                    hoverState.planetMesh = planetMesh;
+                    hoverState.intersectionObject = object;
+                    hoverState.intersectionIndex = index;
+                    hoverState.targetPosition = targetPosition;
+
+                    if (!dotMesh.visible) {
+                      dotMesh.visible = true;
+                    }
                   } else {
-                    _removeItem();
+                    _hide();
                   }
+                } else {
+                  _hide();
                 }
-
-                const {innerMesh} = itemMesh;
-                innerMesh.rotation.y = (innerMesh.rotation.y + (timeDiff * 0.01 / (Math.PI * 2))) % (Math.PI * 2);
-              }
+              });
+            };
+            const _updateParticles = () => {
+              particlesMesh.update();
+            };
+            const _updateItems = () => {
+              itemsMesh.update();
             };
 
             _updateHover();
             _updateParticles();
             _updateItems();
-
-            lastUpdateTime = now;
           };
           render.on('update', _update);
 
@@ -715,20 +1025,18 @@ class Planet {
             scene.remove(planetsMesh);
             planetsMesh.children.forEach(planetMesh => {
               // teleport.removeTarget(planetMesh);
-            });
-            scene.remove(gpuPickerCamera);
+            })
+            intersect.destroyIntersecter(intersecter);
             scene.remove(soundObject);
-            particleMeshes.forEach(particleMesh => {
-              scene.remove(particleMesh);
-            });
-            itemMeshes.forEach(itemMesh => {
-              scene.remove(itemMesh);
-            });
+            scene.remove(particlesMesh);
+            scene.remove(itemsMesh);
 
             if (!popAudio.paused) {
               popAudio.pause();
             }
 
+            input.removeListener('triggerdown', _triggerdown);
+            input.removeListener('triggerup', _triggerup);
             input.removeListener('trigger', _trigger);
             render.removeListener('update', _update);
           });
