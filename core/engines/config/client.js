@@ -317,16 +317,14 @@ class Config {
             });
         });
 
-        const trigger = e => {
-          const isOpen = rend.isOpen();
-          const tab = rend.getTab();
+        const _trigger = e => {
+          const _clickMenu = () => {
+            const isOpen = rend.isOpen();
+            const tab = rend.getTab();
 
-          if (isOpen && tab === 'options') {
-            const {side} = e;
-            const hoverState = rend.getHoverState(side);
-            const {intersectionPoint} = hoverState;
-
-            if (intersectionPoint) {
+            if (isOpen && tab === 'options') {
+              const {side} = e;
+              const hoverState = rend.getHoverState(side);
               const {anchor} = hoverState;
               const onclick = (anchor && anchor.onclick) || '';
 
@@ -339,6 +337,8 @@ class Config {
                 configApi.updateConfig();
 
                 _updatePages();
+
+                return true;
               } else if (onclick === 'config:voiceChat') {
                 const {voiceChatCheckboxValue} = configState;
 
@@ -348,6 +348,8 @@ class Config {
                 configApi.updateConfig();
 
                 _updatePages();
+
+                return true;
               } else if (onclick === 'config:stats') {
                 const {statsCheckboxValue: oldStatsCheckboxValue} = configState;
 
@@ -359,6 +361,8 @@ class Config {
                 configApi.updateConfig();
 
                 _updatePages();
+
+                return true;
               } else if (onclick === 'config:password') {
                 const {passwordValue: inputText} = configState;
                 const {value} = hoverState;
@@ -397,6 +401,8 @@ class Config {
                 configState.keyboardFocusState = keyboardFocusState;
 
                 _updatePages();
+
+                return true;
               } else if (onclick === 'config:maxPlayers') {
                 const {value} = hoverState;
 
@@ -406,15 +412,27 @@ class Config {
                 configApi.updateConfig();
 
                 _updatePages();
+
+                return true;
               } else if (onclick === 'config:tutorial') {
                 rend.setTab('tutorial');
+
+                return true;
               } else {
-                _updatePages();
+                return false;
               }
+            } else {
+              return false;
             }
+          };
+
+          if (_clickMenu()) {
+            e.stopImmediatePropagation();
           }
         };
-        input.on('trigger', trigger);
+        input.on('trigger', _trigger, {
+          priority: 1,
+        });
 
         const _update = () => {
           stats.render();
