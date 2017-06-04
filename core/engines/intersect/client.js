@@ -43,7 +43,7 @@ class Intersect {
         });
 
         class Intersecter {
-          constructor() {
+          constructor({debug}) {
             const pickerScene = new THREE.Scene();
             this.pickerScene = pickerScene;
 
@@ -54,12 +54,14 @@ class Intersect {
 
             const gpuPicker = new GPUPicker();
             gpuPicker.setRenderer(pickerRenderer);
-            const renderer2 = new THREE.WebGLRenderer(); // for debugging
-            renderer2.setSize(256, 256);
-            renderer2.setClearColor(0xffffff, 1);
-            renderer2.domElement.style.cssText = 'position: absolute; top: 0; right: 0;';
-            document.body.appendChild(renderer2.domElement);
-            gpuPicker.renderer2 = renderer2;
+            if (debug) {
+              const debugRenderer = new THREE.WebGLRenderer(); // for debugging
+              debugRenderer.setSize(256, 256);
+              debugRenderer.setClearColor(0xffffff, 1);
+              debugRenderer.domElement.style.cssText = 'position: absolute; top: 0; right: 0;';
+              document.body.appendChild(debugRenderer.domElement);
+              gpuPicker.debugRenderer = debugRenderer;
+            }
             const pickerCamera = new THREE.PerspectiveCamera();
             pickerScene.add(pickerCamera);
             gpuPicker.setCamera(pickerCamera);
@@ -168,7 +170,7 @@ class Intersect {
           }
         }
 
-        const _makeIntersecter = () => new Intersecter();
+        const _makeIntersecter = ({debug = false} = {}) => new Intersecter({debug});
         const _destroyIntersecter = intersecter => intersecter.destroy();
 
         return {

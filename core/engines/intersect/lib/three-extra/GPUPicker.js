@@ -268,7 +268,9 @@ module.exports = THREE => {
 	GPUPicker.prototype.update = function() {
 		if (this.needUpdate){
 			this.renderer.render(this.pickingScene, this.camera, this.pickingTexture);
-			this.renderer2.render(this.pickingScene, this.camera); // for debugging
+      if (this.debugRenderer) {
+        this.debugRenderer.render(this.pickingScene, this.camera);
+      }
 			//read the rendering texture
 			this.renderer.readRenderTargetPixels(this.pickingTexture, 0, 0, this.pickingTexture.width, this.pickingTexture.height, this.pixelBuffer);
 			this.needUpdate = false;
