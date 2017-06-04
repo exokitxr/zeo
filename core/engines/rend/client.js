@@ -265,8 +265,20 @@ class Rend {
               return false;
             }
           };
+          const _doClickMenuBackground = () => {
+            const hoverState = uiTracker.getHoverState(side);
+            const {target} = hoverState;
 
-          _doClickNavbar() || _doClickMenu();
+            if (target && target.mesh && target.mesh.parent === menuMesh) {
+              return true;
+            } else {
+              return false;
+            }
+          };
+
+          if (_doClickNavbar() || _doClickMenu() || _doClickMenuBackground()) {
+            e.stopImmediatePropagation();
+          }
         };
         input.on('trigger', trigger);
         // this needs to be a native click event rather than a soft trigger click event due for clipboard copy security reasons
