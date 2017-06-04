@@ -493,7 +493,7 @@ class Cyborg {
             camera.quaternion.copy(hmdStatus.rotation);
             camera.scale.copy(hmdStatus.scale);
             camera.parent.matrix.copy(webvr.getExternalMatrix());
-            camera.parent.updateMatrixWorld();
+            camera.parent.updateMatrixWorld(true);
 
             // update hmd
             hmd.update(hmdStatus, gamepadsStatus);
