@@ -1,4 +1,9 @@
-class VRFrameDataFake() {
+const SynchronousPromise = require('synchronous-promise').SynchronousPromise;
+const mod = require('mod-loop');
+
+const VREffect = require('./lib/three-extra/VREffect');
+
+class VRFrameDataFake {
   constructor() {
     this.leftProjectionMatrix = new Float32Array(16);
     this.leftViewMatrix = new Float32Array(16);
@@ -13,11 +18,6 @@ class VRPoseFake {
     this.orientation = orientation;
   }
 }
-
-const SynchronousPromise = require('synchronous-promise').SynchronousPromise;
-const mod = require('mod-loop');
-
-const VREffect = require('./lib/three-extra/VREffect');
 
 const DEFAULT_USER_HEIGHT = 1.6;
 const DEFAULT_USER_IPD = 62 / 1000;
