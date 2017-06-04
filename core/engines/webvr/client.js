@@ -1,18 +1,12 @@
-window.WebVRConfig = {
-  CARDBOARD_UI_DISABLED: true,
-  // FORCE_ENABLE_VR: false,
-  ROTATE_INSTRUCTIONS_DISABLED: true,
-  // PREDICTION_TIME_S: 0.040,
-  TOUCH_PANNER_DISABLED: true,
-  // YAW_ONLY: false,
-  // MOUSE_KEYBOARD_CONTROLS_DISABLED: false,
-  // DEFER_INITIALIZATION: false,
-  // ENABLE_DEPRECATED_API: false,
-  // BUFFER_SCALE: 0.5,
-  // DIRTY_SUBMIT_FRAME_BINDINGS: false,
-};
-require('webvr-polyfill');
-const {VRFrameData: VRFrameDataFake} = require('webvr-polyfill/src/base');
+class VRFrameDataFake() {
+  constructor() {
+    this.leftProjectionMatrix = new Float32Array(16);
+    this.leftViewMatrix = new Float32Array(16);
+    this.rightProjectionMatrix = new Float32Array(16);
+    this.rightViewMatrix = new Float32Array(16);
+    this.pose = null;
+  }
+}
 class VRPoseFake {
   constructor(position, orientation) {
     this.position = position;
