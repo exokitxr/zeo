@@ -288,7 +288,7 @@ class Keyboard {
                 KEYBOARD_HEIGHT,
                 KEYBOARD_WORLD_WIDTH,
                 KEYBOARD_WORLD_HEIGHT,
-                0.01,
+                0.02,
                 1.5,
                 nop,
                 nop
@@ -408,7 +408,7 @@ class Keyboard {
               const keyCode = biolumi.getKeyCode(key);
 
               const {subMesh} = keyMesh;
-              subMesh.position.z = -0.01 / 2;
+              subMesh.position.z = -0.02 / 2;
 
               input.triggerEvent('keyboarddown', {
                 key,
