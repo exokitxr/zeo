@@ -10,7 +10,7 @@ import mapUtilsMaker from './lib/utils/map-utils';
 
 class Grid {
   mount() {
-    const {three: {THREE, scene, camera}, elements, teleport, utils: {random: randomUtils}} = zeo;
+    const {three: {THREE, scene, camera}, elements, teleport, utils: {geometry: geometryUtils, random: randomUtils}} = zeo;
     const {alea} = randomUtils;
 
     const _decomposeObjectMatrixWorld = object => {
@@ -89,7 +89,7 @@ class Grid {
           const object = new THREE.Object3D();
 
           const meshes = mapChunks.map(({position, points, mapImage}) => {
-            const geometry = new THREE.PlaneBufferGeometry(WORLD_WIDTH, WORLD_HEIGHT, WIDTH, HEIGHT);
+            const geometry = geometryUtils.unindexBufferGeometry(new THREE.PlaneBufferGeometry(WORLD_WIDTH, WORLD_HEIGHT, WIDTH, HEIGHT));
             const positionAttribute = geometry.getAttribute('position');
             const {array: positions} = positionAttribute;
             const numPositions = positions.length / 3;
