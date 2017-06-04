@@ -51,7 +51,10 @@ class Teleport {
           transparent: true,
         });
 
-        const intersecter = intersect.makeIntersecter();
+        const intersecter = intersect.makeIntersecter({
+          frameRate: 20,
+          intersectMeshKey: '_teleportIntersectMesh',
+        });
 
         const _makeTeleportFloorMesh = () => {
           const geometry = new THREE.TorusBufferGeometry(0.5, 0.15, 3, 5);
@@ -117,16 +120,16 @@ class Teleport {
           const {rotation: hmdLocalRotation} = hmd;
           const hmdLocalEuler = new THREE.Euler().setFromQuaternion(hmdLocalRotation, 'YXZ');
 
-          intersecter.update();
-
           SIDES.forEach(side => {
-            const gamepad = gamepads[side];
             const teleportState = teleportStates[side];
             const {teleporting} = teleportState;
+            const gamepad = gamepads[side];
             const teleportFloorMesh = teleportFloorMeshes[side];
             const teleportAirMesh = teleportAirMeshes[side];
 
             if (teleporting) {
+              intersecter.update(side);
+
               const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale, axes} = gamepad;
 
               const axisFactor = (axes[1] - (-1)) / 2;
@@ -288,10 +291,14 @@ class Teleport {
           intersecter.removeTarget(object);
           intersecter.reindex();
         };
+        const _reindex = () => {
+          intersecter.reindex();
+        };
 
         return {
           addTarget: _addTarget,
           removeTarget: _removeTarget,
+          reindex: _reindex,
         };
       }
     });

@@ -43,12 +43,16 @@ class Intersect {
         });
 
         class Intersecter {
-          constructor({debug}) {
+          constructor({frameRate, intersectMeshKey, debug}) {
+            this.frameRate = frameRate;
+            this.intersectMeshKey = intersectMeshKey;
+            this.lastUpdateTime = Date.now() - (Math.random() * frameRate); // try to avoid synchronization across intersecters
+
             const pickerScene = new THREE.Scene();
             this.pickerScene = pickerScene;
 
             const pickerRenderer = new THREE.WebGLRenderer();
-            pickerRenderer.setSize(256, 256);
+            pickerRenderer.setSize(64, 64);
             pickerRenderer.setClearColor(0xffffff, 1);
             this.pickerRenderer = pickerRenderer;
 
@@ -56,7 +60,7 @@ class Intersect {
             gpuPicker.setRenderer(pickerRenderer);
             if (debug) {
               const debugRenderer = new THREE.WebGLRenderer(); // for debugging
-              debugRenderer.setSize(256, 256);
+              debugRenderer.setSize(64, 64);
               debugRenderer.setClearColor(0xffffff, 1);
               debugRenderer.domElement.style.cssText = 'position: absolute; top: 0; right: 0;';
               document.body.appendChild(debugRenderer.domElement);
@@ -81,19 +85,19 @@ class Intersect {
 
           addTarget(object) {
             const intersectMesh = object.clone();
-            object._intersectMesh = intersectMesh;
+            object[this.intersectMeshKey] = intersectMesh;
             intersectMesh.originalObject = object;
 
             this.pickerScene.add(intersectMesh);
           }
 
           removeTarget(object) {
-            const {_intersectMesh: intersectMesh} = object;
+            const intersectMesh = object[this.intersectMeshKey];
 
             this.pickerScene.remove(intersectMesh);
 
             _destroyIntersectMesh(intersectMesh);
-            object._intersectMesh = null;
+            object[this.intersectMeshKey] = null;
           }
 
           destroyTarget(object) {
@@ -104,73 +108,91 @@ class Intersect {
             this.gpuPicker.reindexScene();
           }
 
-          update() {
-            const {gpuPicker, hoverStates} = this;
-            const {hmd, gamepads} = webvr.getStatus();
+          update(side) {
+            const sides = typeof side === 'string' ? [side] : SIDES;
 
-            SIDES.forEach(side => {
-              const gamepad = gamepads[side];
-              const {worldPosition: controllerPosition, worldRotation: controllerRotation} = gamepad;
-              const hoverState = hoverStates[side];
+            const {frameRate, lastUpdateTime} = this;
+            const now = Date.now();
+            const timeDiff = now - lastUpdateTime;
 
-              gpuPicker.camera.position.copy(controllerPosition);
-              gpuPicker.camera.quaternion.copy(controllerRotation);
-              gpuPicker.camera.updateMatrixWorld(true);
-              gpuPicker.needUpdate = true;
-              gpuPicker.update();
+            if (timeDiff >= frameRate) {
+              const {gpuPicker, hoverStates} = this;
+              const {hmd, gamepads} = webvr.getStatus();
 
-              const intersection = gpuPicker.pick();
+              sides.forEach(side => {
+                const gamepad = gamepads[side];
+                const {worldPosition: controllerPosition, worldRotation: controllerRotation} = gamepad;
+                const hoverState = hoverStates[side];
 
-              const _clear = () => {
-                hoverState.object = null;
-                hoverState.originalObject = null;
-                hoverState.position = null;
-                hoverState.normal = null;
-                hoverState.index = null;
-              };
+                gpuPicker.camera.position.copy(controllerPosition);
+                gpuPicker.camera.quaternion.copy(controllerRotation);
+                gpuPicker.camera.updateMatrixWorld(true);
+                gpuPicker.needUpdate = true;
+                gpuPicker.update();
 
-              if (intersection) {
-                const {object, index} = intersection;
-                const positions = object.geometry.attributes.position.array;
-                const baseIndex = index * 9;
-                const va = new THREE.Vector3().fromArray(positions, baseIndex + 0).applyMatrix4(object.matrixWorld);
-                const vb = new THREE.Vector3().fromArray(positions, baseIndex + 3).applyMatrix4(object.matrixWorld);
-                const vc = new THREE.Vector3().fromArray(positions, baseIndex + 6).applyMatrix4(object.matrixWorld);
-                const triangle = new THREE.Triangle(va, vb, vc);
-                const position = new THREE.Ray(
-                  controllerPosition.clone(),
-                  forwardVector.clone().applyQuaternion(controllerRotation)
-                ).intersectPlane(triangle.plane());
+                const intersection = gpuPicker.pick();
 
-                if (position) {
-                  const normal = triangle.normal();
-                  const originalObject = (() => {
-                    let o;
-                    for (o = object; o && !o.originalObject; o = o.parent) {}
-                    return o && o.originalObject;
-                  })();
+                const _clear = () => {
+                  hoverState.object = null;
+                  hoverState.originalObject = null;
+                  hoverState.position = null;
+                  hoverState.normal = null;
+                  hoverState.index = null;
+                };
 
-                  hoverState.object = object;
-                  hoverState.originalObject = originalObject;
-                  hoverState.position = position;
-                  hoverState.normal = normal;
-                  hoverState.index = index;
+                if (intersection) {
+                  const {object, index} = intersection;
+                  const positions = object.geometry.attributes.position.array;
+                  const baseIndex = index * 9;
+                  const va = new THREE.Vector3().fromArray(positions, baseIndex + 0).applyMatrix4(object.matrixWorld);
+                  const vb = new THREE.Vector3().fromArray(positions, baseIndex + 3).applyMatrix4(object.matrixWorld);
+                  const vc = new THREE.Vector3().fromArray(positions, baseIndex + 6).applyMatrix4(object.matrixWorld);
+                  const triangle = new THREE.Triangle(va, vb, vc);
+                  const position = new THREE.Ray(
+                    controllerPosition.clone(),
+                    forwardVector.clone().applyQuaternion(controllerRotation)
+                  ).intersectPlane(triangle.plane());
+
+                  if (position) {
+                    const normal = triangle.normal();
+                    const originalObject = (() => {
+                      let o;
+                      for (o = object; o && !o.originalObject; o = o.parent) {}
+                      return o && o.originalObject;
+                    })();
+
+                    hoverState.object = object;
+                    hoverState.originalObject = originalObject;
+                    hoverState.position = position;
+                    hoverState.normal = normal;
+                    hoverState.index = index;
+                  } else {
+                    _clear();
+                  }
                 } else {
                   _clear();
                 }
-              } else {
-                _clear();
-              }
-            });
+              });
+
+              this.lastUpdateTime = now;
+            }
           }
 
           destroy() {
             this.pickerRenderer.dispose();
-            _destroyObject(this.pickerScene);
+            _destroyIntersectMesh(this.pickerScene);
           }
         }
 
-        const _makeIntersecter = ({debug = false} = {}) => new Intersecter({debug});
+        const _makeIntersecter = ({
+          frameRate = 50,
+          intersectMeshKey = '_intersectMesh',
+          debug = false,
+        } = {}) => new Intersecter({
+          frameRate,
+          intersectMeshKey,
+          debug,
+        });
         const _destroyIntersecter = intersecter => intersecter.destroy();
 
         return {
