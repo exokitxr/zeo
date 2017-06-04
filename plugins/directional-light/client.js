@@ -99,7 +99,10 @@ class DirectionalLight {
             const {mesh, light} = entityApi;
 
             mesh.position.set(newValue[0], newValue[1], newValue[2]);
+            mesh.updateMatrixWorld();
+
             light.position.copy(mesh.position);
+            light.updateMatrixWorld();
 
             break;
           }
