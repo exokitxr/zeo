@@ -157,6 +157,7 @@ class Teleport {
                   )
                 );
                 teleportFloorMesh.scale.copy(controllerScale);
+                teleportFloorMesh.updateMatrixWorld();
 
                 teleportState.teleportFloorPoint = position;
                 teleportState.teleportAirPoint = null;
@@ -179,6 +180,7 @@ class Teleport {
                   .setFromQuaternion(controllerRotation, camera.rotation.order);
                 teleportAirMesh.rotation.y = controllerEuler.y;
                 teleportAirMesh.scale.copy(controllerScale);
+                teleportAirMesh.updateMatrixWorld();
 
                 teleportState.teleportAirPoint = position;
                 teleportState.teleportFloorPoint = null;
