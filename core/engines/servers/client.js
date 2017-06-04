@@ -180,7 +180,9 @@ class Servers {
             }
           }
         };
-        input.on('trigger', _trigger);
+        input.on('trigger', _trigger, {
+          priority: 1,
+        });
 
         const _tabchange = tab => {
           if (tab === 'servers') {
