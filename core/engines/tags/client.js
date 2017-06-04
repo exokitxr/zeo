@@ -140,6 +140,7 @@ class Tags {
             matrix.decompose(position, rotation, scale);
             return {position, rotation, scale};
           };
+          const _getWorldPosition = object => new THREE.Vector3().setFromMatrixPosition(object.matrixWorld);
 
           const lineMaterial = new THREE.MeshBasicMaterial({
             color: 0x000000,
@@ -770,13 +771,6 @@ class Tags {
             };
             mesh.removeLine = line => {
               lines.splice(lines.indexOf(line), 1);
-            };
-            const _getWorldPosition = object => { // the object might not be a THREE.Object3D; it could be a gamepad or something
-              if (object.getWorldPosition) {
-                return object.getWorldPosition();
-              } else {
-                return object.position;
-              }
             };
             mesh.render = () => {
               const positionsAttribute = geometry.getAttribute('position');
@@ -2001,7 +1995,7 @@ class Tags {
                       let closestTagMeshDistance = Infinity;
                       for (let i = 0; i < tagMeshes.length; i++) {
                         const tagMesh = tagMeshes[i];
-                        const distance = absPosition.distanceTo(tagMesh.getWorldPosition());
+                        const distance = absPosition.distanceTo(_getWorldPosition(tagMesh));
 
                         if (distance <= 0.2) {
                           if (distance < closestTagMeshDistance) {
