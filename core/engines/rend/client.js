@@ -644,6 +644,14 @@ class Rend {
             uiTracker.removeBoxAnchor(boxAnchor);
           }
 
+          reindex() {
+            uiTracker.reindex();
+          }
+
+          updateMatrixWorld(object) {
+            uiTracker.updateMatrixWorld(object);
+          }
+
           getHoverState(side) {
             return uiTracker.getHoverState(side);
           }
