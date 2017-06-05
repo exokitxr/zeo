@@ -176,6 +176,10 @@ class Intersect {
               });
 
               this.lastUpdateTime = now;
+
+              return true;
+            } else {
+              return false;
             }
           }
 
