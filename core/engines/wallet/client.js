@@ -192,6 +192,9 @@ class Wallet {
         rend.registerMenuMesh('walletMesh', walletMesh);
         walletMesh.updateMatrixWorld();
 
+        rend.reindex();
+        rend.updateMatrixWorld(walletMesh);
+
         const _updatePages = () => {
           const {menuMesh} = walletMesh;
           const {planeMesh} = menuMesh;

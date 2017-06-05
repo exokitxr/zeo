@@ -231,6 +231,9 @@ class Config {
         rend.registerMenuMesh('configMesh', configMesh);
         configMesh.updateMatrixWorld();
 
+        rend.reindex();
+        rend.updateMatrixWorld(configMesh);
+
         const statsMesh = (() => {
           const object = new THREE.Object3D();
           object.position.x = -(2 / 2) + (STATS_WORLD_WIDTH / 2);

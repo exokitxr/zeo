@@ -227,6 +227,9 @@ class Rend {
         scene.add(menuMesh);
         menuMesh.updateMatrixWorld();
 
+        uiTracker.reindex();
+        uiTracker.updateMatrixWorld(menuMesh);
+
         const trigger = e => {
           const {side} = e;
 
@@ -479,6 +482,8 @@ class Rend {
             navbarState.tab = newTab;
 
             _updateNavbarPage();
+
+            uiTracker.updateMatrixWorld(menuMesh);
 
             this.emit('tabchange', newTab);
           }
