@@ -21,11 +21,9 @@ class Intersect {
     return archae.requestPlugins([
       '/core/engines/three',
       '/core/engines/webvr',
-      '/core/engines/rend',
     ]).then(([
       three,
       webvr,
-      rend,
     ]) => {
       if (live) {
         const {THREE} = three;
