@@ -49,11 +49,13 @@ class Intersect {
             this.lastUpdateTime = Date.now() - (Math.random() * frameRate); // try to avoid synchronization across intersecters
 
             const pickerScene = new THREE.Scene();
+            pickerScene.autoUpdate = false;
             this.pickerScene = pickerScene;
 
             const pickerRenderer = new THREE.WebGLRenderer();
             pickerRenderer.setSize(64, 64);
             pickerRenderer.setClearColor(0xffffff, 1);
+            pickerRenderer.sortObjects = false;
             this.pickerRenderer = pickerRenderer;
 
             const gpuPicker = new GPUPicker();
@@ -62,6 +64,7 @@ class Intersect {
               const debugRenderer = new THREE.WebGLRenderer(); // for debugging
               debugRenderer.setSize(64, 64);
               debugRenderer.setClearColor(0xffffff, 1);
+              debugRenderer.sortObjects = false;
               debugRenderer.domElement.style.cssText = 'position: absolute; top: 0; right: 0;';
               document.body.appendChild(debugRenderer.domElement);
               gpuPicker.debugRenderer = debugRenderer;
