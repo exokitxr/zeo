@@ -105,6 +105,25 @@ class Intersect {
             _destroyTargetObject(object);
           }
 
+          updateMatrixWorld(object) {
+            const _recursivelyVisible = object => {
+              for (; object && object.visible; object = object.parent) {}
+              return !object;
+            };
+            const _recurse = object => {
+              const intersectMesh = object[this.intersectMeshKey];
+              if (intersectMesh) {
+                intersectMesh.matrixWorld.copy(object.matrixWorld);
+                intersectMesh.visible = _recursivelyVisible(object);
+              }
+
+              for (let i = 0; i < object.children.length; i++) {
+                _recurse(object.children[i]);
+              }
+            };
+            _recurse(object);
+          }
+
           reindex() {
             this.gpuPicker.reindexScene();
           }
