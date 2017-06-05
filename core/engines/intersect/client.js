@@ -67,7 +67,7 @@ class Intersect {
               document.body.appendChild(debugRenderer.domElement);
               gpuPicker.debugRenderer = debugRenderer;
             }
-            const pickerCamera = new THREE.PerspectiveCamera();
+            const pickerCamera = new THREE.PerspectiveCamera(10, 1);
             pickerScene.add(pickerCamera);
             gpuPicker.setCamera(pickerCamera);
             gpuPicker.setScene(pickerScene);
