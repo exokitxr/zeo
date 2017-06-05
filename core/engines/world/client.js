@@ -96,13 +96,6 @@ class World {
 
         const transparentMaterial = biolumi.getTransparentMaterial();
 
-        const wireframeHighlightMaterial = new THREE.MeshBasicMaterial({
-          color: 0x0000FF,
-          wireframe: true,
-          opacity: 0.5,
-          transparent: true,
-        });
-
         const mainFontSpec = {
           fonts: biolumi.getFonts(),
           fontSize: 36,
