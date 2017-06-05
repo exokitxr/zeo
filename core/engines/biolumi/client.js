@@ -136,6 +136,7 @@ class Biolumi {
     return Promise.all([
       archae.requestPlugins([
         '/core/engines/three',
+        '/core/engines/intersect',
         '/core/engines/anima',
         '/core/utils/geometry-utils',
       ]),
@@ -146,6 +147,7 @@ class Biolumi {
       .then(([
         [
           three,
+          intersect,
           anima,
           geometryUtils,
         ],
@@ -171,6 +173,8 @@ class Biolumi {
             object.matrixWorld.decompose(position, rotation, scale);
             return new MatrixProperties(position, rotation, scale);
           };
+
+          const forwardVector = new THREE.Vector3(0, 0, -1);
 
           const RAY_COLOR = 0x44c2ff;
           const RAY_HIGHLIGHT_COLOR = new THREE.Color(RAY_COLOR).multiplyScalar(0.5).getHex();
@@ -209,7 +213,7 @@ class Biolumi {
               this.isEnabled = isEnabled;
 
               const mesh = (() => {
-                const geometry = new THREE.PlaneBufferGeometry(worldWidth, worldHeight);
+                const geometry = geometryUtils.unindexBufferGeometry(new THREE.PlaneBufferGeometry(worldWidth, worldHeight));
                 const material = (() => {
                   const shaderUniforms = THREE.UniformsUtils.clone(menuShader.uniforms);
                   shaderUniforms.texture.value = new THREE.Texture(
@@ -456,37 +460,23 @@ class Biolumi {
               this.width = width;
               this.height = height;
 
-              this.img = null;
               this.anchors = [];
               this.makeAnchors = null;
             }
 
             getAnchors() {
               let {anchors} = this;
-              const {makeAnchors} = this;
-              if (!anchors && makeAnchors) {
-                anchors = makeAnchors();
-                this.anchors = anchors;
-                this.makeAnchors = null;
+              if (!anchors) {
+                const {makeAnchors} = this;
+
+                if (makeAnchors) {
+                  anchors = makeAnchors();
+                  this.anchors = anchors;
+                  this.makeAnchors = null;
+                }
               }
-              const {width, height} = this;
 
-              return anchors.map(anchor => {
-                const {rect, onclick, onmousedown, onmouseup} = anchor;
-                const {top, bottom, left, right} = rect;
-
-                return new Anchor(
-                  new Rect(
-                    clamp(top, 0, height),
-                    clamp(bottom, 0, height),
-                    clamp(left, 0, width),
-                    clamp(right, 0, width)
-                  ),
-                  onclick,
-                  onmousedown,
-                  onmouseup
-                );
-              });
+              return anchors;
             }
           }
           class BoxAnchor {
@@ -573,6 +563,12 @@ class Biolumi {
 
           class UiTracker {
             constructor() {
+              const intersecter = intersect.makeIntersecter({
+                frameRate: 20,
+                // debug: true,
+              });
+              this.intersecter = intersecter;
+
               this.pages = [];
               this.boxAnchors = [];
 
@@ -599,10 +595,16 @@ class Biolumi {
             }
 
             addPage(page) {
+              const {mesh} = page;
+              this.intersecter.addTarget(mesh);
+
               this.pages.push(page);
             }
 
             removePage(page) {
+              const {mesh} = page;
+              this.intersecter.removeTarget(mesh);
+
               this.pages.splice(this.pages.indexOf(page), 1);
             }
 
@@ -618,8 +620,171 @@ class Biolumi {
               return this.hoverStates[side];
             }
 
+            updateMatrixWorld(object) {
+              this.intersecter.updateMatrixWorld(object);
+            }
+
+            reindex() {
+              this.intersecter.reindex();
+            }
+
             update({pose, sides, controllerMeshes}) {
               const {gamepads} = pose;
+              const {pages, boxAnchors, hoverStates, dotMeshes, boxMeshes, intersecter} = this;
+
+              const updated = intersecter.update();
+              if (updated) {
+                /* for (let i = 0; i < pages.length; i++) {
+                  const page = pages[i];
+                  const {mesh} = page;
+                  mesh.visible = page.isEnabled();
+                } */
+
+                for (let s = 0; s < SIDES.length; s++) {
+                  const side = SIDES[s];
+                  const gamepad = gamepads[side];
+                  const dotMesh = dotMeshes[side];
+                  const boxMesh = boxMeshes[side];
+                  const hoverState = hoverStates[side];
+                  const controllerMesh = controllerMeshes[side];
+                  const {rayMesh} = controllerMesh;
+
+                  const _show = () => {
+                    if (!dotMesh.visible) {
+                      dotMesh.visible = true;
+                    }
+                    if (!rayMesh.visible) {
+                      rayMesh.visible = true;
+                    }
+                  };
+                  const _hide = () => {
+                    hoverState.intersectionPoint = null;
+                    hoverState.type = '';
+                    hoverState.target = null;
+                    hoverState.anchor = null;
+                    hoverState.value = 0;
+
+                    if (dotMesh.visible) {
+                      dotMesh.visible = false;
+                    }
+                    if (boxMesh.visible) {
+                      boxMesh.visible = false;
+                    }
+                    if (rayMesh.visible) {
+                      rayMesh.visible = false;
+                    }
+                  };
+
+                  if (sides.includes(side)) {
+                    const intersectionHoverState = intersecter.getHoverState(side);
+                    const {object} = intersectionHoverState;
+
+                    if (object) {
+                      const {originalObject} = intersectionHoverState;
+                      const mesh = originalObject;
+                      const {page} = mesh;
+                      const {layer} = page;
+
+                      if (layer) {
+                        const {position, normal} = intersectionHoverState;
+                        const {width, height, worldWidth, worldHeight} = page;
+                        const worldPosition = new THREE.Vector3().setFromMatrixPosition(mesh.matrixWorld);
+                        const worldRotation = new THREE.Quaternion().setFromRotationMatrix(mesh.matrixWorld);
+                        const {worldPosition: controllerPosition} = gamepad;
+
+                        hoverState.intersectionPoint = position;
+                        hoverState.type = 'page';
+                        hoverState.target = page;
+
+                        const yAxis = new THREE.Plane().setFromNormalAndCoplanarPoint(
+                          new THREE.Vector3(1, 0, 0).applyQuaternion(worldRotation),
+                          worldPosition.clone()
+                            .sub(new THREE.Vector3(worldWidth / 2, 0, 0).applyQuaternion(worldRotation))
+                        );
+                        const x = yAxis.distanceToPoint(position) / worldWidth * width;
+                        const xAxis = new THREE.Plane().setFromNormalAndCoplanarPoint(
+                          new THREE.Vector3(0, -1, 0).applyQuaternion(worldRotation),
+                          worldPosition.clone()
+                            .add(new THREE.Vector3(0, worldHeight / 2, 0).applyQuaternion(worldRotation))
+                        );
+                        const y = xAxis.distanceToPoint(position) / worldHeight * height;
+
+                        let anchor = null;
+                        const anchors = layer.getAnchors();
+                        for (let i = 0; i < anchors.length; i++) {
+                          const a = anchors[i];
+                          const {rect} = a;
+
+                          if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
+                            anchor = a;
+                            break;
+                          }
+                        }
+
+                        dotMesh.position.copy(position);
+                        dotMesh.quaternion.setFromUnitVectors(
+                          forwardVector,
+                          normal
+                        );
+                        dotMesh.updateMatrixWorld();
+                        if (!gamepad.buttons.trigger.pressed && dotMesh.material.color.getHex() !== RAY_COLOR) {
+                          dotMesh.material.color.setHex(RAY_COLOR);
+                        } else if (gamepad.buttons.trigger.pressed && dotMesh.material.color.getHex() !== RAY_HIGHLIGHT_COLOR) {
+                          dotMesh.material.color.setHex(RAY_HIGHLIGHT_COLOR);
+                        }
+
+                        if (anchor) {
+                          hoverState.anchor = anchor;
+                          hoverState.value = (x - anchor.rect.left) / (anchor.rect.right - anchor.rect.left);
+
+                          const anchorMidpoint = new THREE.Vector2(
+                            ((anchor.rect.left + anchor.rect.right) / 2) / width * worldWidth,
+                            ((anchor.rect.top + anchor.rect.bottom) / 2) / height * worldHeight
+                          );
+                          const anchorSize = new THREE.Vector2(
+                            (anchor.rect.right - anchor.rect.left) / width * worldWidth,
+                            (anchor.rect.bottom - anchor.rect.top) / height * worldHeight
+                          );
+                          boxMesh.position.copy(
+                            worldPosition.clone()
+                              .add(
+                                new THREE.Vector3((-worldWidth / 2) + anchorMidpoint.x, (worldHeight / 2) - anchorMidpoint.y, 0)
+                                  .applyQuaternion(worldRotation)
+                              )
+                          );
+                          boxMesh.quaternion.copy(worldRotation);
+                          boxMesh.scale.set(anchorSize.x, anchorSize.y, 0.01);
+                          boxMesh.updateMatrixWorld();
+
+                          if (!boxMesh.visible) {
+                            boxMesh.visible = true;
+                          }
+                        } else {
+                          hoverState.anchor = null;
+                          hoverState.value = 0;
+
+                          if (boxMesh.visible) {
+                            boxMesh.visible = false;
+                          }
+                        }
+
+                        rayMesh.scale.z = position.distanceTo(controllerPosition);
+                        rayMesh.updateMatrixWorld();
+
+                        _show();
+                      } else {
+                        _hide();
+                      }
+                    } else {
+                      _hide();
+                    }
+                  } else {
+                    _hide();
+                  }
+                }
+              }
+
+              /* const {gamepads} = pose;
               const {pages, boxAnchors, hoverStates, dotMeshes, boxMeshes} = this;
 
               for (let s = 0; s < SIDES.length; s++) {
@@ -917,7 +1082,7 @@ class Biolumi {
                 } else {
                   _hide();
                 }
-              }
+              } */
             }
           }
 
