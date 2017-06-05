@@ -14,8 +14,6 @@ const NAVBAR_WORLD_DEPTH = 0.01;
 
 const DEFAULT_USER_HEIGHT = 1.6;
 
-const TRANSITION_TIME = 1000;
-
 module.exports = {
   WIDTH,
   HEIGHT,

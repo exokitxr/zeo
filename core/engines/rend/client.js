@@ -12,7 +12,6 @@ const {
   NAVBAR_WORLD_DEPTH,
 
   DEFAULT_USER_HEIGHT,
-  TRANSITION_TIME,
 } = require('./lib/constants/menu');
 const names = require('./lib/constants/names.json');
 const menuUtils = require('./lib/utils/menu');
@@ -49,7 +48,6 @@ class Rend {
       '/core/engines/three',
       '/core/engines/webvr',
       '/core/engines/biolumi',
-      '/core/engines/anima',
       '/core/utils/js-utils',
       '/core/utils/geometry-utils',
       '/core/utils/creature-utils',
@@ -59,7 +57,6 @@ class Rend {
       three,
       webvr,
       biolumi,
-      anima,
       jsUtils,
       geometryUtils,
       creatureUtils,
@@ -108,7 +105,6 @@ class Rend {
           position: [0, DEFAULT_USER_HEIGHT, -1.5],
           rotation: new THREE.Quaternion().toArray(),
           scale: new THREE.Vector3(1, 1, 1).toArray(),
-          animation: null,
         };
         const statusState = {
           url: bootstrap.getInitialPath(),
@@ -307,14 +303,16 @@ class Rend {
         };
         input.on('click', click);
         const menudown = () => {
-          const {open, animation} = menuState;
+          const {open} = menuState;
 
           if (open) {
+            menuMesh.visible = false;
+            uiTracker.updateMatrixWorld(menuMesh);
+
             menuState.open = false; // XXX need to cancel other menu states as well
             menuState.position = null;
             menuState.rotation = null;
             menuState.scale = null;
-            menuState.animation = anima.makeAnimation(TRANSITION_TIME);
 
             const {tagsLinesMesh} = auxObjects;
             tagsLinesMesh.visible = false;
@@ -336,12 +334,14 @@ class Rend {
             menuMesh.position.copy(newMenuPosition);
             menuMesh.quaternion.copy(newMenuRotation);
             menuMesh.scale.copy(newMenuScale);
+            menuMesh.visible = true;
+            menuMesh.updateMatrixWorld();
+            uiTracker.updateMatrixWorld(menuMesh);
 
             menuState.open = true;
             menuState.position = newMenuPosition.toArray();
             menuState.rotation = newMenuRotation.toArray();
             menuState.scale = newMenuScale.toArray();
-            menuState.animation = anima.makeAnimation(TRANSITION_TIME);
 
             const {tagsLinesMesh} = auxObjects;
             tagsLinesMesh.visible = true;
@@ -354,94 +354,6 @@ class Rend {
           }
         };
         input.on('menudown', menudown);
-
-        localUpdates.push(() => {
-          const _updateMeshAnimations = () => {
-            const {animation} = menuState;
-
-            if (animation) {
-              const {open} = menuState;
-
-              const startValue = open ? 0 : 1;
-              const endValue = 1 - startValue;
-              const factor = animation.getValue();
-              const value = ((1 - factor) * startValue) + (factor * endValue);
-
-              const {tagMeshes, transformGizmos, colorWheels} = auxObjects;
-              const animatedMeshSpecs = [
-                {
-                  mesh: menuMesh,
-                  direction: 'y',
-                },
-                /* {
-                  mesh: keyboardMesh,
-                  direction: 'x',
-                }, */
-              ]
-                .concat(tagMeshes.map(tagMesh => ({
-                  mesh: tagMesh,
-                  direction: 'y',
-                })))
-                .concat(transformGizmos.map(transformGizmo => ({
-                  mesh: transformGizmo,
-                  direction: 'xyz',
-                })))
-                .concat(colorWheels.map(colorWheel => ({
-                  mesh: colorWheel,
-                  direction: 'y',
-                })));
-
-              if (factor < 1) {
-                if (value > 0.001) {
-                  animatedMeshSpecs.forEach(meshSpec => {
-                    const {direction, mesh} = meshSpec;
-
-                    switch (direction) {
-                      case 'x':
-                        mesh.scale.set(value, 1, 1);
-                        break;
-                      case 'y':
-                        mesh.scale.set(1, value, 1);
-                        break;
-                      case 'z':
-                        mesh.scale.set(1, 1, value);
-                        break;
-                      case 'xyz':
-                        mesh.scale.set(value, value, value);
-                        break;
-                    }
-
-                    if (!mesh.visible) {
-                      mesh.visible = (('initialVisible' in mesh) ? mesh.initialVisible : true);
-                    }
-                  });
-                } else {
-                  animatedMeshSpecs.forEach(meshSpec => {
-                    const {mesh} = meshSpec;
-
-                    mesh.visible = false;
-                  });
-                }
-              } else {
-                animatedMeshSpecs.forEach(meshSpec => {
-                  const {mesh} = meshSpec;
-
-                  mesh.scale.set(1, 1, 1);
-
-                  if (open && !mesh.visible) {
-                    mesh.visible = (('initialVisible' in mesh) ? mesh.initialVisible : true);
-                  } else if (!open && mesh.visible) {
-                    mesh.visible = false;
-                  }
-                });
-
-                menuState.animation = null;
-              }
-            }
-          };
-
-          _updateMeshAnimations();
-        });
 
         cleanups.push(() => {
           scene.remove(menuMesh);
