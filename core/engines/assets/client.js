@@ -128,6 +128,7 @@ class Assets {
                 mesh.position.copy(labelPosition);
                 mesh.quaternion.copy(labelRotation);
                 mesh.scale.copy(labelScale);
+                mesh.updateMatrixWorld();
 
                 if (username !== labelState.username) {
                   labelState.username = username;
@@ -180,6 +181,7 @@ class Assets {
                   mesh.position.fromArray(position);
                   mesh.quaternion.fromArray(rotation);
                   mesh.scale.fromArray(scale);
+                  mesh.updateMatrixWorld();
 
                   if (username !== menuState.username) {
                     menuState.username = username;

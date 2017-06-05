@@ -148,6 +148,7 @@ class Multiplayer {
               hmd.position.fromArray(hmdStatus.position);
               hmd.quaternion.fromArray(hmdStatus.rotation);
               hmd.scale.fromArray(hmdStatus.scale);
+              hmd.updateMatrixWorld();
             };
             const _updateControllers = () => {
               const {left: leftController, right: rightController} = controllers;
@@ -158,10 +159,12 @@ class Multiplayer {
               leftController.position.fromArray(leftControllerStatus.position);
               leftController.quaternion.fromArray(leftControllerStatus.rotation);
               leftController.scale.fromArray(leftControllerStatus.scale);
+              leftController.updateMatrixWorld();
 
               rightController.position.fromArray(rightControllerStatus.position);
               rightController.quaternion.fromArray(rightControllerStatus.rotation);
               rightController.scale.fromArray(rightControllerStatus.scale);
+              rightController.updateMatrixWorld();
             };
             const _updateLabel = () => {
               const {hmd: hmdStatus, username} = status;
