@@ -28,7 +28,7 @@ class Intersect {
       rend,
     ]) => {
       if (live) {
-        const {THREE, scene, camera} = three;
+        const {THREE} = three;
 
         const GPUPicker = GPUPickerLib(THREE);
 
