@@ -30,6 +30,4 @@ module.exports = {
   NAVBAR_WORLD_DEPTH,
 
   DEFAULT_USER_HEIGHT,
-
-  TRANSITION_TIME,
 };
