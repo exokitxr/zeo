@@ -2742,6 +2742,14 @@ class Tags {
               }
             }
 
+            getTagMeshes() {
+              return tagMeshes;
+            }
+
+            getAttributeSpec(attributeName) {
+              return _getAttributeSpec(attributeName);
+            }
+
             makeTag(itemSpec, {initialUpdate = true} = {}) {
               const object = new THREE.Object3D();
 
