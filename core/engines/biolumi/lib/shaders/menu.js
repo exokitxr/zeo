@@ -26,7 +26,11 @@ const menuShader = {
     "    vec3 diffuse = (sample.rgb * sample.a) + (backgroundColor.rgb * (1.0 - sample.a));",
     "    gl_FragColor = vec4(diffuse, (backgroundColor.a >= 0.5) ? 1.0 : sample.a);",
     "  } else {",
-    "    gl_FragColor = backgroundColor;",
+    "    if (backgroundColor.a >= 0.5) {",
+    "      gl_FragColor = backgroundColor;",
+    "    } else {",
+    "      discard;",
+    "    }",
     "  }",
     "}"
   ].join("\n"),
