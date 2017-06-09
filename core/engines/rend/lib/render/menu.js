@@ -65,15 +65,15 @@ const getNavbarSrc = ({tab}) => {
   const focusedContent = label => `\
     <div style="position: absolute; top: 0; left: 0; border-width: 50px 25px 0 0; border-style: solid; border-color: transparent #FFF transparent transparent;"></div>
     <div style="position: absolute; top: 0; right: 0; border-width: 50px 0 0 25px; border-style: solid; border-color: transparent transparent transparent #FFF;"></div>
-    <div style="display: flex; position: relative; width: 120px; background-color: #FFF; justify-content: center; align-items: center;">${label}</div>
+    <div style="display: flex; position: relative; width: 110px; background-color: #FFF; justify-content: center; align-items: center;">${label}</div>
   `;
   const unfocusedContent = label => `\
     <div style="position: absolute; top: 0; left: 0; border-width: 50px 25px 0 0; border-style: solid; border-color: transparent #EEE transparent transparent;"></div>
     <div style="position: absolute; top: 0; right: 0; border-width: 50px 0 0 25px; border-style: solid; border-color: transparent transparent transparent #EEE;"></div>
-    <div style="display: flex; position: relative; width: 120px; background-color: #EEE; justify-content: center; align-items: center;">${label}</div>
+    <div style="display: flex; position: relative; width: 110px; background-color: #EEE; justify-content: center; align-items: center;">${label}</div>
   `;
   const tabContent = (tabName, tabLabel, first) => `\
-    <a style="display: flex; position: relative; width: 170px; height: 100%; ${first ? '' : 'margin-left: -25px;'} justify-content: center; align-items: stretch; font-size: 20px; text-decoration: none; ${tab === tabName ? 'z-index: 1;' : ''}" onclick="navbar:${tabName}">
+    <a style="display: flex; position: relative; width: 160px; height: 100%; ${first ? '' : 'margin-left: -25px;'} justify-content: center; align-items: stretch; font-size: 20px; text-decoration: none; ${tab === tabName ? 'z-index: 1;' : ''}" onclick="navbar:${tabName}">
       ${tab === tabName ? focusedContent(tabLabel) : unfocusedContent(tabLabel)}
     </a>
   `;
@@ -84,6 +84,7 @@ const getNavbarSrc = ({tab}) => {
         tabContent('status', 'Status', true),
         tabContent('world', 'World', false),
         tabContent('entity', 'Entities', false),
+        tabContent('file', 'Files', false),
         tabContent('servers', 'Servers', false),
         tabContent('wallet', 'Wallet', false),
         tabContent('options', 'Options', false)
