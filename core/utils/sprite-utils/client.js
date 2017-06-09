@@ -17,13 +17,21 @@ const spriteUtils = archae => ({
         const {THREE} = three;
 
         const _getImageData = img => {
-          const canvas = document.createElement('canvas');
-          canvas.width = img.width;
-          canvas.height = img.height;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0);
+          if (img.tagName === 'IMG') {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0);
 
-          return ctx.getImageData(0, 0, canvas.width, canvas.height);
+            return ctx.getImageData(0, 0, canvas.width, canvas.height);
+          } else if (img.tagName === 'CANVAS') {
+            const canvas = img;
+            const ctx = canvas.getContext('2d');
+            return ctx.getImageData(0, 0, canvas.width, canvas.height);
+          } else {
+            return null;
+          }
         };
         const pixelGeometryVerticesCache = {};
         const _getPixelGeometryVertices = size => {
