@@ -83,6 +83,7 @@ const getNavbarSrc = ({tab}) => {
       ${[
         tabContent('status', 'Status', true),
         tabContent('world', 'World', false),
+        tabContent('entity', 'Entities', false),
         tabContent('servers', 'Servers', false),
         tabContent('wallet', 'Wallet', false),
         tabContent('options', 'Options', false)
