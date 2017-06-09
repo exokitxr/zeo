@@ -137,7 +137,6 @@ class Biolumi {
       archae.requestPlugins([
         '/core/engines/three',
         '/core/engines/intersect',
-        '/core/engines/anima',
         '/core/utils/geometry-utils',
       ]),
       _requestTransparentImg(),
@@ -148,7 +147,6 @@ class Biolumi {
         [
           three,
           intersect,
-          anima,
           geometryUtils,
         ],
         transparentImg,
