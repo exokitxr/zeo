@@ -79,6 +79,14 @@ class WebVR {
       live = false;
     };
 
+    const _getVRDisplays = () => {
+      if (navigator.getVRDisplays) {
+        return navigator.getVRDisplays();
+      } else {
+        return Promise.resolve([]);
+      }
+    };
+
     return Promise.all([
       archae.requestPlugins([
         '/core/engines/bootstrap',
@@ -86,7 +94,7 @@ class WebVR {
         '/core/engines/three',
         '/core/utils/js-utils',
       ]),
-      navigator.getVRDisplays(),
+      _getVRDisplays(),
     ]).then(([
       [
         bootstrap,
@@ -291,7 +299,7 @@ class WebVR {
                     this.isOpen = false;
                   });
 
-                  const frameData = (display instanceof FakeVRDisplay) ? new VRFrameDataFake() : new VRFrameData();
+                  const frameData = (!display || (display instanceof FakeVRDisplay)) ? new VRFrameDataFake() : new VRFrameData();
                   this._frameData = frameData;
 
                   if (display && stereoscopic) {
