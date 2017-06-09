@@ -82,7 +82,7 @@ const getNavbarSrc = ({tab}) => {
     <div style="display: flex; width: 1024px; height: 50px; background-color: #CCC;">
       ${[
         tabContent('status', 'Status', true),
-        tabContent('world', 'World', false),
+        tabContent('world', 'Mods', false),
         tabContent('entity', 'Entities', false),
         tabContent('file', 'Files', false),
         tabContent('servers', 'Servers', false),
