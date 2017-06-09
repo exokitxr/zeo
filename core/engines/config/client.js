@@ -231,9 +231,6 @@ class Config {
         rend.registerMenuMesh('configMesh', configMesh);
         configMesh.updateMatrixWorld();
 
-        rend.reindex();
-        rend.updateMatrixWorld(configMesh);
-
         const statsMesh = (() => {
           const object = new THREE.Object3D();
           object.position.x = -(2 / 2) + (STATS_WORLD_WIDTH / 2);
@@ -289,6 +286,10 @@ class Config {
           return object;
         })();
         rend.registerMenuMesh('statsMesh', statsMesh);
+        statsMesh.updateMatrixWorld();
+
+        rend.reindex();
+        rend.updateMatrixWorld(configMesh);
 
         stats.render = () => {
           const {frame: oldFrame} = statsState;
@@ -360,6 +361,8 @@ class Config {
                 const newStatsCheckboxValue = !oldStatsCheckboxValue;
                 configState.statsCheckboxValue = newStatsCheckboxValue;
                 statsMesh.visible = newStatsCheckboxValue;
+
+                rend.updateMatrixWorld(statsMesh);
 
                 _saveBrowserConfig();
                 configApi.updateConfig();
