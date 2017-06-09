@@ -19,7 +19,7 @@ import {
   TAGS_WORLD_HEIGHT,
   TAGS_WORLD_DEPTH,
 } from './lib/constants/world';
-import worldRenderer from './lib/render/world';
+import worldRender from './lib/render/world';
 import menuUtils from './lib/utils/menu';
 
 const TAGS_PER_ROW = 4;
@@ -72,7 +72,7 @@ class World {
       '/core/engines/tags',
       '/core/engines/fs',
       '/core/utils/network-utils',
-      '/core/utils/geometry-utils',
+      '/core/utils/creature-utils',
     ]).then(([
       three,
       input,
@@ -88,11 +88,13 @@ class World {
       tags,
       fs,
       networkUtils,
-      geometryUtils,
+      creatureUtils,
     ]) => {
       if (live) {
         const {THREE, scene, camera} = three;
         const {AutoWs} = networkUtils;
+
+        const worldRenderer = worldRender.makeRenderer({creatureUtils});
 
         const transparentMaterial = biolumi.getTransparentMaterial();
 
@@ -151,7 +153,7 @@ class World {
               menu: true,
               isEnabled: () => this.isEnabled(),
             });
-            scene.add(transformGizmo);
+            // scene.add(transformGizmo);
             this._transformGizmo = transformGizmo;
 
             this._hovered = false;
@@ -259,8 +261,8 @@ class World {
               tagMesh.visible = false;
             }
 
-            scene.add(tagMesh);
-            tagMesh.updateMatrixWorld();
+            // scene.add(tagMesh);
+            // tagMesh.updateMatrixWorld();
           }
 
           remove(tagMesh) {
@@ -269,7 +271,7 @@ class World {
             const {id} = item;
             delete tagMeshes[id];
 
-            tagMesh.parent.remove(tagMesh);
+            // tagMesh.parent.remove(tagMesh);
           }
         }
         const elementManager = new ElementManager();
@@ -727,47 +729,50 @@ class World {
           const {inputText} = npmState;
 
           _searchNpm(inputText)
-            .then(itemSpecs => itemSpecs.map(itemSpec => {
-              itemSpec.metadata.isStatic = true; // XXX can probably be hardcoded in the render
-              itemSpec.metadata.exists = elementManager.getTagMeshes()
-                .some(tagMesh =>
-                  tagMesh.item.type === itemSpec.type &&
-                  tagMesh.item.name === itemSpec.name
-                );
+            .then(itemSpecs =>
+              Promise.all(itemSpecs.map(itemSpec => {
+                itemSpec.metadata.isStatic = true; // XXX can probably be hardcoded in the render
+                itemSpec.metadata.exists = elementManager.getTagMeshes()
+                  .some(tagMesh =>
+                    tagMesh.item.type === itemSpec.type &&
+                    tagMesh.item.name === itemSpec.name
+                  );
 
-              const npmTagMesh = tags.makeTag(itemSpec, {
-                initialUpdate: false,
-              });
-              npmTagMesh.planeMesh.scale.set(NPM_TAG_MESH_SCALE, NPM_TAG_MESH_SCALE, 1);
+                const npmTagMesh = tags.makeTag(itemSpec, {
+                  initialUpdate: false,
+                });
+                npmTagMesh.planeMesh.scale.set(NPM_TAG_MESH_SCALE, NPM_TAG_MESH_SCALE, 1);
 
-              return npmTagMesh;
-            }))
-            .then(tagMeshes => {
-              const {tagMeshes: oldTagMeshes} = npmCacheState;
+                return npmTagMesh;
+              }))
+                .then(tagMeshes => {
+                  const {tagMeshes: oldTagMeshes} = npmCacheState;
 
-              npmState.loading = false;
-              npmState.page = 0;
-              npmState.numTags = tagMeshes.length;
-              npmCacheState.tagMeshes = tagMeshes;
+                  npmState.loading = false;
+                  npmState.page = 0;
+                  npmState.tagSpecs = itemSpecs;
+                  npmState.numTags = itemSpecs.length;
+                  npmCacheState.tagMeshes = tagMeshes;
 
-              const {npmMesh} = worldMesh;
-              for (let i = 0; i < oldTagMeshes.length; i++) {
-                const oldTagMesh = oldTagMeshes[i];
-                npmMesh.remove(oldTagMesh);
-                tags.destroyTag(oldTagMesh);
-              }
-              for (let i = 0; i < tagMeshes.length; i++) {
-                const tagMesh = tagMeshes[i];
-                tagMesh.visible = false;
-                tagMesh.initialVisible = false;
-                npmMesh.add(tagMesh);
-              }
+                  const {npmMesh} = worldMesh;
+                  for (let i = 0; i < oldTagMeshes.length; i++) {
+                    const oldTagMesh = oldTagMeshes[i];
+                    npmMesh.remove(oldTagMesh);
+                    tags.destroyTag(oldTagMesh);
+                  }
+                  for (let i = 0; i < tagMeshes.length; i++) {
+                    const tagMesh = tagMeshes[i];
+                    tagMesh.visible = false;
+                    tagMesh.initialVisible = false;
+                    npmMesh.add(tagMesh);
+                  }
 
-              _updateNpmTagMeshContainer();
-              _updatePages();
+                  _updateNpmTagMeshContainer();
+                  _updatePages();
 
-              next();
-            })
+                  next();
+                })
+            )
             .catch(err => {
               console.warn(err);
 
@@ -783,6 +788,7 @@ class World {
         const npmState = {
           loading: true,
           inputText: '',
+          tagSpecs: [],
           numTags: 0,
           page: 0,
         };
@@ -810,6 +816,7 @@ class World {
                 npm: {
                   loading,
                   inputText,
+                  tagSpecs,
                   numTags,
                   page,
                 },
@@ -822,7 +829,7 @@ class World {
 
                 return {
                   type: 'html',
-                  src: worldRenderer.getWorldPageSrc({loading, inputText, inputValue, numTags, page, focus}),
+                  src: worldRenderer.getWorldPageSrc({loading, inputText, inputValue, tagSpecs, numTags, page, focus}),
                   x: 0,
                   y: 0,
                   w: WIDTH,
@@ -922,6 +929,8 @@ class World {
             }
           };
           const _updateMatrixAttributes = () => {
+            return;
+
             if (rend.isOpen() && matrixAttributes.length > 0) {
               const {gamepads} = webvr.getStatus();
               const _getControllerLine = gamepad => {
