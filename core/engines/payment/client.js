@@ -5,7 +5,7 @@ import {
   WORLD_HEIGHT,
   WORLD_DEPTH,
 } from './lib/constants/payment';
-import paymentRenderer from './lib/render/payment';
+import paymentRender from './lib/render/payment';
 
 const ASSET_TAG_MESH_SCALE = 1.5;
 const DEFAULT_MATRIX = [
@@ -37,6 +37,7 @@ class Payment {
       '/core/engines/biolumi',
       '/core/engines/rend',
       '/core/engines/tags',
+      '/core/utils/creature-utils',
     ]).then(([
       three,
       input,
@@ -44,10 +45,12 @@ class Payment {
       biolumi,
       rend,
       tags,
+      creatureUtils,
     ]) => {
       if (live) {
         const {THREE, scene, camera} = three;
 
+        const paymentRenderer = paymentRender.makeRenderer({creatureUtils});
         const transparentMaterial = biolumi.getTransparentMaterial();
 
         const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
@@ -87,7 +90,7 @@ class Payment {
             }) => {
               return {
                 type: 'html',
-                src: paymentRenderer.getPayPageSrc({id, address, loading, paying, done, hasAvailableBalance}),
+                src: paymentRenderer.getPayPageSrc({id, address, asset, quantity, loading, paying, done, hasAvailableBalance}),
                 x: 0,
                 y: 0,
                 w: WIDTH,
@@ -106,26 +109,6 @@ class Payment {
             mesh.rotation.x = -Math.PI / 4;
             mesh.rotation.order = camera.rotation.order;
 
-            const tagMesh = (() => {
-              const mesh = tags.makeTag({
-                type: 'asset',
-                id: asset + ':fake',
-                name: asset,
-                displayName: asset,
-                quantity: quantity,
-                matrix: DEFAULT_MATRIX,
-                metadata: {
-                  isStatic: true,
-                },
-              });
-              mesh.position.set(-WORLD_WIDTH * 0.28, 0, 0.001);
-              mesh.visible = false;
-
-              return mesh;
-            })();
-            mesh.add(tagMesh);
-            mesh.tagMesh = tagMesh;
-
             return mesh;
           })();
           object.add(menuMesh);
@@ -141,9 +124,6 @@ class Payment {
               payState.hasAvailableBalance = hasAvailableBalance;
 
               page.update();
-
-              const {tagMesh} = menuMesh;
-              tagMesh.visible = true;
             })
             .catch(err => {
               console.warn(err);
@@ -152,9 +132,6 @@ class Payment {
               payState.hasAvailableBalance = false;
 
               page.update();
-
-              const {tagMesh} = menuMesh;
-              tagMesh.visible = true;
             });
 
           const {hmd: hmdStatus} = webvr.getStatus();
@@ -168,6 +145,18 @@ class Payment {
           let live = true;
           object.confirm = () => {
             if (live) {
+              const _ok = () => {
+                payState.paying = false;
+                payState.done = true;
+                page.update();
+
+                cb();
+
+                setTimeout(() => {
+                  cleanup();
+                }, 2000);
+              };
+
               fetch(`${siteUrl}/id/api/pay`, {
                 method: 'POST',
                 headers: (() => {
@@ -190,18 +179,7 @@ class Payment {
                   }
                 })
                 .then(() => {
-                  payState.paying = false;
-                  payState.done = true;
-                  page.update();
-
-                  const {tagMesh} = menuMesh;
-                  tagMesh.visible = false;
-
-                  cb();
-
-                  setTimeout(() => {
-                    cleanup();
-                  }, 2000);
+                  _ok();
                 });
 
               payState.paying = true;
@@ -224,9 +202,6 @@ class Payment {
           object.destroy = () => {
             menuMesh.destroy();
 
-            const {tagMesh} = menuMesh;
-            tags.destroyTag(tagMesh);
-
             rend.removePage(page);
           };
 
@@ -237,7 +212,7 @@ class Payment {
 
           const object = new THREE.Object3D();
 
-           const payState = {
+          const payState = {
             loading: true,
             hasAvailableBalance: false,
             paying: false,
@@ -259,7 +234,7 @@ class Payment {
             }) => {
               return {
                 type: 'html',
-                src: paymentRenderer.getBuyPageSrc({id, loading, hasAvailableBalance, paying, done}),
+                src: paymentRenderer.getBuyPageSrc({id, srcAsset, srcQuantity, dstAsset, dstQuantity, loading, hasAvailableBalance, paying, done}),
                 x: 0,
                 y: 0,
                 w: WIDTH,
@@ -278,46 +253,6 @@ class Payment {
             mesh.rotation.x = -Math.PI / 4;
             mesh.rotation.order = camera.rotation.order;
 
-            const dstTagMesh = (() => {
-              const mesh = tags.makeTag({
-                type: 'asset',
-                id: id + ':dst',
-                name: dstAsset,
-                displayName: dstAsset,
-                quantity: dstQuantity,
-                matrix: DEFAULT_MATRIX,
-                metadata: {
-                  isStatic: true,
-                },
-              });
-              mesh.position.set(-WORLD_WIDTH * 0.28, 0, 0.001);
-              mesh.visible = false;
-
-              return mesh;
-            })();
-            mesh.add(dstTagMesh);
-            mesh.dstTagMesh = dstTagMesh;
-
-            const srcTagMesh = (() => {
-              const mesh = tags.makeTag({
-                type: 'asset',
-                id: id + ':src',
-                name: srcAsset,
-                displayName: srcAsset,
-                quantity: srcQuantity,
-                matrix: DEFAULT_MATRIX,
-                metadata: {
-                  isStatic: true,
-                },
-              });
-              mesh.position.set(0, 0, 0.001);
-              mesh.visible = false;
-
-              return mesh;
-            })();
-            mesh.add(srcTagMesh);
-            mesh.srcTagMesh = srcTagMesh;
-
             return mesh;
           })();
           object.add(menuMesh);
@@ -333,10 +268,6 @@ class Payment {
               payState.hasAvailableBalance = hasAvailableBalance;
 
               page.update();
-
-              const {srcTagMesh, dstTagMesh} = menuMesh;
-              srcTagMesh.visible = true;
-              dstTagMesh.visible = true;
             })
             .catch(err => {
               console.warn(err);
@@ -345,10 +276,6 @@ class Payment {
               payState.hasAvailableBalance = false;
 
               page.update();
-
-              const {srcTagMesh, dstTagMesh} = menuMesh;
-              srcTagMesh.visible = true;
-              dstTagMesh.visible = true;
             });
 
           const {hmd: hmdStatus} = webvr.getStatus();
@@ -360,20 +287,20 @@ class Payment {
           object.paymentId = id;
           object.confirm = () => {
             if (live) {
-              setTimeout(() => {
+              const _ok = () => {
                 payState.paying = false;
                 payState.done = true;
                 page.update();
-
-                const {dstTagMesh, srcTagMesh} = menuMesh;
-                dstTagMesh.visible = false;
-                srcTagMesh.visible = false;
 
                 cb();
 
                 setTimeout(() => {
                   cleanup();
                 }, 2000);
+              };
+
+              setTimeout(() => { // XXX actually create and fill the order here
+                _ok();
               }, 2000);
 
               payState.paying = true;
@@ -391,10 +318,6 @@ class Payment {
 
           object.destroy = () => {
             menuMesh.destroy();
-
-            const {dstTagMesh, srcTagMesh} = menuMesh;
-            tags.destroyTag(dstTagMesh);
-            tags.destroyTag(srcTagMesh);
 
             rend.removePage(page);
           };
@@ -442,6 +365,7 @@ class Payment {
             if (paymentMesh.position.distanceTo(hmdPosition) >= 1) {
               scene.remove(paymentMesh);
               paymentMesh.destroy();
+
               paymentMeshes.splice(paymentMeshes.indexOf(paymentMesh), 1);
             }
           }
@@ -453,6 +377,8 @@ class Payment {
             const paymentMesh = paymentMeshes[i];
             scene.remove(paymentMesh);
             paymentMesh.destroy();
+
+            paymentMeshes.splice(paymentMeshes.indexOf(paymentMesh), 1);
           }
 
           input.removeListener('trigger', _trigger);
@@ -464,11 +390,13 @@ class Payment {
         })
           .then(res => res.json())
           .then(status => status.assets);
-        const _hasAvailableBalance = (asset, quantity) => _requestBalances()
-          .then(balances => {
-            const balanceSpec = balances.find(balance => balance.asset === asset);
-            return balanceSpec && balanceSpec.quantity >= quantity;
-          });
+        const _hasAvailableBalance = (asset, quantity) => {
+          _requestBalances()
+            .then(balances => {
+              const balanceSpec = balances.find(balance => balance.asset === asset);
+              return balanceSpec && balanceSpec.quantity >= quantity;
+            });
+        };
         const _requestPay = ({address, asset, quantity, message}) => new Promise((accept, reject) => {
           const paymentMesh = _makePayMesh({
             address,
@@ -484,9 +412,15 @@ class Payment {
           }, () => {
             scene.remove(paymentMesh);
             paymentMesh.destroy();
-          });
 
+            paymentMeshes.splice(paymentMeshes.indexOf(paymentMesh), 1);
+          });
           scene.add(paymentMesh);
+          paymentMesh.updateMatrixWorld();
+
+          rend.reindex();
+          rend.updateMatrixWorld(paymentMesh);
+
           paymentMeshes.push(paymentMesh)
         });
         const _requestBuy = ({srcAsset, srcQuantity, dstAsset, dstQuantity, message}) => new Promise((accept, reject) => {
@@ -505,9 +439,15 @@ class Payment {
           }, () => {
             scene.remove(paymentMesh);
             paymentMesh.destroy();
-          });
 
+            paymentMeshes.splice(paymentMeshes.indexOf(paymentMesh), 1);
+          });
           scene.add(paymentMesh);
+          paymentMesh.updateMatrixWorld();
+
+          rend.reindex();
+          rend.updateMatrixWorld(paymentMesh);
+
           paymentMeshes.push(paymentMesh);
         });
 

@@ -8,7 +8,14 @@ const closeOutlineImgSrc = 'data:image/svg+xml;base64,' + btoa(closeOutlineImg);
 const checkImg = require('../img/check');
 const checkImgSrc = 'data:image/svg+xml;base64,' + btoa(checkImg);
 
-const getPayPageSrc = ({id, address, loading, hasAvailableBalance, paying, done}) => {
+const CREDIT_ASSET_NAME = 'CRD';
+
+const makeRenderer = ({creatureUtils}) => {
+
+const getPayPageSrc = ({id, address, asset, quantity, loading, hasAvailableBalance, paying, done}) => {
+  const normalizedAssetName = _normalizeAssetName(asset);
+  const quantityString = _commaizeAssetQuantity(asset, quantity);
+
   return `\
     <div style="display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; padding: 25px 0; padding-bottom: 10px; flex-direction: column; box-sizing: border-box;">
       <div style="display: flex; position: relative; height: 120px; margin-top: -25px; margin-bottom: 20px; padding-left: 50px; background-color: #000; color: #FFF; font-size: 60px; font-weight: 400; align-items: center; box-sizing: border-box;">
@@ -22,7 +29,7 @@ const getPayPageSrc = ({id, address, loading, hasAvailableBalance, paying, done}
           <div style="display: flex; padding-left: 50px; flex-direction: column; flex-grow: 1; box-sizing: border-box;">
             <div style="display: flex; margin-bottom: 50px; font-size: 30px; font-weight: 400; flex-grow: 1; align-items: center;">
               <span>Pay</span>
-              <div style="width: 250px;"></div>
+              ${_getAssetSrc(asset, quantity)}
               <span>to <span style="font-family: Consolas, 'Liberation Mono', Menlo, Courier, monospace;">${address}</span>?</span>
             </div>
             ${hasAvailableBalance ? `\
@@ -52,7 +59,7 @@ const getPayPageSrc = ({id, address, loading, hasAvailableBalance, paying, done}
     </div>
   `;
 };
-const getBuyPageSrc = ({id, loading, hasAvailableBalance, paying, done}) => {
+const getBuyPageSrc = ({id, srcAsset, srcQuantity, dstAsset, dstQuantity, loading, hasAvailableBalance, paying, done}) => {
   return `\
     <div style="display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; padding: 25px 0; padding-bottom: 10px; flex-direction: column; box-sizing: border-box;">
       <div style="display: flex; position: relative; height: 120px; margin-top: -25px; margin-bottom: 20px; padding-left: 50px; background-color: #000; color: #FFF; font-size: 60px; font-weight: 400; align-items: center; box-sizing: border-box;">
@@ -66,9 +73,9 @@ const getBuyPageSrc = ({id, loading, hasAvailableBalance, paying, done}) => {
           <div style="display: flex; padding-left: 50px; flex-direction: column; flex-grow: 1; box-sizing: border-box;">
             <div style="display: flex; margin-bottom: 50px; font-size: 30px; font-weight: 400; flex-grow: 1; align-items: center;">
               <span>Buy</span>
-              <div style="width: 250px;"></div>
+              ${_getAssetSrc(dstAsset, dstQuantity)}
               <span>for</span>
-              <div style="width: 250px;"></div>
+              ${_getAssetSrc(srcAsset, srcQuantity)}
               <span>?</span>
             </div>
             ${hasAvailableBalance ? `\
@@ -98,8 +105,39 @@ const getBuyPageSrc = ({id, loading, hasAvailableBalance, paying, done}) => {
     </div>
   `;
 };
+const _getAssetSrc = (asset, quantity) => {
+  const normalizedAssetName = _normalizeAssetName(asset);
+  const quantityString = _commaizeAssetQuantity(asset, quantity);
 
-module.exports = {
+  return `\
+    <div style="display: flex; margin: 0 10px;">
+      <img src="${creatureUtils.makeStaticCreature('asset:' + asset)}" width="50" height="50" style="margin: 10px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;" />
+      <div style="display: flex; flex-grow: 1; flex-direction: column; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">
+        <h1 style="margin: 0; margin-top: 10px; margin-bottom: 5px; font-size: 24px; font-weight: 400; line-height: 1.4; text-overflow: ellipsis; overflow: hidden;">${normalizedAssetName}</h1>
+        <div style="display: flex; flex-grow: 1; align-items: center;">
+          <div style="padding: 0 5px; border: 2px solid; font-size: 20px; font-weight: 400;">&#164; ${quantityString}</div>
+        </div>
+      </div>
+    </div>
+  `;
+};
+const _normalizeAssetName = name => name === 'BTC' ? CREDIT_ASSET_NAME : name;
+const _commaize = n => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+const _commaizeAssetQuantity = (asset, quantity) => {
+  if (asset === 'BTC') {
+    return quantity.toFixed(8).replace(/(\..*?)0+$/, '$1').replace(/\.$/, '');
+  } else {
+    return _commaize(quantity);
+  }
+};
+
+return {
   getPayPageSrc,
   getBuyPageSrc,
+};
+
+};
+
+module.exports = {
+  makeRenderer,
 };
