@@ -5,6 +5,7 @@
   "client": "client.js",
   "server": "server.js",
   "dependencies": {
-    "marchingcubes": "0.0.8"
+    "lru-cache": "^4.1.0",
+    "marchingcubes": "0.0.11"
   }
 }
