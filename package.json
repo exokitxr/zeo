@@ -30,7 +30,7 @@
     "node": "7.x"
   },
   "dependencies": {
-    "archae": "0.0.74",
+    "archae": "0.0.77",
     "base128": "^0.2.1",
     "body-parser": "^1.16.1",
     "cookie": "^0.3.1",
@@ -48,6 +48,6 @@
     "rnd": "^1.0.10",
     "transclude": "0.0.3",
     "urlsafe-base64": "^1.0.0",
-    "vrid": "0.0.7"
+    "vrid": "0.0.8"
   }
 }
