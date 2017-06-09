@@ -14,6 +14,7 @@ const DEFAULT_MATRIX = [
   1, 1, 1,
 ];
 
+const DEBUG = true; // XXX
 const SIDES = ['left', 'right'];
 
 class Payment {
@@ -157,33 +158,42 @@ class Payment {
                 }, 2000);
               };
 
-              fetch(`${siteUrl}/id/api/pay`, {
-                method: 'POST',
-                headers: (() => {
-                  const headers = new Headers();
-                  headers.append('Content-Type', 'application/json');
-                  return headers;
-                })(),
-                body: JSON.stringify({
-                  address,
-                  asset,
-                  quantity,
-                }),
-                credentials: 'include',
-              })
-                .then(res => {
-                  if (res.status >= 200 && res.status < 300) {
-                    return res.json();
-                  } else {
-                    return null;
-                  }
+              if (!DEBUG) {
+                fetch(`${siteUrl}/id/api/pay`, {
+                  method: 'POST',
+                  headers: (() => {
+                    const headers = new Headers();
+                    headers.append('Content-Type', 'application/json');
+                    return headers;
+                  })(),
+                  body: JSON.stringify({
+                    address,
+                    asset,
+                    quantity,
+                  }),
+                  credentials: 'include',
                 })
-                .then(() => {
-                  _ok();
-                });
+                  .then(res => {
+                    if (res.status >= 200 && res.status < 300) {
+                      return res.json();
+                    } else {
+                      return null;
+                    }
+                  })
+                  .then(() => {
+                    _ok();
+                  });
 
-              payState.paying = true;
-              page.update();
+                payState.paying = true;
+                page.update();
+              } else {
+                setTimeout(() => {
+                  _ok();
+                }, 2000);
+
+                payState.paying = true;
+                page.update();
+              }
 
               live = false;
             }
@@ -299,12 +309,21 @@ class Payment {
                 }, 2000);
               };
 
-              setTimeout(() => { // XXX actually create and fill the order here
-                _ok();
-              }, 2000);
+              if (!DEBUG) {
+                setTimeout(() => { // XXX actually create and fill the order here
+                  _ok();
+                }, 2000);
 
-              payState.paying = true;
-              page.update();
+                payState.paying = true;
+                page.update();
+              } else {
+                setTimeout(() => {
+                  _ok();
+                }, 2000);
+
+                payState.paying = true;
+                page.update();
+              }
 
               live = false;
             }
@@ -391,11 +410,15 @@ class Payment {
           .then(res => res.json())
           .then(status => status.assets);
         const _hasAvailableBalance = (asset, quantity) => {
-          _requestBalances()
-            .then(balances => {
-              const balanceSpec = balances.find(balance => balance.asset === asset);
-              return balanceSpec && balanceSpec.quantity >= quantity;
-            });
+          if (!DEBUG) {
+            _requestBalances()
+              .then(balances => {
+                const balanceSpec = balances.find(balance => balance.asset === asset);
+                return balanceSpec && balanceSpec.quantity >= quantity;
+              });
+          } else {
+            return Promise.resolve(true);
+          }
         };
         const _requestPay = ({address, asset, quantity, message}) => new Promise((accept, reject) => {
           const paymentMesh = _makePayMesh({
