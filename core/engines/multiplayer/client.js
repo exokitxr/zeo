@@ -381,9 +381,8 @@ class Multiplayer {
               const {id, status} = statusEntry;
 
               const playerStatuses = multiplayerApi.getPlayerStatuses();
+              const playerStatus = playerStatuses.get(id);
               if (status) {
-                const playerStatus = playerStatuses.get(id);
-
                 if (!playerStatus) {
                   multiplayerApi.emit('playerEnter', {id, status});
 
@@ -402,9 +401,13 @@ class Multiplayer {
                   }
                 }
               } else {
-                multiplayerApi.emit('playerLeave', {id});
+                if (playerStatus) {
+                  multiplayerApi.emit('playerLeave', {id});
 
-                playerStatuses.delete(id);
+                  playerStatuses.delete(id);
+                } else {
+                  console.warn('Ignoring duplicate player leave message', {id});
+                }
               }
             };
             const _status = status => {
