@@ -979,6 +979,7 @@ class WebVR {
 
                 // prevent some key combinations from hijacking input
                 if (
+                  (e.keyCode === 8) || // Backspace
                   (e.keyCode === 18) || // Alt
                   (e.ctrlKey && e.keyCode === 70) || // Ctrl-F
                   (e.ctrlKey && e.keyCode === 87) || // Ctrl-W
