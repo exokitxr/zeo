@@ -388,6 +388,9 @@ class Keyboard {
         scene.add(keyboardMesh);
         keyboardMesh.updateMatrixWorld();
 
+        rend.reindex();
+        rend.updateMatrixWorld(keyboardMesh);
+
         const _makeKeyboardHoverState = () => ({
           key: null,
         });
@@ -515,6 +518,8 @@ class Keyboard {
                     keyboardMesh.position.copy(controllerEnd);
                     keyboardMesh.quaternion.copy(controllerRotation);
                     keyboardMesh.updateMatrixWorld();
+
+                    rend.updateMatrixWorld(keyboardMesh);
                   }
                 }
               });
@@ -760,10 +765,14 @@ class Keyboard {
             keyboardMesh.updateMatrixWorld();
             keyboardMesh.visible = true;
 
+            rend.updateMatrixWorld(keyboardMesh);
+
             newFocusState.on('blur', () => {
               keyboardState.focusState = null;
 
               keyboardMesh.visible = false;
+
+              rend.updateMatrixWorld(keyboardMesh);
 
               const {keyMeshes} = keyboardMesh;
               SIDES.forEach(side => {
