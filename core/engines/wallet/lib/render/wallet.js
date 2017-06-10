@@ -15,25 +15,22 @@ const makeRenderer = ({creatureUtils}) => {
 const getWalletPageSrc = ({loading, error, inputText, inputValue, asset, assets, numTags, page, focus}) => {
   return `\
     <div style="display: flex; min-height: ${HEIGHT}px;">
-      ${loading ?
-        `<div style="display: flex; margin-bottom: 100px; font-size: 30px; font-weight: 400; flex-grow: 1; align-items: center; justify-content: center;">Loading...</div>`
-      :
-        !error ?
-          (asset === null ?
-            getAssetsPageSrc({inputText, inputValue, assets, numTags, page, focus})
-          :
-            getAssetPageSrc(asset)
-          )
+      ${!error ?
+        (asset === null ?
+          getAssetsPageSrc({loading, inputText, inputValue, assets, numTags, page, focus})
         :
-          `<div style="display: flex; margin-bottom: 100px; font-size: 30px; align-items: center; justify-content: center; flex-grow: 1; flex-direction: column;">
-            <div style="margin-bottom: 20px; font-size: 30px; font-weight: 400;">Connection problem :/</div>
-            <a style="padding: 10px 15px; border: 2px solid; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="wallet:refresh">Refresh</a>
-          </div>`
+          getAssetPageSrc(asset)
+        )
+      :
+        `<div style="display: flex; margin-bottom: 100px; font-size: 30px; align-items: center; justify-content: center; flex-grow: 1; flex-direction: column;">
+          <div style="margin-bottom: 20px; font-size: 30px; font-weight: 400;">Connection problem :/</div>
+          <a style="padding: 10px 15px; border: 2px solid; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="wallet:refresh">Refresh</a>
+        </div>`
       }
     </div>
   `;
 };
-const getAssetsPageSrc = ({inputText, inputValue, assets, numTags, page, focus}) => {
+const getAssetsPageSrc = ({loading, inputText, inputValue, assets, numTags, page, focus}) => {
   const leftSrc = `\
     <div style="display: flex; padding: 30px; flex-grow: 1; flex-direction: column;">
       <div style="display: flex; font-size: 36px; line-height: 1.4; align-items: center;">
@@ -44,12 +41,16 @@ const getAssetsPageSrc = ({inputText, inputValue, assets, numTags, page, focus})
         </a>
         <a style="padding: 10px 15px; border: 2px solid; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="wallet:manage">Manage account</a>
       </div>
-      <div style="display: flex; flex-grow: 1; flex-direction: column;">
-        ${assets
-          .slice(page * numTagsPerPage, (page + 1) * numTagsPerPage)
-          .map(assetSpec => getAssetSrc(assetSpec))
-          .join('\n')}
-      </div>
+      ${loading ?
+        `<div style="display: flex; margin-bottom: 100px; font-size: 30px; font-weight: 400; flex-grow: 1; align-items: center; justify-content: center;">Loading...</div>`
+      :
+        `<div style="display: flex; flex-grow: 1; flex-direction: column;">
+          ${assets
+            .slice(page * numTagsPerPage, (page + 1) * numTagsPerPage)
+            .map(assetSpec => getAssetSrc(assetSpec))
+            .join('\n')}
+        </div>`
+      }
     </div>
   `;
   const rightSrc = (() => {
@@ -101,11 +102,16 @@ const getAssetSrc = assetSpec => {
     <${tagName} style="position: relative; display: flex; padding-bottom: 20px; border-bottom: 1px solid #EEE; text-decoration: none; overflow: hidden; box-sizing: border-box;" onclick="${onclick}">
       <div style="display: flex; margin-left: -30px; margin-right: -80px; padding-left: 30px; padding-right: 80px; flex-grow: 1; flex-direction: column; box-sizing: border-box;">
         <div style="display: flex; flex-grow: 1;">
-          <img src="${creatureUtils.makeStaticCreature('asset:' + asset)}" width="50" height="50" style="margin: 10px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;" />
-          <div style="display: flex; flex-grow: 1; flex-direction: column; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">
+          ${creatureUtils.makeSvgCreature('asset:' + asset, {
+            width: 12,
+            height: 12,
+            viewBox: '0 0 12 12',
+            style: 'width: 50px; height: 50px; margin: 10px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;',
+          })}
+          <div style="display: flex; margin-left: 10px; flex-grow: 1; flex-direction: column; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">
             <h1 style="margin: 0; margin-top: 10px; margin-bottom: 5px; font-size: 24px; font-weight: 400; line-height: 1.4; text-overflow: ellipsis; overflow: hidden;">${normalizedAssetName}</h1>
             <div style="display: flex; flex-grow: 1; align-items: center;">
-              <div style="padding: 0 5px; border: 2px solid; font-size: 20px; font-weight: 400;">&#164; ${quantityString}</div>
+              <div style="padding: 0 5px; border: 2px solid; font-size: 20px; font-weight: 400;">¤ ${quantityString}</div>
             </div>
           </div>
         </div>
@@ -122,9 +128,14 @@ const getAssetPageSrc = ({asset, quantity}) => {
       <div style="display: flex; padding: 30px; flex-grow: 1; flex-direction: column;">
         <div style="display: flex; margin-bottom: 20px; align-items: center;">
           <a style="display: flex; width: 80px; height: 80px; justify-content: center; align-items: center;" onclick="wallet:back">${chevronLeftImg}</a>
-          <img src="${creatureUtils.makeStaticCreature('asset:' + asset)}" width="50" height="50" style="margin: 10px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;" />
-          <div style="margin-right: auto; font-size: 36px; line-height: 1.4; font-weight: 400;">${normalizedAssetName}</div>
-          <div style="padding: 0 10px; border: 2px solid; font-size: 30px; font-weight: 400;">&#164; ${quantityString}</div>
+          ${creatureUtils.makeSvgCreature('asset:' + asset, {
+            width: 12,
+            height: 12,
+            viewBox: '0 0 12 12',
+            style: 'width: 50px; height: 50px; margin: 10px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;',
+          })}
+          <div style="margin-left: 20px; margin-right: auto; font-size: 36px; line-height: 1.4; font-weight: 400;">${normalizedAssetName}</div>
+          <div style="padding: 0 10px; border: 2px solid; font-size: 30px; font-weight: 400;">¤ ${quantityString}</div>
         </div>
         <div style="display: flex; padding-left: 20px; flex-wrap: wrap; box-sizing: border-box;">
           ${
@@ -140,7 +151,7 @@ const getAssetPageSrc = ({asset, quantity}) => {
               const id = asset; // XXX
               const billQuantityString = _commaizeAssetQuantity(asset, billQuantity);
 
-              return `<a style="display: flex; width: ${(WIDTH - (30 * 2) - 20) / 3}px; padding: 10px; font-size: 30px; font-weight: 400; box-sizing: border-box;" onclick="asset:bill:${id}:${billQuantity}">&#164; ${billQuantityString}</a>`;
+              return `<a style="display: flex; width: ${(WIDTH - (30 * 2) - 20) / 3}px; padding: 10px; font-size: 30px; font-weight: 400; box-sizing: border-box;" onclick="asset:bill:${id}:${billQuantity}">¤ ${billQuantityString}</a>`;
             })
             .join('\n')
           }
