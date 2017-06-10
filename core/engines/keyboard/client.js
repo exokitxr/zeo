@@ -210,7 +210,6 @@ class Keyboard {
             height: KEYBOARD_HEIGHT,
             worldWidth: KEYBOARD_WORLD_WIDTH,
             worldHeight: KEYBOARD_WORLD_HEIGHT,
-            isEnabled: () => rend.isOpen(),
           });
           // keyboardPage.mesh = planeMesh;
           rend.addPage(keyboardPage);
@@ -221,7 +220,6 @@ class Keyboard {
             height: KEYBOARD_HEADER_HEIGHT,
             worldWidth: KEYBOARD_HEADER_WORLD_WIDTH,
             worldHeight: KEYBOARD_HEADER_WORLD_HEIGHT,
-            isEnabled: () => rend.isOpen(),
           });
           // keyboardHeaderPage.mesh = headerSolidMesh;
           rend.addPage(keyboardHeaderPage);
