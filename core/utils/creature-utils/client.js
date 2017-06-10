@@ -1,14 +1,13 @@
 const creature = require('creaturejs');
 
-window.creature = creature;
-
 const creatureUtils = () => ({
   mount() {
-    const {makeAnimatedCreature, makeStaticCreature, makeCanvasCreature} = creature;
+    const {makeAnimatedCreature, makeStaticCreature, makeCanvasCreature, makeSvgCreature} = creature;
     return {
       makeAnimatedCreature,
       makeStaticCreature,
       makeCanvasCreature,
+      makeSvgCreature,
     };
   },
 });
