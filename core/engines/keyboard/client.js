@@ -700,6 +700,7 @@ class Keyboard {
 
               this.update();
 
+              e.preventDefault();
               e.stopImmediatePropagation();
             }
           }
@@ -724,6 +725,7 @@ class Keyboard {
             if (e.keyCode === 13) { // enter
               this.blur();
 
+              e.preventDefault();
               e.stopImmediatePropagation();
             }
           }
