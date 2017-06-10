@@ -10,24 +10,30 @@ const vectorPolygonImgSrc = 'data:image/svg+xml;base64,' + btoa(vectorPolygonImg
 const closeBoxOutline = require('../img/close-box-outline');
 const closeBoxOutlineSrc = 'data:image/svg+xml;base64,' + btoa(closeBoxOutline);
 const closeOutline = require('../img/close-outline');
-const closeOutlineSrc = 'data:image/svg+xml;base64,' + btoa(closeOutline);
 const packageVariant = require('../img/package-variant');
 const packageVariantSrc = 'data:image/svg+xml;base64,' + btoa(packageVariant);
 const packageVariantClosed = require('../img/package-variant-closed');
 const packageVariantClosedSrc = 'data:image/svg+xml;base64,' + btoa(packageVariantClosed);
 const autorenewImg = require('../img/autorenew');
 const autorenewImgSrc = 'data:image/svg+xml;base64,' + btoa(autorenewImg);
-const closeBoxImg = require('../img/close-box');
-const closeBoxImgSrc = 'data:image/svg+xml;base64,' + btoa(closeBoxImg);
 const linkImg = require('../img/link');
-const linkImgSrc = 'data:image/svg+xml;base64,' + btoa(linkImg);
 const upImg = require('../img/up');
 const downImg = require('../img/down');
+const chevronLeftImg = require('../img/chevron-left');
 
-const numTagsPerPage = 1;
+const numTagsPerPage = 6;
 
 const makeRenderer = ({menuUtils, creatureUtils}) => {
-  const getEntityPageSrc = ({loading, npmInputText, npmInputValue, attributeInputText, attributeInputValue, tagSpecs, numTags, page, focusSpec}) => {
+  const getEntityPageSrc = ({loading, npmInputText, npmInputValue, attributeInputText, attributeInputValue, entity, tagSpecs, numTags, page, focusSpec}) => {
+    return `\
+      ${entity === null ?
+          getEntitiesSrc({loading, npmInputText, npmInputValue, attributeInputText, attributeInputValue, tagSpecs, numTags, page, focusSpec})
+        :
+          getEntityDetailsSrc({entity, inputText: attributeInputText, inputValue: attributeInputValue, page, focusSpec})
+      }
+    `;
+  };
+  const getEntitiesSrc = ({loading, npmInputText, npmInputValue, attributeInputText, attributeInputValue, tagSpecs, numTags, page, focusSpec}) => {
     const leftSrc = `\
       <div style="display: flex; padding: 30px; font-size: 36px; line-height: 1.4; flex-grow: 1; flex-direction: column;">
         <a style="position: relative; display: block; margin-bottom: 20px; border-bottom: 2px solid; text-decoration: none;" onclick="entity:focus">
@@ -37,11 +43,16 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
           <div>${npmInputText}</div>
           ${!npmInputText ? `<div>Search entities</div>` : ''}
         </a>
-        ${tagSpecs
-          .slice(page * numTagsPerPage, (page + 1) * numTagsPerPage)
-          .map(tagSpec => getEntitySrc(tagSpec, attributeInputText, attributeInputValue, focusSpec))
-          .join('\n')}
-        ${loading ? `<div style="display: flex; margin-bottom: 100px; font-size: 30px; align-items: center; justify-content: center; flex-grow: 1;">Loading...</div>` : ''}
+        ${loading ?
+          `<div style="display: flex; margin-bottom: 100px; font-size: 30px; font-weight: 400; flex-grow: 1; align-items: center; justify-content: center;">Loading...</div>`
+        :
+          `<div style="display: flex; flex-grow: 1; flex-direction: column;">
+            ${tagSpecs
+              .slice(page * numTagsPerPage, (page + 1) * numTagsPerPage)
+              .map(tagSpec => getEntitySrc(tagSpec, attributeInputText, attributeInputValue, focusSpec))
+              .join('\n')}
+          </div>`
+        }
       </div>
     `;
     const rightSrc = (() => {
@@ -72,40 +83,85 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
       </div>
     `;
   };
-  const getEntitySrc = (item, inputText, inputValue, focusSpec) => {
+  const getEntitySrc = item => {
     const {id, name, displayName, attributes, instancing, metadata: {isStatic}} = item;
-    const tagName = isStatic ? 'a' : 'div';
 
     return `\
-      <div style="display: block; border-bottom: 1px solid #EEE;">
-        <${tagName} style="display: block; width: 400px; text-decoration: none;" onclick="entity:main:${id}">
-          <div style="position: relative; display: flex; padding: 10px 0; flex-direction: column; text-decoration: none; overflow: hidden; box-sizing: border-box;">
-            <div style="display: flex; height: 50px; align-items: center;">
-              <div style="display: flex; flex-grow: 1;">
-                <img src="${creatureUtils.makeStaticCreature('entity:' + name)}" width="50" height="50" style="width: 50px; height: 50px; margin: 10px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;" />
-                <h1 style="display: flex; flex-grow: 1; font-size: 24px; font-weight: 400; line-height: 1.4; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">${displayName}</h1>
-              </div>
-              ${!isStatic ? `<a style="display: flex; padding: 15px; text-decoration: none; justify-content: center; align-items: center;" onclick="entity:remove:${id}">
-                <img src="${closeOutlineSrc}" width="30" height="30" />
-              </a>` : ''}
+      <a style="display: block; border-bottom: 1px solid #EEE; text-decoration: none;" onclick="entity:entity:${id}">
+        <div style="position: relative; display: flex; padding: 10px 0; flex-direction: column; text-decoration: none; overflow: hidden; box-sizing: border-box;">
+          <div style="display: flex; height: 50px; align-items: center;">
+            <div style="display: flex; flex-grow: 1;">
+              ${creatureUtils.makeSvgCreature('entity:' + name, {
+                width: 12,
+                height: 12,
+                viewBox: '0 0 12 12',
+                style: 'width: 50px; height: 50px; margin: 10px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;',
+              })}
+              <h1 style="display: flex; flex-grow: 1; font-size: 24px; font-weight: 400; line-height: 1.4; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">${displayName}</h1>
             </div>
-            ${attributes
-              .map(attribute => getAttributeSrc(item, attribute, inputText, inputValue, focusSpec))
-              .join('\n')}
           </div>
-        </${tagName}>
+        </div>
+      </a>
+    `;
+  };
+  const getEntityDetailsSrc = ({entity, inputText, inputValue, page, focusSpec}) => {
+    const {id, name, displayName, attributes, instancing, metadata: {isStatic}} = entity;
+
+    const leftSrc = `\
+      <div style="position: relative; width: 600px; top: ${-page * (HEIGHT - 100)}px; margin-right: auto; padding: 30px; box-sizing: border-box;">
+        <div style="display: flex; margin-right: 20px; align-items: center;">
+          <a style="display: flex; width: 80px; height: 80px; justify-content: center; align-items: center;" onclick="entity:back">${chevronLeftImg}</a>
+          ${creatureUtils.makeSvgCreature('entity:' + name, {
+            width: 12,
+            height: 12,
+            viewBox: '0 0 12 12',
+            style: 'width: 80px; height: 80px; margin-right: 20px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;',
+          })}
+          <div style="margin-right: auto; font-size: 36px; line-height: 1.4; font-weight: 400;">${name}</div>
+          <a style="display: flex; padding: 15px; text-decoration: none; justify-content: center; align-items: center;" onclick="entity:remove:${id}">
+            ${closeOutline}
+          </a>
+        </div>
+        <div style="position: relative; display: flex; padding: 10px 0; flex-direction: column; text-decoration: none; overflow: hidden; box-sizing: border-box;">
+          ${attributes
+            .map(attribute => getAttributeSrc(entity, attribute, inputText, inputValue, focusSpec))
+            .join('\n')}
+        </div>
+      </div>
+    `;
+
+    const rightSrc = (() => {
+      const showUp = page !== 0;
+      const showDown = true;
+
+      return `\
+        <div style="display: flex; width: 250px; padding-top: 20px; flex-direction: column; box-sizing: border-box;">
+          <a style="position: relative; display: flex; margin: 0 30px; margin-bottom: auto; border: 1px solid; border-radius: 5px; text-decoration: none; justify-content: center; align-items: center; ${showUp ? '' : 'visibility: hidden;'}" onclick="entity:up">
+            ${upImg}
+          </a>
+          <a style="position: relative; display: flex; margin: 0 30px; margin-bottom: 20px; border: 1px solid; border-radius: 5px; text-decoration: none; justify-content: center; align-items: center; ${showDown ? '' : 'visibility: hidden;'}" onclick="entity:down">
+            ${downImg}
+          </a>
+        </div>
+      `;
+    })();
+
+    return `\
+      <div style="display: flex; height: ${HEIGHT - 100}px; overflow: hidden;">
+        ${leftSrc}
+        ${rightSrc}
       </div>
     `;
   };
-  const getAttributeSrc = (item, attribute, inputText, inputValue, focusSpec) => {
-    const {id} = item;
+  const getAttributeSrc = (entity, attribute, inputText, inputValue, focusSpec) => {
+    const {id} = entity;
     const {name, type, value, min, max, step, options} = attribute;
 
     const headerSrc = `\
-      <div style="display: flex; height: 50px; font-size: 24px; align-items: center;">
-        <div style="margin-left: 20px; margin-right: auto; font-weight: 400;">${name}</div>
+      <div style="display: flex; height: 50px; margin: 0 20px; font-size: 24px; align-items: center;">
+        <div style="margin-right: auto; font-weight: 400;">${name}</div>
         <a style="display: flex; padding: 0 15px; text-decoration: none; justify-content: center; align-items: center;" onclick="entityAttribute:remove:${id}:${name}">
-          <img src="${closeOutlineSrc}" width="30" height="30" />
+          ${closeOutline}
         </a>
       </div>
     `;
@@ -263,10 +319,10 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
       }
       case 'file': {
         return `\
-          <div style="display: flex; width: 300px; height: 50px;">
-            <div style="display: flex; position: relative; margin: 20px; font-size: 24px; align-items: center; flex-grow: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">${focusValue}</div>
-            <a style="display: flex; width: 80px; justify-content: center; align-items: center;" onmousedown="entityAttribute:${id}:${name}:link">
-              <img src="${linkImgSrc}" width="50" height="50" style="margin: 10px; image-rendering: pixelated;" />
+          <div style="display: flex; height: 50px; margin: 0 20px; align-items: center;">
+            <div style="display: flex; position: relative; font-size: 24px; font-weight: 400; font-style: italic; align-items: center; flex-grow: 1; white-space: nowrap; text-overflow: ellipsis;">${focusValue}</div>
+            <a style="display: flex; padding: 15px; justify-content: center; align-items: center;" onmousedown="entityAttribute:${id}:${name}:link">
+              ${linkImg}
             </a>
           </div>
         `;
@@ -280,6 +336,7 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
 
   return {
     getEntityPageSrc,
+    getEntitiesSrc,
     getEntitySrc,
     getAttributeSrc,
   };
