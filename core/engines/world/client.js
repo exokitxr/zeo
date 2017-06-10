@@ -754,20 +754,6 @@ class World {
                   npmState.numTags = itemSpecs.length;
                   npmCacheState.tagMeshes = tagMeshes;
 
-                  const {npmMesh} = worldMesh;
-                  for (let i = 0; i < oldTagMeshes.length; i++) {
-                    const oldTagMesh = oldTagMeshes[i];
-                    npmMesh.remove(oldTagMesh);
-                    tags.destroyTag(oldTagMesh);
-                  }
-                  for (let i = 0; i < tagMeshes.length; i++) {
-                    const tagMesh = tagMeshes[i];
-                    tagMesh.visible = false;
-                    tagMesh.initialVisible = false;
-                    npmMesh.add(tagMesh);
-                  }
-
-                  _updateNpmTagMeshContainer();
                   _updatePages();
 
                   next();
@@ -788,6 +774,7 @@ class World {
         const npmState = {
           loading: true,
           inputText: '',
+          module: null,
           tagSpecs: [],
           numTags: 0,
           page: 0,
@@ -801,112 +788,71 @@ class World {
         };
 
         const worldMesh = (() => {
-          const result = new THREE.Object3D();
-          result.visible = false;
+          const object = new THREE.Object3D();
+          object.visible = false;
 
-          const menuMesh = (() => {
-            const object = new THREE.Object3D();
+          const planeMesh = (() => {
+            const worldUi = biolumi.makeUi({
+              width: WIDTH,
+              height: HEIGHT,
+            });
+            const mesh = worldUi.makePage(({
+              npm: {
+                loading,
+                inputText,
+                module,
+                tagSpecs,
+                numTags,
+                page,
+              },
+              focus: {
+                keyboardFocusState,
+              },
+            }) => {
+              const {type: focusType = '', inputValue = 0} = keyboardFocusState || {};
 
-            const planeMesh = (() => {
-              const worldUi = biolumi.makeUi({
-                width: WIDTH,
-                height: HEIGHT,
-              });
-              const mesh = worldUi.makePage(({
-                npm: {
-                  loading,
-                  inputText,
-                  tagSpecs,
-                  numTags,
-                  page,
-                },
-                focus: {
-                  keyboardFocusState,
-                },
-              }) => {
-                const {type = '', inputValue = 0} = keyboardFocusState || {};
-                const focus = type === 'npm';
+              return {
+                type: 'html',
+                src: worldRenderer.getWorldPageSrc({loading, inputText, inputValue, module, tagSpecs, numTags, page, focusType}),
+                x: 0,
+                y: 0,
+                w: WIDTH,
+                h: HEIGHT,
+              };
+            }, {
+              type: 'world',
+              state: {
+                npm: npmState,
+                focus: focusState,
+              },
+              worldWidth: WORLD_WIDTH,
+              worldHeight: WORLD_HEIGHT,
+              isEnabled: () => rend.isOpen(),
+            });
+            mesh.receiveShadow = true;
 
-                return {
-                  type: 'html',
-                  src: worldRenderer.getWorldPageSrc({loading, inputText, inputValue, tagSpecs, numTags, page, focus}),
-                  x: 0,
-                  y: 0,
-                  w: WIDTH,
-                  h: HEIGHT,
-                };
-              }, {
-                type: 'world',
-                state: {
-                  npm: npmState,
-                  focus: focusState,
-                },
-                worldWidth: WORLD_WIDTH,
-                worldHeight: WORLD_HEIGHT,
-                isEnabled: () => rend.isOpen(),
-              });
-              mesh.receiveShadow = true;
+            const {page} = mesh;
+            rend.addPage(page);
 
-              const {page} = mesh;
-              rend.addPage(page);
+            cleanups.push(() => {
+              rend.removePage(page);
+            });
 
-              cleanups.push(() => {
-                rend.removePage(page);
-              });
-
-              return mesh;
-            })();
-            object.add(planeMesh);
-            object.planeMesh = planeMesh;
-
-            const shadowMesh = (() => {
-              const geometry = new THREE.BoxBufferGeometry(WORLD_WIDTH, WORLD_HEIGHT, 0.01);
-              const material = transparentMaterial;
-              const mesh = new THREE.Mesh(geometry, material);
-              mesh.castShadow = true;
-              return mesh;
-            })();
-            object.add(shadowMesh);
-
-            return object;
+            return mesh;
           })();
-          result.add(menuMesh);
-          result.menuMesh = menuMesh;
+          object.add(planeMesh);
+          object.planeMesh = planeMesh;
 
-          const npmMesh = (() => {
-            const object = new THREE.Object3D();
-            object.position.z = 0.001;
-
-            const newEntityTagMesh = (() => {
-              const newEntityTagMesh = tags.makeTag({
-                type: 'entity',
-                id: 'entity',
-                name: 'new-entity',
-                displayName: 'New entity',
-                attributes: {},
-                matrix: DEFAULT_MATRIX,
-                metadata: {
-                  isStatic: true,
-                },
-              });
-              newEntityTagMesh.position.set(
-                (WORLD_WIDTH / 2) - 0.24,
-                (WORLD_HEIGHT / 2) - 0.13,
-                0
-              );
-              newEntityTagMesh.planeMesh.scale.set(NPM_TAG_MESH_SCALE, NPM_TAG_MESH_SCALE, 1);
-
-              return newEntityTagMesh;
-            })();
-            object.add(newEntityTagMesh);
-            object.newEntityTagMesh = newEntityTagMesh;
-
-            return object;
+          const shadowMesh = (() => {
+            const geometry = new THREE.BoxBufferGeometry(WORLD_WIDTH, WORLD_HEIGHT, 0.01);
+            const material = transparentMaterial;
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.castShadow = true;
+            return mesh;
           })();
-          result.add(npmMesh);
-          result.npmMesh = npmMesh;
+          object.add(shadowMesh);
 
-          return result;
+          return object;
         })();
         rend.registerMenuMesh('worldMesh', worldMesh);
         worldMesh.updateMatrixWorld();
@@ -915,8 +861,7 @@ class World {
         rend.updateMatrixWorld(worldMesh);
 
         const _updatePages = () => {
-          const {menuMesh} = worldMesh;
-          const {planeMesh} = menuMesh;
+          const {planeMesh} = worldMesh;
           const {page} = planeMesh;
           page.update();
         };
@@ -973,64 +918,6 @@ class World {
         };
         rend.on('update', _update);
 
-        const npmCancels = [];
-        const _updateNpmTagMeshContainer = () => {
-          // hide old
-          const oldTagMeshes = npmTagMeshes;
-          for (let i = 0; i < oldTagMeshes.length; i++) {
-            const oldTagMesh = oldTagMeshes[i];
-            oldTagMesh.visible = false;
-            oldTagMesh.initialVisible = false;
-          }
-
-          // cancel old rendering
-          // XXX this has a bug where flipping through pages too fast causes them to not re-render when we flip back to them
-          for (let i = 0; i < npmCancels.length; i++) {
-            const npmCancel = npmCancels[i];
-            npmCancel();
-          }
-          npmCancels.length = 0;
-
-          // show new
-          const {npmMesh} = worldMesh;
-          const {page} = npmState;
-          const {tagMeshes} = npmCacheState;
-          const aspectRatio = 400 / 150;
-          const width = TAGS_WORLD_WIDTH * NPM_TAG_MESH_SCALE;
-          const height = width / aspectRatio;
-          const leftClip = ((30 / WIDTH) * WORLD_WIDTH);
-          const rightClip = (((250 + 30) / WIDTH) * WORLD_WIDTH);
-          const padding = (WORLD_WIDTH - (leftClip + rightClip) - (TAGS_PER_ROW * width)) / (TAGS_PER_ROW - 1);
-          const newTagMeshes = [];
-          const startIndex = page * TAGS_PER_PAGE;
-          const endIndex = (page + 1) * TAGS_PER_PAGE;
-          for (let i = startIndex; i < endIndex && i < tagMeshes.length; i++) {
-            const newTagMesh = tagMeshes[i];
-
-            const baseI = i - startIndex;
-            const x = baseI % TAGS_PER_ROW;
-            const y = Math.floor(baseI / TAGS_PER_ROW);
-            newTagMesh.position.set(
-              -(WORLD_WIDTH / 2) + (leftClip + (width / 2)) + (x * (width + padding)),
-              (WORLD_HEIGHT / 2) - (height / 2) - (y * (height + padding)) - 0.23,
-              0
-            );
-            newTagMesh.planeDetailsMesh.position.copy(
-              newTagMesh.planeDetailsMesh.initialOffset.clone().sub(newTagMesh.position)
-            );
-            newTagMesh.visible = true;
-            newTagMesh.initialVisible = true;
-
-            const {planeMesh: newTagMeshPlaneMesh} = newTagMesh;
-            const {page: newTagMeshPage} = newTagMeshPlaneMesh;
-            const npmCancel = newTagMeshPage.initialUpdate();
-
-            newTagMeshes.push(newTagMesh);
-            npmCancels.push(npmCancel);
-          }
-          npmTagMeshes = newTagMeshes;
-        };
-
         const _tabchange = tab => {
           if (tab === 'world') {
             keyboard.tryBlur();
@@ -1048,7 +935,7 @@ class World {
         const _trigger = e => {
           const {side} = e;
 
-          const _clickUnpack = () => {
+          /* const _clickUnpack = () => {
             const hoverState = rend.getHoverState(side);
             const {intersectionPoint} = hoverState;
 
@@ -1153,7 +1040,7 @@ class World {
             } else {
               return false;
             }
-          };
+          }; */
           const _clickMenu = () => {
             const tab = rend.getTab();
 
@@ -1174,7 +1061,7 @@ class World {
                   const {hmd: hmdStatus} = webvr.getStatus();
                   const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmdStatus;
                   const keyboardFocusState = keyboard.focus({
-                    type: 'npm',
+                    type: 'world',
                     position: hmdPosition,
                     rotation: hmdRotation,
                     inputText: inputText,
@@ -1211,7 +1098,25 @@ class World {
 
                   npmState.page += (direction === 'up' ? -1 : 1);
 
-                  _updateNpmTagMeshContainer();
+                  _updatePages();
+
+                  return true;
+                } else if (match = onclick.match(/^module:main:(.+)$/)) {
+                  const id = match[1];
+
+                  const tagMesh = tags.getTagMeshes().find(tagMesh => tagMesh.item.id === id);
+                  const {item} = tagMesh;
+                  npmState.module = item;
+                  npmState.page = 0;
+
+                  _updatePages();
+
+                  return true;
+                } else if (onclick === 'module:back') {
+                  // const id = match[1];
+
+                  npmState.module = null;
+
                   _updatePages();
 
                   return true;
@@ -1226,14 +1131,14 @@ class World {
             }
           };
 
-          if (_clickUnpack() || _clickCast() || _clickMenu()) {
+          if (/* _clickUnpack() || _clickCast() || */_clickMenu()) {
             e.stopImmediatePropagation();
           }
         };
         input.on('trigger', _trigger, {
           priority: 1,
         });
-        const _triggerdown = e => {
+        /* const _triggerdown = e => {
           const {side} = e;
           const grabMesh = grabManager.getMesh(side);
 
@@ -1353,7 +1258,7 @@ class World {
         };
         input.on('gripup', _gripup, {
           priority: -1,
-        });
+        }); */
 
         const _getTagIdSrc = id => {
           const _getWorldSrc = () => {
@@ -2047,9 +1952,9 @@ class World {
           rend.removeListener('tabchange', _tabchange);
 
           input.removeListener('trigger', _trigger);
-          input.removeListener('triggerdown', _triggerdown);
+          /* input.removeListener('triggerdown', _triggerdown);
           input.removeListener('gripdown', _gripdown);
-          input.removeListener('gripup', _gripup);
+          input.removeListener('gripup', _gripup); */
 
           tags.removeListener('download', _download);
           tags.removeListener('grabNpmTag', _grabNpmTag);
