@@ -13,23 +13,20 @@ const packageVariant = require('../img/package-variant');
 const packageVariantSrc = 'data:image/svg+xml;base64,' + btoa(packageVariant);
 const packageVariantClosed = require('../img/package-variant-closed');
 const packageVariantClosedSrc = 'data:image/svg+xml;base64,' + btoa(packageVariantClosed);
-const autorenewImg = require('../img/autorenew');
-const autorenewImgSrc = 'data:image/svg+xml;base64,' + btoa(autorenewImg);
-const closeBoxImg = require('../img/close-box');
-const closeBoxImgSrc = 'data:image/svg+xml;base64,' + btoa(closeBoxImg);
-const linkImg = require('../img/link');
-const linkImgSrc = 'data:image/svg+xml;base64,' + btoa(linkImg);
 const upImg = require('../img/up');
 const downImg = require('../img/down');
+const chevronLeftImg = require('../img/chevron-left');
 
 const numTagsPerPage = 6;
 
 const makeRenderer = ({creatureUtils}) => {
-  const getWorldPageSrc = ({loading, inputText, inputValue, tagSpecs, numTags, page, focus}) => {
+  const getWorldPageSrc = ({loading, inputText, inputValue, module, tagSpecs, numTags, page, focusType}) => {
     const leftSrc = `\
       <div style="display: flex; padding: 30px; font-size: 36px; line-height: 1.4; flex-grow: 1; flex-direction: column;">
         <a style="position: relative; display: block; margin-bottom: 20px; border-bottom: 2px solid; text-decoration: none;" onclick="npm:focus">
-          ${focus ? `<div style="position: absolute; width: 2px; top: 2px; bottom: 2px; left: ${inputValue}px; background-color: #000;"></div>` : ''}
+          ${focusType === 'world' ?
+            `<div style="position: absolute; width: 2px; top: 2px; bottom: 2px; left: ${inputValue}px; background-color: #000;"></div>`
+          : ''}
           <div>${inputText}</div>
           ${!inputText ? `<div>Search mods</div>` : ''}
         </a>
@@ -63,8 +60,12 @@ const makeRenderer = ({creatureUtils}) => {
 
     return `\
       <div style="display: flex; min-height: ${HEIGHT}px;">
-        ${leftSrc}
-        ${rightSrc}
+        ${module !== null ?
+          getModuleDetailsSrc(module, page, focusType === 'version')
+        :
+          `${leftSrc}
+          ${rightSrc}`
+        }
       </div>
     `;
   };
@@ -89,7 +90,12 @@ const makeRenderer = ({creatureUtils}) => {
       <${tagName} style="display: block; text-decoration: none;" onclick="module:main:${id}">
         <div style="position: relative; display: flex; text-decoration: none; overflow: hidden; box-sizing: border-box; ${(instancing || staticExists) ? 'filter: brightness(75%);' : ''}">
           <${linkTagName} style="display: flex; padding: 10px 0; border-bottom: 1px solid #EEE; flex-grow: 1; text-decoration: none; box-sizing: border-box;" onclick="module:main:${id}" onmousedown="module:main:${id}">
-            <img src="${creatureUtils.makeStaticCreature('module:' + name)}" width="50" height="50" style="width: 50px; height: 50px; margin: 10px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;" />
+            ${creatureUtils.makeSvgCreature('module:' + name, {
+              width: 12,
+              height: 12,
+              viewBox: '0 0 12 12',
+              style: 'width: 50px; height: 50px; margin: 10px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;',
+            })}
             <div style="margin-right: 10px; flex-grow: 1;">
               <div style="display: flex; flex-direction: column;">
                 <h1 style="margin: 0; font-size: 24px; font-weight: 400; line-height: 1.4;">${displayName}</h1>
@@ -107,9 +113,109 @@ const makeRenderer = ({creatureUtils}) => {
     `;
   };
 
+  const getModuleDetailsSrc = (item, page, focus) => {
+    const {id, name, displayName, version, versions, description, readme, metadata: {exists}} = item;
+    const imgSrc = (() => {
+      if (exists) {
+        return vectorPolygonImgSrc;
+      } else {
+        return packageVariantClosedSrc;
+      }
+    })();
+
+    const headerSrc = `\
+      <div style="display: flex; height: 100px; padding: 30px; justify-content: center; align-items: center; box-sizing: border-box;">
+        <a style="display: flex; width: 80px; height: 80px; justify-content: center; align-items: center;" onclick="module:back">${chevronLeftImg}</a>
+        ${creatureUtils.makeSvgCreature('module:' + name, {
+          width: 12,
+          height: 12,
+          viewBox: '0 0 12 12',
+          style: 'width: 80px; height: 80px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;',
+        })}
+        <div style="display: flex; margin-left: 10px; margin-right: auto; flex-direction: column; justify-content: center;">
+          <div style="display: flex; margin-bottom: 10px; align-items: flex-end; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+            <div style="margin-right: 15px; font-size: 28px; font-weight: 400;">${displayName}</div>
+            <div style="font-size: 16px; font-weight: 400;">${description}</div>
+          </div>
+          ${!focus ?
+            `<a style="display: flex; height: 30px; margin-right: auto; padding: 0 10px; border: 2px solid #333; font-size: 16px; font-weight: 400; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="module:focusVersion:${id}">
+              <div style="text-overflow: ellipsis; margin-right: 10px; overflow: hidden;">${version}</div>
+              <div style="display: flex; font-size: 13px; justify-content: center;">▼</div>
+            </a>`
+          :
+            `<div style="position: relative; height: 30px; margin-right: auto; z-index: 1;">
+              <div style="display: flex; flex-direction: column; background-color: #FFF;">
+                ${versions.map((versionOption, i, a) => {
+                  const style = (() => {
+                    let result = '';
+                    if (i !== 0) {
+                      result += 'padding-top: 2px; border-top: 0;';
+                    }
+                    if (i !== (a.length - 1)) {
+                      result += 'padding-bottom: 2px; border-bottom: 0;';
+                    }
+                    if (versionOption === version) {
+                      result += 'background-color: #EEE;';
+                    }
+                    return result;
+                  })();
+                  return `<a style="display: flex; height: 30px; padding: 0 10px; border: 2px solid #333; ${style}; font-size: 16px; text-decoration: none; align-items: center; text-overflow: ellipsis; overflow: hidden; box-sizing: border-box;" onclick="module:setVersion:${id}:${versionOption}">
+                    ${versionOption}
+                  </a>`;
+                }).join('\n')}
+              </div>
+            </div>`
+          }
+        </div>
+        <a style="display: flex; padding: 5px 10px; border: 2px solid; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="module:add:${id}">Add entity</a>
+      </div>
+    `;
+    const bodySrc = (() => {
+      const leftSrc = `\
+        <div style="position: relative; width: ${WIDTH - 250}px; top: ${-page * (HEIGHT - 100)}px; padding: 30px; box-sizing: border-box;">
+          ${readme ?
+            readme
+          :
+            `<div style="padding: 15px; background-color: #EEE; border-radius: 5px; font-weight: 400;">No readme</div>`
+          }
+        </div>
+      `;
+      const rightSrc = (() => {
+        const showUp = page !== 0;
+        const showDown = Boolean(readme);
+
+        return `\
+          <div style="display: flex; width: 250px; padding-top: 20px; flex-direction: column; box-sizing: border-box;">
+            <a style="position: relative; display: flex; margin: 0 30px; margin-bottom: auto; border: 1px solid; border-radius: 5px; text-decoration: none; justify-content: center; align-items: center; ${showUp ? '' : 'visibility: hidden;'}" onclick="module:up:${id}">
+              ${upImg}
+            </a>
+            <a style="position: relative; display: flex; margin: 0 30px; margin-bottom: 20px; border: 1px solid; border-radius: 5px; text-decoration: none; justify-content: center; align-items: center; ${showDown ? '' : 'visibility: hidden;'}" onclick="module:down:${id}">
+              ${downImg}
+            </a>
+          </div>
+        `;
+      })();
+
+      return `\
+        <div style="display: flex; height: ${HEIGHT - 100}px; overflow: hidden;">
+          ${leftSrc}
+          ${rightSrc}
+        </div>
+      `;
+    })();
+
+    return `\
+      <div style="display: block; width: ${WIDTH}px; height: ${HEIGHT}px; text-decoration: none;">
+        ${headerSrc}
+        ${bodySrc}
+      </div>
+    `;
+  };
+
   return {
     getWorldPageSrc,
     getModuleSrc,
+    getModuleDetailsSrc,
   };
 };
 
