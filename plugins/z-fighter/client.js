@@ -238,6 +238,11 @@ class ZFighter {
                   leftMesh.scale.set(value, 1, 1);
                   rightMesh.scale.set(value, 1, 1);
                   hitMesh.scale.set(1, 1, value);
+
+                  coreMesh.updateMatrixWorld();
+                  leftMesh.updateMatrixWorld();
+                  rightMesh.updateMatrixWorld();
+                  hitMesh.updateMatrixWorld();
                 };
 
                 object.destroy = () => {
@@ -337,6 +342,10 @@ class ZFighter {
                   topMesh.scale.set(1, 1, value);
                   bottomMesh.scale.set(1, 1, value);
                   hitMesh.scale.set(1, 1, value);
+
+                  topMesh.updateMatrixWorld();
+                  bottomMesh.updateMatrixWorld();
+                  hitMesh.updateMatrixWorld();
                 };
 
                 object.destroy = () => {
@@ -467,7 +476,6 @@ class ZFighter {
                   worldWidth: WORLD_WIDTH,
                   worldHeight: WORLD_HEIGHT,
                 });
-                // mesh.rotation.order = camera.rotation.order;
                 mesh.visible = _isEnabled();
 
                 const _align = (position, rotation, scale, lerpFactor) => {
@@ -492,6 +500,8 @@ class ZFighter {
                     mesh.quaternion.copy(targetRotation);
                     mesh.scale.copy(scale);
                   }
+
+                  mesh.updateMatrixWorld();
                 };
                 mesh.align = _align;
 
@@ -732,47 +742,56 @@ class ZFighter {
                     }
                   }
                 };
-                const _updateDroneMove = () => {
-                  if (now >= droneState.endTime) {
+                const _updateDrone = () => {
+                  const _updateDroneMove = () => {
+                    if (now >= droneState.endTime) {
+                      const {hmd: hmdStatus} = pose.getStatus();
+                      const {worldPosition: hmdPosition} = hmdStatus;
+
+                      const _getNearbyDirection = oldDirection => {
+                        for (;;) {
+                          const randomDirection = new THREE.Vector3(-0.5 + Math.random(), (-0.5 + Math.random()) * 0.2, -0.5 + Math.random()).normalize();
+
+                          if (randomDirection.distanceTo(oldDirection) <= 1.5) {
+                            return randomDirection;
+                          }
+                        }
+                      };
+
+                      droneState.direction = _getNearbyDirection(droneState.direction);
+                      droneState.startPosition = droneMesh.position.clone();
+                      droneState.endPosition = hmdPosition.clone().add(
+                        forwardVector.clone()
+                          .multiplyScalar(DRONE_DISTANCE)
+                          .applyQuaternion(new THREE.Quaternion().setFromUnitVectors(
+                            forwardVector,
+                            droneState.direction
+                          ))
+                      );
+                      droneState.startTime = now;
+                      droneState.endTime = now + ((0.5 + (Math.random() * 0.5)) * 2000);
+                    }
+
+                    const {startPosition, endPosition, startTime, endTime} = droneState;
+                    const newPosition = startPosition.clone().add(
+                      endPosition.clone().sub(startPosition)
+                        .multiplyScalar((now - startTime) / (endTime - startTime))
+                    );
+                    droneMesh.position.copy(newPosition);
+                  };
+                  const _updateDroneLook = () => {
                     const {hmd: hmdStatus} = pose.getStatus();
                     const {worldPosition: hmdPosition} = hmdStatus;
 
-                    const _getNearbyDirection = oldDirection => {
-                      for (;;) {
-                        const randomDirection = new THREE.Vector3(-0.5 + Math.random(), (-0.5 + Math.random()) * 0.2, -0.5 + Math.random()).normalize();
+                    droneMesh.lookAt(hmdPosition);
+                  };
+                  const _updateDroneMatrix = () => {
+                    droneMesh.updateMatrixWorld();
+                  };
 
-                        if (randomDirection.distanceTo(oldDirection) <= 1.5) {
-                          return randomDirection;
-                        }
-                      }
-                    };
-
-                    droneState.direction = _getNearbyDirection(droneState.direction);
-                    droneState.startPosition = droneMesh.position.clone();
-                    droneState.endPosition = hmdPosition.clone().add(
-                      forwardVector.clone()
-                        .multiplyScalar(DRONE_DISTANCE)
-                        .applyQuaternion(new THREE.Quaternion().setFromUnitVectors(
-                          forwardVector,
-                          droneState.direction
-                        ))
-                    );
-                    droneState.startTime = now;
-                    droneState.endTime = now + ((0.5 + (Math.random() * 0.5)) * 2000);
-                  }
-
-                  const {startPosition, endPosition, startTime, endTime} = droneState;
-                  const newPosition = startPosition.clone().add(
-                    endPosition.clone().sub(startPosition)
-                      .multiplyScalar((now - startTime) / (endTime - startTime))
-                  );
-                  droneMesh.position.copy(newPosition);
-                };
-                const _updateDroneLook = () => {
-                  const {hmd: hmdStatus} = pose.getStatus();
-                  const {worldPosition: hmdPosition} = hmdStatus;
-
-                  droneMesh.lookAt(hmdPosition);
+                  _updateDroneMove();
+                  _updateDroneLook();
+                  _updateDroneMatrix();
                 };
                 const _addBullets = () => {
                   const timeDiff = now - lastBulletUpdateTime;
@@ -786,6 +805,9 @@ class ZFighter {
                     bullet.quaternion.copy(rotation);
                     bullet.scale.copy(scale);
                     scene.add(bullet);
+
+                    bullet.updateMatrixWorld();
+
                     bullets.push(bullet);
 
                     lastBulletUpdateTime = now;
@@ -878,6 +900,7 @@ class ZFighter {
                         new THREE.Vector3(0, 0, -BULLET_SPEED * timeDiff)
                           .applyQuaternion(bullet.quaternion)
                       );
+                      bullet.updateMatrixWorld();
 
                       bullet.lastTime = now;
                     } else {
@@ -909,6 +932,7 @@ class ZFighter {
                 const _resetDrone = () => {
                   droneMesh.position.set(0, 1.5, 0);
                   droneMesh.quaternion.copy(zeroQuaternion);
+                  droneMesh.updateMatrixWorld();
                 };
                 const _resetBullets = () => {
                   if (bullets.length > 0) {
@@ -925,8 +949,7 @@ class ZFighter {
 
                   if (!_isPaused()) {
                     _updateHudMesh();
-                    _updateDroneMove();
-                    _updateDroneLook();
+                    _updateDrone();
                     _addBullets();
                     _intersectBullets();
                     _updateBullets();
