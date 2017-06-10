@@ -193,8 +193,8 @@ class Tags {
                 if (tagMesh) {
                   fn(tagMesh);
 
-                  const {planeMesh: {page}} = tagMesh;
-                  page.update();
+                  /* const {planeMesh: {page}} = tagMesh;
+                  page.update(); */
                 }
               };
 
@@ -206,14 +206,14 @@ class Tags {
                       item.instancing = false;
 
                       const _updateInstanceUi = () => {
-                        const {planeMesh: {page}} = tagMesh;
+                        /* const {planeMesh: {page}} = tagMesh;
                         page.update();
 
                         const {planeOpenMesh} = tagMesh;
                         if (planeOpenMesh) {
                           const {page: openPage} = planeOpenMesh
                           openPage.update();
-                        }
+                        } */
                       };
                       _updateInstanceUi();
 
@@ -234,14 +234,14 @@ class Tags {
 
               item.instancing = true;
 
-              const {planeMesh: {page}} = tagMesh;
+              /* const {planeMesh: {page}} = tagMesh;
               page.update();
 
               const {planeOpenMesh} = tagMesh;
               if (planeOpenMesh) {
                 const {page: openPage} = planeOpenMesh
                 openPage.update();
-              }
+              } */
 
               _updateNpmUi(tagMesh => {
                 const {item} = tagMesh;
@@ -262,8 +262,8 @@ class Tags {
                   if (tagMesh) {
                     fn(tagMesh);
 
-                    const {planeMesh: {page}} = tagMesh;
-                    page.update();
+                    /* const {planeMesh: {page}} = tagMesh;
+                    page.update(); */
                   }
                 };
 
@@ -649,9 +649,9 @@ class Tags {
                     delete entityAttributes[attributeName];
                   }
 
-                  const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === entityId);
+                  /* const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === entityId);
                   const {attributesMesh} = tagMesh;
-                  attributesMesh.update();
+                  attributesMesh.update(); */
                 }
               }
             }
@@ -804,7 +804,7 @@ class Tags {
 
             return mesh;
           })();
-          scene.add(linesMesh);
+          // scene.add(linesMesh);
           rend.registerAuxObject('tagsLinesMesh', linesMesh);
 
           const _makeDragState = () => ({
@@ -1020,7 +1020,7 @@ class Tags {
           const _requestFileItemModelMesh = item => fs.makeFile('fs/' + item.id + item.name)
             .read({type: 'model'});
 
-          const _menudown = e => {
+          /* const _menudown = e => {
             const {side} = e;
             const {gamepads} = webvr.getStatus();
             const gamepad = gamepads[side];
@@ -1102,7 +1102,7 @@ class Tags {
           };
           input.on('menudown', _menudown, {
             priority: 1,
-          });
+          }); */
           const _trigger = e => {
             const {side} = e;
 
@@ -1122,7 +1122,7 @@ class Tags {
                     const onclick = (anchor && anchor.onclick) || '';
 
                     let match;
-                    if (match = onclick.match(/^(?:module|asset):main:(.+)$/)) {
+                    /* if (match = onclick.match(/^module:main:(.+)$/)) {
                       const id = match[1];
 
                       const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
@@ -1134,7 +1134,7 @@ class Tags {
                       });
 
                       return true;
-                    } else if (match = onclick.match(/^(?:module|asset):close:(.+)$/)) {
+                    } else if (match = onclick.match(/^module:close:(.+)$/)) {
                       const id = match[1];
 
                       const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
@@ -1146,14 +1146,14 @@ class Tags {
                       });
 
                       return true;
-                    } else if (match = onclick.match(/^module:focusVersion:(.+)$/)) {
+                    } else */if (match = onclick.match(/^module:focusVersion:(.+)$/)) {
                       const id = match[1];
 
                       const _updateTagMeshDetailsPage = () => {
                         const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
                         const {planeDetailsMesh} = tagMesh;
-                        const {page} = planeDetailsMesh;
-                        page.update();
+                        /* const {page} = planeDetailsMesh;
+                        page.update(); */
                       };
 
                       const keyboardFocusState = keyboard.fakeFocus({
@@ -1177,8 +1177,8 @@ class Tags {
                       const _updateTagMeshDetailsPage = () => {
                         const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
                         const {planeDetailsMesh} = tagMesh;
-                        const {page} = planeDetailsMesh;
-                        page.update();
+                        /* const {page} = planeDetailsMesh;
+                        page.update(); */
                       };
 
                       const {keyboardFocusState} = focusState;
@@ -1216,7 +1216,7 @@ class Tags {
                       const {page} = planeDetailsMesh;
 
                       item.page--;
-                      page.update();
+                      // page.update();
 
                       return true;
                     } else if (match = onclick.match(/^module:down:(.+)$/)) {
@@ -1227,7 +1227,7 @@ class Tags {
                       const {page} = planeDetailsMesh;
 
                       item.page++;
-                      page.update();
+                      // page.update();
 
                       return true;
                     } else {
@@ -1497,8 +1497,8 @@ class Tags {
                   const {value: attributeValue} = attribute;
 
                   const _updateAttributes = () => {
-                    const {attributesMesh} = tagMesh;
-                    attributesMesh.update();
+                    /* const {attributesMesh} = tagMesh;
+                    attributesMesh.update(); */
                   };
 
                   if (action === 'focus') {
@@ -2162,10 +2162,10 @@ class Tags {
               }
             };
             const _updateLocal = () => {
-              for (let i = 0; i < localUpdates.length; i++) {
+              /* for (let i = 0; i < localUpdates.length; i++) {
                 const update = localUpdates[i];
                 update();
-              }
+              } */
             };
 
             _updateElementGrabbables();
@@ -2705,10 +2705,10 @@ class Tags {
                 const {item} = tagMesh;
                 const {type} = item;
 
-                if (type === 'entity') {
+                /* if (type === 'entity') {
                   const {attributesMesh} = tagMesh;
                   attributesMesh.update();
-                }
+                } */
               }
             }
 
@@ -2849,18 +2849,18 @@ class Tags {
                 mesh[tagMeshSymbol] = true;
                 mesh.tagMesh = object;
 
-                const {page} = mesh;
-                rend.addPage(page);
+                /* const {page} = mesh;
+                rend.addPage(page); */
 
                 const cleanup = () => {
-                  rend.removePage(page);
+                  // rend.removePage(page);
                 };
                 cleanups.push(cleanup);
 
                 mesh.destroy = (destroy => function() {
                   destroy.apply(this, arguments);
 
-                  rend.removePage(page);
+                  // rend.removePage(page);
 
                   cleanups.splice(cleanups.indexOf(cleanup), 1);
                 })(mesh.destroy);
@@ -2875,22 +2875,22 @@ class Tags {
                   page.initialUpdate();
                 }
                 planeMesh.visible = !item.open;
-                object.add(planeMesh);
+                // object.add(planeMesh);
                 object.planeMesh = planeMesh;
 
                 const planeOpenMesh = _addUiManagerPage(uiOpenManager);
                 planeOpenMesh.position.x = (WORLD_OPEN_WIDTH - WORLD_WIDTH) / 2;
                 planeOpenMesh.position.y = -(WORLD_OPEN_HEIGHT - WORLD_HEIGHT) / 2;
                 planeOpenMesh.visible = Boolean(item.open);
-                object.add(planeOpenMesh);
+                // object.add(planeOpenMesh);
                 object.planeOpenMesh = planeOpenMesh;
 
-                item.on('update', () => {
+                /* item.on('update', () => {
                   if (planeOpenMesh.visible) {
                     const {page: openPage} = planeOpenMesh;
                     openPage.update();
                   }
-                });
+                }); */
               } else if (itemSpec.type === 'module') {
                 const planeMesh = _addUiManagerPage(uiStaticManager);
                 if (initialUpdate) {
@@ -2898,7 +2898,7 @@ class Tags {
                   page.initialUpdate();
                 }
                 planeMesh.visible = !item.details;
-                object.add(planeMesh);
+                // object.add(planeMesh);
                 object.planeMesh = planeMesh;
 
                 const planeDetailsMesh = _addUiManagerPage(uiDetailsManager);
@@ -2909,7 +2909,7 @@ class Tags {
                   planeDetailsMesh.initialOffset = planeDetailsMesh.position.clone();
                 }
                 planeDetailsMesh.visible = Boolean(item.details);
-                object.add(planeDetailsMesh);
+                // object.add(planeDetailsMesh);
                 object.planeDetailsMesh = planeDetailsMesh;
               } else if (itemSpec.type === 'asset') {
                 const planeMesh = _addUiManagerPage(uiStaticManager);
@@ -2918,17 +2918,17 @@ class Tags {
                   page.initialUpdate();
                 }
                 planeMesh.visible = !item.details;
-                object.add(planeMesh);
+                // object.add(planeMesh);
                 object.planeMesh = planeMesh;
 
                 const updates = [];
                 object.update = () => {
-                  console.log('update asset plane mesh', {itemSpec, planeMesh}); // XXX
+                  /* console.log('update asset plane mesh', {itemSpec, planeMesh}); // XXX
 
                   for (let i = 0; i < updates.length; i++) {
                     const update = updates[i];
                     update();
-                  }
+                  } */
                 };
                 updates.push(() => {
                   const {page} = planeMesh;
@@ -2999,7 +2999,7 @@ class Tags {
                     });
                   }
                   planeDetailsMesh.visible = Boolean(item.details);
-                  object.add(planeDetailsMesh);
+                  // object.add(planeDetailsMesh);
                   object.planeDetailsMesh = planeDetailsMesh;
                 }
               } else {
@@ -3008,7 +3008,7 @@ class Tags {
                   const {page} = planeMesh;
                   page.initialUpdate();
                 }
-                object.add(planeMesh);
+                // object.add(planeMesh);
                 object.planeMesh = planeMesh;
               }
 
@@ -3097,7 +3097,7 @@ class Tags {
                           const currentStateJson = JSON.stringify(state);
 
                           if (currentStateJson !== lastStateJson) {
-                            page.update();
+                            // page.update();
 
                             oldAttributeMesh.lastStateJson = currentStateJson;
                           }
@@ -3140,8 +3140,8 @@ class Tags {
                           });
                           newAttributeMesh.receiveShadow = true;
 
-                          const {page} = newAttributeMesh;
-                          page.update();
+                          /* const {page} = newAttributeMesh;
+                          page.update(); */
 
                           // used by trigger handler lookups
                           newAttributeMesh.itemId = item.id;
@@ -3157,11 +3157,11 @@ class Tags {
                       mesh.position.x = WORLD_WIDTH;
                       mesh.position.y = (attributesArray.length * WORLD_HEIGHT / 2) - (0.5 * WORLD_HEIGHT) - (i * WORLD_HEIGHT);
 
-                      const {page} = mesh;
-                      rend.addPage(page);
+                      /* const {page} = mesh;
+                      rend.addPage(page); */
 
                       const cleanup = () => {
-                        rend.removePage(page);
+                        // rend.removePage(page);
                       };
                       cleanups.push(cleanup);
 
@@ -3191,7 +3191,7 @@ class Tags {
 
                   return attributesMesh;
                 })();
-                object.add(attributesMesh);
+                // object.add(attributesMesh);
                 object.attributesMesh = attributesMesh;
 
                 object.setAttribute = (attribute, value) => {
