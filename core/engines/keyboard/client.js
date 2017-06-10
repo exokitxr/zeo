@@ -212,7 +212,8 @@ class Keyboard {
             worldHeight: KEYBOARD_WORLD_HEIGHT,
             color: [1, 1, 1, 0],
           });
-          // keyboardPage.mesh = planeMesh;
+          object.add(keyboardPage.mesh);
+          object.keyboardPage = keyboardPage;
           rend.addPage(keyboardPage);
 
           const {headerSolidMesh} = planeMesh;
@@ -224,7 +225,11 @@ class Keyboard {
             worldHeight: KEYBOARD_HEADER_WORLD_HEIGHT,
             color: [1, 1, 1, 0],
           });
-          // keyboardHeaderPage.mesh = headerSolidMesh;
+          keyboardHeaderPage.mesh.position.copy(planeMesh.headerMesh.position);
+          keyboardHeaderPage.mesh.quaternion.copy(planeMesh.headerMesh.quaternion);
+          keyboardHeaderPage.mesh.scale.copy(planeMesh.headerMesh.scale);
+          object.add(keyboardHeaderPage.mesh);
+          object.keyboardHeaderPage = keyboardHeaderPage;
           rend.addPage(keyboardHeaderPage);
 
           cleanups.push(() => {
