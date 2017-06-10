@@ -51,7 +51,12 @@ const getServerSrc = (server, index) => {
 
   return `\
     <a style="display: flex; padding: 10px 0; border-bottom: 1px solid #EEE; text-decoration: none;" onclick="servers:go:${index}">
-      <img src="${creatureUtils.makeStaticCreature('server:' + worldname)}" width="80" height="80" style="display: flex; margin-right: 10px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;" />
+      ${creatureUtils.makeSvgCreature('server:' + worldname, {
+        width: 12,
+        height: 12,
+        viewBox: '0 0 12 12',
+        style: 'width: 50px; height: 50px; margin: 10px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;',
+      })}
       <div style="display: flex; margin-right: auto; padding: 5px; flex-direction: column;">
         <div style="font-size: 24px; font-weight: 600;">${worldname}</div>
         <div style="font-size: 16px; font-weight: 400;">

@@ -80,7 +80,12 @@ const makeRenderer = ({creatureUtils}) => {
       <div style="position: relative; display: flex; border-bottom: 1px solid #EEE; text-decoration: none; overflow: hidden; box-sizing: border-box; ${instancing ? 'filter: brightness(75%);' : ''}">
         <div style="display: flex; flex-grow: 1; flex-direction: column;">
           <div style="display: flex; flex-grow: 1;">
-            <img src="${creatureUtils.makeStaticCreature('file:' + name)}" width="50" height="50" style="width: 50px; height: 50px; margin: 10px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;" />
+            ${creatureUtils.makeSvgCreature('file:' + name, {
+              width: 12,
+              height: 12,
+              viewBox: '0 0 12 12',
+              style: 'width: 50px; height: 50px; margin: 10px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;',
+            })}
             <div style="display: flex; max-width: ${WIDTH - (30) - (50 + (10 * 2)) - (30 + (15 * 2))}px; margin-top: 10px; flex-grow: 1; flex-direction: column; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">
               <h1 style="margin: 0; font-size: 24px; font-weight: 400; line-height: 1.4;">${name}</h1>
               <p style="margin: 0; margin-bottom: 10px; font-size: 15px; line-height: 1.4;">${mimeType}</p>

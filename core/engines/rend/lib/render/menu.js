@@ -17,14 +17,24 @@ const getStatusSrc = ({status: {url, username, worldname, users, authToken, flag
           <h1 style="margin: 15px 0; font-size: 40px; font-weight: 400;">My profile</h1>
           <div style="display: flex; font-size: 30px; line-height: 1; justify-content: center; align-items: center;">
             <div style="display: inline-flex; margin-right: auto; justify-content: center; align-items: center;">
-              <img src="${creatureUtils.makeStaticCreature('user:' + username)}" width="40" height="40" style="margin-right: 10px; image-rendering: pixelated;" />
+              ${creatureUtils.makeSvgCreature('user:' + username, {
+                width: 12,
+                height: 12,
+                viewBox: '0 0 12 12',
+                style: 'width: 40px; height: 40px; margin: 10px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;',
+              })}
               <span>${username}</span>
             </div>
           </div>
           <h1 style="margin: 15px 0; font-size: 40px; font-weight: 400;">Server status</h1>
           <div style="display: flex; justify-content: center; align-items: center;">
             <div style="display: flex; position: relative; margin-left: -30px; margin-right: auto; padding: 10px 30px; background-color: #000; font-size: 30px; font-weight: 400; color: #FFF; justify-content: center; align-items: center;">
-              <img src="${creatureUtils.makeStaticCreature('server:' + worldname)}" width="40" height="40" style="margin-right: 20px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;" />
+              ${creatureUtils.makeSvgCreature('server:' + worldname, {
+                width: 12,
+                height: 12,
+                viewBox: '0 0 12 12',
+                style: 'width: 40px; height: 40px; margin-right: 20px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;',
+              })}
               <span style="margin-right: auto;">${worldname}</span>
             </div>
           </div>
@@ -32,7 +42,12 @@ const getStatusSrc = ({status: {url, username, worldname, users, authToken, flag
           <div style="display: flex;">
             ${allUsers.map(user => `\
               <div style="display: flex; margin-bottom: 5px; font-size: 30px; line-height: 1; align-items: center;">
-                <img src="${creatureUtils.makeStaticCreature('user:' + user)}" width="40" height="40" style="margin-right: 20px; image-rendering: pixelated;" />
+                ${creatureUtils.makeSvgCreature('user:' + user, {
+                  width: 12,
+                  height: 12,
+                  viewBox: '0 0 12 12',
+                  style: 'width: 40px; height: 40px; margin-right: 20px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;',
+                })}
                 <div>${user}</div>
               </div>
             `).join('\n')}

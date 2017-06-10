@@ -111,7 +111,12 @@ const _getAssetSrc = (asset, quantity) => {
 
   return `\
     <div style="display: flex; margin: 0 10px;">
-      <img src="${creatureUtils.makeStaticCreature('asset:' + asset)}" width="50" height="50" style="margin: 10px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;" />
+      ${creatureUtils.makeSvgCreature('asset:' + asset, {
+        width: 12,
+        height: 12,
+        viewBox: '0 0 12 12',
+        style: 'width: 50px; height: 50px; margin: 10px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;',
+      })}
       <div style="display: flex; flex-grow: 1; flex-direction: column; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">
         <h1 style="margin: 0; margin-top: 10px; margin-bottom: 5px; font-size: 24px; font-weight: 400; line-height: 1.4; text-overflow: ellipsis; overflow: hidden;">${normalizedAssetName}</h1>
         <div style="display: flex; flex-grow: 1; align-items: center;">
