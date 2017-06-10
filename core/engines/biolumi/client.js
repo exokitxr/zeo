@@ -1328,7 +1328,6 @@ const debounce = fn => {
   };
   return _go;
 };
-const clamp = (n, min, max) => Math.min(Math.max(n, min), max);
 const nop = () => {};
 
 module.exports = Biolumi;
