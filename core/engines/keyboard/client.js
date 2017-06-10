@@ -216,6 +216,7 @@ class Keyboard {
 
           const {headerSolidMesh} = planeMesh;
           const keyboardHeaderPage = biolumi.makePage(null, {
+            type: 'keyboard',
             width: KEYBOARD_HEADER_WIDTH,
             height: KEYBOARD_HEADER_HEIGHT,
             worldWidth: KEYBOARD_HEADER_WORLD_WIDTH,
