@@ -199,7 +199,7 @@ class Biolumi {
           };
 
           class Page {
-            constructor(spec, type, state, color, width, height, worldWidth, worldHeight, isEnabled) {
+            constructor(spec, type, state, color, width, height, worldWidth, worldHeight) {
               this.spec = spec;
               this.type = type;
               this.state = state;
@@ -208,7 +208,6 @@ class Biolumi {
               this.height = height;
               this.worldWidth = worldWidth;
               this.worldHeight = worldHeight;
-              this.isEnabled = isEnabled;
 
               const mesh = (() => {
                 const geometry = geometryUtils.unindexBufferGeometry(new THREE.PlaneBufferGeometry(worldWidth, worldHeight));
@@ -478,10 +477,9 @@ class Biolumi {
             }
           }
           class BoxAnchor {
-            constructor(boxTarget, anchor, isEnabled) {
+            constructor(boxTarget, anchor) {
               this.boxTarget = boxTarget;
               this.anchor = anchor;
-              this.isEnabled = isEnabled;
             }
           }
 
@@ -512,12 +510,12 @@ class Biolumi {
               this.page = null;
             }
 
-            makePage(spec, {type = null, state = null, worldWidth, worldHeight, isEnabled = yes} = {}) {
+            makePage(spec, {type = null, state = null, worldWidth, worldHeight} = {}) {
               const {page} = this;
 
               if (!page) {
                 const {width, height, color} = this;
-                const page = new Page(spec, type, state, color, width, height, worldWidth, worldHeight, isEnabled);
+                const page = new Page(spec, type, state, color, width, height, worldWidth, worldHeight);
                 this.page = page;
 
                 const {mesh} = page;
@@ -632,12 +630,6 @@ class Biolumi {
 
               const updated = intersecter.update();
               if (updated) {
-                /* for (let i = 0; i < pages.length; i++) {
-                  const page = pages[i];
-                  const {mesh} = page;
-                  mesh.visible = page.isEnabled();
-                } */
-
                 for (let s = 0; s < SIDES.length; s++) {
                   const side = SIDES[s];
                   const gamepad = gamepads[side];
@@ -1085,9 +1077,9 @@ class Biolumi {
           }
 
           const _makeUi = ({width, height, color = [1, 1, 1, 1]}) => new Ui(width, height, color);
-          const _makePage = (spec, {type = null, state = null, color = [1, 1, 1, 1], width, height, worldWidth, worldHeight, isEnabled = yes}) =>
-            new Page(spec, type, state, color, width, height, worldWidth, worldHeight, isEnabled);
-          const _makeBoxAnchor = ({boxTarget, anchor, isEnabled = yes}) => new BoxAnchor(boxTarget, anchor, isEnabled);
+          const _makePage = (spec, {type = null, state = null, color = [1, 1, 1, 1], width, height, worldWidth, worldHeight}) =>
+            new Page(spec, type, state, color, width, height, worldWidth, worldHeight);
+          const _makeBoxAnchor = ({boxTarget, anchor}) => new BoxAnchor(boxTarget, anchor);
 
           const _updateUiTimer = () => {
             uiTimer.update();
@@ -1338,6 +1330,5 @@ const debounce = fn => {
 };
 const clamp = (n, min, max) => Math.min(Math.max(n, min), max);
 const nop = () => {};
-const yes = () => true;
 
 module.exports = Biolumi;
