@@ -216,7 +216,6 @@ class Keyboard {
           object.keyboardPage = keyboardPage;
           rend.addPage(keyboardPage);
 
-          const {headerSolidMesh} = planeMesh;
           const keyboardHeaderPage = biolumi.makePage(null, {
             type: 'keyboard',
             width: KEYBOARD_HEADER_WIDTH,
@@ -535,12 +534,32 @@ class Keyboard {
               const {gamepads} = webvr.getStatus();
 
               SIDES.forEach(side => {
-                const gamepad = gamepads[side];
+                const hoverState = rend.getHoverState(side);
+                const {type, target} = hoverState;
+                const {keyMeshes} = keyboardMesh;
+                const keyMesh = keyMeshes[side];
 
-                if (gamepad) {
+                const _hide = () => {
+                  const {key: oldKey} = keyMesh;
+                  if (oldKey) {
+                    const {keySpecs} = keyboardMesh;
+                    const oldKeySpec = keySpecs.find(keySpec => keySpec.key === oldKey);
+                    const {onmouseout} = oldKeySpec;
+                    onmouseout();
+                  }
+
+                  keyMesh.key = null;
+
+                  if (keyMesh.visible) {
+                    keyMesh.visible = false;
+                  }
+                };
+
+                if (type === 'page' && target.type === 'keyboard') {
+                  const {intersectionPoint} = hoverState;
+                  const gamepad = gamepads[side];
                   const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale} = gamepad;
 
-                  const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation, controllerScale);
                   const {planeMesh} = keyboardMesh;
                   const {position: keyboardPosition, rotation: keyboardRotation} = _decomposeObjectMatrixWorld(planeMesh);
                   const xAxis = new THREE.Vector3(1, 0, 0).applyQuaternion(keyboardRotation);
@@ -548,110 +567,85 @@ class Keyboard {
                   const keyboardTopLeftPoint = keyboardPosition.clone()
                     .add(xAxis.clone().multiplyScalar(-KEYBOARD_WORLD_WIDTH / 2))
                     .add(negativeYAxis.clone().multiplyScalar(-KEYBOARD_WORLD_HEIGHT / 2));
-                  const keyboardPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(
-                    new THREE.Vector3(0, 0, -1).applyQuaternion(keyboardRotation),
-                    keyboardTopLeftPoint
-                  );
-                  const intersectionPoint = keyboardPlane.intersectLine(controllerLine);
 
-                  if (intersectionPoint) {
-                    const matchingKeySpec = (() => {
-                      const intersectionRay = intersectionPoint.clone().sub(keyboardTopLeftPoint);
-                      const ax = intersectionRay.clone().projectOnVector(xAxis).dot(xAxis);
-                      const ay = intersectionRay.clone().projectOnVector(negativeYAxis).dot(negativeYAxis);
-                      const {keySpecs} = keyboardMesh;
-                      const matchingKeySpecs = keySpecs.filter(keySpec => {
-                        const {rect: {top, bottom, left, right}, width, height, worldWidth, worldHeight} = keySpec;
-                        const x = ax / worldWidth * width;
-                        const y = ay / worldHeight * height;
-                        return x >= left && x < right && y >= top && y < bottom;
-                      });
+                  const matchingKeySpec = (() => {
+                    const intersectionRay = intersectionPoint.clone().sub(keyboardTopLeftPoint);
+                    const ax = intersectionRay.clone().projectOnVector(xAxis).dot(xAxis);
+                    const ay = intersectionRay.clone().projectOnVector(negativeYAxis).dot(negativeYAxis);
+                    const {keySpecs} = keyboardMesh;
+                    const matchingKeySpecs = keySpecs.filter(keySpec => {
+                      const {rect: {top, bottom, left, right}, width, height, worldWidth, worldHeight} = keySpec;
+                      const x = ax / worldWidth * width;
+                      const y = ay / worldHeight * height;
+                      return x >= left && x < right && y >= top && y < bottom;
+                    });
 
-                      if (matchingKeySpecs.length > 0) {
-                        return matchingKeySpecs[0];
-                      } else {
-                        const x = ax / KEYBOARD_WORLD_WIDTH * KEYBOARD_WIDTH;
-                        const y = ay / KEYBOARD_WORLD_HEIGHT * KEYBOARD_HEIGHT;
-                        if (x >= 0 && x < KEYBOARD_WIDTH && y >= 0 && y < KEYBOARD_HEIGHT) {
-                          const intersectionPointVector = new THREE.Vector2(x, y);
-                          const keySpecDistanceSpecs = keySpecs.map(keySpec => {
-                            const {rect: {top, bottom, left, right, width, height}} = keySpec;
-                            const center = new THREE.Vector2(left + (width / 2), top + (height / 2));
-                            const distance = center.distanceTo(intersectionPointVector);
-
-                            return {
-                              keySpec,
-                              distance,
-                            };
-                          });
-                          return keySpecDistanceSpecs.sort((a, b) => a.distance - b.distance)[0].keySpec;
-                        } else {
-                          return null;
-                        }
-                      }
-                    })();
-
-                    const {keyMeshes} = keyboardMesh;
-                    const keyMesh = keyMeshes[side];
-                    if (matchingKeySpec) {
-                      const {key} = matchingKeySpec;
-
-                      if (key !== keyMesh.key) {
-                        const {
-                          rect: {
-                            top,
-                            bottom,
-                            left,
-                            right,
-                            width,
-                            height,
-                          },
-                          imageData,
-                          width: fullWidth,
-                          height: fullHeight,
-                          worldWidth,
-                          worldHeight,
-                          highlightOffset,
-                          highlightScale,
-                          onmouseover,
-                          onmouseout,
-                        } = matchingKeySpec;
-                        const {subMesh: {material: {map: texture}}} = keyMesh;
-                        texture.image = imageData;
-                        texture.needsUpdate = true;
-
-                        keyMesh.position.copy(
-                          // keyboardTopLeftPoint.clone()
-                          new THREE.Vector3(-KEYBOARD_WORLD_WIDTH / 2, KEYBOARD_WORLD_HEIGHT / 2, 0)
-                            .add(new THREE.Vector3(1, 0, 0).multiplyScalar((left + (width / 2)) / fullWidth * worldWidth))
-                            .add(new THREE.Vector3(0, -1, 0).multiplyScalar((top + (height / 2)) / fullHeight * worldHeight))
-                            .add(new THREE.Vector3(0, 0, highlightOffset)/*.applyQuaternion(keyboardRotation)*/)
-                        );
-                        // keyMesh.quaternion.copy(keyboardRotation);
-                        keyMesh.scale.set(
-                          width / fullWidth * worldWidth * highlightScale,
-                          height / fullHeight * worldHeight * highlightScale,
-                          1
-                        );
-                        keyMesh.updateMatrixWorld();
-
-                        const {key: oldKey} = keyMesh;
-                        if (oldKey) {
-                          const {keySpecs} = keyboardMesh;
-                          const oldKeySpec = keySpecs.find(keySpec => keySpec.key === oldKey);
-                          const {onmouseout} = oldKeySpec;
-                          onmouseout();
-                        }
-
-                        keyMesh.key = key;
-
-                        onmouseover();
-                      }
-
-                      if (!keyMesh.visible) {
-                        keyMesh.visible = true;
-                      }
+                    if (matchingKeySpecs.length > 0) {
+                      return matchingKeySpecs[0];
                     } else {
+                      const x = ax / KEYBOARD_WORLD_WIDTH * KEYBOARD_WIDTH;
+                      const y = ay / KEYBOARD_WORLD_HEIGHT * KEYBOARD_HEIGHT;
+                      if (x >= 0 && x < KEYBOARD_WIDTH && y >= 0 && y < KEYBOARD_HEIGHT) {
+                        const intersectionPointVector = new THREE.Vector2(x, y);
+                        const keySpecDistanceSpecs = keySpecs.map(keySpec => {
+                          const {rect: {top, bottom, left, right, width, height}} = keySpec;
+                          const center = new THREE.Vector2(left + (width / 2), top + (height / 2));
+                          const distance = center.distanceTo(intersectionPointVector);
+
+                          return {
+                            keySpec,
+                            distance,
+                          };
+                        });
+                        return keySpecDistanceSpecs.sort((a, b) => a.distance - b.distance)[0].keySpec;
+                      } else {
+                        return null;
+                      }
+                    }
+                  })();
+
+                  if (matchingKeySpec) {
+                    const {key} = matchingKeySpec;
+
+                    if (key !== keyMesh.key) {
+                      const {
+                        rect: {
+                          top,
+                          bottom,
+                          left,
+                          right,
+                          width,
+                          height,
+                        },
+                        imageData,
+                        width: fullWidth,
+                        height: fullHeight,
+                        worldWidth,
+                        worldHeight,
+                        highlightOffset,
+                        highlightScale,
+                        onmouseover,
+                        onmouseout,
+                      } = matchingKeySpec;
+                      const {subMesh: {material: {map: texture}}} = keyMesh;
+                      texture.image = imageData;
+                      texture.needsUpdate = true;
+
+                      keyMesh.position.copy(
+                        // keyboardTopLeftPoint.clone()
+                        new THREE.Vector3(-KEYBOARD_WORLD_WIDTH / 2, KEYBOARD_WORLD_HEIGHT / 2, 0)
+                          .add(new THREE.Vector3(1, 0, 0).multiplyScalar((left + (width / 2)) / fullWidth * worldWidth))
+                          .add(new THREE.Vector3(0, -1, 0).multiplyScalar((top + (height / 2)) / fullHeight * worldHeight))
+                          .add(new THREE.Vector3(0, 0, highlightOffset)/*.applyQuaternion(keyboardRotation)*/)
+                      );
+                      // keyMesh.quaternion.copy(keyboardRotation);
+                      keyMesh.scale.set(
+                        width / fullWidth * worldWidth * highlightScale,
+                        height / fullHeight * worldHeight * highlightScale,
+                        1
+                      );
+                      keyMesh.updateMatrixWorld();
+
                       const {key: oldKey} = keyMesh;
                       if (oldKey) {
                         const {keySpecs} = keyboardMesh;
@@ -660,13 +654,19 @@ class Keyboard {
                         onmouseout();
                       }
 
-                      keyMesh.key = null;
+                      keyMesh.key = key;
 
-                      if (keyMesh.visible) {
-                        keyMesh.visible = false;
-                      }
+                      onmouseover();
                     }
+
+                    if (!keyMesh.visible) {
+                      keyMesh.visible = true;
+                    }
+                  } else {
+                    _hide();
                   }
+                } else {
+                  _hide();
                 }
               });
             };
