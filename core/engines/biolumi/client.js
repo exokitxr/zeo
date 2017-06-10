@@ -300,7 +300,9 @@ class Biolumi {
               const _requestInnerSrc = () => {
                 const {htmlSrc} = cache;
                 if (htmlSrc !== null) {
-                  cache.innerSrc = htmlSrc.replace(/([^\x00-\x7F])/g, (all, c) => ('&#' + c.charCodeAt(0) + ';'));
+                  cache.innerSrc = htmlSrc
+                    .replace(/([^\x00-\x7F])/g, (all, c) => ('&#' + c.charCodeAt(0) + ';')) // convert non-ascii to HTML entities
+                    .replace(/#/g, '%23'); // firefox gets confused if we don't escape hashes in the data url
                 }
 
                 return Promise.resolve();
@@ -314,11 +316,11 @@ class Biolumi {
 
                   const img = new Image();
                   const {innerSrc} = cache;
-                  img.src = 'data:image/svg+xml;base64,' + btoa('<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'' + w + '\' height=\'' + h + '\'>' +
-                    '<foreignObject width=\'100%\' height=\'100%\' x=\'0\' y=\'0\'>' +
+                  img.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="' + w + '" height="' + h + '">' +
+                    '<foreignObject width="100%" height="100%" x="0" y="0">' +
                       innerSrc +
                     '</foreignObject>' +
-                  '</svg>');
+                  '</svg>';
                   img.onload = () => {
                     cache.img = img;
 
