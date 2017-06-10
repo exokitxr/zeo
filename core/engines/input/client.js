@@ -56,6 +56,8 @@ class Input {
         const {listeners} = this;
 
         let live = true;
+        e.preventDefault = nop;
+        e.stopPropagation = nop;
         e.stopImmediatePropagation = (stopImmediatePropagation => () => {
           live = false;
 
@@ -180,5 +182,6 @@ class Input {
     this._cleanup();
   }
 }
+const nop = () => {};
 
 module.exports = Input;
