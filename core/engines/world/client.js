@@ -1307,57 +1307,6 @@ class World {
           loadCbs: [],
           authorized: false,
         };
-        const _requestCheckAuthorized = () => new Promise((accept, reject) => {
-          const {loaded} = authorizedState;
-
-          if (!loaded) {
-            const {loading, loadCbs} = authorizedState;
-
-            if (!loading) {
-              const _finish = authorized => {
-                authorizedState.authorized = authorized;
-                authorizedState.loading = false;
-                authorizedState.loaded = true;
-
-                const {loadCbs} = authorizedState;
-                for (let i = 0; i < loadCbs.length; i++) {
-                  const loadCb = loadCbs[i];
-                  loadCb(authorized);
-                }
-                loadCbs.length = 0;
-              };
-
-              fetch(`${siteUrl}/id/api/authorizedServers`, {
-                credentials: 'include',
-              })
-                .then(res => {
-                  if (res.status >= 200 && res.status < 300) {
-                    return res.json();
-                  } else {
-                    return null;
-                  }
-                })
-                .then(body => {
-                  const {result: authorizedServers} = body;
-                  _finish(authorizedServers.includes(serverUrl));
-                })
-                .catch(err => {
-                  console.warn(err);
-
-                  _finish(false);
-                });
-
-              authorizedState.loading = true;
-            }
-
-            loadCbs.push(authorized => {
-              accept(authorized);
-            });
-          } else {
-            const {authorized} = authorizedState;
-            accept(authorized);
-          }
-        });
         const _openWalletWindow = req => {
           const width = 800;
           const height = 600;
@@ -1394,98 +1343,68 @@ class World {
           };
           window.addEventListener('message', _onmessage);
         });
-        const _requestAuthorize = () => _requestCheckAuthorized()
-          .then(authorized => {
-            if (authorized) {
-              return Promise.resolve(true);
-            } else {
-              return _requestWallet({
-                x: 'authorize',
-                u: serverUrl,
-              })
-                .then(result => {
-                  if (result === 'accept') {
-                    authorizedState.authorized = true;
-
-                    return Promise.resolve(false);
-                  } else {
-                    const err = new Error('authorization rejected');
-                    return Promise.reject(err);
-                  }
-                })
-            }
-          });
-        _requestCheckAuthorized(); // trigger initial load
 
         const _grabAssetBill = ({side, tagMesh, quantity}) => {
           const grabMesh = grabManager.getMesh(side);
 
           if (!grabMesh) {
-            _requestAuthorize()
-              .then(wasAlreadyAuthorized => {
-                if (wasAlreadyAuthorized) {
-                  // add tag mesh
-                  const itemSpec = _clone(tagMesh.item);
-                  itemSpec.id = _makeId();
-                  itemSpec.matrix = DEFAULT_MATRIX;
-                  itemSpec.quantity = quantity;
-                  itemSpec.words = assetwalletStatic.makeWords();
-                  itemSpec.metadata.isStatic = false;
-                  _addTag(itemSpec, 'hand:' + side);
-                  const billTagMesh = grabManager.getMesh(side);
-                  const {item: billItem} = billTagMesh;
-                  billItem.instancing = true;
+            // add tag mesh
+            const itemSpec = _clone(tagMesh.item);
+            itemSpec.id = _makeId();
+            itemSpec.matrix = DEFAULT_MATRIX;
+            itemSpec.quantity = quantity;
+            itemSpec.words = assetwalletStatic.makeWords();
+            itemSpec.metadata.isStatic = false;
+            _addTag(itemSpec, 'hand:' + side);
+            const billTagMesh = grabManager.getMesh(side);
+            const {item: billItem} = billTagMesh;
+            billItem.instancing = true;
 
-                  // perform the pack
-                  return fetch(`${siteUrl}/id/api/pack`, {
-                    method: 'POST',
-                    headers: (() => {
-                      const headers = new Headers();
-                      headers.append('Content-Type', 'application/json');
-                      return headers;
-                    })(),
-                    body: JSON.stringify((() => {
-                      if (itemSpec.name === 'BTC') {
-                        return {
-                          words: itemSpec.words,
-                          value: itemSpec.quantity,
-                        };
-                      } else {
-                        return {
-                          words: itemSpec.words,
-                          asset: itemSpec.name,
-                          quantity: itemSpec.quantity,
-                        };
-                      }
-                    })()),
-                    credentials: 'include',
-                  })
-                    .then(res => {
-                      if (res.status >= 200 && res.status < 300) {
-                        return res.json();
-                      } else {
-                        return null;
-                      }
-                    })
-                    .then(({words, asset, quantity, txid}) => {
-                      console.log('packed', {words, asset, quantity, txid});
-
-                      const assetName = itemSpec.name || 'BTC';
-                      const assetTagMesh = wallet.getAssetTagMeshes()
-                        .find(tagMesh =>
-                          tagMesh.item.type === 'asset' &&
-                          tagMesh.item.name === assetName &&
-                          (tagMesh.item.metadata && tagMesh.item.metadata.isStatic && !tagMesh.item.metadata.isSub)
-                        );
-                      if (assetTagMesh) {
-                        // XXX update the quantity here
-                        assetTagMesh.update();
-                      }
-                    });
+            // perform the pack
+            return fetch(`${siteUrl}/id/api/pack`, {
+              method: 'POST',
+              headers: (() => {
+                const headers = new Headers();
+                headers.append('Content-Type', 'application/json');
+                return headers;
+              })(),
+              body: JSON.stringify((() => {
+                if (itemSpec.name === 'BTC') {
+                  return {
+                    words: itemSpec.words,
+                    value: itemSpec.quantity,
+                  };
+                } else {
+                  return {
+                    words: itemSpec.words,
+                    asset: itemSpec.name,
+                    quantity: itemSpec.quantity,
+                  };
+                }
+              })()),
+              credentials: 'include',
+            })
+              .then(res => {
+                if (res.status >= 200 && res.status < 300) {
+                  return res.json();
+                } else {
+                  return null;
                 }
               })
-              .catch(err => {
-                console.warn(err);
+              .then(({words, asset, quantity, txid}) => {
+                console.log('packed', {words, asset, quantity, txid});
+
+                const assetName = itemSpec.name || 'BTC';
+                const assetTagMesh = wallet.getAssetTagMeshes()
+                  .find(tagMesh =>
+                    tagMesh.item.type === 'asset' &&
+                    tagMesh.item.name === assetName &&
+                    (tagMesh.item.metadata && tagMesh.item.metadata.isStatic && !tagMesh.item.metadata.isSub)
+                  );
+                if (assetTagMesh) {
+                  // XXX update the quantity here
+                  assetTagMesh.update();
+                }
               });
           }
         };
