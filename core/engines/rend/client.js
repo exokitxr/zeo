@@ -101,7 +101,7 @@ class Rend {
         };
 
         const menuState = {
-          open: !bootstrap.getTutorialFlag(),
+          open: true,
           position: [0, DEFAULT_USER_HEIGHT, -1.5],
           rotation: new THREE.Quaternion().toArray(),
           scale: new THREE.Vector3(1, 1, 1).toArray(),

@@ -32,31 +32,18 @@ class Bootstrap {
       .then(res => res.json()
         .then(({startTime}) => startTime)
       );
-    /* const _requestTutorialFlag = () => fetch(`${siteUrl}/id/api/cookie/tutorialFlag`, { // XXX re-enable this
-      credentials: 'include',
-    })
-      .then(res => res.json())
-      .then(({result}) => result)
-      .catch(err => {
-        console.warn(err);
-
-        return Promise.resolve(true);
-      }); */
-    const _requestTutorialFlag = () => Promise.resolve(false);
 
     return Promise.all([
       archae.requestPlugins([
         '/core/utils/js-utils',
       ]),
       _requestStartTime(),
-      _requestTutorialFlag(),
     ])
       .then(([
         [
           jsUtils,
         ],
         startTime,
-        tutorialFlag,
       ]) => {
         if (live) {
           const {events} = jsUtils;
@@ -84,29 +71,6 @@ class Bootstrap {
           }
           const worldTimer = new WorldTimer(startTime);
 
-          const _saveTutorialFlag = _debounce(next => {
-            fetch(`${siteUrl}/id/api/cookie/tutorialFlag`, {
-              method: 'POST',
-              headers: (() => {
-                const headers = new Headers();
-                headers.append('Content-Type', 'application/json');
-                return headers;
-              })(),
-              body: JSON.stringify({
-                value: tutorialFlag,
-              }),
-              credentials: 'include',
-            })
-              .then(() => {
-                next();
-              })
-              .catch(err => {
-                console.warn(err);
-
-                next();
-              });
-          });
-
           class BootstrapApi extends EventEmitter {
             getInitialUrl() {
               return initialUrl;
@@ -128,16 +92,6 @@ class Bootstrap {
               vrMode = newVrMode;
 
               this.emit('vrModeChange', vrMode);
-            }
-
-            getTutorialFlag() {
-              return tutorialFlag;
-            }
-
-            setTutorialFlag(newTutorialFlag) {
-              tutorialFlag = newTutorialFlag;
-
-              _saveTutorialFlag();
             }
 
             getWorldTime() {
