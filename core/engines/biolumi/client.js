@@ -1244,7 +1244,7 @@ class Biolumi {
           const _makeUiTracker = () => new UiTracker();
 
           const _makeDotMesh = () => {
-            const geometry = new THREE.CylinderBufferGeometry(0.0, 0.01, 0.001, 32)
+            const geometry = new THREE.CylinderBufferGeometry(0.01, 0.01, 0.001, 32)
               .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
             const material = dotMeshMaterial;
 
