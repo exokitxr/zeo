@@ -692,12 +692,8 @@ class Zeo {
                         return payment.requestBalances();
                       }
 
-                      requestPay(options) {
-                        return payment.requestPay(options);
-                      }
-
-                      requestBuy(options) {
-                        return payment.requestBuy(options);
+                      requestCharge(options) {
+                        return payment.requestCharge(options);
                       }
                     }
 
