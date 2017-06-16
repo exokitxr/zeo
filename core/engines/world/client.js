@@ -518,7 +518,10 @@ class World {
           if (res.status >= 200 && res.status < 300) {
             return res.json();
           } else {
-            return Promise.reject(new Error('API returned invalid status code: ' + res.status));
+            return Promise.reject({
+              status: res.status,
+              stack: 'API returned invalid status code: ' + res.status,
+            });
           }
         };
 
@@ -648,7 +651,13 @@ class World {
                     .catch(err => {
                       console.warn(err);
 
-                      assetInstance.show(); // failed to send, so re-show
+                      if (err.status === 402) { // insufficient funds, delete the asset since there's no way it's valid
+                        hand.destroyGrabbable(grabbable);
+
+                        _removeTag(item.id);
+                      } else { // failed to send, so re-show
+                        assetInstance.show();
+                      }
                     });
                 }
               });
