@@ -93,7 +93,6 @@ class Rend {
         const localUpdates = [];
 
         const auxObjects = {
-          tagMeshes: null,
           tagsLinesMesh: null,
           transformGizmos: null,
           colorWheels: null,
@@ -547,6 +546,10 @@ class Rend {
 
           release(options) {
             this.emit('release', options);
+          }
+
+          setEntity(item) {
+            this.emit('entityChange', item);
           }
 
           addPage(page) {
