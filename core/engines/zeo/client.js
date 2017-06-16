@@ -582,14 +582,7 @@ class Zeo {
                       }
 
                       getRemoteControllerMeshes(userId) {
-                        const remotePlayerMesh = multiplayer.getRemotePlayerMesh(userId);
-
-                        if (remotePlayerMesh) {
-                          const {controllers: controllerMeshes} = remotePlayerMesh;
-                          return controllerMeshes;
-                        } else {
-                          return null;
-                        }
+                        return multiplayer.getRemoteControllerMeshes(userId);
                       }
 
                       on(event, handler) {
