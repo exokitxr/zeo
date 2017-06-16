@@ -1,11 +1,3 @@
-import assetWalletStaticLib from 'assetwallet-static';
-const assetwalletStatic = assetWalletStaticLib({
-  random: () => {
-    const array = new Uint32Array(1);
-    crypto.getRandomValues(array);
-    return Math.abs(array[0] / 0xFFFFFFFF);
-  },
-});
 import {
   WIDTH,
   HEIGHT,
@@ -22,18 +14,8 @@ import {
 import worldRender from './lib/render/world';
 import menuUtils from './lib/utils/menu';
 
-const TAGS_PER_ROW = 4;
-const TAGS_ROWS_PER_PAGE = 6;
-const TAGS_PER_PAGE = TAGS_PER_ROW * TAGS_ROWS_PER_PAGE;
-const NPM_TAG_MESH_SCALE = 1.5;
-const DEFAULT_USER_HEIGHT = 1.6;
-const DEFAULT_MATRIX = [
-  0, 0, 0,
-  0, 0, 0, 1,
-  1, 1, 1,
-];
-
 const SIDES = ['left', 'right'];
+const NUM_POSITIONS = 100 * 1024;
 
 class World {
   constructor(archae) {
@@ -58,6 +40,7 @@ class World {
     });
 
     return archae.requestPlugins([
+      '/core/engines/bootstrap',
       '/core/engines/three',
       '/core/engines/input',
       '/core/engines/webvr',
@@ -68,12 +51,17 @@ class World {
       '/core/engines/wallet',
       '/core/engines/keyboard',
       '/core/engines/transform',
+      '/core/engines/hand',
       '/core/engines/loader',
       '/core/engines/tags',
       '/core/engines/fs',
+      '/core/engines/notification',
       '/core/utils/network-utils',
+      '/core/utils/geometry-utils',
+      '/core/utils/sprite-utils',
       '/core/utils/creature-utils',
     ]).then(([
+      bootstrap,
       three,
       input,
       webvr,
@@ -84,10 +72,14 @@ class World {
       wallet,
       keyboard,
       transform,
+      hand,
       loader,
       tags,
       fs,
+      notification,
       networkUtils,
+      geometryUtils,
+      spriteUtils,
       creatureUtils,
     ]) => {
       if (live) {
@@ -96,6 +88,11 @@ class World {
 
         const worldRenderer = worldRender.makeRenderer({creatureUtils});
 
+        const assetMaterial = new THREE.MeshBasicMaterial({
+          color: 0xFFFFFF,
+          shading: THREE.FlatShading,
+          vertexColors: THREE.VertexColors,
+        });
         const transparentMaterial = biolumi.getTransparentMaterial();
 
         const mainFontSpec = {
@@ -107,11 +104,11 @@ class World {
         };
 
         const oneVector = new THREE.Vector3(1, 1, 1);
-        const zeroVector = new THREE.Vector3(0, 0, 0);
-        const zeroQuaternion = new THREE.Quaternion();
         const forwardVector = new THREE.Vector3(0, 0, -1);
-        const controllerMeshOffset = new THREE.Vector3(0, 0, -0.02);
-        const controllerMeshQuaternion = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, -1));
+        const forwardQuaternion = new THREE.Quaternion().setFromUnitVectors(
+          new THREE.Vector3(0, 0, -1),
+          new THREE.Vector3(0, -1, 0)
+        );
         const matrixAttributeSizeVector = oneVector.clone().multiplyScalar(2 * 1.1);
 
         const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
@@ -276,103 +273,254 @@ class World {
         }
         const elementManager = new ElementManager();
 
-        class GrabManager {
-          constructor() {
-            this.left = null;
-            this.right = null;
-          }
+        const assetsMesh = (() => {
+          const object = new THREE.Object3D();
 
-          getMesh(side) {
-            return this[side];
-          }
+          const coreGeometry = geometryUtils.unindexBufferGeometry(
+            new THREE.TetrahedronBufferGeometry(0.1, 1)
+              .applyMatrix(new THREE.Matrix4().makeRotationZ(Math.PI * 3 / 12))
+          );
+          const numCoreGeometryVertices = coreGeometry.getAttribute('position').count;
+          const coreMesh = (() => {
+            const geometry = new THREE.BufferGeometry();
+            const positions = new Float32Array(NUM_POSITIONS * 3); // XXX need to handle overflows
+            const positionsAttribute = new THREE.BufferAttribute(positions, 3);
+            geometry.addAttribute('position', positionsAttribute);
+            const normals = new Float32Array(NUM_POSITIONS * 3);
+            const normalsAttribute = new THREE.BufferAttribute(normals, 3);
+            geometry.addAttribute('normal', normalsAttribute);
+            const colors = new Float32Array(NUM_POSITIONS * 3);
+            const colorsAttribute = new THREE.BufferAttribute(colors, 3);
+            geometry.addAttribute('color', colorsAttribute);
+            geometry.setDrawRange(0, 0);
+            geometry.boundingSphere = new THREE.Sphere(
+              new THREE.Vector3(0, 0, 0),
+              1
+            );
 
-          setMesh(side, mesh) {
-            const oldMesh = this[side];
-            this[side] = mesh;
+            const material = assetMaterial;
 
-            if (oldMesh) {
-              rend.release({
-                side: side,
-                mesh: oldMesh,
-              });
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.frustumCulled = false;
+            return mesh;
+          })();
+          object.add(coreMesh);
+
+          const assets = [];
+          const _makeHoverState = () => ({
+            asset: null,
+            notification: null,
+          });
+          const hoverStates = {
+            left: _makeHoverState(),
+            right: _makeHoverState(),
+          };
+
+          class Asset {
+            constructor(
+              position,
+              rotation,
+              scale,
+              asset,
+              quantity,
+              geometry,
+              startTime
+            ) {
+              this.position = position;
+              this.rotation = rotation;
+              this.scale = scale;
+              this.asset = asset;
+              this.quantity = quantity;
+              this.geometry = geometry;
+              this.startTime = startTime;
+
+              this._grabbed = false;
+              this._visible = true;
             }
-            if (mesh) {
-              rend.grab({
-                side: side,
-                mesh: mesh,
-              });
+
+            getMatrix(now) {
+              const {position, rotation, scale, startTime, _grabbed: grabbed} = this;
+              const timeDiff = now - startTime;
+              const newQuaternion = !grabbed ?
+                new THREE.Quaternion().setFromEuler(new THREE.Euler(
+                  0,
+                  (rotation.y + (timeDiff / (Math.PI * 2) * 0.01)) % (Math.PI * 2),
+                  0,
+                  camera.rotation.order
+                ))
+              :
+                rotation.clone().multiply(forwardQuaternion);
+              const newPosition = !grabbed ? position : position.clone().add(new THREE.Vector3(0, 0, -0.02 / 2).applyQuaternion(newQuaternion));
+              const hovered = SIDES.some(side => hoverStates[side].asset === this);
+              const newScale = hovered ? scale.clone().multiplyScalar(1.25) : scale;
+
+              return new THREE.Matrix4().compose(
+                newPosition,
+                newQuaternion,
+                newScale
+              );
+            }
+
+            isVisible() {
+              return this._visible;
+            }
+
+            show() {
+              this._visible = true;
+            }
+
+            hide() {
+              this._visible = false;
+            }
+
+            grab() {
+              this._grabbed = true;
+            }
+
+            release() {
+              this._grabbed = false;
+            }
+
+            update(position, rotation, scale) {
+              this.position.copy(position);
+              this.rotation.copy(rotation);
+              this.scale.copy(scale);
             }
           }
 
-          isGrabbed() {
-            return SIDES.some(side => this[side] !== null);
-          }
-        }
-        const grabManager = new GrabManager();
+          object.addAsset = (position, rotation, scale, asset, quantity) => {
+            const geometry = (() => {
+              const canvas = creatureUtils.makeCanvasCreature('asset:' + asset);
+              const pixelSize = 0.02;
+              const geometry = spriteUtils.makeImageGeometry(canvas, pixelSize);
+              return geometry;
+            })();
+            const startTime = Date.now();
+            const assetInstance = new Asset(position, rotation, scale, asset, quantity, geometry, startTime);
+            assets.push(assetInstance);
 
-        class RemoteGrabManager {
-          constructor() {
-            this.managers = {};
+            return assetInstance;
+          };
+          object.removeAsset = assetInstance => {
+            assets.splice(assets.indexOf(assetInstance), 1);
+          };
 
-            multiplayer.getPlayerStatuses().forEach((status, userId) => {
-              this.addManager(userId);
-            });
+          let lastUpdateTime = Date.now();
+          object.update = () => {
+            const {gamepads} = webvr.getStatus();
+            const now = Date.now();
 
-            const _playerEnter = update => {
-              const {id: userId} = update;
+            const _updateAssets = () => {
+              SIDES.forEach(side => {
+                const gamepad = gamepads[side];
+                const {worldPosition: controllerPosition} = gamepad;
+                const hoverState = hoverStates[side];
 
-              this.addManager(userId);
+                let closestAsset = null;
+                let closestAssetIndex = -1;
+                let closestAssetDistance = Infinity;
+                for (let i = 0; i < assets.length; i++) {
+                  const asset = assets[i];
+                  const distance = controllerPosition.distanceTo(asset.position);
+
+                  if (closestAsset === null || distance < closestAssetDistance) {
+                    closestAsset = asset;
+                    closestAssetIndex = i;
+                    closestAssetDistance = distance;
+                  }
+                }
+
+                if (closestAssetDistance < 0.2) {
+                  hoverState.asset = closestAsset;
+
+                  const {notification: oldNotification} = hoverState;
+                  if (!oldNotification || oldNotification.asset !== closestAsset) {
+                    if (oldNotification) {
+                      notification.removeNotification(oldNotification);
+                    }
+
+                    const {asset, quantity} = closestAsset;
+                    const newNotification = notification.addNotification(`This is ${quantity} ${asset}.`);
+                    newNotification.asset = closestAsset;
+
+                    hoverState.notification = newNotification;
+                  }
+                } else {
+                  const {asset} = hoverState;
+
+                  if (asset) {
+                    const {notification: oldNotification} = hoverState;
+                    notification.removeNotification(oldNotification);
+
+                    hoverState.asset = null;
+                    hoverState.notification = null;
+                  }
+                }
+              });
             };
-            multiplayer.on('playerEnter', _playerEnter);
-            const _playerLeave = update => {
-              const {id: userId} = update;
+            const _updateCore = () => {
+              const now = Date.now();
 
-              this.removeManager(userId);
-            };
-            multiplayer.on('playerLeave', _playerLeave);
+              const {geometry} = coreMesh;
+              const positionsAttribute = geometry.getAttribute('position');
+              const {array: positions} = positionsAttribute;
+              const normalsAttribute = geometry.getAttribute('normal');
+              const {array: normals} = normalsAttribute;
+              const colorsAttribute = geometry.getAttribute('color');
+              const {array: colors} = colorsAttribute;
 
-            this._cleanup = () => {
-              multiplayer.removeListener('playerEnter', _playerEnter);
-              multiplayer.removeListener('playerLeave', _playerLeave);
-            };
-          }
+              let index = 0;
+              for (let i = 0; i < assets.length; i++) {
+                const asset = assets[i];
 
-          getManager(userId) {
-            return this.managers[userId];
-          }
+                if (asset.isVisible()) {
+                  const {geometry: assetGeometry} = asset;
+                  const matrix = asset.getMatrix(now);
 
-          addManager(userId) {
-            const manager = new GrabManager();
-            manager.userId = userId;
+                  const newGeometry = assetGeometry.clone()
+                    .applyMatrix(matrix);
+                  const newPositions = newGeometry.getAttribute('position').array;
+                  const newNormals = newGeometry.getAttribute('normal').array;
+                  const newColors = newGeometry.getAttribute('color').array;
+                  const numVertices = newPositions.length / 3;
 
-            this.managers[userId] = manager;
-          }
+                  positions.set(newPositions, index);
+                  normals.set(newNormals, index);
+                  colors.set(newColors, index);
 
-          removeManager(userId) {
-            delete this.managers[userId];
-          }
-
-          isGrabbed() {
-            const {managers} = this;
-
-            for (const userId in managers) {
-              const manager = managers[userId];
-
-              if (manager.isGrabbed()) {
-                return true;
+                  index += numVertices * 3;
+                }
               }
-            }
 
-            return false;
+              positionsAttribute.needsUpdate = true;
+              normalsAttribute.needsUpdate = true;
+              colorsAttribute.needsUpdate = true;
+
+              geometry.setDrawRange(0, index / 3);
+            };
+
+            _updateAssets();
+            _updateCore();
+
+            lastUpdateTime = now;
+          };
+
+          return object;
+        })();
+        scene.add(assetsMesh);
+        assetsMesh.updateMatrixWorld();
+
+        cleanups.push(() => {
+          scene.remove(assetsMesh);
+        });
+
+        const _resJson = res => {
+          if (res.status >= 200 && res.status < 300) {
+            return res.json();
+          } else {
+            return Promise.reject(new Error('API returned invalid status code: ' + res.status));
           }
-
-          destroy() {
-            this._cleanup();
-          }
-        }
-        const remoteGrabManager = new RemoteGrabManager();
-
-        let npmTagMeshes = [];
+        };
 
         const requestHandlers = new Map();
         const _request = (method, args, cb) => {
@@ -403,187 +551,134 @@ class World {
             });
           }
         };
-        const _addTag = (itemSpec, dst, {element = null} = {}) => {
-          _handleAddTag(localUserId, itemSpec, dst, {element});
-
-          _request('addTag', [localUserId, itemSpec, dst], _warnError);
+        const _addTag = (itemSpec, {element = null} = {}) => {
+          const entityElement = _handleAddTag(localUserId, itemSpec, {element});
+          _request('addTag', [localUserId, itemSpec], _warnError);
+          return entityElement;
         };
-        const _removeTag = src => {
-          _handleRemoveTag(localUserId, src);
-
-          _request('removeTag', [localUserId, src], _warnError);
-        };
-        const _moveTag = (src, dst) => {
-          _handleMoveTag(localUserId, src, dst);
-
-          _request('moveTag', [localUserId, src, dst], _warnError);
+        const _removeTag = id => {
+          const entityElement = _handleRemoveTag(localUserId, id);
+          _request('removeTag', [localUserId, id], _warnError);
+          return entityElement;
         };
 
-        const _handleAddTag = (userId, itemSpec, dst, {element = null} = {}) => {
-          const isMe = userId === localUserId;
+        const _handleAddTag = (userId, itemSpec, {element = null} = {}) => {
+          const tagMesh = tags.makeTag(itemSpec);
+          const {item} = tagMesh;
 
-          let match;
-          if (dst === 'world') {
-            const tagMesh = tags.makeTag(itemSpec);
-            if (element) { // manually added
-              const {item} = tagMesh;
-              element.item = item;
-              item.instance = element;
-            }
-
-            const {item: {type}} = tagMesh;
-            if (type === 'module') {
-              tags.reifyModule(tagMesh);
-            } else if (type === 'entity') {
-              tags.reifyEntity(tagMesh);
-            }
-
-            elementManager.add(tagMesh);
-          } else if (match = dst.match(/^hand:(left|right)$/)) {
-            const side = match[1];
-
-            const tagMesh = tags.makeTag(itemSpec);
-            if (element) { // manually added
-              const {item} = tagMesh;
-              element.item = item;
-              item.instance = element;
-            }
-
-            const {item: {type}} = tagMesh;
-            if (type === 'module') {
-              tags.reifyModule(tagMesh);
-            } else if (type === 'entity') {
-              tags.reifyEntity(tagMesh);
-            }
-
-            const userGrabManager = isMe ? grabManager : remoteGrabManager.getManager(userId);
-            const userControllerMeshes = (() => {
-              if (isMe) {
-                const controllers = cyborg.getControllers();
-                return {
-                  left: controllers.left.mesh,
-                  right: controllers.right.mesh,
-                };
-              } else {
-                const remotePlayerMesh = multiplayer.getRemotePlayerMesh(userId);
-                const {controllers: controllerMeshes} = remotePlayerMesh;
-                return controllerMeshes;
-              }
-            })();
-
-            userGrabManager.setMesh(side, tagMesh);
-
-            const controllerMesh = userControllerMeshes[side];
-            tagMesh.position.copy(controllerMeshOffset);
-            tagMesh.quaternion.copy(controllerMeshQuaternion);
-            tagMesh.scale.copy(oneVector);
-            controllerMesh.add(tagMesh);
-          } else {
-            console.warn('invalid add tag arguments', {userId, itemSpec, dst});
+          if (element) {
+            element.item = item;
+            item.instance = element;
           }
-        };
-        const _handleRemoveTag = (userId, src) => {
-          const isMe = userId === localUserId;
 
-          let match;
-          if (match = src.match(/^world:(.+)$/)) {
-            const id = match[1];
-            const tagMesh = elementManager.getTagMesh(id);
-
-            const {item: {type}} = tagMesh;
-            if (type === 'module') {
-              tags.unreifyModule(tagMesh);
-            } else if (type === 'entity') {
-              tags.unreifyEntity(tagMesh);
-            }
-
-            elementManager.remove(tagMesh);
-            tags.destroyTag(tagMesh);
-          } else if (match = src.match(/^hand:(left|right)$/)) {
-            const side = match[1];
-
-            const userGrabManager = isMe ? grabManager : remoteGrabManager.getManager(userId);
-
-            const tagMesh = userGrabManager.getMesh(side);
-
-            const {item: {type}} = tagMesh;
-            if (type === 'module') {
-              tags.unreifyModule(tagMesh);
-            } else if (type === 'entity') {
-              tags.unreifyEntity(tagMesh);
-            }
-
-            elementManager.remove(tagMesh);
-            tags.destroyTag(tagMesh);
-
-            userGrabManager.setMesh(side, null);
-          } else {
-            console.warn('invalid remove tag arguments', {userId, itemSpec, src});
+          let result = null;
+          if (item.type === 'entity' && !item.instance) {
+            result = tags.mutateAddEntity(tagMesh);
           }
-        };
-        const _handleMoveTag = (userId, src, dst) => {
-          const isMe = userId === localUserId;
+          if (item.type === 'asset' && !item.instance) {
+            const {attributes} = item;
+            const {
+              position: {value: matrix},
+              asset: {value: asset},
+              quantity: {value: quantity},
+            } = attributes;
 
-          let match;
-          if (match = src.match(/^world:(.+)$/)) {
-            const id = match[1];
+            const position = new THREE.Vector3(matrix[0], matrix[1], matrix[2]);
+            const rotation = new THREE.Quaternion(matrix[3], matrix[4], matrix[5], matrix[6]);
+            const scale = new THREE.Vector3(matrix[7], matrix[8], matrix[9]);
 
-            if (match = dst.match(/^hand:(left|right)$/)) {
-              const side = match[1];
+            const assetInstance = assetsMesh.addAsset(position, rotation, scale, asset, quantity);
+            item.instance = assetInstance;
 
-              const userGrabManager = isMe ? grabManager : remoteGrabManager.getManager(userId);
-              const userControllerMeshes = (() => {
-                if (isMe) {
-                  const controllers = cyborg.getControllers();
-                  return {
-                    left: controllers.left.mesh,
-                    right: controllers.right.mesh,
-                  };
-                } else {
-                  const remotePlayerMesh = multiplayer.getRemotePlayerMesh(userId);
-                  const {controllers: controllerMeshes} = remotePlayerMesh;
-                  return controllerMeshes;
+            const grabbable = (() => {
+              const grabbable = hand.makeGrabbable();
+              grabbable.setPosition(position);
+              grabbable.on('grab', () => {
+                assetInstance.grab();
+              });
+              grabbable.on('release', () => {
+                assetInstance.release();
+
+                const {hmd} = webvr.getStatus();
+                const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmd;
+                const externalMatrix = webvr.getExternalMatrix();
+                const bodyPosition = hmdPosition.clone()
+                  .add(
+                    new THREE.Vector3(0, -0.4, 0)
+                      .applyQuaternion(new THREE.Quaternion().setFromRotationMatrix(externalMatrix))
+                  );
+                if (assetInstance.position.distanceTo(bodyPosition) < 0.35) {
+                  const _requestCreateSend = ({asset, quantity, srcAddress, dstAddress, privateKey}) => fetch(`${siteUrl}/id/api/send`, {
+                    method: 'POST',
+                    headers: (() => {
+                      const headers = new Headers();
+                      headers.append('Content-Type', 'application/json');
+                      return headers;
+                    })(),
+                    body: JSON.stringify({
+                      asset: asset,
+                      quantity: quantity,
+                      srcAddress: srcAddress,
+                      dstAddress: dstAddress,
+                      privateKey: privateKey,
+                    }),
+                    credentials: 'include',
+                  })
+                    .then(_resJson);
+
+                  assetInstance.hide(); // for better UX
+
+                  const {
+                    address: {value: address},
+                    privateKey: {value: privateKey},
+                  } = attributes;
+                  const dstAddress = bootstrap.getAddress();
+                  _requestCreateSend({
+                    asset: asset,
+                    quantity: quantity,
+                    srcAddress: address,
+                    dstAddress: dstAddress,
+                    privateKey: privateKey,
+                  })
+                    .then(() => {
+                      hand.destroyGrabbable(grabbable);
+
+                      _handleRemoveTag(localUserId, item.id); // XXX send this to the backend as well
+                    })
+                    .catch(err => {
+                      console.warn(err);
+
+                      assetInstance.show(); // failed to send, so re-show
+                    });
                 }
-              })();
-
-              const tagMesh = elementManager.getTagMesh(id);
-
-              userGrabManager.setMesh(side, tagMesh);
-
-              const controllerMesh = userControllerMeshes[side];
-              controllerMesh.add(tagMesh);
-              tagMesh.position.copy(controllerMeshOffset);
-              tagMesh.quaternion.copy(controllerMeshQuaternion);
-              tagMesh.scale.copy(oneVector)
-            } else {
-              console.warn('invalid move tag arguments', {src, dst});
-            }
-          } else if (match = src.match(/^hand:(left|right)$/)) {
-            const side = match[1];
-
-            const userGrabManager = isMe ? grabManager : remoteGrabManager.getManager(userId);
-            const tagMesh = userGrabManager.getMesh(side);
-
-            if (match = dst.match(/^world:(.+)$/)) {
-              const matrixArrayString = match[1];
-              const matrixArray = JSON.parse(matrixArrayString);
-
-              tagMesh.position.set(matrixArray[0], matrixArray[1], matrixArray[2]);
-              tagMesh.quaternion.set(matrixArray[3], matrixArray[4], matrixArray[5], matrixArray[6]);
-              tagMesh.scale.set(matrixArray[7], matrixArray[8], matrixArray[9]);
-
-              const {item} = tagMesh;
-              item.matrix = matrixArray;
-
-              elementManager.add(tagMesh);
-
-              userGrabManager.setMesh(side, null);
-            } else {
-              console.warn('invalid move tag arguments', {src, dst});
-            }
-          } else {
-            console.warn('invalid move tag arguments', {src, dst});
+              });
+              grabbable.on('update', ({position, rotation, scale}) => {
+                assetInstance.update(position, rotation, scale);
+              });
+              return grabbable;
+            })();
           }
+
+          elementManager.add(tagMesh);
+
+          return result;
+        };
+        const _handleRemoveTag = (userId, id) => {
+          const tagMesh = elementManager.getTagMesh(id);
+          const {item} = tagMesh;
+
+          let result = null;
+          if (item.type === 'entity' && item.instance) {
+            result = tags.mutateRemoveEntity(tagMesh);
+          }
+          if (item.type === 'asset' && item.instance) {
+            const {instance: assetInstance} = item;
+            assetsMesh.removeAsset(assetInstance);
+          }
+
+          tags.destroyTag(tagMesh);
+
+          return result;
         };
         const _handleSetTagAttribute = (userId, src, {name, value}) => {
           // same for local and remote user ids
@@ -738,12 +833,9 @@ class World {
                     tagMesh.item.name === itemSpec.name
                   );
 
-                const npmTagMesh = tags.makeTag(itemSpec, {
+                return tags.makeTag(itemSpec, {
                   initialUpdate: false,
                 });
-                npmTagMesh.planeMesh.scale.set(NPM_TAG_MESH_SCALE, NPM_TAG_MESH_SCALE, 1);
-
-                return npmTagMesh;
               }))
                 .then(tagMeshes => {
                   const {tagMeshes: oldTagMeshes} = npmCacheState;
@@ -767,8 +859,6 @@ class World {
 
           const {numTags} = npmState;
           npmState.loading = numTags === 0;
-
-          _updatePages();
         });
 
         const npmState = {
@@ -868,10 +958,8 @@ class World {
         _updatePages();
 
         const _update = e => {
-          const _updateTagsLinesMesh = () => {
-            if (grabManager.isGrabbed() || remoteGrabManager.isGrabbed()) {
-              tags.updateLinesMesh();
-            }
+          const _updateAssetsMesh = () => {
+            assetsMesh.update();
           };
           const _updateMatrixAttributes = () => {
             return;
@@ -913,7 +1001,7 @@ class World {
             }
           };
 
-          _updateTagsLinesMesh();
+          _updateAssetsMesh();
           _updateMatrixAttributes();
         };
         rend.on('update', _update);
@@ -925,6 +1013,7 @@ class World {
             const {loaded} = npmCacheState;
             if (!loaded) {
               _updateNpm();
+              _updatePages();
 
               npmCacheState.loaded = true;
             }
@@ -935,112 +1024,6 @@ class World {
         const _trigger = e => {
           const {side} = e;
 
-          /* const _clickUnpack = () => {
-            const hoverState = rend.getHoverState(side);
-            const {intersectionPoint} = hoverState;
-
-            if (intersectionPoint) {
-              const {anchor} = hoverState;
-              const onclick = (anchor && anchor.onclick) || '';
-
-              let match;
-              if (match = onclick.match(/^asset:claim:(.+)$/)) {
-                const id = match[1];
-
-                // XXX should only allow this when the wallet is logged in
-                const tagMesh = elementManager.getTagMesh(id);
-                const {item} = tagMesh;
-                const src = _getTagIdSrc(id);
-                _removeTag(src);
-
-                fetch(`${siteUrl}/id/api/unpack`, {
-                  method: 'POST',
-                  headers: (() => {
-                    const headers = new Headers();
-                    headers.append('Content-Type', 'application/json');
-                    return headers;
-                  })(),
-                  body: JSON.stringify((() => {
-                    if (item.name === 'BTC') {
-                      return {
-                        words: item.words,
-                        value: item.quantity,
-                      };
-                    } else {
-                      return {
-                        words: item.words,
-                        asset: item.name,
-                        quantity: item.quantity,
-                      };
-                    }
-                  })()),
-                  credentials: 'include',
-                })
-                  .then(res => {
-                    if (res.status >= 200 && res.status < 300) {
-                      return res.json();
-                    } else {
-                      return null;
-                    }
-                  })
-                  .then(({txid}) => {
-                    console.log('unpacked', {txid});
-
-                    const assetName = item.name || 'BTC';
-                    const assetTagMesh = wallet.getAssetTagMeshes()
-                      .find(tagMesh =>
-                        tagMesh.item.type === 'asset' &&
-                        tagMesh.item.name === assetName &&
-                        (tagMesh.item.metadata && tagMesh.item.metadata.isStatic && !tagMesh.item.metadata.isSub)
-                      );
-                    if (assetTagMesh) {
-                      // XXX update the quantity here
-                      assetTagMesh.update();
-                    }
-                  })
-                  .catch(err => {
-                    console.warn(err);
-                  });
-
-                return true;
-              } else {
-                return false;
-              }
-            } else {
-              return false;
-            }
-          };
-          const _clickCast = () => {
-            const isOpen = rend.isOpen();
-
-            if (isOpen) {
-              const grabMesh = grabManager.getMesh(side);
-              const triggerState = triggerStates[side];
-              const {triggered} = triggerState;
-
-              if (grabMesh && triggered) {
-                const tagMesh = grabMesh;
-                const {item} = tagMesh;
-                const {temp} = item;
-                const {position, rotation, scale} = _decomposeObjectMatrixWorld(tagMesh);
-                const matrixArray = position.toArray().concat(rotation.toArray()).concat(scale.toArray());
-
-                if (!temp) {
-                  _moveTag('hand:' + side, 'world:' + JSON.stringify(matrixArray));
-                } else {
-                  _handleMoveTag(localUserId, 'hand:' + side, 'world:' + JSON.stringify(matrixArray));
-                }
-
-                triggerState.triggered = false;
-
-                return true;
-              } else {
-                return false;
-              }
-            } else {
-              return false;
-            }
-          }; */
           const _clickMenu = () => {
             const tab = rend.getTab();
 
@@ -1080,9 +1063,9 @@ class World {
 
                       // XXX the backend should cache responses to prevent local re-requests from hitting external APIs
                       _updateNpm();
-
-                      _updatePages();
                     }
+
+                    _updatePages();
                   });
                   keyboardFocusState.on('blur', () => {
                     focusState.keyboardFocusState = null;
@@ -1120,6 +1103,31 @@ class World {
                   _updatePages();
 
                   return true;
+                } else if (match = onclick.match(/^module:add:(.+)$/)) {
+                  const id = match[1];
+                  const moduleTagMesh = tags.getTagMeshes().find(tagMesh => tagMesh.item.type === 'module' && tagMesh.item.id === id);
+                  const {item: moduleItem} = moduleTagMesh;
+                  const {name: module, displayName: moduleName, tagName} = moduleItem;
+                  const attributes = tags.getAttributeSpecs(module);
+
+                  const itemSpec = {
+                    type: 'entity',
+                    id: _makeId(),
+                    name: moduleName,
+                    displayName: moduleName,
+                    version: '0.0.1',
+                    module: module,
+                    tagName: tagName,
+                    attributes: attributes,
+                    metadata: {},
+                  };
+                  const entityElement = _addTag(itemSpec);
+                  const {instance: item} = entityElement;
+
+                  rend.setTab('entity');
+                  rend.setEntity(item);
+
+                  return true;
                 } else {
                   return false;
                 }
@@ -1131,134 +1139,13 @@ class World {
             }
           };
 
-          if (/* _clickUnpack() || _clickCast() || */_clickMenu()) {
+          if (_clickMenu()) {
             e.stopImmediatePropagation();
           }
         };
         input.on('trigger', _trigger, {
           priority: 1,
         });
-        /* const _triggerdown = e => {
-          const {side} = e;
-          const grabMesh = grabManager.getMesh(side);
-
-          if (grabMesh) {
-            const triggerState = triggerStates[side];
-            triggerState.triggered = true;
-
-            grabMesh.position.z = -1;
-            grabMesh.quaternion.copy(zeroQuaternion);
-
-            e.stopImmediatePropagation();
-          }
-        };
-        input.on('triggerdown', _triggerdown, {
-          priority: 1,
-        });
-        const _gripdown = e => {
-          const {side} = e;
-
-          const _grabWorldTagMesh = () => {
-            const isOpen = rend.isOpen();
-
-            if (isOpen) {
-              const grabMesh = (() => {
-                const grabMesh = grabManager.getMesh(side);
-
-                if (!grabMesh) {
-                  return tags.getGrabTagMesh(side);
-                } else {
-                  return null;
-                }
-              })()
-
-              if (grabMesh) {
-                const elementsTagMeshes = elementManager.getTagMeshes();
-                const {npmMesh} = worldMesh;
-                const {newEntityTagMesh} = npmMesh;
-
-                if (elementsTagMeshes.includes(grabMesh)) {
-                  const tagMesh = grabMesh;
-                  const {item} = tagMesh;
-                  const {id} = item;
-                  _moveTag('world:' + id, 'hand:' + side);
-
-                  e.stopImmediatePropagation();
-
-                  return true;
-                } else if (npmTagMeshes.includes(grabMesh)) {
-                  const tagMesh = grabMesh;
-                  const canMakeTag = !(tagMesh.item.metadata.exists || tagMesh.item.instancing); // XXX handle the multi-{user,controller} conflict cases
-
-                  if (canMakeTag) {
-                    const item = _clone(tagMesh.item);
-                    item.id = _makeId();
-                    item.metadata.isStatic = false;
-                    _addTag(item, 'hand:' + side);
-
-                    e.stopImmediatePropagation();
-
-                    return true;
-                  } else {
-                    return false;
-                  }
-                } else if (grabMesh === newEntityTagMesh) {
-                  const tagMesh = grabMesh;
-                  const item = _clone(tagMesh.item);
-                  item.id = _makeId();
-                  item.metadata.isStatic = false;
-                  _addTag(item, 'hand:' + side);
-
-                  e.stopImmediatePropagation();
-
-                  return true;
-                } else {
-                  return false;
-                }
-              } else {
-                return false;
-              }
-            } else {
-              return false;
-            }
-          };
-
-          _grabWorldTagMesh();
-        };
-        input.on('gripdown', _gripdown, {
-          priority: -1,
-        });
-        const _gripup = e => {
-          const {side} = e;
-          const isOpen = rend.isOpen();
-
-          if (isOpen) {
-            const grabMesh = grabManager.getMesh(side);
-
-            if (grabMesh) {
-              const tagMesh = grabMesh;
-              const {item} = tagMesh;
-              const {temp} = item;
-              const {position, rotation, scale} = _decomposeObjectMatrixWorld(tagMesh);
-              const matrixArray = position.toArray().concat(rotation.toArray()).concat(scale.toArray());
-
-              if (!temp) {
-                _moveTag('hand:' + side, 'world:' + JSON.stringify(matrixArray));
-              } else {
-                _handleMoveTag(localUserId, 'hand:' + side, 'world:' + JSON.stringify(matrixArray));
-              }
-
-              const triggerState = triggerStates[side];
-              const {triggered} = triggerState;
-              if (triggered) {
-                triggerState.triggered = false;
-              }
-            }
-          }
-        };
-        input.on('gripup', _gripup, {
-          priority: -1,
-        }); */
 
         const _getTagIdSrc = id => {
           const _getWorldSrc = () => {
@@ -1288,18 +1175,6 @@ class World {
 
           return _getWorldSrc() || _getHandSrc() || null;
         };
-        const _grabNpmTag = ({side, tagMesh}) => {
-          const grabMesh = grabManager.getMesh(side);
-
-          if (!grabMesh) {
-            const item = _clone(tagMesh.item);
-            item.id = _makeId();
-            item.metadata.isStatic = false;
-
-            _addTag(item, 'hand:' + side);
-          }
-        };
-        tags.on('grabNpmTag', _grabNpmTag);
 
         const authorizedState = {
           loading: false,
@@ -1344,7 +1219,7 @@ class World {
           window.addEventListener('message', _onmessage);
         });
 
-        const _grabAssetBill = ({side, tagMesh, quantity}) => {
+        /* const _grabAssetBill = ({side, tagMesh, quantity}) => {
           const grabMesh = grabManager.getMesh(side);
 
           if (!grabMesh) {
@@ -1384,13 +1259,7 @@ class World {
               })()),
               credentials: 'include',
             })
-              .then(res => {
-                if (res.status >= 200 && res.status < 300) {
-                  return res.json();
-                } else {
-                  return null;
-                }
-              })
+              .then(_resJson)
               .then(({words, asset, quantity, txid}) => {
                 console.log('packed', {words, asset, quantity, txid});
 
@@ -1408,40 +1277,7 @@ class World {
               });
           }
         };
-        tags.on('grabAssetBill', _grabAssetBill);
-        const _grabWorldTag = ({side, tagMesh}) => {
-          const grabMesh = grabManager.getMesh(side);
-
-          if (!grabMesh) {
-            const {item} = tagMesh;
-            const {id} = item;
-
-            _moveTag('world:' + id, 'hand:' + side);
-          }
-        };
-        tags.on('grabWorldTag', _grabWorldTag);
-        const _mutateAddModule = ({element}) => {
-          const name = element.getAttribute('name');
-          const itemSpec = {
-            type: 'module',
-            id: _makeId(),
-            name: name,
-            displayName: name,
-            attributes: {},
-            matrix: DEFAULT_MATRIX,
-            metadata: {
-              isStatic: false,
-            },
-          };
-          _addTag(itemSpec, 'world');
-        };
-        tags.on('mutateAddModule', _mutateAddModule);
-        const _mutateRemoveModule = ({id}) => {
-          const src = _getTagIdSrc(id);
-
-          _removeTag(src);
-        };
-        tags.on('mutateRemoveModule', _mutateRemoveModule);
+        tags.on('grabAssetBill', _grabAssetBill); */
         const _mutateAddEntity = ({element, tagName, attributes}) => {
           const itemSpec = {
             type: 'entity',
@@ -1451,16 +1287,13 @@ class World {
             version: '0.0.1',
             tagName: tagName,
             attributes: attributes,
-            matrix: DEFAULT_MATRIX,
             metadata: {},
           };
-          _addTag(itemSpec, 'world', {element});
+          _addTag(itemSpec, {element});
         };
         tags.on('mutateAddEntity', _mutateAddEntity);
         const _mutateRemoveEntity = ({id}) => {
-          const src = _getTagIdSrc(id);
-
-          _removeTag(src);
+          _removeTag(id);
         };
         tags.on('mutateRemoveEntity', _mutateRemoveEntity);
         const _mutateSetAttribute = ({id, name, value}) => {
@@ -1469,24 +1302,12 @@ class World {
           _request('setTagAttribute', [localUserId, src, {name, value}], _warnError);
         };
         tags.on('mutateSetAttribute', _mutateSetAttribute);
-        const _tagsAddTag = ({itemSpec, dst}) => {
-          _addTag(itemSpec, dst);
-        };
-        tags.on('addTag', _tagsAddTag);
         const _tagsSetAttribute = ({id, name, value}) => {
           const src = _getTagIdSrc(id);
 
           _handleSetTagAttribute(localUserId, src, {name, value});
         };
         tags.on('setAttribute', _tagsSetAttribute);
-        const _tagsRemove = ({id}) => {
-          const src = _getTagIdSrc(id);
-
-          _request('removeTag', [localUserId, src], _warnError);
-
-          _handleRemoveTag(localUserId, src);
-        };
-        tags.on('remove', _tagsRemove);
         const _tagsAttributeValueChanged = attributeSpec => {
           const {type} = attributeSpec;
 
@@ -1597,7 +1418,7 @@ class World {
           for (let i = 0; i < itemSpecs.length; i++) {
             const itemSpec = itemSpecs[i];
 
-            _handleAddTag(localUserId, itemSpec, 'world');
+            _handleAddTag(localUserId, itemSpec);
           }
         };
         tags.on('loadTags', _loadTags);
@@ -1605,6 +1426,11 @@ class World {
           _request('broadcast', [detail], _warnError);
         };
         tags.on('broadcast', _broadcast);
+
+        const _addAsset = itemSpec => {
+          _handleAddTag(localUserId, itemSpec); // XXX emit to the backend as well
+        };
+        wallet.on('addAsset', _addAsset);
 
         const _download = ({id}) => {
           const a = document.createElement('a');
@@ -1630,7 +1456,7 @@ class World {
             mimeType,
             matrix: _getInFrontOfCameraMatrix(),
           };
-          _handleAddTag(localUserId, itemSpec, 'world');
+          _handleAddTag(localUserId, itemSpec);
 
           const elementTagMeshes = elementManager.getTagMeshes();
           const tempTagMesh = elementTagMeshes.find(tagMesh => tagMesh.item.id === id);
@@ -1651,7 +1477,7 @@ class World {
             .then(() => {
               _cleanupTempTagMesh();
 
-              _addTag(itemSpec, 'world');
+              _addTag(itemSpec);
 
               const tagMesh = elementTagMeshes.find(tagMesh => tagMesh.item.id === id);
               if (!rend.isOpen()) {
@@ -1777,17 +1603,13 @@ class World {
                     });
                 }
               } else if (type === 'addTag') {
-                const {args: [userId, itemSpec, dst]} = m;
+                const {args: [userId, itemSpec]} = m;
 
-                _handleAddTag(userId, itemSpec, dst);
+                _handleAddTag(userId, itemSpec);
               } else if (type === 'removeTag') {
-                const {args: [userId, src]} = m;
+                const {args: [userId, id]} = m;
 
-                _handleRemoveTag(userId, src);
-              } else if (type === 'moveTag') {
-                const {args: [userId, src, dst]} = m;
-
-                _handleMoveTag(userId, src, dst);
+                _handleRemoveTag(userId, id);
               } else if (type === 'setTagAttribute') {
                 const {args: [userId, src, {name, value}]} = m;
 
@@ -1865,28 +1687,17 @@ class World {
         })();
 
         cleanups.push(() => {
-          remoteGrabManager.destroy();
-
           rend.removeListener('update', _update);
           rend.removeListener('tabchange', _tabchange);
 
           input.removeListener('trigger', _trigger);
-          /* input.removeListener('triggerdown', _triggerdown);
-          input.removeListener('gripdown', _gripdown);
-          input.removeListener('gripup', _gripup); */
 
           tags.removeListener('download', _download);
-          tags.removeListener('grabNpmTag', _grabNpmTag);
-          tags.removeListener('grabAssetBill', _grabAssetBill);
-          tags.removeListener('grabWorldTag', _grabWorldTag);
-          tags.removeListener('mutateAddModule', _mutateAddModule);
-          tags.removeListener('mutateRemoveModule', _mutateRemoveModule);
+          // tags.removeListener('grabAssetBill', _grabAssetBill);
           tags.removeListener('mutateAddEntity', _mutateAddEntity);
           tags.removeListener('mutateRemoveEntity', _mutateRemoveEntity);
           tags.removeListener('mutateSetAttribute', _mutateSetAttribute);
-          tags.removeListener('addTag', _tagsAddTag);
           tags.removeListener('setAttribute', _tagsSetAttribute);
-          tags.removeListener('remove', _tagsRemove);
           tags.removeListener('attributeValueChanged', _tagsAttributeValueChanged);
           tags.removeListener('open', _tagsOpen);
           tags.removeListener('close', _tagsClose);
@@ -1899,6 +1710,8 @@ class World {
           tags.removeListener('loadTags', _loadTags);
           tags.removeListener('broadcast', _broadcast);
 
+          wallet.removeListener('addAsset', _addAsset);
+
           fs.removeListener('upload', _upload);
 
           connection.destroy();
@@ -1907,6 +1720,14 @@ class World {
         class WorldApi {
           init() {
             initPromise.resolve();
+          }
+
+          addTag(itemSpec) {
+            _addTag(itemSpec);
+          }
+
+          removeTag(id) {
+            _removeTag(id);
           }
 
           makeFile({ext = 'txt'} = {}) {
