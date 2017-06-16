@@ -4,6 +4,6 @@
   "version": "0.0.1",
   "client": "client.js",
   "dependencies": {
-    "vrid": "0.0.13"
+    "vrid": "0.0.14"
   }
 }
