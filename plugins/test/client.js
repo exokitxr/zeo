@@ -60,30 +60,17 @@ class Test {
     elements.registerComponent(this, testComponent);
 
     const _keypress = e => {
-      if (e.keyCode === 98) { // B
-        payment.requestBuy({
-          srcAsset: 'CRAPCOIN',
+      if (e.keyCode === 112) { // P
+        payment.requestCharge({
+          dstAddress: 'G4ExZ6nYBPnu7Sr1c8kMgbzz3VS9DbGi6cNeghEirbHj',
+          srcAsset: 'ZEOCOIN',
           srcQuantity: 10,
-          dstAsset: 'CRAPCOINB',
-          dstQuantity: 1,
         })
           .then(result => {
-            console.warn('buy result', result);
+            console.warn('charge result', result);
           })
           .catch(err => {
-            console.warn('buy error', err);
-          });
-      } else if (e.keyCode === 112) { // P
-        payment.requestPay({
-          address: 'n3W1ExUh7Somt28Qe7DT5FUfY127MY4r1X',
-          asset: 'CRAPCOIN',
-          quantity: 10,
-        })
-          .then(result => {
-            console.warn('pay result', result);
-          })
-          .catch(err => {
-            console.warn('pay error', err);
+            console.warn('charge error', err);
           });
       }
     };
@@ -95,16 +82,16 @@ class Test {
       const {buttons: {grip: {pressed: gripPressed}}} = gamepad;
 
       if (gripPressed) {
-        payment.requestPay({
-          address: 'n3W1ExUh7Somt28Qe7DT5FUfY127MY4r1X',
-          asset: 'CRAPCOIN',
-          quantity: 10,
+        payment.requestCharge({
+          dstAddress: 'G4ExZ6nYBPnu7Sr1c8kMgbzz3VS9DbGi6cNeghEirbHj',
+          srcAsset: 'ZEOCOIN',
+          srcQuantity: 10,
         })
           .then(result => {
-            console.warn('pay result', result);
+            console.warn('charge result', result);
           })
           .catch(err => {
-            console.warn('pay error', err);
+            console.warn('charge error', err);
           });
 
         e.stopImmediatePropagation();
