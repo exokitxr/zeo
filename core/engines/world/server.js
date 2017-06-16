@@ -28,16 +28,6 @@ class World {
       live = false;
     };
 
-    const _parseUrlSpec = url => {
-      const match = url.match(/^(?:([^:]+):\/\/)([^:]+)(?::([0-9]*?))?$/);
-      return match && {
-        protocol: match[1],
-        host: match[2],
-        port: match[3] ? parseInt(match[3], 10) : null,
-      };
-    };
-    const hubSpec = _parseUrlSpec(hubUrl);
-
     const worldPath = path.join(dirname, dataDirectory, 'world');
     const worldTagsJsonPath = path.join(worldPath, 'tags.json');
     const worldFilesJsonPath = path.join(worldPath, 'files.json');
@@ -90,14 +80,9 @@ class World {
             let match;
             if (match = url.match(/\/archae\/worldWs\?id=(.+)$/)) {
               const userId = match[1];
-              const token = null; // XXX actually authenticate with the token here;
 
               const user = {
                 id: userId,
-                hands: {
-                  left: null,
-                  right: null,
-                },
               };
               usersJson[userId] = user;
 
@@ -440,11 +425,6 @@ const _debounce = fn => {
     }
   };
   return _go;
-};
-const _makeInvalidArgsError = () => {
-  const err = new Error('invalid arguments');
-  err.code = 'EARGS';
-  return err;
 };
 
 module.exports = World;
