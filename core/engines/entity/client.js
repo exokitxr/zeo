@@ -43,6 +43,7 @@ class Entity {
       '/core/engines/biolumi',
       '/core/engines/rend',
       '/core/engines/tags',
+      '/core/engines/world',
       '/core/engines/fs',
       '/core/engines/keyboard',
       '/core/engines/color',
@@ -54,6 +55,7 @@ class Entity {
       biolumi,
       rend,
       tags,
+      world,
       fs,
       keyboard,
       color,
@@ -95,13 +97,13 @@ class Entity {
         };
 
         const _decorateEntity = entity => {
-          const {id, name, displayName, attributes, instancing, metadata} = entity;
+          const {id, name, displayName, module, attributes, instancing, metadata} = entity;
 
           const attributesArray = Object.keys(attributes)
             .map(attributeName => {
               const attribute = attributes[attributeName];
               const {value} = attribute;
-              const attributeSpec = tags.getAttributeSpec(attributeName);
+              const attributeSpec = tags.getAttributeSpec(module, attributeName);
 
               const result = _shallowClone(attributeSpec);
               result.name = attributeName;
@@ -128,8 +130,6 @@ class Entity {
           npmState.numTags = itemSpecs.length;
 
           npmState.loading = false;
-
-          _updatePages();
         };
 
         const npmState = {
@@ -255,12 +255,24 @@ class Entity {
             const {loaded} = npmCacheState;
             if (!loaded) {
               _updateNpm();
+              _updatePages();
 
               npmCacheState.loaded = true;
             }
           }
         };
         rend.on('tabchange', _tabchange);
+
+        const _setEntity = item => {
+          npmState.entity = item !== null ? _decorateEntity(item) : null;
+          npmState.page = 0;
+
+          _updatePages();
+        };
+        const _entitychange = item => {
+          _setEntity(item);
+        };
+        rend.on('entitychange', _entitychange);
 
         const _trigger = e => {
           const {side} = e;
@@ -299,6 +311,8 @@ class Entity {
 
                   _updateNpm();
                 }
+
+                _updatePages();
               });
               keyboardFocusState.on('blur', () => {
                 focusState.keyboardFocusState = null;
@@ -322,16 +336,19 @@ class Entity {
 
               const tagMesh = tags.getTagMeshes().find(tagMesh => tagMesh.item.id === tagId);
               const {item} = tagMesh;
-              npmState.entity = _decorateEntity(item);
-              npmState.page = 0;
-
-              _updatePages();
+              _setEntity(item);
 
               return true;
             } else if (onclick === 'entity:back') {
-              npmState.entity = null;
+              _setEntity(null);
 
-              _updatePages();
+              return true;
+            } else if (match = onclick.match(/^entity:remove:(.+)$/)) {
+              const tagId = match[1];
+
+              world.removeTag(tagId);
+
+              _setEntity(null);
 
               return true;
             } else {
@@ -408,6 +425,7 @@ class Entity {
                   focusState.keyboardFocusState = null;
 
                   _updateNpm();
+                  _updatePages();
                 });
 
                 _updatePages();
@@ -422,6 +440,7 @@ class Entity {
 
                 setTimeout(() => {
                   _updateNpm();
+                  _updatePages();
                 });
               } else if (action === 'tweak') {
                 const attributeSpec = tags.getAttributeSpec(attributeName);
@@ -449,6 +468,7 @@ class Entity {
 
                   setTimeout(() => {
                     _updateNpm();
+                    _updatePages();
                   });
                 } else if (type ==='vector') {
                   const newKeyValue = (() => {
@@ -474,6 +494,7 @@ class Entity {
 
                   setTimeout(() => {
                     _updateNpm();
+                    _updatePages();
                   });
                 }
               } else if (action === 'pick') {
@@ -511,6 +532,7 @@ class Entity {
                   focusState.keyboardFocusState = null;
 
                   _updateNpm();
+                  _updatePages();
 
                   scene.remove(colorWheel);
                   color.destroyColorWheel(colorWheel);
@@ -526,6 +548,7 @@ class Entity {
 
                 setTimeout(() => {
                   _updateNpm();
+                  _updatePages();
                 });
               }
 
@@ -543,6 +566,7 @@ class Entity {
 
         cleanups.push(() => {
           rend.removeListener('tabchange', _tabchange);
+          rend.removeListener('entitychange', _entitychange);
           input.removeListener('trigger', _trigger);
         });
       }
