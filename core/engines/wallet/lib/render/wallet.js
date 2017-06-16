@@ -7,19 +7,18 @@ const upImg = require('../img/up');
 const downImg = require('../img/down');
 const chevronLeftImg = require('../img/chevron-left');
 
-const CREDIT_ASSET_NAME = 'CRD';
 const numTagsPerPage = 6;
 
 const makeRenderer = ({creatureUtils}) => {
 
-const getWalletPageSrc = ({loading, error, inputText, inputValue, asset, assets, numTags, page, focus}) => {
+const getWalletPageSrc = ({loading, charging, error, inputText, inputValue, asset, assets, numTags, page, focus}) => {
   return `\
     <div style="display: flex; min-height: ${HEIGHT}px;">
       ${!error ?
         (asset === null ?
           getAssetsPageSrc({loading, inputText, inputValue, assets, numTags, page, focus})
         :
-          getAssetPageSrc(asset)
+          getAssetPageSrc({asset, charging})
         )
       :
         `<div style="display: flex; margin-bottom: 100px; font-size: 30px; align-items: center; justify-content: center; flex-grow: 1; flex-direction: column;">
@@ -44,12 +43,16 @@ const getAssetsPageSrc = ({loading, inputText, inputValue, assets, numTags, page
       ${loading ?
         `<div style="display: flex; margin-bottom: 100px; font-size: 30px; font-weight: 400; flex-grow: 1; align-items: center; justify-content: center;">Loading...</div>`
       :
-        `<div style="display: flex; flex-grow: 1; flex-direction: column;">
-          ${assets
-            .slice(page * numTagsPerPage, (page + 1) * numTagsPerPage)
-            .map(assetSpec => getAssetSrc(assetSpec))
-            .join('\n')}
-        </div>`
+        ((assets.length > 0) ?
+          `<div style="display: flex; flex-grow: 1; flex-direction: column;">
+            ${assets
+              .slice(page * numTagsPerPage, (page + 1) * numTagsPerPage)
+              .map(assetSpec => getAssetSrc(assetSpec))
+              .join('\n')}
+          </div>`
+        : `\
+          <div style="display: flex; margin-bottom: 100px; font-size: 30px; font-weight: 400; flex-grow: 1; align-items: center; justify-content: center;">No assets :/</div>
+        `)
       }
     </div>
   `;
@@ -83,8 +86,7 @@ const getAssetsPageSrc = ({loading, inputText, inputValue, assets, numTags, page
 };
 const getAssetSrc = assetSpec => {
   const {asset, quantity} = assetSpec;
-  const normalizedAssetName = _normalizeAssetName(asset);
-  const quantityString = _commaizeAssetQuantity(asset, quantity);
+  const quantityString = _commaizeQuantity(quantity);
   const id = asset; // XXX
   const isStatic = true;
   const isSub = false;
@@ -109,7 +111,7 @@ const getAssetSrc = assetSpec => {
             style: 'width: 50px; height: 50px; margin: 10px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;',
           })}
           <div style="display: flex; margin-left: 10px; flex-grow: 1; flex-direction: column; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">
-            <h1 style="margin: 0; margin-top: 10px; margin-bottom: 5px; font-size: 24px; font-weight: 400; line-height: 1.4; text-overflow: ellipsis; overflow: hidden;">${normalizedAssetName}</h1>
+            <h1 style="margin: 0; margin-top: 10px; margin-bottom: 5px; font-size: 24px; font-weight: 400; line-height: 1.4; text-overflow: ellipsis; overflow: hidden;">${asset}</h1>
             <div style="display: flex; flex-grow: 1; align-items: center;">
               <div style="padding: 0 5px; border: 2px solid; font-size: 20px; font-weight: 400;">¤ ${quantityString}</div>
             </div>
@@ -119,12 +121,12 @@ const getAssetSrc = assetSpec => {
     </${tagName}>
   `;
 };
-const getAssetPageSrc = ({asset, quantity}) => {
-  const normalizedAssetName = _normalizeAssetName(asset);
-  const quantityString = _commaizeAssetQuantity(asset, quantity);
+const getAssetPageSrc = ({asset: {asset, quantity}, charging}) => {
+  const quantityString = _commaizeQuantity(quantity);
+  const linkTagName = !charging ? 'a': 'span';
 
   return `\
-    <div style="display: flex; width: ${WIDTH}; min-height: ${HEIGHT}px;">
+    <div style="display: flex; position: relative; width: ${WIDTH}; height: ${HEIGHT}px;">
       <div style="display: flex; padding: 30px; flex-grow: 1; flex-direction: column;">
         <div style="display: flex; margin-bottom: 20px; align-items: center;">
           <a style="display: flex; width: 80px; height: 80px; justify-content: center; align-items: center;" onclick="wallet:back">${chevronLeftImg}</a>
@@ -134,24 +136,27 @@ const getAssetPageSrc = ({asset, quantity}) => {
             viewBox: '0 0 12 12',
             style: 'width: 50px; height: 50px; margin: 10px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;',
           })}
-          <div style="margin-left: 20px; margin-right: auto; font-size: 36px; line-height: 1.4; font-weight: 400;">${normalizedAssetName}</div>
+          <div style="margin-left: 20px; margin-right: auto; font-size: 36px; line-height: 1.4; font-weight: 400;">${asset}</div>
           <div style="padding: 0 10px; border: 2px solid; font-size: 30px; font-weight: 400;">¤ ${quantityString}</div>
         </div>
+        ${charging ? `<div style="display: flex; position: absolute; top: 0; bottom: 0; left: 0; right: 0; justify-content: center; align-items: center;">
+          <div style="padding: 10px 30px; background-color: #000; color: #FFF; font-size: 30px; font-weight: 400;">Processing...</div>
+        </div> ` : ''}
         <div style="display: flex; padding-left: 20px; flex-wrap: wrap; box-sizing: border-box;">
           ${
             [
-              1, 5, 10, 25,
-              100, 200, 500, 1000,
-              2000, 5000, 10000, 20000,
-              50000, 100000, 200000, 500000,
-              1000000, 2000000, 5000000, 10000000,
+              0.01, 0.05, 0.10, 0.25,
+              1, 2, 5, 10,
+              20, 50, 100, 500,
+              1000, 5000, 10000, 50000,
+              100000, 200000, 500000, 1000000,
             ]
-            .map(asset === 'BTC' ? (billQuantity => billQuantity / 1e2) : (billQuantity => billQuantity))
+            .filter(billQuantity => billQuantity <= quantity)
             .map(billQuantity => {
               const id = asset; // XXX
-              const billQuantityString = _commaizeAssetQuantity(asset, billQuantity);
+              const billQuantityString = _commaizeQuantity(billQuantity);
 
-              return `<a style="display: flex; width: ${(WIDTH - (30 * 2) - 20) / 3}px; padding: 10px; font-size: 30px; font-weight: 400; box-sizing: border-box;" onclick="asset:bill:${id}:${billQuantity}">¤ ${billQuantityString}</a>`;
+              return `<${linkTagName} style="display: flex; width: ${(WIDTH - (30 * 2) - 20) / 3}px; padding: 10px; font-size: 30px; font-weight: 400; box-sizing: border-box;" onclick="asset:bill:${id}:${billQuantity}">¤ ${billQuantityString}</${linkTagName}>`;
             })
             .join('\n')
           }
@@ -160,15 +165,12 @@ const getAssetPageSrc = ({asset, quantity}) => {
     </div>
   `;
 };
-const _normalizeAssetName = name => name === 'BTC' ? CREDIT_ASSET_NAME : name;
 const _commaize = n => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-const _commaizeAssetQuantity = (asset, quantity) => {
-  if (asset === 'BTC') {
-    return quantity.toFixed(8).replace(/(\..*?)0+$/, '$1').replace(/\.$/, '');
-  } else {
-    return _commaize(quantity);
-  }
-};
+const _commaizeQuantity = quantity =>
+  quantity.toFixed(2)
+  .replace(/^([^.]*)(\.?.*)$/, (all, wholes, decimals) => _commaize(wholes) + decimals)
+  .replace(/(\..*?)0+$/, '$1')
+  .replace(/\.$/, '');
 
 return {
   getWalletPageSrc,
