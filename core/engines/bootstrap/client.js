@@ -49,13 +49,6 @@ class Bootstrap {
           const {events} = jsUtils;
           const {EventEmitter} = events;
 
-          const isInIframe = (() => {
-            try {
-              return window.self !== window.top;
-            } catch (e) {
-              return true;
-            }
-          })();
           let vrMode = null;
           class WorldTimer {
             constructor(startTime = 0) {
@@ -71,6 +64,30 @@ class Bootstrap {
           }
           const worldTimer = new WorldTimer(startTime);
 
+          let address = null;
+          const _resJson = res => {
+            if (res.status >= 200 && res.status < 300) {
+              return res.json();
+            } else {
+              return null;
+            }
+          };
+          const _loadAddress = () => {
+            fetch(`${siteUrl}/id/api/address`, {
+              credentials: 'include',
+            })
+              .then(_resJson)
+              .then(({address: newAddress}) => {
+                address = newAddress;
+              })
+              .catch(err => {
+                console.warn(err);
+
+                setTimeout(_loadAddress, 1000);
+              });
+          };
+          _loadAddress();
+
           class BootstrapApi extends EventEmitter {
             getInitialUrl() {
               return initialUrl;
@@ -78,10 +95,6 @@ class Bootstrap {
 
             getInitialPath() {
               return initialPath;
-            }
-
-            isInIframe() {
-              return isInIframe;
             }
 
             getVrMode() {
@@ -98,15 +111,12 @@ class Bootstrap {
               return worldTimer.getWorldTime();
             }
 
+            getAddress() {
+              return address;
+            }
+
             navigate(url) {
-              if (!isInIframe) {
-                document.location.href = url;
-              } else {
-                window.parent.postMessage({
-                  method: 'navigate',
-                  args: [url],
-                }, 'https://' + siteUrl);
-              }
+              document.location.href = url;
             }
 
             requestLogout() {
@@ -117,13 +127,7 @@ class Bootstrap {
                 },
                 credentials: 'same-origin',
               })
-                .then(res => {
-                  if (res.status >= 200 && res.status < 300) {
-                    return res.json();
-                  } else {
-                    return null;
-                  }
-                });
+                .then(_resJson);
             }
           }
           const bootstrapApi = new BootstrapApi();
