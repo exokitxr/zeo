@@ -113,8 +113,6 @@ class FileEngine {
           npmState.numTags = itemSpecs.length;
 
           npmState.loading = false;
-
-          _updatePages();
         };
 
         const npmState = {
@@ -218,6 +216,7 @@ class FileEngine {
             const {loaded} = npmCacheState;
             if (!loaded) {
               _updateNpm();
+              _updatePages();
 
               npmCacheState.loaded = true;
             }
@@ -264,6 +263,8 @@ class FileEngine {
 
                     _updateNpm();
                   }
+
+                  _updatePages();
                 });
                 keyboardFocusState.on('blur', () => {
                   focusState.keyboardFocusState = null;
