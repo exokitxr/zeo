@@ -591,7 +591,7 @@ class World {
             item.instance = assetInstance;
 
             const grabbable = (() => {
-              const grabbable = hand.makeGrabbable();
+              const grabbable = hand.makeGrabbable(item.id);
               grabbable.setPosition(position);
               grabbable.on('grab', () => {
                 assetInstance.grab();
@@ -643,7 +643,7 @@ class World {
                     .then(() => {
                       hand.destroyGrabbable(grabbable);
 
-                      _handleRemoveTag(localUserId, item.id); // XXX send this to the backend as well
+                      _removeTag(item.id);
                     })
                     .catch(err => {
                       console.warn(err);
@@ -1428,7 +1428,7 @@ class World {
         tags.on('broadcast', _broadcast);
 
         const _addAsset = itemSpec => {
-          _handleAddTag(localUserId, itemSpec); // XXX emit to the backend as well
+          _addTag(itemSpec);
         };
         wallet.on('addAsset', _addAsset);
 

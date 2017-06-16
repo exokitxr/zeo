@@ -27,18 +27,78 @@ class Hand {
       '/core/engines/input',
       '/core/engines/webvr',
       '/core/engines/rend',
+      '/core/engines/multiplayer',
       '/core/utils/js-utils',
+      '/core/utils/network-utils',
     ]).then(([
       three,
       input,
       webvr,
       rend,
+      multiplayer,
       jsUtils,
+      networkUtils,
     ]) => {
       if (live) {
         const {THREE, scene, camera} = three;
         const {events} = jsUtils;
         const {EventEmitter} = events;
+        const {AutoWs} = networkUtils;
+
+        const localUserId = multiplayer.getId();
+
+        const connection = (() => {
+          const connection = new AutoWs(_relativeWsUrl('archae/handWs?id=' + localUserId));
+          connection.on('message', msg => {
+            const m = JSON.parse(msg.data);
+            const {type} = m;
+
+            if (type === 'init') {
+              const {args} = m;
+              const [userSpecs] = args;
+
+              for (let i = 0; i < userSpecs.length; i++) {
+                const userSpec = userSpecs[i];
+                const {id: userId, hands: {left: leftId, right: rightId}} = userSpec;
+
+                if (leftId !== null) {
+                  const leftGrabbable = grabbables.find(grabbable => grabbable.id === leftId);
+                  leftGrabbable.grab(userId, 'left');
+                }
+                if (rightId !== null) {
+                  const rightGrabbable = grabbables.find(grabbable => grabbable.id === rightId);
+                  rightGrabbable.grab(userId, 'right');
+                }
+              }
+            } else if (type === 'grab') {
+              const {args} = m;
+              const [userId, side, id] = args;
+
+              const grabbable = grabbables.find(grabbable => grabbable.id === id);
+              grabbable.grab(userId, side);
+            } else if (type === 'release') {
+              const {args} = m;
+              const [userId, side] = args;
+
+              const remoteGrabState = remoteGrabStates.get(userId);
+              const remoteGrabStateSide = remoteGrabState[side];
+              const {grabbedGrabbable} = remoteGrabStateSide;
+              grabbedGrabbable.release(userId, side);
+            } else {
+              console.warn('unknown hand message type:', type);
+            }
+          });
+          return connection;
+        })();
+
+        const _broadcast = (method, args) => {
+          const e = {
+            method,
+            args,
+          };
+          const es = JSON.stringify(e);
+          connection.send(es);
+        };
 
         const grabbables = [];
 
@@ -51,9 +111,34 @@ class Hand {
           right: _makeGrabState(),
         };
 
+        const remoteGrabStates = new Map();
+        const _makeRemoteGrabState = () => ({
+          grabbedGrabbable: null,
+        });
+        const _makeRemoteGrabStates = () => ({
+          left: _makeRemoteGrabState(),
+          right: _makeRemoteGrabState(),
+        });
+        const _addRemoteUser = userId => {
+          remoteGrabStates.set(userId, _makeRemoteGrabStates());
+        };
+        multiplayer.getPlayerStatuses().forEach((status, userId) => {
+          _addRemoteUser(userId);
+        });
+        const _playerEnter = ({id: userId}) => {
+          remoteGrabStates.set(userId, _makeRemoteGrabStates());
+        };
+        multiplayer.on('playerEnter', _playerEnter);
+        const _playerLeave = ({id: userId}) => {
+          remoteGrabStates.delete(userId);
+        };
+        multiplayer.on('playerLeave', _playerLeave);
+
         class Grabbable extends EventEmitter {
-          constructor() {
+          constructor(id) {
             super();
+
+            this.id = id;
 
             this.position = new THREE.Vector3();
             this.rotation = new THREE.Quaternion();
@@ -68,24 +153,48 @@ class Hand {
             return this.position.distanceTo(position);
           }
 
-          grab(side) {
+          grab(userId, side) {
+            const me = userId === localUserId;
             const e = {
               grabbable: this,
               side: side,
+              me: me,
             };
 
             this.emit('grab', e);
-            handApi.emit('grab', e);
+
+            if (me) {
+              const grabState = grabStates[side];
+              grabState.grabbedGrabbable = this;
+
+              _broadcast('grab', [side, this.id]);
+            } else {
+              const remoteGrabState = remoteGrabStates.get(userId);
+              const remoteGrabStateSide = remoteGrabState[side];
+              remoteGrabStateSide.grabbedGrabbable = this;
+            }
           }
 
-          release(side) {
+          release(userId, side) {
+            const me = userId === localUserId;
             const e = {
               grabbable: this,
               side: side,
+              me: me,
             };
 
             this.emit('release', e);
-            handApi.emit('release', e);
+
+            if (me) {
+              const grabState = grabStates[side];
+              grabState.grabbedGrabbable = null;
+
+              _broadcast('release', [side]);
+            } else {
+              const remoteGrabState = remoteGrabStates.get(userId);
+              const remoteGrabStateSide = remoteGrabState[side];
+              remoteGrabStateSide.grabbedGrabbable = null;
+            }
           }
 
           update(position, rotation, scale) {
@@ -99,7 +208,6 @@ class Hand {
               scale,
             };
             this.emit('update', e);
-            handApi.emit('update', e);
           }
         }
 
@@ -112,10 +220,7 @@ class Hand {
             const {hoveredGrabbable} = grabState;
 
             if (hoveredGrabbable) {
-              const grabbedGrabbable = hoveredGrabbable;
-              grabState.grabbedGrabbable = grabbedGrabbable;
-
-              grabbedGrabbable.grab(side);
+              hoveredGrabbable.grab(localUserId, side);
             }
           }
         };
@@ -126,7 +231,7 @@ class Hand {
           const {grabbedGrabbable} = grabState;
 
           if (grabbedGrabbable) {
-            grabbedGrabbable.release(side);
+            grabbedGrabbable.release(localUserId, side);
 
             grabState.grabbedGrabbable = null;
           }
@@ -136,7 +241,7 @@ class Hand {
         const _update = () => {
           const {gamepads} = webvr.getStatus();
 
-          const _updateStates = () => {
+          const _updateLocalPositions = () => {
             SIDES.forEach(side => {
               const gamepad = gamepads[side];
               const grabState = grabStates[side];
@@ -146,6 +251,22 @@ class Hand {
                 const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale} = gamepad;
                 grabbedGrabbable.update(controllerPosition, controllerRotation, controllerScale);
               }
+            });
+          };
+          const _updateRemotePositions = () => {
+            remoteGrabStates.forEach((remoteGrabState, userId) => {
+              SIDES.forEach(side => {
+                const remoteGrabStateSide = remoteGrabState[side];
+                const {grabbedGrabbable} = remoteGrabStateSide;
+
+                if (grabbedGrabbable) {
+                  const remoteControllerMeshes = multiplayer.getRemoteControllerMeshes(userId);
+                  const remoteControllerMesh = remoteControllerMeshes[side];
+                  const {position, quaternion: rotation, scale} = remoteControllerMesh;
+
+                  grabbedGrabbable.update(position, rotation, scale);
+                }
+              });
             });
           };
           const _updateHovers = () => {
@@ -172,20 +293,25 @@ class Hand {
             });
           };
 
-          _updateStates();
+          _updateLocalPositions();
+          _updateRemotePositions();
           _updateHovers();
         };
         rend.on('update', _update);
 
         cleanups.push(() => {
+          multiplayer.removeListener('playerEnter', _playerEnter);
+          multiplayer.removeListener('playerLeave', _playerLeave);
+
           input.removeListener('gripdown', _gripdown);
           input.removeListener('gripup', _gripup);
+
           rend.removeListener('update', _update);
         });
 
-        class HandApi extends EventEmitter {
-          makeGrabbable() {
-            const grabbable = new Grabbable();
+        class HandApi {
+          makeGrabbable(id) {
+            const grabbable = new Grabbable(id);
             grabbables.push(grabbable);
             return grabbable;
           }
@@ -205,5 +331,10 @@ class Hand {
     this._cleanup();
   }
 }
+
+const _relativeWsUrl = s => {
+  const l = window.location;
+  return ((l.protocol === 'https:') ? 'wss://' : 'ws://') + l.host + l.pathname + (!/\/$/.test(l.pathname) ? '/' : '') + s;
+};
 
 module.exports = Hand;
