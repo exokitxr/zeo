@@ -508,7 +508,7 @@ class Entity {
                     _updatePages();
                   });
                 }
-              } else if (action === 'pick') {
+              } else if (action === 'pick') { // YYY
                 const colorWheel = color.makeColorWheel({
                   onpreview: colorString => {
                     // XXX

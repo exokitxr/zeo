@@ -20,6 +20,7 @@ const linkImg = require('../img/link');
 const upImg = require('../img/up');
 const downImg = require('../img/down');
 const chevronLeftImg = require('../img/chevron-left');
+const colorImg = require('../img/color');
 
 const numTagsPerPage = 6;
 
@@ -289,7 +290,10 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
         const string = focusValue !== null ? focusValue : inputText;
 
         return `\
-          <div style="display: flex; height: 50px; margin: 5px 20px; justify-content: center; align-items: center; box-sizing: border-box;">
+          <div style="display: flex; position: relative; height: 50px; margin: 5px 20px; justify-content: center; align-items: center; box-sizing: border-box;">
+            <a style="display: block; position: absolute; top: 0; left: 0; width: 160px; height: 160px; border: 2px solid #000; z-index: 1;" onclick="entityAttribute:${id}:${name}:color">
+              ${colorImg}
+            </a>
             <a style="display: block; width: 40px; height: 40px; margin-right: 10px; background-color: ${color};" onclick="entityAttribute:${id}:${name}:pick"></a>
             <a style="display: flex; position: relative; height: 40px; border: 2px solid #333; font-size: 24px; text-decoration: none; flex-grow: 1; align-items: center; overflow: hidden; box-sizing: border-box;" onclick="entityAttribute:${id}:${name}:focus" onmousedown="entityAttribute:${id}:${name}:focus">
               ${focus ? `<div style="position: absolute; width: 2px; top: 2px; bottom: 2px; left: ${inputValue}px; background-color: #333;"></div>` : ''}
