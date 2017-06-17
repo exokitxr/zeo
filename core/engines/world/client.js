@@ -689,127 +689,43 @@ class World {
 
           return result;
         };
-        const _handleSetTagAttribute = (userId, src, {name, value}) => {
+        const _handleSetTagAttribute = (userId, id, {name, value}) => {
           // same for local and remote user ids
-          let match;
-          if (match = src.match(/^world:(.+)$/)) {
-            const id = match[1];
 
-            const tagMesh = elementManager.getTagMesh(id);
-            tagMesh.setAttribute(name, value);
+          const tagMesh = elementManager.getTagMesh(id);
+          tagMesh.setAttribute(name, value);
 
-            return tagMesh;
-          } else {
-            console.warn('invalid set tag attribute arguments', {src, name, value});
-
-            return null;
-          }
+          return tagMesh;
         };
-        const _handleTagOpen = (userId, src) => {
+        const _handleTagOpen = (userId, id) => {
           // same for local and remote user ids
-          let match;
-          if (match = src.match(/^world:(.+)$/)) {
-            const id = match[1];
 
-            const tagMesh = elementManager.getTagMesh(id);
-            tagMesh.open();
-          } else {
-            console.warn('invalid tag open arguments', {src});
-          }
+          const tagMesh = elementManager.getTagMesh(id);
+          tagMesh.open();
         };
-        const _handleTagClose = (userId, src) => {
+        const _handleTagClose = (userId, id) => {
           // same for local and remote user ids
-          let match;
-          if (match = src.match(/^world:(.+)$/)) {
-            const id = match[1];
 
-            const tagMesh = elementManager.getTagMesh(id);
-            tagMesh.close();
-          } else {
-            console.warn('invalid tag open arguments', {src});
-          }
+          const tagMesh = elementManager.getTagMesh(id);
+          tagMesh.close();
         };
-        const _handleTagOpenDetails = (userId, src) => {
+        const _handleTagPlay = (userId, id) => {
           // same for local and remote user ids
-          let match;
-          if (match = src.match(/^(world|npm|asset):(.+)$/)) {
-            const type = match[1];
-            const id = match[2];
 
-            const tagMesh = (() => {
-              if (type === 'world') {
-                return elementManager.getTagMesh(id);
-              } else if (type === 'npm') {
-                return npmTagMeshes.find(tagMesh => tagMesh.item.id === id);
-              } else if (type === 'asset') {
-                return wallet.getAssetTagMeshes().find(tagMesh => tagMesh.item.id === id);
-              } else {
-                return null;
-              }
-            })();
-            tagMesh.openDetails();
-          } else {
-            console.warn('invalid tag open details arguments', {src});
-          }
+          const tagMesh = elementManager.getTagMesh(id);
+          tagMesh.play();
         };
-        const _handleTagCloseDetails = (userId, src) => {
+        const _handleTagPause = (userId, id) => {
           // same for local and remote user ids
-          let match;
-          if (match = src.match(/^(world|npm|asset):(.+)$/)) {
-            const type = match[1];
-            const id = match[2];
 
-            const tagMesh = (() => {
-              if (type === 'world') {
-                return elementManager.getTagMesh(id);
-              } else if (type === 'npm') {
-                return npmTagMeshes.find(tagMesh => tagMesh.item.id === id);
-              } else if (type === 'asset') {
-                return wallet.getAssetTagMeshes().find(tagMesh => tagMesh.item.id === id);
-              } else {
-                return null;
-              }
-            })();
-            tagMesh.closeDetails();
-          } else {
-            console.warn('invalid tag close details arguments', {src});
-          }
+          const tagMesh = elementManager.getTagMesh(id);
+          tagMesh.pause();
         };
-        const _handleTagPlay = (userId, src) => {
+        const _handleTagSeek = (userId, id, value) => {
           // same for local and remote user ids
-          let match;
-          if (match = src.match(/^world:(.+)$/)) {
-            const id = match[1];
 
-            const tagMesh = elementManager.getTagMesh(id);
-            tagMesh.play();
-          } else {
-            console.warn('invalid tag play arguments', {src});
-          }
-        };
-        const _handleTagPause = (userId, src) => {
-          // same for local and remote user ids
-          let match;
-          if (match = src.match(/^world:(.+)$/)) {
-            const id = match[1];
-
-            const tagMesh = elementManager.getTagMesh(id);
-            tagMesh.pause();
-          } else {
-            console.warn('invalid tag pause arguments', {src});
-          }
-        };
-        const _handleTagSeek = (userId, src, value) => {
-          // same for local and remote user ids
-          let match;
-          if (match = src.match(/^world:(.+)$/)) {
-            const id = match[1];
-
-            const tagMesh = elementManager.getTagMesh(id);
-            tagMesh.seek(value);
-          } else {
-            console.warn('invalid tag seek arguments', {src, value});
-          }
+          const tagMesh = elementManager.getTagMesh(id);
+          tagMesh.seek(value);
         };
         const _handleLoadModule = (userId, plugin) => {
           loader.requestPlugin(plugin)
@@ -1156,35 +1072,6 @@ class World {
           priority: 1,
         });
 
-        const _getTagIdSrc = id => {
-          const _getWorldSrc = () => {
-            if (elementManager.getTagMeshes().some(tagMesh => tagMesh.item.id === id)) {
-              return 'world:' + id;
-            } else if (npmTagMeshes.some(tagMesh => tagMesh.item.id === id)) {
-              return 'npm:' + id;
-            } else if (wallet.getAssetTagMeshes().some(tagMesh => tagMesh.item.id === id)) {
-              return 'asset:' + id;
-            } else {
-              return null;
-            }
-          };
-          const _getHandSrc = () => {
-            const controllers = cyborg.getControllers();
-
-            for (let i = 0; i < SIDES.length; i++) {
-              const side = SIDES[i];
-              const grabMesh = grabManager.getMesh(side);
-
-              if (grabMesh && grabMesh.item.id === id) {
-                return 'hand:' + side;
-              }
-            }
-            return null;
-          };
-
-          return _getWorldSrc() || _getHandSrc() || null;
-        };
-
         const authorizedState = {
           loading: false,
           loaded: false,
@@ -1306,15 +1193,11 @@ class World {
         };
         tags.on('mutateRemoveEntity', _mutateRemoveEntity);
         const _mutateSetAttribute = ({id, name, value}) => {
-          const src = _getTagIdSrc(id);
-
-          _request('setTagAttribute', [localUserId, src, {name, value}], _warnError);
+          _request('setTagAttribute', [localUserId, id, {name, value}], _warnError);
         };
         tags.on('mutateSetAttribute', _mutateSetAttribute);
         const _tagsSetAttribute = ({id, name, value}) => {
-          const src = _getTagIdSrc(id);
-
-          _handleSetTagAttribute(localUserId, src, {name, value});
+          _handleSetTagAttribute(localUserId, id, {name, value});
         };
         tags.on('setAttribute', _tagsSetAttribute);
         const _tagsAttributeValueChanged = attributeSpec => {
@@ -1340,69 +1223,37 @@ class World {
         };
         tags.on('attributeValueChanged', _tagsAttributeValueChanged);
         const _tagsOpen = ({id}) => {
-          const src = _getTagIdSrc(id);
+          _request('tagOpen', [localUserId, id], _warnError);
 
-          _request('tagOpen', [localUserId, src], _warnError);
-
-          _handleTagOpen(localUserId, src);
+          _handleTagOpen(localUserId, id);
         };
         tags.on('open', _tagsOpen);
         const _tagsClose = ({id}) => {
-          const src = _getTagIdSrc(id);
+          _request('tagClose', [localUserId, id], _warnError);
 
-          _request('tagClose', [localUserId, src], _warnError);
-
-          _handleTagClose(localUserId, src);
+          _handleTagClose(localUserId, id);
         };
         tags.on('close', _tagsClose);
-        const _tagsOpenDetails = ({id, isStatic}) => {
-          const src = _getTagIdSrc(id);
-
-          if (!isStatic) {
-            _request('tagOpenDetails', [localUserId, src], _warnError);
-          }
-
-          _handleTagOpenDetails(localUserId, src);
-        };
-        tags.on('openDetails', _tagsOpenDetails);
-        const _tagsCloseDetails = ({id, isStatic}) => {
-          const src = _getTagIdSrc(id);
-
-          if (!isStatic) {
-            _request('tagCloseDetails', [localUserId, src], _warnError);
-          }
-
-          _handleTagCloseDetails(localUserId, src);
-        };
-        tags.on('closeDetails', _tagsCloseDetails);
         const _tagsPlay = ({id}) => {
-          const src = _getTagIdSrc(id);
+          _request('tagPlay', [localUserId, id], _warnError);
 
-          _request('tagPlay', [localUserId, src], _warnError);
-
-          _handleTagPlay(localUserId, src);
+          _handleTagPlay(localUserId, id);
         };
         tags.on('play', _tagsPlay);
         const _tagsPause = ({id}) => {
-          const src = _getTagIdSrc(id);
+          _request('tagPause', [localUserId, id], _warnError);
 
-          _request('tagPause', [localUserId, src], _warnError);
-
-          _handleTagPause(localUserId, src);
+          _handleTagPause(localUserId, id);
         };
         tags.on('pause', _tagsPause);
         const _tagsSeek = ({id, value}) => {
-          const src = _getTagIdSrc(id);
+          _request('tagSeek', [localUserId, id, value], _warnError);
 
-          _request('tagSeek', [localUserId, src, value], _warnError);
-
-          _handleTagSeek(localUserId, src, value);
+          _handleTagSeek(localUserId, id, value);
         };
         tags.on('seek', _tagsSeek);
         const _tagsSeekUpdate = ({id, value}) => {
-          const src = _getTagIdSrc(id);
-
-          _request('tagSeekUpdate', [localUserId, src, value], _warnError);
+          _request('tagSeekUpdate', [localUserId, id, value], _warnError);
         };
         tags.on('seekUpdate', _tagsSeekUpdate);
         const _reinstallModule = ({id}) => {
@@ -1620,9 +1471,9 @@ class World {
 
                 _handleRemoveTag(userId, id);
               } else if (type === 'setTagAttribute') {
-                const {args: [userId, src, {name, value}]} = m;
+                const {args: [userId, id, {name, value}]} = m;
 
-                const tagMesh = _handleSetTagAttribute(userId, src, {name, value});
+                const tagMesh = _handleSetTagAttribute(userId, id, {name, value});
 
                 // this prevents this mutation from triggering an infinite recursion multiplayer update
                 // we simply ignore this mutation during the next entity mutation tick
@@ -1636,33 +1487,33 @@ class World {
                   });
                 }
               } else if (type === 'tagOpen') {
-                const {args: [userId, src]} = m;
+                const {args: [userId, id]} = m;
 
-                _handleTagOpen(userId, src);
+                _handleTagOpen(userId, id);
               } else if (type === 'tagClose') {
-                const {args: [userId, src]} = m;
+                const {args: [userId, id]} = m;
 
-                _handleTagClose(userId, src);
+                _handleTagClose(userId, id);
               } else if (type === 'tagOpenDetails') {
-                const {args: [userId, src]} = m;
+                const {args: [userId, id]} = m;
 
-                _handleTagOpenDetails(userId, src);
+                _handleTagOpenDetails(userId, id);
               } else if (type === 'tagCloseDetails') {
-                const {args: [userId, src]} = m;
+                const {args: [userId, id]} = m;
 
-                _handleTagCloseDetails(userId, src);
+                _handleTagCloseDetails(userId, id);
               } else if (type === 'tagPlay') {
-                const {args: [userId, src]} = m;
+                const {args: [userId, id]} = m;
 
-                _handleTagPlay(userId, src);
+                _handleTagPlay(userId, id);
               } else if (type === 'tagPause') {
-                const {args: [userId, src]} = m;
+                const {args: [userId, id]} = m;
 
-                _handleTagPause(userId, src);
+                _handleTagPause(userId, id);
               } else if (type === 'tagSeek') {
-                const {args: [userId, src, value]} = m;
+                const {args: [userId, id, value]} = m;
 
-                _handleTagSeek(userId, src, value);
+                _handleTagSeek(userId, id, value);
               } else if (type === 'loadModule') {
                 const {args: [userId, plugin]} = m;
 
@@ -1710,8 +1561,6 @@ class World {
           tags.removeListener('attributeValueChanged', _tagsAttributeValueChanged);
           tags.removeListener('open', _tagsOpen);
           tags.removeListener('close', _tagsClose);
-          tags.removeListener('openDetails', _tagsOpenDetails);
-          tags.removeListener('closeDetails', _tagsCloseDetails);
           tags.removeListener('play', _tagsPlay);
           tags.removeListener('pause', _tagsPause);
           tags.removeListener('seek', _tagsSeek);
