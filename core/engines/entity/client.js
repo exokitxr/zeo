@@ -122,7 +122,7 @@ class Entity {
               !(item.metadata && item.metadata.isStatic) &&
               item.displayName.indexOf(inputText) !== -1
             )
-            .map(({item}) => _decorateEntity(item));
+            .map(({item}) => item);
 
           npmState.loading = false;
           npmState.page = 0;
@@ -194,7 +194,18 @@ class Entity {
 
               return {
                 type: 'html',
-                src: entityRenderer.getEntityPageSrc({loading, npmInputText, npmInputValue, attributeInputText, attributeInputValue, entity, tagSpecs, numTags, page, focusSpec}),
+                src: entityRenderer.getEntityPageSrc({
+                  loading,
+                  npmInputText,
+                  npmInputValue,
+                  attributeInputText,
+                  attributeInputValue,
+                  entity: entity && _decorateEntity(entity),
+                  tagSpecs,
+                  numTags,
+                  page,
+                  focusSpec,
+                }),
                 x: 0,
                 y: 0,
                 w: WIDTH,
@@ -264,7 +275,7 @@ class Entity {
         rend.on('tabchange', _tabchange);
 
         const _setEntity = item => {
-          npmState.entity = item !== null ? _decorateEntity(item) : null;
+          npmState.entity = item;
           npmState.page = 0;
 
           _updatePages();
