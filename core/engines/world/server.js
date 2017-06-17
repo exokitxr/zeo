@@ -164,6 +164,10 @@ class World {
                     })(cb);
 
                     delete tagsJson.tags[id];
+
+                    _saveTags();
+
+                    cb();
                   } else if (method === 'setTagAttribute') {
                     const [userId, id, {name: attributeName, value: attributeValue}] = args;
 
