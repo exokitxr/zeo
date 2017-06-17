@@ -187,6 +187,15 @@ class Entity {
                     tagId: tagId,
                     attributeName: attributeName,
                   };
+                } else if (match = type.match(/^entityAttributeColor:(.+?):(.+?)$/)) {
+                  const tagId = match[1];
+                  const attributeName = match[2];
+
+                  return {
+                    type: 'entityAttributeColor',
+                    tagId: tagId,
+                    attributeName: attributeName,
+                  };
                 } else {
                   return null;
                 }
@@ -508,34 +517,9 @@ class Entity {
                     _updatePages();
                   });
                 }
-              } else if (action === 'pick') { // YYY
-                const colorWheel = color.makeColorWheel({
-                  onpreview: colorString => {
-                    // XXX
-                  },
-                  onupdate: colorString => {
-                    tags.emit('setAttribute', {
-                      id: tagId,
-                      name: attributeName,
-                      value: '#' + colorString,
-                    });
-                  },
-                  menu: true,
-                });
-                scene.add(colorWheel);
-
-                const tagMesh = tags.getTagMeshes().find(tagMesh => tagMesh.item.id === tagId);
-                const {attributesMesh} = tagMesh;
-                const {attributeMeshes} = attributesMesh;
-                const attributeMesh = attributeMeshes.find(attributeMesh => attributeMesh.attributeName === attributeName);
-                const {position, rotation, scale} = _decomposeObjectMatrixWorld(attributeMesh);
-                colorWheel.position.copy(position.clone().add(new THREE.Vector3(0, -0.125, 0.001).applyQuaternion(rotation)));
-                colorWheel.quaternion.copy(rotation);
-                colorWheel.scale.copy(scale);
-                colorWheel.updateBoxTargets();
-
-                const keyboardFocusState = keyboard.fakeFocus({
-                  type: 'color',
+              } else if (action === 'pick') {
+                const keyboardFocusState =  keyboard.fakeFocus({
+                  type: 'entityAttributeColor:' + tagId + ':' + attributeName,
                 });
                 focusState.keyboardFocusState = keyboardFocusState;
 
@@ -544,10 +528,9 @@ class Entity {
 
                   _updateNpm();
                   _updatePages();
-
-                  scene.remove(colorWheel);
-                  color.destroyColorWheel(colorWheel);
                 });
+
+                _updatePages();
               } else if (action === 'toggle') {
                 const newValue = !attributeValue;
 

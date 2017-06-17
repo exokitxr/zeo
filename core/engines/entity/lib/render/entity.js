@@ -178,8 +178,20 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
     `;
   };
   const getAttributeInputSrc = (id, name, type, value, min, max, step, options, inputText, inputValue, focusSpec) => {
-    const focus = Boolean(focusSpec && focusSpec.type === 'entityAttribute' && focusSpec.attributeName === name);
-    const focusValue = !focus ? value : menuUtils.castValueStringToValue(inputText, type, min, max, step, options);
+    const focusType = (() => {
+      if (focusSpec && focusSpec.attributeName === name) {
+        if (focusSpec.type === 'entityAttribute') {
+          return 'input';
+        } else if (focusSpec.type === 'entityAttributeColor') {
+          return 'color';
+        } else {
+          return null;
+        }
+      } else {
+        return null;
+      }
+    })();
+    const focusValue = focusType === null ? value : menuUtils.castValueStringToValue(inputText, type, min, max, step, options);
 
     switch (type) {
       case 'matrix': {
@@ -216,7 +228,7 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
       case 'text': {
         return `\
           <a style="display: flex; position: relative; margin: 20px; border: 2px solid #333; font-size: 24px; text-decoration: none; align-items: center; overflow: hidden; box-sizing: border-box;" onclick="entityAttribute:${id}:${name}:focus" onmousedown="entityAttribute:${id}:${name}:focus">
-            ${focus ? `<div style="position: absolute; width: 2px; top: 0; bottom: 0; left: ${inputValue}px; background-color: #333;"></div>` : ''}
+            ${focusType === 'input' ? `<div style="position: absolute; width: 2px; top: 0; bottom: 0; left: ${inputValue}px; background-color: #333;"></div>` : ''}
             <div>${focusValue}</div>
           </a>
         `;
@@ -240,7 +252,7 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
               </div>
             </a>
             <a style="display: flex; position: relative; width: 100px; height: 40px; margin: 5px 20px; border: 2px solid; font-size: 24px; font-weight: 400; text-decoration: none; overflow: hidden; box-sizing: border-box;" onclick="entityAttribute:${id}:${name}:focus" onmousedown="entityAttribute:${id}:${name}:focus">
-              ${focus ? `<div style="position: absolute; width: 2px; top: 0; bottom: 0; left: ${inputValue}px; background-color: #333;"></div>` : ''}
+              ${focusType === 'input' ? `<div style="position: absolute; width: 2px; top: 0; bottom: 0; left: ${inputValue}px; background-color: #333;"></div>` : ''}
               <div>${string}</div>
             </a>
           </div>
@@ -251,7 +263,7 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
           options = [''];
         }
 
-        if (!focus) {
+        if (focusType === 'input') {
           return `\
             <a style="display: flex; height: 40px; margin: 5px 20px; padding: 5px; border: 2px solid #333; font-size: 20px; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="entityAttribute:${id}:${name}:focus" onmousedown="entityAttribute:${id}:${name}:focus">
               <div style="text-overflow: ellipsis; flex-grow: 1; overflow: hidden;">${focusValue}</div>
@@ -291,12 +303,12 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
 
         return `\
           <div style="display: flex; position: relative; height: 50px; margin: 5px 20px; justify-content: center; align-items: center; box-sizing: border-box;">
-            <a style="display: block; position: absolute; top: 0; left: 0; width: 160px; height: 160px; border: 2px solid #000; z-index: 1;" onclick="entityAttribute:${id}:${name}:color">
+            ${focusType === 'color' ? `<a style="display: block; position: absolute; top: 0; left: 0; width: 160px; height: 160px; border: 2px solid #000; z-index: 1;" onclick="entityAttribute:${id}:${name}:color">
               ${colorImg}
-            </a>
+            </a>` : ''}
             <a style="display: block; width: 40px; height: 40px; margin-right: 10px; background-color: ${color};" onclick="entityAttribute:${id}:${name}:pick"></a>
             <a style="display: flex; position: relative; height: 40px; border: 2px solid #333; font-size: 24px; text-decoration: none; flex-grow: 1; align-items: center; overflow: hidden; box-sizing: border-box;" onclick="entityAttribute:${id}:${name}:focus" onmousedown="entityAttribute:${id}:${name}:focus">
-              ${focus ? `<div style="position: absolute; width: 2px; top: 2px; bottom: 2px; left: ${inputValue}px; background-color: #333;"></div>` : ''}
+              ${focusType === 'input' ? `<div style="position: absolute; width: 2px; top: 2px; bottom: 2px; left: ${inputValue}px; background-color: #333;"></div>` : ''}
               <div>${string}</div>
             </a>
           </div>
