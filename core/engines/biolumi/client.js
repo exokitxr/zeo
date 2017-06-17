@@ -576,6 +576,7 @@ class Biolumi {
                 target: null,
                 anchor: null,
                 value: 0,
+                crossValue: 0,
               });
               this.hoverStates = {
                 left: _makeHoverState(),
@@ -655,6 +656,7 @@ class Biolumi {
                     hoverState.target = null;
                     hoverState.anchor = null;
                     hoverState.value = 0;
+                    hoverState.crossValue = 0;
 
                     if (dotMesh.visible) {
                       dotMesh.visible = false;
@@ -725,6 +727,7 @@ class Biolumi {
                       if (anchor) {
                         hoverState.anchor = anchor;
                         hoverState.value = (x - anchor.rect.left) / (anchor.rect.right - anchor.rect.left);
+                        hoverState.crossValue = (y - anchor.rect.top) / (anchor.rect.bottom - anchor.rect.top);
 
                         const anchorMidpoint = new THREE.Vector2(
                           ((anchor.rect.left + anchor.rect.right) / 2) / width * worldWidth,
@@ -751,6 +754,7 @@ class Biolumi {
                       } else {
                         hoverState.anchor = null;
                         hoverState.value = 0;
+                        hoverState.crossValue = 0;
 
                         if (boxMesh.visible) {
                           boxMesh.visible = false;

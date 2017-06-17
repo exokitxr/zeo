@@ -13,6 +13,7 @@ import {
 } from './lib/constants/entity';
 import entityRender from './lib/render/entity';
 import menuUtilser from './lib/utils/menu';
+import colorImg from './lib/img/color';
 
 class Entity {
   constructor(archae) {
@@ -36,30 +37,71 @@ class Entity {
       live = false;
     });
 
-    return archae.requestPlugins([
-      '/core/engines/three',
-      '/core/engines/input',
-      '/core/engines/webvr',
-      '/core/engines/biolumi',
-      '/core/engines/rend',
-      '/core/engines/tags',
-      '/core/engines/world',
-      '/core/engines/fs',
-      '/core/engines/keyboard',
-      '/core/engines/color',
-      '/core/utils/creature-utils',
-    ]).then(([
-      three,
-      input,
-      webvr,
-      biolumi,
-      rend,
-      tags,
-      world,
-      fs,
-      keyboard,
-      color,
-      creatureUtils,
+    const _requestColorImgData = () => new Promise((accept, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const {width, height} = img;
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+
+        const imageData = ctx.getImageData(0, 0, width, height);
+        const {data: imageDataData} = imageData;
+        imageData.getColorArray = (x, y) => {
+          const xPx = Math.floor(x * width);
+          const yPx = Math.floor(y * height);
+          const baseIndex = (xPx + (yPx * width)) * 4;
+          const colorArray = [
+            imageDataData[baseIndex + 0] / 255,
+            imageDataData[baseIndex + 1] / 255,
+            imageDataData[baseIndex + 2] / 255,
+          ];
+          return colorArray;
+        };
+
+        accept(imageData);
+      };
+      img.onerror = err => {
+        reject(err);
+      };
+      img.src = 'data:image/svg+xml;utf8,' + colorImg;
+    });
+
+    return Promise.all([
+      archae.requestPlugins([
+        '/core/engines/three',
+        '/core/engines/input',
+        '/core/engines/webvr',
+        '/core/engines/biolumi',
+        '/core/engines/rend',
+        '/core/engines/tags',
+        '/core/engines/world',
+        '/core/engines/fs',
+        '/core/engines/keyboard',
+        '/core/engines/color',
+        '/core/utils/creature-utils',
+      ]),
+      _requestColorImgData(),
+    ])
+    .then(([
+      [
+        three,
+        input,
+        webvr,
+        biolumi,
+        rend,
+        tags,
+        world,
+        fs,
+        keyboard,
+        color,
+        creatureUtils,
+      ],
+      colorImgData,
     ]) => {
       if (live) {
         const {THREE, scene} = three;
@@ -83,9 +125,6 @@ class Entity {
           fontWeight: biolumi.getFontWeight(),
           fontStyle: biolumi.getFontStyle(),
         };
-
-        const zeroQuaternion = new THREE.Quaternion();
-        const forwardVector = new THREE.Vector3(0, 0, -1);
 
         /* const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
         const _decomposeMatrix = matrix => {
@@ -381,7 +420,7 @@ class Entity {
             const onclick = (anchor && anchor.onclick) || '';
 
             let match;
-            if (match = onclick.match(/^entityAttribute:([^:]+):([^:]+)(?::([^:]+))?:(focus|set|tweak|pick|toggle|choose)(?::([^:]+))?$/)) {
+            if (match = onclick.match(/^entityAttribute:([^:]+):([^:]+)(?::([^:]+))?:(focus|set|tweak|pick|color|toggle|choose)(?::([^:]+))?$/)) {
               const tagId = match[1];
               const attributeName = match[2];
               const key = match[3];
@@ -529,6 +568,21 @@ class Entity {
                   _updateNpm();
                   _updatePages();
                 });
+
+                _updatePages();
+              } else if (action === 'color') {
+                const {value: x, crossValue: y} = hoverState;
+
+                const c = new THREE.Color().fromArray(colorImgData.getColorArray(x, y));
+                const newValue = '#' + c.getHexString();
+
+                tags.emit('setAttribute', {
+                  id: tagId,
+                  name: attributeName,
+                  value: newValue,
+                });
+
+                keyboard.tryBlur();
 
                 _updatePages();
               } else if (action === 'toggle') {
