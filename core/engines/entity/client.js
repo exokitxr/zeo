@@ -370,13 +370,13 @@ class Entity {
 
               const tagMesh = tags.getTagMeshes().find(tagMesh => tagMesh.item.id === tagId);
               const {item} = tagMesh;
-              const {attributes} = item;
+              const {module, attributes} = item;
               const attribute = attributes[attributeName];
               const {value: attributeValue} = attribute;
 
               if (action === 'focus') {
                 const {value: hoverValue} = hoverState;
-                const {type} = tags.getAttributeSpec(attributeName);
+                const {type} = tags.getAttributeSpec(module, attributeName);
 
                 const textProperties = (() => {
                   if (type === 'text') {
@@ -443,7 +443,7 @@ class Entity {
                   _updatePages();
                 });
               } else if (action === 'tweak') {
-                const attributeSpec = tags.getAttributeSpec(attributeName);
+                const attributeSpec = tags.getAttributeSpec(module, attributeName);
                 const {type} = attributeSpec;
 
                 if (type === 'number') {
