@@ -481,8 +481,10 @@ class Tags {
 
                     const {module} = entityItem;
                     const componentApis = tagComponentApis[module] || [];
+                    const componentElements = tagComponentInstances[module] || [];
                     for (let i = 0; i < componentApis.length; i++) {
                       const componentApi = componentApis[i];
+                      const componentElement = componentElements[i];
                       const {attributes: componentAttributes = []} = componentApi;
                       const componentAttribute = componentAttributes[attributeName];
 
@@ -490,7 +492,6 @@ class Tags {
                         const {type: attributeType} = componentAttribute;
                         const oldAttributeValue = menuUtils.castValueToCallbackValue(oldValueJson, attributeType);
                         const newAttributeValue = menuUtils.castValueToCallbackValue(newValueJson, attributeType);
-                        const componentElement = tagComponentInstances[module];
 
                         componentElement.entityAttributeValueChangedCallback(entityElement, attributeName, oldAttributeValue, newAttributeValue);
 
