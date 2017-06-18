@@ -98,7 +98,7 @@ code {
   text-decoration: inherit;
 }
 .hero .hero-wrap p {
-  margin-bottom: 20px;
+  margin-bottom: 30px;
   font-size: 16px;
   line-height: 1.4;
   font-weight: 400;
@@ -234,13 +234,12 @@ b {
 }
 .button.solid {
   padding: 2px 17px;
-  // background-color: #673AB7;
   background: linear-gradient(to bottom, #ee0979, #ff6a00);
   border: 0;
   color: #FFF;
 }
 .button.solid:hover {
-  background-color: #512DA8;
+  background: linear-gradient(to bottom, #c50763, #cc5500);
 }
 .button.primary {
   color: #4CAF50;
