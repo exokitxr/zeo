@@ -1,45 +1,49 @@
-# Introduction
+# What's this?
 
-## What's this
+It's your personal multiplayer VR server.
 
-*Zeo* is a multiplayer VR server for your browser that you can extend with a mods in realtime. Mods are just Javascript (node modules) that run in the browser or on the server. There's already a large collection of mods for you to play with, but you can also make your own, it's pretty easy. 
+You connect with your browser. Anyone can join if you give them the URL. &#x1F47E;
 
-Modded or not, anyone can join your Zeo server if you give them the URL. That could get confusing, but luckily there's a magic Virtual Reality IDentity (VRID) system baked in that tracks your avatar and the digital things you _regardless of which server you're on_, because your VRID lives in a distributed blockchain. Oh yeah, and your avatar can own real credits and other digital assets. And by real we mean fake.
+<iframe src="https://www.youtube.com/embed/Ip-7ypbsgIM" style="width: 580px; height: calc(580px / 16 * 9); border: 0;"></iframe>
 
-It's been asked whether this whole thing is a joke. The answer is yes. But you can use it anyway!
+## What can I do with it?
 
-## How's I get in on it?
+Connect face-to-face with people across the world. Headsets are supported ([WebVR](https://webvr.info/)) but it also works with mouse and keyboard.
 
-#### Join a server
+Install a bunch of [mods](/mods) (items, superpowers, games, etc) to your server to keep things interesting. If you know Javascript you can even write your own mods and [get paid to make VR stuff](/docs/payments).
 
-List of servers [here](/servers). You join at the pleasure of the server admin. Expect treasures and horrors.
+Explore other people's servers and find literal treasures (`CRD` virtual credits), as well as horrors.
 
-To join a world all you need is to open the server URL (<i>fits in a tweet!</i>) in a web browser with WebGL support. You can use a mouse and keyboard to emulate the controls, but you can also use a true headset with WebVR.
+Your avatar's stats and inventory <i>carries across servers</i> with the [`CRD` blockchain](https://github.com/modulesio/crds) &mdash; blockchain is the same tech that powers Bitcoin.
 
-If you have the hardware and grant the serv permission, you can even use voice and video chat.
+## How do I run it?
 
-#### Run a server
+- **Windows**: download [latest release](https://github.com/modulesio/zeo/releases), unzip, and run
+- **Linux/OSX**: `npm i -g zeo`, then `zeo`
 
-If you don't want to play by someone else's rules, you can [run your own server](/docs/run).
+## Keyboard controls
 
-#### Manage my identity
+<img src="/img/controls.png" width=580 height=481 style="width: 100%;">
 
-Your VR identity (VRID) runs on a distributed blockchain. It's just a browser cookie on your machine, so you're in control. Your VRID follows you across servers automatically. You can export your VRID anytime -- it's just a set of English words you can write down.
+## How do I manage my avatar (VRID)?
 
-Manage your VRID with a webwallet [here](/id), _but that's just for conveniece. You can totally [run your own](/webwallet)._
+[Access your VRID here](/vrid).
 
-#### Make my own VR content
+Your VRID lives in a browser cookie, so _make sure to export your keys_ or you could lose everything &#x1F63F;. If you enter your email on your VRID page we'll set you up with recovery &#x1F44D;.
 
-Modules are just Javascript based on [THREE.js](https://threejs.org). To make your module available form VR, just publish to [npm](https://npmjs.org) with the `zeo-module` keyword. Your module can run code in both the browser and the server, and even accept payments.
+Read all about how VRID works [here](/docs/vrid).
 
-[Learn the API](/docs/api) to see all of the things your module can do.
+## Links
 
-### How do I make my own content?
+- [User manual](/docs/user-manual). Non-technical.
+- [List of public servers](/servers). You join at the admin's pleasure &#x1F607;.
+- [List of mods](/modules). If you're a nerd, they're actually just [`npm`](https://npmjs.org/) modules.
+- [API docs](/api). Technical.
 
-It's literally just `npm` modules. If you publish with the `zeo-module` keyword your module is instantly avialable to load on any server.
+## Help?
 
-Modules can contain arbitrary browser-side and server-side Javascript code, and you can of course depend on any module on `npm`. Modules are automatically hotloaded and unloaded.
+Sure!
 
-For how to make your module hotloadable (super easy!), see [here]().
-
-To see all of the VR APIss you can hook into, see [here]().
+- [Slack](https://zeovr.slack.com/)
+- [Forum](https://zeovr.io/forum)
+- [Github](https://github.com/modulesio/zeo)
