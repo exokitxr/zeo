@@ -5,10 +5,9 @@ body {
 .header {
   display: flex;
   height: 80px;
-  padding-left: 30px;
+  padding: 0 30px;
   font-family: var(--fonts);
-  background-color: rgba(255, 255, 255, 0.9);
-  border-bottom: 2px solid #CCC;
+  border-bottom: 2px solid #000;
   align-items: center;
   box-sizing: border-box;
   z-index: 1;
@@ -85,7 +84,6 @@ body {
 navbar {
   display: flex;
   height: 80px;
-  margin-bottom: -2px;
   font-size: 16px;
   font-weight: 400;
   align-items: center;
@@ -93,7 +91,7 @@ navbar {
 navbar > a {
   display: flex;
   position: relative;
-  height: 100%;
+  height: calc(80px - 2px);
   padding: 0 20px;
   padding-top: 10px;
   border-bottom: 5px solid transparent;
@@ -118,6 +116,9 @@ navbar > a.blue.selected {
 }
 navbar > a.blue.selected::after {
   border-color: #4CAF50 transparent transparent transparent;
+}
+navbar > a.id {
+  font-weight: 600;
 }
 navbar > a.green {
   font-weight: 600;
