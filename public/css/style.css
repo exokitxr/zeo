@@ -154,7 +154,7 @@ code {
 .documentation-body .markdown-body h1,
 .documentation-body .markdown-body h2 {
   border-bottom-width: 2px;
-  border-bottom-color: rgba(0, 0, 0, 0.1);
+  border-bottom-color: #000;
 }
 .documentation-body .markdown-body img {
   background-color: transparent;
