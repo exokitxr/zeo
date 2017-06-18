@@ -30,7 +30,7 @@
     "node": "8.x"
   },
   "dependencies": {
-    "archae": "0.0.77",
+    "archae": "0.0.80",
     "body-parser": "^1.16.1",
     "cookie": "^0.3.1",
     "cryptoutils": "0.0.7",
