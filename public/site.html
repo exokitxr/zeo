@@ -12,7 +12,7 @@
       <a href="https://zeovr.io" class=header-logo-anchor><img width=32 height=51 src="/img/logo.png" class=header-icon>zeo vr</a>
     </div>
     <navbar>
-      <a href="/" class="try blue selected">Try it</a>
+      <a href="/" class="try blue selected">Home</a>
       <a href="/docs" class="documentation blue">Documentation</a>
       <a href="/modules" class="modules blue">Modules</a>
       <a href="/servers" class="servers blue">Servers</a>
@@ -39,71 +39,38 @@
           <p>It's your private multiplayer VR server. Connect with a URL in your browser. Share it! Identity carries over across servers (via the <a href="https://github.com/modulesio/crds" class=link><code>CRD</code> blockchain</a>). Hotload <a href="/modules" class=link>npm mods</a> (items, games, superpowers) to your face without leaving VR. Works with a headset or mouse + keyboard. Make your own JS mods and earn <code>CRD</code> with the <a href="/docs/payments" class=link>payments API</a>.</p>
           <p><b>Q:</b> Is this a joke? <b>A:</b> Only one way to find out &#x1F47E;</p>
           <div class=buttons>
-            <a href="#" class="button solid">Find a server &rsaquo;</a>
-            <a href="#" class=button>Read the whitepaper</a>
+            <a href="/servers" class="button solid">Find a server &#x1f86a;</a>
+            <a href="/whitepaper" class=button>Read whitepaper!</a>
+            <a href="/docs" class=button>Learn more!</a>
           </div>
         </div>
       </div>
     </section>
-    <section class=story>
-      <div class=story-wrap>
-        <h1>How it makes you more awesome</h1>
-        <div class=story-item>
-          <img src="/img/earth-box.svg" class=story-item-icon>
-          <div class=story-item-content>
-            <h2>Own your world</h2>
-            <p>You own your server. Friends can join with a browser URL. You're there together with voice chat. You can use your headset if you're cool, or just mouse + keyboard if you're too cool for a headset. <a class=link>Learn more</a></p>
-          </div>
-        </div>
-        <div class=story-item>
-          <img src="/img/ic_device_hub_black_24px.svg" class=story-item-icon>
-          <div class=story-item-content>
-            <h2>Download superpowers</h2>
-            <p>Mod your VR world with drag-and-drop tools, games, and abilities for your avatar. If you're a nerd: it's all just Javascript on npm, you get to make your own stuff! If you're not a nerd: don't worry, you found this thing so you're nerd enough. <a class=link>Learn more</a></p>
-          </div>
-        </div>
-        <div class=story-item>
-          <img src="/img/cash.svg" class=story-item-icon>
-          <div class=story-item-content>
-            <h2>Increase your digital worth</h2>
-            <p>The VR blockchain is mining coins for you -- right now. Find coins on servers and add them to your webwallet. Your coins are stored locally, so only you get to hold them, and use them to buy awesome things in VR. <a class=link>Learn more</a></p>
-          </div>
-        </div>
-        <div class=story-item>
-          <img src="/img/satellite-variant.svg" class=story-item-icon>
-          <div class=story-item-content>
-            <h2>Hack your metaverse</h2>
-            <p>Make virtual stuff, publish to NPM, mine coins, mint assets, accept payments. The APIs are waiting for you to work your hacker magic. Either way, what's yours is yours. Your content and coins live in a P2P network. <a class=link>Learn more</a></p>
-          </div>
-        </div>
-      </div>
-    </section>
-    <section class=story>
-      <div class=story-line>
-        <div class=tiles>
-          <a class=tile>
-            <img src="/img/ic_explore_black_24px.svg" class=icon>
-            <div class=label>Find a server</div>
-            <div class=sub>Don't worry there's a tutorial</div>
-          </a>
-          <a class=tile>
-            <img src="/img/ic_donut_small_black_24px.svg" class=icon>
-            <div class=label>Find content</div>
-            <div class=sub>See what you're missing out on</div>
-          </a>
-          <a class=tile>
-            <img src="/img/ic_account_balance_wallet_black_24px.svg" class=icon>
-            <div class=label>Open wallet</div>
-            <div class=sub>Get some free coins too</div>
-          </a>
-          <a class=tile>
-            <img src="/img/ic_book_black_24px.svg" class=icon>
-            <div class=label>Read docs</div>
-            <div class=sub>Learn to run your a server and hack</div>
-          </a>
-        </div>
-      </div>
-    </section>
+    <div class=screenshots>
+      <div class=screenshots-wrap id=screenshots-wrap></div>
+    </div>
+    <script>
+      const SCREENSHOTS = (() => {
+        function pad(n, width) {
+          n = n + '';
+          return n.length >= width ? n : new Array(width - n.length + 1).join('0') + n;
+        }
+        const result = [];
+        for (let i = 39; i <= 86; i++) {
+          if (![41,43,45,48,50,53,55,57,59,61,63,65,69,71,74,76,78,83].includes(i)) {
+            result.push('/img/screenshots/lol-' + pad(i, 3) + '.png');
+          }
+        }
+        return result;
+      })();
+      const screenshotsWrap = document.querySelector('#screenshots-wrap');
+      for (let i = 0; i < 150; i++) {
+        const img = new Image();
+        img.className = 'screenshot';
+        img.src = SCREENSHOTS[i % SCREENSHOTS.length];
+        screenshotsWrap.appendChild(img);
+      }
+    </script>
     <footer class=footer>
       <div class=footer-wrap>
         <div class=footer-left><a href="/" class="link soft">Home</a> | <a href="https://github.com/modulesio/zeo" class="link soft">Github</a> | <a href="mailto:hello@zeovr.io" class="link soft">Contact</a></div>

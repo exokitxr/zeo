@@ -121,6 +121,20 @@ code {
 .hero .hero-wrap .button + .button {
   margin-left: 10px;
 }
+.screenshots {
+  display: flex;
+  justify-content: center;
+}
+.screenshots .screenshots-wrap {
+  display: flex;
+  flex-wrap: wrap;
+}
+.screenshots .screenshot {
+  width: 2%;
+  height: 2vw;
+  padding: 2px;
+  box-sizing: border-box;
+}
 
 .documentation-body {
   position: relative;
@@ -999,7 +1013,7 @@ section.list {
   height: 80px;
   padding: 0 30px;
   background-color: #000;
-  color: #808080;
+  color: #FFF;
   font-size: 13px;
   justify-content: center;
   align-items: center;
