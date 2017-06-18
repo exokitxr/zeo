@@ -1,47 +1,57 @@
-# VRID
+## What's VRID?
 
-### What is a VRID?
+It's your *V*irtual *R*eality *ID*entity. Manage yours [here](/id).
 
-Your Virtual Reality IDentity remembers your avatar and the things you own in VR. Your VRID stays with you even if you move to a different server, because it's stored on a distributed blockchain (the same technology behind Bitcoin).
+Basically it's your avatar on VR servers. Your VRID holds your stats, `CRD` ("credits") virtual currency, and items. Your VRID _carries across servers_ because it's _not stored on any server_ -- it's replicated on the [`CRD` blockchain](https://github.com/modulesio/crds).
 
-The most valuable part of your VRID is your wallet. That's what holds all of your _credits_ (money) and _assets_ (property).
+## How do I get one?
 
-You don't have to do anything to get a VRID. It's just a key that points to your identity on the blockchain. It's automatically generated for you if you don't have one.
+You don't need to do anything! You already [have a VRID here](/id).
 
-You can manage your VRID [here](/id). But remember, your VRID is not stored on this site!
+Basically a VRID is just a secret number that identifies you to the blockchain and lets you make transactions on it. But don't worry about all that &mdash; it's handled for you under the hood.
 
-### What's are credits?
+The only thing you need to remember is that your VRID secret key is stored in your browser cookies, so _you should export it_ and keep it safe. If you provide your email on your [VRID page](/id) we'll set you up with recovery.
 
-Credits (CRD) are the currency that's mined by our blockchain network. We use a fork of the bitcoin software and the coins it generates are called credits.
+## What can I do with VRID?
 
-You can literally hold your credit bills in VR by pulling them from your wallet page in VR. You can leave your credits in the VR world for yourself or someone else to pick them up later, and you can trade credits with other players for goods and serives. You can also use credits to buy things, like mods.
+With your VRID you can do awesome things like find hidden treasures across the metaverse, trade with people you meet, and [make your own mods](/docs/api) and sell them. You don't need anyone's permission.
 
-Since credits are cryptographically stored on the blockchain ledger, they cannot be forged or faked by anyone (including the developers!). That makes them valuable.
+That's the power of of the blockchain &#x1F984;.
 
-The network is set up so that 50 CRD is mined every 10 minutes, on average.
+## What's the CRD blockchain?
 
-### Are credits bitcoins?
+A blockchain is an internet transaction system with no owner. Think of it like a bank run by robots who pay people to keep them running.
 
-No.
+Bitcoin is one blockchain, but there are many. `CRD` ("credits") is just another blockchain that uses the same concepts and algorithms as Bitcoin. The main difference is that CRD is specifically designed for realtime servers like VR. Some features of `CRD`:
 
-They are generated in the same manner as bitcoins (mining), but credits don't count as bitcoins, and bitcoins don't count as credits.
+- _Fast transactions_: Much higher limits and lower block times compared to Bitcoin
+- _Security features_: Charge and chargeback support (like credit cards), which lets you use CRD even with untrusted people in untrusted environments
+- Extensible value: Invent new currencies and trade them, so when you make a badass +1 Sword you can trade for 10 potions of invisibility
+- _Designed for the web_: CRD is based on Javascript and JSON, which works smoothly in web browsers
 
-In technical terms, we use the same software but a different blockchain.
+The [`CRD` software is open source on Github](https://github.com/modulesio/crds). You'll find much more technical discussion there.
 
-### What are assets?
+## What's the CRD currency?
 
-Assets are currencies that behave just like credits, except they're called something else, and they're created by users in arbitrary quantities, instead of being mined by the network in fixed quantities.
+`CRD` is the basic currency of the `CRD` blockchain.
 
-Anyone can create a new asset with as many copies as they like. Including you! You can do that on your VRID page [here](/id).
+The only special thing about `CRD` is that it's what miners get for "mining" the `CRD` blockchain.
 
-Assets might seem pointless at first glance, but they can be used to represent ownership. For example, mods can look up whether you own a certain asset to decide whether you own that mod. And if you don't own, it can offer you the option to purchase it and fund the author's awesome work in making that mod. So assets can actually be quite valuable.
+## How do I get CRD?
 
-You can trade assets in exactly the same way you trade credits. And of course you can trade credits for assets and vice versa.
+1. [Mine the `CRD` blockchain](https://github.com/modulesio/crds).
+1. Find `CRD` on [public servers](/servers). Pick it up and put it in your VRID wallet.
+1. Make awesome VR stuff and [open a VR store](/docs/payments).
+1. Ask on Twitter! [#zeovr](https://twitter.com/hashtag/zeovr)
 
-### Where do I get credits?
+## I'm a nerd, what are the deets
 
-We're constantly dropping them on servers, so you might just be able to find them lying around if you explore.
+It's a `SHA-256` Merkle tree of JSON signed with `secp256k1` ECC. Blocks and messages are indexed in a database, also JSON. No TXO's, just balances.
 
-You can mine credits yourself with regular bitcoin mining software.
+Mining is dynamic target `SHA-256`, solution gets constant coinbase. Minting custom tokens requires holding the corresponding minting token. Anyone can assign themselves a minting token for an unassigned name.
 
-Or, if you're too lazy to do either of those things, jusst tweet us your VRID ([@modulesio](https://twitter.com/modulesio)) and we'll throw you some CRD!
+Sends are to an address, no scripts. Divisibility to cents.
+
+Charges and chargebacks are sends that require no signature, but have settle block delay. Within that delay either party can sign a message to chargeback. Addresses can be locked to prevent charges, which will be immediately rejected.
+
+More on the [Github page](https://github.com/modulesio/crds).
