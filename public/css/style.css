@@ -18,8 +18,11 @@ a {
   outline: none;
   cursor: pointer;
 }
-.link:not(.soft), .link.soft:hover {
+.link {
   text-decoration: underline;
+}
+.link:hover {
+  color: #2196F3;
 }
 code {
   display: inline-block;
@@ -65,22 +68,50 @@ code {
   align-items: center;
   flex-direction: column;
 }
+.hero .hero-right .dollar {
+  user-select: none;
+}
 .hero .hero-wrap h1,
-.hero .hero-wrap p {
+.hero .hero-wrap pre,
+.hero .hero-wrap p,
+.hero .hero-wrap ul {
   width: 100%;
   margin: 0;
 }
 .hero .hero-wrap h1 {
-  margin-bottom: 50px;
-  font-size: 60px;
+  margin-bottom: 30px;
+  font-size: 50px;
   line-height: 1.2;
-  font-weight: 300;
+  font-weight: 400;
+}
+.hero .hero-wrap pre {
+  margin-bottom: 30px;
+  padding: 10px;
+  border: 2px solid;
+  font-size: 14px;
+  line-height: 1.6;
+  box-sizing: border-box;
+}
+.hero .hero-wrap code {
+  background-color: #EEE;
+  border-radius: 3px;
+  text-decoration: inherit;
 }
 .hero .hero-wrap p {
   margin-bottom: 20px;
-  font-size: 18px;
-  line-height: 1.8;
+  font-size: 16px;
+  line-height: 1.4;
   font-weight: 400;
+}
+.hero .hero-wrap ul {
+  padding: 0;
+  list-style-type: none;
+}
+.hero .hero-wrap ul li {
+  margin-bottom: 10px;
+  padding: 5px;
+  padding-left: 10px;
+  // border-left: 2px solid;
 }
 .hero .hero-wrap .buttons {
   display: flex;
@@ -202,8 +233,10 @@ b {
   cursor: auto;
 }
 .button.solid {
-  background-color: #673AB7;
-  border-color: transparent;
+  padding: 2px 17px;
+  // background-color: #673AB7;
+  background: linear-gradient(to bottom, #ee0979, #ff6a00);
+  border: 0;
   color: #FFF;
 }
 .button.solid:hover {
