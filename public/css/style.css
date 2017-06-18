@@ -48,12 +48,10 @@ code {
 .hero .hero-wrap {
   display: flex;
   position: relative;
-  width: 650px;
+  width: 800px;
 }
 .hero .hero-left {
-  position: absolute;
-  top: 20px;
-  left: calc(-240px - 50px);
+  margin-right: 30px;
 }
 .hero .hero-left .video {
   width: 240px;
@@ -142,6 +140,7 @@ code {
 }
 .documentation-body .markdown-body {
   display: flex;
+  min-height: calc(100vh - (80px + 100px));
 }
 .documentation-body .markdown-body .toc {
   width: 220px;
