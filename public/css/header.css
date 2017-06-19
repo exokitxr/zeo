@@ -84,7 +84,7 @@ body {
 navbar {
   display: flex;
   height: 80px;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 400;
   align-items: center;
 }
@@ -94,7 +94,7 @@ navbar > a {
   height: calc(80px - 2px);
   padding: 0 20px;
   padding-top: 10px;
-  border-bottom: 5px solid transparent;
+  border-bottom: 2px solid transparent;
   align-items: center;
   box-sizing: border-box;
   cursor: pointer;
