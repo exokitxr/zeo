@@ -1,4 +1,4 @@
-## What is a mod?
+## What's a mod?
 
 A `mod` is a piece of Javascript code that runs on your VR server.
 
