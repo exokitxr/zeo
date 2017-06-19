@@ -46,6 +46,7 @@ Read all about how VRID works [here](/docs/vrid).
 
 ## Links
 
+- [Getting started](/docs/getting-started). Start here.
 - [User manual](/docs/user-manual). Non-technical.
 - [List of public servers](/servers). You join at the admin's pleasure &#x1F607;.
 - [List of mods](/modules). If you're a nerd, they're actually just [`npm`](https://npmjs.org/) modules.
