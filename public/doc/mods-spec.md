@@ -1,4 +1,4 @@
-## Modules overview
+## Modules specification
 
 Mods are just [`npm` modules](https://npmjs.org/).
 

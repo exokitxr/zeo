@@ -1,4 +1,4 @@
-# Run a server
+## Run a server
 
 A server is a VR world. Anyone can run one. The code is [open source on Github](https://github.com/modulesio/zeo).
 

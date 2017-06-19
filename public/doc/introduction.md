@@ -1,33 +1,44 @@
-# What's this?
+## Zeo is _your_ VR world
 
-It's your personal multiplayer VR server.
+Basically, this is a thing that lets you build your VR world with your own hands... ok, and a ton of [mods](https://github.com/modulesio/zeo). &#x1F47E;
 
-You connect with your browser. Anyone can join if you give them the URL. &#x1F47E;
+You run it and connect with a web browser. Friends can join if you give them the URL. You don't even need a headset b/c it works with mouse and keyboard. But definitely more awesome with a headset.
+
+And your world really _is_ yours, because you run it yourself. You're boss, also everyone knows you're boss because [_blockchain magic_](/docs/vrid) carries your inventory across to all servers.
+
+Plus if you know Javascript, you can [make your own mods](/docs/mods) and get paid in `CRD` ("credits").
 
 <iframe src="https://www.youtube.com/embed/Ip-7ypbsgIM" style="width: 580px; height: calc(580px / 16 * 9); border: 0;"></iframe>
 
-## What can I do with it?
+## Features
 
-Connect face-to-face with people across the world. Headsets are supported ([WebVR](https://webvr.info/)) but it also works with mouse and keyboard.
-
-Install a bunch of [mods](/mods) (items, superpowers, games, etc) to your server to keep things interesting. If you know Javascript you can even write your own mods and [get paid to make VR stuff](/docs/payments).
-
-Explore other people's servers and find literal treasures (`CRD` virtual credits), as well as horrors.
-
-Your avatar's stats and inventory <i>carries across servers</i> with the [`CRD` blockchain](https://github.com/modulesio/crds) &mdash; blockchain is the same tech that powers Bitcoin.
+- **Free!** &#x1F4B8; [Also open source](https://github.com/modulesio/zeo)
+- Runs on _your_ machine so you're da boss
+- Connects from any modern browser with a URL
+- Mouse and keyboard or headset, both work
+- Multiplayer w/ voicechat out of the box
+- Extendable with mods from inside VR
+- Inventory carries across servers with [`VRID`](/docs/vrid)
+- Open source Javascript, so you can _literally_ hack the world
 
 ## How do I run it?
 
+If you're pro:
+
 - **Windows**: download [latest release](https://github.com/modulesio/zeo/releases), unzip, and run
 - **Linux/OSX**: `npm i -g zeo`, then `zeo`
+
+If you need help, he have a [page for that too](/docs/getting-started)!
 
 ## Keyboard controls
 
 <img src="/img/controls.png" width=580 height=481 style="width: 100%;">
 
-## How do I manage my avatar (VRID)?
+## VRID
 
 [Access your VRID here](/vrid).
+
+It's your blockchain identity in VR. It _carries across servers_ because it's not stored on any server -- it's all in the [blockchain cloud](/docs/vrid).
 
 Your VRID lives in a browser cookie, so _make sure to export your keys_ or you could lose everything &#x1F63F;. If you enter your email on your VRID page we'll set you up with recovery &#x1F44D;.
 
