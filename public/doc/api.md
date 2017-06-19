@@ -16,7 +16,7 @@ The APIs are grouped into several subkeys according to their function. Here's th
 - `player`: handles multiplayer stuff, such as querying player states and enter/leave events
 - `ui`: provides utilities for user interface rendering, such as menus
 - `sound`: provides positional audio support
-- `interset`: provides advanced, GPU-accellerated intersection testing support
+- `intersect`: provides advanced, GPU-accellerated intersection testing support
 - `teleport`: lets you hook in to the teleport system by adding and removing surfaces
 - `payment`: provides a set of APIs you can use to interact with user's VRID, such as asset ownership and charges
 
