@@ -36,7 +36,7 @@ If you're running a VR headset, your machine definitely meets all requirements.
 
 #### If you're using Windows
 
-Only `Windows 10` is supported.
+Only `Windows 10 64-bit` is supported.
 
 1. Download the latest release [here](https://github.com/modulesio/zeo/releases).
 1. Unzip the `.zip` file. Windows does that, but you can also use [`7-zip`](http://www.7-zip.org/download.html) or whatever.
