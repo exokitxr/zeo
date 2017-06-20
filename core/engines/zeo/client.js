@@ -519,18 +519,6 @@ class Zeo {
                         tags.unregisterComponent(pluginInstance, componentApi);
                       }
 
-                      getWorldElement() {
-                        return tags.getWorldElement();
-                      }
-
-                      getModulesElement() {
-                        return tags.getModulesElement();
-                      }
-
-                      getEntitiesElement() {
-                        return tags.getEntitiesElement();
-                      }
-
                       makeFile(options) {
                         return world.makeFile(options);
                       }
