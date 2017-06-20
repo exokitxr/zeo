@@ -50,8 +50,38 @@ There are two kinds of servers: _public_ and _private_. Public servers will be l
 
 ### Wallet tab
 
+Your VR server comes with [`VRID` blockchain](/docs/vrid) integration that _carries across_ servers, so you can keep items and CRD ("credits") regardless of where you go.
 
+The *Wallet* tab lets you see all items your VRID avatar has, and take them out of your wallet into the world. Search for an asset using the standard search input, then click the asset and click an amount to place it into the world.
+
+Your item is as a unique pixel blob that flats in the world. If you move your controller over an item you'll see the name of the asset and how much there is in your HUD (heads up displace) in front of you. You can grab the item and place it in the world by holding the `GRIP` button. Some mods can interact with your item. For example, there are vending machines that give you stuff if you place the correct item into them. How it works is spelled out in each mod's readme file. &#x1F4D6;
+
+You can also grab items and move them to your chest to add them to your wallet. This works regardless of whether it's your item or someone else's. You're welcome to trade items with your friends.
+
+The magic is that _mods know about your items_! Mods will behave differently depending on whether you have a certain item. So the `sword` mod gives you different swords depending on the `SWORD` items you have in your VRID. This works automagically. &#x1F984;
+
+You don't have to worry about how any of this works under the hood, but the short answer is your stuff lives on the `VRID` blockchain, and your browser stores the signing keys in a cookie. If you want to read more about that [/docs/vrid](there's a whole section for it).
 
 ### Config tab
 
+The config tab lets you tweak the settings of your client (browser) and server.
 
+The client settings are only for you, but the server settings affect everyone on the server. The client settings are only stored in your browser, but the server settings are saved on the server.
+
+#### Client settings
+
+- *Resolution*: Adjust graphics detail of the world. You should not change this unless you have performance issues. Lower settings will look worse but might give you a higher framete. Higher setting looks better but takes more processing power.
+
+- *Stats*: Show an FPS counter in the corner of the menu.
+
+#### Server settings
+
+- *Visibility*: _Public_ or _private_. _Public_ is the default. The changes whether your server appears in public server lists (such as the Servers tab). _Public_ means it will appear and _private_ means it will be hidden. This _doesn't_ prevent people from joining your server if they find out the URL. For that you want to use a _Password_.
+
+- *Password*: Password-protect your server. Everyone will need to know this password to join the server, even if they have the URL. If this is blank then there is no password. Don't get locked out!
+
+- *Max players*: The number of players allowed on the server at the same time. This is deliberately limited for performance. You caan increase this but you might have performance problems, so be careful.
+
+### Conclusion
+
+That about wraps up the editor tutorial. Why not [test your new skillz with some mods](/mods)?
