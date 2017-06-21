@@ -145,7 +145,6 @@ const getAssetPageSrc = ({asset: {asset, quantity}, charging}) => {
         <div style="display: flex; padding-left: 20px; flex-wrap: wrap; box-sizing: border-box;">
           ${
             [
-              0.01, 0.05, 0.10, 0.25,
               1, 2, 5, 10,
               20, 50, 100, 500,
               1000, 5000, 10000, 50000,
