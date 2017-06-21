@@ -47,8 +47,8 @@ class Test {
           value: 'https://lol.com',
         },
       },
-      entityAddedCallback(entityElement, attribute, value) {
-        console.log('entityAddedCallback', {entityElement, attribute, value});
+      entityAddedCallback(entityElement) {
+        console.log('entityAddedCallback', {entityElement});
       },
       entityRemovedCallback(entityElement) {
         console.log('entityRemovedCallback', {entityElement});
