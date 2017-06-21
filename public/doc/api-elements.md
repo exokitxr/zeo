@@ -1,20 +1,18 @@
 ## `elements` API
 
-This API lets your `mod` register elements that can be configured by users. You don't need to use this API to have a working mod, but you probably should use it if you want your mod to be configurable by users.
+This API lets your `mod` register the kinds of entities that can be configured by users. You don't need to use this API to have a working mod, but you probably should use it if you want your mod to be configurable by users.
 
-Basically, you call `registerElement()` with a description of the typed attributes for your element, how to create/destroy your element, and how to respond to attribute changes. This specifies show your element should work, and the engine will take it from there to present the user the appropriate interface. 
+Basically, you call `registerEntity()` with a description of the typed attributes for your entity, how to create/destroy it, and how to respond to attribute changes. The engine will take care of the rest present the user the appropriate interface. 
 
-All elements well as as elements in the browser's DOM (for advanced users and other mods).
+All entities are first-class DOM elements, so they can see each other, send each other DOM events (e.g. `CustomEvent`), and read/write each other's attributes. As long as you follow the rules, it just works!
 
-As long as you follow the rules, it just works!
+#### `registerEntity(this, spec)`
 
-#### `registerElement(this, spec)`
-
-Call this to register an element for your mod, from the perspective of the user. If you call this, it should be from your mod's `mount` function.
+Call this to register an entity for your mod, from the perspective of the user. If you call this, it should be from your mod's `mount` function.
 
 ###### `this`
 
-The first argument is the `this` value of your mod (the same `this` that your `mount` function is called with). This is used to track which elements belong to which mod, so it's required! You'll be passing `this` again when unregistering your element on unmount (below)
+The first argument is the `this` value of your mod (the same `this` that your `mount` function is called with). This is used to track which entities belong to which mod, so it's required! You'll be passing `this` again when unregistering your entity on unmount.
 
 ###### `spec`
 
@@ -22,7 +20,7 @@ This should be an object with the following shape:
 
 ```
 {
-  tagName: 'my-element',
+  tagName: 'my-tag',
   attributes: {
     'attribute-1': {
       type: 'type',
@@ -39,9 +37,9 @@ This should be an object with the following shape:
 }
 ```
 
-All keys are optional with sane defaults. But you should provide _something_, or else calling `registerElement()` would be a bit silly.
+All keys are optional with sane defaults. But you should provide _something_, or else calling `registerEntity()` would be a bit silly.
 
-- `tagName`: Tag name that will represent your element in the DOM. Can be any valid [`HTML` tag name](https://www.w3.org/TR/html/syntax.html#tag-name).
+- `tagName`: Tag name that will represent your entity in the DOM. Can be any valid [`HTML` tag name](https://www.w3.org/TR/html/syntax.html#tag-name).
 - `attribute-1`, `someOtherAttribute`, etc.: These are just object keys uniquely describing your attribute. They will be used as HTML attributes, so must be a [valid `HTML` attribute name](https://www.w3.org/TR/html/syntax.html#elements-attributes).
 - `type`: Each attribute has a type. The valid types are described below.
 - `value`: The _initial value_ for this attribute. The type of `value` depends on the attribute's declared `type`. Described below.
@@ -66,8 +64,8 @@ Every attribute has a `type`. There are types like `matrix`, `select`, and `colo
 - `color` (`'#000000'`): A CSS-compatible color string. Can be any [fomat allowed by CSS](https://www.w3.org/TR/css3-color/#colorunits).
 - `file`: (`''`): A URL representing a requestable file.
 
-#### `unregisterElement(this, spec)`
+#### `unregisterEntity(this, spec)`
 
-Should be called with the same arguments as `registerElement()`.
+Should be called with the same arguments as `unregisterEntity()`.
 
-You'll generally call this in the opposite place that you called `registerElement`. For example, if you called `registerElement` during `mount`, you should call `unregisterElement` during `unmount`.
+You'll generally call this in the opposite place that you called `registerEntity`. For example, if you called `registerEntity` during `mount`, you should call `unregisterEntity` during `unmount`.
