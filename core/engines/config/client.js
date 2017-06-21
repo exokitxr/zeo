@@ -421,10 +421,10 @@ class Config {
                 _updatePages();
 
                 return true;
-              } else if (onclick === 'config:tutorial') {
+              /* } else if (onclick === 'config:tutorial') {
                 rend.setTab('tutorial');
 
-                return true;
+                return true; */
               } else {
                 return false;
               }

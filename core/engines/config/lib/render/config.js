@@ -15,7 +15,6 @@ const getConfigPageSrc = ({focus, resolutionValue, voiceChatCheckboxValue, stats
         ${getSliderSrc('Max players', (maxPlayersValue - 1) / (8 - 1), 'config:maxPlayers')}
       ` : ''}
       <h1 style="margin: 15px 0; font-size: 40px; font-weight: 400;">Help</h1>
-      ${getButtonSrc('Run tutorial', 'config:tutorial')}
     </div>
   </div>
 `;
@@ -65,9 +64,9 @@ const getCheckboxSrc = (label, checkboxValue, onclick) => `\
   </div>
 `;
 
-const getButtonSrc = (label, onclick) => `\
+/* const getButtonSrc = (label, onclick) => `\
   <a style="margin-right: auto; padding: 10px 15px; border: 2px solid; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="${onclick}">${label}</a>
-`;
+`; */
 
 module.exports = {
   getConfigPageSrc,
