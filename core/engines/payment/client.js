@@ -285,7 +285,15 @@ class Payment {
           rend.removeListener('update', _update);
         };
 
-        const _requestBalances = () => wallet.requestAssets();
+        const _getAddress = () => bootstrap.getAddress();
+        const _requestBalances = ({address = _getAddress(), confirmed = false} = {}) => {
+          if (address === _getAddress() && !confirmed) {
+            return wallet.requestAssets();
+          } else {
+            return fetch(`${siteUrl}/id/api/${confirmed ? 'confirmedAssets' : 'unconfirmedAssets'}/${address}`);
+              .then(_resJson);
+          }
+        };
         const _hasAvailableBalance = (asset, quantity) => {
           if (!DEBUG) {
             return wallet.requestAssets()
@@ -336,6 +344,7 @@ class Payment {
         });
 
         return {
+          getAddress: _getAddress,
           requestBalances: _requestBalances,
           requestCharge: _requestCharge,
         };
