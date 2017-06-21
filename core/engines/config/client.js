@@ -135,6 +135,7 @@ class Config {
           resolutionValue: browserConfigSpec.resolution,
           voiceChatCheckboxValue: browserConfigSpec.voiceChat,
           statsCheckboxValue: browserConfigSpec.stats,
+          visibilityValue: serverConfigSpec.visibility,
           passwordValue: serverConfigSpec.password,
           maxPlayersValue: serverConfigSpec.maxPlayers,
           keyboardFocusState: null,
@@ -181,6 +182,7 @@ class Config {
                 resolutionValue,
                 voiceChatCheckboxValue,
                 statsCheckboxValue,
+                visibilityValue,
                 passwordValue,
                 maxPlayersValue,
                 keyboardFocusState,
@@ -193,6 +195,7 @@ class Config {
                 resolutionValue,
                 voiceChatCheckboxValue,
                 statsCheckboxValue,
+                visibilityValue,
                 passwordValue,
                 maxPlayersValue,
                 inputValue: keyboardFocusState ? keyboardFocusState.inputValue : 0,
@@ -333,6 +336,7 @@ class Config {
               const {anchor} = hoverState;
               const onclick = (anchor && anchor.onclick) || '';
 
+              let match;
               if (onclick === 'config:resolution') {
                 const {value} = hoverState;
 
@@ -366,6 +370,32 @@ class Config {
 
                 _saveBrowserConfig();
                 configApi.updateBrowserConfig();
+
+                _updatePages();
+
+                return true;
+              } else if (match = onclick.match(/^config:visibility(?::(public|private))?$/)) {
+                const visibilityValue = match[1] || null;
+
+                if (visibilityValue === null) {
+                  const keyboardFocusState =  keyboard.fakeFocus({
+                    type: 'config:visibility',
+                  });
+                  configState.keyboardFocusState = keyboardFocusState;
+
+                  keyboardFocusState.on('blur', () => {
+                    configState.keyboardFocusState = null;
+
+                    _updatePages();
+                  });
+                } else {
+                  configState.visibilityValue = visibilityValue;
+
+                  _saveServerConfig();
+                  configApi.updateBrowserConfig();
+
+                  keyboard.tryBlur();
+                }
 
                 _updatePages();
 
@@ -482,6 +512,7 @@ class Config {
 
           getServerConfig() {
             return {
+              visibility: configState.visibilityValue,
               password: configState.passwordValue,
               maxPlayers: configState.maxPlayersValue,
             };

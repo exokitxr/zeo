@@ -6,6 +6,7 @@ const bodyParser = require('body-parser');
 const bodyParserJson = bodyParser.json();
 
 const DEFAULT_SERVER_CONFIG = {
+  visibility: 'public',
   password: '',
   maxPlayers: 4,
 };
