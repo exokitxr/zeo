@@ -208,43 +208,6 @@ class Wallet {
         };
         _updatePages();
 
-        const _openWalletWindow = req => {
-          const width = 800;
-          const height = 600;
-
-          return window.open(
-            `${siteUrl}/id/iframe?${_formatQueryString(req)}`,
-            'wallet',
-            `left=${(screen.width - width) / 2},top=${(screen.height - height) / 2},width=${width},height=${height}`
-          );
-        }
-
-        const _requestWallet = (req, cb) => {
-          const walletWindow = _openWalletWindow(req);
-
-          const _cleanup = () => {
-            window.removeEventListener('message', _onmessage);
-
-            walletWindow.close();
-          };
-
-          const _onmessage = e => {
-            _cleanup();
-
-            const {data} = e;
-            const {error} = data;
-
-            if (!error) {
-              const {result} = data;
-
-              cb(null, result);
-            } else {
-              cb(error);
-            }
-          };
-          window.addEventListener('message', _onmessage);
-        };
-
         const _resJson = res => {
           if (res.status >= 200 && res.status < 300) {
             return res.json();
