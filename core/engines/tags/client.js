@@ -2061,7 +2061,9 @@ class Tags {
               entityElement.item = null;
               item.instance = null;
 
-              entityElement.parentNode.removeChild(entityElement);
+              if (entityElement.parentNode) {
+                entityElement.parentNode.removeChild(entityElement);
+              }
 
               return entityElement;
             }
