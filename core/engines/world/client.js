@@ -1049,7 +1049,7 @@ class World {
                     metadata: {},
                   };
                   const entityElement = _addTag(itemSpec);
-                  const {instance: item} = entityElement;
+                  const {item} = entityElement;
 
                   rend.setTab('entity');
                   rend.setEntity(item);
