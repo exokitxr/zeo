@@ -405,6 +405,7 @@ class Entity {
 
               world.removeTag(tagId);
 
+              npmState.tagSpecs = npmState.tagSpecs.filter(item => item.id === tagId);
               _setEntity(null);
 
               return true;
