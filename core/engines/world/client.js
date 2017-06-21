@@ -1034,7 +1034,7 @@ class World {
                   const moduleTagMesh = tags.getTagMeshes().find(tagMesh => tagMesh.item.type === 'module' && tagMesh.item.id === id);
                   const {item: moduleItem} = moduleTagMesh;
                   const {name: module, displayName: moduleName} = moduleItem;
-                  const tagName = _makeTagName(module);
+                  const tagName = _makeTagName(moduleName);
                   const attributes = tags.getAttributeSpecs(module);
 
                   const itemSpec = {
