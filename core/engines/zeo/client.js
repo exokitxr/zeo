@@ -669,12 +669,16 @@ class Zeo {
                     }
 
                     class ZeoPaymentApi {
-                      requestBalances() {
-                        return payment.requestBalances();
+                      getAddress() {
+                        return payment.getAddress();
                       }
 
-                      requestCharge(options) {
-                        return payment.requestCharge(options);
+                      requestBalances(options) {
+                        return payment.requestBalances(options);
+                      }
+
+                      requestCharge(chargeSpec) {
+                        return payment.requestCharge(chargeSpec);
                       }
                     }
 
