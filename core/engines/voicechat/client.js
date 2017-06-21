@@ -27,6 +27,8 @@ export default class VoiceChat {
     if (serverEnabled) {
       archae.requestPlugins([
         '/core/engines/three',
+        '/core/engines/webvr',
+        '/core/engines/input',
         '/core/engines/somnifer',
         '/core/engines/config',
         '/core/engines/multiplayer',
@@ -35,6 +37,8 @@ export default class VoiceChat {
       ])
         .then(([
           three,
+          webvr,
+          input,
           somnifer,
           config,
           multiplayer,
@@ -214,8 +218,25 @@ export default class VoiceChat {
               _localCleanup();
             };
 
+            const _menudown = e => {
+              const {side} = e;
+              const {gamepads} = webvr.getStatus();
+              const gamepad = gamepads[side];
+
+              if (gamepad.buttons.grip.pressed) {
+                const browserConfig = config.getBrowserConfig();
+                browserConfig.voiceChat = !browserConfig.voiceChat;
+                config.setBrowserConfig(browserConfig);
+
+                e.stopImmediatePropagation();
+              }
+            };
+            input.on('menudown', _menudown, {
+              priority: 1,
+            });
+
             const _updateEnabled = () => {
-              const {voiceChat} = config.getConfig();
+              const {voiceChat} = config.getBrowserConfig();
               const shouldBeEnabled = voiceChat;
 
               if (shouldBeEnabled && !enabled) {
@@ -224,8 +245,8 @@ export default class VoiceChat {
                 _disable();
               };
             };
-            const _config = _updateEnabled;
-            config.on('config', _config);
+            const _browserConfig = _updateEnabled;
+            config.on('browserConfig', _browserConfig);
 
             _updateEnabled();
 
@@ -234,7 +255,8 @@ export default class VoiceChat {
 
               callInterface.destroy();
 
-              config.removeListener('config', _config);
+              input.removeListener('menudown', _menudown);
+              config.removeListener('browserConfig', _browserConfig);
             });
           }
         });

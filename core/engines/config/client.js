@@ -339,7 +339,7 @@ class Config {
                 configState.resolutionValue = value;
 
                 _saveBrowserConfig();
-                configApi.updateConfig();
+                configApi.updateBrowserConfig();
 
                 _updatePages();
 
@@ -350,7 +350,7 @@ class Config {
                 configState.voiceChatCheckboxValue = !voiceChatCheckboxValue;
 
                 _saveBrowserConfig();
-                configApi.updateConfig();
+                configApi.updateBrowserConfig();
 
                 _updatePages();
 
@@ -365,7 +365,7 @@ class Config {
                 rend.updateMatrixWorld(statsMesh);
 
                 _saveBrowserConfig();
-                configApi.updateConfig();
+                configApi.updateBrowserConfig();
 
                 _updatePages();
 
@@ -394,7 +394,7 @@ class Config {
                     configState.passwordValue = keyboardInputText;
 
                     _saveServerConfig();
-                    configApi.updateConfig();
+                    configApi.updateBrowserConfig();
 
                     _updatePages();
                   }
@@ -416,7 +416,7 @@ class Config {
                 configState.maxPlayersValue = 1 + Math.round(value * (8 - 1));
 
                 _saveServerConfig();
-                configApi.updateConfig();
+                configApi.updateBrowserConfig();
 
                 _updatePages();
 
@@ -465,21 +465,23 @@ class Config {
         });
 
         class ConfigApi extends EventEmitter {
-          getConfig() {
-            return {
-              voiceChat: configState.voiceChatCheckboxValue,
-              stats: configState.statsCheckboxValue,
-              maxPlayers: configState.maxPlayersValue,
-            };
-          }
-
           getBrowserConfig() {
             return {
               resolution: configState.resolutionValue,
               voiceChat: configState.voiceChatCheckboxValue,
               stats: configState.statsCheckboxValue,
-              maxPlayers: configState.maxPlayersValue,
             };
+          }
+
+          setBrowserConfig(newConfig) {
+            ('resolution' in newConfig) && (configState.resolutionValue = newConfig.resolution);
+            ('voiceChat' in newConfig) && (configState.voiceChatCheckboxValue = newConfig.voiceChat);
+            ('stats' in newConfig) && (configState.statsCheckboxValue = newConfig.stats);
+
+            _saveBrowserConfig();
+            configApi.updateBrowserConfig();
+
+            _updatePages();
           }
 
           getServerConfig() {
@@ -489,9 +491,24 @@ class Config {
             };
           }
 
-          updateConfig() {
-            const config = this.getConfig();
-            this.emit('config', config);
+          setServerConfig(newConfig) {
+            ('password' in newConfig) && (configState.passwordValue = newConfig.password);
+            ('maxPlayers' in newConfig) && (configState.maxPlayersValue = newConfig.maxPlayers);
+
+            _saveServerConfig();
+            configApi.updateServerConfig();
+
+            _updatePages();
+          }
+
+          updateBrowserConfig() {
+            const browserConfig = this.getBrowserConfig();
+            this.emit('browserConfig', browserConfig);
+          }
+
+          updateServerConfig() {
+            const serverConfig = this.getServerConfig();
+            this.emit('serverConfig', serverConfig);
           }
         }
         const configApi = new ConfigApi();
