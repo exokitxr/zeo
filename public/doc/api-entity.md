@@ -1,4 +1,4 @@
-## `elements` API
+## `entity` API
 
 This API lets your `mod` register the kinds of entities that can be configured by users. You don't need to use this API to have a working mod, but you probably should use it if you want your mod to be configurable by users.
 

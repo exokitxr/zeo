@@ -12,7 +12,7 @@ The APIs are grouped into several subkeys according to their function. Here's th
 - `pose`: for querying the user's state, such as HMD and controller state
 - `input`: handles input state checking (such as buttons) and emits input events (such as button presses)
 - `render`: handles timing for rendering and emits events when interesting things happen (such as it's time for a frame)
-- `elements`: handles registration and configuration of entities presented to the user
+- `entity`: handles registration and configuration of entities presented to the user
 - `player`: handles multiplayer stuff, such as querying player states and enter/leave events
 - `ui`: provides utilities for user interface rendering, such as menus
 - `sound`: provides positional audio support
