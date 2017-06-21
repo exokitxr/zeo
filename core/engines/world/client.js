@@ -1,3 +1,4 @@
+import htmlTagNames from 'html-tag-names';
 import {
   WIDTH,
   HEIGHT,
@@ -1032,7 +1033,8 @@ class World {
                   const id = match[1];
                   const moduleTagMesh = tags.getTagMeshes().find(tagMesh => tagMesh.item.type === 'module' && tagMesh.item.id === id);
                   const {item: moduleItem} = moduleTagMesh;
-                  const {name: module, displayName: moduleName, tagName} = moduleItem;
+                  const {name: module, displayName: moduleName} = moduleItem;
+                  const tagName = _makeTagName(module);
                   const attributes = tags.getAttributeSpecs(module);
 
                   const itemSpec = {
@@ -1652,6 +1654,20 @@ const _formatQueryString = o => {
     result.push(encodeURIComponent(k) + '=' + encodeURIComponent(o[k]));
   }
   return result.join('&');
+};
+const _makeTagName = s => {
+  s = s
+    .toLowerCase()
+    .replace(/[^a-z0-9-]/g, '-')
+    .replace(/--+/g, '-')
+    .replace(/(?:^-|-$)/g, '');
+  if (/^[0-9]/.test(s)) {
+    s = 'e-' + s;
+  }
+  if (htmlTagNames.includes(s)) {
+    s = 'e-' + s;
+  }
+  return s;
 };
 
 module.exports = World;
