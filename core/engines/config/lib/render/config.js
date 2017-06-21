@@ -14,7 +14,6 @@ const getConfigPageSrc = ({focus, resolutionValue, voiceChatCheckboxValue, stats
         ${getInputSrc('Password', passwordValue, 'Enter password', inputValue, focus, 'config:password')}
         ${getSliderSrc('Max players', (maxPlayersValue - 1) / (8 - 1), 'config:maxPlayers')}
       ` : ''}
-      <h1 style="margin: 15px 0; font-size: 40px; font-weight: 400;">Help</h1>
     </div>
   </div>
 `;
