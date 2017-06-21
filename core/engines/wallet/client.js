@@ -36,7 +36,7 @@ class Wallet {
 
   mount() {
     const {_archae: archae} = this;
-    const {metadata: {site: {url: siteUrl}, home: {enabled: homeEnabled}, server: {enabled: serverEnabled}}} = archae;
+    const {metadata: {vrid: {url: vridUrl}, server: {enabled: serverEnabled}}} = archae;
 
     const cleanups = [];
     this._cleanup = () => {
@@ -215,7 +215,7 @@ class Wallet {
             return Promise.reject(new Error('invalid status code: ' + res.status));
           }
         };
-        const _requestAssets = () => fetch(`${siteUrl}/id/api/assets`, {
+        const _requestAssets = () => fetch(`${vridUrl}/id/api/assets`, {
           credentials: 'include',
         })
           .then(_resJson);
@@ -378,7 +378,7 @@ class Wallet {
                 const privateKey = _arrayToBase64(privateKeyBuffer);
                 const dstAddress = vridApi.getAddress(privateKeyBuffer);
 
-                return fetch(`${siteUrl}/id/api/pack`, {
+                return fetch(`${vridUrl}/id/api/pack`, {
                   method: 'POST',
                   headers: (() => {
                     const headers = new Headers();

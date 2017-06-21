@@ -25,7 +25,7 @@ class Payment {
 
   mount() {
     const {_archae: archae} = this;
-    const {metadata: {site: {url: siteUrl}, home: {enabled: homeEnabled}, server: {enabled: serverEnabled}}} = archae;
+    const {metadata: {vrid: {url: vridUrl}, server: {enabled: serverEnabled}}} = archae;
 
     let live = true;
     this._cleanup = () => {
@@ -171,7 +171,7 @@ class Payment {
               };
 
               if (!DEBUG) {
-                fetch(`${siteUrl}/id/api/charge`, {
+                fetch(`${vridUrl}/id/api/charge`, {
                   method: 'POST',
                   headers: (() => {
                     const headers = new Headers();
@@ -290,7 +290,7 @@ class Payment {
           if (address === _getAddress() && !confirmed) {
             return wallet.requestAssets();
           } else {
-            return fetch(`${siteUrl}/id/api/${confirmed ? 'confirmedAssets' : 'unconfirmedAssets'}/${address}`);
+            return fetch(`${vridUrl}/id/api/${confirmed ? 'confirmedAssets' : 'unconfirmedAssets'}/${address}`)
               .then(_resJson);
           }
         };

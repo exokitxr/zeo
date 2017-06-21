@@ -27,6 +27,7 @@ cp -ralf installed data/hub/servers/server_two/
   siteUrl='https://zeovr.io:8080' \
   hubUrl='https://zeovr.io:8000' \
   homeUrl='https://zeovr.io:8081' \
+  vridUrl='https://zeovr.io:8000' \
   worldname='server_one' \
   dataDirectory='data/hub/servers/server_one/data' dataDirectorySrc='defaults/data' \
   cryptoDirectory='data/hub/servers/server_one/crypto' cryptoDirectorySrc='crypto-test' \
@@ -36,6 +37,7 @@ cp -ralf installed data/hub/servers/server_two/
   siteUrl='https://zeovr.io:8080' \
   hubUrl='https://zeovr.io:8000' \
   homeUrl='https://zeovr.io:8081' \
+  vridUrl='https://zeovr.io:8000' \
   worldname='server_two' \
   dataDirectory='data/hub/servers/server_two/data' dataDirectorySrc='defaults/data' \
   cryptoDirectory='data/hub/servers/server_two/crypto' cryptoDirectorySrc='crypto-test' \
