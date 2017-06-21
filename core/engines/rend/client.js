@@ -549,7 +549,7 @@ class Rend {
           }
 
           setEntity(item) {
-            this.emit('entityChange', item);
+            this.emit('entitychange', item);
           }
 
           addPage(page) {
