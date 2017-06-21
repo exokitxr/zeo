@@ -1,8 +1,6 @@
 ## `pose` API
 
-The pose API is for tracking the user's headset and controllers. You can use it to get the `position`, `rotation`, and `scale` of these objects, as well as button input states, and be informed of _input events_ as they occur.
-
-You could compute some of this by looking at the [`three` API](/docs/three-api) objects, but the `pose` API is faster and cleaner to work with.
+The pose API is for tracking the user's headset and controllers. You can use it to get the `position`, `rotation`, and `scale` of these objects, as well as button input states, and be informed of _input events_ as they occur. This API acts as a normalization layer for mouse + keyboard and headset controls, and it works the same in either case.
 
 `pose` API works great with [`render` API](/docs/render-api) for timing. With these two you can implement vitually any 3D interaction you can imagine.
 
