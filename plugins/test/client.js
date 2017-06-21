@@ -75,31 +75,6 @@ class Test {
       }
     };
     input.on('keypress', _keypress);
-    const _menudown = e => {
-      const {side} = e;
-      const {gamepads} = pose.getStatus();
-      const gamepad = gamepads[side];
-      const {buttons: {grip: {pressed: gripPressed}}} = gamepad;
-
-      if (gripPressed) {
-        payment.requestCharge({
-          dstAddress: 'G4ExZ6nYBPnu7Sr1c8kMgbzz3VS9DbGi6cNeghEirbHj',
-          srcAsset: 'ZEOCOIN',
-          srcQuantity: 10,
-        })
-          .then(result => {
-            console.warn('charge result', result);
-          })
-          .catch(err => {
-            console.warn('charge error', err);
-          });
-
-        e.stopImmediatePropagation();
-      }
-    };
-    input.on('menudown', _menudown, {
-      priority: 1,
-    });
 
     this._cleanup = () => {
       elements.unregisterComponent(this, testComponent);
