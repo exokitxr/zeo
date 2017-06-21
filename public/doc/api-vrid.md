@@ -1,4 +1,4 @@
-## Payment API
+## VRID API
 
 This API allows your mod to interact with the [VRID blockchain](/docs/vrid).
 You should understand how VRID works before using this API. Blockchains can be a bit confusing! &#x1F635;
