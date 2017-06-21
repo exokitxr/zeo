@@ -2076,6 +2076,10 @@ class Tags {
               });
             }
 
+            getWorldElement() {
+              return rootWorldElement;
+            }
+
             message(detail) {
               const e = new CustomEvent('message', {
                 detail: detail,
