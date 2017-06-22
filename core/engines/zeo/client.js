@@ -598,11 +598,11 @@ class Zeo {
                       }
 
                       removeListener() {
-                        broadcast.removeListener.apply(this, arguments);
+                        return broadcast.removeListener.apply(this, arguments);
                       }
 
                       removeAllListeners() {
-                        broadcast.removeAllListeners.apply(this, arguments);
+                        return broadcast.removeAllListeners.apply(this, arguments);
                       }
                     }
 
