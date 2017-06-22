@@ -30,138 +30,153 @@ class Bootstrap {
       },
     } = archae;
 
-    const _parseUrlSpec = url => {
-      const match = url.match(/^(?:([^:]+):\/\/)([^:]+)(?::([0-9]*?))?$/);
-      return match && {
-        protocol: match[1],
-        host: match[2],
-        port: match[3] ? parseInt(match[3], 10) : null,
-      };
-    };
-    const hubSpec = _parseUrlSpec(hubUrl);
-    const homeSpec = _parseUrlSpec(homeUrl);
-    const serverSpec = _parseUrlSpec(serverUrl);
-
-    const cleanups = [];
+    let live = true;
     this._cleanup = () => {
-      for (let i = 0; i < cleanups.length; i++) {
-        const cleanup = cleanups[i];
-        cleanup();
-      }
+      live = false;
     };
 
-    const _announceServer = () => new Promise((accept, reject) => {
-      const options = {
-        method: 'POST',
-        host: hubSpec.host,
-        port: hubSpec.port,
-        path: '/servers/announce',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      };
-      const req = (hubSpec.protocol === 'http' ? http : https).request(options);
-      req.end(JSON.stringify({
-        worldname: serverWorldname,
-        protocol: serverSpec.protocol,
-        port: serverSpec.port,
-        users: [], // XXX announce the real users from the hub engine
-      }));
+    return archae.requestPlugins([
+      '/core/engines/config',
+    ])
+      .then(([
+        config,
+      ]) => {
+        if (live) {
+          const _parseUrlSpec = url => {
+            const match = url.match(/^(?:([^:]+):\/\/)([^:]+)(?::([0-9]*?))?$/);
+            return match && {
+              protocol: match[1],
+              host: match[2],
+              port: match[3] ? parseInt(match[3], 10) : null,
+            };
+          };
+          const hubSpec = _parseUrlSpec(hubUrl);
+          const homeSpec = _parseUrlSpec(homeUrl);
+          const serverSpec = _parseUrlSpec(serverUrl);
 
-      req.on('response', res => {
-        res.resume();
+          const cleanups = [];
+          this._cleanup = () => {
+            for (let i = 0; i < cleanups.length; i++) {
+              const cleanup = cleanups[i];
+              cleanup();
+            }
+          };
 
-        res.on('end', () => {
-          const {statusCode} = res;
+          const _announceServer = () => new Promise((accept, reject) => {
+            const options = {
+              method: 'POST',
+              host: hubSpec.host,
+              port: hubSpec.port,
+              path: '/servers/announce',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+            };
+            const req = (hubSpec.protocol === 'http' ? http : https).request(options);
+            req.end(JSON.stringify({
+              worldname: serverWorldname,
+              protocol: serverSpec.protocol,
+              port: serverSpec.port,
+              users: [], // XXX announce the real users from the hub engine
+            }));
 
-          if (statusCode >= 200 && statusCode < 300) {
-            accept();
-          } else {
-            const err = new Error('server announce returned error status code: ' + statusCode);
-            err.code = 'EHTTP';
-            err.statusCode = statusCode;
-            err.options = options;
-            reject(err);
-          }
-        });
-        res.on('error', err => {
-          err.options = options;
+            req.on('response', res => {
+              res.resume();
 
-          reject(err);
-        });
-      });
-      req.on('error', err => {
-        err.options = options;
+              res.on('end', () => {
+                const {statusCode} = res;
 
-        reject(err);
-      });
-    });
+                if (statusCode >= 200 && statusCode < 300) {
+                  accept();
+                } else {
+                  const err = new Error('server announce returned error status code: ' + statusCode);
+                  err.code = 'EHTTP';
+                  err.statusCode = statusCode;
+                  err.options = options;
+                  reject(err);
+                }
+              });
+              res.on('error', err => {
+                err.options = options;
 
-    const _tryServerAnnounce = () => new Promise((accept, reject) => {
-      _announceServer()
-        .then(() => {
-          accept(true);
-        })
-        .catch(err => {
-          console.warn('server announce failed', err.code, JSON.stringify({statusCode: err.statusCode, options: err.options}));
+                reject(err);
+              });
+            });
+            req.on('error', err => {
+              err.options = options;
 
-          accept(false);
-        });
-    });
+              reject(err);
+            });
+          });
 
-    const _makeQueueAnnounce = tryAnnounceFn => {
-      const recurse = _debounce(next => {
-        tryAnnounceFn()
-          .then(ok => {
-            if (ok) {
-              next();
-            } else {
-              setTimeout(() => {
-                recurse();
+          const _tryServerAnnounce = () => new Promise((accept, reject) => {
+            const configJson = config.getConfig();
+            const {visibility} = configJson;
 
-                next();
-              }, SERVER_ANNOUNCE_RETRY_INTERVAL);
+            if (visibility === 'public') {
+              _announceServer()
+                .then(() => {
+                  accept(true);
+                })
+                .catch(err => {
+                  console.warn('server announce failed', err.code, JSON.stringify({statusCode: err.statusCode, options: err.options}));
+
+                  accept(false);
+                });
             }
           });
-      });
-      return recurse;
-    };
-    const _queueServerAnnounce = _makeQueueAnnounce(_tryServerAnnounce);
 
-    if (serverEnabled && hubSpec) {
-      _queueServerAnnounce();
+          const _queueServerAnnounce = _debounce(next => {
+            _tryServerAnnounce()
+              .then(ok => {
+                if (ok) {
+                  next();
+                } else {
+                  setTimeout(() => {
+                    _queueServerAnnounce();
 
-      const serverAnnounceInterval = setInterval(() => {
-        _queueServerAnnounce();
-      }, SERVER_ANNOUNCE_INTERVAL);
+                    next();
+                  }, SERVER_ANNOUNCE_RETRY_INTERVAL);
+                }
+              });
+          });
 
-      cleanups.push(() => {
-        clearInterval(serverAnnounceInterval);
-        clearInterval(serverIconAnnounceInterval);
-      });
-    }
+          if (serverEnabled && hubSpec) {
+            _queueServerAnnounce();
 
-    const startTime = Date.now();
-    function serveStartTime(req, res, next) {
-      res.json({
-        startTime,
-      });
-    }
-    app.get('/archae/bootstrap/start-time.json', serveStartTime);
+            const serverAnnounceInterval = setInterval(() => {
+              _queueServerAnnounce();
+            }, SERVER_ANNOUNCE_INTERVAL);
 
-    cleanups.push(() => {
-      function removeMiddlewares(route, i, routes) {
-        if (
-          route.handle.name === 'serveStartTime'
-        ) {
-          routes.splice(i, 1);
+            cleanups.push(() => {
+              clearInterval(serverAnnounceInterval);
+              clearInterval(serverIconAnnounceInterval);
+            });
+          }
+
+          const startTime = Date.now();
+          function serveStartTime(req, res, next) {
+            res.json({
+              startTime,
+            });
+          }
+          app.get('/archae/bootstrap/start-time.json', serveStartTime);
+
+          cleanups.push(() => {
+            function removeMiddlewares(route, i, routes) {
+              if (
+                route.handle.name === 'serveStartTime'
+              ) {
+                routes.splice(i, 1);
+              }
+              if (route.route) {
+                route.route.stack.forEach(removeMiddlewares);
+              }
+            }
+            app._router.stack.forEach(removeMiddlewares);
+          });
         }
-        if (route.route) {
-          route.route.stack.forEach(removeMiddlewares);
-        }
-      }
-      app._router.stack.forEach(removeMiddlewares);
-    });
+      });
   }
 
   unmount() {

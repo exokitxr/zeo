@@ -118,6 +118,12 @@ class Config {
             }
             app._router.stack.forEach(removeMiddlewares);
           };
+
+          const _getConfig = () => configJson;
+
+          return {
+            getConfig: _getConfig,
+          };
         }
       });
   }
