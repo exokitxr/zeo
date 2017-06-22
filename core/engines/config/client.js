@@ -188,24 +188,47 @@ class Config {
                 keyboardFocusState,
                 flags,
               },
-            }) => ({
-              type: 'html',
-              src: configRenderer.getConfigPageSrc({
-                focus: keyboardFocusState !== null,
-                resolutionValue,
-                voiceChatCheckboxValue,
-                statsCheckboxValue,
-                visibilityValue,
-                passwordValue,
-                maxPlayersValue,
-                inputValue: keyboardFocusState ? keyboardFocusState.inputValue : 0,
-                flags,
-              }),
-              x: 0,
-              y: 0,
-              w: WIDTH,
-              h: HEIGHT,
-            }), {
+            }) => {
+              const focusSpec = (() => {
+                if (keyboardFocusState) {
+                  const {type} = keyboardFocusState;
+
+                  if (type === 'config:password') {
+                    return {
+                      type: 'password',
+                    };
+                  } else if (type === 'config:visibiltiy') {
+                    return {
+                      type: 'password',
+                    };
+                  } else {
+                    return null;
+                  }
+                } else {
+                  return null;
+                }
+              })();
+              const inputValue = keyboardFocusState ? keyboardFocusState.inputValue : 0;
+
+              return {
+                type: 'html',
+                src: configRenderer.getConfigPageSrc({
+                  resolutionValue,
+                  voiceChatCheckboxValue,
+                  statsCheckboxValue,
+                  visibilityValue,
+                  passwordValue,
+                  maxPlayersValue,
+                  inputValue,
+                  focusSpec,
+                  flags,
+                }),
+                x: 0,
+                y: 0,
+                w: WIDTH,
+                h: HEIGHT,
+              };
+            }, {
               type: 'config',
               state: {
                 config: configState,
@@ -408,7 +431,7 @@ class Config {
                 const {hmd: hmdStatus} = webvr.getStatus();
                 const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmdStatus;
                 const keyboardFocusState = keyboard.focus({
-                  type: 'npm',
+                  type: 'config:password',
                   position: hmdPosition,
                   rotation: hmdRotation,
                   inputText: inputText,

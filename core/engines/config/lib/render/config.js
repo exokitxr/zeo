@@ -2,8 +2,11 @@ const {
   WIDTH,
 } = require('../constants/config');
 
-const getConfigPageSrc = ({focus, resolutionValue, voiceChatCheckboxValue, statsCheckboxValue, visibilityValue, passwordValue, maxPlayersValue, inputValue, flags}) => `\
-  <div style="width: ${WIDTH}px;">
+const getConfigPageSrc = ({resolutionValue, voiceChatCheckboxValue, statsCheckboxValue, visibilityValue, passwordValue, maxPlayersValue, inputValue, focusSpec, flags}) => {
+  const focusVisibility = Boolean(focusSpec) && focusSpec.type === 'visibility';
+  const focusPassword = Boolean(focusSpec) && focusSpec.type === 'password';
+
+  return `<div style="width: ${WIDTH}px;">
     <div style="display: flex; width: 640px; padding: 0 30px; box-sizing: border-box; flex-direction: column;">
       <h1 style="margin: 15px 0; font-size: 40px; font-weight: 400;">Browser settings</h1>
       ${getSliderSrc('Resolution', resolutionValue, 'config:resolution')}
@@ -11,13 +14,13 @@ const getConfigPageSrc = ({focus, resolutionValue, voiceChatCheckboxValue, stats
       ${getCheckboxSrc('Stats', statsCheckboxValue, 'config:stats')}
       ${flags.server ? `\
         <h1 style="margin: 15px 0; font-size: 40px; font-weight: 400;">Server settings</h1>
-        ${getSelectSrc('Visibility', visibilityValue, ['public', 'private'], focus, 'config:visibility')}
-        ${getInputSrc('Password', passwordValue, 'Enter password', inputValue, focus, 'config:password')}
+        ${getSelectSrc('Visibility', visibilityValue, ['public', 'private'], focusVisibility, 'config:visibility')}
+        ${getInputSrc('Password', passwordValue, 'Enter password', inputValue, focusPassword, 'config:password')}
         ${getSliderSrc('Max players', (maxPlayersValue - 1) / (8 - 1), 'config:maxPlayers')}
       ` : ''}
     </div>
-  </div>
-`;
+  </div>`;
+};
 
 const getInputSrc = (label, inputText, inputPlaceholder, inputValue, focus, onclick) => `\
   <div style='display: flex; margin-bottom: 5px; font-size: 30px; line-height: 1.4; justify-content: center; align-items: center;'>
