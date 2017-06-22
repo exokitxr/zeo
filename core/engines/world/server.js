@@ -1,6 +1,5 @@
 const path = require('path');
 const fs = require('fs');
-// const https = require('https');
 
 const mkdirp = require('mkdirp');
 
