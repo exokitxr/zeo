@@ -426,7 +426,7 @@ class Entity {
               const tagMesh = tags.getTagMeshes().find(tagMesh => tagMesh.item.id === tagId);
               const {item} = tagMesh;
               const {module, attributes} = item;
-              const attribute = attributes[attributeName];
+              const attribute = attributes[attributeName] || tags.getAttributeSpec(module, attributeName);
               const {value: attributeValue} = attribute;
 
               if (action === 'focus') {
