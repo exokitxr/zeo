@@ -136,7 +136,7 @@ class Entity {
         const _decorateEntity = entity => {
           const {id, name, displayName, module, attributes, instancing, metadata} = entity;
 
-          const attributeSpecs = _clone(tags.getAttributeSpecs(module));
+          const attributeSpecs = tags.getAttributeSpecs(module);
           for (const attributeName in attributes) {
             const attribute = attributes[attributeName];
             const {value} = attribute;
@@ -622,7 +622,6 @@ class Entity {
   }
 }
 
-const _clone = o => JSON.parse(JSON.stringify(o));
 const _roundToDecimals = (value, decimals) => Number(Math.round(value+'e'+decimals)+'e-'+decimals);
 
 module.exports = Entity;

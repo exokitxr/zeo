@@ -1831,7 +1831,9 @@ class Tags {
               const componentAttribute = componentAttributes[attributeName];
 
               if (componentAttribute) {
-                return componentAttribute;
+                const attributeSpec = _shallowClone(componentAttribute);
+                attributeSpec.name = attributeName;
+                return attributeSpec;
               }
             }
 
@@ -1849,7 +1851,10 @@ class Tags {
                 for (const componentAttributeName in componentAttributes) {
                   if (!result.some(attributeSpec => attributeSpec.name === componentAttributeName)) {
                     const componentAttribute = componentAttributes[componentAttributeName];
-                    result.push(componentAttribute);
+
+                    const attributeSpec = _shallowClone(componentAttribute);
+                    attributeSpec.name = componentAttributeName;
+                    result.push(attributeSpec);
                   }
                 }
               }
