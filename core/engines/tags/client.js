@@ -1838,7 +1838,7 @@ class Tags {
             return null;
           };
           const _getAttributeSpecs = module => {
-            const result = {};
+            const result = [];
 
             const componentApis = tagComponentApis[module] || [];
             for (let i = 0; i < componentApis.length; i++) {
@@ -1847,13 +1847,9 @@ class Tags {
 
               if (componentAttributes) {
                 for (const componentAttributeName in componentAttributes) {
-                  if (!(componentAttributeName in result)) {
+                  if (!result.some(attributeSpec => attributeSpec.name === componentAttributeName)) {
                     const componentAttribute = componentAttributes[componentAttributeName];
-                    const {value} = componentAttribute;
-
-                    result[componentAttributeName] = {
-                      value,
-                    };
+                    result.push(componentAttribute);
                   }
                 }
               }

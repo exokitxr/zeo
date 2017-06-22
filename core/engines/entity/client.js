@@ -136,19 +136,16 @@ class Entity {
         const _decorateEntity = entity => {
           const {id, name, displayName, module, attributes, instancing, metadata} = entity;
 
-          const attributesArray = Object.keys(attributes)
-            .map(attributeName => {
-              const attribute = attributes[attributeName];
-              const {value} = attribute;
-              const attributeSpec = tags.getAttributeSpec(module, attributeName);
+          const attributeSpecs = _clone(tags.getAttributeSpecs(module));
+          for (const attributeName in attributes) {
+            const attribute = attributes[attributeName];
+            const {value} = attribute;
 
-              const result = _shallowClone(attributeSpec);
-              result.name = attributeName;
-              result.value = value;
-              return result;
-            });
+            const attributeSpec = attributeSpecs.find(attributeSpec => attributeSpec.name === attributeName);
+            attributeSpec.value = value;
+          }
 
-          return {id, name, displayName, attributes: attributesArray, instancing, metadata};
+          return {id, name, displayName, attributes: attributeSpecs, instancing, metadata};
         };
         const _updateNpm = () => {
           const {inputText} = npmState;
@@ -625,16 +622,7 @@ class Entity {
   }
 }
 
-const _shallowClone = o => {
-  const result = {};
-
-  for (const k in o) {
-    const v = o[k];
-    result[k] = v;
-  }
-
-  return result;
-};
+const _clone = o => JSON.parse(JSON.stringify(o));
 const _roundToDecimals = (value, decimals) => Number(Math.round(value+'e'+decimals)+'e-'+decimals);
 
 module.exports = Entity;
