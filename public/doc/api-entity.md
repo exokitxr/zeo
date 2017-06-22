@@ -66,4 +66,24 @@ Every attribute has a `type`. There are types like `matrix`, `select`, and `colo
 
 Should be called with the same arguments as `unregisterEntity()`.
 
-You'll generally call this in the opposite place that you called `registerEntity`. For example, if you called `registerEntity` during `mount`, you should call `unregisterEntity` during `unmount`.
+Call this in the opposite place that you called `registerEntity`. For example, if you called `registerEntity` during `mount`, you should call `unregisterEntity` during `unmount`.
+
+#### `getWorldElement()`
+
+This returns the _root DOM element_ for the VR world. The children of this element are the loaded entity DOM elements &mdash; literally the elements you get passed in `entityAddedCallback`. This method is provided for convenience.
+
+This allows entities to _talk to each other_. You can read and write to them using the [standard DOM APIs](https://developer.mozilla.org/en-US/docs/Web/API/Document_Object_Model) like `querySelector`, `getAttribute`, and `setAttribute`, send and listen for events ([`addEventListener`](https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener), [`CustomEvent`](https://developer.mozilla.org/en/docs/Web/API/CustomEvent)), and even use DOM libraries like [jQuery](https://jquery.com/).
+
+Just note that when you're dealing with elements you're dealing with the local ones on your machine. If you want to share data with other clients, consider using the [`broadcast` API](/docs/api-broadcast).
+
+#### Data storage
+
+Loading and saving entities and their attributes happens automagically. Syncing between connected users is also automagic. &#x1F497;
+
+This means if all your mods and their entities need to remember is some key-value pairs, you can use the DOM API and handle the attribute value change callbacks. Everything should just work.
+
+If you need to store a larger piece of data, use a `file` attribute and store your data as an actual file on the backend. In that case file data won't be automatically synced to users (you'll have teach the code what you need), but since you're dealing with an actual file you can pack it with however much of whatever you want.
+
+If you only need to signal other clients without storing anything, there's a whole nother [`broadcast` API](/docs/api-broadcast) for that.
+
+Finally, if you need full control (for things like custom data streaming), you can use the power of server code! Uour mod's `server` file can start its own TCP/UDP/whatever, and the `client` sides can connect to it.
