@@ -31,5 +31,7 @@ You're free to use your own `THREE.js` objects on the side &mdash; sometimes thi
 Few notes:
 
 - If you `scene.add` (e.g. during your mod's `mount`), you must `scene.remove` (e.g. during your mod's `unmount`). Basically you need to follow the rules in the [Mods spec](/docs/mods-spec).
+- Remember to `.dispose()` of your [`Geometry`](https://threejs.org/docs/#api/core/Geometry) and [`Material`](https://threejs.org/docs/#api/core/Material) when you're done with 'em. Especially on `unmount` or if you add objects in a loop. This is required to prevent smemory leaks.
+- For performance reasons [`scene.autoUpdate`](https://threejs.org/docs/#api/scenes/Scene) is set to `false`. This means when you change `Object3D` properties like `.position` you need to call [.updateMatrixWorld()](https://threejs.org/docs/#api/core/Object3D) afterward.
 - The `camera` properties adjust automatically to the user's headset/screen. You can read them but _do not change them_. It won't work, and in VR you can't control the user's eyes anyway.
 - Likewise, you can use the `renderer` to render stuff or read the parameters, but you shouldn't change them. Otherwise things will malfunction in weird ways and your module might get classified as broken.
