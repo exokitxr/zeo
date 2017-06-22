@@ -59,6 +59,7 @@ const flags = {
   hubUrl: _findArg('hubUrl'),
   homeUrl: _findArg('homeUrl'),
   vridUrl: _findArg('vridUrl'),
+  crdsUrl: _findArg('crdsUrl'),
   forumUrl: _findArg('forumUrl'),
   maxUsers: _findArg('maxUsers'),
 };
@@ -94,6 +95,7 @@ const siteUrl = flags.siteUrl || (protocolString + '://' + hostname + ':' + port
 const hubUrl = flags.hubUrl || (protocolString + '://hub.' + hostname + ':' + port);
 const homeUrl = flags.homeUrl || (protocolString + '://127.0.0.1:' + port);
 const vridUrl = flags.vridUrl || (protocolString + '://' + hostname + ':' + port);
+const crdsUrl = flags.crdsUrl || (protocolString + '://' + hostname + ':' + port);
 const forumUrl = flags.forumUrl || (protocolString + '://forum.' + hostname + ':' + port);
 const fullUrl = protocolString + '://127.0.0.1:' + port;
 const maxUsers = (flags.maxUsers && parseInt(flags.maxUsers, 10)) || 4;
@@ -125,6 +127,9 @@ const config = {
     },
     vrid: {
       url: vridUrl,
+    },
+    crds: {
+      url: crdsUrl,
     },
     hub: {
       url: hubUrl,
