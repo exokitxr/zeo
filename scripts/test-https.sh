@@ -15,18 +15,15 @@ cp -ralf installed data/hub/servers/server_two/
   port=8080 secure=true \
   siteUrl='https://zeovr.io:8080' \
   homeUrl='https://zeovr.io:8081' \
-  hubUrl='https://zeovr.io:8000' \
   crdsUrl='http://zeovr.io:9999' \
   forumUrl='http://127.0.0.1:8089' &
 ./index.js hub \
   port=8000 secure=true \
-  hubUrl='https://zeovr.io:8000' \
   cryptoDirectory='crypto-test-hub' cryptoDirectorySrc='defaults/crypto' \
   installDirectory='installed' installDirectorySrc='installed' &
 ./index.js server \
   port=7777 secure=true \
   siteUrl='https://zeovr.io:8080' \
-  hubUrl='https://zeovr.io:8000' \
   homeUrl='https://zeovr.io:8081' \
   vridUrl='https://zeovr.io:8080' \
   worldname='server_one' \
@@ -36,7 +33,6 @@ cp -ralf installed data/hub/servers/server_two/
 ./index.js server \
   port=7778 secure=true \
   siteUrl='https://zeovr.io:8080' \
-  hubUrl='https://zeovr.io:8000' \
   homeUrl='https://zeovr.io:8081' \
   vridUrl='https://zeovr.io:8080' \
   worldname='server_two' \

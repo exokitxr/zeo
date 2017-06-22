@@ -104,7 +104,7 @@ const _update = () => {
   }
   serversBody.style.display = 'none';
 
-  fetch('/servers/servers.json')
+  fetch('/prsnt/servers.json')
     .then(res => res.json()
       .then(({servers}) => {
         loadStatus.style.display = 'none';

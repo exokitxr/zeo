@@ -16,15 +16,11 @@ class Bootstrap {
     const {app, dirname, dataDirectory} = archae.getCore();
     const {
       metadata: {
-        hub: {
-          url: hubUrl,
-        },
-        home: {
-          url: homeUrl,
+        site: {
+          url: siteUrl,
         },
         server: {
           url: serverUrl,
-          worldname: serverWorldname,
           enabled: serverEnabled,
         },
       },
@@ -50,8 +46,7 @@ class Bootstrap {
               port: match[3] ? parseInt(match[3], 10) : null,
             };
           };
-          const hubSpec = _parseUrlSpec(hubUrl);
-          const homeSpec = _parseUrlSpec(homeUrl);
+          const siteSpec = _parseUrlSpec(siteUrl);
           const serverSpec = _parseUrlSpec(serverUrl);
 
           const cleanups = [];
@@ -65,16 +60,16 @@ class Bootstrap {
           const _announceServer = () => new Promise((accept, reject) => {
             const options = {
               method: 'POST',
-              host: hubSpec.host,
-              port: hubSpec.port,
-              path: '/servers/announce',
+              host: siteSpec.host,
+              port: siteSpec.port,
+              path: '/prsnt/announce',
               headers: {
                 'Content-Type': 'application/json',
               },
             };
-            const req = (hubSpec.protocol === 'http' ? http : https).request(options);
+            const req = (siteSpec.protocol === 'http' ? http : https).request(options);
             req.end(JSON.stringify({
-              worldname: serverWorldname,
+              name: 'Server name', // XXX announce the real server from the config
               protocol: serverSpec.protocol,
               port: serverSpec.port,
               users: [], // XXX announce the real users from the hub engine
@@ -141,7 +136,7 @@ class Bootstrap {
               });
           });
 
-          if (serverEnabled && hubSpec) {
+          if (serverEnabled && siteSpec) {
             _queueServerAnnounce();
 
             const serverAnnounceInterval = setInterval(() => {

@@ -47,18 +47,18 @@ const getServersPageSrc = ({remoteServers, page, loading}) => {
 };
 
 const getServerSrc = (server, index) => {
-  const {worldname, url, users} = server;
+  const {name, url, users} = server;
 
   return `\
     <a style="display: flex; padding: 10px 0; border-bottom: 1px solid #EEE; text-decoration: none;" onclick="servers:go:${index}">
-      ${creatureUtils.makeSvgCreature('server:' + worldname, {
+      ${creatureUtils.makeSvgCreature('server:' + name, {
         width: 12,
         height: 12,
         viewBox: '0 0 12 12',
         style: 'width: 50px; height: 50px; margin: 10px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;',
       })}
       <div style="display: flex; margin-right: auto; padding: 5px; flex-direction: column;">
-        <div style="font-size: 24px; font-weight: 600;">${worldname}</div>
+        <div style="font-size: 24px; font-weight: 600;">${name}</div>
         <div style="font-size: 16px; font-weight: 400;">
           ${url ?
             `<i>${url}</i>`

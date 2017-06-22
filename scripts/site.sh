@@ -10,13 +10,8 @@ pushd "$DIR"/../
   port=8080 secure=true \
   siteUrl='https://zeovr.io:8080' \
   homeUrl='https://zeovr.io:8081' \
-  hubUrl='https://zeovr.io:8000' \
   crdsUrl='https://zeovr.io:9999' \
   forumUrl='http://127.0.0.1:8089' \
-  cryptoDirectory='crypto-test' cryptoDirectorySrc='defaults/crypto' &
-./index.js hub \
-  port=8000 secure=true \
-  hubUrl='https://zeovr.io:8000' \
   cryptoDirectory='crypto-test' cryptoDirectorySrc='defaults/crypto' &
 
 sleep infinity;

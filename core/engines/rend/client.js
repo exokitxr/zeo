@@ -26,7 +26,16 @@ class Rend {
 
   mount() {
     const {_archae: archae} = this;
-    const {metadata: {server: {worldname: serverWorldname, enabled: serverEnabled}, hub: {url: hubUrl}}} = archae;
+    const {
+      metadata: {
+        site: {
+          url: siteUrl,
+        },
+        server: {
+          enabled: serverEnabled,
+        },
+      },
+    } = archae;
 
     const cleanups = [];
     this._cleanup = () => {
@@ -66,18 +75,7 @@ class Rend {
         const {events} = jsUtils;
         const {EventEmitter} = events;
 
-        const transparentImg = biolumi.getTransparentImg();
         const transparentMaterial = biolumi.getTransparentMaterial();
-
-        const _parseUrlSpec = url => {
-          const match = url.match(/^(?:([^:]+):\/\/)([^:]+)(?::([0-9]*?))?$/);
-          return match && {
-            protocol: match[1],
-            host: match[2],
-            port: match[3] ? parseInt(match[3], 10) : null,
-          };
-        };
-        const hubSpec = _parseUrlSpec(hubUrl);
 
         const menuRenderer = menuRender.makeRenderer({
           creatureUtils,
@@ -107,13 +105,9 @@ class Rend {
         };
         const statusState = {
           url: bootstrap.getInitialPath(),
+          name: 'Server name', // XXX set this from the config
           username: names[Math.floor(Math.random() * names.length)],
-          worldname: serverWorldname,
           users: [],
-          flags: {
-            hub: Boolean(hubSpec),
-            server: serverEnabled,
-          }
         };
         const navbarState = {
           tab: 'status',
@@ -257,7 +251,7 @@ class Rend {
 
             if (onclick === 'status:backToHub') {
               const initialToken = _getQueryVariable(bootstrap.getInitialUrl(), 't');
-              bootstrap.navigate('https://' + hubUrl + (initialToken ? ('?t=' + initialToken) : ''));
+              bootstrap.navigate('https://' + siteUrl + (initialToken ? ('?t=' + initialToken) : ''));
 
               return true; // can't happen
             } else if (onclick === 'status:servers') {
@@ -511,8 +505,6 @@ class Rend {
           setStatus(name, value) {
             statusState[name] = value;
 
-            this.emit('statusUpdate');
-
             _updateMenuPage();
           }
 
@@ -642,12 +634,5 @@ const _copyToClipboard = s => {
   const successful = document.execCommand('copy');
   return successful;
 };
-const _proxyLogin = () => fetch('server/proxyLogin', {
-  method: 'POST',
-  credentials: 'same-origin',
-})
-  .then(res => res.json()
-    .then(({token}) => token)
-  );
 
 module.exports = Rend;

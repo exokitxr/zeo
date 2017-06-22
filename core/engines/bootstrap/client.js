@@ -18,7 +18,7 @@ class Bootstrap {
 
   mount() {
     const {_archae: archae} = this;
-    const {metadata: {site: {url: siteUrl}, hub: {url: hubUrl, enabled: hubEnabled}, server: {enabled: serverEnabled}}} = archae;
+    const {metadata: {site: {url: siteUrl}, server: {enabled: serverEnabled}}} = archae;
 
     let live = true;
     this._cleanup = () => {

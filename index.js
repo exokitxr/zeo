@@ -24,7 +24,6 @@ const flags = {
   server: args.includes('server'),
   site: args.includes('site'),
   home: args.includes('home'),
-  hub: args.includes('hub'),
   forum: args.includes('forum'),
   install: args.includes('install'),
   host: _findArg('host'),
@@ -54,9 +53,7 @@ const flags = {
   dataDirectorySrc: _findArg('dataDirectorySrc'),
   cryptoDirectorySrc: _findArg('cryptoDirectorySrc'),
   installDirectorySrc: _findArg('installDirectorySrc'),
-  worldname: _findArg('worldname'),
   siteUrl: _findArg('siteUrl'),
-  hubUrl: _findArg('hubUrl'),
   homeUrl: _findArg('homeUrl'),
   vridUrl: _findArg('vridUrl'),
   crdsUrl: _findArg('crdsUrl'),
@@ -88,11 +85,9 @@ const installDirectory = flags.installDirectory || 'installed';
 const dataDirectorySrc = flags.dataDirectorySrc || dataDirectory;
 const cryptoDirectorySrc = flags.cryptoDirectorySrc || cryptoDirectory;
 const installDirectorySrc = flags.installDirectorySrc || installDirectory;
-const staticSite = flags.site && !(flags.home || flags.hub || flags.server);
-const worldname = flags.worldname || [_capitalize(rnd.adjective()), _capitalize(rnd.noun())].join(' ');
+const staticSite = flags.site && !(flags.home || flags.server);
 const protocolString = !secure ? 'http' : 'https';
 const siteUrl = flags.siteUrl || (protocolString + '://' + hostname + ':' + port);
-const hubUrl = flags.hubUrl || (protocolString + '://hub.' + hostname + ':' + port);
 const homeUrl = flags.homeUrl || (protocolString + '://127.0.0.1:' + port);
 const vridUrl = flags.vridUrl || (protocolString + '://' + hostname + ':' + port);
 const crdsUrl = flags.crdsUrl || (protocolString + '://' + hostname + ':' + port);
@@ -131,17 +126,12 @@ const config = {
     crds: {
       url: crdsUrl,
     },
-    hub: {
-      url: hubUrl,
-      enabled: flags.hub,
-    },
     forum: {
       url: forumUrl,
       enabled: flags.forum,
     },
     server: {
       url: fullUrl,
-      worldname: worldname,
       enabled: flags.server,
     },
     maxUsers: maxUsers,
@@ -159,12 +149,9 @@ const _install = () => {
   }
 };
 
-const worldnameRegexp = /^[a-z][a-z0-9_-]*/i;
 const _checkArgs = () => {
-  if ((Number(Boolean(flags.hub)) + Number(Boolean(flags.home)) + Number(Boolean(flags.server))) > 1) {
-    return Promise.reject(new Error('hub, server, and site arguments are mutually exclusive'));
-  } else if (flags.worldname && !worldnameRegexp.test(flags.worldname)) {
-    return Promise.reject(new Error('worldname must match ' + String(worldnameRegexp)));
+  if ((Number(Boolean(flags.home)) + Number(Boolean(flags.server))) > 1) {
+    return Promise.reject(new Error('server and site arguments are mutually exclusive'));
   } else {
     return Promise.resolve();
   }
@@ -179,7 +166,7 @@ const _configure = () => {
 };
 
 const _preload = () => {
-  if (flags.hub || flags.home || flags.server) {
+  if (flags.home || flags.server) {
     const preload = require('./lib/preload');
     return preload.preload(a, config);
   } else {
@@ -243,10 +230,6 @@ const _listenLibs = () => {
     const home = require('./lib/home');
     listenPromises.push(home.listen(a, config));
   }
-  if (flags.hub) {
-    const hub = require('./lib/hub');
-    listenPromises.push(hub.listen(a, config));
-  }
   if (flags.server) {
     const server = require('./lib/server');
     listenPromises.push(server.listen(a, config));
@@ -256,7 +239,7 @@ const _listenLibs = () => {
 };
 
 const _listenArchae = () => {
-  if (flags.site || flags.home || flags.hub || flags.server) {
+  if (flags.site || flags.home || flags.server) {
     return new Promise((accept, reject) => {
       a.listen(err => {
         if (!err) {
@@ -274,7 +257,7 @@ const _listenArchae = () => {
 const _boot = () => {
   const bootPromises = [];
 
-  if (flags.hub || flags.server) {
+  if (flags.server) {
     bootPromises.push(
       _getAllPlugins()
         .then(plugins => a.requestPlugins(plugins))
@@ -297,9 +280,6 @@ _checkArgs()
     }
     if (flags.home) {
       console.log('Home: ' + config.metadata.home.url + '/');
-    }
-    if (flags.hub) {
-      console.log('Hub: ' + config.metadata.hub.url + '/');
     }
     if (flags.server) {
       console.log('Server: ' + config.metadata.server.url + '/');

@@ -10,15 +10,8 @@ pushd "$DIR"/../
   port=8080 \
   siteUrl='http://127.0.0.1:8080' \
   homeUrl='http://127.0.0.1:8081' \
-  hubUrl='http://127.0.0.1:8000' \
-  cryptoDirectory='crypto-test' cryptoDirectorySrc='defaults/crypto' &
-./index.js home \
-  port=8081 \
-  siteUrl='http://127.0.0.1:8080' \
-  cryptoDirectory='crypto-test' cryptoDirectorySrc='defaults/crypto' &
-./index.js hub \
-  port=8000 \
-  hubUrl='http://127.0.0.1:8000' \
+  crdsUrl='http://127.0.0.1:9999' \
+  forumUrl='http://127.0.0.1:8089' \
   cryptoDirectory='crypto-test' cryptoDirectorySrc='defaults/crypto' &
 
 sleep infinity;

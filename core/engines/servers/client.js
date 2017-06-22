@@ -16,7 +16,16 @@ class Servers {
 
   mount() {
     const {_archae: archae} = this;
-    const {metadata: {hub: {url: hubUrl}, server: {enabled: serverEnabled}}} = archae;
+    const {
+      metadata: {
+        site: {
+          url: siteUrl,
+        },
+        server: {
+          enabled: serverEnabled,
+        },
+      },
+    } = archae;
 
     const cleanups = [];
     this._cleanup = () => {
@@ -77,7 +86,7 @@ class Servers {
           loading: true,
         };
 
-        const _requestRemoteServers = () => fetch(hubUrl + '/servers/servers.json')
+        const _requestRemoteServers = () => fetch(siteUrl + '/prsnt/servers.json')
           .then(res => res.json()
             .then(j => {
               const {servers} = j;
