@@ -20,7 +20,6 @@ This should be an object with the following shape:
 
 ```
 {
-  tagName: 'my-tag',
   attributes: {
     'attribute-1': {
       type: 'type',
@@ -39,8 +38,7 @@ This should be an object with the following shape:
 
 All keys are optional with sane defaults. But you should provide _something_, or else calling `registerEntity()` would be a bit silly.
 
-- `tagName`: Tag name that will represent your entity in the DOM. Can be any valid [`HTML` tag name](https://www.w3.org/TR/html/syntax.html#tag-name).
-- `attribute-1`, `someOtherAttribute`, etc.: These are just object keys uniquely describing your attribute. They will be used as HTML attributes, so must be a [valid `HTML` attribute name](https://www.w3.org/TR/html/syntax.html#elements-attributes).
+- `attribute-1`, `someOtherAttribute`, etc.: These keys will be used as HTML attributes for you entity DOM elements, so should be [valid `HTML` attribute names](https://www.w3.org/TR/html/syntax.html#elements-attributes).
 - `type`: Each attribute has a type. The valid types are described below.
 - `value`: The _initial value_ for this attribute. The type of `value` depends on the attribute's declared `type`. Described below.
 - `entityAddedCallback`: Called when your entity is added to the world. This is the place to add something to the VR world with the other APIs. `entityElement` is the DOM element for your entity, and can be used to interact with the entity DOM.
