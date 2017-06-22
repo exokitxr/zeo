@@ -513,12 +513,12 @@ class Zeo {
                     }
 
                     class ZeoElementsApi {
-                      registerComponent(pluginInstance, componentApi) {
-                        tags.registerComponent(pluginInstance, componentApi);
+                      registerEntity(pluginInstance, componentApi) {
+                        tags.registerEntity(pluginInstance, componentApi);
                       }
 
-                      unregisterComponent(pluginInstance, componentApi) {
-                        tags.unregisterComponent(pluginInstance, componentApi);
+                      unregisterEntity(pluginInstance, componentApi) {
+                        tags.unregisterEntity(pluginInstance, componentApi);
                       }
 
                       getWorldElement() {

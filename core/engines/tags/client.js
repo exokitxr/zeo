@@ -1867,7 +1867,7 @@ class Tags {
               this.listen();
             }
 
-            registerComponent(pluginInstance, componentApi) {
+            registerEntity(pluginInstance, componentApi) {
               // create element
               const baseObject = componentApi;
               const componentElement = menuUtils.makeZeoComponentElement(baseObject);
@@ -1890,7 +1890,7 @@ class Tags {
               tagComponentInstanceInstances.push(componentElement);
             }
 
-            unregisterComponent(pluginInstance, componentApiToRemove) {
+            unregisterEntity(pluginInstance, componentApiToRemove) {
               const name = archae.getPath(pluginInstance);
 
               const tagComponentApiComponents = tagComponentApis[name];
