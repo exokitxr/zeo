@@ -13,15 +13,17 @@ To get a mod to show up on a VR server, you add the `zeo-mod` keyword to your [`
 }
 ```
 
+For _local development_ you can put your mod as a directory under `/mods` on your server. This works the same as if you'd published it, except you don't need to publish and nobody else can see your mess yet. &#x1F44C;
+
 That's it! The rest of this document explains how to structure your module to actually make it do stuff.
 
 #### Module loader
 
-Installing mods uses plain `npm install`. So, if your mod installs locally, it should "just work"&#x2122; on your VR server.
+Installing mods uses plain [`npm install`](https://docs.npmjs.com/cli/install).
 
-However, mods need to be hot-loaded and unloaded in the VR world, so your mod will need to describe how to start and stop it, in both the browser and on the server. These are all optional, but if your mod actually does _something_, you'll want to hook in at one or all of these points.
+Mods are hot-loaded and hot-unloaded in the VR world. Your mod describes how to start and stop itself, in both the browser and on the server. This is optional, but if your mod actually does _something_, you'll want to hook in at one or all of these points. &#x1F4AA;
 
-The module loader we use is called [`archae`](https://github.com/modulesio/archae) and it's just a way to describe these entrypoints. The entrypoints are described by keys in your `package.json`:
+The module loader we use is called [`archae`](https://github.com/modulesio/archae). It's just a way to describe these entrypoints. The entrypoints are described by keys in your `package.json`:
 
 ###### packgage.json
 ```
