@@ -3,6 +3,9 @@
   "version": "0.0.1",
   "description": "WebVR worlds in Javascript",
   "main": "index.js",
+  "bin" : {
+    "zeo": "index.js"
+  },
   "scripts": {
     "start": "scripts/standalone.sh",
     "test": "echo \"Error: no test specified\" && exit 1",
