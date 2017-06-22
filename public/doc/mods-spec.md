@@ -2,14 +2,14 @@
 
 Mods are just [`npm` modules](https://npmjs.org/).
 
-To get a mod to show up on a VR server, you add the `vr-module` keyword to your [`package.json`](https://docs.npmjs.com/files/package.json) and publish normally:
+To get a mod to show up on a VR server, you add the `zeo-mod` keyword to your [`package.json`](https://docs.npmjs.com/files/package.json) and publish normally:
 
 ###### package.json
 ```
 {
   "name": "example",
   "version": "0.0.1",
-  "keywords": ["vr-module"]
+  "keywords": ["zeo-mod"]
 }
 ```
 
