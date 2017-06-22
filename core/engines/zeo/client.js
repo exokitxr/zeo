@@ -94,6 +94,7 @@ class Zeo {
             '/core/engines/color',
             '/core/engines/loader',
             '/core/engines/tags',
+            '/core/engines/broadcast',
             '/core/engines/world',
             '/core/engines/entity',
             '/core/engines/file',
@@ -135,6 +136,7 @@ class Zeo {
             color,
             loader,
             tags,
+            broadcast,
             world,
             entity,
             file,
@@ -590,6 +592,20 @@ class Zeo {
                       }
                     }
 
+                    class ZeoBroadcastApi {
+                      on() {
+                        return broadcast.on.apply(this, arguments);
+                      }
+
+                      removeListener() {
+                        broadcast.removeListener.apply(this, arguments);
+                      }
+
+                      removeAllListeners() {
+                        broadcast.removeAllListeners.apply(this, arguments);
+                      }
+                    }
+
                     class ZeoUiApi {
                       makeUi(options) {
                         return biolumi.makeUi(options);
@@ -716,6 +732,7 @@ class Zeo {
                         this.elements = new ZeoElementsApi();
                         this.world = new ZeoWorldApi();
                         this.player = new ZeoPlayerApi();
+                        this.broadcast = new ZeoBroadcastApi();
                         this.ui = new ZeoUiApi();
                         this.sound = new ZeoSoundApi();
                         this.intersect = new ZeoIntersectApi();

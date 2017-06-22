@@ -213,9 +213,6 @@ class Tags {
           const rootWorldElement = document.createElement('world');
           rootWorldElement.style.cssText = 'display: none !important;';
           const localEventSymbol = Symbol();
-          rootWorldElement.addEventListener('broadcast', e => {
-            tagsApi.emit('broadcast', e.detail);
-          });
           document.body.appendChild(rootWorldElement);
 
           const _addEntityCallback = (componentElement, entityElement) => {

@@ -1284,10 +1284,6 @@ class World {
           }
         };
         tags.on('loadTags', _loadTags);
-        const _broadcast = detail => {
-          _request('broadcast', [detail], _warnError);
-        };
-        tags.on('broadcast', _broadcast);
 
         const _addAsset = itemSpec => {
           _addTag(itemSpec);
@@ -1568,7 +1564,6 @@ class World {
           tags.removeListener('seek', _tagsSeek);
           tags.removeListener('seekUpdate', _tagsSeekUpdate);
           tags.removeListener('loadTags', _loadTags);
-          tags.removeListener('broadcast', _broadcast);
 
           wallet.removeListener('addAsset', _addAsset);
 

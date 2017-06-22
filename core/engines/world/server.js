@@ -314,12 +314,6 @@ class World {
                     _broadcast('unloadModule', [userId, id]);
 
                     cb();
-                  } else if (method === 'broadcast') {
-                    const [detail] = args;
-
-                    _broadcast('message', [detail]);
-
-                    cb();
                   } else {
                     const err = new Error('no such method:' + JSON.stringify(method));
                     cb(err.stack);
