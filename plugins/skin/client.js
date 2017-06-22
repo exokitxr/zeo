@@ -95,9 +95,12 @@ class Skin {
                 entityObject.remove(mesh);
                 meshes.splice(meshIndex, 1);
               };
-              player.getRemoteStatuses().forEach((status, playerId) => {
+              const statuses = player.getRemoteStatuses();
+              for (let i = 0; i < statuses.length; i++) {
+                const status = statuses[i];
+                const {playerId} = status;
                 _addMesh(playerId);
-              });
+              }
 
               const _updateMesh = mesh => {
                 const {head, playerRotation, playerModel, arms} = mesh;

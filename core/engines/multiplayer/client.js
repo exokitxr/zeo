@@ -65,7 +65,16 @@ class Multiplayer {
           }
 
           getPlayerStatuses() {
-            return this.playerStatuses;
+            const result = [];
+
+            this.playerStatuses.forEach((status, playerId) => {
+              result.push({
+                playerId,
+                status,
+              });
+            });
+
+            return result;
           }
 
           getUsers() {
