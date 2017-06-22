@@ -22,7 +22,7 @@ class Rend {
       const q = req.query.q ? decodeURIComponent(req.query.q) : '';
 
       mq.search(q, {
-        keywords: ['zeo-module'],
+        keywords: ['zeo-mod'],
       })
         .then(modSpecs => {
           res.json(modSpecs);

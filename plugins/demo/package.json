@@ -3,7 +3,7 @@
   "description": "A simple bouncy ball plugin.",
   "version": "0.0.1",
   "keywords": [
-    "zeo-module"
+    "zeo-mod"
   ],
   "client": "client.js",
   "dependencies": {}

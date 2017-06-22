@@ -3,7 +3,7 @@
   "description": "Virtual cake that you can eat. Made with Zeo VR.",
   "version": "0.0.4",
   "keywords": [
-    "zeo-module"
+    "zeo-mod"
   ],
   "client": "client.js",
   "server": "server.js",
