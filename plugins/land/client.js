@@ -66,8 +66,7 @@ class Land {
           shading: THREE.FlatShading,
         });
 
-        const landComponent = {
-          selector: 'land[position]',
+        const landEntity = {
           attributes: {
             position: {
               type: 'matrix',
@@ -79,7 +78,7 @@ class Land {
             },
           },
           entityAddedCallback(entityElement) {
-            const entityApi = entityElement.getComponentApi();
+            const entityApi = entityElement.getEntityApi();
             const entityObject = entityElement.getObject();
 
             const landMesh = (() => {
@@ -96,7 +95,7 @@ class Land {
             };
           },
           entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-            const entityApi = entityElement.getComponentApi();
+            const entityApi = entityElement.getEntityApi();
 
             switch (name) {
               /* case 'position': { // XXX re-enable this
@@ -115,15 +114,15 @@ class Land {
             }
           },
           entityRemovedCallback(entityElement) {
-            const entityApi = entityElement.getComponentApi();
+            const entityApi = entityElement.getEntityApi();
 
             entityApi._cleanup();
           },
         };
-        elements.registerComponent(this, landComponent);
+        elements.registerEntity(this, landEntity);
 
         this._cleanup = () => {
-          elements.unregisterComponent(this, landComponent);
+          elements.unregisterEntity(this, landEntity);
         };
       }
     });

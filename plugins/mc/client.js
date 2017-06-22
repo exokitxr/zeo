@@ -132,10 +132,9 @@ class Mc {
             vertexColors: THREE.FaceColors,
           });
 
-          const mcComponent = {
-            selector: 'mc',
+          const mcEntity = {
             entityAddedCallback(entityElement) {
-              const entityApi = entityElement.getComponentApi();
+              const entityApi = entityElement.getEntityApi();
               const entityObject = entityElement.getObject();
 
               const _makeGrabState = () => ({
@@ -450,15 +449,15 @@ class Mc {
               };
             },
             entityRemovedCallback() {
-              const entityApi = entityElement.getComponentApi();
+              const entityApi = entityElement.getEntityApi();
 
               entityApi._cleanup();
             },
           };
-          elements.registerComponent(this, mcComponent);
+          elements.registerEntity(this, mcEntity);
 
           this._cleanup = () => {
-            elements.unregisterComponent(this, mcComponent);
+            elements.unregisterEntity(this, mcEntity);
           };
         }
       });

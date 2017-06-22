@@ -32,8 +32,7 @@ class Skybox {
         return result;
       });
 
-    const skyboxComponent = {
-      selector: 'skybox[position]',
+    const skyboxEntity = {
       attributes: {
         position: {
           type: 'matrix',
@@ -49,7 +48,7 @@ class Skybox {
         },
       },
       entityAddedCallback(entityElement) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
         const entityObject = entityElement.getObject();
 
         const skyboxMesh = (() => {
@@ -124,12 +123,12 @@ class Skybox {
         };
       },
       entityRemovedCallback(entityElement) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
 
         entityApi._cleanup();
       },
       entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
         const entityObject = entityElement.getObject();
 
         switch (name) {
@@ -154,10 +153,10 @@ class Skybox {
         }
       }
     };
-    elements.registerComponent(this, skyboxComponent);
+    elements.registerEntity(this, skyboxEntity);
 
     this._cleanup = () => {
-      elements.registerComponent(this, skyboxComponent);
+      elements.registerEntity(this, skyboxEntity);
     };
   }
 

@@ -40,8 +40,7 @@ class Shell {
       }
     };
 
-    const shellComponent = {
-      selector: 'shell[position]',
+    const shellEntity = {
       attributes: {
         position: {
           type: 'matrix',
@@ -53,7 +52,7 @@ class Shell {
         },
       },
       entityAddedCallback(entityElement) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
         const entityObject = entityElement.getObject();
 
         const cleanups = [];
@@ -461,12 +460,12 @@ class Shell {
         });
       },
       entityRemovedCallback(entityElement) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
 
         entityApi._cleanup();
       },
       entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
 
         switch (name) {
           case 'position': {
@@ -479,12 +478,12 @@ class Shell {
         };
       },
     };
-    elements.registerComponent(this, shellComponent);
+    elements.registerEntity(this, shellEntity);
 
     render.on('update', _update);
 
     this._cleanup = () => {
-      elements.unregisterComponent(this, shellComponent);
+      elements.unregisterEntity(this, shellEntity);
 
       render.removeListener('update', _update);
     };

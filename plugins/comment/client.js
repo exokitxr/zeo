@@ -37,8 +37,7 @@ class Comment {
       shading: THREE.FlatShading,
     });
 
-    const commentComponent = {
-      selector: 'comment[position][lookat][text]',
+    const commentEntity = {
       attributes: {
         position: {
           type: 'matrix',
@@ -62,7 +61,7 @@ class Comment {
         },
       },
       entityAddedCallback(entityElement) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
         const entityObject = entityElement.getObject();
 
         const commentState = {
@@ -262,7 +261,7 @@ class Comment {
         };
       },
       entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
 
         switch (name) {
           case 'position': {
@@ -301,15 +300,15 @@ class Comment {
         }
       },
       entityRemovedCallback(entityElement) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
 
         entityApi._cleanup();
       },
     };
-    elements.registerComponent(this, commentComponent);
+    elements.registerEntity(this, commentEntity);
 
     this._cleanup = () => {
-      elements.unregisterComponent(this, commentComponent);
+      elements.unregisterEntity(this, commentEntity);
     };
   }
 

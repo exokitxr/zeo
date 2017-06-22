@@ -29,8 +29,7 @@ class ZSword {
 
     const THREEConvexGeometry = ConvexGeometry(THREE);
 
-    const swordComponent = {
-      selector: 'sword[position]',
+    const swordEntity = {
       attributes: {
         position: {
           type: 'matrix',
@@ -54,7 +53,7 @@ class ZSword {
         },
       },
       entityAddedCallback(entityElement) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
         const entityObject = entityElement.getObject();
 
         const mesh = (() => {
@@ -134,11 +133,11 @@ class ZSword {
         };
       },
       entityRemovedCallback(entityElement) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
         entityApi._cleanup();
       },
       entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
 
         switch (name) {
           case 'position': {
@@ -151,10 +150,10 @@ class ZSword {
         }
       },
     };
-    elements.registerComponent(this, swordComponent);
+    elements.registerEntity(this, swordEntity);
 
     this._cleanup = () => {
-      elements.unregisterComponent(this, swordComponent);
+      elements.unregisterEntity(this, swordEntity);
     };
   }
 

@@ -4,8 +4,7 @@ export default class Grass {
   mount() {
     const {three: {THREE}, elements, utils: {random: {alea}}} = zeo;
 
-    const grassComponent = {
-      selector: 'grass[position]',
+    const grassEntity = {
       attributes: {
         position: {
           type: 'matrix',
@@ -17,7 +16,7 @@ export default class Grass {
         },
       },
       entityAddedCallback(entityElement) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
         const entityObject = entityElement.getObject();
 
         const grassColors = [
@@ -865,15 +864,15 @@ export default class Grass {
         };
       },
       destructor(entityElement) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
 
         entityApi._cleanup();
       },
     };
-    elements.registerComponent(this, grassComponent);
+    elements.registerEntity(this, grassEntity);
 
     this._cleanup = () => {
-      elements.unregisterComponent(this, grassComponent);
+      elements.unregisterEntity(this, grassEntity);
     };
   }
 

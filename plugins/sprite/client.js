@@ -27,8 +27,7 @@ class Sprite {
           };
         }));
 
-    const spriteComponent = {
-      selector: 'sprite[position][image]',
+    const spriteEntity = {
       attributes: {
         position: {
           type: 'matrix',
@@ -44,7 +43,7 @@ class Sprite {
         },
       },
       entityAddedCallback(entityElement) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
         const entityObject = entityElement.getObject();
 
         entityApi.position = null;
@@ -73,12 +72,12 @@ class Sprite {
         };
       },
       entityRemovedCallback(entityElement) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
 
         entityApi._cleanup();
       },
       entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
 
         switch (name) {
           case 'position': {
@@ -134,10 +133,10 @@ class Sprite {
         }
       },
     };
-    elements.registerComponent(this, spriteComponent);
+    elements.registerEntity(this, spriteEntity);
 
     this._cleanup = () => {
-      elements.unregisterComponent(this, spriteComponent);
+      elements.unregisterEntity(this, spriteEntity);
     };
   }
 

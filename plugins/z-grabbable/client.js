@@ -383,8 +383,7 @@ class ZGrabbable {
     };
     input.on('gripup', _gripup);
 
-    const grabbableComponent = {
-      selector: '[grabbable][size]',
+    const grabbableEntity = {
       attributes: {
         grabbable: {
           type: 'checkbox',
@@ -408,14 +407,14 @@ class ZGrabbable {
       },
       entityAddedCallback(entityElement) {
         const grabbable = new Grabbable(entityElement, entityElement.getObject());
-        entityElement.setComponentApi(grabbable);
+        entityElement.setEntityApi(grabbable);
       },
       entityRemovedCallback(entityElement) {
-        const grabbable = entityElement.getComponentApi();
+        const grabbable = entityElement.getEntityApi();
         grabbable.destroy();
       },
       entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-        const grabbable = entityElement.getComponentApi();
+        const grabbable = entityElement.getEntityApi();
 
         switch (name) {
           case 'grabbable': {
@@ -436,7 +435,7 @@ class ZGrabbable {
         }
       }
     };
-    elements.registerComponent(this, grabbableComponent);
+    elements.registerEntity(this, grabbableEntity);
 
     worldElement.addEventListener('message', e => {
       const {detail: {type}} = e;
@@ -453,7 +452,7 @@ class ZGrabbable {
     });
 
     this._cleanup = () => {
-      elements.unregisterComponent(this, grabbableComponent);
+      elements.unregisterEntity(this, grabbableEntity);
 
       input.removeListener('gripdown', _gripdown);
       input.removeListener('gripup', _gripup);

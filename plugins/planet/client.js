@@ -207,8 +207,7 @@ class Planet {
     return _requestAudio('archae/planet/audio/pop.ogg')
       .then(popAudio => {
         if (live) {
-          const planetComponent = {
-            selector: 'planet[position][planet-id]',
+          const planetEntity = {
             attributes: {
               position: {
                 type: 'matrix',
@@ -230,7 +229,7 @@ class Planet {
               },
             },
             entityAddedCallback(entityElement) {
-              const entityApi = entityElement.getComponentApi();
+              const entityApi = entityElement.getEntityApi();
               const entityObject = entityElement.getObject();
 
               const intersecter = intersect.makeIntersecter({
@@ -1097,12 +1096,12 @@ class Planet {
               };
             },
             entityRemovedCallback(entityElement) {
-              const entityApi = entityElement.getComponentApi();
+              const entityApi = entityElement.getEntityApi();
 
               entityApi._cleanup();
             },
             entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-              const entityApi = entityElement.getComponentApi();
+              const entityApi = entityElement.getEntityApi();
               const entityObject = entityElement.getObject();
 
               switch (name) {
@@ -1131,10 +1130,10 @@ class Planet {
               }
             },
           };
-          elements.registerComponent(this, planetComponent);
+          elements.registerEntity(this, planetEntity);
 
           this._cleanup = () => {
-            elements.unregisterComponent(this, planetComponent);
+            elements.unregisterEntity(this, planetEntity);
           };
         }
       });

@@ -42,8 +42,7 @@ class Ocean {
       }
     };
 
-    const oceanComponent = {
-      selector: 'ocean[position]',
+    const oceanEntity = {
       attributes: {
         position: {
           type: 'matrix',
@@ -55,7 +54,7 @@ class Ocean {
         },
       },
       entityAddedCallback(entityElement) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
         const entityObject = entityElement.getObject();
 
         const mesh = (() => {
@@ -116,12 +115,12 @@ class Ocean {
         };
       },
       entityRemovedCallback(entityElement) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
 
         entityApi._cleanup();
       },
       entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
 
         switch (name) {
           case 'position': {
@@ -136,12 +135,12 @@ class Ocean {
         }
       },
     };
-    elements.registerComponent(this, oceanComponent);
+    elements.registerEntity(this, oceanEntity);
 
     render.on('update', _update);
 
     this._cleanup = () => {
-      elements.unregisterComponent(this, oceanComponent);
+      elements.unregisterEntity(this, oceanEntity);
 
       render.removeListener('update', _update);
     };

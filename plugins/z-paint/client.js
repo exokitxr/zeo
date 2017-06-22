@@ -39,8 +39,7 @@ class ZPaint {
     return _requestImage('archae/z-paint/brushes/brush.png')
       .then(brushImg => {
         if (live) {
-          const paintbrushComponent = {
-            selector: 'paintbrush[position][paint-id][color]',
+          const paintbrushEntity = {
             attributes: {
               position: {
                 type: 'matrix',
@@ -78,7 +77,7 @@ class ZPaint {
               },
             },
             entityAddedCallback(entityElement) {
-              const entityApi = entityElement.getComponentApi();
+              const entityApi = entityElement.getEntityApi();
               const entityObject = entityElement.getObject();
 
               const paintbrushMesh = (() => {
@@ -682,12 +681,12 @@ class ZPaint {
               };
             },
             entityRemovedCallback(entityElement) {
-              const entityApi = entityElement.getComponentApi();
+              const entityApi = entityElement.getEntityApi();
 
               entityApi._cleanup();
             },
             entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-              const entityApi = entityElement.getComponentApi();
+              const entityApi = entityElement.getEntityApi();
 
               switch (name) {
                 case 'position': {
@@ -719,10 +718,10 @@ class ZPaint {
               }
             },
           };
-          elements.registerComponent(this, paintbrushComponent);
+          elements.registerEntity(this, paintbrushEntity);
 
           this._cleanup = () => {
-            elements.unregisterComponent(this, paintbrushComponent);
+            elements.unregisterEntity(this, paintbrushEntity);
           };
         }
       });

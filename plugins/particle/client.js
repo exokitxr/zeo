@@ -8,8 +8,7 @@ class Particle {
       opacity: 0.5,
     });
 
-    const particleComponent = {
-      selector: 'particle[position]',
+    const particleEntity = {
       attributes: {
         position: {
           type: 'matrix',
@@ -21,7 +20,7 @@ class Particle {
         },
       },
       entityAddedCallback(entityElement) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
         const entityObject = entityElement.getObject();
 
         const mesh = (() => {
@@ -161,7 +160,7 @@ class Particle {
         };
       },
       entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
 
         switch (name) {
           /* case 'position': { // XXX re-enable this
@@ -180,15 +179,15 @@ class Particle {
         }
       },
       entityRemovedCallback(entityElement) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
 
         entityApi._cleanup();
       },
     };
-    elements.registerComponent(this, particleComponent);
+    elements.registerEntity(this, particleEntity);
 
     this._cleanup = () => {
-      elements.unregisterComponent(this, particleComponent);
+      elements.unregisterEntity(this, particleEntity);
     };
   }
 

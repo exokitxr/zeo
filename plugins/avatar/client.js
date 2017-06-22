@@ -27,8 +27,7 @@ class Avatar {
       return new THREEConvexGeometry(points);
     })();
 
-    const avatarComponent = {
-      selector: 'avatar[position]',
+    const avatarEntity = {
       attributes: {
         position: {
           type: 'matrix',
@@ -40,7 +39,7 @@ class Avatar {
         },
       },
       entityAddedCallback(entityElement) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
         const entityObject = entityElement.getObject();
 
         const mesh = (() => {
@@ -132,7 +131,7 @@ class Avatar {
         };
       },
       entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
 
         switch (name) {
           case 'position': {
@@ -151,15 +150,15 @@ class Avatar {
         }
       },
       entityRemovedCallback(entityElement) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
 
         entityApi._cleanup();
       },
     };
-    elements.registerComponent(this, avatarComponent);
+    elements.registerEntity(this, avatarEntity);
 
     this._cleanup = () => {
-      elements.unregisterComponent(this, avatarComponent);
+      elements.unregisterEntity(this, avatarEntity);
     };
   }
 

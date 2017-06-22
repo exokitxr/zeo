@@ -33,8 +33,7 @@ class DayNightSkybox {
 
     const zeroVector = new THREE.Vector3(0, 0, 0);
 
-    const skyboxComponent = {
-      selector: 'skybox[position]',
+    const skyboxEntity = {
       attributes: {
         position: {
           type: 'matrix',
@@ -46,7 +45,7 @@ class DayNightSkybox {
         }
       },
       entityAddedCallback(entityElement) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
         const entityObject = entityElement.getObject();
 
         const mesh = (() => {
@@ -207,12 +206,12 @@ class DayNightSkybox {
         };
       },
       entityRemovedCallback(entityElement) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
 
         entityApi._cleanup();
       },
       entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-        c0onst entityApi = entityElement.getComponentApi();
+        c0onst entityApi = entityElement.getEntityApi();
 
         switch (name) {
           case 'position': {
@@ -227,7 +226,7 @@ class DayNightSkybox {
         }
       }
     };
-    elements.registerComponent(this, skyboxComponent);
+    elements.registerEntity(this, skyboxEntity);
 
     const updates = [];
     const _update = () => {
@@ -239,7 +238,7 @@ class DayNightSkybox {
     render.on('update', _update);
 
     this._cleanup = () => {
-      elements.unregisterComponent(this, skyboxComponent);
+      elements.unregisterEntity(this, skyboxEntity);
 
       render.removeListener('update', _update);
     };

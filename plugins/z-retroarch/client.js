@@ -54,8 +54,7 @@ class Retroarch {
       // shading: THREE.FlatShading,
     });
 
-    const retroarchComponent = {
-      selector: 'retroarch[position]',
+    const retroarchEntity = {
       attributes: {
         position: {
           type: 'matrix',
@@ -67,7 +66,7 @@ class Retroarch {
         },
       },
       entityAddedCallback(entityElement) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
         const entityObject = entityElement.getObject();
 
         const _makeGamepadState = () => ({
@@ -688,7 +687,7 @@ class Retroarch {
         };
       },
       entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
         const entityObject = entityElement.getObject();
 
         switch (name) {
@@ -706,15 +705,15 @@ class Retroarch {
         }
       },
       entityRemovedCallback(entityElement) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
 
         entityApi._cleanup();
       },
     };
-    elements.registerComponent(this, retroarchComponent);
+    elements.registerEntity(this, retroarchEntity);
 
     this._cleanup = () => {
-      elements.unregisterComponent(this, retroarchComponent);
+      elements.unregisterEntity(this, retroarchEntity);
     };
   }
 

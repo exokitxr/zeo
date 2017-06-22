@@ -80,8 +80,7 @@ class Raycast {
     };
     render.on('update', _update);
 
-    const raycastableComponent = {
-      selector: '[raycastable]',
+    const raycastableEntity = {
       attributes: {
         raycastable: {
           type: 'checkbox',
@@ -89,7 +88,7 @@ class Raycast {
         },
       },
       entityAddedCallback(entityElement) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
         const entityObject = entityElement.getObject();
 
         /* const sphereMesh = new THREE.Mesh(
@@ -120,7 +119,7 @@ class Raycast {
         };
       },
       entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
         const entityObject = entityElement.getObject();
 
         switch (name) {
@@ -147,19 +146,19 @@ class Raycast {
         }
       },
       entityRemovedCallback(entityElement) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
 
         entityApi._cleanup();
       },
     };
-    elements.registerComponent(this, raycastableComponent);
+    elements.registerEntity(this, raycastableEntity);
 
     this._cleanup = () => {
       SIDES.forEach(side => {
         scene.remove(dotMeshes[side]);
       });
 
-      elements.unregisterComponent(this, raycastableComponent);
+      elements.unregisterEntity(this, raycastableEntity);
 
       render.removeListener('update', _update);
     };

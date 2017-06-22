@@ -21,8 +21,7 @@ class Floor {
 
     const geometryUtils = geometryutils({THREE});
 
-    const floorComponent = {
-      selector: 'floor[position]',
+    const floorEntity = {
       attributes: {
         position: {
           type: 'matrix',
@@ -30,7 +29,7 @@ class Floor {
         },
       },
       entityAddedCallback(entityElement) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
         const entityObject = entityElement.getObject();
 
         const mesh = (() => {
@@ -176,7 +175,7 @@ class Floor {
         };
       },
       entityRemovedCallback(entityElement) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
 
         entityApi._cleanup();
       },
@@ -198,10 +197,10 @@ class Floor {
         }
       }
     };
-    elements.registerComponent(this, floorComponent);
+    elements.registerEntity(this, floorEntity);
 
     this._cleanup = () => {
-      elements.registerComponent(this, floorComponent);
+      elements.registerEntity(this, floorEntity);
     };
   }
 

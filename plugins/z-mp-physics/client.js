@@ -1367,8 +1367,7 @@ class ZMpPhysics {
             }
           };
 
-          const mpPhysicsComponent = {
-            selector: '[mp-physics][mp-physics-id][size]',
+          const mpPhysicsEntity = {
             attributes: {
               'mp-physics': {
                 type: 'checkbox',
@@ -1403,7 +1402,7 @@ class ZMpPhysics {
                 rotation,
                 mass: 1,
               });
-              entityElement.setComponentApi(physicsEntity);
+              entityElement.setEntityApi(physicsEntity);
 
               physicsEntity.on('update', ({position, rotation, scale}) => {
                 entityElement.setState('position', position);
@@ -1426,13 +1425,13 @@ class ZMpPhysics {
               })(physicsEntity.destroy.bind(physicsEntity));
             },
             entityRemovedCallback(entityElement) {
-              const physicsEntity = entityElement.getComponentApi();
+              const physicsEntity = entityElement.getEntityApi();
               physicsEntity.destroy();
 
               _updateControllersDebugMeshes();
             },
             entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-              const physicsEntity = entityElement.getComponentApi();
+              const physicsEntity = entityElement.getEntityApi();
 
               switch (name) {
                 case 'mp-physics': {
@@ -1490,10 +1489,10 @@ class ZMpPhysics {
               }
             },
           };
-          elements.registerComponent(this, mpPhysicsComponent);
+          elements.registerEntity(this, mpPhysicsEntity);
 
           cleanups.push(() => {
-            elements.unregisterComponent(this, mpPhysicsComponent);
+            elements.unregisterEntity(this, mpPhysicsEntity);
 
             if (connection.readyState === WebSocket.OPEN) {
               connection.close();

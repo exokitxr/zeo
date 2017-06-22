@@ -14,7 +14,7 @@ class Fog {
 
     const fogElement = {
       entityAddedCallback(entityElement) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
 
         /* const update = () => { // XXX fix this walk to work with the new skybox module
           const skybox = (() => {
@@ -43,17 +43,17 @@ class Fog {
         };
       },
       entityRemovedCallback(entityElement) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
 
         entityApi._cleanup();
       },
     }
-    elements.registerComponent(this, fogComponent);
+    elements.registerEntity(this, fogEntity);
 
     render.on('update', _update);
 
     this._cleanup = () => {
-      elements.unregisterComponent(this, fogComponent);
+      elements.unregisterEntity(this, fogEntity);
 
       render.removeListener('update', _update);
     };

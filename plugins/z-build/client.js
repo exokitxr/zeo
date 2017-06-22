@@ -74,8 +74,7 @@ class ZBuild {
       side: THREE.DoubleSide,
     });
 
-    const buildComponent = {
-      selector: 'build[position][build-id][color]',
+    const buildEntity = {
       attributes: {
         position: {
           type: 'matrix',
@@ -113,7 +112,7 @@ class ZBuild {
         },
       },
       entityAddedCallback(entityElement) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
         const entityObject = entityElement.getObject();
 
         const shapesWidth = 0.18;
@@ -1159,11 +1158,11 @@ class ZBuild {
         };
       },
       entityRemovedCallback(entityElement) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
         entityApi._cleanup();
       },
       entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
 
         switch (name) {
           case 'position': {
@@ -1193,12 +1192,12 @@ class ZBuild {
         }
       },
     };
-    elements.registerComponent(this, buildComponent);
+    elements.registerEntity(this, buildEntity);
 
     this._cleanup = () => {
       shapeMaterial.dispose();
 
-      elements.unregisterComponent(this, buildComponent);
+      elements.unregisterEntity(this, buildEntity);
     };
   }
 

@@ -118,8 +118,7 @@ class ZDraw {
         if (live) {
           const papers = [];
 
-          const paperComponent = {
-            selector: 'paper[position][paper-id]',
+          const paperEntity = {
             attributes: {
               position: {
                 type: 'matrix',
@@ -153,7 +152,7 @@ class ZDraw {
               },
             },
             entityAddedCallback(entityElement) {
-              const entityApi = entityElement.getComponentApi();
+              const entityApi = entityElement.getEntityApi();
               const entityObject = entityElement.getObject();
 
               entityApi.entityElement = entityElement;
@@ -446,12 +445,12 @@ class ZDraw {
               };
             },
             entityRemovedCallback(entityElement) {
-              const entityApi = entityElement.getComponentApi();
+              const entityApi = entityElement.getEntityApi();
 
               entityApi._cleanup();
             },
             entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-              const entityApi = entityElement.getComponentApi();
+              const entityApi = entityElement.getEntityApi();
 
               switch (name) {
                 case 'position': {
@@ -477,9 +476,8 @@ class ZDraw {
               }
             },
           };
-          elements.registerComponent(this, paperComponent);
-          const pencilComponent = {
-            selector: 'pencil[position][color]',
+          elements.registerEntity(this, paperEntity);
+          const pencilEntity = {
             attributes: {
               position: {
                 type: 'matrix',
@@ -507,7 +505,7 @@ class ZDraw {
               },
             },
             entityAddedCallback(entityElement) {
-              const entityApi = entityElement.getComponentApi();
+              const entityApi = entityElement.getEntityApi();
               const entityObject = entityElement.getObject();
 
               const mesh = (() => {
@@ -874,12 +872,12 @@ class ZDraw {
               };
             },
             entityRemovedCallback(entityElement) {
-              const entityApi = entityElement.getComponentApi();
+              const entityApi = entityElement.getEntityApi();
 
               entityApi._cleanup();
             },
             entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-              const entityApi = entityElement.getComponentApi();
+              const entityApi = entityElement.getEntityApi();
 
               switch (name) {
                 case 'position': {
@@ -899,11 +897,11 @@ class ZDraw {
               }
             },
           };
-          elements.registerComponent(this, pencilComponent);
+          elements.registerEntity(this, pencilEntity);
 
           this._cleanup = () => {
-            elements.unregisterComponent(this, paperComponent);
-            elements.unregisterComponent(this, pencilComponent);
+            elements.unregisterEntity(this, paperEntity);
+            elements.unregisterEntity(this, pencilEntity);
           };
         }
       });

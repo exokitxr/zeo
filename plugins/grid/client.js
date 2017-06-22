@@ -65,8 +65,7 @@ class Grid {
       position,
     })));
 
-    const gridComponent = {
-      selector: 'grid[position]',
+    const gridEntity = {
       attributes: {
         position: {
           type: 'matrix',
@@ -82,7 +81,7 @@ class Grid {
         },
       },
       entityAddedCallback(entityElement) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
         const entityObject = entityElement.getObject();
 
         const mesh = (() => {
@@ -154,12 +153,12 @@ class Grid {
         };
       },
       entityRemovedCallback(entityElement) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
 
         entityApi._cleanup();
       },
       entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
 
         switch (name) {
           case 'position': {
@@ -172,10 +171,10 @@ class Grid {
         }
       },
     };
-    elements.registerComponent(this, gridComponent);
+    elements.registerEntity(this, gridEntity);
 
     this._cleanup = () => {
-      elements.unregisterComponent(this, gridComponent);
+      elements.unregisterEntity(this, gridEntity);
     };
   }
 

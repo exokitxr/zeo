@@ -93,8 +93,7 @@ class Fire {
             opacity: 0.9,
           });
 
-          const fireComponent = {
-            selector: 'fire[position]',
+          const fireEntity = {
             attributes: {
               position: {
                 type: 'matrix',
@@ -110,7 +109,7 @@ class Fire {
               },
             },
             entityAddedCallback(entityElement) {
-              const entityApi = entityElement.getComponentApi();
+              const entityApi = entityElement.getEntityApi();
               const entityObject = entityElement.getObject();
 
               const fireMesh = (() => {
@@ -340,7 +339,7 @@ class Fire {
               };
             },
             entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-              const entityApi = entityElement.getComponentApi();
+              const entityApi = entityElement.getEntityApi();
 
               switch (name) {
                 case 'position': {
@@ -372,12 +371,12 @@ class Fire {
               }
             },
             entityRemovedCallback(entityElement) {
-              const entityApi = entityElement.getComponentApi();
+              const entityApi = entityElement.getEntityApi();
 
               entityApi._cleanup();
             },
           };
-          elements.registerComponent(this, fireComponent);
+          elements.registerEntity(this, fireEntity);
 
           this._cleanup = () => {
             logGeometry.dispose();
@@ -388,7 +387,7 @@ class Fire {
             flameMaterial.dispose();
             sparkMaterial.dispose();
 
-            elements.unregisterComponent(this, fireComponent);
+            elements.unregisterEntity(this, fireEntity);
           };
         }
       });

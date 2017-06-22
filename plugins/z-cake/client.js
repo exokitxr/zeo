@@ -164,8 +164,7 @@ class ZCake {
           let fakeCake = _makeFakeCake();
           const cakes = [];
 
-          const cakeComponent = {
-            selector: 'cake[position][slices]',
+          const cakeEntity = {
             attributes: {
               position: {
                 type: 'matrix',
@@ -211,7 +210,7 @@ class ZCake {
               const cake = new Cake(entityElement, entityElement.getObject());
               cakes.push(cake);
 
-              entityElement.setComponentApi(cake);
+              entityElement.setEntityApi(cake);
 
               if (cakes.length === 1) {
                 fakeCake.destroy();
@@ -219,7 +218,7 @@ class ZCake {
               }
             },
             entityRemovedCallback(entityElement) {
-              const cake = entityElement.getComponentApi();
+              const cake = entityElement.getEntityApi();
               cake.destroy();
 
               cakes.splice(cakes.indexOf(cake), 1);
@@ -229,7 +228,7 @@ class ZCake {
               }
             },
             entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-              const cake = entityElement.getComponentApi();
+              const cake = entityElement.getEntityApi();
 
               switch (name) {
                 case 'position': {
@@ -252,7 +251,7 @@ class ZCake {
               }
             },
             entityStateValueChangedCallback(entityElement, key, oldValue, newValue) {
-              const cake = entityElement.getComponentApi();
+              const cake = entityElement.getEntityApi();
 
               switch (key) {
                 case 'position':
@@ -266,7 +265,7 @@ class ZCake {
               }
             },
           };
-          elements.registerComponent(this, cakeComponent);
+          elements.registerEntity(this, cakeEntity);
 
           const updates = [];
           const _update = () => {
@@ -278,7 +277,7 @@ class ZCake {
           render.on('update', _update);
 
           this._cleanup = () => {
-            elements.unregisterComponent(this, cakeComponent);
+            elements.unregisterEntity(this, cakeEntity);
 
             if (fakeCake) {
               fakeCake.destroy();

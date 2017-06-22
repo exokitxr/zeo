@@ -740,8 +740,7 @@ class ZSpPhysics {
             }
           };
 
-          const spPhysicsComponent = {
-            selector: '[sp-physics][size]',
+          const spPhysicsEntity = {
             attributes: {
               'sp-physics': {
                 type: 'checkbox',
@@ -772,7 +771,7 @@ class ZSpPhysics {
                 rotation,
                 mass: 1,
               });
-              entityElement.setComponentApi(physicsBody);
+              entityElement.setEntityApi(physicsBody);
 
               physicsBody.on('update', ({position, rotation, scale}) => {
                 entityElement.setState('position', position);
@@ -795,13 +794,13 @@ class ZSpPhysics {
               })(physicsBody.destroy.bind(physicsBody));
             },
             entityRemovedCallback(entityElement) {
-              const physicsBody = entityElement.getComponentApi();
+              const physicsBody = entityElement.getEntityApi();
               physicsBody.destroy();
 
               _updateControllersDebugMeshes();
             },
             entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-              const physicsBody = entityElement.getComponentApi();
+              const physicsBody = entityElement.getEntityApi();
 
               switch (name) {
                 case 'sp-physics': {
@@ -855,10 +854,10 @@ class ZSpPhysics {
               }
             },
           };
-          elements.registerComponent(this, spPhysicsComponent);
+          elements.registerEntity(this, spPhysicsEntity);
 
           cleanups.push(() => {
-            elements.unregisterComponent(this, spPhysicsComponent);
+            elements.unregisterEntity(this, spPhysicsEntity);
 
             clearInterval(interval);
 

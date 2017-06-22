@@ -133,8 +133,7 @@ class Egg {
       shading: THREE.FlatShading,
     });
 
-    const eggComponent = {
-      selector: 'egg[position][bites][size]',
+    const eggEntity = {
       attributes: {
         position: {
           type: 'matrix',
@@ -169,7 +168,7 @@ class Egg {
         },
       },
       entityAddedCallback(entityElement) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
         const entityObject = entityElement.getObject();
 
         entityApi.mesh = null;
@@ -353,7 +352,7 @@ class Egg {
         };
       },
       entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
 
         switch (name) {
           case 'position': {
@@ -374,15 +373,15 @@ class Egg {
         }
       },
       entityRemovedCallback(entityElement) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
 
         entityApi._cleanup();
       },
     };
-    elements.registerComponent(this, eggComponent);
+    elements.registerEntity(this, eggEntity);
 
     this._cleanup = () => {
-      elements.unregisterComponent(this, eggComponent);
+      elements.unregisterEntity(this, eggEntity);
     };
   }
 

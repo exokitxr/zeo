@@ -63,8 +63,7 @@ class ZGun {
             shading: THREE.FlatShading,
           });
 
-          const gunComponent = {
-            selector: 'gun[position]',
+          const gunEntity = {
             attributes: {
               position: {
                 type: 'matrix',
@@ -88,7 +87,7 @@ class ZGun {
               },
             },
             entityAddedCallback(entityElement) {
-              const entityApi = entityElement.getComponentApi();
+              const entityApi = entityElement.getEntityApi();
               const entityObject = entityElement.getObject();
 
               const mesh = (() => {
@@ -254,11 +253,11 @@ class ZGun {
               };
             },
             entityRemovedCallback(entityElement) {
-              const entityApi = entityElement.getComponentApi();
+              const entityApi = entityElement.getEntityApi();
               entityApi._cleanup();
             },
             entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-              const entityApi = entityElement.getComponentApi();
+              const entityApi = entityElement.getEntityApi();
 
               switch (name) {
                 case 'position': {
@@ -271,10 +270,10 @@ class ZGun {
               }
             },
           };
-          elements.registerComponent(this, gunComponent);
+          elements.registerEntity(this, gunEntity);
 
           this._cleanup = () => {
-            elements.unregisterComponent(this, gunComponent);
+            elements.unregisterEntity(this, gunEntity);
           };
         }
       });

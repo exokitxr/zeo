@@ -148,8 +148,7 @@ class Rain {
       }
     };
 
-    const rainComponent = {
-      selector: 'rain[position][type][drops][range][length][color][enabled]',
+    const rainEntity = {
       attributes: {
         position: {
           type: 'matrix',
@@ -197,7 +196,7 @@ class Rain {
         },
       },
       entityAddedCallback(entityElement) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
         const entityObject = entityElement.getObject();
 
         const {drops, range, length} = ATTRIBUTE_DEFAULTS;
@@ -268,12 +267,12 @@ class Rain {
         };
       },
       entityRemovedCallback(entityElement) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
 
         entityApi._cleanup();
       },
       entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
 
         switch (name) {
           case 'position': {
@@ -326,12 +325,12 @@ class Rain {
         }
       },
     }
-    elements.registerComponent(this, rainComponent);
+    elements.registerEntity(this, rainEntity);
 
     render.on('update', _update);
 
     this._cleanup = () => {
-      elements.unregisterComponent(this, rainComponent);
+      elements.unregisterEntity(this, rainEntity);
 
       render.removeListener('update', _update);
     };

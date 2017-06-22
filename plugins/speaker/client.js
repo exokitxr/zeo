@@ -91,8 +91,7 @@ class Speaker {
       };
     });
 
-    const speakerComponent = {
-      selector: 'speaker[position]',
+    const speakerEntity = {
       attributes: {
         position: {
           type: 'matrix',
@@ -112,7 +111,7 @@ class Speaker {
         },
       },
       entityAddedCallback(entityElement) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
         const entityObject = entityElement.getObject();
 
         const speakerMesh = (() => {
@@ -185,7 +184,7 @@ class Speaker {
         };
       },
       entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
 
         switch (name) {
           case 'position': {
@@ -219,18 +218,18 @@ class Speaker {
         }
       },
       entityRemovedCallback(entityElement) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
 
         entityApi._cleanup();
       },
     };
-    elements.registerComponent(this, speakerComponent);
+    elements.registerEntity(this, speakerEntity);
 
     this._cleanup = () => {
       speakerGeometry.dispose();
       speakerMaterial.dispose();
 
-      elements.unregisterComponent(this, speakerComponent);
+      elements.unregisterEntity(this, speakerEntity);
     };
   }
 

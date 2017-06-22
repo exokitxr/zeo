@@ -6,8 +6,7 @@ class AmbientLight {
 
     const geometryUtils = geometryutils({THREE});
 
-    const ambientLightComponent = {
-      selector: 'ambient-light[position][color][intensity]',
+    const ambientLightEntity = {
       attributes: {
         position: {
           type: 'matrix',
@@ -30,7 +29,7 @@ class AmbientLight {
         },
       },
       entityAddedCallback(entityElement) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
         const entityObject = entityElement.getObject();
 
         const mesh = (() => {
@@ -94,12 +93,12 @@ class AmbientLight {
         };
       },
       entityRemovedCallback(entityElement) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
 
         entityApi._cleanup();
       },
       entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
 
         switch (name) {
           case 'position': {
@@ -131,10 +130,10 @@ class AmbientLight {
         }
       }
     }
-    elements.registerComponent(this, ambientLightComponent);
+    elements.registerEntity(this, ambientLightEntity);
 
     this._cleanup = () => {
-      elements.unregisterComponent(this, ambientLightComponent);
+      elements.unregisterEntity(this, ambientLightEntity);
     };
   }
 

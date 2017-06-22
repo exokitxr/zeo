@@ -2,8 +2,7 @@ class Model {
   mount() {
     const {three: {THREE}, elements} = zeo;
 
-    const modelComponent = {
-      selector: 'model[position][src]',
+    const modelEntity = {
       attributes: {
         position: {
           type: 'matrix',
@@ -19,7 +18,7 @@ class Model {
         },
       },
       entityAddedCallback(entityElement) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
         const entityObject = entityElement.getObject();
 
         entityApi.position = null;
@@ -49,12 +48,12 @@ class Model {
         };
       },
       entityRemovedCallback(entityElement) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
 
         entityApi._cleanup();
       },
       entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
         const entityObject = entityElement.getObject();
 
         switch (name) {
@@ -101,10 +100,10 @@ class Model {
         }
       },
     }
-    elements.registerComponent(this, modelComponent);
+    elements.registerEntity(this, modelEntity);
 
     this._cleanup = () => {
-      elements.unregisterComponent(this, modelComponent);
+      elements.unregisterEntity(this, modelEntity);
     };
   }
 

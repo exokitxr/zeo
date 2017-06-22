@@ -64,8 +64,7 @@ class Map {
       position,
     })));
 
-    const mapComponent = {
-      selector: 'map[position]',
+    const mapEntity = {
       attributes: {
         position: {
           type: 'matrix',
@@ -77,7 +76,7 @@ class Map {
         },
       },
       entityAddedCallback(entityElement) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
         const entityObject = entityElement.getObject();
 
         const mesh = (() => {
@@ -128,12 +127,12 @@ class Map {
         };
       },
       entityRemovedCallback(entityElement) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
 
         entityApi._cleanup();
       },
       entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
 
         switch (name) {
           case 'position': {
@@ -146,10 +145,10 @@ class Map {
         }
       },
     };
-    elements.registerComponent(this, mapComponent);
+    elements.registerEntity(this, mapEntity);
 
     this._cleanup = () => {
-      elements.unregisterComponent(this, mapComponent);
+      elements.unregisterEntity(this, mapEntity);
     };
   }
 

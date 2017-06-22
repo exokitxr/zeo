@@ -62,10 +62,10 @@ const makeZeoComponentElement = baseObject => {
         },
 
         // extensions
-        getComponentApi: {
+        getEntityApi: {
           value: () => entityApiComponentApi,
         },
-        setComponentApi: {
+        setEntityApi: {
           value: newEntityApiComponentApi => {
             entityApiComponentApi = newEntityApiComponentApi;
           },

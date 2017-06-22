@@ -84,8 +84,7 @@ class Agent {
             return result;
           };
 
-          const agentComponent = {
-            selector: 'agent',
+          const agentEntity = {
             attributes: {
               position: {
                 type: 'matrix',
@@ -97,7 +96,7 @@ class Agent {
               },
             },
             entityAddedCallback(entityElement) {
-              const entityApi = entityElement.getComponentApi();
+              const entityApi = entityElement.getEntityApi();
               const entityObject = entityElement.getObject();
 
               entityApi.position = null;
@@ -324,7 +323,7 @@ class Agent {
               };
             },
             entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-              const entityApi = entityElement.getComponentApi();
+              const entityApi = entityElement.getEntityApi();
 
               switch (name) {
                 case 'position': {
@@ -336,7 +335,7 @@ class Agent {
               }
             },
           };
-          elements.registerComponent(this, agentComponent);
+          elements.registerEntity(this, agentEntity);
 
           const updates = [];
           const _update = () => {
@@ -348,7 +347,7 @@ class Agent {
           render.on('update', _update);
 
           this._cleanup = () => {
-            elements.unregisterComponent(this, agentComponent);
+            elements.unregisterEntity(this, agentEntity);
 
             render.removeListener('update', _update);
           };

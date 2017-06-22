@@ -141,8 +141,7 @@ class Raptor {
             ];
           })();
 
-          const raptorComponent = {
-            selector: 'raptor[position]',
+          const raptorEntity = {
             attributes: {
               position: {
                 type: 'matrix',
@@ -154,7 +153,7 @@ class Raptor {
               },
             },
             entityAddedCallback(entityElement) {
-              const entityApi = entityElement.getComponentApi();
+              const entityApi = entityElement.getEntityApi();
               const entityObject = entityElement.getObject();
 
               const _makeAvatarSideState = () => ({
@@ -610,7 +609,7 @@ class Raptor {
               };
             },
             entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-              const entityApi = entityElement.getComponentApi();
+              const entityApi = entityElement.getEntityApi();
 
               switch (name) {
                 /* case 'position': { // XXX re-enable this
@@ -629,15 +628,15 @@ class Raptor {
               }
             },
             entityRemovedCallback(entityElement) {
-              const entityApi = entityElement.getComponentApi();
+              const entityApi = entityElement.getEntityApi();
 
               entityApi._cleanup();
             },
           };
-          elements.registerComponent(this, raptorComponent);
+          elements.registerEntity(this, raptorEntity);
 
           this._cleanup = () => {
-            elements.unregisterComponent(this, raptorComponent);
+            elements.unregisterEntity(this, raptorEntity);
           };
         }
       });

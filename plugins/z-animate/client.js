@@ -43,8 +43,7 @@ class ZAnimate {
       return {position, rotation, scale};
     };
 
-    const animateComponent = {
-      selector: 'animate[position]',
+    const animateEntity = {
       attributes: {
         position: {
           type: 'matrix',
@@ -78,7 +77,7 @@ class ZAnimate {
         },
       },
       entityAddedCallback(entityElement) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
         const entityObject = entityElement.getObject();
 
         entityApi.entityElement = entityElement;
@@ -813,11 +812,11 @@ class ZAnimate {
         };
       },
       entityRemovedCallback(entityElement) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
         entityApi._cleanup();
       },
       entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
 
         switch (name) {
           case 'position': {
@@ -855,10 +854,10 @@ class ZAnimate {
         }
       },
     };
-    elements.registerComponent(this, animateComponent);
+    elements.registerEntity(this, animateEntity);
 
     this._cleanup = () => {
-      elements.unregisterComponent(this, animateComponent);
+      elements.unregisterEntity(this, animateEntity);
     };
   }
 

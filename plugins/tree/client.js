@@ -2,8 +2,7 @@ export default class Tree {
   mount() {
     const {three: {THREE}, elements, utils: {random: {alea}}} = zeo;
 
-    const treeComponent = {
-      selector: 'tree[position]',
+    const treeEntity = {
       attributes: {
         position: {
           type: 'matrix',
@@ -15,7 +14,7 @@ export default class Tree {
         },
       },
       entityAddedCallback(entityElement) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
         const entityObject = entityElement.getObject();
 
         const trunkColors = [
@@ -555,15 +554,15 @@ export default class Tree {
         };
       },
       entityRemovedCallback(entityElement) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
 
         entityApi._cleanup();
       },
     };
-    elements.registerComponent(this, treeComponent);
+    elements.registerEntity(this, treeEntity);
 
     this._cleanup = () => {
-      elements.unregisterComponent(this, treeComponent);
+      elements.unregisterEntity(this, treeEntity);
     };
   }
 

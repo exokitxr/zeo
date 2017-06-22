@@ -4,8 +4,7 @@ class Test {
 
     console.log('mount');
 
-    const testComponent = {
-      selector: 'test[position]',
+    const testEntity = {
       attributes: {
         position: {
           type: 'matrix',
@@ -57,7 +56,7 @@ class Test {
         console.log('entityAttributeValueChangedCallback', {entityElement, name, oldValue, newValue});
       },
     };
-    elements.registerComponent(this, testComponent);
+    elements.registerEntity(this, testEntity);
 
     const _keypress = e => {
       if (e.keyCode === 112) { // P
@@ -77,7 +76,7 @@ class Test {
     input.on('keypress', _keypress);
 
     this._cleanup = () => {
-      elements.unregisterComponent(this, testComponent);
+      elements.unregisterEntity(this, testEntity);
 
       input.removeListener('keypress', _keypress);
     };

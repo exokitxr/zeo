@@ -8,8 +8,7 @@ class Ar {
 
     const transparentImg = ui.getTransparentImg();
 
-    const arComponent = {
-      selector: 'ar[position]',
+    const arEntity = {
       attributes: {
         position: {
           type: 'matrix',
@@ -21,7 +20,7 @@ class Ar {
         },
       },
       entityAddedCallback(entityElement) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
         const entityObject = entityElement.getObject();
 
         elementApi.position = null;
@@ -112,12 +111,12 @@ class Ar {
         };
       },
       entityRemovedCallback(entityElement) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
 
         entityApi._cleanup();
       },
       attributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
 
         switch (name) {
           case 'position': {
@@ -129,7 +128,7 @@ class Ar {
         }
       },
     },
-    elements.registerComponent(this, arComponent);
+    elements.registerEntity(this, arEntity);
 
     const updates = [];
     const _update = () => {
@@ -141,7 +140,7 @@ class Ar {
     render.on('update', _update);
 
     this._cleanup = () => {
-      elements.unregisterComponent(this, arComponent);
+      elements.unregisterEntity(this, arEntity);
 
       render.removeListener('update', _update);
     };

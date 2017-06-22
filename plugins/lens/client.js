@@ -52,8 +52,7 @@ class Lens {
       color: 0x000000,
     });
 
-    const lensComponent = {
-      selector: 'lens[position][type]',
+    const lensEntity = {
       attributes: {
         position: {
           type: 'matrix',
@@ -73,7 +72,7 @@ class Lens {
         }
       },
       entityAddedCallback(entityElement) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
         const entityObject = entityElement.getObject();
 
         const _makeRenderTarget = (width, height) => new THREE.WebGLRenderTarget(width, height, {
@@ -248,12 +247,12 @@ class Lens {
         };
       },
       entityRemovedCallback(entityElement) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
 
         entityApi._cleanup();
       },
       entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
 
         switch (name) {
           case 'position': {
@@ -279,7 +278,7 @@ class Lens {
         }
       },
     };
-    elements.registerComponent(this, lensComponent);
+    elements.registerEntity(this, lensEntity);
 
     const updateEyes = [];
     const _updateEye = camera => {
@@ -291,7 +290,7 @@ class Lens {
     render.on('updateEye', _updateEye);
 
     this._cleanup = () => {
-      elements.registerComponent(this, lensComponent);
+      elements.registerEntity(this, lensEntity);
 
       render.removeListener('updateEye', _updateEye);
     };

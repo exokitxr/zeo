@@ -73,8 +73,7 @@ class Portal {
           }
         };
 
-        const portalComponent = {
-          selector: 'portal[position1][color1][position2][color2]',
+        const portalEntity = {
           attributes: {
             position1: {
               type: 'matrix',
@@ -102,7 +101,7 @@ class Portal {
             }
           },
           entityAddedCallback(entityElement) {
-            const entityApi = entityElement.getComponentApi();
+            const entityApi = entityElement.getEntityApi();
             const entityObject = entityElement.getObject();
 
             const mesh = (() => {
@@ -413,12 +412,12 @@ class Portal {
             };
           },
           entityRemovedCallback(entityElement) {
-            const entityApi = entityElement.getComponentApi();
+            const entityApi = entityElement.getEntityApi();
 
             entityApi._cleanup();
           },
           entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-            const entityApi = entityElement.getComponentApi();
+            const entityApi = entityElement.getEntityApi();
 
             switch (name) {
               case 'position1': {
@@ -468,13 +467,13 @@ class Portal {
             }
           }
         };
-        elements.registerComponent(this, portalComponent);
+        elements.registerEntity(this, portalEntity);
 
         render.on('update', _update);
         render.on('updateEye', _updateEye);
 
         this._cleanup = () => {
-          elements.unregisterComponent(this, portalComponent);
+          elements.unregisterEntity(this, portalEntity);
 
           render.removeListener('update', _update);
           render.removeListener('updateEye', _updateEye);

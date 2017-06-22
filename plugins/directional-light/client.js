@@ -8,8 +8,7 @@ class DirectionalLight {
 
     const geometryUtils = geometryutils({THREE});
 
-    const directionalLightComponent = {
-      selector: 'directional-light[position][lookat][color][intensity][shadow]',
+    const directionalLightEntity = {
       attributes: {
         position: {
           type: 'matrix',
@@ -44,7 +43,7 @@ class DirectionalLight {
         },
       },
       entityAddedCallback(entityElement) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
         const entityObject = entityElement.getObject();
 
         const mesh = (() => {
@@ -87,12 +86,12 @@ class DirectionalLight {
         };
       },
       entityRemovedCallback(entityElement) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
 
         entityApi._cleanup();
       },
       entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
 
         switch (name) {
           case 'position': {
@@ -142,10 +141,10 @@ class DirectionalLight {
         }
       }
     }
-    elements.registerComponent(this, directionalLightComponent);
+    elements.registerEntity(this, directionalLightEntity);
 
     this._cleanup = () => {
-      elements.unregisterComponent(this, directionalLightComponent);
+      elements.unregisterEntity(this, directionalLightEntity);
     };
   }
 

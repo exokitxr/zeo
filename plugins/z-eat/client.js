@@ -73,8 +73,7 @@ class ZEat {
     }
 
     const edibles = [];
-    const edibleComponent = {
-      selector: '[edible][size]',
+    const edibleEntity = {
       attributes: {
         edible: {
           type: 'checkbox',
@@ -87,17 +86,17 @@ class ZEat {
       },
       entityAddedCallback(entityElement) {
         const edible = new Edible(entityElement, entityElement.getObject());
-        entityElement.setComponentApi(edible);
+        entityElement.setEntityApi(edible);
         edibles.push(edible);
       },
       entityRemovedCallback(entityElement) {
-        const edible = entityElement.getComponentApi();
+        const edible = entityElement.getEntityApi();
         edible.destroy();
 
         edibles.splice(edibles.indexOf(edible), 1);
       },
       entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-        const edible = entityElement.getComponentApi();
+        const edible = entityElement.getEntityApi();
 
         switch (name) {
           case 'edible': {
@@ -113,7 +112,7 @@ class ZEat {
         }
       }
     };
-    elements.registerComponent(this, edibleComponent);
+    elements.registerEntity(this, edibleEntity);
 
     class Eater {
       constructor(entityElement, entityObject) {
@@ -136,8 +135,7 @@ class ZEat {
     }
 
     const eaters = [];
-    const eaterComponent = {
-      selector: '[eater][size]',
+    const eaterEntity = {
       attributes: {
         eater: {
           type: 'checkbox',
@@ -150,7 +148,7 @@ class ZEat {
       },
       entityAddedCallback(entityElement) {
         const eater = new Eater(entityElement, entityElement.getObject());
-        entityElement.setComponentApi(eater);
+        entityElement.setEntityApi(eater);
         eaters.push(eater);
       },
       entityRemovedCallback(entityElement) {
@@ -160,7 +158,7 @@ class ZEat {
         eaters.splice(eaters.indexOf(eater), 1);
       },
       entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-        const eater = entityElement.getComponentApi();
+        const eater = entityElement.getEntityApi();
 
         switch (name) {
           case 'eater': {
@@ -176,7 +174,7 @@ class ZEat {
         }
       }
     };
-    elements.registerComponent(this, eaterComponent);
+    elements.registerEntity(this, eaterEntity);
 
     const _update = () => {
       for (let i = 0; i < edibles.length; i++) {
@@ -206,8 +204,8 @@ class ZEat {
     render.on('update', _update);
 
     this._cleanup = () => {
-      elements.unregisterComponent(this, edibleComponent);
-      elements.unregisterComponent(this, eaterComponent);
+      elements.unregisterEntity(this, edibleEntity);
+      elements.unregisterEntity(this, eaterEntity);
 
       render.removeListener('update', _update);
     };

@@ -52,8 +52,7 @@ class ZBow {
       shading: THREE.FlatShading,
     });
 
-    const bowComponent = {
-      selector: 'bow[position]',
+    const bowEntity = {
       attributes: {
         position: {
           type: 'matrix',
@@ -77,7 +76,7 @@ class ZBow {
         },
       },
       entityAddedCallback(entityElement) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
         const entityObject = entityElement.getObject();
 
         const mesh = (() => {
@@ -422,11 +421,11 @@ class ZBow {
         };
       },
       entityRemovedCallback(entityElement) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
         entityApi._cleanup();
       },
       entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
 
         switch (name) {
           case 'position': {
@@ -439,10 +438,10 @@ class ZBow {
         }
       },
     };
-    elements.registerComponent(this, bowComponent);
+    elements.registerEntity(this, bowEntity);
 
     this._cleanup = () => {
-      elements.unregisterComponent(this, bowComponent);
+      elements.unregisterEntity(this, bowEntity);
     };
   }
 

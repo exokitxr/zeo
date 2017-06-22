@@ -325,8 +325,7 @@ export default class Voxel {
       return texture;
     })();
 
-    const voxelComponent = {
-      selector: 'voxel[position]',
+    const voxelEntity = {
       attributes: {
         position: {
           type: 'matrix',
@@ -338,7 +337,7 @@ export default class Voxel {
         },
       },
       entityAddedCallback(entityElement) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
         const entityObject = entityElement.getObject();
 
         const mesh = (() => {
@@ -445,13 +444,13 @@ export default class Voxel {
         };
       },
       entityRemovedCallback() {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
         const entityObject = entityElement.getObject();
 
         entityApi._cleanup();
       },
       entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
 
         switch (name) {
           case 'position': {
@@ -464,10 +463,10 @@ export default class Voxel {
         }
       },
     };
-    elements.registerComponent(this, voxelComponent);
+    elements.registerEntity(this, voxelEntity);
 
     this._cleanup = () => {
-      elements.unregisterComponent(this, voxelComponent);
+      elements.unregisterEntity(this, voxelEntity);
     };
   }  
 

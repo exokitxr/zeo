@@ -26,8 +26,7 @@ class Mirror {
       }
     };
 
-    const mirrorComponent = {
-      selector: 'mirror[position][color]',
+    const mirrorEntity = {
       attributes: {
         position: {
           type: 'matrix',
@@ -43,7 +42,7 @@ class Mirror {
         },
       },
       entityAddedCallback(entityElement) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
         const entityObject = entityElement.getObject();
 
         const mirrorMesh = (() => {
@@ -154,12 +153,12 @@ class Mirror {
         };
       },
       entityRemovedCallback(entityElement) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
 
         entityApi._cleanup();
       },
       entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
 
         switch (name) {
           case 'position': {
@@ -187,12 +186,12 @@ class Mirror {
         }
       },
     };
-    elements.registerComponent(this, mirrorComponent);
+    elements.registerEntity(this, mirrorEntity);
 
     render.on('updateEye', _updateEye);
 
     this._cleanup = () => {
-      elements.unregisterComponent(this, mirrorComponent);
+      elements.unregisterEntity(this, mirrorEntity);
 
       render.removeListener('updateEye', _updateEye);
     };

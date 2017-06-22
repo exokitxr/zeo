@@ -10,11 +10,10 @@ module.exports = archae => ({ // `archae` is the Zeo plugin loader
     };
 
     // declare the element representing our plugin
-    const demoComponent = {
-      selector: 'demo',
+    const demoEntity = {
       attributes: {},
       entityCreatedCallback(entityElement) { // `entityCreatedCallback` gets called an applicable attrbute is added to the world
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
 
         // create the sphere and add it to the scene
         const sphere = new THREE.Mesh(
@@ -97,16 +96,16 @@ module.exports = archae => ({ // `archae` is the Zeo plugin loader
         };
       },
       entityRemovedCallback(entityElement) { // `destructor` gets called when our element is removed from the scene
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
 
         entityApi._cleanup();
       },
     }
-    elements.registerComponent(this, demoComponent); // register our element as available to the scene
+    elements.registerEntity(this, demoEntity); // register our element as available to the scene
 
     // set up a callback to call when we want to clean up after the plugin
     this._cleanup = () => {
-      elements.unregisterComponent(this, demoComponent);
+      elements.unregisterEntity(this, demoEntity);
     };
   },
   unmount() { // `unmount` gets called when our plugin unloads

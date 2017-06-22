@@ -147,8 +147,7 @@ module.exports = archae => ({
             return {position, rotation, scale};
           };
 
-          const demoAdComponent = {
-            selector: 'demo-ad[position]',
+          const demoAdEntity = {
             attributes: {
               position: {
                 type: 'matrix',
@@ -160,7 +159,7 @@ module.exports = archae => ({
               },
             },
             entityAddedCallback(entityElement) {
-              const entityApi = entityElement.getComponentApi();
+              const entityApi = entityElement.getEntityApi();
               const entityObject = entityElement.getObject();
 
               const adState = {
@@ -539,12 +538,12 @@ module.exports = archae => ({
               };
             },
             entityRemovedCallback(entityElement) {
-              const entityApi = entityElement.getComponentApi();
+              const entityApi = entityElement.getEntityApi();
 
               entityApi._cleanup();
             },
             entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-              const entityApi = entityElement.getComponentApi();
+              const entityApi = entityElement.getEntityApi();
 
               switch (name) {
                 case 'position': {
@@ -559,10 +558,10 @@ module.exports = archae => ({
               }
             },
           };
-          elements.registerComponent(this, demoAdComponent);
+          elements.registerEntity(this, demoAdEntity);
 
           this._cleanup = () => {
-            elements.unregisterComponent(this, demoAdComponent);
+            elements.unregisterEntity(this, demoAdEntity);
           };
         }
       });

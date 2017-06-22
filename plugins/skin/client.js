@@ -64,8 +64,7 @@ class Skin {
             return mesh;
           };
 
-          const skinComponent = {
-            selector: 'skin',
+          const skinEntity = {
             attributes: {
               /* position: {
                 type: 'matrix',
@@ -77,7 +76,7 @@ class Skin {
               }, */
             },
             entityAddedCallback(entityElement) {
-              const entityApi = entityElement.getComponentApi();
+              const entityApi = entityElement.getEntityApi();
               const entityObject = entityElement.getObject();
 
               const localMesh = _makeMesh();
@@ -220,7 +219,7 @@ class Skin {
               };
             },
             entityRemovedCallback(entityElement) {
-              const entityApi = entityElement.getComponentApi();
+              const entityApi = entityElement.getEntityApi();
 
               entityApi._cleanup();
             },
@@ -242,10 +241,10 @@ class Skin {
               }
             },
           };
-          elements.registerComponent(this, skinComponent);
+          elements.registerEntity(this, skinEntity);
 
           this._cleanup = () => {
-            elements.unregisterComponent(this, skinComponent);
+            elements.unregisterEntity(this, skinEntity);
           };
         }
       });

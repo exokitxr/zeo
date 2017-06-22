@@ -14,8 +14,7 @@ class Link {
       }
     };
 
-    const linkComponent = {
-      selector: 'link[position][destination]',
+    const linkEntity = {
       attributes: {
         position: {
           type: 'matrix',
@@ -35,7 +34,7 @@ class Link {
         },
       },
       entityAddedCallback(entityElement) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
         const entityObject = entityElement.getObject();
 
         const cubeCamera = new THREE.CubeCamera(0.001, 1024, 256);
@@ -64,12 +63,12 @@ class Link {
         };
       },
       entityRemovedCallback(entityElement) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
 
         entityApi._cleanup();
       },
       entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
 
         switch (name) {
           case 'position': {
@@ -93,12 +92,12 @@ class Link {
         }
       }
     }
-    elements.registerComponent(this, linkComponent);
+    elements.registerEntity(this, linkEntity);
 
     render.on('update', _update);
 
     this._cleanup = () => {
-      elements.unregisterComponent(this, linkComponent);
+      elements.unregisterEntity(this, linkEntity);
 
       render.removeListener('update', _update);
     };

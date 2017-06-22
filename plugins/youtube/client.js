@@ -29,8 +29,7 @@ class Youtube {
       transparent: true,
     });
 
-    const youtubeComponent = {
-      selector: 'youtube[position]',
+    const youtubeEntity = {
       attributes: {
         position: {
           type: 'matrix',
@@ -42,7 +41,7 @@ class Youtube {
         },
       },
       entityAddedCallback(entityElement) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
         const entityObject = entityElement.getObject();
 
         const mesh = (() => {
@@ -400,12 +399,12 @@ class Youtube {
         };
       },
       entityRemovedCallback(entityElement) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
 
         entityApi._cleanup();
       },
       entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
 
         switch (name) {
           case 'position': {
@@ -420,7 +419,7 @@ class Youtube {
         }
       },
     };
-    elements.registerComponent(this, youtubeComponent);
+    elements.registerEntity(this, youtubeEntity);
 
     const updates = [];
     const _update = () => {
@@ -432,7 +431,7 @@ class Youtube {
     render.on('update', _update);
 
     this._cleanup = () => {
-      elements.unregisterComponent(this, youtubeComponent);
+      elements.unregisterEntity(this, youtubeEntity);
 
       render.removeListener('update', _update);
     };

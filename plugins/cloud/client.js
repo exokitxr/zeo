@@ -22,8 +22,7 @@ class Cloud {
 
     const updates = [];
 
-    const cloudComponent = {
-      selector: 'cloud[position]',
+    const cloudEntity = {
       attributes: {
         position: {
           type: 'matrix',
@@ -35,7 +34,7 @@ class Cloud {
         },
       },
       entityAddedCallback(entityElement) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
         const entityObject = entityElement.getObject();
 
         const rng = new alea();
@@ -193,12 +192,12 @@ class Cloud {
         };
       },
       entityRemovedCallback(entityElement) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
 
         entityApi._cleanup();
       },
       entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
 
         switch (name) {
           case 'position': {
@@ -213,7 +212,7 @@ class Cloud {
         }
       },
     };
-    elements.registerComponent(this, cloudComponent);
+    elements.registerEntity(this, cloudEntity);
 
     const _update = () => {
       for (let i = 0; i < updates.length; i++) {
@@ -226,7 +225,7 @@ class Cloud {
     this._cleanup = () => {
       cloudsMaterial.dispose();
 
-      elements.unregisterComponent(this, cloudComponent);
+      elements.unregisterEntity(this, cloudEntity);
 
       render.removeListener('update', _update);
     };

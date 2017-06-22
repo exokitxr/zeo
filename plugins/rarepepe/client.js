@@ -75,8 +75,7 @@ class Rarepepe {
             return material;
           })();
 
-          const rarepepeComponent = {
-            selector: 'rarepepe[position][index]',
+          const rarepepeEntity = {
             attributes: {
               position: {
                 type: 'matrix',
@@ -95,7 +94,7 @@ class Rarepepe {
               },
             },
             entityAddedCallback(entityElement) {
-              const entityApi = entityElement.getComponentApi();
+              const entityApi = entityElement.getEntityApi();
               const entityObject = entityElement.getObject();
 
               const rarepepeMesh = new THREE.Object3D();
@@ -222,7 +221,7 @@ class Rarepepe {
               };
             },
             entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-              const entityApi = entityElement.getComponentApi();
+              const entityApi = entityElement.getEntityApi();
               const entityObject = entityElement.getObject();
 
               switch (name) {
@@ -250,19 +249,19 @@ class Rarepepe {
               }
             },
             entityRemovedCallback(entityElement) {
-              const entityApi = entityElement.getComponentApi();
+              const entityApi = entityElement.getEntityApi();
 
               entityApi._cleanup();
             },
           };
-          elements.registerComponent(this, rarepepeComponent);
+          elements.registerEntity(this, rarepepeEntity);
 
           this._cleanup = () => {
             cardfrontGeometry.dispose();
             cardbackGeometry.dispose();
             cardbackMaterial.dispose();
 
-            elements.unregisterComponent(this, rarepepeComponent);
+            elements.unregisterEntity(this, rarepepeEntity);
           };
         }
       });

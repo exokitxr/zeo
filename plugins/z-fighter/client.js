@@ -102,8 +102,7 @@ class ZFighter {
             return mesh;
           };
 
-          const fighterComponent = {
-            selector: 'fighter[position][type]',
+          const fighterEntity = {
             attributes: {
               position: {
                 type: 'matrix',
@@ -143,7 +142,7 @@ class ZFighter {
               },
             },
             entityAddedCallback(entityElement) {
-              const entityApi = entityElement.getComponentApi();
+              const entityApi = entityElement.getEntityApi();
               const entityObject = entityElement.getObject();
 
               const liveState = {
@@ -999,12 +998,12 @@ class ZFighter {
               };
             },
             entityRemovedCallback(entityElement) {
-              const entityApi = entityElement.getComponentApi();
+              const entityApi = entityElement.getEntityApi();
 
               entityApi._cleanup();
             },
             entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-              const entityApi = entityElement.getComponentApi();
+              const entityApi = entityElement.getEntityApi();
               const entityObject = entityElement.getObject();
 
               switch (name) {
@@ -1041,14 +1040,14 @@ class ZFighter {
               }
             },
           };
-          elements.registerComponent(this, fighterComponent);
+          elements.registerEntity(this, fighterEntity);
 
           this._cleanup = () => {
             whiteMaterial.dispose();
             bulletGeometry.dispose();
             bulletMaterial.dispose();
 
-            elements.unregisterComponent(this, fighterComponent);
+            elements.unregisterEntity(this, fighterEntity);
           };
         }
       });

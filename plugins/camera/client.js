@@ -16,8 +16,7 @@ class Camera {
     };
 
     const cameraElements = [];
-    const cameraComponent = {
-      selector: 'camera[position]',
+    const cameraEntity = {
       attributes: {
         position: {
           type: 'matrix',
@@ -29,7 +28,7 @@ class Camera {
         },
       },
       entityAddedCallback(entityElement, attribute, value) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
         const entityObject = entityElement.getObject();
 
         const renderTarget = (() => {
@@ -141,12 +140,12 @@ class Camera {
         };
       },
       entityRemovedCallback(entityElement) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
 
         entityApi._cleanup();
       },
       entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
 
         switch (name) {
           case 'position': {
@@ -181,7 +180,7 @@ class Camera {
           .then(res => res.blob());
       } */
     };
-    elements.registerComponent(this, cameraComponent);
+    elements.registerEntity(this, cameraEntity);
 
     const _paddown = e => {
       const {side} = e;
@@ -230,7 +229,7 @@ class Camera {
     render.on('update', _update);
 
     this._cleanup = () => {
-      elements.unregisterComponent(this, cameraComponent);
+      elements.unregisterEntity(this, cameraEntity);
 
       input.removeListener('paddown', _paddown);
       input.removeListener('padup', _padup);

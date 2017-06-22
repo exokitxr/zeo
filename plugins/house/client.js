@@ -33,8 +33,7 @@ class House {
       shading: THREE.FlatShading,
     });
 
-    const houseComponent = {
-      selector: 'house[position]',
+    const houseEntity = {
       attributes: {
         position: {
           type: 'matrix',
@@ -46,7 +45,7 @@ class House {
         },
       },
       entityAddedCallback(entityElement) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
         const entityObject = entityElement.getObject();
 
         const mesh = (() => {
@@ -144,7 +143,7 @@ class House {
         };
       },
       entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
 
         switch (name) {
           case 'position': {
@@ -163,15 +162,15 @@ class House {
         }
       },
       entityRemovedCallback(entityElement) {
-        const entityApi = entityElement.getComponentApi();
+        const entityApi = entityElement.getEntityApi();
 
         entityApi._cleanup();
       },
     };
-    elements.registerComponent(this, houseComponent);
+    elements.registerEntity(this, houseEntity);
 
     this._cleanup = () => {
-      elements.unregisterComponent(this, houseComponent);
+      elements.unregisterEntity(this, houseEntity);
     };
   }
 
