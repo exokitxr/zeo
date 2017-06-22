@@ -114,7 +114,7 @@ class Bootstrap {
                   accept(true);
                 })
                 .catch(err => {
-                  console.warn('server announce failed', err.code, JSON.stringify({statusCode: err.statusCode, options: err.options}));
+                  // console.warn('server announce failed', err.code, JSON.stringify({statusCode: err.statusCode, options: err.options}));
 
                   accept(false);
                 });
