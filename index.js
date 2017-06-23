@@ -18,7 +18,6 @@ const _findArg = name => {
 };
 const flags = {
   server: args.includes('server'),
-  site: args.includes('site'),
   install: args.includes('install'),
   host: _findArg('host'),
   port: (() => {
@@ -50,7 +49,6 @@ const flags = {
   siteUrl: _findArg('siteUrl'),
   vridUrl: _findArg('vridUrl'),
   crdsUrl: _findArg('crdsUrl'),
-  forumUrl: _findArg('forumUrl'),
   maxUsers: _findArg('maxUsers'),
 };
 const hasSomeFlag = (() => {
@@ -78,12 +76,10 @@ const installDirectory = flags.installDirectory || 'installed';
 const dataDirectorySrc = flags.dataDirectorySrc || dataDirectory;
 const cryptoDirectorySrc = flags.cryptoDirectorySrc || cryptoDirectory;
 const installDirectorySrc = flags.installDirectorySrc || installDirectory;
-const staticSite = flags.site && !flags.server;
 const protocolString = !secure ? 'http' : 'https';
 const siteUrl = flags.siteUrl || (protocolString + '://' + hostname + ':' + port);
 const vridUrl = flags.vridUrl || (protocolString + '://' + hostname + ':' + port);
 const crdsUrl = flags.crdsUrl || (protocolString + '://' + hostname + ':' + port);
-const forumUrl = flags.forumUrl || (protocolString + '://forum.' + hostname + ':' + port);
 const fullUrl = protocolString + '://127.0.0.1:' + port;
 const maxUsers = (flags.maxUsers && parseInt(flags.maxUsers, 10)) || 4;
 const config = {
@@ -95,9 +91,9 @@ const config = {
   dataDirectory: dataDirectory,
   cryptoDirectory: cryptoDirectory,
   installDirectory: installDirectory,
-  cors: !staticSite,
+  cors: true,
   corsOrigin: fullUrl,
-  staticSite: staticSite,
+  staticSite: false,
   metadata: {
     config: {
       dataDirectorySrc: dataDirectorySrc,
@@ -106,16 +102,12 @@ const config = {
     },
     site: {
       url: siteUrl,
-      enabled: flags.site,
     },
     vrid: {
       url: vridUrl,
     },
     crds: {
       url: crdsUrl,
-    },
-    forum: {
-      url: forumUrl,
     },
     server: {
       url: fullUrl,
@@ -201,10 +193,6 @@ const _getAllPlugins = () => {
 const _listenLibs = () => {
   const listenPromises = [];
 
-  if (flags.site) {
-    const site = require('./lib/site');
-    listenPromises.push(site.listen(a, config));
-  }
   if (flags.server) {
     const server = require('./lib/server');
     listenPromises.push(server.listen(a, config));
@@ -249,15 +237,11 @@ _configure()
   .then(() => _listenArchae())
   .then(() => _boot())
   .then(() => {
-    if (flags.site) {
-      console.log('Site: ' + config.metadata.site.url + '/');
-    }
     if (flags.server) {
       console.log('Server: ' + config.metadata.server.url + '/');
     }
   })
   .catch(err => {
     console.warn(err);
-
     process.exit(1);
   });

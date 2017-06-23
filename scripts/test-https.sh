@@ -11,16 +11,6 @@ cp -ralf installed data/hub/servers/server_one/
 mkdir -p data/hub/servers/server_two
 cp -ralf installed data/hub/servers/server_two/
 
-./index.js site \
-  port=8080 secure=true \
-  siteUrl='https://zeovr.io:8080' \
-  homeUrl='https://zeovr.io:8081' \
-  crdsUrl='http://zeovr.io:9999' \
-  forumUrl='http://127.0.0.1:8089' &
-./index.js hub \
-  port=8000 secure=true \
-  cryptoDirectory='crypto-test-hub' cryptoDirectorySrc='defaults/crypto' \
-  installDirectory='installed' installDirectorySrc='installed' &
 ./index.js server \
   port=7777 secure=true \
   siteUrl='https://zeovr.io:8080' \
