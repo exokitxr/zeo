@@ -2,12 +2,8 @@
 
 const path = require('path');
 const fs = require('fs');
-const child_process = require('child_process');
 
-const mkdirp = require('mkdirp');
 const archae = require('archae');
-const rnd = require('rnd');
-rnd.setSeed(process.env.USER + ';' + process.cwd());
 
 const args = process.argv.slice(2);
 const _findArg = name => {
