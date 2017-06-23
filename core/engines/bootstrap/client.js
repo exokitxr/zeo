@@ -1,14 +1,3 @@
-import {
-  WIDTH,
-  HEIGHT,
-  WORLD_WIDTH,
-  WORLD_HEIGHT,
-  WORLD_DEPTH,
-
-  DEFAULT_USER_HEIGHT,
-} from './lib/constants/menu';
-import menuRenderer from './lib/render/menu';
-
 const FACES = ['top', 'bottom', 'left', 'right', 'front', 'back'];
 
 class Bootstrap {
