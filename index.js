@@ -23,7 +23,6 @@ const _findArg = name => {
 const flags = {
   server: args.includes('server'),
   site: args.includes('site'),
-  forum: args.includes('forum'),
   install: args.includes('install'),
   host: _findArg('host'),
   port: (() => {
@@ -121,7 +120,6 @@ const config = {
     },
     forum: {
       url: forumUrl,
-      enabled: flags.forum,
     },
     server: {
       url: fullUrl,
