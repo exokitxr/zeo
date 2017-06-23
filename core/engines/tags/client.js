@@ -1861,12 +1861,6 @@ class Tags {
           };
 
           class TagsApi extends EventEmitter {
-            constructor() {
-              super();
-
-              this.listen();
-            }
-
             registerEntity(pluginInstance, componentApi) {
               // create element
               const baseObject = componentApi;
@@ -2093,18 +2087,6 @@ class Tags {
 
             updateLinesMesh() {
               linesMesh.render();
-            }
-
-            listen() {
-              this.on('setAttribute', setAttrbuteSpec => {
-                // if this is the only listener (i.e. a home with no world engine rather than a server), we need to set the attribute on ourselves
-                if (this.listeners('setAttribute').length === 1) {
-                  const {id, name, value} = setAttrbuteSpec;
-                  const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
-                  const {item} = tagMesh;
-                  item.setAttribute(name, value);
-                }
-              });
             }
           };
           const tagsApi = new TagsApi();

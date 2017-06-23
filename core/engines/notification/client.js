@@ -18,7 +18,7 @@ class Notification {
 
   mount() {
     const {_archae: archae} = this;
-    const {metadata: {site: {url: siteUrl}, home: {enabled: homeEnabled}, server: {enabled: serverEnabled}}} = archae;
+    const {metadata: {site: {url: siteUrl}, server: {enabled: serverEnabled}}} = archae;
 
     const cleanups = [];
     this._cleanup = () => {

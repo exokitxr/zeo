@@ -2,8 +2,6 @@ const {
   WIDTH,
   HEIGHT,
 } = require('../constants/menu');
-const homeImg = require('../img/home');
-const homeImgSrc = 'data:image/svg+xml;base64,' + btoa(homeImg);
 
 const makeRenderer = ({creatureUtils}) => {
 

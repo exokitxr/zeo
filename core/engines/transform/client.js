@@ -9,7 +9,6 @@ class Transform {
 
   mount() {
     const {_archae: archae} = this;
-    const {metadata: {home: {enabled: homeEnabled}}} = archae;
 
     const cleanups = [];
     this._cleanup = () => {

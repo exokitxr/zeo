@@ -23,7 +23,6 @@ const _findArg = name => {
 const flags = {
   server: args.includes('server'),
   site: args.includes('site'),
-  home: args.includes('home'),
   forum: args.includes('forum'),
   install: args.includes('install'),
   host: _findArg('host'),
@@ -54,7 +53,6 @@ const flags = {
   cryptoDirectorySrc: _findArg('cryptoDirectorySrc'),
   installDirectorySrc: _findArg('installDirectorySrc'),
   siteUrl: _findArg('siteUrl'),
-  homeUrl: _findArg('homeUrl'),
   vridUrl: _findArg('vridUrl'),
   crdsUrl: _findArg('crdsUrl'),
   forumUrl: _findArg('forumUrl'),
@@ -85,10 +83,9 @@ const installDirectory = flags.installDirectory || 'installed';
 const dataDirectorySrc = flags.dataDirectorySrc || dataDirectory;
 const cryptoDirectorySrc = flags.cryptoDirectorySrc || cryptoDirectory;
 const installDirectorySrc = flags.installDirectorySrc || installDirectory;
-const staticSite = flags.site && !(flags.home || flags.server);
+const staticSite = flags.site && !flags.server;
 const protocolString = !secure ? 'http' : 'https';
 const siteUrl = flags.siteUrl || (protocolString + '://' + hostname + ':' + port);
-const homeUrl = flags.homeUrl || (protocolString + '://127.0.0.1:' + port);
 const vridUrl = flags.vridUrl || (protocolString + '://' + hostname + ':' + port);
 const crdsUrl = flags.crdsUrl || (protocolString + '://' + hostname + ':' + port);
 const forumUrl = flags.forumUrl || (protocolString + '://forum.' + hostname + ':' + port);
@@ -115,10 +112,6 @@ const config = {
     site: {
       url: siteUrl,
       enabled: flags.site,
-    },
-    home: {
-      url: homeUrl,
-      enabled: flags.home,
     },
     vrid: {
       url: vridUrl,
@@ -149,14 +142,6 @@ const _install = () => {
   }
 };
 
-const _checkArgs = () => {
-  if ((Number(Boolean(flags.home)) + Number(Boolean(flags.server))) > 1) {
-    return Promise.reject(new Error('server and site arguments are mutually exclusive'));
-  } else {
-    return Promise.resolve();
-  }
-};
-
 const _configure = () => {
   [process.stdout, process.stderr].forEach(stream => {
     stream.setMaxListeners(100);
@@ -166,7 +151,7 @@ const _configure = () => {
 };
 
 const _preload = () => {
-  if (flags.home || flags.server) {
+  if (flags.server) {
     const preload = require('./lib/preload');
     return preload.preload(a, config);
   } else {
@@ -226,10 +211,6 @@ const _listenLibs = () => {
     const site = require('./lib/site');
     listenPromises.push(site.listen(a, config));
   }
-  if (flags.home) {
-    const home = require('./lib/home');
-    listenPromises.push(home.listen(a, config));
-  }
   if (flags.server) {
     const server = require('./lib/server');
     listenPromises.push(server.listen(a, config));
@@ -239,7 +220,7 @@ const _listenLibs = () => {
 };
 
 const _listenArchae = () => {
-  if (flags.site || flags.home || flags.server) {
+  if (flags.site || flags.server) {
     return new Promise((accept, reject) => {
       a.listen(err => {
         if (!err) {
@@ -267,8 +248,7 @@ const _boot = () => {
   return Promise.all(bootPromises);
 };
 
-_checkArgs()
-  .then(() => _configure())
+_configure()
   .then(() => _preload())
   .then(() => _install())
   .then(() => _listenLibs())
@@ -277,9 +257,6 @@ _checkArgs()
   .then(() => {
     if (flags.site) {
       console.log('Site: ' + config.metadata.site.url + '/');
-    }
-    if (flags.home) {
-      console.log('Home: ' + config.metadata.home.url + '/');
     }
     if (flags.server) {
       console.log('Server: ' + config.metadata.server.url + '/');
