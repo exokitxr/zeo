@@ -6,7 +6,7 @@ pushd "$DIR"/../
 
 ./index.js server \
   port=7777 \
-  siteUrl='http://127.0.0.1:8080' \
+  siteUrl='https://127.0.0.1:8080' \
   homeUrl='http://127.0.0.1:8081' \
   vridUrl='http://127.0.0.1:8080' \
   worldname='server_one' \
@@ -15,7 +15,7 @@ pushd "$DIR"/../
   installDirectory='data/servers/server_one/installed' &
 ./index.js server \
   port=7778 \
-  siteUrl='http://127.0.0.1:8080' \
+  siteUrl='https://127.0.0.1:8080' \
   homeUrl='http://127.0.0.1:8081' \
   vridUrl='http://127.0.0.1:8080' \
   worldname='server_two' \
