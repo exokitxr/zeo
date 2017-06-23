@@ -10,7 +10,6 @@ export NODE_TLS_REJECT_UNAUTHORIZED=0
   siteUrl='https://zeovr.io' \
   vridUrl='https://zeovr.io' \
   dataDirectorySrc='defaults/data' \
-  cryptoDirectorySrc='defaults/crypto' \
-  installDirectorySrc='installed'
+  cryptoDirectorySrc='defaults/crypto'
 
 popd;

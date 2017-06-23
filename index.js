@@ -45,7 +45,6 @@ const flags = {
   installDirectory: _findArg('installDirectory'),
   dataDirectorySrc: _findArg('dataDirectorySrc'),
   cryptoDirectorySrc: _findArg('cryptoDirectorySrc'),
-  installDirectorySrc: _findArg('installDirectorySrc'),
   siteUrl: _findArg('siteUrl'),
   vridUrl: _findArg('vridUrl'),
   crdsUrl: _findArg('crdsUrl'),
@@ -75,7 +74,6 @@ const cryptoDirectory = flags.cryptoDirectory || 'crypto';
 const installDirectory = flags.installDirectory || 'installed';
 const dataDirectorySrc = flags.dataDirectorySrc || dataDirectory;
 const cryptoDirectorySrc = flags.cryptoDirectorySrc || cryptoDirectory;
-const installDirectorySrc = flags.installDirectorySrc || installDirectory;
 const protocolString = !secure ? 'http' : 'https';
 const siteUrl = flags.siteUrl || (protocolString + '://' + hostname + ':' + port);
 const vridUrl = flags.vridUrl || (protocolString + '://' + hostname + ':' + port);
@@ -98,7 +96,6 @@ const config = {
     config: {
       dataDirectorySrc: dataDirectorySrc,
       cryptoDirectorySrc: cryptoDirectorySrc,
-      installDirectorySrc: installDirectorySrc,
     },
     site: {
       url: siteUrl,
