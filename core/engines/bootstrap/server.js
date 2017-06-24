@@ -23,7 +23,6 @@ class Bootstrap {
         },
         server: {
           url: serverUrl,
-          enabled: serverEnabled,
         },
       },
     } = archae;
@@ -72,8 +71,10 @@ class Bootstrap {
                 rejectUnauthorized: siteSpec.host !== '127.0.0.1',
               };
               const req = (siteSpec.protocol === 'http' ? http : https).request(options);
+              const configJson = config.getConfig();
+              const {name} = configJson;
               req.end(JSON.stringify({
-                name: 'Server name', // XXX announce the real server from the config
+                name: name,
                 protocol: serverSpec.protocol,
                 address: ip,
                 port: serverSpec.port,
@@ -144,7 +145,7 @@ class Bootstrap {
               });
           });
 
-          if (serverEnabled && siteSpec) {
+          if (siteSpec) {
             _queueServerAnnounce();
 
             const serverAnnounceInterval = setInterval(() => {
