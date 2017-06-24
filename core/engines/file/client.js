@@ -188,6 +188,19 @@ class FileEngine {
                     if (live) {
                       itemSpec.media = audio;
 
+                      let interval = null;
+                      audio.addEventListener('play', () => {
+                        interval = setInterval(() => {
+                          npmState.value = audio.currentTime / audio.duration;
+
+                          _updatePages();
+                        }, 100);
+                      });
+                      audio.addEventListener('pause', () => {
+                        clearInterval(interval);
+                        interval = null;
+                      });
+
                       pend();
                     }
                   })
@@ -589,6 +602,8 @@ class FileEngine {
                 if (media && (media.tagName === 'AUDIO' || media.tagName === 'VIDEO')) {
                   const {value} = hoverState;
                   media.currentTime = value * media.duration;
+
+                  npmState.value = value;
 
                   _updatePages();
                 }
