@@ -27,7 +27,14 @@ const downImg = require('../img/down');
 const numTagsPerPage = 4;
 
 const makeRenderer = ({creatureUtils}) => {
-  const getFilePageSrc = ({loading, inputText, inputValue, tagSpecs, numTags, page, focus}) => {
+  const getFilePageSrc = ({loading, inputText, inputValue, tagSpecs, numTags, file, page, focus}) => {
+    if (!file) {
+      return getFilesSrc({loading, inputText, inputValue, tagSpecs, numTags, page, focus});
+    } else {
+      return getFileDetailsSrc(file);
+    }
+  };
+  const getFilesSrc = ({loading, inputText, inputValue, tagSpecs, numTags, page, focus}) => {
     const leftSrc = `\
       <div style="display: flex; padding: 30px; font-size: 36px; line-height: 1.4; flex-grow: 1; flex-direction: column;">
         <a style="position: relative; display: block; margin-bottom: 20px; border-bottom: 2px solid; text-decoration: none;" onclick="file:focus">
@@ -195,10 +202,29 @@ const makeRenderer = ({creatureUtils}) => {
       </a>
     `;
   };
+  const getFileDetailsSrc = ({id, name, mimeType, mode}) => {
+    const previewSrc = (() => {
+      switch (mode) {
+        case 'image': {
+          return `<div style="width: 480px; height: 480px; background-color: #000;"></div>`;
+        }
+        default: {
+          return '';
+        }
+      }
+    })();
+
+    return `<div style="display: flex; min-height: ${HEIGHT}px; padding: 30px; flex-direction: column; box-sizing: border-box;">
+      <h1 style="margin: 0; font-size: 30px; font-weight: 400; line-height: 1.4;">${name}</h1>
+      <p style="margin: 0; margin-bottom: 10px; font-size: 20px; font-weight: 400; line-height: 1.4;">${mimeType}</p>
+      ${previewSrc}
+    </div>`;
+  };
 
   return {
     getFilePageSrc,
     getFileSrc,
+    getFileDetailsSrc,
   };
 };
 
