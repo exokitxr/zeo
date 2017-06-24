@@ -106,7 +106,7 @@ class Bootstrap {
 
                 reject(err);
               });
-            });
+            }));
 
           const _tryServerAnnounce = () => new Promise((accept, reject) => {
             const configJson = config.getConfig();
