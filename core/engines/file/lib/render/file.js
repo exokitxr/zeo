@@ -203,27 +203,16 @@ const makeRenderer = ({creatureUtils}) => {
       </a>
     `;
   };
-  const getFileDetailsSrc = ({id, name, mimeType, mode}) => {
-    const previewSrc = (() => {
-      switch (mode) {
-        case 'image': {
-          return `<div style="width: 480px; height: 480px; background-color: #000;"></div>`;
-        }
-        default: {
-          return '';
-        }
-      }
-    })();
-
+  const getFileDetailsSrc = ({id, name, mimeType}) => {
     return `<div style="display: flex; min-height: ${HEIGHT}px; padding: 30px; flex-direction: column; box-sizing: border-box;">
-      <div style="display: flex;">
-        <a style="display: flex; width: 80px; height: 80px; justify-content: center; align-items: center;" onclick="file:back">${chevronLeftImg}</a>
+      <div style="display: flex; height: 80px; margin-bottom: 20px;">
+        <a style="display: flex; width: 80px; height: 80px; margin-right: 20px; justify-content: center; align-items: center;" onclick="file:back">${chevronLeftImg}</a>
         <div style="display: flex; flex-direction: column;">
           <h1 style="margin: 0; font-size: 30px; font-weight: 400; line-height: 1.4;">${name}</h1>
-          <p style="margin: 0; margin-bottom: 10px; font-size: 20px; font-weight: 400; line-height: 1.4;">${mimeType}</p>
+          <p style="margin: 0; font-size: 20px; font-weight: 400; line-height: 1.4;">${mimeType}</p>
         </div>
       </div>
-      ${previewSrc}
+      <div style="width: 480px; height: 480px;"></div>
     </div>`;
   };
 

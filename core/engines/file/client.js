@@ -267,7 +267,9 @@ class FileEngine {
 
           const detailsMesh = (() => {
             const size = 480;
-            const geometry = new THREE.PlaneBufferGeometry((size / WIDTH) * WORLD_WIDTH, (size / HEIGHT) * WORLD_HEIGHT);
+            const worldWidth = (size / WIDTH) * WORLD_WIDTH;
+            const worldHeight = (size / HEIGHT) * WORLD_HEIGHT;
+            const geometry = new THREE.PlaneBufferGeometry(worldWidth, worldHeight);
             const texture = new THREE.Texture(
               transparentImg,
               THREE.UVMapping,
@@ -287,8 +289,20 @@ class FileEngine {
             });
 
             const mesh = new THREE.Mesh(geometry, material);
-            mesh.position.set(0, 0, 0.001);
+            mesh.position.set(
+              0,
+              0,
+              0.001
+            );
             mesh.visible = false;
+
+            mesh.setAspectRatio = aspectRatio => {
+              mesh.position.x = -(WORLD_WIDTH / 2) + (worldWidth / 2) + ((30 / WIDTH) * WORLD_WIDTH);
+              mesh.position.y = (WORLD_HEIGHT / 2) - (worldHeight / 2) - (((30 + 80 + 20) / HEIGHT) * WORLD_HEIGHT);
+              mesh.scale.y = 1 / aspectRatio;
+              mesh.updateMatrixWorld();
+            };
+
             return mesh;
           })();
           object.add(detailsMesh);
@@ -314,7 +328,7 @@ class FileEngine {
         const _updatePages = () => {
           const {planeMesh} = fileMesh;
           const {page} = planeMesh;
-          page.update();
+          return page.update();
         };
         _updatePages();
 
@@ -400,22 +414,30 @@ class FileEngine {
 
                 const {detailsMesh} = fileMesh;
                 const {media} = itemSpec;
-                if (media && media.tagName === 'IMG') {
-                  detailsMesh.material.map.image = media;
-                  detailsMesh.material.map.needsUpdate = true;
+                detailsMesh.material.map.image = media;
+                detailsMesh.material.map.needsUpdate = true;
+                detailsMesh.setAspectRatio(media.width / media.height);
 
-                  detailsMesh.visible = true;
-                } else {
-                  detailsMesh.visible = false;
-                }
-
-                _updatePages();
+                _updatePages()
+                  .then(() => {
+                    if (media && media.tagName === 'IMG') {
+                      detailsMesh.visible = true;
+                    } else {
+                      detailsMesh.visible = false;
+                    }
+                  });
 
                 return true;
               } else if (onclick === 'file:back') {
-                npmState.file = itemSpec;
+                npmState.file = null;
 
-                _updatePages();
+                _updatePages()
+                  .then(() => {
+                    const {detailsMesh} = fileMesh;
+                    if (detailsMesh.visible) {
+                      detailsMesh.visible = false;
+                    }
+                  });
 
                 return true;
               } else {

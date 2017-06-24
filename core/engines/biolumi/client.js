@@ -426,6 +426,11 @@ class Biolumi {
 
                 return Promise.resolve();
               };
+              const _requestCallback = () => {
+                accept();
+
+                return Promise.resolve();
+              };
               const cancels = [
                 _requestLayerSpec,
                 _requestHtmlSrc,
@@ -433,14 +438,22 @@ class Biolumi {
                 _requestImage,
                 _requestTexture,
                 _requestLayer,
+                _requestCallback,
               ].map(work => uiWorker.add(work));
 
-              return () => { // return a cancel function
+              let accept = null;
+              let reject = null;
+              const result = new Promise((a, r) => {
+                accept = a;
+                reject = r;
+              });
+              /* result.cancel = () => { // return a cancel function
                 for (let i = 0; i < cancels.length; i++) {
                   const cancel = cancels[i];
                   cancel();
                 }
-              };
+              }; */
+              return result;
             }
 
             initialUpdate() {
