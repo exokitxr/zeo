@@ -180,23 +180,11 @@ const castValueStringToValue = (s, type, min, max, step, options) => {
       }
     }
     case 'file': {
-      return fs.makeFile(s);
+      return s;
     }
     default: {
       return s;
     }
-  }
-};
-const castValueToCallbackValue = (value, type) => {
-  if (value !== undefined) {
-    switch (type) {
-      case 'file':
-        return fs.makeFile(value);
-      default:
-        return value;
-    }
-  } else {
-    return value;
   }
 };
 const castValueValueToString = (s, type) => {
@@ -257,7 +245,6 @@ const _shallowClone = o => {
 return {
   makeZeoComponentElement,
   castValueStringToValue,
-  castValueToCallbackValue,
   castValueValueToString,
   debounce,
 };

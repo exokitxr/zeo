@@ -34,7 +34,7 @@ const _makeZeoElementInstance = ({tag, elementApiAttributes, attributeValues, ba
 
       const _castValue = s => {
         if (s !== null) {
-          return castValueStringToCallbackValue(s.replace(/^"([\s\S]*)"$/, '$1'), type, min, max, step, options);
+          return castValueStringToValue(s.replace(/^"([\s\S]*)"$/, '$1'), type, min, max, step, options);
         } else {
           return null;
         }
@@ -152,16 +152,6 @@ class FakeFile {
       });
   }
 }
-const castValueStringToCallbackValue = (s, type, min, max, step, options) => {
-  switch (type) {
-    case 'file': {
-      const url = /^\//.test(s) ? ('/archae/fs' + s) : s;
-      return new FakeFile(url);
-    }
-    default:
-      return castValueStringToValue(s, type, min, max, step, options);
-  }
-};
 const castValueValueToString = (s, type) => {
   if (typeof s === 'string') {
     return s;
@@ -186,6 +176,5 @@ const _jsonParse = s => {
 
 module.exports = {
   castValueStringToValue,
-  castValueStringToCallbackValue,
   castValueValueToString,
 };
