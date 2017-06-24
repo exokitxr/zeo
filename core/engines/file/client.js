@@ -268,10 +268,10 @@ class FileEngine {
           object.add(planeMesh);
           object.planeMesh = planeMesh;
 
+          const size = 480;
+          const worldWidth = (size / WIDTH) * WORLD_WIDTH;
+          const worldHeight = (size / HEIGHT) * WORLD_HEIGHT;
           const detailsMesh = (() => {
-            const size = 480;
-            const worldWidth = (size / WIDTH) * WORLD_WIDTH;
-            const worldHeight = (size / HEIGHT) * WORLD_HEIGHT;
             const geometry = new THREE.PlaneBufferGeometry(worldWidth, worldHeight);
             const texture = new THREE.Texture(
               transparentImg,
@@ -293,16 +293,14 @@ class FileEngine {
 
             const mesh = new THREE.Mesh(geometry, material);
             mesh.position.set(
-              0,
-              0,
+              -(WORLD_WIDTH / 2) + (worldWidth / 2) + ((30 / WIDTH) * WORLD_WIDTH),
+              (WORLD_HEIGHT / 2) - (worldHeight / 2) - (((30 + 80 + 20) / HEIGHT) * WORLD_HEIGHT),
               0.001
             );
             mesh.visible = false;
-
             mesh.setAspectRatio = aspectRatio => {
-              mesh.position.x = -(WORLD_WIDTH / 2) + (worldWidth / 2) + ((30 / WIDTH) * WORLD_WIDTH);
-              mesh.position.y = (WORLD_HEIGHT / 2) - (worldHeight / 2) - (((30 + 80 + 20) / HEIGHT) * WORLD_HEIGHT);
-              mesh.scale.y = 1 / aspectRatio;
+              mesh.scale.x = aspectRatio < 1 ? aspectRatio : 1;
+              mesh.scale.y = aspectRatio > 1 ? (1 / aspectRatio) : 1;
               mesh.updateMatrixWorld();
             };
 
@@ -310,6 +308,38 @@ class FileEngine {
           })();
           object.add(detailsMesh);
           object.detailsMesh = detailsMesh;
+
+          const anchors = [
+            {
+              rect: {
+                left: 0,
+                right: size,
+                top: 0,
+                bottom: size,
+                onclick: 'file:media',
+              },
+            },
+          ];
+          const detailsPage = biolumi.makePage(null, {
+            type: 'file:media',
+            width: size,
+            height: size,
+            worldWidth: worldWidth,
+            worldHeight: worldHeight,
+            color: [1, 1, 1, 0],
+            layer: {
+              getAnchors: () => anchors,
+            },
+          });
+          detailsPage.mesh.position.copy(detailsMesh.position);
+          detailsPage.mesh.visible = false;
+          object.add(detailsPage.mesh);
+          object.detailsPage = detailsPage;
+          rend.addPage(detailsPage);
+
+          cleanups.push(() => {
+            rend.removePage(detailsPage);
+          });
 
           const shadowMesh = (() => {
             const geometry = new THREE.BoxBufferGeometry(WORLD_WIDTH, WORLD_HEIGHT, 0.01);
@@ -425,11 +455,16 @@ class FileEngine {
 
                 _updatePages()
                   .then(() => {
+                    const {detailsPage} = fileMesh;
                     if (media && media.tagName === 'IMG') {
                       detailsMesh.visible = true;
+                      detailsPage.mesh.visible = true;
                     } else {
                       detailsMesh.visible = false;
+                      detailsPage.mesh.visible = false;
                     }
+
+                    rend.updateMatrixWorld(fileMesh);
                   });
 
                 return true;
@@ -439,8 +474,13 @@ class FileEngine {
                 _updatePages()
                   .then(() => {
                     const {detailsMesh} = fileMesh;
+
                     if (detailsMesh.visible) {
                       detailsMesh.visible = false;
+
+                      const {detailsPage} = fileMesh;
+                      detailsPage.mesh.visible = false;
+                      rend.updateMatrixWorld(fileMesh);
                     }
                   });
 
