@@ -147,12 +147,13 @@ const makeRenderer = ({creatureUtils}) => {
     })();
 
     return `<div style="display: flex; min-height: ${HEIGHT}px; padding: 30px; flex-direction: column; box-sizing: border-box;">
-      <div style="display: flex; height: 80px;">
+      <div style="display: flex; height: 80px; align-items: center;">
         <a style="display: flex; width: 80px; height: 80px; margin-right: 20px; justify-content: center; align-items: center;" onclick="file:back">${chevronLeftImg}</a>
-        <div style="display: flex; flex-direction: column;">
-          <h1 style="margin: 0; font-size: 30px; font-weight: 400; line-height: 1.4;">${name}</h1>
-          <p style="margin: 0; font-size: 20px; font-weight: 400; line-height: 1.4;">${mimeType}</p>
+        <div style="flex-grow: 1; margin-right: 30px; flex-direction: column; overflow: hidden;">
+          <h1 style="margin: 0; font-size: 30px; font-weight: 400; line-height: 1.4; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">${name}</h1>
+          <p style="margin: 0; font-size: 20px; font-weight: 400; line-height: 1.4; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">${mimeType}</p>
         </div>
+        <a style="display: flex; padding: 10px 20px; border: 2px solid; font-size: 20px; font-weight: 400; justify-content: center; align-items: center;" onclick="file:remove:${id}">Delete</a>
       </div>
       ${previewSrc}
     </div>`;
