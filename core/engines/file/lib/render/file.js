@@ -147,7 +147,7 @@ const makeRenderer = ({creatureUtils}) => {
     })();
 
     return `<div style="display: flex; min-height: ${HEIGHT}px; padding: 30px; flex-direction: column; box-sizing: border-box;">
-      <div style="display: flex; height: 80px; margin-bottom: 10px;">
+      <div style="display: flex; height: 80px;">
         <a style="display: flex; width: 80px; height: 80px; margin-right: 20px; justify-content: center; align-items: center;" onclick="file:back">${chevronLeftImg}</a>
         <div style="display: flex; flex-direction: column;">
           <h1 style="margin: 0; font-size: 30px; font-weight: 400; line-height: 1.4;">${name}</h1>

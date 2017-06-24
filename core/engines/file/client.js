@@ -65,6 +65,7 @@ class FileEngine {
         const fileRenderer = fileRender.makeRenderer({creatureUtils});
 
         const transparentImg = biolumi.getTransparentImg();
+        const blackImg = biolumi.getBlackImg();
         const transparentMaterial = biolumi.getTransparentMaterial();
 
         const mainFontSpec = {
@@ -340,7 +341,7 @@ class FileEngine {
             const mesh = new THREE.Mesh(geometry, material);
             mesh.position.set(
               -(WORLD_WIDTH / 2) + (worldWidth / 2) + ((30 / WIDTH) * WORLD_WIDTH),
-              (WORLD_HEIGHT / 2) - (worldHeight / 2) - (((30 + 80 + 10) / HEIGHT) * WORLD_HEIGHT),
+              (WORLD_HEIGHT / 2) - (worldHeight / 2) - (((30 + 80) / HEIGHT) * WORLD_HEIGHT),
               0.001
             );
             mesh.visible = false;
@@ -497,6 +498,15 @@ class FileEngine {
                   detailsMesh.material.map.image = media;
                   detailsMesh.material.map.needsUpdate = true;
                   detailsMesh.setAspectRatio(media.width / media.height);
+                } else if (media && media.tagName === 'AUDIO') {
+                  detailsMesh.material.map.image = blackImg;
+                  detailsMesh.material.map.needsUpdate = true;
+                } else if (media && media.tagName === 'VIDEO') {
+                  detailsMesh.material.map.image = media;
+                  detailsMesh.material.map.needsUpdate = true;
+                } else {
+                  detailsMesh.material.map.image = blackImg;
+                  detailsMesh.material.map.needsUpdate = true;
                 }
 
                 _updatePages()
