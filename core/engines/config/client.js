@@ -75,7 +75,6 @@ class Config {
 
     return Promise.all([
       archae.requestPlugins([
-        '/core/engines/bootstrap',
         '/core/engines/input',
         '/core/engines/three',
         '/core/engines/webvr',
@@ -88,7 +87,6 @@ class Config {
       _requestGetServerConfig(),
     ]).then(([
       [
-        bootstrap,
         input,
         three,
         webvr,
@@ -332,18 +330,6 @@ class Config {
           const {page} = planeMesh;
           page.update();
         };
-
-        const _requestLogout = () => new Promise((accept, reject) => {
-          bootstrap.requestLogout()
-            .then(() => {
-              accept();
-            })
-            .catch(err => {
-              console.warn(err);
-
-              accept();
-            });
-        });
 
         const _trigger = e => {
           const _clickMenu = () => {
