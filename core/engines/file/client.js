@@ -340,7 +340,7 @@ class FileEngine {
             const mesh = new THREE.Mesh(geometry, material);
             mesh.position.set(
               -(WORLD_WIDTH / 2) + (worldWidth / 2) + ((30 / WIDTH) * WORLD_WIDTH),
-              (WORLD_HEIGHT / 2) - (worldHeight / 2) - (((30 + 80 + 20) / HEIGHT) * WORLD_HEIGHT),
+              (WORLD_HEIGHT / 2) - (worldHeight / 2) - (((30 + 80 + 10) / HEIGHT) * WORLD_HEIGHT),
               0.001
             );
             mesh.visible = false;
