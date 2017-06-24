@@ -23,6 +23,7 @@ const linkImg = require('../img/link');
 const linkImgSrc = 'data:image/svg+xml;base64,' + btoa(linkImg);
 const upImg = require('../img/up');
 const downImg = require('../img/down');
+const chevronLeftImg = require('../img/chevron-left');
 
 const numTagsPerPage = 4;
 
@@ -215,8 +216,13 @@ const makeRenderer = ({creatureUtils}) => {
     })();
 
     return `<div style="display: flex; min-height: ${HEIGHT}px; padding: 30px; flex-direction: column; box-sizing: border-box;">
-      <h1 style="margin: 0; font-size: 30px; font-weight: 400; line-height: 1.4;">${name}</h1>
-      <p style="margin: 0; margin-bottom: 10px; font-size: 20px; font-weight: 400; line-height: 1.4;">${mimeType}</p>
+      <div style="display: flex;">
+        <a style="display: flex; width: 80px; height: 80px; justify-content: center; align-items: center;" onclick="file:back">${chevronLeftImg}</a>
+        <div style="display: flex; flex-direction: column;">
+          <h1 style="margin: 0; font-size: 30px; font-weight: 400; line-height: 1.4;">${name}</h1>
+          <p style="margin: 0; margin-bottom: 10px; font-size: 20px; font-weight: 400; line-height: 1.4;">${mimeType}</p>
+        </div>
+      </div>
       ${previewSrc}
     </div>`;
   };
