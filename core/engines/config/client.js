@@ -35,7 +35,6 @@ class Config {
 
   mount() {
     const {_archae: archae} = this;
-    const {metadata: {server: {enabled: serverEnabled}}} = archae;
 
     const cleanups = [];
     this._cleanup = () => {
@@ -62,14 +61,8 @@ class Config {
 
       accept();
     });
-    const _requestGetServerConfig = () => {
-      if (serverEnabled) {
-        return fetch('archae/config/config.json')
-          .then(res => res.json());
-      } else {
-        return Promise.resolve({});
-      }
-    };
+    const _requestGetServerConfig = () => fetch('archae/config/config.json')
+      .then(res => res.json());
     const _requestSetServerConfig = config => fetch('archae/config/config.json', {
       method: 'PUT',
       headers: {
@@ -136,12 +129,10 @@ class Config {
           voiceChatCheckboxValue: browserConfigSpec.voiceChat,
           statsCheckboxValue: browserConfigSpec.stats,
           visibilityValue: serverConfigSpec.visibility,
+          nameValue: serverConfigSpec.name,
           passwordValue: serverConfigSpec.password,
           maxPlayersValue: serverConfigSpec.maxPlayers,
           keyboardFocusState: null,
-          flags: {
-            server: serverEnabled,
-          },
         };
         const statsState = {
           frame: 0,
@@ -183,6 +174,7 @@ class Config {
                 voiceChatCheckboxValue,
                 statsCheckboxValue,
                 visibilityValue,
+                nameValue,
                 passwordValue,
                 maxPlayersValue,
                 keyboardFocusState,
@@ -193,7 +185,11 @@ class Config {
                 if (keyboardFocusState) {
                   const {type} = keyboardFocusState;
 
-                  if (type === 'config:password') {
+                  if (type === 'config:name') {
+                    return {
+                      type: 'name',
+                    };
+                  } else if (type === 'config:password') {
                     return {
                       type: 'password',
                     };
@@ -217,6 +213,7 @@ class Config {
                   voiceChatCheckboxValue,
                   statsCheckboxValue,
                   visibilityValue,
+                  nameValue,
                   passwordValue,
                   maxPlayersValue,
                   inputValue,
@@ -423,6 +420,46 @@ class Config {
                 _updatePages();
 
                 return true;
+              } else if (onclick === 'config:name') {
+                const {nameValue: inputText} = configState;
+                const {value} = hoverState;
+                const valuePx = value * (640 - (150 + (30 * 2) + 30));
+                const {index, px} = biolumi.getTextPropertiesFromCoord(inputText, mainFontSpec, valuePx);
+                const {hmd: hmdStatus} = webvr.getStatus();
+                const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmdStatus;
+                const keyboardFocusState = keyboard.focus({
+                  type: 'config:name',
+                  position: hmdPosition,
+                  rotation: hmdRotation,
+                  inputText: inputText,
+                  inputIndex: index,
+                  inputValue: px,
+                  fontSpec: mainFontSpec,
+                });
+                keyboardFocusState.on('update', () => {
+                  const {inputText: keyboardInputText} = keyboardFocusState;
+                  const {nameValue: nameInputText} = configState;
+
+                  if (keyboardInputText !== nameInputText) {
+                    configState.nameValue = keyboardInputText;
+
+                    _saveServerConfig();
+                    configApi.updateBrowserConfig();
+
+                    _updatePages();
+                  }
+                });
+                keyboardFocusState.on('blur', () => {
+                  configState.keyboardFocusState = null;
+
+                  _updatePages();
+                });
+
+                configState.keyboardFocusState = keyboardFocusState;
+
+                _updatePages();
+
+                return true;
               } else if (onclick === 'config:password') {
                 const {passwordValue: inputText} = configState;
                 const {value} = hoverState;
@@ -536,12 +573,14 @@ class Config {
           getServerConfig() {
             return {
               visibility: configState.visibilityValue,
+              name: configState.nameValue,
               password: configState.passwordValue,
               maxPlayers: configState.maxPlayersValue,
             };
           }
 
           setServerConfig(newConfig) {
+            ('name' in newConfig) && (configState.nameValue = newConfig.name);
             ('password' in newConfig) && (configState.passwordValue = newConfig.password);
             ('maxPlayers' in newConfig) && (configState.maxPlayersValue = newConfig.maxPlayers);
 
