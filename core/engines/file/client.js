@@ -185,6 +185,7 @@ class FileEngine {
           inputText: '',
           tagSpecs: [],
           numTags: 0,
+          file: null,
           page: 0,
         };
         const focusState = {
@@ -209,6 +210,7 @@ class FileEngine {
                 inputText,
                 tagSpecs,
                 numTags,
+                file,
                 page,
               },
               focus: {
@@ -220,7 +222,16 @@ class FileEngine {
 
               return {
                 type: 'html',
-                src: fileRenderer.getFilePageSrc({loading, inputText, inputValue, tagSpecs, numTags, page, focus}),
+                src: fileRenderer.getFilePageSrc({
+                  loading,
+                  inputText,
+                  inputValue,
+                  tagSpecs,
+                  numTags,
+                  file,
+                  page,
+                  focus,
+                }),
                 x: 0,
                 y: 0,
                 w: WIDTH,
@@ -344,6 +355,15 @@ class FileEngine {
                 const direction = match[1];
 
                 npmState.page += (direction === 'up' ? -1 : 1);
+
+                _updatePages();
+
+                return true;
+              } else if (match = onclick.match(/^file:file:(.+)$/)) {
+                const id = match[1];
+
+                const itemSpec = npmState.tagSpecs.find(tagSpec => tagSpec.id === id);
+                npmState.file = itemSpec;
 
                 _updatePages();
 
