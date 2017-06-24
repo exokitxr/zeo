@@ -129,7 +129,7 @@ const makeRenderer = ({creatureUtils}) => {
       if (mode === 'image') {
         return '<div style="width: 480px; height: 480px;"></div>';
       } else if (mode === 'audio' || mode === 'video') {
-        const mainSrc = `<div style="width: inherit; height: ${480 - 50}px;"></div>`;
+        const mainSrc = `<div style="width: inherit; height: 480px;"></div>`;
         const barSrc = `<a style="display: flex; width: inherit; height: 50px; background-color: #FFF;" onclick="file:seek:${id}">
           <svg xmlns="http://www.w3.org/2000/svg" width="1" height="16" viewBox="0 0 0.26458333 4.2333333" style="position: absolute; height: 50px; width: ${50 * (1 / 16)}px; margin-left: ${-(50 * (1 / 16) / 2)}px; left: ${value * 100}%;">
             <path d="M0 0v4.233h.265V0H0" fill="#f44336"/>
@@ -139,7 +139,7 @@ const makeRenderer = ({creatureUtils}) => {
           </svg>
         </a>`;
 
-        return `<div style="display: flex; width: 480px; height: 480px; flex-direction: column;">
+        return `<div style="display: flex; width: 480px; flex-direction: column;">
           ${mainSrc}
           ${barSrc}
         </div>`;

@@ -173,6 +173,52 @@ class FileEngine {
 
                 pends++;
               })();
+            } else if (mode === 'audio') {
+              (() => {
+                let live = true;
+                updateCancels.push(() => {
+                  live = false;
+                });
+
+                const {id, name} = itemSpec;
+                fs.makeFile('fs/' + id + name)
+                  .read({type: 'audio'})
+                  .then(audio => {
+                    if (live) {
+                      itemSpec.media = audio;
+
+                      pend();
+                    }
+                  })
+                  .catch(err => {
+                    console.warn(err);
+                  });
+
+                pends++;
+              })();
+            } else if (mode === 'video') {
+              (() => {
+                let live = true;
+                updateCancels.push(() => {
+                  live = false;
+                });
+
+                const {id, name} = itemSpec;
+                fs.makeFile('fs/' + id + name)
+                  .read({type: 'video'})
+                  .then(video => {
+                    if (live) {
+                      itemSpec.media = video;
+
+                      pend();
+                    }
+                  })
+                  .catch(err => {
+                    console.warn(err);
+                  });
+
+                pends++;
+              })();
             }
           }
 
@@ -456,7 +502,7 @@ class FileEngine {
                 _updatePages()
                   .then(() => {
                     const {detailsPage} = fileMesh;
-                    if (media && media.tagName === 'IMG') {
+                    if (media && (media.tagName === 'IMG' || media.tagName === 'AUDIO' || media.tagName === 'VIDEO')) {
                       detailsMesh.visible = true;
                       detailsPage.mesh.visible = true;
                     } else {
