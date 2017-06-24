@@ -17,14 +17,14 @@ class Loader {
         return archae.removePlugin(plugin);
       }
 
-      releasePlugin(pluginName) {
-        return archae.releasePlugin(pluginName);
+      releasePlugin(plugin) {
+        return archae.releasePlugin(plugin);
       }
     }
     const loaderApi = new LoaderApi();
 
-    const _unload = pluginName => {
-      loaderApi.releasePlugin(pluginName);
+    const _unload = plugin => {
+      loaderApi.releasePlugin(plugin);
     };
     archae.on('unload', _unload);
     const _load = plugin => {
