@@ -59,8 +59,8 @@ class Bootstrap {
             }
           };
 
-          const _announceServer = () => publicIp.v4()
-            .then(ip => new Promise((accept, reject) => {
+          const _announceServer = () => new Promise((accept, reject) => {
+            publicIp.v4().then(ip => {
               const options = {
                 method: 'POST',
                 host: siteSpec.host,
@@ -69,6 +69,7 @@ class Bootstrap {
                 headers: {
                   'Content-Type': 'application/json',
                 },
+                rejectUnauthorized: siteSpec.host !== '127.0.0.1',
               };
               const req = (siteSpec.protocol === 'http' ? http : https).request(options);
               req.end(JSON.stringify({
@@ -106,7 +107,10 @@ class Bootstrap {
 
                 reject(err);
               });
-            }));
+            }, err => {
+              reject(err);
+            });
+          });
 
           const _tryServerAnnounce = () => new Promise((accept, reject) => {
             const configJson = config.getConfig();
