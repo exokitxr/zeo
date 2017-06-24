@@ -3,6 +3,8 @@ const fs = require('fs');
 const http = require('http');
 const https = require('https');
 
+const publicIp = require('public-ip');
+
 const SERVER_ANNOUNCE_INTERVAL = 30 * 1000;
 const SERVER_ANNOUNCE_RETRY_INTERVAL = 2 * 1000;
 
@@ -57,52 +59,54 @@ class Bootstrap {
             }
           };
 
-          const _announceServer = () => new Promise((accept, reject) => {
-            const options = {
-              method: 'POST',
-              host: siteSpec.host,
-              port: siteSpec.port,
-              path: '/prsnt/announce',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-            };
-            const req = (siteSpec.protocol === 'http' ? http : https).request(options);
-            req.end(JSON.stringify({
-              name: 'Server name', // XXX announce the real server from the config
-              protocol: serverSpec.protocol,
-              port: serverSpec.port,
-              users: [], // XXX announce the real users from the hub engine
-            }));
+          const _announceServer = () => publicIp.v4()
+            .then(ip => new Promise((accept, reject) => {
+              const options = {
+                method: 'POST',
+                host: siteSpec.host,
+                port: siteSpec.port,
+                path: '/prsnt/announce',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+              };
+              const req = (siteSpec.protocol === 'http' ? http : https).request(options);
+              req.end(JSON.stringify({
+                name: 'Server name', // XXX announce the real server from the config
+                protocol: serverSpec.protocol,
+                address: ip,
+                port: serverSpec.port,
+                users: [], // XXX announce the real users from the hub engine
+              }));
 
-            req.on('response', res => {
-              res.resume();
+              req.on('response', res => {
+                res.resume();
 
-              res.on('end', () => {
-                const {statusCode} = res;
+                res.on('end', () => {
+                  const {statusCode} = res;
 
-                if (statusCode >= 200 && statusCode < 300) {
-                  accept();
-                } else {
-                  const err = new Error('server announce returned error status code: ' + statusCode);
-                  err.code = 'EHTTP';
-                  err.statusCode = statusCode;
+                  if (statusCode >= 200 && statusCode < 300) {
+                    accept();
+                  } else {
+                    const err = new Error('server announce returned error status code: ' + statusCode);
+                    err.code = 'EHTTP';
+                    err.statusCode = statusCode;
+                    err.options = options;
+                    reject(err);
+                  }
+                });
+                res.on('error', err => {
                   err.options = options;
+
                   reject(err);
-                }
+                });
               });
-              res.on('error', err => {
+              req.on('error', err => {
                 err.options = options;
 
                 reject(err);
               });
             });
-            req.on('error', err => {
-              err.options = options;
-
-              reject(err);
-            });
-          });
 
           const _tryServerAnnounce = () => new Promise((accept, reject) => {
             const configJson = config.getConfig();

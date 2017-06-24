@@ -5,6 +5,7 @@
   "client": "client.js",
   "server": "server.js",
   "dependencies": {
-    "mkdirp": "^0.5.1"
+    "mkdirp": "^0.5.1",
+    "public-ip": "^2.3.5"
   }
 }
