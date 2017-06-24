@@ -538,9 +538,13 @@ class FileEngine {
                 } else if (media && media.tagName === 'AUDIO') {
                   detailsMesh.material.map.image = blackImg;
                   detailsMesh.material.map.needsUpdate = true;
+
+                  npmState.value = media.currentTime / media.duration;
                 } else if (media && media.tagName === 'VIDEO') {
                   detailsMesh.material.map.image = media;
                   detailsMesh.material.map.needsUpdate = true;
+
+                  npmState.value = media.currentTime / media.duration;
                 } else {
                   detailsMesh.material.map.image = blackImg;
                   detailsMesh.material.map.needsUpdate = true;
@@ -562,6 +566,7 @@ class FileEngine {
 
                 return true;
               } else if (onclick === 'file:back') {
+                const oldFile = npmState.file;
                 npmState.file = null;
 
                 _updatePages()
@@ -574,6 +579,11 @@ class FileEngine {
                       const {detailsPage} = fileMesh;
                       detailsPage.mesh.visible = false;
                       rend.updateMatrixWorld(fileMesh);
+
+                      const {media} = oldFile;
+                      if (media && (media.tagName === 'AUDIO' || media.tagName === 'VIDEO') && !media.paused) {
+                        media.pause();
+                      }
                     }
                   });
 
