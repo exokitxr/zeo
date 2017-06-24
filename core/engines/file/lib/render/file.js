@@ -77,7 +77,7 @@ const makeRenderer = ({creatureUtils}) => {
     const open = false;
 
     const headerSrc = `\
-      <div style="position: relative; display: flex; border-bottom: 1px solid #EEE; text-decoration: none; overflow: hidden; box-sizing: border-box; ${instancing ? 'filter: brightness(75%);' : ''}">
+      <div style="position: relative; display: flex;">
         <div style="display: flex; flex-grow: 1; flex-direction: column;">
           <div style="display: flex; flex-grow: 1;">
             ${creatureUtils.makeSvgCreature('file:' + name, {
@@ -91,23 +91,17 @@ const makeRenderer = ({creatureUtils}) => {
               <p style="margin: 0; margin-bottom: 10px; font-size: 15px; line-height: 1.4;">${mimeType}</p>
             </div>
           </div>
-          <div style="display: flex; margin-bottom: 10px; font-size: 16px; font-weight: 400;">
-            ${!open ?
-              `<a style="display: flex; margin-left: 20px; margin-right: 10px; padding: 5px 10px; border: 2px solid; text-decoration: none;" onclick="tag:open:${id}">Preview</a>`
-            :
-              `<a style="display: flex; margin-left: 20px; margin-right: 10px; padding: 5px 10px; border: 2px solid transparent; background-color: #000; color: #FFF; font-weight: 400; text-decoration: none;" onclick="tag:close:${id}">Preview</a>`
-            }
-            <a style="display: flex; margin-right: auto; padding: 5px 10px; border: 2px solid; text-decoration: none;" onclick="tag:download:${id}">Download</a>
-          </div>
         </div>
-        <div style="display: flex;">
+        <!-- <div style="display: flex;">
           <a style="display: flex; margin-bottom: auto; padding: 15px; text-decoration: none; justify-content: center; align-items: center;" onclick="tag:remove:${id}">
             <img src="${closeOutlineSrc}" width="30" height="30" />
           </a>
-        </div>
+        </div> -->
       </div>
     `;
     const bodySrc = (() => {
+      return '';
+
       const _getFramePreviewSrc = (text = '') => `\
         <div style="position: relative; display: flex; width: ${OPEN_WIDTH}px; height: ${OPEN_HEIGHT - HEIGHT}px; background-color: #EEE; font-size: 28px; font-weight: 400; justify-content: center; align-items: center; overflow: hidden; box-sizing: border-box;">${text}</div>
       `;
@@ -181,10 +175,10 @@ const makeRenderer = ({creatureUtils}) => {
     })();
 
     return `\
-      <div>
+      <a style="display: flex; border-bottom: 1px solid #EEE; text-decoration: none;" onclick="file:file:${id}">
         ${headerSrc}
         ${bodySrc}
-      </div>
+      </a>
     `;
   };
 
