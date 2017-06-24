@@ -71,6 +71,7 @@ class Tags {
       '/core/engines/somnifer',
       '/core/engines/rend',
       '/core/utils/js-utils',
+      '/core/utils/type-utils',
       '/core/utils/geometry-utils',
       '/core/utils/image-utils',
       '/core/utils/creature-utils',
@@ -89,6 +90,7 @@ class Tags {
         somnifer,
         rend,
         jsUtils,
+        typeUtils,
         geometryUtils,
         imageUtils,
         creatureUtils,
@@ -116,8 +118,8 @@ class Tags {
 
           const transparentImg = biolumi.getTransparentImg();
 
-          const menuUtils = menuUtilser.makeUtils({THREE, scene, fs});
-          const tagsRenderer = tagsRender.makeRenderer({menuUtils, creatureUtils});
+          const menuUtils = menuUtilser.makeUtils({THREE, scene});
+          const tagsRenderer = tagsRender.makeRenderer({typeUtils, creatureUtils});
 
           const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
           const _decomposeMatrix = matrix => {

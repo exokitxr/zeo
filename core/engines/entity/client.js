@@ -12,7 +12,6 @@ import {
   TAGS_WORLD_DEPTH,
 } from './lib/constants/entity';
 import entityRender from './lib/render/entity';
-import menuUtilser from './lib/utils/menu';
 import colorImg from './lib/img/color';
 
 class Entity {
@@ -82,6 +81,7 @@ class Entity {
         '/core/engines/world',
         '/core/engines/fs',
         '/core/engines/keyboard',
+        '/core/utils/type-utils',
         '/core/utils/creature-utils',
       ]),
       _requestColorImgData(),
@@ -97,6 +97,7 @@ class Entity {
         world,
         fs,
         keyboard,
+        typeUtils,
         creatureUtils,
       ],
       colorImgData,
@@ -104,8 +105,7 @@ class Entity {
       if (live) {
         const {THREE, scene} = three;
 
-        const menuUtils = menuUtilser.makeUtils({fs});
-        const entityRenderer = entityRender.makeRenderer({menuUtils, creatureUtils});
+        const entityRenderer = entityRender.makeRenderer({typeUtils, creatureUtils});
 
         const transparentMaterial = biolumi.getTransparentMaterial();
 
@@ -436,13 +436,13 @@ class Entity {
                 const textProperties = (() => {
                   if (type === 'text') {
                     const hoverValuePx = hoverValue * 400;
-                    return biolumi.getTextPropertiesFromCoord(menuUtils.castValueValueToString(attributeValue, type), subcontentFontSpec, hoverValuePx);
+                    return biolumi.getTextPropertiesFromCoord(typeUtils.castValueValueToString(attributeValue, type), subcontentFontSpec, hoverValuePx);
                   } else if (type === 'number') {
                     const hoverValuePx = hoverValue * 100;
-                    return biolumi.getTextPropertiesFromCoord(menuUtils.castValueValueToString(attributeValue, type), subcontentFontSpec, hoverValuePx);
+                    return biolumi.getTextPropertiesFromCoord(typeUtils.castValueValueToString(attributeValue, type), subcontentFontSpec, hoverValuePx);
                   } else if (type === 'color') {
                     const hoverValuePx = hoverValue * (400 - (40 + 4));
-                    return biolumi.getTextPropertiesFromCoord(menuUtils.castValueValueToString(attributeValue, type), subcontentFontSpec, hoverValuePx);
+                    return biolumi.getTextPropertiesFromCoord(typeUtils.castValueValueToString(attributeValue, type), subcontentFontSpec, hoverValuePx);
                   } else {
                     return null;
                   }
@@ -451,7 +451,7 @@ class Entity {
                   if (textProperties) {
                     const {hmd: hmdStatus} = webvr.getStatus();
                     const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmdStatus;
-                    const inputText = menuUtils.castValueValueToString(attributeValue, type);
+                    const inputText = typeUtils.castValueValueToString(attributeValue, type);
                     const {index, px} = textProperties;
                     return keyboard.focus({
                       type: 'entityAttribute:' + tagId + ':' + attributeName,

@@ -30,7 +30,7 @@ const downImg = require('../img/down');
 
 const AXES = ['x', 'y', 'z'];
 
-const makeRenderer = ({menuUtils, creatureUtils}) => {
+const makeRenderer = ({typeUtils, creatureUtils}) => {
   const getModuleSrc = ({item, inputText, inputValue}) => {
     const {id, name, displayName, description, instancing, metadata: {isStatic, exists}} = item;
     const tagName = isStatic ? 'a' : 'div';
@@ -231,7 +231,7 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
   };
 
   const getAttributeInputSrc = (id, name, type, value, min, max, step, options, inputText, inputValue, focus, transform) => {
-    const focusValue = !focus ? value : menuUtils.castValueStringToValue(inputText, type, min, max, step, options);
+    const focusValue = !focus ? value : typeUtils.castValueStringToValue(inputText, type, min, max, step, options);
 
     switch (type) {
       case 'matrix': {
