@@ -1,28 +1,3 @@
-const makeUtils = ({fs}) => {
-
-const debounce = fn => {
-  let running = false;
-  let queued = false;
-
-  const _go = () => {
-    if (!running) {
-      running = true;
-
-      fn(() => {
-        running = false;
-
-        if (queued) {
-          queued = false;
-
-          _go();
-        }
-      });
-    } else {
-      queued = true;
-    }
-  };
-  return _go;
-};
 const castValueStringToValue = (s, type, min, max, step, options) => {
   switch (type) {
     case 'matrix': {
@@ -86,6 +61,7 @@ const castValueValueToString = (s, type) => {
     return JSON.stringify(s);
   }
 };
+
 const _jsonParse = s => {
   let error = null;
   let result;
@@ -101,14 +77,12 @@ const _jsonParse = s => {
   }
 };
 
-return {
-  debounce,
-  castValueStringToValue,
-  castValueValueToString,
-};
-
-};
-
 module.exports = {
-  makeUtils,
+  mount() {
+    return {
+      castValueStringToValue,
+      castValueValueToString,
+    };
+  },
+  unmount() {},
 };

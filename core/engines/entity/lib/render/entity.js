@@ -24,7 +24,7 @@ const colorImg = require('../img/color');
 
 const numTagsPerPage = 6;
 
-const makeRenderer = ({menuUtils, creatureUtils}) => {
+const makeRenderer = ({typeUtils, creatureUtils}) => {
   const getEntityPageSrc = ({loading, npmInputText, npmInputValue, attributeInputText, attributeInputValue, entity, tagSpecs, numTags, page, focusSpec}) => {
     return `\
       ${entity === null ?
@@ -191,7 +191,7 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
         return null;
       }
     })();
-    const focusValue = focusType === null ? value : menuUtils.castValueStringToValue(inputText, type, min, max, step, options);
+    const focusValue = focusType === null ? value : typeUtils.castValueStringToValue(inputText, type, min, max, step, options);
 
     switch (type) {
       case 'matrix': {
