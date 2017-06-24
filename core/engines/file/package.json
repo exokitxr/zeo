@@ -4,5 +4,7 @@
   "version": "0.0.1",
   "keywords": [],
   "client": "client.js",
-  "dependencies": {}
+  "dependencies": {
+    "svgize": "0.0.3"
+  }
 }

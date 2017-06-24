@@ -73,19 +73,33 @@ const makeRenderer = ({creatureUtils}) => {
     `;
   };
   const getFileSrc = item => {
-    const {id, name, mimeType, instancing, paused, value} = item;
+    const {id, name, mimeType, instancing, paused, value, mode, preview} = item;
     const open = false;
 
+    const previewSrc = (() => {
+      switch (mode) {
+        case 'image': {
+          if (preview) {
+            return preview;
+          } else {
+            return `<div style="width: 50px; height: 50px; margin: 10px; background-color: #EEE;"></div>`;
+          }
+        }
+        default: {
+          return creatureUtils.makeSvgCreature('file:' + name, {
+            width: 12,
+            height: 12,
+            viewBox: '0 0 12 12',
+            style: 'width: 50px; height: 50px; margin: 10px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;',
+          });
+        }
+      }
+    })();
     const headerSrc = `\
       <div style="position: relative; display: flex;">
         <div style="display: flex; flex-grow: 1; flex-direction: column;">
           <div style="display: flex; flex-grow: 1;">
-            ${creatureUtils.makeSvgCreature('file:' + name, {
-              width: 12,
-              height: 12,
-              viewBox: '0 0 12 12',
-              style: 'width: 50px; height: 50px; margin: 10px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;',
-            })}
+            ${previewSrc}
             <div style="display: flex; max-width: ${WIDTH - (30) - (50 + (10 * 2)) - (30 + (15 * 2))}px; margin-top: 10px; flex-grow: 1; flex-direction: column; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">
               <h1 style="margin: 0; font-size: 24px; font-weight: 400; line-height: 1.4;">${name}</h1>
               <p style="margin: 0; margin-bottom: 10px; font-size: 15px; line-height: 1.4;">${mimeType}</p>
