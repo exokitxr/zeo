@@ -54,12 +54,12 @@ class Biolumi {
 
           this.work();
 
-          return () => {
+          /* return () => {
             const index = threads.indexOf(thread);
             if (index !== -1) {
               threads.splice(index, 1);
             }
-          };
+          }; */
         }
 
         work(next) {
@@ -431,7 +431,7 @@ class Biolumi {
 
                 return Promise.resolve();
               };
-              const cancels = [
+              /* const cancels = [
                 _requestLayerSpec,
                 _requestHtmlSrc,
                 _requestInnerSrc,
@@ -439,7 +439,14 @@ class Biolumi {
                 _requestTexture,
                 _requestLayer,
                 _requestCallback,
-              ].map(work => uiWorker.add(work));
+              ].map(work => uiWorker.add(work)); */
+              uiWorker.add(_requestLayerSpec);
+              uiWorker.add(_requestHtmlSrc);
+              uiWorker.add(_requestInnerSrc);
+              uiWorker.add(_requestImage);
+              uiWorker.add(_requestTexture);
+              uiWorker.add(_requestLayer);
+              uiWorker.add(_requestCallback);
 
               let accept = null;
               let reject = null;
