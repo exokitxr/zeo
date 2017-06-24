@@ -64,6 +64,7 @@ class FileEngine {
 
         const fileRenderer = fileRender.makeRenderer({creatureUtils});
 
+        const transparentImg = biolumi.getTransparentImg();
         const transparentMaterial = biolumi.getTransparentMaterial();
 
         const mainFontSpec = {
@@ -116,6 +117,7 @@ class FileEngine {
             .map(({item}) => {
               const {id, name, mimeType, instancing, paused, value} = item;
               const mode = fs.getFileMode(mimeType);
+              const media = null;
               const preview = null;
 
               return {
@@ -126,6 +128,7 @@ class FileEngine {
                 paused,
                 value,
                 mode,
+                media,
                 preview,
               };
             });
@@ -158,6 +161,7 @@ class FileEngine {
                       const svgString = svgize.imageDataToSvg(imageData, {
                         style: 'width: 50px; height: 50px; margin: 10px;',
                       });
+                      itemSpec.media = img;
                       itemSpec.preview = svgString;
 
                       pend();
@@ -261,6 +265,35 @@ class FileEngine {
           object.add(planeMesh);
           object.planeMesh = planeMesh;
 
+          const detailsMesh = (() => {
+            const size = 480;
+            const geometry = new THREE.PlaneBufferGeometry((size / WIDTH) * WORLD_WIDTH, (size / HEIGHT) * WORLD_HEIGHT);
+            const texture = new THREE.Texture(
+              transparentImg,
+              THREE.UVMapping,
+              THREE.ClampToEdgeWrapping,
+              THREE.ClampToEdgeWrapping,
+              THREE.NearestFilter,
+              THREE.NearestFilter,
+              THREE.RGBAFormat,
+              THREE.UnsignedByteType,
+              16
+            );
+            texture.needsUpdate = true;
+            const material = new THREE.MeshBasicMaterial({
+              color: 0xFFFFFF,
+              map: texture,
+              side: THREE.DoubleSide,
+            });
+
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.position.set(0, 0, 0.001);
+            mesh.visible = false;
+            return mesh;
+          })();
+          object.add(detailsMesh);
+          object.detailsMesh = detailsMesh;
+
           const shadowMesh = (() => {
             const geometry = new THREE.BoxBufferGeometry(WORLD_WIDTH, WORLD_HEIGHT, 0.01);
             const material = transparentMaterial;
@@ -363,6 +396,23 @@ class FileEngine {
                 const id = match[1];
 
                 const itemSpec = npmState.tagSpecs.find(tagSpec => tagSpec.id === id);
+                npmState.file = itemSpec;
+
+                const {detailsMesh} = fileMesh;
+                const {media} = itemSpec;
+                if (media && media.tagName === 'IMG') {
+                  detailsMesh.material.map.image = media;
+                  detailsMesh.material.map.needsUpdate = true;
+
+                  detailsMesh.visible = true;
+                } else {
+                  detailsMesh.visible = false;
+                }
+
+                _updatePages();
+
+                return true;
+              } else if (onclick === 'file:back') {
                 npmState.file = itemSpec;
 
                 _updatePages();
