@@ -199,7 +199,7 @@ class Biolumi {
           };
 
           class Page {
-            constructor(spec, type, state, color, width, height, worldWidth, worldHeight) {
+            constructor(spec, type, state, color, width, height, worldWidth, worldHeight, layer) {
               this.spec = spec;
               this.type = type;
               this.state = state;
@@ -208,6 +208,7 @@ class Biolumi {
               this.height = height;
               this.worldWidth = worldWidth;
               this.worldHeight = worldHeight;
+              this.layer = layer;
 
               const mesh = (() => {
                 const geometry = geometryUtils.unindexBufferGeometry(new THREE.PlaneBufferGeometry(worldWidth, worldHeight));
@@ -250,7 +251,6 @@ class Biolumi {
                 return mesh;
               })();
               this.mesh = mesh;
-              this.layer = null;
               this.rendered = false;
               this.boxTarget = null;
             }
@@ -532,12 +532,12 @@ class Biolumi {
               this.page = null;
             }
 
-            makePage(spec, {type = null, state = null, worldWidth, worldHeight} = {}) {
+            makePage(spec, {type = null, state = null, worldWidth, worldHeight, layer = null} = {}) {
               const {page} = this;
 
               if (!page) {
                 const {width, height, color} = this;
-                const page = new Page(spec, type, state, color, width, height, worldWidth, worldHeight);
+                const page = new Page(spec, type, state, color, width, height, worldWidth, worldHeight, layer);
                 this.page = page;
 
                 const {mesh} = page;
@@ -1097,8 +1097,8 @@ class Biolumi {
           }
 
           const _makeUi = ({width, height, color = [1, 1, 1, 1]}) => new Ui(width, height, color);
-          const _makePage = (spec, {type = null, state = null, color = [1, 1, 1, 1], width, height, worldWidth, worldHeight}) =>
-            new Page(spec, type, state, color, width, height, worldWidth, worldHeight);
+          const _makePage = (spec, {type = null, state = null, color = [1, 1, 1, 1], width, height, worldWidth, worldHeight, layer = null}) =>
+            new Page(spec, type, state, color, width, height, worldWidth, worldHeight, layer);
           const _makeBoxAnchor = ({boxTarget, anchor}) => new BoxAnchor(boxTarget, anchor);
 
           const _updateUiTimer = () => {
