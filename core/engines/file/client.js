@@ -190,6 +190,7 @@ class FileEngine {
           tagSpecs: [],
           numTags: 0,
           file: null,
+          value: 0.1,
           page: 0,
         };
         const focusState = {
@@ -215,6 +216,7 @@ class FileEngine {
                 tagSpecs,
                 numTags,
                 file,
+                value,
                 page,
               },
               focus: {
@@ -233,6 +235,7 @@ class FileEngine {
                   tagSpecs,
                   numTags,
                   file,
+                  value,
                   page,
                   focus,
                 }),
@@ -414,9 +417,11 @@ class FileEngine {
 
                 const {detailsMesh} = fileMesh;
                 const {media} = itemSpec;
-                detailsMesh.material.map.image = media;
-                detailsMesh.material.map.needsUpdate = true;
-                detailsMesh.setAspectRatio(media.width / media.height);
+                if (media && media.tagName === 'IMG') {
+                  detailsMesh.material.map.image = media;
+                  detailsMesh.material.map.needsUpdate = true;
+                  detailsMesh.setAspectRatio(media.width / media.height);
+                }
 
                 _updatePages()
                   .then(() => {

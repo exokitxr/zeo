@@ -28,11 +28,11 @@ const chevronLeftImg = require('../img/chevron-left');
 const numTagsPerPage = 4;
 
 const makeRenderer = ({creatureUtils}) => {
-  const getFilePageSrc = ({loading, inputText, inputValue, tagSpecs, numTags, file, page, focus}) => {
+  const getFilePageSrc = ({loading, inputText, inputValue, tagSpecs, numTags, file, value, page, focus}) => {
     if (!file) {
       return getFilesSrc({loading, inputText, inputValue, tagSpecs, numTags, page, focus});
     } else {
-      return getFileDetailsSrc(file);
+      return getFileDetailsSrc({file, value});
     }
   };
   const getFilesSrc = ({loading, inputText, inputValue, tagSpecs, numTags, page, focus}) => {
@@ -82,7 +82,6 @@ const makeRenderer = ({creatureUtils}) => {
   };
   const getFileSrc = item => {
     const {id, name, mimeType, instancing, paused, value, mode, preview} = item;
-    const open = false;
 
     const previewSrc = (() => {
       switch (mode) {
@@ -103,7 +102,8 @@ const makeRenderer = ({creatureUtils}) => {
         }
       }
     })();
-    const headerSrc = `\
+
+    return `<a style="display: flex; border-bottom: 1px solid #EEE; text-decoration: none;" onclick="file:file:${id}">
       <div style="position: relative; display: flex;">
         <div style="display: flex; flex-grow: 1; flex-direction: column;">
           <div style="display: flex; flex-grow: 1;">
@@ -120,90 +120,32 @@ const makeRenderer = ({creatureUtils}) => {
           </a>
         </div> -->
       </div>
-    `;
-    const bodySrc = (() => {
-      return '';
+    </a>`;
+  };
+  const getFileDetailsSrc = ({file, value}) => {
+    const {id, name, mimeType, mode} = file;
 
-      const _getFramePreviewSrc = (text = '') => `\
-        <div style="position: relative; display: flex; width: ${OPEN_WIDTH}px; height: ${OPEN_HEIGHT - HEIGHT}px; background-color: #EEE; font-size: 28px; font-weight: 400; justify-content: center; align-items: center; overflow: hidden; box-sizing: border-box;">${text}</div>
-      `;
+    const previewSrc = (() => {
+      if (mode === 'image') {
+        return '<div style="width: 480px; height: 480px;"></div>';
+      } else if (mode === 'audio' || mode === 'video') {
+        const mainSrc = `<div style="width: inherit; height: ${480 - 50}px;"></div>`;
+        const barSrc = `<a style="display: flex; width: inherit; height: 50px; background-color: #FFF;" onclick="file:seek:${id}">
+          <svg xmlns="http://www.w3.org/2000/svg" width="1" height="16" viewBox="0 0 0.26458333 4.2333333" style="position: absolute; height: 50px; width: ${50 * (1 / 16)}px; margin-left: ${-(50 * (1 / 16) / 2)}px; left: ${value * 100}%;">
+            <path d="M0 0v4.233h.265V0H0" fill="#f44336"/>
+          </svg>
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 8.4666666 8.4666666" preserveAspectRatio="none" style="width: inherit; height: 50px;">
+            <path d="M0 3.97v.528h8.467v-.53H0" fill="#ccc"/>
+          </svg>
+        </a>`;
 
-      if (open) {
-        if (mode === 'image') {
-          return _getFramePreviewSrc();
-        } else if (mode === 'audio' || mode === 'video') {
-          const mainSrc = (() => {
-            if (mode === 'audio') {
-              if (paused) {
-                return `\
-                  <a style="display: flex; background-color: #FFF; flex-grow: 1; justify-content: center; align-items: center;" onclick="media:play:${id}">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 79.374997 79.374985">
-                      <path d="M21.167 79.375l39.687-39.687L21.167 0v79.375"/>
-                    </svg>
-                  </a>
-                `;
-              } else {
-                return `\
-                  <a style="display: flex;  background-color: #FFF; flex-grow: 1; justify-content: center; align-items: center;" onclick="media:pause:${id}">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 79.374997 79.374985">
-                      <path d="M13.23 0v79.375h18.52V0H13.23M47.625 0v79.375h18.52V0z"/>
-                    </svg>
-                  </a>
-                `;
-              }
-            } else if (mode === 'video') {
-              if (paused) {
-                return `\
-                  <a style="display: flex; flex-grow: 1; justify-content: center; align-items: center;" onclick="media:play:${id}">
-                    <div></div>
-                  </a>
-                `;
-              } else  {
-                return `\
-                  <a style="display: flex; flex-grow: 1; justify-content: center; align-items: center;" onclick="media:pause:${id}">
-                    <div></div>
-                  </a>
-                `;
-              }
-            } else {
-              return '';
-            }
-          })();
-          const barSrc = `\
-            <a style="display: flex; width: ${WIDTH}px; height: 100px; background-color: #FFF;" onclick="media:seek:${id}">
-              <svg xmlns="http://www.w3.org/2000/svg" width="1" height="16" viewBox="0 0 0.26458333 4.2333333" style="position: absolute; height: 100px; width: ${100 * (1 / 16)}px; margin-left: ${-(100 * (1 / 16) / 2)}px; left: ${value * 100}%;">
-                <path d="M0 0v4.233h.265V0H0" fill="#f44336"/>
-              </svg>
-              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 8.4666666 8.4666666" preserveAspectRatio="none" style="width: ${OPEN_WIDTH}px; height: 100px;">
-                <path d="M0 3.97v.528h8.467v-.53H0" fill="#ccc"/>
-              </svg>
-            </div>
-          `;
-
-          return `\
-            <div style="display: flex; height: ${OPEN_HEIGHT - HEIGHT}px; flex-direction: column;">
-              ${mainSrc}
-              ${barSrc}
-            </div>
-          `;
-        } else if (mode === 'model') {
-          return _getFramePreviewSrc();
-        } else {
-          return _getFramePreviewSrc('Unknown file type');
-        }
-      } else {
-        return '';
+        return `<div style="display: flex; width: 480px; height: 480px; flex-direction: column;">
+          ${mainSrc}
+          ${barSrc}
+        </div>`;
       }
     })();
 
-    return `\
-      <a style="display: flex; border-bottom: 1px solid #EEE; text-decoration: none;" onclick="file:file:${id}">
-        ${headerSrc}
-        ${bodySrc}
-      </a>
-    `;
-  };
-  const getFileDetailsSrc = ({id, name, mimeType}) => {
     return `<div style="display: flex; min-height: ${HEIGHT}px; padding: 30px; flex-direction: column; box-sizing: border-box;">
       <div style="display: flex; height: 80px; margin-bottom: 20px;">
         <a style="display: flex; width: 80px; height: 80px; margin-right: 20px; justify-content: center; align-items: center;" onclick="file:back">${chevronLeftImg}</a>
@@ -212,7 +154,7 @@ const makeRenderer = ({creatureUtils}) => {
           <p style="margin: 0; font-size: 20px; font-weight: 400; line-height: 1.4;">${mimeType}</p>
         </div>
       </div>
-      <div style="width: 480px; height: 480px;"></div>
+      ${previewSrc}
     </div>`;
   };
 
