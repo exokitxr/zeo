@@ -363,8 +363,8 @@ class FileEngine {
                 right: size,
                 top: 0,
                 bottom: size,
-                onclick: 'file:media',
               },
+              onclick: 'file:media',
             },
           ];
           const detailsPage = biolumi.makePage(null, {
@@ -380,6 +380,9 @@ class FileEngine {
           });
           detailsPage.mesh.position.copy(detailsMesh.position);
           detailsPage.mesh.visible = false;
+          detailsPage.setId = id => {
+            anchors[0].onclick = id ? ('file:media:' + id) : 'file:media';
+          };
           object.add(detailsPage.mesh);
           object.detailsPage = detailsPage;
           rend.addPage(detailsPage);
@@ -492,7 +495,7 @@ class FileEngine {
                 const itemSpec = npmState.tagSpecs.find(tagSpec => tagSpec.id === id);
                 npmState.file = itemSpec;
 
-                const {detailsMesh} = fileMesh;
+                const {detailsMesh, detailsPage} = fileMesh;
                 const {media} = itemSpec;
                 if (media && media.tagName === 'IMG') {
                   detailsMesh.material.map.image = media;
@@ -508,10 +511,10 @@ class FileEngine {
                   detailsMesh.material.map.image = blackImg;
                   detailsMesh.material.map.needsUpdate = true;
                 }
+                detailsPage.setId(id);
 
                 _updatePages()
                   .then(() => {
-                    const {detailsPage} = fileMesh;
                     if (media && (media.tagName === 'IMG' || media.tagName === 'AUDIO' || media.tagName === 'VIDEO')) {
                       detailsMesh.visible = true;
                       detailsPage.mesh.visible = true;
@@ -539,6 +542,21 @@ class FileEngine {
                       rend.updateMatrixWorld(fileMesh);
                     }
                   });
+
+                return true;
+              } else if (match = onclick.match(/^file:media:(.+)$/)) {
+                const id = match[1];
+
+                const itemSpec = npmState.tagSpecs.find(tagSpec => tagSpec.id === id);
+                const {media} = itemSpec;
+
+                if (media && (media.tagName === 'AUDIO' || media.tagName === 'VIDEO')) {
+                  if (media.paused) {
+                    media.play();
+                  } else {
+                    media.pause();
+                  }
+                }
 
                 return true;
               } else {

@@ -115,7 +115,7 @@ const makeRenderer = ({creatureUtils}) => {
           </div>
         </div>
         <!-- <div style="display: flex;">
-          <a style="display: flex; margin-bottom: auto; padding: 15px; text-decoration: none; justify-content: center; align-items: center;" onclick="tag:remove:${id}">
+          <a style="display: flex; margin-bottom: auto; padding: 15px; text-decoration: none; justify-content: center; align-items: center;" onclick="file:remove:${id}">
             <img src="${closeOutlineSrc}" width="30" height="30" />
           </a>
         </div> -->
