@@ -402,7 +402,7 @@ class Entity {
 
               world.removeTag(tagId);
 
-              npmState.tagSpecs = npmState.tagSpecs.filter(item => item.id !== tagId);
+              npmState.tagSpecs.splice(npmState.tagSpecs.findIndex(item => item.id !== tagId), 1);
               _setEntity(null);
 
               return true;
