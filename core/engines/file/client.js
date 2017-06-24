@@ -12,6 +12,7 @@ import {
   TAGS_WORLD_DEPTH,
 } from './lib/constants/file';
 import fileRender from './lib/render/file';
+import svgize from 'svgize';
 
 class FileEngine {
   constructor(archae) {
@@ -92,20 +93,84 @@ class FileEngine {
           return {position, rotation, scale};
         };
 
+        const updateCancels = [];
+        const _cancelNpm = () => {
+          if (updateCancels.length > 0) {
+            for (let i = 0; i < updateCancels.length; i++) {
+              const updateCancel = updateCancels[i];
+              updateCancel();
+            }
+            updateCancels.length = 0;
+          }
+        };
         const _updateNpm = () => {
+          _cancelNpm();
+
           const {inputText} = npmState;
 
           const itemSpecs = tags.getTagMeshes()
             .filter(({item}) =>
               item.type === 'file' &&
-              !(item.metadata && item.metadata.isStatic) &&
               item.name.indexOf(inputText) !== -1
             )
             .map(({item}) => {
-              const {name, mimeType, instancing, paused, value} = item;
+              const {id, name, mimeType, instancing, paused, value} = item;
               const mode = fs.getFileMode(mimeType);
-              return {name, mimeType, instancing, paused, value, mode};
+              const preview = null;
+
+              return {
+                id,
+                name,
+                mimeType,
+                instancing,
+                paused,
+                value,
+                mode,
+                preview,
+              };
             });
+
+          let pends = 0;
+          const pend = () => {
+            if (--pends === 0) {
+              _updatePages();
+
+              updateCancels.length = 0;
+            }
+          };
+          for (let i = 0; i < itemSpecs.length; i++) {
+            const itemSpec = itemSpecs[i];
+            const {mode} = itemSpec;
+
+            if (mode === 'image') {
+              (() => {
+                let live = true;
+                updateCancels.push(() => {
+                  live = false;
+                });
+
+                const {id, name} = itemSpec;
+                fs.makeFile('fs/' + id + name)
+                  .read({type: 'image'})
+                  .then(img => {
+                    if (live) {
+                      const imageData = _resizeImage(img, 50, 50);
+                      const svgString = svgize.imageDataToSvg(imageData, {
+                        style: 'width: 50px; height: 50px; margin: 10px;',
+                      });
+                      itemSpec.preview = svgString;
+
+                      pend();
+                    }
+                  })
+                  .catch(err => {
+                    console.warn(err);
+                  });
+
+                pends++;
+              })();
+            }
+          }
 
           npmState.loading = false;
           npmState.page = 0;
@@ -309,5 +374,14 @@ class FileEngine {
     this._cleanup();
   }
 }
+const _resizeImage = (img, width, height) => {
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(img, 0, 0, width, height);
+  const imageData = ctx.getImageData(0, 0, width, height);
+  return imageData;
+};
 
 module.exports = FileEngine;
