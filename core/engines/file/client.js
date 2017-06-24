@@ -211,6 +211,27 @@ class FileEngine {
                     if (live) {
                       itemSpec.media = video;
 
+                      const _update = () => {
+                        const {detailsMesh} = fileMesh;
+                        detailsMesh.material.map.needsUpdate = true;
+                      };
+                      let interval = null;
+                      video.addEventListener('play', () => {
+                        rend.on('update', _update);
+
+                        interval = setInterval(() => {
+                          npmState.value = video.currentTime / video.duration;
+
+                          _updatePages();
+                        }, 100);
+                      });
+                      video.addEventListener('pause', () => {
+                        rend.removeListener('update', _update);
+
+                        clearInterval(interval);
+                        interval = null;
+                      });
+
                       pend();
                     }
                   })
@@ -237,7 +258,7 @@ class FileEngine {
           tagSpecs: [],
           numTags: 0,
           file: null,
-          value: 0.1,
+          value: 0,
           page: 0,
         };
         const focusState = {
@@ -556,6 +577,20 @@ class FileEngine {
                   } else {
                     media.pause();
                   }
+                }
+
+                return true;
+              } else if (match = onclick.match(/^file:seek:(.+)$/)) {
+                const id = match[1];
+
+                const itemSpec = npmState.tagSpecs.find(tagSpec => tagSpec.id === id);
+                const {media} = itemSpec;
+
+                if (media && (media.tagName === 'AUDIO' || media.tagName === 'VIDEO')) {
+                  const {value} = hoverState;
+                  media.currentTime = value * media.duration;
+
+                  _updatePages();
                 }
 
                 return true;
