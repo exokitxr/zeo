@@ -158,7 +158,7 @@ class Tags {
                 if (entry) {
                   entry.refCount++;
 
-                  accept();
+                  accept(true);
 
                   unlock();
                 } else {
@@ -169,7 +169,7 @@ class Tags {
 
                       modules.set(name, entry);
 
-                      accept();
+                      accept(false);
 
                       unlock();
                     })
@@ -262,6 +262,33 @@ class Tags {
             _updateLine();
             _doCallback();
           };
+          const _entityValueChangedCallbacks = (componentApi, componentElement, entityElement, entityAttributes) => {
+            const {attributes: componentAttributes = {}} = componentApi;
+
+            for (const componentAttributeName in componentAttributes) {
+              const componentAttribute = componentAttributes[componentAttributeName];
+              const {type: attributeType} = componentAttribute;
+              const entityAttribute = entityAttributes[componentAttributeName] || {};
+              const {value: attributeValueJson} = entityAttribute;
+
+              if (attributeValueJson !== undefined) {
+                const oldValue = null;
+                const newValue = menuUtils.castValueToCallbackValue(attributeValueJson, attributeType);
+
+                componentElement.entityAttributeValueChangedCallback(entityElement, componentAttributeName, oldValue, newValue);
+
+                const {item} = entityElement;
+                const {id: entityId} = item;
+                tagsApi.emit('attributeValueChanged', {
+                  entityId: entityId,
+                  attributeName: componentAttributeName,
+                  type: attributeType,
+                  oldValue: oldValue,
+                  newValue: newValue,
+                });
+              }
+            }
+          };
           const _removeEntityCallback = (componentElement, entityElement) => {
             const _updateLine = () => {
               /* const {_lines: componentLines} = componentElement;
@@ -342,41 +369,17 @@ class Tags {
             }
 
             _addModule(module)
-              .then(() => {
-                if (element.getAttribute('module') === module) {
+              .then(existed => {
+                if (existed) {
                   const componentApis = tagComponentApis[module] || [];
                   const componentElements = tagComponentInstances[module] || [];
 
                   for (let i = 0; i < componentApis.length; i++) {
                     const componentApi = componentApis[i];
                     const componentElement = componentElements[i];
-                    const {attributes: componentAttributes = {}} = componentApi;
 
                     _addEntityCallback(componentElement, element);
-
-                    for (const componentAttributeName in componentAttributes) {
-                      const componentAttribute = componentAttributes[componentAttributeName];
-                      const {type: attributeType} = componentAttribute;
-                      const entityAttribute = entityAttributes[componentAttributeName] || {};
-                      const {value: attributeValueJson} = entityAttribute;
-
-                      if (attributeValueJson !== undefined) {
-                        const oldValue = null;
-                        const newValue = menuUtils.castValueToCallbackValue(attributeValueJson, attributeType);
-
-                        componentElement.entityAttributeValueChangedCallback(element, componentAttributeName, oldValue, newValue);
-
-                        const {item} = element;
-                        const {id: entityId} = item;
-                        tagsApi.emit('attributeValueChanged', {
-                          entityId: entityId,
-                          attributeName: componentAttributeName,
-                          type: attributeType,
-                          oldValue: oldValue,
-                          newValue: newValue,
-                        });
-                      }
-                    }
+                    _entityValueChangedCallbacks(componentApi, componentElement, element, entityAttributes);
                   }
                 }
               })
@@ -1882,22 +1885,49 @@ class Tags {
                 tagComponentInstances[name] = tagComponentInstanceInstances;
               }
               tagComponentInstanceInstances.push(componentElement);
+
+              const entityTags = tagMeshes.filter(({item}) => item.type === 'entity' && item.module === name);
+              for (let i = 0; i < entityTags.length; i++) {
+                const entityTag = entityTags[i];
+                const {item} = entityTag;
+                const {instance: entityElement} = item;
+
+                if (entityElement) {
+                  _addEntityCallback(componentElement, entityElement);
+
+                   const entityAttributes = _getElementJsonAttributes(entityElement);
+                  _entityValueChangedCallbacks(componentApi, componentElement, entityElement, entityAttributes);
+                }
+              }
             }
 
             unregisterEntity(pluginInstance, componentApiToRemove) {
               const name = archae.getPath(pluginInstance);
 
+              const componentElements = tagComponentInstances[name];
+              const componentElementIndex = componentElements.findIndex(componentElement => componentElement.componentApi === componentApiToRemove);
+              const componentElement = componentElements[componentElementIndex];
+
+              const entityTags = tagMeshes.filter(({item}) => item.type === 'entity' && item.module === name);
+              for (let i = 0; i < entityTags.length; i++) {
+                const entityTag = entityTags[i];
+                const {item} = entityTag;
+                const {instance: entityElement} = item;
+
+                if (entityElement) {
+                  _removeEntityCallback(componentElement, entityElement);
+                }
+              }
+
+              componentElements.splice(componentElementIndex, 1);
+              if (componentElements.length === 0) {
+                delete tagComponentInstances[name];
+              }
+
               const tagComponentApiComponents = tagComponentApis[name];
               tagComponentApiComponents.splice(tagComponentApiComponents.indexOf(componentApiToRemove), 1);
               if (tagComponentApiComponents.length === 0) {
                 delete tagComponentApis[name];
-              }
-
-              const tagComponentInstanceInstances = tagComponentInstances[name];
-              const tagComponentInstanceIndex = tagComponentInstanceInstances.findIndex(componentElement => componentElement.componentApi === componentApiToRemove);
-              tagComponentInstanceInstances.splice(tagComponentInstanceIndex, 1);
-              if (tagComponentInstanceInstances.length === 0) {
-                delete tagComponentInstances[name];
               }
             }
 
