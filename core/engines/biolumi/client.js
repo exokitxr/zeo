@@ -36,6 +36,7 @@ class Biolumi {
       };
     });
     const _requestTransparentImg = () => _requestImg(transparentImgUrl);
+    const _requestBlackImg = () => _requestImg(blackImgUrl);
     const _requestUiWorker = () => {
       class UiWorker {
         constructor({frameTime = DEFAULT_FRAME_TIME} = {}) {
@@ -140,6 +141,7 @@ class Biolumi {
         '/core/utils/geometry-utils',
       ]),
       _requestTransparentImg(),
+      _requestBlackImg(),
       _requestUiWorker(),
       _requestUiTimer(),
     ])
@@ -150,6 +152,7 @@ class Biolumi {
           geometryUtils,
         ],
         transparentImg,
+        blackImg,
         uiWorker,
         uiTimer,
       ]) => {
@@ -1111,6 +1114,7 @@ class Biolumi {
           const _getFontWeight = () => fontWeight;
           const _getFontStyle = () => fontStyle;
           const _getTransparentImg = () => transparentImg;
+          const _getBlackImg = () => blackImg;
 
           const transparentMaterial = new THREE.MeshBasicMaterial({
             opacity: 0,
@@ -1297,6 +1301,7 @@ class Biolumi {
             getFontWeight: _getFontWeight,
             getFontStyle: _getFontStyle,
             getTransparentImg: _getTransparentImg,
+            getBlackImg: _getBlackImg,
 
             getTransparentMaterial: _getTransparentMaterial,
 
@@ -1323,6 +1328,7 @@ const monospaceFonts = `Consolas, "Liberation Mono", Menlo, Courier, monospace`;
 const fontWeight = 300;
 const fontStyle = 'normal';
 const transparentImgUrl = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+const blackImgUrl = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="1" height="1" viewBox="0 0 1 1"><rect width="1" height="1" style="fill:#000"></rect></svg>';
 const rootCss = `margin: 0px; padding: 0px; height: 100%; width: 100%; font-family: ${fonts}; font-weight: ${fontWeight}; overflow: visible; user-select: none;`;
 
 const debounce = fn => {
