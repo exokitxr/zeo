@@ -273,7 +273,7 @@ class Tags {
 
               if (attributeValueJson !== undefined) {
                 const oldValue = null;
-                const newValue = menuUtils.castValueToCallbackValue(attributeValueJson, attributeType);
+                const newValue = attributeValueJson;
 
                 componentElement.entityAttributeValueChangedCallback(entityElement, componentAttributeName, oldValue, newValue);
 
@@ -490,8 +490,8 @@ class Tags {
 
                       if (componentAttribute !== undefined) {
                         const {type: attributeType} = componentAttribute;
-                        const oldAttributeValue = menuUtils.castValueToCallbackValue(oldValueJson, attributeType);
-                        const newAttributeValue = menuUtils.castValueToCallbackValue(newValueJson, attributeType);
+                        const oldAttributeValue = oldValueJson;
+                        const newAttributeValue = newValueJson;
 
                         componentElement.entityAttributeValueChangedCallback(entityElement, attributeName, oldAttributeValue, newAttributeValue);
 
