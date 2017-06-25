@@ -577,13 +577,39 @@ class FileEngine {
                 }
 
                 return true;
-              } else if (match = onclick.match(/^file:remove:(.+)$/)) {
+              } else if (match = onclick.match(/^file:loadEntities:(.+)$/)) {
                 const id = match[1];
 
-                world.removeTag(id);
+                const file = npmState.tagSpecs.find(tagSpec => tagSpec.id === id);
+                const {name} = file;
+                fs.makeFile('fs/' + id + name)
+                  .read({type: 'json'})
+                  .then(j => {
+                    const {entities} = j;
 
-                npmState.tagSpecs.splice(npmState.tagSpecs.findIndex(tagSpec => tagSpec.id === id), 1);
-                _setFile(null);
+                    rend.loadEntities(entities);
+                  })
+                  .catch(err => {
+                    console.warn(err);
+                  });
+
+                return true;
+              } else if (match = onclick.match(/^file:replaceWorld:(.+)$/)) {
+                const id = match[1];
+
+                const file = npmState.tagSpecs.find(tagSpec => tagSpec.id === id);
+                const {name} = file;
+                fs.makeFile('fs/' + id + name)
+                  .read({type: 'json'})
+                  .then(j => {
+                    const {entities} = j;
+
+                    rend.clearAllEntities();
+                    rend.loadEntities(entities);
+                  })
+                  .catch(err => {
+                    console.warn(err);
+                  });
 
                 return true;
               } else {

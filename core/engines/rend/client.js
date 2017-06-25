@@ -250,11 +250,11 @@ class Rend {
             const onclick = (anchor && anchor.onclick) || '';
 
             if (onclick === 'status:saveWorld') {
-              rendApi.emit('saveAllEntities');
+              rendApi.saveAllEntities();
 
               return true;
             } else if (onclick === 'status:clearWorld') {
-              rendApi.emit('clearAllEntities');
+              rendApi.clearAllEntities();
 
               return true;
             } else {
@@ -567,6 +567,18 @@ class Rend {
 
           updateMatrixWorld(object) {
             uiTracker.updateMatrixWorld(object);
+          }
+
+          loadEntities(itemSpecs) {
+            this.emit('loadEntities', itemSpecs);
+          }
+
+          saveAllEntities() {
+            this.emit('saveAllEntities');
+          }
+
+          clearAllEntities() {
+            this.emit('clearAllEntities');
           }
 
           getHoverState(side) {
