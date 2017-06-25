@@ -34,7 +34,7 @@ const makeRenderer = ({creatureUtils}) => {
           .slice(page * numTagsPerPage, (page + 1) * numTagsPerPage)
           .map(tagSpec => getModuleSrc(tagSpec))
           .join('\n')}
-        ${loading ? `<div style="display: flex; margin-bottom: 100px; font-size: 30px; align-items: center; justify-content: center; flex-grow: 1;">Loading...</div>` : ''}
+        ${loading ? `<div style="display: flex; margin-bottom: 100px; font-size: 30px; font-weight: 400; align-items: center; justify-content: center; flex-grow: 1;">Loading...</div>` : ''}
       </div>
     `;
     const rightSrc = (() => {
@@ -134,38 +134,38 @@ const makeRenderer = ({creatureUtils}) => {
         })}
         <div style="display: flex; margin-left: 10px; margin-right: auto; flex-direction: column; justify-content: center;">
           <div style="display: flex; margin-bottom: 10px; align-items: flex-end;">
-            <div style="margin-right: 15px; font-size: 28px; font-weight: 400; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">${displayName}</div>
-            <div style="font-size: 16px; font-weight: 400; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">${description}</div>
+            <div style="margin-right: 15px; font-size: 28px; font-weight: 400;">${displayName}</div>
+            ${!focus ?
+              `<a style="display: flex; width: 100px; height: 34px; padding: 0 10px; border: 2px solid #333; font-size: 20px; font-weight: 400; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="module:focusVersion:${id}">
+                <div style="text-overflow: ellipsis; margin-right: auto; overflow: hidden;">${version}</div>
+                <div style="display: flex; font-size: 16px; justify-content: center;">▼</div>
+              </a>`
+            :
+              `<div style="position: relative; width: 100px; height: 30px; margin-right: auto; z-index: 1;">
+                <div style="display: flex; flex-direction: column; background-color: #FFF;">
+                  ${versions.map((versionOption, i, a) => {
+                    const style = (() => {
+                      let result = '';
+                      if (i !== 0) {
+                        result += 'padding-top: 2px; border-top: 0;';
+                      }
+                      if (i !== (a.length - 1)) {
+                        result += 'padding-bottom: 2px; border-bottom: 0;';
+                      }
+                      if (versionOption === version) {
+                        result += 'background-color: #EEE;';
+                      }
+                      return result;
+                    })();
+                    return `<a style="display: flex; height: 30px; padding: 0 10px; border: 2px solid #333; ${style}; font-size: 16px; text-decoration: none; align-items: center; text-overflow: ellipsis; overflow: hidden; box-sizing: border-box;" onclick="module:setVersion:${id}:${versionOption}">
+                      ${versionOption}
+                    </a>`;
+                  }).join('\n')}
+                </div>
+              </div>`
+            }
           </div>
-          ${!focus ?
-            `<a style="display: flex; height: 30px; margin-right: auto; padding: 0 10px; border: 2px solid #333; font-size: 16px; font-weight: 400; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="module:focusVersion:${id}">
-              <div style="text-overflow: ellipsis; margin-right: 10px; overflow: hidden;">${version}</div>
-              <div style="display: flex; font-size: 13px; justify-content: center;">▼</div>
-            </a>`
-          :
-            `<div style="position: relative; height: 30px; margin-right: auto; z-index: 1;">
-              <div style="display: flex; flex-direction: column; background-color: #FFF;">
-                ${versions.map((versionOption, i, a) => {
-                  const style = (() => {
-                    let result = '';
-                    if (i !== 0) {
-                      result += 'padding-top: 2px; border-top: 0;';
-                    }
-                    if (i !== (a.length - 1)) {
-                      result += 'padding-bottom: 2px; border-bottom: 0;';
-                    }
-                    if (versionOption === version) {
-                      result += 'background-color: #EEE;';
-                    }
-                    return result;
-                  })();
-                  return `<a style="display: flex; height: 30px; padding: 0 10px; border: 2px solid #333; ${style}; font-size: 16px; text-decoration: none; align-items: center; text-overflow: ellipsis; overflow: hidden; box-sizing: border-box;" onclick="module:setVersion:${id}:${versionOption}">
-                    ${versionOption}
-                  </a>`;
-                }).join('\n')}
-              </div>
-            </div>`
-          }
+          <div style="width: 600px; font-size: 16px; font-weight: 400; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">${description}</div>
         </div>
         <a style="display: flex; padding: 5px 10px; border: 2px solid; font-size: 20px; font-weight: 400; text-decoration: none; white-space: nowrap;" onclick="module:add:${id}">Add entity</a>
       </div>
@@ -176,7 +176,7 @@ const makeRenderer = ({creatureUtils}) => {
           ${readme ?
             readme
           :
-            `<div style="display: flex; width: inherit; height: 300px; font-size: 30px; font-weight: 400; justify-content: center; align-items: center;">No readme</div>`
+            `<div style="display: flex; width: inherit; height: 100px; font-size: 30px; font-weight: 400; justify-content: center; align-items: center;">No readme</div>`
           }
         </div>
       `;
