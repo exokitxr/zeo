@@ -329,6 +329,52 @@ class Entity {
         };
         rend.on('entitychange', _entitychange);
 
+        const _saveEntities = entitySpecs => {
+          const id = _makeId();
+          const date = new Date();
+          const fileSpec = {
+            type: 'file',
+            id: id,
+            name: '/world-' + [
+               date.getFullYear(),
+               date.getMonth() + 1,
+               date.getDate(),
+               date.getHours(),
+               date.getMinutes(),
+            ].join('-') + '.jsw',
+            mimeType: 'application/json-world',
+          };
+          const data = JSON.stringify({
+            entities: entitySpecs,
+          });
+
+          fs.writeData(fileSpec.id, fileSpec.name, data)
+            .then(() => {
+              world.addTag(fileSpec);
+              const fileTagMesh = tags.getTagMeshes().find(tagMesh => tagMesh.item.id === id);
+              const {item: fileItem} = fileTagMesh;
+
+              file.addFile(fileItem);
+
+              rend.setTab('file');
+            })
+            .catch(err => {
+              console.warn(err);
+            });
+        };
+
+        const _saveAllEntities = () => {
+          const entitySpecs = tags.getTagMeshes()
+            .filter(({item}) => item.type === 'entity')
+            .map(({item}) => item);
+          _saveEntities(entitySpecs);
+        };
+        rend.on('saveAllEntities', _saveAllEntities);
+        const _clearAllEntities = () => {
+          console.log('clear all entities'); // XXX
+        };
+        rend.on('clearAllEntities', _clearAllEntities);
+
         const _trigger = e => {
           const {side} = e;
 
@@ -436,37 +482,7 @@ class Entity {
               return true;
             } else if (onclick === 'entity:saveEntities') {
               const entitySpecs = npmState.tagSpecs.filter(entitySpec => entitySpec.selected);
-              const id = _makeId();
-              const date = new Date();
-              const fileSpec = {
-                type: 'file',
-                id: id,
-                name: '/world-' + [
-                   date.getFullYear(),
-                   date.getMonth() + 1,
-                   date.getDate(),
-                   date.getHours(),
-                   date.getMinutes(),
-                ].join('-') + '.jsw',
-                mimeType: 'application/json-world',
-              };
-              const data = JSON.stringify({
-                entities: entitySpecs,
-              });
-
-              fs.writeData(fileSpec.id, fileSpec.name, data)
-                .then(() => {
-                  world.addTag(fileSpec);
-                  const fileTagMesh = tags.getTagMeshes().find(tagMesh => tagMesh.item.id === id);
-                  const {item: fileItem} = fileTagMesh;
-
-                  file.addFile(fileItem);
-
-                  rend.setTab('file');
-                })
-                .catch(err => {
-                  console.warn(err);
-                });
+              _saveEntities(entitySpecs);
 
               return true;
             } else {
@@ -674,6 +690,8 @@ class Entity {
         cleanups.push(() => {
           rend.removeListener('tabchange', _tabchange);
           rend.removeListener('entitychange', _entitychange);
+          rend.removeListener('saveAllEntities', _saveAllEntities);
+          rend.removeListener('clearAllEntities', _clearAllEntities);
           input.removeListener('trigger', _trigger);
         });
       }

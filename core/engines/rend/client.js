@@ -249,13 +249,14 @@ class Rend {
             const {anchor} = hoverState;
             const onclick = (anchor && anchor.onclick) || '';
 
-            if (onclick === 'status:backToHub') {
-              const initialToken = _getQueryVariable(bootstrap.getInitialUrl(), 't');
-              bootstrap.navigate('https://' + siteUrl + (initialToken ? ('?t=' + initialToken) : ''));
+            if (onclick === 'status:saveWorld') {
+              rendApi.emit('saveAllEntities');
 
-              return true; // can't happen
-            } else if (onclick === 'status:servers') {
-              rendApi.setTab('servers');
+              return true;
+            } else if (onclick === 'status:clearWorld') {
+              rendApi.emit('clearAllEntities');
+
+              return true;
             } else {
               return false;
             }
@@ -590,20 +591,6 @@ class Rend {
   }
 }
 
-const _getQueryVariable = (url, variable) => {
-  const match = url.match(/\?(.+)$/);
-  const query = match ? match[1] : '';
-  const vars = query.split('&');
-
-  for (let i = 0; i < vars.length; i++) {
-    const pair = vars[i].split('=');
-
-    if (decodeURIComponent(pair[0]) === variable) {
-      return decodeURIComponent(pair[1]);
-    }
-  }
-  return null;
-};
 const _copyToClipboard = s => {
   const mark = document.createElement('span');
   mark.textContent = s;
