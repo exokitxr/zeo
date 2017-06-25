@@ -370,10 +370,6 @@ class Entity {
           _saveEntities(entitySpecs);
         };
         rend.on('saveAllEntities', _saveAllEntities);
-        const _clearAllEntities = () => {
-          console.log('clear all entities'); // XXX
-        };
-        rend.on('clearAllEntities', _clearAllEntities);
 
         const _trigger = e => {
           const {side} = e;
@@ -691,7 +687,6 @@ class Entity {
           rend.removeListener('tabchange', _tabchange);
           rend.removeListener('entitychange', _entitychange);
           rend.removeListener('saveAllEntities', _saveAllEntities);
-          rend.removeListener('clearAllEntities', _clearAllEntities);
           input.removeListener('trigger', _trigger);
         });
       }
