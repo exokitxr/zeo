@@ -1059,8 +1059,37 @@ class World {
                   _updatePages();
 
                   return true;
+                } else if (onclick === 'module:focusVersion') {
+                  const keyboardFocusState =  keyboard.fakeFocus({
+                    type: 'version',
+                  });
+                  focusState.keyboardFocusState = keyboardFocusState;
+
+                  keyboardFocusState.on('blur', () => {
+                    focusState.keyboardFocusState = null;
+
+                    _updatePages();
+                  });
+
+                  _updatePages();
+
+                  return true;
+                } else if (match = onclick.match(/^module:setVersion:(.+?):(.+?)$/)) { // XXX load the version metadata here
+                  const id = match[1];
+                  const version = match[2];
+
+                  const moduleTagMesh = tags.getTagMeshes().find(tagMesh => tagMesh.item.type === 'module' && tagMesh.item.id === id);
+                  const {item: moduleItem} = moduleTagMesh;
+                  moduleItem.version = version;
+
+                  keyboard.tryBlur();
+
+                  _updatePages();
+
+                  return true;
                 } else if (match = onclick.match(/^module:add:(.+)$/)) {
                   const id = match[1];
+
                   const moduleTagMesh = tags.getTagMeshes().find(tagMesh => tagMesh.item.type === 'module' && tagMesh.item.id === id);
                   const {item: moduleItem} = moduleTagMesh;
                   const {name: module, displayName: moduleName} = moduleItem;
