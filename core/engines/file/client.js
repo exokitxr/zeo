@@ -466,69 +466,6 @@ class FileEngine {
         };
         rend.on('tabchange', _tabchange);
 
-        const _setFile = itemSpec => {
-          if (itemSpec) {
-            npmState.file = itemSpec;
-
-            const {detailsMesh, detailsPage} = fileMesh;
-            const {media} = itemSpec;
-            if (media && media.tagName === 'IMG') {
-              detailsMesh.material.map.image = media;
-              detailsMesh.material.map.needsUpdate = true;
-              detailsMesh.setAspectRatio(media.width / media.height);
-            } else if (media && media.tagName === 'AUDIO') {
-              detailsMesh.material.map.image = blackImg;
-              detailsMesh.material.map.needsUpdate = true;
-
-              npmState.value = media.currentTime / media.duration;
-            } else if (media && media.tagName === 'VIDEO') {
-              detailsMesh.material.map.image = media;
-              detailsMesh.material.map.needsUpdate = true;
-
-              npmState.value = media.currentTime / media.duration;
-            } else {
-              detailsMesh.material.map.image = blackImg;
-              detailsMesh.material.map.needsUpdate = true;
-            }
-            const {id} = itemSpec;
-            detailsPage.setId(id);
-
-            _updatePages()
-              .then(() => {
-                if (media && (media.tagName === 'IMG' || media.tagName === 'AUDIO' || media.tagName === 'VIDEO')) {
-                  detailsMesh.visible = true;
-                  detailsPage.mesh.visible = true;
-                } else {
-                  detailsMesh.visible = false;
-                  detailsPage.mesh.visible = false;
-                }
-
-                rend.updateMatrixWorld(fileMesh);
-              });
-          } else {
-          const {file: oldFile} = npmState;
-          npmState.file = null;
-
-          _updatePages()
-            .then(() => {
-              const {detailsMesh} = fileMesh;
-
-              if (detailsMesh.visible) {
-                detailsMesh.visible = false;
-
-                const {detailsPage} = fileMesh;
-                detailsPage.mesh.visible = false;
-                rend.updateMatrixWorld(fileMesh);
-
-                const {media} = oldFile;
-                if (media && (media.tagName === 'AUDIO' || media.tagName === 'VIDEO') && !media.paused) {
-                  media.pause();
-                }
-              }
-            });
-          }
-        };
-
         const _trigger = e => {
           const {side} = e;
 
@@ -657,6 +594,77 @@ class FileEngine {
           rend.removeListener('tabchange', _tabchange);
           input.removeListener('trigger', _trigger);
         });
+
+        const _addFile = itemSpec => {
+          npmState.tagSpecs.push(itemSpec);
+        };
+        const _setFile = itemSpec => {
+          if (itemSpec) {
+            npmState.file = itemSpec;
+
+            const {detailsMesh, detailsPage} = fileMesh;
+            const {media} = itemSpec;
+            if (media && media.tagName === 'IMG') {
+              detailsMesh.material.map.image = media;
+              detailsMesh.material.map.needsUpdate = true;
+              detailsMesh.setAspectRatio(media.width / media.height);
+            } else if (media && media.tagName === 'AUDIO') {
+              detailsMesh.material.map.image = blackImg;
+              detailsMesh.material.map.needsUpdate = true;
+
+              npmState.value = media.currentTime / media.duration;
+            } else if (media && media.tagName === 'VIDEO') {
+              detailsMesh.material.map.image = media;
+              detailsMesh.material.map.needsUpdate = true;
+
+              npmState.value = media.currentTime / media.duration;
+            } else {
+              detailsMesh.material.map.image = blackImg;
+              detailsMesh.material.map.needsUpdate = true;
+            }
+            const {id} = itemSpec;
+            detailsPage.setId(id);
+
+            _updatePages()
+              .then(() => {
+                if (media && (media.tagName === 'IMG' || media.tagName === 'AUDIO' || media.tagName === 'VIDEO')) {
+                  detailsMesh.visible = true;
+                  detailsPage.mesh.visible = true;
+                } else {
+                  detailsMesh.visible = false;
+                  detailsPage.mesh.visible = false;
+                }
+
+                rend.updateMatrixWorld(fileMesh);
+              });
+          } else {
+            const {file: oldFile} = npmState;
+            npmState.file = null;
+
+            _updatePages()
+              .then(() => {
+                const {detailsMesh} = fileMesh;
+
+                if (detailsMesh.visible) {
+                  detailsMesh.visible = false;
+
+                  const {detailsPage} = fileMesh;
+                  detailsPage.mesh.visible = false;
+                  rend.updateMatrixWorld(fileMesh);
+
+                  const {media} = oldFile;
+                  if (media && (media.tagName === 'AUDIO' || media.tagName === 'VIDEO') && !media.paused) {
+                    media.pause();
+                  }
+                }
+              });
+          }
+        };
+
+        return {
+          addFile: _addFile,
+          setFile: _setFile,
+        };
       }
     });
   }

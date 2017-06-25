@@ -78,8 +78,9 @@ class Entity {
         '/core/engines/biolumi',
         '/core/engines/rend',
         '/core/engines/tags',
-        '/core/engines/world',
         '/core/engines/fs',
+        '/core/engines/world',
+        '/core/engines/file',
         '/core/engines/keyboard',
         '/core/utils/type-utils',
         '/core/utils/creature-utils',
@@ -94,8 +95,9 @@ class Entity {
         biolumi,
         rend,
         tags,
-        world,
         fs,
+        world,
+        file,
         keyboard,
         typeUtils,
         creatureUtils,
@@ -434,8 +436,38 @@ class Entity {
               return true;
             } else if (onclick === 'entity:saveEntities') {
               const entitySpecs = npmState.tagSpecs.filter(entitySpec => entitySpec.selected);
+              const id = _makeId();
+              const date = new Date();
+              const fileSpec = {
+                type: 'file',
+                id: id,
+                name: '/world-' + [
+                   date.getFullYear(),
+                   date.getMonth() + 1,
+                   date.getDate(),
+                   date.getHours(),
+                   date.getMinutes(),
+                ].join('-') + '.jsw',
+                mimeType: 'application/json-world',
+              };
+              const data = JSON.stringify({
+                entities: entitySpecs,
+              });
 
-              console.log('save entities', entitySpecs); // XXX
+              fs.writeData(fileSpec.id, fileSpec.name, data)
+                .then(() => {
+                  world.addTag(fileSpec);
+                  const fileTagMesh = tags.getTagMeshes().find(tagMesh => tagMesh.item.id === id);
+                  const {item: fileItem} = fileTagMesh;
+
+                  file.addFile(fileItem);
+                  file.setFile(fileItem);
+
+                  rend.setTab('file');
+                })
+                .catch(err => {
+                  console.warn(err);
+                });
 
               return true;
             } else {
@@ -654,6 +686,7 @@ class Entity {
   }
 }
 
+const _makeId = () => Math.random().toString(36).substring(7);
 const _roundToDecimals = (value, decimals) => Number(Math.round(value+'e'+decimals)+'e-'+decimals);
 
 module.exports = Entity;
