@@ -25,7 +25,7 @@ const upImg = require('../img/up');
 const downImg = require('../img/down');
 const chevronLeftImg = require('../img/chevron-left');
 
-const numTagsPerPage = 4;
+const numTagsPerPage = 8;
 
 const makeRenderer = ({creatureUtils}) => {
   const getFilePageSrc = ({loading, inputText, inputValue, tagSpecs, numTags, file, value, page, focus}) => {

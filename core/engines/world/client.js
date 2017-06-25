@@ -218,7 +218,7 @@ class World {
           right: _makeTriggerState(),
         };
 
-        const _getInFrontOfCameraMatrix = () => {
+        /* const _getInFrontOfCameraMatrix = () => {
           const {hmd: hmdStatus} = webvr.getStatus();
           const {worldPosition: hmdPosition, worldRotation: hmdRotation, worldScale: hmdScale} = hmdStatus;
 
@@ -227,7 +227,7 @@ class World {
           const newScale = hmdScale;
 
           return newPosition.toArray().concat(newRotation.toArray()).concat(newScale.toArray());
-        };
+        }; */
 
         class ElementManager {
           constructor() {
@@ -556,14 +556,14 @@ class World {
           }
         };
         const _addTag = (itemSpec, {element = null} = {}) => {
-          const entityElement = _handleAddTag(localUserId, itemSpec, {element});
+          const newElement = _handleAddTag(localUserId, itemSpec, {element});
           _request('addTag', [localUserId, itemSpec], _warnError);
-          return entityElement;
+          return newElement;
         };
         const _removeTag = id => {
-          const entityElement = _handleRemoveTag(localUserId, id);
+          const newElement = _handleRemoveTag(localUserId, id);
           _request('removeTag', [localUserId, id], _warnError);
-          return entityElement;
+          return newElement;
         };
 
         const _handleAddTag = (userId, itemSpec, {element = null} = {}) => {
@@ -1312,7 +1312,6 @@ class World {
             id,
             name,
             mimeType,
-            matrix: _getInFrontOfCameraMatrix(),
           };
           _handleAddTag(localUserId, itemSpec);
 
