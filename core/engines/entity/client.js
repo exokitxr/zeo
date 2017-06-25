@@ -145,7 +145,7 @@ class Entity {
             attributeSpec.value = value;
           }
 
-          return {id, name, displayName, attributes: attributeSpecs, instancing, selected: false};
+          return {id, name, displayName, attributes: attributeSpecs, instancing};
         };
         const _updateNpm = () => {
           const {inputText} = npmState;
@@ -421,6 +421,21 @@ class Entity {
               }
 
               _updatePages();
+
+              return true;
+            } else if (onclick === 'entity:clearAll') {
+              for (let i = 0; i < npmState.tagSpecs.length; i++) {
+                const entitySpec = npmState.tagSpecs[i];
+                entitySpec.selected = false;
+              }
+
+              _updatePages();
+
+              return true;
+            } else if (onclick === 'entity:saveEntities') {
+              const entitySpecs = npmState.tagSpecs.filter(entitySpec => entitySpec.selected);
+
+              console.log('save entities', entitySpecs); // XXX
 
               return true;
             } else {
