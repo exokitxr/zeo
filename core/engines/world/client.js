@@ -908,9 +908,7 @@ class World {
             assetsMesh.update();
           };
           const _updateMatrixAttributes = () => {
-            return;
-
-            if (rend.isOpen() && matrixAttributes.length > 0) {
+            /* if (rend.isOpen() && matrixAttributes.length > 0) {
               const {gamepads} = webvr.getStatus();
               const _getControllerLine = gamepad => {
                 const {worldPosition: controllerPosition, worldRotation: controllerRotation} = gamepad;
@@ -944,7 +942,7 @@ class World {
                 const matrixAttribute = matrixAttributes[i];
                 matrixAttribute.setHovered(intersectedMatrixAttributes.includes(matrixAttribute));
               }
-            }
+            } */
           };
 
           _updateAssetsMesh();
