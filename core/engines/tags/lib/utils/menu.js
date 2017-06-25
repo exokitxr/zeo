@@ -5,34 +5,6 @@ const makeZeoComponentElement = baseObject => {
 
   const componentElement = document.createElement('z-component');
   componentElement.entityAddedCallback = function(entityElement) {
-    // per-entity properties
-    const {_bound: bound} = entityElement;
-    if (!bound) {
-      const entityApiState = {};
-      const boundComponents = [];
-
-      entityElement.getState = key => entityApiState[key];
-      entityElement.setState = (key, newValue) => {
-        const oldValue = (key in entityApiState) ? entityApiState[key] : null;
-
-        entityApiState[key] = newValue;
-
-        for (let i = 0; i < boundComponents.length; i++) {
-          const boundComponent = boundComponents[i];
-
-          boundComponent.entityStateChangedCallback(entityElement, key, oldValue, newValue);
-        }
-      };
-      entityElement.removeState = key => {
-        delete entityApiState[key];
-      };
-      entityElement.hasState = key => (key in entityApiState);
-      entityElement.boundComponents = boundComponents;
-      entityElement._bound = true;
-    }
-    const {boundComponents} = entityElement;
-    boundComponents.push(this);
-
     // per-component properties
     let entityApi = entityApis.get(entityElement);
     if (!entityApi) {
@@ -104,9 +76,6 @@ const makeZeoComponentElement = baseObject => {
     const entityApi = entityApis.get(entityElement);
     entityApis.delete(entityElement);
 
-    const {boundComponents} = entityElement;
-    boundComponents.splice(boundComponents.indexOf(this), 1);
-
     if (baseObject.entityRemovedCallback) {
       baseObject.entityRemovedCallback.call(this, entityApi);
     }
@@ -116,13 +85,6 @@ const makeZeoComponentElement = baseObject => {
 
     if (baseObject.entityAttributeValueChangedCallback) {
       baseObject.entityAttributeValueChangedCallback.call(this, entityApi, attribute, oldValue, newValue);
-    }
-  };
-  componentElement.entityStateChangedCallback = function(entityElement, key, oldValue, newValue) {
-    const entityApi = entityApis.get(entityElement);
-
-    if (baseObject.entityStateChangedCallback) {
-      baseObject.entityStateChangedCallback.call(this, entityApi, key, oldValue, newValue);
     }
   };
 
