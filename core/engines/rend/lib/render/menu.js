@@ -5,7 +5,7 @@ const {
 
 const makeRenderer = ({creatureUtils}) => {
 
-const getStatusSrc = ({status: {state, url, username, name, users}}) => {
+const getStatusSrc = ({status: {state, url, address, port, name, username, users}}) => {
   const allUsers = [username].concat(users).sort((a, b) => a.localeCompare(b));
   const stateColor = (() => {
     switch (state) {
@@ -33,12 +33,13 @@ const getStatusSrc = ({status: {state, url, username, name, users}}) => {
         `).join('\n')}
       </div>
       <div style="width: 400px;">
-        <h1 style="display: flex; margin: 20px 0; font-size: 40px; font-weight: 400; align-items: center;">
+        <h1 style="display: flex; margin-top: 20px; margin-bottom: 10px; font-size: 40px; font-weight: 400; align-items: center;">
           <div style="width: 20px; height: 20px; margin-right: 20px; background-color: ${stateColor}; border-radius: 100px;"></div>
           <span>${_capitalize(state)}</span>
         </h1>
-        <!-- <div style="margin-bottom: 10px; font-size: 20px; font-weight: 400;">Share this token to allow others to log in. Click to copy to clipboard.</div> -->
-        <a style="display: inline-block; margin-bottom: 20px; font-size: 30px; line-height: 1.6; font-weight: 400; color: #2196F3; text-decoration: none; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;" onclick="status:url">${url}</a>
+        ${state === 'firewalled' ? `<div style="margin-bottom: 10px; font-size: 24px; font-weight: 400;">Others might not be able to join. Make sure to open port <b>${port}</b> for address <b>${address}</b> on your router.</div>` : ''}
+        <a style="display: inline-block; margin-bottom: 10px; font-size: 30px; line-height: 1.6; font-weight: 400; color: #2196F3; text-decoration: none; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;" onclick="status:url">${url}</a>
+        <div style="margin-bottom: 20px; font-size: 24px; font-weight: 400;">Share this link. Click to copy.</div>
         <div style="display: flex;">
           <a style="margin-right: 20px; border: 2px solid; padding: 7px 20px; font-size: 24px; font-weight: 400; line-height: 1.4;" onclick="status:saveWorld">Save world</a>
           <a style="border: 2px solid; padding: 7px 20px; font-size: 24px; font-weight: 400; line-height: 1.4;" onclick="status:clearWorld">Clear world</a>
