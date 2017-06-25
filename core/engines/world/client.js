@@ -967,6 +967,10 @@ class World {
         };
         rend.on('tabchange', _tabchange);
 
+        const _loadEntities = itemSpecs => {
+          _addTags(itemSpecs);
+        };
+        rend.on('loadEntities', _loadEntities);
         const _clearAllEntities = () => {
           const entityItemIds = tags.getTagMeshes()
             .filter(({item}) => item.type === 'entity')
@@ -1582,6 +1586,7 @@ class World {
         cleanups.push(() => {
           rend.removeListener('update', _update);
           rend.removeListener('tabchange', _tabchange);
+          rend.removeListener('loadEntities', _loadEntities);
           rend.removeListener('clearAllEntities', _clearAllEntities);
 
           input.removeListener('trigger', _trigger);
