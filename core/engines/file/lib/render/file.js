@@ -144,8 +144,11 @@ const makeRenderer = ({creatureUtils}) => {
           ${barSrc}
         </div>`;
       } else if (mode === 'world') {
-        return `<div style="display: flex; width: 480px; margin: 20px; 0; flex-direction: column;">
+        return `<div style="display: flex; width: 480px; margin-top: 20px; flex-direction: column;">
           <h1 style="margin: 0; font-size: 30px; font-weight: 400; line-height: 1.4;">Entities (${preview ? preview.entities.length : 0})</h1>
+          ${preview ? `<ul>
+            ${preview.entities.map(entity => `<li style="font-size: 20px; font-weight: 400; line-height: 1.4;">${entity.name}</li>`).join('\n')}
+          </ul>` : ''}
         </div>`;
       } else {
         return '';
