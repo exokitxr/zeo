@@ -318,9 +318,9 @@ const makeRenderer = ({typeUtils, creatureUtils}) => {
                     if (i !== (a.length - 1)) {
                       result += 'padding-bottom: 2px; border-bottom: 0;';
                     }
-                    if (option === focusValue) {
+                    /* if (option === focusValue) {
                       result += 'background-color: #EEE;';
-                    }
+                    } */
                     return result;
                   })();
                   return `<a style="display: flex; height: 40px; padding: 0 5px; border: 2px solid #333; ${style}; font-size: 20px; font-weight: 400; text-decoration: none; align-items: center; text-overflow: ellipsis; overflow: hidden; box-sizing: border-box;" onclick="entityAttribute:${id}:${name}:set:${option}" onmousedown="entityAttribute:${id}:${name}:set:${option}">

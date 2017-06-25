@@ -136,12 +136,16 @@ const makeRenderer = ({creatureUtils}) => {
           <div style="display: flex; margin-bottom: 10px; align-items: flex-end;">
             <div style="margin-right: 15px; font-size: 28px; font-weight: 400;">${displayName}</div>
             ${!focus ?
-              `<a style="display: flex; width: 100px; height: 34px; padding: 0 10px; border: 2px solid #333; font-size: 20px; font-weight: 400; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="module:focusVersion:${id}">
-                <div style="text-overflow: ellipsis; margin-right: auto; overflow: hidden;">${version}</div>
-                <div style="display: flex; font-size: 16px; justify-content: center;">▼</div>
-              </a>`
+              `<div style="position: relative; width: 120px; height: 34px; margin-right: auto; z-index: 1;">
+                 <div style="display: flex; flex-direction: column; background-color: #FFF;">
+                   <a style="display: flex; height: 34px; padding: 0 10px; border: 2px solid #333; font-size: 20px; font-weight: 400; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="module:focusVersion">
+                    <div style="text-overflow: ellipsis; margin-right: auto; overflow: hidden;">${version}</div>
+                    <div style="display: flex; font-size: 16px; justify-content: center;">▼</div>
+                   </a>
+                 </div>
+               </div>`
             :
-              `<div style="position: relative; width: 100px; height: 30px; margin-right: auto; z-index: 1;">
+              `<div style="position: relative; width: 120px; height: 34px; margin-right: auto; z-index: 1;">
                 <div style="display: flex; flex-direction: column; background-color: #FFF;">
                   ${versions.map((versionOption, i, a) => {
                     const style = (() => {
@@ -152,12 +156,12 @@ const makeRenderer = ({creatureUtils}) => {
                       if (i !== (a.length - 1)) {
                         result += 'padding-bottom: 2px; border-bottom: 0;';
                       }
-                      if (versionOption === version) {
+                      /* if (versionOption === version) {
                         result += 'background-color: #EEE;';
-                      }
+                      } */
                       return result;
                     })();
-                    return `<a style="display: flex; height: 30px; padding: 0 10px; border: 2px solid #333; ${style}; font-size: 16px; text-decoration: none; align-items: center; text-overflow: ellipsis; overflow: hidden; box-sizing: border-box;" onclick="module:setVersion:${id}:${versionOption}">
+                    return `<a style="display: flex; height: 34px; padding: 0 10px; border: 2px solid #333; ${style}; font-size: 20px; font-weight: 400; text-decoration: none; align-items: center; text-overflow: ellipsis; overflow: hidden; box-sizing: border-box;" onclick="module:setVersion:${id}:${versionOption}">
                       ${versionOption}
                     </a>`;
                   }).join('\n')}
