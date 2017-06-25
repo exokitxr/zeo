@@ -35,27 +35,22 @@ const makeRenderer = ({typeUtils, creatureUtils}) => {
     `;
   };
   const getEntitiesSrc = ({loading, npmInputText, npmInputValue, attributeInputText, attributeInputValue, tagSpecs, numTags, page, focusSpec}) => {
-    const leftSrc = `\
-      <div style="display: flex; padding: 30px; font-size: 36px; line-height: 1.4; flex-grow: 1; flex-direction: column;">
-        <a style="position: relative; display: block; margin-bottom: 20px; border-bottom: 2px solid; text-decoration: none;" onclick="entity:focus">
-          ${(focusSpec && focusSpec.type === 'entity') ?
-            `<div style="position: absolute; width: 2px; top: 2px; bottom: 2px; left: ${npmInputValue}px; background-color: #000;"></div>`
-          : ''}
-          <div>${npmInputText}</div>
-          ${!npmInputText ? `<div>Search entities</div>` : ''}
-        </a>
-        ${loading ?
-          `<div style="display: flex; margin-bottom: 100px; font-size: 30px; font-weight: 400; flex-grow: 1; align-items: center; justify-content: center;">Loading...</div>`
-        :
-          `<div style="display: flex; flex-grow: 1; flex-direction: column;">
-            ${tagSpecs
-              .slice(page * numTagsPerPage, (page + 1) * numTagsPerPage)
-              .map(tagSpec => getEntitySrc(tagSpec, attributeInputText, attributeInputValue, focusSpec))
-              .join('\n')}
-          </div>`
-        }
-      </div>
-    `;
+    const headerSrc = `<div style="display: flex; height: 80px; font-size: 36px; line-height: 1.4; align-items: flex-start;">
+      <a style="position: relative; display: block; margin-right: 30px; margin-bottom: 30px; border-bottom: 2px solid; flex-grow: 1; text-decoration: none;" onclick="entity:focus">
+        ${(focusSpec && focusSpec.type === 'entity') ?
+          `<div style="position: absolute; width: 2px; top: 2px; bottom: 2px; left: ${npmInputValue}px; background-color: #000;"></div>`
+        : ''}
+        <div>${npmInputText}</div>
+        ${!npmInputText ? `<div>Search entities</div>` : ''}
+      </a>
+      <a style="padding: 10px 15px; border: 2px solid; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="entity:selectAll">Select all</a>
+    </div>`;
+    const leftSrc = `<div style="display: flex; flex-grow: 1; flex-direction: column;">
+      ${tagSpecs
+        .slice(page * numTagsPerPage, (page + 1) * numTagsPerPage)
+        .map(tagSpec => getEntitySrc(tagSpec, attributeInputText, attributeInputValue, focusSpec))
+        .join('\n')}
+    </div>`;
     const rightSrc = (() => {
       const showUp = page !== 0;
       const showDown = (() => {
@@ -64,12 +59,12 @@ const makeRenderer = ({typeUtils, creatureUtils}) => {
       })();
 
       return `\
-        <div style="display: flex; width: 250px; min-height: ${HEIGHT}px; padding-top: 20px; flex-direction: column; box-sizing: border-box;">
+        <div style="display: flex; width: 250px; height: ${HEIGHT - 80}px; padding-top: 20px; flex-direction: column; box-sizing: border-box;">
           <div style="width: 1px; height: 100px;"></div>
-          <a style="position: relative; display: flex; margin: 0 30px; margin-bottom: auto; border: 2px solid; border-radius: 5px; text-decoration: none; justify-content: center; align-items: center; ${showUp ? '' : 'visibility: hidden;'}" onclick="entity:up">
+          <a style="position: relative; display: flex; margin-left: 30px; margin-bottom: auto; border: 2px solid; border-radius: 5px; text-decoration: none; justify-content: center; align-items: center; ${showUp ? '' : 'visibility: hidden;'}" onclick="entity:up">
             ${upImg}
           </a>
-          <a style="position: relative; display: flex; margin: 0 30px; border: 2px solid; border-radius: 5px; text-decoration: none; justify-content: center; align-items: center; ${showDown ? '' : 'visibility: hidden;'}" onclick="entity:down">
+          <a style="position: relative; display: flex; margin-left: 30px; border: 2px solid; border-radius: 5px; text-decoration: none; justify-content: center; align-items: center; ${showDown ? '' : 'visibility: hidden;'}" onclick="entity:down">
             ${downImg}
           </a>
           <div style="width: 1px; height: 50px;"></div>
@@ -78,9 +73,20 @@ const makeRenderer = ({typeUtils, creatureUtils}) => {
     })();
 
     return `\
-      <div style="display: flex; min-height: ${HEIGHT}px;">
-        ${leftSrc}
-        ${rightSrc}
+      <div style="display: flex; width: ${WIDTH}px; min-height: ${HEIGHT}px; padding: 30px; box-sizing: border-box;">
+        ${loading ?
+          `<div style="display: flex; flex-grow: 1; flex-direction: column;">
+            <div style="display: flex; margin-bottom: 100px; font-size: 30px; font-weight: 400; flex-grow: 1; align-items: center; justify-content: center;">Loading...</div>
+          </div>`
+        :
+          `<div style="display: flex; flex-grow: 1; flex-direction: column;">
+            ${headerSrc}
+            <div style="display: flex; flex-grow: 1;">
+              ${leftSrc}
+              ${rightSrc}
+            </div>
+          </div>`
+        }
       </div>
     `;
   };
