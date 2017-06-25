@@ -145,8 +145,13 @@ const makeRenderer = ({creatureUtils}) => {
         </div>`;
       } else if (mode === 'world') {
         return `<div style="display: flex; width: 480px; margin-top: 20px; flex-direction: column;">
-          <h1 style="margin: 0; font-size: 30px; font-weight: 400; line-height: 1.4;">Entities (${preview ? preview.entities.length : 0})</h1>
-          ${preview ? `<ul>
+          <h1 style="margin: 0; margin-bottom: 10px; font-size: 30px; font-weight: 400; line-height: 1.4;">Actions</h1>
+          <div style="display: flex; margin-bottom: 10px;">
+            <a style="display: flex; margin-right: 20px; padding: 10px 20px; border: 2px solid; font-size: 20px; font-weight: 400; justify-content: center; align-items: center;" onclick="file:loadEntities:${id}">Load entities</a>
+            <a style="display: flex; margin-right: 20px; padding: 10px 20px; border: 2px solid; font-size: 20px; font-weight: 400; justify-content: center; align-items: center;" onclick="file:replaceWorld:${id}">Replace world</a>
+          </div>
+          <h1 style="margin: 0; margin-bottom: 10px; font-size: 30px; font-weight: 400; line-height: 1.4;">Entities (${preview ? preview.entities.length : 0})</h1>
+          ${preview ? `<ul style="margin: 0;">
             ${preview.entities.map(entity => `<li style="font-size: 20px; font-weight: 400; line-height: 1.4;">${entity.name}</li>`).join('\n')}
           </ul>` : ''}
         </div>`;
@@ -162,6 +167,9 @@ const makeRenderer = ({creatureUtils}) => {
           <h1 style="margin: 0; font-size: 30px; font-weight: 400; line-height: 1.4; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">${name}</h1>
           <p style="margin: 0; font-size: 20px; font-weight: 400; line-height: 1.4; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">${mimeType}</p>
         </div>
+        ${mode === 'world' ? `\
+          <a style="display: flex; margin-right: 20px; padding: 10px 20px; border: 2px solid; font-size: 20px; font-weight: 400; justify-content: center; align-items: center;" onclick="file:publish:${id}">Publish</a>
+        ` : ''}
         <a style="display: flex; padding: 10px 20px; border: 2px solid; font-size: 20px; font-weight: 400; justify-content: center; align-items: center;" onclick="file:remove:${id}">Delete</a>
       </div>
       ${previewSrc}
