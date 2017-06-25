@@ -88,23 +88,153 @@ class FileEngine {
         const zeroQuaternion = new THREE.Quaternion();
         const forwardVector = new THREE.Vector3(0, 0, -1);
 
-        const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
+        /* const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
         const _decomposeMatrix = matrix => {
           const position = new THREE.Vector3();
           const rotation = new THREE.Quaternion();
           const scale = new THREE.Vector3();
           matrix.decompose(position, rotation, scale);
           return {position, rotation, scale};
+        }; */
+
+        const _decorateFile = item => {
+          const {id, name, mimeType, instancing, paused, value} = item;
+          const mode = fs.getFileMode(mimeType);
+          const media = null;
+          const preview = null;
+
+          return {
+            id,
+            name,
+            mimeType,
+            instancing,
+            paused,
+            value,
+            mode,
+            media,
+            preview,
+          };
+        };
+        const _previewFile = file => {
+          const {mode} = file;
+
+          if (mode === 'image') {
+            const {id, name} = file;
+            const result = fs.makeFile('fs/' + id + name)
+              .read({type: 'image'})
+              .then(img => {
+                if (live) {
+                  const imageData = _resizeImage(img, 50, 50);
+                  const svgString = svgize.imageDataToSvg(imageData, {
+                    style: 'width: 50px; height: 50px; margin: 10px;',
+                  });
+                  file.media = img;
+                  file.preview = svgString;
+                }
+              });
+
+            let live = true;
+            result.cancel = () => {
+              live = false;
+            };
+
+            return result;
+          } else if (mode === 'audio') {
+            const {id, name} = file;
+            const result = fs.makeFile('fs/' + id + name)
+              .read({type: 'audio'})
+              .then(audio => {
+                if (live) {
+                  file.media = audio;
+
+                  let interval = null;
+                  audio.addEventListener('play', () => {
+                    interval = setInterval(() => {
+                      npmState.value = audio.currentTime / audio.duration;
+
+                      _updatePages();
+                    }, 100);
+                  });
+                  audio.addEventListener('pause', () => {
+                    clearInterval(interval);
+                    interval = null;
+                  });
+                }
+              });
+
+            let live = true;
+            result.cancel = () => {
+              live = false;
+            };
+
+            return result;
+          } else if (mode === 'video') {
+            const {id, name} = file;
+            const result = fs.makeFile('fs/' + id + name)
+              .read({type: 'video'})
+              .then(video => {
+                if (live) {
+                  file.media = video;
+
+                  const _update = () => {
+                    const {detailsMesh} = fileMesh;
+                    detailsMesh.material.map.needsUpdate = true;
+                  };
+                  let interval = null;
+                  video.addEventListener('play', () => {
+                    rend.on('update', _update);
+
+                    interval = setInterval(() => {
+                      npmState.value = video.currentTime / video.duration;
+
+                      _updatePages();
+                    }, 100);
+                  });
+                  video.addEventListener('pause', () => {
+                    rend.removeListener('update', _update);
+
+                    clearInterval(interval);
+                    interval = null;
+                  });
+                }
+              });
+
+            let live = true;
+            result.cancel = () => {
+              live = false;
+            };
+
+            return result;
+          } else if (mode === 'world') {
+            const {id, name} = file;
+            const result = fs.makeFile('fs/' + id + name)
+              .read({type: 'json'})
+              .then(world => {
+                if (live) {
+                  file.media = world;
+                  file.preview = world;
+                }
+              });
+
+            let live = true;
+            result.cancel = () => {
+              live = false;
+            };
+
+            return result;
+          } else {
+            return Promise.resolve();
+          }
         };
 
-        const updateCancels = [];
+        const updatePromises = [];
         const _cancelNpm = () => {
-          if (updateCancels.length > 0) {
-            for (let i = 0; i < updateCancels.length; i++) {
-              const updateCancel = updateCancels[i];
-              updateCancel();
+          if (updatePromises.length > 0) {
+            for (let i = 0; i < updatePromises.length; i++) {
+              const updatePromise = updatePromises[i];
+              updatePromise.cancel();
             }
-            updateCancels.length = 0;
+            updatePromises.length = 0;
           }
         };
         const _updateNpm = () => {
@@ -112,157 +242,37 @@ class FileEngine {
 
           const {inputText} = npmState;
 
-          const itemSpecs = tags.getTagMeshes()
+          const files = tags.getTagMeshes()
             .filter(({item}) =>
               item.type === 'file' &&
               item.name.indexOf(inputText) !== -1
             )
-            .map(({item}) => {
-              const {id, name, mimeType, instancing, paused, value} = item;
-              const mode = fs.getFileMode(mimeType);
-              const media = null;
-              const preview = null;
+            .map(({item}) => _decorateFile(item));
 
-              return {
-                id,
-                name,
-                mimeType,
-                instancing,
-                paused,
-                value,
-                mode,
-                media,
-                preview,
-              };
-            });
-
-          let pends = 0;
-          const pend = () => {
-            if (--pends === 0) {
-              _updatePages();
-
-              updateCancels.length = 0;
+          if (files.length > 0) {
+            for (let i = 0; i < files.length; i++) {
+              const file = files[i];
+              const promise = _previewFile(file);
+              updatePromises.push(promise);
             }
-          };
-          for (let i = 0; i < itemSpecs.length; i++) {
-            const itemSpec = itemSpecs[i];
-            const {mode} = itemSpec;
 
-            if (mode === 'image') {
-              (() => {
-                let live = true;
-                updateCancels.push(() => {
-                  live = false;
-                });
+            Promise.all(updatePromises)
+              .then(() => {
+                updatePromises.length = 0;
+                _updatePages();
+              })
+              .catch(err => {
+                console.warn(err);
 
-                const {id, name} = itemSpec;
-                fs.makeFile('fs/' + id + name)
-                  .read({type: 'image'})
-                  .then(img => {
-                    if (live) {
-                      const imageData = _resizeImage(img, 50, 50);
-                      const svgString = svgize.imageDataToSvg(imageData, {
-                        style: 'width: 50px; height: 50px; margin: 10px;',
-                      });
-                      itemSpec.media = img;
-                      itemSpec.preview = svgString;
-
-                      pend();
-                    }
-                  })
-                  .catch(err => {
-                    console.warn(err);
-                  });
-
-                pends++;
-              })();
-            } else if (mode === 'audio') {
-              (() => {
-                let live = true;
-                updateCancels.push(() => {
-                  live = false;
-                });
-
-                const {id, name} = itemSpec;
-                fs.makeFile('fs/' + id + name)
-                  .read({type: 'audio'})
-                  .then(audio => {
-                    if (live) {
-                      itemSpec.media = audio;
-
-                      let interval = null;
-                      audio.addEventListener('play', () => {
-                        interval = setInterval(() => {
-                          npmState.value = audio.currentTime / audio.duration;
-
-                          _updatePages();
-                        }, 100);
-                      });
-                      audio.addEventListener('pause', () => {
-                        clearInterval(interval);
-                        interval = null;
-                      });
-
-                      pend();
-                    }
-                  })
-                  .catch(err => {
-                    console.warn(err);
-                  });
-
-                pends++;
-              })();
-            } else if (mode === 'video') {
-              (() => {
-                let live = true;
-                updateCancels.push(() => {
-                  live = false;
-                });
-
-                const {id, name} = itemSpec;
-                fs.makeFile('fs/' + id + name)
-                  .read({type: 'video'})
-                  .then(video => {
-                    if (live) {
-                      itemSpec.media = video;
-
-                      const _update = () => {
-                        const {detailsMesh} = fileMesh;
-                        detailsMesh.material.map.needsUpdate = true;
-                      };
-                      let interval = null;
-                      video.addEventListener('play', () => {
-                        rend.on('update', _update);
-
-                        interval = setInterval(() => {
-                          npmState.value = video.currentTime / video.duration;
-
-                          _updatePages();
-                        }, 100);
-                      });
-                      video.addEventListener('pause', () => {
-                        rend.removeListener('update', _update);
-
-                        clearInterval(interval);
-                        interval = null;
-                      });
-
-                      pend();
-                    }
-                  })
-                  .catch(err => {
-                    console.warn(err);
-                  });
-
-                pends++;
-              })();
-            }
+                updatePromises.length = 0;
+                _updatePages();
+              });
           }
 
           npmState.loading = false;
           npmState.page = 0;
-          npmState.tagSpecs = itemSpecs;
-          npmState.numTags = itemSpecs.length;
+          npmState.tagSpecs = files;
+          npmState.numTags = files.length;
 
           npmState.loading = false;
         };
@@ -595,9 +605,6 @@ class FileEngine {
           input.removeListener('trigger', _trigger);
         });
 
-        const _addFile = itemSpec => {
-          npmState.tagSpecs.push(itemSpec);
-        };
         const _setFile = itemSpec => {
           if (itemSpec) {
             npmState.file = itemSpec;
@@ -660,10 +667,23 @@ class FileEngine {
               });
           }
         };
+        const _addFile = item => {
+          const fileItem = _decorateFile(item);
+          _previewFile(fileItem)
+            .then(() => {
+              _updatePages();
+            })
+            .catch(err => {
+              console.warn(err);
+
+              _updatePages();
+            });
+          npmState.tagSpecs.push(fileItem);
+          _setFile(fileItem);
+        };
 
         return {
           addFile: _addFile,
-          setFile: _setFile,
         };
       }
     });

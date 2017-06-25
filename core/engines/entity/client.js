@@ -461,7 +461,6 @@ class Entity {
                   const {item: fileItem} = fileTagMesh;
 
                   file.addFile(fileItem);
-                  file.setFile(fileItem);
 
                   rend.setTab('file');
                 })
