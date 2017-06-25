@@ -296,10 +296,14 @@ const makeRenderer = ({typeUtils, creatureUtils}) => {
 
         if (focusType !== 'input') {
           return `\
-            <a style="display: flex; height: 40px; margin: 5px 20px; padding: 5px; border: 2px solid #333; font-size: 20px; font-weight: 400; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="entityAttribute:${id}:${name}:focus" onmousedown="entityAttribute:${id}:${name}:focus">
-              <div style="text-overflow: ellipsis; flex-grow: 1; overflow: hidden;">${focusValue}</div>
-              <div style="display: flex; padding: 0 10px; font-size: 16px; justify-content: center;">▼</div>
-            </a>
+            <div style="position: relative; height: 40px; margin: 5px 20px; z-index: 1;">
+              <div style="display: flex; flex-direction: column; background-color: #FFF;">
+                <a style="display: flex; height: 40px; padding: 0 5px; border: 2px solid #333; font-size: 20px; font-weight: 400; text-decoration: none; align-items: center; text-overflow: ellipsis; overflow: hidden; box-sizing: border-box;" onclick="entityAttribute:${id}:${name}:focus" onmousedown="entityAttribute:${id}:${name}:focus">
+                  <div style="text-overflow: ellipsis; flex-grow: 1; overflow: hidden;">${focusValue}</div>
+                  <div style="display: flex; padding: 0 10px; font-size: 16px; justify-content: center;">▼</div>
+                </a>
+              </div>
+            </div>
           `;
         } else {
           return `\
@@ -319,7 +323,7 @@ const makeRenderer = ({typeUtils, creatureUtils}) => {
                     }
                     return result;
                   })();
-                  return `<a style="display: flex; height: 40px; padding: 5px; border: 2px solid #333; ${style}; font-size: 20px; font-weight: 400; text-decoration: none; align-items: center; text-overflow: ellipsis; overflow: hidden; box-sizing: border-box;" onclick="entityAttribute:${id}:${name}:set:${option}" onmousedown="entityAttribute:${id}:${name}:set:${option}">
+                  return `<a style="display: flex; height: 40px; padding: 0 5px; border: 2px solid #333; ${style}; font-size: 20px; font-weight: 400; text-decoration: none; align-items: center; text-overflow: ellipsis; overflow: hidden; box-sizing: border-box;" onclick="entityAttribute:${id}:${name}:set:${option}" onmousedown="entityAttribute:${id}:${name}:set:${option}">
                     ${option}
                   </a>`;
                 }).join('\n')}
