@@ -123,7 +123,7 @@ const makeRenderer = ({creatureUtils}) => {
     </a>`;
   };
   const getFileDetailsSrc = ({file, value}) => {
-    const {id, name, mimeType, mode} = file;
+    const {id, name, mimeType, mode, preview} = file;
 
     const previewSrc = (() => {
       if (mode === 'image') {
@@ -143,6 +143,12 @@ const makeRenderer = ({creatureUtils}) => {
           ${mainSrc}
           ${barSrc}
         </div>`;
+      } else if (mode === 'world') {
+        return `<div style="display: flex; width: 480px; margin: 20px; 0; flex-direction: column;">
+          <h1 style="margin: 0; font-size: 30px; font-weight: 400; line-height: 1.4;">Entities (${preview ? preview.entities.length : 0})</h1>
+        </div>`;
+      } else {
+        return '';
       }
     })();
 

@@ -354,6 +354,8 @@ class Fs {
                 return 'video';
               } else if (/^mime\/(?:json|obj|dae|fbx|gltf)$/.test(mimeType)) {
                 return 'model';
+              } else if (mimeType === 'application/json-world') {
+                return 'world';
               } else {
                 return null;
               }
