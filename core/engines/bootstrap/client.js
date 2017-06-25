@@ -17,31 +17,37 @@ class Bootstrap {
     const initialUrl = document.location.href;
     const initialPath = document.location.protocol + '//' + document.location.host + document.location.pathname;
 
-    const _requestStartTime = () => fetch('archae/bootstrap/start-time.json')
-      .then(res => res.json()
-        .then(({startTime}) => startTime)
-      );
-
-    return Promise.all([
-      archae.requestPlugins([
-        '/core/utils/js-utils',
-      ]),
-      _requestStartTime(),
+    return archae.requestPlugins([
+      '/core/utils/js-utils',
+      '/core/utils/network-utils',
     ])
       .then(([
-        [
-          jsUtils,
-        ],
-        startTime,
+        jsUtils,
+        networkUtils,
       ]) => {
         if (live) {
           const {events} = jsUtils;
           const {EventEmitter} = events;
+          const {AutoWs} = networkUtils;
+
+          let connectionState = null;
+          const connection = (() => {
+            const connection = new AutoWs(_relativeWsUrl('archae/bootstrapWs'));
+            connection.on('message', msg => {
+              const newConnectionState = JSON.parse(msg.data);
+
+              bootstrapApi.setConnectionState(newConnectionState);
+            });
+            return connection;
+          })();
+          this._cleanup = () => {
+            connection.destroy();
+          };
 
           let vrMode = null;
           class WorldTimer {
-            constructor(startTime = 0) {
-              this.startTime = startTime;
+            constructor() {
+              this.startTime = Date.now();
             }
 
             getWorldTime() {
@@ -51,7 +57,7 @@ class Bootstrap {
               return worldTime;
             }
           }
-          const worldTimer = new WorldTimer(startTime);
+          const worldTimer = new WorldTimer();
 
           let address = null;
           const _resJson = res => {
@@ -84,6 +90,16 @@ class Bootstrap {
 
             getInitialPath() {
               return initialPath;
+            }
+
+            getConnectionState() {
+              return connectionState;
+            }
+
+            setConnectionState(newConnectionState) {
+              connectionState = newConnectionState;
+
+              this.emit('connectionStateChange', connectionState);
             }
 
             getVrMode() {
@@ -131,6 +147,10 @@ class Bootstrap {
   }
 }
 
+const _relativeWsUrl = s => {
+  const l = window.location;
+  return ((l.protocol === 'https:') ? 'wss://' : 'ws://') + l.host + l.pathname + (!/\/$/.test(l.pathname) ? '/' : '') + s;
+};
 const _getQueryVariable = (url, variable) => {
   const match = url.match(/\?(.+)$/);
   const query = match ? match[1] : '';

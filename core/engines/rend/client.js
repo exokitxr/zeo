@@ -97,17 +97,18 @@ class Rend {
           controllerMeshes: null,
         };
 
+        const statusState = {
+          state: 'connecting',
+          url: '',
+          name: '',
+          username: '',
+          users: [],
+        };
         const menuState = {
           open: true,
           position: [0, DEFAULT_USER_HEIGHT, -1.5],
           rotation: new THREE.Quaternion().toArray(),
           scale: new THREE.Vector3(1, 1, 1).toArray(),
-        };
-        const statusState = {
-          url: bootstrap.getInitialPath(), // XXX make this use the external IP
-          name: '',
-          username: names[Math.floor(Math.random() * names.length)],
-          users: [],
         };
         const navbarState = {
           tab: 'status',
@@ -224,6 +225,24 @@ class Rend {
 
         uiTracker.reindex();
         uiTracker.updateMatrixWorld(menuMesh);
+
+        const _setConnectionState = connectionState => {
+          const {state, protocol, address, port} = connectionState;
+          const url = protocol + '://' + address + ':' + port;
+
+          statusState.state = state;
+          statusState.url = url;
+        };
+        const _connectionStateChange = connectionState => {
+          _setConnectionState(connectionState);
+
+          _updatePages();
+        };
+        bootstrap.on('connectionStateChange', _connectionStateChange);
+        const connectionState = bootstrap.getConnectionState();
+        if (connectionState) {
+          _setConnectionState(connectionState);
+        }
 
         const trigger = e => {
           const {side} = e;
@@ -363,6 +382,8 @@ class Rend {
             scene.remove(dotMeshes[side]);
             scene.remove(boxMeshes[side]);
           });
+
+          broadcast.removeListener('connectionStateChange', _connectionStateChange);
 
           input.removeListener('trigger', trigger);
           input.removeListener('click', click);
