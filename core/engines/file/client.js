@@ -587,6 +587,11 @@ class FileEngine {
                   .then(j => {
                     const {entities} = j;
 
+                    for (let i = 0; i < entities.length; i++) { // need to do this so new entities do not conflict with current ones
+                      const entity = entities[i];
+                      entity.id = _makeId();
+                    }
+
                     rend.loadEntities(entities);
                   })
                   .catch(err => {
@@ -603,6 +608,11 @@ class FileEngine {
                   .read({type: 'json'})
                   .then(j => {
                     const {entities} = j;
+
+                    for (let i = 0; i < entities.length; i++) { // need to do this so new entities do not conflict with current ones
+                      const entity = entities[i];
+                      entity.id = _makeId();
+                    }
 
                     rend.clearAllEntities();
                     rend.loadEntities(entities);
@@ -719,6 +729,7 @@ class FileEngine {
     this._cleanup();
   }
 }
+const _makeId = () => Math.random().toString(36).substring(7);
 const _resizeImage = (img, width, height) => {
   const canvas = document.createElement('canvas');
   canvas.width = width;
