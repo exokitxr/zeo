@@ -371,6 +371,9 @@ class Tags {
               });
             }
 
+            const {item} = element;
+            item.instancing = true;
+
             _addModule(module)
               .then(existed => {
                 if (existed) {
@@ -385,6 +388,8 @@ class Tags {
                     _entityValueChangedCallbacks(componentApi, componentElement, element, entityAttributes);
                   }
                 }
+
+                item.instancing = false;
               })
               .catch(err => {
                 console.warn(err);
@@ -1917,7 +1922,7 @@ class Tags {
               const componentElementIndex = componentElements.findIndex(componentElement => componentElement.componentApi === componentApiToRemove);
               const componentElement = componentElements[componentElementIndex];
 
-              const entityTags = tagMeshes.filter(({item}) => item.type === 'entity' && item.module === name);
+              const entityTags = tagMeshes.filter(({item}) => item.type === 'entity' && item.module === name && !item.instancing);
               for (let i = 0; i < entityTags.length; i++) {
                 const entityTag = entityTags[i];
                 const {item} = entityTag;
