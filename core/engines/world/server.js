@@ -150,6 +150,26 @@ class World {
                     _saveTags();
 
                     cb();
+                  } else if (method === 'addTags') {
+                    const [userId, itemSpecs] = args;
+
+                    cb = (cb => err => {
+                      if (!err) {
+                        _broadcast('addTags', [userId, itemSpecs]);
+                      }
+
+                      cb(err);
+                    })(cb);
+
+                    for (let i = 0; i < itemSpecs.length; i++) {
+                      const itemSpec = itemSpecs[i];
+                      const {id} = itemSpec;
+                      tagsJson.tags[id] = itemSpec;
+                    }
+
+                    _saveTags();
+
+                    cb();
                   } else if (method === 'removeTag') {
                     const [userId, id] = args;
 
@@ -162,6 +182,25 @@ class World {
                     })(cb);
 
                     delete tagsJson.tags[id];
+
+                    _saveTags();
+
+                    cb();
+                  } else if (method === 'removeTags') {
+                    const [userId, ids] = args;
+
+                    cb = (cb => err => {
+                      if (!err) {
+                        _broadcast('removeTags', [userId, ids]);
+                      }
+
+                      cb(err);
+                    })(cb);
+
+                    for (let i = 0; i < ids.length; i++) {
+                      const id = ids[i];
+                      delete tagsJson.tags[id];
+                    }
 
                     _saveTags();
 

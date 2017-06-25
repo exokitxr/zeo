@@ -560,10 +560,18 @@ class World {
           _request('addTag', [localUserId, itemSpec], _warnError);
           return newElement;
         };
+        const _addTags = (itemSpecs) => {
+          _handleAddTags(localUserId, itemSpecs);
+          _request('addTags', [localUserId, itemSpecs], _warnError);
+        };
         const _removeTag = id => {
           const newElement = _handleRemoveTag(localUserId, id);
           _request('removeTag', [localUserId, id], _warnError);
           return newElement;
+        };
+        const _removeTags = ids => {
+          _handleRemoveTags(localUserId, ids);
+          _request('removeTags', [localUserId, ids], _warnError);
         };
 
         const _handleAddTag = (userId, itemSpec, {element = null} = {}) => {
@@ -673,6 +681,12 @@ class World {
 
           return result;
         };
+        const _handleAddTags = (userId, itemSpecs) => {
+          for (let i = 0; i < itemSpecs.length; i++) {
+            const itemSpec = itemSpecs[i];
+            _handleAddTag(userId, itemSpec);
+          }
+        };
         const _handleRemoveTag = (userId, id) => {
           const tagMesh = elementManager.getTagMesh(id);
           const {item} = tagMesh;
@@ -689,6 +703,12 @@ class World {
           tags.destroyTag(tagMesh);
 
           return result;
+        };
+        const _handleRemoveTags = (userId, ids) => {
+          for (let i = 0; i < ids.length; i++) {
+            const id = ids[i];
+            _handleRemoveTag(userId, id);
+          }
         };
         const _handleSetTagAttribute = (userId, id, {name, value}) => {
           // same for local and remote user ids
@@ -946,6 +966,14 @@ class World {
           }
         };
         rend.on('tabchange', _tabchange);
+
+        const _clearAllEntities = () => {
+          const entityItemIds = tags.getTagMeshes()
+            .filter(({item}) => item.type === 'entity')
+            .map(({item: {id}}) => id);
+          _removeTags(entityItemIds);
+        };
+        rend.on('clearAllEntities', _clearAllEntities);
 
         const _trigger = e => {
           const {side} = e;
@@ -1463,10 +1491,18 @@ class World {
                 const {args: [userId, itemSpec]} = m;
 
                 _handleAddTag(userId, itemSpec);
+              } else if (type === 'addTags') {
+                const {args: [userId, itemSpecs]} = m;
+
+                _handleAddTags(userId, itemSpecs);
               } else if (type === 'removeTag') {
                 const {args: [userId, id]} = m;
 
                 _handleRemoveTag(userId, id);
+              } else if (type === 'removeTags') {
+                const {args: [userId, ids]} = m;
+
+                _handleRemoveTags(userId, ids);
               } else if (type === 'setTagAttribute') {
                 const {args: [userId, id, {name, value}]} = m;
 
@@ -1546,6 +1582,7 @@ class World {
         cleanups.push(() => {
           rend.removeListener('update', _update);
           rend.removeListener('tabchange', _tabchange);
+          rend.removeListener('clearAllEntities', _clearAllEntities);
 
           input.removeListener('trigger', _trigger);
 
@@ -1580,8 +1617,16 @@ class World {
             _addTag(itemSpec);
           }
 
+          addTags(itemSpecs) {
+            _addTags(itemSpecs);
+          }
+
           removeTag(id) {
             _removeTag(id);
+          }
+
+          removeTags(ids) {
+            _removeTags(ids);
           }
 
           makeFile({ext = 'txt'} = {}) {
