@@ -134,7 +134,7 @@ class Entity {
         }; */
 
         const _decorateEntity = entity => {
-          const {id, name, displayName, module, attributes, instancing, metadata} = entity;
+          const {id, name, displayName, module, attributes, instancing} = entity;
 
           const attributeSpecs = tags.getAttributeSpecs(module);
           for (const attributeName in attributes) {
@@ -145,7 +145,7 @@ class Entity {
             attributeSpec.value = value;
           }
 
-          return {id, name, displayName, attributes: attributeSpecs, instancing, metadata};
+          return {id, name, displayName, attributes: attributeSpecs, instancing, selected: false};
         };
         const _updateNpm = () => {
           const {inputText} = npmState;
@@ -153,7 +153,6 @@ class Entity {
           const itemSpecs = tags.getTagMeshes()
             .filter(({item}) =>
               item.type === 'entity' &&
-              !(item.metadata && item.metadata.isStatic) &&
               item.displayName.indexOf(inputText) !== -1
             )
             .map(({item}) => item);
@@ -404,6 +403,24 @@ class Entity {
 
               npmState.tagSpecs.splice(npmState.tagSpecs.findIndex(item => item.id === tagId), 1);
               _setEntity(null);
+
+              return true;
+            } else if (match = onclick.match(/^entity:select:(.+)$/)) {
+              const tagId = match[1];
+
+              const entitySpec = npmState.tagSpecs.find(item => item.id === tagId);
+              entitySpec.selected = !entitySpec.selected;
+
+              _updatePages();
+
+              return true;
+            } else if (onclick === 'entity:selectAll') {
+              for (let i = 0; i < npmState.tagSpecs.length; i++) {
+                const entitySpec = npmState.tagSpecs[i];
+                entitySpec.selected = true;
+              }
+
+              _updatePages();
 
               return true;
             } else {

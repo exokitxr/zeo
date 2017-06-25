@@ -90,18 +90,18 @@ const makeRenderer = ({typeUtils, creatureUtils}) => {
     `;
   };
   const getEntitySrc = item => {
-    const {id, name, displayName, attributes, instancing, metadata: {isStatic}} = item;
+    const {id, name, displayName, attributes, instancing, selected} = item;
 
     return `\
-      <div style="display: flex; height: 70px;">
-        <a style="display: flex; justify-content: center; align-items: center;" onclick="entity:check">
+      <div style="display: flex; height: 80px;">
+        <a style="display: flex; justify-content: center; align-items: center;" onclick="entity:select:${id}">
           <div style="display: flex; border: 2px solid; width: 25px; height: 25px; margin: 20px; padding: 3px; box-sizing: border-box; text-decoration: none;">
-            <div style="background-color: #000; flex-grow: 1;"></div>
+            ${selected ? `<div style="background-color: #000; flex-grow: 1;"></div>` : ''}
           </div>
         </a>
         <a style="display: block; border-bottom: 1px solid #EEE; flex-grow: 1; text-decoration: none;" onclick="entity:entity:${id}">
           <div style="position: relative; display: flex; padding: 10px 0; flex-direction: column; text-decoration: none; overflow: hidden; box-sizing: border-box;">
-            <div style="display: flex; height: 50px; align-items: center;">
+            <div style="display: flex; height: 60px; align-items: center;">
               <div style="display: flex; flex-grow: 1;">
                 ${creatureUtils.makeSvgCreature('entity:' + name, {
                   width: 12,
@@ -118,7 +118,7 @@ const makeRenderer = ({typeUtils, creatureUtils}) => {
     `;
   };
   const getEntityDetailsSrc = ({entity, inputText, inputValue, page, focusSpec}) => {
-    const {id, name, displayName, attributes, instancing, metadata: {isStatic}} = entity;
+    const {id, name, displayName, attributes, instancing} = entity;
 
     const leftSrc = `\
       <div style="position: relative; width: 600px; top: ${-page * (HEIGHT - 100)}px; margin-right: auto; padding: 30px; box-sizing: border-box;">
