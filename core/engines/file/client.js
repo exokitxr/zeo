@@ -577,6 +577,15 @@ class FileEngine {
                 }
 
                 return true;
+              } else if (match = onclick.match(/^file:remove:(.+)$/)) {
+                const id = match[1];
+
+                world.removeTag(id);
+
+                npmState.tagSpecs.splice(npmState.tagSpecs.findIndex(tagSpec => tagSpec.id === id), 1);
+                _setFile(null);
+
+                return true;
               } else if (match = onclick.match(/^file:loadEntities:(.+)$/)) {
                 const id = match[1];
 
