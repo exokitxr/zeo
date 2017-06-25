@@ -35,6 +35,17 @@ const makeRenderer = ({typeUtils, creatureUtils}) => {
     `;
   };
   const getEntitiesSrc = ({loading, npmInputText, npmInputValue, attributeInputText, attributeInputValue, tagSpecs, numTags, page, focusSpec}) => {
+    const numSelected = (() => {
+      let result = 0;
+      for (let i = 0; i < tagSpecs.length; i++) {
+        const entitySpec = tagSpecs[i];
+        if (entitySpec.selected) {
+          result++;
+        }
+      }
+      return result;
+    })();
+
     const headerSrc = `<div style="display: flex; height: 80px; font-size: 36px; line-height: 1.4; align-items: flex-start;">
       <a style="position: relative; display: block; margin-right: 30px; margin-bottom: 30px; border-bottom: 2px solid; flex-grow: 1; text-decoration: none;" onclick="entity:focus">
         ${(focusSpec && focusSpec.type === 'entity') ?
@@ -43,7 +54,15 @@ const makeRenderer = ({typeUtils, creatureUtils}) => {
         <div>${npmInputText}</div>
         ${!npmInputText ? `<div>Search entities</div>` : ''}
       </a>
-      <a style="padding: 10px 15px; border: 2px solid; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="entity:selectAll">Select all</a>
+      <div style="display: flex; height: 44px; margin: 0 20px; font-size: 24px; font-weight: 400; align-items: center;">(${numSelected})</div>
+      ${numSelected === 0 ?
+        `<a style="padding: 10px 15px; border: 2px solid; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="entity:selectAll">Select all</a>`
+      :
+        `<div style="display: flex;">
+          <a style="margin-right: 20px; padding: 10px 15px; border: 2px solid; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="entity:saveEntities">Save entities</a>
+          <a style="padding: 10px 15px; border: 2px solid; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="entity:clearAll">Clear all</a>
+        </div>`
+      }
     </div>`;
     const leftSrc = `<div style="display: flex; flex-grow: 1; flex-direction: column;">
       ${tagSpecs
