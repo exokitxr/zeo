@@ -133,9 +133,9 @@ const makeRenderer = ({creatureUtils}) => {
           style: 'width: 80px; height: 80px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;',
         })}
         <div style="display: flex; margin-left: 10px; margin-right: auto; flex-direction: column; justify-content: center;">
-          <div style="display: flex; margin-bottom: 10px; align-items: flex-end; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-            <div style="margin-right: 15px; font-size: 28px; font-weight: 400;">${displayName}</div>
-            <div style="font-size: 16px; font-weight: 400;">${description}</div>
+          <div style="display: flex; margin-bottom: 10px; align-items: flex-end;">
+            <div style="margin-right: 15px; font-size: 28px; font-weight: 400; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">${displayName}</div>
+            <div style="font-size: 16px; font-weight: 400; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">${description}</div>
           </div>
           ${!focus ?
             `<a style="display: flex; height: 30px; margin-right: auto; padding: 0 10px; border: 2px solid #333; font-size: 16px; font-weight: 400; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="module:focusVersion:${id}">
@@ -167,7 +167,7 @@ const makeRenderer = ({creatureUtils}) => {
             </div>`
           }
         </div>
-        <a style="display: flex; padding: 5px 10px; border: 2px solid; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="module:add:${id}">Add entity</a>
+        <a style="display: flex; padding: 5px 10px; border: 2px solid; font-size: 20px; font-weight: 400; text-decoration: none; white-space: nowrap;" onclick="module:add:${id}">Add entity</a>
       </div>
     `;
     const bodySrc = (() => {
@@ -176,7 +176,7 @@ const makeRenderer = ({creatureUtils}) => {
           ${readme ?
             readme
           :
-            `<div style="padding: 15px; background-color: #EEE; border-radius: 5px; font-weight: 400;">No readme</div>`
+            `<div style="display: flex; width: inherit; height: 300px; font-size: 30px; font-weight: 400; justify-content: center; align-items: center;">No readme</div>`
           }
         </div>
       `;
