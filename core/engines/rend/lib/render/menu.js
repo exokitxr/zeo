@@ -5,56 +5,36 @@ const {
 
 const makeRenderer = ({creatureUtils}) => {
 
-const getStatusSrc = ({status: {url, username, name, users, authToken}}) => {
+const getStatusSrc = ({status: {url, username, name, users}}) => {
   const allUsers = [username].concat(users).sort((a, b) => a.localeCompare(b));
 
   return `\
     <div style="display: flex; padding: 0 30px;">
       <div style="margin-right: auto;">
-        <h1 style="margin: 15px 0; font-size: 40px; font-weight: 400;">My profile</h1>
-        <div style="display: flex; font-size: 30px; line-height: 1; justify-content: center; align-items: center;">
-          <div style="display: inline-flex; margin-right: auto; justify-content: center; align-items: center;">
-            ${creatureUtils.makeSvgCreature('user:' + username, {
-              width: 12,
-              height: 12,
-              viewBox: '0 0 12 12',
-              style: 'width: 40px; height: 40px; margin: 10px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;',
+        <h1 style="margin: 20px 0; font-size: 40px; font-weight: 400;">${name} (${allUsers.length})</h1>
+        ${allUsers.map(user => `\
+          <div style="display: flex; margin-bottom: 5px; font-size: 30px; font-weight: 400; line-height: 1; align-items: center;">
+            ${creatureUtils.makeSvgCreature('user:' + user, {
+              style: 'width: 40px; height: 40px; margin: 10px; margin-right: 20px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;',
             })}
-            <span>${username}</span>
+            <div>${user}</div>
+            ${user === username ? `<div style="width: 15px; height: 15px; margin-left: 20px; background-color: #CCC; border-radius: 100px;"></div>` : ''}
           </div>
-        </div>
-        <h1 style="margin: 15px 0; font-size: 40px; font-weight: 400;">Server status</h1>
-        <div style="display: flex; justify-content: center; align-items: center;">
-          <div style="display: flex; position: relative; margin-left: -30px; margin-right: auto; padding: 10px 30px; background-color: #000; font-size: 30px; font-weight: 400; color: #FFF; justify-content: center; align-items: center;">
-            ${creatureUtils.makeSvgCreature('server:' + name, {
-              width: 12,
-              height: 12,
-              viewBox: '0 0 12 12',
-              style: 'width: 40px; height: 40px; margin-right: 20px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;',
-            })}
-            <span style="margin-right: auto;">${name}</span>
-          </div>
-        </div>
-        <h1 style="margin: 15px 0; font-size: 40px; font-weight: 400;">Online (${allUsers.length})</h1>
-        <div style="display: flex;">
-          ${allUsers.map(user => `\
-            <div style="display: flex; margin-bottom: 5px; font-size: 30px; line-height: 1; align-items: center;">
-              ${creatureUtils.makeSvgCreature('user:' + user, {
-                width: 12,
-                height: 12,
-                viewBox: '0 0 12 12',
-                style: 'width: 40px; height: 40px; margin-right: 20px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;',
-              })}
-              <div>${user}</div>
-            </div>
-          `).join('\n')}
-        </div>
+        `).join('\n')}
       </div>
       <div style="width: 400px;">
-        <h1 style="margin: 15px 0; font-size: 40px; font-weight: 400;">Access token</h1>
+        <h1 style="display: flex; margin: 20px 0; font-size: 40px; font-weight: 400; align-items: center;">
+          <div style="width: 20px; height: 20px; margin-right: 20px; background-color: #4CAF50; border-radius: 100px;"></div>
+          <span>Connected</span>
+        </h1>
+        <!-- <h1 style="margin: 20px 0; font-size: 40px; font-weight: 400;">Actions</h1> -->
+        <div style="display: flex;">
+          <a style="margin-right: 20px; border: 2px solid; padding: 7px 20px; font-size: 24px; font-weight: 400; line-height: 1.4;" onclick="status:saveWorld">Save world</a>
+          <a style="border: 2px solid; padding: 7px 20px; font-size: 24px; font-weight: 400; line-height: 1.4;" onclick="status:clearWorld">Clear world</a>
+        </div>
+        <!-- <h1 style="margin: 15px 0; font-size: 40px; font-weight: 400;">Access token</h1>
         <div style="margin-bottom: 10px; font-size: 20px; font-weight: 400;">Share this token to allow others to log in. Click to copy to clipboard.</div>
-        <a style="display: block; margin-bottom: 10px; font-size: 30px; font-weight: 400; color: #2196F3; text-decoration: none; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;" onclick="status:token">${url}${authToken ? ('?t=' + authToken) : ''}</a>
-        <h1 style="margin: 15px 0; font-size: 40px; font-weight: 400;">Links</h1>
+        <a style="display: block; margin-bottom: 10px; font-size: 30px; font-weight: 400; color: #2196F3; text-decoration: none; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;" onclick="status:token">${url}</a> --> 
       </div>
     </div>
   `;
