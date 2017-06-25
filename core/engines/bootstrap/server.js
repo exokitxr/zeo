@@ -116,7 +116,7 @@ class Bootstrap {
               };
               const req = (siteSpec.protocol === 'http' ? http : https).request(options);
               const configJson = config.getConfig();
-              const {name} = configJson;
+              const {name, visibility} = configJson;
               const {protocol, port} = serverSpec;
               const address = ip;
               req.end(JSON.stringify({
@@ -125,6 +125,7 @@ class Bootstrap {
                 address: address,
                 port: port,
                 users: [], // XXX announce the real users from the hub engine
+                visibility: visibility,
               }));
 
               req.on('response', res => {
@@ -134,7 +135,7 @@ class Bootstrap {
                   const {statusCode} = res;
 
                   if (statusCode >= 200 && statusCode < 300) {
-                    connectionState.state = 'connected';
+                    connectionState.state = visibility === 'public' ? 'connected' : 'private';
                     _broadcastUpdate();
 
                     accept();
@@ -186,17 +187,15 @@ class Bootstrap {
             const configJson = config.getConfig();
             const {visibility} = configJson;
 
-            if (visibility === 'public') {
-              _announceServer()
-                .then(() => {
-                  accept(true);
-                })
-                .catch(err => {
-                  // console.warn('server announce failed', err.code, JSON.stringify({statusCode: err.statusCode, options: err.options}));
+            _announceServer()
+              .then(() => {
+                accept(true);
+              })
+              .catch(err => {
+                // console.warn('server announce failed', err.code, JSON.stringify({statusCode: err.statusCode, options: err.options}));
 
-                  accept(false);
-                });
-            }
+                accept(false);
+              });
           });
 
           const _queueServerAnnounce = _debounce(next => {
