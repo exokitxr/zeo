@@ -104,7 +104,7 @@ class Rend {
           scale: new THREE.Vector3(1, 1, 1).toArray(),
         };
         const statusState = {
-          url: bootstrap.getInitialPath(),
+          url: bootstrap.getInitialPath(), // XXX make this use the external IP
           name: '',
           username: names[Math.floor(Math.random() * names.length)],
           users: [],
@@ -287,7 +287,7 @@ class Rend {
             const {anchor} = hoverState;
             const onclick = (anchor && anchor.onclick) || '';
 
-            if (onclick === 'status:token') {
+            if (onclick === 'status:url') {
               const {url} = statusState;
               const clipboardText = url;
 

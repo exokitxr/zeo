@@ -27,14 +27,12 @@ const getStatusSrc = ({status: {url, username, name, users}}) => {
           <div style="width: 20px; height: 20px; margin-right: 20px; background-color: #4CAF50; border-radius: 100px;"></div>
           <span>Connected</span>
         </h1>
-        <!-- <h1 style="margin: 20px 0; font-size: 40px; font-weight: 400;">Actions</h1> -->
+        <!-- <div style="margin-bottom: 10px; font-size: 20px; font-weight: 400;">Share this token to allow others to log in. Click to copy to clipboard.</div> -->
+        <a style="display: inline-block; margin-bottom: 20px; font-size: 30px; line-height: 2; font-weight: 400; color: #2196F3; text-decoration: none; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;" onclick="status:url">${url}</a>
         <div style="display: flex;">
           <a style="margin-right: 20px; border: 2px solid; padding: 7px 20px; font-size: 24px; font-weight: 400; line-height: 1.4;" onclick="status:saveWorld">Save world</a>
           <a style="border: 2px solid; padding: 7px 20px; font-size: 24px; font-weight: 400; line-height: 1.4;" onclick="status:clearWorld">Clear world</a>
         </div>
-        <!-- <h1 style="margin: 15px 0; font-size: 40px; font-weight: 400;">Access token</h1>
-        <div style="margin-bottom: 10px; font-size: 20px; font-weight: 400;">Share this token to allow others to log in. Click to copy to clipboard.</div>
-        <a style="display: block; margin-bottom: 10px; font-size: 30px; font-weight: 400; color: #2196F3; text-decoration: none; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;" onclick="status:token">${url}</a> --> 
       </div>
     </div>
   `;
