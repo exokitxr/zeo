@@ -59,8 +59,7 @@ const makeRenderer = ({typeUtils, creatureUtils}) => {
       })();
 
       return `\
-        <div style="display: flex; width: 250px; height: ${HEIGHT - 80}px; padding-top: 20px; flex-direction: column; box-sizing: border-box;">
-          <div style="width: 1px; height: 100px;"></div>
+        <div style="display: flex; width: 250px; flex-direction: column; box-sizing: border-box;">
           <a style="position: relative; display: flex; margin-left: 30px; margin-bottom: auto; border: 2px solid; border-radius: 5px; text-decoration: none; justify-content: center; align-items: center; ${showUp ? '' : 'visibility: hidden;'}" onclick="entity:up">
             ${upImg}
           </a>
@@ -94,21 +93,28 @@ const makeRenderer = ({typeUtils, creatureUtils}) => {
     const {id, name, displayName, attributes, instancing, metadata: {isStatic}} = item;
 
     return `\
-      <a style="display: block; border-bottom: 1px solid #EEE; text-decoration: none;" onclick="entity:entity:${id}">
-        <div style="position: relative; display: flex; padding: 10px 0; flex-direction: column; text-decoration: none; overflow: hidden; box-sizing: border-box;">
-          <div style="display: flex; height: 50px; align-items: center;">
-            <div style="display: flex; flex-grow: 1;">
-              ${creatureUtils.makeSvgCreature('entity:' + name, {
-                width: 12,
-                height: 12,
-                viewBox: '0 0 12 12',
-                style: 'width: 50px; height: 50px; margin: 10px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;',
-              })}
-              <h1 style="display: flex; flex-grow: 1; font-size: 24px; font-weight: 400; line-height: 1.4; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">${displayName}</h1>
+      <div style="display: flex; height: 70px;">
+        <a style="display: flex; justify-content: center; align-items: center;" onclick="entity:check">
+          <div style="display: flex; border: 2px solid; width: 25px; height: 25px; margin: 20px; padding: 3px; box-sizing: border-box; text-decoration: none;">
+            <div style="background-color: #000; flex-grow: 1;"></div>
+          </div>
+        </a>
+        <a style="display: block; border-bottom: 1px solid #EEE; flex-grow: 1; text-decoration: none;" onclick="entity:entity:${id}">
+          <div style="position: relative; display: flex; padding: 10px 0; flex-direction: column; text-decoration: none; overflow: hidden; box-sizing: border-box;">
+            <div style="display: flex; height: 50px; align-items: center;">
+              <div style="display: flex; flex-grow: 1;">
+                ${creatureUtils.makeSvgCreature('entity:' + name, {
+                  width: 12,
+                  height: 12,
+                  viewBox: '0 0 12 12',
+                  style: 'width: 50px; height: 50px; margin: 10px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;',
+                })}
+                <h1 style="display: flex; flex-grow: 1; font-size: 24px; font-weight: 400; line-height: 1.4; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">${displayName}</h1>
+              </div>
             </div>
           </div>
-        </div>
-      </a>
+        </a>
+      </div>
     `;
   };
   const getEntityDetailsSrc = ({entity, inputText, inputValue, page, focusSpec}) => {
