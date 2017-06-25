@@ -101,7 +101,7 @@ class Rend {
           state: 'connecting',
           url: '',
           name: '',
-          username: '',
+          username: names[Math.floor(Math.random() * names.length)],
           users: [],
         };
         const menuState = {
