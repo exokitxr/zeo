@@ -100,6 +100,8 @@ class Rend {
         const statusState = {
           state: 'connecting',
           url: '',
+          address: '',
+          port: 0,
           name: '',
           username: names[Math.floor(Math.random() * names.length)],
           users: [],
@@ -232,6 +234,8 @@ class Rend {
 
           statusState.state = state;
           statusState.url = url;
+          statusState.address = address;
+          statusState.port = port;
         };
         const _connectionStateChange = connectionState => {
           _setConnectionState(connectionState);
