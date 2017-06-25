@@ -31,6 +31,7 @@ const AXES = ['x', 'y', 'z'];
 const itemInstanceSymbol = Symbol();
 const itemInstancingSymbol = Symbol();
 const itemPageSymbol = Symbol();
+const itemSelectedSymbol = Symbol();
 const itemPreviewSymbol = Symbol();
 const itemTempSymbol = Symbol();
 const itemMediaPromiseSymbol = Symbol();
@@ -1568,6 +1569,12 @@ class Tags {
             }
             set page(page) {
               this[itemPageSymbol] = page;
+            }
+            get selected() {
+              return this[itemSelectedSymbol];
+            }
+            set selected(selected) {
+              this[itemSelectedSymbol] = selected;
             }
             get preview() {
               return this[itemPreviewSymbol];
