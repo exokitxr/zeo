@@ -136,6 +136,8 @@ class Config {
           frame: 0,
         };
 
+        rend.setStatus('name', serverConfigSpec.name);
+
         const _saveBrowserConfig = () => {
           const config = configApi.getBrowserConfig();
           _requestSetBrowserConfig(config);
@@ -427,12 +429,15 @@ class Config {
                   const {nameValue: nameInputText} = configState;
 
                   if (keyboardInputText !== nameInputText) {
-                    configState.nameValue = keyboardInputText;
+                    const newName = keyboardInputText;
+                    configState.nameValue = newName;
 
                     _saveServerConfig();
                     configApi.updateBrowserConfig();
 
                     _updatePages();
+
+                    rend.setStatus('name', newName);
                   }
                 });
                 keyboardFocusState.on('blur', () => {

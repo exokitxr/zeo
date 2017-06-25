@@ -105,7 +105,7 @@ class Rend {
         };
         const statusState = {
           url: bootstrap.getInitialPath(),
-          name: 'Server name', // XXX set this from the config
+          name: '',
           username: names[Math.floor(Math.random() * names.length)],
           users: [],
         };
