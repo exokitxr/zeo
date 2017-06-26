@@ -103,7 +103,6 @@ class Hand {
         const grabbables = [];
 
         const _makeGrabState = () => ({
-          hoveredGrabbable: null,
           grabbedGrabbable: null,
         });
         const grabStates = {
@@ -211,13 +210,35 @@ class Hand {
           }
         }
 
+        const _getHoveredGrabbable = side => {
+          const gamepad = gamepads[side];
+          const {worldPosition: controllerPosition} = gamepad;
+          const grabState = grabStates[side];
+
+          let closestGrabbable = null;
+          let closestGrabbableDistance = Infinity;
+          for (let i = 0; i < grabbables.length; i++) {
+            const grabbable = grabbables[i];
+            const distance = grabbable.distanceTo(controllerPosition);
+
+            if (distance < 0.2) {
+              if (!closestGrabbable || (distance < closestGrabbableDistance)) {
+                closestGrabbable = grabbable;
+                closestGrabbableDistance = distance;
+              }
+            }
+          }
+
+          return closestGrabbable;
+        };
+
         const _gripdown = e => {
           const {side} = e;
           const grabState = grabStates[side];
           const {grabbedGrabbable} = grabState;
 
           if (!grabbedGrabbable) {
-            const {hoveredGrabbable} = grabState;
+            hoveredGrabbable = _getHoveredGrabbable(side);
 
             if (hoveredGrabbable) {
               hoveredGrabbable.grab(localUserId, side);
@@ -269,33 +290,9 @@ class Hand {
               });
             });
           };
-          const _updateHovers = () => {
-            SIDES.forEach(side => {
-              const gamepad = gamepads[side];
-              const {worldPosition: controllerPosition} = gamepad;
-              const grabState = grabStates[side];
-
-              let closestGrabbable = null;
-              let closestGrabbableDistance = Infinity;
-              for (let i = 0; i < grabbables.length; i++) {
-                const grabbable = grabbables[i];
-                const distance = grabbable.distanceTo(controllerPosition);
-
-                if (distance < 0.2) {
-                  if (!closestGrabbable || (distance < closestGrabbableDistance)) {
-                    closestGrabbable = grabbable;
-                    closestGrabbableDistance = distance;
-                  }
-                }
-              }
-
-              grabState.hoveredGrabbable = closestGrabbable;
-            });
-          };
 
           _updateLocalPositions();
           _updateRemotePositions();
-          _updateHovers();
         };
         rend.on('update', _update);
 
