@@ -190,15 +190,6 @@ class Keyboard {
             mesh.add(headerSolidMesh);
             mesh.headerSolidMesh = headerSolidMesh;
 
-            const shadowMesh = (() => {
-              const geometry = new THREE.BoxBufferGeometry(KEYBOARD_WORLD_WIDTH, KEYBOARD_WORLD_HEIGHT, 0.01);
-              const material = transparentMaterial;
-              const mesh = new THREE.Mesh(geometry, material);
-              mesh.castShadow = true;
-              return mesh;
-            })();
-            mesh.add(shadowMesh);
-
             return mesh;
           })();
           object.add(planeMesh);

@@ -184,15 +184,6 @@ class Wallet {
           object.add(planeMesh);
           object.planeMesh = planeMesh;
 
-          const shadowMesh = (() => {
-            const geometry = new THREE.BoxBufferGeometry(WORLD_WIDTH, WORLD_HEIGHT, 0.01);
-            const material = transparentMaterial;
-            const mesh = new THREE.Mesh(geometry, material);
-            mesh.castShadow = true;
-            return mesh;
-          })();
-          object.add(shadowMesh);
-
           return object;
         })();
         rend.registerMenuMesh('walletMesh', walletMesh);
