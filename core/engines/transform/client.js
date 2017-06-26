@@ -113,7 +113,7 @@ class Transform {
                 scaleGizmo.position.copy(scaleVector);
                 object.updateMatrixWorld();
 
-                // _updateBoxTargets();
+                _updateBoxTargets();
               };
               object.update = _update;
               object.syncPosition = () => {
@@ -291,8 +291,7 @@ class Transform {
             };
             transformGizmo.updateBoxTargets = _updateBoxTargets;
 
-            _update(position, rotation, scale);
-            _updateBoxTargets();
+            transformGizmo.update(position, rotation, scale);
 
             transformGizmos.push(transformGizmo);
 
@@ -360,7 +359,6 @@ class Transform {
 
               const {position, rotation, scale} = transformGizmo.getProperties();
               transformGizmo.update(position, rotation, scale);
-              transformGizmo.updateBoxTargets();
               transformGizmo.onupdate(position, rotation, scale);
 
               dragState.src = null;
