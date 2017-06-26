@@ -107,6 +107,7 @@ class Zeo {
             '/core/engines/voicechat',
             '/core/engines/fs',
             '/core/engines/somnifer',
+            '/core/engines/physics',
             '/core/utils/js-utils',
             '/core/utils/type-utils',
             '/core/utils/network-utils',
@@ -150,6 +151,7 @@ class Zeo {
             voicechat,
             fs,
             somnifer,
+            physics,
             jsUtils,
             typeUtils,
             networkUtils,
@@ -636,6 +638,16 @@ class Zeo {
                       }
                     }
 
+                    class ZeoPhysicsApi {
+                      makeBody(object, id, opts) {
+                        return physics.makeBody(object, id, opts);
+                      }
+
+                      destroyBody(body) {
+                        physics.destroyBody(body);
+                      }
+                    }
+
                     class ZeoIntersectApi {
                       makeIntersecter() {
                         return intersect.makeIntersecter();
@@ -747,6 +759,7 @@ class Zeo {
                         this.broadcast = new ZeoBroadcastApi();
                         this.ui = new ZeoUiApi();
                         this.sound = new ZeoSoundApi();
+                        this.physics = new ZeoPhysicsApi();
                         this.intersect = new ZeoIntersectApi();
                         this.teleport = new ZeoTeleportApi();
                         this.hand = new ZeoHandApi();
