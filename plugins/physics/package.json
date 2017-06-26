@@ -1,7 +1,7 @@
 {
-  "name": "physics-demo",
-  "description": "Physics demo.",
+  "name": "physics",
   "version": "0.0.1",
+  "description": "Physics test.",
   "client": "client.js",
   "dependencies": {}
 }

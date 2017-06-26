@@ -6,7 +6,8 @@ const WANTS_DEACTIVATION = 3;
 const DISABLE_DEACTIVATION = 4;
 const DISABLE_SIMULATION = 5;
 
-const FPS = 1000 / 60;
+const FPS = 1000 / 90;
+const FIXED_TIME_STEP = 1 / 200;
 const TRANSFORM_AUX = new Ammo.btTransform();
 
 const collisionConfiguration = new Ammo.btDefaultCollisionConfiguration();
@@ -252,7 +253,7 @@ let lastTime = Date.now();
 const interval = setInterval(() => {
   const now = Date.now();
   const dt = (now - lastTime) / 1000;
-  physicsWorld.stepSimulation(dt, 2);
+  physicsWorld.stepSimulation(dt, 5, FIXED_TIME_STEP);
 
   for (let i = 0; i < bodies.length; i++) {
     const body = bodies[i];
