@@ -1,6 +1,7 @@
 import keycode from 'keycode';
 
 import menuShader from './lib/shaders/menu';
+import transparentShader from './lib/shaders/transparent';
 
 const DEFAULT_FRAME_TIME = 1000 / (60 * 2)
 
@@ -805,10 +806,10 @@ class Biolumi {
           const _getTransparentImg = () => transparentImg;
           const _getBlackImg = () => blackImg;
 
-          const transparentMaterial = new THREE.MeshBasicMaterial({
-            opacity: 0,
+          const transparentMaterial = new THREE.ShaderMaterial({
+            vertexShader: transparentShader.vertexShader,
+            fragmentShader: transparentShader.fragmentShader,
             transparent: true,
-            depthWrite: false,
           });
           const _getTransparentMaterial = () => transparentMaterial;
 
