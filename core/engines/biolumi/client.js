@@ -563,6 +563,7 @@ class Biolumi {
               this.intersecter = intersecter;
 
               this.pages = [];
+              this.open = true;
 
               const _makeHoverState = () => ({
                 intersectionPoint: null,
@@ -584,6 +585,10 @@ class Biolumi {
                 left: _makeBoxMesh(),
                 right: _makeBoxMesh(),
               };
+            }
+
+            setOpen(open) {
+              this.open = open;
             }
 
             addPage(page) {
@@ -622,7 +627,7 @@ class Biolumi {
 
             update({pose, sides, controllerMeshes}) {
               const {gamepads} = pose;
-              const {pages, hoverStates, dotMeshes, boxMeshes, intersecter} = this;
+              const {pages, open, hoverStates, dotMeshes, boxMeshes, intersecter} = this;
 
               const updated = intersecter.update();
               if (updated) {
@@ -656,7 +661,7 @@ class Biolumi {
                     if (boxMesh.visible) {
                       boxMesh.visible = false;
                     }
-                    if (rayMesh.visible) {
+                    if (!open && rayMesh.visible) {
                       rayMesh.visible = false;
                     }
                   };
