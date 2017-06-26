@@ -382,7 +382,7 @@ class Planet {
                         linearVelocity,
                         angularVelocity,
                         startTime,
-                        endTime,
+                        endTime
                       );
                     }
                   };
@@ -417,7 +417,7 @@ class Planet {
                     const hole = new THREE.Vector3(
                       holes[baseIndex + 0],
                       holes[baseIndex + 1],
-                      holes[baseIndex + 2],
+                      holes[baseIndex + 2]
                     );
                     const color = new THREE.Color(
                       colors[baseIndex + 0] / 255,
@@ -554,7 +554,7 @@ class Planet {
                   linearVelocity,
                   angularVelocity,
                   startTime,
-                  endTime,
+                  endTime
                 ) => {
                   if (((particles.length + 1) * numParticleGeometryVertices * 3) > NUM_POSITIONS) {
                     particles.shift();
