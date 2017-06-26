@@ -12,7 +12,7 @@ const SIDES = ['left', 'right'];
 
 class ZBow {
   mount() {
-    const {three: {THREE, scene}, input, elements, render, pose, player, utils: {geometry: geometryUtils}} = zeo;
+    const {three: {THREE, scene}, input, elements, render, pose, hand, player, utils: {geometry: geometryUtils}} = zeo;
 
     const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
     const _decomposeMatrix = matrix => {
@@ -61,18 +61,6 @@ class ZBow {
             0, 0, 0, 1,
             1, 1, 1,
           ],
-        },
-        grabbable: {
-          type: 'checkbox',
-          value: true,
-        },
-        holdable: {
-          type: 'checkbox',
-          value: true,
-        },
-        size: {
-          type: 'vector',
-          value: [0.1, 1, 0.3],
         },
       },
       entityAddedCallback(entityElement) {
@@ -179,6 +167,8 @@ class ZBow {
           entityObject.position.set(position[0], position[1], position[2]);
           entityObject.quaternion.set(position[3], position[4], position[5], position[6]);
           entityObject.scale.set(position[7], position[8], position[9]);
+
+          bowGrabbable.setPosition(new THREE.Vector3(position[0], position[1], position[2]));
         };
 
         const _makeArrowState = () => ({
@@ -194,15 +184,16 @@ class ZBow {
 
         const _getOtherSide = side => side === 'left' ? 'right' : 'left';
 
+        const bowGrabbable = hand.makeGrabbable('bow');
         const _grab = e => {
-          const {detail: {side}} = e;
+          const {side} = e;
           const bowState = bowStates[side];
 
           bowState.grabbed = true;
         };
-        entityElement.addEventListener('grab', _grab);
+        bowGrabbable.on('grab', _grab);
         const _release = e => {
-          const {detail: {side}} = e;
+          const {side} = e;
           const bowState = bowStates[side];
 
           bowState.grabbed = false;
@@ -224,7 +215,8 @@ class ZBow {
             }
           });
         };
-        entityElement.addEventListener('release', _release);
+        bowGrabbable.on('release', _release);
+
         const _gripdown = e => {
           const {side} = e;
           const otherSide = _getOtherSide(side);
@@ -296,6 +288,24 @@ class ZBow {
         });
 
         const _update = () => {
+          const {gamepads} = pose.getStatus();
+
+          const _updateBow = () => {
+            SIDES.forEach(side => {
+              const bowState = bowStates[side];
+              const {grabbed} = bowState;
+
+              if (grabbed) {
+                const gamepad = gamepads[side];
+                const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale} = gamepad;
+
+                entityObject.position.copy(controllerPosition);
+                entityObject.quaternion.copy(controllerRotation);
+                entityObject.scale.copy(controllerScale);
+                entityObject.updateMatrixWorld();
+              }
+            });
+          };
           const _updateNock = () => {
             SIDES.forEach(side => {
               const bowState = bowStates[side];
@@ -353,7 +363,6 @@ class ZBow {
               const {pulling} = bowState;
 
               if (pulling) {
-                const {gamepads} = pose.getStatus();
                 const gamepad = gamepads[side];
 
                 if (gamepad) {
@@ -403,6 +412,7 @@ class ZBow {
             }
           };
 
+          _updateBow();
           _updateNock();
           _updateString();
           _updateArrows();
@@ -412,8 +422,8 @@ class ZBow {
         entityApi._cleanup = () => {
           entityObject.remove(mesh);
 
-          entityElement.removeEventListener('grab', _grab);
-          entityElement.removeEventListener('release', _release);
+          hand.destroyGrabbable(bowGrabbable);
+
           input.removeListener('gripdown', _gripdown);
           input.removeListener('gripup', _gripup);
 
