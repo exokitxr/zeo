@@ -80,6 +80,7 @@ class Transform {
           };
 
           const transformGizmos = [];
+          rend.registerAuxObject('transformGizmos', transformGizmos);
 
           const _getTransformGizmos = () => transformGizmos;
 
@@ -166,7 +167,7 @@ class Transform {
               if (boxAnchors) {
                 for (let i = 0; i < boxAnchors.length; i++) {
                   const boxAnchor = boxAnchors[i];
-                  scene.remove(boxAnchor);
+                  transformGizmo.remove(boxAnchor);
 
                   rend.removeMesh(boxAnchor);
                 }
@@ -191,7 +192,7 @@ class Transform {
 
               boxAnchors = [
                 _makeBoxTarget(
-                  transformGizmo.position.clone().add(new THREE.Vector3(1, 0, 0)),
+                  new THREE.Vector3(1, 0, 0),
                   new THREE.Quaternion(),
                   new THREE.Vector3(1, 1, 1),
                   new THREE.Vector3(0.2, 0.1, 0.1),
@@ -200,7 +201,7 @@ class Transform {
                   }
                 ),
                 _makeBoxTarget(
-                    transformGizmo.position.clone().add(new THREE.Vector3(0, 1, 0)),
+                  new THREE.Vector3(0, 1, 0),
                   new THREE.Quaternion(),
                   new THREE.Vector3(1, 1, 1),
                   new THREE.Vector3(0.1, 0.2, 0.1),
@@ -209,7 +210,7 @@ class Transform {
                   }
                 ),
                 _makeBoxTarget(
-                  transformGizmo.position.clone().add(new THREE.Vector3(0, 0, 1)),
+                  new THREE.Vector3(0, 0, 1),
                   new THREE.Quaternion(),
                   new THREE.Vector3(1, 1, 1),
                   new THREE.Vector3(0.1, 0.1, 0.2),
@@ -218,7 +219,7 @@ class Transform {
                   }
                 ),
                 _makeBoxTarget(
-                  transformGizmo.position.clone(),
+                  new THREE.Vector3(),
                   new THREE.Quaternion(),
                   new THREE.Vector3(1, 1, 1),
                   new THREE.Vector3(0.2, 0.2, 0.2),
@@ -227,7 +228,7 @@ class Transform {
                   }
                 ),
                 _makeBoxTarget(
-                  transformGizmo.position.clone().add(new THREE.Vector3(0.3 / 2, 0.3 / 2, 0)),
+                  new THREE.Vector3(0.3 / 2, 0.3 / 2, 0),
                   new THREE.Quaternion(),
                   new THREE.Vector3(1, 1, 1),
                   new THREE.Vector3(0.3, 0.3, 0.01),
@@ -236,7 +237,7 @@ class Transform {
                   }
                 ),
                 _makeBoxTarget(
-                  transformGizmo.position.clone().add(new THREE.Vector3(0, 0.3 / 2, 0.3 / 2)),
+                  new THREE.Vector3(0, 0.3 / 2, 0.3 / 2),
                   new THREE.Quaternion(),
                   new THREE.Vector3(1, 1, 1),
                   new THREE.Vector3(0.01, 0.3, 0.3),
@@ -245,7 +246,7 @@ class Transform {
                   }
                 ),
                 _makeBoxTarget(
-                  transformGizmo.position.clone().add(new THREE.Vector3(0.3 / 2, 0, 0.3 / 2)),
+                  new THREE.Vector3(0.3 / 2, 0, 0.3 / 2),
                   new THREE.Quaternion(),
                   new THREE.Vector3(1, 1, 1),
                   new THREE.Vector3(0.3, 0.01, 0.3),
@@ -254,10 +255,7 @@ class Transform {
                   }
                 ),
                 _makeBoxTarget(
-                  transformGizmo.position.clone().add(
-                    new THREE.Vector3(0, 0, rotateScale)
-                      .applyQuaternion(transformGizmo.rotateGizmo.quaternion)
-                  ),
+                  new THREE.Vector3(0, 0, rotateScale).applyQuaternion(transformGizmo.rotateGizmo.quaternion),
                   new THREE.Quaternion(),
                   new THREE.Vector3(1, 1, 1),
                   new THREE.Vector3(0.1, 0.1, 0.1),
@@ -266,7 +264,7 @@ class Transform {
                   }
                 ),
                 _makeBoxTarget(
-                  transformGizmo.position.clone().add(transformGizmo.scaleGizmo.position),
+                  transformGizmo.scaleGizmo.position,
                   new THREE.Quaternion(),
                   new THREE.Vector3(1, 1, 1),
                   new THREE.Vector3(0.1, 0.1, 0.1),
@@ -277,8 +275,7 @@ class Transform {
               ];
               for (let i = 0; i < boxAnchors.length; i++) {
                 const boxAnchor = boxAnchors[i];
-                scene.add(boxAnchor);
-                boxAnchor.updateMatrixWorld();
+                transformGizmo.add(boxAnchor);
 
                 rend.addMesh(boxAnchor);
               }
@@ -288,6 +285,8 @@ class Transform {
                 const boxAnchor = boxAnchors[i];
                 rend.updateMatrixWorld(boxAnchor);
               } */
+              transformGizmo.updateMatrixWorld();
+              rend.updateMatrixWorld(transformGizmo);
             };
             transformGizmo.updateBoxTargets = _updateBoxTargets;
 

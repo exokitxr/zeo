@@ -709,6 +709,7 @@ class Entity {
                   });
                   scene.add(transformGizmo);
                   transformGizmo.updateMatrixWorld();
+                  rend.updateMatrixWorld(transformGizmo);
 
                   keyboardFocusState.on('blur', () => {
                     focusState.keyboardFocusState = null;

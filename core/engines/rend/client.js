@@ -92,6 +92,7 @@ class Rend {
 
         const auxObjects = {
           tagsLinesMesh: null,
+          transformGizmos: null,
           colorWheels: null,
           controllerMeshes: null,
         };
@@ -323,6 +324,13 @@ class Rend {
             menuState.rotation = null;
             menuState.scale = null;
 
+            const {transformGizmos} = auxObjects;
+            for (let i = 0; i < transformGizmos.length; i++) {
+              const transformGizmo = transformGizmos[i];
+              transformGizmo.visible = false;
+              uiTracker.updateMatrixWorld(transformGizmo);
+            }
+
             const {tagsLinesMesh} = auxObjects;
             tagsLinesMesh.visible = false;
 
@@ -353,6 +361,13 @@ class Rend {
             menuState.position = newMenuPosition.toArray();
             menuState.rotation = newMenuRotation.toArray();
             menuState.scale = newMenuScale.toArray();
+
+            const {transformGizmos} = auxObjects;
+            for (let i = 0; i < transformGizmos.length; i++) {
+              const transformGizmo = transformGizmos[i];
+              transformGizmo.visible = true;
+              uiTracker.updateMatrixWorld(transformGizmo);
+            }
 
             const {tagsLinesMesh} = auxObjects;
             tagsLinesMesh.visible = true;
