@@ -421,9 +421,9 @@ class Rend {
         _updatePages();
 
         localUpdates.push(() => {
-          const _updateRenderer = () => {
+          /* const _updateRenderer = () => {
             renderer.shadowMap.needsUpdate = true;
-          };
+          }; */
           const _updateUiTimer = () => {
             biolumi.updateUiTimer();
           };
@@ -449,7 +449,7 @@ class Rend {
             });
           };
 
-          _updateRenderer();
+          // _updateRenderer();
           _updateUiTimer();
           _updateUiTracker();
         });
