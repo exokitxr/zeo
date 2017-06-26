@@ -116,9 +116,10 @@ class Physics {
             if (constructor === THREE.BoxBufferGeometry) {
               const {parameters: {width, height, depth}} = geometry;
               const {position, rotation} = _decomposeMatrix(object.matrix);
+              const owner = bindConnection ? localUserId : null;
               const e = {
                 method: 'add',
-                args: [id, 'box', [width, height, depth], position.toArray(), rotation.toArray(), mass],
+                args: [id, 'box', [width, height, depth], position.toArray(), rotation.toArray(), mass, owner],
               };
               const es = JSON.stringify(e);
               connection.send(es);
@@ -136,9 +137,10 @@ class Physics {
                 new THREE.Vector3(positions[6], positions[7], positions[8]),
               ).normal();
               const constant = object.position.length();
+              const owner = bindConnection ? localUserId : null;
               const e = {
                 method: 'add',
-                args: [id, 'plane', normal.toArray().concat([constant]), [0, 0, 0], [0, 0, 0, 1], mass],
+                args: [id, 'plane', normal.toArray().concat([constant]), [0, 0, 0], [0, 0, 0, 1], mass, owner],
               };
               const es = JSON.stringify(e);
               connection.send(es);

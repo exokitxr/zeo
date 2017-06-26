@@ -19,9 +19,10 @@ physicsWorld.setGravity(new Ammo.btVector3(0, -10, 0));
 const bodies = [];
 
 class Body {
-  constructor(id, rigidBody) {
+  constructor(id, rigidBody, owner) {
     this.id = id;
     this.rigidBody = rigidBody;
+    this.owner = owner;
 
     this._lastUpdate = null;
   }
@@ -67,12 +68,19 @@ class Body {
   }
 }
 
+const _removeBody = (body, bodyIndex) => {
+  const {rigidBody} = body;
+  physicsWorld.removeRigidBody(rigidBody);
+
+  bodies.splice(bodyIndex, 1);
+};
+
 process.on('message', m => {
   const {method, args} = m;
 
   switch (method) {
     case 'add': {
-      const [id, type, spec, position, rotation, mass] = args;
+      const [id, type, spec, position, rotation, mass, owner] = args;
 
       switch (type) {
         case 'box': {
@@ -89,7 +97,7 @@ process.on('message', m => {
             const boxBody = new Ammo.btRigidBody(new Ammo.btRigidBodyConstructionInfo(boxMass, boxMotionState, boxShape, boxLocalInertia));
             physicsWorld.addRigidBody(boxBody);
             
-            const body = new Body(id, boxBody);
+            const body = new Body(id, boxBody, owner);
             bodies.push(body);
           }
           break;
@@ -107,7 +115,7 @@ process.on('message', m => {
             const planeBody = new Ammo.btRigidBody(new Ammo.btRigidBodyConstructionInfo(planeMass, planeMotionState, planeShape, planeLocalInertia));
             physicsWorld.addRigidBody(planeBody);
 
-            const body = new Body(id, planeBody);
+            const body = new Body(id, planeBody, owner);
             bodies.push(body);
           }
           break;
@@ -125,10 +133,8 @@ process.on('message', m => {
 
       if (bodyIndex !== -1) {
         const body = bodies[bodyIndex];
-        const {rigidBody} = body;
-        physicsWorld.removeRigidBody(rigidBody);
 
-        bodies.splice(bodyIndex, 1);
+        _removeBody(body, bodyIndex);
       }
       break;
     }
@@ -138,6 +144,19 @@ process.on('message', m => {
 
       if (body) {
         body.setState(position, rotation);
+      }
+      break;
+    }
+    case 'removeOwner': {
+      const [owner] = args;
+
+      const oldBodies = bodies.slice();
+      for (let i = 0; i < oldBodies.length; i++) {
+        const body = oldBodies[i];
+
+        if (body.owner === owner) {
+          _removeBody(body, i);
+        }
       }
       break;
     }
