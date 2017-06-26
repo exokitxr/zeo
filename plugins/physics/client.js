@@ -4,7 +4,7 @@ const SIDES = ['left', 'right'];
 
 class Physics {
   mount() {
-    const {three, elements, input, pose, render, physics} = zeo;
+    const {three, elements, input, pose, render, player, physics} = zeo;
     const {THREE, scene} = three;
 
     const zeroVector = new THREE.Vector3();
@@ -14,6 +14,8 @@ class Physics {
       transparent: true,
       opacity: 0.9,
     });
+
+    const playerId = player.getId();
 
     const _getRandomState = () => {
       const position = new THREE.Vector3(-2 + (Math.random() * 4), 3, -2 + (Math.random() * 4));
@@ -41,7 +43,7 @@ class Physics {
       })();
       object.add(childMesh);
 
-      const physicsBody = physics.makeBody(object, 'controller:' + side, {
+      const physicsBody = physics.makeBody(object, `controller:${playerId}:${side}`, {
         linearFactor: zeroVector.toArray(),
         angularFactor: zeroVector.toArray(),
         disableDeactivation: true,
