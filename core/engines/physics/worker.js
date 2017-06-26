@@ -71,11 +71,26 @@ class Body {
   }
 }
 
+const _addBody = body => {
+  const {rigidBody} = body;
+  physicsWorld.addRigidBody(rigidBody);
+
+  bodies.push(body);
+
+  if (bodies.length === 1) {
+    _start();
+  }
+};
+
 const _removeBody = (body, bodyIndex) => {
   const {rigidBody} = body;
   physicsWorld.removeRigidBody(rigidBody);
 
   bodies.splice(bodyIndex, 1);
+
+  if (bodies.length === 0) {
+    _stop();
+  }
 };
 
 process.on('message', m => {
@@ -103,10 +118,9 @@ process.on('message', m => {
             if (disableDeactivation) {
               boxBody.setActivationState(DISABLE_DEACTIVATION);
             }
-            physicsWorld.addRigidBody(boxBody);
             
             const body = new Body(id, boxBody, owner);
-            bodies.push(body);
+            _addBody(body);
           }
           break;
         }
@@ -126,10 +140,9 @@ process.on('message', m => {
             if (disableDeactivation) {
               planeBody.setActivationState(DISABLE_DEACTIVATION);
             }
-            physicsWorld.addRigidBody(planeBody);
 
             const body = new Body(id, planeBody, owner);
-            bodies.push(body);
+            _addBody(body);
           }
           break;
         }
@@ -172,10 +185,9 @@ process.on('message', m => {
             if (disableDeactivation) {
               compoundBody.setActivationState(DISABLE_DEACTIVATION);
             }
-            physicsWorld.addRigidBody(compoundBody);
 
             const body = new Body(id, compoundBody, owner);
-            bodies.push(body);
+            _addBody(body);
           }
           break;
         }
@@ -184,6 +196,7 @@ process.on('message', m => {
           break;
         }
       }
+
       break;
     }
     case 'remove': {
@@ -249,20 +262,29 @@ const _arrayEquals = (a, b) => {
   }
 };
 
-let lastTime = Date.now();
-const interval = setInterval(() => {
-  const now = Date.now();
-  const dt = (now - lastTime) / 1000;
-  physicsWorld.stepSimulation(dt, 5, FIXED_TIME_STEP);
+let interval = null;
+let lastTime = 0;
+const _start = () => {
+  interval = setInterval(() => {
+    const now = Date.now();
+    const dt = (now - lastTime) / 1000;
+    physicsWorld.stepSimulation(dt, 5, FIXED_TIME_STEP);
 
-  for (let i = 0; i < bodies.length; i++) {
-    const body = bodies[i];
-    const update = body.getUpdate();
+    for (let i = 0; i < bodies.length; i++) {
+      const body = bodies[i];
+      const update = body.getUpdate();
 
-    if (update !== null) {
-      process.send(update);
+      if (update !== null) {
+        process.send(update);
+      }
     }
-  }
 
-  lastTime = now;
-}, FPS);
+    lastTime = now;
+  }, FPS);
+  lastTime = Date.now();
+};
+const _stop = () => {
+  clearInterval(interval);
+  interval = null;
+  lastTime = 0;
+};
