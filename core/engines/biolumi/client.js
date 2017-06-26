@@ -661,8 +661,10 @@ class Biolumi {
                     if (boxMesh.visible) {
                       boxMesh.visible = false;
                     }
-                    if (!open && rayMesh.visible) {
-                      rayMesh.visible = false;
+                    if (!open || !sides.includes(side)) {
+                      if (rayMesh.visible) {
+                        rayMesh.visible = false;
+                      }
                     }
                   };
 
