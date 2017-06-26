@@ -161,6 +161,7 @@ class Biolumi {
           const {THREE, renderer} = three;
 
           const zeroQuaternion = new THREE.Quaternion();
+          const defaultRayMeshScale = new THREE.Vector3(1, 1, 15);
 
           /* class MatrixProperties {
             constructor(position, rotation, scale) {
@@ -664,6 +665,15 @@ class Biolumi {
                     if (!open || !sides.includes(side)) {
                       if (rayMesh.visible) {
                         rayMesh.visible = false;
+                      }
+                    } else {
+                      if (!rayMesh.scale.equals(defaultRayMeshScale)) {
+                        rayMesh.scale.copy(defaultRayMeshScale);
+                        rayMesh.updateMatrixWorld();
+                      }
+
+                      if (!rayMesh.visible) {
+                        rayMesh.visible = true;
                       }
                     }
                   };
