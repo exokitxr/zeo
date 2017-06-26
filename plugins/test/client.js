@@ -1,14 +1,52 @@
+const SIDES = ['left', 'right'];
+
 class Test {
   mount() {
-    const {three, elements, input, pose, physics, payment} = zeo;
+    const {three, elements, input, pose, render, physics, payment} = zeo;
     const {THREE, scene} = three;
 
     const zeroVector = new THREE.Vector3();
+    const boxMaterial = new THREE.MeshPhongMaterial({
+      color: 0xFF0000,
+      transparent: true,
+      opacity: 0.9,
+    });
 
     const dataSymbol = Symbol();
     const bodies = [];
 
     console.log('mount');
+
+    const _makeControllerMesh = side => {
+      const object = new THREE.Object3D();
+
+      const childMesh = (() => {
+        const geometry = new THREE.BoxBufferGeometry(0.115, 0.075, 0.215);
+        const material = boxMaterial;
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.position.set(0, -(0.075 / 2), (0.215 / 2) - 0.045);
+        mesh.updateMatrix();
+        return mesh;
+      })();
+      object.add(childMesh);
+
+      const physicsBody = physics.makeBody(object, 'controller:' + side, {
+        linearFactor: zeroVector.toArray(),
+        angularFactor: zeroVector.toArray(),
+        disableDeactivation: true,
+        bindObject: true,
+        bindConnection: true,
+      });
+      object.physicsBody = physicsBody;
+
+      return object;
+    };
+    const controllerMeshes = {
+      left: _makeControllerMesh('left'),
+      right: _makeControllerMesh('right'),
+    };
+    scene.add(controllerMeshes.left);
+    scene.add(controllerMeshes.right);
 
     const testEntity = {
       attributes: {
@@ -57,9 +95,7 @@ class Test {
 
         const boxMesh = (() => {
           const geometry = new THREE.BoxBufferGeometry(1, 1, 1);
-          const material = new THREE.MeshPhongMaterial({
-            color: 0xFF0000,
-          });
+          const material = boxMaterial;
           const mesh = new THREE.Mesh(geometry, material);
           mesh.position.set(-2, 5, 0);
           mesh.rotation.set(Math.PI / 4, 0, Math.PI / 4);
@@ -68,9 +104,8 @@ class Test {
         scene.add(boxMesh);
         boxMesh.updateMatrixWorld();
         const boxBody = physics.makeBody(boxMesh, 'box', {
-          mass: 1,
           bindObject: true,
-          bindConnection: true,
+          bindConnection: false,
         });
         boxBody.initialState = {
           position: boxMesh.position.toArray(),
@@ -134,6 +169,19 @@ class Test {
     };
     elements.registerEntity(this, testEntity);
 
+    const _update = () => {
+      const {gamepads} = pose.getStatus();
+
+      SIDES.forEach(side => {
+        const gamepad = gamepads[side];
+        const {worldPosition: controlerPosition, worldRotation: controllerRotation} = gamepad;
+        const controllerMesh = controllerMeshes[side];
+        const {physicsBody} = controllerMesh;
+        physicsBody.setState(controlerPosition.toArray(), controllerRotation.toArray(), zeroVector.toArray(), zeroVector.toArray(), false);
+      });
+    };
+    render.on('update', _update);
+
     const _keypress = e => {
       if (e.keyCode === 112) { // P
         payment.requestCharge({
@@ -152,7 +200,7 @@ class Test {
           const body = bodies[i];
           const {initialState: {position, rotation}} = body;
           const linearVelocity = zeroVector.toArray();
-          const angularVelcity = zeroVector.toArray();;
+          const angularVelcity = zeroVector.toArray();
           const activate = true;
           body.setState(position, rotation, linearVelocity, angularVelcity, activate);
         }
@@ -161,8 +209,14 @@ class Test {
     input.on('keypress', _keypress);
 
     this._cleanup = () => {
+      boxMaterial.dispose();
+
+      scene.remove(controllerMeshes.left);
+      scene.remove(controllerMeshes.right);
+
       elements.unregisterEntity(this, testEntity);
 
+      render.removeListener('update', _update);
       input.removeListener('keypress', _keypress);
     };
   }
