@@ -112,14 +112,14 @@ class World {
         );
         const matrixAttributeSizeVector = oneVector.clone().multiplyScalar(2 * 1.1);
 
-        const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
+        /* const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
         const _decomposeMatrix = matrix => {
           const position = new THREE.Vector3();
           const rotation = new THREE.Quaternion();
           const scale = new THREE.Vector3();
           matrix.decompose(position, rotation, scale);
           return {position, rotation, scale};
-        };
+        }; */
 
         const localUserId = multiplayer.getId();
 
@@ -130,7 +130,7 @@ class World {
           transparent: true,
           opacity: 0.5,
         });
-        class MatrixAttribute {
+        /* class MatrixAttribute {
           constructor(entityId, attributeName) {
             this.entityId = entityId;
             this.attributeName = attributeName;
@@ -208,7 +208,7 @@ class World {
             transform.destroyTransformGizmo(this._transformGizmo);
           }
         }
-        const matrixAttributes = [];
+        const matrixAttributes = []; */
 
         const _makeTriggerState = () => ({
           triggered: false,
@@ -1261,7 +1261,7 @@ class World {
           _handleSetTagAttribute(localUserId, id, {name, value});
         };
         tags.on('setAttribute', _tagsSetAttribute);
-        const _tagsAttributeValueChanged = attributeSpec => {
+        /* const _tagsAttributeValueChanged = attributeSpec => {
           const {type} = attributeSpec;
 
           if (type === 'matrix') {
@@ -1282,7 +1282,7 @@ class World {
             }
           }
         };
-        tags.on('attributeValueChanged', _tagsAttributeValueChanged);
+        tags.on('attributeValueChanged', _tagsAttributeValueChanged); */
         const _tagsOpen = ({id}) => {
           _request('tagOpen', [localUserId, id], _warnError);
 
@@ -1624,7 +1624,7 @@ class World {
           tags.removeListener('mutateRemoveEntity', _mutateRemoveEntity);
           tags.removeListener('mutateSetAttribute', _mutateSetAttribute);
           tags.removeListener('setAttribute', _tagsSetAttribute);
-          tags.removeListener('attributeValueChanged', _tagsAttributeValueChanged);
+          // tags.removeListener('attributeValueChanged', _tagsAttributeValueChanged);
           tags.removeListener('open', _tagsOpen);
           tags.removeListener('close', _tagsClose);
           tags.removeListener('play', _tagsPlay);
