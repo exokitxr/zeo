@@ -162,133 +162,142 @@ class Transform {
               return object;
             })();
 
-            let boxAnchors = null;
-            const _removeBoxTargets = () => {
-              if (boxAnchors) {
-                for (let i = 0; i < boxAnchors.length; i++) {
-                  const boxAnchor = boxAnchors[i];
-                  transformGizmo.remove(boxAnchor);
-
-                  rend.removeMesh(boxAnchor);
-                }
-                rend.reindex();
-
-                boxAnchors = null;
-              }
-            };
-            transformGizmo.removeBoxTargets = _removeBoxTargets;
-            const _makeBoxTarget = (position, rotation, scale, size, anchor) => {
+            const boxAnchors = [];
+            const _addBoxTarget = (position, rotation, scale, size, anchor, onupdate = nop) => {
               const geometry = geometryUtils.unindexBufferGeometry(new THREE.BoxBufferGeometry(size.x, size.y, size.z));
               const material = transparentMaterial;
-              const mesh = new THREE.Mesh(geometry, material);
-              mesh.position.copy(position);
-              mesh.quaternion.copy(rotation);
-              mesh.scale.copy(scale);
-              mesh.anchor = anchor;
-              return mesh;
-            };
-            const _updateBoxTargets = () => {
-              _removeBoxTargets();
 
-              boxAnchors = [
-                _makeBoxTarget(
-                  new THREE.Vector3(1, 0, 0),
-                  new THREE.Quaternion(),
-                  new THREE.Vector3(1, 1, 1),
-                  new THREE.Vector3(0.2, 0.1, 0.1),
-                  {
-                    onmousedown: `transform:${transformId}:x`,
-                  }
-                ),
-                _makeBoxTarget(
-                  new THREE.Vector3(0, 1, 0),
-                  new THREE.Quaternion(),
-                  new THREE.Vector3(1, 1, 1),
-                  new THREE.Vector3(0.1, 0.2, 0.1),
-                  {
-                    onmousedown: `transform:${transformId}:y`,
-                  }
-                ),
-                _makeBoxTarget(
-                  new THREE.Vector3(0, 0, 1),
-                  new THREE.Quaternion(),
-                  new THREE.Vector3(1, 1, 1),
-                  new THREE.Vector3(0.1, 0.1, 0.2),
-                  {
-                    onmousedown: `transform:${transformId}:z`,
-                  }
-                ),
-                _makeBoxTarget(
-                  new THREE.Vector3(),
-                  new THREE.Quaternion(),
-                  new THREE.Vector3(1, 1, 1),
-                  new THREE.Vector3(0.2, 0.2, 0.2),
-                  {
-                    onmousedown: `transform:${transformId}:xyz`,
-                  }
-                ),
-                _makeBoxTarget(
-                  new THREE.Vector3(0.3 / 2, 0.3 / 2, 0),
-                  new THREE.Quaternion(),
-                  new THREE.Vector3(1, 1, 1),
-                  new THREE.Vector3(0.3, 0.3, 0.01),
-                  {
-                    onmousedown: `transform:${transformId}:xy`,
-                  }
-                ),
-                _makeBoxTarget(
-                  new THREE.Vector3(0, 0.3 / 2, 0.3 / 2),
-                  new THREE.Quaternion(),
-                  new THREE.Vector3(1, 1, 1),
-                  new THREE.Vector3(0.01, 0.3, 0.3),
-                  {
-                    onmousedown: `transform:${transformId}:yz`,
-                  }
-                ),
-                _makeBoxTarget(
-                  new THREE.Vector3(0.3 / 2, 0, 0.3 / 2),
-                  new THREE.Quaternion(),
-                  new THREE.Vector3(1, 1, 1),
-                  new THREE.Vector3(0.3, 0.01, 0.3),
-                  {
-                    onmousedown: `transform:${transformId}:xz`,
-                  }
-                ),
-                _makeBoxTarget(
-                  new THREE.Vector3(0, 0, rotateScale).applyQuaternion(transformGizmo.rotateGizmo.quaternion),
-                  new THREE.Quaternion(),
-                  new THREE.Vector3(1, 1, 1),
-                  new THREE.Vector3(0.1, 0.1, 0.1),
-                  {
-                    onmousedown: `transform:${transformId}:rotate`,
-                  }
-                ),
-                _makeBoxTarget(
-                  transformGizmo.scaleGizmo.position,
-                  new THREE.Quaternion(),
-                  new THREE.Vector3(1, 1, 1),
-                  new THREE.Vector3(0.1, 0.1, 0.1),
-                  {
-                    onmousedown: `transform:${transformId}:scale`,
-                  }
-                ),
-              ];
+              const boxAnchor = new THREE.Mesh(geometry, material);
+              boxAnchor.position.copy(position);
+              boxAnchor.quaternion.copy(rotation);
+              boxAnchor.scale.copy(scale);
+              boxAnchor.anchor = anchor;
+
+              transformGizmo.add(boxAnchor);
+              rend.addMesh(boxAnchor);
+
+              boxAnchor.onupdate = onupdate;
+
+              boxAnchors.push(boxAnchor);
+            };
+            _addBoxTarget(
+              new THREE.Vector3(1, 0, 0),
+              new THREE.Quaternion(),
+              new THREE.Vector3(1, 1, 1),
+              new THREE.Vector3(0.2, 0.1, 0.1),
+              {
+                onmousedown: `transform:${transformId}:x`,
+              }
+            );
+            _addBoxTarget(
+              new THREE.Vector3(0, 1, 0),
+              new THREE.Quaternion(),
+              new THREE.Vector3(1, 1, 1),
+              new THREE.Vector3(0.1, 0.2, 0.1),
+              {
+                onmousedown: `transform:${transformId}:y`,
+              }
+            );
+            _addBoxTarget(
+              new THREE.Vector3(0, 0, 1),
+              new THREE.Quaternion(),
+              new THREE.Vector3(1, 1, 1),
+              new THREE.Vector3(0.1, 0.1, 0.2),
+              {
+                onmousedown: `transform:${transformId}:z`,
+              }
+            );
+            _addBoxTarget(
+              new THREE.Vector3(),
+              new THREE.Quaternion(),
+              new THREE.Vector3(1, 1, 1),
+              new THREE.Vector3(0.2, 0.2, 0.2),
+              {
+                onmousedown: `transform:${transformId}:xyz`,
+              }
+            );
+            _addBoxTarget(
+              new THREE.Vector3(0.3 / 2, 0.3 / 2, 0),
+              new THREE.Quaternion(),
+              new THREE.Vector3(1, 1, 1),
+              new THREE.Vector3(0.3, 0.3, 0.01),
+              {
+                onmousedown: `transform:${transformId}:xy`,
+              }
+            );
+            _addBoxTarget(
+              new THREE.Vector3(0, 0.3 / 2, 0.3 / 2),
+              new THREE.Quaternion(),
+              new THREE.Vector3(1, 1, 1),
+              new THREE.Vector3(0.01, 0.3, 0.3),
+              {
+                onmousedown: `transform:${transformId}:yz`,
+              }
+            );
+            _addBoxTarget(
+              new THREE.Vector3(0.3 / 2, 0, 0.3 / 2),
+              new THREE.Quaternion(),
+              new THREE.Vector3(1, 1, 1),
+              new THREE.Vector3(0.3, 0.01, 0.3),
+              {
+                onmousedown: `transform:${transformId}:xz`,
+              }
+            );
+            _addBoxTarget(
+              new THREE.Vector3(0, 0, rotateScale).applyQuaternion(transformGizmo.rotateGizmo.quaternion),
+              new THREE.Quaternion(),
+              new THREE.Vector3(1, 1, 1),
+              new THREE.Vector3(0.1, 0.1, 0.1),
+              {
+                onmousedown: `transform:${transformId}:rotate`,
+              },
+              function() {
+                this.position.copy(new THREE.Vector3(0, 0, rotateScale).applyQuaternion(transformGizmo.rotateGizmo.quaternion));
+              }
+            );
+            _addBoxTarget(
+              transformGizmo.scaleGizmo.position,
+              new THREE.Quaternion(),
+              new THREE.Vector3(1, 1, 1),
+              new THREE.Vector3(0.1, 0.1, 0.1),
+              {
+                onmousedown: `transform:${transformId}:scale`,
+              }
+            );
+            rend.reindex();
+
+            const _updateBoxTargets = () => {
               for (let i = 0; i < boxAnchors.length; i++) {
                 const boxAnchor = boxAnchors[i];
-                transformGizmo.add(boxAnchor);
-
-                rend.addMesh(boxAnchor);
+                boxAnchor.onupdate();
               }
-
-              rend.reindex();
-              /* for (let i = 0; i < boxAnchors.length; i++) {
-                const boxAnchor = boxAnchors[i];
-                rend.updateMatrixWorld(boxAnchor);
-              } */
-              transformGizmo.updateMatrixWorld();
               rend.updateMatrixWorld(transformGizmo);
             };
             transformGizmo.updateBoxTargets = _updateBoxTargets;
+            const _showBoxTargets = () => {
+              for (let i = 0; i < boxAnchors.length; i++) {
+                const boxAnchor = boxAnchors[i];
+                boxAnchor.visible = true;
+              }
+              rend.updateMatrixWorld(transformGizmo);
+            };
+            transformGizmo.showBoxTargets = _showBoxTargets;
+            const _hideBoxTargets = () => {
+              for (let i = 0; i < boxAnchors.length; i++) {
+                const boxAnchor = boxAnchors[i];
+                boxAnchor.visible = false;
+              }
+              rend.updateMatrixWorld(transformGizmo);
+            };
+            transformGizmo.hideBoxTargets = _hideBoxTargets;
+            const _removeBoxTargets = () => {
+              for (let i = 0; i < boxAnchors.length; i++) {
+                const boxAnchor = boxAnchors[i];
+                rend.removeMesh(boxAnchor);
+              }
+              rend.reindex();
+            };
+            transformGizmo.removeBoxTargets = _removeBoxTargets;
 
             transformGizmo.update(position, rotation, scale);
 
@@ -331,7 +340,7 @@ class Transform {
                     startPosition: transformGizmo.position.clone(),
                   };
 
-                  transformGizmo.removeBoxTargets();
+                  transformGizmo.hideBoxTargets();
 
                   return true;
                 } else {
@@ -359,6 +368,8 @@ class Transform {
               const {position, rotation, scale} = transformGizmo.getProperties();
               transformGizmo.update(position, rotation, scale);
               transformGizmo.onupdate(position, rotation, scale);
+
+              transformGizmo.showBoxTargets();
 
               dragState.src = null;
             }
