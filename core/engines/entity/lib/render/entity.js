@@ -5,18 +5,13 @@ const {
 
 const AXES = ['x', 'y', 'z'];
 
-const vectorPolygonImg = require('../img/vector-polygon');
-const vectorPolygonImgSrc = 'data:image/svg+xml;base64,' + btoa(vectorPolygonImg);
 const closeBoxOutline = require('../img/close-box-outline');
-const closeBoxOutlineSrc = 'data:image/svg+xml;base64,' + btoa(closeBoxOutline);
 const closeOutline = require('../img/close-outline');
 const packageVariant = require('../img/package-variant');
-const packageVariantSrc = 'data:image/svg+xml;base64,' + btoa(packageVariant);
-const packageVariantClosed = require('../img/package-variant-closed');
-const packageVariantClosedSrc = 'data:image/svg+xml;base64,' + btoa(packageVariantClosed);
 const autorenewImg = require('../img/autorenew');
-const autorenewImgSrc = 'data:image/svg+xml;base64,' + btoa(autorenewImg);
 const linkImg = require('../img/link');
+const mapMarkerCircle = require('../img/map-marker-circle');
+const mapMarkerCircleWhite = require('../img/map-marker-circle-white');
 const upImg = require('../img/up');
 const downImg = require('../img/down');
 const chevronLeftImg = require('../img/chevron-left');
@@ -213,6 +208,8 @@ const makeRenderer = ({typeUtils, creatureUtils}) => {
       if (focusSpec && focusSpec.attributeName === name) {
         if (focusSpec.type === 'entityAttribute') {
           return 'input';
+        } else if (focusSpec.type === 'entityAttributeMatrix') {
+          return 'matrix';
         } else if (focusSpec.type === 'entityAttributeColor') {
           return 'color';
         } else {
@@ -226,7 +223,13 @@ const makeRenderer = ({typeUtils, creatureUtils}) => {
 
     switch (type) {
       case 'matrix': {
-        return '';
+        return `\
+          <div style="display: flex; height: 50px; margin: 0 20px; align-items: center;">
+            <a style="display: flex; padding: 15px; ${focusType === 'matrix' ? 'background-color: #000;' : ''} justify-content: center; align-items: center;" onclick="entityAttribute:${id}:${name}:matrix">
+              ${focusType === 'matrix' ? mapMarkerCircleWhite : mapMarkerCircle}
+            </a>
+          </div>
+        `;
       }
       case 'vector': {
         if (min === undefined) {
@@ -244,7 +247,7 @@ const makeRenderer = ({typeUtils, creatureUtils}) => {
 
           result += `\
             <div style="display: flex; height: 30px; margin: 5px 20px;">
-              <a style="display: flex; position: relative; height: inherit; width: 300px;" onclick="entityAttribute:${id}:${name}:${axis}:tweak" onmousedown="entityAttribute:${id}:${name}:${axis}:tweak">
+              <a style="display: flex; position: relative; height: inherit; width: 300px;" onclick="entityAttribute:${id}:${name}:${axis}:tweak">
                 <div style="position: absolute; top: 14px; left: 0; right: 0; height: 2px; background-color: #CCC;">
                   <div style="position: absolute; top: -9px; bottom: -9px; left: ${factor * 100}%; margin-left: -1px; width: 2px; background-color: #F00;"></div>
                 </div>
@@ -258,7 +261,7 @@ const makeRenderer = ({typeUtils, creatureUtils}) => {
       }
       case 'text': {
         return `\
-          <a style="display: flex; position: relative; margin: 20px; border: 2px solid #333; font-size: 24px; text-decoration: none; align-items: center; overflow: hidden; box-sizing: border-box;" onclick="entityAttribute:${id}:${name}:focus" onmousedown="entityAttribute:${id}:${name}:focus">
+          <a style="display: flex; position: relative; margin: 20px; border: 2px solid #333; font-size: 24px; text-decoration: none; align-items: center; overflow: hidden; box-sizing: border-box;" onclick="entityAttribute:${id}:${name}:focus">
             ${focusType === 'input' ? `<div style="position: absolute; width: 2px; top: 0; bottom: 0; left: ${inputValue}px; background-color: #333;"></div>` : ''}
             <div>${focusValue}</div>
           </a>
@@ -277,12 +280,12 @@ const makeRenderer = ({typeUtils, creatureUtils}) => {
 
         return `\
           <div style="display: flex;">
-            <a style="display: flex; position: relative; width: ${400 - (20 * 2) - 100 - (20 * 2)}px; height: 40px; margin: 5px 20px; margin-right: auto;" onclick="entityAttribute:${id}:${name}:tweak" onmousedown="entityAttribute:${id}:${name}:tweak">
+            <a style="display: flex; position: relative; width: ${400 - (20 * 2) - 100 - (20 * 2)}px; height: 40px; margin: 5px 20px; margin-right: auto;" onclick="entityAttribute:${id}:${name}:tweak">
               <div style="position: absolute; top: 19px; left: 0; right: 0; height: 2px; background-color: #CCC;">
                 <div style="position: absolute; top: -14px; bottom: -14px; left: ${factor * 100}%; margin-left: -1px; width: 2px; background-color: #F00;"></div>
               </div>
             </a>
-            <a style="display: flex; position: relative; width: 100px; height: 40px; margin: 5px 20px; border: 2px solid; font-size: 24px; font-weight: 400; text-decoration: none; overflow: hidden; box-sizing: border-box;" onclick="entityAttribute:${id}:${name}:focus" onmousedown="entityAttribute:${id}:${name}:focus">
+            <a style="display: flex; position: relative; width: 100px; height: 40px; margin: 5px 20px; border: 2px solid; font-size: 24px; font-weight: 400; text-decoration: none; overflow: hidden; box-sizing: border-box;" onclick="entityAttribute:${id}:${name}:focus">
               ${focusType === 'input' ? `<div style="position: absolute; width: 2px; top: 0; bottom: 0; left: ${inputValue}px; background-color: #333;"></div>` : ''}
               <div>${string}</div>
             </a>
@@ -298,7 +301,7 @@ const makeRenderer = ({typeUtils, creatureUtils}) => {
           return `\
             <div style="position: relative; height: 40px; margin: 5px 20px; z-index: 1;">
               <div style="display: flex; flex-direction: column; background-color: #FFF;">
-                <a style="display: flex; height: 40px; padding: 0 5px; border: 2px solid #333; font-size: 20px; font-weight: 400; text-decoration: none; align-items: center; text-overflow: ellipsis; overflow: hidden; box-sizing: border-box;" onclick="entityAttribute:${id}:${name}:focus" onmousedown="entityAttribute:${id}:${name}:focus">
+                <a style="display: flex; height: 40px; padding: 0 5px; border: 2px solid #333; font-size: 20px; font-weight: 400; text-decoration: none; align-items: center; text-overflow: ellipsis; overflow: hidden; box-sizing: border-box;" onclick="entityAttribute:${id}:${name}:focus">
                   <div style="text-overflow: ellipsis; flex-grow: 1; overflow: hidden;">${focusValue}</div>
                   <div style="display: flex; padding: 0 10px; font-size: 16px; justify-content: center;">▼</div>
                 </a>
@@ -323,7 +326,7 @@ const makeRenderer = ({typeUtils, creatureUtils}) => {
                     } */
                     return result;
                   })();
-                  return `<a style="display: flex; height: 40px; padding: 0 5px; border: 2px solid #333; ${style}; font-size: 20px; font-weight: 400; text-decoration: none; align-items: center; text-overflow: ellipsis; overflow: hidden; box-sizing: border-box;" onclick="entityAttribute:${id}:${name}:set:${option}" onmousedown="entityAttribute:${id}:${name}:set:${option}">
+                  return `<a style="display: flex; height: 40px; padding: 0 5px; border: 2px solid #333; ${style}; font-size: 20px; font-weight: 400; text-decoration: none; align-items: center; text-overflow: ellipsis; overflow: hidden; box-sizing: border-box;" onclick="entityAttribute:${id}:${name}:set:${option}">
                     ${option}
                   </a>`;
                 }).join('\n')}
@@ -342,7 +345,7 @@ const makeRenderer = ({typeUtils, creatureUtils}) => {
               ${colorImg}
             </a>` : ''}
             <a style="display: block; width: 40px; height: 40px; margin-right: 10px; background-color: ${color};" onclick="entityAttribute:${id}:${name}:pick"></a>
-            <a style="display: flex; position: relative; height: 40px; border: 2px solid #333; font-size: 24px; text-decoration: none; flex-grow: 1; align-items: center; overflow: hidden; box-sizing: border-box;" onclick="entityAttribute:${id}:${name}:focus" onmousedown="entityAttribute:${id}:${name}:focus">
+            <a style="display: flex; position: relative; height: 40px; border: 2px solid #333; font-size: 24px; text-decoration: none; flex-grow: 1; align-items: center; overflow: hidden; box-sizing: border-box;" onclick="entityAttribute:${id}:${name}:focus">
               ${focusType === 'input' ? `<div style="position: absolute; width: 2px; top: 2px; bottom: 2px; left: ${inputValue}px; background-color: #333;"></div>` : ''}
               <div>${string}</div>
             </a>
@@ -353,13 +356,13 @@ const makeRenderer = ({typeUtils, creatureUtils}) => {
         return `\
           <div style="display: flex; margin: 0 20px;">
             ${focusValue ?
-              `<a style="display: flex; width: 50px; height: 50px; justify-content: center; align-items: center;" onclick="entityAttribute:${id}:${name}:toggle" onmousedown="entityAttribute:${id}:${name}:toggle">
+              `<a style="display: flex; width: 50px; height: 50px; justify-content: center; align-items: center;" onclick="entityAttribute:${id}:${name}:toggle">
                 <div style="display: flex; width: ${(25 * 2) - (3 * 2)}px; height: 25px; padding: 2px; border: 4px solid #333; justify-content: flex-end; align-items: center; box-sizing: border-box;">
                   <div style="width: ${25 - ((4 * 2) + (2 * 2))}px; height: ${25 - ((4 * 2) + (2 * 2))}px; background-color: #333;"></div>
                 </div>
               </a>`
             :
-              `<a style="display: flex; width: 50px; height: 50px; justify-content: center; align-items: center;" onclick="entityAttribute:${id}:${name}:toggle" onmousedown="entityAttribute:${id}:${name}:toggle">
+              `<a style="display: flex; width: 50px; height: 50px; justify-content: center; align-items: center;" onclick="entityAttribute:${id}:${name}:toggle">
                 <div style="display: flex; width: ${(25 * 2) - (3 * 2)}px; height: 25px; padding: 2px; border: 4px solid #CCC; justify-content: flex-start; align-items: center; box-sizing: border-box;">
                   <div style="width: ${25 - ((4 * 2) + (2 * 2))}px; height: ${25 - ((4 * 2) + (2 * 2))}px; background-color: #CCC;"></div>
                 </div>
@@ -372,7 +375,7 @@ const makeRenderer = ({typeUtils, creatureUtils}) => {
         return `\
           <div style="display: flex; height: 50px; margin: 0 20px; align-items: center;">
             <div style="display: flex; position: relative; font-size: 24px; font-weight: 400; font-style: italic; align-items: center; flex-grow: 1; white-space: nowrap; text-overflow: ellipsis;">${focusValue}</div>
-            <a style="display: flex; padding: 15px; justify-content: center; align-items: center;" onmousedown="entityAttribute:${id}:${name}:link">
+            <a style="display: flex; padding: 15px; justify-content: center; align-items: center;">
               ${linkImg}
             </a>
           </div>

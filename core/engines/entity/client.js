@@ -222,6 +222,15 @@ class Entity {
                     tagId: tagId,
                     attributeName: attributeName,
                   };
+                } else if (match = type.match(/^entityAttributeMatrix:(.+?):(.+?)$/)) {
+                  const tagId = match[1];
+                  const attributeName = match[2];
+
+                  return {
+                    type: 'entityAttributeMatrix',
+                    tagId: tagId,
+                    attributeName: attributeName,
+                  };
                 } else if (match = type.match(/^entityAttributeColor:(.+?):(.+?)$/)) {
                   const tagId = match[1];
                   const attributeName = match[2];
@@ -491,7 +500,7 @@ class Entity {
             const onclick = (anchor && anchor.onclick) || '';
 
             let match;
-            if (match = onclick.match(/^entityAttribute:([^:]+):([^:]+)(?::([^:]+))?:(focus|set|tweak|pick|color|toggle|choose)(?::([^:]+))?$/)) {
+            if (match = onclick.match(/^entityAttribute:([^:]+):([^:]+)(?::([^:]+))?:(focus|set|tweak|pick|color|toggle|link|matrix)(?::([^:]+))?$/)) {
               const tagId = match[1];
               const attributeName = match[2];
               const key = match[3];
@@ -669,6 +678,31 @@ class Entity {
                   _updateNpm();
                   _updatePages();
                 });
+              } else if (action === 'link') {
+                console.log('link', { // XXX
+                  tagId,
+                  attributeName,
+                  attributeValue,
+                });
+              } else if (action === 'matrix') {
+                const {keyboardFocusState: oldKeyboardFocusState} = focusState;
+
+                if (oldKeyboardFocusState && /^entityAttributeMatrix:/.test(oldKeyboardFocusState.type)) {
+                  keyboard.tryBlur();
+                } else {
+                  const keyboardFocusState =  keyboard.fakeFocus({
+                    type: 'entityAttributeMatrix:' + tagId + ':' + attributeName,
+                  });
+                  focusState.keyboardFocusState = keyboardFocusState;
+
+                  keyboardFocusState.on('blur', () => {
+                    focusState.keyboardFocusState = null;
+
+                    _updatePages();
+                  });
+
+                  _updatePages();
+                }
               }
 
               return true;
