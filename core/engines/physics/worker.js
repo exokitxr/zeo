@@ -10,7 +10,7 @@ const solver = new Ammo.btSequentialImpulseConstraintSolver();
 const physicsWorld = new Ammo.btDiscreteDynamicsWorld(dispatcher, broadphase, solver, collisionConfiguration);
 physicsWorld.setGravity(new Ammo.btVector3(0, -10, 0));
 
-const bodies = {};
+const bodies = [];
 
 class Body {
   constructor(id, rigidBody) {
@@ -36,7 +36,8 @@ class Body {
         position: p,
         rotation: q,
       };
-      lastUpdate = newUpdate;
+      this._lastUpdate = newUpdate;
+
       return newUpdate;
     } else {
       return null;
@@ -53,7 +54,7 @@ process.on('message', m => {
 
       switch (type) {
         case 'box': {
-          if (!bodies[id]) {
+          if (!bodies.some(body => body.id === id)) {
             const boxShape = new Ammo.btBoxShape(new Ammo.btVector3(spec[0] / 2, spec[1] / 2, spec[2] / 2));
             const boxTransform = new Ammo.btTransform();
             boxTransform.setIdentity();
@@ -65,11 +66,12 @@ process.on('message', m => {
             physicsWorld.addRigidBody(boxBody);
             
             const body = new Body(id, boxBody);
-            bodies[id] = body;
+            bodies.push(body);
           }
+          break;
         }
         case 'plane': {
-          if (!bodies[id]) {
+          if (!bodies.some(body => body.id === id)) {
             const planeShape = new Ammo.btStaticPlaneShape(new Ammo.btVector3(spec[0], spec[1], spec[2]), spec[3]);
             const planeTransform = new Ammo.btTransform();
             planeTransform.setIdentity();
@@ -81,23 +83,26 @@ process.on('message', m => {
             physicsWorld.addRigidBody(planeBody);
 
             const body = new Body(id, boxBody);
-            bodies[id] = body;
+            bodies.push(body);
           }
+          break;
         }
         default: {
           console.warn('invalid body type:', JSON.stringify(type));
+          break;
         }
       }
       break;
     }
     case 'remove': {
-      const body = bodies[id];
+      const bodyIndex = bodies.find(body => body.id === id);
 
-      if (body) {
-        const {rigidBody} = boxBody;
+      if (bodyIndex !== -1) {
+        const body = bodies[bodyIndex];
+        const {rigidBody} = body;
         physicsWorld.removeRigidBody(rigidBody);
 
-        delete bodies[id];
+        bodies.splice(bodyIndex, 1);
       }
       break;
     }

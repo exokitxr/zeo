@@ -1,6 +1,9 @@
 class Test {
   mount() {
-    const {elements, input, pose, payment} = zeo;
+    const {three, elements, input, pose, physics, payment} = zeo;
+    const {THREE, scene} = three;
+
+    const dataSymbol = Symbol();
 
     console.log('mount');
 
@@ -48,9 +51,35 @@ class Test {
       },
       entityAddedCallback(entityElement) {
         console.log('entityAddedCallback', {entityElement});
+
+        const boxMesh = (() => {
+          const geometry = new THREE.BoxBufferGeometry(1, 1, 1);
+          const material = new THREE.MeshPhongMaterial({
+            color: 0xFFFF00,
+          });
+          const mesh = new THREE.Mesh(geometry, material);
+          mesh.position.set(-2, 5, 0);
+          return mesh;
+        })();
+        scene.add(boxMesh);
+        boxMesh.updateMatrixWorld();
+        const boxBody = physics.makeBody(boxMesh, 'box', {
+          weight: 1,
+          bindObject: true,
+          bindConnection: true,
+        });
+
+        entityElement[dataSymbol] = {
+          boxMesh,
+          boxBody,
+        };
       },
       entityRemovedCallback(entityElement) {
         console.log('entityRemovedCallback', {entityElement});
+
+        const {[dataSymbol]: {boxMesh, boxBody}} = entityElement;
+        scene.remove(boxBody);
+        physics.destroyBody(boxBody);
       },
       entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
         console.log('entityAttributeValueChangedCallback', {entityElement, name, oldValue, newValue});
@@ -71,6 +100,8 @@ class Test {
           .catch(err => {
             console.warn('charge error', err);
           });
+      } else if (e.keyCode === 107) { // K
+        // XXX reset phyics here
       }
     };
     input.on('keypress', _keypress);
