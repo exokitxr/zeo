@@ -672,7 +672,7 @@ class Zeo {
                       }
                     }
 
-                    class ZeoHandApi {
+                    class ZeoHandsApi {
                       makeGrabbable(id) {
                         return hand.makeGrabbable(id);
                       }
@@ -766,7 +766,7 @@ class Zeo {
                         this.physics = new ZeoPhysicsApi();
                         this.intersect = new ZeoIntersectApi();
                         this.teleport = new ZeoTeleportApi();
-                        this.hand = new ZeoHandApi();
+                        this.hands = new ZeoHandsApi();
                         this.transform = new ZeoTransformApi();
                         this.color = new ZeoColorApi();
                         this.animation = new ZeoAnimationApi();
