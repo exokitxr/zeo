@@ -76,12 +76,12 @@ class Physics {
             this.emit('update', u);
           }
 
-          setState(position, rotation) {
+          setState(position, rotation, linearVelocity, angularVelocity, activate) {
             const {id} = this;
 
             const e = {
               method: 'setState',
-              args: [id, position, rotation],
+              args: [id, position, rotation, linearVelocity, angularVelocity, activate],
             };
             const es = JSON.stringify(e);
             connection.send(es);
