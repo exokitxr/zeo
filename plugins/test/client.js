@@ -3,6 +3,8 @@ class Test {
     const {three, elements, input, pose, physics, payment} = zeo;
     const {THREE, scene} = three;
 
+    const zeroVector = new THREE.Vector3();
+
     const dataSymbol = Symbol();
     const bodies = [];
 
@@ -149,7 +151,10 @@ class Test {
         for (let i = 0; i < bodies.length; i++) {
           const body = bodies[i];
           const {initialState: {position, rotation}} = body;
-          body.setState(position, rotation);
+          const linearVelocity = zeroVector.toArray();
+          const angularVelcity = zeroVector.toArray();;
+          const activate = true;
+          body.setState(position, rotation, linearVelocity, angularVelcity, activate);
         }
       }
     };

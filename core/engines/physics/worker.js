@@ -50,7 +50,7 @@ class Body {
     }
   }
 
-  setState(position, rotation) {
+  setState(position, rotation, linearVelocity, angularVelocity, activate) {
     const {rigidBody} = this;
 
     TRANSFORM_AUX.setIdentity();
@@ -58,9 +58,11 @@ class Body {
     TRANSFORM_AUX.setRotation(new Ammo.btQuaternion(rotation[0], rotation[1], rotation[2], rotation[3]));
 
     rigidBody.setCenterOfMassTransform(TRANSFORM_AUX);
-    rigidBody.setLinearVelocity(new Ammo.btVector3(0, 0, 0));
-    rigidBody.setAngularVelocity(new Ammo.btVector3(0, 0, 0));
-    rigidBody.activate();
+    rigidBody.setLinearVelocity(new Ammo.btVector3(linearVelocity[0], linearVelocity[1], linearVelocity[2]));
+    rigidBody.setAngularVelocity(new Ammo.btVector3(angularVelocity[0], angularVelocity[1], angularVelocity[2]));
+    if (activate) {
+      rigidBody.activate();
+    }
   }
 
   clearCache() {
@@ -120,6 +122,46 @@ process.on('message', m => {
           }
           break;
         }
+        case 'compound': {
+          if (!bodies.some(body => body.id === id)) {
+            const compoundShape = new Ammo.btCompoundShape();
+            for (let i = 0; i < spec.length; i++) {
+              const childSpec = spec[i];
+              const [type, spec, position, rotation, mass] = childSpec;
+
+              switch (type) {
+                case 'box': {
+                  const boxShape = new Ammo.btBoxShape(new Ammo.btVector3(spec[0] / 2, spec[1] / 2, spec[2] / 2));
+                  const boxTransform = TRANSFORM_AUX;
+                  boxTransform.setIdentity();
+                  boxTransform.setOrigin(new Ammo.btVector3(position[0], position[1], position[2]));
+                  boxTransform.setRotation(new Ammo.btQuaternion(rotation[0], rotation[1], rotation[2], rotation[3]));
+                  compoundShape.addChildShape(boxTransform, boxShape);
+                  break;
+                }
+                default: {
+                  console.warn('invalid child type:', JSON.stringify(type));
+                  break;
+                }
+              }
+            }
+
+            const compoundTransform = TRANSFORM_AUX;
+            compoundTransform.setIdentity();
+            compoundTransform.setOrigin(new Ammo.btVector3(position[0], position[1], position[2]));
+            compoundTransform.setRotation(new Ammo.btQuaternion(rotation[0], rotation[1], rotation[2], rotation[3]));
+            const compoundMass = mass;
+            const compoundLocalInertia = new Ammo.btVector3(0, 0, 0);
+            const compoundMotionState = new Ammo.btDefaultMotionState(compoundTransform);
+            const compoundBody = new Ammo.btRigidBody(new Ammo.btRigidBodyConstructionInfo(compoundMass, compoundMotionState, compoundShape, compoundLocalInertia));
+            compoundBody.setActivationState(DISABLE_DEACTIVATION);
+            physicsWorld.addRigidBody(compoundBody);
+
+            const body = new Body(id, compoundBody, owner);
+            bodies.push(body);
+          }
+          break;
+        }
         default: {
           console.warn('invalid body type:', JSON.stringify(type));
           break;
@@ -139,11 +181,11 @@ process.on('message', m => {
       break;
     }
     case 'setState': {
-      const [id, position, rotation] = args;
+      const [id, position, rotation, linearVelocity, anguilarVelocity, activate] = args;
       const body = bodies.find(body => body.id === id);
 
       if (body) {
-        body.setState(position, rotation);
+        body.setState(position, rotation, linearVelocity, anguilarVelocity, activate);
       }
       break;
     }
