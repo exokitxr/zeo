@@ -211,6 +211,7 @@ class Hand {
         }
 
         const _getHoveredGrabbable = side => {
+          const {gamepads} = webvr.getStatus();
           const gamepad = gamepads[side];
           const {worldPosition: controllerPosition} = gamepad;
           const grabState = grabStates[side];
@@ -238,7 +239,7 @@ class Hand {
           const {grabbedGrabbable} = grabState;
 
           if (!grabbedGrabbable) {
-            hoveredGrabbable = _getHoveredGrabbable(side);
+            const hoveredGrabbable = _getHoveredGrabbable(side);
 
             if (hoveredGrabbable) {
               hoveredGrabbable.grab(localUserId, side);
@@ -260,9 +261,9 @@ class Hand {
         input.on('gripup', _gripup);
 
         const _update = () => {
-          const {gamepads} = webvr.getStatus();
-
           const _updateLocalPositions = () => {
+            const {gamepads} = webvr.getStatus();
+
             SIDES.forEach(side => {
               const gamepad = gamepads[side];
               const grabState = grabStates[side];

@@ -656,6 +656,16 @@ class Zeo {
                       }
                     }
 
+                    class ZeoHandApi {
+                      makeGrabbable(id) {
+                        return hand.makeGrabbable(id);
+                      }
+
+                      destroyGrabbable(grabbable) {
+                        hand.destroyGrabbable(grabbable);
+                      }
+                    }
+
                     class ZeoTransformApi {
                       makeTransformGizmo(spec) {
                         return transform.makeTransformGizmo(spec);
@@ -739,6 +749,7 @@ class Zeo {
                         this.sound = new ZeoSoundApi();
                         this.intersect = new ZeoIntersectApi();
                         this.teleport = new ZeoTeleportApi();
+                        this.hand = new ZeoHandApi();
                         this.transform = new ZeoTransformApi();
                         this.color = new ZeoColorApi();
                         this.animation = new ZeoAnimationApi();
