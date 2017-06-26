@@ -535,7 +535,7 @@ class Keyboard {
 
               SIDES.forEach(side => {
                 const hoverState = rend.getHoverState(side);
-                const {type, target} = hoverState;
+                const {target} = hoverState;
                 const {keyMeshes} = keyboardMesh;
                 const keyMesh = keyMeshes[side];
 
@@ -555,7 +555,7 @@ class Keyboard {
                   }
                 };
 
-                if (type === 'page' && target.type === 'keyboard') {
+                if (target && target.type === 'keyboard') {
                   const {intersectionPoint} = hoverState;
                   const gamepad = gamepads[side];
                   const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale} = gamepad;

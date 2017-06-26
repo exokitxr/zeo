@@ -92,7 +92,6 @@ class Rend {
 
         const auxObjects = {
           tagsLinesMesh: null,
-          transformGizmos: null,
           colorWheels: null,
           controllerMeshes: null,
         };
@@ -578,12 +577,12 @@ class Rend {
             uiTracker.removePage(page);
           }
 
-          addBoxAnchor(boxAnchor) {
-            uiTracker.addBoxAnchor(boxAnchor);
+          addMesh(mesh) {
+            uiTracker.addMesh(mesh);
           }
 
-          removeBoxAnchor(boxAnchor) {
-            uiTracker.removeBoxAnchor(boxAnchor);
+          removeMesh(mesh) {
+            uiTracker.removeMesh(mesh);
           }
 
           reindex() {
