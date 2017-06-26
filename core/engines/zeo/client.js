@@ -646,6 +646,10 @@ class Zeo {
                       destroyBody(body) {
                         physics.destroyBody(body);
                       }
+
+                      refresh() {
+                        physics.refresh();
+                      }
                     }
 
                     class ZeoIntersectApi {
