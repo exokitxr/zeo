@@ -15,7 +15,7 @@ const dispatcher = new Ammo.btCollisionDispatcher(collisionConfiguration);
 const broadphase = new Ammo.btDbvtBroadphase();
 const solver = new Ammo.btSequentialImpulseConstraintSolver();
 const physicsWorld = new Ammo.btDiscreteDynamicsWorld(dispatcher, broadphase, solver, collisionConfiguration);
-physicsWorld.setGravity(new Ammo.btVector3(0, -10, 0));
+physicsWorld.setGravity(new Ammo.btVector3(0, -9.8, 0));
 
 const bodies = [];
 
