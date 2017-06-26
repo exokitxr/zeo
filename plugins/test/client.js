@@ -4,6 +4,7 @@ class Test {
     const {THREE, scene} = three;
 
     const dataSymbol = Symbol();
+    const bodies = [];
 
     console.log('mount');
 
@@ -55,31 +56,75 @@ class Test {
         const boxMesh = (() => {
           const geometry = new THREE.BoxBufferGeometry(1, 1, 1);
           const material = new THREE.MeshPhongMaterial({
-            color: 0xFFFF00,
+            color: 0xFF0000,
           });
           const mesh = new THREE.Mesh(geometry, material);
           mesh.position.set(-2, 5, 0);
+          mesh.rotation.set(Math.PI / 4, 0, Math.PI / 4);
           return mesh;
         })();
         scene.add(boxMesh);
         boxMesh.updateMatrixWorld();
         const boxBody = physics.makeBody(boxMesh, 'box', {
-          weight: 1,
+          mass: 1,
           bindObject: true,
           bindConnection: true,
         });
+        boxBody.initialState = {
+          position: boxMesh.position.toArray(),
+          rotation: boxMesh.quaternion.toArray(),
+        };
+        bodies.push(boxBody);
+
+        const planeMesh = (() => {
+          const geometry = new THREE.PlaneBufferGeometry(10, 10, 100, 100)
+            .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(
+              new THREE.Quaternion().setFromUnitVectors(
+                new THREE.Vector3(0, 0, 1),
+                new THREE.Vector3(0, 1, 0)
+              )
+            ));
+          const material = new THREE.MeshPhongMaterial({
+            color: 0xFFFFFF,
+            wireframe: true,
+            transparent: true,
+            opacity: 0.5,
+          });
+          const mesh = new THREE.Mesh(geometry, material);
+          mesh.position.set(0, 0, 0);
+          mesh.quaternion;
+          return mesh;
+        })();
+        scene.add(planeMesh);
+        planeMesh.updateMatrixWorld();
+        const planeBody = physics.makeBody(planeMesh, 'plane', {
+          mass: 0,
+          bindObject: true,
+          bindConnection: true,
+        });
+        planeBody.initialState = {
+          position: planeMesh.position.toArray(),
+          rotation: planeMesh.quaternion.toArray(),
+        };
+        bodies.push(planeBody);
 
         entityElement[dataSymbol] = {
           boxMesh,
           boxBody,
+          planeMesh,
+          planeBody,
         };
       },
       entityRemovedCallback(entityElement) {
         console.log('entityRemovedCallback', {entityElement});
 
-        const {[dataSymbol]: {boxMesh, boxBody}} = entityElement;
-        scene.remove(boxBody);
+        const {[dataSymbol]: {boxMesh, boxBody, planeMesh, planeBody}} = entityElement;
+        scene.remove(boxMesh);
+        scene.remove(planeMesh);
         physics.destroyBody(boxBody);
+        physics.destroyBody(planeBody);
+        bodies.splice(bodies.indexOf(boxBody), 1);
+        bodies.splice(bodies.indexOf(planeBody), 1);
       },
       entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
         console.log('entityAttributeValueChangedCallback', {entityElement, name, oldValue, newValue});
@@ -101,7 +146,11 @@ class Test {
             console.warn('charge error', err);
           });
       } else if (e.keyCode === 107) { // K
-        // XXX reset phyics here
+        for (let i = 0; i < bodies.length; i++) {
+          const body = bodies[i];
+          const {initialState: {position, rotation}} = body;
+          body.setState(position, rotation);
+        }
       }
     };
     input.on('keypress', _keypress);

@@ -73,6 +73,11 @@ class Physics {
         c.on('close', () => {
           connections.splice(connections.indexOf(c), 1);
         });
+
+        worker.send({
+          method: 'clearCache',
+          args: [],
+        });
       }
     });
     this._cleanup = () => {

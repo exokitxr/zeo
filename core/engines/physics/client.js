@@ -18,6 +18,7 @@ class Physics {
       '/core/engines/rend',
       '/core/engines/multiplayer',
       '/core/utils/js-utils',
+      '/core/utils/geometry-utils',
       '/core/utils/network-utils',
     ]).then(([
       three,
@@ -26,6 +27,7 @@ class Physics {
       rend,
       multiplayer,
       jsUtils,
+      geometryUtils,
       networkUtils,
     ]) => {
       if (live) {
@@ -36,14 +38,14 @@ class Physics {
 
         const localUserId = multiplayer.getId();
 
-        /* const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
+        /* const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld); */
         const _decomposeMatrix = matrix => {
           const position = new THREE.Vector3();
           const rotation = new THREE.Quaternion();
           const scale = new THREE.Vector3();
           matrix.decompose(position, rotation, scale);
           return {position, rotation, scale};
-        }; */
+        };
 
         const bodies = {};
 
@@ -73,6 +75,17 @@ class Physics {
             };
             this.emit('update', u);
           }
+
+          setState(position, rotation) {
+            const {id} = this;
+
+            const e = {
+              method: 'setState',
+              args: [id, position, rotation],
+            };
+            const es = JSON.stringify(e);
+            connection.send(es);
+          }
         }
 
         const connection = new AutoWs(_relativeWsUrl('archae/physicsWs?id=' + localUserId));
@@ -100,17 +113,40 @@ class Physics {
             const {geometry} = object;
             const {constructor} = geometry;
 
-            if (constructor === THREE.BoxGeometry || constructor === THREE.BoxBufferGeometry) {
+            if (constructor === THREE.BoxBufferGeometry) {
               const {parameters: {width, height, depth}} = geometry;
+              const {position, rotation} = _decomposeMatrix(object.matrix);
               const e = {
                 method: 'add',
-                args: [id, 'box', [width, height, depth], object.position.toArray(), object.quaternion.toArray(), mass],
+                args: [id, 'box', [width, height, depth], position.toArray(), rotation.toArray(), mass],
               };
               const es = JSON.stringify(e);
               connection.send(es);
 
               const body = new Body(id, object, bindObject);
               bodies[id] = body;
+
+              return body;
+            } else if (constructor === THREE.PlaneBufferGeometry) {
+              const geometryClone = geometryUtils.unindexBufferGeometry(geometry.clone());
+              const positions = geometryClone.getAttribute('position').array;
+              const normal = new THREE.Triangle(
+                new THREE.Vector3(positions[0], positions[1], positions[2]),
+                new THREE.Vector3(positions[3], positions[4], positions[5]),
+                new THREE.Vector3(positions[6], positions[7], positions[8]),
+              ).normal();
+              const constant = object.position.length();
+              const e = {
+                method: 'add',
+                args: [id, 'plane', normal.toArray().concat([constant]), [0, 0, 0], [0, 0, 0, 1], mass],
+              };
+              const es = JSON.stringify(e);
+              connection.send(es);
+
+              const body = new Body(id, object, bindObject);
+              bodies[id] = body;
+
+              return body;
 
               return body;
             } else {

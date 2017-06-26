@@ -1,5 +1,11 @@
 const Ammo = require('bllt');
 
+const ACTIVE_TAG = 1;
+const ISLAND_SLEEPING = 2;
+const WANTS_DEACTIVATION = 3;
+const DISABLE_DEACTIVATION = 4;
+const DISABLE_SIMULATION = 5;
+
 const FPS = 1000 / 60;
 const TRANSFORM_AUX = new Ammo.btTransform();
 
@@ -23,8 +29,7 @@ class Body {
   getUpdate() {
     const {id, rigidBody, _lastUpdate: lastUpdate} = this;
 
-    const ms = rigidBody.getMotionState();
-    ms.getWorldTransform(TRANSFORM_AUX);
+    rigidBody.getMotionState().getWorldTransform(TRANSFORM_AUX);
     const pv = TRANSFORM_AUX.getOrigin();
     const p = [pv.x(), pv.y(), pv.z()];
     const qv = TRANSFORM_AUX.getRotation();
@@ -43,6 +48,23 @@ class Body {
       return null;
     }
   }
+
+  setState(position, rotation) {
+    const {rigidBody} = this;
+
+    TRANSFORM_AUX.setIdentity();
+    TRANSFORM_AUX.setOrigin(new Ammo.btVector3(position[0], position[1], position[2]));
+    TRANSFORM_AUX.setRotation(new Ammo.btQuaternion(rotation[0], rotation[1], rotation[2], rotation[3]));
+
+    rigidBody.setCenterOfMassTransform(TRANSFORM_AUX);
+    rigidBody.setLinearVelocity(new Ammo.btVector3(0, 0, 0));
+    rigidBody.setAngularVelocity(new Ammo.btVector3(0, 0, 0));
+    rigidBody.activate();
+  }
+
+  clearCache() {
+    this._lastUpdate = null;
+  }
 }
 
 process.on('message', m => {
@@ -56,11 +78,13 @@ process.on('message', m => {
         case 'box': {
           if (!bodies.some(body => body.id === id)) {
             const boxShape = new Ammo.btBoxShape(new Ammo.btVector3(spec[0] / 2, spec[1] / 2, spec[2] / 2));
-            const boxTransform = new Ammo.btTransform();
+            const boxTransform = TRANSFORM_AUX;
             boxTransform.setIdentity();
             boxTransform.setOrigin(new Ammo.btVector3(position[0], position[1], position[2]));
+            boxTransform.setRotation(new Ammo.btQuaternion(rotation[0], rotation[1], rotation[2], rotation[3]));
             const boxMass = mass;
             const boxLocalInertia = new Ammo.btVector3(0, 0, 0);
+            boxShape.calculateLocalInertia(boxMass, boxLocalInertia);
             const boxMotionState = new Ammo.btDefaultMotionState(boxTransform);
             const boxBody = new Ammo.btRigidBody(new Ammo.btRigidBodyConstructionInfo(boxMass, boxMotionState, boxShape, boxLocalInertia));
             physicsWorld.addRigidBody(boxBody);
@@ -73,16 +97,17 @@ process.on('message', m => {
         case 'plane': {
           if (!bodies.some(body => body.id === id)) {
             const planeShape = new Ammo.btStaticPlaneShape(new Ammo.btVector3(spec[0], spec[1], spec[2]), spec[3]);
-            const planeTransform = new Ammo.btTransform();
+            const planeTransform = TRANSFORM_AUX;
             planeTransform.setIdentity();
             planeTransform.setOrigin(new Ammo.btVector3(position[0], position[1], position[2]));
-            const planeMass = 0;
+            planeTransform.setRotation(new Ammo.btQuaternion(rotation[0], rotation[1], rotation[2], rotation[3]));
+            const planeMass = mass;
             const planeLocalInertia = new Ammo.btVector3(0, 0, 0);
             const planeMotionState = new Ammo.btDefaultMotionState(planeTransform);
             const planeBody = new Ammo.btRigidBody(new Ammo.btRigidBodyConstructionInfo(planeMass, planeMotionState, planeShape, planeLocalInertia));
             physicsWorld.addRigidBody(planeBody);
 
-            const body = new Body(id, boxBody);
+            const body = new Body(id, planeBody);
             bodies.push(body);
           }
           break;
@@ -95,7 +120,8 @@ process.on('message', m => {
       break;
     }
     case 'remove': {
-      const bodyIndex = bodies.find(body => body.id === id);
+      const [id] = args;
+      const bodyIndex = bodies.findIndex(body => body.id === id);
 
       if (bodyIndex !== -1) {
         const body = bodies[bodyIndex];
@@ -103,6 +129,22 @@ process.on('message', m => {
         physicsWorld.removeRigidBody(rigidBody);
 
         bodies.splice(bodyIndex, 1);
+      }
+      break;
+    }
+    case 'setState': {
+      const [id, position, rotation] = args;
+      const body = bodies.find(body => body.id === id);
+
+      if (body) {
+        body.setState(position, rotation);
+      }
+      break;
+    }
+    case 'clearCache': {
+      for (let i = 0; i < bodies.length; i++) {
+        const body = bodies[i];
+        body.clearCache();
       }
       break;
     }
