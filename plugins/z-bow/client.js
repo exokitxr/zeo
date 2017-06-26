@@ -12,7 +12,7 @@ const SIDES = ['left', 'right'];
 
 class ZBow {
   mount() {
-    const {three: {THREE, scene}, input, elements, render, pose, hand, player, utils: {geometry: geometryUtils}} = zeo;
+    const {three: {THREE, scene}, input, elements, render, pose, hands, player, utils: {geometry: geometryUtils}} = zeo;
 
     const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
     const _decomposeMatrix = matrix => {
@@ -184,7 +184,7 @@ class ZBow {
 
         const _getOtherSide = side => side === 'left' ? 'right' : 'left';
 
-        const bowGrabbable = hand.makeGrabbable('bow');
+        const bowGrabbable = hands.makeGrabbable('bow');
         const _grab = e => {
           const {side} = e;
           const bowState = bowStates[side];
@@ -422,7 +422,7 @@ class ZBow {
         entityApi._cleanup = () => {
           entityObject.remove(mesh);
 
-          hand.destroyGrabbable(bowGrabbable);
+          hands.destroyGrabbable(bowGrabbable);
 
           input.removeListener('gripdown', _gripdown);
           input.removeListener('gripup', _gripup);
