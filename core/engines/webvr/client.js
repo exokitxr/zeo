@@ -917,7 +917,7 @@ class WebVR {
             const gamepads = [new FakeVRGamepad(this, 0), new FakeVRGamepad(this, 1)];
             this.gamepads = gamepads;
 
-            this.mode = 'center';
+            this.mode = 'right';
 
             const keydown = e => {
               if (this.isPresenting) {
