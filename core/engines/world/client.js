@@ -1133,108 +1133,6 @@ class World {
           priority: 1,
         });
 
-        const authorizedState = {
-          loading: false,
-          loaded: false,
-          loadCbs: [],
-          authorized: false,
-        };
-        const _openWalletWindow = req => {
-          const width = 800;
-          const height = 600;
-
-          return window.open(
-            `${siteUrl}/id/iframe?${_formatQueryString(req)}`,
-            'wallet',
-            `left=${(screen.width - width) / 2},top=${(screen.height - height) / 2},width=${width},height=${height}`
-          );
-        }
-        const _requestWallet = req => new Promise((accept, reject) => {
-          const walletWindow = _openWalletWindow(req);
-
-          const _cleanup = () => {
-            window.removeEventListener('message', _onmessage);
-
-            if (walletWindow) {
-              walletWindow.close();
-            }
-          };
-
-          const _onmessage = e => {
-            _cleanup();
-
-            const {data} = e;
-            const {error} = data;
-
-            if (!error) {
-              const {result} = data;
-              accept(result);
-            } else {
-              reject(error);
-            }
-          };
-          window.addEventListener('message', _onmessage);
-        });
-
-        /* const _grabAssetBill = ({side, tagMesh, quantity}) => {
-          const grabMesh = grabManager.getMesh(side);
-
-          if (!grabMesh) {
-            // add tag mesh
-            const itemSpec = _clone(tagMesh.item);
-            itemSpec.id = _makeId();
-            itemSpec.matrix = DEFAULT_MATRIX;
-            itemSpec.quantity = quantity;
-            itemSpec.words = assetwalletStatic.makeWords();
-            itemSpec.metadata.isStatic = false;
-            _addTag(itemSpec, 'hand:' + side);
-            const billTagMesh = grabManager.getMesh(side);
-            const {item: billItem} = billTagMesh;
-            billItem.instancing = true;
-
-            // perform the pack
-            return fetch(`${siteUrl}/id/api/pack`, {
-              method: 'POST',
-              headers: (() => {
-                const headers = new Headers();
-                headers.append('Content-Type', 'application/json');
-                return headers;
-              })(),
-              body: JSON.stringify((() => {
-                if (itemSpec.name === 'BTC') {
-                  return {
-                    words: itemSpec.words,
-                    value: itemSpec.quantity,
-                  };
-                } else {
-                  return {
-                    words: itemSpec.words,
-                    asset: itemSpec.name,
-                    quantity: itemSpec.quantity,
-                  };
-                }
-              })()),
-              credentials: 'include',
-            })
-              .then(_resJson)
-              .then(({words, asset, quantity, txid}) => {
-                console.log('packed', {words, asset, quantity, txid});
-
-                const assetName = itemSpec.name || 'BTC';
-                const assetTagMesh = wallet.getAssetTagMeshes()
-                  .find(tagMesh =>
-                    tagMesh.item.type === 'asset' &&
-                    tagMesh.item.name === assetName &&
-                    (tagMesh.item.metadata && tagMesh.item.metadata.isStatic && !tagMesh.item.metadata.isSub)
-                  );
-                if (assetTagMesh) {
-                  // XXX update the quantity here
-                  assetTagMesh.update();
-                }
-              });
-          }
-        };
-        tags.on('grabAssetBill', _grabAssetBill); */
         const _mutateAddEntity = ({element, tagName, attributes}) => {
           const itemSpec = {
             type: 'entity',
@@ -1261,28 +1159,6 @@ class World {
           _handleSetTagAttribute(localUserId, id, {name, value});
         };
         tags.on('setAttribute', _tagsSetAttribute);
-        /* const _tagsAttributeValueChanged = attributeSpec => {
-          const {type} = attributeSpec;
-
-          if (type === 'matrix') {
-            const {entityId, attributeName, oldValue, newValue} = attributeSpec;
-
-            if (oldValue === null && newValue !== null) {
-              const matrixAttribute = new MatrixAttribute(entityId, attributeName);
-              matrixAttribute.updateMatrix(newValue);
-              matrixAttributes.push(matrixAttribute);
-            } else if (oldValue !== null && newValue === null) {
-              const index = matrixAttributes.findIndex(matrixAttribute => matrixAttribute.entityId === entityId && matrixAttribute.attributeName === attributeName);
-              const matrixAttribute = matrixAttributes[index];
-              matrixAttribute.destroy();
-              matrixAttributes.splice(index, 1);
-            } else if (oldValue !== null && newValue !== null) {
-              const matrixAttribute = matrixAttributes.find(matrixAttribute => matrixAttribute.entityId === entityId && matrixAttribute.attributeName === attributeName);
-              matrixAttribute.updateMatrix(newValue);
-            }
-          }
-        };
-        tags.on('attributeValueChanged', _tagsAttributeValueChanged); */
         const _tagsOpen = ({id}) => {
           _request('tagOpen', [localUserId, id], _warnError);
 
@@ -1619,12 +1495,10 @@ class World {
           input.removeListener('trigger', _trigger);
 
           tags.removeListener('download', _download);
-          // tags.removeListener('grabAssetBill', _grabAssetBill);
           tags.removeListener('mutateAddEntity', _mutateAddEntity);
           tags.removeListener('mutateRemoveEntity', _mutateRemoveEntity);
           tags.removeListener('mutateSetAttribute', _mutateSetAttribute);
           tags.removeListener('setAttribute', _tagsSetAttribute);
-          // tags.removeListener('attributeValueChanged', _tagsAttributeValueChanged);
           tags.removeListener('open', _tagsOpen);
           tags.removeListener('close', _tagsClose);
           tags.removeListener('play', _tagsPlay);
