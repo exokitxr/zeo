@@ -100,7 +100,7 @@ class Test {
         const planeBody = physics.makeBody(planeMesh, 'plane', {
           mass: 0,
           bindObject: true,
-          bindConnection: true,
+          bindConnection: false,
         });
         planeBody.initialState = {
           position: planeMesh.position.toArray(),

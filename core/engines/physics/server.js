@@ -61,7 +61,6 @@ class Physics {
       let match;
       if (match = url.match(/\/archae\/physicsWs\?id=(.+)$/)) {
         const userId = match[1];
-        c.userId = userId;
 
         c.on('message', m => {
           const j = JSON.parse(m);
@@ -71,6 +70,11 @@ class Physics {
         connections.push(c);
 
         c.on('close', () => {
+          worker.send({
+            method: 'removeOwner',
+            args: [userId],
+          });
+
           connections.splice(connections.indexOf(c), 1);
         });
 
