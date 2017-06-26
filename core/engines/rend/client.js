@@ -207,18 +207,6 @@ class Rend {
           object.add(navbarMesh);
           object.navbarMesh = navbarMesh;
 
-          const shadowMesh = (() => {
-            const geometry = new THREE.BoxBufferGeometry(WORLD_WIDTH, WORLD_HEIGHT + NAVBAR_WORLD_HEIGHT, 0.01);
-            const material = transparentMaterial.clone();
-            material.depthWrite = false;
-
-            const mesh = new THREE.Mesh(geometry, material);
-            mesh.position.y = NAVBAR_WORLD_HEIGHT / 2;
-            mesh.castShadow = true;
-            return mesh;
-          })();
-          object.add(shadowMesh);
-
           return object;
         })();
         scene.add(menuMesh);
