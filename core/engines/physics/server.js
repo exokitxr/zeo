@@ -23,7 +23,7 @@ class Physics {
     const worker = child_process.fork(path.join(__dirname, 'worker.js'));
     worker.on('message', m => {
       if (connections.length > 0) {
-        const ms = JSON.stringify(ms);
+        const ms = JSON.stringify(m);
         
         for (let i = 0; i < connections.length; i++) {
           const connection = connections[i];

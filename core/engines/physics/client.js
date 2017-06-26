@@ -79,7 +79,7 @@ class Physics {
         connection.on('message', msg => {
           const m = JSON.parse(msg.data);
           const {id} = m;
-          const body = bodies[i];
+          const body = bodies[id];
 
           if (body) {
             const {position, rotation} = m;
@@ -104,15 +104,19 @@ class Physics {
               const {parameters: {width, height, depth}} = geometry;
               const e = {
                 method: 'add',
-                args: [id, 'box', [width, height, depth], object.position.toArray, object.quaternion.toArray(), mass],
+                args: [id, 'box', [width, height, depth], object.position.toArray(), object.quaternion.toArray(), mass],
               };
               const es = JSON.stringify(e);
               connection.send(es);
 
               const body = new Body(id, object, bindObject);
               bodies[id] = body;
+
+              return body;
             } else {
               console.warn('Invalid mesh type', object);
+
+              return null;
             }
           }
         };
@@ -140,5 +144,10 @@ class Physics {
     this._cleanup();
   }
 }
+
+const _relativeWsUrl = s => {
+  const l = window.location;
+  return ((l.protocol === 'https:') ? 'wss://' : 'ws://') + l.host + l.pathname + (!/\/$/.test(l.pathname) ? '/' : '') + s;
+};
 
 module.exports = Physics;
