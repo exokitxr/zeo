@@ -698,8 +698,8 @@ class Entity {
                   focusState.keyboardFocusState = keyboardFocusState;
 
                   const position = new THREE.Vector3(attributeValue[0], attributeValue[1], attributeValue[2]);
-                  const rotation = new THREE.Quaternion(attributeValue[3], attributeValue[4], attributeValue[5]);
-                  const scale = new THREE.Vector3(attributeValue[6], attributeValue[7], attributeValue[8]);
+                  const rotation = new THREE.Quaternion(attributeValue[3], attributeValue[4], attributeValue[5], attributeValue[6]);
+                  const scale = new THREE.Vector3(attributeValue[7], attributeValue[8], attributeValue[9]);
 
                   const transformGizmo = transform.makeTransformGizmo({
                     position: position,
