@@ -104,55 +104,92 @@ class Physics {
           connection.destroy();
         };
 
-        const _makeBody = (object, id, {bindObject = true, bindConnection = true, mass = 1} = {}) => {
+        const _makeBody = (object, id, {bindObject = true, bindConnection = true, mass = 1, linearFactor = [1, 1, 1], angularFactor = [1, 1, 1], disableDeactivation = false} = {}) => {
           const oldBody = bodies[id];
 
           if (oldBody) {
             return oldBody;
           } else {
-            const {geometry} = object;
-            const {constructor} = geometry;
+            const {constructor} = object;
 
-            if (constructor === THREE.BoxBufferGeometry) {
-              const {parameters: {width, height, depth}} = geometry;
+            if (constructor === THREE.Mesh) {
+              const {geometry} = object;
+              const {constructor} = geometry;
+
+              if (constructor === THREE.BoxBufferGeometry) {
+                const {parameters: {width, height, depth}} = geometry;
+                const {position, rotation} = _decomposeMatrix(object.matrix);
+                const owner = bindConnection ? localUserId : null;
+                const e = {
+                  method: 'add',
+                  args: [id, 'box', [width, height, depth], position.toArray(), rotation.toArray(), mass, linearFactor, angularFactor, disableDeactivation, owner],
+                };
+                const es = JSON.stringify(e);
+                connection.send(es);
+
+                const body = new Body(id, object, bindObject);
+                bodies[id] = body;
+
+                return body;
+              } else if (constructor === THREE.PlaneBufferGeometry) {
+                const geometryClone = geometryUtils.unindexBufferGeometry(geometry.clone());
+                const positions = geometryClone.getAttribute('position').array;
+                const normal = new THREE.Triangle(
+                  new THREE.Vector3(positions[0], positions[1], positions[2]),
+                  new THREE.Vector3(positions[3], positions[4], positions[5]),
+                  new THREE.Vector3(positions[6], positions[7], positions[8]),
+                ).normal();
+                const constant = object.position.length();
+                const owner = bindConnection ? localUserId : null;
+                const e = {
+                  method: 'add',
+                  args: [id, 'plane', normal.toArray().concat([constant]), [0, 0, 0], [0, 0, 0, 1], mass, linearFactor, angularFactor, disableDeactivation, owner],
+                };
+                const es = JSON.stringify(e);
+                connection.send(es);
+
+                const body = new Body(id, object, bindObject);
+                bodies[id] = body;
+
+                return body;
+              } else {
+                console.warn('Invalid mesh type', constructor);
+
+                return null;
+              }
+            } else if (constructor === THREE.Object3D) {
+              const {children} = object;
+
+              const spec = [];
+              for (let i = 0; i < children.length; i++) {
+                const child = children[i];
+                const {geometry} = child;
+                const {constructor} = geometry;
+
+                if (constructor === THREE.BoxBufferGeometry) {
+                  const {parameters: {width, height, depth}} = geometry;
+                  const {position, rotation} = _decomposeMatrix(child.matrix);
+
+                  spec.push(['box', [width, height, depth], position.toArray(), rotation.toArray()]);
+                } else {
+                  console.warn('Invalid compound child type', constructor);
+                }
+              }
               const {position, rotation} = _decomposeMatrix(object.matrix);
               const owner = bindConnection ? localUserId : null;
               const e = {
                 method: 'add',
-                args: [id, 'box', [width, height, depth], position.toArray(), rotation.toArray(), mass, owner],
+                args: [id, 'compound', spec, position.toArray(), rotation.toArray(), mass, linearFactor, angularFactor, disableDeactivation, owner],
               };
               const es = JSON.stringify(e);
               connection.send(es);
 
               const body = new Body(id, object, bindObject);
               bodies[id] = body;
-
-              return body;
-            } else if (constructor === THREE.PlaneBufferGeometry) {
-              const geometryClone = geometryUtils.unindexBufferGeometry(geometry.clone());
-              const positions = geometryClone.getAttribute('position').array;
-              const normal = new THREE.Triangle(
-                new THREE.Vector3(positions[0], positions[1], positions[2]),
-                new THREE.Vector3(positions[3], positions[4], positions[5]),
-                new THREE.Vector3(positions[6], positions[7], positions[8]),
-              ).normal();
-              const constant = object.position.length();
-              const owner = bindConnection ? localUserId : null;
-              const e = {
-                method: 'add',
-                args: [id, 'plane', normal.toArray().concat([constant]), [0, 0, 0], [0, 0, 0, 1], mass, owner],
-              };
-              const es = JSON.stringify(e);
-              connection.send(es);
-
-              const body = new Body(id, object, bindObject);
-              bodies[id] = body;
-
-              return body;
 
               return body;
             } else {
-              console.warn('Invalid mesh type', object);
+              console.warn('Invalid object type', constructor);
 
               return null;
             }

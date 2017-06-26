@@ -82,7 +82,7 @@ process.on('message', m => {
 
   switch (method) {
     case 'add': {
-      const [id, type, spec, position, rotation, mass, owner] = args;
+      const [id, type, spec, position, rotation, mass, linearFactor, angularFactor, disableDeactivation, owner] = args;
 
       switch (type) {
         case 'box': {
@@ -97,6 +97,11 @@ process.on('message', m => {
             boxShape.calculateLocalInertia(boxMass, boxLocalInertia);
             const boxMotionState = new Ammo.btDefaultMotionState(boxTransform);
             const boxBody = new Ammo.btRigidBody(new Ammo.btRigidBodyConstructionInfo(boxMass, boxMotionState, boxShape, boxLocalInertia));
+            boxBody.setLinearFactor(new Ammo.btVector3(linearFactor[0], linearFactor[1], linearFactor[2]));
+            boxBody.setAngularFactor(new Ammo.btVector3(angularFactor[0], angularFactor[1], angularFactor[2]));
+            if (disableDeactivation) {
+              boxBody.setActivationState(DISABLE_DEACTIVATION);
+            }
             physicsWorld.addRigidBody(boxBody);
             
             const body = new Body(id, boxBody, owner);
@@ -115,6 +120,11 @@ process.on('message', m => {
             const planeLocalInertia = new Ammo.btVector3(0, 0, 0);
             const planeMotionState = new Ammo.btDefaultMotionState(planeTransform);
             const planeBody = new Ammo.btRigidBody(new Ammo.btRigidBodyConstructionInfo(planeMass, planeMotionState, planeShape, planeLocalInertia));
+            planeBody.setLinearFactor(new Ammo.btVector3(linearFactor[0], linearFactor[1], linearFactor[2]));
+            planeBody.setAngularFactor(new Ammo.btVector3(angularFactor[0], angularFactor[1], angularFactor[2]));
+            if (disableDeactivation) {
+              planeBody.setActivationState(DISABLE_DEACTIVATION);
+            }
             physicsWorld.addRigidBody(planeBody);
 
             const body = new Body(id, planeBody, owner);
@@ -125,14 +135,15 @@ process.on('message', m => {
         case 'compound': {
           if (!bodies.some(body => body.id === id)) {
             const compoundShape = new Ammo.btCompoundShape();
-            for (let i = 0; i < spec.length; i++) {
-              const childSpec = spec[i];
+            const childSpecs = spec;
+            for (let i = 0; i < childSpecs.length; i++) {
+              const childSpec = childSpecs[i];
               const [type, spec, position, rotation, mass] = childSpec;
 
               switch (type) {
                 case 'box': {
                   const boxShape = new Ammo.btBoxShape(new Ammo.btVector3(spec[0] / 2, spec[1] / 2, spec[2] / 2));
-                  const boxTransform = TRANSFORM_AUX;
+                  const boxTransform = new Ammo.btTransform();
                   boxTransform.setIdentity();
                   boxTransform.setOrigin(new Ammo.btVector3(position[0], position[1], position[2]));
                   boxTransform.setRotation(new Ammo.btQuaternion(rotation[0], rotation[1], rotation[2], rotation[3]));
@@ -152,9 +163,14 @@ process.on('message', m => {
             compoundTransform.setRotation(new Ammo.btQuaternion(rotation[0], rotation[1], rotation[2], rotation[3]));
             const compoundMass = mass;
             const compoundLocalInertia = new Ammo.btVector3(0, 0, 0);
+            compoundShape.calculateLocalInertia(compoundMass, compoundLocalInertia);
             const compoundMotionState = new Ammo.btDefaultMotionState(compoundTransform);
             const compoundBody = new Ammo.btRigidBody(new Ammo.btRigidBodyConstructionInfo(compoundMass, compoundMotionState, compoundShape, compoundLocalInertia));
-            compoundBody.setActivationState(DISABLE_DEACTIVATION);
+            compoundBody.setLinearFactor(new Ammo.btVector3(linearFactor[0], linearFactor[1], linearFactor[2]));
+            compoundBody.setAngularFactor(new Ammo.btVector3(angularFactor[0], angularFactor[1], angularFactor[2]));
+            if (disableDeactivation) {
+              compoundBody.setActivationState(DISABLE_DEACTIVATION);
+            }
             physicsWorld.addRigidBody(compoundBody);
 
             const body = new Body(id, compoundBody, owner);
