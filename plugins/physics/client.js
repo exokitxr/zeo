@@ -157,8 +157,6 @@ class Physics {
         });
         planeMesh.body = planeBody;
 
-        physics.refresh();
-
         entityElement[dataSymbol] = {
           boxMeshes,
           planeMesh,

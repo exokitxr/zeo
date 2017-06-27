@@ -24,13 +24,16 @@ class Physics {
 
     const worker = child_process.fork(path.join(__dirname, 'worker.js'));
     worker.on('message', m => {
-      if (connections.length > 0) {
+      const {id} = m;
+      const interest = interests[id];
+
+      if (interest.length > 0) {
         const ms = JSON.stringify(m);
         
         for (let i = 0; i < connections.length; i++) {
           const connection = connections[i];
 
-          if (connection.readyState === OPEN) {
+          if (interest.includes(connection.userId) && connection.readyState === OPEN) {
             connection.send(ms);
           }
         }
@@ -59,6 +62,8 @@ class Physics {
       }
     };
 
+    const interests = {};
+
     const connections = [];
     wss.on('connection', c => {
       const {url} = c.upgradeReq;
@@ -66,10 +71,44 @@ class Physics {
       let match;
       if (match = url.match(/\/archae\/physicsWs\?id=(.+)$/)) {
         const userId = match[1];
+        c.userId = userId;
+
+        const localInterests = [];
 
         c.on('message', m => {
           const j = JSON.parse(m);
           worker.send(j);
+
+          const {method} = j;
+          switch (method) {
+            case 'add': {
+              const {args} = j;
+              const [id] = args;
+
+              let interest = interests[id];
+              if (!interest) {
+                interest = [];
+                interests[id] = interest;
+              }
+              interest.push(userId);
+
+              localInterests.push(id);
+              break;
+            }
+            case 'remove': {
+              const {args} = j;
+              const [id] = args;
+
+              const interest = interests[id];
+              interest.splice(interests.indexOf(userId), 1);
+              if (interest.length === 0) {
+                delete interests[id];
+              }
+
+              localInterests.splice(localInterests.indexOf(id), 1);
+              break;
+            }
+          }
         });
 
         connections.push(c);
@@ -79,6 +118,16 @@ class Physics {
             method: 'removeOwner',
             args: [userId],
           });
+
+          for (let i = 0; i < localInterests.length; i++) {
+            const id = localInterests[i];
+            const interest = interests[id];
+
+            interest.splice(interest.indexOf(userId), 1);
+            if (interest.length === 0) {
+              delete interests[id];
+            }
+          }
 
           connections.splice(connections.indexOf(c), 1);
         });

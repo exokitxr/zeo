@@ -206,19 +206,10 @@ class Physics {
 
           delete bodies[id];
         };
-        const _refresh = () => {
-          const e = {
-            method: 'clearCache',
-            args: [],
-          };
-          const es = JSON.stringify(e);
-          connection.send(es);
-        };
 
         return {
           makeBody: _makeBody,
           destroyBody: _destroyBody,
-          refresh: _refresh,
         };
       }
     });
