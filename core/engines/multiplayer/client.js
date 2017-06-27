@@ -77,6 +77,18 @@ class Multiplayer {
             return result;
           }
 
+          getPlayerStatus(playerId) {
+            return this.playerStatuses.get(playerId) || null;
+          }
+
+          setPlayerStatus(playerId, status) {
+            this.playerStatuses.set(playerId, status);
+          }
+
+          deletePlayerStatus(playerId) {
+            this.playerStatuses.delete(playerId);
+          }
+
           getUsers() {
             const {playerStatuses} = this;
 
@@ -216,14 +228,16 @@ class Multiplayer {
         };
 
         const playerStatuses = multiplayerApi.getPlayerStatuses();
-        playerStatuses.forEach((status, id) => {
+        for (let i = 0; i < playerStatuses.length; i++) {
+          const playerStatus = playerStatuses[i];
+          const {playerId, status} = playerStatus;
           const remotePlayerMesh = _makeRemotePlayerMesh();
           remotePlayerMesh.update(status);
 
           scene.add(remotePlayerMesh);
 
-          multiplayerApi.addRemotePlayerMesh(id, remotePlayerMesh);
-        });
+          multiplayerApi.addRemotePlayerMesh(playerId, remotePlayerMesh);
+        }
 
         const playerStatusUpdate = update => {
           const {id, status} = update;
@@ -400,13 +414,12 @@ class Multiplayer {
             const _handleStatusEntry = statusEntry => {
               const {id, status} = statusEntry;
 
-              const playerStatuses = multiplayerApi.getPlayerStatuses();
-              const playerStatus = playerStatuses.get(id);
+              const playerStatus = multiplayerApi.getPlayerStatus(id);
               if (status) {
                 if (!playerStatus) {
                   multiplayerApi.emit('playerEnter', {id, status});
 
-                  playerStatuses.set(id, status);
+                  multiplayerApi.setPlayerStatus(id, status);
                 } else {
                   multiplayerApi.emit('playerStatusUpdate', {id, status});
 
@@ -424,7 +437,7 @@ class Multiplayer {
                 if (playerStatus) {
                   multiplayerApi.emit('playerLeave', {id});
 
-                  playerStatuses.delete(id);
+                  multiplayerApi.deletePlayerStatus(id);
                 } else {
                   console.warn('Ignoring duplicate player leave message', {id});
                 }
