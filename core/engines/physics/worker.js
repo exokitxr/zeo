@@ -100,9 +100,10 @@ process.on('message', m => {
     case 'add': {
       const [id, type, spec, position, rotation, mass, linearFactor, angularFactor, disableDeactivation, owner] = args;
 
-      switch (type) {
-        case 'box': {
-          if (!bodies.some(body => body.id === id)) {
+      const body = bodies.find(body => body.id === id);
+      if (!body) {
+        switch (type) {
+          case 'box': {
             const boxShape = new Ammo.btBoxShape(new Ammo.btVector3(spec[0] / 2, spec[1] / 2, spec[2] / 2));
             const boxTransform = TRANSFORM_AUX;
             boxTransform.setIdentity();
@@ -121,11 +122,9 @@ process.on('message', m => {
             
             const body = new Body(id, boxBody, owner);
             _addBody(body);
+            break;
           }
-          break;
-        }
-        case 'plane': {
-          if (!bodies.some(body => body.id === id)) {
+          case 'plane': {
             const planeShape = new Ammo.btStaticPlaneShape(new Ammo.btVector3(spec[0], spec[1], spec[2]), spec[3]);
             const planeTransform = TRANSFORM_AUX;
             planeTransform.setIdentity();
@@ -143,11 +142,9 @@ process.on('message', m => {
 
             const body = new Body(id, planeBody, owner);
             _addBody(body);
+            break;
           }
-          break;
-        }
-        case 'compound': {
-          if (!bodies.some(body => body.id === id)) {
+          case 'compound': {
             const compoundShape = new Ammo.btCompoundShape();
             const childSpecs = spec;
             for (let i = 0; i < childSpecs.length; i++) {
@@ -188,15 +185,16 @@ process.on('message', m => {
 
             const body = new Body(id, compoundBody, owner);
             _addBody(body);
+            break;
           }
-          break;
+          default: {
+            console.warn('invalid body type:', JSON.stringify(type));
+            break;
+          }
         }
-        default: {
-          console.warn('invalid body type:', JSON.stringify(type));
-          break;
-        }
+      } else {
+        body.clearCache();
       }
-
       break;
     }
     case 'remove': {
@@ -229,13 +227,6 @@ process.on('message', m => {
         if (body.owner === owner) {
           _removeBody(body, i);
         }
-      }
-      break;
-    }
-    case 'clearCache': {
-      for (let i = 0; i < bodies.length; i++) {
-        const body = bodies[i];
-        body.clearCache();
       }
       break;
     }
