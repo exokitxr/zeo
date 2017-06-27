@@ -190,36 +190,53 @@ class ZBow {
 
         const bowGrabbable = hands.makeGrabbable('bow');
         const _grab = e => {
-          const {side} = e;
-          const bowState = bowStates[side];
+          const {userId} = e;
 
-          bowState.grabbed = true;
+          if (userId) {
+            const {side} = e;
+            const bowState = bowStates[side];
+
+            bowState.grabbed = true;
+          }
         };
         bowGrabbable.on('grab', _grab);
         const _release = e => {
-          const {side} = e;
-          const bowState = bowStates[side];
+          const {userId} = e;
 
-          bowState.grabbed = false;
-
-          SIDES.forEach(side => {
+          if (userId === player.getId()) {
+            const {side} = e;
             const bowState = bowStates[side];
-            const {pulling, drawnArrowMesh, nockedArrowMesh} = bowState;
 
-            if (pulling) {
-              bowState.pulling = false;
-            }
-            if (drawnArrowMesh) {
-              drawnArrowMesh.parent.remove(drawnArrowMesh);
-              bowState.drawnArrowMesh = null;
-            }
-            if (nockedArrowMesh) {
-              scene.remove(nockedArrowMesh);
-              bowState.nockedArrowMesh = null;
-            }
-          });
+            bowState.grabbed = false;
+
+            SIDES.forEach(side => {
+              const bowState = bowStates[side];
+              const {pulling, drawnArrowMesh, nockedArrowMesh} = bowState;
+
+              if (pulling) {
+                bowState.pulling = false;
+              }
+              if (drawnArrowMesh) {
+                drawnArrowMesh.parent.remove(drawnArrowMesh);
+                bowState.drawnArrowMesh = null;
+              }
+              if (nockedArrowMesh) {
+                scene.remove(nockedArrowMesh);
+                bowState.nockedArrowMesh = null;
+              }
+            });
+          }
         };
         bowGrabbable.on('release', _release);
+        const _grabbableUpdate = e => {
+          const {position, rotation, scale} = e;
+
+          entityObject.position.fromArray(position);
+          entityObject.quaternion.fromArray(rotation);
+          entityObject.scale.fromArray(scale);
+          entityObject.updateMatrixWorld();
+        };
+        bowGrabbable.on('update', _grabbableUpdate);
 
         const _gripdown = e => {
           const {side} = e;
@@ -294,22 +311,6 @@ class ZBow {
         const _update = () => {
           const {gamepads} = pose.getStatus();
 
-          const _updateBow = () => {
-            SIDES.forEach(side => {
-              const bowState = bowStates[side];
-              const {grabbed} = bowState;
-
-              if (grabbed) {
-                const gamepad = gamepads[side];
-                const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale} = gamepad;
-
-                entityObject.position.copy(controllerPosition);
-                entityObject.quaternion.copy(controllerRotation);
-                entityObject.scale.copy(controllerScale);
-                entityObject.updateMatrixWorld();
-              }
-            });
-          };
           const _updateNock = () => {
             SIDES.forEach(side => {
               const bowState = bowStates[side];
@@ -416,7 +417,6 @@ class ZBow {
             }
           };
 
-          _updateBow();
           _updateNock();
           _updateString();
           _updateArrows();

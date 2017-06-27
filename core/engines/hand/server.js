@@ -142,7 +142,6 @@ class Hand {
                   _broadcast(id, 'release', [id]);
                 }
 
-                grabbable.destroy();
                 _broadcast(id, 'destroy', [id]);
 
                 delete grabbables[id];
