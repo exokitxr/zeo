@@ -1,6 +1,12 @@
-export const NUM_CELLS = 32;
-export const NUM_CELLS_OVERSCAN = NUM_CELLS + 1;
+const NUM_CELLS = 32;
+const OVERSCAN = 1;
+const NUM_CELLS_OVERSCAN = NUM_CELLS + OVERSCAN;
 
-export const SCALE = 0.01;
+const DEFAULT_SEED = 'p';
 
-export const DEFAULT_SEED = 'p';
+module.exports = {
+  NUM_CELLS,
+  OVERSCAN,
+  NUM_CELLS_OVERSCAN,
+  DEFAULT_SEED,
+};

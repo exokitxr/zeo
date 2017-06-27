@@ -1,4 +1,4 @@
-export class MapPoint {
+class MapPoint {
   constructor(
     elevation = 0,
     moisture = 0,
@@ -17,3 +17,7 @@ export class MapPoint {
     this.lava = lava;
   }
 }
+
+module.exports = {
+  MapPoint,
+};

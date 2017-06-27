@@ -1,17 +1,45 @@
-import isosurface from 'isosurface';
-import indev from 'indev';
+const indev = require('indev');
 
-import {
+const {
   NUM_CELLS,
+  OVERSCAN,
   NUM_CELLS_OVERSCAN,
 
-  SCALE,
-
   DEFAULT_SEED,
-} from '../constants/constants';
-import {MapPoint} from '../records/records';
+} = require('../constants/constants');
+const {MapPoint} = require('../records/records');
 
-const getApi = ({alea}) => {
+class Vector3 {
+  constructor(x, y, z) {
+    this.x = x;
+    this.y = y;
+    this.z = z;
+  }
+
+  static fromArray(array, offset = 0) {
+    return new Vector3(
+      array[offset + 0],
+      array[offset + 1],
+      array[offset + 2]
+    );
+  }
+
+  sub(v) {
+    return new Vector3(
+      this.x - v.x,
+      this.y - v.y,
+      this.z - v.z
+    );
+  }
+
+  cross(v) {
+    return new Vector3(
+      this.y * v.z - this.z * v.y,
+		  this.z * v.x - this.x * v.z,
+		  this.x * v.y - this.y * v.x
+    );
+  }
+}
 
 const BIOME_COLORS = {
   // Features
@@ -61,9 +89,8 @@ const DIRECTIONS = [
   [1, 1],
 ];
 const _random = (() => {
-  const rng = new alea(DEFAULT_SEED);
   const generator = indev({
-    random: rng,
+    seed: DEFAULT_SEED,
   });
   const elevationNoise = generator.uniform({
     frequency: 0.002,
@@ -88,8 +115,8 @@ const buildMapChunk = ({offset}) => {
       for (let x = 0; x < NUM_CELLS_OVERSCAN; x++) {
         const index = _getCoordOverscanIndex(x, y);
   
-        const dx = (offset.x * NUM_CELLS) + x;
-        const dy = (offset.y * NUM_CELLS) + y;
+        const dx = (offset.x * NUM_CELLS) - OVERSCAN + x;
+        const dy = (offset.y * NUM_CELLS) - OVERSCAN + y;
         const elevation = (-0.5 + Math.pow(_random.elevationNoise.in2D(dx, dy), 0.5)) * 64;/* (() => {
           const y = _random.elevationNoise.in2D(dx, dy);
           const scaleFactor = 1;
@@ -203,198 +230,122 @@ const buildMapChunk = ({offset}) => {
     return points;
   })();
 
-  // const caves = new Float32Array(NUM_CELLS_OVERSCAN * (NUM_CELLS_OVERSCAN * 2) * NUM_CELLS_OVERSCAN);
-
   return {
     offset,
     points,
-    // caves
   };
 };
 
 const compileMapChunk = mapChunk => {
-  const {offset, points/*, caves*/} = mapChunk;
+  const {offset, points} = mapChunk;
   const mapChunkUpdate = recompileMapChunk(mapChunk);
-  const {positions, normals, colors, heightField} = mapChunkUpdate;
+  const {positions, normals, colors, indices} = mapChunkUpdate;
 
   return {
     offset,
     points,
-    // caves,
     positions,
     normals,
     colors,
-    heightField,
+    indices,
   };
 };
 
 const recompileMapChunk = mapChunk => {
-  const {offset, points/*, caves*/} = mapChunk;
+  const {offset, points} = mapChunk;
 
-  const position = {
-    x: offset.x * NUM_CELLS,
-    y: offset.y * NUM_CELLS,
-  };
+  const positions = new Float32Array((NUM_CELLS + 1) * (NUM_CELLS + 1) * 3);
+  const normals = new Float32Array((NUM_CELLS + 1) * (NUM_CELLS + 1) * 3);
+  const colors = new Float32Array((NUM_CELLS + 1) * (NUM_CELLS + 1) * 3);
+  const indices = new Uint16Array(NUM_CELLS * NUM_CELLS * 3 * 2);
 
-  const cubes = isosurface.marchingCubes([ NUM_CELLS_OVERSCAN, NUM_CELLS_OVERSCAN * 2, NUM_CELLS_OVERSCAN ], (x, y, z) => {
-    const index = _getCoordOverscanIndex(x, z);
-    const point = points[index];
-    const {elevation} = point;
-    const normalizedElevation = _normalizeElevation(elevation);
+  let i = 0;
+  for (let y = 0; y <= NUM_CELLS; y++) {
+    for (let x = 0; x <= NUM_CELLS; x++) {
+      const index = _getCoordOverscanIndex(x, y);
+      const point = points[index];
+      const {elevation, moisture, land, water, ocean, lava} = point;
+      const coast = land && ocean;
 
-    let value = -1;
-    for (let dy = y - 1 + ((1/8) / 2); dy <= y + 1 - ((1/8) / 2); dy += 1/8) {
-      if (dy >= normalizedElevation) {
-        value += 1/8;
-      }
+      const ax = x + (offset.x * NUM_CELLS);
+      const ay = y + (offset.y * NUM_CELLS);
+      positions[(i * 3) + 0] = ax;
+      positions[(i * 3) + 1] = elevation;
+      positions[(i * 3) + 2] = ay;
+
+      const biome = _getBiome({
+        elevation,
+        moisture,
+        land,
+        water,
+        ocean,
+        coast,
+        lava,
+      });
+      const colorInt = BIOME_COLORS[biome];
+      const colorArray = _colorIntToArray(colorInt);
+      colors[(i * 3) + 0] = colorArray[0];
+      colors[(i * 3) + 1] = colorArray[1];
+      colors[(i * 3) + 2] = colorArray[2];
+
+      i++;
     }
-
-    /* if (caves.length > 0) {
-      const caveIndex = _getCaveIndex(x, y, z);
-      const cave = caves[caveIndex];
-      if (cave !== 0) {
-        value += cave * 2;
-      }
-    } */
-
-    return value;
-  }, [
-    [ 0, -NUM_CELLS_OVERSCAN, 0 ],
-    [ NUM_CELLS_OVERSCAN, NUM_CELLS_OVERSCAN, NUM_CELLS_OVERSCAN ],
-  ]);
-  const {positions: cubePositions, cells: cubeCells} = cubes;
-  const numCells = cubeCells.length;
-
-  const positions = new Float32Array(numCells * 3 * 3);
-  const colors = new Float32Array(numCells * 3 * 3);
-  for (let i = 0; i < numCells; i++) {
-    const cell = cubeCells[i];
-    const [fa, fb, fc] = cell;
-    const va = cubePositions[fa];
-    const vb = cubePositions[fb];
-    const vc = cubePositions[fc];
-
-    positions[(i * 9) + 0] = (position.x + va[0]) * SCALE;
-    positions[(i * 9) + 1] = va[1] * SCALE;
-    positions[(i * 9) + 2] = (position.y + va[2]) * SCALE;
-
-    positions[(i * 9) + 3] = (position.x + vb[0]) * SCALE;
-    positions[(i * 9) + 4] = vb[1] * SCALE;
-    positions[(i * 9) + 5] = (position.y + vb[2]) * SCALE;
-
-    positions[(i * 9) + 6] = (position.x + vc[0]) * SCALE;
-    positions[(i * 9) + 7] = vc[1] * SCALE;
-    positions[(i * 9) + 8] = (position.y + vc[2]) * SCALE;
-
-    const paIndex = _getCoordOverscanIndex(Math.round(va[0]), Math.round(va[2]));
-    const pa = points[paIndex];
-    const pbIndex = _getCoordOverscanIndex(Math.round(vb[0]), Math.round(vb[2]));
-    const pb = points[pbIndex];
-    const pcIndex = _getCoordOverscanIndex(Math.round(vc[0]), Math.round(vc[2]));
-    const pc = points[pcIndex];
-
-    const positionElevation = (va[1] + vb[1] + vc[1]) / 3;
-    const pointElevation = (pa.elevation + pb.elevation + pc.elevation) / 3;
-    const normalizedPointElevation = _normalizeElevation(pointElevation);
-    const colorInt = (() => {
-      if (positionElevation > (normalizedPointElevation - 0.5)) {
-        const biome = _getTriangleBiome(pa, pb, pc);
-        return BIOME_COLORS[biome];
-      } else {
-        return 0x888888;
-      }
-    })();
-    const colorArray = new THREE.Color(colorInt).toArray();
-
-    colors[(i * 9) + 0] = colorArray[0];
-    colors[(i * 9) + 1] = colorArray[1];
-    colors[(i * 9) + 2] = colorArray[2];
-
-    colors[(i * 9) + 3] = colorArray[0];
-    colors[(i * 9) + 4] = colorArray[1];
-    colors[(i * 9) + 5] = colorArray[2];
-
-    colors[(i * 9) + 6] = colorArray[0];
-    colors[(i * 9) + 7] = colorArray[1];
-    colors[(i * 9) + 8] = colorArray[2];
   }
 
-  const normals = (() => {
-    const geometry = new THREE.BufferGeometry();
-    geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
-    geometry.computeVertexNormals();
-    return geometry.getAttribute('normal').array;
-  })();
+  i = 0;
+  for (let y = 0; y < NUM_CELLS; y++) {
+    for (let x = 0; x < NUM_CELLS; x++) {
+      const a = x + (NUM_CELLS + 1) * y;
+			const b = x + (NUM_CELLS + 1) * (y + 1);
+			const c = (x + 1) + (NUM_CELLS + 1) * (y + 1);
+			const d = (x + 1) + (NUM_CELLS + 1) * y;
 
-  const heightField = (() => {
-    const result = new Float32Array(((NUM_CELLS * 2) + 1) * ((NUM_CELLS * 2) + 1));
+      indices[(i * 3 * 2) + 0] = a;
+      indices[(i * 3 * 2) + 1] = b;
+      indices[(i * 3 * 2) + 2] = d;
 
-    const minX = position.x;
-    const maxX = minX + NUM_CELLS;
-    const minY = position.y;
-    const maxY = minY + NUM_CELLS;
+      indices[(i * 3 * 2) + 3] = b;
+      indices[(i * 3 * 2) + 4] = c;
+      indices[(i * 3 * 2) + 5] = d;
 
-    const _getPointElevation = (() => {
-      const cache = {};
-
-      return (x, y) => {
-        const key = x + ',' + y;
-        const entry = cache[key];
-
-        if (entry !== undefined) {
-          return entry;
-        } else {
-          const newEntry = (() => {
-            const pointIndex = _getCoordOverscanIndex(x - position.x, y - position.y);
-            const point = points[pointIndex];
-            const elevation = point ? point.elevation : 0;
-            const normalizedElevation = _normalizeElevation(elevation);
-            return normalizedElevation;
-          })();
-          cache[key] = newEntry;
-          return newEntry;
-        }
-      };
-    })();
-
-    let i = 0;
-    for (let y = minY; y <= maxY; y += 0.5) {
-      for (let x = minX; x <= maxX; x += 0.5) {
-        const height = (() => {
-          const ax = Math.floor(x);
-          const ay = Math.floor(y);
-          if (x === ax && y === ay) {
-            const elevation = _getPointElevation(ax, ay);
-            return elevation;
-          } else {
-            const aElevation = _getPointElevation(ax, ay);
-            const bx = Math.ceil(x);
-            const by = Math.ceil(y);
-            const bElevation = _getPointElevation(bx, by);
-            const elevation = (aElevation + bElevation) / 2;
-            return elevation;
-          }
-        })();
-
-        result[i] = height;
-        i++;
-      }
+      i++;
     }
+  }
 
-    return result;
-  })();
+  for (let i = 0; i < indices.length; i += 3) {
+    const vA = indices[i + 0] * 3;
+    const vB = indices[i + 1] * 3;
+    const vC = indices[i + 2] * 3;
+
+    const pA = Vector3.fromArray(positions, vA);
+    const pB = Vector3.fromArray(positions, vB);
+    const pC = Vector3.fromArray(positions, vC);
+
+    const cb = pC.sub(pB).cross(pA.sub(pB));
+
+    normals[vA + 0] += cb.x;
+    normals[vA + 1] += cb.y;
+    normals[vA + 2] += cb.z;
+
+    normals[vB + 0] += cb.x;
+    normals[vB + 1] += cb.y;
+    normals[vB + 2] += cb.z;
+
+    normals[vC + 0] += cb.x;
+    normals[vC + 1] += cb.y;
+    normals[vC + 2] += cb.z;
+  }
 
   return {
     offset,
     positions,
     normals,
     colors,
-    heightField,
+    indices,
   };
 };
 
 const _getCoordOverscanIndex = (x, y) => x + (y * NUM_CELLS_OVERSCAN);
-// const _getCaveIndex = (x, y, z) => x + ((y + NUM_CELLS_OVERSCAN) * NUM_CELLS_OVERSCAN) + (z * NUM_CELLS_OVERSCAN * (NUM_CELLS_OVERSCAN * 2));
 
 const _normalizeElevation = elevation => {
   if (elevation >= 0) {
@@ -456,14 +407,14 @@ const _getTriangleBiome = (ap, bp, cp) => {
     coast,
     lava,
   });
-}
+};
+const _colorIntToArray = n => ([
+  ((n >> (8 * 2)) & 0xFF) / 0xFF,
+  ((n >> (8 * 1)) & 0xFF) / 0xFF,
+  ((n >> (8 * 0)) & 0xFF) / 0xFF,
+]);
 
-const api = {
+module.exports = {
   buildMapChunk,
   compileMapChunk,
 };
-return api;
-
-};
-
-export default getApi;
