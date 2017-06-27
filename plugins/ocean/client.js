@@ -7,13 +7,12 @@ const OCEAN_SHADER = {
   },
   vertexShader: [
     "uniform float worldTime;",
-    "attribute vec4 wave;",
+    "attribute vec3 wave;",
     "void main() {",
-    "  float y = wave[0];",
-    "  float ang = wave[1];",
-    "  float amp = wave[2];",
-    "  float speed = wave[3];",
-    "  gl_Position = projectionMatrix * modelViewMatrix * vec4(position.x, y + ((sin(ang + (speed * worldTime))) * amp), position.z, 1.0);",
+    "  float ang = wave[0];",
+    "  float amp = wave[1];",
+    "  float speed = wave[2];",
+    "  gl_Position = projectionMatrix * modelViewMatrix * vec4(position.x, ((sin(ang + (speed * worldTime))) * amp), position.z, 1.0);",
     "}"
   ].join("\n"),
   fragmentShader: [
@@ -65,19 +64,16 @@ class Ocean {
             const positions = geometry.getAttribute('position').array;
             const numPositions = positions.length / 3;
 
-            const result = new Float32Array(numPositions * 4);
+            const result = new Float32Array(numPositions * 3);
             for (let i = 0; i < numPositions; i++) {
-              // const y = positions[(i * 3) + 1];
-
-              const baseIndex = i * 4;
-              result[baseIndex + 0] = 0; // y
-              result[baseIndex + 1] = Math.random() * Math.PI * 2; // ang
-              result[baseIndex + 2] = DATA.amplitude + Math.random() * DATA.amplitudeVariance; // amp
-              result[baseIndex + 3] = (DATA.speed + Math.random() * DATA.speedVariance) / 1000; // speed
+              const baseIndex = i * 3;
+              result[baseIndex + 0] = Math.random() * Math.PI * 2; // ang
+              result[baseIndex + 1] = DATA.amplitude + Math.random() * DATA.amplitudeVariance; // amp
+              result[baseIndex + 2] = (DATA.speed + Math.random() * DATA.speedVariance) / 1000; // speed
             }
             return result;
           })();
-          geometry.addAttribute('wave', new THREE.BufferAttribute(waves, 4));
+          geometry.addAttribute('wave', new THREE.BufferAttribute(waves, 3));
 
           const uniforms = THREE.UniformsUtils.clone(OCEAN_SHADER.uniforms);
           const material = new THREE.ShaderMaterial({
