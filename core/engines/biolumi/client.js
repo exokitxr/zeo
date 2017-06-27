@@ -827,6 +827,7 @@ class Biolumi {
             vertexShader: transparentShader.vertexShader,
             fragmentShader: transparentShader.fragmentShader,
             transparent: true,
+            depthWrite: false,
           });
           const _getTransparentMaterial = () => transparentMaterial;
 
