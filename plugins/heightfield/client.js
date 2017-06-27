@@ -21,7 +21,7 @@ class Heightfield {
 
   mount() {
     const {_archae: archae} = this;
-    const {three, render} = zeo;
+    const {three, render, pose} = zeo;
     const {THREE, scene, camera} = three;
 
     const mapChunkMaterial = new THREE.MeshPhongMaterial({
@@ -77,8 +77,9 @@ class Heightfield {
 
     const _getMapChunkOffsetKey = (x, y) => x + ',' + y;
     const _requestRefreshMapChunks = () => {
-      const {position: cameraPosition} = camera;
-      const cameraMapChunkOffset = [Math.floor(cameraPosition.x / NUM_CELLS), Math.floor(cameraPosition.z / NUM_CELLS)];
+      const {hmd} = pose.getStatus();
+      const {worldPosition: hmdPosition} = hmd;
+      const cameraMapChunkOffset = [Math.floor(hmdPosition.x / NUM_CELLS), Math.floor(hmdPosition.z / NUM_CELLS)];
 
       const requiredMapChunkOffsets = DIRECTIONS.map(([x, y]) => ([cameraMapChunkOffset[0] + x, cameraMapChunkOffset[1] + y]));
       const missingMapChunkOffsets = requiredMapChunkOffsets.filter(([x, y]) => {
