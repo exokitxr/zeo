@@ -24,8 +24,8 @@ class Heightfield {
     const {three, render} = zeo;
     const {THREE, scene, camera} = three;
 
-    const mapChunkMaterial = new THREE.MeshLambertMaterial({
-      color: 0xFFFFFF,
+    const mapChunkMaterial = new THREE.MeshPhongMaterial({
+      // color: 0xFFFFFF,
       shading: THREE.FlatShading,
       vertexColors: THREE.VertexColors,
     });
