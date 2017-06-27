@@ -18,13 +18,13 @@ const OCEAN_SHADER = {
   ].join("\n"),
   fragmentShader: [
     "void main() {",
-    "  gl_FragColor = vec4(0.2, 0.2, 0.2, 0.25);",
+    "  gl_FragColor = vec4(0.25, 0.25, 0.5, 0.98);",
     "}"
   ].join("\n")
 };
 
 const DATA = {
-  amplitude: 0.1,
+  amplitude: 0.5,
   amplitudeVariance: 0.3,
   speed: 1,
   speedVariance: 2,
@@ -67,10 +67,10 @@ class Ocean {
 
             const result = new Float32Array(numPositions * 4);
             for (let i = 0; i < numPositions; i++) {
-              const y = positions[(i * 3) + 1];
+              // const y = positions[(i * 3) + 1];
 
               const baseIndex = i * 4;
-              result[baseIndex + 0] = y; // y
+              result[baseIndex + 0] = 0; // y
               result[baseIndex + 1] = Math.random() * Math.PI * 2; // ang
               result[baseIndex + 2] = DATA.amplitude + Math.random() * DATA.amplitudeVariance; // amp
               result[baseIndex + 3] = (DATA.speed + Math.random() * DATA.speedVariance) / 1000; // speed
@@ -79,24 +79,16 @@ class Ocean {
           })();
           geometry.addAttribute('wave', new THREE.BufferAttribute(waves, 4));
 
-          /* const material = new THREE.MeshBasicMaterial({
-            color: 0x000000,
-            wireframe: true,
-            opacity: 0.25,
-            transparent: true,
-          }); */
           const uniforms = THREE.UniformsUtils.clone(OCEAN_SHADER.uniforms);
           const material = new THREE.ShaderMaterial({
             uniforms,
             vertexShader: OCEAN_SHADER.vertexShader,
             fragmentShader: OCEAN_SHADER.fragmentShader,
-            wireframe: true,
-            // opacity: 0.25,
             transparent: true,
+            // depthTest: false,
           });
 
           const result = new THREE.Mesh(geometry, material);
-          result.renderOrder = -1;
           return result;
         })();
         entityObject.add(mesh);
