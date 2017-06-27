@@ -1,6 +1,8 @@
 const path = require('path');
 const child_process = require('child_process');
 
+const OPEN = 1; // ws.OPEN
+
 class Physics {
   constructor(archae) {
     this._archae = archae;
@@ -27,7 +29,10 @@ class Physics {
         
         for (let i = 0; i < connections.length; i++) {
           const connection = connections[i];
-          connection.send(ms);
+
+          if (connection.readyState === OPEN) {
+            connection.send(ms);
+          }
         }
       }
     });
