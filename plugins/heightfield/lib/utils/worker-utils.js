@@ -117,7 +117,7 @@ const buildMapChunk = ({offset}) => {
   
         const dx = (offset.x * NUM_CELLS) - OVERSCAN + x;
         const dy = (offset.y * NUM_CELLS) - OVERSCAN + y;
-        const elevation = (-0.5 + Math.pow(_random.elevationNoise.in2D(dx, dy), 0.5)) * 64;/* (() => {
+        const elevation = (-0.3 + Math.pow(_random.elevationNoise.in2D(dx + 1000, dy + 1000), 0.5)) * 64;/* (() => {
           const y = _random.elevationNoise.in2D(dx, dy);
           const scaleFactor = 1;
           const powFactor = 0.3;

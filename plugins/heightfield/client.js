@@ -5,7 +5,7 @@ const protocolUtils = require('./lib/utils/protocol-utils');
 
 const DIRECTIONS = (() => {
   const result = [];
-  const size = 2;
+  const size = 5;
   for (let x = -size; x <= size; x++) {
     for (let y = -size; y <= size; y++) {
       result.push([x, y]);
@@ -58,8 +58,7 @@ class Heightfield {
       const material = mapChunkMaterial;
 
       const mesh = new THREE.Mesh(geometry, material);
-      mesh.receiveShadow = true;
-      mesh.frustumCulled = false;
+      // mesh.frustumCulled = false;
       return mesh;
     };
 
