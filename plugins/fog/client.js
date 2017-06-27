@@ -1,20 +1,16 @@
-const FOG_DENSITY = 0.05;
+const FOG_DENSITY = 0.01;
+const FOG_COLOR = 0xFFFFFF;
 
 class Fog {
   mount() {
     const {three: {scene}, elements, render} = zeo;
 
-    const updates = [];
-    const _update = () => {
-      for (let i = 0; i < updates.length; i++) {
-        const update = updates[i];
-        update();
-      }
-    };
-
     const fogElement = {
       entityAddedCallback(entityElement) {
         const entityApi = entityElement.getEntityApi();
+
+        scene.fog.density = FOG_DENSITY;
+        scene.fog.color.setHex(FOG_COLOR);
 
         /* const update = () => { // XXX fix this walk to work with the new skybox module
           const skybox = (() => {
@@ -48,14 +44,10 @@ class Fog {
         entityApi._cleanup();
       },
     }
-    elements.registerEntity(this, fogEntity);
-
-    render.on('update', _update);
+    elements.registerEntity(this, fogElement);
 
     this._cleanup = () => {
-      elements.unregisterEntity(this, fogEntity);
-
-      render.removeListener('update', _update);
+      elements.unregisterEntity(this, fogElement);
     };
   }
 
