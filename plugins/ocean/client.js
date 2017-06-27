@@ -1,7 +1,7 @@
-const murmur = require('murmurhash');
+ const murmur = require('murmurhash');
 
 const NUM_CELLS = 100;
-const SCALE = 2;
+const SCALE = 4;
 
 const OCEAN_SHADER = {
   uniforms: {
@@ -9,28 +9,48 @@ const OCEAN_SHADER = {
       type: 'f',
       value: 0,
     },
+    fogColor: {
+      type: '3f',
+    },
+    fogDensity: {
+      type: 'f',
+    },
   },
   vertexShader: [
     "uniform float worldTime;",
     "attribute vec3 wave;",
+    "attribute float color;",
+    "varying float vcolor;",
+    "varying float fogDepth;",
     "void main() {",
     "  float ang = wave[0];",
     "  float amp = wave[1];",
     "  float speed = wave[2];",
     "  gl_Position = projectionMatrix * modelViewMatrix * vec4(position.x, ((sin(ang + (speed * worldTime))) * amp), position.z, 1.0);",
+    "  vcolor = color;",
+    "  vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );",
+    "  fogDepth = -mvPosition.z;",
     "}"
   ].join("\n"),
   fragmentShader: [
+    "#define LOG2 1.442695",
+    "#define whiteCompliment(a) ( 1.0 - saturate( a ) )",
+		"uniform vec3 fogColor;",
+    "uniform float fogDensity;",
+    "varying float vcolor;",
+    "varying float fogDepth;",
     "void main() {",
-    "  gl_FragColor = vec4(0.25, 0.25, 0.5, 0.98);",
+    "  gl_FragColor = vec4(vec3(0.25, 0.25, 0.5) * vcolor, 0.95);",
+    "  float fogFactor = whiteCompliment( exp2( - fogDensity * fogDensity * fogDepth * fogDepth * LOG2 ) );",
+    "  gl_FragColor.rgb = mix( gl_FragColor.rgb, fogColor, fogFactor );",
     "}"
   ].join("\n")
 };
 const DATA = {
   amplitude: 0.5,
   amplitudeVariance: 0.3,
-  speed: 1,
-  speedVariance: 2,
+  speed: 0.5,
+  speedVariance: 0.5,
 };
 const DIRECTIONS = (() => {
   const result = [];
@@ -45,7 +65,7 @@ const DIRECTIONS = (() => {
 
 class Ocean {
   mount() {
-    const {three: {THREE}, render, elements, world} = zeo;
+    const {three: {THREE, scene}, render, elements, world} = zeo;
 
     const updates = [];
     const _update = () => {
@@ -74,24 +94,27 @@ class Ocean {
           const geometry = new THREE.PlaneBufferGeometry(NUM_CELLS * SCALE, NUM_CELLS * SCALE, NUM_CELLS, NUM_CELLS);
           geometry.applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
           geometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, 0));
-          const waves = (() => {
-            const positions = geometry.getAttribute('position').array;
-            const numPositions = positions.length / 3;
-            const result = new Float32Array(numPositions * 3);
-            for (let i = 0; i < numPositions; i++) {
-              const baseIndex = i * 3;
-              const x = positions[baseIndex + 0];
-              const y = positions[baseIndex + 2];
-              const key = `${x + (ox * NUM_CELLS * SCALE)}:${y + (oy * NUM_CELLS  * SCALE)}`;
-              result[baseIndex + 0] = (murmur(key + ':ang') / 0xFFFFFFFF) * Math.PI * 2; // ang
-              result[baseIndex + 1] = DATA.amplitude + (murmur(key + ':amp') / 0xFFFFFFFF) * DATA.amplitudeVariance; // amp
-              result[baseIndex + 2] = (DATA.speed + (murmur(key + ':speed') / 0xFFFFFFFF) * DATA.speedVariance) / 1000; // speed
-            }
-            return result;
-          })();
+
+          const positions = geometry.getAttribute('position').array;
+          const numPositions = positions.length / 3;
+          const waves = new Float32Array(numPositions * 3);
+          const colors = new Float32Array(numPositions);
+          for (let i = 0; i < numPositions; i++) {
+            const baseIndex = i * 3;
+            const x = positions[baseIndex + 0];
+            const y = positions[baseIndex + 2];
+            const key = `${x + (ox * NUM_CELLS * SCALE)}:${y + (oy * NUM_CELLS  * SCALE)}`;
+            waves[baseIndex + 0] = (murmur(key + ':ang') / 0xFFFFFFFF) * Math.PI * 2; // ang
+            waves[baseIndex + 1] = DATA.amplitude + (murmur(key + ':amp') / 0xFFFFFFFF) * DATA.amplitudeVariance; // amp
+            waves[baseIndex + 2] = (DATA.speed + (murmur(key + ':speed') / 0xFFFFFFFF) * DATA.speedVariance) / 1000; // speed
+            colors[i] = 0.8 + ((murmur(key + ':color') / 0xFFFFFFFF) * (1 - 0.8));
+          }
           geometry.addAttribute('wave', new THREE.BufferAttribute(waves, 3));
+          geometry.addAttribute('color', new THREE.BufferAttribute(colors, 1));
 
           const uniforms = THREE.UniformsUtils.clone(OCEAN_SHADER.uniforms);
+          uniforms.fogColor.value = scene.fog.color;
+          uniforms.fogDensity.value = scene.fog.density;
           const material = new THREE.ShaderMaterial({
             uniforms,
             vertexShader: OCEAN_SHADER.vertexShader,
@@ -103,6 +126,14 @@ class Ocean {
           const result = new THREE.Mesh(geometry, material);
           result.position.set(ox * NUM_CELLS * SCALE, 0, oy * NUM_CELLS * SCALE);
           result.updateMatrixWorld();
+
+          result.update = () => {
+            const worldTime = world.getWorldTime();
+            uniforms.worldTime.value = worldTime;
+            uniforms.fogColor.value = scene.fog.color;
+            uniforms.fogDensity.value = scene.fog.density;
+          };
+
           return result;
         };
         const meshes = [];
@@ -115,9 +146,7 @@ class Ocean {
         const update = () => {
           for (let i = 0; i < meshes.length; i++) {
             const mesh = meshes[i];
-            const {material: meshMaterial} = mesh;
-            const worldTime = world.getWorldTime();
-            meshMaterial.uniforms.worldTime.value = worldTime;
+            mesh.update();
           }
         };
         updates.push(update);
