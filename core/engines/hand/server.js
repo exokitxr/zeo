@@ -214,11 +214,11 @@ class Hand {
         c.on('close', () => {
           for (let i = 0; i < localInterests.length; i++) {
             const id = localInterests[i];
-            const interest = iterests[id];
+            const interest = interests[id];
 
             interest.splice(interest.indexOf(userId), 1);
             if (interest.length === 0) {
-              delete iterests[id];
+              delete interests[id];
             }
           }
 

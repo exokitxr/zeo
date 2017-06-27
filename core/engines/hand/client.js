@@ -169,7 +169,7 @@ class Hand {
             const grabState = grabStates[side];
             grabState.grabbedGrabbable = this;
 
-            _broadcast('grab', [id, userId, side]);
+            _broadcast('grab', [id, side]);
 
             this.emit('grab', {
               userId,
