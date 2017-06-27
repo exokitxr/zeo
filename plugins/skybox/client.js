@@ -73,6 +73,7 @@ class Skybox {
               map: texture,
               color: 0xFFFFFF,
               side: THREE.BackSide,
+              fog: false,
             });
             return material;
           };
