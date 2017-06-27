@@ -9,7 +9,7 @@ import mapUtilsMaker from './lib/utils/map-utils';
 
 const SIDES = ['left', 'right'];
 
-class Map {
+class PixelMap {
   mount() {
     const {three: {THREE, scene, camera}, elements, ui, utils: {random: randomUtils}} = zeo;
 
@@ -157,4 +157,4 @@ class Map {
   }
 }
 
-module.exports = Map;
+module.exports = PixelMap;
