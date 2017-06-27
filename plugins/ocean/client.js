@@ -1,3 +1,8 @@
+const murmur = require('murmurhash');
+
+const NUM_CELLS = 100;
+const SCALE = 2;
+
 const OCEAN_SHADER = {
   uniforms: {
     worldTime: {
@@ -21,13 +26,22 @@ const OCEAN_SHADER = {
     "}"
   ].join("\n")
 };
-
 const DATA = {
   amplitude: 0.5,
   amplitudeVariance: 0.3,
   speed: 1,
   speedVariance: 2,
 };
+const DIRECTIONS = (() => {
+  const result = [];
+  const size = 2;
+  for (let x = -size; x <= size; x++) {
+    for (let y = -size; y <= size; y++) {
+      result.push([x, y]);
+    }
+  }
+  return result;
+})();
 
 class Ocean {
   mount() {
@@ -56,20 +70,22 @@ class Ocean {
         const entityApi = entityElement.getEntityApi();
         const entityObject = entityElement.getObject();
 
-        const mesh = (() => {
-          const geometry = new THREE.PlaneBufferGeometry(200, 200, 200 / 2, 200 / 2);
+        const _makeOceanMesh = (ox, oy) => {
+          const geometry = new THREE.PlaneBufferGeometry(NUM_CELLS * SCALE, NUM_CELLS * SCALE, NUM_CELLS, NUM_CELLS);
           geometry.applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
           geometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, 0));
           const waves = (() => {
             const positions = geometry.getAttribute('position').array;
             const numPositions = positions.length / 3;
-
             const result = new Float32Array(numPositions * 3);
             for (let i = 0; i < numPositions; i++) {
               const baseIndex = i * 3;
-              result[baseIndex + 0] = Math.random() * Math.PI * 2; // ang
-              result[baseIndex + 1] = DATA.amplitude + Math.random() * DATA.amplitudeVariance; // amp
-              result[baseIndex + 2] = (DATA.speed + Math.random() * DATA.speedVariance) / 1000; // speed
+              const x = positions[baseIndex + 0];
+              const y = positions[baseIndex + 2];
+              const key = `${x + (ox * NUM_CELLS * SCALE)}:${y + (oy * NUM_CELLS  * SCALE)}`;
+              result[baseIndex + 0] = (murmur(key + ':ang') / 0xFFFFFFFF) * Math.PI * 2; // ang
+              result[baseIndex + 1] = DATA.amplitude + (murmur(key + ':amp') / 0xFFFFFFFF) * DATA.amplitudeVariance; // amp
+              result[baseIndex + 2] = (DATA.speed + (murmur(key + ':speed') / 0xFFFFFFFF) * DATA.speedVariance) / 1000; // speed
             }
             return result;
           })();
@@ -85,19 +101,32 @@ class Ocean {
           });
 
           const result = new THREE.Mesh(geometry, material);
+          result.position.set(ox * NUM_CELLS * SCALE, 0, oy * NUM_CELLS * SCALE);
+          result.updateMatrixWorld();
           return result;
-        })();
-        entityObject.add(mesh);
+        };
+        const meshes = [];
+        DIRECTIONS.forEach(([x, y]) => {
+          const mesh = _makeOceanMesh(x, y);
+          entityObject.add(mesh);
+          meshes.push(mesh);
+        });
 
-        const {material: meshMaterial} = mesh;
         const update = () => {
-          const worldTime = world.getWorldTime();
-          meshMaterial.uniforms.worldTime.value = worldTime;
+          for (let i = 0; i < meshes.length; i++) {
+            const mesh = meshes[i];
+            const {material: meshMaterial} = mesh;
+            const worldTime = world.getWorldTime();
+            meshMaterial.uniforms.worldTime.value = worldTime;
+          }
         };
         updates.push(update);
       
         entityApi._cleanup = () => {
-          entityObject.remove(mesh);
+          for (let i = 0; i < meshes.length; i++) {
+            const mesh = meshes[i];
+            entityObject.remove(mesh);
+          }
 
           updates.splice(updates.indexOf(update), 1);
         };
