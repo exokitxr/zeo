@@ -27,7 +27,7 @@ class Physics {
       const {id} = m;
       const interest = interests[id];
 
-      if (interest.length > 0) {
+      if (interest && interest.length > 0) {
         const ms = JSON.stringify(m);
         
         for (let i = 0; i < connections.length; i++) {
