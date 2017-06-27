@@ -1,5 +1,3 @@
-const OPEN = 1; // ws.OPEN
-
 class Hand {
   constructor(archae) {
     this._archae = archae;
@@ -9,7 +7,51 @@ class Hand {
     const {_archae: archae} = this;
     const {app, wss} = archae.getCore();
 
-    const usersJson = {};
+    class Grabbable {
+      constructor(id, position, rotation, scale) {
+        this.id = id;
+        this.position = position;
+        this.rotation = rotation;
+        this.scale = scale;
+
+        this.userId = null;
+        this.side = null;
+      }
+
+      grab(userId, side) {
+        const {id} = this;
+
+        this.userId = userId;
+        this.side = side;
+      }
+
+      release() {
+        const {userId} = this;
+
+        if (userId !== null) {
+          const {id, side} = this;
+
+          this.userId = null;
+          this.side = null;
+
+          return {
+            userId,
+            side,
+          };
+        } else {
+          return null;
+        }
+      }
+
+      setState(position, rotation, scale) {
+        this.position = position;
+        this.rotation = rotation;
+        this.scale = scale;
+      }
+    }
+
+    const grabbables = {};
+    const interests = {};
 
     const connections = [];
 
@@ -19,29 +61,18 @@ class Hand {
       let match;
       if (match = url.match(/\/archae\/handWs\?id=(.+)$/)) {
         const userId = match[1];
+        c.userId = userId;
 
-        const user = {
-          id: userId,
-          hands: {
-            left: null,
-            right: null,
-          },
-        };
-        usersJson[userId] = user;
-
-        const _sendInit = () => {
+        const _send = (type, args) => {
           const e = {
-            type: 'init',
-            args: [
-              _arrayify(usersJson).filter(userSpec => userSpec.id !== userId),
-            ],
+            type,
+            args,
           };
           const es = JSON.stringify(e);
+
           c.send(es);
         };
-        _sendInit();
-
-        const _broadcast = (type, args) => {
+        const _broadcast = (interestId, type, args) => {
           if (connections.some(connection => connection !== c)) {
             const e = {
               type,
@@ -49,14 +80,18 @@ class Hand {
             };
             const es = JSON.stringify(e);
 
+            const interest = interests[interestId];
             for (let i = 0; i < connections.length; i++) {
               const connection = connections[i];
-              if (connection !== c) {
+              const {userId} = connection;
+              if (interest.includes(userId) && connection !== c) {
                 connection.send(es);
               }
             }
           }
         };
+
+        const localInterests = [];
 
         c.on('message', s => {
           const m = _jsonParse(s);
@@ -64,18 +99,108 @@ class Hand {
           if (typeof m === 'object' && m !== null && typeof m.method === 'string' && Array.isArray(m.args)) {
             const {method, args} = m;
 
-            if (method === 'grab') {
-              const [side, id] = args;
+            if (method === 'addGrabbable') {
+              const [id, position, rotation, scale] = args;
 
-              user.hands[side] = id;
+              const grabbable = grabbables[id];
+              if (!grabbable) {
+                const newGrabbable = new Grabbable(id, position, rotation, scale);
+                grabbables[id] = newGrabbable;
+              }
 
-              _broadcast('grab', [userId, side, id]);
+              let interest = interests[id];
+              if (!interest) {
+                interest = [];
+                interests[id] = interest;
+              }
+              if (!interest.includes(userId)) {
+                interest.push(userId);
+              }
+
+              if (!localInterests.includes(id)) {
+                localInterests.push(id);
+              }
+
+              if (grabbable) {
+                const {userId, side} = grabbable;
+                if (userId) {
+                  _send('grab', [id, userId, side]);
+                }
+
+                const {position, rotation, scale} = grabbable;
+                _send('update', [id, position, rotation, scale]);
+              }
+            } else if (method === 'removeGrabbable') {
+              const [id] = args;
+
+              const grabbable = grabbables[id];
+
+              if (grabbable) {
+                const releaseSpec = grabbable.release();
+                if (releaseSpec) {
+                  const {userId, side} = releaseSpec;
+                  _broadcast(id, 'release', [id]);
+                }
+
+                grabbable.destroy();
+                _broadcast(id, 'destroy', [id]);
+
+                delete grabbables[id];
+                delete interests[id];
+
+                localInterests.splice(localInterests.indexOf(id), 1);
+              }
+            } else if (method === 'grab') {
+              const [id, side] = args;
+
+              const grabbable = grabbables[id];
+
+              if (grabbable) {
+                const releaseSpec = grabbable.release();
+                if (releaseSpec) {
+                  const {userId, side} = releaseSpec;
+                  _broadcast(id, 'release', [id]);
+                }
+
+                grabbable.grab(userId, side);
+                _broadcast(id, 'grab', [id, userId, side]);
+              }
             } else if (method === 'release') {
-              const [side] = args;
+              const [id] = args;
 
-              user.hands[side] = null;
+              const grabbable = grabbables[id];
 
-              _broadcast('release', [userId, side]);
+              if (grabbable) {
+                const releaseSpec = grabbable.release();
+                if (releaseSpec) {
+                  const {userId, side} = releaseSpec;
+                  _broadcast(id, 'release', [id]);
+                }
+              }
+            } else if (method === 'setState') {
+              const [id, position, rotation, scale] = args;
+
+              const grabbable = grabbables[id];
+
+              if (grabbable) {
+                const releaseSpec = grabbable.release();
+                if (releaseSpec) {
+                  const {userId, side} = releaseSpec;
+                  _broadcast(id, 'release', [id]);
+                }
+
+                grabbable.setState(position, rotation, scale);
+                _broadcast(id, 'update', [id, position, rotation, scale]);
+              }
+            } else if (method === 'update') {
+              const [id, position, rotation, scale] = args;
+
+              const grabbable = grabbables[id];
+
+              if (grabbable) {
+                grabbable.setState(position, rotation, scale);
+                _broadcast(id, 'update', [id, position, rotation, scale]);
+              }
             } else {
               console.warn('no such hand method:' + JSON.stringify(method));
             }
@@ -84,20 +209,19 @@ class Hand {
           }
         });
 
-        const cleanups = [];
-        const cleanup = () => {
-          for (let i = 0; i < cleanups.length; i++) {
-            const cleanup = cleanups[i];
-            cleanup();
-          }
-        };
+        connections.push(c);
 
         c.on('close', () => {
-          cleanup();
-        });
+          for (let i = 0; i < localInterests.length; i++) {
+            const id = localInterests[i];
+            const interest = iterests[id];
 
-        connections.push(c);
-        cleanups.push(() => {
+            interest.splice(interest.indexOf(userId), 1);
+            if (interest.length === 0) {
+              delete iterests[id];
+            }
+          }
+
           connections.splice(connections.indexOf(c), 1);
         });
       }
