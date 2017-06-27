@@ -141,6 +141,18 @@ class Hand {
             this.side = null;
           }
 
+          isGrabbed() {
+            return Boolean(this.id);
+          }
+
+          getGrabberId() {
+            return this.id;
+          }
+
+          getGrabberSide() {
+            return this.side;
+          }
+
           distanceTo(point) {
             return new THREE.Vector3().fromArray(this.position).distanceTo(point);
           }
