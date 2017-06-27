@@ -142,6 +142,7 @@ class Physics {
             color: 0xFFFFFF,
             transparent: true,
             opacity: 0,
+            depthWrite: false,
           });
           const mesh = new THREE.Mesh(geometry, material);
           mesh.position.set(0, 0, 0);
