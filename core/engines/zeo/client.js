@@ -565,7 +565,7 @@ class Zeo {
                       }
 
                       getRemoteStatus(userId) {
-                        return multiplayer.getPlayerStatuses().get(userId);
+                        return multiplayer.getPlayerStatus(userId);
                       }
 
                       getRemoteHmdMesh(userId) {
