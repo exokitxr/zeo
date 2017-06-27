@@ -42,6 +42,11 @@ class Physics {
     worker.on('error', err => {
       console.warn(err);
     });
+    worker.on('exit', code => {
+      console.warn('physics worker exited with code', code);
+
+      process.exit(1);
+    });
 
     const _parseUrlSpec = url => {
       const match = url.match(/^(?:([^:]+):\/\/)([^:]+)(?::([0-9]*?))?$/);
