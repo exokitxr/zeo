@@ -1,7 +1,5 @@
 const indev = require('indev');
 
-const ConvexGeometry = require('./lib/three-extra/ConvexGeometry');
-
 const CLOUD_RATE = 0.00001;
 const CLOUD_SPEED = 2;
 
@@ -9,9 +7,7 @@ const NUM_CELLS = 64;
 
 class Cloud {
   mount() {
-    const {three: {THREE}, elements, render, world, utils: {random: {alea}}} = zeo;
-
-    const THREEConvexGeometry = ConvexGeometry(THREE);
+    const {three: {THREE, camera}, elements, render, world, utils: {geometry: geometryUtils, random: {alea}}} = zeo;
 
     const cloudsMaterial = new THREE.MeshBasicMaterial({
       color: 0xFFFFFF,
@@ -19,6 +15,11 @@ class Cloud {
       transparent: true,
       fog: false,
     });
+
+    const cloudTypes = [
+      geometryUtils.unindexBufferGeometry(new THREE.TetrahedronBufferGeometry(1, 1)),
+      geometryUtils.unindexBufferGeometry(new THREE.BoxBufferGeometry(1, 1, 1)),
+    ];
 
     const updates = [];
 
@@ -56,10 +57,9 @@ class Cloud {
 
         const _getWorldTime = () => world.getWorldTime();
 
-        let lastWorldTime = _getWorldTime();
+        let lastFrameTime = _getWorldTime();
+        let lastMeshTime = _getWorldTime();
         const update = () => {
-          const _getSnappedWorldTime = worldTime => Math.floor(worldTime / 1000) * 1000;
-
           const _setCloudMeshFrame = worldTime => {
             const {cloudMeshes} = cloudsMesh;
 
@@ -68,6 +68,7 @@ class Cloud {
               const {basePosition, startTime} = cloudMesh;
               const timeDiff = worldTime - startTime;
               cloudMesh.position.x = basePosition[0] - ((timeDiff / 1000) * CLOUD_SPEED);
+              cloudMesh.updateMatrixWorld();
             }
           };
           const _setCloudMesh = worldTime => {
@@ -109,58 +110,72 @@ class Cloud {
               const {basePosition, cloudId} = cloud;
 
               const cloudMesh = (() => {
-                const object = new THREE.Object3D();
-
                 const cloudRng = new alea(cloudId);
-                const numCloudMeshChunks = 2 + Math.floor(cloudRng() * 8);
+                const numCloudMeshChunks = 5 + Math.floor(cloudRng() * 40);
                 const cloudMeshChunks = Array(numCloudMeshChunks);
+                const points = [];
                 for (let j = 0; j < numCloudMeshChunks; j++) {
-                  const geometry = (() => {
-                    const points = (() => {
-                      const numPoints = 10 + Math.floor(cloudRng() * 10);
-                      const result = Array(numPoints);
-                      for (let i = 0; i < numPoints; i++) {
-                        const x = -8 + (cloudRng() * 8)
-                        const y = -3 + (cloudRng() * 3)
-                        const z = -8 + (cloudRng() * 8)
-                        const point = new THREE.Vector3(x, y, z);
-                        result[i] = point;
-                      }
-                      return result;
-                    })();
-                    const geometry = new THREEConvexGeometry(points);
-                    return geometry;
-                  })();
-                  const material = cloudsMaterial;
-
-                  const cloudMeshChunk = new THREE.Mesh(geometry, material);
-                  cloudMeshChunk.position.x = -12 + (cloudRng() * 12);
-                  cloudMeshChunk.position.z = -12 + (cloudRng() * 12);
-
-                  object.add(cloudMeshChunk);
-
-                  cloudMeshChunks[j] = cloudMeshChunk;
+                  const cloudType = cloudTypes[Math.floor(cloudTypes.length * cloudRng())];
+                  const geometry = cloudType.clone()
+                    .applyMatrix(new THREE.Matrix4().makeScale(
+                      1 + (cloudRng() * 8),
+                      1 + (cloudRng() * 8),
+                      1 + (cloudRng() * 8)
+                    ))
+                    .applyMatrix(new THREE.Matrix4().makeRotationFromEuler(
+                      new THREE.Euler(
+                        cloudRng() * Math.PI * 2,
+                        cloudRng() * Math.PI * 2,
+                        cloudRng() * Math.PI * 2,
+                        camera.rotation.euler
+                      )
+                    ))
+                    .applyMatrix(new THREE.Matrix4().makeTranslation(
+                      -25 + (cloudRng() * 25),
+                      -5 + (cloudRng() * 5),
+                      -25 + (cloudRng() * 25)
+                    ));
+                  points.push(geometry.getAttribute('position').array);
                 }
-
-                object.position.x = basePosition[0];
-                object.position.y = 30 + (cloudRng() * 10);
-                object.position.z = basePosition[1];
-
-                // object.receiveShadow = false;
-                // object.castShadow = true;
-                object.cloudId = cloudId;
-                object.basePosition = basePosition;
-                object.startTime = worldTime;
-
-                object.destroy = () => {
-                  for (let i = 0; i < cloudMeshChunks.length; i++) {
-                    const cloudMeshChunk = cloudMeshChunks[i];
-                    const {geometry} = cloudMeshChunk;
-                    geometry.dispose();
+                const geometry = new THREE.BufferGeometry();
+                const positions = (() => {
+                  const size = (() => {
+                    let result = 0;
+                    for (let i = 0; i < points.length; i++) {
+                      const point = points[i];
+                      result += point.length;
+                    }
+                    return result;
+                  })();
+                  const result = new Float32Array(size);
+                  let index = 0;
+                  for (let i = 0; i < points.length; i++) {
+                    const point = points[i];
+                    result.set(point, index);
+                    index += point.length;
                   }
+                  return result;
+                })();
+                geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+                const material = cloudsMaterial;
+
+                const cloudMesh = new THREE.Mesh(geometry, material);
+                cloudMesh.position.x = basePosition[0];
+                cloudMesh.position.y = 30 + (cloudRng() * 10);
+                cloudMesh.position.z = basePosition[1];
+                cloudMesh.updateMatrixWorld();
+                cloudMesh.frustumCulled = false;
+
+                cloudMesh.cloudId = cloudId;
+                cloudMesh.basePosition = basePosition;
+                cloudMesh.startTime = worldTime;
+
+                cloudMesh.destroy = () => {
+                  geometry.dispose();
                 };
 
-                return object;
+                return cloudMesh;
               })();
 
               cloudsMesh.add(cloudMesh);
@@ -171,16 +186,16 @@ class Cloud {
           };
 
           const nextWorldTime = _getWorldTime();
-          const prevWorldTime = lastWorldTime;
 
-          if (nextWorldTime !== prevWorldTime) {
+          const frameTimeDiff = nextWorldTime - lastFrameTime;
+          if (frameTimeDiff >= 20) {
             _setCloudMeshFrame(nextWorldTime);
+            lastFrameTime = nextWorldTime;
           }
-
-          const nextWorldTimeSnapped = _getSnappedWorldTime(nextWorldTime);
-          const prevWorldTimeSnapped = _getSnappedWorldTime(prevWorldTime);
-          if (nextWorldTimeSnapped !== prevWorldTimeSnapped) {
-            _setCloudMesh(nextWorldTimeSnapped);
+          const meshTimeDiff = nextWorldTime - lastMeshTime;
+          if (meshTimeDiff >= 1000) {
+            _setCloudMesh(nextWorldTime);
+            lastMeshTime = nextWorldTime;
           }
         };
         updates.push(update);
