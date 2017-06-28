@@ -1,4 +1,4 @@
-const NUM_POSITIONS = 10 * 1024;
+const NUM_POSITIONS = 30 * 1024;
 
 class Tree {
   constructor(archae) {
@@ -150,16 +150,110 @@ class Tree {
         const geometry = new THREE.BufferGeometry();
         const positions = Float32Array.from([
           -0.1, 0, 0,
-          0, 0.1, 0,
+          0, 0.2, 0,
           0.1, 0, 0,
           -0.1, 0, 0,
           0.1, 0, 0,
-          0, 0.1, 0,
+          0, 0.2, 0,
         ]);
         geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
         const lightColor = new THREE.Color(0x8BC34A);
         const darkColor = lightColor.clone().multiplyScalar(0.25);
         const colors = Float32Array.from([
+          darkColor.r, darkColor.g, darkColor.b,
+          lightColor.r, lightColor.g, lightColor.b,
+          darkColor.r, darkColor.g, darkColor.b,
+          darkColor.r, darkColor.g, darkColor.b,
+          darkColor.r, darkColor.g, darkColor.b,
+          lightColor.r, lightColor.g, lightColor.b,
+        ]);
+        geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
+        geometry.computeVertexNormals();
+
+        return geometry;
+      })(),
+      (() => {
+        const geometry = new THREE.BufferGeometry();
+        const positions = Float32Array.from([
+          0, 0, -0.001,
+          -0.1, 0.2, -0.001,
+          0, 0.1, -0.001,
+          0, 0, -0.001,
+          0, 0.1, -0.001,
+          -0.1, 0.2, -0.001,
+
+          0, 0, 0,
+          0.1, 0.2, 0,
+          0, 0.1, 0,
+          0, 0, 0,
+          0, 0.1, 0,
+          0.1, 0.2, 0,
+        ]);
+        geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+        const lightColor = new THREE.Color(0x8BC34A);
+        const darkColor = lightColor.clone().multiplyScalar(0.25);
+        const colors = Float32Array.from([
+          darkColor.r, darkColor.g, darkColor.b,
+          lightColor.r, lightColor.g, lightColor.b,
+          darkColor.r, darkColor.g, darkColor.b,
+          darkColor.r, darkColor.g, darkColor.b,
+          darkColor.r, darkColor.g, darkColor.b,
+          lightColor.r, lightColor.g, lightColor.b,
+
+          darkColor.r, darkColor.g, darkColor.b,
+          lightColor.r, lightColor.g, lightColor.b,
+          darkColor.r, darkColor.g, darkColor.b,
+          darkColor.r, darkColor.g, darkColor.b,
+          darkColor.r, darkColor.g, darkColor.b,
+          lightColor.r, lightColor.g, lightColor.b,
+        ]);
+        geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
+        geometry.computeVertexNormals();
+
+        return geometry;
+      })(),
+      (() => {
+        const geometry = new THREE.BufferGeometry();
+        const positions = Float32Array.from([
+          0, 0, -0.001,
+          -0.15, 0.15, -0.001,
+          0, 0.175, -0.001,
+          0, 0, -0.001,
+          0, 0.175, -0.001,
+          -0.15, 0.15, -0.001,
+
+          0, 0, -0.001,
+          0.15, 0.15, -0.001,
+          0, 0.175, -0.001,
+          0, 0, -0.001,
+          0, 0.175, -0.001,
+          0.15, 0.15, -0.001,
+
+          -0.075, 0.075, 0,
+          0, 0.275, 0,
+          0.075, 0.075, 0,
+          -0.075, 0.075, 0,
+          0.075, 0.075, 0,
+          0, 0.275, 0,
+        ]);
+        geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+        const lightColor = new THREE.Color(0x8BC34A);
+        const darkColor = lightColor.clone().multiplyScalar(0.25);
+        const colors = Float32Array.from([
+          darkColor.r, darkColor.g, darkColor.b,
+          lightColor.r, lightColor.g, lightColor.b,
+          lightColor.r, lightColor.g, lightColor.b,
+          darkColor.r, darkColor.g, darkColor.b,
+          lightColor.r, lightColor.g, lightColor.b,
+          lightColor.r, lightColor.g, lightColor.b,
+
+          darkColor.r, darkColor.g, darkColor.b,
+          lightColor.r, lightColor.g, lightColor.b,
+          lightColor.r, lightColor.g, lightColor.b,
+          darkColor.r, darkColor.g, darkColor.b,
+          lightColor.r, lightColor.g, lightColor.b,
+          lightColor.r, lightColor.g, lightColor.b,
+
           darkColor.r, darkColor.g, darkColor.b,
           lightColor.r, lightColor.g, lightColor.b,
           darkColor.r, darkColor.g, darkColor.b,
@@ -267,8 +361,8 @@ class Tree {
             const geometry = treeLeafGeometries[Math.floor(Math.random() * treeLeafGeometries.length)]
               .clone()
               .applyMatrix(new THREE.Matrix4().makeScale(
-                1 + (Math.random() * 3),
-                1 + (Math.random() * 20),
+                1 + (Math.random() * 2),
+                1 + (Math.random() * 5),
                 1
               ))
               .applyMatrix(new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(
