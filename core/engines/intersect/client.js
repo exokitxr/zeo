@@ -41,10 +41,10 @@ class Intersect {
         });
 
         class Intersecter {
-          constructor({frameRate, intersectMeshKey, debug}) {
+          constructor({frameRate, debug}) {
             this.frameRate = frameRate;
-            this.intersectMeshKey = intersectMeshKey;
             this.lastUpdateTime = Date.now() - (Math.random() * frameRate); // try to avoid synchronization across intersecters
+
 
             const pickerScene = new THREE.Scene();
             pickerScene.autoUpdate = false;
@@ -73,6 +73,8 @@ class Intersect {
             gpuPicker.setScene(pickerScene);
             this.gpuPicker = gpuPicker;
 
+            this.intersectMeshMap = new Map();
+
             const hoverStates = {
               left: _makeHoverState(),
               right: _makeHoverState(),
@@ -86,19 +88,19 @@ class Intersect {
 
           addTarget(object) {
             const intersectMesh = object.clone();
-            object[this.intersectMeshKey] = intersectMesh;
+            this.intersectMeshMap.set(object, intersectMesh);
             intersectMesh.originalObject = object;
 
             this.pickerScene.add(intersectMesh);
           }
 
           removeTarget(object) {
-            const intersectMesh = object[this.intersectMeshKey];
+            const intersectMesh = this.intersectMeshMap.get(object);
 
             this.pickerScene.remove(intersectMesh);
 
             _destroyIntersectMesh(intersectMesh);
-            object[this.intersectMeshKey] = null;
+            this.intersectMeshMap.delete(object);
           }
 
           destroyTarget(object) {
@@ -111,7 +113,7 @@ class Intersect {
               return !object;
             };
             const _recurse = object => {
-              const intersectMesh = object[this.intersectMeshKey];
+              const intersectMesh = this.intersectMeshMap.get(object);
               if (intersectMesh) {
                 intersectMesh.matrixWorld.copy(object.matrixWorld);
                 intersectMesh.visible = _recursivelyVisible(object);
@@ -210,11 +212,9 @@ class Intersect {
 
         const _makeIntersecter = ({
           frameRate = 50,
-          intersectMeshKey = '_intersectMesh',
           debug = false,
         } = {}) => new Intersecter({
           frameRate,
-          intersectMeshKey,
           debug,
         });
         const _destroyIntersecter = intersecter => intersecter.destroy();
