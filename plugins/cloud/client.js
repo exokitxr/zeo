@@ -7,6 +7,7 @@ const NUM_CELLS = 64;
 
 class Cloud {
   mount() {
+    return;
     const {three: {THREE, camera}, elements, render, world, utils: {geometry: geometryUtils, random: {alea}}} = zeo;
 
     const cloudsMaterial = new THREE.MeshBasicMaterial({
