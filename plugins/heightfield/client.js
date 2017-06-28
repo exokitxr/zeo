@@ -21,7 +21,7 @@ class Heightfield {
 
   mount() {
     const {_archae: archae} = this;
-    const {three, render, pose} = zeo;
+    const {three, render, pose, teleport, utils: {geometry: geometryUtils}} = zeo;
     const {THREE, scene, camera} = three;
 
     const mapChunkMaterial = new THREE.MeshPhongMaterial({
@@ -44,12 +44,12 @@ class Heightfield {
       const {position, positions, normals, colors, indices} = mapChunkData;
 
       const geometry = (() => {
-        const geometry = new THREE.BufferGeometry();
-
+        let geometry = new THREE.BufferGeometry();
         geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
         geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
         geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
         geometry.setIndex(new THREE.Uint16BufferAttribute(indices, 1));
+        geometry = geometryUtils.unindexBufferGeometry(geometry); // XXX this could be moved to the backend for performance
 
         // geometry.computeBoundingSphere();
 
@@ -96,28 +96,33 @@ class Heightfield {
         return result;
       })();
 
-      const missingMapChunkPromises = missingMapChunkOffsets.map(([x, y]) => {
-        return _requestGenerate(x, y)
-          .then(mapChunkBuffer => {
-            const mapChunkData = protocolUtils.parseMapChunk(mapChunkBuffer);
-            const mesh = _makeMapChunkMesh(mapChunkData);
-            object.add(mesh);
-
-            const key = _getMapChunkOffsetKey(x, y);
-            const mapChunk = new MapChunk([x, y], mesh);
-            currentMapChunks.set(key, mapChunk);
+      const missingMapChunkPromises = missingMapChunkOffsets.map(([x, y]) => _requestGenerate(x, y)
+        .then(mapChunkBuffer => {
+          const mapChunkData = protocolUtils.parseMapChunk(mapChunkBuffer);
+          const mapChunkMesh = _makeMapChunkMesh(mapChunkData);
+          object.add(mapChunkMesh);
+          teleport.addTarget(mapChunkMesh, {
+            flat: true,
           });
-      });
+
+          const key = _getMapChunkOffsetKey(x, y);
+          const mapChunk = new MapChunk([x, y], mapChunkMesh);
+          currentMapChunks.set(key, mapChunk);
+        }));
       return Promise.all(missingMapChunkPromises)
         .then(() => {
           deadMapChunkOffsets.forEach(([x, y]) => {
             const key = _getMapChunkOffsetKey(x, y);
             const mapChunk = currentMapChunks.get(key);
-            const {mesh} = mapChunk;
-            object.remove(mesh);
+            const {mesh: mapChunkMesh} = mapChunk;
+            object.remove(mapChunkMesh);
+            teleport.removeTarget(mapChunkMesh);
 
             currentMapChunks.delete(key);
           });
+        })
+        .then(() => {
+          teleport.reindex();
         });
     };
 

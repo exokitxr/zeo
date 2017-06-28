@@ -1077,9 +1077,10 @@ class Planet {
 
               entityApi._cleanup = () => {
                 scene.remove(planetsMesh);
-                planetsMesh.children.forEach(planetMesh => {
-                  // teleport.removeTarget(planetMesh);
-                })
+                /* planetsMesh.children.forEach(planetMesh => {
+                  teleport.removeTarget(planetMesh);
+                });
+                teleport.reindex(); */
                 intersect.destroyIntersecter(intersecter);
                 scene.remove(soundObject);
                 scene.remove(particlesMesh);

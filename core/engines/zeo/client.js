@@ -661,12 +661,16 @@ class Zeo {
                     }
 
                     class ZeoTeleportApi {
-                      addTarget(object) {
-                        teleport.addTarget(object);
+                      addTarget(object, options) {
+                        teleport.addTarget(object, options);
                       }
 
                       removeTarget(object) {
                         teleport.removeTarget(object);
+                      }
+
+                      reindex() {
+                        teleport.reindex();
                       }
                     }
 
