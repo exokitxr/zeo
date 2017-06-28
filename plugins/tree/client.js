@@ -20,9 +20,11 @@ class Tree {
 
     const treeGeometries = [
       (() => {
+        const radiusBottom = 0.2 + Math.random() * 0.3;
+        const radiusTop = radiusBottom * (0.2 + (Math.random() * 0.3));
         const heightSegments = 10;
         const radialSegments = 10;
-        const geometry = geometryUtils.unindexBufferGeometry(new THREE.CylinderBufferGeometry(0.2, 0.2, 10, radialSegments, heightSegments))
+        const geometry = geometryUtils.unindexBufferGeometry(new THREE.CylinderBufferGeometry(radiusTop, radiusBottom, 10, radialSegments, heightSegments))
           .applyMatrix(new THREE.Matrix4().makeTranslation(0, heightSegments / 2, 0));
         const positions = geometry.getAttribute('position').array;
 
