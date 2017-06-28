@@ -1,6 +1,6 @@
 {
-  "name": "grass",
-  "description": "Procedurally generated grass.",
+  "name": "pixel-grass",
+  "description": "Procedurally generated pixel grass.",
   "version": "0.0.1",
   "keywords": [],
   "client": "client.js",

@@ -1,6 +1,6 @@
 import functionutils from 'functionutils';
 
-export default class Grass {
+export default class PixelGrass {
   mount() {
     const {three: {THREE}, elements, utils: {random: {alea}}} = zeo;
 
