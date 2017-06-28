@@ -26,9 +26,9 @@ class Tree {
 
     const treeCoreGeometries = [
       (() => {
-        const radiusBottom = 0.2 + Math.random() * 0.3;
+        const radiusBottom = 0.3 + Math.random() * 0.5;
         const radiusTop = radiusBottom * (0.2 + (Math.random() * 0.3));
-        const heightSegments = 10;
+        const heightSegments = 16;
         const radialSegments = 5;
         const geometry = geometryUtils.unindexBufferGeometry(new THREE.CylinderBufferGeometry(radiusTop, radiusBottom, heightSegments, radialSegments, heightSegments))
           .applyMatrix(new THREE.Matrix4().makeTranslation(0, heightSegments / 2, 0));
@@ -139,27 +139,43 @@ class Tree {
       return result;
     };
     const treeBranchGeometries = [
-      _makeTreeBranchGeometries(2),
-      _makeTreeBranchGeometries(3),
       _makeTreeBranchGeometries(4),
       _makeTreeBranchGeometries(5),
       _makeTreeBranchGeometries(6),
+      _makeTreeBranchGeometries(7),
+      _makeTreeBranchGeometries(8),
+      _makeTreeBranchGeometries(9),
+      _makeTreeBranchGeometries(10),
     ];
     const treeLeafGeometries = [
       (() => {
         const geometry = new THREE.BufferGeometry();
         const positions = Float32Array.from([
-          -0.1, 0, 0,
+          0, 0, 0,
+          -0.05, 0.1, 0,
+          0.05, 0.1, 0,
+          0, 0, 0,
+          0.05, 0.1, 0,
+          -0.05, 0.1, 0,
+
+          -0.05, 0.1, 0,
           0, 0.2, 0,
-          0.1, 0, 0,
-          -0.1, 0, 0,
-          0.1, 0, 0,
+          0.05, 0.1, 0,
+          -0.05, 0.1, 0,
+          0.05, 0.1, 0,
           0, 0.2, 0,
         ]);
         geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
         const lightColor = new THREE.Color(0x8BC34A);
         const darkColor = lightColor.clone().multiplyScalar(0.25);
         const colors = Float32Array.from([
+          lightColor.r, lightColor.g, lightColor.b,
+          darkColor.r, darkColor.g, darkColor.b,
+          darkColor.r, darkColor.g, darkColor.b,
+          lightColor.r, lightColor.g, lightColor.b,
+          darkColor.r, darkColor.g, darkColor.b,
+          darkColor.r, darkColor.g, darkColor.b,
+
           darkColor.r, darkColor.g, darkColor.b,
           lightColor.r, lightColor.g, lightColor.b,
           darkColor.r, darkColor.g, darkColor.b,
@@ -175,12 +191,12 @@ class Tree {
       (() => {
         const geometry = new THREE.BufferGeometry();
         const positions = Float32Array.from([
-          0, 0, -0.001,
-          -0.1, 0.2, -0.001,
-          0, 0.1, -0.001,
-          0, 0, -0.001,
-          0, 0.1, -0.001,
-          -0.1, 0.2, -0.001,
+          0, 0, -0.01,
+          -0.1, 0.2, -0.01,
+          0, 0.1, -0.01,
+          0, 0, -0.01,
+          0, 0.1, -0.01,
+          -0.1, 0.2, -0.01,
 
           0, 0, 0,
           0.1, 0.2, 0,
@@ -215,19 +231,19 @@ class Tree {
       (() => {
         const geometry = new THREE.BufferGeometry();
         const positions = Float32Array.from([
-          0, 0, -0.001,
-          -0.15, 0.15, -0.001,
-          0, 0.175, -0.001,
-          0, 0, -0.001,
-          0, 0.175, -0.001,
-          -0.15, 0.15, -0.001,
+          0, 0, -0.01,
+          -0.15, 0.15, -0.01,
+          0, 0.175, -0.01,
+          0, 0, -0.01,
+          0, 0.175, -0.01,
+          -0.15, 0.15, -0.01,
 
-          0, 0, -0.001,
-          0.15, 0.15, -0.001,
-          0, 0.175, -0.001,
-          0, 0, -0.001,
-          0, 0.175, -0.001,
-          0.15, 0.15, -0.001,
+          0, 0, -0.01,
+          0.15, 0.15, -0.01,
+          0, 0.175, -0.01,
+          0, 0, -0.01,
+          0, 0.175, -0.01,
+          0.15, 0.15, -0.01,
 
           -0.075, 0.075, 0,
           0, 0.275, 0,
@@ -355,14 +371,16 @@ class Tree {
             const treeBranchPositions = treeBranchGeometry.getAttribute('position').array;
             const treeBranchNormals = treeBranchGeometry.getAttribute('normal').array;
             const numPositions = treeBranchPositions.length / 3;
-            const positionIndex = Math.floor(Math.random() * numPositions);
-            const baseIndex = positionIndex * 3;
+            const baseIndex1 = Math.floor((1 - Math.pow(Math.random(), 0.5)) * numPositions) * 3;
+            const baseIndex2 = Math.floor((1 - Math.pow(Math.random(), 0.5)) * numPositions) * 3;
+            const lerpFactor = Math.random();
+            const inverseLerpFactor = 1 - lerpFactor;
 
             const geometry = treeLeafGeometries[Math.floor(Math.random() * treeLeafGeometries.length)]
               .clone()
               .applyMatrix(new THREE.Matrix4().makeScale(
-                1 + (Math.random() * 2),
-                1 + (Math.random() * 5),
+                5,
+                5 + Math.random() * 5,
                 1
               ))
               .applyMatrix(new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(
@@ -374,15 +392,15 @@ class Tree {
               .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(
                 upVector,
                 new THREE.Vector3(
-                  treeBranchNormals[baseIndex + 0],
-                  treeBranchNormals[baseIndex + 1],
-                  treeBranchNormals[baseIndex + 2]
+                  (treeBranchNormals[baseIndex1 + 0] * lerpFactor + treeBranchNormals[baseIndex2 + 0] * inverseLerpFactor),
+                  (treeBranchNormals[baseIndex1 + 1] * lerpFactor + treeBranchNormals[baseIndex2 + 1] * inverseLerpFactor),
+                  (treeBranchNormals[baseIndex1 + 2] * lerpFactor + treeBranchNormals[baseIndex2 + 2] * inverseLerpFactor)
                 )
               )))
               .applyMatrix(new THREE.Matrix4().makeTranslation(
-                treeBranchPositions[baseIndex + 0],
-                treeBranchPositions[baseIndex + 1],
-                treeBranchPositions[baseIndex + 2],
+                (treeBranchPositions[baseIndex1 + 0] * lerpFactor + treeBranchPositions[baseIndex2 + 0] * inverseLerpFactor),
+                (treeBranchPositions[baseIndex1 + 1] * lerpFactor + treeBranchPositions[baseIndex2 + 1] * inverseLerpFactor),
+                (treeBranchPositions[baseIndex1 + 2] * lerpFactor + treeBranchPositions[baseIndex2 + 2] * inverseLerpFactor)
               ));
 
             const newPositions = geometry.getAttribute('position').array;
