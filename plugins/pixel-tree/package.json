@@ -1,6 +1,6 @@
 {
-  "name": "tree",
-  "description": "Procedurally generated trees.",
+  "name": "pixel-tree",
+  "description": "Procedurally generated pixel trees.",
   "version": "0.0.1",
   "keywords": [],
   "client": "client.js",

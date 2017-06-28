@@ -1,4 +1,4 @@
-export default class Tree {
+export default class PixelTree {
   mount() {
     const {three: {THREE}, elements, utils: {random: {alea}}} = zeo;
 
