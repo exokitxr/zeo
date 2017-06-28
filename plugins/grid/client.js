@@ -142,6 +142,7 @@ class Grid {
         })();
         entityObject.add(mesh);
         teleport.addTarget(mesh);
+        teleport.reindex();
 
         entityApi.align = () => {
           // XXX implement this
@@ -150,6 +151,7 @@ class Grid {
         entityApi._cleanup = () => {
           entityObject.remove(mesh);
           teleport.removeTarget(mesh);
+          teleport.reindex();
         };
       },
       entityRemovedCallback(entityElement) {

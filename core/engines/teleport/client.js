@@ -44,6 +44,7 @@ class Teleport {
         };
 
         const forwardVector = new THREE.Vector3(0, 0, -1);
+        const zeroQuaternion = new THREE.Quaternion();
         const teleportMeshMaterial = new THREE.MeshPhongMaterial({
           color: 0xFFC107,
           shading: THREE.FlatShading,
@@ -55,6 +56,14 @@ class Teleport {
           frameRate: 20,
           intersectMeshKey: '_teleportIntersectMesh',
         });
+
+        const metadatas = new Map();
+
+        class Metadata {
+          constructor(flat) {
+            this.flat = flat;
+          }
+        }
 
         const _makeTeleportFloorMesh = () => {
           const geometry = new THREE.TorusBufferGeometry(0.5, 0.15, 3, 5);
@@ -139,23 +148,29 @@ class Teleport {
               const {position} = hoverState;
 
               if (position !== null && position.distanceTo(controllerPosition) <= teleportDistance) {
-                const {position, normal} = hoverState;
+                const {position, normal, originalObject} = hoverState;
+                const metadata = metadatas.get(originalObject);
+                const {flat} = metadata;
 
                 teleportFloorMesh.position.copy(position);
-                teleportFloorMesh.quaternion.setFromRotationMatrix(
-                  new THREE.Matrix4().lookAt(
-                    position.clone(),
-                    position.clone().add(
-                      position.clone().sub(
-                        new THREE.Plane().setFromNormalAndCoplanarPoint(
-                          normal,
-                          position
-                        ).projectPoint(controllerPosition)
-                      ).normalize()
-                    ),
-                    normal.clone()
-                  )
-                );
+                if (flat) {
+                  teleportFloorMesh.quaternion.copy(zeroQuaternion);
+                } else {
+                  teleportFloorMesh.quaternion.setFromRotationMatrix(
+                    new THREE.Matrix4().lookAt(
+                      position.clone(),
+                      position.clone().add(
+                        position.clone().sub(
+                          new THREE.Plane().setFromNormalAndCoplanarPoint(
+                            normal,
+                            position
+                          ).projectPoint(controllerPosition)
+                        ).normalize()
+                      ),
+                      normal.clone()
+                    )
+                  );
+                }
                 teleportFloorMesh.scale.copy(controllerScale);
                 teleportFloorMesh.updateMatrixWorld();
 
@@ -291,13 +306,16 @@ class Teleport {
           rend.removeListener('update', _update);
         };
 
-        const _addTarget = object => {
+        const _addTarget = (object, {flat = false} = {}) => {
           intersecter.addTarget(object);
-          intersecter.reindex();
+
+          const metadata = new Metadata(flat);
+          metadatas.set(object, metadata);
         };
         const _removeTarget = object => {
           intersecter.removeTarget(object);
-          intersecter.reindex();
+
+          metadatas.delete(object);
         };
         const _reindex = () => {
           intersecter.reindex();
