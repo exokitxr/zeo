@@ -22,10 +22,11 @@ physicsWorld.setGravity(new Ammo.btVector3(0, -9.8, 0));
 const bodies = [];
 
 class Body {
-  constructor(id, rigidBody, owner) {
+  constructor(id, rigidBody, owner, destroy) {
     this.id = id;
     this.rigidBody = rigidBody;
     this.owner = owner;
+    this.destroy = destroy;
 
     this._lastUpdate = null;
   }
@@ -105,6 +106,7 @@ const _addBody = body => {
 const _removeBody = (body, bodyIndex) => {
   const {rigidBody} = body;
   physicsWorld.removeRigidBody(rigidBody);
+  body.destroy();
 
   bodies.splice(bodyIndex, 1);
 
@@ -125,48 +127,113 @@ process.on('message', m => {
         switch (type) {
           case 'box': {
             const boxShape = new Ammo.btBoxShape(new Ammo.btVector3(spec[0] / 2, spec[1] / 2, spec[2] / 2));
+
             const boxTransform = BT_TRANSFORM;
             boxTransform.setIdentity();
-            boxTransform.setOrigin(new Ammo.btVector3(position[0], position[1], position[2]));
-            boxTransform.setRotation(new Ammo.btQuaternion(rotation[0], rotation[1], rotation[2], rotation[3]));
+
+            BT_VECTOR3.setX(position[0]);
+            BT_VECTOR3.setY(position[1]);
+            BT_VECTOR3.setZ(position[2]);
+            boxTransform.setOrigin(BT_VECTOR3);
+
+            BT_QUATERNION.setX(rotation[0]);
+            BT_QUATERNION.setY(rotation[1]);
+            BT_QUATERNION.setZ(rotation[2]);
+            BT_QUATERNION.setW(rotation[3]);
+            boxTransform.setRotation(BT_QUATERNION);
+
             const boxMass = mass;
-            const boxLocalInertia = new Ammo.btVector3(0, 0, 0);
+            const boxLocalInertia = BT_VECTOR3;
+            boxLocalInertia.setX(0);
+            boxLocalInertia.setY(0);
+            boxLocalInertia.setZ(0);
             boxShape.calculateLocalInertia(boxMass, boxLocalInertia);
+
             const boxMotionState = new Ammo.btDefaultMotionState(boxTransform);
-            const boxBody = new Ammo.btRigidBody(new Ammo.btRigidBodyConstructionInfo(boxMass, boxMotionState, boxShape, boxLocalInertia));
-            boxBody.setLinearFactor(new Ammo.btVector3(linearFactor[0], linearFactor[1], linearFactor[2]));
-            boxBody.setAngularFactor(new Ammo.btVector3(angularFactor[0], angularFactor[1], angularFactor[2]));
+            const boxConstructionInfo = new Ammo.btRigidBodyConstructionInfo(boxMass, boxMotionState, boxShape, boxLocalInertia);
+
+            const boxBody = new Ammo.btRigidBody(boxConstructionInfo);
+
+            BT_VECTOR3.setX(linearFactor[0]);
+            BT_VECTOR3.setY(linearFactor[1]);
+            BT_VECTOR3.setZ(linearFactor[2]);
+            boxBody.setLinearFactor(BT_VECTOR3);
+
+            BT_VECTOR3.setX(angularFactor[0]);
+            BT_VECTOR3.setY(angularFactor[1]);
+            BT_VECTOR3.setZ(angularFactor[2]);
+            boxBody.setAngularFactor(BT_VECTOR3);
+
             if (disableDeactivation) {
               boxBody.setActivationState(DISABLE_DEACTIVATION);
             }
             
-            const body = new Body(id, boxBody, owner);
+            const body = new Body(id, boxBody, owner, () => {
+              Ammo.destroy(boxBody);
+              Ammo.destroy(boxConstructionInfo);
+              Ammo.destroy(boxMotionState);
+              Ammo.destroy(boxShape);
+            });
             _addBody(body);
+
             break;
           }
           case 'plane': {
             const planeShape = new Ammo.btStaticPlaneShape(new Ammo.btVector3(spec[0], spec[1], spec[2]), spec[3]);
+
             const planeTransform = BT_TRANSFORM;
             planeTransform.setIdentity();
-            planeTransform.setOrigin(new Ammo.btVector3(position[0], position[1], position[2]));
-            planeTransform.setRotation(new Ammo.btQuaternion(rotation[0], rotation[1], rotation[2], rotation[3]));
+
+            BT_VECTOR3.setX(position[0]);
+            BT_VECTOR3.setY(position[1]);
+            BT_VECTOR3.setZ(position[2]);
+            planeTransform.setOrigin(BT_VECTOR3);
+
+            BT_QUATERNION.setX(rotation[0]);
+            BT_QUATERNION.setY(rotation[1]);
+            BT_QUATERNION.setZ(rotation[2]);
+            BT_QUATERNION.setW(rotation[3]);
+            planeTransform.setRotation(BT_QUATERNION);
+
             const planeMass = mass;
-            const planeLocalInertia = new Ammo.btVector3(0, 0, 0);
+            const planeLocalInertia = BT_VECTOR3;
+            planeLocalInertia.setX(0);
+            planeLocalInertia.setY(0);
+            planeLocalInertia.setZ(0);
+            planeShape.calculateLocalInertia(planeMass, planeLocalInertia);
+
             const planeMotionState = new Ammo.btDefaultMotionState(planeTransform);
             const planeBody = new Ammo.btRigidBody(new Ammo.btRigidBodyConstructionInfo(planeMass, planeMotionState, planeShape, planeLocalInertia));
-            planeBody.setLinearFactor(new Ammo.btVector3(linearFactor[0], linearFactor[1], linearFactor[2]));
-            planeBody.setAngularFactor(new Ammo.btVector3(angularFactor[0], angularFactor[1], angularFactor[2]));
+
+            BT_VECTOR3.setX(linearFactor[0]);
+            BT_VECTOR3.setY(linearFactor[1]);
+            BT_VECTOR3.setZ(linearFactor[2]);
+            planeBody.setLinearFactor(BT_VECTOR3);
+
+            BT_VECTOR3.setX(angularFactor[0]);
+            BT_VECTOR3.setY(angularFactor[1]);
+            BT_VECTOR3.setZ(angularFactor[2]);
+            planeBody.setAngularFactor(BT_VECTOR3);
+
             if (disableDeactivation) {
               planeBody.setActivationState(DISABLE_DEACTIVATION);
             }
 
-            const body = new Body(id, planeBody, owner);
+            const body = new Body(id, planeBody, owner, () => {
+              Ammo.destroy(planeBody);
+              Ammo.destroy(planeConstructionInfo);
+              Ammo.destroy(planeMotionState);
+              Ammo.destroy(planeShape);
+            });
             _addBody(body);
+
             break;
           }
           case 'compound': {
             const compoundShape = new Ammo.btCompoundShape();
+
             const childSpecs = spec;
+            const childDestroys = [];
             for (let i = 0; i < childSpecs.length; i++) {
               const childSpec = childSpecs[i];
               const [type, spec, position, rotation, mass] = childSpec;
@@ -174,11 +241,27 @@ process.on('message', m => {
               switch (type) {
                 case 'box': {
                   const boxShape = new Ammo.btBoxShape(new Ammo.btVector3(spec[0] / 2, spec[1] / 2, spec[2] / 2));
-                  const boxTransform = new Ammo.btTransform();
+
+                  const boxTransform = BT_TRANSFORM;
                   boxTransform.setIdentity();
-                  boxTransform.setOrigin(new Ammo.btVector3(position[0], position[1], position[2]));
-                  boxTransform.setRotation(new Ammo.btQuaternion(rotation[0], rotation[1], rotation[2], rotation[3]));
+
+                  BT_VECTOR3.setX(position[0]);
+                  BT_VECTOR3.setY(position[1]);
+                  BT_VECTOR3.setZ(position[2]);
+                  boxTransform.setOrigin(BT_VECTOR3);
+
+                  BT_QUATERNION.setX(rotation[0]);
+                  BT_QUATERNION.setY(rotation[1]);
+                  BT_QUATERNION.setZ(rotation[2]);
+                  BT_QUATERNION.setW(rotation[3]);
+                  boxTransform.setRotation(BT_QUATERNION);
+
                   compoundShape.addChildShape(boxTransform, boxShape);
+
+                  childDestroys.push(() => {
+                    Ammo.destroy(boxShape);
+                  });
+
                   break;
                 }
                 default: {
@@ -190,21 +273,56 @@ process.on('message', m => {
 
             const compoundTransform = BT_TRANSFORM;
             compoundTransform.setIdentity();
-            compoundTransform.setOrigin(new Ammo.btVector3(position[0], position[1], position[2]));
-            compoundTransform.setRotation(new Ammo.btQuaternion(rotation[0], rotation[1], rotation[2], rotation[3]));
+
+            BT_VECTOR3.setX(position[0]);
+            BT_VECTOR3.setY(position[1]);
+            BT_VECTOR3.setZ(position[2]);
+            compoundTransform.setOrigin(BT_VECTOR3);
+
+            BT_QUATERNION.setX(rotation[0]);
+            BT_QUATERNION.setY(rotation[1]);
+            BT_QUATERNION.setZ(rotation[2]);
+            BT_QUATERNION.setW(rotation[3]);
+            compoundTransform.setRotation(BT_QUATERNION);
+
             const compoundMass = mass;
-            const compoundLocalInertia = new Ammo.btVector3(0, 0, 0);
+            const compoundLocalInertia = BT_VECTOR3;
+            compoundLocalInertia.setX(0);
+            compoundLocalInertia.setY(0);
+            compoundLocalInertia.setZ(0);
             compoundShape.calculateLocalInertia(compoundMass, compoundLocalInertia);
+
             const compoundMotionState = new Ammo.btDefaultMotionState(compoundTransform);
-            const compoundBody = new Ammo.btRigidBody(new Ammo.btRigidBodyConstructionInfo(compoundMass, compoundMotionState, compoundShape, compoundLocalInertia));
-            compoundBody.setLinearFactor(new Ammo.btVector3(linearFactor[0], linearFactor[1], linearFactor[2]));
-            compoundBody.setAngularFactor(new Ammo.btVector3(angularFactor[0], angularFactor[1], angularFactor[2]));
+            const compoundConstructionInfo = new Ammo.btRigidBodyConstructionInfo(compoundMass, compoundMotionState, compoundShape, compoundLocalInertia);
+            const compoundBody = new Ammo.btRigidBody(compoundConstructionInfo);
+
+            BT_VECTOR3.setX(linearFactor[0]);
+            BT_VECTOR3.setY(linearFactor[1]);
+            BT_VECTOR3.setZ(linearFactor[2]);
+            compoundBody.setLinearFactor(BT_VECTOR3);
+
+            BT_VECTOR3.setX(angularFactor[0]);
+            BT_VECTOR3.setY(angularFactor[1]);
+            BT_VECTOR3.setZ(angularFactor[2]);
+            compoundBody.setAngularFactor(BT_VECTOR3);
+
             if (disableDeactivation) {
               compoundBody.setActivationState(DISABLE_DEACTIVATION);
             }
 
-            const body = new Body(id, compoundBody, owner);
+            const body = new Body(id, compoundBody, owner, () => {
+              Ammo.destroy(compoundBody);
+              Ammo.destroy(compoundConstructionInfo);
+              Ammo.destroy(compoundMotionState);
+              Ammo.destroy(compoundShape);
+
+              for (let i = 0; i < childDestroys; i++) {
+                const childDestroy = childDestroys[i];
+                childDestroy();
+              }
+            });
             _addBody(body);
+
             break;
           }
           default: {
