@@ -8,7 +8,9 @@ const DISABLE_SIMULATION = 5;
 
 const FPS = 1000 / 90;
 const FIXED_TIME_STEP = 1 / 200;
-const TRANSFORM_AUX = new Ammo.btTransform();
+const BT_VECTOR3 = new Ammo.btVector3();
+const BT_TRANSFORM = new Ammo.btTransform();
+const BT_QUATERNION = new Ammo.btQuaternion();
 
 const collisionConfiguration = new Ammo.btDefaultCollisionConfiguration();
 const dispatcher = new Ammo.btCollisionDispatcher(collisionConfiguration);
@@ -31,10 +33,10 @@ class Body {
   getUpdate() {
     const {id, rigidBody, _lastUpdate: lastUpdate} = this;
 
-    rigidBody.getMotionState().getWorldTransform(TRANSFORM_AUX);
-    const pv = TRANSFORM_AUX.getOrigin();
+    rigidBody.getMotionState().getWorldTransform(BT_TRANSFORM);
+    const pv = BT_TRANSFORM.getOrigin();
     const p = [pv.x(), pv.y(), pv.z()];
-    const qv = TRANSFORM_AUX.getRotation();
+    const qv = BT_TRANSFORM.getRotation();
     const q = [qv.x(), qv.y(), qv.z(), qv.w()];
 
     if (lastUpdate === null || !_arrayEquals(lastUpdate.position, p) || !_arrayEquals(lastUpdate.rotation, q)) {
@@ -54,13 +56,31 @@ class Body {
   setState(position, rotation, linearVelocity, angularVelocity, activate) {
     const {rigidBody} = this;
 
-    TRANSFORM_AUX.setIdentity();
-    TRANSFORM_AUX.setOrigin(new Ammo.btVector3(position[0], position[1], position[2]));
-    TRANSFORM_AUX.setRotation(new Ammo.btQuaternion(rotation[0], rotation[1], rotation[2], rotation[3]));
+    BT_TRANSFORM.setIdentity();
 
-    rigidBody.setCenterOfMassTransform(TRANSFORM_AUX);
-    rigidBody.setLinearVelocity(new Ammo.btVector3(linearVelocity[0], linearVelocity[1], linearVelocity[2]));
-    rigidBody.setAngularVelocity(new Ammo.btVector3(angularVelocity[0], angularVelocity[1], angularVelocity[2]));
+    BT_VECTOR3.setX(position[0]);
+    BT_VECTOR3.setY(position[1]);
+    BT_VECTOR3.setZ(position[2]);
+    BT_TRANSFORM.setOrigin(BT_VECTOR3);
+
+    BT_QUATERNION.setX(rotation[0]);
+    BT_QUATERNION.setY(rotation[1]);
+    BT_QUATERNION.setZ(rotation[2]);
+    BT_QUATERNION.setW(rotation[3]);
+    BT_TRANSFORM.setRotation(BT_QUATERNION);
+
+    rigidBody.setCenterOfMassTransform(BT_TRANSFORM);
+
+    BT_VECTOR3.setX(linearVelocity[0]);
+    BT_VECTOR3.setY(linearVelocity[1]);
+    BT_VECTOR3.setZ(linearVelocity[2]);
+    rigidBody.setLinearVelocity(BT_VECTOR3);
+
+    BT_VECTOR3.setX(angularVelocity[0]);
+    BT_VECTOR3.setY(angularVelocity[1]);
+    BT_VECTOR3.setZ(angularVelocity[2]);
+    rigidBody.setAngularVelocity(BT_VECTOR3);
+
     if (activate) {
       rigidBody.activate();
     }
@@ -105,7 +125,7 @@ process.on('message', m => {
         switch (type) {
           case 'box': {
             const boxShape = new Ammo.btBoxShape(new Ammo.btVector3(spec[0] / 2, spec[1] / 2, spec[2] / 2));
-            const boxTransform = TRANSFORM_AUX;
+            const boxTransform = BT_TRANSFORM;
             boxTransform.setIdentity();
             boxTransform.setOrigin(new Ammo.btVector3(position[0], position[1], position[2]));
             boxTransform.setRotation(new Ammo.btQuaternion(rotation[0], rotation[1], rotation[2], rotation[3]));
@@ -126,7 +146,7 @@ process.on('message', m => {
           }
           case 'plane': {
             const planeShape = new Ammo.btStaticPlaneShape(new Ammo.btVector3(spec[0], spec[1], spec[2]), spec[3]);
-            const planeTransform = TRANSFORM_AUX;
+            const planeTransform = BT_TRANSFORM;
             planeTransform.setIdentity();
             planeTransform.setOrigin(new Ammo.btVector3(position[0], position[1], position[2]));
             planeTransform.setRotation(new Ammo.btQuaternion(rotation[0], rotation[1], rotation[2], rotation[3]));
@@ -168,7 +188,7 @@ process.on('message', m => {
               }
             }
 
-            const compoundTransform = TRANSFORM_AUX;
+            const compoundTransform = BT_TRANSFORM;
             compoundTransform.setIdentity();
             compoundTransform.setOrigin(new Ammo.btVector3(position[0], position[1], position[2]));
             compoundTransform.setRotation(new Ammo.btQuaternion(rotation[0], rotation[1], rotation[2], rotation[3]));
