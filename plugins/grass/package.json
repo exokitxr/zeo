@@ -1,0 +1,9 @@
+{
+  "name": "grass",
+  "version": "0.0.1",
+  "description": "Procedurally genetarated grass.",
+  "client": "client.js",
+  "dependencies": {
+    "indev": "^3.0.10"
+  }
+}
