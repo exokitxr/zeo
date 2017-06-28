@@ -107,7 +107,7 @@ class Ocean {
             waves[baseIndex + 0] = (murmur(key + ':ang') / 0xFFFFFFFF) * Math.PI * 2; // ang
             waves[baseIndex + 1] = DATA.amplitude + (murmur(key + ':amp') / 0xFFFFFFFF) * DATA.amplitudeVariance; // amp
             waves[baseIndex + 2] = (DATA.speed + (murmur(key + ':speed') / 0xFFFFFFFF) * DATA.speedVariance) / 1000; // speed
-            colors[i] = 0.8 + ((murmur(key + ':color') / 0xFFFFFFFF) * (1 - 0.8));
+            colors[i] = 0.7 + ((murmur(key + ':color') / 0xFFFFFFFF) * (1 - 0.7));
           }
           geometry.addAttribute('wave', new THREE.BufferAttribute(waves, 3));
           geometry.addAttribute('color', new THREE.BufferAttribute(colors, 1));
