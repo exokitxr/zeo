@@ -24,7 +24,7 @@ class AmbientLight {
           type: 'number',
           value: 0.2,
           min: 0,
-          max: 2,
+          max: 4,
           step: 0.1,
         },
       },

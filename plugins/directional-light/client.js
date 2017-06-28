@@ -34,7 +34,7 @@ class DirectionalLight {
           type: 'number',
           value: 2,
           min: 0,
-          max: 2,
+          max: 4,
           step: 0.1,
         },
         shadow: {
