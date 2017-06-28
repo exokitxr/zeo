@@ -10,18 +10,18 @@ class Tree {
     const {three, render, pose, utils: {geometry: geometryUtils}} = zeo;
     const {THREE, scene, camera} = three;
 
-    const treeMaterial = new THREE.MeshPhongMaterial({
+    const treeMaterial = new THREE.MeshLambertMaterial({
       // color: 0xFFFFFF,
-      shininess: 0,
-      shading: THREE.FlatShading,
+      // shininess: 0,
+      // shading: THREE.FlatShading,
       vertexColors: THREE.VertexColors,
-      side: THREE.DoubleSide,
+      // side: THREE.DoubleSide,
     });
 
     const treeGeometries = [
       (() => {
         const heightSegments = 10;
-        const radialSegments = 5;
+        const radialSegments = 10;
         const geometry = geometryUtils.unindexBufferGeometry(new THREE.CylinderBufferGeometry(0.2, 0.2, 10, radialSegments, heightSegments))
           .applyMatrix(new THREE.Matrix4().makeTranslation(0, heightSegments / 2, 0));
         const positions = geometry.getAttribute('position').array;
@@ -73,6 +73,7 @@ class Tree {
     const treeMesh = (() => {
       const numTrees = 1;
       const positions = new Float32Array(NUM_POSITIONS * 3);
+      const normals = new Float32Array(NUM_POSITIONS * 3);
       const colors = new Float32Array(NUM_POSITIONS * 3);
       let index = 0;
       for (let i = 0; i < numTrees; i++) {
@@ -91,14 +92,17 @@ class Tree {
             treePosition.z + (-1 + (Math.random() * 1))
           ));
         const newPositions = geometry.getAttribute('position').array;
+        const newNormals = geometry.getAttribute('normal').array;
         const newColors = geometry.getAttribute('color').array;
         positions.set(newPositions, index);
+        normals.set(newNormals, index);
         colors.set(newColors, index);
 
         index += newPositions.length;
       }
       const geometry = new THREE.BufferGeometry();
       geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+      geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
       geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
       geometry.setDrawRange(0, index);
 
