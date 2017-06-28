@@ -109,8 +109,8 @@ class Heightfield {
         positions[4] = 0.02;
         positions[5] = 0;
 
-        positions[6] = 0.01;
-        positions[7] = 0.01;
+        positions[6] = 0.0125;
+        positions[7] = 0.0125;
         positions[8] = 0;
 
         positions[9] = 0.01;
@@ -122,19 +122,19 @@ class Heightfield {
         positions[14] = 0;
 
         positions[15] = 0.02;
-        positions[16] = 0.02;
+        positions[16] = 0.015;
         positions[17] = 0;
 
         positions[18] = 0.03;
-        positions[19] = 0.02;
+        positions[19] = 0.015;
         positions[20] = 0;
 
         positions[21] = 0.04;
-        positions[22] = 0.03;
+        positions[22] = 0.025;
         positions[23] = 0;
 
         positions[24] = 0.04;
-        positions[25] = 0.03;
+        positions[25] = 0.025;
         positions[26] = 0;
 
         geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
