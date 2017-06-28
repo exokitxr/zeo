@@ -10,6 +10,7 @@ class Tree {
     const {three, render, pose, utils: {geometry: geometryUtils}} = zeo;
     const {THREE, scene, camera} = three;
 
+    const upVector = new THREE.Vector3(0, 1, 0);
     const sideQuaternion = new THREE.Quaternion().setFromUnitVectors(
       new THREE.Vector3(0, 1, 0),
       new THREE.Vector3(1, 0, 0)
@@ -56,7 +57,7 @@ class Tree {
           const baseIndex = index * 3;
           const y = positions[baseIndex + 1];
           const heightOffset = heightOffsets[y];
-          const c = baseColor.clone().multiplyScalar(0.1 + (((y + 1) / heightSegments) * 0.9));
+          const c = baseColor.clone().multiplyScalar(0.1 + (((y + 1) / heightSegments) * (1 - 0.1)));
 
           positions[baseIndex + 0] += heightOffset.x;
           // positions[baseIndex + 1] += heightOffset.y;
@@ -110,7 +111,7 @@ class Tree {
         const baseIndex = index * 3;
         const y = positions[baseIndex + 1];
         const heightOffset = heightOffsets[y];
-        const c = baseColor.clone().multiplyScalar(0.5 + (((y + 1) / heightSegments) * (1 - 0.5)));
+        const c = baseColor.clone().multiplyScalar(0.7 + (((y + 1) / heightSegments) * (1 - 0.7)));
 
         positions[baseIndex + 0] += heightOffset.x;
         // positions[baseIndex + 1] += heightOffset.y;
@@ -143,6 +144,34 @@ class Tree {
       _makeTreeBranchGeometries(4),
       _makeTreeBranchGeometries(5),
       _makeTreeBranchGeometries(6),
+    ];
+    const treeLeafGeometries = [
+      (() => {
+        const geometry = new THREE.BufferGeometry();
+        const positions = Float32Array.from([
+          -0.1, 0, 0,
+          0, 0.1, 0,
+          0.1, 0, 0,
+          -0.1, 0, 0,
+          0.1, 0, 0,
+          0, 0.1, 0,
+        ]);
+        geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+        const lightColor = new THREE.Color(0x8BC34A);
+        const darkColor = lightColor.clone().multiplyScalar(0.25);
+        const colors = Float32Array.from([
+          darkColor.r, darkColor.g, darkColor.b,
+          lightColor.r, lightColor.g, lightColor.b,
+          darkColor.r, darkColor.g, darkColor.b,
+          darkColor.r, darkColor.g, darkColor.b,
+          darkColor.r, darkColor.g, darkColor.b,
+          lightColor.r, lightColor.g, lightColor.b,
+        ]);
+        geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
+        geometry.computeVertexNormals();
+
+        return geometry;
+      })(),
     ];
 
     const treeMesh = (() => {
@@ -180,9 +209,10 @@ class Tree {
 
           return treeCoreGeometry;
         };
-        const _renderBranches = treeCoreGeometry => {
-          const {heightSegments, heightOffsets} = treeCoreGeometry;
+        const _renderBranches = treeCoreGeometrySpec => {
+          const {heightSegments, heightOffsets} = treeCoreGeometrySpec;
 
+          const treeBranchGeometrySpec = [];
           for (let i = Math.floor(heightSegments * 0.4); i < heightSegments; i++) {
             const heightOffset = heightOffsets[i];
 
@@ -209,20 +239,72 @@ class Tree {
                     treePosition.z + heightOffsetLocal.z
                   ));
                 const newPositions = geometry.getAttribute('position').array;
-                const newNormals = geometry.getAttribute('normal').array;
-                const newColors = geometry.getAttribute('color').array;
                 positions.set(newPositions, index);
+                const newNormals = geometry.getAttribute('normal').array;
                 normals.set(newNormals, index);
+                const newColors = geometry.getAttribute('color').array;
                 colors.set(newColors, index);
+
+                treeBranchGeometrySpec.push(geometry);
 
                 index += newPositions.length;
               }
             }
           }
+
+          return treeBranchGeometrySpec;
+        };
+        const _renderLeaves = treeBranchGeometrySpec => {
+          const numLeaves = 1000;
+          for (let i = 0; i < numLeaves; i++) {
+            const treeBranchGeometry = treeBranchGeometrySpec[Math.floor(Math.random() * treeBranchGeometrySpec.length)];
+            const treeBranchPositions = treeBranchGeometry.getAttribute('position').array;
+            const treeBranchNormals = treeBranchGeometry.getAttribute('normal').array;
+            const numPositions = treeBranchPositions.length / 3;
+            const positionIndex = Math.floor(Math.random() * numPositions);
+            const baseIndex = positionIndex * 3;
+
+            const geometry = treeLeafGeometries[Math.floor(Math.random() * treeLeafGeometries.length)]
+              .clone()
+              .applyMatrix(new THREE.Matrix4().makeScale(
+                1 + (Math.random() * 3),
+                1 + (Math.random() * 20),
+                1
+              ))
+              .applyMatrix(new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(
+                Math.random() * Math.PI / 2,
+                Math.random() * (Math.PI * 2),
+                0,
+                camera.rotation.order
+              )))
+              .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(
+                upVector,
+                new THREE.Vector3(
+                  treeBranchNormals[baseIndex + 0],
+                  treeBranchNormals[baseIndex + 1],
+                  treeBranchNormals[baseIndex + 2]
+                )
+              )))
+              .applyMatrix(new THREE.Matrix4().makeTranslation(
+                treeBranchPositions[baseIndex + 0],
+                treeBranchPositions[baseIndex + 1],
+                treeBranchPositions[baseIndex + 2],
+              ));
+
+            const newPositions = geometry.getAttribute('position').array;
+            positions.set(newPositions, index);
+            const newNormals = geometry.getAttribute('normal').array;
+            normals.set(newNormals, index);
+            const newColors = geometry.getAttribute('color').array;
+            colors.set(newColors, index);
+
+            index += newPositions.length;
+          }
         };
 
         const treeCoreGeometry = _renderCore();
-        _renderBranches(treeCoreGeometry);
+        const treeBranchGeometrySpec = _renderBranches(treeCoreGeometry);
+        _renderLeaves(treeBranchGeometrySpec);
       }
       const geometry = new THREE.BufferGeometry();
       geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
