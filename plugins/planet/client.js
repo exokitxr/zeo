@@ -232,9 +232,7 @@ class Planet {
               const entityApi = entityElement.getEntityApi();
               const entityObject = entityElement.getObject();
 
-              const intersecter = intersect.makeIntersecter({
-                intersectMeshKey: '_planetIntersectMesh',
-              });
+              const intersecter = intersect.makeIntersecter();
 
               const _makePlanetMesh = origin => {
                 const object = new THREE.Object3D();

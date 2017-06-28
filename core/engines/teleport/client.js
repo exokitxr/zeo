@@ -54,7 +54,6 @@ class Teleport {
 
         const intersecter = intersect.makeIntersecter({
           frameRate: 20,
-          intersectMeshKey: '_teleportIntersectMesh',
         });
 
         const metadatas = new Map();
