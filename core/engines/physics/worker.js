@@ -34,11 +34,13 @@ class Body {
   getUpdate() {
     const {id, rigidBody, _lastUpdate: lastUpdate} = this;
 
-    rigidBody.getMotionState().getWorldTransform(BT_TRANSFORM);
+    const ms = rigidBody.getMotionState();
+    ms.getWorldTransform(BT_TRANSFORM);
     const pv = BT_TRANSFORM.getOrigin();
     const p = [pv.x(), pv.y(), pv.z()];
     const qv = BT_TRANSFORM.getRotation();
     const q = [qv.x(), qv.y(), qv.z(), qv.w()];
+    // Ammo.destroy(ms);
 
     if (lastUpdate === null || !_arrayEquals(lastUpdate.position, p) || !_arrayEquals(lastUpdate.rotation, q)) {
       const newUpdate = {
@@ -126,7 +128,10 @@ process.on('message', m => {
       if (!body) {
         switch (type) {
           case 'box': {
-            const boxShape = new Ammo.btBoxShape(new Ammo.btVector3(spec[0] / 2, spec[1] / 2, spec[2] / 2));
+            BT_VECTOR3.setX(spec[0] / 2);
+            BT_VECTOR3.setY(spec[1] / 2);
+            BT_VECTOR3.setZ(spec[2] / 2);
+            const boxShape = new Ammo.btBoxShape(BT_VECTOR3);
 
             const boxTransform = BT_TRANSFORM;
             boxTransform.setIdentity();
@@ -169,17 +174,20 @@ process.on('message', m => {
             }
             
             const body = new Body(id, boxBody, owner, () => {
-              Ammo.destroy(boxBody);
-              Ammo.destroy(boxConstructionInfo);
-              Ammo.destroy(boxMotionState);
-              Ammo.destroy(boxShape);
+              // Ammo.destroy(boxBody);
+              // Ammo.destroy(boxConstructionInfo);
+              // Ammo.destroy(boxMotionState);
+              // Ammo.destroy(boxShape);
             });
             _addBody(body);
 
             break;
           }
           case 'plane': {
-            const planeShape = new Ammo.btStaticPlaneShape(new Ammo.btVector3(spec[0], spec[1], spec[2]), spec[3]);
+            BT_VECTOR3.setX(spec[0]);
+            BT_VECTOR3.setY(spec[1]);
+            BT_VECTOR3.setZ(spec[2]);
+            const planeShape = new Ammo.btStaticPlaneShape(BT_VECTOR3, spec[3]);
 
             const planeTransform = BT_TRANSFORM;
             planeTransform.setIdentity();
@@ -220,10 +228,10 @@ process.on('message', m => {
             }
 
             const body = new Body(id, planeBody, owner, () => {
-              Ammo.destroy(planeBody);
-              Ammo.destroy(planeConstructionInfo);
-              Ammo.destroy(planeMotionState);
-              Ammo.destroy(planeShape);
+              // Ammo.destroy(planeBody);
+              // Ammo.destroy(planeConstructionInfo);
+              // Ammo.destroy(planeMotionState);
+              // Ammo.destroy(planeShape);
             });
             _addBody(body);
 
@@ -240,7 +248,10 @@ process.on('message', m => {
 
               switch (type) {
                 case 'box': {
-                  const boxShape = new Ammo.btBoxShape(new Ammo.btVector3(spec[0] / 2, spec[1] / 2, spec[2] / 2));
+                  BT_VECTOR3.setX(spec[0] / 2);
+                  BT_VECTOR3.setY(spec[1] / 2);
+                  BT_VECTOR3.setZ(spec[2] / 2);
+                  const boxShape = new Ammo.btBoxShape(BT_VECTOR3);
 
                   const boxTransform = BT_TRANSFORM;
                   boxTransform.setIdentity();
@@ -259,7 +270,7 @@ process.on('message', m => {
                   compoundShape.addChildShape(boxTransform, boxShape);
 
                   childDestroys.push(() => {
-                    Ammo.destroy(boxShape);
+                    // Ammo.destroy(boxShape);
                   });
 
                   break;
@@ -311,10 +322,10 @@ process.on('message', m => {
             }
 
             const body = new Body(id, compoundBody, owner, () => {
-              Ammo.destroy(compoundBody);
-              Ammo.destroy(compoundConstructionInfo);
-              Ammo.destroy(compoundMotionState);
-              Ammo.destroy(compoundShape);
+              // Ammo.destroy(compoundBody);
+              // Ammo.destroy(compoundConstructionInfo);
+              // Ammo.destroy(compoundMotionState);
+              // Ammo.destroy(compoundShape);
 
               for (let i = 0; i < childDestroys; i++) {
                 const childDestroy = childDestroys[i];
