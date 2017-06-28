@@ -1,0 +1,9 @@
+{
+  "name": "tree",
+  "version": "0.0.1",
+  "description": "Procedurally genetarated trees.",
+  "client": "client.js",
+  "dependencies": {
+    "indev": "^3.0.10"
+  }
+}
