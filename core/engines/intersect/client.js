@@ -45,7 +45,6 @@ class Intersect {
             this.frameRate = frameRate;
             this.lastUpdateTime = Date.now() - (Math.random() * frameRate); // try to avoid synchronization across intersecters
 
-
             const pickerScene = new THREE.Scene();
             pickerScene.autoUpdate = false;
             this.pickerScene = pickerScene;
@@ -67,7 +66,7 @@ class Intersect {
               document.body.appendChild(debugRenderer.domElement);
               gpuPicker.debugRenderer = debugRenderer;
             }
-            const pickerCamera = new THREE.PerspectiveCamera(10, 1);
+            const pickerCamera = new THREE.PerspectiveCamera(10, 1, 0.01, 15);
             pickerScene.add(pickerCamera);
             gpuPicker.setCamera(pickerCamera);
             gpuPicker.setScene(pickerScene);
