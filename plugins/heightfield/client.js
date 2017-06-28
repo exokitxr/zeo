@@ -26,6 +26,7 @@ class Heightfield {
 
     const mapChunkMaterial = new THREE.MeshPhongMaterial({
       // color: 0xFFFFFF,
+      shininess: 0,
       shading: THREE.FlatShading,
       vertexColors: THREE.VertexColors,
     });
