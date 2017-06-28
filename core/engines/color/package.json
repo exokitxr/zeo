@@ -1,8 +1,0 @@
-{
-  "name": "color",
-  "description": "Provides a color picker for the zeo core.",
-  "version": "0.0.1",
-  "keywords": [],
-  "client": "client.js",
-  "dependencies": {}
-}

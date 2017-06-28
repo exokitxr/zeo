@@ -91,7 +91,6 @@ class Zeo {
             '/core/engines/scale',
             '/core/engines/hand',
             '/core/engines/transform',
-            '/core/engines/color',
             '/core/engines/loader',
             '/core/engines/tags',
             '/core/engines/broadcast',
@@ -135,7 +134,6 @@ class Zeo {
             scale,
             hand,
             transform,
-            color,
             loader,
             tags,
             broadcast,
@@ -692,24 +690,6 @@ class Zeo {
                       }
                     }
 
-                    class ZeoColorApi {
-                      getWidth() {
-                        return color.getWidth();
-                      }
-
-                      getHeight() {
-                        return color.getHeight();
-                      }
-
-                      makeColorWheel(spec) {
-                        return color.makeColorWheel(spec);
-                      }
-
-                      destroyColorWheel(colorWheel) {
-                        return color.destroyColorWheel(colorWheel);
-                      }
-                    }
-
                     class ZeoAnimationApi {
                       makeAnimation(duration) {
                         return anima.makeAnimation(duration);
@@ -768,7 +748,6 @@ class Zeo {
                         this.teleport = new ZeoTeleportApi();
                         this.hands = new ZeoHandsApi();
                         this.transform = new ZeoTransformApi();
-                        this.color = new ZeoColorApi();
                         this.animation = new ZeoAnimationApi();
                         this.payment = new ZeoPaymentApi();
                         this.utils = new ZeoUtilsApi();

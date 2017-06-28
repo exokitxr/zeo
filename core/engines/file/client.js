@@ -46,7 +46,6 @@ class FileEngine {
       '/core/engines/fs',
       '/core/engines/world',
       '/core/engines/keyboard',
-      '/core/engines/color',
       '/core/utils/creature-utils',
     ]).then(([
       three,
@@ -58,7 +57,6 @@ class FileEngine {
       fs,
       world,
       keyboard,
-      color,
       creatureUtils,
     ]) => {
       if (live) {
