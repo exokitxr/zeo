@@ -15,10 +15,12 @@ const hmdModelPath = 'archae/assets/models/hmd/hmd.json';
 const controllerModelPath = 'archae/assets/models/controller/controller.json';
 const sfxPath = 'archae/assets/sfx/';
 const SFX = [
+  'digi_click',
   'digi_cluck',
   'digi_drop',
   'digi_error_short',
   'digi_ping_down',
+  'digi_pip',
   'digi_plink_glass',
   'digi_plink_off',
   'digi_plink',
