@@ -286,11 +286,7 @@ class Rend {
             }
           };
 
-          if (_doClickNavbar()) {
-            sfx.digi_plink_glass.trigger();
-
-            e.stopImmediatePropagation();
-          } else if (_doClickMenu() || _doClickMenuBackground()) {
+          if (_doClickNavbar() || _doClickMenu() || _doClickMenuBackground()) {
             sfx.digi_plink.trigger();
 
             e.stopImmediatePropagation();
