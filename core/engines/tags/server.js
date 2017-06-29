@@ -99,7 +99,7 @@ class Tags {
       entityApiElements.delete(entityApi);
       worldElement.removeChild(entityElement);
 
-      const {entityAddedCallback = nop} = entityApi;
+      const {entityRemovedCallback = nop} = entityApi;
       entityRemovedCallback(entityElement);
 
       worldElement.emit('elementRemoved', entityElement);
