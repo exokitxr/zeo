@@ -21,7 +21,7 @@ class Heightfield {
 
   mount() {
     const {_archae: archae} = this;
-    const {three, render, pose, teleport, utils: {geometry: geometryUtils}} = zeo;
+    const {three, render, pose, teleport, physics, utils: {geometry: geometryUtils}} = zeo;
     const {THREE, scene, camera} = three;
 
     const mapChunkMaterial = new THREE.MeshPhongMaterial({
@@ -29,6 +29,7 @@ class Heightfield {
       shininess: 0,
       shading: THREE.FlatShading,
       vertexColors: THREE.VertexColors,
+      // side: THREE.DoubleSide,
     });
 
     const _requestGenerate = (x, y) => fetch(`/archae/heightfield/generate?x=${x}&y=${y}`)
@@ -50,7 +51,6 @@ class Heightfield {
         geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
         geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
         geometry.setIndex(new THREE.Uint16BufferAttribute(indices, 1));
-        geometry = geometryUtils.unindexBufferGeometry(geometry); // XXX this could be moved to the backend for performance
 
         // geometry.computeBoundingSphere();
 
@@ -102,9 +102,24 @@ class Heightfield {
           const mapChunkData = protocolUtils.parseMapChunk(mapChunkBuffer);
           const mapChunkMesh = _makeMapChunkMesh(mapChunkData);
           object.add(mapChunkMesh);
-          teleport.addTarget(mapChunkMesh, {
-            flat: true,
+
+          const physicsBody = physics.makeBody(mapChunkMesh, 'heightfield:' + x + ':' + y, {
+            mass: 0,
+            position: [
+              (NUM_CELLS / 2) + (x * NUM_CELLS),
+              0,
+              (NUM_CELLS / 2) + (y * NUM_CELLS)
+            ],
+            linearFactor: [0, 0, 0],
+            angularFactor: [0, 0, 0],
+            bindObject: false,
+            bindConnection: false,
           });
+          mapChunkMesh.physicsBody = physicsBody;
+
+          /* teleport.addTarget(mapChunkMesh, {
+            flat: true,
+          }); */
 
           const key = _getMapChunkOffsetKey(x, y);
           const mapChunk = new MapChunk([x, y], mapChunkMesh);
@@ -117,7 +132,11 @@ class Heightfield {
             const mapChunk = currentMapChunks.get(key);
             const {mesh: mapChunkMesh} = mapChunk;
             object.remove(mapChunkMesh);
-            teleport.removeTarget(mapChunkMesh);
+
+            const {physicsBody} = mapChunkMesh;
+            physics.destroyBody(physicsBody);
+
+            // teleport.removeTarget(mapChunkMesh);
 
             currentMapChunks.delete(key);
           });
