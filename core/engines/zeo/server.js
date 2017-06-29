@@ -16,19 +16,21 @@ class Zeo {
     };
 
     return archae.requestPlugins([
+      '/core/engines/three',
       '/core/engines/tags',
       '/core/engines/world',
       '/core/engines/fs',
     ])
       .then(([
+        three,
         tags,
         world,
         fs,
       ]) => {
         if (live) {
-          class ZeoWorldApi {
-            getTags() {
-              return world.getTags();
+          class ZeoThreeApi {
+            constructor() {
+              this.THREE = three.THREE;
             }
           }
 
@@ -46,6 +48,12 @@ class Zeo {
             }
           }
 
+          class ZeoWorldApi {
+            getTags() {
+              return world.getTags();
+            }
+          }
+
           class ZeoFsApi {
             makeFile(id, pathname) {
               return fs.makeFile(id, pathname);
@@ -54,6 +62,7 @@ class Zeo {
 
           class ZeoApi {
             constructor() {
+              this.three = new ZeoThreeApi();
               this.elements = new ZeoElementsApi();
               this.world = new ZeoWorldApi();
               this.fs = new ZeoFsApi();
