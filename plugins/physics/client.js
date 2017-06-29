@@ -1,4 +1,4 @@
-const NUM_BOX_MESHES = 32;
+const NUM_BOX_MESHES = 20;
 
 const SIDES = ['left', 'right'];
 
@@ -184,16 +184,23 @@ class Physics {
     };
     elements.registerEntity(this, testEntity);
 
+    let lastUpdateTime = Date.now();
     const _update = () => {
-      const {gamepads} = pose.getStatus();
+      const now = Date.now();
+      const timeDiff = now - lastUpdateTime;
+      if (timeDiff > 50) {
+        const {gamepads} = pose.getStatus();
 
-      SIDES.forEach(side => {
-        const gamepad = gamepads[side];
-        const {worldPosition: controlerPosition, worldRotation: controllerRotation} = gamepad;
-        const controllerMesh = controllerMeshes[side];
-        const {physicsBody} = controllerMesh;
-        physicsBody.setState(controlerPosition.toArray(), controllerRotation.toArray(), zeroVector.toArray(), zeroVector.toArray(), false);
-      });
+        SIDES.forEach(side => {
+          const gamepad = gamepads[side];
+          const {worldPosition: controlerPosition, worldRotation: controllerRotation} = gamepad;
+          const controllerMesh = controllerMeshes[side];
+          const {physicsBody} = controllerMesh;
+          physicsBody.setState(controlerPosition.toArray(), controllerRotation.toArray(), zeroVector.toArray(), zeroVector.toArray(), false);
+        });
+
+        lastUpdateTime = now;
+      }
     };
     render.on('update', _update);
 
