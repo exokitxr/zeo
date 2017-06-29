@@ -104,7 +104,7 @@ class Physics {
           connection.destroy();
         };
 
-        const _makeBody = (object, id, {bindObject = true, bindConnection = true, mass = 1, linearFactor = [1, 1, 1], angularFactor = [1, 1, 1], disableDeactivation = false} = {}) => {
+        const _makeBody = (object, id, {bindObject = true, bindConnection = true, mass = 1, position = null, rotation = null, linearFactor = [1, 1, 1], angularFactor = [1, 1, 1], disableDeactivation = false} = {}) => {
           const oldBody = bodies[id];
 
           if (oldBody) {
@@ -112,17 +112,30 @@ class Physics {
           } else {
             const {constructor} = object;
 
+            let result = null;
+            const _getMatrix = () => {
+              if (result === null) {
+                result = _decomposeMatrix(object.matrix);
+              }
+              return result;
+            };
+
             if (constructor === THREE.Mesh) {
               const {geometry} = object;
               const {constructor} = geometry;
 
               if (constructor === THREE.BoxBufferGeometry) {
                 const {parameters: {width, height, depth}} = geometry;
-                const {position, rotation} = _decomposeMatrix(object.matrix);
+                if (position === null) {
+                  position = _getMatrix().position.toArray();
+                }
+                if (rotation === null) {
+                  rotation = _getMatrix().rotation.toArray();
+                }
                 const owner = bindConnection ? localUserId : null;
                 const e = {
                   method: 'add',
-                  args: [id, 'box', [width, height, depth], position.toArray(), rotation.toArray(), mass, linearFactor, angularFactor, disableDeactivation, owner],
+                  args: [id, 'box', [width, height, depth], position, rotation, mass, linearFactor, angularFactor, disableDeactivation, owner],
                 };
                 const es = JSON.stringify(e);
                 connection.send(es);
@@ -144,6 +157,34 @@ class Physics {
                 const e = {
                   method: 'add',
                   args: [id, 'plane', normal.toArray().concat([constant]), [0, 0, 0], [0, 0, 0, 1], mass, linearFactor, angularFactor, disableDeactivation, owner],
+                };
+                const es = JSON.stringify(e);
+                connection.send(es);
+
+                const body = new Body(id, object, bindObject);
+                bodies[id] = body;
+
+                return body;
+              } else if (constructor === THREE.BufferGeometry) {
+                if (position === null) {
+                  position = _getMatrix().position.toArray();
+                }
+                if (rotation === null) {
+                  rotation = _getMatrix().rotation.toArray();
+                }
+                const positions = geometry.getAttribute('position').array;
+                const numPositions = positions.length / 3;
+                const width = Math.sqrt(numPositions);
+                const height = width;
+                const yPositions = new Float32Array(numPositions);
+                for (let i = 0; i < numPositions; i++) {
+                  yPositions[i] = positions[(i * 3) + 1];
+                }
+                const yPositionsBase64 = _arrayToBase64(new Uint8Array(yPositions.buffer, yPositions.byteOffset, yPositions.length * 4));
+                const owner = bindConnection ? localUserId : null;
+                const e = {
+                  method: 'add',
+                  args: [id, 'heightfield', [width, height, yPositionsBase64], position, rotation, mass, linearFactor, angularFactor, disableDeactivation, owner],
                 };
                 const es = JSON.stringify(e);
                 connection.send(es);
@@ -175,11 +216,16 @@ class Physics {
                   console.warn('Invalid compound child type', constructor);
                 }
               }
-              const {position, rotation} = _decomposeMatrix(object.matrix);
+              if (position === null) {
+                position = _getMatrix().position.toArray();
+              }
+              if (rotation === null) {
+                rotation = _getMatrix().rotation.toArray();
+              }
               const owner = bindConnection ? localUserId : null;
               const e = {
                 method: 'add',
-                args: [id, 'compound', spec, position.toArray(), rotation.toArray(), mass, linearFactor, angularFactor, disableDeactivation, owner],
+                args: [id, 'compound', spec, position, rotation, mass, linearFactor, angularFactor, disableDeactivation, owner],
               };
               const es = JSON.stringify(e);
               connection.send(es);
@@ -223,6 +269,13 @@ class Physics {
 const _relativeWsUrl = s => {
   const l = window.location;
   return ((l.protocol === 'https:') ? 'wss://' : 'ws://') + l.host + l.pathname + (!/\/$/.test(l.pathname) ? '/' : '') + s;
+};
+const _arrayToBase64 = array => {
+  let binary = '';
+  for (let i = 0; i < array.byteLength; i++) {
+    binary += String.fromCharCode(array[i]);
+  }
+  return btoa(binary);
 };
 
 module.exports = Physics;
