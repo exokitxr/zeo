@@ -76,6 +76,7 @@ class Entity {
         '/core/engines/input',
         '/core/engines/webvr',
         '/core/engines/biolumi',
+        '/core/engines/assets',
         '/core/engines/rend',
         '/core/engines/tags',
         '/core/engines/fs',
@@ -94,6 +95,7 @@ class Entity {
         input,
         webvr,
         biolumi,
+        assets,
         rend,
         tags,
         fs,
@@ -108,6 +110,7 @@ class Entity {
     ]) => {
       if (live) {
         const {THREE, scene} = three;
+        const {sfx} = assets;
 
         const entityRenderer = entityRender.makeRenderer({typeUtils, creatureUtils});
 
@@ -487,7 +490,7 @@ class Entity {
               return false;
             }
           };
-          const _doClickAttribute = () => {
+          const _clickAttribute = () => {
             const hoverState = rend.getHoverState(side);
             const {anchor} = hoverState;
             const onclick = (anchor && anchor.onclick) || '';
@@ -730,7 +733,9 @@ class Entity {
             }
           };
 
-          if (_clickMenu() || _doClickAttribute()) {
+          if (_clickMenu() || _clickAttribute()) {
+            sfx.digi_select.trigger();
+
             e.stopImmediatePropagation();
           }
         };

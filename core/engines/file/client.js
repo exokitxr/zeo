@@ -41,6 +41,7 @@ class FileEngine {
       '/core/engines/input',
       '/core/engines/webvr',
       '/core/engines/biolumi',
+      '/core/engines/assets',
       '/core/engines/rend',
       '/core/engines/tags',
       '/core/engines/fs',
@@ -52,6 +53,7 @@ class FileEngine {
       input,
       webvr,
       biolumi,
+      assets,
       rend,
       tags,
       fs,
@@ -61,6 +63,7 @@ class FileEngine {
     ]) => {
       if (live) {
         const {THREE} = three;
+        const {sfx} = assets;
 
         const fileRenderer = fileRender.makeRenderer({creatureUtils});
 
@@ -470,165 +473,161 @@ class FileEngine {
 
           const _clickMenu = () => {
             const hoverState = rend.getHoverState(side);
-            const {intersectionPoint} = hoverState;
+            const {anchor} = hoverState;
+            const onclick = (anchor && anchor.onclick) || '';
 
-            if (intersectionPoint) {
-              const {anchor} = hoverState;
-              const onclick = (anchor && anchor.onclick) || '';
+            let match;
+            if (onclick === 'file:focus') {
+              const {inputText} = npmState;
+              const {value} = hoverState;
+              const valuePx = value * (WIDTH - (250 + (30 * 2)));
+              const {index, px} = biolumi.getTextPropertiesFromCoord(inputText, mainFontSpec, valuePx); // XXX this can be folded into the keyboard engine
+              const {hmd: hmdStatus} = webvr.getStatus();
+              const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmdStatus;
+              const keyboardFocusState = keyboard.focus({
+                type: 'file',
+                position: hmdPosition,
+                rotation: hmdRotation,
+                inputText: inputText,
+                inputIndex: index,
+                inputValue: px,
+                fontSpec: mainFontSpec,
+              });
+              focusState.keyboardFocusState = keyboardFocusState;
 
-              let match;
-              if (onclick === 'file:focus') {
-                const {inputText} = npmState;
-                const {value} = hoverState;
-                const valuePx = value * (WIDTH - (250 + (30 * 2)));
-                const {index, px} = biolumi.getTextPropertiesFromCoord(inputText, mainFontSpec, valuePx); // XXX this can be folded into the keyboard engine
-                const {hmd: hmdStatus} = webvr.getStatus();
-                const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmdStatus;
-                const keyboardFocusState = keyboard.focus({
-                  type: 'file',
-                  position: hmdPosition,
-                  rotation: hmdRotation,
-                  inputText: inputText,
-                  inputIndex: index,
-                  inputValue: px,
-                  fontSpec: mainFontSpec,
-                });
-                focusState.keyboardFocusState = keyboardFocusState;
+              keyboardFocusState.on('update', () => {
+                const {inputText: keyboardInputText} = keyboardFocusState;
+                const {inputText: npmInputText} = npmState;
 
-                keyboardFocusState.on('update', () => {
-                  const {inputText: keyboardInputText} = keyboardFocusState;
-                  const {inputText: npmInputText} = npmState;
+                if (keyboardInputText !== npmInputText) {
+                  npmState.inputText = keyboardInputText;
 
-                  if (keyboardInputText !== npmInputText) {
-                    npmState.inputText = keyboardInputText;
-
-                    _updateNpm();
-                  }
-
-                  _updatePages();
-                });
-                keyboardFocusState.on('blur', () => {
-                  focusState.keyboardFocusState = null;
-
-                  _updatePages();
-                });
-
-                _updatePages();
-
-                return true;
-              } else if (match = onclick.match(/^file:(up|down)$/)) {
-                const direction = match[1];
-
-                npmState.page += (direction === 'up' ? -1 : 1);
-
-                _updatePages();
-
-                return true;
-              } else if (match = onclick.match(/^file:file:(.+)$/)) {
-                const id = match[1];
-
-                const itemSpec = npmState.tagSpecs.find(tagSpec => tagSpec.id === id);
-                _setFile(itemSpec);
-
-                return true;
-              } else if (onclick === 'file:back') {
-                _setFile(null);
-
-                return true;
-              } else if (match = onclick.match(/^file:media:(.+)$/)) {
-                const id = match[1];
-
-                const itemSpec = npmState.tagSpecs.find(tagSpec => tagSpec.id === id);
-                const {media} = itemSpec;
-
-                if (media && (media.tagName === 'AUDIO' || media.tagName === 'VIDEO')) {
-                  if (media.paused) {
-                    media.play();
-                  } else {
-                    media.pause();
-                  }
+                  _updateNpm();
                 }
 
-                return true;
-              } else if (match = onclick.match(/^file:seek:(.+)$/)) {
-                const id = match[1];
+                _updatePages();
+              });
+              keyboardFocusState.on('blur', () => {
+                focusState.keyboardFocusState = null;
 
-                const itemSpec = npmState.tagSpecs.find(tagSpec => tagSpec.id === id);
-                const {media} = itemSpec;
+                _updatePages();
+              });
 
-                if (media && (media.tagName === 'AUDIO' || media.tagName === 'VIDEO')) {
-                  const {value} = hoverState;
-                  media.currentTime = value * media.duration;
+              _updatePages();
 
-                  npmState.value = value;
+              return true;
+            } else if (match = onclick.match(/^file:(up|down)$/)) {
+              const direction = match[1];
 
-                  _updatePages();
+              npmState.page += (direction === 'up' ? -1 : 1);
+
+              _updatePages();
+
+              return true;
+            } else if (match = onclick.match(/^file:file:(.+)$/)) {
+              const id = match[1];
+
+              const itemSpec = npmState.tagSpecs.find(tagSpec => tagSpec.id === id);
+              _setFile(itemSpec);
+
+              return true;
+            } else if (onclick === 'file:back') {
+              _setFile(null);
+
+              return true;
+            } else if (match = onclick.match(/^file:media:(.+)$/)) {
+              const id = match[1];
+
+              const itemSpec = npmState.tagSpecs.find(tagSpec => tagSpec.id === id);
+              const {media} = itemSpec;
+
+              if (media && (media.tagName === 'AUDIO' || media.tagName === 'VIDEO')) {
+                if (media.paused) {
+                  media.play();
+                } else {
+                  media.pause();
                 }
-
-                return true;
-              } else if (match = onclick.match(/^file:remove:(.+)$/)) {
-                const id = match[1];
-
-                world.removeTag(id);
-
-                npmState.tagSpecs.splice(npmState.tagSpecs.findIndex(tagSpec => tagSpec.id === id), 1);
-                _setFile(null);
-
-                return true;
-              } else if (match = onclick.match(/^file:loadEntities:(.+)$/)) {
-                const id = match[1];
-
-                const file = npmState.tagSpecs.find(tagSpec => tagSpec.id === id);
-                const {name} = file;
-                fs.makeFile('fs/' + id + name)
-                  .read({type: 'json'})
-                  .then(j => {
-                    const {entities} = j;
-
-                    for (let i = 0; i < entities.length; i++) { // need to do this so new entities do not conflict with current ones
-                      const entity = entities[i];
-                      entity.id = _makeId();
-                    }
-
-                    rend.loadEntities(entities);
-                  })
-                  .catch(err => {
-                    console.warn(err);
-                  });
-
-                return true;
-              } else if (match = onclick.match(/^file:replaceWorld:(.+)$/)) {
-                const id = match[1];
-
-                const file = npmState.tagSpecs.find(tagSpec => tagSpec.id === id);
-                const {name} = file;
-                fs.makeFile('fs/' + id + name)
-                  .read({type: 'json'})
-                  .then(j => {
-                    const {entities} = j;
-
-                    for (let i = 0; i < entities.length; i++) { // need to do this so new entities do not conflict with current ones
-                      const entity = entities[i];
-                      entity.id = _makeId();
-                    }
-
-                    rend.clearAllEntities();
-                    rend.loadEntities(entities);
-                  })
-                  .catch(err => {
-                    console.warn(err);
-                  });
-
-                return true;
-              } else {
-                return false;
               }
+
+              return true;
+            } else if (match = onclick.match(/^file:seek:(.+)$/)) {
+              const id = match[1];
+
+              const itemSpec = npmState.tagSpecs.find(tagSpec => tagSpec.id === id);
+              const {media} = itemSpec;
+
+              if (media && (media.tagName === 'AUDIO' || media.tagName === 'VIDEO')) {
+                const {value} = hoverState;
+                media.currentTime = value * media.duration;
+
+                npmState.value = value;
+
+                _updatePages();
+              }
+
+              return true;
+            } else if (match = onclick.match(/^file:remove:(.+)$/)) {
+              const id = match[1];
+
+              world.removeTag(id);
+
+              npmState.tagSpecs.splice(npmState.tagSpecs.findIndex(tagSpec => tagSpec.id === id), 1);
+              _setFile(null);
+
+              return true;
+            } else if (match = onclick.match(/^file:loadEntities:(.+)$/)) {
+              const id = match[1];
+
+              const file = npmState.tagSpecs.find(tagSpec => tagSpec.id === id);
+              const {name} = file;
+              fs.makeFile('fs/' + id + name)
+                .read({type: 'json'})
+                .then(j => {
+                  const {entities} = j;
+
+                  for (let i = 0; i < entities.length; i++) { // need to do this so new entities do not conflict with current ones
+                    const entity = entities[i];
+                    entity.id = _makeId();
+                  }
+
+                  rend.loadEntities(entities);
+                })
+                .catch(err => {
+                  console.warn(err);
+                });
+
+              return true;
+            } else if (match = onclick.match(/^file:replaceWorld:(.+)$/)) {
+              const id = match[1];
+
+              const file = npmState.tagSpecs.find(tagSpec => tagSpec.id === id);
+              const {name} = file;
+              fs.makeFile('fs/' + id + name)
+                .read({type: 'json'})
+                .then(j => {
+                  const {entities} = j;
+
+                  for (let i = 0; i < entities.length; i++) { // need to do this so new entities do not conflict with current ones
+                    const entity = entities[i];
+                    entity.id = _makeId();
+                  }
+
+                  rend.clearAllEntities();
+                  rend.loadEntities(entities);
+                })
+                .catch(err => {
+                  console.warn(err);
+                });
+
+              return true;
             } else {
               return false;
             }
           };
 
           if (_clickMenu()) {
+            sfx.digi_select.trigger();
+
             e.stopImmediatePropagation();
           }
         };

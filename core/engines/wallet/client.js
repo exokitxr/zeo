@@ -57,6 +57,7 @@ class Wallet {
       '/core/engines/input',
       '/core/engines/webvr',
       '/core/engines/biolumi',
+      '/core/engines/assets',
       '/core/engines/keyboard',
       '/core/engines/hand',
       '/core/engines/rend',
@@ -69,6 +70,7 @@ class Wallet {
       input,
       webvr,
       biolumi,
+      assets,
       keyboard,
       hand,
       rend,
@@ -80,6 +82,7 @@ class Wallet {
         const {THREE, scene, camera} = three;
         const {events} = jsUtils;
         const {EventEmitter} = events;
+        const {sfx} = assets;
 
         const walletRenderer = walletRender.makeRenderer({creatureUtils});
 
@@ -453,6 +456,8 @@ class Wallet {
           };
 
           if (_clickMenu()) {
+            sfx.digi_select.trigger();
+
             e.stopImmediatePropagation();
           }
         };
