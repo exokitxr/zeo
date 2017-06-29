@@ -521,12 +521,6 @@ class Config {
             sfx.digi_select.trigger();
 
             e.stopImmediatePropagation();
-          }
-
-          if (_clickMenu()) {
-            sfx.digi_select.trigger();
-
-            e.stopImmediatePropagation();
           } else if (_clickMenuBackground()) {
             sfx.digi_plink.trigger();
 
