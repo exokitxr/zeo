@@ -80,6 +80,7 @@ class Config {
         '/core/engines/webvr',
         '/core/engines/keyboard',
         '/core/engines/biolumi',
+        '/core/engines/assets',
         '/core/engines/rend',
         '/core/utils/js-utils',
       ]),
@@ -92,6 +93,7 @@ class Config {
         webvr,
         keyboard,
         biolumi,
+        assets,
         rend,
         jsUtils,
       ],
@@ -102,6 +104,7 @@ class Config {
         const {THREE, scene} = three;
         const {events} = jsUtils;
         const {EventEmitter} = events;
+        const {sfx} = assets;
 
         const _decomposeObjectMatrixWorld = object => {
           const position = new THREE.Vector3();
@@ -335,182 +338,177 @@ class Config {
 
         const _trigger = e => {
           const _clickMenu = () => {
-            const isOpen = rend.isOpen();
-            const tab = rend.getTab();
+            const {side} = e;
+            const hoverState = rend.getHoverState(side);
+            const {anchor} = hoverState;
+            const onclick = (anchor && anchor.onclick) || '';
 
-            if (isOpen && tab === 'options') {
-              const {side} = e;
-              const hoverState = rend.getHoverState(side);
-              const {anchor} = hoverState;
-              const onclick = (anchor && anchor.onclick) || '';
+            let match;
+            if (onclick === 'config:resolution') {
+              const {value} = hoverState;
 
-              let match;
-              if (onclick === 'config:resolution') {
-                const {value} = hoverState;
+              configState.resolutionValue = value;
 
-                configState.resolutionValue = value;
+              _saveBrowserConfig();
+              configApi.updateBrowserConfig();
 
-                _saveBrowserConfig();
-                configApi.updateBrowserConfig();
+              _updatePages();
 
-                _updatePages();
+              return true;
+            } else if (onclick === 'config:voiceChat') {
+              const {voiceChatCheckboxValue} = configState;
 
-                return true;
-              } else if (onclick === 'config:voiceChat') {
-                const {voiceChatCheckboxValue} = configState;
+              configState.voiceChatCheckboxValue = !voiceChatCheckboxValue;
 
-                configState.voiceChatCheckboxValue = !voiceChatCheckboxValue;
+              _saveBrowserConfig();
+              configApi.updateBrowserConfig();
 
-                _saveBrowserConfig();
-                configApi.updateBrowserConfig();
+              _updatePages();
 
-                _updatePages();
+              return true;
+            } else if (onclick === 'config:stats') {
+              const {statsCheckboxValue: oldStatsCheckboxValue} = configState;
 
-                return true;
-              } else if (onclick === 'config:stats') {
-                const {statsCheckboxValue: oldStatsCheckboxValue} = configState;
+              const newStatsCheckboxValue = !oldStatsCheckboxValue;
+              configState.statsCheckboxValue = newStatsCheckboxValue;
+              statsMesh.visible = newStatsCheckboxValue;
 
-                const newStatsCheckboxValue = !oldStatsCheckboxValue;
-                configState.statsCheckboxValue = newStatsCheckboxValue;
-                statsMesh.visible = newStatsCheckboxValue;
+              rend.updateMatrixWorld(statsMesh);
 
-                rend.updateMatrixWorld(statsMesh);
+              _saveBrowserConfig();
+              configApi.updateBrowserConfig();
 
-                _saveBrowserConfig();
-                configApi.updateBrowserConfig();
+              _updatePages();
 
-                _updatePages();
+              return true;
+            } else if (match = onclick.match(/^config:visibility(?::(public|private))?$/)) {
+              const visibilityValue = match[1] || null;
 
-                return true;
-              } else if (match = onclick.match(/^config:visibility(?::(public|private))?$/)) {
-                const visibilityValue = match[1] || null;
-
-                if (visibilityValue === null) {
-                  const keyboardFocusState =  keyboard.fakeFocus({
-                    type: 'config:visibility',
-                  });
-                  configState.keyboardFocusState = keyboardFocusState;
-
-                  keyboardFocusState.on('blur', () => {
-                    configState.keyboardFocusState = null;
-
-                    _updatePages();
-                  });
-                } else {
-                  configState.visibilityValue = visibilityValue;
-
-                  _saveServerConfig();
-                  configApi.updateBrowserConfig();
-
-                  keyboard.tryBlur();
-                }
-
-                _updatePages();
-
-                return true;
-              } else if (onclick === 'config:name') {
-                const {nameValue: inputText} = configState;
-                const {value} = hoverState;
-                const valuePx = value * (640 - (150 + (30 * 2) + 30));
-                const {index, px} = biolumi.getTextPropertiesFromCoord(inputText, mainFontSpec, valuePx);
-                const {hmd: hmdStatus} = webvr.getStatus();
-                const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmdStatus;
-                const keyboardFocusState = keyboard.focus({
-                  type: 'config:name',
-                  position: hmdPosition,
-                  rotation: hmdRotation,
-                  inputText: inputText,
-                  inputIndex: index,
-                  inputValue: px,
-                  fontSpec: mainFontSpec,
+              if (visibilityValue === null) {
+                const keyboardFocusState =  keyboard.fakeFocus({
+                  type: 'config:visibility',
                 });
-                keyboardFocusState.on('update', () => {
-                  const {inputText: keyboardInputText} = keyboardFocusState;
-                  const {nameValue: nameInputText} = configState;
+                configState.keyboardFocusState = keyboardFocusState;
 
-                  if (keyboardInputText !== nameInputText) {
-                    const newName = keyboardInputText;
-                    configState.nameValue = newName;
-
-                    _saveServerConfig();
-                    configApi.updateBrowserConfig();
-
-                    _updatePages();
-
-                    rend.setStatus('name', newName);
-                  }
-                });
                 keyboardFocusState.on('blur', () => {
                   configState.keyboardFocusState = null;
 
                   _updatePages();
                 });
-
-                configState.keyboardFocusState = keyboardFocusState;
-
-                _updatePages();
-
-                return true;
-              } else if (onclick === 'config:password') {
-                const {passwordValue: inputText} = configState;
-                const {value} = hoverState;
-                const valuePx = value * (640 - (150 + (30 * 2) + 30));
-                const {index, px} = biolumi.getTextPropertiesFromCoord(inputText, mainFontSpec, valuePx);
-                const {hmd: hmdStatus} = webvr.getStatus();
-                const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmdStatus;
-                const keyboardFocusState = keyboard.focus({
-                  type: 'config:password',
-                  position: hmdPosition,
-                  rotation: hmdRotation,
-                  inputText: inputText,
-                  inputIndex: index,
-                  inputValue: px,
-                  fontSpec: mainFontSpec,
-                });
-                keyboardFocusState.on('update', () => {
-                  const {inputText: keyboardInputText} = keyboardFocusState;
-                  const {passwordValue: passwordInputText} = configState;
-
-                  if (keyboardInputText !== passwordInputText) {
-                    configState.passwordValue = keyboardInputText;
-
-                    _saveServerConfig();
-                    configApi.updateBrowserConfig();
-
-                    _updatePages();
-                  }
-                });
-                keyboardFocusState.on('blur', () => {
-                  configState.keyboardFocusState = null;
-
-                  _updatePages();
-                });
-
-                configState.keyboardFocusState = keyboardFocusState;
-
-                _updatePages();
-
-                return true;
-              } else if (onclick === 'config:maxPlayers') {
-                const {value} = hoverState;
-
-                configState.maxPlayersValue = 1 + Math.round(value * (8 - 1));
+              } else {
+                configState.visibilityValue = visibilityValue;
 
                 _saveServerConfig();
                 configApi.updateBrowserConfig();
 
-                _updatePages();
-
-                return true;
-              } else {
-                return false;
+                keyboard.tryBlur();
               }
+
+              _updatePages();
+
+              return true;
+            } else if (onclick === 'config:name') {
+              const {nameValue: inputText} = configState;
+              const {value} = hoverState;
+              const valuePx = value * (640 - (150 + (30 * 2) + 30));
+              const {index, px} = biolumi.getTextPropertiesFromCoord(inputText, mainFontSpec, valuePx);
+              const {hmd: hmdStatus} = webvr.getStatus();
+              const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmdStatus;
+              const keyboardFocusState = keyboard.focus({
+                type: 'config:name',
+                position: hmdPosition,
+                rotation: hmdRotation,
+                inputText: inputText,
+                inputIndex: index,
+                inputValue: px,
+                fontSpec: mainFontSpec,
+              });
+              keyboardFocusState.on('update', () => {
+                const {inputText: keyboardInputText} = keyboardFocusState;
+                const {nameValue: nameInputText} = configState;
+
+                if (keyboardInputText !== nameInputText) {
+                  const newName = keyboardInputText;
+                  configState.nameValue = newName;
+
+                  _saveServerConfig();
+                  configApi.updateBrowserConfig();
+
+                  _updatePages();
+
+                  rend.setStatus('name', newName);
+                }
+              });
+              keyboardFocusState.on('blur', () => {
+                configState.keyboardFocusState = null;
+
+                _updatePages();
+              });
+
+              configState.keyboardFocusState = keyboardFocusState;
+
+              _updatePages();
+
+              return true;
+            } else if (onclick === 'config:password') {
+              const {passwordValue: inputText} = configState;
+              const {value} = hoverState;
+              const valuePx = value * (640 - (150 + (30 * 2) + 30));
+              const {index, px} = biolumi.getTextPropertiesFromCoord(inputText, mainFontSpec, valuePx);
+              const {hmd: hmdStatus} = webvr.getStatus();
+              const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmdStatus;
+              const keyboardFocusState = keyboard.focus({
+                type: 'config:password',
+                position: hmdPosition,
+                rotation: hmdRotation,
+                inputText: inputText,
+                inputIndex: index,
+                inputValue: px,
+                fontSpec: mainFontSpec,
+              });
+              keyboardFocusState.on('update', () => {
+                const {inputText: keyboardInputText} = keyboardFocusState;
+                const {passwordValue: passwordInputText} = configState;
+
+                if (keyboardInputText !== passwordInputText) {
+                  configState.passwordValue = keyboardInputText;
+
+                  _saveServerConfig();
+                  configApi.updateBrowserConfig();
+
+                  _updatePages();
+                }
+              });
+              keyboardFocusState.on('blur', () => {
+                configState.keyboardFocusState = null;
+
+                _updatePages();
+              });
+
+              configState.keyboardFocusState = keyboardFocusState;
+
+              _updatePages();
+
+              return true;
+            } else if (onclick === 'config:maxPlayers') {
+              const {value} = hoverState;
+
+              configState.maxPlayersValue = 1 + Math.round(value * (8 - 1));
+
+              _saveServerConfig();
+              configApi.updateBrowserConfig();
+
+              _updatePages();
+
+              return true;
             } else {
               return false;
             }
           };
 
           if (_clickMenu()) {
+            sfx.digi_select.trigger();
+
             e.stopImmediatePropagation();
           }
         };

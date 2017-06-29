@@ -46,6 +46,7 @@ class Servers {
       '/core/engines/three',
       '/core/engines/webvr',
       '/core/engines/biolumi',
+      '/core/engines/assets',
       '/core/engines/rend',
       '/core/utils/js-utils',
       '/core/utils/creature-utils',
@@ -55,6 +56,7 @@ class Servers {
       three,
       webvr,
       biolumi,
+      assets,
       rend,
       jsUtils,
       creatureUtils,
@@ -63,6 +65,7 @@ class Servers {
         const {THREE, scene} = three;
         const {events} = jsUtils;
         const {EventEmitter} = events;
+        const {sfx} = assets;
 
         const menuRenderer = menuRender.makeRenderer({
           creatureUtils,
@@ -170,12 +173,10 @@ class Servers {
         const _trigger = e => {
           const {side} = e;
           const hoverState = rend.getHoverState(side);
-          const {intersectionPoint} = hoverState;
+          const {anchor} = hoverState;
+          const onclick = (anchor && anchor.onclick) || '';
 
-          if (intersectionPoint) {
-            const {anchor} = hoverState;
-            const onclick = (anchor && anchor.onclick) || '';
-
+          const _clickMenu = () => {
             let match;
             if (match = onclick.match(/^servers:go:([0-9]+)$/)) {
               const index = parseInt(match[1], 10);
@@ -184,13 +185,25 @@ class Servers {
               const remoteServer = remoteServers[index];
               const {url: remoteServerUrl} = remoteServer;
               _connectServer(remoteServerUrl);
+
+              return true;
             } else if (match = onclick.match(/^servers:(up|down)$/)) {
               const direction = match[1];
 
               serversState.page += (direction === 'up' ? -1 : 1);
 
               _updatePages();
+
+              return true;
+            } else {
+              return false;
             }
+          };
+
+          if (_clickMenu()) {
+            sfx.digi_select.trigger();
+
+            e.stopImmediatePropagation();
           }
         };
         input.on('trigger', _trigger, {
