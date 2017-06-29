@@ -337,8 +337,9 @@ class Config {
         };
 
         const _trigger = e => {
+          const {side} = e;
+
           const _clickMenu = () => {
-            const {side} = e;
             const hoverState = rend.getHoverState(side);
             const {anchor} = hoverState;
             const onclick = (anchor && anchor.onclick) || '';
@@ -505,9 +506,29 @@ class Config {
               return false;
             }
           };
+          const _clickMenuBackground = () => {
+            const hoverState = rend.getHoverState(side);
+            const {target} = hoverState;
+
+            if (target && target.mesh && target.mesh.parent === configMesh) {
+              return true;
+            } else {
+              return false;
+            }
+          };
 
           if (_clickMenu()) {
             sfx.digi_select.trigger();
+
+            e.stopImmediatePropagation();
+          }
+
+          if (_clickMenu()) {
+            sfx.digi_select.trigger();
+
+            e.stopImmediatePropagation();
+          } else if (_clickMenuBackground()) {
+            sfx.digi_plink.trigger();
 
             e.stopImmediatePropagation();
           }

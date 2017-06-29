@@ -199,15 +199,34 @@ class Servers {
               return false;
             }
           };
+          const _clickMenuBackground = () => {
+            const hoverState = rend.getHoverState(side);
+            const {target} = hoverState;
+
+            if (target && target.mesh && target.mesh.parent === serversMesh) {
+              return true;
+            } else {
+              return false;
+            }
+          };
 
           if (_clickMenu()) {
             sfx.digi_select.trigger();
+
+            e.stopImmediatePropagation();
+          } else if (_clickMenuBackground()) {
+            sfx.digi_plink.trigger();
 
             e.stopImmediatePropagation();
           }
         };
         input.on('trigger', _trigger, {
           priority: 1,
+        });
+
+        cleanups.push(() => {
+          rend.removeListener('tabchange', _tabchange);
+          input.removeListener('trigger', _trigger);
         });
 
         const _tabchange = tab => {
