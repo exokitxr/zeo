@@ -33,7 +33,7 @@
     "node": "8.x"
   },
   "dependencies": {
-    "archae": "0.0.90",
+    "archae": "0.0.91",
     "cookie": "^0.3.1",
     "fs-extra": "^2.1.2",
     "fshash": "0.0.11",
