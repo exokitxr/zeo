@@ -8,7 +8,7 @@ class Physics {
     const {THREE, scene} = three;
 
     const zeroVector = new THREE.Vector3();
-    const boxGeometry = new THREE.BoxBufferGeometry(0.1, 0.1, 0.1);
+    const boxGeometry = new THREE.BoxBufferGeometry(0.3, 0.3, 0.3);
     const boxMaterial = new THREE.MeshPhongMaterial({
       color: 0xFF0000,
       transparent: true,
