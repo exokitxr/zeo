@@ -18,7 +18,11 @@ class Physics {
     const playerId = player.getId();
 
     const _getRandomState = () => {
-      const position = new THREE.Vector3(-2 + (Math.random() * 4), 3, -2 + (Math.random() * 4));
+      const position = new THREE.Vector3(
+        -2 + (Math.random() * 4),
+        50,
+        -2 + (Math.random() * 4)
+      );
       const rotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(
         Math.random() * (Math.PI * 2),
         Math.random() * (Math.PI * 2),
