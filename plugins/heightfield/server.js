@@ -57,11 +57,6 @@ class Heightfield {
       }
       app._router.stack.forEach(removeMiddlewares);
 
-      for (let i = 0; i < connections.length; i++) {
-        const connection = connections[i];
-        connection.close();
-      }
-
       elements.unregisterEntity(this, heightfieldEntity);
     };
   }
