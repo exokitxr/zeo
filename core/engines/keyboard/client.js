@@ -74,6 +74,7 @@ class Keyboard {
         '/core/engines/three',
         '/core/engines/webvr',
         '/core/engines/biolumi',
+        '/core/engines/assets',
         '/core/engines/rend',
         '/core/utils/js-utils',
         '/core/utils/geometry-utils',
@@ -88,6 +89,7 @@ class Keyboard {
         three,
         webvr,
         biolumi,
+        assets,
         rend,
         jsUtils,
         geometryUtils,
@@ -101,6 +103,7 @@ class Keyboard {
         const {THREE, scene, camera} = three;
         const {events} = jsUtils;
         const {EventEmitter} = events;
+        const {sfx} = assets;
 
         const transparentImg = biolumi.getTransparentImg();
         const transparentMaterial = biolumi.getTransparentMaterial();
@@ -409,6 +412,8 @@ class Keyboard {
               const {subMesh} = keyMesh;
               subMesh.position.z = -0.02 / 2;
               subMesh.updateMatrixWorld();
+
+              sfx.digi_pip.trigger();
 
               input.triggerEvent('keyboarddown', {
                 key,
