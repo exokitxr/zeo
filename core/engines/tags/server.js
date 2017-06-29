@@ -1,3 +1,6 @@
+const events = require('events');
+const {EventEmitter} = events;
+
 class Tags {
   constructor(archae) {
     this._archae = archae;
@@ -6,9 +9,12 @@ class Tags {
   mount() {
     const {_archae: archae} = this;
 
-    class Element {
-      constructor(tagName) {
+    class Element extends EventEmitter {
+      constructor(tagName, module) {
+        super();
+
         this.tagName = tagName.toUpperCase();
+        this.module = module;
 
         this.children = [];
       }
@@ -62,7 +68,7 @@ class Tags {
       }
     }
 
-    const worldElement = new Element('world');
+    const worldElement = new Element('world', 'zeo');
 
     const entityApiElements = new Map(); // entityApi -> entityElement
 
@@ -70,21 +76,26 @@ class Tags {
     const _registerEntity = (pluginInstance, entityApi) => {
       const name = archae.getPath(pluginInstance);
       const tagName = _makeTagName(name);
-      const entityElement = new Element(tagName);
+      const entityElement = new Element(tagName, name);
       worldEllement.appendChild(entityElement);
 
       entityApiElements.set(entityApi, entityElement);
 
       const {entityAddedCallback = nop} = entityApi;
-      entityAddedCallback(element);
+      entityAddedCallback(entityElement);
+
+      world.emit('elementAdded', entityElement);
     };
     const _unregisterEntity = (pluginInstance, entityApi) => {
       const entityElement = entityApiElements.get(entityApi);
+      entityApiElements.delete(entityApi);
 
       world.removeChild(entityElement);
 
       const {entityAddedCallback = nop} = entityApi;
-      entityAddedCallback(element);
+      entityAddedCallback(entityElement);
+
+      worldElement.emit('elementRemoved', entityElement);
     };
 
     return {
