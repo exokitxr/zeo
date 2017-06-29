@@ -16,10 +16,12 @@ class Zeo {
     };
 
     return archae.requestPlugins([
+      '/core/engines/tags',
       '/core/engines/world',
       '/core/engines/fs',
     ])
       .then(([
+        tags,
         world,
         fs,
       ]) => {
@@ -27,6 +29,20 @@ class Zeo {
           class ZeoWorldApi {
             getTags() {
               return world.getTags();
+            }
+          }
+
+          class ZeoElementsApi {
+            getWorldElement() {
+              return tags.getWorldElement();
+            }
+
+            registerEntity(pluginInstance, entityApi) {
+              tags.registerEntity(pluginInstance, entityApi);
+            }
+
+            unregisterEntity(pluginInstance, entityApi) {
+              tags.unregisterEntity(pluginInstance, entityApi);
             }
           }
 
@@ -38,6 +54,7 @@ class Zeo {
 
           class ZeoApi {
             constructor() {
+              this.elements = new ZeoElementsApi();
               this.world = new ZeoWorldApi();
               this.fs = new ZeoFsApi();
             }
