@@ -1,5 +1,7 @@
 const path = require('path');
 
+const THREE = require('./lib/three');
+
 class Three {
   constructor(archae) {
     this._archae = archae;
@@ -25,6 +27,10 @@ class Three {
         }
       }
       app._router.stack.forEach(removeMiddlewares);
+    };
+
+    return {
+      THREE,
     };
   }
 
