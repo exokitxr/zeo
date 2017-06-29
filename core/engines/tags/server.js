@@ -85,23 +85,22 @@ class Tags {
       const name = archae.getPath(pluginInstance);
       const tagName = _makeTagName(name);
       const entityElement = new Element(tagName, name);
-      worldEllement.appendChild(entityElement);
+      worldElement.appendChild(entityElement);
 
       entityApiElements.set(entityApi, entityElement);
 
       const {entityAddedCallback = nop} = entityApi;
       entityAddedCallback(entityElement);
 
-      world.emit('elementAdded', entityElement);
+      worldElement.emit('elementAdded', entityElement);
     };
     const _unregisterEntity = (pluginInstance, entityApi) => {
       const entityElement = entityApiElements.get(entityApi);
       entityApiElements.delete(entityApi);
-
-      world.removeChild(entityElement);
+      worldElement.removeChild(entityElement);
 
       const {entityAddedCallback = nop} = entityApi;
-      entityAddedCallback(entityElement);
+      entityRemovedCallback(entityElement);
 
       worldElement.emit('elementRemoved', entityElement);
     };
