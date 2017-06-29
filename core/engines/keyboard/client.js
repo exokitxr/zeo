@@ -413,7 +413,7 @@ class Keyboard {
               subMesh.position.z = -0.02 / 2;
               subMesh.updateMatrixWorld();
 
-              sfx.digi_pip.trigger();
+              sfx.digi_select.trigger();
 
               input.triggerEvent('keyboarddown', {
                 key,

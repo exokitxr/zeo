@@ -732,9 +732,23 @@ class Entity {
               return false;
             }
           };
+          const _clickMenuBackground = () => {
+            const hoverState = rend.getHoverState(side);
+            const {target} = hoverState;
+
+            if (target && target.mesh && target.mesh.parent === entityMesh) {
+              return true;
+            } else {
+              return false;
+            }
+          };
 
           if (_clickMenu() || _clickAttribute()) {
             sfx.digi_select.trigger();
+
+            e.stopImmediatePropagation();
+          } else if (_clickMenuBackground()) {
+            sfx.digi_plink.trigger();
 
             e.stopImmediatePropagation();
           }
