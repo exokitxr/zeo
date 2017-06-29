@@ -7,7 +7,7 @@ const DISABLE_DEACTIVATION = 4;
 const DISABLE_SIMULATION = 5;
 
 const FPS = 1000 / 90;
-const FIXED_TIME_STEP = 1 / 200;
+const FIXED_TIME_STEP = 1 / 90;
 const BT_VECTOR3 = new Ammo.btVector3();
 const BT_TRANSFORM = new Ammo.btTransform();
 const BT_QUATERNION = new Ammo.btQuaternion();
@@ -232,6 +232,75 @@ process.on('message', m => {
               // Ammo.destroy(planeConstructionInfo);
               // Ammo.destroy(planeMotionState);
               // Ammo.destroy(planeShape);
+            });
+            _addBody(body);
+
+            break;
+          }
+          case 'heightfield': {
+            const [width, height, dataString] = spec;
+            const dataBuffer = new Buffer(dataString, 'base64');
+            const numPositions = dataBuffer.length / 4;
+            const dataArray = new Float32Array(dataBuffer.buffer, dataBuffer.byteOffset, numPositions);
+            const dataPointer = Ammo._malloc(dataBuffer.length);
+            const data = new Float32Array(Ammo.HEAPF32.buffer, Ammo.HEAPF32.byteOffset + dataPointer, numPositions);
+            data.set(dataArray);
+            const heightfieldShape = new Ammo.btHeightfieldTerrainShape(
+              width,
+              height,
+              dataPointer,
+              1 /* scale */,
+              -100 /* minHeight */,
+              100 /* maxHeight */,
+              1 /* upAxis */,
+              Ammo.PHY_FLOAT,
+              false /* flipQuadEdges */
+            );
+
+            const heightfieldTransform = BT_TRANSFORM;
+            heightfieldTransform.setIdentity();
+
+            BT_VECTOR3.setX(position[0]);
+            BT_VECTOR3.setY(position[1]);
+            BT_VECTOR3.setZ(position[2]);
+            heightfieldTransform.setOrigin(BT_VECTOR3);
+
+            BT_QUATERNION.setX(rotation[0]);
+            BT_QUATERNION.setY(rotation[1]);
+            BT_QUATERNION.setZ(rotation[2]);
+            BT_QUATERNION.setW(rotation[3]);
+            heightfieldTransform.setRotation(BT_QUATERNION);
+
+            const heightfieldMass = mass;
+            const heightfieldLocalInertia = BT_VECTOR3;
+            heightfieldLocalInertia.setX(0);
+            heightfieldLocalInertia.setY(0);
+            heightfieldLocalInertia.setZ(0);
+            heightfieldShape.calculateLocalInertia(heightfieldMass, heightfieldLocalInertia);
+
+            const heightfieldMotionState = new Ammo.btDefaultMotionState(heightfieldTransform);
+            const heightfieldBody = new Ammo.btRigidBody(new Ammo.btRigidBodyConstructionInfo(heightfieldMass, heightfieldMotionState, heightfieldShape, heightfieldLocalInertia));
+
+            BT_VECTOR3.setX(linearFactor[0]);
+            BT_VECTOR3.setY(linearFactor[1]);
+            BT_VECTOR3.setZ(linearFactor[2]);
+            heightfieldBody.setLinearFactor(BT_VECTOR3);
+
+            BT_VECTOR3.setX(angularFactor[0]);
+            BT_VECTOR3.setY(angularFactor[1]);
+            BT_VECTOR3.setZ(angularFactor[2]);
+            heightfieldBody.setAngularFactor(BT_VECTOR3);
+
+            if (disableDeactivation) {
+              heightfieldBody.setActivationState(DISABLE_DEACTIVATION);
+            }
+
+            const body = new Body(id, heightfieldBody, owner, () => {
+              // Ammo.destroy(planeBody);
+              // Ammo.destroy(planeConstructionInfo);
+              // Ammo.destroy(planeMotionState);
+              // Ammo.destroy(planeShape);
+              Ammo._free(dataPointer);
             });
             _addBody(body);
 
