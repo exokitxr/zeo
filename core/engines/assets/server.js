@@ -11,7 +11,7 @@ class Assets {
 
     const controllerjsModelPath = path.join(path.dirname(require.resolve('controllerjs')), 'model');
 
-    const assetsHmdStatic = express.static(path.join(__dirname, 'models', 'hmd'));
+    const assetsHmdStatic = express.static(path.join(__dirname, 'lib', 'models', 'hmd'));
     function serveAssetsHmd(req, res, next) {
       assetsHmdStatic(req, res, next);
     }
