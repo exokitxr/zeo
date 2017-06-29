@@ -57,6 +57,7 @@ class Rend {
       '/core/engines/three',
       '/core/engines/webvr',
       '/core/engines/biolumi',
+      '/core/engines/assets',
       '/core/utils/js-utils',
       '/core/utils/geometry-utils',
       '/core/utils/creature-utils',
@@ -66,6 +67,7 @@ class Rend {
       three,
       webvr,
       biolumi,
+      assets,
       jsUtils,
       geometryUtils,
       creatureUtils,
@@ -74,6 +76,7 @@ class Rend {
         const {THREE, scene, camera, renderer} = three;
         const {events} = jsUtils;
         const {EventEmitter} = events;
+        const {sfx} = assets;
 
         const transparentMaterial = biolumi.getTransparentMaterial();
 
@@ -283,7 +286,13 @@ class Rend {
             }
           };
 
-          if (_doClickNavbar() || _doClickMenu() || _doClickMenuBackground()) {
+          if (_doClickNavbar()) {
+            sfx.digi_plink_glass.trigger();
+
+            e.stopImmediatePropagation();
+          } else if (_doClickMenu() || _doClickMenuBackground()) {
+            sfx.digi_plink.trigger();
+
             e.stopImmediatePropagation();
           }
         };
@@ -336,6 +345,8 @@ class Rend {
 
             uiTracker.setOpen(false);
 
+            sfx.digi_powerdown.trigger();
+
             rendApi.emit('close');
           } else {
             const {hmd: hmdStatus} = webvr.getStatus();
@@ -373,6 +384,8 @@ class Rend {
             tagsLinesMesh.visible = true;
 
             uiTracker.setOpen(true);
+
+            sfx.digi_slide.trigger();
 
             rendApi.emit('open', {
               position: newMenuPosition,
