@@ -13,6 +13,19 @@ import menuRender from './lib/render/menu';
 
 const hmdModelPath = 'archae/assets/models/hmd/hmd.json';
 const controllerModelPath = 'archae/assets/models/controller/controller.json';
+const sfxPath = 'archae/assets/sfx/';
+const SFX = [
+  'digi_cluck',
+  'digi_drop',
+  'digi_error_short',
+  'digi_ping_down',
+  'digi_plink_glass',
+  'digi_plink_off',
+  'digi_plink',
+  'digi_powerdown',
+  'digi_select',
+  'digi_slide',
+];
 
 class Assets {
   mount() {
@@ -23,26 +36,69 @@ class Assets {
 
     const _requestJson = url => fetch(url)
       .then(res => res.json());
+    const _requestAudio = url => new Promise((accept, reject) => {
+      const audio = document.createElement('audio');
+
+      audio.oncanplay = () => {
+        _cleanup();
+
+        accept(audio);
+      };
+      audio.onerror = err => {
+        reject(err);
+      };
+
+      audio.crossOrigin = true;
+      audio.src = url;
+
+      document.body.appendChild(audio);
+
+      const _cleanup = () => {
+        audio.oncanplay = null;
+        audio.onerror = null;
+
+        document.body.removeChild(audio);
+      };
+    });
+    const _requestSfx = () => Promise.all(SFX.map(sfx => _requestAudio(sfxPath + sfx + '.ogg')))
+      .then(audios => {
+        const result = {};
+        for (let i = 0; i < SFX.length; i++) {
+          const sfx = SFX[i];
+          const audio = audios[i];
+
+          audio.trigger = () => {
+            audio.currentTime = 0;
+
+            if (audio.paused) {
+              audio.play();
+            }
+          };
+
+          result[sfx] = audio;
+        }
+        return result;
+      });
 
     return Promise.all([
       archae.requestPlugins([
         '/core/engines/three',
         '/core/engines/biolumi',
-        '/core/engines/rend',
         '/core/utils/creature-utils',
       ]),
       _requestJson(hmdModelPath),
       _requestJson(controllerModelPath),
+      _requestSfx(),
     ])
       .then(([
         [
           three,
           biolumi,
-          rend,
           creatureUtils,
         ],
         hmdModelJson,
         controllerModelJson,
+        sfx,
       ]) => {
         if (live) {
           const {THREE, scene, camera} = three;
@@ -105,7 +161,6 @@ class Assets {
                 },
                 worldWidth: WORLD_LABEL_WIDTH,
                 worldHeight: WORLD_LABEL_HEIGHT,
-                isEnabled: () => rend.isOpen(),
               });
               mesh.geometry.applyMatrix(new THREE.Matrix4().makeRotationY(Math.PI));
               mesh.rotation.order = camera.rotation.order;
@@ -168,7 +223,6 @@ class Assets {
                 },
                 worldWidth: WORLD_MENU_WIDTH,
                 worldHeight: WORLD_MENU_HEIGHT,
-                isEnabled: () => rend.isOpen(),
               });
               mesh.rotation.order = camera.rotation.order;
 
@@ -208,6 +262,7 @@ class Assets {
                 hmdModelMesh,
                 controllerModelMesh,
               },
+              sfx: sfx,
               makePlayerLabelMesh: _makePlayerLabelMesh,
               makePlayerMenuMesh: _makePlayerMenuMesh,
             };
