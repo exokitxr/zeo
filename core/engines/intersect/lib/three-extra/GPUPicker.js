@@ -458,19 +458,18 @@ module.exports = THREE => {
 			object.geometry = __pickingGeometry;
 			object.elementsCount = __pickingGeometry.elementsCount;//elements count
 
-      if (object.__pickingMaterial) {
-        object.__pickingMaterial.dispose();
+      var __pickingMaterial = object.__pickingMaterial;
+      if (!__pickingMaterial) {
+        __pickingMaterial = new FaceIDMaterial();
+        object.__pickingMaterial = __pickingMaterial;
+        object.material = __pickingMaterial;
       }
-
       var pointSize = object.material.size || 0.01;
       var linewidth = object.material.linewidth || 1;
-      __pickingMaterial = new FaceIDMaterial();
       __pickingMaterial.linewidth = linewidth + this.lineShell;//make the line a little wider to hit
       __pickingMaterial.setBaseID(baseId);
       __pickingMaterial.setPointSize(pointSize + this.pointShell);//make the point a little wider to hit
       __pickingMaterial.setPointScale(this.renderer.getSize().height*this.renderer.getPixelRatio()/2);
-      object.__pickingMaterial = __pickingMaterial;
-      object.material = __pickingMaterial;
 
       return object.elementsCount;
 		}
