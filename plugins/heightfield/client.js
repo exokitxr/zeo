@@ -104,7 +104,7 @@ class Heightfield {
           object.add(mapChunkMesh);
 
           const teleportMesh = mapChunkMesh.clone();
-          teleportMesh.geometry = geometryUtils.unindexBufferGeometry(teleportMesh.geometry);
+          teleportMesh.geometry = geometryUtils.unindexBufferGeometry(teleportMesh.geometry.clone()); // teleport needs unindexed but physics needs indexed
           mapChunkMesh.teleportMesh = teleportMesh;
           teleport.addTarget(teleportMesh, {
             flat: true,
