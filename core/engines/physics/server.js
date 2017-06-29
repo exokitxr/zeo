@@ -105,12 +105,17 @@ class Physics {
               const [id] = args;
 
               const interest = interests[id];
-              interest.splice(interests.indexOf(userId), 1);
-              if (interest.length === 0) {
-                delete interests[id];
+              if (interest) {
+                interest.splice(interest.indexOf(userId), 1);
+                if (interest.length === 0) {
+                  delete interests[id];
+                }
               }
 
-              localInterests.splice(localInterests.indexOf(id), 1);
+              const localInterestIndex = localInterests.indexOf(id);
+              if (localInterestIndex !== -1) {
+                localInterests.splice(localInterestIndex, 1);
+              }
               break;
             }
           }
