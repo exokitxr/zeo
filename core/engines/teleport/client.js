@@ -53,7 +53,7 @@ class Teleport {
         });
 
         const intersecter = intersect.makeIntersecter({
-          frameRate: 20,
+          frameRate: 10,
         });
 
         const metadatas = new Map();
