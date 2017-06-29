@@ -48,6 +48,7 @@ class World {
       '/core/engines/cyborg',
       '/core/engines/multiplayer',
       '/core/engines/biolumi',
+      '/core/engines/assets',
       '/core/engines/rend',
       '/core/engines/wallet',
       '/core/engines/keyboard',
@@ -69,6 +70,7 @@ class World {
       cyborg,
       multiplayer,
       biolumi,
+      assets,
       rend,
       wallet,
       keyboard,
@@ -86,6 +88,7 @@ class World {
       if (live) {
         const {THREE, scene, camera} = three;
         const {AutoWs} = networkUtils;
+        const {sfx} = assets;
 
         const worldRenderer = worldRender.makeRenderer({creatureUtils});
 
@@ -972,151 +975,141 @@ class World {
           const {side} = e;
 
           const _clickMenu = () => {
-            const tab = rend.getTab();
+            const hoverState = rend.getHoverState(side);
+            const {anchor} = hoverState;
+            const onclick = (anchor && anchor.onclick) || '';
 
-            if (tab === 'world') {
-              const hoverState = rend.getHoverState(side);
-              const {intersectionPoint} = hoverState;
+            let match;
+            if (onclick === 'npm:focus') {
+              const {inputText} = npmState;
+              const {value} = hoverState;
+              const valuePx = value * (WIDTH - (250 + (30 * 2)));
+              const {index, px} = biolumi.getTextPropertiesFromCoord(inputText, mainFontSpec, valuePx); // XXX this can be folded into the keyboard engine
+              const {hmd: hmdStatus} = webvr.getStatus();
+              const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmdStatus;
+              const keyboardFocusState = keyboard.focus({
+                type: 'world',
+                position: hmdPosition,
+                rotation: hmdRotation,
+                inputText: inputText,
+                inputIndex: index,
+                inputValue: px,
+                fontSpec: mainFontSpec,
+              });
+              focusState.keyboardFocusState = keyboardFocusState;
 
-              if (intersectionPoint) {
-                const {anchor} = hoverState;
-                const onclick = (anchor && anchor.onclick) || '';
+              keyboardFocusState.on('update', () => {
+                const {inputText: keyboardInputText} = keyboardFocusState;
+                const {inputText: npmInputText} = npmState;
 
-                let match;
-                if (onclick === 'npm:focus') {
-                  const {inputText} = npmState;
-                  const {value} = hoverState;
-                  const valuePx = value * (WIDTH - (250 + (30 * 2)));
-                  const {index, px} = biolumi.getTextPropertiesFromCoord(inputText, mainFontSpec, valuePx); // XXX this can be folded into the keyboard engine
-                  const {hmd: hmdStatus} = webvr.getStatus();
-                  const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmdStatus;
-                  const keyboardFocusState = keyboard.focus({
-                    type: 'world',
-                    position: hmdPosition,
-                    rotation: hmdRotation,
-                    inputText: inputText,
-                    inputIndex: index,
-                    inputValue: px,
-                    fontSpec: mainFontSpec,
-                  });
-                  focusState.keyboardFocusState = keyboardFocusState;
+                if (keyboardInputText !== npmInputText) {
+                  npmState.inputText = keyboardInputText;
 
-                  keyboardFocusState.on('update', () => {
-                    const {inputText: keyboardInputText} = keyboardFocusState;
-                    const {inputText: npmInputText} = npmState;
-
-                    if (keyboardInputText !== npmInputText) {
-                      npmState.inputText = keyboardInputText;
-
-                      // XXX the backend should cache responses to prevent local re-requests from hitting external APIs
-                      _updateNpm();
-                    }
-
-                    _updatePages();
-                  });
-                  keyboardFocusState.on('blur', () => {
-                    focusState.keyboardFocusState = null;
-
-                    _updatePages();
-                  });
-
-                  _updatePages();
-
-                  return true;
-                } else if (match = onclick.match(/^npm:(up|down)$/)) {
-                  const direction = match[1];
-
-                  npmState.page += (direction === 'up' ? -1 : 1);
-
-                  _updatePages();
-
-                  return true;
-                } else if (match = onclick.match(/^module:main:(.+)$/)) {
-                  const id = match[1];
-
-                  const tagMesh = tags.getTagMeshes().find(tagMesh => tagMesh.item.id === id);
-                  const {item} = tagMesh;
-                  npmState.module = item;
-                  npmState.page = 0;
-
-                  _updatePages();
-
-                  return true;
-                } else if (onclick === 'module:back') {
-                  // const id = match[1];
-
-                  npmState.module = null;
-
-                  _updatePages();
-
-                  return true;
-                } else if (onclick === 'module:focusVersion') {
-                  const keyboardFocusState =  keyboard.fakeFocus({
-                    type: 'version',
-                  });
-                  focusState.keyboardFocusState = keyboardFocusState;
-
-                  keyboardFocusState.on('blur', () => {
-                    focusState.keyboardFocusState = null;
-
-                    _updatePages();
-                  });
-
-                  _updatePages();
-
-                  return true;
-                } else if (match = onclick.match(/^module:setVersion:(.+?):(.+?)$/)) { // XXX load the version metadata here
-                  const id = match[1];
-                  const version = match[2];
-
-                  const moduleTagMesh = tags.getTagMeshes().find(tagMesh => tagMesh.item.type === 'module' && tagMesh.item.id === id);
-                  const {item: moduleItem} = moduleTagMesh;
-                  moduleItem.version = version;
-
-                  keyboard.tryBlur();
-
-                  _updatePages();
-
-                  return true;
-                } else if (match = onclick.match(/^module:add:(.+)$/)) {
-                  const id = match[1];
-
-                  const moduleTagMesh = tags.getTagMeshes().find(tagMesh => tagMesh.item.type === 'module' && tagMesh.item.id === id);
-                  const {item: moduleItem} = moduleTagMesh;
-                  const {name: module, displayName: moduleName} = moduleItem;
-                  const tagName = _makeTagName(moduleName);
-                  const attributes = tags.getAttributeSpecs(module);
-
-                  const itemSpec = {
-                    type: 'entity',
-                    id: _makeId(),
-                    name: moduleName,
-                    displayName: moduleName,
-                    version: '0.0.1',
-                    module: module,
-                    tagName: tagName,
-                    attributes: attributes,
-                    metadata: {},
-                  };
-                  const entityElement = _addTag(itemSpec);
-                  const {item} = entityElement;
-
-                  rend.setTab('entity');
-                  rend.setEntity(item);
-
-                  return true;
-                } else {
-                  return false;
+                  // XXX the backend should cache responses to prevent local re-requests from hitting external APIs
+                  _updateNpm();
                 }
-              } else {
-                return false;
-              }
+
+                _updatePages();
+              });
+              keyboardFocusState.on('blur', () => {
+                focusState.keyboardFocusState = null;
+
+                _updatePages();
+              });
+
+              _updatePages();
+
+              return true;
+            } else if (match = onclick.match(/^npm:(up|down)$/)) {
+              const direction = match[1];
+
+              npmState.page += (direction === 'up' ? -1 : 1);
+
+              _updatePages();
+
+              return true;
+            } else if (match = onclick.match(/^module:main:(.+)$/)) {
+              const id = match[1];
+
+              const tagMesh = tags.getTagMeshes().find(tagMesh => tagMesh.item.id === id);
+              const {item} = tagMesh;
+              npmState.module = item;
+              npmState.page = 0;
+
+              _updatePages();
+
+              return true;
+            } else if (onclick === 'module:back') {
+              // const id = match[1];
+
+              npmState.module = null;
+
+              _updatePages();
+
+              return true;
+            } else if (onclick === 'module:focusVersion') {
+              const keyboardFocusState =  keyboard.fakeFocus({
+                type: 'version',
+              });
+              focusState.keyboardFocusState = keyboardFocusState;
+
+              keyboardFocusState.on('blur', () => {
+                focusState.keyboardFocusState = null;
+
+                _updatePages();
+              });
+
+              _updatePages();
+
+              return true;
+            } else if (match = onclick.match(/^module:setVersion:(.+?):(.+?)$/)) { // XXX load the version metadata here
+              const id = match[1];
+              const version = match[2];
+
+              const moduleTagMesh = tags.getTagMeshes().find(tagMesh => tagMesh.item.type === 'module' && tagMesh.item.id === id);
+              const {item: moduleItem} = moduleTagMesh;
+              moduleItem.version = version;
+
+              keyboard.tryBlur();
+
+              _updatePages();
+
+              return true;
+            } else if (match = onclick.match(/^module:add:(.+)$/)) {
+              const id = match[1];
+
+              const moduleTagMesh = tags.getTagMeshes().find(tagMesh => tagMesh.item.type === 'module' && tagMesh.item.id === id);
+              const {item: moduleItem} = moduleTagMesh;
+              const {name: module, displayName: moduleName} = moduleItem;
+              const tagName = _makeTagName(moduleName);
+              const attributes = tags.getAttributeSpecs(module);
+
+              const itemSpec = {
+                type: 'entity',
+                id: _makeId(),
+                name: moduleName,
+                displayName: moduleName,
+                version: '0.0.1',
+                module: module,
+                tagName: tagName,
+                attributes: attributes,
+                metadata: {},
+              };
+              const entityElement = _addTag(itemSpec);
+              const {item} = entityElement;
+
+              rend.setTab('entity');
+              rend.setEntity(item);
+
+              return true;
             } else {
               return false;
             }
           };
 
           if (_clickMenu()) {
+            sfx.digi_select.trigger();
+
             e.stopImmediatePropagation();
           }
         };
