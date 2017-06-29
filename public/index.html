@@ -20,52 +20,11 @@ base.href = document.location.protocol + '//' + document.location.hostname + (do
     }
   </style>
   <style>
-    .loader,
-    .loader:before,
-    .loader:after {
-      border-radius: 50%;
-    }
     .loader {
-      margin-bottom: -20px;
-      color: #000;
-      font-size: 11px;
-      text-indent: -99999em;
-      position: relative;
-      width: 10em;
-      height: 10em;
-      box-shadow: inset 0 0 0 2px;
-      -webkit-transform: scale(0.5) translateZ(0);
-      -ms-transform: scale(0.5) translateZ(0);
-      transform: scale(0.5) translateZ(0);
-    }
-    .loader:before,
-    .loader:after {
-      position: absolute;
-      content: '';
-    }
-    .loader:before {
-      width: 5.2em;
-      height: 10.2em;
-      background: #fff;
-      border-radius: 10.2em 0 0 10.2em;
-      top: -0.1em;
-      left: -0.1em;
-      -webkit-transform-origin: 5.2em 5.1em;
-      transform-origin: 5.2em 5.1em;
-      -webkit-animation: load2 1s infinite ease 0.75s;
-      animation: load2 1s infinite ease 0.75s;
-    }
-    .loader:after {
-      width: 5.2em;
-      height: 10.2em;
-      background: #fff;
-      border-radius: 0 10.2em 10.2em 0;
-      top: -0.1em;
-      left: 5.1em;
-      -webkit-transform-origin: 0px 5.1em;
-      transform-origin: 0px 5.1em;
-      -webkit-animation: load2 1s infinite ease;
-      animation: load2 1s infinite ease;
+      animation-name: spin;
+      animation-duration: 0.5s;
+      animation-iteration-count: infinite;
+      animation-timing-function: linear;
     }
     .loader-overlay {
       display: flex;
@@ -88,7 +47,7 @@ base.href = document.location.protocol + '//' + document.location.hostname + (do
     .loader-wrap > h1, .loader-wrap > p {
       margin: 0;
       font-family: var(--fonts);
-      font-weight: 300;
+      font-weight: 400;
     }
     .loader-wrap > h1 {
       margin-bottom: 10px;
@@ -97,25 +56,12 @@ base.href = document.location.protocol + '//' + document.location.hostname + (do
     }
     .loader-wrap > p {
       font-size: 14px;
-      font-weight: 400;
+      font-weight: 600;
     }
-    @-webkit-keyframes load2 {
-      0% {
-        -webkit-transform: rotate(0deg);
+    @keyframes spin {
+      from {
         transform: rotate(0deg);
-      }
-      100% {
-        -webkit-transform: rotate(360deg);
-        transform: rotate(360deg);
-      }
-    }
-    @keyframes load2 {
-      0% {
-        -webkit-transform: rotate(0deg);
-        transform: rotate(0deg);
-      }
-      100% {
-        -webkit-transform: rotate(360deg);
+      } to {
         transform: rotate(360deg);
       }
     }
@@ -124,7 +70,7 @@ base.href = document.location.protocol + '//' + document.location.hostname + (do
 <body>
   <div class=loader-overlay id=loader-overlay>
     <div class=loader-wrap>
-      <div class=loader></div>
+      <svg class=loader width="50" height="50" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M1760 896q0 176-68.5 336t-184 275.5-275.5 184-336 68.5-336-68.5-275.5-184-184-275.5-68.5-336q0-213 97-398.5t265-305.5 374-151v228q-221 45-366.5 221t-145.5 406q0 130 51 248.5t136.5 204 204 136.5 248.5 51 248.5-51 204-136.5 136.5-204 51-248.5q0-230-145.5-406t-366.5-221v-228q206 31 374 151t265 305.5 97 398.5z"/></svg>
       <h1>Loading world</h1>
       <p id=loader-plugin>Initializing...</p>
     </div>
