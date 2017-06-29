@@ -19,6 +19,14 @@ class Tags {
         this.children = [];
       }
 
+      addEventListener() {
+        return this.on.apply(this, arguments);
+      }
+
+      removeEventListener() {
+        return this.removeListener.apply(this, arguments);
+      }
+
       querySelectorAll(selector) {
         selector = selector.toUpperCase();
 
