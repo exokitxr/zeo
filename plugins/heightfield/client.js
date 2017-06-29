@@ -103,6 +103,13 @@ class Heightfield {
           const mapChunkMesh = _makeMapChunkMesh(mapChunkData);
           object.add(mapChunkMesh);
 
+          const teleportMesh = mapChunkMesh.clone();
+          teleportMesh.geometry = geometryUtils.unindexBufferGeometry(teleportMesh.geometry);
+          mapChunkMesh.teleportMesh = teleportMesh;
+          teleport.addTarget(teleportMesh, {
+            flat: true,
+          });
+
           const physicsBody = physics.makeBody(mapChunkMesh, 'heightfield:' + x + ':' + y, {
             mass: 0,
             position: [
@@ -117,10 +124,6 @@ class Heightfield {
           });
           mapChunkMesh.physicsBody = physicsBody;
 
-          /* teleport.addTarget(mapChunkMesh, {
-            flat: true,
-          }); */
-
           const key = _getMapChunkOffsetKey(x, y);
           const mapChunk = new MapChunk([x, y], mapChunkMesh);
           currentMapChunks.set(key, mapChunk);
@@ -133,16 +136,19 @@ class Heightfield {
             const {mesh: mapChunkMesh} = mapChunk;
             object.remove(mapChunkMesh);
 
+            const {teleportMesh} = mapChunkMesh;
+            teleport.removeTarget(teleportMesh);
+
             const {physicsBody} = mapChunkMesh;
             physics.destroyBody(physicsBody);
-
-            // teleport.removeTarget(mapChunkMesh);
 
             currentMapChunks.delete(key);
           });
         })
         .then(() => {
-          teleport.reindex();
+          if (missingMapChunkPromises.length > 0 || deadMapChunkOffsets.length > 0) {
+            teleport.reindex();
+          }
         });
     };
 
