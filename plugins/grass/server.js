@@ -121,7 +121,7 @@ class Grass {
     ];
 
     const _requestGrassTemplates = () => new Promise((accept, reject) => {
-      const numGrassesPerPatch = 100;
+      const numGrassesPerPatch = 30;
       const positions = new Float32Array(numGrassesPerPatch * 9 * 3);
       const colors = new Float32Array(numGrassesPerPatch * 9 * 3);
 
@@ -132,7 +132,7 @@ class Grass {
 
       for (let i = 0; i < numGrassesPerPatch; i++) {
         const baseIndex = (i * 9 * 3);
-        position.set(-0.5 + Math.random(), 0, -0.5 + Math.random()).normalize().multiplyScalar(Math.random() * 3);
+        position.set(-0.5 + Math.random(), 0, -0.5 + Math.random()).normalize().multiplyScalar(Math.random() * 1);
         quaternion.setFromAxisAngle(upVector, Math.random() * Math.PI * 2);
         scale.set(5 + (Math.random() * 5), 5 + Math.random() * 10, 5 + (Math.random() * 5));
         matrix.compose(position, quaternion, scale);
@@ -182,7 +182,7 @@ class Grass {
             const mapChunk = heightfieldElement.generate(x, y);
             const {points} = mapChunk;
             const numCellsOverscan = heightfieldElement.getNumCellsOverscan();
-            const grassProbability = 0.1;
+            const grassProbability = 0.2;
             const positions = new Float32Array(NUM_POSITIONS * 3);
             let index = 0;
 
