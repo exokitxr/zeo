@@ -46,8 +46,8 @@ class Tree {
       }
     }; */
 
-    const _makeTreeChunkMesh = (mapChunkData, x, z) => {
-      const {position, positions, /*normals, */colors, indices, heightRange} = mapChunkData;
+    const _makeTreeChunkMesh = (treeChunkData, x, z) => {
+      const {position, positions, /*normals, */colors, indices, heightRange} = treeChunkData;
 
       const geometry = (() => {
         let geometry = new THREE.BufferGeometry();
