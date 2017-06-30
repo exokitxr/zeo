@@ -241,7 +241,7 @@ const buildMapChunk = ({offset}) => {
 const compileMapChunk = mapChunk => {
   const {offset, points} = mapChunk;
   const mapChunkUpdate = recompileMapChunk(mapChunk);
-  const {positions, normals, colors, heightfield} = mapChunkUpdate;
+  const {positions, normals, colors, heightfield, heightRange} = mapChunkUpdate;
 
   return {
     offset,
@@ -250,6 +250,7 @@ const compileMapChunk = mapChunk => {
     normals,
     colors,
     heightfield,
+    heightRange,
   };
 };
 
@@ -262,6 +263,8 @@ const recompileMapChunk = mapChunk => {
   const colors = new Float32Array(positions.length);
   geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
   const heightfield = new Float32Array((NUM_CELLS + 1) * (NUM_CELLS + 1));
+  let minY = Infinity;
+  let maxY = Infinity;
 
   let i = 0;
   for (let y = 0; y <= NUM_CELLS; y++) {
@@ -293,6 +296,12 @@ const recompileMapChunk = mapChunk => {
       colors[(i * 3) + 2] = colorArray[2];
 
       heightfield[i] = elevation;
+      if (elevation < minY) {
+        minY = elevation;
+      }
+      if (elevation > maxY) {
+        maxY = elevation;
+      }
 
       i++;
     }
@@ -309,6 +318,7 @@ const recompileMapChunk = mapChunk => {
     normals: newNormals,
     colors: newColors,
     heightfield: heightfield,
+    heightRange: [minY, maxY],
   };
 };
 
