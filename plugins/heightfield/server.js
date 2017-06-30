@@ -9,8 +9,17 @@ class Heightfield {
   mount() {
     const {_archae: archae} = this;
     const {app} = archae.getCore();
-
     const {elements} = zeo;
+
+    const _generate = (x, y) => {
+      const builtMapChunk = workerUtils.buildMapChunk({
+        offset: {
+          x,
+          y,
+        },
+      });
+      return workerUtils.compileMapChunk(builtMapChunk);
+    };
 
     function heightFieldGenerate(req, res, next) {
       const {x: xs, y: ys} = req.query;
@@ -18,14 +27,8 @@ class Heightfield {
       const y = parseInt(ys, 10);
 
       if (!isNaN(x) && !isNaN(y)) {
-        const builtMapChunk = workerUtils.buildMapChunk({
-          offset: {
-            x,
-            y,
-          },
-        });
-        const compiledMapChunk = workerUtils.compileMapChunk(builtMapChunk);
-        const mapChunkBuffer = protocolUtils.stringifyMapChunk(compiledMapChunk);
+        const mapChunk = _generate(x, y);
+        const mapChunkBuffer = protocolUtils.stringifyMapChunk(mapChunk);
 
         res.type('application/octet-stream');
         res.send(new Buffer(mapChunkBuffer));
@@ -39,6 +42,8 @@ class Heightfield {
     const heightfieldEntity = {
       entityAddedCallback(entityElement) {
         console.log('entity added callback', entityElement);
+
+        entityElement.generate = (x, y) => _generate(x, y);
       },
       entityRemovedCallback(entityElement) {
         console.log('entity removed callback', entityElement);
