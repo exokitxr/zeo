@@ -49,8 +49,8 @@ class Grass {
       }
     }; */
 
-    const _makeGrassChunkMesh = (mapChunkData, x, z) => {
-      const {positions, colors, heightRange} = mapChunkData;
+    const _makeGrassChunkMesh = (grassChunkData, x, z) => {
+      const {positions, colors, heightRange} = grassChunkData;
 
       const geometry = (() => {
         let geometry = new THREE.BufferGeometry();
