@@ -1,3 +1,5 @@
+const chnkr = require('chnkr');
+
 const protocolUtils = require('./lib/utils/protocol-utils');
 
 const NUM_POSITIONS = 2000 * 1000;
@@ -57,16 +59,15 @@ class Grass {
       }
     };
 
-    return Promise.all([
-      _requestGrassTemplates(),
-      _requestGrassGenerate(0, 0),
-    ])
-      .then(([
-        grassGeometry,
-        grassPositions,
-      ]) => {
+    return _requestGrassTemplates()
+      .then(grassGeometry => {
         if (live) {
-          const grassMesh = (() => {
+          const chunker = chnkr.makeChunker({
+            resolution: 32,
+            lods: 1,
+          });
+
+          const _makeGrassMesh = grassPositions => {
             const positions = new Float32Array(NUM_POSITIONS * 3);
             const colors = new Float32Array(NUM_POSITIONS * 3);
             let attributeIndex = 0;
@@ -108,16 +109,78 @@ class Grass {
             // mesh.frustumCulled = false;
             mesh.drawMode = THREE.TriangleStripDrawMode;
             return mesh;
-          })();
-          scene.add(grassMesh);
-
-          this._cleanup = () => {
-            scene.remove(grassMesh);
-
-            grassMaterial.dispose();
           };
-        }
-      });
+
+          const _requestRefreshGrassChunks = () => {
+            const {hmd} = pose.getStatus();
+            const {worldPosition: hmdPosition} = hmd;
+            const {added, removed} = chunker.update(hmdPosition.x, hmdPosition.z);
+
+            const addedPromises = added.map(chunk => {
+              const {x, z} = chunk;
+
+              return _requestGrassGenerate(x, z)
+                .then(grassPositions => {
+                  const grassMesh = _makeGrassMesh(grassPositions);
+                  scene.add(grassMesh);
+
+                  chunk.data = grassMesh;
+                });
+            });
+            return Promise.all(addedPromises)
+              .then(() => {
+                removed.forEach(chunk => {
+                  const {data: grassMesh} = chunk;
+                  scene.remove(grassMesh);
+                });
+              })
+          };
+
+          return _requestRefreshGrassChunks()
+            .then(() => {
+              let updating = false;
+              let updateQueued = false;
+              const tryGrassChunkUpdate = () => {
+                if (!updating) {
+                  updating = true;
+
+                  const done = () => {
+                    updating = false;
+
+                    if (updateQueued) {
+                      updateQueued = false;
+
+                      tryGrassChunkUpdate();
+                    }
+                  };
+
+                  _requestRefreshGrassChunks()
+                    .then(done)
+                    .catch(err => {
+                      console.warn(err);
+
+                      done();
+                    });
+                } else {
+                  updateQueued = true;
+                }
+              };
+
+              const _update = () => {
+                tryGrassChunkUpdate();
+              };
+              render.on('update', _update);
+
+              this._cleanup = () => {
+                scene.remove(treeMesh);
+
+                grassMaterial.dispose();
+
+                render.removeListener('update', _update);
+              };
+            });
+          }
+        });
   }
 
   unmount() {
