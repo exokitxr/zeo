@@ -43,7 +43,7 @@ class Body {
     // Ammo.destroy(ms);
 
     if (lastUpdate === null || !_arrayEquals(lastUpdate.position, p) || !_arrayEquals(lastUpdate.rotation, q)) {
-      const newUpdate = {
+      const newUpdate = { // XXX optimize this into an array
         id: id,
         position: p,
         rotation: q,
