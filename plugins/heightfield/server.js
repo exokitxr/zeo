@@ -1,3 +1,5 @@
+const zlib = require('zlib');
+
 const workerUtilser = require('./lib/utils/worker-utils');
 const protocolUtils = require('./lib/utils/protocol-utils');
 const {
@@ -38,7 +40,14 @@ class Heightfield {
         const mapChunkBuffer = new Buffer(protocolUtils.stringifyMapChunk(mapChunk));
 
         res.type('application/octet-stream');
-        res.send(mapChunkBuffer);
+        if (_acceptsEncoding(req, 'gzip')) {
+          res.send(mapChunkBuffer);
+        } else {
+          res.set('Content-Encoding', 'gzip');
+          const mapChunkStream = zlib.createGzip();
+          mapChunkStream.end(mapChunkBuffer);
+          mapChunkStream.pipe(res);
+        }
       } else {
         res.status(400);
         res.send();
@@ -78,6 +87,10 @@ class Heightfield {
   unmount() {
     this._cleanup();
   } 
+};
+const _acceptsEncoding = (req, encoding) => {
+  const acceptEncoding = req.headers['accept-encoding'];
+  return acceptEncoding ? acceptEncoding.trim().split(/ *, */).includes(encoding) : false;
 };
 
 module.exports = Heightfield;
