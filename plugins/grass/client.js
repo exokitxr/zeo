@@ -1,5 +1,8 @@
 const chnkr = require('chnkr');
 
+const {
+  NUM_CELLS,
+} = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
 
 const NUM_POSITIONS = 2000 * 1000;
@@ -46,13 +49,21 @@ class Grass {
       }
     }; */
 
-    const _makeGrassChunkMesh = mapChunkData => {
+    const _makeGrassChunkMesh = (mapChunkData, x, z) => {
       const {positions, colors} = mapChunkData;
 
       const geometry = (() => {
         let geometry = new THREE.BufferGeometry();
         geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
         geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
+        geometry.boundingSphere = new THREE.Sphere(
+          new THREE.Vector3(
+            (x * NUM_CELLS) + (NUM_CELLS / 2),
+            10, // XXX this should actually be around the midpoint of the geometry, which we can compute on the backend
+            (z * NUM_CELLS) + (NUM_CELLS / 2)
+          ),
+          NUM_CELLS / 2
+        );
 
         return geometry;
       })();
@@ -133,7 +144,7 @@ class Grass {
 
         return _requestGrassGenerate(x, z)
           .then(grassChunkData => {
-            const grassChunkMesh = _makeGrassChunkMesh(grassChunkData);
+            const grassChunkMesh = _makeGrassChunkMesh(grassChunkData, x, z);
             scene.add(grassChunkMesh);
 
             chunk.data = grassChunkMesh;

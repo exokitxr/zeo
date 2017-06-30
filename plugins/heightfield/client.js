@@ -46,7 +46,7 @@ class Heightfield {
       .then(_resArrayBuffer)
       .then(mapChunkBuffer => protocolUtils.parseMapChunk(mapChunkBuffer));
 
-    const _makeMapChunkMesh = mapChunkData => {
+    const _makeMapChunkMesh = (mapChunkData, x, z) => {
       const {position, positions, normals, colors, indices} = mapChunkData;
 
       const geometry = (() => {
@@ -55,8 +55,14 @@ class Heightfield {
         geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
         geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
         geometry.setIndex(new THREE.Uint16BufferAttribute(indices, 1));
-
-        // geometry.computeBoundingSphere();
+        geometry.boundingSphere = new THREE.Sphere(
+          new THREE.Vector3(
+            (x * NUM_CELLS) + (NUM_CELLS / 2),
+            10, // XXX this should actually be around the midpoint of the geometry, which we can compute on the backend
+            (z * NUM_CELLS) + (NUM_CELLS / 2)
+          ),
+          NUM_CELLS / 2
+        );
 
         return geometry;
       })();
@@ -90,7 +96,7 @@ class Heightfield {
 
         return _requestGenerate(x, z)
           .then(mapChunkData => {
-            const mapChunkMesh = _makeMapChunkMesh(mapChunkData);
+            const mapChunkMesh = _makeMapChunkMesh(mapChunkData, x, z);
             object.add(mapChunkMesh);
 
             const teleportMesh = mapChunkMesh.clone();

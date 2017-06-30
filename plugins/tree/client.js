@@ -1,5 +1,8 @@
 const chnkr = require('chnkr');
 
+const {
+  NUM_CELLS,
+} = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
 
 const NUM_POSITIONS = 2 * 1000 * 1000;
@@ -45,7 +48,7 @@ class Tree {
       }
     }; */
 
-    const _makeTreeChunkMesh = mapChunkData => {
+    const _makeTreeChunkMesh = (mapChunkData, x, z) => {
       const {position, positions, /*normals, */colors, indices} = mapChunkData;
 
       const geometry = (() => {
@@ -54,6 +57,14 @@ class Tree {
         // geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
         geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
         geometry.setIndex(new THREE.Uint32BufferAttribute(indices, 1));
+        geometry.boundingSphere = new THREE.Sphere(
+          new THREE.Vector3(
+            (x * NUM_CELLS) + (NUM_CELLS / 2),
+            10, // XXX this should actually be around the midpoint of the geometry, which we can compute on the backend
+            (z * NUM_CELLS) + (NUM_CELLS / 2)
+          ),
+          NUM_CELLS / 2
+        );
 
         // geometry.computeBoundingSphere();
 
@@ -141,7 +152,7 @@ class Tree {
 
         return _requestTreeGenerate(x, z)
           .then(treeChunkData => {
-            const treeChunkMesh = _makeTreeChunkMesh(treeChunkData);
+            const treeChunkMesh = _makeTreeChunkMesh(treeChunkData, x, z);
             scene.add(treeChunkMesh);
 
             chunk.data = treeChunkMesh;
