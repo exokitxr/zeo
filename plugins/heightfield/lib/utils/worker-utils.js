@@ -264,7 +264,7 @@ const recompileMapChunk = mapChunk => {
   geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
   const heightfield = new Float32Array((NUM_CELLS + 1) * (NUM_CELLS + 1));
   let minY = Infinity;
-  let maxY = Infinity;
+  let maxY = -Infinity;
 
   let i = 0;
   for (let y = 0; y <= NUM_CELLS; y++) {
