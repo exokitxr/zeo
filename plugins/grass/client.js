@@ -8,6 +8,8 @@ class Grass {
     const {three, render, pose} = zeo;
     const {THREE, scene, camera} = three;
 
+    const upVector = new THREE.Vector3(0, 1, 0);
+
     const grassMaterial = new THREE.MeshBasicMaterial({
       // color: 0xFFFFFF,
       // shininess: 0,
@@ -123,10 +125,14 @@ class Grass {
     const grassMesh = (() => {
       const numPatches = 100;
       const numGrassesPerPatch = 100;
-      // const numPatches = 1;
-      // const numGrassesPerPatch = 1;
       const positions = new Float32Array(numPatches * numGrassesPerPatch * 9 * 3);
       const colors = new Float32Array(numPatches * numGrassesPerPatch * 9 * 3);
+
+      const position = new THREE.Vector3();
+      const quaternion = new THREE.Quaternion();
+      const scale = new THREE.Vector3();
+      const matrix = new THREE.Matrix4();
+
       for (let i = 0; i < numPatches; i++) {
         const patchPosition = new THREE.Vector3(
           -10 + (Math.random() * 20),
@@ -136,15 +142,13 @@ class Grass {
 
         for (let j = 0; j < numGrassesPerPatch; j++) {
           const baseIndex = (i * numGrassesPerPatch * 9 * 3) + (j * 9 * 3);
+          position.set(patchPosition.x + (-1 + (Math.random() * 1)), 0, patchPosition.z + (-1 + (Math.random() * 1)));
+          quaternion.setFromAxisAngle(upVector, Math.random() * Math.PI * 2);
+          scale.set(1 + Math.random() * 2, 2 + Math.random() * 6, 1 + Math.random() * 2);
+          matrix.compose(position, quaternion, scale);
           const geometry = grassGeometries[Math.floor(Math.random() * grassGeometries.length)]
             .clone()
-            .applyMatrix(new THREE.Matrix4().makeScale(1 + Math.random() * 2, 2 + Math.random() * 6, 1 + Math.random() * 2))
-            .applyMatrix(new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(0, Math.random() * Math.PI * 2, 0, camera.rotation.order)))
-            .applyMatrix(new THREE.Matrix4().makeTranslation(
-              patchPosition.x + (-1 + (Math.random() * 1)),
-              0,
-              patchPosition.z + (-1 + (Math.random() * 1))
-            ));
+            .applyMatrix(matrix);
           const newPositions = geometry.getAttribute('position').array;
           const newColors = geometry.getAttribute('color').array;
           positions.set(newPositions, baseIndex);
