@@ -6,8 +6,8 @@ const {
 } = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
 
-const NUM_POSITIONS = 30 * 1024;
-const NUM_POSITIONS_CHUNK = 1 * 1024 * 1024;
+const NUM_POSITIONS = 20 * 1024;
+const NUM_POSITIONS_CHUNK = 100 * 1024;
 const CAMERA_ROTATION_ORDER = 'YXZ';
 
 class Grass {
