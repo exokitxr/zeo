@@ -196,9 +196,9 @@ class Config {
                     return {
                       type: 'password',
                     };
-                  } else if (type === 'config:visibiltiy') {
+                  } else if (type === 'config:visibility') {
                     return {
-                      type: 'password',
+                      type: 'visibility',
                     };
                   } else {
                     return null;
