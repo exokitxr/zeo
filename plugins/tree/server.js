@@ -1,4 +1,3 @@
-// const workerUtils = require('./lib/utils/worker-utils');
 const protocolUtils = require('./lib/utils/protocol-utils');
 
 const NUM_POSITIONS = 30 * 1024;

@@ -4,8 +4,6 @@ const FLOAT32_SIZE = 4;
 const UINT16_SIZE = 2;
 const TREE_GEOMETRY_HEADER_ENTRIES = 4;
 const TREE_GEOMETRY_HEADER_SIZE = UINT32_SIZE * TREE_GEOMETRY_HEADER_ENTRIES;
-const TREE_GEOMETRY_UPDATE_HEADER_ENTRIES = 4;
-const TREE_GEOMETRY_UPDATE_HEADER_SIZE = UINT32_SIZE * TREE_GEOMETRY_HEADER_ENTRIES;
 
 const _getTreeGeometrySizeFromMetadata = metadata => {
   const {numPositions, numNormals, numColors, numIndices} = metadata;
