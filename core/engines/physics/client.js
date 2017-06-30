@@ -171,7 +171,7 @@ class Physics {
                 connection.send(es);
 
                 return body;
-              } else if (constructor === THREE.BufferGeometry) {
+              } else if (constructor === THREE.BufferGeometry && geometry.heightfield) {
                 const body = new Body(id, n, object, bindObject);
                 bodies[n] = body;
 
@@ -181,19 +181,14 @@ class Physics {
                 if (rotation === null) {
                   rotation = _getMatrix().rotation.toArray();
                 }
-                const positions = geometry.getAttribute('position').array;
-                const numPositions = positions.length / 3;
-                const width = Math.sqrt(numPositions);
+                const {heightfield} = geometry;
+                const width = Math.sqrt(heightfield.length);
                 const height = width;
-                const yPositions = new Float32Array(numPositions);
-                for (let i = 0; i < numPositions; i++) {
-                  yPositions[i] = positions[(i * 3) + 1];
-                }
-                const yPositionsBase64 = _arrayToBase64(new Uint8Array(yPositions.buffer, yPositions.byteOffset, yPositions.length * 4));
+                const heightfieldBase64 = _arrayToBase64(new Uint8Array(heightfield.buffer, heightfield.byteOffset, heightfield.length * 4));
                 const owner = bindConnection ? localUserId : null;
                 const e = {
                   method: 'add',
-                  args: [n, 'heightfield', [width, height, yPositionsBase64], position, rotation, mass, linearFactor, angularFactor, disableDeactivation, owner],
+                  args: [n, 'heightfield', [width, height, heightfieldBase64], position, rotation, mass, linearFactor, angularFactor, disableDeactivation, owner],
                 };
                 const es = JSON.stringify(e);
                 connection.send(es);
