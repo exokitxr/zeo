@@ -301,7 +301,7 @@ class Tree {
           for (let i = Math.floor(heightSegments * 0.4); i < heightSegments; i++) {
             const heightOffset = heightOffsets[i];
 
-            const maxNumBranchesPerNode = 4;
+            const maxNumBranchesPerNode = 2;
             const optimalBranchHeight = 0.7;
             const branchWeight = 1 - Math.pow(Math.abs(i - (heightSegments * optimalBranchHeight)) / (heightSegments * optimalBranchHeight), 0.25);
             for (let j = 0; j < maxNumBranchesPerNode; j++) {
@@ -344,14 +344,16 @@ class Tree {
         const branchGeometrySpec = _renderBranches(trunkGeometrySpec);
 
         const _renderLeaves = branchGeometrySpec => {
-          const numLeaves = 100;
+          const numLeaves = 50;
           for (let i = 0; i < numLeaves; i++) {
             const branchGeometry = branchGeometrySpec[Math.floor(Math.random() * branchGeometrySpec.length)];
             const branchPositions = branchGeometry.getAttribute('position').array;
             const branchNormals = branchGeometry.getAttribute('normal').array;
             const numPositions = branchPositions.length / 3;
-            const baseIndex1 = Math.floor((1 - Math.pow(Math.random(), 0.5)) * numPositions) * 3;
-            const baseIndex2 = Math.floor((1 - Math.pow(Math.random(), 0.5)) * numPositions) * 3;
+            const index1 = Math.floor((1 - Math.pow(Math.random(), 0.5)) * numPositions);
+            const index2 = (index1 < (numPositions - 1)) ? (index1 + 1) : (index1 - 1);
+            const baseIndex1 = index1 * 3;
+            const baseIndex2 = index2 * 3;
             const lerpFactor = Math.random();
             const inverseLerpFactor = 1 - lerpFactor;
 
@@ -359,8 +361,8 @@ class Tree {
             const geometry = leafGeometry 
               .clone()
               .applyMatrix(new THREE.Matrix4().makeScale(
-                8,
-                8 + (Math.random() * 8),
+                5,
+                5,
                 1
               ))
               .applyMatrix(new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(
@@ -369,14 +371,14 @@ class Tree {
                 0,
                 CAMERA_ROTATION_ORDER
               )))
-              .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(
+              /* .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(
                 upVector,
                 new THREE.Vector3(
                   (branchNormals[baseIndex1 + 0] * lerpFactor + branchNormals[baseIndex2 + 0] * inverseLerpFactor),
                   (branchNormals[baseIndex1 + 1] * lerpFactor + branchNormals[baseIndex2 + 1] * inverseLerpFactor),
                   (branchNormals[baseIndex1 + 2] * lerpFactor + branchNormals[baseIndex2 + 2] * inverseLerpFactor)
                 )
-              )))
+              ))) */
               .applyMatrix(new THREE.Matrix4().makeTranslation(
                 (branchPositions[baseIndex1 + 0] * lerpFactor + branchPositions[baseIndex2 + 0] * inverseLerpFactor),
                 (branchPositions[baseIndex1 + 1] * lerpFactor + branchPositions[baseIndex2 + 1] * inverseLerpFactor),
@@ -432,7 +434,7 @@ class Tree {
       const scale = new THREE.Vector3(1, 1, 1);
       const matrix = new THREE.Matrix4();
 
-      const treeProbability = 0.1;
+      const treeProbability = 0.025;
       let treeIndex = 0;
 
       for (let dy = 0; dy < NUM_CELLS_OVERSCAN; dy++) {
