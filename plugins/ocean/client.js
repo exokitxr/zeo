@@ -1,6 +1,7 @@
  const murmur = require('murmurhash');
+ const chnkr = require('chnkr');
 
-const NUM_CELLS = 100;
+const NUM_CELLS = 128;
 const SCALE = 4;
 
 const OCEAN_SHADER = {
@@ -26,7 +27,7 @@ const OCEAN_SHADER = {
     "  float ang = wave[0];",
     "  float amp = wave[1];",
     "  float speed = wave[2];",
-    "  gl_Position = projectionMatrix * modelViewMatrix * vec4(position.x, ((sin(ang + (speed * worldTime))) * amp), position.z, 1.0);",
+    "  gl_Position = projectionMatrix * modelViewMatrix * vec4(position.x, position.y, ((sin(ang + (speed * worldTime))) * amp), 1.0);",
     "  vcolor = color;",
     "  vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );",
     "  fogDepth = -mvPosition.z;",
@@ -52,20 +53,10 @@ const DATA = {
   speed: 0.5,
   speedVariance: 0.5,
 };
-const DIRECTIONS = (() => {
-  const result = [];
-  const size = 2;
-  for (let x = -size; x <= size; x++) {
-    for (let y = -size; y <= size; y++) {
-      result.push([x, y]);
-    }
-  }
-  return result;
-})();
 
 class Ocean {
   mount() {
-    const {three: {THREE, scene}, render, elements, world} = zeo;
+    const {three: {THREE, scene}, render, elements, pose, world} = zeo;
 
     const updates = [];
     const _update = () => {
@@ -90,10 +81,16 @@ class Ocean {
         const entityApi = entityElement.getEntityApi();
         const entityObject = entityElement.getObject();
 
+        const chunker = chnkr.makeChunker({
+          resolution: NUM_CELLS,
+          range: 2,
+          useLods: false,
+        });
+
         const _makeOceanMesh = (ox, oy) => {
-          const geometry = new THREE.PlaneBufferGeometry(NUM_CELLS * SCALE, NUM_CELLS * SCALE, NUM_CELLS, NUM_CELLS);
-          geometry.applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
-          geometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, 0));
+          const geometry = new THREE.PlaneBufferGeometry(NUM_CELLS, NUM_CELLS, NUM_CELLS / SCALE, NUM_CELLS / SCALE);
+          // geometry.applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
+          // geometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, 0));
 
           const positions = geometry.getAttribute('position').array;
           const numPositions = positions.length / 3;
@@ -102,8 +99,8 @@ class Ocean {
           for (let i = 0; i < numPositions; i++) {
             const baseIndex = i * 3;
             const x = positions[baseIndex + 0];
-            const y = positions[baseIndex + 2];
-            const key = `${x + (ox * NUM_CELLS * SCALE)}:${y + (oy * NUM_CELLS  * SCALE)}`;
+            const y = positions[baseIndex + 1];
+            const key = `${x + (ox * NUM_CELLS)}:${-y + (oy * NUM_CELLS)}`;
             waves[baseIndex + 0] = (murmur(key + ':ang') / 0xFFFFFFFF) * Math.PI * 2; // ang
             waves[baseIndex + 1] = DATA.amplitude + (murmur(key + ':amp') / 0xFFFFFFFF) * DATA.amplitudeVariance; // amp
             waves[baseIndex + 2] = (DATA.speed + (murmur(key + ':speed') / 0xFFFFFFFF) * DATA.speedVariance) / 1000; // speed
@@ -124,7 +121,8 @@ class Ocean {
           });
 
           const result = new THREE.Mesh(geometry, material);
-          result.position.set(ox * NUM_CELLS * SCALE, 0, oy * NUM_CELLS * SCALE);
+          result.position.set(ox * NUM_CELLS, 0, oy * NUM_CELLS);
+          result.quaternion.set(-0.7071067811865475, 0, 0, 0.7071067811865475);
           result.updateMatrixWorld();
 
           result.update = () => {
@@ -133,21 +131,46 @@ class Ocean {
             uniforms.fogColor.value = scene.fog.color;
             uniforms.fogDensity.value = scene.fog.density;
           };
+          result.destroy = () => {
+            geometry.dispose();
+          };
 
           return result;
         };
         const meshes = [];
-        DIRECTIONS.forEach(([x, y]) => {
-          const mesh = _makeOceanMesh(x, y);
-          entityObject.add(mesh);
-          meshes.push(mesh);
-        });
 
         const update = () => {
-          for (let i = 0; i < meshes.length; i++) {
-            const mesh = meshes[i];
-            mesh.update();
-          }
+          const _updateOceanChunks = () => {
+            const {hmd} = pose.getStatus();
+            const {worldPosition: hmdPosition} = hmd;
+            const {added, removed} = chunker.update(hmdPosition.x, hmdPosition.z);
+
+            for (let i = 0; i < added.length; i++) {
+              const chunk = added[i];
+              const {x, z} = chunk;
+              const oceanChunkMesh = _makeOceanMesh(x, z);
+              scene.add(oceanChunkMesh);
+              meshes.push(oceanChunkMesh);
+
+              chunk.data = oceanChunkMesh;
+            }
+            for (let i = 0; i < removed.length; i++) {
+              const chunk = removed[i];
+              const {data: oceanChunkMesh} = chunk;
+              scene.remove(oceanChunkMesh);
+              oceanChunkMesh.destroy();
+              meshes.splice(meshes.indexOf(oceanChunkMesh), 1);
+            }
+          };
+          const _updateMeshes = () => {
+            for (let i = 0; i < meshes.length; i++) {
+              const mesh = meshes[i];
+              mesh.update();
+            }
+          };
+
+          _updateOceanChunks();
+          _updateMeshes();
         };
         updates.push(update);
       
