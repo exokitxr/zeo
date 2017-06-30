@@ -415,16 +415,6 @@ class Tree {
       }
       return treeTemplatesPromise;
     };
-    /* const _makeTreeTemplatesBufferPromise = () => _requestTreeTemplates()
-      .then(treeTemplates => protocolUtils.stringifyTreeGeometry(treeTemplates));
-
-    let treeTemplatesBufferPromise = null;
-    const _requestTreeTemplatesBuffer = () => {
-      if (treeTemplatesBufferPromise === null) {
-        treeTemplatesBufferPromise = _makeTreeTemplatesBufferPromise();
-      }
-      return treeTemplatesBufferPromise;
-    }; */
 
     const _makeTreeChunkGeometry = (x, y, treeGeometry, points, numCells, numCellsOverscan) => {
       const positions = new Float32Array(NUM_POSITIONS_CHUNK * 3);
