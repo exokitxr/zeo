@@ -1,3 +1,5 @@
+const zlib = require('zlib');
+
 const {
   NUM_CELLS,
   NUM_CELLS_OVERSCAN,
@@ -237,7 +239,14 @@ class Grass {
             const grassChunkBuffer = new Buffer(protocolUtils.stringifyGrassGeometry(grassChunkGeometry));
 
             res.type('application/octet-stream');
-            res.send(grassChunkBuffer);
+            if (_acceptsEncoding(req, 'gzip')) {
+              res.send(grassChunkBuffer);
+            } else {
+              res.set('Content-Encoding', 'gzip');
+              const grassChunkStream = zlib.createGzip();
+              grassChunkStream.end(grassChunkBuffer);
+              grassChunkStream.pipe(res);
+            }
           })
           .catch(err => {
             res.status(err.code === 'ETIMEOUT' ? 404 : 500);
@@ -271,6 +280,10 @@ class Grass {
   unmount() {
     this._cleanup();
   } 
+};
+const _acceptsEncoding = (req, encoding) => {
+  const acceptEncoding = req.headers['accept-encoding'];
+  return acceptEncoding ? acceptEncoding.trim().split(/ *, */).includes(encoding) : false;
 };
 
 module.exports = Grass;
