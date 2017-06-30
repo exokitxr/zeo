@@ -17,6 +17,8 @@ const names = require('./lib/constants/names.json');
 const menuUtils = require('./lib/utils/menu');
 const menuRender = require('./lib/render/menu');
 
+const MENU_RANGE = 3;
+
 const SIDES = ['left', 'right'];
 
 class Rend {
@@ -317,77 +319,85 @@ class Rend {
           }
         };
         input.on('click', click);
+        const _closeMenu = () => {
+          menuMesh.visible = false;
+          uiTracker.updateMatrixWorld(menuMesh);
+
+          menuState.open = false; // XXX need to cancel other menu states as well
+          menuState.position = null;
+          menuState.rotation = null;
+          menuState.scale = null;
+
+          const {transformGizmos} = auxObjects;
+          for (let i = 0; i < transformGizmos.length; i++) {
+            const transformGizmo = transformGizmos[i];
+            transformGizmo.visible = false;
+            uiTracker.updateMatrixWorld(transformGizmo);
+          }
+
+          const {tagsLinesMesh} = auxObjects;
+          tagsLinesMesh.visible = false;
+
+          uiTracker.setOpen(false);
+          _updateUiTracker();
+
+          sfx.digi_powerdown.trigger();
+
+          rendApi.emit('close');
+        };
+        const _openMenu = () => {
+          const {hmd: hmdStatus} = webvr.getStatus();
+          const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmdStatus;
+
+          const newMenuRotation = (() => {
+            const hmdEuler = new THREE.Euler().setFromQuaternion(hmdRotation, camera.rotation.order);
+            hmdEuler.x = 0;
+            hmdEuler.z = 0;
+            return new THREE.Quaternion().setFromEuler(hmdEuler);
+          })();
+          const newMenuPosition = hmdPosition.clone()
+            .add(new THREE.Vector3(0, 0, -1.5).applyQuaternion(newMenuRotation));
+          const newMenuScale = new THREE.Vector3(1, 1, 1);
+          menuMesh.position.copy(newMenuPosition);
+          menuMesh.quaternion.copy(newMenuRotation);
+          menuMesh.scale.copy(newMenuScale);
+          menuMesh.visible = true;
+          menuMesh.updateMatrixWorld();
+          uiTracker.updateMatrixWorld(menuMesh);
+
+          menuState.open = true;
+          menuState.position = newMenuPosition.toArray();
+          menuState.rotation = newMenuRotation.toArray();
+          menuState.scale = newMenuScale.toArray();
+
+          const {transformGizmos} = auxObjects;
+          for (let i = 0; i < transformGizmos.length; i++) {
+            const transformGizmo = transformGizmos[i];
+            transformGizmo.visible = true;
+            uiTracker.updateMatrixWorld(transformGizmo);
+          }
+
+          const {tagsLinesMesh} = auxObjects;
+          tagsLinesMesh.visible = true;
+
+          uiTracker.setOpen(true);
+          _updateUiTracker();
+
+          sfx.digi_slide.trigger();
+
+          rendApi.emit('open', {
+            position: newMenuPosition,
+            rotation: newMenuRotation,
+            scale: newMenuScale,
+          });
+        };
         const menudown = () => {
           const {open} = menuState;
 
           if (open) {
-            menuMesh.visible = false;
-            uiTracker.updateMatrixWorld(menuMesh);
-
-            menuState.open = false; // XXX need to cancel other menu states as well
-            menuState.position = null;
-            menuState.rotation = null;
-            menuState.scale = null;
-
-            const {transformGizmos} = auxObjects;
-            for (let i = 0; i < transformGizmos.length; i++) {
-              const transformGizmo = transformGizmos[i];
-              transformGizmo.visible = false;
-              uiTracker.updateMatrixWorld(transformGizmo);
-            }
-
-            const {tagsLinesMesh} = auxObjects;
-            tagsLinesMesh.visible = false;
-
-            uiTracker.setOpen(false);
-
-            sfx.digi_powerdown.trigger();
-
-            rendApi.emit('close');
+            _closeMenu();
           } else {
-            const {hmd: hmdStatus} = webvr.getStatus();
-            const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmdStatus;
-
-            const newMenuRotation = (() => {
-              const hmdEuler = new THREE.Euler().setFromQuaternion(hmdRotation, camera.rotation.order);
-              hmdEuler.x = 0;
-              hmdEuler.z = 0;
-              return new THREE.Quaternion().setFromEuler(hmdEuler);
-            })();
-            const newMenuPosition = hmdPosition.clone()
-              .add(new THREE.Vector3(0, 0, -1.5).applyQuaternion(newMenuRotation));
-            const newMenuScale = new THREE.Vector3(1, 1, 1);
-            menuMesh.position.copy(newMenuPosition);
-            menuMesh.quaternion.copy(newMenuRotation);
-            menuMesh.scale.copy(newMenuScale);
-            menuMesh.visible = true;
-            menuMesh.updateMatrixWorld();
-            uiTracker.updateMatrixWorld(menuMesh);
-
-            menuState.open = true;
-            menuState.position = newMenuPosition.toArray();
-            menuState.rotation = newMenuRotation.toArray();
-            menuState.scale = newMenuScale.toArray();
-
-            const {transformGizmos} = auxObjects;
-            for (let i = 0; i < transformGizmos.length; i++) {
-              const transformGizmo = transformGizmos[i];
-              transformGizmo.visible = true;
-              uiTracker.updateMatrixWorld(transformGizmo);
-            }
-
-            const {tagsLinesMesh} = auxObjects;
-            tagsLinesMesh.visible = true;
-
-            uiTracker.setOpen(true);
-
-            sfx.digi_slide.trigger();
-
-            rendApi.emit('open', {
-              position: newMenuPosition,
-              rotation: newMenuRotation,
-              scale: newMenuScale,
-            });
+            _openMenu();
           }
         };
         input.on('menudown', menudown);
@@ -436,38 +446,55 @@ class Rend {
         };
         _updatePages();
 
+        const _updateUiTracker = () => {
+          uiTracker.update({
+            pose: webvr.getStatus(),
+            sides: (() => {
+              const vrMode = bootstrap.getVrMode();
+
+              if (vrMode === 'hmd') {
+                return SIDES;
+              } else {
+                const mode = webvr.getMode();
+
+                if (mode !== 'center') {
+                  return [mode];
+                } else {
+                  return SIDES;
+                }
+              }
+            })(),
+            controllerMeshes: auxObjects.controllerMeshes,
+          });
+        };
+
         localUpdates.push(() => {
+          const _updateMenu = () => {
+            if (menuState.open) {
+              const {hmd} = webvr.getStatus();
+              const {worldPosition: hmdPosition} = hmd;
+
+              if (menuMesh.position.distanceTo(hmdPosition) > MENU_RANGE) {
+                _closeMenu();
+              }
+            }
+          };
           /* const _updateRenderer = () => {
             renderer.shadowMap.needsUpdate = true;
           }; */
-          const _updateUiTimer = () => {
+          const _updateUiTimerLocal = () => {
             biolumi.updateUiTimer();
           };
-          const _updateUiTracker = () => {
-            uiTracker.update({
-              pose: webvr.getStatus(),
-              sides: (() => {
-                const vrMode = bootstrap.getVrMode();
-
-                if (vrMode === 'hmd') {
-                  return SIDES;
-                } else {
-                  const mode = webvr.getMode();
-
-                  if (mode !== 'center') {
-                    return [mode];
-                  } else {
-                    return SIDES;
-                  }
-                }
-              })(),
-              controllerMeshes: auxObjects.controllerMeshes,
-            });
+          const _updateUiTrackerLocal = () => {
+            if (menuState.open) {
+              _updateUiTracker();
+            }
           };
 
+          _updateMenu();
           // _updateRenderer();
-          _updateUiTimer();
-          _updateUiTracker();
+          _updateUiTimerLocal();
+          _updateUiTrackerLocal();
         });
 
         class RendApi extends EventEmitter {
