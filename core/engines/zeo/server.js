@@ -39,6 +39,10 @@ class Zeo {
               return tags.getWorldElement();
             }
 
+            requestElement(selector) {
+              return tags.requestElement(selector);
+            }
+
             registerEntity(pluginInstance, entityApi) {
               tags.registerEntity(pluginInstance, entityApi);
             }
