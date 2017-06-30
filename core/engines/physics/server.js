@@ -143,9 +143,16 @@ class Physics {
             const n = localInterests[i];
             const interest = interests[n];
 
-            interest.splice(interest.indexOf(userId), 1);
-            if (interest.length === 0) {
-              delete interests[n];
+            if (interest) {
+              const interestIndex = interest.indexOf(userId);
+
+              if (interestIndex !== -1) {
+                interest.splice(interestIndex, 1);
+
+                if (interest.length === 0) {
+                  delete interests[n];
+                }
+              }
             }
           }
 
