@@ -35,7 +35,7 @@ class Tags {
         const _recurse = e => {
           const {tagName} = e;
           if (tagName === selector) {
-            resule.push(e);
+            result.push(e);
           }
 
           const {children} = e;
@@ -50,13 +50,15 @@ class Tags {
       }
 
       querySelector(selector) {
+        selector = selector.toUpperCase();
+
         const queue = [this];
 
         while (queue.length > 0) {
           const e = queue.pop();
           const {tagName} = e;
 
-          if (tagName) {
+          if (tagName === selector) {
             return e;
           } else {
             const {children} = e;
@@ -81,6 +83,58 @@ class Tags {
     const entityApiElements = new Map(); // entityApi -> entityElement
 
     const _getWorldElement = () => worldElement;
+    const _requestElement = (selector, {timeout = 30 * 1000} = {}) => {
+      selector = selector.toUpperCase();
+      const element = worldElement.querySelector(selector);
+
+      if (element) {
+        return Promise.resolve(element);
+      } else {
+        let _elementAdded = null;
+        const _requestElementAdded = () => new Promise((accept, reject) => {
+          _elementAdded = element => {
+            const {tagName} = element;
+
+            if (tagName === selector) {
+              accept(element);
+            }
+          };
+          worldElement.on('elementAdded', _elementAdded);
+        });
+        let timeoutInstance = null;
+        const _requestTimeout = () => new Promise((accept, reject) => {
+          timeoutInstance = setTimeout(() => {
+            timeoutInstance = null;
+
+            const err = new Error('element request timed out');
+            err.code = 'ETIMEOUT';
+            reject(err);
+          }, timeout);
+        });
+        const _cleanup = () => {
+          worldElement.removeListener('elementAdded', _elementAdded);
+
+          if (timeoutInstance !== null) {
+            clearTimeout(timeoutInstance);
+          }
+        };
+
+        return Promise.race([
+          _requestElementAdded(),
+          _requestTimeout(),
+        ])
+          .then(element => {
+            _cleanup();
+
+            return Promise.resolve(element);
+          })
+          .catch(err => {
+            _cleanup();
+
+            return Promise.reject(err);
+          });
+      }
+    };
     const _registerEntity = (pluginInstance, entityApi) => {
       const name = archae.getPath(pluginInstance);
       const tagName = _makeTagName(name);
@@ -107,6 +161,7 @@ class Tags {
 
     return {
       getWorldElement: _getWorldElement,
+      requestElement: _requestElement,
       registerEntity: _registerEntity,
       unregisterEntity: _unregisterEntity,
     };
