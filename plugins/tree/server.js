@@ -1,3 +1,7 @@
+const {
+  NUM_CELLS,
+  NUM_CELLS_OVERSCAN,
+} = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
 
 const NUM_POSITIONS = 30 * 1024;
@@ -403,10 +407,7 @@ class Tree {
       accept(treeGeometry);
     });
     const _requestGenerate = (x, y) => elements.requestElement('plugins-heightfield')
-      .then(heightfieldElement => ({
-        heightfieldElement: heightfieldElement,
-        mapChunk: heightfieldElement.generate(x, y),
-      }));
+      .then(heightfieldElement => heightfieldElement.generate(x, y));
 
     let treeTemplatesPromise = null;
     const _requestTreeTemplatesMemoized = () => {
@@ -416,7 +417,7 @@ class Tree {
       return treeTemplatesPromise;
     };
 
-    const _makeTreeChunkGeometry = (x, y, treeGeometry, points, numCells, numCellsOverscan) => {
+    const _makeTreeChunkGeometry = (x, y, treeGeometry, points) => {
       const positions = new Float32Array(NUM_POSITIONS_CHUNK * 3);
       // const normals = new Float32Array(NUM_POSITIONS_CHUNK * 3);
       const colors = new Float32Array(NUM_POSITIONS_CHUNK * 3);
@@ -432,16 +433,16 @@ class Tree {
       const treeProbability = 0.1;
       let treeIndex = 0;
 
-      for (let dy = 0; dy < numCellsOverscan; dy++) {
-        for (let dx = 0; dx < numCellsOverscan; dx++) {
+      for (let dy = 0; dy < NUM_CELLS_OVERSCAN; dy++) {
+        for (let dx = 0; dx < NUM_CELLS_OVERSCAN; dx++) {
           if (Math.random() < treeProbability) {
-            const pointIndex = dx + (dy * numCellsOverscan);
+            const pointIndex = dx + (dy * NUM_CELLS_OVERSCAN);
             const point = points[pointIndex];
             const {elevation} = point;
             position.set(
-              (x * numCells) + dx,
+              (x * NUM_CELLS) + dx,
               elevation,
-              (y * numCells) + dy
+              (y * NUM_CELLS) + dy
             );
             quaternion.setFromAxisAngle(upVector, Math.random() * Math.PI * 2);
             matrix.compose(position, quaternion, scale);
@@ -483,15 +484,10 @@ class Tree {
         ])
           .then(([
             treeGeometry,
-            {
-              heightfieldElement,
-              mapChunk,
-            },
+            mapChunk,
           ]) => {
             const {points} = mapChunk;
-            const numCells = heightfieldElement.getNumCells();
-            const numCellsOverscan = heightfieldElement.getNumCellsOverscan();
-            const treeChunkGeometry = _makeTreeChunkGeometry(x, y, treeGeometry, points, numCells, numCellsOverscan);
+            const treeChunkGeometry = _makeTreeChunkGeometry(x, y, treeGeometry, points);
             const treeChunkBuffer = new Buffer(protocolUtils.stringifyTreeGeometry(treeChunkGeometry));
 
             res.type('application/octet-stream');

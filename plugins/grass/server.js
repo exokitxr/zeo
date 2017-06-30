@@ -1,3 +1,7 @@
+const {
+  NUM_CELLS,
+  NUM_CELLS_OVERSCAN,
+} = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
 
 const NUM_POSITIONS = 30 * 1024;
@@ -155,7 +159,7 @@ class Grass {
 
       accept(geometry);
     });
-    const _makeGrassChunkMesh = (x, y, grassGeometry, points, numCells, numCellsOverscan) => {
+    const _makeGrassChunkMesh = (x, y, grassGeometry, points) => {
       const positions = new Float32Array(NUM_POSITIONS_CHUNK * 3);
       const colors = new Float32Array(NUM_POSITIONS_CHUNK * 3);
       let attributeIndex = 0;
@@ -167,17 +171,17 @@ class Grass {
 
       const grassProbability = 0.2;
 
-      for (let dy = 0; dy < numCellsOverscan; dy++) {
-        for (let dx = 0; dx < numCellsOverscan; dx++) {
+      for (let dy = 0; dy < NUM_CELLS_OVERSCAN; dy++) {
+        for (let dx = 0; dx < NUM_CELLS_OVERSCAN; dx++) {
           if (Math.random() < grassProbability) {
-            const pointIndex = dx + (dy * numCellsOverscan);
+            const pointIndex = dx + (dy * NUM_CELLS_OVERSCAN);
             const point = points[pointIndex];
             const {elevation} = point;
 
             position.set(
-              (x * numCells) + dx,
+              (x * NUM_CELLS) + dx,
               elevation,
-              (y * numCells) + dy
+              (y * NUM_CELLS) + dy
             )
             quaternion.setFromAxisAngle(upVector, Math.random() * Math.PI * 2);
             matrix.compose(position, quaternion, scale);
@@ -200,10 +204,7 @@ class Grass {
       };
     };
     const _requestGenerate = (x, y) => elements.requestElement('plugins-heightfield')
-      .then(heightfieldElement => ({
-        heightfieldElement: heightfieldElement,
-        mapChunk: heightfieldElement.generate(x, y),
-      }));
+      .then(heightfieldElement => heightfieldElement.generate(x, y));
 
     let grassTemplatesPromise = null;
     const _requestGrassTemplatesMemoized = () => {
@@ -225,16 +226,10 @@ class Grass {
         ])
           .then(([
             grassGeometry,
-            {
-              heightfieldElement,
-              mapChunk,
-            },
+            mapChunk,
           ]) => {
             const {points} = mapChunk;
-            const numCells = heightfieldElement.getNumCells();
-            const numCellsOverscan = heightfieldElement.getNumCellsOverscan();
-
-            const grassChunkGeometry = _makeGrassChunkMesh(x, y, grassGeometry, points, numCells, numCellsOverscan);
+            const grassChunkGeometry = _makeGrassChunkMesh(x, y, grassGeometry, points);
             const grassChunkBuffer = new Buffer(protocolUtils.stringifyGrassGeometry(grassChunkGeometry));
 
             res.type('application/octet-stream');
