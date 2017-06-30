@@ -431,11 +431,30 @@ class Tree {
           .then(heightfieldElement => {
             const mapChunk = heightfieldElement.generate(x, y);
             const {points} = mapChunk;
-            console.log('map chunk points', points.length); // XXX
-            const treeChunkBuffer = new Float32Array();
+            const numCellsOverscan = heightfieldElement.getNumCellsOverscan();
+            const treeProbability = 0.1;
+            const positions = new Float32Array(NUM_POSITIONS * 3);
+            let index = 0;
+
+            for (let y = 0; y < numCellsOverscan; y++) {
+              for (let x = 0; x < numCellsOverscan; x++) {
+                if (Math.random() < treeProbability) {
+                  const pointIndex = x + (y * numCellsOverscan);
+                  const point = points[pointIndex];
+                  const {elevation} = point;
+
+                  positions[index + 0] = x;
+                  positions[index + 1] = elevation;
+                  positions[index + 2] = y;
+
+                  index += 3;
+                }
+              }
+            }
+            const treeChunkBuffer = new Buffer(positions.buffer, positions.byteOffset, index * 4);
 
             res.type('application/octet-stream');
-            res.send(new Buffer(treeChunkBuffer));
+            res.send(treeChunkBuffer);
           })
           .catch(err => {
             res.status(err.code === 'ETIMEOUT' ? 404 : 500);
