@@ -31,34 +31,43 @@ class Tree {
       live = false;
     };
 
+    const _resArrayBuffer = res => {
+      if (res.status >= 200 && res.status < 300) {
+        return res.arrayBuffer();
+      } else {
+        const err = new Error('invalid status code: ' + res.status);
+        return Promise.reject(err);
+      }
+    };
     const _requestTreeTemplates = () => fetch('archae/tree/templates')
-      .then(res => {
-        if (res.status >= 200 && res.status < 300) {
-          return res.arrayBuffer()
-            .then(treeTemplatesBuffer => protocolUtils.parseTreeGeometry(treeTemplatesBuffer))
-            .then(treeTemplateSpec => {
-              const {positions, /*normals, */colors, indices} = treeTemplateSpec;
+      .then(_resArrayBuffer)
+      .then(treeTemplatesBuffer => protocolUtils.parseTreeGeometry(treeTemplatesBuffer))
+      .then(treeTemplateSpec => {
+        const {positions, /*normals, */colors, indices} = treeTemplateSpec;
 
-              const geometry = new THREE.BufferGeometry();
-              geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
-              // geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
-              geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
-              geometry.setIndex(new THREE.BufferAttribute(indices, 1));
-              return geometry;
-            });
-        } else {
-          const err = new Error('invalid status code: ' + res.status);
-          return Promise.reject(err);
-        }
+        const geometry = new THREE.BufferGeometry();
+        geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+        // geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
+        geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
+        geometry.setIndex(new THREE.BufferAttribute(indices, 1));
+        return geometry;
       });
+    const _requestTreeGenerate = (x, y) => fetch(`archae/tree/generate?x=${x}&y=${y}`)
+      .then(_resArrayBuffer);
     const _copyIndices = (src, dst, startIndexIndex, startAttributeIndex) => {
       for (let i = 0; i < src.length; i++) {
         dst[startIndexIndex + i] = src[i] + startAttributeIndex;
       }
     };
 
-    return _requestTreeTemplates()
-      .then(treeGeometry => {
+    return Promise.all([
+      _requestTreeTemplates(),
+      _requestTreeGenerate(0, 0),
+    ])
+      .then(([
+        treeGeometry,
+        treePositions,
+      ]) => {
         if (live) {
           const treeMesh = (() => {
             const positions = new Float32Array(NUM_POSITIONS * 3);

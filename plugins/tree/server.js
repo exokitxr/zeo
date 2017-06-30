@@ -11,8 +11,7 @@ class Tree {
   mount() {
     const {_archae: archae} = this;
     const {app} = archae.getCore();
-
-    const {three} = zeo;
+    const {three, elements} = zeo;
     const {THREE} = three;
 
     const upVector = new THREE.Vector3(0, 1, 0);
@@ -422,6 +421,35 @@ class Tree {
     }
     app.get('/archae/tree/templates', treeTemplates);
 
+    function treeGenerate(req, res, next) {
+      const {x: xs, y: ys} = req.query;
+      const x = parseInt(xs, 10);
+      const y = parseInt(ys, 10);
+
+      if (!isNaN(x) && !isNaN(y)) {
+        elements.requestElement('plugins-heightfield')
+          .then(heightfieldElement => {
+            const mapChunk = heightfieldElement.generate(x, y);
+            const {points} = mapChunk;
+            console.log('map chunk points', points.length); // XXX
+            const treeChunkBuffer = new Float32Array();
+
+            res.type('application/octet-stream');
+            res.send(new Buffer(treeChunkBuffer));
+          })
+          .catch(err => {
+            res.status(err.code === 'ETIMEOUT' ? 404 : 500);
+            res.send({
+              error: err.stack,
+            });
+          });
+      } else {
+        res.status(400);
+        res.send();
+      }
+    }
+    app.get('/archae/tree/generate', treeGenerate);
+
     /* const treeMesh = (() => {
       const positions = new Float32Array(NUM_POSITIONS * 3);
       // const normals = new Float32Array(NUM_POSITIONS * 3);
@@ -511,31 +539,7 @@ class Tree {
       const mesh = new THREE.Mesh(geometry, material);
       return mesh;
     })();
-    scene.add(treeMesh);
-
-    function treeGenerate(req, res, next) {
-      const {x: xs, y: ys} = req.query;
-      const x = parseInt(xs, 10);
-      const y = parseInt(ys, 10);
-
-      if (!isNaN(x) && !isNaN(y)) {
-        const builtMapChunk = workerUtils.buildMapChunk({
-          offset: {
-            x,
-            y,
-          },
-        });
-        const compiledMapChunk = workerUtils.compileMapChunk(builtMapChunk);
-        const mapChunkBuffer = protocolUtils.stringifyMapChunk(compiledMapChunk);
-
-        res.type('application/octet-stream');
-        res.send(new Buffer(mapChunkBuffer));
-      } else {
-        res.status(400);
-        res.send();
-      }
-    }
-    app.get('/archae/tree/generate', treeGenerate); */
+    scene.add(treeMesh); */
 
     this._cleanup = () => {
       function removeMiddlewares(route, i, routes) {
