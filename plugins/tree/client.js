@@ -68,22 +68,19 @@ class Tree {
             let attributeIndex = 0;
             let indexIndex = 0;
 
+            const position = new THREE.Vector3();
+            const quaternion = new THREE.Quaternion();
+            const scale = new THREE.Vector3(1, 1, 1);
+            const matrix = new THREE.Matrix4();
+
             const numTrees = 1000;
             for (let i = 0; i < numTrees; i++) {
-              const treePosition = new THREE.Vector3(
-                -50 + (Math.random() * 100),
-                0,
-                -50 + (Math.random() * 100)
-              );
-              const treeEuler = new THREE.Euler(0, Math.random() * Math.PI * 2, 0, camera.rotation.order);
+              position.set(-50 + (Math.random() * 100), 0, -50 + (Math.random() * 100));
+              quaternion.setFromAxisAngle(upVector, Math.random() * Math.PI * 2);
+              matrix.compose(position, quaternion, scale);
               const geometry = treeGeometry
                 .clone()
-                .applyMatrix(new THREE.Matrix4().makeRotationFromEuler(treeEuler))
-                .applyMatrix(new THREE.Matrix4().makeTranslation(
-                  treePosition.x,
-                  0,
-                  treePosition.z
-                ));
+                .applyMatrix(matrix);
               const newPositions = geometry.getAttribute('position').array;
               positions.set(newPositions, attributeIndex);
               /* const newNormals = geometry.getAttribute('normal').array;
