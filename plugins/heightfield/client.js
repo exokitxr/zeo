@@ -34,15 +34,17 @@ class Heightfield {
       // side: THREE.DoubleSide,
     });
 
+    const _resArrayBuffer = res => {
+      if (res.status >= 200 && res.status < 300) {
+        return res.arrayBuffer();
+      } else {
+        const err = new Error('invalid status code: ' + res.status);
+        return Promise.reject(err);
+      }
+    };
     const _requestGenerate = (x, y) => fetch(`/archae/heightfield/generate?x=${x}&y=${y}`)
-      .then(res => {
-        if (res.status >= 200 && res.status < 300) {
-          return res.arrayBuffer();
-        } else {
-          const err = new Error('invalid status code: ' + res.status);
-          return Promise.reject(err);
-        }
-      });
+      .then(_resArrayBuffer)
+      .then(mapChunkBuffer => protocolUtils.parseMapChunk(mapChunkBuffer));
 
     const _makeMapChunkMesh = mapChunkData => {
       const {position, positions, normals, colors, indices} = mapChunkData;
@@ -87,8 +89,7 @@ class Heightfield {
         const {x, z} = chunk;
 
         return _requestGenerate(x, z)
-          .then(mapChunkBuffer => {
-            const mapChunkData = protocolUtils.parseMapChunk(mapChunkBuffer);
+          .then(mapChunkData => {
             const mapChunkMesh = _makeMapChunkMesh(mapChunkData);
             object.add(mapChunkMesh);
 
