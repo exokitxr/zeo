@@ -23,18 +23,28 @@ class Physics {
     } = archae;
 
     const worker = child_process.fork(path.join(__dirname, 'worker.js'));
-    worker.on('message', m => {
-      const [n] = m;
+    worker.on('message', workerMessage => {
+      const [n] = workerMessage;
       const interest = interests[n];
 
       if (interest && interest.length > 0) {
-        const ms = JSON.stringify(m);
+        const connectionMessageU8 = new Uint8Array((1 * 8) + (3 * 8) + (4 * 8));
+        const connectionMessageU32 = new Uint32Array(connectionMessageU8.buffer, connectionMessageU8.byteOffset, 1);
+        connectionMessageU32[0] = n;
+        const connectionMessageF64 = new Float64Array(connectionMessageU8.buffer, connectionMessageU8.byteOffset + (1 * 8), 3 + 4);
+        connectionMessageF64[0] = workerMessage[1];
+        connectionMessageF64[1] = workerMessage[2];
+        connectionMessageF64[2] = workerMessage[3];
+        connectionMessageF64[3] = workerMessage[4];
+        connectionMessageF64[4] = workerMessage[5];
+        connectionMessageF64[5] = workerMessage[6];
+        connectionMessageF64[6] = workerMessage[7];
         
         for (let i = 0; i < connections.length; i++) {
           const connection = connections[i];
 
           if (interest.includes(connection.userId) && connection.readyState === OPEN) {
-            connection.send(ms);
+            connection.send(connectionMessageU8);
           }
         }
       }
