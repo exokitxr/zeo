@@ -101,9 +101,9 @@ class Heightfield {
             const mapChunkMesh = _makeMapChunkMesh(mapChunkData, x, z);
             object.add(mapChunkMesh);
 
-            teleport.addTarget(mapChunkMesh, {
+            /* teleport.addTarget(mapChunkMesh, {
               flat: true,
-            });
+            }); */
 
             const physicsBody = physics.makeBody(mapChunkMesh, 'heightfield:' + x + ':' + z, {
               mass: 0,
@@ -129,7 +129,7 @@ class Heightfield {
             object.remove(mapChunkMesh);
             mapChunkMesh.destroy();
 
-            teleport.removeTarget(mapChunkMesh);
+            // teleport.removeTarget(mapChunkMesh);
 
             const {physicsBody} = mapChunkMesh;
             physics.destroyBody(physicsBody);
