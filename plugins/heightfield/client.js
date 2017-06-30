@@ -47,14 +47,13 @@ class Heightfield {
       .then(mapChunkBuffer => protocolUtils.parseMapChunk(mapChunkBuffer));
 
     const _makeMapChunkMesh = (mapChunkData, x, z) => {
-      const {position, positions, normals, colors, indices} = mapChunkData;
+      const {position, positions, normals, colors, heightfield} = mapChunkData;
 
       const geometry = (() => {
         let geometry = new THREE.BufferGeometry();
         geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
         geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
         geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
-        geometry.setIndex(new THREE.Uint16BufferAttribute(indices, 1));
         geometry.boundingSphere = new THREE.Sphere(
           new THREE.Vector3(
             (x * NUM_CELLS) + (NUM_CELLS / 2),
@@ -63,6 +62,7 @@ class Heightfield {
           ),
           NUM_CELLS / 2
         );
+        geometry.heightfield = heightfield;
 
         return geometry;
       })();
@@ -99,10 +99,7 @@ class Heightfield {
             const mapChunkMesh = _makeMapChunkMesh(mapChunkData, x, z);
             object.add(mapChunkMesh);
 
-            const teleportMesh = mapChunkMesh.clone();
-            teleportMesh.geometry = geometryUtils.unindexBufferGeometry(teleportMesh.geometry.clone()); // teleport needs unindexed but physics needs indexed
-            mapChunkMesh.teleportMesh = teleportMesh;
-            teleport.addTarget(teleportMesh, {
+            teleport.addTarget(mapChunkMesh, {
               flat: true,
             });
 
@@ -130,8 +127,7 @@ class Heightfield {
             object.remove(mapChunkMesh);
             mapChunkMesh.destroy();
 
-            const {teleportMesh} = mapChunkMesh;
-            teleport.removeTarget(teleportMesh);
+            teleport.removeTarget(mapChunkMesh);
 
             const {physicsBody} = mapChunkMesh;
             physics.destroyBody(physicsBody);
