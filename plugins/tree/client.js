@@ -49,7 +49,7 @@ class Tree {
     }; */
 
     const _makeTreeChunkMesh = (mapChunkData, x, z) => {
-      const {position, positions, /*normals, */colors, indices} = mapChunkData;
+      const {position, positions, /*normals, */colors, indices, heightRange} = mapChunkData;
 
       const geometry = (() => {
         let geometry = new THREE.BufferGeometry();
@@ -57,13 +57,14 @@ class Tree {
         // geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
         geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
         geometry.setIndex(new THREE.Uint32BufferAttribute(indices, 1));
+        const [minY, maxY] = heightRange;
         geometry.boundingSphere = new THREE.Sphere(
           new THREE.Vector3(
             (x * NUM_CELLS) + (NUM_CELLS / 2),
-            10, // XXX this should actually be around the midpoint of the geometry, which we can compute on the backend
+            (minY + maxY) / 2,
             (z * NUM_CELLS) + (NUM_CELLS / 2)
           ),
-          NUM_CELLS / 2
+          Math.max(Math.sqrt((NUM_CELLS / 2) * (NUM_CELLS / 2) * 2), (maxY - minY) / 2)
         );
 
         // geometry.computeBoundingSphere();

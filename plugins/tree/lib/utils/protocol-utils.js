@@ -10,7 +10,8 @@ const _getTreeGeometrySizeFromMetadata = metadata => {
   return TREE_GEOMETRY_HEADER_SIZE + // header
     (FLOAT32_SIZE * numPositions) + // positions
     (FLOAT32_SIZE * numColors) + // colors
-    (UINT32_SIZE * numIndices); // indices
+    (UINT32_SIZE * numIndices) + // indices
+    (UINT32_SIZE * 2); // height range
 };
 
 const _getTreeGeometrySize = treeGeometry => {
@@ -43,7 +44,7 @@ const _getTreeGeometryBufferSize = (arrayBuffer, byteOffset) => {
 // stringification
 
 const stringifyTreeGeometry = (treeGeometry, arrayBuffer, byteOffset) => {
-  const {positions, colors, indices} = treeGeometry;
+  const {positions, colors, indices, heightRange} = treeGeometry;
 
   if (arrayBuffer === undefined || byteOffset === undefined) {
     const bufferSize = _getTreeGeometrySize(treeGeometry);
@@ -64,6 +65,10 @@ const stringifyTreeGeometry = (treeGeometry, arrayBuffer, byteOffset) => {
 
   const indicesBuffer = new Uint32Array(arrayBuffer, byteOffset + TREE_GEOMETRY_HEADER_SIZE + (FLOAT32_SIZE * positions.length) + (FLOAT32_SIZE * colors.length), indices.length);
   indicesBuffer.set(indices);
+
+  const heightRangeBuffer = new Float32Array(arrayBuffer, byteOffset + TREE_GEOMETRY_HEADER_SIZE + (FLOAT32_SIZE * positions.length) + (FLOAT32_SIZE * colors.length) + (UINT32_SIZE * indices.length), 2);
+  heightRangeBuffer[0] = heightRange[0];
+  heightRangeBuffer[1] = heightRange[1];
 
   return arrayBuffer;
 };
@@ -116,10 +121,17 @@ const parseTreeGeometry = (arrayBuffer, byteOffset) => {
   const indicesBuffer = new Uint32Array(arrayBuffer, byteOffset + TREE_GEOMETRY_HEADER_SIZE + (FLOAT32_SIZE * numPositions) + (FLOAT32_SIZE * numColors), numIndices);
   const indices = indicesBuffer;
 
+  const heightRangeBuffer = new Float32Array(arrayBuffer, byteOffset + TREE_GEOMETRY_HEADER_SIZE + (FLOAT32_SIZE * numPositions) + (FLOAT32_SIZE * numColors) + (UINT32_SIZE * numIndices), 2);
+  const heightRange = [
+    heightRangeBuffer[0],
+    heightRangeBuffer[1],
+  ];
+
   return {
     positions,
     colors,
-    indices
+    indices,
+    heightRange,
   };
 };
 

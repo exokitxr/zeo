@@ -417,7 +417,7 @@ class Tree {
       return treeTemplatesPromise;
     };
 
-    const _makeTreeChunkGeometry = (x, y, treeGeometry, points) => {
+    const _makeTreeChunkGeometry = (x, y, treeGeometry, points, heightRange) => {
       const positions = new Float32Array(NUM_POSITIONS_CHUNK * 3);
       // const normals = new Float32Array(NUM_POSITIONS_CHUNK * 3);
       const colors = new Float32Array(NUM_POSITIONS_CHUNK * 3);
@@ -469,6 +469,10 @@ class Tree {
         // normals: new Float32Array(normals.buffer, normals.byteOffset, attributeIndex),
         colors: new Float32Array(colors.buffer, colors.byteOffset, attributeIndex),
         indices: new Uint32Array(indices.buffer, indices.byteOffset, indexIndex),
+        heightRange: [
+          heightRange[0],
+          heightRange[1] + 20, // account for tree height
+        ],
       };
     };
 
@@ -486,8 +490,8 @@ class Tree {
             treeGeometry,
             mapChunk,
           ]) => {
-            const {points} = mapChunk;
-            const treeChunkGeometry = _makeTreeChunkGeometry(x, y, treeGeometry, points);
+            const {points, heightRange} = mapChunk;
+            const treeChunkGeometry = _makeTreeChunkGeometry(x, y, treeGeometry, points, heightRange);
             const treeChunkBuffer = new Buffer(protocolUtils.stringifyTreeGeometry(treeChunkGeometry));
 
             res.type('application/octet-stream');
