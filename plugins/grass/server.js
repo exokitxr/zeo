@@ -122,7 +122,7 @@ class Grass {
     ];
 
     const _requestGrassTemplates = () => new Promise((accept, reject) => {
-      const numGrassesPerPatch = 200;
+      const numGrassesPerPatch = 100;
       const positions = new Float32Array(numGrassesPerPatch * 9 * 3);
       const colors = new Float32Array(numGrassesPerPatch * 9 * 3);
 
