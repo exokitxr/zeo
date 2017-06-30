@@ -27,23 +27,29 @@ class Grass {
       live = false;
     };
 
+    const _resArrayBuffer = res => {
+      if (res.status >= 200 && res.status < 300) {
+        return res.arrayBuffer();
+      } else {
+        const err = new Error('invalid status code: ' + res.status);
+        return Promise.reject(err);
+      }
+    };
     const _requestGrassTemplates = () => fetch('archae/grass/templates')
-      .then(res => {
-        if (res.status >= 200 && res.status < 300) {
-          return res.arrayBuffer()
-            .then(grassTemplatesBuffer => protocolUtils.parseGrassGeometry(grassTemplatesBuffer))
-            .then(grassTemplateSpec => {
-              const {positions, colors} = grassTemplateSpec;
+      .then(_resArrayBuffer)
+      .then(grassTemplatesBuffer => protocolUtils.parseGrassGeometry(grassTemplatesBuffer))
+      .then(grassTemplateSpec => {
+        const {positions, colors} = grassTemplateSpec;
 
-              const geometry = new THREE.BufferGeometry();
-              geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
-              geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
-              return geometry;
-            });
-        } else {
-          const err = new Error('invalid status code: ' + res.status);
-          return Promise.reject(err);
-        }
+        const geometry = new THREE.BufferGeometry();
+        geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
+        return geometry;
+      });
+    const _requestGrassGenerate = (x, y) => fetch(`archae/grass/generate?x=${x}&y=${y}`)
+      .then(_resArrayBuffer)
+      .then(grassPostionsBuffer => {
+        return new Float32Array(grassPostionsBuffer);
       });
     const _copyIndices = (src, dst, startIndexIndex, startAttributeIndex) => {
       for (let i = 0; i < src.length; i++) {
@@ -51,8 +57,14 @@ class Grass {
       }
     };
 
-    return _requestGrassTemplates()
-      .then(grassGeometry => {
+    return Promise.all([
+      _requestGrassTemplates(),
+      _requestGrassGenerate(0, 0),
+    ])
+      .then(([
+        grassGeometry,
+        grassPositions,
+      ]) => {
         if (live) {
           const grassMesh = (() => {
             const positions = new Float32Array(NUM_POSITIONS * 3);
@@ -64,17 +76,15 @@ class Grass {
             const scale = new THREE.Vector3(1, 1, 1);
             const matrix = new THREE.Matrix4();
 
-            const numPatches = 200;
-            for (let i = 0; i < numPatches; i++) {
-              const patchPosition = new THREE.Vector3(
-                -50 + (Math.random() * 100),
-                0,
-                -50 + (Math.random() * 100)
+            const numGrassPositions = grassPositions.length / 3;
+            for (let i = 0; i < numGrassPositions; i++) {
+              const baseIndex = i * 3;
+              position.set(
+                grassPositions[baseIndex + 0],
+                grassPositions[baseIndex + 1],
+                grassPositions[baseIndex + 2]
               );
-
-              position.set(patchPosition.x + (-1 + (Math.random() * 1)), 0, patchPosition.z + (-1 + (Math.random() * 1)));
               quaternion.setFromAxisAngle(upVector, Math.random() * Math.PI * 2);
-              // scale.set(1 + Math.random() * 2, 2 + Math.random() * 6, 1 + Math.random() * 2);
               matrix.compose(position, quaternion, scale);
               const geometry = grassGeometry
                 .clone()

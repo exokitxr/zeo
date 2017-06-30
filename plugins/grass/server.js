@@ -11,8 +11,7 @@ class Grass {
   mount() {
     const {_archae: archae} = this;
     const {app} = archae.getCore();
-
-    const {three} = zeo;
+    const {three, elements} = zeo;
     const {THREE} = three;
 
     const upVector = new THREE.Vector3(0, 1, 0);
@@ -171,6 +170,54 @@ class Grass {
         });
     }
     app.get('/archae/grass/templates', grassTemplates);
+
+    function grassGenerate(req, res, next) {
+      const {x: xs, y: ys} = req.query;
+      const x = parseInt(xs, 10);
+      const y = parseInt(ys, 10);
+
+      if (!isNaN(x) && !isNaN(y)) {
+        elements.requestElement('plugins-heightfield')
+          .then(heightfieldElement => {
+            const mapChunk = heightfieldElement.generate(x, y);
+            const {points} = mapChunk;
+            const numCellsOverscan = heightfieldElement.getNumCellsOverscan();
+            const grassProbability = 0.1;
+            const positions = new Float32Array(NUM_POSITIONS * 3);
+            let index = 0;
+
+            for (let y = 0; y < numCellsOverscan; y++) {
+              for (let x = 0; x < numCellsOverscan; x++) {
+                if (Math.random() < grassProbability) {
+                  const pointIndex = x + (y * numCellsOverscan);
+                  const point = points[pointIndex];
+                  const {elevation} = point;
+
+                  positions[index + 0] = x;
+                  positions[index + 1] = elevation;
+                  positions[index + 2] = y;
+
+                  index += 3;
+                }
+              }
+            }
+            const grassChunkBuffer = new Buffer(positions.buffer, positions.byteOffset, index * 4);
+
+            res.type('application/octet-stream');
+            res.send(grassChunkBuffer);
+          })
+          .catch(err => {
+            res.status(err.code === 'ETIMEOUT' ? 404 : 500);
+            res.send({
+              error: err.stack,
+            });
+          });
+      } else {
+        res.status(400);
+        res.send();
+      }
+    }
+    app.get('/archae/grass/generate', grassGenerate);
 
     this._cleanup = () => {
       function removeMiddlewares(route, i, routes) {
