@@ -18,7 +18,8 @@ const _getMapChunkSizeFromMetadata = metadata => {
     (FLOAT32_SIZE * numPositions) + // positions
     (FLOAT32_SIZE * numNormals) +  // normals
     (FLOAT32_SIZE * numColors) + // colors
-    (FLOAT32_SIZE * numHeightfield); // heightfield
+    (FLOAT32_SIZE * numHeightfield) + // heightfield
+    (FLOAT32_SIZE * 2); // heightRange
 };
 
 const _getMapChunkSize = mapChunk => {
@@ -59,7 +60,7 @@ const _getMapChunkBufferSize = (arrayBuffer, byteOffset) => {
 // stringification
 
 const stringifyMapChunk = (mapChunk, arrayBuffer, byteOffset) => {
-  const {offset, points, positions, normals, colors, heightfield} = mapChunk;
+  const {offset, points, positions, normals, colors, heightfield, heightRange} = mapChunk;
 
   if (arrayBuffer === undefined || byteOffset === undefined) {
     const bufferSize = _getMapChunkSize(mapChunk);
@@ -104,6 +105,10 @@ const stringifyMapChunk = (mapChunk, arrayBuffer, byteOffset) => {
 
   const heightfieldBuffer = new Float32Array(arrayBuffer, byteOffset + MAP_CHUNK_HEADER_SIZE + (INT32_SIZE * 2) + (POINT_SIZE * points.length) + (FLOAT32_SIZE * positions.length) + (FLOAT32_SIZE * normals.length) + (FLOAT32_SIZE * colors.length), heightfield.length);
   heightfieldBuffer.set(heightfield);
+
+  const heightRangeBuffer = new Float32Array(arrayBuffer, byteOffset + MAP_CHUNK_HEADER_SIZE + (INT32_SIZE * 2) + (POINT_SIZE * points.length) + (FLOAT32_SIZE * positions.length) + (FLOAT32_SIZE * normals.length) + (FLOAT32_SIZE * colors.length) + (FLOAT32_SIZE * heightfield.length), 2);
+  heightRangeBuffer[0] = heightRange[0];
+  heightRangeBuffer[1] = heightRange[1];
 
   return arrayBuffer;
 };
@@ -191,6 +196,12 @@ const parseMapChunk = (arrayBuffer, byteOffset) => {
   const heightfieldBuffer = new Float32Array(arrayBuffer, byteOffset + MAP_CHUNK_HEADER_SIZE + (INT32_SIZE * 2) + (POINT_SIZE * numPoints) + (FLOAT32_SIZE * numPositions) + (FLOAT32_SIZE * numNormals) + (FLOAT32_SIZE * numColors), numHeightfield);
   const heightfield = heightfieldBuffer;
 
+  const heightRangeBuffer = new Float32Array(arrayBuffer, byteOffset + MAP_CHUNK_HEADER_SIZE + (INT32_SIZE * 2) + (POINT_SIZE * numPoints) + (FLOAT32_SIZE * numPositions) + (FLOAT32_SIZE * numNormals) + (FLOAT32_SIZE * numColors) + (FLOAT32_SIZE * numHeightfield), 2);
+  const heightRange = [
+    heightRangeBuffer[0],
+    heightRangeBuffer[1],
+  ];
+
   return {
     offset,
     points,
@@ -198,6 +209,7 @@ const parseMapChunk = (arrayBuffer, byteOffset) => {
     normals,
     colors,
     heightfield,
+    heightRange,
   };
 };
 
