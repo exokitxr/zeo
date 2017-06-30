@@ -62,6 +62,11 @@ class Heightfield {
 
       const mesh = new THREE.Mesh(geometry, material);
       // mesh.frustumCulled = false;
+
+      mesh.destroy = () => {
+        geometry.dispose();
+      };
+
       return mesh;
     };
 
@@ -116,6 +121,7 @@ class Heightfield {
           removed.forEach(chunk => {
             const {data: mapChunkMesh} = chunk;
             object.remove(mapChunkMesh);
+            mapChunkMesh.destroy();
 
             const {teleportMesh} = mapChunkMesh;
             teleport.removeTarget(teleportMesh);

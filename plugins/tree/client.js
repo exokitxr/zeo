@@ -120,6 +120,11 @@ class Tree {
             const material = treeMaterial;
             const mesh = new THREE.Mesh(geometry, material);
             // mesh.frustumCulled = false;
+
+            mesh.destroy = () => {
+              geometry.dispose();
+            };
+
             return mesh;
           };
 
@@ -144,6 +149,7 @@ class Tree {
                 removed.forEach(chunk => {
                   const {data: treeMesh} = chunk;
                   scene.remove(treeMesh);
+                  treeMesh.destroy();
                 });
               })
           };
