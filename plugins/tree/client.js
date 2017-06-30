@@ -28,11 +28,6 @@ class Tree {
       side: THREE.DoubleSide,
     });
 
-    let live = true;
-    this._cleanup = () => {
-      live = false;
-    };
-
     const _resArrayBuffer = res => {
       if (res.status >= 200 && res.status < 300) {
         return res.arrayBuffer();
@@ -198,7 +193,7 @@ class Tree {
         render.on('update', _update);
 
         this._cleanup = () => {
-          scene.remove(treeMesh);
+          // XXX remove old tree meshes here
 
           treeMaterial.dispose();
 
