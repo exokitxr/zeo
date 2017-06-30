@@ -64,7 +64,7 @@ class Tree {
           ]);
           geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
           const lightColor = new THREE.Color(0x8BC34A);
-          const darkColor = lightColor.clone().multiplyScalar(0.25);
+          const darkColor = lightColor.clone().multiplyScalar(0.75);
           const colors = Float32Array.from([
             lightColor.r, lightColor.g, lightColor.b,
             darkColor.r, darkColor.g, darkColor.b,
