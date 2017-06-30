@@ -7,7 +7,7 @@ const {
 const protocolUtils = require('./lib/utils/protocol-utils');
 
 const NUM_POSITIONS = 30 * 1024;
-const NUM_POSITIONS_CHUNK = 2 * 1024 * 1024;
+const NUM_POSITIONS_CHUNK = 100 * 1024;
 const CAMERA_ROTATION_ORDER = 'YXZ';
 
 class Tree {
