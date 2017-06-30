@@ -479,7 +479,7 @@ class World {
 
                 if (asset.isVisible()) {
                   const {geometry: assetGeometry} = asset;
-                  const matrix = asset.getMatrix(now);
+                  const matrix = asset.getMatrix(now); // XXX can optimize this into a shader
 
                   const newGeometry = assetGeometry.clone()
                     .applyMatrix(matrix);
