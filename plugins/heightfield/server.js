@@ -12,7 +12,7 @@ class Heightfield {
 
     const {elements} = zeo;
 
-    function generate(req, res, next) {
+    function heightFieldGenerate(req, res, next) {
       const {x: xs, y: ys} = req.query;
       const x = parseInt(xs, 10);
       const y = parseInt(ys, 10);
@@ -34,7 +34,7 @@ class Heightfield {
         res.send();
       }
     }
-    app.get('/archae/heightfield/generate', generate);
+    app.get('/archae/heightfield/generate', heightFieldGenerate);
 
     const heightfieldEntity = {
       entityAddedCallback(entityElement) {
@@ -48,7 +48,7 @@ class Heightfield {
 
     this._cleanup = () => {
       function removeMiddlewares(route, i, routes) {
-        if (route.handle.name === 'generate') {
+        if (route.handle.name === 'heightFieldGenerate') {
           routes.splice(i, 1);
         }
         if (route.route) {

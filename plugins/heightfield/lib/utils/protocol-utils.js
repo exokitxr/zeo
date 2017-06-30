@@ -4,17 +4,17 @@ const UINT32_SIZE = 4;
 const INT32_SIZE = 4;
 const FLOAT32_SIZE = 4;
 const UINT16_SIZE = 2;
-const MAP_CHUNK_HEADER_ENTRIES = 6;
+const MAP_CHUNK_HEADER_ENTRIES = 5;
 const MAP_CHUNK_HEADER_SIZE = UINT32_SIZE * MAP_CHUNK_HEADER_ENTRIES;
 const MAP_CHUNK_UPDATE_HEADER_ENTRIES = 4;
 const MAP_CHUNK_UPDATE_HEADER_SIZE = UINT32_SIZE * MAP_CHUNK_HEADER_ENTRIES;
 const POINT_SIZE = 7 * FLOAT32_SIZE;
 
 const _getMapChunkSizeFromMetadata = metadata => {
-  const {numPoints, /* numCaves, */numPositions, numNormals, numColors, numIndices} = metadata;
+  const {numPoints, numPositions, numNormals, numColors, numIndices} = metadata;
 
   return MAP_CHUNK_HEADER_SIZE + // header
-    (INT32_SIZE * 2) + // offset
+    (INT32_SIZE * 2) + // offset // XXX can remove this since it's implicit on the front end
     (POINT_SIZE * numPoints) + // points
     (FLOAT32_SIZE * numPositions) + // positions
     (FLOAT32_SIZE * numNormals) +  // normals
@@ -50,33 +50,6 @@ const _getMapChunkBufferSize = (arrayBuffer, byteOffset) => {
 
   return _getMapChunkSizeFromMetadata({
     numPoints,
-    numPositions,
-    numNormals,
-    numColors,
-    numIndices,
-  });
-};
-
-const _getMapChunkUpdateSizeFromMetadata = metadata => {
-  const {numPositions, numNormals, numColors, numIndices} = metadata;
-
-  return MAP_CHUNK_HEADER_SIZE + // header
-    (INT32_SIZE * 2) + // offset
-    (FLOAT32_SIZE * numPositions) + // positions
-    (FLOAT32_SIZE * numNormals) +  // normals
-    (FLOAT32_SIZE * numColors) + // colors
-    (UINT16_SIZE * numIndices); // indices
-};
-
-const _getMapChunkUpdateSize = mapChunkUpdate => {
-  const {positions, normals, colors, indices} = mapChunkUpdate;
-
-  const numPositions = positions.length;
-  const numNormals = normals.length;
-  const numColors = colors.length;
-  const numIndices  = indices.length;
-
-  return _getMapChunkUpdateSizeFromMetadata({
     numPositions,
     numNormals,
     numColors,
