@@ -41,163 +41,169 @@ class Tree {
         return Promise.reject(err);
       }
     };
-    const _requestTreeTemplates = () => fetch('archae/tree/templates')
-      .then(_resArrayBuffer)
-      .then(treeTemplatesBuffer => protocolUtils.parseTreeGeometry(treeTemplatesBuffer))
-      .then(treeTemplateSpec => {
-        const {positions, /*normals, */colors, indices} = treeTemplateSpec;
-
-        const geometry = new THREE.BufferGeometry();
-        geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
-        // geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
-        geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
-        geometry.setIndex(new THREE.BufferAttribute(indices, 1));
-        return geometry;
-      });
     const _requestTreeGenerate = (x, y) => fetch(`archae/tree/generate?x=${x}&y=${y}`)
       .then(_resArrayBuffer)
-      .then(treePostionsBuffer => {
-        return new Float32Array(treePostionsBuffer);
-      });
-    const _copyIndices = (src, dst, startIndexIndex, startAttributeIndex) => {
+      .then(treeChunkBuffer => protocolUtils.parseTreeGeometry(treeChunkBuffer));
+    /* const _copyIndices = (src, dst, startIndexIndex, startAttributeIndex) => {
       for (let i = 0; i < src.length; i++) {
         dst[startIndexIndex + i] = src[i] + startAttributeIndex;
       }
+    }; */
+
+    const _makeTreeChunkMesh = mapChunkData => {
+      const {position, positions, /*normals, */colors, indices} = mapChunkData;
+
+      const geometry = (() => {
+        let geometry = new THREE.BufferGeometry();
+        geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+        // geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
+        geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
+        geometry.setIndex(new THREE.Uint32BufferAttribute(indices, 1));
+
+        // geometry.computeBoundingSphere();
+
+        return geometry;
+      })();
+      const material = treeMaterial;
+
+      const mesh = new THREE.Mesh(geometry, material);
+      // mesh.frustumCulled = false;
+
+      mesh.destroy = () => {
+        geometry.dispose();
+      };
+
+      return mesh;
     };
 
-    return _requestTreeTemplates()
-      .then(treeGeometry => {
-        if (live) {
-          const chunker = chnkr.makeChunker({
-            resolution: 32,
-            lods: 1,
+    const chunker = chnkr.makeChunker({
+      resolution: 32,
+      lods: 1,
+    });
+
+    const _makeTreeMesh = treePositions => {
+      const positions = new Float32Array(NUM_POSITIONS * 3);
+      // const normals = new Float32Array(NUM_POSITIONS * 3);
+      const colors = new Float32Array(NUM_POSITIONS * 3);
+      const indices = new Uint32Array(NUM_POSITIONS * 3);
+      let attributeIndex = 0;
+      let indexIndex = 0;
+
+      const position = new THREE.Vector3();
+      const quaternion = new THREE.Quaternion();
+      const scale = new THREE.Vector3(1, 1, 1);
+      const matrix = new THREE.Matrix4();
+
+      const numTreePositions = treePositions.length / 3;
+      for (let i = 0; i < numTreePositions; i++) {
+        const baseIndex = i * 3;
+        position.set(
+          treePositions[baseIndex + 0],
+          treePositions[baseIndex + 1],
+          treePositions[baseIndex + 2]
+        );
+        quaternion.setFromAxisAngle(upVector, Math.random() * Math.PI * 2);
+        matrix.compose(position, quaternion, scale);
+        const geometry = treeGeometry
+          .clone()
+          .applyMatrix(matrix);
+        const newPositions = geometry.getAttribute('position').array;
+        positions.set(newPositions, attributeIndex);
+        /* const newNormals = geometry.getAttribute('normal').array;
+        normals.set(newNormals, attributeIndex); */
+        const newColors = geometry.getAttribute('color').array;
+        colors.set(newColors, attributeIndex);
+        const newIndices = geometry.index.array;
+        _copyIndices(newIndices, indices, indexIndex, attributeIndex / 3);
+
+        attributeIndex += newPositions.length;
+        indexIndex += newIndices.length;
+      }
+      const geometry = new THREE.BufferGeometry();
+      geometry.addAttribute('position', new THREE.BufferAttribute(new Float32Array(positions.buffer, positions.byteOffset, attributeIndex), 3));
+      // geometry.addAttribute('normal', new THREE.BufferAttribute(new Float32Array(normals.buffer, normals.byteOffset, attributeIndex), 3));
+      geometry.addAttribute('color', new THREE.BufferAttribute(new Float32Array(colors.buffer, colors.byteOffset, attributeIndex), 3));
+      geometry.setIndex(new THREE.BufferAttribute(new Uint32Array(indices.buffer, indices.byteOffset, indexIndex), 1));
+
+      const material = treeMaterial;
+      const mesh = new THREE.Mesh(geometry, material);
+      // mesh.frustumCulled = false;
+
+      mesh.destroy = () => {
+        geometry.dispose();
+      };
+
+      return mesh;
+    };
+
+    const _requestRefreshTreeChunks = () => {
+      const {hmd} = pose.getStatus();
+      const {worldPosition: hmdPosition} = hmd;
+      const {added, removed} = chunker.update(hmdPosition.x, hmdPosition.z);
+
+      const addedPromises = added.map(chunk => {
+        const {x, z} = chunk;
+
+        return _requestTreeGenerate(x, z)
+          .then(treeChunkData => {
+            const treeChunkMesh = _makeTreeChunkMesh(treeChunkData);
+            scene.add(treeChunkMesh);
+
+            chunk.data = treeChunkMesh;
           });
+      });
+      return Promise.all(addedPromises)
+        .then(() => {
+          removed.forEach(chunk => {
+            const {data: treeChunkMesh} = chunk;
+            scene.remove(treeChunkMesh);
+            treeChunkMesh.destroy();
+          });
+        })
+    };
 
-          const _makeTreeMesh = treePositions => {
-            const positions = new Float32Array(NUM_POSITIONS * 3);
-            // const normals = new Float32Array(NUM_POSITIONS * 3);
-            const colors = new Float32Array(NUM_POSITIONS * 3);
-            const indices = new Uint32Array(NUM_POSITIONS * 3);
-            let attributeIndex = 0;
-            let indexIndex = 0;
+    return _requestRefreshTreeChunks()
+      .then(() => {
+        let updating = false;
+        let updateQueued = false;
+        const tryTreeChunkUpdate = () => {
+          if (!updating) {
+            updating = true;
 
-            const position = new THREE.Vector3();
-            const quaternion = new THREE.Quaternion();
-            const scale = new THREE.Vector3(1, 1, 1);
-            const matrix = new THREE.Matrix4();
+            const done = () => {
+              updating = false;
 
-            const numTreePositions = treePositions.length / 3;
-            for (let i = 0; i < numTreePositions; i++) {
-              const baseIndex = i * 3;
-              position.set(
-                treePositions[baseIndex + 0],
-                treePositions[baseIndex + 1],
-                treePositions[baseIndex + 2]
-              );
-              quaternion.setFromAxisAngle(upVector, Math.random() * Math.PI * 2);
-              matrix.compose(position, quaternion, scale);
-              const geometry = treeGeometry
-                .clone()
-                .applyMatrix(matrix);
-              const newPositions = geometry.getAttribute('position').array;
-              positions.set(newPositions, attributeIndex);
-              /* const newNormals = geometry.getAttribute('normal').array;
-              normals.set(newNormals, attributeIndex); */
-              const newColors = geometry.getAttribute('color').array;
-              colors.set(newColors, attributeIndex);
-              const newIndices = geometry.index.array;
-              _copyIndices(newIndices, indices, indexIndex, attributeIndex / 3);
+              if (updateQueued) {
+                updateQueued = false;
 
-              attributeIndex += newPositions.length;
-              indexIndex += newIndices.length;
-            }
-            const geometry = new THREE.BufferGeometry();
-            geometry.addAttribute('position', new THREE.BufferAttribute(new Float32Array(positions.buffer, positions.byteOffset, attributeIndex), 3));
-            // geometry.addAttribute('normal', new THREE.BufferAttribute(new Float32Array(normals.buffer, normals.byteOffset, attributeIndex), 3));
-            geometry.addAttribute('color', new THREE.BufferAttribute(new Float32Array(colors.buffer, colors.byteOffset, attributeIndex), 3));
-            geometry.setIndex(new THREE.BufferAttribute(new Uint32Array(indices.buffer, indices.byteOffset, indexIndex), 1));
-
-            const material = treeMaterial;
-            const mesh = new THREE.Mesh(geometry, material);
-            // mesh.frustumCulled = false;
-
-            mesh.destroy = () => {
-              geometry.dispose();
+                tryTreeChunkUpdate();
+              }
             };
 
-            return mesh;
-          };
+            _requestRefreshTreeChunks()
+              .then(done)
+              .catch(err => {
+                console.warn(err);
 
-          const _requestRefreshTreeChunks = () => {
-            const {hmd} = pose.getStatus();
-            const {worldPosition: hmdPosition} = hmd;
-            const {added, removed} = chunker.update(hmdPosition.x, hmdPosition.z);
+                done();
+              });
+          } else {
+            updateQueued = true;
+          }
+        };
 
-            const addedPromises = added.map(chunk => {
-              const {x, z} = chunk;
+        const _update = () => {
+          tryTreeChunkUpdate();
+        };
+        render.on('update', _update);
 
-              return _requestTreeGenerate(x, z)
-                .then(treePositions => {
-                  const treeMesh = _makeTreeMesh(treePositions);
-                  scene.add(treeMesh);
+        this._cleanup = () => {
+          scene.remove(treeMesh);
 
-                  chunk.data = treeMesh;
-                });
-            });
-            return Promise.all(addedPromises)
-              .then(() => {
-                removed.forEach(chunk => {
-                  const {data: treeMesh} = chunk;
-                  scene.remove(treeMesh);
-                  treeMesh.destroy();
-                });
-              })
-          };
+          treeMaterial.dispose();
 
-          return _requestRefreshTreeChunks()
-            .then(() => {
-              let updating = false;
-              let updateQueued = false;
-              const tryTreeChunkUpdate = () => {
-                if (!updating) {
-                  updating = true;
-
-                  const done = () => {
-                    updating = false;
-
-                    if (updateQueued) {
-                      updateQueued = false;
-
-                      tryTreeChunkUpdate();
-                    }
-                  };
-
-                  _requestRefreshTreeChunks()
-                    .then(done)
-                    .catch(err => {
-                      console.warn(err);
-
-                      done();
-                    });
-                } else {
-                  updateQueued = true;
-                }
-              };
-
-              const _update = () => {
-                tryTreeChunkUpdate();
-              };
-              render.on('update', _update);
-
-              this._cleanup = () => {
-                scene.remove(treeMesh);
-
-                treeMaterial.dispose();
-
-                render.removeListener('update', _update);
-              };
-            });
-        }
+          render.removeListener('update', _update);
+        };
       });
   }
 

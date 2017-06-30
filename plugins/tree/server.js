@@ -1,6 +1,7 @@
 const protocolUtils = require('./lib/utils/protocol-utils');
 
 const NUM_POSITIONS = 30 * 1024;
+const NUM_POSITIONS_CHUNK = 2 * 1024 * 1024;
 const CAMERA_ROTATION_ORDER = 'YXZ';
 
 class Tree {
@@ -20,6 +21,11 @@ class Tree {
       new THREE.Vector3(1, 0, 0)
     );
 
+    const _copyIndices = (src, dst, startIndexIndex, startAttributeIndex) => {
+      for (let i = 0; i < src.length; i++) {
+        dst[startIndexIndex + i] = src[i] + startAttributeIndex;
+      }
+    };
     const _requestTreeTemplates = () => new Promise((accept, reject) => {
       const _makeIndexArray = n => {
         const result = new Uint16Array(n * 3 * 2);
@@ -37,11 +43,6 @@ class Tree {
           result[baseIndexIndex + 5] = baseAttributeIndex + 1;
         }
         return result;
-      };
-      const _copyIndices = (src, dst, startIndexIndex, startAttributeIndex) => {
-        for (let i = 0; i < src.length; i++) {
-          dst[startIndexIndex + i] = src[i] + startAttributeIndex;
-        }
       };
       const leafGeometries = [ // same for all trees
         (() => {
@@ -391,17 +392,30 @@ class Tree {
         };
         _renderLeaves(branchGeometrySpec);
 
-        return {
-          positions: new Float32Array(positions.buffer, positions.byteOffset, attributeIndex),
-          normals: new Float32Array(normals.buffer, normals.byteOffset, attributeIndex),
-          colors: new Float32Array(colors.buffer, colors.byteOffset, attributeIndex),
-          indices: new Uint16Array(indices.buffer, indices.byteOffset, indexIndex),
-        };
+        const geometry = new THREE.BufferGeometry();
+        geometry.addAttribute('position', new THREE.BufferAttribute(new Float32Array(positions.buffer, positions.byteOffset, attributeIndex), 3));
+        geometry.addAttribute('normal', new THREE.BufferAttribute(new Float32Array(normals.buffer, normals.byteOffset, attributeIndex), 3));
+        geometry.addAttribute('color', new THREE.BufferAttribute(new Float32Array(colors.buffer, colors.byteOffset, attributeIndex), 3));
+        geometry.setIndex(new THREE.BufferAttribute(new Uint16Array(indices.buffer, indices.byteOffset, indexIndex), 1));
+        return geometry;
       })();
 
       accept(treeGeometry);
     });
-    const _makeTreeTemplatesBufferPromise = () => _requestTreeTemplates()
+    const _requestGenerate = (x, y) => elements.requestElement('plugins-heightfield')
+      .then(heightfieldElement => ({
+        heightfieldElement: heightfieldElement,
+        mapChunk: heightfieldElement.generate(x, y),
+      }));
+
+    let treeTemplatesPromise = null;
+    const _requestTreeTemplatesMemoized = () => {
+      if (treeTemplatesPromise === null) {
+        treeTemplatesPromise = _requestTreeTemplates();
+      }
+      return treeTemplatesPromise;
+    };
+    /* const _makeTreeTemplatesBufferPromise = () => _requestTreeTemplates()
       .then(treeTemplates => protocolUtils.stringifyTreeGeometry(treeTemplates));
 
     let treeTemplatesBufferPromise = null;
@@ -410,16 +424,62 @@ class Tree {
         treeTemplatesBufferPromise = _makeTreeTemplatesBufferPromise();
       }
       return treeTemplatesBufferPromise;
-    };
+    }; */
 
-    function treeTemplates(req, res, next) {
-      _requestTreeTemplatesBuffer()
-        .then(templatesBuffer => {
-          res.type('application/octet-stream');
-          res.send(new Buffer(templatesBuffer));
-        });
-    }
-    app.get('/archae/tree/templates', treeTemplates);
+    const _makeTreeChunkGeometry = (x, y, treeGeometry, points, numCells, numCellsOverscan) => {
+      const positions = new Float32Array(NUM_POSITIONS_CHUNK * 3);
+      // const normals = new Float32Array(NUM_POSITIONS_CHUNK * 3);
+      const colors = new Float32Array(NUM_POSITIONS_CHUNK * 3);
+      const indices = new Uint32Array(NUM_POSITIONS_CHUNK * 3);
+      let attributeIndex = 0;
+      let indexIndex = 0;
+
+      const position = new THREE.Vector3();
+      const quaternion = new THREE.Quaternion();
+      const scale = new THREE.Vector3(1, 1, 1);
+      const matrix = new THREE.Matrix4();
+
+      const treeProbability = 0.1;
+      let treeIndex = 0;
+
+      for (let dy = 0; dy < numCellsOverscan; dy++) {
+        for (let dx = 0; dx < numCellsOverscan; dx++) {
+          if (Math.random() < treeProbability) {
+            const pointIndex = dx + (dy * numCellsOverscan);
+            const point = points[pointIndex];
+            const {elevation} = point;
+            position.set(
+              (x * numCells) + dx,
+              elevation,
+              (y * numCells) + dy
+            );
+            quaternion.setFromAxisAngle(upVector, Math.random() * Math.PI * 2);
+            matrix.compose(position, quaternion, scale);
+            const geometry = treeGeometry
+              .clone()
+              .applyMatrix(matrix);
+            const newPositions = geometry.getAttribute('position').array;
+            positions.set(newPositions, attributeIndex);
+            /* const newNormals = geometry.getAttribute('normal').array;
+            normals.set(newNormals, attributeIndex); */
+            const newColors = geometry.getAttribute('color').array;
+            colors.set(newColors, attributeIndex);
+            const newIndices = geometry.index.array;
+            _copyIndices(newIndices, indices, indexIndex, attributeIndex / 3);
+
+            attributeIndex += newPositions.length;
+            indexIndex += newIndices.length;
+          }
+        }
+      }
+
+      return {
+        positions: new Float32Array(positions.buffer, positions.byteOffset, attributeIndex),
+        // normals: new Float32Array(normals.buffer, normals.byteOffset, attributeIndex),
+        colors: new Float32Array(colors.buffer, colors.byteOffset, attributeIndex),
+        indices: new Uint32Array(indices.buffer, indices.byteOffset, indexIndex),
+      };
+    };
 
     function treeGenerate(req, res, next) {
       const {x: xs, y: ys} = req.query;
@@ -427,32 +487,22 @@ class Tree {
       const y = parseInt(ys, 10);
 
       if (!isNaN(x) && !isNaN(y)) {
-        elements.requestElement('plugins-heightfield')
-          .then(heightfieldElement => {
-            const mapChunk = heightfieldElement.generate(x, y);
+        Promise.all([
+          _requestTreeTemplatesMemoized(),
+          _requestGenerate(x, y),
+        ])
+          .then(([
+            treeGeometry,
+            {
+              heightfieldElement,
+              mapChunk,
+            },
+          ]) => {
             const {points} = mapChunk;
             const numCells = heightfieldElement.getNumCells();
             const numCellsOverscan = heightfieldElement.getNumCellsOverscan();
-            const treeProbability = 0.1;
-            const positions = new Float32Array(NUM_POSITIONS * 3);
-            let index = 0;
-
-            for (let dy = 0; dy < numCellsOverscan; dy++) {
-              for (let dx = 0; dx < numCellsOverscan; dx++) {
-                if (Math.random() < treeProbability) {
-                  const pointIndex = dx + (dy * numCellsOverscan);
-                  const point = points[pointIndex];
-                  const {elevation} = point;
-
-                  positions[index + 0] = (x * numCells) + dx;
-                  positions[index + 1] = elevation;
-                  positions[index + 2] = (y * numCells) + dy;
-
-                  index += 3;
-                }
-              }
-            }
-            const treeChunkBuffer = new Buffer(positions.buffer, positions.byteOffset, index * 4);
+            const treeChunkGeometry = _makeTreeChunkGeometry(x, y, treeGeometry, points, numCells, numCellsOverscan);
+            const treeChunkBuffer = new Buffer(protocolUtils.stringifyTreeGeometry(treeChunkGeometry));
 
             res.type('application/octet-stream');
             res.send(treeChunkBuffer);
