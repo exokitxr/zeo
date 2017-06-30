@@ -1,6 +1,7 @@
 const protocolUtils = require('./lib/utils/protocol-utils');
 
 const NUM_POSITIONS = 30 * 1024;
+const NUM_POSITIONS_CHUNK = 1 * 1024 * 1024;
 const CAMERA_ROTATION_ORDER = 'YXZ';
 
 class Grass {
@@ -124,6 +125,7 @@ class Grass {
       const numGrassesPerPatch = 30;
       const positions = new Float32Array(numGrassesPerPatch * 9 * 3);
       const colors = new Float32Array(numGrassesPerPatch * 9 * 3);
+      let attributeIndex = 0;
 
       const position = new THREE.Vector3();
       const quaternion = new THREE.Quaternion();
@@ -143,33 +145,73 @@ class Grass {
         positions.set(newPositions, baseIndex);
         const newColors = geometry.getAttribute('color').array;
         colors.set(newColors, baseIndex);
+
+        attributeIndex += newPositions.length;
       }
 
-      accept({
-        positions,
-        colors,
-      });
+      const geometry = new THREE.BufferGeometry();
+      geometry.addAttribute('position', new THREE.BufferAttribute(new Float32Array(positions.buffer, positions.byteOffset, attributeIndex), 3));
+      geometry.addAttribute('color', new THREE.BufferAttribute(new Float32Array(colors.buffer, colors.byteOffset, attributeIndex), 3));
+
+      accept(geometry);
     });
-      
-    const _makeGrassTemplatesBufferPromise = () => _requestGrassTemplates()
-      .then(grassTemplates => protocolUtils.stringifyGrassGeometry(grassTemplates));
+    const _makeGrassChunkMesh = (x, y, grassGeometry, points, numCells, numCellsOverscan) => {
+      const positions = new Float32Array(NUM_POSITIONS_CHUNK * 3);
+      const colors = new Float32Array(NUM_POSITIONS_CHUNK * 3);
+      let attributeIndex = 0;
 
-    let grassTemplatesBufferPromise = null;
-    const _requestGrassTemplatesBuffer = () => {
-      if (grassTemplatesBufferPromise === null) {
-        grassTemplatesBufferPromise = _makeGrassTemplatesBufferPromise();
+      const position = new THREE.Vector3();
+      const quaternion = new THREE.Quaternion();
+      const scale = new THREE.Vector3(1, 1, 1);
+      const matrix = new THREE.Matrix4();
+
+      const grassProbability = 0.2;
+
+      for (let dy = 0; dy < numCellsOverscan; dy++) {
+        for (let dx = 0; dx < numCellsOverscan; dx++) {
+          if (Math.random() < grassProbability) {
+            const pointIndex = dx + (dy * numCellsOverscan);
+            const point = points[pointIndex];
+            const {elevation} = point;
+
+            position.set(
+              (x * numCells) + dx,
+              elevation,
+              (y * numCells) + dy
+            )
+            quaternion.setFromAxisAngle(upVector, Math.random() * Math.PI * 2);
+            matrix.compose(position, quaternion, scale);
+            const geometry = grassGeometry
+              .clone()
+              .applyMatrix(matrix);
+            const newPositions = geometry.getAttribute('position').array;
+            positions.set(newPositions, attributeIndex);
+            const newColors = geometry.getAttribute('color').array;
+            colors.set(newColors, attributeIndex);
+
+            attributeIndex += newPositions.length;
+          }
+        }
       }
-      return grassTemplatesBufferPromise;
-    };
 
-    function grassTemplates(req, res, next) {
-      _requestGrassTemplatesBuffer()
-        .then(templatesBuffer => {
-          res.type('application/octet-stream');
-          res.send(new Buffer(templatesBuffer));
-        });
-    }
-    app.get('/archae/grass/templates', grassTemplates);
+      return {
+        positions: new Float32Array(positions.buffer, positions.byteOffset, attributeIndex),
+        colors: new Float32Array(colors.buffer, colors.byteOffset, attributeIndex),
+      };
+    };
+    const _requestGenerate = (x, y) => elements.requestElement('plugins-heightfield')
+      .then(heightfieldElement => ({
+        heightfieldElement: heightfieldElement,
+        mapChunk: heightfieldElement.generate(x, y),
+      }));
+
+    let grassTemplatesPromise = null;
+    const _requestGrassTemplatesMemoized = () => {
+      if (grassTemplatesPromise === null) {
+        grassTemplatesPromise = _requestGrassTemplates();
+      }
+      return grassTemplatesPromise;
+    };
 
     function grassGenerate(req, res, next) {
       const {x: xs, y: ys} = req.query;
@@ -177,32 +219,23 @@ class Grass {
       const y = parseInt(ys, 10);
 
       if (!isNaN(x) && !isNaN(y)) {
-        elements.requestElement('plugins-heightfield')
-          .then(heightfieldElement => {
-            const mapChunk = heightfieldElement.generate(x, y);
+        Promise.all([
+          _requestGrassTemplatesMemoized(),
+          _requestGenerate(x, y),
+        ])
+          .then(([
+            grassGeometry,
+            {
+              heightfieldElement,
+              mapChunk,
+            },
+          ]) => {
             const {points} = mapChunk;
             const numCells = heightfieldElement.getNumCells();
             const numCellsOverscan = heightfieldElement.getNumCellsOverscan();
-            const grassProbability = 0.2;
-            const positions = new Float32Array(NUM_POSITIONS * 3);
-            let index = 0;
 
-            for (let dy = 0; dy < numCellsOverscan; dy++) {
-              for (let dx = 0; dx < numCellsOverscan; dx++) {
-                if (Math.random() < grassProbability) {
-                  const pointIndex = dx + (dy * numCellsOverscan);
-                  const point = points[pointIndex];
-                  const {elevation} = point;
-
-                  positions[index + 0] = (x * numCells) + dx;
-                  positions[index + 1] = elevation;
-                  positions[index + 2] = (y * numCells) + dy;
-
-                  index += 3;
-                }
-              }
-            }
-            const grassChunkBuffer = new Buffer(positions.buffer, positions.byteOffset, index * 4);
+            const grassChunkGeometry = _makeGrassChunkMesh(x, y, grassGeometry, points, numCells, numCellsOverscan);
+            const grassChunkBuffer = new Buffer(protocolUtils.stringifyGrassGeometry(grassChunkGeometry));
 
             res.type('application/octet-stream');
             res.send(grassChunkBuffer);
