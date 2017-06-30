@@ -19,7 +19,7 @@ const _getMapChunkSizeFromMetadata = metadata => {
     (FLOAT32_SIZE * numNormals) +  // normals
     (FLOAT32_SIZE * numColors) + // colors
     (FLOAT32_SIZE * numHeightfield) + // heightfield
-    (FLOAT32_SIZE * 2); // heightRange
+    (FLOAT32_SIZE * 2); // height range
 };
 
 const _getMapChunkSize = mapChunk => {

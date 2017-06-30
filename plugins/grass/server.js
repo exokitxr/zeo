@@ -159,7 +159,7 @@ class Grass {
 
       accept(geometry);
     });
-    const _makeGrassChunkMesh = (x, y, grassGeometry, points) => {
+    const _makeGrassChunkMesh = (x, y, grassGeometry, points, heightRange) => {
       const positions = new Float32Array(NUM_POSITIONS_CHUNK * 3);
       const colors = new Float32Array(NUM_POSITIONS_CHUNK * 3);
       let attributeIndex = 0;
@@ -201,6 +201,10 @@ class Grass {
       return {
         positions: new Float32Array(positions.buffer, positions.byteOffset, attributeIndex),
         colors: new Float32Array(colors.buffer, colors.byteOffset, attributeIndex),
+        heightRange: [
+          heightRange[0],
+          heightRange[1] + 1, // account for grass height
+        ],
       };
     };
     const _requestGenerate = (x, y) => elements.requestElement('plugins-heightfield')
@@ -228,8 +232,8 @@ class Grass {
             grassGeometry,
             mapChunk,
           ]) => {
-            const {points} = mapChunk;
-            const grassChunkGeometry = _makeGrassChunkMesh(x, y, grassGeometry, points);
+            const {points, heightRange} = mapChunk;
+            const grassChunkGeometry = _makeGrassChunkMesh(x, y, grassGeometry, points, heightRange);
             const grassChunkBuffer = new Buffer(protocolUtils.stringifyGrassGeometry(grassChunkGeometry));
 
             res.type('application/octet-stream');

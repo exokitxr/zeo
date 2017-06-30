@@ -50,19 +50,20 @@ class Grass {
     }; */
 
     const _makeGrassChunkMesh = (mapChunkData, x, z) => {
-      const {positions, colors} = mapChunkData;
+      const {positions, colors, heightRange} = mapChunkData;
 
       const geometry = (() => {
         let geometry = new THREE.BufferGeometry();
         geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
         geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
+        const [minY, maxY] = heightRange;
         geometry.boundingSphere = new THREE.Sphere(
           new THREE.Vector3(
             (x * NUM_CELLS) + (NUM_CELLS / 2),
-            10, // XXX this should actually be around the midpoint of the geometry, which we can compute on the backend
+            (minY + maxY) / 2,
             (z * NUM_CELLS) + (NUM_CELLS / 2)
           ),
-          NUM_CELLS / 2
+          Math.max(Math.sqrt((NUM_CELLS / 2) * (NUM_CELLS / 2) * 2), (maxY - minY) / 2)
         );
 
         return geometry;
