@@ -9,6 +9,8 @@ const {
 } = require('../constants/constants');
 const {MapPoint} = require('../records/records');
 
+module.exports = ({THREE}) => {
+
 class Vector3 {
   constructor(x, y, z) {
     this.x = x;
@@ -239,7 +241,7 @@ const buildMapChunk = ({offset}) => {
 const compileMapChunk = mapChunk => {
   const {offset, points} = mapChunk;
   const mapChunkUpdate = recompileMapChunk(mapChunk);
-  const {positions, normals, colors, indices} = mapChunkUpdate;
+  const {positions, normals, colors, heightfield} = mapChunkUpdate;
 
   return {
     offset,
@@ -247,17 +249,19 @@ const compileMapChunk = mapChunk => {
     positions,
     normals,
     colors,
-    indices,
+    heightfield,
   };
 };
 
 const recompileMapChunk = mapChunk => {
   const {offset, points} = mapChunk;
 
-  const positions = new Float32Array((NUM_CELLS + 1) * (NUM_CELLS + 1) * 3);
-  const normals = new Float32Array((NUM_CELLS + 1) * (NUM_CELLS + 1) * 3);
-  const colors = new Float32Array((NUM_CELLS + 1) * (NUM_CELLS + 1) * 3);
-  const indices = new Uint16Array(NUM_CELLS * NUM_CELLS * 3 * 2);
+  const geometry = new THREE.PlaneBufferGeometry(NUM_CELLS, NUM_CELLS, NUM_CELLS, NUM_CELLS);
+  const positions = geometry.getAttribute('position').array;
+  const normals = geometry.getAttribute('normal').array;
+  const colors = new Float32Array(positions.length);
+  geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
+  const heightfield = new Float32Array((NUM_CELLS + 1) * (NUM_CELLS + 1));
 
   let i = 0;
   for (let y = 0; y <= NUM_CELLS; y++) {
@@ -288,60 +292,23 @@ const recompileMapChunk = mapChunk => {
       colors[(i * 3) + 1] = colorArray[1];
       colors[(i * 3) + 2] = colorArray[2];
 
-      i++;
-    }
-  }
-
-  i = 0;
-  for (let y = 0; y < NUM_CELLS; y++) {
-    for (let x = 0; x < NUM_CELLS; x++) {
-      const a = x + (NUM_CELLS + 1) * y;
-			const b = x + (NUM_CELLS + 1) * (y + 1);
-			const c = (x + 1) + (NUM_CELLS + 1) * (y + 1);
-			const d = (x + 1) + (NUM_CELLS + 1) * y;
-
-      indices[(i * 3 * 2) + 0] = a;
-      indices[(i * 3 * 2) + 1] = b;
-      indices[(i * 3 * 2) + 2] = d;
-
-      indices[(i * 3 * 2) + 3] = b;
-      indices[(i * 3 * 2) + 4] = c;
-      indices[(i * 3 * 2) + 5] = d;
+      heightfield[i] = elevation;
 
       i++;
     }
   }
 
-  for (let i = 0; i < indices.length; i += 3) {
-    const vA = indices[i + 0] * 3;
-    const vB = indices[i + 1] * 3;
-    const vC = indices[i + 2] * 3;
-
-    const pA = Vector3.fromArray(positions, vA);
-    const pB = Vector3.fromArray(positions, vB);
-    const pC = Vector3.fromArray(positions, vC);
-
-    const cb = pC.sub(pB).cross(pA.sub(pB));
-
-    normals[vA + 0] += cb.x;
-    normals[vA + 1] += cb.y;
-    normals[vA + 2] += cb.z;
-
-    normals[vB + 0] += cb.x;
-    normals[vB + 1] += cb.y;
-    normals[vB + 2] += cb.z;
-
-    normals[vC + 0] += cb.x;
-    normals[vC + 1] += cb.y;
-    normals[vC + 2] += cb.z;
-  }
+  const unindexedGeometry = geometry.toNonIndexed();
+  const newPositions = unindexedGeometry.getAttribute('position').array;
+  const newNormals = unindexedGeometry.getAttribute('normal').array;
+  const newColors = unindexedGeometry.getAttribute('color').array;
 
   return {
-    offset,
-    positions,
-    normals,
-    colors,
-    indices,
+    offset: offset,
+    positions: newPositions,
+    normals: newNormals,
+    colors: newColors,
+    heightfield: heightfield,
   };
 };
 
@@ -414,7 +381,9 @@ const _colorIntToArray = n => ([
   ((n >> (8 * 0)) & 0xFF) / 0xFF,
 ]);
 
-module.exports = {
+return {
   buildMapChunk,
   compileMapChunk,
+};
+
 };

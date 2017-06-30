@@ -1,4 +1,4 @@
-const workerUtils = require('./lib/utils/worker-utils');
+const workerUtilser = require('./lib/utils/worker-utils');
 const protocolUtils = require('./lib/utils/protocol-utils');
 const {
   NUM_CELLS,
@@ -13,7 +13,10 @@ class Heightfield {
   mount() {
     const {_archae: archae} = this;
     const {app} = archae.getCore();
-    const {elements} = zeo;
+    const {three, elements} = zeo;
+    const {THREE} = three;
+
+    const workerUtils = workerUtilser({THREE});
 
     const _generate = (x, y) => {
       const builtMapChunk = workerUtils.buildMapChunk({

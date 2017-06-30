@@ -3,7 +3,6 @@ const {MapPoint} = require('../records/records');
 const UINT32_SIZE = 4;
 const INT32_SIZE = 4;
 const FLOAT32_SIZE = 4;
-const UINT16_SIZE = 2;
 const MAP_CHUNK_HEADER_ENTRIES = 5;
 const MAP_CHUNK_HEADER_SIZE = UINT32_SIZE * MAP_CHUNK_HEADER_ENTRIES;
 const MAP_CHUNK_UPDATE_HEADER_ENTRIES = 4;
@@ -11,7 +10,7 @@ const MAP_CHUNK_UPDATE_HEADER_SIZE = UINT32_SIZE * MAP_CHUNK_HEADER_ENTRIES;
 const POINT_SIZE = 7 * FLOAT32_SIZE;
 
 const _getMapChunkSizeFromMetadata = metadata => {
-  const {numPoints, numPositions, numNormals, numColors, numIndices} = metadata;
+  const {numPoints, numPositions, numNormals, numColors, numHeightfield} = metadata;
 
   return MAP_CHUNK_HEADER_SIZE + // header
     (INT32_SIZE * 2) + // offset // XXX can remove this since it's implicit on the front end
@@ -19,24 +18,24 @@ const _getMapChunkSizeFromMetadata = metadata => {
     (FLOAT32_SIZE * numPositions) + // positions
     (FLOAT32_SIZE * numNormals) +  // normals
     (FLOAT32_SIZE * numColors) + // colors
-    (UINT16_SIZE * numIndices); // indices
+    (FLOAT32_SIZE * numHeightfield); // heightfield
 };
 
 const _getMapChunkSize = mapChunk => {
-  const {points, positions, normals, colors, indices} = mapChunk;
+  const {points, positions, normals, colors, heightfield} = mapChunk;
 
   const numPoints = points.length;
   const numPositions = positions.length;
   const numNormals = normals.length;
   const numColors = colors.length;
-  const numIndices = indices.length;
+  const numHeightfield = heightfield.length;
 
   return _getMapChunkSizeFromMetadata({
     numPoints,
     numPositions,
     numNormals,
     numColors,
-    numIndices,
+    numHeightfield,
   });
 };
 
@@ -46,21 +45,21 @@ const _getMapChunkBufferSize = (arrayBuffer, byteOffset) => {
   const numPositions = headerBuffer[1];
   const numNormals = headerBuffer[2];
   const numColors = headerBuffer[3];
-  const numIndices = headerBuffer[4];
+  const numHeightfield = headerBuffer[4];
 
   return _getMapChunkSizeFromMetadata({
     numPoints,
     numPositions,
     numNormals,
     numColors,
-    numIndices,
+    numHeightfield,
   });
 };
 
 // stringification
 
 const stringifyMapChunk = (mapChunk, arrayBuffer, byteOffset) => {
-  const {offset, points, positions, normals, colors, indices} = mapChunk;
+  const {offset, points, positions, normals, colors, heightfield} = mapChunk;
 
   if (arrayBuffer === undefined || byteOffset === undefined) {
     const bufferSize = _getMapChunkSize(mapChunk);
@@ -73,7 +72,7 @@ const stringifyMapChunk = (mapChunk, arrayBuffer, byteOffset) => {
   headerBuffer[1] = positions.length;
   headerBuffer[2] = normals.length;
   headerBuffer[3] = colors.length;
-  headerBuffer[4] = indices.length;
+  headerBuffer[4] = heightfield.length;
 
   const offsetBuffer = new Int32Array(arrayBuffer, byteOffset + MAP_CHUNK_HEADER_SIZE, 2);
   offsetBuffer[0] = offset.x;
@@ -103,8 +102,8 @@ const stringifyMapChunk = (mapChunk, arrayBuffer, byteOffset) => {
   const colorsBuffer = new Float32Array(arrayBuffer, byteOffset + MAP_CHUNK_HEADER_SIZE + (INT32_SIZE * 2) + (POINT_SIZE * points.length) + (FLOAT32_SIZE * positions.length) + (FLOAT32_SIZE * normals.length), colors.length);
   colorsBuffer.set(colors);
 
-  const indicesBuffer = new Uint16Array(arrayBuffer, byteOffset + MAP_CHUNK_HEADER_SIZE + (INT32_SIZE * 2) + (POINT_SIZE * points.length) + (FLOAT32_SIZE * positions.length) + (FLOAT32_SIZE * normals.length) + (FLOAT32_SIZE * colors.length), indices.length);
-  indicesBuffer.set(indices);
+  const heightfieldBuffer = new Float32Array(arrayBuffer, byteOffset + MAP_CHUNK_HEADER_SIZE + (INT32_SIZE * 2) + (POINT_SIZE * points.length) + (FLOAT32_SIZE * positions.length) + (FLOAT32_SIZE * normals.length) + (FLOAT32_SIZE * colors.length), heightfield.length);
+  heightfieldBuffer.set(heightfield);
 
   return arrayBuffer;
 };
@@ -148,7 +147,7 @@ const parseMapChunk = (arrayBuffer, byteOffset) => {
   const numPositions = headerBuffer[1];
   const numNormals = headerBuffer[2];
   const numColors = headerBuffer[3];
-  const numIndices = headerBuffer[4];
+  const numHeightfield = headerBuffer[4];
 
   const offsetBuffer = new Int32Array(arrayBuffer, byteOffset + MAP_CHUNK_HEADER_SIZE, 2);
   const offset = {
@@ -189,8 +188,8 @@ const parseMapChunk = (arrayBuffer, byteOffset) => {
   const colorsBuffer = new Float32Array(arrayBuffer, byteOffset + MAP_CHUNK_HEADER_SIZE + (INT32_SIZE * 2) + (POINT_SIZE * numPoints) + (FLOAT32_SIZE * numPositions) + (FLOAT32_SIZE * numNormals), numColors);
   const colors = colorsBuffer;
 
-  const indicesBuffer = new Uint16Array(arrayBuffer, byteOffset + MAP_CHUNK_HEADER_SIZE + (INT32_SIZE * 2) + (POINT_SIZE * numPoints) + (FLOAT32_SIZE * numPositions) + (FLOAT32_SIZE * numNormals) + (FLOAT32_SIZE * numColors), numIndices);
-  const indices = indicesBuffer;
+  const heightfieldBuffer = new Float32Array(arrayBuffer, byteOffset + MAP_CHUNK_HEADER_SIZE + (INT32_SIZE * 2) + (POINT_SIZE * numPoints) + (FLOAT32_SIZE * numPositions) + (FLOAT32_SIZE * numNormals) + (FLOAT32_SIZE * numColors), numHeightfield);
+  const heightfield = heightfieldBuffer;
 
   return {
     offset,
@@ -198,7 +197,7 @@ const parseMapChunk = (arrayBuffer, byteOffset) => {
     positions,
     normals,
     colors,
-    indices
+    heightfield,
   };
 };
 
