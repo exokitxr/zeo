@@ -171,7 +171,7 @@ class Grass {
       const scale = new THREE.Vector3(1, 1, 1);
       const matrix = new THREE.Matrix4();
 
-      const grassProbability = 0.2;
+      const grassProbability = 0.1;
 
       for (let dy = 0; dy < NUM_CELLS_OVERSCAN; dy++) {
         for (let dx = 0; dx < NUM_CELLS_OVERSCAN; dx++) {
