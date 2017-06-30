@@ -1,3 +1,5 @@
+const chnkr = require('chnkr');
+
 const {
   NUM_CELLS,
 } = require('./lib/constants/constants');
@@ -66,74 +68,53 @@ class Heightfield {
     const object = new THREE.Object3D();
     scene.add(object);
 
-    const currentMapChunks = new Map();
+    const chunker = chnkr.makeChunker({
+      resolution: 32,
+      lods: 3,
+    });
 
-    class MapChunk {
-      constructor(offset, mesh) {
-        this.offset = offset;
-        this.mesh = mesh;
-      }
-    }
-
-    const _getMapChunkOffsetKey = (x, y) => x + ',' + y;
     const _requestRefreshMapChunks = () => {
       const {hmd} = pose.getStatus();
       const {worldPosition: hmdPosition} = hmd;
-      const cameraMapChunkOffset = [Math.floor(hmdPosition.x / NUM_CELLS), Math.floor(hmdPosition.z / NUM_CELLS)];
+      const {added, removed} = chunker.update(hmdPosition.x, hmdPosition.z);
 
-      const requiredMapChunkOffsets = DIRECTIONS.map(([x, y]) => ([cameraMapChunkOffset[0] + x, cameraMapChunkOffset[1] + y]));
-      const missingMapChunkOffsets = requiredMapChunkOffsets.filter(([x, y]) => {
-        const key = _getMapChunkOffsetKey(x, y);
-        return !currentMapChunks.has(key);
+      const addedPromises = added.map(chunk => {
+        const {x, z} = chunk;
+
+        return _requestGenerate(x, z)
+          .then(mapChunkBuffer => {
+            const mapChunkData = protocolUtils.parseMapChunk(mapChunkBuffer);
+            const mapChunkMesh = _makeMapChunkMesh(mapChunkData);
+            object.add(mapChunkMesh);
+
+            const teleportMesh = mapChunkMesh.clone();
+            teleportMesh.geometry = geometryUtils.unindexBufferGeometry(teleportMesh.geometry.clone()); // teleport needs unindexed but physics needs indexed
+            mapChunkMesh.teleportMesh = teleportMesh;
+            teleport.addTarget(teleportMesh, {
+              flat: true,
+            });
+
+            const physicsBody = physics.makeBody(mapChunkMesh, 'heightfield:' + x + ':' + z, {
+              mass: 0,
+              position: [
+                (NUM_CELLS / 2) + (x * NUM_CELLS),
+                0,
+                (NUM_CELLS / 2) + (z * NUM_CELLS)
+              ],
+              linearFactor: [0, 0, 0],
+              angularFactor: [0, 0, 0],
+              bindObject: false,
+              bindConnection: false,
+            });
+            mapChunkMesh.physicsBody = physicsBody;
+
+            chunk.data = mapChunkMesh;
+          });
       });
-      const deadMapChunkOffsets = (() => {
-        const result = [];
-        currentMapChunks.forEach(currentMapChunk => {
-          const {offset} = currentMapChunk;
-          if (!requiredMapChunkOffsets.some(([x, y]) => x === offset[0] && y === offset[1])) {
-            result.push([offset[0], offset[1]]);
-          }
-        });
-        return result;
-      })();
-
-      const missingMapChunkPromises = missingMapChunkOffsets.map(([x, y]) => _requestGenerate(x, y)
-        .then(mapChunkBuffer => {
-          const mapChunkData = protocolUtils.parseMapChunk(mapChunkBuffer);
-          const mapChunkMesh = _makeMapChunkMesh(mapChunkData);
-          object.add(mapChunkMesh);
-
-          const teleportMesh = mapChunkMesh.clone();
-          teleportMesh.geometry = geometryUtils.unindexBufferGeometry(teleportMesh.geometry.clone()); // teleport needs unindexed but physics needs indexed
-          mapChunkMesh.teleportMesh = teleportMesh;
-          teleport.addTarget(teleportMesh, {
-            flat: true,
-          });
-
-          const physicsBody = physics.makeBody(mapChunkMesh, 'heightfield:' + x + ':' + y, {
-            mass: 0,
-            position: [
-              (NUM_CELLS / 2) + (x * NUM_CELLS),
-              0,
-              (NUM_CELLS / 2) + (y * NUM_CELLS)
-            ],
-            linearFactor: [0, 0, 0],
-            angularFactor: [0, 0, 0],
-            bindObject: false,
-            bindConnection: false,
-          });
-          mapChunkMesh.physicsBody = physicsBody;
-
-          const key = _getMapChunkOffsetKey(x, y);
-          const mapChunk = new MapChunk([x, y], mapChunkMesh);
-          currentMapChunks.set(key, mapChunk);
-        }));
-      return Promise.all(missingMapChunkPromises)
+      return Promise.all(addedPromises)
         .then(() => {
-          deadMapChunkOffsets.forEach(([x, y]) => {
-            const key = _getMapChunkOffsetKey(x, y);
-            const mapChunk = currentMapChunks.get(key);
-            const {mesh: mapChunkMesh} = mapChunk;
+          removed.forEach(chunk => {
+            const {data: mapChunkMesh} = chunk;
             object.remove(mapChunkMesh);
 
             const {teleportMesh} = mapChunkMesh;
@@ -141,12 +122,10 @@ class Heightfield {
 
             const {physicsBody} = mapChunkMesh;
             physics.destroyBody(physicsBody);
-
-            currentMapChunks.delete(key);
           });
         })
         .then(() => {
-          if (missingMapChunkPromises.length > 0 || deadMapChunkOffsets.length > 0) {
+          if (added.length > 0 || removed.length > 0) {
             teleport.reindex();
           }
         });
