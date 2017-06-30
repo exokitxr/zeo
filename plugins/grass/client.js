@@ -108,6 +108,11 @@ class Grass {
             // mesh.updateMatrixWorld();
             // mesh.frustumCulled = false;
             mesh.drawMode = THREE.TriangleStripDrawMode;
+
+            mesh.destroy = () => {
+              geometry.dispose();
+            };
+
             return mesh;
           };
 
@@ -132,6 +137,7 @@ class Grass {
                 removed.forEach(chunk => {
                   const {data: grassMesh} = chunk;
                   scene.remove(grassMesh);
+                  grassMesh.destroy();
                 });
               })
           };
