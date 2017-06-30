@@ -24,8 +24,8 @@ class Physics {
 
     const worker = child_process.fork(path.join(__dirname, 'worker.js'));
     worker.on('message', m => {
-      const {id} = m;
-      const interest = interests[id];
+      const [n] = m;
+      const interest = interests[n];
 
       if (interest && interest.length > 0) {
         const ms = JSON.stringify(m);
@@ -88,31 +88,31 @@ class Physics {
           switch (method) {
             case 'add': {
               const {args} = j;
-              const [id] = args;
+              const [n] = args;
 
-              let interest = interests[id];
+              let interest = interests[n];
               if (!interest) {
                 interest = [];
-                interests[id] = interest;
+                interests[n] = interest;
               }
               interest.push(userId);
 
-              localInterests.push(id);
+              localInterests.push(n);
               break;
             }
             case 'remove': {
               const {args} = j;
-              const [id] = args;
+              const [n] = args;
 
-              const interest = interests[id];
+              const interest = interests[n];
               if (interest) {
                 interest.splice(interest.indexOf(userId), 1);
                 if (interest.length === 0) {
-                  delete interests[id];
+                  delete interests[n];
                 }
               }
 
-              const localInterestIndex = localInterests.indexOf(id);
+              const localInterestIndex = localInterests.indexOf(n);
               if (localInterestIndex !== -1) {
                 localInterests.splice(localInterestIndex, 1);
               }
@@ -130,12 +130,12 @@ class Physics {
           });
 
           for (let i = 0; i < localInterests.length; i++) {
-            const id = localInterests[i];
-            const interest = interests[id];
+            const n = localInterests[i];
+            const interest = interests[n];
 
             interest.splice(interest.indexOf(userId), 1);
             if (interest.length === 0) {
-              delete interests[id];
+              delete interests[n];
             }
           }
 

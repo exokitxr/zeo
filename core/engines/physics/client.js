@@ -1,3 +1,5 @@
+const murmur = require('murmurhash');
+
 class Physics {
   constructor(archae) {
     this._archae = archae;
@@ -50,10 +52,11 @@ class Physics {
         const bodies = {};
 
         class Body extends EventEmitter {
-          constructor(id, object, bindObject) {
+          constructor(id, n, object, bindObject) {
             super();
 
             this.id = id;
+            this.n = n;
             this.object = object;
             this.bindObject = bindObject;
           }
@@ -77,11 +80,11 @@ class Physics {
           }
 
           setState(position, rotation, linearVelocity, angularVelocity, activate) {
-            const {id} = this;
+            const {n} = this;
 
             const e = {
               method: 'setState',
-              args: [id, position, rotation, linearVelocity, angularVelocity, activate],
+              args: [n, position, rotation, linearVelocity, angularVelocity, activate],
             };
             const es = JSON.stringify(e);
             connection.send(es);
@@ -91,11 +94,12 @@ class Physics {
         const connection = new AutoWs(_relativeWsUrl('archae/physicsWs?id=' + localUserId));
         connection.on('message', msg => {
           const m = JSON.parse(msg.data);
-          const {id} = m;
-          const body = bodies[id];
+          const [n] = m;
+          const body = bodies[n];
 
           if (body) {
-            const {position, rotation} = m;
+            const position = [m[1], m[2], m[3]];
+            const rotation = [m[4], m[5], m[6], m[7]];
             body.update(position, rotation);
           }
         });
@@ -105,7 +109,8 @@ class Physics {
         };
 
         const _makeBody = (object, id, {bindObject = true, bindConnection = true, mass = 1, position = null, rotation = null, linearFactor = [1, 1, 1], angularFactor = [1, 1, 1], disableDeactivation = false} = {}) => {
-          const oldBody = bodies[id];
+          const n = murmur(id);
+          const oldBody = bodies[n];
 
           if (oldBody) {
             return oldBody;
@@ -121,6 +126,9 @@ class Physics {
             };
 
             if (constructor === THREE.Mesh) {
+              const body = new Body(id, n, object, bindObject);
+              bodies[n] = body;
+
               const {geometry} = object;
               const {constructor} = geometry;
 
@@ -135,16 +143,16 @@ class Physics {
                 const owner = bindConnection ? localUserId : null;
                 const e = {
                   method: 'add',
-                  args: [id, 'box', [width, height, depth], position, rotation, mass, linearFactor, angularFactor, disableDeactivation, owner],
+                  args: [n, 'box', [width, height, depth], position, rotation, mass, linearFactor, angularFactor, disableDeactivation, owner],
                 };
                 const es = JSON.stringify(e);
                 connection.send(es);
 
-                const body = new Body(id, object, bindObject);
-                bodies[id] = body;
-
                 return body;
               } else if (constructor === THREE.PlaneBufferGeometry) {
+                const body = new Body(id, n, object, bindObject);
+                bodies[n] = body;
+
                 const geometryClone = geometryUtils.unindexBufferGeometry(geometry.clone());
                 const positions = geometryClone.getAttribute('position').array;
                 const normal = new THREE.Triangle(
@@ -156,16 +164,16 @@ class Physics {
                 const owner = bindConnection ? localUserId : null;
                 const e = {
                   method: 'add',
-                  args: [id, 'plane', normal.toArray().concat([constant]), [0, 0, 0], [0, 0, 0, 1], mass, linearFactor, angularFactor, disableDeactivation, owner],
+                  args: [n, 'plane', normal.toArray().concat([constant]), [0, 0, 0], [0, 0, 0, 1], mass, linearFactor, angularFactor, disableDeactivation, owner],
                 };
                 const es = JSON.stringify(e);
                 connection.send(es);
 
-                const body = new Body(id, object, bindObject);
-                bodies[id] = body;
-
                 return body;
               } else if (constructor === THREE.BufferGeometry) {
+                const body = new Body(id, n, object, bindObject);
+                bodies[n] = body;
+
                 if (position === null) {
                   position = _getMatrix().position.toArray();
                 }
@@ -184,13 +192,10 @@ class Physics {
                 const owner = bindConnection ? localUserId : null;
                 const e = {
                   method: 'add',
-                  args: [id, 'heightfield', [width, height, yPositionsBase64], position, rotation, mass, linearFactor, angularFactor, disableDeactivation, owner],
+                  args: [n, 'heightfield', [width, height, yPositionsBase64], position, rotation, mass, linearFactor, angularFactor, disableDeactivation, owner],
                 };
                 const es = JSON.stringify(e);
                 connection.send(es);
-
-                const body = new Body(id, object, bindObject);
-                bodies[id] = body;
 
                 return body;
               } else {
@@ -199,6 +204,9 @@ class Physics {
                 return null;
               }
             } else if (constructor === THREE.Object3D) {
+              const body = new Body(id, n, object, bindObject);
+              bodies[n] = body;
+
               const {children} = object;
 
               const spec = [];
@@ -225,13 +233,10 @@ class Physics {
               const owner = bindConnection ? localUserId : null;
               const e = {
                 method: 'add',
-                args: [id, 'compound', spec, position, rotation, mass, linearFactor, angularFactor, disableDeactivation, owner],
+                args: [n, 'compound', spec, position, rotation, mass, linearFactor, angularFactor, disableDeactivation, owner],
               };
               const es = JSON.stringify(e);
               connection.send(es);
-
-              const body = new Body(id, object, bindObject);
-              bodies[id] = body;
 
               return body;
             } else {
@@ -242,15 +247,15 @@ class Physics {
           }
         };
         const _destroyBody = body => {
-          const {id} = body;
+          const {n} = body;
           const e = {
             method: 'remove',
-            args: [id],
+            args: [n],
           };
           const es = JSON.stringify(e);
           connection.send(es);
 
-          delete bodies[id];
+          delete bodies[n];
         };
 
         return {

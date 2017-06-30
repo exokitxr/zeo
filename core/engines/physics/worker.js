@@ -22,8 +22,8 @@ physicsWorld.setGravity(new Ammo.btVector3(0, -9.8, 0));
 const bodies = [];
 
 class Body {
-  constructor(id, rigidBody, owner, destroy) {
-    this.id = id;
+  constructor(n, rigidBody, owner, destroy) {
+    this.n = n;
     this.rigidBody = rigidBody;
     this.owner = owner;
     this.destroy = destroy;
@@ -32,22 +32,20 @@ class Body {
   }
 
   getUpdate() {
-    const {id, rigidBody, _lastUpdate: lastUpdate} = this;
+    const {n, rigidBody, _lastUpdate: lastUpdate} = this;
 
     const ms = rigidBody.getMotionState();
     ms.getWorldTransform(BT_TRANSFORM);
     const pv = BT_TRANSFORM.getOrigin();
-    const p = [pv.x(), pv.y(), pv.z()];
     const qv = BT_TRANSFORM.getRotation();
-    const q = [qv.x(), qv.y(), qv.z(), qv.w()];
     // Ammo.destroy(ms);
 
-    if (lastUpdate === null || !_arrayEquals(lastUpdate.position, p) || !_arrayEquals(lastUpdate.rotation, q)) {
-      const newUpdate = { // XXX optimize this into an array
-        id: id,
-        position: p,
-        rotation: q,
-      };
+    const newUpdate = [
+      n,
+      pv.x(), pv.y(), pv.z(),
+      qv.x(), qv.y(), qv.z(), qv.w(),
+    ];
+    if (lastUpdate === null || !_arrayEquals(newUpdate, lastUpdate)) {
       this._lastUpdate = newUpdate;
 
       return newUpdate;
@@ -122,9 +120,9 @@ process.on('message', m => {
 
   switch (method) {
     case 'add': {
-      const [id, type, spec, position, rotation, mass, linearFactor, angularFactor, disableDeactivation, owner] = args;
+      const [n, type, spec, position, rotation, mass, linearFactor, angularFactor, disableDeactivation, owner] = args;
 
-      const body = bodies.find(body => body.id === id);
+      const body = bodies.find(body => body.n === n);
       if (!body) {
         switch (type) {
           case 'box': {
@@ -173,7 +171,7 @@ process.on('message', m => {
               boxBody.setActivationState(DISABLE_DEACTIVATION);
             }
             
-            const body = new Body(id, boxBody, owner, () => {
+            const body = new Body(n, boxBody, owner, () => {
               // Ammo.destroy(boxBody);
               // Ammo.destroy(boxConstructionInfo);
               // Ammo.destroy(boxMotionState);
@@ -227,7 +225,7 @@ process.on('message', m => {
               planeBody.setActivationState(DISABLE_DEACTIVATION);
             }
 
-            const body = new Body(id, planeBody, owner, () => {
+            const body = new Body(n, planeBody, owner, () => {
               // Ammo.destroy(planeBody);
               // Ammo.destroy(planeConstructionInfo);
               // Ammo.destroy(planeMotionState);
@@ -295,7 +293,7 @@ process.on('message', m => {
               heightfieldBody.setActivationState(DISABLE_DEACTIVATION);
             }
 
-            const body = new Body(id, heightfieldBody, owner, () => {
+            const body = new Body(n, heightfieldBody, owner, () => {
               // Ammo.destroy(planeBody);
               // Ammo.destroy(planeConstructionInfo);
               // Ammo.destroy(planeMotionState);
@@ -390,7 +388,7 @@ process.on('message', m => {
               compoundBody.setActivationState(DISABLE_DEACTIVATION);
             }
 
-            const body = new Body(id, compoundBody, owner, () => {
+            const body = new Body(n, compoundBody, owner, () => {
               // Ammo.destroy(compoundBody);
               // Ammo.destroy(compoundConstructionInfo);
               // Ammo.destroy(compoundMotionState);
@@ -416,8 +414,8 @@ process.on('message', m => {
       break;
     }
     case 'remove': {
-      const [id] = args;
-      const bodyIndex = bodies.findIndex(body => body.id === id);
+      const [n] = args;
+      const bodyIndex = bodies.findIndex(body => body.n === n);
 
       if (bodyIndex !== -1) {
         const body = bodies[bodyIndex];
@@ -427,8 +425,8 @@ process.on('message', m => {
       break;
     }
     case 'setState': {
-      const [id, position, rotation, linearVelocity, anguilarVelocity, activate] = args;
-      const body = bodies.find(body => body.id === id);
+      const [n, position, rotation, linearVelocity, anguilarVelocity, activate] = args;
+      const body = bodies.find(body => body.n === n);
 
       if (body) {
         body.setState(position, rotation, linearVelocity, anguilarVelocity, activate);
