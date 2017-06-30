@@ -627,180 +627,194 @@ class Biolumi {
             }
 
             update({pose, sides, controllerMeshes}) {
-              const {gamepads} = pose;
-              const {pages, open, hoverStates, dotMeshes, boxMeshes, intersecter} = this;
+              const _hideSide = side => {
+                const {hoverStates, dotMeshes, boxMeshes} = this;
 
-              const updated = intersecter.update();
-              if (updated) {
-                for (let s = 0; s < SIDES.length; s++) {
-                  const side = SIDES[s];
-                  const gamepad = gamepads[side];
-                  const dotMesh = dotMeshes[side];
-                  const boxMesh = boxMeshes[side];
-                  const hoverState = hoverStates[side];
-                  const controllerMesh = controllerMeshes[side];
-                  const {rayMesh} = controllerMesh;
+                const hoverState = hoverStates[side];
+                const dotMesh = dotMeshes[side];
+                const boxMesh = boxMeshes[side];
+                const controllerMesh = controllerMeshes[side];
+                const {rayMesh} = controllerMesh;
 
-                  const _show = () => {
-                    if (!dotMesh.visible) {
-                      dotMesh.visible = true;
-                    }
-                    if (!rayMesh.visible) {
-                      rayMesh.visible = true;
-                    }
-                  };
-                  const _hide = () => {
-                    hoverState.intersectionPoint = null;
-                    hoverState.target = null;
-                    hoverState.anchor = null;
-                    hoverState.value = 0;
-                    hoverState.crossValue = 0;
+                hoverState.intersectionPoint = null;
+                hoverState.target = null;
+                hoverState.anchor = null;
+                hoverState.value = 0;
+                hoverState.crossValue = 0;
 
-                    if (dotMesh.visible) {
-                      dotMesh.visible = false;
-                    }
-                    if (boxMesh.visible) {
-                      boxMesh.visible = false;
-                    }
-                    if (!open || !sides.includes(side)) {
-                      if (rayMesh.visible) {
-                        rayMesh.visible = false;
-                      }
-                    } else {
-                      if (!rayMesh.scale.equals(defaultRayMeshScale)) {
-                        rayMesh.scale.copy(defaultRayMeshScale);
-                        rayMesh.updateMatrixWorld();
-                      }
+                if (dotMesh.visible) {
+                  dotMesh.visible = false;
+                }
+                if (boxMesh.visible) {
+                  boxMesh.visible = false;
+                }
+                if (!open || !sides.includes(side)) {
+                  if (rayMesh.visible) {
+                    rayMesh.visible = false;
+                  }
+                } else {
+                  if (!rayMesh.scale.equals(defaultRayMeshScale)) {
+                    rayMesh.scale.copy(defaultRayMeshScale);
+                    rayMesh.updateMatrixWorld();
+                  }
 
-                      if (!rayMesh.visible) {
-                        rayMesh.visible = true;
-                      }
-                    }
-                  };
+                  if (!rayMesh.visible) {
+                    rayMesh.visible = true;
+                  }
+                }
+              };
 
-                  if (sides.includes(side)) {
-                    const intersectionHoverState = intersecter.getHoverState(side);
-                    const {object} = intersectionHoverState;
+              const {open} = this;
+              if (open) {
+                const {intersecter} = this;
+                const updated = intersecter.update();
 
-                    if (object) {
-                      const {position, normal, originalObject} = intersectionHoverState;
-                      const {worldPosition: controllerPosition} = gamepad;
+                if (updated) {
+                  const {gamepads} = pose;
+                  const {hoverStates, dotMeshes, boxMeshes} = this;
 
-                      hoverState.intersectionPoint = position;
+                  for (let s = 0; s < SIDES.length; s++) {
+                    const side = SIDES[s];
+                    const gamepad = gamepads[side];
+                    const dotMesh = dotMeshes[side];
+                    const boxMesh = boxMeshes[side];
+                    const hoverState = hoverStates[side];
+                    const controllerMesh = controllerMeshes[side];
+                    const {rayMesh} = controllerMesh;
 
-                      const mesh = originalObject;
-                      const {page} = mesh;
+                    if (sides.includes(side)) {
+                      const intersectionHoverState = intersecter.getHoverState(side);
+                      const {object} = intersectionHoverState;
 
-                      if (page) {
-                        const {width, height, worldWidth, worldHeight} = page;
-                        const worldPosition = new THREE.Vector3().setFromMatrixPosition(mesh.matrixWorld);
-                        const worldRotation = new THREE.Quaternion().setFromRotationMatrix(mesh.matrixWorld);
+                      if (object) {
+                        const {position, normal, originalObject} = intersectionHoverState;
+                        const {worldPosition: controllerPosition} = gamepad;
 
-                        hoverState.target = page;
+                        hoverState.intersectionPoint = position;
 
-                        const yAxis = new THREE.Plane().setFromNormalAndCoplanarPoint(
-                          new THREE.Vector3(1, 0, 0).applyQuaternion(worldRotation),
-                          worldPosition.clone()
-                            .sub(new THREE.Vector3(worldWidth / 2, 0, 0).applyQuaternion(worldRotation))
-                        );
-                        const x = yAxis.distanceToPoint(position) / worldWidth * width;
-                        const xAxis = new THREE.Plane().setFromNormalAndCoplanarPoint(
-                          new THREE.Vector3(0, -1, 0).applyQuaternion(worldRotation),
-                          worldPosition.clone()
-                            .add(new THREE.Vector3(0, worldHeight / 2, 0).applyQuaternion(worldRotation))
-                        );
-                        const y = xAxis.distanceToPoint(position) / worldHeight * height;
+                        const mesh = originalObject;
+                        const {page} = mesh;
 
-                        let anchor = null;
-                        const {layer} = page;
-                        const anchors = layer ? layer.getAnchors() : [];
-                        for (let i = 0; i < anchors.length; i++) {
-                          const a = anchors[i];
-                          const {rect} = a;
+                        if (page) {
+                          const {width, height, worldWidth, worldHeight} = page;
+                          const worldPosition = new THREE.Vector3().setFromMatrixPosition(mesh.matrixWorld);
+                          const worldRotation = new THREE.Quaternion().setFromRotationMatrix(mesh.matrixWorld);
 
-                          if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
-                            anchor = a;
-                            break;
-                          }
-                        }
+                          hoverState.target = page;
 
-                        if (anchor) {
-                          hoverState.anchor = anchor;
-                          hoverState.value = (x - anchor.rect.left) / (anchor.rect.right - anchor.rect.left);
-                          hoverState.crossValue = (y - anchor.rect.top) / (anchor.rect.bottom - anchor.rect.top);
-
-                          const anchorMidpoint = new THREE.Vector2(
-                            ((anchor.rect.left + anchor.rect.right) / 2) / width * worldWidth,
-                            ((anchor.rect.top + anchor.rect.bottom) / 2) / height * worldHeight
-                          );
-                          const anchorSize = new THREE.Vector2(
-                            (anchor.rect.right - anchor.rect.left) / width * worldWidth,
-                            (anchor.rect.bottom - anchor.rect.top) / height * worldHeight
-                          );
-                          boxMesh.position.copy(
+                          const yAxis = new THREE.Plane().setFromNormalAndCoplanarPoint(
+                            new THREE.Vector3(1, 0, 0).applyQuaternion(worldRotation),
                             worldPosition.clone()
-                              .add(
-                                new THREE.Vector3((-worldWidth / 2) + anchorMidpoint.x, (worldHeight / 2) - anchorMidpoint.y, 0)
-                                  .applyQuaternion(worldRotation)
-                              )
+                              .sub(new THREE.Vector3(worldWidth / 2, 0, 0).applyQuaternion(worldRotation))
                           );
-                          boxMesh.quaternion.copy(worldRotation);
-                          boxMesh.scale.set(anchorSize.x, anchorSize.y, 0.01);
+                          const x = yAxis.distanceToPoint(position) / worldWidth * width;
+                          const xAxis = new THREE.Plane().setFromNormalAndCoplanarPoint(
+                            new THREE.Vector3(0, -1, 0).applyQuaternion(worldRotation),
+                            worldPosition.clone()
+                              .add(new THREE.Vector3(0, worldHeight / 2, 0).applyQuaternion(worldRotation))
+                          );
+                          const y = xAxis.distanceToPoint(position) / worldHeight * height;
+
+                          let anchor = null;
+                          const {layer} = page;
+                          const anchors = layer ? layer.getAnchors() : [];
+                          for (let i = 0; i < anchors.length; i++) {
+                            const a = anchors[i];
+                            const {rect} = a;
+
+                            if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
+                              anchor = a;
+                              break;
+                            }
+                          }
+
+                          if (anchor) {
+                            hoverState.anchor = anchor;
+                            hoverState.value = (x - anchor.rect.left) / (anchor.rect.right - anchor.rect.left);
+                            hoverState.crossValue = (y - anchor.rect.top) / (anchor.rect.bottom - anchor.rect.top);
+
+                            const anchorMidpoint = new THREE.Vector2(
+                              ((anchor.rect.left + anchor.rect.right) / 2) / width * worldWidth,
+                              ((anchor.rect.top + anchor.rect.bottom) / 2) / height * worldHeight
+                            );
+                            const anchorSize = new THREE.Vector2(
+                              (anchor.rect.right - anchor.rect.left) / width * worldWidth,
+                              (anchor.rect.bottom - anchor.rect.top) / height * worldHeight
+                            );
+                            boxMesh.position.copy(
+                              worldPosition.clone()
+                                .add(
+                                  new THREE.Vector3((-worldWidth / 2) + anchorMidpoint.x, (worldHeight / 2) - anchorMidpoint.y, 0)
+                                    .applyQuaternion(worldRotation)
+                                )
+                            );
+                            boxMesh.quaternion.copy(worldRotation);
+                            boxMesh.scale.set(anchorSize.x, anchorSize.y, 0.01);
+                            boxMesh.updateMatrixWorld();
+
+                            if (!boxMesh.visible) {
+                              boxMesh.visible = true;
+                            }
+                          } else {
+                            hoverState.anchor = null;
+                            hoverState.value = 0;
+                            hoverState.crossValue = 0;
+
+                            if (boxMesh.visible) {
+                              boxMesh.visible = false;
+                            }
+                          }
+                        } else {
+                          const {anchor = null} = originalObject;
+
+                          hoverState.target = originalObject;
+                          hoverState.anchor = anchor;
+                          hoverState.value = 0;
+                          hoverState.crossValue = 0;
+
+                          const boundingBox = new THREE.Box3().setFromObject(originalObject);
+                          boxMesh.position.copy(boundingBox.getCenter());
+                          boxMesh.quaternion.copy(zeroQuaternion);
+                          boxMesh.scale.copy(boundingBox.getSize());
                           boxMesh.updateMatrixWorld();
 
                           if (!boxMesh.visible) {
                             boxMesh.visible = true;
                           }
-                        } else {
-                          hoverState.anchor = null;
-                          hoverState.value = 0;
-                          hoverState.crossValue = 0;
+                        }
 
-                          if (boxMesh.visible) {
-                            boxMesh.visible = false;
-                          }
+                        dotMesh.position.copy(position);
+                        dotMesh.quaternion.setFromUnitVectors(
+                          forwardVector,
+                          normal
+                        );
+                        dotMesh.updateMatrixWorld();
+                        if (!gamepad.buttons.trigger.pressed && dotMesh.material.color.getHex() !== RAY_COLOR) {
+                          dotMesh.material.color.setHex(RAY_COLOR);
+                        } else if (gamepad.buttons.trigger.pressed && dotMesh.material.color.getHex() !== RAY_HIGHLIGHT_COLOR) {
+                          dotMesh.material.color.setHex(RAY_HIGHLIGHT_COLOR);
+                        }
+                        if (!dotMesh.visible) {
+                          dotMesh.visible = true;
+                        }
+
+                        rayMesh.scale.z = position.distanceTo(controllerPosition);
+                        rayMesh.updateMatrixWorld();
+                        if (!rayMesh.visible) {
+                          rayMesh.visible = true;
                         }
                       } else {
-                        const {anchor = null} = originalObject;
-
-                        hoverState.target = originalObject;
-                        hoverState.anchor = anchor;
-                        hoverState.value = 0;
-                        hoverState.crossValue = 0;
-
-                        const boundingBox = new THREE.Box3().setFromObject(originalObject);
-                        boxMesh.position.copy(boundingBox.getCenter());
-                        boxMesh.quaternion.copy(zeroQuaternion);
-                        boxMesh.scale.copy(boundingBox.getSize());
-                        boxMesh.updateMatrixWorld();
-
-                        if (!boxMesh.visible) {
-                          boxMesh.visible = true;
-                        }
+                        _hideSide(side);
                       }
-
-                      dotMesh.position.copy(position);
-                      dotMesh.quaternion.setFromUnitVectors(
-                        forwardVector,
-                        normal
-                      );
-                      dotMesh.updateMatrixWorld();
-                      if (!gamepad.buttons.trigger.pressed && dotMesh.material.color.getHex() !== RAY_COLOR) {
-                        dotMesh.material.color.setHex(RAY_COLOR);
-                      } else if (gamepad.buttons.trigger.pressed && dotMesh.material.color.getHex() !== RAY_HIGHLIGHT_COLOR) {
-                        dotMesh.material.color.setHex(RAY_HIGHLIGHT_COLOR);
-                      }
-
-                      rayMesh.scale.z = position.distanceTo(controllerPosition);
-                      rayMesh.updateMatrixWorld();
-
-                      _show();
                     } else {
-                      _hide();
+                      _hideSide(side);
                     }
-                  } else {
-                    _hide();
                   }
+                }
+              } else {
+                for (let s = 0; s < SIDES.length; s++) {
+                  const side = SIDES[s];
+                  _hideSide(side);
                 }
               }
             }
