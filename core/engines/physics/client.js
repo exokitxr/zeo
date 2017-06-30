@@ -92,14 +92,15 @@ class Physics {
         }
 
         const connection = new AutoWs(_relativeWsUrl('archae/physicsWs?id=' + localUserId));
-        connection.on('message', msg => {
-          const m = JSON.parse(msg.data);
-          const [n] = m;
+        connection.on('message', connectionMessage => {
+          const connectionMessageU32 = new Uint32Array(connectionMessage.data, 0, 1);
+          const n = connectionMessageU32[0];
           const body = bodies[n];
 
           if (body) {
-            const position = [m[1], m[2], m[3]];
-            const rotation = [m[4], m[5], m[6], m[7]];
+            const connectionMessageF64 = new Float64Array(connectionMessage.data, 1 * 8, 3 + 4);
+            const position = [connectionMessageF64[0], connectionMessageF64[1], connectionMessageF64[2]];
+            const rotation = [connectionMessageF64[3], connectionMessageF64[4], connectionMessageF64[5], connectionMessageF64[6]];
             body.update(position, rotation);
           }
         });
