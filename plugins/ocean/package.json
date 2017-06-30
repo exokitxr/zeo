@@ -4,6 +4,7 @@
   "version": "0.0.1",
   "client": "client.js",
   "dependencies": {
+    "chnkr": "0.0.11",
     "murmurhash": "0.0.2"
   }
 }
