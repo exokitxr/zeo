@@ -5,6 +5,7 @@
   "client": "client.js",
   "server": "server.js",
   "dependencies": {
+    "chnkr": "0.0.10",
     "indev": "^3.0.10"
   }
 }

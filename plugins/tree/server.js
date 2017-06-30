@@ -431,21 +431,22 @@ class Tree {
           .then(heightfieldElement => {
             const mapChunk = heightfieldElement.generate(x, y);
             const {points} = mapChunk;
+            const numCells = heightfieldElement.getNumCells();
             const numCellsOverscan = heightfieldElement.getNumCellsOverscan();
             const treeProbability = 0.1;
             const positions = new Float32Array(NUM_POSITIONS * 3);
             let index = 0;
 
-            for (let y = 0; y < numCellsOverscan; y++) {
-              for (let x = 0; x < numCellsOverscan; x++) {
+            for (let dy = 0; dy < numCellsOverscan; dy++) {
+              for (let dx = 0; dx < numCellsOverscan; dx++) {
                 if (Math.random() < treeProbability) {
-                  const pointIndex = x + (y * numCellsOverscan);
+                  const pointIndex = dx + (dy * numCellsOverscan);
                   const point = points[pointIndex];
                   const {elevation} = point;
 
-                  positions[index + 0] = x;
+                  positions[index + 0] = (x * numCells) + dx;
                   positions[index + 1] = elevation;
-                  positions[index + 2] = y;
+                  positions[index + 2] = (y * numCells) + dy;
 
                   index += 3;
                 }

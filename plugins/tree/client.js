@@ -1,3 +1,5 @@
+const chnkr = require('chnkr');
+
 const protocolUtils = require('./lib/utils/protocol-utils');
 
 const NUM_POSITIONS = 2 * 1000 * 1000;
@@ -9,7 +11,7 @@ class Tree {
 
   mount() {
     const {_archae: archae} = this;
-    const {three, render, pose, utils: {geometry: geometryUtils}} = zeo;
+    const {three, render, pose} = zeo;
     const {THREE, scene, camera} = three;
 
     const upVector = new THREE.Vector3(0, 1, 0);
@@ -63,16 +65,15 @@ class Tree {
       }
     };
 
-    return Promise.all([
-      _requestTreeTemplates(),
-      _requestTreeGenerate(0, 0),
-    ])
-      .then(([
-        treeGeometry,
-        treePositions,
-      ]) => {
+    return _requestTreeTemplates()
+      .then(treeGeometry => {
         if (live) {
-          const treeMesh = (() => {
+          const chunker = chnkr.makeChunker({
+            resolution: 32,
+            lods: 1,
+          });
+
+          const _makeTreeMesh = treePositions => {
             const positions = new Float32Array(NUM_POSITIONS * 3);
             // const normals = new Float32Array(NUM_POSITIONS * 3);
             const colors = new Float32Array(NUM_POSITIONS * 3);
@@ -120,16 +121,78 @@ class Tree {
             const mesh = new THREE.Mesh(geometry, material);
             // mesh.frustumCulled = false;
             return mesh;
-          })();
-          scene.add(treeMesh);
-
-          this._cleanup = () => {
-            scene.remove(treeMesh);
-
-            treeMaterial.dispose();
           };
-      }
-    });
+
+          const _requestRefreshTreeChunks = () => {
+            const {hmd} = pose.getStatus();
+            const {worldPosition: hmdPosition} = hmd;
+            const {added, removed} = chunker.update(hmdPosition.x, hmdPosition.z);
+
+            const addedPromises = added.map(chunk => {
+              const {x, z} = chunk;
+
+              return _requestTreeGenerate(x, z)
+                .then(treePositions => {
+                  const treeMesh = _makeTreeMesh(treePositions);
+                  scene.add(treeMesh);
+
+                  chunk.data = treeMesh;
+                });
+            });
+            return Promise.all(addedPromises)
+              .then(() => {
+                removed.forEach(chunk => {
+                  const {data: treeMesh} = chunk;
+                  scene.remove(treeMesh);
+                });
+              })
+          };
+
+          return _requestRefreshTreeChunks()
+            .then(() => {
+              let updating = false;
+              let updateQueued = false;
+              const tryTreeChunkUpdate = () => {
+                if (!updating) {
+                  updating = true;
+
+                  const done = () => {
+                    updating = false;
+
+                    if (updateQueued) {
+                      updateQueued = false;
+
+                      tryTreeChunkUpdate();
+                    }
+                  };
+
+                  _requestRefreshTreeChunks()
+                    .then(done)
+                    .catch(err => {
+                      console.warn(err);
+
+                      done();
+                    });
+                } else {
+                  updateQueued = true;
+                }
+              };
+
+              const _update = () => {
+                tryTreeChunkUpdate();
+              };
+              render.on('update', _update);
+
+              this._cleanup = () => {
+                scene.remove(treeMesh);
+
+                treeMaterial.dispose();
+
+                render.removeListener('update', _update);
+              };
+            });
+        }
+      });
   }
 
   unmount() {
