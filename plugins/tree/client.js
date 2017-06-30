@@ -53,7 +53,10 @@ class Tree {
         return geometry;
       });
     const _requestTreeGenerate = (x, y) => fetch(`archae/tree/generate?x=${x}&y=${y}`)
-      .then(_resArrayBuffer);
+      .then(_resArrayBuffer)
+      .then(treePostionsBuffer => {
+        return new Float32Array(treePostionsBuffer);
+      });
     const _copyIndices = (src, dst, startIndexIndex, startAttributeIndex) => {
       for (let i = 0; i < src.length; i++) {
         dst[startIndexIndex + i] = src[i] + startAttributeIndex;
@@ -82,9 +85,14 @@ class Tree {
             const scale = new THREE.Vector3(1, 1, 1);
             const matrix = new THREE.Matrix4();
 
-            const numTrees = 1000;
-            for (let i = 0; i < numTrees; i++) {
-              position.set(-50 + (Math.random() * 100), 0, -50 + (Math.random() * 100));
+            const numTreePositions = treePositions.length / 3;
+            for (let i = 0; i < numTreePositions; i++) {
+              const baseIndex = i * 3;
+              position.set(
+                treePositions[baseIndex + 0],
+                treePositions[baseIndex + 1],
+                treePositions[baseIndex + 2]
+              );
               quaternion.setFromAxisAngle(upVector, Math.random() * Math.PI * 2);
               matrix.compose(position, quaternion, scale);
               const geometry = treeGeometry

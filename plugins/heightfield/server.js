@@ -1,5 +1,9 @@
 const workerUtils = require('./lib/utils/worker-utils');
 const protocolUtils = require('./lib/utils/protocol-utils');
+const {
+  NUM_CELLS,
+  NUM_CELLS_OVERSCAN,
+} = require('./lib/constants/constants');
 
 class Heightfield {
   constructor(archae) {
@@ -28,10 +32,10 @@ class Heightfield {
 
       if (!isNaN(x) && !isNaN(y)) {
         const mapChunk = _generate(x, y);
-        const mapChunkBuffer = protocolUtils.stringifyMapChunk(mapChunk);
+        const mapChunkBuffer = new Buffer(protocolUtils.stringifyMapChunk(mapChunk));
 
         res.type('application/octet-stream');
-        res.send(new Buffer(mapChunkBuffer));
+        res.send(mapChunkBuffer);
       } else {
         res.status(400);
         res.send();
@@ -43,6 +47,8 @@ class Heightfield {
       entityAddedCallback(entityElement) {
         console.log('entity added callback', entityElement);
 
+        entityElement.getNumCells = () => NUM_CELLS;
+        entityElement.getNumCellsOverscan = () => NUM_CELLS_OVERSCAN;
         entityElement.generate = (x, y) => _generate(x, y);
       },
       entityRemovedCallback(entityElement) {
