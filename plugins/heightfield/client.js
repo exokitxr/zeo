@@ -84,7 +84,8 @@ class Heightfield {
 
     const chunker = chnkr.makeChunker({
       resolution: 32,
-      lods: 3,
+      range: 4,
+      useLods: false,
     });
 
     const _requestRefreshMapChunks = () => {

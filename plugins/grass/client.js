@@ -83,7 +83,8 @@ class Grass {
 
     const chunker = chnkr.makeChunker({
       resolution: 32,
-      lods: 1,
+      range: 2,
+      useLods: false,
     });
 
     /* const _makeGrassMesh = grassPositions => {
