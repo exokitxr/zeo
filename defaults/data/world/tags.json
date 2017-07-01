@@ -1,121 +1,15 @@
 {
   "tags": {
-    "3sef39": {
-      "type": "module",
-      "id": "3sef39",
-      "name": "/plugins/grid",
-      "displayName": "grid",
-      "description": "Procedurally generated wireframe terrain grid.",
-      "version": "0.0.1",
-      "readme": null,
-      "matrix": [
-        1.6817562580108643,
-        1.4887709617614746,
-        -0.8000271320343018,
-        -1.9017269129607066e-8,
-        -0.6309480465674864,
-        0,
-        0.7758250833019612,
-        0.9999999983257802,
-        1.0000000000000004,
-        0.9999999952887881
-      ],
-      "metadata": {
-        "isStatic": false,
-        "exists": false
-      }
-    },
-    "h5ypno": {
-      "type": "module",
-      "id": "h5ypno",
-      "name": "/plugins/directional-light",
-      "displayName": "directional-light",
-      "description": "Provides a basic directional light source.",
-      "version": "0.0.1",
-      "readme": null,
-      "matrix": [
-        2.0676932334899902,
-        1.4281606674194336,
-        1.3833131790161133,
-        0.006806656760488237,
-        0.9341667204700038,
-        0.017844833549030353,
-        -0.3563253457383994,
-        0.9999999629944863,
-        1.000000035444366,
-        0.9999999936258022
-      ],
-      "metadata": {
-        "isStatic": false,
-        "exists": false
-      }
-    },
-    "nc0r9": {
+    "3rdq9m": {
+      "_events": {},
       "type": "entity",
-      "id": "nc0r9",
-      "name": "grid",
-      "displayName": "grid",
-      "description": "Procedurally generated wireframe terrain grid.",
-      "version": "0.0.1",
-      "readme": null,
-      "matrix": [
-        1.5838551938533783,
-        1.4887709647122895,
-        -0.779646219792985,
-        -1.9017269129607066e-8,
-        -0.6309480465674864,
-        0,
-        0.7758250833019612,
-        0.9999999983257802,
-        1.0000000000000004,
-        0.9999999952887881
-      ],
-      "metadata": {
-        "isStatic": false,
-        "exists": false
-      },
-      "tagName": "grid",
-      "attributes": {
-        "position": {
-          "value": [
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            1,
-            1,
-            1
-          ]
-        }
-      }
-    },
-    "zgsewb": {
-      "type": "entity",
-      "id": "zgsewb",
+      "id": "3rdq9m",
       "name": "directional-light",
       "displayName": "directional-light",
+      "module": "/plugins/directional-light",
       "description": "Provides a basic directional light source.",
       "version": "0.0.1",
       "readme": null,
-      "matrix": [
-        2.0011440702916174,
-        1.4319797542109005,
-        1.3087704188051177,
-        0.006806656760488237,
-        0.9341667204700038,
-        0.017844833549030353,
-        -0.3563253457383994,
-        0.9999999629944863,
-        1.000000035444366,
-        0.9999999936258022
-      ],
-      "metadata": {
-        "isStatic": false,
-        "exists": false
-      },
       "tagName": "directional-light",
       "attributes": {
         "position": {
@@ -147,198 +41,111 @@
           ]
         },
         "color": {
-          "value": "#FFFFFF"
+          "value": "#ffffff"
         },
         "intensity": {
-          "value": 1
+          "value": 2
         },
         "shadow": {
           "value": false
         }
-      }
-    },
-    "zgsewb2": {
-      "type": "entity",
-      "id": "zgsewb2",
-      "name": "directional-light",
-      "displayName": "directional-light",
-      "description": "Provides a basic directional light source.",
-      "version": "0.0.1",
-      "readme": null,
-      "matrix": [
-        -2.0011440702916174,
-        1.4319797542109005,
-        1.3087704188051177,
-        0.006806656760488237,
-        0.9341667204700038,
-        0.017844833549030353,
-        -0.3563253457383994,
-        0.9999999629944863,
-        1.000000035444366,
-        0.9999999936258022
-      ],
-      "metadata": {
-        "isStatic": false,
-        "exists": false
       },
-      "tagName": "directional-light",
-      "attributes": {
-        "position": {
-          "value": [
-            -3,
-            3,
-            0,
-            0,
-            0,
-            0,
-            1,
-            1,
-            1,
-            1
-          ]
-        },
-        "lookat": {
-          "value": [
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            1,
-            1,
-            1
-          ]
-        },
-        "color": {
-          "value": "#FFFFFF"
-        },
-        "intensity": {
-          "value": 1
-        },
-        "shadow": {
-          "value": false
-        }
-      }
-    },
-    "o9xgylo": {
-      "type": "module",
-      "id": "o9xgylo",
-      "name": "/plugins/skybox",
-      "displayName": "skybox",
-      "description": "Provides a basic skybox.",
-      "version": "0.0.1",
-      "readme": null,
-      "matrix": [
-        -1.835066318511963,
-        1.3898385763168335,
-        0.7548525333404541,
-        -1.0251127338681592e-8,
-        0.7708196512555041,
-        4.832894811669915e-9,
-        0.637053404664432,
-        0.9999999784317952,
-        1,
-        0.9999999812380703
-      ],
       "metadata": {
         "isStatic": false,
         "exists": false
       }
     },
-    "17brpe": {
+    "jtbd1": {
+      "_events": {},
       "type": "entity",
-      "id": "17brpe",
+      "id": "jtbd1",
       "name": "skybox",
       "displayName": "skybox",
+      "module": "/plugins/skybox",
       "description": "Provides a basic skybox.",
       "version": "0.0.1",
       "readme": null,
-      "matrix": [
-        -1.7368556618690492,
-        1.3898385783679947,
-        0.7360199439037428,
-        -1.0251127338681592e-8,
-        0.7708196512555041,
-        4.832894811669915e-9,
-        0.637053404664432,
-        0.9999999784317952,
-        1,
-        0.9999999812380703
-      ],
-      "metadata": {
-        "isStatic": false,
-        "exists": false
-      },
       "tagName": "skybox",
       "attributes": {
         "position": {
           "value": [
+            -0.4944608190630829,
+            0.18671600782382514,
             0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            1,
+            0.05800565060459861,
+            0.7687227093111678,
+            0.5638809516529752,
+            0.29620771943041946,
             1,
             1,
             1
           ]
+        },
+        "type": {
+          "value": "dark"
         }
-      }
-    },
-    "rog4o": {
-      "type": "module",
-      "id": "rog4o",
-      "name": "/plugins/particle",
-      "displayName": "particle",
-      "description": "A simple 3D particle field.",
-      "version": "0.0.1",
-      "readme": null,
-      "matrix": [
-        -1.9266105890274048,
-        1.515516757965088,
-        0.4431394040584564,
-        4.018268172339853e-9,
-        0.7828451659112331,
-        2.3018885010376285e-18,
-        0.6222165652929272,
-        1.0000000061290368,
-        1,
-        1.0000000061290368
-      ],
-      "metadata": {
-        "isStatic": false,
-        "exists": false
-      }
-    },
-    "9bc7pu": {
-      "type": "entity",
-      "id": "9bc7pu",
-      "name": "particle",
-      "displayName": "particle",
-      "description": "A simple 3D particle field.",
-      "version": "0.0.1",
-      "readme": null,
-      "matrix": [
-        -1.829190742969513,
-        1.5155167574650412,
-        0.42057009409189056,
-        4.018268172339853e-9,
-        0.7828451659112331,
-        2.3018885010376285e-18,
-        0.6222165652929272,
-        1.0000000061290368,
-        1,
-        1.0000000061290368
-      ],
-      "metadata": {
-        "isStatic": false,
-        "exists": false
       },
-      "tagName": "particle",
+      "metadata": {
+        "isStatic": false,
+        "exists": false
+      }
+    },
+    "p5ykvh": {
+      "_events": {},
+      "type": "entity",
+      "id": "p5ykvh",
+      "name": "z-bow",
+      "displayName": "z-bow",
+      "module": "/plugins/z-bow",
+      "description": "Procedurally genetarated bow.",
+      "version": "0.0.1",
+      "readme": null,
+      "tagName": "bow",
+      "attributes": {
+        "position": {
+          "value": [
+            0.008991736455541854,
+            0.044089317321777344,
+            -0.05904845978729156,
+            0.18867606865323816,
+            0.6621725648013184,
+            0.3051808400889104,
+            0.6578704143678781,
+            1.0000000065722559,
+            1.0000000125421902,
+            0.9999999684243219
+          ]
+        },
+        "grabbable": {
+          "value": true
+        },
+        "holdable": {
+          "value": true
+        },
+        "size": {
+          "value": [
+            0.2,
+            0.2,
+            0.2
+          ]
+        }
+      },
+      "metadata": {
+        "isStatic": false,
+        "exists": false
+      }
+    },
+    "n0y7d": {
+      "_events": {},
+      "type": "entity",
+      "id": "n0y7d",
+      "name": "test",
+      "displayName": "test",
+      "module": "/plugins/test",
+      "description": "Test zeo components.",
+      "version": "0.0.1",
+      "readme": "<h1 id=\"an-h1-header\">An h1 header</h1>\n<p>Paragraphs are separated by a blank line.</p>\n<p>2nd paragraph. <em>Italic</em>, <strong>bold</strong>, and <code>monospace</code>. Itemized lists\nlook like:</p>\n<ul>\n<li>this one</li>\n<li>that one</li>\n<li>the other one</li>\n</ul>\n<p>Note that --- not considering the asterisk --- the actual text\ncontent starts at 4-columns in.</p>\n<blockquote>\n<p>Block quotes are\nwritten like so.</p>\n<p>They can span multiple paragraphs,\nif you like.</p>\n</blockquote>\n<p>Use 3 dashes for an em-dash. Use 2 dashes for ranges (ex., &quot;it&#39;s all\nin chapters 12--14&quot;). Three dots ... will be converted to an ellipsis.\nUnicode is supported. ☺</p>\n<h2 id=\"an-h2-header\">An h2 header</h2>\n<p>Here&#39;s a numbered list:</p>\n<ol>\n<li>first item</li>\n<li>second item</li>\n<li>third item</li>\n</ol>\n<p>Note again how the actual text starts at 4 columns in (4 characters\nfrom the left side). Here&#39;s a code sample:</p>\n<pre><code># Let me re-iterate ...\nfor i in 1 .. 10 { do-something(i) }\n</code></pre><p>As you probably guessed, indented 4 spaces. By the way, instead of\nindenting the block, you can use delimited blocks, if you like:</p>\n<p>~~\ndefine foobar() {\n    print &quot;Welcome to flavor country!&quot;;\n}\n~~</p>\n<p>(which makes copying &amp; pasting easier). You can optionally mark the\ndelimited block for Pandoc to syntax highlight it:</p>\n<p>~~python\nimport time</p>\n<h1 id=\"quick-count-to-ten-\">Quick, count to ten!</h1>\n<p>for i in range(10):</p>\n<pre><code># (but not *too* quick)\ntime.sleep(0.5)\nprint i\n</code></pre><p>~~</p>\n<h3 id=\"an-h3-header\">An h3 header</h3>\n<p>Now a nested list:</p>\n<ol>\n<li><p>First, get these ingredients:</p>\n<ul>\n<li>carrots</li>\n<li>celery</li>\n<li>lentils</li>\n</ul>\n</li>\n<li><p>Boil some water.</p>\n</li>\n<li><p>Dump everything in the pot and follow\nthis algorithm:</p>\n<pre><code>find wooden spoon\nuncover pot\nstir\ncover pot\nbalance wooden spoon precariously on pot handle\nwait 10 minutes\ngoto first step (or shut off burner when done)\n</code></pre><p>Do not bump wooden spoon or it will fall.</p>\n</li>\n</ol>\n<p>Notice again how text always lines up on 4-space indents (including\nthat last line which continues item 3 above).</p>\n<p>Here&#39;s a link to <a href=\"http://foo.bar\">a website</a>, to a <a href=\"local-doc.html\">local\ndoc</a>, and to a <a href=\"#an-h2-header\">section heading in the current\ndoc</a>. Here&#39;s a footnote [^1].</p>\n<p>[^1]: Footnote text goes here.</p>\n<p>Tables can look like this:</p>\n<p>size  material      color</p>\n<hr>\n<p>9     leather       brown\n10    hemp canvas   natural\n11    glass         transparent</p>\n<p>Table: Shoes, their sizes, and what they&#39;re made of</p>\n<p>(The above is the caption for the table.) Pandoc also supports\nmulti-line tables:</p>\n<hr>\n<p>keyword   text</p>\n<hr>\n<p>red       Sunsets, apples, and\n          other red or reddish\n          things.</p>\n<p>green     Leaves, grass, frogs\n          and other things it&#39;s\n          not easy being.</p>\n<hr>\n<p>A horizontal rule follows.</p>\n<hr>\n<p>Here&#39;s a definition list:</p>\n<p>apples\n  : Good for making applesauce.\noranges\n  : Citrus!\ntomatoes\n  : There&#39;s no &quot;e&quot; in tomatoe.</p>\n<p>Again, text is indented 4 spaces. (Put a blank line between each\nterm/definition pair to spread things out more.)</p>\n<p>Here&#39;s a &quot;line block&quot;:</p>\n<p>| Line one\n|   Line too\n| Line tree</p>\n<p>and images can be specified like so:</p>\n<p><img src=\"example-image.jpg\" alt=\"example image\" title=\"An exemplary image\"></p>\n<p>Inline math equations go in like so: $\\omega = d\\phi / dt$. Display\nmath should get its own line and be put in in double-dollarsigns:</p>\n<p>$$I = \\int \\rho R^{2} dV$$</p>\n<p>And note that you can backslash-escape any punctuation characters\nwhich you wish to be displayed literally, ex.: `foo`, *bar*, etc.</p>\n",
+      "tagName": "test",
       "attributes": {
         "position": {
           "value": [
@@ -353,8 +160,109 @@
             1,
             1
           ]
+        },
+        "text": {
+          "value": "Some text"
+        },
+        "number": {
+          "value": 1
+        },
+        "color": {
+          "value": "#E91E63"
+        },
+        "checkbox": {
+          "value": false
+        },
+        "file": {
+          "value": "https://lol.com"
         }
+      },
+      "metadata": {
+        "isStatic": true,
+        "exists": true
       }
+    },
+    "dxlmqi": {
+      "_events": {},
+      "type": "entity",
+      "id": "dxlmqi",
+      "name": "ambient-light",
+      "displayName": "ambient-light",
+      "module": "/plugins/ambient-light",
+      "version": "0.0.1",
+      "tagName": "ambient-light",
+      "attributes": {
+        "color": {
+          "value": "#ffffff"
+        }
+      },
+      "metadata": {}
+    },
+    "7w06": {
+      "type": "entity",
+      "id": "7w06",
+      "name": "heightfield",
+      "displayName": "heightfield",
+      "version": "0.0.1",
+      "module": "/plugins/heightfield",
+      "tagName": "heightfield",
+      "attributes": [],
+      "metadata": {}
+    },
+    "m6ize3": {
+      "type": "entity",
+      "id": "m6ize3",
+      "name": "ocean",
+      "displayName": "ocean",
+      "version": "0.0.1",
+      "module": "/plugins/ocean",
+      "tagName": "ocean",
+      "attributes": [],
+      "metadata": {}
+    },
+    "17mv4p": {
+      "type": "entity",
+      "id": "17mv4p",
+      "name": "cloud",
+      "displayName": "cloud",
+      "version": "0.0.1",
+      "module": "/plugins/cloud",
+      "tagName": "cloud",
+      "attributes": [],
+      "metadata": {}
+    },
+    "boxtfn": {
+      "type": "entity",
+      "id": "boxtfn",
+      "name": "grass",
+      "displayName": "grass",
+      "version": "0.0.1",
+      "module": "/plugins/grass",
+      "tagName": "grass",
+      "attributes": [],
+      "metadata": {}
+    },
+    "247bqh": {
+      "type": "entity",
+      "id": "247bqh",
+      "name": "tree",
+      "displayName": "tree",
+      "version": "0.0.1",
+      "module": "/plugins/tree",
+      "tagName": "tree",
+      "attributes": [],
+      "metadata": {}
+    },
+    "tw697f": {
+      "type": "entity",
+      "id": "tw697f",
+      "name": "/plugins/items",
+      "displayName": "items",
+      "version": "0.0.1",
+      "module": "/plugins/items",
+      "tagName": "plugins-items",
+      "attributes": [],
+      "metadata": {}
     }
   }
 }
