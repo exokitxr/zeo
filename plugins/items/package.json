@@ -1,0 +1,12 @@
+{
+  "name": "items",
+  "version": "0.0.1",
+  "description": "Procedurally genetarated items.",
+  "client": "client.js",
+  "server": "server.js",
+  "dependencies": {
+    "chnkr": "0.0.11",
+    "indev": "^3.0.10",
+    "isosurface": "^1.0.0"
+  }
+}
