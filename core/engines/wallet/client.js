@@ -25,7 +25,34 @@ const DEFAULT_MATRIX = [
   1, 1, 1,
 ];
 const NUM_POSITIONS = 100 * 1024;
+const ROTATE_SPEED = 0.0004;
 const CREDIT_ASSET_NAME = 'CRD';
+
+const ASSET_SHADER = {
+  uniforms: {
+    theta: {
+      type: 'f',
+      value: 0,
+    },
+  },
+  vertexShader: [
+    "uniform float theta;",
+    "attribute vec3 color;",
+    "attribute vec2 dy;",
+    "varying vec3 vcolor;",
+    `float rotateSpeed = ${ROTATE_SPEED.toFixed(8)};`,
+    "void main() {",
+    "  gl_Position = projectionMatrix * modelViewMatrix * vec4(position.x - dy.x + (dy.x*cos(theta) - dy.y*sin(theta)), position.y, position.z - dy.y + (dy.y*cos(theta) + dy.x*sin(theta)), 1.0);",
+    "  vcolor = color;",
+    "}"
+  ].join("\n"),
+  fragmentShader: [
+    "varying vec3 vcolor;",
+    "void main() {",
+    "  gl_FragColor = vec4(vcolor, 1.0);",
+    "}"
+  ].join("\n")
+};
 
 const SIDES = ['left', 'right'];
 
@@ -92,15 +119,11 @@ class Wallet {
         const walletRenderer = walletRender.makeRenderer({creatureUtils});
 
         const forwardVector = new THREE.Vector3(0, 0, -1);
+        const zeroQuaternion = new THREE.Quaternion();
         const forwardQuaternion = new THREE.Quaternion().setFromUnitVectors(
           new THREE.Vector3(0, 0, -1),
           new THREE.Vector3(0, -1, 0)
         );
-        const assetMaterial = new THREE.MeshBasicMaterial({
-          color: 0xFFFFFF,
-          shading: THREE.FlatShading,
-          vertexColors: THREE.VertexColors,
-        });
         const mainFontSpec = {
           fonts: biolumi.getFonts(),
           fontSize: 36,
@@ -136,10 +159,10 @@ class Wallet {
             const geometry = new THREE.BufferGeometry();
             const positions = new Float32Array(NUM_POSITIONS * 3);
             geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
-            /* const normals = new Float32Array(NUM_POSITIONS * 3);
-            geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3)); */
             const colors = new Float32Array(NUM_POSITIONS * 3);
             geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
+            const dys = new Float32Array(NUM_POSITIONS * 2);
+            geometry.addAttribute('dy', new THREE.BufferAttribute(dys, 2));
             // geometry.setIndex(new THREE.BufferAttribute(new Uint16Array(NUM_POSITIONS * 3), 1));
             geometry.setDrawRange(0, 0);
             geometry.boundingSphere = new THREE.Sphere(
@@ -147,7 +170,13 @@ class Wallet {
               1
             );
 
-            const material = assetMaterial;
+            const material = new THREE.ShaderMaterial({
+              uniforms: THREE.UniformsUtils.clone(ASSET_SHADER.uniforms),
+              vertexShader: ASSET_SHADER.vertexShader,
+              fragmentShader: ASSET_SHADER.fragmentShader,
+              // transparent: true,
+              // depthTest: false,
+            });
 
             const mesh = new THREE.Mesh(geometry, material);
             mesh.frustumCulled = false;
@@ -172,8 +201,7 @@ class Wallet {
               scale,
               asset,
               quantity,
-              geometry,
-              startTime
+              geometry
             ) {
               this.id = id;
               this.position = position;
@@ -182,24 +210,14 @@ class Wallet {
               this.asset = asset;
               this.quantity = quantity;
               this.geometry = geometry;
-              this.startTime = startTime;
 
               this._grabbed = false;
               this._visible = true;
             }
 
-            getMatrix(now) {
-              const {position, rotation, scale, startTime, _grabbed: grabbed} = this;
-              const timeDiff = now - startTime;
-              const newQuaternion = !grabbed ?
-                new THREE.Quaternion().setFromEuler(new THREE.Euler(
-                  0,
-                  (rotation.y + (timeDiff / (Math.PI * 2) * 0.01)) % (Math.PI * 2),
-                  0,
-                  camera.rotation.order
-                ))
-              :
-                rotation.clone().multiply(forwardQuaternion);
+            getMatrix() {
+              const {position, rotation, scale, _grabbed: grabbed} = this;
+              const newQuaternion = !grabbed ? zeroQuaternion : rotation.clone().multiply(forwardQuaternion);
               const newPosition = !grabbed ? position : position.clone().add(new THREE.Vector3(0, 0, -0.02 / 2).applyQuaternion(newQuaternion));
               const hovered = SIDES.some(side => hoverStates[side].asset === this);
               const newScale = hovered ? scale.clone().multiplyScalar(1.25) : scale;
@@ -223,18 +241,28 @@ class Wallet {
               this._visible = false;
             }
 
+            isGrabbed() {
+              return this._grabbed;
+            }
+
             grab() {
               this._grabbed = true;
+
+              geometryNeedsUpdate = true;
             }
 
             release() {
               this._grabbed = false;
+
+              geometryNeedsUpdate = true;
             }
 
             update(position, rotation, scale) {
               this.position.copy(position);
               this.rotation.copy(rotation);
               this.scale.copy(scale);
+
+              geometryNeedsUpdate = true;
             }
           }
 
@@ -244,24 +272,34 @@ class Wallet {
               const imageData = assets.getSpriteImageData('asset:' + asset);
               const pixelSize = 0.02;
               const geometry = spriteUtils.makeImageDataGeometry(imageData, pixelSize);
+              const positions = geometry.getAttribute('position').array;
+              const numPositions = positions.length / 3;
+              const dys = new Float32Array(numPositions * 2);
+              for (let i = 0; i < numPositions; i++) {
+                dys[(i * 2) + 0] = positions[(i * 3) + 0];
+                dys[(i * 2) + 1] = positions[(i * 3) + 2];
+              }
+              geometry.addAttribute('dy', new THREE.BufferAttribute(dys, 2));
               return geometry;
             })();
-            const startTime = Date.now();
-            const assetInstance = new Asset(id, position, rotation, scale, asset, quantity, geometry, startTime);
+            const assetInstance = new Asset(id, position, rotation, scale, asset, quantity, geometry);
             assetInstances.push(assetInstance);
+
+            geometryNeedsUpdate = true;
 
             return assetInstance;
           };
           object.removeAsset = assetInstance => {
             assetInstances.splice(assetInstances.indexOf(assetInstance), 1);
+
+            geometryNeedsUpdate = true;
           };
 
-          let lastUpdateTime = Date.now();
+          let geometryNeedsUpdate = false;
           object.update = () => {
-            const {gamepads} = webvr.getStatus();
-            const now = Date.now();
+            const _updateHovers = () => {
+              const {gamepads} = webvr.getStatus();
 
-            const _updateAssets = () => {
               SIDES.forEach(side => {
                 const gamepad = gamepads[side];
                 const {worldPosition: controllerPosition} = gamepad;
@@ -309,57 +347,54 @@ class Wallet {
                 }
               });
             };
-            const _updateCore = () => {
-              const now = Date.now();
+            const _updateGeometry = () => {
+              if (geometryNeedsUpdate) {
+                const {geometry} = coreMesh;
+                const positionsAttribute = geometry.getAttribute('position');
+                const {array: positions} = positionsAttribute;
+                const colorsAttribute = geometry.getAttribute('color');
+                const {array: colors} = colorsAttribute;
+                const dysAttribute = geometry.getAttribute('dy');
+                const {array: dys} = dysAttribute;
 
-              const {geometry} = coreMesh;
-              const positionsAttribute = geometry.getAttribute('position');
-              const {array: positions} = positionsAttribute;
-              /* const normalsAttribute = geometry.getAttribute('normal');
-              const {array: normals} = normalsAttribute; */
-              const colorsAttribute = geometry.getAttribute('color');
-              const {array: colors} = colorsAttribute;
-              /* const indexAttribute = geometry.index;
-              const {array: indices} = indexAttribute; */
+                let attributeIndex = 0;
+                for (let i = 0; i < assetInstances.length; i++) {
+                  const asset = assetInstances[i];
 
-              let attributeIndex = 0;
-              // let indexIndex = 0;
-              for (let i = 0; i < assetInstances.length; i++) {
-                const asset = assetInstances[i];
+                  if (asset.isVisible()) {
+                    const {geometry: assetGeometry} = asset;
+                    const matrix = asset.getMatrix();
 
-                if (asset.isVisible()) {
-                  const {geometry: assetGeometry} = asset;
-                  const matrix = asset.getMatrix(now); // XXX can optimize this into a shader
+                    const newGeometry = assetGeometry.clone()
+                      .applyMatrix(matrix);
+                    const newPositions = newGeometry.getAttribute('position').array;
+                    positions.set(newPositions, attributeIndex);
+                    const newColors = newGeometry.getAttribute('color').array;
+                    colors.set(newColors, attributeIndex);
+                    const geometryDys = newGeometry.getAttribute('dy').array;
+                    const newDys = asset.isGrabbed() ? new Float32Array(geometryDys.length) : geometryDys;
+                    dys.set(newDys, attributeIndex / 3 * 2);
 
-                  const newGeometry = assetGeometry.clone()
-                    .applyMatrix(matrix);
-                  const newPositions = newGeometry.getAttribute('position').array;
-                  positions.set(newPositions, attributeIndex);
-                  /* const newNormals = newGeometry.getAttribute('normal').array;
-                  normals.set(newNormals, attributeIndex); */
-                  const newColors = newGeometry.getAttribute('color').array;
-                  colors.set(newColors, attributeIndex);
-                  /* const newIndices = newGeometry.index.array;
-                  _copyIndices(newIndices, indices, indexIndex, attributeIndex / 3); */
-
-                  attributeIndex += newPositions.length;
-                  // indexIndex += newIndices.length;
+                    attributeIndex += newPositions.length;
+                  }
                 }
+
+                positionsAttribute.needsUpdate = true;
+                colorsAttribute.needsUpdate = true;
+                dysAttribute.needsUpdate = true;
+
+                geometry.setDrawRange(0, attributeIndex / 3);
+
+                geometryNeedsUpdate = false;
               }
-
-              positionsAttribute.needsUpdate = true;
-              // normalsAttribute.needsUpdate = true;
-              colorsAttribute.needsUpdate = true;
-              // indexAttribute.needsUpdate = true;
-
-              // geometry.setDrawRange(0, indexIndex / 3);
-              geometry.setDrawRange(0, attributeIndex / 3);
+            };
+            const _updateMaterial = () => {
+              coreMesh.material.uniforms.theta.value = (Date.now() * ROTATE_SPEED * (Math.PI * 2) % (Math.PI * 2));
             };
 
-            _updateAssets();
-            _updateCore();
-
-            lastUpdateTime = now;
+            _updateHovers();
+            _updateGeometry();
+            _updateMaterial();
           };
 
           return object;
@@ -896,6 +931,5 @@ const _formatQueryString = o => {
   }
   return result.join('&');
 };
-const _normalizeAssetName = name => name === 'BTC' ? CREDIT_ASSET_NAME : name;
 
 module.exports = Wallet;
