@@ -4,7 +4,7 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 pushd "$DIR"/..;
 
-curl https://nodejs.org/dist/latest/node-v8.1.2-win-x64.zip >node.zip
+curl https://nodejs.org/dist/v8.1.3/node-v8.1.3-win-x64.zip >node.zip
 unzip node.zip
 rm node.zip
 mv node-v8.1.2-win-x64 node
