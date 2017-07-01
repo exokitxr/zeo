@@ -289,8 +289,8 @@ class Wallet {
 
             return assetInstance;
           };
-          object.removeAsset = assetInstance => {
-            assetInstances.splice(assetInstances.indexOf(assetInstance), 1);
+          object.removeAsset = id => {
+            assetInstances.splice(assetInstances.findIndex(assetInstance => assetInstance.id === id), 1);
 
             geometryNeedsUpdate = true;
           };
