@@ -36,7 +36,7 @@ class Wallet {
 
   mount() {
     const {_archae: archae} = this;
-    const {metadata: {vrid: {url: vridUrl}, server: {enabled: serverEnabled}}} = archae;
+    const {metadata: {site: {url: siteUrl}, vrid: {url: vridUrl}}} = archae;
 
     const cleanups = [];
     this._cleanup = () => {
@@ -62,8 +62,10 @@ class Wallet {
       '/core/engines/hand',
       '/core/engines/rend',
       '/core/engines/tags',
+      '/core/engines/notification',
       '/core/utils/js-utils',
       '/core/utils/creature-utils',
+      '/core/utils/sprite-utils',
     ]).then(([
       bootstrap,
       three,
@@ -75,8 +77,10 @@ class Wallet {
       hand,
       rend,
       tags,
+      notification,
       jsUtils,
       creatureUtils,
+      spriteUtils,
     ]) => {
       if (live) {
         const {THREE, scene, camera} = three;
@@ -84,17 +88,19 @@ class Wallet {
         const {EventEmitter} = events;
         const {sfx} = assets;
 
+        const transparentMaterial = biolumi.getTransparentMaterial();
         const walletRenderer = walletRender.makeRenderer({creatureUtils});
 
+        const forwardVector = new THREE.Vector3(0, 0, -1);
+        const forwardQuaternion = new THREE.Quaternion().setFromUnitVectors(
+          new THREE.Vector3(0, 0, -1),
+          new THREE.Vector3(0, -1, 0)
+        );
         const assetMaterial = new THREE.MeshBasicMaterial({
           color: 0xFFFFFF,
           shading: THREE.FlatShading,
           vertexColors: THREE.VertexColors,
         });
-        const transparentMaterial = biolumi.getTransparentMaterial();
-
-        const forwardVector = new THREE.Vector3(0, 0, -1);
-
         const mainFontSpec = {
           fonts: biolumi.getFonts(),
           fontSize: 36,
@@ -103,14 +109,267 @@ class Wallet {
           fontStyle: biolumi.getFontStyle(),
         };
 
-        const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
+        /* const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
         const _decomposeMatrix = matrix => {
           const position = new THREE.Vector3();
           const rotation = new THREE.Quaternion();
           const scale = new THREE.Vector3();
           matrix.decompose(position, rotation, scale);
           return {position, rotation, scale};
+        }; */
+        const _copyIndices = (src, dst, startIndexIndex, startAttributeIndex) => {
+          for (let i = 0; i < src.length; i++) {
+            dst[startIndexIndex + i] = src[i] + startAttributeIndex;
+          }
         };
+
+        const assetsMesh = (() => {
+          const object = new THREE.Object3D();
+
+          const coreGeometry = (() => {
+            const geometry = new THREE.TetrahedronBufferGeometry(0.1, 1)
+              .applyMatrix(new THREE.Matrix4().makeRotationZ(Math.PI * 3 / 12));
+            return geometry;
+          })();
+          const numCoreGeometryVertices = coreGeometry.getAttribute('position').count;
+          const coreMesh = (() => {
+            const geometry = new THREE.BufferGeometry();
+            const positions = new Float32Array(NUM_POSITIONS * 3);
+            geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+            /* const normals = new Float32Array(NUM_POSITIONS * 3);
+            geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3)); */
+            const colors = new Float32Array(NUM_POSITIONS * 3);
+            geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
+            // geometry.setIndex(new THREE.BufferAttribute(new Uint16Array(NUM_POSITIONS * 3), 1));
+            geometry.setDrawRange(0, 0);
+            geometry.boundingSphere = new THREE.Sphere(
+              new THREE.Vector3(0, 0, 0),
+              1
+            );
+
+            const material = assetMaterial;
+
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.frustumCulled = false;
+            return mesh;
+          })();
+          object.add(coreMesh);
+
+          const assets = [];
+          const _makeHoverState = () => ({
+            asset: null,
+            notification: null,
+          });
+          const hoverStates = {
+            left: _makeHoverState(),
+            right: _makeHoverState(),
+          };
+
+          class Asset {
+            constructor(
+              id,
+              position,
+              rotation,
+              scale,
+              asset,
+              quantity,
+              geometry,
+              startTime
+            ) {
+              this.id = id;
+              this.position = position;
+              this.rotation = rotation;
+              this.scale = scale;
+              this.asset = asset;
+              this.quantity = quantity;
+              this.geometry = geometry;
+              this.startTime = startTime;
+
+              this._grabbed = false;
+              this._visible = true;
+            }
+
+            getMatrix(now) {
+              const {position, rotation, scale, startTime, _grabbed: grabbed} = this;
+              const timeDiff = now - startTime;
+              const newQuaternion = !grabbed ?
+                new THREE.Quaternion().setFromEuler(new THREE.Euler(
+                  0,
+                  (rotation.y + (timeDiff / (Math.PI * 2) * 0.01)) % (Math.PI * 2),
+                  0,
+                  camera.rotation.order
+                ))
+              :
+                rotation.clone().multiply(forwardQuaternion);
+              const newPosition = !grabbed ? position : position.clone().add(new THREE.Vector3(0, 0, -0.02 / 2).applyQuaternion(newQuaternion));
+              const hovered = SIDES.some(side => hoverStates[side].asset === this);
+              const newScale = hovered ? scale.clone().multiplyScalar(1.25) : scale;
+
+              return new THREE.Matrix4().compose(
+                newPosition,
+                newQuaternion,
+                newScale
+              );
+            }
+
+            isVisible() {
+              return this._visible;
+            }
+
+            show() {
+              this._visible = true;
+            }
+
+            hide() {
+              this._visible = false;
+            }
+
+            grab() {
+              this._grabbed = true;
+            }
+
+            release() {
+              this._grabbed = false;
+            }
+
+            update(position, rotation, scale) {
+              this.position.copy(position);
+              this.rotation.copy(rotation);
+              this.scale.copy(scale);
+            }
+          }
+
+          object.addAsset = (id, position, rotation, scale, asset, quantity) => {
+            const geometry = (() => {
+              const canvas = creatureUtils.makeCanvasCreature('asset:' + asset);
+              const pixelSize = 0.02;
+              const geometry = spriteUtils.makeImageGeometry(canvas, pixelSize);
+              return geometry;
+            })();
+            const startTime = Date.now();
+            const assetInstance = new Asset(id, position, rotation, scale, asset, quantity, geometry, startTime);
+            assets.push(assetInstance);
+
+            return assetInstance;
+          };
+          object.removeAsset = assetInstance => {
+            assets.splice(assets.indexOf(assetInstance), 1);
+          };
+
+          let lastUpdateTime = Date.now();
+          object.update = () => {
+            const {gamepads} = webvr.getStatus();
+            const now = Date.now();
+
+            const _updateAssets = () => {
+              SIDES.forEach(side => {
+                const gamepad = gamepads[side];
+                const {worldPosition: controllerPosition} = gamepad;
+                const hoverState = hoverStates[side];
+
+                let closestAsset = null;
+                let closestAssetIndex = -1;
+                let closestAssetDistance = Infinity;
+                for (let i = 0; i < assets.length; i++) {
+                  const asset = assets[i];
+                  const distance = controllerPosition.distanceTo(asset.position);
+
+                  if (closestAsset === null || distance < closestAssetDistance) {
+                    closestAsset = asset;
+                    closestAssetIndex = i;
+                    closestAssetDistance = distance;
+                  }
+                }
+
+                if (closestAssetDistance < 0.2) {
+                  hoverState.asset = closestAsset;
+
+                  const {notification: oldNotification} = hoverState;
+                  if (!oldNotification || oldNotification.asset !== closestAsset) {
+                    if (oldNotification) {
+                      notification.removeNotification(oldNotification);
+                    }
+
+                    const {asset, quantity} = closestAsset;
+                    const newNotification = notification.addNotification(`This is ${quantity} ${asset}.`);
+                    newNotification.asset = closestAsset;
+
+                    hoverState.notification = newNotification;
+                  }
+                } else {
+                  const {asset} = hoverState;
+
+                  if (asset) {
+                    const {notification: oldNotification} = hoverState;
+                    notification.removeNotification(oldNotification);
+
+                    hoverState.asset = null;
+                    hoverState.notification = null;
+                  }
+                }
+              });
+            };
+            const _updateCore = () => {
+              const now = Date.now();
+
+              const {geometry} = coreMesh;
+              const positionsAttribute = geometry.getAttribute('position');
+              const {array: positions} = positionsAttribute;
+              /* const normalsAttribute = geometry.getAttribute('normal');
+              const {array: normals} = normalsAttribute; */
+              const colorsAttribute = geometry.getAttribute('color');
+              const {array: colors} = colorsAttribute;
+              /* const indexAttribute = geometry.index;
+              const {array: indices} = indexAttribute; */
+
+              let attributeIndex = 0;
+              // let indexIndex = 0;
+              for (let i = 0; i < assets.length; i++) {
+                const asset = assets[i];
+
+                if (asset.isVisible()) {
+                  const {geometry: assetGeometry} = asset;
+                  const matrix = asset.getMatrix(now); // XXX can optimize this into a shader
+
+                  const newGeometry = assetGeometry.clone()
+                    .applyMatrix(matrix);
+                  const newPositions = newGeometry.getAttribute('position').array;
+                  positions.set(newPositions, attributeIndex);
+                  /* const newNormals = newGeometry.getAttribute('normal').array;
+                  normals.set(newNormals, attributeIndex); */
+                  const newColors = newGeometry.getAttribute('color').array;
+                  colors.set(newColors, attributeIndex);
+                  /* const newIndices = newGeometry.index.array;
+                  _copyIndices(newIndices, indices, indexIndex, attributeIndex / 3); */
+
+                  attributeIndex += newPositions.length;
+                  // indexIndex += newIndices.length;
+                }
+              }
+
+              positionsAttribute.needsUpdate = true;
+              // normalsAttribute.needsUpdate = true;
+              colorsAttribute.needsUpdate = true;
+              // indexAttribute.needsUpdate = true;
+
+              // geometry.setDrawRange(0, indexIndex / 3);
+              geometry.setDrawRange(0, attributeIndex / 3);
+            };
+
+            _updateAssets();
+            _updateCore();
+
+            lastUpdateTime = now;
+          };
+
+          return object;
+        })();
+        scene.add(assetsMesh);
+        assetsMesh.updateMatrixWorld();
+
+        cleanups.push(() => {
+          scene.remove(assetsMesh);
+        });
 
         const walletState = {
           loaded: false,
@@ -492,7 +751,11 @@ class Wallet {
         rend.on('tabchange', _tabchange);
 
         const _update = () => {
-          // XXX
+          const _updateAssetsMesh = () => {
+            assetsMesh.update();
+          };
+
+          _updateAssetsMesh();
         };
         rend.on('update', _update);
 
@@ -506,6 +769,101 @@ class Wallet {
           requestAssets() {
             return _ensureLoaded()
               .then(() => walletState.assets);
+          }
+
+          addAsset(item) {
+            const {id, attributes} = item;
+            const {
+              position: {value: matrix},
+              asset: {value: asset},
+              quantity: {value: quantity},
+            } = attributes;
+
+            const position = new THREE.Vector3(matrix[0], matrix[1], matrix[2]);
+            const rotation = new THREE.Quaternion(matrix[3], matrix[4], matrix[5], matrix[6]);
+            const scale = new THREE.Vector3(matrix[7], matrix[8], matrix[9]);
+
+            const assetInstance = assetsMesh.addAsset(id, position, rotation, scale, asset, quantity);
+
+            const grabbable = hand.makeGrabbable(item.id);
+            grabbable.setState(position.toArray(), [0, 0, 0, 1], [1, 1, 1]);
+            grabbable.on('grab', () => {
+              assetInstance.grab();
+            });
+            grabbable.on('release', () => {
+              assetInstance.release();
+
+              const {hmd} = webvr.getStatus();
+              const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmd;
+              const externalMatrix = webvr.getExternalMatrix();
+              const bodyPosition = hmdPosition.clone()
+                .add(
+                  new THREE.Vector3(0, -0.4, 0)
+                    .applyQuaternion(new THREE.Quaternion().setFromRotationMatrix(externalMatrix))
+                );
+              if (assetInstance.position.distanceTo(bodyPosition) < 0.35) {
+                const _requestCreateSend = ({asset, quantity, srcAddress, dstAddress, privateKey}) => fetch(`${siteUrl}/id/api/send`, {
+                  method: 'POST',
+                  headers: (() => {
+                    const headers = new Headers();
+                    headers.append('Content-Type', 'application/json');
+                    return headers;
+                  })(),
+                  body: JSON.stringify({
+                    asset: asset,
+                    quantity: quantity,
+                    srcAddress: srcAddress,
+                    dstAddress: dstAddress,
+                    privateKey: privateKey,
+                  }),
+                  credentials: 'include',
+                })
+                  .then(_resJson);
+
+                assetInstance.hide(); // for better UX
+
+                const {
+                  address: {value: address},
+                  privateKey: {value: privateKey},
+                } = attributes;
+                const dstAddress = bootstrap.getAddress();
+                _requestCreateSend({
+                  asset: asset,
+                  quantity: quantity,
+                  srcAddress: address,
+                  dstAddress: dstAddress,
+                  privateKey: privateKey,
+                })
+                  .then(() => {
+                    hand.destroyGrabbable(grabbable);
+
+                    _removeTag(item.id);
+                  })
+                  .catch(err => {
+                    console.warn(err);
+
+                    if (err.status === 402) { // insufficient funds, delete the asset since there's no way it's valid
+                      hand.destroyGrabbable(grabbable);
+
+                      _removeTag(item.id);
+                    } else { // failed to send, so re-show
+                      assetInstance.show();
+                    }
+                  });
+              }
+            });
+            grabbable.on('update', ({position, rotation, scale}) => {
+              assetInstance.update(
+                new THREE.Vector3().fromArray(position),
+                new THREE.Quaternion().fromArray(rotation),
+                new THREE.Vector3().fromArray(scale)
+              );
+            });
+          }
+
+          removeAsset(item) {
+            const {id} = item;
+            assetsMesh.removeAsset(id);
           }
         }
         const walletApi = new WalletApi();
