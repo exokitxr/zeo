@@ -68,8 +68,8 @@ const spriteUtils = archae => ({
           return pixelVertices;
         };
 
-        const _makeImageGeometry = (img, size = 1) => {
-          const imageData = _getImageData(img);
+        const _makeImageGeometry = (img, size = 1) => _makeImageDataGeometry(_getImageData(img), size);
+        const _makeImageDataGeometry = (imageData, size = 1) => {
           const {data: pixelData, width, height} = imageData;
 
           const getPixel = (x, y) => {
@@ -137,6 +137,7 @@ const spriteUtils = archae => ({
 
         return {
           makeImageGeometry: _makeImageGeometry,
+          makeImageDataGeometry: _makeImageDataGeometry,
         };
       }
     });
