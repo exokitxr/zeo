@@ -43,6 +43,7 @@ const CLOUD_SHADER = {
 
 class Cloud {
   mount() {
+    return;
     const {three: {THREE, scene, camera}, elements, render, world, utils: {geometry: geometryUtils, random: {alea}}} = zeo;
 
     const cloudTypes = [

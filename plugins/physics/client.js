@@ -6,6 +6,7 @@ const SIDES = ['left', 'right'];
 
 class Physics {
   mount() {
+    return;
     const {three, elements, input, pose, render, player, physics} = zeo;
     const {THREE, scene} = three;
 
