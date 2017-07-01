@@ -178,17 +178,6 @@ class World {
         }
         const elementManager = new ElementManager();
 
-        const _resJson = res => {
-          if (res.status >= 200 && res.status < 300) {
-            return res.json();
-          } else {
-            return Promise.reject({
-              status: res.status,
-              stack: 'API returned invalid status code: ' + res.status,
-            });
-          }
-        };
-
         const requestHandlers = new Map();
         const _request = (method, args, cb) => {
           if (connection) {
@@ -749,10 +738,14 @@ class World {
         };
         tags.on('loadTags', _loadTags);
 
-        const _addAsset = itemSpec => {
+        const _walletAddAsset = itemSpec => {
           _addTag(itemSpec);
         };
-        wallet.on('addAsset', _addAsset);
+        wallet.on('addAsset', _walletAddAsset);
+        const _walletRemoveTag = id => {
+          _removeTag(id);
+        };
+        wallet.on('removeTag', _walletRemoveTag);
 
         const _download = ({id}) => {
           const a = document.createElement('a');
@@ -1029,7 +1022,8 @@ class World {
           tags.removeListener('seekUpdate', _tagsSeekUpdate);
           tags.removeListener('loadTags', _loadTags);
 
-          wallet.removeListener('addAsset', _addAsset);
+          wallet.removeListener('addAsset', _walletAddAsset);
+          wallet.removeListener('removeTag', _walletRemoveTag);
 
           fs.removeListener('upload', _upload);
 
