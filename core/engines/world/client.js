@@ -133,85 +133,6 @@ class World {
           transparent: true,
           opacity: 0.5,
         });
-        /* class MatrixAttribute {
-          constructor(entityId, attributeName) {
-            this.entityId = entityId;
-            this.attributeName = attributeName;
-
-            const boundingBox = new THREE.Box3();
-            this._boundingBox = boundingBox;
-            const transformGizmo = transform.makeTransformGizmo({
-              onpreview: (position, rotation, scale) => {
-                this.updateBoundingBox(position, rotation, scale);
-              },
-              onupdate: (position, rotation, scale) => {
-                tags.emit('setAttribute', {
-                  id: entityId,
-                  name: attributeName,
-                  value: position.toArray().concat(rotation.toArray()).concat(scale.toArray()),
-                });
-              },
-              menu: true,
-              isEnabled: () => this.isEnabled(),
-            });
-            // scene.add(transformGizmo);
-            this._transformGizmo = transformGizmo;
-
-            this._hovered = false;
-          }
-
-          isEnabled() {
-            return rend.isOpen() && this._hovered;
-          }
-
-          updateBoundingBox(position, rotation, scale) {
-            this._boundingBox.setFromCenterAndSize(position, matrixAttributeSizeVector);
-          }
-
-          updateTransformGizmo(position, rotation, scale) {
-            this._transformGizmo.update(position, rotation, scale);
-          }
-
-          updateMatrix(newValue) {
-            const position = new THREE.Vector3(newValue[0], newValue[1], newValue[2]);
-            const rotation = new THREE.Quaternion(newValue[3], newValue[4], newValue[5], newValue[6]);
-            const scale = new THREE.Vector3(newValue[7], newValue[8], newValue[9]);
-
-            this.updateBoundingBox(position, rotation, scale);
-            this.updateTransformGizmo(position, rotation, scale);
-          }
-
-          getIntersectionDistance(controllerLine) {
-            if (controllerLine.intersectsBox(this._boundingBox)) {
-              const boundingBoxCenter = this._boundingBox.getCenter();
-              const closestPoint = controllerLine.closestPointToPoint(boundingBoxCenter);
-
-              if (controllerLine.origin.distanceTo(closestPoint) < 15) {
-                return closestPoint.distanceTo(boundingBoxCenter);
-              } else {
-                return NaN;
-              }
-            } else {
-              return NaN;
-            }
-          }
-
-          setHovered(hovered) {
-            this._hovered = hovered;
-
-            if (hovered && !this._transformGizmo.visible) {
-              this._transformGizmo.visible = true;
-            } else if (!hovered && this._transformGizmo.visible) {
-              this._transformGizmo.visible = false;
-            }
-          }
-
-          destroy() {
-            scene.remove(this._transformGizmo);
-            transform.destroyTransformGizmo(this._transformGizmo);
-          }
-        }
-        const matrixAttributes = []; */
 
         const _makeTriggerState = () => ({
           triggered: false,
@@ -220,17 +141,6 @@ class World {
           left: _makeTriggerState(),
           right: _makeTriggerState(),
         };
-
-        /* const _getInFrontOfCameraMatrix = () => {
-          const {hmd: hmdStatus} = webvr.getStatus();
-          const {worldPosition: hmdPosition, worldRotation: hmdRotation, worldScale: hmdScale} = hmdStatus;
-
-          const newPosition = hmdPosition.clone().add(new THREE.Vector3(0, 0, -0.5).applyQuaternion(hmdRotation));
-          const newRotation = hmdRotation;
-          const newScale = hmdScale;
-
-          return newPosition.toArray().concat(newRotation.toArray()).concat(newScale.toArray());
-        }; */
 
         class ElementManager {
           constructor() {
@@ -901,46 +811,8 @@ class World {
           const _updateAssetsMesh = () => {
             assetsMesh.update();
           };
-          const _updateMatrixAttributes = () => {
-            /* if (rend.isOpen() && matrixAttributes.length > 0) {
-              const {gamepads} = webvr.getStatus();
-              const _getControllerLine = gamepad => {
-                const {worldPosition: controllerPosition, worldRotation: controllerRotation} = gamepad;
-                const controllerLine = new THREE.Ray(controllerPosition, forwardVector.clone().applyQuaternion(controllerRotation));
-                return controllerLine;
-              };
-              const controllerLines = {
-                left: _getControllerLine(gamepads.left),
-                right: _getControllerLine(gamepads.right),
-              };
-
-              const intersectedMatrixAttributes = SIDES.map(side => {
-                const controllerLine = controllerLines[side];
-
-                let closestIntersectionSpec = null;
-                for (let i = 0; i < matrixAttributes.length; i++) {
-                  const matrixAttribute = matrixAttributes[i];
-                  const distance = matrixAttribute.getIntersectionDistance(controllerLine);
-
-                  if (!isNaN(distance) && (!closestIntersectionSpec || (distance < closestIntersectionSpec.distance))) {
-                    closestIntersectionSpec = {
-                      matrixAttribute,
-                      distance,
-                    };
-                  }
-                }
-                const closestIntersectedMatrixAttribute = closestIntersectionSpec && closestIntersectionSpec.matrixAttribute;
-                return closestIntersectedMatrixAttribute;
-              });
-              for (let i = 0; i < matrixAttributes.length; i++) {
-                const matrixAttribute = matrixAttributes[i];
-                matrixAttribute.setHovered(intersectedMatrixAttributes.includes(matrixAttribute));
-              }
-            } */
-          };
 
           _updateAssetsMesh();
-          _updateMatrixAttributes();
         };
         rend.on('update', _update);
 
