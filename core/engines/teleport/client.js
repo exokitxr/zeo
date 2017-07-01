@@ -152,20 +152,26 @@ class Teleport {
                 const {flat} = metadata;
 
                 teleportFloorMesh.position.copy(position);
-                teleportFloorMesh.quaternion.setFromRotationMatrix(
-                  new THREE.Matrix4().lookAt(
-                    position.clone(),
-                    position.clone().add(
-                      position.clone().sub(
-                        new THREE.Plane().setFromNormalAndCoplanarPoint(
-                          flat ? upVector : normal,
-                          position
-                        ).projectPoint(controllerPosition)
-                      ).normalize()
-                    ),
-                    normal.clone()
-                  )
-                );
+                if (flat) {
+                  const controllerEuler = new THREE.Euler()
+                    .setFromQuaternion(controllerRotation, camera.rotation.order);
+                  teleportFloorMesh.rotation.set(0, controllerEuler.y, 0, camera.rotation.order);
+                } else {
+                  teleportFloorMesh.quaternion.setFromRotationMatrix(
+                    new THREE.Matrix4().lookAt(
+                      position.clone(),
+                      position.clone().add(
+                        position.clone().sub(
+                          new THREE.Plane().setFromNormalAndCoplanarPoint(
+                            normal,
+                            position
+                          ).projectPoint(controllerPosition)
+                        ).normalize()
+                      ),
+                      normal.clone()
+                    )
+                  );
+                }
                 teleportFloorMesh.scale.copy(controllerScale);
                 teleportFloorMesh.updateMatrixWorld();
 
