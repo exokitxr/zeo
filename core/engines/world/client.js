@@ -25,7 +25,6 @@ class World {
 
   mount() {
     const {_archae: archae} = this;
-    const {metadata: {site: {url: siteUrl}, server: {url: serverUrl, enabled: serverEnabled}}} = archae;
 
     const cleanups = [];
     this._cleanup = () => {
@@ -57,10 +56,8 @@ class World {
       '/core/engines/loader',
       '/core/engines/tags',
       '/core/engines/fs',
-      '/core/engines/notification',
       '/core/utils/network-utils',
       '/core/utils/geometry-utils',
-      '/core/utils/sprite-utils',
       '/core/utils/creature-utils',
     ]).then(([
       bootstrap,
@@ -79,10 +76,8 @@ class World {
       loader,
       tags,
       fs,
-      notification,
       networkUtils,
       geometryUtils,
-      spriteUtils,
       creatureUtils,
     ]) => {
       if (live) {
@@ -109,10 +104,6 @@ class World {
 
         const oneVector = new THREE.Vector3(1, 1, 1);
         const forwardVector = new THREE.Vector3(0, 0, -1);
-        const forwardQuaternion = new THREE.Quaternion().setFromUnitVectors(
-          new THREE.Vector3(0, 0, -1),
-          new THREE.Vector3(0, -1, 0)
-        );
         const matrixAttributeSizeVector = oneVector.clone().multiplyScalar(2 * 1.1);
 
         /* const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
@@ -187,247 +178,6 @@ class World {
         }
         const elementManager = new ElementManager();
 
-        const assetsMesh = (() => {
-          const object = new THREE.Object3D();
-
-          const coreGeometry = geometryUtils.unindexBufferGeometry(
-            new THREE.TetrahedronBufferGeometry(0.1, 1)
-              .applyMatrix(new THREE.Matrix4().makeRotationZ(Math.PI * 3 / 12))
-          );
-          const numCoreGeometryVertices = coreGeometry.getAttribute('position').count;
-          const coreMesh = (() => {
-            const geometry = new THREE.BufferGeometry();
-            const positions = new Float32Array(NUM_POSITIONS * 3); // XXX need to handle overflows
-            const positionsAttribute = new THREE.BufferAttribute(positions, 3);
-            geometry.addAttribute('position', positionsAttribute);
-            const normals = new Float32Array(NUM_POSITIONS * 3);
-            const normalsAttribute = new THREE.BufferAttribute(normals, 3);
-            geometry.addAttribute('normal', normalsAttribute);
-            const colors = new Float32Array(NUM_POSITIONS * 3);
-            const colorsAttribute = new THREE.BufferAttribute(colors, 3);
-            geometry.addAttribute('color', colorsAttribute);
-            geometry.setDrawRange(0, 0);
-            geometry.boundingSphere = new THREE.Sphere(
-              new THREE.Vector3(0, 0, 0),
-              1
-            );
-
-            const material = assetMaterial;
-
-            const mesh = new THREE.Mesh(geometry, material);
-            mesh.frustumCulled = false;
-            return mesh;
-          })();
-          object.add(coreMesh);
-
-          const assets = [];
-          const _makeHoverState = () => ({
-            asset: null,
-            notification: null,
-          });
-          const hoverStates = {
-            left: _makeHoverState(),
-            right: _makeHoverState(),
-          };
-
-          class Asset {
-            constructor(
-              position,
-              rotation,
-              scale,
-              asset,
-              quantity,
-              geometry,
-              startTime
-            ) {
-              this.position = position;
-              this.rotation = rotation;
-              this.scale = scale;
-              this.asset = asset;
-              this.quantity = quantity;
-              this.geometry = geometry;
-              this.startTime = startTime;
-
-              this._grabbed = false;
-              this._visible = true;
-            }
-
-            getMatrix(now) {
-              const {position, rotation, scale, startTime, _grabbed: grabbed} = this;
-              const timeDiff = now - startTime;
-              const newQuaternion = !grabbed ?
-                new THREE.Quaternion().setFromEuler(new THREE.Euler(
-                  0,
-                  (rotation.y + (timeDiff / (Math.PI * 2) * 0.01)) % (Math.PI * 2),
-                  0,
-                  camera.rotation.order
-                ))
-              :
-                rotation.clone().multiply(forwardQuaternion);
-              const newPosition = !grabbed ? position : position.clone().add(new THREE.Vector3(0, 0, -0.02 / 2).applyQuaternion(newQuaternion));
-              const hovered = SIDES.some(side => hoverStates[side].asset === this);
-              const newScale = hovered ? scale.clone().multiplyScalar(1.25) : scale;
-
-              return new THREE.Matrix4().compose(
-                newPosition,
-                newQuaternion,
-                newScale
-              );
-            }
-
-            isVisible() {
-              return this._visible;
-            }
-
-            show() {
-              this._visible = true;
-            }
-
-            hide() {
-              this._visible = false;
-            }
-
-            grab() {
-              this._grabbed = true;
-            }
-
-            release() {
-              this._grabbed = false;
-            }
-
-            update(position, rotation, scale) {
-              this.position.copy(position);
-              this.rotation.copy(rotation);
-              this.scale.copy(scale);
-            }
-          }
-
-          object.addAsset = (position, rotation, scale, asset, quantity) => {
-            const geometry = (() => {
-              const canvas = creatureUtils.makeCanvasCreature('asset:' + asset);
-              const pixelSize = 0.02;
-              const geometry = spriteUtils.makeImageGeometry(canvas, pixelSize);
-              return geometry;
-            })();
-            const startTime = Date.now();
-            const assetInstance = new Asset(position, rotation, scale, asset, quantity, geometry, startTime);
-            assets.push(assetInstance);
-
-            return assetInstance;
-          };
-          object.removeAsset = assetInstance => {
-            assets.splice(assets.indexOf(assetInstance), 1);
-          };
-
-          let lastUpdateTime = Date.now();
-          object.update = () => {
-            const {gamepads} = webvr.getStatus();
-            const now = Date.now();
-
-            const _updateAssets = () => {
-              SIDES.forEach(side => {
-                const gamepad = gamepads[side];
-                const {worldPosition: controllerPosition} = gamepad;
-                const hoverState = hoverStates[side];
-
-                let closestAsset = null;
-                let closestAssetIndex = -1;
-                let closestAssetDistance = Infinity;
-                for (let i = 0; i < assets.length; i++) {
-                  const asset = assets[i];
-                  const distance = controllerPosition.distanceTo(asset.position);
-
-                  if (closestAsset === null || distance < closestAssetDistance) {
-                    closestAsset = asset;
-                    closestAssetIndex = i;
-                    closestAssetDistance = distance;
-                  }
-                }
-
-                if (closestAssetDistance < 0.2) {
-                  hoverState.asset = closestAsset;
-
-                  const {notification: oldNotification} = hoverState;
-                  if (!oldNotification || oldNotification.asset !== closestAsset) {
-                    if (oldNotification) {
-                      notification.removeNotification(oldNotification);
-                    }
-
-                    const {asset, quantity} = closestAsset;
-                    const newNotification = notification.addNotification(`This is ${quantity} ${asset}.`);
-                    newNotification.asset = closestAsset;
-
-                    hoverState.notification = newNotification;
-                  }
-                } else {
-                  const {asset} = hoverState;
-
-                  if (asset) {
-                    const {notification: oldNotification} = hoverState;
-                    notification.removeNotification(oldNotification);
-
-                    hoverState.asset = null;
-                    hoverState.notification = null;
-                  }
-                }
-              });
-            };
-            const _updateCore = () => {
-              const now = Date.now();
-
-              const {geometry} = coreMesh;
-              const positionsAttribute = geometry.getAttribute('position');
-              const {array: positions} = positionsAttribute;
-              const normalsAttribute = geometry.getAttribute('normal');
-              const {array: normals} = normalsAttribute;
-              const colorsAttribute = geometry.getAttribute('color');
-              const {array: colors} = colorsAttribute;
-
-              let index = 0;
-              for (let i = 0; i < assets.length; i++) {
-                const asset = assets[i];
-
-                if (asset.isVisible()) {
-                  const {geometry: assetGeometry} = asset;
-                  const matrix = asset.getMatrix(now); // XXX can optimize this into a shader
-
-                  const newGeometry = assetGeometry.clone()
-                    .applyMatrix(matrix);
-                  const newPositions = newGeometry.getAttribute('position').array;
-                  const newNormals = newGeometry.getAttribute('normal').array;
-                  const newColors = newGeometry.getAttribute('color').array;
-                  const numVertices = newPositions.length / 3;
-
-                  positions.set(newPositions, index);
-                  normals.set(newNormals, index);
-                  colors.set(newColors, index);
-
-                  index += numVertices * 3;
-                }
-              }
-
-              positionsAttribute.needsUpdate = true;
-              normalsAttribute.needsUpdate = true;
-              colorsAttribute.needsUpdate = true;
-
-              geometry.setDrawRange(0, index / 3);
-            };
-
-            _updateAssets();
-            _updateCore();
-
-            lastUpdateTime = now;
-          };
-
-          return object;
-        })();
-        scene.add(assetsMesh);
-        assetsMesh.updateMatrixWorld();
-
-        cleanups.push(() => {
-          scene.remove(assetsMesh);
-        });
-
         const _resJson = res => {
           if (res.status >= 200 && res.status < 300) {
             return res.json();
@@ -500,94 +250,8 @@ class World {
           if (item.type === 'entity' && !item.instance) {
             result = tags.mutateAddEntity(tagMesh);
           }
-          if (item.type === 'asset' && !item.instance) {
-            const {attributes} = item;
-            const {
-              position: {value: matrix},
-              asset: {value: asset},
-              quantity: {value: quantity},
-            } = attributes;
-
-            const position = new THREE.Vector3(matrix[0], matrix[1], matrix[2]);
-            const rotation = new THREE.Quaternion(matrix[3], matrix[4], matrix[5], matrix[6]);
-            const scale = new THREE.Vector3(matrix[7], matrix[8], matrix[9]);
-
-            const assetInstance = assetsMesh.addAsset(position, rotation, scale, asset, quantity);
-            item.instance = assetInstance;
-
-            const grabbable = (() => {
-              const grabbable = hand.makeGrabbable(item.id);
-              grabbable.setPosition(position);
-              grabbable.on('grab', () => {
-                assetInstance.grab();
-              });
-              grabbable.on('release', () => {
-                assetInstance.release();
-
-                const {hmd} = webvr.getStatus();
-                const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmd;
-                const externalMatrix = webvr.getExternalMatrix();
-                const bodyPosition = hmdPosition.clone()
-                  .add(
-                    new THREE.Vector3(0, -0.4, 0)
-                      .applyQuaternion(new THREE.Quaternion().setFromRotationMatrix(externalMatrix))
-                  );
-                if (assetInstance.position.distanceTo(bodyPosition) < 0.35) {
-                  const _requestCreateSend = ({asset, quantity, srcAddress, dstAddress, privateKey}) => fetch(`${siteUrl}/id/api/send`, {
-                    method: 'POST',
-                    headers: (() => {
-                      const headers = new Headers();
-                      headers.append('Content-Type', 'application/json');
-                      return headers;
-                    })(),
-                    body: JSON.stringify({
-                      asset: asset,
-                      quantity: quantity,
-                      srcAddress: srcAddress,
-                      dstAddress: dstAddress,
-                      privateKey: privateKey,
-                    }),
-                    credentials: 'include',
-                  })
-                    .then(_resJson);
-
-                  assetInstance.hide(); // for better UX
-
-                  const {
-                    address: {value: address},
-                    privateKey: {value: privateKey},
-                  } = attributes;
-                  const dstAddress = bootstrap.getAddress();
-                  _requestCreateSend({
-                    asset: asset,
-                    quantity: quantity,
-                    srcAddress: address,
-                    dstAddress: dstAddress,
-                    privateKey: privateKey,
-                  })
-                    .then(() => {
-                      hand.destroyGrabbable(grabbable);
-
-                      _removeTag(item.id);
-                    })
-                    .catch(err => {
-                      console.warn(err);
-
-                      if (err.status === 402) { // insufficient funds, delete the asset since there's no way it's valid
-                        hand.destroyGrabbable(grabbable);
-
-                        _removeTag(item.id);
-                      } else { // failed to send, so re-show
-                        assetInstance.show();
-                      }
-                    });
-                }
-              });
-              grabbable.on('update', ({position, rotation, scale}) => {
-                assetInstance.update(position, rotation, scale);
-              });
-              return grabbable;
-            })();
+          if (item.type === 'asset') {
+            wallet.addAsset(item);
           }
 
           elementManager.add(tagMesh);
@@ -608,9 +272,8 @@ class World {
           if (item.type === 'entity' && item.instance) {
             result = tags.mutateRemoveEntity(tagMesh);
           }
-          if (item.type === 'asset' && item.instance) {
-            const {instance: assetInstance} = item;
-            assetsMesh.removeAsset(assetInstance);
+          if (item.type === 'asset') {
+            wallet.removeAsset(item);
           }
 
           tags.destroyTag(tagMesh);
@@ -808,11 +471,7 @@ class World {
         _updatePages();
 
         const _update = e => {
-          const _updateAssetsMesh = () => {
-            assetsMesh.update();
-          };
-
-          _updateAssetsMesh();
+          // XXX
         };
         rend.on('update', _update);
 
@@ -1245,116 +904,109 @@ class World {
           return result;
         })();
 
-        const connection = (() => {
-          if (serverEnabled) {
-            const connection = new AutoWs(_relativeWsUrl('archae/worldWs?id=' + localUserId));
-            let initialized = false;
-            connection.on('message', msg => {
-              const m = JSON.parse(msg.data);
-              const {type} = m;
+        const connection = new AutoWs(_relativeWsUrl('archae/worldWs?id=' + localUserId));
+        let connectionInitialized = false;
+        connection.on('message', msg => {
+          const m = JSON.parse(msg.data);
+          const {type} = m;
 
-              if (type === 'init') {
-                if (!initialized) { // XXX temporary hack until we correctly unload tags on disconnect
-                  initPromise // wait for core to be loaded before initializing user plugins
-                    .then(() => {
-                      const {args: [itemSpecs]} = m;
+          if (type === 'init') {
+            if (!connectionInitialized) { // XXX temporary hack until we correctly unload tags on disconnect
+              initPromise // wait for core to be loaded before initializing user plugins
+                .then(() => {
+                  const {args: [itemSpecs]} = m;
 
-                      tags.loadTags(itemSpecs);
+                  tags.loadTags(itemSpecs);
 
-                      initialized = true;
-                    });
-                }
-              } else if (type === 'addTag') {
-                const {args: [userId, itemSpec]} = m;
+                  connectionInitialized = true;
+                });
+            }
+          } else if (type === 'addTag') {
+            const {args: [userId, itemSpec]} = m;
 
-                _handleAddTag(userId, itemSpec);
-              } else if (type === 'addTags') {
-                const {args: [userId, itemSpecs]} = m;
+            _handleAddTag(userId, itemSpec);
+          } else if (type === 'addTags') {
+            const {args: [userId, itemSpecs]} = m;
 
-                _handleAddTags(userId, itemSpecs);
-              } else if (type === 'removeTag') {
-                const {args: [userId, id]} = m;
+            _handleAddTags(userId, itemSpecs);
+          } else if (type === 'removeTag') {
+            const {args: [userId, id]} = m;
 
-                _handleRemoveTag(userId, id);
-              } else if (type === 'removeTags') {
-                const {args: [userId, ids]} = m;
+            _handleRemoveTag(userId, id);
+          } else if (type === 'removeTags') {
+            const {args: [userId, ids]} = m;
 
-                _handleRemoveTags(userId, ids);
-              } else if (type === 'setTagAttribute') {
-                const {args: [userId, id, {name, value}]} = m;
+            _handleRemoveTags(userId, ids);
+          } else if (type === 'setTagAttribute') {
+            const {args: [userId, id, {name, value}]} = m;
 
-                const tagMesh = _handleSetTagAttribute(userId, id, {name, value});
+            const tagMesh = _handleSetTagAttribute(userId, id, {name, value});
 
-                // this prevents this mutation from triggering an infinite recursion multiplayer update
-                // we simply ignore this mutation during the next entity mutation tick
-                if (tagMesh) {
-                  const {item} = tagMesh;
-                  const {id} = item;
+            // this prevents this mutation from triggering an infinite recursion multiplayer update
+            // we simply ignore this mutation during the next entity mutation tick
+            if (tagMesh) {
+              const {item} = tagMesh;
+              const {id} = item;
 
-                  tags.ignoreEntityMutation({
-                    type: 'setAttribute',
-                    args: [id, name, value],
-                  });
-                }
-              } else if (type === 'tagOpen') {
-                const {args: [userId, id]} = m;
+              tags.ignoreEntityMutation({
+                type: 'setAttribute',
+                args: [id, name, value],
+              });
+            }
+          } else if (type === 'tagOpen') {
+            const {args: [userId, id]} = m;
 
-                _handleTagOpen(userId, id);
-              } else if (type === 'tagClose') {
-                const {args: [userId, id]} = m;
+            _handleTagOpen(userId, id);
+          } else if (type === 'tagClose') {
+            const {args: [userId, id]} = m;
 
-                _handleTagClose(userId, id);
-              } else if (type === 'tagOpenDetails') {
-                const {args: [userId, id]} = m;
+            _handleTagClose(userId, id);
+          } else if (type === 'tagOpenDetails') {
+            const {args: [userId, id]} = m;
 
-                _handleTagOpenDetails(userId, id);
-              } else if (type === 'tagCloseDetails') {
-                const {args: [userId, id]} = m;
+            _handleTagOpenDetails(userId, id);
+          } else if (type === 'tagCloseDetails') {
+            const {args: [userId, id]} = m;
 
-                _handleTagCloseDetails(userId, id);
-              } else if (type === 'tagPlay') {
-                const {args: [userId, id]} = m;
+            _handleTagCloseDetails(userId, id);
+          } else if (type === 'tagPlay') {
+            const {args: [userId, id]} = m;
 
-                _handleTagPlay(userId, id);
-              } else if (type === 'tagPause') {
-                const {args: [userId, id]} = m;
+            _handleTagPlay(userId, id);
+          } else if (type === 'tagPause') {
+            const {args: [userId, id]} = m;
 
-                _handleTagPause(userId, id);
-              } else if (type === 'tagSeek') {
-                const {args: [userId, id, value]} = m;
+            _handleTagPause(userId, id);
+          } else if (type === 'tagSeek') {
+            const {args: [userId, id, value]} = m;
 
-                _handleTagSeek(userId, id, value);
-              } else if (type === 'loadModule') {
-                const {args: [userId, plugin]} = m;
+            _handleTagSeek(userId, id, value);
+          } else if (type === 'loadModule') {
+            const {args: [userId, plugin]} = m;
 
-                _handleLoadModule(userId, plugin);
-              } else if (type === 'unloadModule') {
-                const {args: [userId, pluginName]} = m;
+            _handleLoadModule(userId, plugin);
+          } else if (type === 'unloadModule') {
+            const {args: [userId, pluginName]} = m;
 
-                _handleUnloadModule(userId, pluginName);
-              } else if (type === 'message') {
-                const {args: [detail]} = m;
+            _handleUnloadModule(userId, pluginName);
+          } else if (type === 'message') {
+            const {args: [detail]} = m;
 
-                _handleMessage(detail);
-              } else if (type === 'response') {
-                const {id} = m;
+            _handleMessage(detail);
+          } else if (type === 'response') {
+            const {id} = m;
 
-                const requestHandler = requestHandlers.get(id);
-                if (requestHandler) {
-                  const {error, result} = m;
-                  requestHandler(error, result);
-                } else {
-                  console.warn('unregistered handler:', JSON.stringify(id));
-                }
-              } else {
-                console.log('unknown message', m);
-              }
-            });
-            return connection;
+            const requestHandler = requestHandlers.get(id);
+            if (requestHandler) {
+              const {error, result} = m;
+              requestHandler(error, result);
+            } else {
+              console.warn('unregistered handler:', JSON.stringify(id));
+            }
           } else {
-            return null;
+            console.log('unknown message', m);
           }
-        })();
+        });
 
         cleanups.push(() => {
           rend.removeListener('update', _update);
