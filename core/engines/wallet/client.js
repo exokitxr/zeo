@@ -155,7 +155,6 @@ class Wallet {
           })();
           object.add(coreMesh);
 
-          const assets = [];
           const _makeHoverState = () => ({
             asset: null,
             notification: null,
@@ -239,21 +238,22 @@ class Wallet {
             }
           }
 
+          const assetInstances = [];
           object.addAsset = (id, position, rotation, scale, asset, quantity) => {
             const geometry = (() => {
-              const canvas = creatureUtils.makeCanvasCreature('asset:' + asset);
+              const imageData = assets.getSpriteImageData('asset:' + asset);
               const pixelSize = 0.02;
-              const geometry = spriteUtils.makeImageGeometry(canvas, pixelSize);
+              const geometry = spriteUtils.makeImageDataGeometry(imageData, pixelSize);
               return geometry;
             })();
             const startTime = Date.now();
             const assetInstance = new Asset(id, position, rotation, scale, asset, quantity, geometry, startTime);
-            assets.push(assetInstance);
+            assetInstances.push(assetInstance);
 
             return assetInstance;
           };
           object.removeAsset = assetInstance => {
-            assets.splice(assets.indexOf(assetInstance), 1);
+            assetInstances.splice(assetInstances.indexOf(assetInstance), 1);
           };
 
           let lastUpdateTime = Date.now();
@@ -270,8 +270,8 @@ class Wallet {
                 let closestAsset = null;
                 let closestAssetIndex = -1;
                 let closestAssetDistance = Infinity;
-                for (let i = 0; i < assets.length; i++) {
-                  const asset = assets[i];
+                for (let i = 0; i < assetInstances.length; i++) {
+                  const asset = assetInstances[i];
                   const distance = controllerPosition.distanceTo(asset.position);
 
                   if (closestAsset === null || distance < closestAssetDistance) {
@@ -324,8 +324,8 @@ class Wallet {
 
               let attributeIndex = 0;
               // let indexIndex = 0;
-              for (let i = 0; i < assets.length; i++) {
-                const asset = assets[i];
+              for (let i = 0; i < assetInstances.length; i++) {
+                const asset = assetInstances[i];
 
                 if (asset.isVisible()) {
                   const {geometry: assetGeometry} = asset;

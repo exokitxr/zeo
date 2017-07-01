@@ -10,6 +10,7 @@ class Assets {
     const {express, app} = archae.getCore();
 
     const controllerjsModelPath = path.join(path.dirname(require.resolve('controllerjs')), 'model');
+    const imgPath = path.join(__dirname, 'lib', 'img');
     const sfxPath = path.join(__dirname, 'lib', 'sfx');
 
     const assetsHmdStatic = express.static(path.join(__dirname, 'lib', 'models', 'hmd'));
@@ -22,6 +23,11 @@ class Assets {
       assetsControllerStatic(req, res, next);
     }
     app.use('/archae/assets/models/controller', serveAssetsController);
+    const assetsImgStatic = express.static(imgPath);
+    function serveAssetsImg(req, res, next) {
+      assetsImgStatic(req, res, next);
+    }
+    app.use('/archae/assets/img', serveAssetsImg);
     const assetsSfxStatic = express.static(sfxPath);
     function serveAssetsSfx(req, res, next) {
       assetsSfxStatic(req, res, next);
@@ -33,6 +39,7 @@ class Assets {
         if (
           route.handle.name === 'serveAssetsHmd' ||
           route.handle.name === 'serveAssetsController' ||
+          route.handle.name === 'serveAssetsImg' ||
           route.handle.name === 'serveAssetsSfx'
         ) {
           routes.splice(i, 1);

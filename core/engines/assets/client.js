@@ -1,3 +1,4 @@
+import murmur from 'murmurhash';
 import {
   LABEL_WIDTH,
   LABEL_HEIGHT,
@@ -13,7 +14,8 @@ import menuRender from './lib/render/menu';
 
 const hmdModelPath = 'archae/assets/models/hmd/hmd.json';
 const controllerModelPath = 'archae/assets/models/controller/controller.json';
-const sfxPath = 'archae/assets/sfx/';
+const imgPath = 'archae/assets/img';
+const sfxPath = 'archae/assets/sfx';
 const SFX = [
   'digi_click',
   'digi_cluck',
@@ -38,6 +40,26 @@ class Assets {
 
     const _requestJson = url => fetch(url)
       .then(res => res.json());
+    const _requestImage = url => new Promise((accept, reject) => {
+      const img = new Image();
+
+      img.onload = () => {
+        _cleanup();
+
+        accept(img);
+      };
+      img.onerror = err => {
+        reject(err);
+      };
+
+      img.crossOrigin = true;
+      img.src = url;
+
+      const _cleanup = () => {
+        img.oncanplay = null;
+        img.onerror = null;
+      };
+    });
     const _requestAudio = url => new Promise((accept, reject) => {
       const audio = document.createElement('audio');
 
@@ -62,7 +84,31 @@ class Assets {
         document.body.removeChild(audio);
       };
     });
-    const _requestSfx = () => Promise.all(SFX.map(sfx => _requestAudio(sfxPath + sfx + '.ogg')))
+    const _requestSpritesheet = () => Promise.all([
+      _requestImage(imgPath + '/spritesheet.png'),
+      _requestJson(imgPath + '/spritesheet.json'),
+    ])
+      .then(([
+        img,
+        json,
+      ]) => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        const spriteSize = 16;
+        canvas.getSpriteImageData = (x, y, w, h) => ctx.getImageData(x, y, spriteSize, spriteSize);
+
+        const names = Object.keys(json);
+
+        return {
+          canvas,
+          names,
+          json,
+        };
+      });
+    const _requestSfx = () => Promise.all(SFX.map(sfx => _requestAudio(sfxPath + '/' + sfx + '.ogg')))
       .then(audios => {
         const result = {};
         for (let i = 0; i < SFX.length; i++) {
@@ -90,6 +136,7 @@ class Assets {
       ]),
       _requestJson(hmdModelPath),
       _requestJson(controllerModelPath),
+      _requestSpritesheet(),
       _requestSfx(),
     ])
       .then(([
@@ -100,6 +147,7 @@ class Assets {
         ],
         hmdModelJson,
         controllerModelJson,
+        spritesheet,
         sfx,
       ]) => {
         if (live) {
@@ -135,6 +183,13 @@ class Assets {
             hmdModelMesh,
             controllerModelMesh,
           ]) => {
+            const _getSpriteImageData = s => {
+              const spriteName = spritesheet.names[Math.floor((murmur(s) / 0xFFFFFFFF) * spritesheet.names.length)];
+              const spriteCoods = spritesheet.json[spriteName];
+              const [x, y] = spriteCoods;
+              const imageData = spritesheet.canvas.getSpriteImageData(x, y);
+              return imageData;
+            };
             const _makePlayerLabelMesh = ({username}) => {
               const labelState = {
                 username: username,
@@ -265,6 +320,7 @@ class Assets {
                 controllerModelMesh,
               },
               sfx: sfx,
+              getSpriteImageData: _getSpriteImageData,
               makePlayerLabelMesh: _makePlayerLabelMesh,
               makePlayerMenuMesh: _makePlayerMenuMesh,
             };
