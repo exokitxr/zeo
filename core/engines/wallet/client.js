@@ -465,7 +465,10 @@ class Wallet {
           if (res.status >= 200 && res.status < 300) {
             return res.json();
           } else {
-            return Promise.reject(new Error('invalid status code: ' + res.status));
+            return Promise.reject({
+              status: res.status,
+              stack: 'API returned invalid status code: ' + res.status,
+            });
           }
         };
         const _requestAssets = () => fetch(`${vridUrl}/id/api/assets`, {
@@ -837,7 +840,7 @@ class Wallet {
                   .then(() => {
                     hand.destroyGrabbable(grabbable);
 
-                    _removeTag(item.id);
+                    walletApi.emit('removeTag', item.id);
                   })
                   .catch(err => {
                     console.warn(err);
@@ -845,7 +848,7 @@ class Wallet {
                     if (err.status === 402) { // insufficient funds, delete the asset since there's no way it's valid
                       hand.destroyGrabbable(grabbable);
 
-                      _removeTag(item.id);
+                      walletApi.emit('removeTag', item.id);
                     } else { // failed to send, so re-show
                       assetInstance.show();
                     }
