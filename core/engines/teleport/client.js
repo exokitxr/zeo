@@ -43,8 +43,8 @@ class Teleport {
           return {position, rotation, scale};
         };
 
+        const upVector = new THREE.Vector3(0, 1, 0);
         const forwardVector = new THREE.Vector3(0, 0, -1);
-        const zeroQuaternion = new THREE.Quaternion();
         const teleportMeshMaterial = new THREE.MeshPhongMaterial({
           color: 0xFFC107,
           shading: THREE.FlatShading,
@@ -152,24 +152,20 @@ class Teleport {
                 const {flat} = metadata;
 
                 teleportFloorMesh.position.copy(position);
-                if (flat) {
-                  teleportFloorMesh.quaternion.copy(zeroQuaternion);
-                } else {
-                  teleportFloorMesh.quaternion.setFromRotationMatrix(
-                    new THREE.Matrix4().lookAt(
-                      position.clone(),
-                      position.clone().add(
-                        position.clone().sub(
-                          new THREE.Plane().setFromNormalAndCoplanarPoint(
-                            normal,
-                            position
-                          ).projectPoint(controllerPosition)
-                        ).normalize()
-                      ),
-                      normal.clone()
-                    )
-                  );
-                }
+                teleportFloorMesh.quaternion.setFromRotationMatrix(
+                  new THREE.Matrix4().lookAt(
+                    position.clone(),
+                    position.clone().add(
+                      position.clone().sub(
+                        new THREE.Plane().setFromNormalAndCoplanarPoint(
+                          flat ? upVector : normal,
+                          position
+                        ).projectPoint(controllerPosition)
+                      ).normalize()
+                    ),
+                    normal.clone()
+                  )
+                );
                 teleportFloorMesh.scale.copy(controllerScale);
                 teleportFloorMesh.updateMatrixWorld();
 
