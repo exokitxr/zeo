@@ -214,6 +214,17 @@ const _listenArchae = () => {
   }
 };
 
+const _listenNetwork = () => {
+  const listenPromises = [];
+
+  if (flags.server) {
+    const server = require('./lib/network');
+    listenPromises.push(server.listen(a, config));
+  }
+
+  return Promise.all(listenPromises);
+};
+
 const _boot = () => {
   const bootPromises = [];
 
@@ -232,6 +243,7 @@ _configure()
   .then(() => _install())
   .then(() => _listenLibs())
   .then(() => _listenArchae())
+  .then(() => _listenNetwork())
   .then(() => _boot())
   .then(() => {
     if (flags.server) {
