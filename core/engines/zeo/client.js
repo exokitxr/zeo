@@ -540,6 +540,14 @@ class Zeo {
                       getTags() {
                         return bootstrap.getWorldTime();
                       }
+
+                      getSpawnMatrix() {
+                        return webvr.getSpawnMatrix();
+                      }
+
+                      setSpawnMatrix(spawnMatrix) {
+                        webvr.setSpawnMatrix(spawnMatrix);
+                      }
                     }
 
                     const controllerMeshes = (() => {

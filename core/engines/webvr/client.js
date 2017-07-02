@@ -242,6 +242,9 @@ class WebVR {
             const stageMatrix = new THREE.Matrix4();
             this.stageMatrix = stageMatrix;
 
+            const spawnMatrix = new THREE.Matrix4();
+            this.spawnMatrix = spawnMatrix;
+
             const lookMatrix = new THREE.Matrix4();
             this.lookMatrix = lookMatrix;
 
@@ -345,11 +348,11 @@ class WebVR {
                   if (display && display.stageParameters) {
                     displayStageMatrix.fromArray(display.stageParameters.sittingToStandingTransform);
                   }
-                  this.setStageMatrix(displayStageMatrix);
+                  this.setStageMatrix(displayStageMatrix.premultiply(this.getSpawnMatrix()));
                   this.updateStatus();
 
                   cleanups.push(() => {
-                    this.setStageMatrix(new THREE.Matrix4());
+                    this.setStageMatrix(this.getSpawnMatrix());
                     this.updateStatus();
 
                     this._frameData = null;
@@ -770,6 +773,18 @@ class WebVR {
 
           setStageMatrix(stageMatrix) {
             this.stageMatrix.copy(stageMatrix);
+          }
+
+          getSpawnMatrix() {
+            return this.spawnMatrix.clone();
+          }
+
+          setSpawnMatrix(spawnMatrix) {
+            this.spawnMatrix.copy(spawnMatrix);
+
+            if (!this.display) {
+              this.setStageMatrix(spawnMatrix);
+            }
           }
 
           getSittingToStandingTransform() {
