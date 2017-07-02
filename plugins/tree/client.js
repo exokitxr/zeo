@@ -5,13 +5,14 @@ const {
 } = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
 
+const NUM_POSITIONS_CHUNK = 200 * 1024;
+
 class Tree {
   constructor(archae) {
     this._archae = archae;
   }
 
   mount() {
-    return;
     const {_archae: archae} = this;
     const {three, render, pose} = zeo;
     const {THREE, scene, camera} = three;
@@ -30,22 +31,27 @@ class Tree {
       side: THREE.DoubleSide,
     });
 
-    const _resArrayBuffer = res => {
-      if (res.status >= 200 && res.status < 300) {
-        return res.arrayBuffer();
-      } else {
-        const err = new Error('invalid status code: ' + res.status);
-        return Promise.reject(err);
-      }
+    const worker = new Worker('archae/plugins/_plugins_tree/build/worker.js');
+    const queue = [];
+    worker.requestGenerate = (x, y) => new Promise((accept, reject) => {
+      const buffer = new ArrayBuffer(NUM_POSITIONS_CHUNK * 3);
+      worker.postMessage({
+        x,
+        y,
+        buffer,
+      }, [buffer]);
+      queue.push(buffer => {
+        accept(buffer);
+      });
+    });
+    worker.onmessage = e => {
+      const {data: buffer} = e;
+      const cb = queue.shift();
+      cb(buffer);
     };
-    const _requestTreeGenerate = (x, y) => fetch(`archae/tree/generate?x=${x}&y=${y}`)
-      .then(_resArrayBuffer)
+
+    const _requestTreeGenerate = (x, y) => worker.requestGenerate(x, y)
       .then(treeChunkBuffer => protocolUtils.parseTreeGeometry(treeChunkBuffer));
-    /* const _copyIndices = (src, dst, startIndexIndex, startAttributeIndex) => {
-      for (let i = 0; i < src.length; i++) {
-        dst[startIndexIndex + i] = src[i] + startAttributeIndex;
-      }
-    }; */
 
     const _makeTreeChunkMesh = (treeChunkData, x, z) => {
       const {position, positions, /*normals, */colors, indices, heightRange} = treeChunkData;
@@ -98,6 +104,7 @@ class Tree {
 
         return _requestTreeGenerate(x, z)
           .then(treeChunkData => {
+console.log('tree generate', treeChunkData);
             const treeChunkMesh = _makeTreeChunkMesh(treeChunkData, x, z);
             scene.add(treeChunkMesh);
 
