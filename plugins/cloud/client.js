@@ -41,8 +41,7 @@ class Cloud {
         return Promise.reject(err);
       }
     };
-    const _requestCloudGenerate = (x, y) => fetch(`archae/cloud/generate?x=${x}&y=${y}`)
-      .then(_resArrayBuffer)
+    const _requestCloudGenerate = (x, y) => worker.requestGenerate(x, y)
       .then(cloudChunkBuffer => protocolUtils.parseCloudGeometry(cloudChunkBuffer));
 
     const cloudsMaterial = new THREE.ShaderMaterial({
