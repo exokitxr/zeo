@@ -20,12 +20,14 @@ class Zeo {
       '/core/engines/tags',
       '/core/engines/world',
       '/core/engines/fs',
+      '/core/utils/random-utils',
     ])
       .then(([
         three,
         tags,
         world,
         fs,
+        randomUtils,
       ]) => {
         if (live) {
           class ZeoThreeApi {
@@ -64,12 +66,19 @@ class Zeo {
             }
           }
 
+          class ZeoUtilsApi {
+            constructor() {
+              this.random = randomUtils;
+            }
+          }
+
           class ZeoApi {
             constructor() {
               this.three = new ZeoThreeApi();
               this.elements = new ZeoElementsApi();
               this.world = new ZeoWorldApi();
               this.fs = new ZeoFsApi();
+              this.utils = new ZeoUtilsApi();
             }
           }
           const zeoApi = new ZeoApi();
