@@ -1,4 +1,4 @@
-const alea = require('alea');
+const alea = require('./lib/alea');
 
 module.exports = {
   mount() {
