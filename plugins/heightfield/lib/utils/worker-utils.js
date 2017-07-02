@@ -11,38 +11,6 @@ const {MapPoint} = require('../records/records');
 
 module.exports = ({THREE}) => {
 
-class Vector3 {
-  constructor(x, y, z) {
-    this.x = x;
-    this.y = y;
-    this.z = z;
-  }
-
-  static fromArray(array, offset = 0) {
-    return new Vector3(
-      array[offset + 0],
-      array[offset + 1],
-      array[offset + 2]
-    );
-  }
-
-  sub(v) {
-    return new Vector3(
-      this.x - v.x,
-      this.y - v.y,
-      this.z - v.z
-    );
-  }
-
-  cross(v) {
-    return new Vector3(
-      this.y * v.z - this.z * v.y,
-		  this.z * v.x - this.x * v.z,
-		  this.x * v.y - this.y * v.x
-    );
-  }
-}
-
 const BIOME_COLORS = {
   // Features
   OCEAN: 0x44447a,
