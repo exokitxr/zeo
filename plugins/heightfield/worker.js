@@ -22,9 +22,28 @@ const _generate = (x, y) => {
 };
 
 self.onmessage = e => {
-  const {data: {x, y, buffer}} = e;
-  const mapChunk = _generate(x, y);
-  const resultBuffer = protocolUtils.stringifyMapChunk(mapChunk, buffer, 0);
+  const {data} = e;
+  const {method} = data;
 
-  postMessage(resultBuffer, [resultBuffer]);
+  switch (method) {
+    case 'getOriginHeight': {
+      const originHeight = workerUtils.getOriginHeight();
+
+      postMessage(originHeight);
+      break;
+    }
+    case 'generate': {
+      const {args} = data;
+      const {x, y, buffer} = args;
+      const mapChunk = _generate(x, y);
+      const resultBuffer = protocolUtils.stringifyMapChunk(mapChunk, buffer, 0);
+
+      postMessage(resultBuffer, [resultBuffer]);
+      break;
+    }
+    default: {
+      console.warn('invalid heightfield worker method:', JSON.stringify(method));
+      break;
+    }
+  }
 };

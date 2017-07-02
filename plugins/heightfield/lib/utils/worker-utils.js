@@ -87,13 +87,7 @@ const buildMapChunk = ({offset}) => {
   
         const dx = (offset.x * NUM_CELLS) - OVERSCAN + x;
         const dy = (offset.y * NUM_CELLS) - OVERSCAN + y;
-        const elevation = (-0.3 + Math.pow(_random.elevationNoise.in2D(dx + 1000, dy + 1000), 0.5)) * 64;/* (() => {
-          const y = _random.elevationNoise.in2D(dx, dy);
-          const scaleFactor = 1;
-          const powFactor = 0.3;
-          const x = Math.pow(scaleFactor, powFactor) - Math.pow(scaleFactor * (1 - y), powFactor);
-          return x - 0.5;
-        })(); */
+        const elevation = (-0.3 + Math.pow(_random.elevationNoise.in2D(dx + 1000, dy + 1000), 0.5)) * 64;
         const moisture = _random.moistureNoise.in2D(dx, dy);
         const land = elevation > 0;
         const water = !land;
@@ -221,7 +215,6 @@ const compileMapChunk = mapChunk => {
     heightRange,
   };
 };
-
 const recompileMapChunk = mapChunk => {
   const {offset, points} = mapChunk;
 
@@ -289,6 +282,7 @@ const recompileMapChunk = mapChunk => {
     heightRange: [minY, maxY],
   };
 };
+const getOriginHeight = () => (-0.3 + Math.pow(_random.elevationNoise.in2D(0 + 1000, 0 + 1000), 0.5)) * 64;
 
 const _getCoordOverscanIndex = (x, y) => x + (y * NUM_CELLS_OVERSCAN);
 
@@ -362,6 +356,7 @@ const _colorIntToArray = n => ([
 return {
   buildMapChunk,
   compileMapChunk,
+  getOriginHeight,
 };
 
 };
