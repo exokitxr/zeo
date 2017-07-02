@@ -3,7 +3,9 @@
   "version": "0.0.1",
   "description": "Procedurally genetarated grass.",
   "client": "client.js",
-  "server": "server.js",
+  "builds": {
+    "worker": "worker.js"
+  },
   "dependencies": {
     "chnkr": "0.0.11",
     "indev": "^3.0.10"
