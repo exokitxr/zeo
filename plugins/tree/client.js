@@ -120,49 +120,46 @@ class Tree {
         })
     };
 
-    return _requestRefreshTreeChunks()
-      .then(() => {
-        let updating = false;
-        let updateQueued = false;
-        const tryTreeChunkUpdate = () => {
-          if (!updating) {
-            updating = true;
+    let updating = false;
+    let updateQueued = false;
+    const tryTreeChunkUpdate = () => {
+      if (!updating) {
+        updating = true;
 
-            const done = () => {
-              updating = false;
+        const done = () => {
+          updating = false;
 
-              if (updateQueued) {
-                updateQueued = false;
+          if (updateQueued) {
+            updateQueued = false;
 
-                tryTreeChunkUpdate();
-              }
-            };
-
-            _requestRefreshTreeChunks()
-              .then(done)
-              .catch(err => {
-                console.warn(err);
-
-                done();
-              });
-          } else {
-            updateQueued = true;
+            tryTreeChunkUpdate();
           }
         };
 
-        const _update = () => {
-          tryTreeChunkUpdate();
-        };
-        render.on('update', _update);
+        _requestRefreshTreeChunks()
+          .then(done)
+          .catch(err => {
+            console.warn(err);
 
-        this._cleanup = () => {
-          // XXX remove old tree meshes here
+            done();
+          });
+      } else {
+        updateQueued = true;
+      }
+    };
 
-          treeMaterial.dispose();
+    const _update = () => {
+      tryTreeChunkUpdate();
+    };
+    render.on('update', _update);
 
-          render.removeListener('update', _update);
-        };
-      });
+    this._cleanup = () => {
+      // XXX remove old tree meshes here
+
+      treeMaterial.dispose();
+
+      render.removeListener('update', _update);
+    };
   }
 
   unmount() {
