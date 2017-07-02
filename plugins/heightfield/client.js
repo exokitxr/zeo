@@ -5,16 +5,7 @@ const {
 } = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
 
-const DIRECTIONS = (() => {
-  const result = [];
-  const size = 3;
-  for (let x = -size; x <= size; x++) {
-    for (let y = -size; y <= size; y++) {
-      result.push([x, y]);
-    }
-  }
-  return result;
-})();
+const NUM_POSITIONS_CHUNK = 100 * 1024;
 
 class Heightfield {
   constructor(archae) {
@@ -23,8 +14,8 @@ class Heightfield {
 
   mount() {
     const {_archae: archae} = this;
-    const {three, render, pose, teleport, physics, utils: {geometry: geometryUtils}} = zeo;
-    const {THREE, scene, camera} = three;
+    const {three, render, pose, teleport, physics,} = zeo;
+    const {THREE, scene} = three;
 
     const mapChunkMaterial = new THREE.MeshPhongMaterial({
       // color: 0xFFFFFF,
@@ -34,16 +25,26 @@ class Heightfield {
       // side: THREE.DoubleSide,
     });
 
-    const _resArrayBuffer = res => {
-      if (res.status >= 200 && res.status < 300) {
-        return res.arrayBuffer();
-      } else {
-        const err = new Error('invalid status code: ' + res.status);
-        return Promise.reject(err);
-      }
+    const worker = new Worker('archae/plugins/_plugins_heightfield/build/worker.js');
+    const queue = [];
+    worker.requestGenerate = (x, y) => new Promise((accept, reject) => {
+      const buffer = new ArrayBuffer(NUM_POSITIONS_CHUNK * 3);
+      worker.postMessage({
+        x,
+        y,
+        buffer,
+      }, [buffer]);
+      queue.push(buffer => {
+        accept(buffer);
+      });
+    });
+    worker.onmessage = e => {
+      const {data: buffer} = e;
+      const cb = queue.shift();
+      cb(buffer);
     };
-    const _requestGenerate = (x, y) => fetch(`/archae/heightfield/generate?x=${x}&y=${y}`)
-      .then(_resArrayBuffer)
+
+    const _requestGenerate = (x, y) => worker.requestGenerate(x, y)
       .then(mapChunkBuffer => protocolUtils.parseMapChunk(mapChunkBuffer));
 
     const _makeMapChunkMesh = (mapChunkData, x, z) => {
