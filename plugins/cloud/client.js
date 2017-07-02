@@ -5,6 +5,7 @@ const {
 } = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
 
+const NUM_POSITIONS_CHUNK = 200 * 1024;
 const CLOUD_SPEED = 1;
 
 const CLOUD_SHADER = {
@@ -54,6 +55,25 @@ class Cloud {
     /* const cloudsMaterial = new THREE.MeshBasicMaterial({
       color: 0xFFFFFF,
     }); */
+
+    const worker = new Worker('archae/plugins/_plugins_cloud/build/worker.js');
+    const queue = [];
+    worker.requestGenerate = (x, y) => new Promise((accept, reject) => {
+      const buffer = new ArrayBuffer(NUM_POSITIONS_CHUNK * 3);
+      worker.postMessage({
+        x,
+        y,
+        buffer,
+      }, [buffer]);
+      queue.push(buffer => {
+        accept(buffer);
+      });
+    });
+    worker.onmessage = e => {
+      const {data: buffer} = e;
+      const cb = queue.shift();
+      cb(buffer);
+    };
 
     const updates = [];
 
