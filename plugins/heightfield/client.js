@@ -192,7 +192,8 @@ class Heightfield {
         render.on('update', _update);
 
         this._cleanup = () => {
-          scene.remove(object);
+          // XXX remove chunks from the scene here
+
           render.removeListener('update', _update);
         };
       });
