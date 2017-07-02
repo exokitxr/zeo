@@ -1,11 +1,8 @@
-self.module = {
-  exports: {},
-};
 importScripts('/archae/three/three.js');
-const {exports: THREE} = module;
-importScripts('/archae/random-utils/lib/alea.js');
-const {exports: alea} = module;
-self.module = null;
+const {exports: THREE} = self.module;
+importScripts('/archae/random-utils/alea.js');
+const {exports: alea} = self.module;
+self.module = {};
 
 const {
   NUM_CELLS,
@@ -147,9 +144,7 @@ const _makeCloudChunkMesh = (x, y, cloudPatchGeometries) => {
 self.onmessage = e => {
   const {data: {x, y, buffer}} = e;
   const cloudChunkGeometry = _makeCloudChunkMesh(x, y, cloudPatchGeometries);
-  protocolUtils.stringifyCloudGeometry(cloudChunkGeometry, buffer);
+  const resultBuffer = protocolUtils.stringifyCloudGeometry(cloudChunkGeometry, buffer, 0);
 
-  postMessage(buffer, [buffer]);
-}
-app.get('/archae/cloud/generate', cloudGenerate);
-
+  postMessage(resultBuffer, [resultBuffer]);
+};
