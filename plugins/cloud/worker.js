@@ -1,3 +1,12 @@
+self.module = {
+  exports: {},
+};
+importScripts('/archae/three/three.js');
+const {exports: THREE} = module;
+importScripts('/archae/random-utils/lib/alea.js');
+const {exports: alea} = module;
+self.module = null;
+
 const {
   NUM_CELLS,
   NUM_CELLS_OVERSCAN,
@@ -7,9 +16,6 @@ const protocolUtils = require('./lib/utils/protocol-utils');
 const NUM_POSITIONS = 20 * 1024;
 const NUM_POSITIONS_CHUNK = 200 * 1024;
 const CAMERA_ROTATION_ORDER = 'YXZ';
-
-const {three, utils: {random: {alea}}} = zeo;
-const {THREE} = three;
 
 const upVector = new THREE.Vector3(0, 1, 0);
 
@@ -138,7 +144,7 @@ const _makeCloudChunkMesh = (x, y, cloudPatchGeometries) => {
   };
 };
 
-window.onmessage = e => {
+self.onmessage = e => {
   const {data: {x, y, buffer}} = e;
   const cloudChunkGeometry = _makeCloudChunkMesh(x, y, cloudPatchGeometries);
   protocolUtils.stringifyCloudGeometry(cloudChunkGeometry, buffer);
