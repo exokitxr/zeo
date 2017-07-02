@@ -1,12 +1,4 @@
-(function (root, factory) {
-  if (typeof exports === 'object') {
-      module.exports = factory();
-  } else if (typeof define === 'function' && define.amd) {
-      define(factory);
-  } else {
-      root.Alea = factory();
-  }
-}(this, function () {
+module.exports = (function() {
 
   'use strict';
 
@@ -106,4 +98,4 @@
     mash.version = 'Mash 0.9';
     return mash;
   }
-}));
+})();
