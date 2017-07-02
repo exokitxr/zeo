@@ -104,7 +104,6 @@ class Tree {
 
         return _requestTreeGenerate(x, z)
           .then(treeChunkData => {
-console.log('tree generate', treeChunkData);
             const treeChunkMesh = _makeTreeChunkMesh(treeChunkData, x, z);
             scene.add(treeChunkMesh);
 
