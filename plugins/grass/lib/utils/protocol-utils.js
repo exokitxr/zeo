@@ -133,7 +133,7 @@ const parseGrassGeometries = arrayBuffer => {
     byteOffset += grassGeometrySize;
   }
 
-  return grassGeometrys;
+  return grassGeometries;
 };
 
 module.exports = {
