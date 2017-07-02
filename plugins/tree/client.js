@@ -11,6 +11,7 @@ class Tree {
   }
 
   mount() {
+    return;
     const {_archae: archae} = this;
     const {three, render, pose} = zeo;
     const {THREE, scene, camera} = three;
