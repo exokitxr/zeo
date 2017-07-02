@@ -1,6 +1,8 @@
 const UINT32_SIZE = 4;
 const INT32_SIZE = 4;
 const FLOAT32_SIZE = 4;
+const MAP_CHUNKS_HEADER_ENTRIES = 1;
+const MAP_CHUNKS_HEADER_SIZE = UINT32_SIZE * MAP_CHUNKS_HEADER_ENTRIES;
 const MAP_CHUNK_HEADER_ENTRIES = 4;
 const MAP_CHUNK_HEADER_SIZE = UINT32_SIZE * MAP_CHUNK_HEADER_ENTRIES;
 const MAP_CHUNK_UPDATE_HEADER_ENTRIES = 4;
@@ -63,20 +65,25 @@ const stringifyChestChunk = (chestChunk, arrayBuffer, byteOffset) => {
   headerBuffer[1] = normals.length;
   headerBuffer[2] = colors.length;
   headerBuffer[3] = indices.length;
+  byteOffset += MAP_CHUNK_HEADER_SIZE;
 
-  const positionsBuffer = new Float32Array(arrayBuffer, byteOffset + MAP_CHUNK_HEADER_SIZE, positions.length);
+  const positionsBuffer = new Float32Array(arrayBuffer, byteOffset, positions.length);
   positionsBuffer.set(positions);
+  byteOffset += FLOAT32_SIZE * positions.length;
 
-  const normalsBuffer = new Float32Array(arrayBuffer, byteOffset + MAP_CHUNK_HEADER_SIZE + (FLOAT32_SIZE * positions.length), normals.length);
+  const normalsBuffer = new Float32Array(arrayBuffer, byteOffset, normals.length);
   normalsBuffer.set(normals);
+  byteOffset += FLOAT32_SIZE * normals.length;
 
-  const colorsBuffer = new Float32Array(arrayBuffer, byteOffset + MAP_CHUNK_HEADER_SIZE + (FLOAT32_SIZE * positions.length) + (FLOAT32_SIZE * normals.length), colors.length);
+  const colorsBuffer = new Float32Array(arrayBuffer, byteOffset, colors.length);
   colorsBuffer.set(colors);
+  byteOffset += FLOAT32_SIZE * colors.length;
 
-  const indicesBuffer = new Uint32Array(arrayBuffer, byteOffset + MAP_CHUNK_HEADER_SIZE + (FLOAT32_SIZE * positions.length) + (FLOAT32_SIZE * normals.length) + (FLOAT32_SIZE * colors.length), indices.length);
+  const indicesBuffer = new Uint32Array(arrayBuffer, byteOffset, indices.length);
   indicesBuffer.set(indices);
+  byteOffset += UINT32_SIZE * indices.length;
 
-  return arrayBuffer;
+  return [arrayBuffer, byteOffset];
 };
 
 const _sum = a => {
@@ -88,22 +95,24 @@ const _sum = a => {
   return result;
 };
 
-const stringifyChestChunks = chestChunks => {
-  const chestChunkSizes = chestChunks.map(_getChestChunkSize);
-  const bufferSize = _sum(chestChunkSizes);
-  const arrayBuffer = new ArrayBuffer(bufferSize);
-
-  let byteOffset = 0;
-  for (let i = 0; i < chestChunks.length; i++) {
-    const chestChunk = chestChunks[i];
-
-    stringifyChestChunk(chestChunk, arrayBuffer, byteOffset);
-
-    const chestChunkSize = chestChunkSizes[i];
-    byteOffset += chestChunkSize;
+const stringifyChestChunks = (chestChunks, arrayBuffer, byteOffset) => {
+  if (arrayBuffer === undefined || byteOffset === undefined) {
+    const chestChunkSizes = chestChunks.map(_getChestChunkSize);
+    const bufferSize = _sum(chestChunkSizes);
+    arrayBuffer = new ArrayBuffer(bufferSize);
+    byteOffset = 0;
   }
 
-  return arrayBuffer;
+  const headerBuffer = new Uint32Array(arrayBuffer, byteOffset, MAP_CHUNKS_HEADER_ENTRIES);
+  headerBuffer[0] = chestChunks.length;
+  byteOffset += MAP_CHUNKS_HEADER_SIZE;
+
+  for (let i = 0; i < chestChunks.length; i++) {
+    const chestChunk = chestChunks[i];
+    byteOffset = stringifyChestChunk(chestChunk, arrayBuffer, byteOffset)[1];
+  }
+
+  return [arrayBuffer, byteOffset];
 };
 
 // parsing
@@ -118,37 +127,48 @@ const parseChestChunk = (arrayBuffer, byteOffset) => {
   const numNormals = headerBuffer[1];
   const numColors = headerBuffer[2];
   const numIndices = headerBuffer[3];
+  byteOffset += MAP_CHUNK_HEADER_SIZE;
 
-  const positionsBuffer = new Float32Array(arrayBuffer, byteOffset + MAP_CHUNK_HEADER_SIZE, numPositions);
+  const positionsBuffer = new Float32Array(arrayBuffer, byteOffset, numPositions);
   const positions = positionsBuffer;
+  byteOffset += FLOAT32_SIZE * numPositions;
 
-  const normalsBuffer = new Float32Array(arrayBuffer, byteOffset + MAP_CHUNK_HEADER_SIZE + (FLOAT32_SIZE * numPositions), numNormals);
+  const normalsBuffer = new Float32Array(arrayBuffer, byteOffset, numNormals);
   const normals = normalsBuffer;
+  byteOffset += FLOAT32_SIZE * numNormals;
 
-  const colorsBuffer = new Float32Array(arrayBuffer, byteOffset + MAP_CHUNK_HEADER_SIZE + (FLOAT32_SIZE * numPositions) + (FLOAT32_SIZE * numNormals), numColors);
+  const colorsBuffer = new Float32Array(arrayBuffer, byteOffset, numColors);
   const colors = colorsBuffer;
+  byteOffset += FLOAT32_SIZE * numColors;
 
-  const indicesBuffer = new Uint32Array(arrayBuffer, byteOffset + MAP_CHUNK_HEADER_SIZE + (FLOAT32_SIZE * numPositions) + (FLOAT32_SIZE * numNormals) + (FLOAT32_SIZE * numColors), numIndices);
+  const indicesBuffer = new Uint32Array(arrayBuffer, byteOffset, numIndices);
   const indices = indicesBuffer;
+  byteOffset += UINT32_SIZE * numIndices;
 
-  return {
-    positions,
-    normals,
-    colors,
-    indices,
-  };
+  return [
+    {
+      positions,
+      normals,
+      colors,
+      indices,
+    },
+    byteOffset,
+  ];
 };
 
 const parseChestChunks = arrayBuffer => {
-  const chestChunks = [];
-
   let byteOffset = 0;
-  while (byteOffset < arrayBuffer.byteLength) {
-    const chestChunk = parseChestChunk(arrayBuffer, byteOffset);
-    chestChunks.push(chestChunk);
 
-    const chestChunkSize = _getChestChunkBufferSize(arrayBuffer, byteOffset);
-    byteOffset += chestChunkSize;
+  const headerBuffer = new Uint32Array(arrayBuffer, byteOffset, MAP_CHUNKS_HEADER_ENTRIES);
+  const numChestChunks = headerBuffer[0];
+  byteOffset += MAP_CHUNKS_HEADER_SIZE;
+
+  const chestChunks = Array(numChestChunks);
+  for (let i = 0; i < numChestChunks; i++) {
+    const [chestChunk, newByteOffset] = parseChestChunk(arrayBuffer, byteOffset);
+
+    chestChunks[i] = chestChunk;
+    byteOffset = newByteOffset;
   }
 
   return chestChunks;

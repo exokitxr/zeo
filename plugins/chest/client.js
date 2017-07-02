@@ -3,7 +3,7 @@ const {
 } = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
 
-const NUM_POSITIONS_CHUNK = 500 * 1024;
+const NUM_POSITIONS_CHUNK = 100 * 1024;
 
 class Chest {
   constructor(archae) {
@@ -23,10 +23,16 @@ class Chest {
       // side: THREE.DoubleSide,
     });
 
+    const _copyIndices = (src, dst, startIndexIndex, startAttributeIndex) => {
+      for (let i = 0; i < src.length; i++) {
+        dst[startIndexIndex + i] = src[i] + startAttributeIndex;
+      }
+    };
+
     const worker = new Worker('archae/plugins/_plugins_chest/build/worker.js');
     const queue = [];
     worker.requestGeometry = () => new Promise((accept, reject) => {
-      const buffer = new ArrayBuffer(NUM_POSITIONS_CHUNK * 3);
+      const buffer = new ArrayBuffer(NUM_POSITIONS_CHUNK * 3 * 4);
       worker.postMessage({
         buffer,
       }, [buffer]);
@@ -41,28 +47,43 @@ class Chest {
     };
 
     const _requestChestGeometry = () => worker.requestGeometry()
-      .then(chestChunkBuffer => protocolUtils.parseChestChunk(chestChunkBuffer));
-    const _makeChestMesh = chestGeometry => {
-      const {positions, normals, colors, indices/*, heightRange*/} = chestGeometry;
+      .then(chestChunkBuffer => protocolUtils.parseChestChunks(chestChunkBuffer))
+      .then(([chestGeometry, lidGeometry]) => ({chestGeometry, lidGeometry}));
+    const _makeChestMesh = chestGeometries => {
+      const {chestGeometry, lidGeometry} = chestGeometries;
 
-      const geometry = (() => {
-        let geometry = new THREE.BufferGeometry();
-        geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
-        // geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
-        geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
-        geometry.setIndex(new THREE.BufferAttribute(indices, 1));
-        // const [minY, maxY] = heightRange;
-        geometry.boundingSphere = new THREE.Sphere(
-          new THREE.Vector3(
-            0,
-            0,
-            0
-          ),
-          10
-        );
+      const positions = new Float32Array(NUM_POSITIONS_CHUNK * 3);
+      const colors = new Float32Array(NUM_POSITIONS_CHUNK * 3);
+      const indices = new Uint32Array(NUM_POSITIONS_CHUNK * 3);
+      let attributeIndex = 0;
+      let indexIndex = 0;
 
-        return geometry;
-      })();
+      const _addGeometry = newGeometry => {
+        const {positions: newPositions/*, normals*/, colors: newColors, indices: newIndices/*, heightRange*/} = newGeometry;
+
+        positions.set(newPositions, attributeIndex);
+        colors.set(newColors, attributeIndex);
+        _copyIndices(newIndices, indices, indexIndex, attributeIndex / 3);
+
+        attributeIndex += newPositions.length;
+        indexIndex += newIndices.length;
+      };
+      _addGeometry(chestGeometry);
+      _addGeometry(lidGeometry);
+
+      const geometry = new THREE.BufferGeometry();
+      geometry.addAttribute('position', new THREE.BufferAttribute(new Float32Array(positions.buffer, positions.byteOffset, attributeIndex), 3));
+      geometry.addAttribute('color', new THREE.BufferAttribute(new Float32Array(colors.buffer, colors.byteOffset, attributeIndex), 3));
+      geometry.setIndex(new THREE.BufferAttribute(new Uint32Array(indices.buffer, indices.byteOffset, indexIndex), 1));
+      geometry.boundingSphere = new THREE.Sphere(
+        new THREE.Vector3(
+          0,
+          0,
+          0
+        ),
+        10
+      );
+
       const material = chestMaterial;
 
       const mesh = new THREE.Mesh(geometry, material);
@@ -78,8 +99,8 @@ class Chest {
     };
 
     return _requestChestGeometry()
-      .then(chestGeometry => {
-        const chestMesh = _makeChestMesh(chestGeometry);
+      .then(chestGeometries => {
+        const chestMesh = _makeChestMesh(chestGeometries);
         scene.add(chestMesh);
 
         worker.terminate();

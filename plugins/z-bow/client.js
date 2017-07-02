@@ -12,6 +12,7 @@ const SIDES = ['left', 'right'];
 
 class ZBow {
   mount() {
+    return;
     const {three: {THREE, scene}, input, elements, render, pose, hands, player, utils: {geometry: geometryUtils}} = zeo;
 
     const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
