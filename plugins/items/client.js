@@ -5,7 +5,7 @@ const {
 } = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
 
-const NUM_POSITIONS = 2000 * 1000;
+const NUM_POSITIONS_CHUNK = 200 * 1024;
 
 class Items {
   constructor(archae) {
@@ -13,7 +13,6 @@ class Items {
   }
 
   mount() {
-    return;
     const {_archae: archae} = this;
     const {three, render, pose} = zeo;
     const {THREE, scene, camera} = three;
@@ -26,21 +25,25 @@ class Items {
       // side: THREE.DoubleSide,
     });
 
-    let live = true;
-    this._cleanup = () => {
-      live = false;
+    const worker = new Worker('archae/plugins/_plugins_items/build/worker.js');
+    const queue = [];
+    worker.requestGenerate = (x, y) => new Promise((accept, reject) => {
+      const buffer = new ArrayBuffer(NUM_POSITIONS_CHUNK * 3);
+      worker.postMessage({
+        x,
+        y,
+        buffer,
+      }, [buffer]);
+      queue.push(buffer => {
+        accept(buffer);
+      });
+    });
+    worker.onmessage = e => {
+      const {data: buffer} = e;
+      const cb = queue.shift();
+      cb(buffer);
     };
-
-    const _resArrayBuffer = res => {
-      if (res.status >= 200 && res.status < 300) {
-        return res.arrayBuffer();
-      } else {
-        const err = new Error('invalid status code: ' + res.status);
-        return Promise.reject(err);
-      }
-    };
-    const _requestItemsGenerate = (x, y) => fetch(`archae/items/generate?x=${x}&y=${y}`)
-      .then(_resArrayBuffer)
+    const _requestItemsGenerate = (x, y) => worker.requestGenerate(x, y)
       .then(itemsChunkBuffer => protocolUtils.parseItemsChunk(itemsChunkBuffer));
 
     const _makeItemsChunkMesh = (mapChunkData, x, z) => {
@@ -108,49 +111,46 @@ class Items {
         })
     };
 
-    return _requestRefreshGrassChunks()
-      .then(() => {
-        let updating = false;
-        let updateQueued = false;
-        const tryGrassChunkUpdate = () => {
-          if (!updating) {
-            updating = true;
+    let updating = false;
+    let updateQueued = false;
+    const tryGrassChunkUpdate = () => {
+      if (!updating) {
+        updating = true;
 
-            const done = () => {
-              updating = false;
+        const done = () => {
+          updating = false;
 
-              if (updateQueued) {
-                updateQueued = false;
+          if (updateQueued) {
+            updateQueued = false;
 
-                tryGrassChunkUpdate();
-              }
-            };
-
-            _requestRefreshGrassChunks()
-              .then(done)
-              .catch(err => {
-                console.warn(err);
-
-                done();
-              });
-          } else {
-            updateQueued = true;
+            tryGrassChunkUpdate();
           }
         };
 
-        const _update = () => {
-          tryGrassChunkUpdate();
-        };
-        render.on('update', _update);
+        _requestRefreshGrassChunks()
+          .then(done)
+          .catch(err => {
+            console.warn(err);
 
-        this._cleanup = () => {
-          // XXX remove old items meshes here
+            done();
+          });
+      } else {
+        updateQueued = true;
+      }
+    };
 
-          itemsMaterial.dispose();
+    const _update = () => {
+      tryGrassChunkUpdate();
+    };
+    render.on('update', _update);
 
-          render.removeListener('update', _update);
-        };
-      });
+    this._cleanup = () => {
+      // XXX remove old items meshes here
+
+      itemsMaterial.dispose();
+
+      render.removeListener('update', _update);
+    };
   }
 
   unmount() {
