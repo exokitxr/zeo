@@ -5,7 +5,7 @@ const {
 } = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
 
-const NUM_POSITIONS = 2000 * 1000;
+const NUM_POSITIONS_CHUNK = 200 * 1024;
 
 class Grass {
   constructor(archae) {
@@ -13,10 +13,9 @@ class Grass {
   }
 
   mount() {
-    return;
     const {_archae: archae} = this;
     const {three, render, pose} = zeo;
-    const {THREE, scene, camera} = three;
+    const {THREE, scene} = three;
 
     const upVector = new THREE.Vector3(0, 1, 0);
 
@@ -28,27 +27,27 @@ class Grass {
       side: THREE.DoubleSide,
     });
 
-    let live = true;
-    this._cleanup = () => {
-      live = false;
+    const worker = new Worker('archae/plugins/_plugins_grass/build/worker.js');
+    const queue = [];
+    worker.requestGenerate = (x, y) => new Promise((accept, reject) => {
+      const buffer = new ArrayBuffer(NUM_POSITIONS_CHUNK * 3);
+      worker.postMessage({
+        x,
+        y,
+        buffer,
+      }, [buffer]);
+      queue.push(buffer => {
+        accept(buffer);
+      });
+    });
+    worker.onmessage = e => {
+      const {data: buffer} = e;
+      const cb = queue.shift();
+      cb(buffer);
     };
 
-    const _resArrayBuffer = res => {
-      if (res.status >= 200 && res.status < 300) {
-        return res.arrayBuffer();
-      } else {
-        const err = new Error('invalid status code: ' + res.status);
-        return Promise.reject(err);
-      }
-    };
-    const _requestGrassGenerate = (x, y) => fetch(`archae/grass/generate?x=${x}&y=${y}`)
-      .then(_resArrayBuffer)
+    const _requestGrassGenerate = (x, y) => worker.requestGenerate(x, y)
       .then(grassChunkBuffer => protocolUtils.parseGrassGeometry(grassChunkBuffer));
-    /* const _copyIndices = (src, dst, startIndexIndex, startAttributeIndex) => {
-      for (let i = 0; i < src.length; i++) {
-        dst[startIndexIndex + i] = src[i] + startAttributeIndex;
-      }
-    }; */
 
     const _makeGrassChunkMesh = (grassChunkData, x, z) => {
       const {positions, colors, heightRange} = grassChunkData;
@@ -88,55 +87,6 @@ class Grass {
       useLods: false,
     });
 
-    /* const _makeGrassMesh = grassPositions => {
-      const positions = new Float32Array(NUM_POSITIONS * 3);
-      const colors = new Float32Array(NUM_POSITIONS * 3);
-      let attributeIndex = 0;
-
-      const position = new THREE.Vector3();
-      const quaternion = new THREE.Quaternion();
-      const scale = new THREE.Vector3(1, 1, 1);
-      const matrix = new THREE.Matrix4();
-
-      const numGrassPositions = grassPositions.length / 3;
-      for (let i = 0; i < numGrassPositions; i++) {
-        const baseIndex = i * 3;
-        position.set(
-          grassPositions[baseIndex + 0],
-          grassPositions[baseIndex + 1],
-          grassPositions[baseIndex + 2]
-        );
-        quaternion.setFromAxisAngle(upVector, Math.random() * Math.PI * 2);
-        matrix.compose(position, quaternion, scale);
-        const geometry = grassGeometry
-          .clone()
-          .applyMatrix(matrix);
-        const newPositions = geometry.getAttribute('position').array;
-        positions.set(newPositions, attributeIndex);
-        const newColors = geometry.getAttribute('color').array;
-        colors.set(newColors, attributeIndex);
-
-        attributeIndex += newPositions.length;
-      }
-      const geometry = new THREE.BufferGeometry();
-      geometry.addAttribute('position', new THREE.BufferAttribute(new Float32Array(positions.buffer, positions.byteOffset, attributeIndex), 3));
-      geometry.addAttribute('color', new THREE.BufferAttribute(new Float32Array(colors.buffer, colors.byteOffset, attributeIndex), 3));
-
-      const material = grassMaterial;
-
-      const mesh = new THREE.Mesh(geometry, material);
-      // mesh.position.y = 0.5;
-      // mesh.updateMatrixWorld();
-      // mesh.frustumCulled = false;
-      mesh.drawMode = THREE.TriangleStripDrawMode;
-
-      mesh.destroy = () => {
-        geometry.dispose();
-      };
-
-      return mesh;
-    }; */
-
     const _requestRefreshGrassChunks = () => {
       const {hmd} = pose.getStatus();
       const {worldPosition: hmdPosition} = hmd;
@@ -163,49 +113,46 @@ class Grass {
         })
     };
 
-    return _requestRefreshGrassChunks()
-      .then(() => {
-        let updating = false;
-        let updateQueued = false;
-        const tryGrassChunkUpdate = () => {
-          if (!updating) {
-            updating = true;
+    let updating = false;
+    let updateQueued = false;
+    const tryGrassChunkUpdate = () => {
+      if (!updating) {
+        updating = true;
 
-            const done = () => {
-              updating = false;
+        const done = () => {
+          updating = false;
 
-              if (updateQueued) {
-                updateQueued = false;
+          if (updateQueued) {
+            updateQueued = false;
 
-                tryGrassChunkUpdate();
-              }
-            };
-
-            _requestRefreshGrassChunks()
-              .then(done)
-              .catch(err => {
-                console.warn(err);
-
-                done();
-              });
-          } else {
-            updateQueued = true;
+            tryGrassChunkUpdate();
           }
         };
 
-        const _update = () => {
-          tryGrassChunkUpdate();
-        };
-        render.on('update', _update);
+        _requestRefreshGrassChunks()
+          .then(done)
+          .catch(err => {
+            console.warn(err);
 
-        this._cleanup = () => {
-          // XXX remove old grass meshes here
+            done();
+          });
+      } else {
+        updateQueued = true;
+      }
+    };
 
-          grassMaterial.dispose();
+    const _update = () => {
+      tryGrassChunkUpdate();
+    };
+    render.on('update', _update);
 
-          render.removeListener('update', _update);
-        };
-      });
+    this._cleanup = () => {
+      // XXX remove old grass meshes here
+
+      grassMaterial.dispose();
+
+      render.removeListener('update', _update);
+    };
   }
 
   unmount() {
