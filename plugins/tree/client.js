@@ -61,7 +61,7 @@ class Tree {
         geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
         // geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
         geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
-        geometry.setIndex(new THREE.Uint32BufferAttribute(indices, 1));
+        geometry.setIndex(new THREE.BufferAttribute(indices, 1));
         const [minY, maxY] = heightRange;
         geometry.boundingSphere = new THREE.Sphere(
           new THREE.Vector3(
