@@ -1,3 +1,7 @@
+if (typeof self === 'object' && typeof global === 'undefined') {
+  self.module = {};
+}
+
 module.exports = (() => {
   'use strict';
 
