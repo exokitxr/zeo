@@ -14,7 +14,7 @@ class Heightfield {
 
   mount() {
     const {_archae: archae} = this;
-    const {three, render, pose, teleport, physics,} = zeo;
+    const {three, render, pose, world, teleport, physics} = zeo;
     const {THREE, scene} = three;
 
     const mapChunkMaterial = new THREE.MeshPhongMaterial({
@@ -27,12 +27,23 @@ class Heightfield {
 
     const worker = new Worker('archae/plugins/_plugins_heightfield/build/worker.js');
     const queue = [];
+    worker.requestOriginHeight = () => new Promise((accept, reject) => {
+      worker.postMessage({
+        method: 'getOriginHeight',
+      });
+      queue.push(originHeight => {
+        accept(originHeight);
+      });
+    });
     worker.requestGenerate = (x, y) => new Promise((accept, reject) => {
       const buffer = new ArrayBuffer(NUM_POSITIONS_CHUNK * 3);
       worker.postMessage({
-        x,
-        y,
-        buffer,
+        method: 'generate',
+        args: {
+          x,
+          y,
+          buffer,
+        },
       }, [buffer]);
       queue.push(buffer => {
         accept(buffer);
@@ -43,6 +54,11 @@ class Heightfield {
       const cb = queue.shift();
       cb(buffer);
     };
+
+    const _bootstrap = () => worker.requestOriginHeight()
+      .then(originHeight => {
+        world.setSpawnMatrix(new THREE.Matrix4().makeTranslation(0, originHeight, 0));
+      });
 
     const _requestGenerate = (x, y) => worker.requestGenerate(x, y)
       .then(mapChunkBuffer => protocolUtils.parseMapChunk(mapChunkBuffer));
@@ -80,9 +96,6 @@ class Heightfield {
       return mesh;
     };
 
-    const object = new THREE.Object3D();
-    scene.add(object);
-
     const chunker = chnkr.makeChunker({
       resolution: 32,
       range: 4,
@@ -100,7 +113,7 @@ class Heightfield {
         return _requestGenerate(x, z)
           .then(mapChunkData => {
             const mapChunkMesh = _makeMapChunkMesh(mapChunkData, x, z);
-            object.add(mapChunkMesh);
+            scene.add(mapChunkMesh);
 
             teleport.addTarget(mapChunkMesh, {
               flat: true,
@@ -127,7 +140,7 @@ class Heightfield {
         .then(() => {
           removed.forEach(chunk => {
             const {data: mapChunkMesh} = chunk;
-            object.remove(mapChunkMesh);
+            scene.remove(mapChunkMesh);
             mapChunkMesh.destroy();
 
             teleport.removeTarget(mapChunkMesh);
@@ -143,7 +156,7 @@ class Heightfield {
         });
     };
 
-    return _requestRefreshMapChunks()
+    return _bootstrap()
       .then(() => {
         let updating = false;
         let updateQueued = false;
