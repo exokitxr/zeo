@@ -167,7 +167,7 @@ class Chest {
       const _makeBoxTargetSpec = (type, position, rotation, scale, boundingBox) => {
         const boundingBoxMin = new THREE.Vector3().fromArray(boundingBox[0]);
         const boundingBoxMax = new THREE.Vector3().fromArray(boundingBox[1]);
-        const offset = boundingBoxMin.clone().add(boundingBoxMax).divideScalar(2);
+        const offset = boundingBoxMin.clone().add(boundingBoxMax).divideScalar(2).multiply(scale).applyQuaternion(rotation);
         const newPosition = position.clone().add(offset);
         const size = boundingBoxMax.clone().sub(boundingBoxMin);
         return {
