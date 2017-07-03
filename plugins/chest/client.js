@@ -4,6 +4,7 @@ const {
 const protocolUtils = require('./lib/utils/protocol-utils');
 
 const NUM_POSITIONS_CHUNK = 100 * 1024;
+const SIDES = ['left', 'right'];
 
 class Chest {
   constructor(archae) {
@@ -22,6 +23,7 @@ class Chest {
       vertexColors: THREE.VertexColors,
       // side: THREE.DoubleSide,
     });
+    const hoverColor = new THREE.Color(0x2196F3);
 
     const _copyIndices = (src, dst, startIndexIndex, startAttributeIndex) => {
       for (let i = 0; i < src.length; i++) {
@@ -46,6 +48,14 @@ class Chest {
       cb(buffer);
     };
 
+    const _makeHoverState = () => ({
+      type: null,
+    });
+    const hoverStates = {
+      left: _makeHoverState(),
+      right: _makeHoverState(),
+    };
+
     const _requestChestGeometry = () => worker.requestGeometry()
       .then(chestChunkBuffer => protocolUtils.parseChestChunks(chestChunkBuffer))
       .then(([chestGeometry, lidGeometry]) => ({chestGeometry, lidGeometry}));
@@ -58,18 +68,21 @@ class Chest {
       let attributeIndex = 0;
       let indexIndex = 0;
 
-      const _addGeometry = newGeometry => {
-        const {positions: newPositions/*, normals*/, colors: newColors, indices: newIndices/*, heightRange*/} = newGeometry;
+      const _render = () => {
+        const _addGeometry = (newGeometry) => {
+          const {positions: newPositions/*, normals*/, colors: newColors, indices: newIndices/*, heightRange*/} = newGeometry;
 
-        positions.set(newPositions, attributeIndex);
-        colors.set(newColors, attributeIndex);
-        _copyIndices(newIndices, indices, indexIndex, attributeIndex / 3);
+          positions.set(newPositions, attributeIndex);
+          colors.set(newColors, attributeIndex);
+          _copyIndices(newIndices, indices, indexIndex, attributeIndex / 3);
 
-        attributeIndex += newPositions.length;
-        indexIndex += newIndices.length;
+          attributeIndex += newPositions.length;
+          indexIndex += newIndices.length;
+        };
+        _addGeometry(chestGeometry);
+        _addGeometry(lidGeometry);
       };
-      _addGeometry(chestGeometry);
-      _addGeometry(lidGeometry);
+      _render();      
 
       const geometry = new THREE.BufferGeometry();
       geometry.addAttribute('position', new THREE.BufferAttribute(new Float32Array(positions.buffer, positions.byteOffset, attributeIndex), 3));
@@ -91,6 +104,55 @@ class Chest {
       mesh.updateMatrixWorld();
       // mesh.frustumCulled = false;
 
+      mesh.needsUpdate = false;
+      mesh.update = () => {
+        if (mesh.needsUpdate) {
+          const hoverTypes = (() => {
+            const result = [];
+            SIDES.forEach(side => {
+              const hoverState = hoverStates[side];
+              const {type} = hoverState;
+              if (!result.includes(type)) {
+                result.push(type);
+              }
+            });
+            return result;
+          })();
+
+          const colorAttribute = geometry.getAttribute('color');
+          const {array: colors} = colorAttribute;
+          let attributeIndex = 0;
+          const _rerenderGeometry = (newGeometry, highlight) => {
+            const {colors: newColors} = newGeometry;
+
+            if (highlight) {
+              const numColors = colors.length / 3;
+              for (let i = 0; i < numColors; i++) {
+                const baseIndex = i * 3;
+                const color = hoverColor.clone().multiplyScalar(
+                  new THREE.Color(
+                    newColors[baseIndex + 0],
+                    newColors[baseIndex + 1],
+                    newColors[baseIndex + 2],
+                  ).getHSL().l * 3.5
+                );
+                colors[attributeIndex + baseIndex + 0] = color.r;
+                colors[attributeIndex + baseIndex + 1] = color.g;
+                colors[attributeIndex + baseIndex + 2] = color.b;
+              }
+            } else {
+              colors.set(newColors, attributeIndex);
+            }
+
+            attributeIndex += newColors.length;
+          };
+          _rerenderGeometry(chestGeometry, hoverTypes.includes('chest'));
+          _rerenderGeometry(lidGeometry, hoverTypes.includes('lid'));
+          colorAttribute.needsUpdate = true;
+
+          mesh.needsUpdate = false;
+        }
+      };
       mesh.destroy = () => {
         geometry.dispose();
       };
@@ -106,7 +168,47 @@ class Chest {
         worker.terminate();
 
         const _update = () => {
-          // XXX
+          const _updateHover = () => {
+            const {gamepads} = pose.getStatus();
+            const {chestGeometry, lidGeometry} = chestGeometries;
+            const _makeBoundingBoxSpec = (type, geometry) => ({
+              type: type,
+              boundingBox: new THREE.Box3(
+                new THREE.Vector3().fromArray(geometry.boundingBox[0]).applyMatrix4(chestMesh.matrixWorld),
+                new THREE.Vector3().fromArray(geometry.boundingBox[1]).applyMatrix4(chestMesh.matrixWorld)
+              ),
+            });
+            const boundingBoxSpecs = [
+              _makeBoundingBoxSpec('chest', chestGeometry),
+              _makeBoundingBoxSpec('lid', lidGeometry),
+            ];
+
+            SIDES.forEach(side => {
+              const gamepad = gamepads[side];
+              const {worldPosition: controllerPosition} = gamepad;
+              const hoverState = hoverStates[side];
+
+              let type = null;
+              for (let i = 0; i < boundingBoxSpecs.length; i++) {
+                const boundingBoxSpec = boundingBoxSpecs[i];
+                const {boundingBox} = boundingBoxSpec;
+
+                if (boundingBox.containsPoint(controllerPosition)) {
+                  type = boundingBoxSpec.type;
+                }
+              }
+              if (hoverState.type !== type) {
+                hoverState.type = type;
+                chestMesh.needsUpdate = true;
+              }
+            });
+          };
+          const _updateMesh = () => {
+            chestMesh.update();
+          };
+
+          _updateHover();
+          _updateMesh();
         };
         render.on('update', _update);
 
