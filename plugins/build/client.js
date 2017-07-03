@@ -70,8 +70,8 @@ class Build {
     const _makePolygonMesh = (ox, oy, oz) => {
       const geometry = new THREE.BufferGeometry();
       geometry.boundingSphere = new THREE.Sphere(
-        new THREE.Vector3(ox + 0.5, oy + 0.5, oz + 0.5),
-        Math.sqrt(3)
+        new THREE.Vector3((ox + 0.5) * RESOLUTION, (oy + 0.5) * RESOLUTION, (oz + 0.5) * RESOLUTION),
+        Math.sqrt(RESOLUTION * RESOLUTION * 3)
       );
 
       const material = polygonMeshMaterial;
@@ -139,9 +139,9 @@ class Build {
       for (let dz = -1; dz <= 1; dz++) {
         for (let dy = -1; dy <= 1; dy++) {
           for (let dx = -1; dx <= 1; dx++) {
-            const x = (Math.floor(p.x * RESOLUTION) / RESOLUTION) + (dx / RESOLUTION);
-            const y = (Math.floor(p.y * RESOLUTION) / RESOLUTION) + (dy / RESOLUTION);
-            const z = (Math.floor(p.z * RESOLUTION) / RESOLUTION) + (dz / RESOLUTION);
+            const x = Math.floor(p.x + dx);
+            const y = Math.floor(p.y + dy);
+            const z = Math.floor(p.z + dz);
             const v = Math.max(baseValue - Math.sqrt(dx*dx + dy*dy + dz*dz), 0);
 
             const pointPolygonMeshesToUpdate = [];
@@ -150,17 +150,17 @@ class Build {
               const direction = DIRECTIONS[i];
               const [ex, ey, ez] = direction;
 
-              const lx = x + (ex / RESOLUTION);
-              const ly = y + (ey / RESOLUTION);
-              const lz = z + (ez / RESOLUTION);
+              const lx = x + ex;
+              const ly = y + ey;
+              const lz = z + ez;
 
-              const ox = Math.floor(lx);
-              const oy = Math.floor(ly);
-              const oz = Math.floor(lz);
+              const ox = Math.floor(lx / RESOLUTION);
+              const oy = Math.floor(ly / RESOLUTION);
+              const oz = Math.floor(lz / RESOLUTION);
 
-              const rx = (x - ox) * RESOLUTION;
-              const ry = (y - oy) * RESOLUTION;
-              const rz = (z - oz) * RESOLUTION;
+              const rx = x - (ox * RESOLUTION);
+              const ry = y - (oy * RESOLUTION);
+              const rz = z - (oz * RESOLUTION);
 
               if (rx >= 0 && rx <= RESOLUTION && ry >= 0 && ry <= RESOLUTION && rz >= 0 && rz <= RESOLUTION) {
                 const meshIndex = ox + ':' + oy + ':' + oz;
