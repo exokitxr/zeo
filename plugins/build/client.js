@@ -69,7 +69,7 @@ class Build {
       const geometry = new THREE.BufferGeometry();
       geometry.boundingSphere = new THREE.Sphere(
         new THREE.Vector3(ox + 0.5, oy + 0.5, oz + 0.5),
-        1
+        Math.sqrt(3)
       );
 
       const material = polygonMeshMaterial;

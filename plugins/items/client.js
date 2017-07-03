@@ -60,7 +60,7 @@ class Items {
             (minY + maxY) / 2,
             (z * NUM_CELLS) + (NUM_CELLS / 2)
           ),
-          Math.max(Math.sqrt((NUM_CELLS / 2) * (NUM_CELLS / 2) * 2), (maxY - minY) / 2)
+          Math.max(Math.sqrt((NUM_CELLS / 2) * (NUM_CELLS / 2) * 3), (maxY - minY) / 2)
         );
 
         return geometry;
