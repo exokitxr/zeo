@@ -149,12 +149,6 @@ class Wallet {
         const assetsMesh = (() => {
           const object = new THREE.Object3D();
 
-          const coreGeometry = (() => {
-            const geometry = new THREE.TetrahedronBufferGeometry(0.1, 1)
-              .applyMatrix(new THREE.Matrix4().makeRotationZ(Math.PI * 3 / 12));
-            return geometry;
-          })();
-          const numCoreGeometryVertices = coreGeometry.getAttribute('position').count;
           const coreMesh = (() => {
             const geometry = new THREE.BufferGeometry();
             const positions = new Float32Array(NUM_POSITIONS * 3);
