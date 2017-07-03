@@ -1,6 +1,7 @@
-const polygonMeshResolution = 0.02;
-const chunkSize = 8;
-const h = chunkSize / 2;
+const protocolUtils = require('./lib/utils/protocol-utils');
+
+const RESOLUTION = 32;
+const NUM_POSITIONS = 200 * 1024;
 
 class Build {
   constructor(archae) {
@@ -9,296 +10,232 @@ class Build {
 
   mount() {
     const {_archae: archae} = this;
-    const {three: {THREE, scene}, pose, input} = zeo;
+    const {three, pose, input} = zeo;
+    const {THREE, scene} = three;
 
-    let live = true;
-    this._cleanup = () => {
-      live = false;
+    const polygonMeshMaterial = new THREE.MeshPhongMaterial({
+      color: 0x9E9E9E,
+      shininess: 0,
+      shading: THREE.FlatShading,
+    });
+
+    const worker = new Worker('archae/plugins/_plugins_build/build/worker.js');
+    const queue = [];
+    worker.requestMesh = (x, y, z, points, resultBuffer) => new Promise((accept, reject) => {
+      worker.postMessage({
+        x,
+        y,
+        z,
+        points,
+        resultBuffer,
+      }, [resultBuffer]);
+      queue.push(data => {
+        accept(data);
+      });
+    })
+      .then(({resultBuffer}) => {
+        const {positions, normals, indices} = protocolUtils.parseGeometry(resultBuffer);
+        return {resultBuffer, positions, normals, indices};
+      });
+    worker.onmessage = e => {
+      const {data} = e;
+      const cb = queue.shift();
+      cb(data);
     };
 
-    return archae.requestWorker(this, {
-      count: 2,
-    })
-      .then(worker => {
-        if (live) {
-          const polygonMeshMaterial = new THREE.MeshPhongMaterial({
-            color: 0xFF0000,
-            shininess: 0,
-            shading: THREE.FlatShading,
-          });
+    const _makeBuildState = () => ({
+      originPoint: null,
+      points: null,
+      resultBuffers: [
+        new ArrayBuffer(NUM_POSITIONS * 4),
+        new ArrayBuffer(NUM_POSITIONS * 4),
+      ],
+      resultBufferPage: 0,
+      interval: null,
+      refreshPromise: null,
+      queued: false,
+    });
+    const buildStates = {
+      left: _makeBuildState(),
+      right: _makeBuildState(),
+    };
 
-          const _getMatrix = object => {
-            const position = new THREE.Vector3();
-            const rotation = new THREE.Quaternion();
-            const scale = new THREE.Vector3();
-            // object.updateMatrixWorld();
-            object.matrixWorld.decompose(position, rotation, scale);
+    let brushSize = 2;
 
-            return {
-              position,
-              rotation,
-              scale,
-            };
-          };
+    const _makePolygonMesh = () => {
+      const geometry = new THREE.BufferGeometry();
+      geometry.boundingSphere = new THREE.Sphere(
+        new THREE.Vector3(),
+        1
+      );
 
-          // main
-          const _makeBuildState = () => ({
-            originPoint: null,
-            points: null,
-            interval: null,
-            refreshPromise: null,
-          });
-          const buildStates = {
-            left: _makeBuildState(),
-            right: _makeBuildState(),
-          };
+      const material = polygonMeshMaterial;
 
-          let brushSize = 2;
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.visible = false;
+      // mesh.frustumCulled = false;
+      return mesh;
+    };
+    const polygonMeshes = {
+      left: _makePolygonMesh(),
+      right: _makePolygonMesh(),
+    };
+    scene.add(polygonMeshes.left);
+    scene.add(polygonMeshes.right);
 
-          const _makePolygonMesh = () => {
-            const geometry = new THREE.BufferGeometry();
+    const _logPoint = side => {
+      const buildState = buildStates[side];
 
-            const material = polygonMeshMaterial;
+      const _setPointsData = () => {
+        let updated = false;
 
-            const mesh = new THREE.Mesh(geometry, material);
-            mesh.visible = false;
-            mesh.frustumCulled = false; // XXX compute bounding box instead
-            return mesh;
-          };
-          const polygonMeshes = {
-            left: _makePolygonMesh(),
-            right: _makePolygonMesh(),
-          };
-          scene.add(polygonMeshes.left);
-          scene.add(polygonMeshes.right);
+        const {gamepads} = pose.getStatus();
+        const gamepad = gamepads[side];
+        const {worldPosition: controllerPosition} = gamepad;
+        const {originPoint, points} = buildState;
 
-          const _getPointIndex = point => (point.x * chunkSize * chunkSize) + (point.y * chunkSize) + point.z;
-          const _getCurrentPoint = side => {
-            const {gamepads: gamepadsStatus} = pose.getStatus();
-            const gamepadStatus = gamepadsStatus[side];
-            if (gamepadStatus) {
-              const {worldPosition: controllerPosition} = gamepadStatus;
-              return controllerPosition.clone();
-            } else {
-              return null;
-            }
-          };
-          const _logPoint = side => {
-            const currentPoint = _getCurrentPoint(side);
+        const baseX = Math.floor((controllerPosition.x - originPoint.x + 0.5) * RESOLUTION);
+        const baseY = Math.floor((controllerPosition.y - originPoint.y + 0.5) * RESOLUTION);
+        const baseZ = Math.floor((controllerPosition.z - originPoint.z + 0.5) * RESOLUTION);
+        const baseValue = Math.sqrt(Math.pow(1.25, 2) * 3);
+        for (let dz = -1; dz <= 1; dz++) {
+          for (let dy = -1; dy <= 1; dy++) {
+            for (let dx = -1; dx <= 1; dx++) {
+              const x = baseX + dx;
+              const y = baseY + dy;
+              const z = baseZ + dz;
 
-            if (currentPoint) {
-              const buildState = buildStates[side];
-              const {originPoint, points} = buildState;
-
-              const _setPoint = (point, v) => {
-                const pointIndex = _getPointIndex(point);
+              if (x >= 0 && x < RESOLUTION && y >= 0 && y < RESOLUTION && z >= 0 && z < RESOLUTION) {
+                const pointIndex = x + (y * RESOLUTION) + (z * RESOLUTION * RESOLUTION);
+                const v = Math.max(baseValue - Math.sqrt(dx*dx + dy*dy + dz*dz), 0);
                 points[pointIndex] = Math.max(v, points[pointIndex]);
-              };
-              const _makePointValue = (() => {
-                if (brushSize === 1) {
-                  return (dx, dy, dz) => {
-                    if (dx === 0 && dy === 0 && dz === 0) {
-                      return 1;
-                    } else {
-                      return 0.4;
-                    }
-                  };
-                } else if (brushSize === 2) {
-                  return (dx, dy, dz) => {
-                    if (dx === 0 && dy === 0 && dz === 0) {
-                      return 1;
-                    } else if (!((dx === 1 || dx === -1) && (dy === 1 || dy === -1) && (dz === 1 || dz === -1))) {
-                      return 0.5;
-                    } else {
-                      return 0.25;
-                    }
-                  };
-                } else {
-                  return (dx, dy, dz) => {
-                    const distance = Math.sqrt((dx * dx) + (dy * dy) + (dz * dz));
-                    if (distance === 0) {
-                      return 1;
-                    } else if (distance <= 1) {
-                      return 0.75;
-                    } else if (distance <= 2) {
-                      return 0.5;
-                    } else {
-                      return 0.25;
-                    }
-                  };
-                }
-              })();
 
-              const minPoint = new THREE.Vector3(
-                originPoint.x - ((chunkSize / 2) * polygonMeshResolution),
-                originPoint.y - ((chunkSize / 2) * polygonMeshResolution),
-                originPoint.z - ((chunkSize / 2) * polygonMeshResolution)
-              );
-
-              if (brushSize !== 3) {
-                for (let dx = -1; dx <= 1; dx++) {
-                  for (let dy = -1; dy <= 1; dy++) {
-                    for (let dz = -1; dz <= 1; dz++) {
-                      const point = new THREE.Vector3(
-                        Math.floor(((currentPoint.x + (dx * polygonMeshResolution)) - minPoint.x) / polygonMeshResolution),
-                        Math.floor(((currentPoint.y + (dy * polygonMeshResolution)) - minPoint.y) / polygonMeshResolution),
-                        Math.floor(((currentPoint.z + (dz * polygonMeshResolution)) - minPoint.z) / polygonMeshResolution)
-                      );
-                      if (point.x >= 0 && point.x < chunkSize && point.y >= 0 && point.y < chunkSize && point.z >= 0 && point.z < chunkSize) {
-                        const v = _makePointValue(dx, dy, dz);
-                        _setPoint(point, v);
-                      }
-                    }
-                  }
-                }
-              } else {
-                for (let dx = -2; dx <= 2; dx++) {
-                  for (let dy = -2; dy <= 2; dy++) {
-                    for (let dz = -2; dz <= 2; dz++) {
-                      const point = new THREE.Vector3(
-                        Math.floor(((currentPoint.x + (dx * polygonMeshResolution)) - minPoint.x) / polygonMeshResolution),
-                        Math.floor(((currentPoint.y + (dy * polygonMeshResolution)) - minPoint.y) / polygonMeshResolution),
-                        Math.floor(((currentPoint.z + (dz * polygonMeshResolution)) - minPoint.z) / polygonMeshResolution)
-                      );
-                      if (point.x >= 0 && point.x < chunkSize && point.y >= 0 && point.y < chunkSize && point.z >= 0 && point.z < chunkSize) {
-                        const v = _makePointValue(dx, dy, dz);
-                        _setPoint(point, v);
-                      }
-                    }
-                  }
-                }
+                updated = true;
               }
-
-              _refreshPolygonMesh(side);
             }
           }
-          const _refreshPolygonMesh = side => {
-            const buildState = buildStates[side];
-            const {refreshPromise} = buildState;
-
-            if (!refreshPromise) {
-              const {originPoint, points} = buildState;
-              const polygonMesh = polygonMeshes[side];
-              const {geometry: polygonMeshGeometry} = polygonMesh;
-
-              const startX = -h - 1;
-              const startY = -h - 1;
-              const startZ = -h - 1;
-
-              const endX = h + 1;
-              const endY = h + 1;
-              const endZ = h + 1;
-
-              const minX = originPoint.x + (startX * polygonMeshResolution);
-              const minY = originPoint.y + (startY * polygonMeshResolution);
-              const minZ = originPoint.z + (startZ * polygonMeshResolution);
-
-              const dims = [ endX - startX, endY - startY, endZ - startZ ];
-              const start = [ startX, startY, startZ ];
-              const end = [ endX, endY, endZ ];
-              buildState.refreshPromise = worker.request('marchCubes', [
-                {
-                  points,
-                  chunkSize,
-                  dims,
-                  start,
-                  end,
-                },
-              ]);
-              buildState.refreshPromise.then(({positions}) => {
-                // offset positions to the local reference frame
-                const numPoints = positions.length / 3;
-                for (let i = 0; i < numPoints; i++) {
-                  const baseIndex = i * 3;
-
-                  positions[baseIndex + 0] = minX + ((positions[baseIndex + 0] - startX) * polygonMeshResolution);
-                  positions[baseIndex + 1] = minY + ((positions[baseIndex + 1] - startY) * polygonMeshResolution);
-                  positions[baseIndex + 2] = minZ + ((positions[baseIndex + 2] - startZ) * polygonMeshResolution);
-                }
-
-                polygonMeshGeometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
-                polygonMeshGeometry.removeAttribute('normal');
-                polygonMeshGeometry.computeVertexNormals();
-                if (!polygonMesh.visible) {
-                  polygonMesh.visible = true;
-                }
-
-                buildState.refreshPromise = null;
-              }).catch(err => {
-                console.warn(err);
-
-                buildState.refreshPromise = null;
-              });
-            }
-          };
-          const _startBuilding = side => {
-            const buildState = buildStates[side];
-            const {interval} = buildState;
-
-            if (!interval) {
-              buildState.originPoint = _getCurrentPoint(side);
-              buildState.points = new Float32Array(chunkSize * chunkSize * chunkSize);
-
-              const _recurse = () => {
-                _logPoint(side);
-
-                buildState.interval = requestAnimationFrame(_recurse);
-              };
-              _recurse();
-            }
-          };
-          const _stopBuilding = side => {
-            const buildState = buildStates[side];
-            const {interval} = buildState;
-
-            if (interval) {
-              cancelAnimationFrame(interval);
-
-              buildState.interval = null;
-            }
-          };
-
-          const keydown = e => {
-            switch (e.keyCode) {
-              case 49: // 1
-                brushSize = 1;
-                break;
-              case 50: // 2
-                brushSize = 2;
-                break;
-              case 51: // 3
-                brushSize = 3;
-                break;
-            }
-          };
-          input.on('keydown', keydown);
-          const triggerdown = e => {
-            const {side} = e;
-
-            _startBuilding(side);
-          };
-          input.on('triggerdown', triggerdown);
-          const triggerup = e => {
-            const {side} = e;
-
-            _stopBuilding(side);
-          };
-          input.on('triggerup', triggerup);
-
-          this._cleanup = () => {
-            scene.remove(polygonMeshes.left);
-            scene.remove(polygonMeshes.right);
-
-            input.removeListener('keydown', keydown);
-            input.removeListener('triggerdown', triggerdown);
-            input.removeListener('triggerup', triggerup);
-
-            worker.terminate();
-          };
-        } else {
-          worker.terminate();
         }
-      });
+
+        return updated;
+      };
+
+      const updated = _setPointsData();
+      if (updated) {
+        _refreshPolygonMesh(side);
+      }
+    };
+    const _refreshPolygonMesh = side => {
+      const _recurse = () => {
+        const buildState = buildStates[side];
+        const {refreshPromise} = buildState;
+
+        if (!refreshPromise) {
+          const {originPoint, points, resultBuffers, resultBufferPage} = buildState;
+          const resultBuffer = resultBuffers[resultBufferPage];
+          const refreshPromise = worker.requestMesh(originPoint.x, originPoint.y, originPoint.z, points, resultBuffer);
+          refreshPromise
+            .then(({resultBuffer, positions, normals, indices}) => {
+              const polygonMesh = polygonMeshes[side];
+              const {geometry} = polygonMesh;
+              geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+              geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
+              geometry.setIndex(new THREE.BufferAttribute(indices, 1));
+
+              polygonMesh.position.copy(originPoint);
+              polygonMesh.updateMatrixWorld();
+              if (!polygonMesh.visible) {
+                polygonMesh.visible = true;
+              }
+
+              buildState.resultBuffers[resultBufferPage] = resultBuffer;
+              buildState.resultBufferPage = resultBufferPage === 0 ? 1 : 0;
+              buildState.refreshPromise = null;
+
+              const {queued} = buildState;
+              if (queued) {
+                buildState.queued = false;
+
+                _recurse();
+              }
+            }).catch(err => {
+              console.warn(err);
+
+              buildState.refreshPromise = null;
+            });
+          buildState.refreshPromise = refreshPromise;
+        } else {
+          buildState.queued = true;
+        }
+      };
+      _recurse();
+    };
+    const _startBuilding = side => {
+      const buildState = buildStates[side];
+      const {interval} = buildState;
+
+      if (!interval) {
+        const {gamepads} = pose.getStatus();
+        const gamepad = gamepads[side];
+        const {worldPosition: controllerPosition} = gamepad;
+        buildState.originPoint = controllerPosition.clone();
+        buildState.points = new Float32Array(RESOLUTION * RESOLUTION * RESOLUTION);
+
+        const _recurse = () => {
+          _logPoint(side);
+
+          buildState.interval = requestAnimationFrame(_recurse);
+        };
+        _recurse();
+      }
+    };
+    const _stopBuilding = side => {
+      const buildState = buildStates[side];
+      const {interval} = buildState;
+
+      if (interval) {
+        cancelAnimationFrame(interval);
+
+        buildState.interval = null;
+      }
+    };
+
+    const keydown = e => {
+      switch (e.keyCode) {
+        case 49: // 1
+          brushSize = 1;
+          break;
+        case 50: // 2
+          brushSize = 2;
+          break;
+        case 51: // 3
+          brushSize = 3;
+          break;
+      }
+    };
+    input.on('keydown', keydown);
+    const triggerdown = e => {
+      const {side} = e;
+
+      _startBuilding(side);
+    };
+    input.on('triggerdown', triggerdown);
+    const triggerup = e => {
+      const {side} = e;
+
+      _stopBuilding(side);
+    };
+    input.on('triggerup', triggerup);
+
+    this._cleanup = () => {
+      scene.remove(polygonMeshes.left);
+      scene.remove(polygonMeshes.right);
+
+      input.removeListener('keydown', keydown);
+      input.removeListener('triggerdown', triggerdown);
+      input.removeListener('triggerup', triggerup);
+
+      worker.terminate();
+    };
   }
 
   unmount() {
