@@ -16,7 +16,7 @@ const _marchCubes = (fn, resolution) => isosurface.marchingCubes(
   ]
 );
 
-const _makeGeometry = (x, y, z, points) => {
+const _makeGeometry = (ox, oy, oz, points) => {
   const {positions: positionsArray, cells: cellsArray} = _marchCubes((x, y, z) => {
     const dx = x + (RESOLUTION / 2);
     const dy = y + (RESOLUTION / 2);
@@ -46,6 +46,13 @@ const _makeGeometry = (x, y, z, points) => {
   geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
   geometry.applyMatrix(new THREE.Matrix4().makeScale(1 / RESOLUTION, 1 / RESOLUTION, 1 / RESOLUTION));
   geometry.computeVertexNormals();
+
+  for (let i = 0; i < numPositions; i++) {
+    const baseIndex = i * 3;
+    positions[baseIndex + 0] += ox;
+    positions[baseIndex + 1] += oy;
+    positions[baseIndex + 2] += oz;
+  }
 
   const normals = geometry.getAttribute('normal').array;
 

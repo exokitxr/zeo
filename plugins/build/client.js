@@ -1,7 +1,7 @@
 const protocolUtils = require('./lib/utils/protocol-utils');
 
 const RESOLUTION = 32;
-const NUM_POSITIONS = 200 * 1024;
+const BUFFER_SIZE = 100 * 1024;
 
 class Build {
   constructor(archae) {
@@ -47,8 +47,8 @@ class Build {
       originPoint: null,
       points: null,
       resultBuffers: [
-        new ArrayBuffer(NUM_POSITIONS * 4),
-        new ArrayBuffer(NUM_POSITIONS * 4),
+        new ArrayBuffer(BUFFER_SIZE),
+        new ArrayBuffer(BUFFER_SIZE),
       ],
       resultBufferPage: 0,
       interval: null,
@@ -73,7 +73,7 @@ class Build {
 
       const mesh = new THREE.Mesh(geometry, material);
       mesh.visible = false;
-      // mesh.frustumCulled = false;
+      mesh.frustumCulled = false; // XXX
       return mesh;
     };
     const polygonMeshes = {
@@ -141,8 +141,6 @@ class Build {
               geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
               geometry.setIndex(new THREE.BufferAttribute(indices, 1));
 
-              polygonMesh.position.copy(originPoint);
-              polygonMesh.updateMatrixWorld();
               if (!polygonMesh.visible) {
                 polygonMesh.visible = true;
               }
