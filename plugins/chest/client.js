@@ -248,10 +248,10 @@ class Chest {
               position,
               rotation,
               scale,
-              lidOpen ? [
-                [lidGeometry.boundingBox[0][0], lidGeometry.boundingBox[0][1], lidGeometry.boundingBox[0][2] - (lidGeometry.boundingBox[1][1] - lidGeometry.boundingBox[0][1])],
-                [lidGeometry.boundingBox[1][0], lidGeometry.boundingBox[0][1] + (lidGeometry.boundingBox[1][2] - lidGeometry.boundingBox[0][2]), lidGeometry.boundingBox[0][2]],
-              ] : lidGeometry.boundingBox
+              [
+                [lidGeometry.boundingBox[0][0], lidGeometry.boundingBox[0][1], lidGeometry.boundingBox[0][2]],
+                [lidGeometry.boundingBox[1][0], lidGeometry.boundingBox[0][1] + (lidGeometry.boundingBox[1][2] - lidGeometry.boundingBox[0][2]), lidGeometry.boundingBox[1][2]],
+              ]
             ),
           ];
           lastMatrixWorld.copy(mesh.matrixWorld);
