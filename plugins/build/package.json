@@ -1,9 +1,11 @@
 {
   "name": "build",
   "version": "0.0.1",
-  "description": "Draw and interact with physics-enabled polygon objects based on the marching cubes algorithm.",
+  "description": "Build structures with polygonized voxels.",
   "client": "client.js",
-  "worker": "worker.js",
+  "builds": {
+    "worker": "worker.js"
+  },
   "dependencies": {
     "isosurface": "^1.0.0"
   }

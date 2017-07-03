@@ -1,69 +1,66 @@
+importScripts('/archae/three/three.js');
+const {exports: THREE} = self.module;
+self.module = {};
+
 const isosurface = require('isosurface');
+const protocolUtils = require('./lib/utils/protocol-utils');
 
-self.onrequest = (method, args, cb) => {
-  switch (method) {
-    case 'marchCubes': {
-      const opts = args[0];
-      const positions = marchCubes(opts);
-      const result = {
-        positions,
-      };
-      cb(null, result);
+const RESOLUTION = 32;
 
-      break;
-    }
-    default: {
-      const err = new Error('unknown method');
-      cb(err.stack);
+const _marchCubes = (fn, resolution) => isosurface.marchingCubes(
+  [resolution, resolution, resolution],
+  fn,
+  [
+    [-resolution / 2, -resolution / 2, -resolution / 2],
+    [resolution / 2, resolution / 2, resolution / 2]
+  ]
+);
 
-      break;
-    }
+const _makeGeometry = (x, y, z, points) => {
+  const {positions: positionsArray, cells: cellsArray} = _marchCubes((x, y, z) => {
+    const dx = x + (RESOLUTION / 2);
+    const dy = y + (RESOLUTION / 2);
+    const dz = z + (RESOLUTION / 2);
+    const index = dx + (dy * RESOLUTION) + (dz * RESOLUTION * RESOLUTION);
+    return 1 - points[index];
+  }, RESOLUTION);
+
+  const numPositions = positionsArray.length;
+  const positions = new Float32Array(numPositions * 3);
+  for (let i = 0; i < numPositions; i++) {
+    const baseIndex = i * 3;
+    positions[baseIndex + 0] = positionsArray[i][0];
+    positions[baseIndex + 1] = positionsArray[i][1];
+    positions[baseIndex + 2] = positionsArray[i][2];
   }
+  const numCells = cellsArray.length;
+  const indices = new Uint32Array(numCells * 3);
+  for (let i = 0; i < numCells; i++) {
+    const baseIndex = i * 3;
+    indices[baseIndex + 0] = cellsArray[i][0];
+    indices[baseIndex + 1] = cellsArray[i][1];
+    indices[baseIndex + 2] = cellsArray[i][2];
+  }
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+  geometry.applyMatrix(new THREE.Matrix4().makeScale(1 / RESOLUTION, 1 / RESOLUTION, 1 / RESOLUTION));
+  geometry.computeVertexNormals();
+
+  const normals = geometry.getAttribute('normal').array;
+
+  return {
+    positions: positions,
+    normals: normals,
+    indices: indices,
+  };
 };
 
-function marchCubes({points, chunkSize, dims, start, end}) {
-  const _getPointIndex = (x, y, z) => (x * chunkSize * chunkSize) + (y * chunkSize) + z;
-
-  const h = chunkSize / 2;
-
-  const cubes = isosurface.marchingCubes(dims, (x, y, z) => {
-    if (
-      x >= -h && y >= -h && z >= -h &&
-      x < h && y < h && z < h
-    ) {
-      const pointIndex = _getPointIndex(x - (-h), y - (-h), z - (-h));
-      const value = points[pointIndex];
-
-      return -0.5 + (value || 0);
-    } else {
-      return -1;
-    }
-  }, [
-    start,
-    end,
-  ]);
-  const {cells: cubeCells, positions: cubePositions} = cubes;
-
-  const numCells = cubeCells.length;
-
-  const positions = new Float32Array(numCells * 3 * 3);
-  for (let i = 0; i < numCells; i++) {
-    const cubeCell = cubeCells[i];
-
-    const va = cubePositions[cubeCell[0]];
-    const vb = cubePositions[cubeCell[1]];
-    const vc = cubePositions[cubeCell[2]];
-
-    positions[(i * 9) + 0] = va[0];
-    positions[(i * 9) + 1] = va[1];
-    positions[(i * 9) + 2] = va[2];
-    positions[(i * 9) + 3] = vc[0];
-    positions[(i * 9) + 4] = vc[1];
-    positions[(i * 9) + 5] = vc[2];
-    positions[(i * 9) + 6] = vb[0];
-    positions[(i * 9) + 7] = vb[1];
-    positions[(i * 9) + 8] = vb[2];
-  }
-
-  return positions;
-}
+self.onmessage = e => {
+  const {data: {x, y, z, points, resultBuffer}} = e;
+  const geometry = _makeGeometry(x, y, z, points);
+  const newResultBuffer = protocolUtils.stringifyGeometry(geometry, resultBuffer, 0);
+  postMessage({
+    resultBuffer: newResultBuffer,
+  }, [newResultBuffer]);
+};
