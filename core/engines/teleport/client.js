@@ -214,13 +214,13 @@ class Teleport {
               if (teleportFloorPoint) {
                 const vrMode = bootstrap.getVrMode();
                 if (vrMode === 'hmd') {
-                  const sittingToStandingTransformMatrix = webvr.getSittingToStandingTransform();
-                  const hmdStagePosition = hmdLocalPosition.clone().applyMatrix4(sittingToStandingTransformMatrix);
+                  const spawnTransform = webvr.getSpawnTransform();
+                  const hmdStagePosition = hmdLocalPosition.clone().applyMatrix4(spawnTransform);
                   const teleportMeshEuler = new THREE.Euler().setFromQuaternion(teleportFloorMesh.quaternion, 'XZY');
                   teleportMeshEuler.y = 0;
                   webvr.setStageMatrix(
                     camera.matrixWorldInverse.clone()
-                      .multiply(sittingToStandingTransformMatrix) // move back to origin
+                      .multiply(spawnTransform) // move back to origin
                       .premultiply(new THREE.Matrix4().makeTranslation(-hmdStagePosition.x, 0, -hmdStagePosition.z))
                       .premultiply(new THREE.Matrix4().makeRotationFromEuler(teleportMeshEuler))
                       .premultiply(new THREE.Matrix4().makeTranslation(
@@ -249,13 +249,13 @@ class Teleport {
               } else if (teleportAirPoint) {
                 const vrMode = bootstrap.getVrMode();
                 if (vrMode === 'hmd') {
-                  const sittingToStandingTransformMatrix = webvr.getSittingToStandingTransform();
-                  const hmdStagePosition = hmdLocalPosition.clone().applyMatrix4(sittingToStandingTransformMatrix);
+                  const spawnTransform = webvr.getSpawnTransform();
+                  const hmdStagePosition = hmdLocalPosition.clone().applyMatrix4(spawnTransform);
                   const teleportMeshEuler = new THREE.Euler().setFromQuaternion(teleportAirMesh.quaternion, 'XZY');
                   teleportMeshEuler.y = 0;
                   webvr.setStageMatrix(
                     camera.matrixWorldInverse.clone()
-                      .multiply(sittingToStandingTransformMatrix) // move back to origin
+                      .multiply(spawnTransform) // move back to origin
                       .premultiply(new THREE.Matrix4().makeTranslation(-hmdStagePosition.x, 0, -hmdStagePosition.z))
                       .premultiply(new THREE.Matrix4().makeRotationFromEuler(teleportMeshEuler))
                       .premultiply(new THREE.Matrix4().makeTranslation(
