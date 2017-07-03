@@ -44,14 +44,13 @@ const _makeGeometry = (ox, oy, oz, points) => {
 
   const geometry = new THREE.BufferGeometry();
   geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
-  geometry.applyMatrix(new THREE.Matrix4().makeScale(1 / RESOLUTION, 1 / RESOLUTION, 1 / RESOLUTION));
   geometry.computeVertexNormals();
 
   for (let i = 0; i < numPositions; i++) {
     const baseIndex = i * 3;
-    positions[baseIndex + 0] += ox + 0.5;
-    positions[baseIndex + 1] += oy + 0.5;
-    positions[baseIndex + 2] += oz + 0.5;
+    positions[baseIndex + 0] += (ox + 0.5) * RESOLUTION;
+    positions[baseIndex + 1] += (oy + 0.5) * RESOLUTION;
+    positions[baseIndex + 2] += (oz + 0.5) * RESOLUTION;
   }
 
   const normals = geometry.getAttribute('normal').array;
