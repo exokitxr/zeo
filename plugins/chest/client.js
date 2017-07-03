@@ -236,10 +236,9 @@ class Chest {
       };
       let lastMatrixWorld = new THREE.Matrix4();
       lastMatrixWorld.set(); // force initial update
-      let lastLidOpen = false;
       mesh.boxTargets = null;
       mesh.updateBoxTargets = () => {
-        if (!mesh.matrixWorld.equals(lastMatrixWorld) || lidOpen !== lastLidOpen) {
+        if (!mesh.matrixWorld.equals(lastMatrixWorld)) {
           const {position, rotation, scale} = _decomposeObjectMatrixWorld(mesh);
 
           mesh.boxTargets = [
@@ -255,7 +254,6 @@ class Chest {
             ),
           ];
           lastMatrixWorld.copy(mesh.matrixWorld);
-          lastLidOpen = lidOpen;
         }
       };
 
