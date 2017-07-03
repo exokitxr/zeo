@@ -1,5 +1,3 @@
-const chnkr = require('chnkr');
-
 const {
   NUM_CELLS,
 } = require('./lib/constants/constants');
@@ -14,7 +12,7 @@ class Items {
 
   mount() {
     const {_archae: archae} = this;
-    const {three, render, pose} = zeo;
+    const {three, render, pose, utils: {random: {chnkr}}} = zeo;
     const {THREE, scene, camera} = three;
 
     const itemsMaterial = new THREE.MeshBasicMaterial({
@@ -82,7 +80,6 @@ class Items {
     const chunker = chnkr.makeChunker({
       resolution: 32,
       range: 2,
-      useLods: false,
     });
 
     const _requestRefreshGrassChunks = () => {

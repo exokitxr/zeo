@@ -7,7 +7,6 @@
     "worker": "worker.js"
   },
   "dependencies": {
-    "chnkr": "0.0.11",
     "indev": "^3.0.10",
     "isosurface": "^1.0.0"
   }
