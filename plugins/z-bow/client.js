@@ -15,14 +15,14 @@ class ZBow {
     return;
     const {three: {THREE, scene}, input, elements, render, pose, hands, player, utils: {geometry: geometryUtils}} = zeo;
 
-    const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
+    /* const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
     const _decomposeMatrix = matrix => {
       const position = new THREE.Vector3();
       const rotation = new THREE.Quaternion();
       const scale = new THREE.Vector3();
       matrix.decompose(position, rotation, scale);
       return {position, rotation, scale};
-    };
+    }; */
 
     const zeroVector = new THREE.Vector3();
     const backVector = new THREE.Vector3(0, 0, -1);
