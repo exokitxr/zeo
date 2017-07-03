@@ -102,7 +102,38 @@ class Heightfield {
     const _requestRefreshMapChunks = () => {
       const {hmd} = pose.getStatus();
       const {worldPosition: hmdPosition} = hmd;
-      const {added, removed} = chunker.update(hmdPosition.x, hmdPosition.z);
+      const {added, removed, relodded} = chunker.update(hmdPosition.x, hmdPosition.z);
+      let retargeted = false;
+
+      const _addTarget = (mapChunkMesh, x, z) => {
+        teleport.addTarget(mapChunkMesh, {
+          flat: true,
+        });
+
+        const physicsBody = physics.makeBody(mapChunkMesh, 'heightfield:' + x + ':' + z, {
+          mass: 0,
+          position: [
+            (NUM_CELLS / 2) + (x * NUM_CELLS),
+            0,
+            (NUM_CELLS / 2) + (z * NUM_CELLS)
+          ],
+          linearFactor: [0, 0, 0],
+          angularFactor: [0, 0, 0],
+          bindObject: false,
+          bindConnection: false,
+        });
+        mapChunkMesh.physicsBody = physicsBody;
+
+        mapChunkMesh.targeted = true;
+      };
+      const _removeTarget = mapChunkMesh => {
+        teleport.removeTarget(mapChunkMesh);
+
+        const {physicsBody} = mapChunkMesh;
+        physics.destroyBody(physicsBody);
+
+        mapChunkMesh.targeted = false;
+      };
 
       const addedPromises = added.map(chunk => {
         const {x, z} = chunk;
@@ -112,23 +143,12 @@ class Heightfield {
             const mapChunkMesh = _makeMapChunkMesh(mapChunkData, x, z);
             scene.add(mapChunkMesh);
 
-            teleport.addTarget(mapChunkMesh, {
-              flat: true,
-            });
+            const {lod} = chunk;
+            if (lod === 1 && !mapChunkMesh.targeted) {
+              _addTarget(mapChunkMesh, x, z);
 
-            const physicsBody = physics.makeBody(mapChunkMesh, 'heightfield:' + x + ':' + z, {
-              mass: 0,
-              position: [
-                (NUM_CELLS / 2) + (x * NUM_CELLS),
-                0,
-                (NUM_CELLS / 2) + (z * NUM_CELLS)
-              ],
-              linearFactor: [0, 0, 0],
-              angularFactor: [0, 0, 0],
-              bindObject: false,
-              bindConnection: false,
-            });
-            mapChunkMesh.physicsBody = physicsBody;
+              retargeted = true;
+            }
 
             chunk.data = mapChunkMesh;
           });
@@ -140,14 +160,29 @@ class Heightfield {
             scene.remove(mapChunkMesh);
             mapChunkMesh.destroy();
 
-            teleport.removeTarget(mapChunkMesh);
+            const {lod} = chunk;
+            if (lod !== 1 && mapChunkMesh.targeted) {
+              _removeTarget(mapChunkMesh);
 
-            const {physicsBody} = mapChunkMesh;
-            physics.destroyBody(physicsBody);
+              retargeted = true;
+            }
+          });
+          relodded.forEach(chunk => {
+            const {x, z, lod, data: mapChunkMesh} = chunk;
+
+            if (lod === 1 && !mapChunkMesh.targeted) {
+              _addTarget(mapChunkMesh, x, z);
+
+              retargeted = true;
+            } else if (lod !== 1 && mapChunkMesh.targeted) {
+              _removeTarget(mapChunkMesh);
+
+              retargeted = true;
+            }
           });
         })
         .then(() => {
-          if (added.length > 0 || removed.length > 0) {
+          if (retargeted) {
             teleport.reindex();
           }
         });
