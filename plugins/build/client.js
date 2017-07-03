@@ -63,8 +63,6 @@ class Build {
 
     const polygonMeshes = {};
 
-    let brushSize = 2;
-
     const _makePolygonMesh = (ox, oy, oz) => {
       const geometry = new THREE.BufferGeometry();
       geometry.boundingSphere = new THREE.Sphere(
@@ -211,20 +209,6 @@ class Build {
       }
     };
 
-    const keydown = e => {
-      switch (e.keyCode) {
-        case 49: // 1
-          brushSize = 1;
-          break;
-        case 50: // 2
-          brushSize = 2;
-          break;
-        case 51: // 3
-          brushSize = 3;
-          break;
-      }
-    };
-    input.on('keydown', keydown);
     const triggerdown = e => {
       const {side} = e;
 
@@ -245,7 +229,6 @@ class Build {
         polygonMesh.destroy();
       }
 
-      input.removeListener('keydown', keydown);
       input.removeListener('triggerdown', triggerdown);
       input.removeListener('triggerup', triggerup);
 
