@@ -5,27 +5,33 @@ const ease = BezierEasing(0, 1, 0, 1);
 const Anima = {
   mount() {
     class Animation {
-      constructor(duration) {
+      constructor(startValue, endValue, duration) {
+        this.startValue = startValue;
+        this.endValue = endValue;
         this.startTime = Date.now();
         this.endTime = this.startTime + duration;
       }
 
       getValue() {
-        const {startTime, endTime} = this;
+        const {startValue, endValue, startTime, endTime} = this;
         const now = Date.now();
+        return startValue + ease(Math.max(Math.min((now - startTime) / (endTime - startTime), 1), 0)) * (endValue - startValue);
+      }
 
-        return ease(Math.max(Math.min((now - startTime) / (endTime - startTime), 1), 0));
+      isDone() {
+        return Date.now() >= this.endTime;
+      }
+
+      finish() {
+        this.endTime = Date.now();
       }
     }
 
-    class AnimaApi {
-      makeAnimation(duration) {
-        return new Animation(duration);
-      }
-    }
-    const animaApi = new AnimaApi();
+    const _makeAnimation = (startValue, endValue, duration) => new Animation(startValue, endValue, duration);
 
-    return animaApi;
+    return {
+      makeAnimation: _makeAnimation,
+    };
   },
   unmount() {},
 };

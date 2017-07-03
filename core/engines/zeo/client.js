@@ -703,8 +703,8 @@ class Zeo {
                     }
 
                     class ZeoAnimationApi {
-                      makeAnimation(duration) {
-                        return anima.makeAnimation(duration);
+                      makeAnimation(startValue, endValue, duration) {
+                        return anima.makeAnimation(startValue, endValue, duration);
                       }
                     }
 
