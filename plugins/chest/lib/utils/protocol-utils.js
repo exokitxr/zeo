@@ -15,7 +15,8 @@ const _getChestChunkSizeFromMetadata = metadata => {
     (FLOAT32_SIZE * numPositions) + // positions
     (FLOAT32_SIZE * numNormals) +  // normals
     (FLOAT32_SIZE * numColors) + // colors
-    (UINT32_SIZE * numIndices); // indices
+    (UINT32_SIZE * numIndices) + // indices
+    (FLOAT32_SIZE * 3 * 2); // bounding box
 };
 
 const _getChestChunkSize = chestChunk => {
@@ -52,7 +53,7 @@ const _getChestChunkBufferSize = (arrayBuffer, byteOffset) => {
 // stringification
 
 const stringifyChestChunk = (chestChunk, arrayBuffer, byteOffset) => {
-  const {positions, normals, colors, indices} = chestChunk;
+  const {positions, normals, colors, indices, boundingBox} = chestChunk;
 
   if (arrayBuffer === undefined || byteOffset === undefined) {
     const bufferSize = _getChestChunkSize(chestChunk);
@@ -82,6 +83,15 @@ const stringifyChestChunk = (chestChunk, arrayBuffer, byteOffset) => {
   const indicesBuffer = new Uint32Array(arrayBuffer, byteOffset, indices.length);
   indicesBuffer.set(indices);
   byteOffset += UINT32_SIZE * indices.length;
+
+  const boundingBoxBuffer = new Float32Array(arrayBuffer, byteOffset, 3 * 2);
+  boundingBoxBuffer[0] = boundingBox[0][0];
+  boundingBoxBuffer[1] = boundingBox[0][1];
+  boundingBoxBuffer[2] = boundingBox[0][2];
+  boundingBoxBuffer[3] = boundingBox[1][0];
+  boundingBoxBuffer[4] = boundingBox[1][1];
+  boundingBoxBuffer[5] = boundingBox[1][2];
+  byteOffset += FLOAT32_SIZE * 3 * 2;
 
   return [arrayBuffer, byteOffset];
 };
@@ -145,12 +155,20 @@ const parseChestChunk = (arrayBuffer, byteOffset) => {
   const indices = indicesBuffer;
   byteOffset += UINT32_SIZE * numIndices;
 
+  const boundingBoxBuffer = new Float32Array(arrayBuffer, byteOffset, 3 * 2);
+  const boundingBox = [
+    [boundingBoxBuffer[0], boundingBoxBuffer[1], boundingBoxBuffer[2]],
+    [boundingBoxBuffer[3], boundingBoxBuffer[4], boundingBoxBuffer[5]],
+  ];
+  byteOffset += FLOAT32_SIZE * 3 * 2;
+
   return [
     {
       positions,
       normals,
       colors,
       indices,
+      boundingBox,
     },
     byteOffset,
   ];
