@@ -28,7 +28,7 @@ class Build {
 
   mount() {
     const {_archae: archae} = this;
-    const {three, pose, input, render} = zeo;
+    const {three, pose, input, render, teleport} = zeo;
     const {THREE, scene, camera} = three;
 
     const forwardVector = new THREE.Vector3(0, 0, -1);
@@ -85,6 +85,7 @@ class Build {
       let bufferPage = 0;
       let refreshPromise = null;
       let queued = false;
+      let teleportMesh = null;
 
       const points = new Float32Array((RESOLUTION + 1) * (RESOLUTION + 1) * (RESOLUTION + 1));
       mesh.points = points;
@@ -106,6 +107,15 @@ class Build {
                 buffers[bufferPage] = resultBuffer;
                 bufferPage = bufferPage === 0 ? 1 : 0;
                 refreshPromise = null;
+
+                if (teleportMesh) {
+                  teleport.removeTarget(teleportMesh);
+                }
+                teleportMesh = new THREE.Mesh(geometry.toNonIndexed(), polygonMeshMaterial); // XXX generate unindexed geometry in the worker
+                teleport.addTarget(teleportMesh, {
+                  flat: true,
+                });
+                teleport.reindex();
 
                 if (queued) {
                   queued = false;
@@ -184,9 +194,11 @@ class Build {
         }
       }
 
-      for (let i = 0; i < polygonMeshesToUpdate.length; i++) {
-        const polygonMesh = polygonMeshesToUpdate[i];
-        polygonMesh.update();
+      if (polygonMeshesToUpdate.length > 0) {
+        for (let i = 0; i < polygonMeshesToUpdate.length; i++) {
+          const polygonMesh = polygonMeshesToUpdate[i];
+          polygonMesh.update();
+        }
       }
     };
 
