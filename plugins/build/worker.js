@@ -8,11 +8,11 @@ const protocolUtils = require('./lib/utils/protocol-utils');
 const RESOLUTION = 32;
 
 const _marchCubes = (fn, resolution) => isosurface.marchingCubes(
-  [resolution, resolution, resolution],
+  [resolution + 1, resolution + 1, resolution + 1],
   fn,
   [
     [-resolution / 2, -resolution / 2, -resolution / 2],
-    [resolution / 2, resolution / 2, resolution / 2]
+    [(resolution / 2) + 1, (resolution / 2) + 1, (resolution / 2) + 1],
   ]
 );
 
@@ -21,7 +21,7 @@ const _makeGeometry = (ox, oy, oz, points) => {
     const dx = x + (RESOLUTION / 2);
     const dy = y + (RESOLUTION / 2);
     const dz = z + (RESOLUTION / 2);
-    const index = dx + (dy * RESOLUTION) + (dz * RESOLUTION * RESOLUTION);
+    const index = dx + (dy * (RESOLUTION + 1)) + (dz * (RESOLUTION + 1) * (RESOLUTION + 1));
     return 1 - points[index];
   }, RESOLUTION);
 
@@ -49,9 +49,9 @@ const _makeGeometry = (ox, oy, oz, points) => {
 
   for (let i = 0; i < numPositions; i++) {
     const baseIndex = i * 3;
-    positions[baseIndex + 0] += ox;
-    positions[baseIndex + 1] += oy;
-    positions[baseIndex + 2] += oz;
+    positions[baseIndex + 0] += ox + 0.5;
+    positions[baseIndex + 1] += oy + 0.5;
+    positions[baseIndex + 2] += oz + 0.5;
   }
 
   const normals = geometry.getAttribute('normal').array;
