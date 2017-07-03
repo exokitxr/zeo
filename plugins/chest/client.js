@@ -48,9 +48,9 @@ class Chest {
 
     const _requestChestGeometry = () => worker.requestGeometry()
       .then(chestChunkBuffer => protocolUtils.parseChestChunks(chestChunkBuffer))
-      .then(([chestGeometry, lidGeometry]) => ({chestGeometry, lidGeometry}));
+      .then(([chestGeometry, lidGeometry, latchGeometry, hingeGeometry]) => ({chestGeometry, lidGeometry, latchGeometry, hingeGeometry}));
     const _makeChestMesh = chestGeometries => {
-      const {chestGeometry, lidGeometry} = chestGeometries;
+      const {chestGeometry, lidGeometry, latchGeometry, hingeGeometry} = chestGeometries;
 
       const positions = new Float32Array(NUM_POSITIONS_CHUNK * 3);
       const colors = new Float32Array(NUM_POSITIONS_CHUNK * 3);
@@ -70,6 +70,8 @@ class Chest {
       };
       _addGeometry(chestGeometry);
       _addGeometry(lidGeometry);
+      _addGeometry(latchGeometry);
+      _addGeometry(hingeGeometry);
 
       const geometry = new THREE.BufferGeometry();
       geometry.addAttribute('position', new THREE.BufferAttribute(new Float32Array(positions.buffer, positions.byteOffset, attributeIndex), 3));
