@@ -28,8 +28,11 @@ class Build {
 
   mount() {
     const {_archae: archae} = this;
-    const {three, pose, input} = zeo;
-    const {THREE, scene} = three;
+    const {three, pose, input, render} = zeo;
+    const {THREE, scene, camera} = three;
+
+    const forwardVector = new THREE.Vector3(0, 0, -1);
+    const dotMeshQuaternion = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 8, 0, 0, camera.rotation.order));
 
     const polygonMeshMaterial = new THREE.MeshPhongMaterial({
       color: 0x9E9E9E,
@@ -62,6 +65,7 @@ class Build {
     };
 
     const polygonMeshes = {};
+    let drawing = false;
 
     const _makePolygonMesh = (ox, oy, oz) => {
       const geometry = new THREE.BufferGeometry();
@@ -128,16 +132,16 @@ class Build {
       return mesh;
     };
 
-    const _logPoint = controllerPosition => {
+    const _logPoint = p => {
       const polygonMeshesToUpdate = [];
 
       const baseValue = Math.sqrt(Math.pow(1.25, 2) * 3);
       for (let dz = -1; dz <= 1; dz++) {
         for (let dy = -1; dy <= 1; dy++) {
           for (let dx = -1; dx <= 1; dx++) {
-            const x = (Math.floor(controllerPosition.x * RESOLUTION) / RESOLUTION) + (dx / RESOLUTION);
-            const y = (Math.floor(controllerPosition.y * RESOLUTION) / RESOLUTION) + (dy / RESOLUTION);
-            const z = (Math.floor(controllerPosition.z * RESOLUTION) / RESOLUTION) + (dz / RESOLUTION);
+            const x = (Math.floor(p.x * RESOLUTION) / RESOLUTION) + (dx / RESOLUTION);
+            const y = (Math.floor(p.y * RESOLUTION) / RESOLUTION) + (dy / RESOLUTION);
+            const z = (Math.floor(p.z * RESOLUTION) / RESOLUTION) + (dz / RESOLUTION);
             const v = Math.max(baseValue - Math.sqrt(dx*dx + dy*dy + dz*dz), 0);
 
             const pointPolygonMeshesToUpdate = [];
@@ -186,39 +190,45 @@ class Build {
       }
     };
 
-    let interval = null;
-    const _startBuilding = side => {
-      if (!interval) {
-        const _recurse = () => {
-          const {gamepads} = pose.getStatus();
-          const gamepad = gamepads[side];
-          const {worldPosition: controllerPosition} = gamepad;
+    const dotMesh = (() => {
+      const geometry = new THREE.ConeBufferGeometry(1, 1, 3, 1);
+      const material = polygonMeshMaterial;
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.destroy = () => {
+        geometry.dispose();
+      };
+      return mesh;
+    })();
+    scene.add(dotMesh);
 
-          _logPoint(controllerPosition);
+    const _update = () => {
+      const _updateDotMesh = () => {
+        const {gamepads} = pose.getStatus();
+        const gamepad = gamepads.right;
+        const {worldPosition: controllerPosition, worldRotation: controllerRotation} = gamepad;
+        const position = controllerPosition.clone().add(forwardVector.clone().multiplyScalar(10).applyQuaternion(controllerRotation));
+        dotMesh.position.copy(position);
+        dotMesh.quaternion.copy(controllerRotation.clone().multiply(dotMeshQuaternion));
+        dotMesh.updateMatrixWorld();
+      };
+      const _draw = () => {
+        if (drawing) {
+          const {position} = dotMesh;
+          _logPoint(position);
+        }
+      };
 
-          interval = setTimeout(_recurse);
-        };
-        _recurse();
-      }
+      _updateDotMesh();
+      _draw();
     };
-    const _stopBuilding = () => {
-      if (interval) {
-        clearTimeout(interval);
-
-        interval = null;
-      }
-    };
+    render.on('update', _update);
 
     const triggerdown = e => {
-      const {side} = e;
-
-      _startBuilding(side);
+      drawing = true;
     };
     input.on('triggerdown', triggerdown);
     const triggerup = e => {
-      const {side} = e;
-
-      _stopBuilding(side);
+      drawing = false;
     };
     input.on('triggerup', triggerup);
 
@@ -228,6 +238,8 @@ class Build {
         scene.remove(polygonMesh);
         polygonMesh.destroy();
       }
+
+      scene.remove(dotMesh);
 
       input.removeListener('triggerdown', triggerdown);
       input.removeListener('triggerup', triggerup);
