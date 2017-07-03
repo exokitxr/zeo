@@ -1,7 +1,25 @@
 const protocolUtils = require('./lib/utils/protocol-utils');
 
 const RESOLUTION = 32;
-const BUFFER_SIZE = 100 * 1024;
+const BUFFER_SIZE = 1000 * 1024;
+
+const DIRECTIONS = (() => {
+  const result = [];
+  for (let x = -1; x <= 1; x++) {
+    if (x !== 0) {
+      for (let y = -1; y <= 1; y++) {
+        if (y !== 0) {
+          for (let z = -1; z <= 1; z++) {
+            if (z !== 0) {
+              result.push([x, y, z]);
+            }
+          }
+        }
+      }
+    }
+  }
+  return result;
+})();
 
 class Build {
   constructor(archae) {
@@ -43,157 +61,153 @@ class Build {
       cb(data);
     };
 
-    const _makeBuildState = () => ({
-      originPoint: null,
-      points: null,
-      resultBuffers: [
-        new ArrayBuffer(BUFFER_SIZE),
-        new ArrayBuffer(BUFFER_SIZE),
-      ],
-      resultBufferPage: 0,
-      interval: null,
-      refreshPromise: null,
-      queued: false,
-    });
-    const buildStates = {
-      left: _makeBuildState(),
-      right: _makeBuildState(),
-    };
+    const polygonMeshes = {};
 
     let brushSize = 2;
 
-    const _makePolygonMesh = () => {
+    const _makePolygonMesh = (ox, oy, oz) => {
       const geometry = new THREE.BufferGeometry();
       geometry.boundingSphere = new THREE.Sphere(
-        new THREE.Vector3(),
+        new THREE.Vector3(ox + 0.5, oy + 0.5, oz + 0.5),
         1
       );
 
       const material = polygonMeshMaterial;
 
       const mesh = new THREE.Mesh(geometry, material);
+
+      const buffers = [
+        new ArrayBuffer(BUFFER_SIZE),
+        new ArrayBuffer(BUFFER_SIZE),
+      ];
+      let bufferPage = 0;
+      let refreshPromise = null;
+      let queued = false;
+
+      const points = new Float32Array((RESOLUTION + 1) * (RESOLUTION + 1) * (RESOLUTION + 1));
+      mesh.points = points;
+      mesh.update = () => {
+        const _recurse = () => {
+          if (!refreshPromise) {
+            const buffer = buffers[bufferPage];
+            refreshPromise = worker.requestMesh(ox, oy, oz, points, buffer);
+            refreshPromise
+              .then(({resultBuffer, positions, normals, indices}) => {
+                geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+                geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
+                geometry.setIndex(new THREE.BufferAttribute(indices, 1));
+
+                if (!mesh.visible) {
+                  mesh.visible = true;
+                }
+
+                buffers[bufferPage] = resultBuffer;
+                bufferPage = bufferPage === 0 ? 1 : 0;
+                refreshPromise = null;
+
+                if (queued) {
+                  queued = false;
+
+                  _recurse();
+                }
+              }).catch(err => {
+                console.warn(err);
+
+                refreshPromise = null;
+              });
+          } else {
+            queued = true;
+          }
+        };
+        _recurse();
+      };
+      mesh.destroy = () => {
+        geometry.dispose();
+      };
+
       mesh.visible = false;
-      mesh.frustumCulled = false; // XXX
+
       return mesh;
     };
-    const polygonMeshes = {
-      left: _makePolygonMesh(),
-      right: _makePolygonMesh(),
-    };
-    scene.add(polygonMeshes.left);
-    scene.add(polygonMeshes.right);
 
-    const _logPoint = side => {
-      const buildState = buildStates[side];
+    const _logPoint = controllerPosition => {
+      const polygonMeshesToUpdate = [];
 
-      const _setPointsData = () => {
-        let updated = false;
+      const baseValue = Math.sqrt(Math.pow(1.25, 2) * 3);
+      for (let dz = -1; dz <= 1; dz++) {
+        for (let dy = -1; dy <= 1; dy++) {
+          for (let dx = -1; dx <= 1; dx++) {
+            const x = (Math.floor(controllerPosition.x * RESOLUTION) / RESOLUTION) + (dx / RESOLUTION);
+            const y = (Math.floor(controllerPosition.y * RESOLUTION) / RESOLUTION) + (dy / RESOLUTION);
+            const z = (Math.floor(controllerPosition.z * RESOLUTION) / RESOLUTION) + (dz / RESOLUTION);
+            const v = Math.max(baseValue - Math.sqrt(dx*dx + dy*dy + dz*dz), 0);
 
-        const {gamepads} = pose.getStatus();
-        const gamepad = gamepads[side];
-        const {worldPosition: controllerPosition} = gamepad;
-        const {originPoint, points} = buildState;
+            const pointPolygonMeshesToUpdate = [];
 
-        const baseX = Math.floor((controllerPosition.x - originPoint.x + 0.5) * RESOLUTION);
-        const baseY = Math.floor((controllerPosition.y - originPoint.y + 0.5) * RESOLUTION);
-        const baseZ = Math.floor((controllerPosition.z - originPoint.z + 0.5) * RESOLUTION);
-        const baseValue = Math.sqrt(Math.pow(1.25, 2) * 3);
-        for (let dz = -1; dz <= 1; dz++) {
-          for (let dy = -1; dy <= 1; dy++) {
-            for (let dx = -1; dx <= 1; dx++) {
-              const x = baseX + dx;
-              const y = baseY + dy;
-              const z = baseZ + dz;
+            for (let i = 0; i < DIRECTIONS.length; i++) {
+              const direction = DIRECTIONS[i];
+              const [ex, ey, ez] = direction;
 
-              if (x >= 0 && x < RESOLUTION && y >= 0 && y < RESOLUTION && z >= 0 && z < RESOLUTION) {
-                const pointIndex = x + (y * RESOLUTION) + (z * RESOLUTION * RESOLUTION);
-                const v = Math.max(baseValue - Math.sqrt(dx*dx + dy*dy + dz*dz), 0);
-                points[pointIndex] = Math.max(v, points[pointIndex]);
+              const lx = x + (ex / RESOLUTION);
+              const ly = y + (ey / RESOLUTION);
+              const lz = z + (ez / RESOLUTION);
 
-                updated = true;
+              const ox = Math.floor(lx);
+              const oy = Math.floor(ly);
+              const oz = Math.floor(lz);
+
+              const rx = (x - ox) * RESOLUTION;
+              const ry = (y - oy) * RESOLUTION;
+              const rz = (z - oz) * RESOLUTION;
+
+              if (rx >= 0 && rx <= RESOLUTION && ry >= 0 && ry <= RESOLUTION && rz >= 0 && rz <= RESOLUTION) {
+                const meshIndex = ox + ':' + oy + ':' + oz;
+                let polygonMesh = polygonMeshes[meshIndex];
+                if (!polygonMesh) {
+                  polygonMesh = _makePolygonMesh(ox, oy, oz);
+                  scene.add(polygonMesh);
+                  polygonMeshes[meshIndex] = polygonMesh;
+                }
+                if (!pointPolygonMeshesToUpdate.includes(polygonMesh)) {
+                  const {points} = polygonMesh;
+                  const pointIndex = rx + (ry * (RESOLUTION + 1)) + (rz * (RESOLUTION + 1) * (RESOLUTION + 1));
+                  points[pointIndex] = Math.max(v, points[pointIndex]);
+
+                  pointPolygonMeshesToUpdate.push(polygonMesh);
+                }
               }
             }
+            polygonMeshesToUpdate.push.apply(polygonMeshesToUpdate, pointPolygonMeshesToUpdate);
           }
         }
+      }
 
-        return updated;
-      };
-
-      const updated = _setPointsData();
-      if (updated) {
-        _refreshPolygonMesh(side);
+      for (let i = 0; i < polygonMeshesToUpdate.length; i++) {
+        const polygonMesh = polygonMeshesToUpdate[i];
+        polygonMesh.update();
       }
     };
-    const _refreshPolygonMesh = side => {
-      const _recurse = () => {
-        const buildState = buildStates[side];
-        const {refreshPromise} = buildState;
 
-        if (!refreshPromise) {
-          const {originPoint, points, resultBuffers, resultBufferPage} = buildState;
-          const resultBuffer = resultBuffers[resultBufferPage];
-          const refreshPromise = worker.requestMesh(originPoint.x, originPoint.y, originPoint.z, points, resultBuffer);
-          refreshPromise
-            .then(({resultBuffer, positions, normals, indices}) => {
-              const polygonMesh = polygonMeshes[side];
-              const {geometry} = polygonMesh;
-              geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
-              geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
-              geometry.setIndex(new THREE.BufferAttribute(indices, 1));
-
-              if (!polygonMesh.visible) {
-                polygonMesh.visible = true;
-              }
-
-              buildState.resultBuffers[resultBufferPage] = resultBuffer;
-              buildState.resultBufferPage = resultBufferPage === 0 ? 1 : 0;
-              buildState.refreshPromise = null;
-
-              const {queued} = buildState;
-              if (queued) {
-                buildState.queued = false;
-
-                _recurse();
-              }
-            }).catch(err => {
-              console.warn(err);
-
-              buildState.refreshPromise = null;
-            });
-          buildState.refreshPromise = refreshPromise;
-        } else {
-          buildState.queued = true;
-        }
-      };
-      _recurse();
-    };
+    let interval = null;
     const _startBuilding = side => {
-      const buildState = buildStates[side];
-      const {interval} = buildState;
-
       if (!interval) {
-        const {gamepads} = pose.getStatus();
-        const gamepad = gamepads[side];
-        const {worldPosition: controllerPosition} = gamepad;
-        buildState.originPoint = controllerPosition.clone();
-        buildState.points = new Float32Array(RESOLUTION * RESOLUTION * RESOLUTION);
-
         const _recurse = () => {
-          _logPoint(side);
+          const {gamepads} = pose.getStatus();
+          const gamepad = gamepads[side];
+          const {worldPosition: controllerPosition} = gamepad;
 
-          buildState.interval = requestAnimationFrame(_recurse);
+          _logPoint(controllerPosition);
+
+          interval = setTimeout(_recurse);
         };
         _recurse();
       }
     };
-    const _stopBuilding = side => {
-      const buildState = buildStates[side];
-      const {interval} = buildState;
-
+    const _stopBuilding = () => {
       if (interval) {
-        cancelAnimationFrame(interval);
+        clearTimeout(interval);
 
-        buildState.interval = null;
+        interval = null;
       }
     };
 
@@ -225,8 +239,11 @@ class Build {
     input.on('triggerup', triggerup);
 
     this._cleanup = () => {
-      scene.remove(polygonMeshes.left);
-      scene.remove(polygonMeshes.right);
+      for (const k in polygonMeshes) {
+        const polygonMesh = polygonMeshes[k];
+        scene.remove(polygonMesh);
+        polygonMesh.destroy();
+      }
 
       input.removeListener('keydown', keydown);
       input.removeListener('triggerdown', triggerdown);
