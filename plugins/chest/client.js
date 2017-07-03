@@ -13,9 +13,14 @@ class Chest {
 
   mount() {
     const {_archae: archae} = this;
-    const {three, render, pose, hands, utils: {geometry: geometryUtils}} = zeo;
+    const {three, render, pose, input, hands, animation, utils: {geometry: geometryUtils}} = zeo;
     const {THREE, scene} = three;
 
+    const zeroQuaternion = new THREE.Quaternion();
+    const upQuaternion = new THREE.Quaternion().setFromUnitVectors(
+      new THREE.Vector3(0, 0, 1),
+      new THREE.Vector3(0, 1, 0)
+    );
     const chestMaterial = new THREE.MeshBasicMaterial({
       // color: 0xFFFFFF,
       // shininess: 0,
@@ -32,6 +37,14 @@ class Chest {
       const scale = new THREE.Vector3();
       matrix.decompose(position, rotation, scale);
       return {position, rotation, scale};
+    };
+    const _sum = a => {
+      let result = 0;
+      for (let i = 0; i < a.length; i++) {
+        const e = a[i];
+        result += e;
+      }
+      return result;
     };
     const _copyIndices = (src, dst, startIndexIndex, startAttributeIndex) => {
       for (let i = 0; i < src.length; i++) {
@@ -63,6 +76,9 @@ class Chest {
       left: _makeHoverState(),
       right: _makeHoverState(),
     };
+    let lidAnimation = null;
+    let lidOpen = false;
+    const lidQuaternion = new THREE.Quaternion();
 
     const _requestChestGeometry = () => worker.requestGeometry()
       .then(chestChunkBuffer => protocolUtils.parseChestChunks(chestChunkBuffer))
@@ -70,49 +86,85 @@ class Chest {
     const _makeChestMesh = chestGeometries => {
       const {chestGeometry, lidGeometry} = chestGeometries;
 
-      const positions = new Float32Array(NUM_POSITIONS_CHUNK * 3);
-      const colors = new Float32Array(NUM_POSITIONS_CHUNK * 3);
-      const indices = new Uint32Array(NUM_POSITIONS_CHUNK * 3);
-      let attributeIndex = 0;
-      let indexIndex = 0;
+      const chestGeometryList = [chestGeometry, lidGeometry];
+      const numPositions = _sum(chestGeometryList.map(({positions}) => positions.length));
+      const numIndices = _sum(chestGeometryList.map(({indices}) => indices.length));
 
+      const positions = new Float32Array(numPositions);
+      const positionAttribute = new THREE.BufferAttribute(positions, 3);
+      const colors = new Float32Array(numPositions);
+      const colorAttribute = new THREE.BufferAttribute(colors, 3);
+      const indices = new Uint32Array(numIndices);
+      const indexAttribute = new THREE.BufferAttribute(indices, 1);
+
+      const _rotateGeometry = (geometry, offset, quaternion) => {
+        const {positions, colors, indices} = geometry;
+        const newPositions = positions.slice();
+        const positionAttribute = new THREE.BufferAttribute(newPositions, 3);
+
+        new THREE.Matrix4().makeTranslation(
+          offset.x,
+          offset.y,
+          offset.z
+        )
+          .premultiply(new THREE.Matrix4().makeRotationFromQuaternion(quaternion))
+          .premultiply(new THREE.Matrix4().makeTranslation(
+            -offset.x,
+            -offset.y,
+            -offset.z
+          ))
+          .applyToBufferAttribute(positionAttribute);
+
+        return {
+          positions: newPositions,
+          colors: colors,
+          indices: indices,
+        };
+      };
       const _render = () => {
-        const _addGeometry = newGeometry => {
-          const {positions: newPositions/*, normals*/, colors: newColors, indices: newIndices/*, heightRange*/} = newGeometry;
+        let attributeIndex = 0;
+        let indexIndex = 0;
+
+        const hoverTypes = (() => {
+          const result = [];
+          SIDES.forEach(side => {
+            const hoverState = hoverStates[side];
+            const {type} = hoverState;
+            if (!result.includes(type)) {
+              result.push(type);
+            }
+          });
+          return result;
+        })();
+        const _addGeometry = (newGeometry, highlight) => {
+          const {positions: newPositions, colors: newColors, indices: newIndices} = newGeometry;
 
           positions.set(newPositions, attributeIndex);
-          colors.set(newColors, attributeIndex);
+          if (highlight) {
+            const numColors = colors.length / 3;
+            for (let i = 0; i < numColors; i++) {
+              const baseIndex = i * 3;
+              const color = hoverColor.clone().multiplyScalar(
+                new THREE.Color(
+                  newColors[baseIndex + 0],
+                  newColors[baseIndex + 1],
+                  newColors[baseIndex + 2],
+                ).getHSL().l * 3.5
+              );
+              colors[attributeIndex + baseIndex + 0] = color.r;
+              colors[attributeIndex + baseIndex + 1] = color.g;
+              colors[attributeIndex + baseIndex + 2] = color.b;
+            }
+          } else {
+            colors.set(newColors, attributeIndex);
+          }
           _copyIndices(newIndices, indices, indexIndex, attributeIndex / 3);
 
           attributeIndex += newPositions.length;
           indexIndex += newIndices.length;
         };
-        const _rotateGeometry = (geometry, offset, quaternion) => {
-          const {positions, colors, indices} = geometry;
-          const newPositions = positions.slice();
-          const positionAttribute = new THREE.BufferAttribute(newPositions, 3);
 
-          new THREE.Matrix4().makeTranslation(
-            offset.x,
-            offset.y,
-            offset.z
-          )
-            .premultiply(new THREE.Matrix4().makeRotationFromQuaternion(quaternion))
-            .premultiply(new THREE.Matrix4().makeTranslation(
-              -offset.x,
-              -offset.y,
-              -offset.z
-            ))
-            .applyToBufferAttribute(positionAttribute);
-
-          return {
-            positions: newPositions,
-            colors: colors,
-            indices: indices,
-          };
-        };
-
-        _addGeometry(chestGeometry);
+        _addGeometry(chestGeometry, hoverTypes.includes('chest'));
         _addGeometry(
           _rotateGeometry(
             lidGeometry,
@@ -121,19 +173,21 @@ class Chest {
               (lidGeometry.boundingBox[1][1] - lidGeometry.boundingBox[0][1]) / 2,
               (lidGeometry.boundingBox[1][2] - lidGeometry.boundingBox[0][2]) / 2
             ),
-            new THREE.Quaternion().setFromUnitVectors(
-              new THREE.Vector3(0, 0, -1),
-              new THREE.Vector3(0, -1, -1).normalize(),
-            )
-          )
+            lidQuaternion
+          ),
+          hoverTypes.includes('lid')
         );
+
+        positionAttribute.needsUpdate = true;
+        colorAttribute.needsUpdate = true;
+        // indexAttribute.needsUpdate = true;
       };
-      _render();      
+      _render();
 
       const geometry = new THREE.BufferGeometry();
-      geometry.addAttribute('position', new THREE.BufferAttribute(new Float32Array(positions.buffer, positions.byteOffset, attributeIndex), 3));
-      geometry.addAttribute('color', new THREE.BufferAttribute(new Float32Array(colors.buffer, colors.byteOffset, attributeIndex), 3));
-      geometry.setIndex(new THREE.BufferAttribute(new Uint32Array(indices.buffer, indices.byteOffset, indexIndex), 1));
+      geometry.addAttribute('position', positionAttribute);
+      geometry.addAttribute('color', colorAttribute);
+      geometry.setIndex(indexAttribute);
       geometry.boundingSphere = new THREE.Sphere(
         new THREE.Vector3(
           0,
@@ -182,64 +236,33 @@ class Chest {
       };
       let lastMatrixWorld = new THREE.Matrix4();
       lastMatrixWorld.set(); // force initial update
+      let lastLidOpen = false;
       mesh.boxTargets = null;
       mesh.updateBoxTargets = () => {
-        if (!mesh.matrixWorld.equals(lastMatrixWorld)) {
+        if (!mesh.matrixWorld.equals(lastMatrixWorld) || lidOpen !== lastLidOpen) {
           const {position, rotation, scale} = _decomposeObjectMatrixWorld(mesh);
 
           mesh.boxTargets = [
             _makeBoxTargetSpec('chest', position, rotation, scale, chestGeometry.boundingBox),
-            _makeBoxTargetSpec('lid', position, rotation, scale, lidGeometry.boundingBox),
+            _makeBoxTargetSpec('lid',
+              position,
+              rotation,
+              scale,
+              lidOpen ? [
+                [lidGeometry.boundingBox[0][0], lidGeometry.boundingBox[0][1], lidGeometry.boundingBox[0][2] - (lidGeometry.boundingBox[1][1] - lidGeometry.boundingBox[0][1])],
+                [lidGeometry.boundingBox[1][0], lidGeometry.boundingBox[0][1] + (lidGeometry.boundingBox[1][2] - lidGeometry.boundingBox[0][2]), lidGeometry.boundingBox[0][2]],
+              ] : lidGeometry.boundingBox
+            ),
           ];
           lastMatrixWorld.copy(mesh.matrixWorld);
+          lastLidOpen = lidOpen;
         }
       };
 
       mesh.needsUpdate = false;
       mesh.update = () => {
         if (mesh.needsUpdate) {
-          const hoverTypes = (() => {
-            const result = [];
-            SIDES.forEach(side => {
-              const hoverState = hoverStates[side];
-              const {type} = hoverState;
-              if (!result.includes(type)) {
-                result.push(type);
-              }
-            });
-            return result;
-          })();
-
-          const colorAttribute = geometry.getAttribute('color');
-          const {array: colors} = colorAttribute;
-          let attributeIndex = 0;
-          const _rerenderGeometry = (newGeometry, highlight) => {
-            const {colors: newColors} = newGeometry;
-
-            if (highlight) {
-              const numColors = colors.length / 3;
-              for (let i = 0; i < numColors; i++) {
-                const baseIndex = i * 3;
-                const color = hoverColor.clone().multiplyScalar(
-                  new THREE.Color(
-                    newColors[baseIndex + 0],
-                    newColors[baseIndex + 1],
-                    newColors[baseIndex + 2],
-                  ).getHSL().l * 3.5
-                );
-                colors[attributeIndex + baseIndex + 0] = color.r;
-                colors[attributeIndex + baseIndex + 1] = color.g;
-                colors[attributeIndex + baseIndex + 2] = color.b;
-              }
-            } else {
-              colors.set(newColors, attributeIndex);
-            }
-
-            attributeIndex += newColors.length;
-          };
-          _rerenderGeometry(chestGeometry, hoverTypes.includes('chest'));
-          _rerenderGeometry(lidGeometry, hoverTypes.includes('lid'));
-          colorAttribute.needsUpdate = true;
+          _render();
 
           mesh.needsUpdate = false;
         }
@@ -259,6 +282,23 @@ class Chest {
         scene.add(chestMesh);
 
         worker.terminate();
+
+        const _gripdown = e => {
+          const {side} = e;
+          const hoverState = hoverStates[side];
+          const {type} = hoverState;
+
+          if (type === 'lid') {
+            if (!lidOpen) {
+              lidAnimation = animation.makeAnimation(0, 1, 500);
+              lidOpen = true;
+            } else {
+              lidAnimation = animation.makeAnimation(1, 0, 500);
+              lidOpen = false;
+            }
+          }
+        };
+        input.on('gripdown', _gripdown);
 
         const _update = () => {
           const _updateHover = () => {
@@ -288,11 +328,23 @@ class Chest {
               }
             });
           };
+          const _updateLidAnimation = () => {
+            if (lidAnimation) {
+              const value = lidAnimation.getValue();
+              lidQuaternion.copy(zeroQuaternion.clone().slerp(upQuaternion, value));
+              chestMesh.needsUpdate = true;
+
+              if (lidAnimation.isDone()) {
+                lidAnimation = null;
+              }
+            }
+          };
           const _updateMesh = () => {
             chestMesh.update();
           };
 
           _updateHover();
+          _updateLidAnimation();
           _updateMesh();
         };
         render.on('update', _update);
@@ -303,6 +355,7 @@ class Chest {
 
           chestMaterial.dispose();
 
+          input.removeListener('gripdown', _gripdown);
           render.removeListener('update', _update);
         };
       });
