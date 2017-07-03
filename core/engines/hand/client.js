@@ -129,13 +129,22 @@ class Hand {
         };
 
         class Grabbable extends EventEmitter {
-          constructor(id, {position = [0, 0, 0], rotation = [0, 0, 0, 1], scale = [1, 1, 1]} = {}) {
+          constructor(
+            id,
+            {
+              position = [0, 0, 0],
+              rotation = [0, 0, 0, 1],
+              scale = [1, 1, 1],
+              isGrabbable = p => p.distanceTo(new THREE.Vector3().fromArray(this.position)) < GRAB_DISTANCE,
+            } = {}
+          ) {
             super();
 
             this.id = id;
             this.position = position;
             this.rotation = rotation;
             this.scale = scale;
+            this.isGrabbable = isGrabbable;
 
             this.userId = null;
             this.side = null;
@@ -151,10 +160,6 @@ class Hand {
 
           getGrabberSide() {
             return this.side;
-          }
-
-          distanceTo(point) {
-            return new THREE.Vector3().fromArray(this.position).distanceTo(point);
           }
 
           add() {
@@ -255,21 +260,14 @@ class Hand {
           const {worldPosition: controllerPosition} = gamepad;
           const grabState = grabStates[side];
 
-          let closestGrabbable = null;
-          let closestGrabbableDistance = Infinity;
           for (const id in grabbables) {
             const grabbable = grabbables[id];
-            const distance = grabbable.distanceTo(controllerPosition);
 
-            if (distance < GRAB_DISTANCE) {
-              if (!closestGrabbable || (distance < closestGrabbableDistance)) {
-                closestGrabbable = grabbable;
-                closestGrabbableDistance = distance;
-              }
+            if (grabbable.isGrabbable(controllerPosition)) {
+              return grabbable;
             }
           }
-
-          return closestGrabbable;
+          return null;
         };
 
         const _gripdown = e => {
@@ -323,8 +321,8 @@ class Hand {
         });
 
         class HandApi {
-          makeGrabbable(id) {
-            const grabbable = new Grabbable(id);
+          makeGrabbable(id, options) {
+            const grabbable = new Grabbable(id, options);
             grabbable.add();
             grabbables[id] = grabbable;
             return grabbable;

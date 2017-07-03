@@ -13,7 +13,7 @@ class Chest {
 
   mount() {
     const {_archae: archae} = this;
-    const {three, render, pose, utils: {geometry: geometryUtils}} = zeo;
+    const {three, render, pose, hands, utils: {geometry: geometryUtils}} = zeo;
     const {THREE, scene} = three;
 
     const chestMaterial = new THREE.MeshBasicMaterial({
@@ -150,6 +150,20 @@ class Chest {
       mesh.updateMatrixWorld();
       // mesh.frustumCulled = false;
 
+      const grabbable = hands.makeGrabbable('chest', {
+        position: mesh.position.toArray(),
+        rotation: mesh.quaternion.toArray(),
+        scale: mesh.scale.toArray(),
+        isGrabbable: p => SIDES.some(side => hoverStates[side].type === 'chest'),
+      });
+      grabbable.on('update', ({position, rotation, scale}) => {
+        mesh.position.fromArray(position);
+        mesh.quaternion.fromArray(rotation);
+        mesh.scale.fromArray(scale);
+        mesh.updateMatrixWorld();
+      });
+      mesh.grabbable = grabbable;
+
       const _makeBoxTargetSpec = (type, position, rotation, scale, boundingBox) => {
         const boundingBoxMin = new THREE.Vector3().fromArray(boundingBox[0]);
         const boundingBoxMax = new THREE.Vector3().fromArray(boundingBox[1]);
@@ -232,6 +246,8 @@ class Chest {
       };
       mesh.destroy = () => {
         geometry.dispose();
+
+        hands.destroyGrabbable(grabbable);
       };
 
       return mesh;

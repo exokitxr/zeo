@@ -683,8 +683,8 @@ class Zeo {
                     }
 
                     class ZeoHandsApi {
-                      makeGrabbable(id) {
-                        return hand.makeGrabbable(id);
+                      makeGrabbable(id, options) {
+                        return hand.makeGrabbable(id, options);
                       }
 
                       destroyGrabbable(grabbable) {
