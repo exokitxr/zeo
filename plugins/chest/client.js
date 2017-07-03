@@ -167,9 +167,9 @@ class Chest {
         };
       };
       let lastMatrixWorld = new THREE.Matrix4();
-      lastMatrixWorld.set();
-      mesh.boxTargets = [];
-      const _updateBoxTargets = () => {
+      lastMatrixWorld.set(); // force initial update
+      mesh.boxTargets = null;
+      mesh.updateBoxTargets = () => {
         if (!mesh.matrixWorld.equals(lastMatrixWorld)) {
           const {position, rotation, scale} = _decomposeObjectMatrixWorld(mesh);
 
@@ -180,8 +180,6 @@ class Chest {
           lastMatrixWorld.copy(mesh.matrixWorld);
         }
       };
-      mesh.updateBoxTargets = _updateBoxTargets;
-      _updateBoxTargets();
 
       mesh.needsUpdate = false;
       mesh.update = () => {
