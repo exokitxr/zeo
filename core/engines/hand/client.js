@@ -151,11 +151,11 @@ class Hand {
           }
 
           isGrabbed() {
-            return Boolean(this.id);
+            return Boolean(this.userId);
           }
 
           getGrabberId() {
-            return this.id;
+            return this.userId;
           }
 
           getGrabberSide() {
