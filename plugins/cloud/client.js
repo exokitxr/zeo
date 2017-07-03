@@ -1,5 +1,3 @@
-const chnkr = require('chnkr');
-
 const {
   NUM_CELLS,
 } = require('./lib/constants/constants');
@@ -30,7 +28,7 @@ const CLOUD_SHADER = {
 
 class Cloud {
   mount() {
-    const {three, elements, render, pose, world, utils: {geometry: geometryUtils, random: {alea}}} = zeo;
+    const {three, elements, render, pose, world, utils: {geometry: geometryUtils, random: {alea, chnkr}}} = zeo;
     const {THREE, scene, camera} = three;
 
     const _resArrayBuffer = res => {
@@ -94,7 +92,6 @@ class Cloud {
         const chunker = chnkr.makeChunker({
           resolution: NUM_CELLS,
           range: 3,
-          useLods: false,
         });
 
         const cloudChunkMeshes = [];

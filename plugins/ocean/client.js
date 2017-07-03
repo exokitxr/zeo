@@ -1,5 +1,4 @@
  const murmur = require('murmurhash');
- const chnkr = require('chnkr');
 
 const NUM_CELLS = 128;
 const SCALE = 4;
@@ -56,7 +55,7 @@ const DATA = {
 
 class Ocean {
   mount() {
-    const {three: {THREE, scene}, render, elements, pose, world} = zeo;
+    const {three: {THREE, scene}, render, elements, pose, world, utils: {random: {chnkr}}} = zeo;
 
     const updates = [];
     const _update = () => {
@@ -84,7 +83,6 @@ class Ocean {
         const chunker = chnkr.makeChunker({
           resolution: NUM_CELLS,
           range: 2,
-          useLods: false,
         });
 
         const _makeOceanMesh = (ox, oy) => {

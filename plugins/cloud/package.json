@@ -6,7 +6,5 @@
   "builds": {
     "worker": "worker.js"
   },
-  "dependencies": {
-    "chnkr": "0.0.11"
-  }
+  "dependencies": {}
 }

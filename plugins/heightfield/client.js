@@ -1,5 +1,3 @@
-const chnkr = require('chnkr');
-
 const {
   NUM_CELLS,
 } = require('./lib/constants/constants');
@@ -14,7 +12,7 @@ class Heightfield {
 
   mount() {
     const {_archae: archae} = this;
-    const {three, render, pose, world, teleport, physics} = zeo;
+    const {three, render, pose, world, teleport, physics, utils: {random: {chnkr}}} = zeo;
     const {THREE, scene} = three;
 
     const mapChunkMaterial = new THREE.MeshPhongMaterial({
@@ -99,7 +97,6 @@ class Heightfield {
     const chunker = chnkr.makeChunker({
       resolution: 32,
       range: 4,
-      useLods: false,
     });
 
     const _requestRefreshMapChunks = () => {
