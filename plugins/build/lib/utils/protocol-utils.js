@@ -1,27 +1,30 @@
 const UINT32_SIZE = 4;
 const INT32_SIZE = 4;
 const FLOAT32_SIZE = 4;
-const MAP_CHUNK_HEADER_ENTRIES = 3;
+const MAP_CHUNK_HEADER_ENTRIES = 4;
 const MAP_CHUNK_HEADER_SIZE = UINT32_SIZE * MAP_CHUNK_HEADER_ENTRIES;
 
 const _getGeometrySizeFromMetadata = metadata => {
-  const {numPositions, numNormals, numColors, numIndices} = metadata;
+  const {numPositions, numUnindexedPositions, numNormals, numColors, numIndices} = metadata;
 
   return MAP_CHUNK_HEADER_SIZE + // header
-    (FLOAT32_SIZE * numPositions) + // positions
+    (FLOAT32_SIZE * numPositions) + // indexed positions
+    (FLOAT32_SIZE * numUnindexedPositions) + // unindexed positions
     (FLOAT32_SIZE * numNormals) +  // normals
     (UINT32_SIZE * numIndices);// indices
 };
 
 const _getGeometrySize = geometry => {
-  const {positions, normals, indices} = geometry;
+  const {positions, unindexedPositions, normals, indices} = geometry;
 
   const numPositions = positions.length;
+  const numUnindexedPositions = unindexedPositions.length;
   const numNormals = normals.length;
   const numIndices = indices.length;
 
   return _getGeometrySizeFromMetadata({
     numPositions,
+    numUnindexedPositions,
     numNormals,
     numIndices,
   });
@@ -30,7 +33,7 @@ const _getGeometrySize = geometry => {
 // stringification
 
 const stringifyGeometry = (geometry, arrayBuffer, byteOffset) => {
-  const {positions, normals, indices} = geometry;
+  const {positions, unindexedPositions, normals, indices} = geometry;
 
   if (arrayBuffer === undefined || byteOffset === undefined) {
     const bufferSize = _getGeometrySize(geometry);
@@ -40,13 +43,18 @@ const stringifyGeometry = (geometry, arrayBuffer, byteOffset) => {
 
   const headerBuffer = new Uint32Array(arrayBuffer, byteOffset, MAP_CHUNK_HEADER_ENTRIES);
   headerBuffer[0] = positions.length;
-  headerBuffer[1] = normals.length;
-  headerBuffer[2] = indices.length;
+  headerBuffer[1] = unindexedPositions.length;
+  headerBuffer[2] = normals.length;
+  headerBuffer[3] = indices.length;
   byteOffset += MAP_CHUNK_HEADER_SIZE;
 
   const positionsBuffer = new Float32Array(arrayBuffer, byteOffset, positions.length);
   positionsBuffer.set(positions);
   byteOffset += FLOAT32_SIZE * positions.length;
+
+  const unindexedPositionsBuffer = new Float32Array(arrayBuffer, byteOffset, unindexedPositions.length);
+  unindexedPositionsBuffer.set(unindexedPositions);
+  byteOffset += FLOAT32_SIZE * unindexedPositions.length;
 
   const normalsBuffer = new Float32Array(arrayBuffer, byteOffset, normals.length);
   normalsBuffer.set(normals);
@@ -68,13 +76,18 @@ const parseGeometry = (arrayBuffer, byteOffset) => {
 
   const headerBuffer = new Uint32Array(arrayBuffer, byteOffset, MAP_CHUNK_HEADER_ENTRIES);
   const numPositions = headerBuffer[0];
-  const numNormals = headerBuffer[1];
-  const numIndices = headerBuffer[2];
+  const numUnindexedPositions = headerBuffer[1];
+  const numNormals = headerBuffer[2];
+  const numIndices = headerBuffer[3];
   byteOffset += MAP_CHUNK_HEADER_SIZE;
 
   const positionsBuffer = new Float32Array(arrayBuffer, byteOffset, numPositions);
   const positions = positionsBuffer;
   byteOffset += FLOAT32_SIZE * numPositions;
+
+  const unindexedPositionsBuffer = new Float32Array(arrayBuffer, byteOffset, numUnindexedPositions);
+  const unindexedPositions = unindexedPositionsBuffer;
+  byteOffset += FLOAT32_SIZE * numUnindexedPositions;
 
   const normalsBuffer = new Float32Array(arrayBuffer, byteOffset, numNormals);
   const normals = normalsBuffer;
@@ -86,6 +99,7 @@ const parseGeometry = (arrayBuffer, byteOffset) => {
 
   return {
     positions,
+    unindexedPositions,
     normals,
     indices,
   };

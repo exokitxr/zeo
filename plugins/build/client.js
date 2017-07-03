@@ -55,8 +55,8 @@ class Build {
       });
     })
       .then(({resultBuffer}) => {
-        const {positions, normals, indices} = protocolUtils.parseGeometry(resultBuffer);
-        return {resultBuffer, positions, normals, indices};
+        const {positions, unindexedPositions, normals, indices} = protocolUtils.parseGeometry(resultBuffer);
+        return {resultBuffer, positions, unindexedPositions, normals, indices};
       });
     worker.onmessage = e => {
       const {data} = e;
@@ -95,7 +95,7 @@ class Build {
             const buffer = buffers[bufferPage];
             refreshPromise = worker.requestMesh(ox, oy, oz, points, buffer);
             refreshPromise
-              .then(({resultBuffer, positions, normals, indices}) => {
+              .then(({resultBuffer, positions, unindexedPositions, normals, indices}) => {
                 geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
                 geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
                 geometry.setIndex(new THREE.BufferAttribute(indices, 1));
@@ -110,8 +110,18 @@ class Build {
 
                 if (teleportMesh) {
                   teleport.removeTarget(teleportMesh);
+                  teleportMesh.destroy();
                 }
-                teleportMesh = new THREE.Mesh(geometry.toNonIndexed(), polygonMeshMaterial); // XXX generate unindexed geometry in the worker
+                teleportMesh = (() => {
+                  const geometry = new THREE.BufferGeometry();
+                  geometry.addAttribute('position', new THREE.BufferAttribute(unindexedPositions, 3));
+                  const material = polygonMeshMaterial;
+                  const mesh = new THREE.Mesh(geometry, material);
+                  mesh.destroy = () => {
+                    geometry.dispose();
+                  };
+                  return mesh;
+                })();
                 teleport.addTarget(teleportMesh, {
                   flat: true,
                 });

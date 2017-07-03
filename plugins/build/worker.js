@@ -54,9 +54,15 @@ const _makeGeometry = (ox, oy, oz, points) => {
   }
 
   const normals = geometry.getAttribute('normal').array;
+  geometry.removeAttribute('normal');
+  geometry.setIndex(new THREE.BufferAttribute(indices, 1));
+
+  const unindexedGeometry = geometry.toNonIndexed();
+  const unindexedPositions = unindexedGeometry.getAttribute('position').array;
 
   return {
     positions: positions,
+    unindexedPositions: unindexedPositions,
     normals: normals,
     indices: indices,
   };
