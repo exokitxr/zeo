@@ -13,8 +13,8 @@ class Chest {
 
   mount() {
     const {_archae: archae} = this;
-    const {three, render, pose} = zeo;
-    const {THREE, scene, camera} = three;
+    const {three, render, pose, utils: {geometry: geometryUtils}} = zeo;
+    const {THREE, scene} = three;
 
     const chestMaterial = new THREE.MeshBasicMaterial({
       // color: 0xFFFFFF,
@@ -25,6 +25,14 @@ class Chest {
     });
     const hoverColor = new THREE.Color(0x2196F3);
 
+    const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
+    const _decomposeMatrix = matrix => {
+      const position = new THREE.Vector3();
+      const rotation = new THREE.Quaternion();
+      const scale = new THREE.Vector3();
+      matrix.decompose(position, rotation, scale);
+      return {position, rotation, scale};
+    };
     const _copyIndices = (src, dst, startIndexIndex, startAttributeIndex) => {
       for (let i = 0; i < src.length; i++) {
         dst[startIndexIndex + i] = src[i] + startAttributeIndex;
@@ -142,6 +150,39 @@ class Chest {
       mesh.updateMatrixWorld();
       // mesh.frustumCulled = false;
 
+      const _makeBoxTargetSpec = (type, position, rotation, scale, boundingBox) => {
+        const boundingBoxMin = new THREE.Vector3().fromArray(boundingBox[0]);
+        const boundingBoxMax = new THREE.Vector3().fromArray(boundingBox[1]);
+        const offset = boundingBoxMin.clone().add(boundingBoxMax).divideScalar(2);
+        const newPosition = position.clone().add(offset);
+        const size = boundingBoxMax.clone().sub(boundingBoxMin);
+        return {
+          type: type,
+          boxTarget: geometryUtils.makeBoxTarget(
+            newPosition,
+            rotation,
+            scale,
+            size
+          ),
+        };
+      };
+      let lastMatrixWorld = new THREE.Matrix4();
+      lastMatrixWorld.set();
+      mesh.boxTargets = [];
+      const _updateBoxTargets = () => {
+        if (!mesh.matrixWorld.equals(lastMatrixWorld)) {
+          const {position, rotation, scale} = _decomposeObjectMatrixWorld(mesh);
+
+          mesh.boxTargets = [
+            _makeBoxTargetSpec('chest', position, rotation, scale, chestGeometry.boundingBox),
+            _makeBoxTargetSpec('lid', position, rotation, scale, lidGeometry.boundingBox),
+          ];
+          lastMatrixWorld.copy(mesh.matrixWorld);
+        }
+      };
+      mesh.updateBoxTargets = _updateBoxTargets;
+      _updateBoxTargets();
+
       mesh.needsUpdate = false;
       mesh.update = () => {
         if (mesh.needsUpdate) {
@@ -209,17 +250,8 @@ class Chest {
           const _updateHover = () => {
             const {gamepads} = pose.getStatus();
             const {chestGeometry, lidGeometry} = chestGeometries;
-            const _makeBoundingBoxSpec = (type, geometry) => ({
-              type: type,
-              boundingBox: new THREE.Box3(
-                new THREE.Vector3().fromArray(geometry.boundingBox[0]).applyMatrix4(chestMesh.matrixWorld),
-                new THREE.Vector3().fromArray(geometry.boundingBox[1]).applyMatrix4(chestMesh.matrixWorld)
-              ),
-            });
-            const boundingBoxSpecs = [
-              _makeBoundingBoxSpec('chest', chestGeometry),
-              _makeBoundingBoxSpec('lid', lidGeometry),
-            ];
+            chestMesh.updateBoxTargets();
+            const {boxTargets: boxTargetSpecs} = chestMesh;
 
             SIDES.forEach(side => {
               const gamepad = gamepads[side];
@@ -227,12 +259,13 @@ class Chest {
               const hoverState = hoverStates[side];
 
               let type = null;
-              for (let i = 0; i < boundingBoxSpecs.length; i++) {
-                const boundingBoxSpec = boundingBoxSpecs[i];
-                const {boundingBox} = boundingBoxSpec;
+              for (let i = 0; i < boxTargetSpecs.length; i++) {
+                const boxTargetSpec = boxTargetSpecs[i];
+                const {boxTarget} = boxTargetSpec;
 
-                if (boundingBox.containsPoint(controllerPosition)) {
-                  type = boundingBoxSpec.type;
+                if (boxTarget.containsPoint(controllerPosition)) {
+                  type = boxTargetSpec.type;
+                  break;
                 }
               }
               if (hoverState.type !== type) {
