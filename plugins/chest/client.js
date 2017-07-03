@@ -302,31 +302,40 @@ class Chest {
 
         const _update = () => {
           const _updateHover = () => {
-            const {gamepads} = pose.getStatus();
-            const {chestGeometry, lidGeometry} = chestGeometries;
-            chestMesh.updateBoxTargets();
-            const {boxTargets: boxTargetSpecs} = chestMesh;
+            const {grabbable} = chestMesh;
 
-            SIDES.forEach(side => {
-              const gamepad = gamepads[side];
-              const {worldPosition: controllerPosition} = gamepad;
-              const hoverState = hoverStates[side];
+            if (!grabbable.isGrabbed()) {
+              const {gamepads} = pose.getStatus();
+              const {chestGeometry, lidGeometry} = chestGeometries;
+              chestMesh.updateBoxTargets();
+              const {boxTargets: boxTargetSpecs} = chestMesh;
 
-              let type = null;
-              for (let i = 0; i < boxTargetSpecs.length; i++) {
-                const boxTargetSpec = boxTargetSpecs[i];
-                const {boxTarget} = boxTargetSpec;
+              SIDES.forEach(side => {
+                const gamepad = gamepads[side];
+                const {worldPosition: controllerPosition} = gamepad;
+                const hoverState = hoverStates[side];
 
-                if (boxTarget.containsPoint(controllerPosition)) {
-                  type = boxTargetSpec.type;
-                  break;
+                let type = null;
+                for (let i = 0; i < boxTargetSpecs.length; i++) {
+                  const boxTargetSpec = boxTargetSpecs[i];
+                  const {boxTarget} = boxTargetSpec;
+
+                  if (boxTarget.containsPoint(controllerPosition)) {
+                    type = boxTargetSpec.type;
+                    break;
+                  }
                 }
-              }
-              if (hoverState.type !== type) {
-                hoverState.type = type;
-                chestMesh.needsUpdate = true;
-              }
-            });
+                if (hoverState.type !== type) {
+                  hoverState.type = type;
+                  chestMesh.needsUpdate = true;
+                }
+              });
+            } else {
+              SIDES.forEach(side => {
+                const hoverState = hoverStates[side];
+                hoverState.type = null;
+              });
+            }
           };
           const _updateLidAnimation = () => {
             if (lidAnimation) {
