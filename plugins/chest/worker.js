@@ -121,14 +121,20 @@ const chestGeometry = (() => {
   geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
   geometry.applyMatrix(new THREE.Matrix4().makeScale(1 / resolution, 1 / resolution, 1 / resolution));
   geometry.computeVertexNormals();
+  geometry.computeBoundingBox();
 
   const normals = geometry.getAttribute('normal').array;
+  const {boundingBox} = geometry;
 
   return {
     positions: positions,
     normals: normals,
     colors: colors,
     indices: indices,
+    boundingBox: [
+      boundingBox.min.toArray(),
+      boundingBox.max.toArray(),
+    ],
   };
 })();
 const lidGeometry = (() => {
@@ -301,14 +307,20 @@ const lidGeometry = (() => {
   geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
   geometry.applyMatrix(new THREE.Matrix4().makeScale(1 / resolution, 1 / resolution, 1 / resolution));
   geometry.computeVertexNormals();
+  geometry.computeBoundingBox();
 
   const normals = geometry.getAttribute('normal').array;
+  const {boundingBox} = geometry;
 
   return {
     positions: positions,
     normals: normals,
     colors: colors,
     indices: indices,
+    boundingBox: [
+      boundingBox.min.toArray(),
+      boundingBox.max.toArray(),
+    ],
   };
 })();
 
