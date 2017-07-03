@@ -69,7 +69,7 @@ class Chest {
       let indexIndex = 0;
 
       const _render = () => {
-        const _addGeometry = (newGeometry) => {
+        const _addGeometry = newGeometry => {
           const {positions: newPositions/*, normals*/, colors: newColors, indices: newIndices/*, heightRange*/} = newGeometry;
 
           positions.set(newPositions, attributeIndex);
@@ -79,8 +79,46 @@ class Chest {
           attributeIndex += newPositions.length;
           indexIndex += newIndices.length;
         };
+        const _rotateGeometry = (geometry, offset, quaternion) => {
+          const {positions, colors, indices} = geometry;
+          const newPositions = positions.slice();
+          const positionAttribute = new THREE.BufferAttribute(newPositions, 3);
+
+          new THREE.Matrix4().makeTranslation(
+            offset.x,
+            offset.y,
+            offset.z
+          )
+            .premultiply(new THREE.Matrix4().makeRotationFromQuaternion(quaternion))
+            .premultiply(new THREE.Matrix4().makeTranslation(
+              -offset.x,
+              -offset.y,
+              -offset.z
+            ))
+            .applyToBufferAttribute(positionAttribute);
+
+          return {
+            positions: newPositions,
+            colors: colors,
+            indices: indices,
+          };
+        };
+
         _addGeometry(chestGeometry);
-        _addGeometry(lidGeometry);
+        _addGeometry(
+          _rotateGeometry(
+            lidGeometry,
+            new THREE.Vector3(
+              0,
+              (lidGeometry.boundingBox[1][1] - lidGeometry.boundingBox[0][1]) / 2,
+              (lidGeometry.boundingBox[1][2] - lidGeometry.boundingBox[0][2]) / 2
+            ),
+            new THREE.Quaternion().setFromUnitVectors(
+              new THREE.Vector3(0, 0, -1),
+              new THREE.Vector3(0, -1, -1).normalize(),
+            )
+          )
+        );
       };
       _render();      
 
