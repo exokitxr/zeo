@@ -787,12 +787,9 @@ class WebVR {
             }
           }
 
-          getSittingToStandingTransform() {
-            if (this.display) {
-              return new THREE.Matrix4().fromArray(this.display.stageParameters.sittingToStandingTransform);
-            } else {
-              return new THREE.Matrix4();
-            }
+          getSpawnTransform() {
+            return new THREE.Matrix4().fromArray(this.display.stageParameters.sittingToStandingTransform)
+              .premultiply(this.spawnMatrix);
           }
 
           getExternalMatrix() {
