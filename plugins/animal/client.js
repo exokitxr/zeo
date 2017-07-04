@@ -2,6 +2,34 @@ const protocolUtils = require('./lib/utils/protocol-utils');
 
 const NUM_POSITIONS = 100 * 1024;
 
+const ANIMAL_SHADER = {
+  uniforms: {
+    worldTime: {
+      type: 'f',
+      value: 0,
+    },
+    map: {
+      type: 't',
+      value: null,
+    },
+  },
+  vertexShader: [
+    "uniform float worldTime;",
+    "varying vec2 vUv;",
+    "void main() {",
+    "  gl_Position = projectionMatrix * modelViewMatrix * vec4(position.x, position.y, position.z, 1.0);",
+    "  vUv = uv;",
+    "}"
+  ].join("\n"),
+  fragmentShader: [
+    "uniform sampler2D map;",
+    "varying vec2 vUv;",
+    "void main() {",
+    "  gl_FragColor = texture2D(map, vUv);",
+    "}"
+  ].join("\n")
+};
+
 class Chest {
   constructor(archae) {
     this._archae = archae;
@@ -82,13 +110,13 @@ class Chest {
         1
       );
       texture.needsUpdate = true;
-      const material = new THREE.MeshBasicMaterial({
-        // color: 0xFF0000,
-        // shininess: 0,
-        // shading: THREE.FlatShading,
-        // vertexColors: THREE.VertexColors,
-        // side: THREE.DoubleSide,
-        map: texture,
+      const uniforms = THREE.UniformsUtils.clone(ANIMAL_SHADER.uniforms);
+      uniforms.map.value = texture;
+      const material = new THREE.ShaderMaterial({
+        uniforms,
+        vertexShader: ANIMAL_SHADER.vertexShader,
+        fragmentShader: ANIMAL_SHADER.fragmentShader,
+        transparent: true,
       });
 
       const mesh = new THREE.Mesh(geometry, material);
