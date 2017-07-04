@@ -154,7 +154,7 @@ const _getAllPlugins = () => {
   const _readdir = p => new Promise((accept, reject) => {
     fs.readdir(p, (err, files) => {
       if (!err) {
-        const decoratedFiles = files.map(file => path.join(p, file));
+        const decoratedFiles = files.map(file => p + '/' + file);
         accept(decoratedFiles);
       } else {
         reject(err);
@@ -179,9 +179,10 @@ const _getAllPlugins = () => {
     }))).then(() => acc);
   };
 
+  // NOTE: this cannot be path.join() because Windows
   return Promise.all([
-    path.join(config.dirname, '/core/engines'),
-    path.join(config.dirname, '/core/utils'),
+    config.dirname + '/core/engines',
+    config.dirname + '/core/utils',
   ].map(_readdir))
     .then(files => _filterDirectories(_flatten(files)))
     .then(directories => directories.map(directory => directory.slice(config.dirname.length)));
