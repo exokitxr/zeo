@@ -2,6 +2,7 @@ importScripts('/archae/three/three.js');
 const {exports: THREE} = self.module;
 self.module = {};
 
+const colors = require('./lib/data/colors.json');
 const protocolUtils = require('./lib/utils/protocol-utils');
 
 const NUM_POSITIONS = 10 * 1024; // XXX can be computed exactly
@@ -20,7 +21,7 @@ const _copyIndices = (src, dst, startIndexIndex, startAttributeIndex) => {
   }
 };
 
-const _makeCubeGeometry = () => {
+const _makeCubeGeometry = (invert = false) => {
   const size = 1;
   const halfSize = size/2;
 
@@ -73,11 +74,21 @@ const _makeCubeGeometry = () => {
     7, 9 ,8, 
     1, 3, 4, //bottom
     3, 5, 4,
-    1, 11,10,// left
+    1, 11,10, // left
     1, 4, 11,
-    3, 12, 5,//right
+    3, 12, 5, //right
     5, 12, 13,
   ]);
+  if (invert) {
+    const numIndices = indices.length / 3;
+    for (let i = 0; i < numIndices; i++) {
+      const baseIndex = i * 3;
+      indices[baseIndex + 0] = indices[baseIndex + 0];
+      const indices1 = indices[baseIndex + 1];
+      indices[baseIndex + 1] = indices[baseIndex + 2];
+      indices[baseIndex + 2] = indices1;
+    }
+  }
 
   const geometry = new THREE.BufferGeometry();
   geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
@@ -89,9 +100,9 @@ const _makeCubeGeometry = () => {
 const animalGeometry = (() => {
   const bodyGeometry = (() => {
     const type = Math.random() < 0.5 ? 'long' : 'high';
-    const width = 0.2 + (Math.random() * 0.3);
-    const height = (type === 'long') ? (0.1 + (Math.random() * 0.4)) : (0.5 + (Math.random() * 1));
-    const depth = (type === 'long') ? (0.5 + (Math.random() * 1)) : (0.1 + (Math.random() * 0.4));
+    const width = 0.3 + (Math.random() * 0.3);
+    const height = (type === 'long') ? (0.2 + (Math.random() * 0.4)) : (1 + (Math.random() * 1));
+    const depth = (type === 'long') ? (1 + (Math.random() * 1)) : (0.2 + (Math.random() * 0.4));
 
     const geometry = _makeCubeGeometry()
       .applyMatrix(new THREE.Matrix4().makeScale(width, height, depth));
@@ -101,31 +112,41 @@ const animalGeometry = (() => {
     return geometry;
   })();
   const legGeometries = (() => {
-    const numLegs = 1 + Math.floor(Math.random() * (2 +  1));
-    const width = 0.05 + (Math.random() * 0.1);
+    const numLegs = 1 + Math.floor(Math.random() * (3 +  1));
+    const width = 0.05 + (Math.random() * 0.2);
     const height = 0.2 + (Math.random() * 0.8);
-    const depth = 0.05 + (Math.random() * 0.1);
+    const depth = 0.05 + (Math.random() * 0.2);
     const offsetX = 0.6 + (Math.random() * 0.4);
-    const offsetY = 0.1 + (Math.random() * 0.2);
-    const offsetZ = 0 + (Math.random() * 0.2);
-    const scaleZ = 1 + (-0.2 + (Math.random() * 0.4));
+    const offsetY = 0 + (Math.random() * 0.2);
+    const offsetZ = -0.1 + (Math.random() * 0.2);
+    const scaleZ = (1 / (1 + Math.abs(offsetZ))) - (Math.random() * 0.2);
+    const legOffsets = (() => {
+      const result = Array(numLegs);
+      for (let i = 0; i < numLegs; i++) {
+        result[i] = new THREE.Vector2(
+          -0.1 + (Math.random() * 0.2),
+          -0.01 + (Math.random() * 0.02)
+        );
+      }
+      return result;
+    })();
 
     const result = [];
     for (let i = 0; i < numLegs; i++) {
       const leftGeometry = _makeCubeGeometry()
         .applyMatrix(new THREE.Matrix4().makeScale(width, height, depth))
         .applyMatrix(new THREE.Matrix4().makeTranslation(
-          -offsetX*bodyGeometry.width/2,
-          -bodyGeometry.height/2 - height/2 + offsetZ*bodyGeometry.height,
+          -offsetX*bodyGeometry.width/2 + legOffsets[i].x*bodyGeometry.width/2,
+          -bodyGeometry.height/2 - height/2 + offsetY*bodyGeometry.height + legOffsets[i].y*bodyGeometry.height/2,
           ((-bodyGeometry.depth/2 + (numLegs === 1 ? (bodyGeometry.depth/2) : (i/(numLegs-1)*bodyGeometry.depth))) * scaleZ) + offsetZ*bodyGeometry.depth
         ));
       result.push(leftGeometry);
 
-      const rightGeometry = _makeCubeGeometry()
-        .applyMatrix(new THREE.Matrix4().makeScale(width, height, depth))
+      const rightGeometry = _makeCubeGeometry(true)
+        .applyMatrix(new THREE.Matrix4().makeScale(-width, height, depth))
         .applyMatrix(new THREE.Matrix4().makeTranslation(
-          offsetX*bodyGeometry.width/2,
-          -bodyGeometry.height/2 - height/2 + offsetZ*bodyGeometry.height,
+          offsetX*bodyGeometry.width/2 - legOffsets[i].x*bodyGeometry.width/2,
+          -bodyGeometry.height/2 - height/2 + offsetY*bodyGeometry.height + legOffsets[i].y*bodyGeometry.height/2,
           ((-bodyGeometry.depth/2 + (numLegs === 1 ? (bodyGeometry.depth/2) : (i/(numLegs-1)*bodyGeometry.depth))) * scaleZ) + offsetZ*bodyGeometry.depth
         ));
       result.push(rightGeometry);
@@ -164,11 +185,61 @@ const animalGeometry = (() => {
     indexIndex += newIndices.length;
   }
 
+  const texture = (() => {
+    const size = 16;
+    const width = 4 * size;
+    const height = 3 * size;
+    const numPixels = width * height;
+    const data = new Uint8Array(numPixels * 3);
+
+    const palette = colors[Math.floor(Math.random() * colors.length)];
+    const baseColor = new THREE.Color().setStyle(palette[0]);
+    const grainColor = new THREE.Color().setStyle(palette[1]);
+    const boxColor = new THREE.Color().setStyle(palette[2]);
+    const graininess = 0.4 + Math.random() * 0.4;
+    const boxes = (() => {
+      const numBoxes = Math.floor(0 + (Math.random() * 20));
+
+      const result = Array(numBoxes);
+      for (let i = 0; i < numBoxes; i++) {
+        const box = new THREE.Box2().setFromCenterAndSize(
+          new THREE.Vector2(Math.random() * width, Math.random() * height),
+          new THREE.Vector2((0.1 + (Math.random() * 0.2)) * width, (0.1 + (Math.random() * 0.2)) * height)
+        );
+        box.value = Math.random() * 0.5;
+        result[i] = box;
+      }
+      return result;
+    })();
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const p = new THREE.Vector2(x, y);
+        const c = baseColor.clone().lerp(grainColor, Math.random() * graininess);
+        for (let i = 0; i < boxes.length; i++) {
+          const box = boxes[i];
+
+          if (box.containsPoint(p)) {
+            const {value} = box;
+            c.lerp(boxColor, value);
+          }
+        }
+
+        const baseIndex = (x + (y * width)) * 3;
+        data[baseIndex + 0] = c.r * 255;
+        data[baseIndex + 1] = c.g * 255;
+        data[baseIndex + 2] = c.b * 255;
+      }
+    }
+
+    return data;
+  })();
+
   return {
     positions: new Float32Array(positions.buffer, positions.byteOffset, attributeIndex),
     normals: new Float32Array(positions.buffer, positions.byteOffset, attributeIndex),
     uvs: new Float32Array(uvs.buffer, uvs.byteOffset, uvIndex),
     indices: new Uint32Array(indices.buffer, indices.byteOffset, indexIndex),
+    texture: texture,
   };
 })();
 

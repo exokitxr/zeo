@@ -1,6 +1,6 @@
 const protocolUtils = require('./lib/utils/protocol-utils');
 
-const NUM_POSITIONS = 10 * 1024;
+const NUM_POSITIONS = 100 * 1024;
 
 class Chest {
   constructor(archae) {
@@ -17,13 +17,6 @@ class Chest {
       new THREE.Vector3(0, 0, 1),
       new THREE.Vector3(0, 1, 0)
     );
-    const animalMaterial = new THREE.MeshPhongMaterial({
-      color: 0xFF0000,
-      // shininess: 0,
-      // shading: THREE.FlatShading,
-      // vertexColors: THREE.VertexColors,
-      // side: THREE.DoubleSide,
-    });
 
     /* const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
     const _decomposeMatrix = matrix => {
@@ -50,7 +43,7 @@ class Chest {
     const worker = new Worker('archae/plugins/_plugins_animal/build/worker.js');
     const queue = [];
     worker.requestAnimalGeometry = () => new Promise((accept, reject) => {
-      const buffer = new ArrayBuffer(NUM_POSITIONS * (3 + 3 + 2 + 1));
+      const buffer = new ArrayBuffer(NUM_POSITIONS);
       worker.postMessage({
         buffer,
       }, [buffer]);
@@ -67,7 +60,7 @@ class Chest {
     const _requestAnimalGeometry = () => worker.requestAnimalGeometry()
       .then(animalBuffer => protocolUtils.parseGeometry(animalBuffer));
     const _makeAnimalMesh = animalGeometry => {
-      const {positions, normals, uvs, indices} = animalGeometry;
+      const {positions, normals, uvs, indices, texture: textureData} = animalGeometry;
 
       const geometry = new THREE.BufferGeometry();
       geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
@@ -75,7 +68,28 @@ class Chest {
       geometry.addAttribute('uv', new THREE.BufferAttribute(uvs, 2));
       geometry.setIndex(new THREE.BufferAttribute(indices, 1));
 
-      const material = animalMaterial;
+      const texture = new THREE.DataTexture(
+        textureData,
+        16 * 4,
+        16 * 3,
+        THREE.RGBFormat,
+        THREE.UnsignedByteType,
+        THREE.UVMapping,
+        THREE.ClampToEdgeWrapping,
+        THREE.ClampToEdgeWrapping,
+        THREE.NearestFilter,
+        THREE.NearestFilter,
+        1
+      );
+      texture.needsUpdate = true;
+      const material = new THREE.MeshBasicMaterial({
+        // color: 0xFF0000,
+        // shininess: 0,
+        // shading: THREE.FlatShading,
+        // vertexColors: THREE.VertexColors,
+        // side: THREE.DoubleSide,
+        map: texture,
+      });
 
       const mesh = new THREE.Mesh(geometry, material);
       mesh.position.set(2, 31, 0);
@@ -84,6 +98,8 @@ class Chest {
 
       mesh.destroy = () => {
         geometry.dispose();
+        material.dispose();
+        texture.dispose();
       };
 
       return mesh;
@@ -99,8 +115,6 @@ class Chest {
         this._cleanup = () => {
           scene.remove(animalMesh);
           animalMesh.destroy();
-
-          animalMaterial.dispose();
         };
       });
   }
