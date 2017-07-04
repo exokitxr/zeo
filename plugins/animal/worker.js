@@ -5,8 +5,6 @@ self.module = {};
 const colors = require('./lib/data/colors.json');
 const protocolUtils = require('./lib/utils/protocol-utils');
 
-const NUM_POSITIONS = 10 * 1024; // XXX can be computed exactly
-
 const _sum = a => {
   let result = 0;
   for (let i = 0; i < a.length; i++) {
@@ -21,7 +19,7 @@ const _copyIndices = (src, dst, startIndexIndex, startAttributeIndex) => {
   }
 };
 
-const _makeCubeGeometry = (invert = false) => {
+const _makeCubeGeometry = ({rotate = false, invert = false, odd = false, scale = [1, 1]} = {}) => {
   const size = 1;
   const halfSize = size/2;
 
@@ -45,6 +43,19 @@ const _makeCubeGeometry = (invert = false) => {
     +halfSize, +halfSize, -halfSize,
     +halfSize, +halfSize, +halfSize,
   ]);
+  const dys = (() => {
+    if (rotate) {
+      const numPositions = positions.length / 3;
+      const result = new Float32Array(numPositions * 2);
+      for (let i = 0; i < numPositions; i++) {
+        result[(i * 2) + 0] = positions[(i * 3) + 2] * scale[0]; // x is z
+        result[(i * 2) + 1] = (positions[(i * 3) + 1] - halfSize) * scale[1]; // y is y
+      }
+      return result;
+    } else {
+      return new Float32Array(positions.length / 3 * 2);
+    }
+  })();
   const uvs = Float32Array.from([
     0, 0.66,
     0.25, 0.66,
@@ -92,6 +103,7 @@ const _makeCubeGeometry = (invert = false) => {
 
   const geometry = new THREE.BufferGeometry();
   geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+  geometry.addAttribute('dy', new THREE.BufferAttribute(dys, 3));
   geometry.addAttribute('uv', new THREE.BufferAttribute(uvs, 2));
   geometry.setIndex(new THREE.BufferAttribute(indices, 1));
   geometry.computeVertexNormals();
@@ -133,7 +145,9 @@ const animalGeometry = (() => {
 
     const result = [];
     for (let i = 0; i < numLegs; i++) {
-      const leftGeometry = _makeCubeGeometry()
+      const odd = i % 2 === 1;
+
+      const leftGeometry = _makeCubeGeometry({rotate: true, odd, scale: [depth, height]})
         .applyMatrix(new THREE.Matrix4().makeScale(width, height, depth))
         .applyMatrix(new THREE.Matrix4().makeTranslation(
           -offsetX*bodyGeometry.width/2 + legOffsets[i].x*bodyGeometry.width/2,
@@ -142,7 +156,7 @@ const animalGeometry = (() => {
         ));
       result.push(leftGeometry);
 
-      const rightGeometry = _makeCubeGeometry(true)
+      const rightGeometry = _makeCubeGeometry({rotate: true, invert: true, odd, scale: [depth, height]})
         .applyMatrix(new THREE.Matrix4().makeScale(-width, height, depth))
         .applyMatrix(new THREE.Matrix4().makeTranslation(
           offsetX*bodyGeometry.width/2 - legOffsets[i].x*bodyGeometry.width/2,
@@ -157,14 +171,17 @@ const animalGeometry = (() => {
 
   const numPositions = _sum(geometries.map(g => g.getAttribute('position').array.length));
   const numNormals = _sum(geometries.map(g => g.getAttribute('normal').array.length));
+  const numDys = _sum(geometries.map(g => g.getAttribute('dy').array.length));
   const numUvs = _sum(geometries.map(g => g.getAttribute('uv').array.length));
   const numIndices = _sum(geometries.map(g => g.index.array.length));
 
   const positions = new Float32Array(numPositions);
   const normals = new Float32Array(numNormals);
+  const dys = new Float32Array(numDys);
   const uvs = new Float32Array(numUvs);
   const indices = new Uint32Array(numIndices);
   let attributeIndex = 0;
+  let dyIndex = 0;
   let uvIndex = 0;
   let indexIndex = 0;
 
@@ -175,12 +192,15 @@ const animalGeometry = (() => {
     positions.set(newPositions, attributeIndex);
     const newNormals = geometry.getAttribute('normal').array;
     normals.set(newNormals, attributeIndex);
+    const newDys = geometry.getAttribute('dy').array;
+    dys.set(newDys, dyIndex);
     const newUvs = geometry.getAttribute('uv').array;
     uvs.set(newUvs, uvIndex);
     const newIndices = geometry.index.array;
     _copyIndices(newIndices, indices, indexIndex, attributeIndex / 3);
 
     attributeIndex += newPositions.length;
+    dyIndex += newDys.length;
     uvIndex += newUvs.length;
     indexIndex += newIndices.length;
   }
@@ -236,6 +256,7 @@ const animalGeometry = (() => {
 
   return {
     positions: new Float32Array(positions.buffer, positions.byteOffset, attributeIndex),
+    dys: new Float32Array(dys.buffer, dys.byteOffset, dyIndex),
     normals: new Float32Array(positions.buffer, positions.byteOffset, attributeIndex),
     uvs: new Float32Array(uvs.buffer, uvs.byteOffset, uvIndex),
     indices: new Uint32Array(indices.buffer, indices.byteOffset, indexIndex),

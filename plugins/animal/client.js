@@ -1,10 +1,12 @@
 const protocolUtils = require('./lib/utils/protocol-utils');
 
+const WALK_ROTATE_SPEED = 0.0005;
+const WALK_ROTATE_ANGLE = Math.PI / 4;
 const NUM_POSITIONS = 100 * 1024;
 
 const ANIMAL_SHADER = {
   uniforms: {
-    worldTime: {
+    theta: {
       type: 'f',
       value: 0,
     },
@@ -14,10 +16,11 @@ const ANIMAL_SHADER = {
     },
   },
   vertexShader: [
-    "uniform float worldTime;",
+    "uniform float theta;",
+    "attribute vec2 dy;",
     "varying vec2 vUv;",
     "void main() {",
-    "  gl_Position = projectionMatrix * modelViewMatrix * vec4(position.x, position.y, position.z, 1.0);",
+    "  gl_Position = projectionMatrix * modelViewMatrix * vec4(position.x, position.y - dy.y + (dy.y*cos(theta) - dy.x*sin(theta)), position.z - dy.x + (dy.x*cos(theta) + dy.y*sin(theta)), 1.0);",
     "  vUv = uv;",
     "}"
   ].join("\n"),
@@ -88,11 +91,12 @@ class Chest {
     const _requestAnimalGeometry = () => worker.requestAnimalGeometry()
       .then(animalBuffer => protocolUtils.parseGeometry(animalBuffer));
     const _makeAnimalMesh = animalGeometry => {
-      const {positions, normals, uvs, indices, texture: textureData} = animalGeometry;
+      const {positions, normals, dys, uvs, indices, texture: textureData} = animalGeometry;
 
       const geometry = new THREE.BufferGeometry();
       geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
       geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
+      geometry.addAttribute('dy', new THREE.BufferAttribute(dys, 2));
       geometry.addAttribute('uv', new THREE.BufferAttribute(uvs, 2));
       geometry.setIndex(new THREE.BufferAttribute(indices, 1));
 
@@ -140,9 +144,16 @@ class Chest {
 
         worker.terminate();
 
+        const _update = () => {
+          animalMesh.material.uniforms.theta.value = Math.sin(Date.now() * WALK_ROTATE_SPEED * (Math.PI * 2) % (Math.PI * 2)) * WALK_ROTATE_ANGLE;
+        };
+        render.on('update', _update);
+
         this._cleanup = () => {
           scene.remove(animalMesh);
           animalMesh.destroy();
+
+          render.removeListener('update', _update);
         };
       });
   }
