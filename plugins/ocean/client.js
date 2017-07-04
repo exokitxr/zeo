@@ -1,4 +1,4 @@
- const murmur = require('murmurhash');
+const murmur = require('murmurhash');
 
 const NUM_CELLS = 128;
 const SCALE = 4;
