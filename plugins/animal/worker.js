@@ -44,17 +44,19 @@ const _makeCubeGeometry = ({rotate = false, invert = false, odd = false, scale =
     +halfSize, +halfSize, +halfSize,
   ]);
   const dys = (() => {
+    const numPositions = positions.length / 3;
+    const result = new Float32Array(numPositions * 3);
+
     if (rotate) {
-      const numPositions = positions.length / 3;
-      const result = new Float32Array(numPositions * 2);
       for (let i = 0; i < numPositions; i++) {
-        result[(i * 2) + 0] = positions[(i * 3) + 2] * scale[0]; // x is z
-        result[(i * 2) + 1] = (positions[(i * 3) + 1] - halfSize) * scale[1]; // y is y
+        const baseIndex = i * 3;
+        result[baseIndex + 0] = positions[baseIndex + 2] * scale[0]; // x is z
+        result[baseIndex + 1] = (positions[baseIndex + 1] - halfSize) * scale[1]; // y is y
+        result[baseIndex + 2] = odd ? -1 : 1; // z is angle factor
       }
-      return result;
-    } else {
-      return new Float32Array(positions.length / 3 * 2);
     }
+
+    return result;
   })();
   const uvs = Float32Array.from([
     0, 0.66,

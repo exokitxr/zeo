@@ -17,10 +17,11 @@ const ANIMAL_SHADER = {
   },
   vertexShader: [
     "uniform float theta;",
-    "attribute vec2 dy;",
+    "attribute vec3 dy;",
     "varying vec2 vUv;",
     "void main() {",
-    "  gl_Position = projectionMatrix * modelViewMatrix * vec4(position.x, position.y - dy.y + (dy.y*cos(theta) - dy.x*sin(theta)), position.z - dy.x + (dy.x*cos(theta) + dy.y*sin(theta)), 1.0);",
+    "  float theta2 = theta * dy.z;",
+    "  gl_Position = projectionMatrix * modelViewMatrix * vec4(position.x, position.y - dy.y + (dy.y*cos(theta2) - dy.x*sin(theta2)), position.z - dy.x + (dy.x*cos(theta2) + dy.y*sin(theta2)), 1.0);",
     "  vUv = uv;",
     "}"
   ].join("\n"),
@@ -96,7 +97,7 @@ class Chest {
       const geometry = new THREE.BufferGeometry();
       geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
       geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
-      geometry.addAttribute('dy', new THREE.BufferAttribute(dys, 2));
+      geometry.addAttribute('dy', new THREE.BufferAttribute(dys, 3));
       geometry.addAttribute('uv', new THREE.BufferAttribute(uvs, 2));
       geometry.setIndex(new THREE.BufferAttribute(indices, 1));
 
