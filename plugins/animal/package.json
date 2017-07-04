@@ -1,0 +1,10 @@
+{
+  "name": "animal",
+  "version": "0.0.1",
+  "description": "Procedural animals.",
+  "client": "client.js",
+  "builds": {
+    "worker": "worker.js"
+  },
+  "dependencies": {}
+}
