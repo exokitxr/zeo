@@ -258,6 +258,15 @@ class Wallet {
               this.rotation.copy(rotation);
               this.scale.copy(scale);
 
+              const {geometry} = this;
+              const positions = geometry.getAttribute('position').array;
+              const numPositions = positions.length / 3;
+              const dys = geometry.getAttribute('dy').array;
+              for (let i = 0; i < numPositions; i++) {
+                dys[(i * 2) + 0] = positions[(i * 3) + 0] * scale.x;
+                dys[(i * 2) + 1] = positions[(i * 3) + 2] * scale.z;
+              }
+
               geometryNeedsUpdate = true;
             }
           }
@@ -816,14 +825,17 @@ class Wallet {
           geometry.setIndex(indexAttribute);
 
           const dotPosition = new THREE.Vector2(0, 0);
+          dotPosition.snap = function() {
+            return new THREE.Vector2(
+              Math.min(Math.floor(((this.x + 1) / 2) * slotsWidth), slotsWidth - 1),
+              Math.min(Math.floor(((-this.y + 1) / 2) * slotsWidth), slotsWidth - 1)
+            );
+          };
           const _render = () => {
             let attributeIndex = 0;
             let indexIndex = 0;
 
-            const highlightedSlotPosition = new THREE.Vector2(
-              Math.min(Math.floor(((dotPosition.x + 1) / 2) * slotsWidth), slotsWidth - 1),
-              Math.min(Math.floor(((-dotPosition.y + 1) / 2) * slotsWidth), slotsWidth - 1)
-            );
+            const dotPositionSnap = dotPosition.snap();
 
             for (let y = 0; y < slotsWidth; y++) {
               for (let x = 0; x < slotsWidth; x++) {
@@ -841,7 +853,7 @@ class Wallet {
                   const baseIndex = i * 3;
                   const z = dotPositions[baseIndex + 2];
                   const color = (() => {
-                    if (x === highlightedSlotPosition.x && y === highlightedSlotPosition.y) {
+                    if (x === dotPositionSnap.x && y === dotPositionSnap.y) {
                       return z > 0 ? lightSlotColor : darkSlotColor;
                     } else {
                       return z > 0 ? whiteSlotColor : blackSlotColor;
@@ -893,19 +905,33 @@ class Wallet {
           mesh.visible = false;
 
           const gridAssetsMesh = _makeAssetsMesh();
-          gridAssetsMesh.addAsset(
+          const assetInstance = gridAssetsMesh.addAsset(
             'wallet:CRD',
             new THREE.Vector3(-gridWidth/2 + slotSize/2 + (0 * (slotSize + slotSpacing)), gridWidth/2 - slotSize/2 - (0 * (slotSize + slotSpacing)), 0),
             zeroQuaternion,
-            oneVector.clone().multiplyScalar(0.75),
+            oneVector.clone().multiplyScalar(0.6),
             'CRD',
             1
           );
+          assetInstance.hovered = false;
           mesh.add(gridAssetsMesh);
 
           mesh.update = (x, y) => {
             dotPosition.set(x, y);
             _render();
+
+            const dotPositionSnap = dotPosition.snap();
+            if (dotPositionSnap.x === 0 && dotPositionSnap.y === 0) {
+              if (!assetInstance.hovered) {
+                assetInstance.update(assetInstance.position, assetInstance.rotation, oneVector.clone().multiplyScalar(0.7));
+                assetInstance.hovered = true;
+              }
+            } else {
+              if (assetInstance.hovered) {
+                assetInstance.update(assetInstance.position, assetInstance.rotation, oneVector.clone().multiplyScalar(0.6));
+                assetInstance.hovered = false;
+              }
+            }
 
             gridAssetsMesh.update();
           };
