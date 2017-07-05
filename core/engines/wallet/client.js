@@ -809,8 +809,6 @@ class Wallet {
           const dotGeometry = new THREE.BoxBufferGeometry(dotSize, dotSize, dotSize);
           const dotPositions = dotGeometry.getAttribute('position').array;
           const numDotPositions = dotPositions.length / 3;
-          const lightDotColor = new THREE.Color(0x3F51B5);
-          const darkDotColor = lightDotColor.clone().multiplyScalar(0.7);
           const dotIndices = slotGeometry.index.array;
           const numDotIndices = dotIndices.length / 3;
 
@@ -880,7 +878,7 @@ class Wallet {
             for (let i = 0; i < numDotPositions; i++) {
               const baseIndex = i * 3;
               const z = dotPositions[baseIndex + 2];
-              const color = z > 0 ? lightDotColor : darkDotColor;
+              const color = z > 0 ? lightSlotColor : darkSlotColor;
 
               colors[attributeIndex + baseIndex + 0] = color.r;
               colors[attributeIndex + baseIndex + 1] = color.g;
