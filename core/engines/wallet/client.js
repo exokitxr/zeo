@@ -143,10 +143,32 @@ class Wallet {
           matrix.decompose(position, rotation, scale);
           return {position, rotation, scale};
         }; */
+        const _isInBody = p => {
+          const {hmd} = webvr.getStatus();
+          const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmd;
+          const externalMatrix = webvr.getExternalMatrix();
+          const bodyPosition = hmdPosition.clone()
+            .add(
+              new THREE.Vector3(0, -0.4, 0)
+                .applyQuaternion(new THREE.Quaternion().setFromRotationMatrix(externalMatrix))
+            );
+          return p.distanceTo(bodyPosition) < 0.35;
+        };
         const _copyIndices = (src, dst, startIndexIndex, startAttributeIndex) => {
           for (let i = 0; i < src.length; i++) {
             dst[startIndexIndex + i] = src[i] + startAttributeIndex;
           }
+        };
+
+        const _makeHoverState = () => ({
+          worldAsset: null,
+          worldNotification: null,
+          bodyAsset: null,
+          bodyNotification: null,
+        });
+        const hoverStates = {
+          left: _makeHoverState(),
+          right: _makeHoverState(),
         };
 
         const _makeAssetsMesh = () => {
@@ -172,16 +194,7 @@ class Wallet {
             return mesh;
           })();
 
-          const _makeHoverState = () => ({
-            asset: null,
-            notification: null,
-          });
-          const hoverStates = {
-            left: _makeHoverState(),
-            right: _makeHoverState(),
-          };
-
-          class Asset {
+          class AssetInstance {
             constructor(
               id,
               position,
@@ -245,7 +258,7 @@ class Wallet {
               geometryNeedsUpdate = true;
             }
 
-            update(position, rotation, scale) {
+            setState(position, rotation, scale) {
               this.position.copy(position);
               this.rotation.copy(rotation);
               this.scale.copy(scale);
@@ -279,7 +292,7 @@ class Wallet {
               geometry.addAttribute('dy', new THREE.BufferAttribute(dys, 2));
               return geometry;
             })();
-            const assetInstance = new Asset(id, position, rotation, scale, asset, quantity, geometry);
+            const assetInstance = new AssetInstance(id, position, rotation, scale, asset, quantity, geometry);
             assetInstances.push(assetInstance);
 
             geometryNeedsUpdate = true;
@@ -357,29 +370,29 @@ class Wallet {
               }
 
               if (closestAssetDistance < 0.2) {
-                hoverState.asset = closestAsset;
+                hoverState.worldAsset = closestAsset;
 
-                const {notification: oldNotification} = hoverState;
-                if (!oldNotification || oldNotification.asset !== closestAsset) {
-                  if (oldNotification) {
-                    notification.removeNotification(oldNotification);
+                const {notification: oldWorldNotification} = hoverState;
+                if (!oldWorldNotification || oldWorldNotification.asset !== closestAsset) {
+                  if (oldWorldNotification) {
+                    notification.removeNotification(oldWorldNotification);
                   }
 
                   const {asset, quantity} = closestAsset;
-                  const newNotification = notification.addNotification(`This is ${quantity} ${asset}.`);
-                  newNotification.asset = closestAsset;
+                  const newWorldNotification = notification.addNotification(`This is ${quantity} ${asset}.`);
+                  newWorldNotification.asset = closestAsset;
 
-                  hoverState.notification = newNotification;
+                  hoverState.worldNotification = newWorldNotification;
                 }
               } else {
                 const {asset} = hoverState;
 
                 if (asset) {
-                  const {notification: oldNotification} = hoverState;
-                  notification.removeNotification(oldNotification);
+                  const {notification: oldWorldNotification} = hoverState;
+                  notification.removeNotification(oldWorldNotification);
 
-                  hoverState.asset = null;
-                  hoverState.notification = null;
+                  hoverState.worldAsset = null;
+                  hoverState.worldNotification = null;
                 }
               }
             });
@@ -869,6 +882,9 @@ class Wallet {
         scene.add(gridMesh);
 
         const gridAssetsMesh = (() => {
+          const side = 'right'; // XXX make this work for both sides
+          const hoverState = hoverStates[side];
+
           const mesh = _makeAssetsMesh();
           /* const assetInstance = gridAssetsMesh.addAsset(
             'wallet:CRD',
@@ -881,7 +897,6 @@ class Wallet {
           assetInstance.hovered = false; */
 
           const assetInstances = [];
-          let hoveredAssetInstance = null;
           mesh.updateAssets = assets => {
             assetInstances.length = 0;
 
@@ -910,16 +925,36 @@ class Wallet {
             const dotPosition = new THREE.Vector2(x, y);
             const dotPositionSnap = _snapDotPosition(dotPosition);
 
-            if (hoveredAssetInstance !== null) {
-              hoveredAssetInstance.update(hoveredAssetInstance.position, hoveredAssetInstance.rotation, oneVector.clone().multiplyScalar(0.6));
-              hoveredAssetInstance = null;
-            }
+            const _clearBodyAsset = () => {
+              const {bodyAsset} = hoverState;
+              if (bodyAsset !== null) {
+                bodyAsset.setState(bodyAsset.position, bodyAsset.rotation, oneVector.clone().multiplyScalar(0.6));
+                hoverState.bodyAsset = null;
+              }
+            };
+            const _clearBodyNotification = () => {
+              const {bodyNotification} = hoverState;
+              if (bodyNotification !== null) {
+                notification.removeNotification(bodyNotification);
+                hoverState.bodyNotification = null;
+              }
+            };
 
             const index = dotPositionSnap.x + (dotPositionSnap.y * slotsWidth);
             if (index < assetInstances.length) {
               const assetInstance = assetInstances[index];
-              assetInstance.update(assetInstance.position, assetInstance.rotation, oneVector.clone().multiplyScalar(0.7));
-              hoveredAssetInstance = assetInstance;
+              const {bodyAsset} = hoverState;
+
+              if (bodyAsset !== assetInstance) {
+                _clearBodyAsset();
+                _clearBodyNotification();
+
+                assetInstance.setState(assetInstance.position, assetInstance.rotation, oneVector.clone().multiplyScalar(0.7));
+                hoverState.bodyAsset = assetInstance;
+              }
+            } else {
+              _clearBodyAsset();
+              _clearBodyNotification();
             }
 
             mesh.updateGeometry();
@@ -964,6 +999,29 @@ class Wallet {
         });
 
         const _update = () => {
+          const _updateHover = () => {
+            const {gamepads} = webvr.getStatus();
+
+            SIDES.forEach(side => {
+              const gamepad = gamepads[side];
+              const {worldPosition: controllerPosition} = gamepad;
+              const hoverState = hoverStates[side];
+              const {bodyAsset, bodyNotification} = hoverState;
+
+              // XXX also add the release asset notification
+
+              const isInBody = _isInBody(controllerPosition);
+              if (isInBody && !bodyNotification) {
+                if (bodyAsset !== null) {
+                  const {asset, quantity} = bodyAsset;
+                  hoverState.bodyNotification = notification.addNotification(`Grab to pull ${quantity} ${asset}.`);
+                }
+              } else if (!isInBody && bodyNotification) {
+                 notification.removeNotification(bodyNotification);
+                 hoverState.bodyNotification = null;
+              }
+            });
+          };
           const _updateGrid = () => {
             const {side} = gridState;
 
@@ -984,6 +1042,7 @@ class Wallet {
             assetsMaterial.uniforms.theta.value = (Date.now() * ROTATE_SPEED * (Math.PI * 2) % (Math.PI * 2));
           };
 
+          _updateHover();
           _updateGrid();
           _updateAssets();
           _updateAssetsMaterial();
@@ -1030,15 +1089,7 @@ class Wallet {
             grabbable.on('release', () => {
               assetInstance.release();
 
-              const {hmd} = webvr.getStatus();
-              const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmd;
-              const externalMatrix = webvr.getExternalMatrix();
-              const bodyPosition = hmdPosition.clone()
-                .add(
-                  new THREE.Vector3(0, -0.4, 0)
-                    .applyQuaternion(new THREE.Quaternion().setFromRotationMatrix(externalMatrix))
-                );
-              if (assetInstance.position.distanceTo(bodyPosition) < 0.35) {
+              if (_isInBody(assetInstance.position)) {
                 const _requestCreateSend = ({asset, quantity, srcAddress, dstAddress, privateKey}) => fetch(`${siteUrl}/id/api/send`, {
                   method: 'POST',
                   headers: (() => {
@@ -1090,7 +1141,7 @@ class Wallet {
               }
             });
             grabbable.on('update', ({position, rotation, scale}) => {
-              assetInstance.update(
+              assetInstance.setState(
                 new THREE.Vector3().fromArray(position),
                 new THREE.Quaternion().fromArray(rotation),
                 new THREE.Vector3().fromArray(scale)
