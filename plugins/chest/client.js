@@ -3,6 +3,7 @@ const {
 } = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
 
+const MAX_ITEMS = 4;
 const NUM_POSITIONS_CHUNK = 100 * 1024;
 const SIDES = ['left', 'right'];
 
@@ -13,7 +14,7 @@ class Chest {
 
   mount() {
     const {_archae: archae} = this;
-    const {three, render, pose, input, hands, animation, utils: {geometry: geometryUtils}} = zeo;
+    const {three, render, pose, input, hands, items, animation, utils: {geometry: geometryUtils}} = zeo;
     const {THREE, scene} = three;
 
     const zeroQuaternion = new THREE.Quaternion();
@@ -215,6 +216,8 @@ class Chest {
         mesh.quaternion.fromArray(rotation);
         mesh.scale.fromArray(scale);
         mesh.updateMatrixWorld();
+
+        mesh.updateTrackedItems();
       });
       mesh.grabbable = grabbable;
 
@@ -265,6 +268,44 @@ class Chest {
           mesh.needsUpdate = false;
         }
       };
+
+      const trackedItemIds = [];
+      mesh.hasItem = item => trackedItemIds.includes(item.id);
+      mesh.canAddItem = item => {
+        const {position: itemPosition} = item;
+        const {boxTargets: boxTargetSpecs} = mesh;
+        return boxTargetSpecs.some(boxTargetSpec => boxTargetSpec.boxTarget.containsPoint(itemPosition)) && trackedItemIds.length < MAX_ITEMS;
+      };
+      mesh.addItem = item => {
+        const {id} = item;
+        trackedItemIds.push(id); // XXX save this to a data attribute
+      };
+      mesh.removeItem = item => {
+        const {id} = item;
+        trackedItemIds.splice(trackedItemIds.indexOf(id), 1);
+      };
+      mesh.updateTrackedItems = () => {
+        const assetSize = 0.02 * 12;
+        const assetSpacing = 0.02;
+
+        for (let i = 0; i < trackedItemIds.length; i++) {
+          const trackedItemId = trackedItemIds[i];
+          const item = items.getItem(trackedItemId);
+          const {grabbable} = item;
+          grabbable.setState(
+            mesh.position.clone().add(
+              new THREE.Vector3(
+                -(((assetSize * MAX_ITEMS) + (assetSpacing * (MAX_ITEMS - 1))) / 2) + (assetSize / 2) + ((assetSize + assetSpacing) * i),
+                0.2,
+                0
+              ).applyQuaternion(mesh.quaternion)
+            ).toArray(),
+            mesh.quaternion.toArray(),
+            mesh.scale.toArray()
+          );
+        }
+      };
+
       mesh.destroy = () => {
         geometry.dispose();
 
@@ -297,6 +338,24 @@ class Chest {
           }
         };
         input.on('gripdown', _gripdown);
+
+        const _grab = e => {
+          const {item} = e;
+
+          if (chestMesh.hasItem(item)) {
+            chestMesh.removeItem(item);
+          }
+        };
+        items.on('grab', _grab);
+        const _release = e => {
+          const {item} = e;
+
+          if (chestMesh.canAddItem(item)) {
+            chestMesh.addItem(item);
+            chestMesh.updateTrackedItems();
+          }
+        };
+        items.on('release', _release);
 
         const _update = () => {
           const _updateHover = () => {
@@ -363,6 +422,8 @@ class Chest {
           chestMaterial.dispose();
 
           input.removeListener('gripdown', _gripdown);
+          items.on('grab', _grab);
+          items.on('release', _release);
           render.removeListener('update', _update);
         };
       });
