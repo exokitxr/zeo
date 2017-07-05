@@ -220,7 +220,7 @@ class Wallet {
             return mesh;
           })();
 
-          class AssetInstance {
+          class AssetInstance { // XXX make this a subclass of Grabbable
             constructor(
               id,
               position,
@@ -245,11 +245,24 @@ class Wallet {
               this._visible = true;
 
               if (grabbable) {
-                const _updateGeometry = () => {
+                grabbable.on('grab', e => {
+                  const {side} = e;
+                  walletApi.emit('grab', {
+                    side: side,
+                    item: this,
+                  });
+
                   geometryNeedsUpdate = true;
-                };
-                grabbable.on('grab', _updateGeometry);
-                grabbable.on('release', _updateGeometry);
+                });
+                grabbable.on('release', e => {
+                  const {side} = e;
+                  walletApi.emit('release', {
+                    side: side,
+                    item: this,
+                  });
+
+                  geometryNeedsUpdate = true;
+                });
               }
             }
 
@@ -1051,10 +1064,12 @@ class Wallet {
             const assetInstance = assetsMesh.getAssetInstance(id);
             const {grabbable} = assetInstance;
             grabbable.grab(side);
+
+            e.stopImmediatePropagation();
           }
         };
         input.on('gripdown', _gripdown, {
-          priority: 1,
+          priority: -1,
         });
 
         const _update = () => {
@@ -1132,6 +1147,10 @@ class Wallet {
           requestAssets() {
             return _ensureLoaded()
               .then(() => walletState.assets);
+          }
+
+          getAsset(id) {
+            return assetsMesh.getAssetInstance(id);
           }
 
           addAsset(item) {

@@ -708,6 +708,24 @@ class Zeo {
                       }
                     }
 
+                    class ZeoItemsApi {
+                      getItem(id) {
+                        return wallet.getAsset(id);
+                      }
+
+                      on() {
+                        return wallet.on.apply(wallet, arguments);
+                      }
+
+                      removeListener() {
+                        return wallet.removeListener.apply(wallet, arguments);
+                      }
+
+                      removeAllListeners() {
+                        return wallet.removeAllListeners.apply(wallet, arguments);
+                      }
+                    }
+
                     class ZeoPaymentApi {
                       getAddress() {
                         return payment.getAddress();
@@ -761,6 +779,7 @@ class Zeo {
                         this.hands = new ZeoHandsApi();
                         this.transform = new ZeoTransformApi();
                         this.animation = new ZeoAnimationApi();
+                        this.items = new ZeoItemsApi();
                         this.payment = new ZeoPaymentApi();
                         this.utils = new ZeoUtilsApi();
                       }
