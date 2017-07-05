@@ -829,23 +829,23 @@ class Wallet {
           return mesh;
         };
 
+        const slotGeometry = new THREE.BoxBufferGeometry(slotSize, slotPlatformHeight, slotSize);
+        const numSlotPositions = slotGeometry.getAttribute('position').array.length / 3;
+        const numSlotColors = numSlotPositions;
+        const numSlotIndices = slotGeometry.index.array.length / 3;
+        const lightSlotColor = new THREE.Color(0x2196F3);
+        const darkSlotColor = lightSlotColor.clone().multiplyScalar(0.6);
+        const whiteSlotColor = new THREE.Color(0xCCCCCC);
+        const blackSlotColor = whiteSlotColor.clone().multiplyScalar(0.6);
+
+        const dotSize = slotSize / 4;
+        const dotGeometry = new THREE.BoxBufferGeometry(dotSize, dotSize, dotSize);
+        const dotPositions = dotGeometry.getAttribute('position').array;
+        const numDotPositions = dotPositions.length / 3;
+        const numDotColors = numDotPositions;
+        const numDotIndices = slotGeometry.index.array.length / 3;
+
         const _makeGridMesh = side => {
-          const slotGeometry = new THREE.BoxBufferGeometry(slotSize, slotPlatformHeight, slotSize);
-          const numSlotPositions = slotGeometry.getAttribute('position').array.length / 3;
-          const numSlotColors = numSlotPositions;
-          const numSlotIndices = slotGeometry.index.array.length / 3;
-          const lightSlotColor = new THREE.Color(0x2196F3);
-          const darkSlotColor = lightSlotColor.clone().multiplyScalar(0.6);
-          const whiteSlotColor = new THREE.Color(0xCCCCCC);
-          const blackSlotColor = whiteSlotColor.clone().multiplyScalar(0.6);
-
-          const dotSize = slotSize / 4;
-          const dotGeometry = new THREE.BoxBufferGeometry(dotSize, dotSize, dotSize);
-          const dotPositions = dotGeometry.getAttribute('position').array;
-          const numDotPositions = dotPositions.length / 3;
-          const numDotColors = numDotPositions;
-          const numDotIndices = slotGeometry.index.array.length / 3;
-
           const geometry = new THREE.BufferGeometry();
           const positions = new Float32Array(numSlotPositions * 3 * numSlots + numDotPositions * 3);
           const positionAttribute = new THREE.BufferAttribute(positions, 3);
