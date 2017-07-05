@@ -166,7 +166,8 @@ class Wallet {
 
         const _makeHoverState = () => ({
           worldAsset: null,
-          worldNotification: null,
+          worldGrabNotification: null,
+          worldReleaseNotification: null,
           bodyAsset: null,
           bodyNotification: null,
         });
@@ -376,27 +377,28 @@ class Wallet {
               if (closestAssetDistance < 0.2) {
                 hoverState.worldAsset = closestAsset;
 
-                const {notification: oldWorldNotification} = hoverState;
-                if (!oldWorldNotification || oldWorldNotification.asset !== closestAsset) {
-                  if (oldWorldNotification) {
-                    notification.removeNotification(oldWorldNotification);
+                const {worldGrabNotification: oldWorldGrabNotification} = hoverState;
+                if (!oldWorldGrabNotification || oldWorldGrabNotification.asset !== closestAsset) {
+                  if (oldWorldGrabNotification) {
+                    notification.removeNotification(oldWorldGrabNotification);
                   }
 
                   const {asset, quantity} = closestAsset;
-                  const newWorldNotification = notification.addNotification(`This is ${quantity} ${asset}.`);
-                  newWorldNotification.asset = closestAsset;
+                  const newWorldGrabNotification = notification.addNotification(`This is ${quantity} ${asset}.`);
+                  newWorldGrabNotification.asset = closestAsset;
 
-                  hoverState.worldNotification = newWorldNotification;
+                  hoverState.worldGrabNotification = newWorldGrabNotification;
                 }
               } else {
-                const {asset} = hoverState;
-
-                if (asset) {
-                  const {notification: oldWorldNotification} = hoverState;
-                  notification.removeNotification(oldWorldNotification);
-
+                const {worldAsset} = hoverState;
+                if (worldAsset) {
                   hoverState.worldAsset = null;
-                  hoverState.worldNotification = null;
+                }
+
+                const {worldGrabNotification} = hoverState;
+                if (worldGrabNotification) {
+                  notification.removeNotification(worldGrabNotification);
+                  hoverState.worldGrabNotification = null;
                 }
               }
             });
@@ -986,11 +988,17 @@ class Wallet {
               const gamepad = gamepads[side];
               const {worldPosition: controllerPosition} = gamepad;
               const hoverState = hoverStates[side];
-              const {bodyAsset, bodyNotification} = hoverState;
-
-              // XXX also add the release asset notification
-
+              const {worldAsset, worldReleaseNotification, bodyAsset, bodyNotification} = hoverState;
               const isInBody = _isInBody(controllerPosition);
+
+              if ((isInBody && worldAsset) && !worldReleaseNotification) {
+                const {asset, quantity} = worldAsset;
+                hoverState.worldReleaseNotification = notification.addNotification(`Release to store ${quantity} ${asset}.`);
+              } else if (!(isInBody && worldAsset) && worldReleaseNotification) {
+                notification.removeNotification(worldReleaseNotification);
+                hoverState.worldReleaseNotification = null;
+              }
+
               if (isInBody && !bodyNotification) {
                 if (bodyAsset !== null) {
                   const {asset, quantity} = bodyAsset;
