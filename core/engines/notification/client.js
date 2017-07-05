@@ -97,7 +97,16 @@ class Notification {
           });
           mesh.visible = false;
 
-          const _align = (position, rotation, scale, lerpFactor) => {
+          mesh.needsUpdate = false;
+          mesh.update = () => {
+            if (mesh.needsUpdate) {
+              const {page} = mesh;
+              page.update();
+
+              mesh.needsUpdate = false;
+            }
+          };
+          mesh.align = (position, rotation, scale, lerpFactor) => {
             const targetPosition = position.clone().add(
               new THREE.Vector3(
                 0,
@@ -122,7 +131,6 @@ class Notification {
 
             mesh.updateMatrixWorld();
           };
-          mesh.align = _align;
 
           const {position: cameraPosition, rotation: cameraRotation, scale: cameraScale} = _decomposeObjectMatrixWorld(camera);
           mesh.align(cameraPosition, cameraRotation, cameraScale, 1);
@@ -131,17 +139,16 @@ class Notification {
         })();
         scene.add(hudMesh);
 
-        const _updatePages = () => {
-          const {page} = hudMesh;
-          page.update();
-        };
-        _updatePages();
-
         let lastUpdateTime = Date.now();
         const _update = () => {
           const now = Date.now();
 
           const _updateHudMesh = () => {
+            if (hudMesh.visible) {
+              hudMesh.update();
+            }
+          };
+          const _alignHudMesh = () => {
             if (hudMesh.visible) {
               const {position: cameraPosition, rotation: cameraRotation, scale: cameraScale} = _decomposeObjectMatrixWorld(camera);
               const timeDiff = now - lastUpdateTime;
@@ -151,6 +158,7 @@ class Notification {
           };
 
           _updateHudMesh();
+          _alignHudMesh();
 
           lastUpdateTime = now;
         };
@@ -172,24 +180,24 @@ class Notification {
           const notification = new Notification(text);
           notifications.push(notification);
 
-          _updatePages();
-
           if (notifications.length === 1) {
             const {position: cameraPosition, rotation: cameraRotation, scale: cameraScale} = _decomposeObjectMatrixWorld(camera);
             hudMesh.align(cameraPosition, cameraRotation, cameraScale, 1);
             hudMesh.visible = true;
           }
 
+          hudMesh.needsUpdate = true;
+
           return notification;
         };
         const _removeNotification = notification => {
           notifications.splice(notifications.indexOf(notification), 1);
 
-          _updatePages();
-
           if (notifications.length === 0) {
             hudMesh.visible = false;
           }
+
+          hudMesh.needsUpdate = true;
         };
 
         return {
