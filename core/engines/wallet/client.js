@@ -118,12 +118,20 @@ class Wallet {
         const transparentMaterial = biolumi.getTransparentMaterial();
         const walletRenderer = walletRender.makeRenderer({creatureUtils});
 
+        const oneVector = new THREE.Vector3(1, 1, 1);
         const forwardVector = new THREE.Vector3(0, 0, -1);
         const zeroQuaternion = new THREE.Quaternion();
         const forwardQuaternion = new THREE.Quaternion().setFromUnitVectors(
           new THREE.Vector3(0, 0, -1),
           new THREE.Vector3(0, -1, 0)
         );
+        const assetsMaterial = new THREE.ShaderMaterial({
+          uniforms: THREE.UniformsUtils.clone(ASSET_SHADER.uniforms),
+          vertexShader: ASSET_SHADER.vertexShader,
+          fragmentShader: ASSET_SHADER.fragmentShader,
+          // transparent: true,
+          // depthTest: false,
+        });
         const gridMaterial = new THREE.MeshBasicMaterial({
           vertexColors: THREE.VertexColors,
         });
@@ -149,10 +157,8 @@ class Wallet {
           }
         };
 
-        const assetsMesh = (() => {
-          const object = new THREE.Object3D();
-
-          const coreMesh = (() => {
+        const _makeAssetsMesh = () => {
+          const mesh = (() => {
             const geometry = new THREE.BufferGeometry();
             const positions = new Float32Array(NUM_POSITIONS * 3);
             geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
@@ -167,19 +173,12 @@ class Wallet {
               1
             );
 
-            const material = new THREE.ShaderMaterial({
-              uniforms: THREE.UniformsUtils.clone(ASSET_SHADER.uniforms),
-              vertexShader: ASSET_SHADER.vertexShader,
-              fragmentShader: ASSET_SHADER.fragmentShader,
-              // transparent: true,
-              // depthTest: false,
-            });
+            const material = assetsMaterial;
 
             const mesh = new THREE.Mesh(geometry, material);
             mesh.frustumCulled = false;
             return mesh;
           })();
-          object.add(coreMesh);
 
           const _makeHoverState = () => ({
             asset: null,
@@ -264,7 +263,7 @@ class Wallet {
           }
 
           const assetInstances = [];
-          object.addAsset = (id, position, rotation, scale, asset, quantity) => {
+          mesh.addAsset = (id, position, rotation, scale, asset, quantity) => {
             const geometry = (() => {
               const imageData = assets.getSpriteImageData('asset:' + asset);
               const pixelSize = 0.02;
@@ -273,8 +272,8 @@ class Wallet {
               const numPositions = positions.length / 3;
               const dys = new Float32Array(numPositions * 2);
               for (let i = 0; i < numPositions; i++) {
-                dys[(i * 2) + 0] = positions[(i * 3) + 0];
-                dys[(i * 2) + 1] = positions[(i * 3) + 2];
+                dys[(i * 2) + 0] = positions[(i * 3) + 0] * scale.x;
+                dys[(i * 2) + 1] = positions[(i * 3) + 2] * scale.z;
               }
               geometry.addAttribute('dy', new THREE.BufferAttribute(dys, 2));
               return geometry;
@@ -286,14 +285,14 @@ class Wallet {
 
             return assetInstance;
           };
-          object.removeAsset = id => {
+          mesh.removeAsset = id => {
             assetInstances.splice(assetInstances.findIndex(assetInstance => assetInstance.id === id), 1);
 
             geometryNeedsUpdate = true;
           };
 
           let geometryNeedsUpdate = false;
-          object.update = () => {
+          mesh.update = () => {
             const _updateHovers = () => {
               const {gamepads} = webvr.getStatus();
 
@@ -346,7 +345,7 @@ class Wallet {
             };
             const _updateGeometry = () => {
               if (geometryNeedsUpdate) {
-                const {geometry} = coreMesh;
+                const {geometry} = mesh;
                 const positionsAttribute = geometry.getAttribute('position');
                 const {array: positions} = positionsAttribute;
                 const colorsAttribute = geometry.getAttribute('color');
@@ -385,23 +384,15 @@ class Wallet {
                 geometryNeedsUpdate = false;
               }
             };
-            const _updateMaterial = () => {
-              coreMesh.material.uniforms.theta.value = (Date.now() * ROTATE_SPEED * (Math.PI * 2) % (Math.PI * 2));
-            };
 
             _updateHovers();
             _updateGeometry();
-            _updateMaterial();
           };
 
-          return object;
-        })();
+          return mesh;
+        };
+        const assetsMesh = _makeAssetsMesh();
         scene.add(assetsMesh);
-        assetsMesh.updateMatrixWorld();
-
-        cleanups.push(() => {
-          scene.remove(assetsMesh);
-        });
 
         const walletState = {
           loaded: false,
@@ -780,10 +771,11 @@ class Wallet {
           const slotsWidth = 4;
           const numSlots = slotsWidth * slotsWidth;
           const slotSize = 0.2;
+          const slotPlatformHeight = slotSize / 5;
           const slotSpacing = slotSize / 2;
           const gridWidth = (slotSize * slotsWidth) + (slotSpacing * (slotsWidth - 1));
 
-          const slotGeometry = new THREE.BoxBufferGeometry(slotSize, slotSize / 5, slotSize);
+          const slotGeometry = new THREE.BoxBufferGeometry(slotSize, slotPlatformHeight, slotSize);
           const slotPositions = slotGeometry.getAttribute('position').array;
           const numSlotPositions = slotPositions.length / 3;
           const slotColors = new Float32Array(numSlotPositions * 3);
@@ -838,7 +830,7 @@ class Wallet {
                 const slotGeometryClone = slotGeometry.clone()
                   .applyMatrix(new THREE.Matrix4().makeTranslation(
                     -(gridWidth / 2) + (slotSize / 2) + (x * (slotSize + slotSpacing)),
-                    (gridWidth / 2) - (slotSize / 2) - (y * (slotSize + slotSpacing)),
+                    (gridWidth / 2) - slotSize - (slotPlatformHeight / 2) - (y * (slotSize + slotSpacing)),
                     0
                   ));
                 const slotClonePositions = slotGeometryClone.getAttribute('position').array;
@@ -900,15 +892,28 @@ class Wallet {
           const mesh = new THREE.Mesh(geometry, material);
           mesh.visible = false;
 
+          const gridAssetsMesh = _makeAssetsMesh();
+          gridAssetsMesh.addAsset(
+            'wallet:CRD',
+            new THREE.Vector3(-gridWidth/2 + slotSize/2 + (0 * (slotSize + slotSpacing)), gridWidth/2 - slotSize/2 - (0 * (slotSize + slotSpacing)), 0),
+            zeroQuaternion,
+            oneVector.clone().multiplyScalar(0.75),
+            'CRD',
+            1
+          );
+          mesh.add(gridAssetsMesh);
+
           mesh.update = (x, y) => {
             dotPosition.set(x, y);
-
             _render();
+
+            gridAssetsMesh.update();
           };
 
           return mesh;
         })();
         scene.add(gridMesh);
+        gridMesh.updateMatrixWorld();
 
         const _padtouchdown = e => {
           const {side} = e;
@@ -972,13 +977,18 @@ class Wallet {
           const _updateAssetsMesh = () => {
             assetsMesh.update();
           };
+          const _updateAssetsMaterial = () => {
+            assetsMaterial.uniforms.theta.value = (Date.now() * ROTATE_SPEED * (Math.PI * 2) % (Math.PI * 2));
+          };
 
           _updateGridMesh();
           _updateAssetsMesh();
+          _updateAssetsMaterial();
         };
         rend.on('update', _update);
 
         cleanups.push(() => {
+          scene.remove(assetsMesh);
           scene.remove(gridMesh);
 
           input.removeListener('trigger', _trigger);
