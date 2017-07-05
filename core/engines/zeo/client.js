@@ -604,15 +604,15 @@ class Zeo {
 
                     class ZeoBroadcastApi {
                       on() {
-                        return broadcast.on.apply(this, arguments);
+                        return broadcast.on.apply(broadcast, arguments);
                       }
 
                       removeListener() {
-                        return broadcast.removeListener.apply(this, arguments);
+                        return broadcast.removeListener.apply(broadcast, arguments);
                       }
 
                       removeAllListeners() {
-                        return broadcast.removeAllListeners.apply(this, arguments);
+                        return broadcast.removeAllListeners.apply(broadcast, arguments);
                       }
                     }
 
