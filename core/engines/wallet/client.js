@@ -154,6 +154,10 @@ class Wallet {
             );
           return p.distanceTo(bodyPosition) < 0.35;
         };
+        const _snapDotPosition = p => new THREE.Vector2(
+          Math.min(Math.floor(((p.x + 1) / 2) * slotsWidth), slotsWidth - 1),
+          Math.min(Math.floor(((-p.y + 1) / 2) * slotsWidth), slotsWidth - 1)
+        );
         const _copyIndices = (src, dst, startIndexIndex, startAttributeIndex) => {
           for (let i = 0; i < src.length; i++) {
             dst[startIndexIndex + i] = src[i] + startAttributeIndex;
@@ -506,7 +510,11 @@ class Wallet {
             walletState.assets = assets;
             walletState.numTags = assets.length;
 
-            gridAssetsMesh.updateAssets(assets);
+            SIDES.forEach(side => {
+              const gridMesh = gridMeshes[side];
+              const {gridAssetsMesh} = gridMesh;
+              gridAssetsMesh.updateAssets(assets);
+            });
           })
           .catch(err => {
             walletState.error = true;
@@ -749,17 +757,80 @@ class Wallet {
         const slotPlatformHeight = slotSize / 5;
         const slotSpacing = slotSize / 2;
         const gridWidth = (slotSize * slotsWidth) + (slotSpacing * (slotsWidth - 1));
-        const gridState = {
-          side: null,
+
+        const _makeGridAssetsMesh = side => {
+          const hoverState = hoverStates[side];
+
+          const mesh = _makeAssetsMesh();
+
+          const assetInstances = [];
+          mesh.updateAssets = assets => {
+            assetInstances.length = 0;
+
+            for (let i = 0; i < assets.length; i++) {
+              const {asset, quantity} = assets[i];
+              const x = i % gridWidth;
+              const y = Math.floor(i / gridWidth);
+              const assetInstance = mesh.addAsset(
+                'wallet:' + asset,
+                new THREE.Vector3(
+                  -gridWidth/2 + slotSize/2 + (x * (slotSize + slotSpacing)),
+                  gridWidth/2 - slotSize/2 - (y * (slotSize + slotSpacing)),
+                  0
+                ),
+                zeroQuaternion,
+                oneVector.clone().multiplyScalar(0.6),
+                asset,
+                quantity
+              );
+              assetInstances.push(assetInstance);
+            }
+
+            mesh.updateGeometry();
+          };
+          mesh.updatePoint = (x, y) => {
+            const dotPosition = new THREE.Vector2(x, y);
+            const dotPositionSnap = _snapDotPosition(dotPosition);
+
+            const _clearBodyAsset = () => {
+              const {bodyAsset} = hoverState;
+              if (bodyAsset !== null) {
+                bodyAsset.setState(bodyAsset.position, bodyAsset.rotation, oneVector.clone().multiplyScalar(0.6));
+                hoverState.bodyAsset = null;
+              }
+            };
+            const _clearBodyNotification = () => {
+              const {bodyNotification} = hoverState;
+              if (bodyNotification !== null) {
+                notification.removeNotification(bodyNotification);
+                hoverState.bodyNotification = null;
+              }
+            };
+
+            const index = dotPositionSnap.x + (dotPositionSnap.y * slotsWidth);
+            if (index < assetInstances.length) {
+              const assetInstance = assetInstances[index];
+              const {bodyAsset} = hoverState;
+
+              if (bodyAsset !== assetInstance) {
+                _clearBodyAsset();
+                _clearBodyNotification();
+
+                assetInstance.setState(assetInstance.position, assetInstance.rotation, oneVector.clone().multiplyScalar(0.7));
+                hoverState.bodyAsset = assetInstance;
+              }
+            } else {
+              _clearBodyAsset();
+              _clearBodyNotification();
+            }
+
+            mesh.updateGeometry();
+          };
+          return mesh;
         };
 
-        const _snapDotPosition = p => new THREE.Vector2(
-          Math.min(Math.floor(((p.x + 1) / 2) * slotsWidth), slotsWidth - 1),
-          Math.min(Math.floor(((-p.y + 1) / 2) * slotsWidth), slotsWidth - 1)
-        );
-
-        const gridMesh = (() => {
-          const slotGeometry = new THREE.BoxBufferGeometry(slotSize, slotPlatformHeight, slotSize);
+        const _makeGridMesh = side => {
+          const slotGeometry = new THREE.BoxBufferGeometry(slotSize, slotPlatformHeight, slotSize); // XXX this can be shared
           const slotPositions = slotGeometry.getAttribute('position').array;
           const numSlotPositions = slotPositions.length / 3;
           const slotColors = new Float32Array(numSlotPositions * 3);
@@ -873,111 +944,37 @@ class Wallet {
           const mesh = new THREE.Mesh(geometry, material);
           mesh.visible = false;
 
+          const gridAssetsMesh = _makeGridAssetsMesh(side);
+          mesh.add(gridAssetsMesh);
+          mesh.gridAssetsMesh = gridAssetsMesh;
+
           mesh.updatePoint = (x, y) => {
             _render(x, y);
+
+            gridAssetsMesh.updatePoint(x, y);
           };
 
           return mesh;
-        })();
-        scene.add(gridMesh);
-
-        const gridAssetsMesh = (() => {
-          const side = 'right'; // XXX make this work for both sides
-          const hoverState = hoverStates[side];
-
-          const mesh = _makeAssetsMesh();
-          /* const assetInstance = gridAssetsMesh.addAsset(
-            'wallet:CRD',
-            new THREE.Vector3(-gridWidth/2 + slotSize/2 + (0 * (slotSize + slotSpacing)), gridWidth/2 - slotSize/2 - (0 * (slotSize + slotSpacing)), 0),
-            zeroQuaternion,
-            oneVector.clone().multiplyScalar(0.6),
-            'CRD',
-            1
-          );
-          assetInstance.hovered = false; */
-
-          const assetInstances = [];
-          mesh.updateAssets = assets => {
-            assetInstances.length = 0;
-
-            for (let i = 0; i < assets.length; i++) {
-              const {asset, quantity} = assets[i];
-              const x = i % gridWidth;
-              const y = Math.floor(i / gridWidth);
-              const assetInstance = gridAssetsMesh.addAsset(
-                'wallet:' + asset,
-                new THREE.Vector3(
-                  -gridWidth/2 + slotSize/2 + (x * (slotSize + slotSpacing)),
-                  gridWidth/2 - slotSize/2 - (y * (slotSize + slotSpacing)),
-                  0
-                ),
-                zeroQuaternion,
-                oneVector.clone().multiplyScalar(0.6),
-                asset,
-                quantity
-              );
-              assetInstances.push(assetInstance);
-            }
-
-            mesh.updateGeometry();
-          };
-          mesh.updatePoint = (x, y) => {
-            const dotPosition = new THREE.Vector2(x, y);
-            const dotPositionSnap = _snapDotPosition(dotPosition);
-
-            const _clearBodyAsset = () => {
-              const {bodyAsset} = hoverState;
-              if (bodyAsset !== null) {
-                bodyAsset.setState(bodyAsset.position, bodyAsset.rotation, oneVector.clone().multiplyScalar(0.6));
-                hoverState.bodyAsset = null;
-              }
-            };
-            const _clearBodyNotification = () => {
-              const {bodyNotification} = hoverState;
-              if (bodyNotification !== null) {
-                notification.removeNotification(bodyNotification);
-                hoverState.bodyNotification = null;
-              }
-            };
-
-            const index = dotPositionSnap.x + (dotPositionSnap.y * slotsWidth);
-            if (index < assetInstances.length) {
-              const assetInstance = assetInstances[index];
-              const {bodyAsset} = hoverState;
-
-              if (bodyAsset !== assetInstance) {
-                _clearBodyAsset();
-                _clearBodyNotification();
-
-                assetInstance.setState(assetInstance.position, assetInstance.rotation, oneVector.clone().multiplyScalar(0.7));
-                hoverState.bodyAsset = assetInstance;
-              }
-            } else {
-              _clearBodyAsset();
-              _clearBodyNotification();
-            }
-
-            mesh.updateGeometry();
-          };
-          return mesh;
-        })();
-        gridMesh.add(gridAssetsMesh);
+        };
+        const gridMeshes = {
+          left: _makeGridMesh('left'),
+          right: _makeGridMesh('right'),
+        };
+        scene.add(gridMeshes.left);
+        scene.add(gridMeshes.right);
 
         const _padtouchdown = e => {
           const {side} = e;
+          const gridMesh = gridMeshes[side];
+          const {hmd} = webvr.getStatus();
+          const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmd;
 
-          if (gridState.side !== side) {
-            const {hmd} = webvr.getStatus();
-            const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmd;
-            gridMesh.position.copy(hmdPosition.clone().add(forwardVector.clone().applyQuaternion(hmdRotation)));
-            gridMesh.quaternion.copy(hmdRotation);
-            gridMesh.updateMatrixWorld();
+          gridMesh.position.copy(hmdPosition.clone().add(forwardVector.clone().applyQuaternion(hmdRotation)));
+          gridMesh.quaternion.copy(hmdRotation);
+          gridMesh.updateMatrixWorld();
 
-            if (!gridMesh.visible) {
-              gridMesh.visible = true;
-            }
-
-            gridState.side = side;
+          if (!gridMesh.visible) {
+            gridMesh.visible = true;
           }
         };
         input.on('padtouchdown', _padtouchdown, {
@@ -985,13 +982,10 @@ class Wallet {
         });
         const _padtouchup = e => {
           const {side} = e;
+          const gridMesh = gridMeshes[side];
 
-          if (gridState.side === side) {
-            if (gridMesh.visible) {
-              gridMesh.visible = false;
-            }
-
-            gridState.side = null;
+          if (gridMesh.visible) {
+            gridMesh.visible = false;
           }
         };
         input.on('padtouchup', _padtouchup, {
@@ -1023,16 +1017,17 @@ class Wallet {
             });
           };
           const _updateGrid = () => {
-            const {side} = gridState;
+            const {gamepads} = webvr.getStatus();
 
-            if (side !== null) {
-              const {gamepads} = webvr.getStatus();
+            SIDES.forEach(side => {
               const gamepad = gamepads[side];
               const {axes: [x, y]} = gamepad;
+              const gridMesh = gridMeshes[side];
+              const {gridAssetsMesh} = gridMesh;
 
               gridMesh.updatePoint(x, y);
               gridAssetsMesh.updatePoint(x, y);
-            }
+            });
           };
           const _updateAssets = () => {
             assetsMesh.updateGeometry();
@@ -1050,8 +1045,8 @@ class Wallet {
         rend.on('update', _update);
 
         cleanups.push(() => {
-          scene.remove(assetsMesh);
-          scene.remove(gridMesh);
+          scene.remove(gridMeshes.left);
+          scene.remove(gridMeshes.right);
 
           input.removeListener('trigger', _trigger);
           input.removeListener('padtouchdown', _padtouchdown);
