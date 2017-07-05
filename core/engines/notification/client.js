@@ -77,7 +77,7 @@ class Notification {
           const mesh = menuUi.makePage(({
             notifications,
           }) => {
-            const text = _escape(notifications.map(({text}) => text).join('\n'));
+            const text = _escape(notifications.map(({text}) => text).join(' '));
 
             return {
               type: 'html',
