@@ -198,120 +198,28 @@ class Cyborg {
                 username: rend.getStatus('username'),
               });
               this.labelMesh = labelMesh;
-
-              const hudMesh = (() => {
-                const object = new THREE.Object3D();
-                // object.visible = false;
-
-                const circleMesh = (() => {
-                  const geometry = (() => {
-                    const geometry = new THREE.CylinderBufferGeometry(0.05, 0.05, 0.01, 8, 1)
-                      .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
-                      .applyMatrix(new THREE.Matrix4().makeRotationZ(Math.PI / 8));
-
-                    const _almostZero = v => Math.abs(v) < 0.001;
-
-                    const {array: positions} = geometry.getAttribute('position');
-                    const numPositions = positions.length / 3;
-                    for (let i = 0; i < numPositions; i++) {
-                      const baseIndex = i * 3;
-
-                      if (_almostZero(positions[baseIndex + 0]) && _almostZero(positions[baseIndex + 1])) {
-                        positions[baseIndex + 2] -= 0.005;
-                      }
-                    }
-
-                    geometry.computeVertexNormals();
-
-                    return geometry;
-                  })();
-                  const material = solidMaterial;
-
-                  const mesh = new THREE.Mesh(geometry, material);
-                  mesh.position.z = -0.1;
-
-                  const notchMesh = (() => {
-                    const geometry = new THREE.SphereBufferGeometry(0.005, 5, 4)
-                      .applyMatrix(new THREE.Matrix4().makeRotationY(Math.PI / 8))
-                      .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, 0.003));
-                    const material = solidMaterial;
-
-                    const mesh = new THREE.Mesh(geometry, material);
-                    return mesh;
-                  })();
-                  mesh.add(notchMesh);
-                  mesh.notchMesh = notchMesh;
-
-                  return mesh;
-                })();
-                object.add(circleMesh);
-                object.circleMesh = circleMesh;
-
-                return object;
-              })();
-              this.hudMesh = hudMesh;
             }
 
             update(hmdStatus, gamepadStatus) {
-              const _updateMesh = () => {
-                const {mesh} = this;
+              const {mesh} = this;
+              mesh.position.copy(hmdStatus.position);
+              mesh.quaternion.copy(hmdStatus.rotation);
+              mesh.scale.copy(hmdStatus.scale);
+              mesh.updateMatrixWorld();
 
-                mesh.position.copy(hmdStatus.position);
-                mesh.quaternion.copy(hmdStatus.rotation);
-                mesh.scale.copy(hmdStatus.scale);
-                mesh.updateMatrixWorld();
-
-                const {labelMesh} = this;
-                labelMesh.update({
-                  hmdStatus: {
-                    position: hmdStatus.position.toArray(),
-                    rotation: (() => { // flip our own label so it appears to face the right direction in the mirror
-                      const euler = new THREE.Euler().setFromQuaternion(hmdStatus.rotation, camera.rotation.order);
-                      euler.y += Math.PI;
-                      return new THREE.Quaternion().setFromEuler(euler).toArray();
-                    })(),
-                    scale: hmdStatus.scale.toArray(),
-                  },
-                  username: rend.getStatus('username'),
-                });
-              };
-              const _updateHmdMesh = () => {
-                const {hudMesh} = this;
-
-                const vrMode = bootstrap.getVrMode();
-                const mode = webvr.getMode()
-                const keys = webvr.getKeys();
-                if (vrMode === 'keyboard' && mode !== null && keys !== null) {
-                  const {axis} = keys;
-
-                  if (axis) {
-                    hudMesh.position.copy(hmdStatus.position);
-                    hudMesh.quaternion.copy(hmdStatus.rotation);
-                    hudMesh.scale.copy(hmdStatus.scale);
-
-                    const {circleMesh} = hudMesh;
-                    const {notchMesh} = circleMesh;
-                    const gamepad = gamepadStatus[mode === 'center' ? 'left' : mode];
-                    const {axes} = gamepad;
-                    notchMesh.position.set(axes[0] * 0.043, axes[1] * 0.043, (1 - new THREE.Vector2(axes[0], axes[1]).length()) * (-0.005));
-
-                    if (!hudMesh.visible) {
-                      hudMesh.visible = true;
-                    }
-                  } else {
-                    if (hudMesh.visible) {
-                      hudMesh.visible = false;
-                    }
-                  }
-                } else {
-                  if (hudMesh.visible) {
-                    hudMesh.visible = false;
-                  }
-                }
-              };
-
-              _updateMesh();
-              _updateHmdMesh();
+              const {labelMesh} = this;
+              labelMesh.update({
+                hmdStatus: {
+                  position: hmdStatus.position.toArray(),
+                  rotation: (() => { // flip our own label so it appears to face the right direction in the mirror
+                    const euler = new THREE.Euler().setFromQuaternion(hmdStatus.rotation, camera.rotation.order);
+                    euler.y += Math.PI;
+                    return new THREE.Quaternion().setFromEuler(euler).toArray();
+                  })(),
+                  scale: hmdStatus.scale.toArray(),
+                },
+                username: rend.getStatus('username'),
+              });
             }
           }
 
@@ -376,9 +284,8 @@ class Cyborg {
           const player = new Player();
 
           const hmd = new Hmd();
-          const {mesh: hmdMesh, hudMesh: hmdHudMesh, labelMesh: hmdLabelMesh} = hmd;
+          const {mesh: hmdMesh, labelMesh: hmdLabelMesh} = hmd;
           camera.parent.add(hmdMesh);
-          camera.parent.add(hmdHudMesh);
           camera.parent.add(hmdLabelMesh);
 
           const controllers = {
@@ -453,9 +360,8 @@ class Cyborg {
 
             solidMaterial.dispose();
 
-            const {mesh: hmdMesh, hudMesh: hmdHudMesh, labelMesh: hmdLabelMesh} = hmd;
+            const {mesh: hmdMesh, labelMesh: hmdLabelMesh} = hmd;
             camera.parent.remove(hmdMesh); // XXX need to destroy these meshes to prevent memory leaks
-            camera.parent.remove(hmdHudMesh);
             camera.parent.remove(hmdLabelMesh);
             SIDES.forEach(side => {
               const controller = controllers[side];
