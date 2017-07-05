@@ -82,6 +82,7 @@ class Wallet {
       '/core/engines/hand',
       '/core/engines/rend',
       '/core/engines/tags',
+      '/core/engines/multiplayer',
       '/core/engines/notification',
       '/core/utils/js-utils',
       '/core/utils/creature-utils',
@@ -97,6 +98,7 @@ class Wallet {
       hand,
       rend,
       tags,
+      multiplayer,
       notification,
       jsUtils,
       creatureUtils,
@@ -109,6 +111,7 @@ class Wallet {
         const {sfx} = assets;
 
         const transparentMaterial = biolumi.getTransparentMaterial();
+        const localUserId = multiplayer.getId();
 
         const oneVector = new THREE.Vector3(1, 1, 1);
         const forwardVector = new THREE.Vector3(0, 0, -1);
@@ -163,6 +166,23 @@ class Wallet {
             dst[startIndexIndex + i] = src[i] + startAttributeIndex;
           }
         };
+        const _requestCreateCharge = ({asset, quantity, srcAddress, dstAddress, privateKey}) => fetch(`${siteUrl}/id/api/charge`, {
+          method: 'POST',
+          headers: (() => {
+            const headers = new Headers();
+            headers.append('Content-Type', 'application/json');
+            return headers;
+          })(),
+          body: JSON.stringify({
+            asset: asset,
+            quantity: quantity,
+            srcAddress: srcAddress,
+            dstAddress: dstAddress,
+            privateKey: privateKey,
+          }),
+          credentials: 'include',
+        })
+          .then(_resJson);
 
         const _makeHoverState = () => ({
           worldAsset: null,
@@ -208,6 +228,7 @@ class Wallet {
               scale,
               asset,
               quantity,
+              owner,
               geometry
             ) {
               this.id = id;
@@ -216,6 +237,7 @@ class Wallet {
               this.scale = scale;
               this.asset = asset;
               this.quantity = quantity;
+              this.owner = owner;
               this.geometry = geometry;
 
               this._grabbed = false;
@@ -283,7 +305,8 @@ class Wallet {
           }
 
           const assetInstances = [];
-          mesh.addAsset = (id, position, rotation, scale, asset, quantity) => {
+          mesh.getAssetInstance = id => assetInstances.find(assetInstance => assetInstance.id === id);
+          mesh.addAsset = (id, position, rotation, scale, asset, quantity, owner) => {
             const geometry = (() => {
               const imageData = assets.getSpriteImageData('asset:' + asset);
               const pixelSize = 0.02;
@@ -298,7 +321,7 @@ class Wallet {
               geometry.addAttribute('dy', new THREE.BufferAttribute(dys, 2));
               return geometry;
             })();
-            const assetInstance = new AssetInstance(id, position, rotation, scale, asset, quantity, geometry);
+            const assetInstance = new AssetInstance(id, position, rotation, scale, asset, quantity, owner, geometry);
             assetInstances.push(assetInstance);
 
             geometryNeedsUpdate = true;
@@ -775,7 +798,7 @@ class Wallet {
               const x = i % gridWidth;
               const y = Math.floor(i / gridWidth);
               const assetInstance = mesh.addAsset(
-                'wallet:' + asset,
+                `wallet:${side}:${asset}`,
                 new THREE.Vector3(
                   -gridWidth/2 + slotSize/2 + (x * (slotSize + slotSpacing)),
                   gridWidth/2 - slotSize/2 - (y * (slotSize + slotSpacing)),
@@ -981,6 +1004,51 @@ class Wallet {
           priority: 1,
         });
 
+        const _gripdown = e => {
+          const {side} = e;
+          const {gamepads} = webvr.getStatus();
+          const gamepad = gamepads[side];
+          const {worldPosition: position} = gamepad;
+          const hoverState = hoverStates[side];
+          const {worldGrabAsset, bodyAsset} = hoverState;
+
+          if (_isInBody(position) && bodyAsset && !worldGrabAsset) {
+            const {asset, quantity} = bodyAsset;
+            const {worldRotation: rotation, worldScale: scale} = gamepad;
+
+            const id = _makeId();
+            const itemSpec = {
+              type: 'asset',
+              id: id,
+              name: asset,
+              displayName: asset,
+              attributes: {
+                position: {
+                  value: position.toArray().concat(rotation.toArray()).concat(scale.toArray()),
+                },
+                asset: {
+                  value: asset,
+                },
+                quantity: {
+                  value: quantity,
+                },
+                owner: {
+                  value: localUserId,
+                },
+              },
+              metadata: {},
+            };
+            walletApi.emit('addAsset', itemSpec);
+
+            const assetInstance = assetsMesh.getAssetInstance(id);
+            const {grabbable} = assetInstance;
+            grabbable.grab(side);
+          }
+        };
+        input.on('gripdown', _gripdown, {
+          priority: 1,
+        });
+
         const _update = () => {
           const _updateHover = () => {
             const {gamepads} = webvr.getStatus();
@@ -1046,6 +1114,7 @@ class Wallet {
           input.removeListener('trigger', _trigger);
           input.removeListener('padtouchdown', _padtouchdown);
           input.removeListener('padtouchup', _padtouchup);
+          input.removeListener('gripdown', _gripdown);
 
           rend.removeListener('tabchange', _tabchange);
           rend.removeListener('update', _update);
@@ -1063,16 +1132,17 @@ class Wallet {
               position: {value: matrix},
               asset: {value: asset},
               quantity: {value: quantity},
+              owner: {value: owner},
             } = attributes;
 
             const position = new THREE.Vector3(matrix[0], matrix[1], matrix[2]);
             const rotation = new THREE.Quaternion(matrix[3], matrix[4], matrix[5], matrix[6]);
             const scale = new THREE.Vector3(matrix[7], matrix[8], matrix[9]);
 
-            const assetInstance = assetsMesh.addAsset(id, position, rotation, scale, asset, quantity);
+            const assetInstance = assetsMesh.addAsset(id, position, rotation, scale, asset, quantity, owner);
 
             const grabbable = hand.makeGrabbable(item.id);
-            grabbable.setState(position.toArray(), [0, 0, 0, 1], [1, 1, 1]);
+            grabbable.setState(position.toArray(), rotation.toArray(), scale.toArray());
             grabbable.on('grab', e => {
               const {side} = e;
               const hoverState = hoverStates[side];
@@ -1090,32 +1160,19 @@ class Wallet {
               hoverState.worldGrabAsset = null;
 
               if (_isInBody(assetInstance.position)) {
-                const _requestCreateSend = ({asset, quantity, srcAddress, dstAddress, privateKey}) => fetch(`${siteUrl}/id/api/send`, {
-                  method: 'POST',
-                  headers: (() => {
-                    const headers = new Headers();
-                    headers.append('Content-Type', 'application/json');
-                    return headers;
-                  })(),
-                  body: JSON.stringify({
-                    asset: asset,
-                    quantity: quantity,
-                    srcAddress: srcAddress,
-                    dstAddress: dstAddress,
-                    privateKey: privateKey,
-                  }),
-                  credentials: 'include',
-                })
-                  .then(_resJson);
+                if (assetInstance.owner === localUserId) {
+                  walletApi.emit('removeTag', assetInstance.id);
+                } else {
+                  assetInstance.hide(); // for better UX
+                  // XXX need to charge the owner to ourselves
+                }
 
-                assetInstance.hide(); // for better UX
-
-                const {
+                /* const {
                   address: {value: address},
                   privateKey: {value: privateKey},
                 } = attributes;
                 const dstAddress = bootstrap.getAddress();
-                _requestCreateSend({
+                _requestCreateCharge({
                   asset: asset,
                   quantity: quantity,
                   srcAddress: address,
@@ -1137,7 +1194,7 @@ class Wallet {
                     } else { // failed to send, so re-show
                       assetInstance.show();
                     }
-                  });
+                  }); */
               }
             });
             grabbable.on('update', ({position, rotation, scale}) => {
@@ -1147,6 +1204,7 @@ class Wallet {
                 new THREE.Vector3().fromArray(scale)
               );
             });
+            assetInstance.grabbable = grabbable;
           }
 
           removeAsset(item) {
@@ -1173,13 +1231,6 @@ const _arrayToBase64 = array => {
     binary += String.fromCharCode(array[i]);
   }
   return btoa(binary);
-};
-const _formatQueryString = o => {
-  const result = [];
-  for (const k in o) {
-    result.push(encodeURIComponent(k) + '=' + encodeURIComponent(o[k]));
-  }
-  return result.join('&');
 };
 
 module.exports = Wallet;
