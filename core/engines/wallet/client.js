@@ -789,7 +789,9 @@ class Wallet {
           const slotColors = new Float32Array(numSlotPositions * 3);
           const numSlotColors = slotColors.length / 3;
           const lightSlotColor = new THREE.Color(0x2196F3);
-          const darkSlotColor = lightSlotColor.clone().multiplyScalar(0.75);
+          const darkSlotColor = lightSlotColor.clone().multiplyScalar(0.7);
+          const whiteSlotColor = new THREE.Color(0x808080);
+          const blackSlotColor = whiteSlotColor.clone().multiplyScalar(0.7);
           for (let i = 0; i < numSlotColors; i++) {
             const baseIndex = i * 3;
             const z = slotPositions[baseIndex + 2];
@@ -807,20 +809,8 @@ class Wallet {
           const dotGeometry = new THREE.BoxBufferGeometry(dotSize, dotSize, dotSize);
           const dotPositions = dotGeometry.getAttribute('position').array;
           const numDotPositions = dotPositions.length / 3;
-          const dotColors = new Float32Array(numDotPositions * 3);
-          const numDotColors = dotColors.length / 3;
           const lightDotColor = new THREE.Color(0x3F51B5);
-          const darkDotColor = lightDotColor.clone().multiplyScalar(0.75);
-          for (let i = 0; i < numDotColors; i++) {
-            const baseIndex = i * 3;
-            const z = dotPositions[baseIndex + 2];
-            const color = z > 0 ? lightDotColor : darkDotColor;
-
-            dotColors[baseIndex + 0] = color.r;
-            dotColors[baseIndex + 1] = color.g;
-            dotColors[baseIndex + 2] = color.b;
-          }
-          dotGeometry.addAttribute('color', new THREE.BufferAttribute(dotColors, 3));
+          const darkDotColor = lightDotColor.clone().multiplyScalar(0.7);
           const dotIndices = slotGeometry.index.array;
           const numDotIndices = dotIndices.length / 3;
 
@@ -828,17 +818,22 @@ class Wallet {
           const positions = new Float32Array(numSlotPositions * 3 * numSlots + numDotPositions * 3);
           const positionAttribute = new THREE.BufferAttribute(positions, 3);
           geometry.addAttribute('position', positionAttribute);
-          const colors = new Float32Array(numSlotColors * 3 * numSlots + numDotColors * 3);
+          const colors = new Float32Array(numSlotColors * 3 * numSlots + numDotPositions * 3);
           const colorAttribute = new THREE.BufferAttribute(colors, 3);
           geometry.addAttribute('color', colorAttribute);
           const indices = new Uint16Array(numSlotIndices * 3 * numSlots + numDotIndices * 4);
           const indexAttribute = new THREE.BufferAttribute(indices, 1);
           geometry.setIndex(indexAttribute);
 
-          const dotPosition = new THREE.Vector2();
+          const dotPosition = new THREE.Vector2(0, 0);
           const _render = () => {
             let attributeIndex = 0;
             let indexIndex = 0;
+
+            const highlightedSlotPosition = new THREE.Vector2(
+              Math.min(Math.floor(((dotPosition.x + 1) / 2) * slotsWidth), slotsWidth - 1),
+              Math.min(Math.floor(((-dotPosition.y + 1) / 2) * slotsWidth), slotsWidth - 1)
+            );
 
             for (let y = 0; y < slotsWidth; y++) {
               for (let x = 0; x < slotsWidth; x++) {
@@ -852,7 +847,21 @@ class Wallet {
                 const slotCloneColors = slotGeometryClone.getAttribute('color').array;
                 const slotCloneIndices = slotGeometryClone.index.array;
                 positions.set(slotClonePositions, attributeIndex);
-                colors.set(slotCloneColors, attributeIndex);
+                for (let i = 0; i < numDotPositions; i++) {
+                  const baseIndex = i * 3;
+                  const z = dotPositions[baseIndex + 2];
+                  const color = (() => {
+                    if (x === highlightedSlotPosition.x && y === highlightedSlotPosition.y) {
+                      return z > 0 ? lightSlotColor : darkSlotColor;
+                    } else {
+                      return z > 0 ? whiteSlotColor : blackSlotColor;
+                    }
+                  })();
+
+                  colors[attributeIndex + baseIndex + 0] = color.r;
+                  colors[attributeIndex + baseIndex + 1] = color.g;
+                  colors[attributeIndex + baseIndex + 2] = color.b;
+                }
                 _copyIndices(slotCloneIndices, indices, indexIndex, attributeIndex / 3);
 
                 attributeIndex += slotClonePositions.length;
@@ -868,8 +877,15 @@ class Wallet {
               ));
             const dotClonePositions = dotCloneGeometry.getAttribute('position').array;
             positions.set(dotClonePositions, attributeIndex);
-            const dotCloneColors = dotCloneGeometry.getAttribute('color').array;
-            colors.set(dotCloneColors, attributeIndex);
+            for (let i = 0; i < numDotPositions; i++) {
+              const baseIndex = i * 3;
+              const z = dotPositions[baseIndex + 2];
+              const color = z > 0 ? lightDotColor : darkDotColor;
+
+              colors[attributeIndex + baseIndex + 0] = color.r;
+              colors[attributeIndex + baseIndex + 1] = color.g;
+              colors[attributeIndex + baseIndex + 2] = color.b;
+            }
             const dotCloneIndices = dotCloneGeometry.index.array;
             _copyIndices(dotCloneIndices, indices, indexIndex, attributeIndex / 3);
             attributeIndex += dotClonePositions.length;
