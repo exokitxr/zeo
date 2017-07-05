@@ -124,6 +124,9 @@ class Wallet {
           new THREE.Vector3(0, 0, -1),
           new THREE.Vector3(0, -1, 0)
         );
+        const gridMaterial = new THREE.MeshBasicMaterial({
+          vertexColors: THREE.VertexColors,
+        });
         const mainFontSpec = {
           fonts: biolumi.getFonts(),
           fontSize: 36,
@@ -770,22 +773,27 @@ class Wallet {
           priority: 1,
         });
 
+        const gridState = {
+          side: null,
+        };
         const gridMesh = (() => {
           const slotsWidth = 4;
           const numSlots = slotsWidth * slotsWidth;
           const slotSize = 0.2;
-          const slotSpacing = 0.1;
+          const slotSpacing = slotSize / 2;
+          const gridWidth = (slotSize * slotsWidth) + (slotSpacing * (slotsWidth - 1));
 
           const slotGeometry = new THREE.BoxBufferGeometry(slotSize, slotSize / 5, slotSize);
           const slotPositions = slotGeometry.getAttribute('position').array;
           const numSlotPositions = slotPositions.length / 3;
           const slotColors = new Float32Array(numSlotPositions * 3);
-          const lightColor = new THREE.Color(0x2196F3);
-          const darkColor = lightColor.clone().multiplyScalar(0.7);
-          for (let i = 0; i < slotColors.length; i++) {
+          const numSlotColors = slotColors.length / 3;
+          const lightSlotColor = new THREE.Color(0x2196F3);
+          const darkSlotColor = lightSlotColor.clone().multiplyScalar(0.75);
+          for (let i = 0; i < numSlotColors; i++) {
             const baseIndex = i * 3;
             const z = slotPositions[baseIndex + 2];
-            const color = z > 0 ? lightColor : darkColor;
+            const color = z > 0 ? lightSlotColor : darkSlotColor;
 
             slotColors[baseIndex + 0] = color.r;
             slotColors[baseIndex + 1] = color.g;
@@ -795,62 +803,128 @@ class Wallet {
           const slotIndices = slotGeometry.index.array;
           const numSlotIndices = slotIndices.length / 3;
 
-          const geometry = new THREE.BufferGeometry();
-          const positions = new Float32Array(numSlotPositions * 3 * numSlots);
-          const colors = new Float32Array(numSlotPositions * 3 * numSlots);
-          const indices = new Uint16Array(numSlotIndices * 3 * numSlots);
-          let attributeIndex = 0;
-          let indexIndex = 0;
-          for (let y = 0; y < slotsWidth; y++) {
-            for (let x = 0; x < slotsWidth; x++) {
-              const slotGeometryClone = slotGeometry.clone()
-                .applyMatrix(new THREE.Matrix4().makeTranslation(
-                  -(((slotSize * slotsWidth) + (slotSpacing * (slotsWidth - 1))) / 2) + (slotSize / 2) + (x * (slotSize + slotSpacing)),
-                  (((slotSize * slotsWidth) + (slotSpacing * (slotsWidth - 1))) / 2) - (slotSize / 2) - (y * (slotSize + slotSpacing)),
-                  0
-                ));
-              const slotClonePositions = slotGeometryClone.getAttribute('position').array;
-              const slotCloneColors = slotGeometryClone.getAttribute('color').array;
-              const slotCloneIndices = slotGeometryClone.index.array;
-              positions.set(slotClonePositions, attributeIndex);
-              colors.set(slotCloneColors, attributeIndex);
-              _copyIndices(slotCloneIndices, indices, indexIndex, attributeIndex / 3);
+          const dotSize = slotSize / 4;
+          const dotGeometry = new THREE.BoxBufferGeometry(dotSize, dotSize, dotSize);
+          const dotPositions = dotGeometry.getAttribute('position').array;
+          const numDotPositions = dotPositions.length / 3;
+          const dotColors = new Float32Array(numDotPositions * 3);
+          const numDotColors = dotColors.length / 3;
+          const lightDotColor = new THREE.Color(0x3F51B5);
+          const darkDotColor = lightDotColor.clone().multiplyScalar(0.75);
+          for (let i = 0; i < numDotColors; i++) {
+            const baseIndex = i * 3;
+            const z = dotPositions[baseIndex + 2];
+            const color = z > 0 ? lightDotColor : darkDotColor;
 
-              attributeIndex += slotClonePositions.length;
-              indexIndex += slotCloneIndices.length;
-            }
+            dotColors[baseIndex + 0] = color.r;
+            dotColors[baseIndex + 1] = color.g;
+            dotColors[baseIndex + 2] = color.b;
           }
-          geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
-          geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
-          geometry.setIndex(new THREE.BufferAttribute(indices, 1));
+          dotGeometry.addAttribute('color', new THREE.BufferAttribute(dotColors, 3));
+          const dotIndices = slotGeometry.index.array;
+          const numDotIndices = dotIndices.length / 3;
 
-          const material = new THREE.MeshBasicMaterial({
-            vertexColors: THREE.VertexColors,
-          });
+          const geometry = new THREE.BufferGeometry();
+          const positions = new Float32Array(numSlotPositions * 3 * numSlots + numDotPositions * 3);
+          const positionAttribute = new THREE.BufferAttribute(positions, 3);
+          geometry.addAttribute('position', positionAttribute);
+          const colors = new Float32Array(numSlotColors * 3 * numSlots + numDotColors * 3);
+          const colorAttribute = new THREE.BufferAttribute(colors, 3);
+          geometry.addAttribute('color', colorAttribute);
+          const indices = new Uint16Array(numSlotIndices * 3 * numSlots + numDotIndices * 4);
+          const indexAttribute = new THREE.BufferAttribute(indices, 1);
+          geometry.setIndex(indexAttribute);
+
+          const dotPosition = new THREE.Vector2();
+          const _render = () => {
+            let attributeIndex = 0;
+            let indexIndex = 0;
+
+            for (let y = 0; y < slotsWidth; y++) {
+              for (let x = 0; x < slotsWidth; x++) {
+                const slotGeometryClone = slotGeometry.clone()
+                  .applyMatrix(new THREE.Matrix4().makeTranslation(
+                    -(gridWidth / 2) + (slotSize / 2) + (x * (slotSize + slotSpacing)),
+                    (gridWidth / 2) - (slotSize / 2) - (y * (slotSize + slotSpacing)),
+                    0
+                  ));
+                const slotClonePositions = slotGeometryClone.getAttribute('position').array;
+                const slotCloneColors = slotGeometryClone.getAttribute('color').array;
+                const slotCloneIndices = slotGeometryClone.index.array;
+                positions.set(slotClonePositions, attributeIndex);
+                colors.set(slotCloneColors, attributeIndex);
+                _copyIndices(slotCloneIndices, indices, indexIndex, attributeIndex / 3);
+
+                attributeIndex += slotClonePositions.length;
+                indexIndex += slotCloneIndices.length;
+              }
+            }
+
+            const dotCloneGeometry = dotGeometry.clone()
+              .applyMatrix(new THREE.Matrix4().makeTranslation(
+                dotPosition.x * gridWidth/2,
+                dotPosition.y * gridWidth/2,
+                0
+              ));
+            const dotClonePositions = dotCloneGeometry.getAttribute('position').array;
+            positions.set(dotClonePositions, attributeIndex);
+            const dotCloneColors = dotCloneGeometry.getAttribute('color').array;
+            colors.set(dotCloneColors, attributeIndex);
+            const dotCloneIndices = dotCloneGeometry.index.array;
+            _copyIndices(dotCloneIndices, indices, indexIndex, attributeIndex / 3);
+            attributeIndex += dotClonePositions.length;
+            indexIndex += dotCloneIndices.length;
+
+            positionAttribute.needsUpdate = true;
+            colorAttribute.needsUpdate = true;
+            // indexAttribute.needsUpdate = true;
+          };
+          _render();
+
+          const material = gridMaterial;
 
           const mesh = new THREE.Mesh(geometry, material);
           mesh.visible = false;
+
+          mesh.update = (x, y) => {
+            dotPosition.set(x, y);
+
+            _render();
+          };
+
           return mesh;
         })();
         scene.add(gridMesh);
 
-        const _padtouchdown = () => {
-          const {hmd} = webvr.getStatus();
-          const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmd;
-          gridMesh.position.copy(hmdPosition.clone().add(forwardVector.clone().applyQuaternion(hmdRotation)));
-          gridMesh.quaternion.copy(hmdRotation);
-          gridMesh.updateMatrixWorld();
+        const _padtouchdown = e => {
+          const {side} = e;
 
-          if (!gridMesh.visible) {
-            gridMesh.visible = true;
+          if (gridState.side !== side) {
+            const {hmd} = webvr.getStatus();
+            const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmd;
+            gridMesh.position.copy(hmdPosition.clone().add(forwardVector.clone().applyQuaternion(hmdRotation)));
+            gridMesh.quaternion.copy(hmdRotation);
+            gridMesh.updateMatrixWorld();
+
+            if (!gridMesh.visible) {
+              gridMesh.visible = true;
+            }
+
+            gridState.side = side;
           }
         };
         input.on('padtouchdown', _padtouchdown, {
           priority: 1,
         });
-        const _padtouchup = () => {
-          if (gridMesh.visible) {
-            gridMesh.visible = false;
+        const _padtouchup = e => {
+          const {side} = e;
+
+          if (gridState.side === side) {
+            if (gridMesh.visible) {
+              gridMesh.visible = false;
+            }
+
+            gridState.side = null;
           }
         };
         input.on('padtouchup', _padtouchup, {
@@ -870,10 +944,22 @@ class Wallet {
         rend.on('tabchange', _tabchange);
 
         const _update = () => {
+          const _updateGridMesh = () => {
+            const {side} = gridState;
+
+            if (side !== null) {
+              const {gamepads} = webvr.getStatus();
+              const gamepad = gamepads[side];
+              const {axes: [x, y]} = gamepad;
+
+              gridMesh.update(x, y);
+            }
+          };
           const _updateAssetsMesh = () => {
             assetsMesh.update();
           };
 
+          _updateGridMesh();
           _updateAssetsMesh();
         };
         rend.on('update', _update);
