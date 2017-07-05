@@ -222,35 +222,35 @@ class Hand {
           }
 
           setState(position, rotation, scale) {
-            const {id} = this;
+            if (!_arrayEquals(this.position, position) || !_arrayEquals(this.rotation, rotation) || !_arrayEquals(this.scale, scale)) {
+              this.position = position;
+              this.rotation = rotation;
+              this.scale = scale;
 
-            this.position = position;
-            this.rotation = rotation;
-            this.scale = scale;
+              this.emit('update', {
+                position,
+                rotation,
+                scale,
+              });
+            }
 
-            _broadcast('setState', [id, position, rotation, scale]);
-
-            this.emit('update', {
-              position,
-              rotation,
-              scale,
-            });
+            _broadcast('setState', [this.id, position, rotation, scale]);
           }
 
           update(position, rotation, scale) {
-            const {id} = this;
+            if (!_arrayEquals(this.position, position) || !_arrayEquals(this.rotation, rotation) || !_arrayEquals(this.scale, scale)) {
+              this.position = position;
+              this.rotation = rotation;
+              this.scale = scale;
 
-            this.position = position;
-            this.rotation = rotation;
-            this.scale = scale;
+              this.emit('update', {
+                position,
+                rotation,
+                scale,
+              });
 
-            _broadcast('update', [id, position, rotation, scale]);
-
-            this.emit('update', {
-              position,
-              rotation,
-              scale,
-            });
+              _broadcast('update', [this.id, position, rotation, scale]);
+            }
           }
         }
 
@@ -280,10 +280,14 @@ class Hand {
 
             if (hoveredGrabbable) {
               hoveredGrabbable.grab(side);
+
+              e.stopImmediatePropagation();
             }
           }
         };
-        input.on('gripdown', _gripdown);
+        input.on('gripdown', _gripdown, {
+          priority: 1,
+        });
         const _gripup = e => {
           const {side} = e;
           const grabState = grabStates[side];
@@ -293,9 +297,13 @@ class Hand {
             grabbedGrabbable.release();
 
             grabState.grabbedGrabbable = null;
+
+            e.stopImmediatePropagation();
           }
         };
-        input.on('gripup', _gripup);
+        input.on('gripup', _gripup, {
+          priority: 1,
+        });
 
         const _update = () => {
           const {gamepads} = webvr.getStatus();
@@ -346,6 +354,7 @@ class Hand {
   }
 }
 
+const _arrayEquals = (a, b) => a.length === b.length && a.every((ai, i) => ai === b[i]);
 const _relativeWsUrl = s => {
   const l = window.location;
   return ((l.protocol === 'https:') ? 'wss://' : 'ws://') + l.host + l.pathname + (!/\/$/.test(l.pathname) ? '/' : '') + s;
