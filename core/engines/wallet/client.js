@@ -416,7 +416,7 @@ class Wallet {
           keyboardFocusState: null,
         };
 
-        const walletMesh = (() => {
+        const menuMesh = (() => {
           const object = new THREE.Object3D();
           object.visible = false;
 
@@ -477,14 +477,14 @@ class Wallet {
 
           return object;
         })();
-        rend.registerMenuMesh('walletMesh', walletMesh);
-        walletMesh.updateMatrixWorld();
+        rend.registerMenuMesh('walletMesh', menuMesh);
+        menuMesh.updateMatrixWorld();
 
         rend.reindex();
-        rend.updateMatrixWorld(walletMesh);
+        rend.updateMatrixWorld(menuMesh);
 
         const _updatePages = () => {
-          const {planeMesh} = walletMesh;
+          const {planeMesh} = menuMesh;
           const {page} = planeMesh;
           page.update();
         };
@@ -770,6 +770,93 @@ class Wallet {
           priority: 1,
         });
 
+        const gridMesh = (() => {
+          const slotsWidth = 4;
+          const numSlots = slotsWidth * slotsWidth;
+          const slotSize = 0.2;
+          const slotSpacing = 0.1;
+
+          const slotGeometry = new THREE.BoxBufferGeometry(slotSize, slotSize / 5, slotSize);
+          const slotPositions = slotGeometry.getAttribute('position').array;
+          const numSlotPositions = slotPositions.length / 3;
+          const slotColors = new Float32Array(numSlotPositions * 3);
+          const lightColor = new THREE.Color(0x2196F3);
+          const darkColor = lightColor.clone().multiplyScalar(0.7);
+          for (let i = 0; i < slotColors.length; i++) {
+            const baseIndex = i * 3;
+            const z = slotPositions[baseIndex + 2];
+            const color = z > 0 ? lightColor : darkColor;
+
+            slotColors[baseIndex + 0] = color.r;
+            slotColors[baseIndex + 1] = color.g;
+            slotColors[baseIndex + 2] = color.b;
+          }
+          slotGeometry.addAttribute('color', new THREE.BufferAttribute(slotColors, 3));
+          const slotIndices = slotGeometry.index.array;
+          const numSlotIndices = slotIndices.length / 3;
+
+          const geometry = new THREE.BufferGeometry();
+          const positions = new Float32Array(numSlotPositions * 3 * numSlots);
+          const colors = new Float32Array(numSlotPositions * 3 * numSlots);
+          const indices = new Uint16Array(numSlotIndices * 3 * numSlots);
+          let attributeIndex = 0;
+          let indexIndex = 0;
+          for (let y = 0; y < slotsWidth; y++) {
+            for (let x = 0; x < slotsWidth; x++) {
+              const slotGeometryClone = slotGeometry.clone()
+                .applyMatrix(new THREE.Matrix4().makeTranslation(
+                  -(((slotSize * slotsWidth) + (slotSpacing * (slotsWidth - 1))) / 2) + (slotSize / 2) + (x * (slotSize + slotSpacing)),
+                  (((slotSize * slotsWidth) + (slotSpacing * (slotsWidth - 1))) / 2) - (slotSize / 2) - (y * (slotSize + slotSpacing)),
+                  0
+                ));
+              const slotClonePositions = slotGeometryClone.getAttribute('position').array;
+              const slotCloneColors = slotGeometryClone.getAttribute('color').array;
+              const slotCloneIndices = slotGeometryClone.index.array;
+              positions.set(slotClonePositions, attributeIndex);
+              colors.set(slotCloneColors, attributeIndex);
+              _copyIndices(slotCloneIndices, indices, indexIndex, attributeIndex / 3);
+
+              attributeIndex += slotClonePositions.length;
+              indexIndex += slotCloneIndices.length;
+            }
+          }
+          geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+          geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
+          geometry.setIndex(new THREE.BufferAttribute(indices, 1));
+
+          const material = new THREE.MeshBasicMaterial({
+            vertexColors: THREE.VertexColors,
+          });
+
+          const mesh = new THREE.Mesh(geometry, material);
+          mesh.visible = false;
+          return mesh;
+        })();
+        scene.add(gridMesh);
+
+        const _padtouchdown = () => {
+          const {hmd} = webvr.getStatus();
+          const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmd;
+          gridMesh.position.copy(hmdPosition.clone().add(forwardVector.clone().applyQuaternion(hmdRotation)));
+          gridMesh.quaternion.copy(hmdRotation);
+          gridMesh.updateMatrixWorld();
+
+          if (!gridMesh.visible) {
+            gridMesh.visible = true;
+          }
+        };
+        input.on('padtouchdown', _padtouchdown, {
+          priority: 1,
+        });
+        const _padtouchup = () => {
+          if (gridMesh.visible) {
+            gridMesh.visible = false;
+          }
+        };
+        input.on('padtouchup', _padtouchup, {
+          priority: 1,
+        });
+
         const _tabchange = tab => {
           if (tab === 'wallet') {
             keyboard.tryBlur();
@@ -792,7 +879,12 @@ class Wallet {
         rend.on('update', _update);
 
         cleanups.push(() => {
+          scene.remove(gridMesh);
+
           input.removeListener('trigger', _trigger);
+          input.removeListener('padtouchdown', _padtouchdown);
+          input.removeListener('padtouchup', _padtouchup);
+
           rend.removeListener('tabchange', _tabchange);
           rend.removeListener('update', _update);
         });
