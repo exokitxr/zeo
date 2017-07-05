@@ -166,6 +166,7 @@ class Wallet {
 
         const _makeHoverState = () => ({
           worldAsset: null,
+          worldGrabAsset: null,
           worldGrabNotification: null,
           worldReleaseNotification: null,
           bodyAsset: null,
@@ -988,13 +989,13 @@ class Wallet {
               const gamepad = gamepads[side];
               const {worldPosition: controllerPosition} = gamepad;
               const hoverState = hoverStates[side];
-              const {worldAsset, worldReleaseNotification, bodyAsset, bodyNotification} = hoverState;
+              const {worldGrabAsset, worldReleaseNotification, bodyAsset, bodyNotification} = hoverState;
               const isInBody = _isInBody(controllerPosition);
 
-              if ((isInBody && worldAsset) && !worldReleaseNotification) {
-                const {asset, quantity} = worldAsset;
+              if ((isInBody && worldGrabAsset) && !worldReleaseNotification) {
+                const {asset, quantity} = worldGrabAsset;
                 hoverState.worldReleaseNotification = notification.addNotification(`Release to store ${quantity} ${asset}.`);
-              } else if (!(isInBody && worldAsset) && worldReleaseNotification) {
+              } else if (!(isInBody && worldGrabAsset) && worldReleaseNotification) {
                 notification.removeNotification(worldReleaseNotification);
                 hoverState.worldReleaseNotification = null;
               }
@@ -1072,11 +1073,21 @@ class Wallet {
 
             const grabbable = hand.makeGrabbable(item.id);
             grabbable.setState(position.toArray(), [0, 0, 0, 1], [1, 1, 1]);
-            grabbable.on('grab', () => {
+            grabbable.on('grab', e => {
+              const {side} = e;
+              const hoverState = hoverStates[side];
+
               assetInstance.grab();
+
+              hoverState.worldGrabAsset = assetInstance;
             });
-            grabbable.on('release', () => {
+            grabbable.on('release', e => {
+              const {side} = e;
+              const hoverState = hoverStates[side];
+
               assetInstance.release();
+
+              hoverState.worldGrabAsset = null;
 
               if (_isInBody(assetInstance.position)) {
                 const _requestCreateSend = ({asset, quantity, srcAddress, dstAddress, privateKey}) => fetch(`${siteUrl}/id/api/send`, {
