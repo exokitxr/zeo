@@ -960,10 +960,6 @@ class WebVR {
                     keys.grip = true;
                     needsGamepadUpdate = true;
                     break;
-                  case 82: // R
-                    keys.touch = true;
-                    needsGamepadUpdate = true;
-                    break;
                   case 16: // Shift
                     keys.shift = true;
                     break;
@@ -972,7 +968,9 @@ class WebVR {
                     needsGamepadUpdate = true;
                     break;
                   case 86: // V
+                    keys.touch = true;
                     keys.axis = true;
+                    needsGamepadUpdate = true;
                     break;
                   case 90: // Z
                     this.mode = 'left';
@@ -1030,12 +1028,10 @@ class WebVR {
                     keys.grip = false;
                     needsGamepadUpdate = true;
                     break;
-                  case 82: // R
-                    keys.touch = false;
-                    needsGamepadUpdate = true;
-                    break;
                   case 86: // V
+                    keys.touch = false;
                     keys.axis = false;
+                    needsGamepadUpdate = true;
                     break;
                   case 16: // Shift
                     keys.shift = false;
