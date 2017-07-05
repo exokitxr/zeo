@@ -1874,6 +1874,27 @@ class Tags {
 
             return result;
           };
+          const _getAttributeSpecsMap = module => {
+            const result = {};
+
+            const componentApis = tagComponentApis[module] || [];
+            for (let i = 0; i < componentApis.length; i++) {
+              const componentApi = componentApis[i];
+              const {attributes: componentAttributes} = componentApi;
+
+              if (componentAttributes) {
+                for (const componentAttributeName in componentAttributes) {
+                  if (!result[componentAttributeName]) {
+                    const componentAttribute = componentAttributes[componentAttributeName];
+                    const attributeSpec = _shallowClone(componentAttribute);
+                    result[componentAttributeName] = attributeSpec;
+                  }
+                }
+              }
+            }
+
+            return result;
+          };
 
           class TagsApi extends EventEmitter {
             registerEntity(pluginInstance, componentApi) {
@@ -1953,6 +1974,10 @@ class Tags {
 
             getAttributeSpecs(module) {
               return _getAttributeSpecs(module);
+            }
+
+            getAttributeSpecsMap(module) {
+              return _getAttributeSpecsMap(module);
             }
 
             makeTag(itemSpec, {initialUpdate = true} = {}) {

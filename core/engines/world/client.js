@@ -602,7 +602,7 @@ class World {
               const {item: moduleItem} = moduleTagMesh;
               const {name: module, displayName: moduleName} = moduleItem;
               const tagName = _makeTagName(module);
-              const attributes = tags.getAttributeSpecs(module);
+              const attributes = tags.getAttributeSpecsMap(module);
 
               const itemSpec = {
                 type: 'entity',
