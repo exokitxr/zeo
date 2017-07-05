@@ -229,6 +229,7 @@ class Wallet {
               asset,
               quantity,
               owner,
+              grabbable,
               geometry
             ) {
               this.id = id;
@@ -238,14 +239,23 @@ class Wallet {
               this.asset = asset;
               this.quantity = quantity;
               this.owner = owner;
+              this.grabbable = grabbable;
               this.geometry = geometry;
 
-              this._grabbed = false;
               this._visible = true;
+
+              if (grabbable) {
+                const _updateGeometry = () => {
+                  geometryNeedsUpdate = true;
+                };
+                grabbable.on('grab', _updateGeometry);
+                grabbable.on('release', _updateGeometry);
+              }
             }
 
             getMatrix() {
-              const {position, rotation, scale, _grabbed: grabbed} = this;
+              const {position, rotation, scale} = this;
+              const grabbed = this.isGrabbed();
               const newQuaternion = !grabbed ? zeroQuaternion : rotation.clone().multiply(forwardQuaternion);
               const newPosition = !grabbed ? position : position.clone().add(new THREE.Vector3(0, 0, -0.02 / 2).applyQuaternion(newQuaternion));
               const hovered = SIDES.some(side => hoverStates[side].asset === this);
@@ -271,19 +281,7 @@ class Wallet {
             }
 
             isGrabbed() {
-              return this._grabbed;
-            }
-
-            grab() {
-              this._grabbed = true;
-
-              geometryNeedsUpdate = true;
-            }
-
-            release() {
-              this._grabbed = false;
-
-              geometryNeedsUpdate = true;
+              return Boolean(this.grabbable) && this.grabbable.isGrabbed();
             }
 
             setState(position, rotation, scale) {
@@ -302,11 +300,18 @@ class Wallet {
 
               geometryNeedsUpdate = true;
             }
+
+            destroy() {
+              const {grabbable} = this;
+              if (grabbable) {
+                hand.destroyGrabbable(grabbable);
+              }
+            }
           }
 
           const assetInstances = [];
           mesh.getAssetInstance = id => assetInstances.find(assetInstance => assetInstance.id === id);
-          mesh.addAsset = (id, position, rotation, scale, asset, quantity, owner) => {
+          mesh.addAssetInstance = (id, position, rotation, scale, asset, quantity, owner, grabbable) => {
             const geometry = (() => {
               const imageData = assets.getSpriteImageData('asset:' + asset);
               const pixelSize = 0.02;
@@ -321,15 +326,16 @@ class Wallet {
               geometry.addAttribute('dy', new THREE.BufferAttribute(dys, 2));
               return geometry;
             })();
-            const assetInstance = new AssetInstance(id, position, rotation, scale, asset, quantity, owner, geometry);
+            const assetInstance = new AssetInstance(id, position, rotation, scale, asset, quantity, owner, grabbable, geometry);
             assetInstances.push(assetInstance);
 
             geometryNeedsUpdate = true;
 
             return assetInstance;
           };
-          mesh.removeAsset = id => {
-            assetInstances.splice(assetInstances.findIndex(assetInstance => assetInstance.id === id), 1);
+          mesh.removeAssetInstance = id => {
+            const assetInstance = assetInstances.splice(assetInstances.findIndex(assetInstance => assetInstance.id === id), 1)[0];
+            assetInstance.destroy();
 
             geometryNeedsUpdate = true;
           };
@@ -347,11 +353,11 @@ class Wallet {
 
               let attributeIndex = 0;
               for (let i = 0; i < assetInstances.length; i++) {
-                const asset = assetInstances[i];
+                const assetInstance = assetInstances[i];
 
-                if (asset.isVisible()) {
-                  const {geometry: assetGeometry} = asset;
-                  const matrix = asset.getMatrix();
+                if (assetInstance.isVisible()) {
+                  const {geometry: assetGeometry} = assetInstance;
+                  const matrix = assetInstance.getMatrix();
 
                   const newGeometry = assetGeometry.clone()
                     .applyMatrix(matrix);
@@ -360,7 +366,7 @@ class Wallet {
                   const newColors = newGeometry.getAttribute('color').array;
                   colors.set(newColors, attributeIndex);
                   const geometryDys = newGeometry.getAttribute('dy').array;
-                  const newDys = asset.isGrabbed() ? new Float32Array(geometryDys.length) : geometryDys;
+                  const newDys = assetInstance.isGrabbed() ? new Float32Array(geometryDys.length) : geometryDys;
                   dys.set(newDys, attributeIndex / 3 * 2);
 
                   attributeIndex += newPositions.length;
@@ -388,11 +394,11 @@ class Wallet {
               let closestAssetIndex = -1;
               let closestAssetDistance = Infinity;
               for (let i = 0; i < assetInstances.length; i++) {
-                const asset = assetInstances[i];
-                const distance = controllerPosition.distanceTo(asset.position);
+                const assetInstance = assetInstances[i];
+                const distance = controllerPosition.distanceTo(assetInstance.position);
 
                 if (closestAsset === null || distance < closestAssetDistance) {
-                  closestAsset = asset;
+                  closestAsset = assetInstance;
                   closestAssetIndex = i;
                   closestAssetDistance = distance;
                 }
@@ -402,14 +408,14 @@ class Wallet {
                 hoverState.worldAsset = closestAsset;
 
                 const {worldGrabNotification: oldWorldGrabNotification} = hoverState;
-                if (!oldWorldGrabNotification || oldWorldGrabNotification.asset !== closestAsset) {
+                if (!oldWorldGrabNotification || oldWorldGrabNotification.assetInstance !== closestAsset) {
                   if (oldWorldGrabNotification) {
                     notification.removeNotification(oldWorldGrabNotification);
                   }
 
                   const {asset, quantity} = closestAsset;
                   const newWorldGrabNotification = notification.addNotification(`This is ${quantity} ${asset}.`);
-                  newWorldGrabNotification.asset = closestAsset;
+                  newWorldGrabNotification.assetInstance = closestAsset;
 
                   hoverState.worldGrabNotification = newWorldGrabNotification;
                 }
@@ -436,14 +442,14 @@ class Wallet {
         const walletState = {
           loaded: false,
           loading: true,
-          charging: false,
+          // charging: false,
           error: false,
-          inputText: '',
+          // inputText: '',
           address: null,
-          asset: null,
+          // asset: null,
           assets: [],
           numTags: 0,
-          page: 0,
+          // page: 0,
         };
         const focusState = {
           keyboardFocusState: null,
@@ -797,7 +803,7 @@ class Wallet {
               const {asset, quantity} = assets[i];
               const x = i % gridWidth;
               const y = Math.floor(i / gridWidth);
-              const assetInstance = mesh.addAsset(
+              const assetInstance = mesh.addAssetInstance(
                 `wallet:${side}:${asset}`,
                 new THREE.Vector3(
                   -gridWidth/2 + slotSize/2 + (x * (slotSize + slotSpacing)),
@@ -807,7 +813,9 @@ class Wallet {
                 zeroQuaternion,
                 oneVector.clone().multiplyScalar(0.6),
                 asset,
-                quantity
+                quantity,
+                null,
+                null
               );
               assetInstances.push(assetInstance);
             }
@@ -1139,15 +1147,11 @@ class Wallet {
             const rotation = new THREE.Quaternion(matrix[3], matrix[4], matrix[5], matrix[6]);
             const scale = new THREE.Vector3(matrix[7], matrix[8], matrix[9]);
 
-            const assetInstance = assetsMesh.addAsset(id, position, rotation, scale, asset, quantity, owner);
-
             const grabbable = hand.makeGrabbable(item.id);
             grabbable.setState(position.toArray(), rotation.toArray(), scale.toArray());
             grabbable.on('grab', e => {
               const {side} = e;
               const hoverState = hoverStates[side];
-
-              assetInstance.grab();
 
               hoverState.worldGrabAsset = assetInstance;
             });
@@ -1155,17 +1159,16 @@ class Wallet {
               const {side} = e;
               const hoverState = hoverStates[side];
 
-              assetInstance.release();
-
               hoverState.worldGrabAsset = null;
 
               if (_isInBody(assetInstance.position)) {
-                if (assetInstance.owner === localUserId) {
+console.log('remove asset instance with owner', {owner: assetInstance.owner, localUserId});
+                // if (assetInstance.owner === localUserId) {
                   walletApi.emit('removeTag', assetInstance.id);
-                } else {
+                // } else {
                   assetInstance.hide(); // for better UX
                   // XXX need to charge the owner to ourselves
-                }
+                // }
 
                 /* const {
                   address: {value: address},
@@ -1204,12 +1207,13 @@ class Wallet {
                 new THREE.Vector3().fromArray(scale)
               );
             });
-            assetInstance.grabbable = grabbable;
+
+            const assetInstance = assetsMesh.addAssetInstance(id, position, rotation, scale, asset, quantity, owner, grabbable);
           }
 
           removeAsset(item) {
             const {id} = item;
-            assetsMesh.removeAsset(id);
+            assetsMesh.removeAssetInstance(id);
           }
         }
         const walletApi = new WalletApi();
