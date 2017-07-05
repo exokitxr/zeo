@@ -550,7 +550,7 @@ class Wallet {
         _ensureLoaded();
 
         const _trigger = e => {
-          const {side} = e;
+          /* const {side} = e;
 
           const _clickMenu = () => {
             const hoverState = rend.getHoverState(side);
@@ -737,7 +737,7 @@ class Wallet {
             sfx.digi_plink.trigger();
 
             e.stopImmediatePropagation();
-          }
+          } */
         };
         input.on('trigger', _trigger, {
           priority: 1,
