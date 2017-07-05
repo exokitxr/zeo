@@ -781,9 +781,9 @@ class Wallet {
           const slotColors = new Float32Array(numSlotPositions * 3);
           const numSlotColors = slotColors.length / 3;
           const lightSlotColor = new THREE.Color(0x2196F3);
-          const darkSlotColor = lightSlotColor.clone().multiplyScalar(0.7);
+          const darkSlotColor = lightSlotColor.clone().multiplyScalar(0.6);
           const whiteSlotColor = new THREE.Color(0xCCCCCC);
-          const blackSlotColor = whiteSlotColor.clone().multiplyScalar(0.7);
+          const blackSlotColor = whiteSlotColor.clone().multiplyScalar(0.6);
           for (let i = 0; i < numSlotColors; i++) {
             const baseIndex = i * 3;
             const z = slotPositions[baseIndex + 2];
