@@ -169,7 +169,6 @@ class Rend {
           object.entityMesh = null;
           object.fileMesh = null;
           object.serversMesh = null;
-          object.walletMesh = null;
           object.configMesh = null;
           object.statsMesh = null;
 
@@ -250,7 +249,7 @@ class Rend {
             const onclick = (anchor && anchor.onclick) || '';
 
             let match;
-            if (match = onclick.match(/^navbar:(status|world|entity|file|servers|wallet|options)$/)) {
+            if (match = onclick.match(/^navbar:(status|world|entity|file|servers|options)$/)) {
               const newTab = match[1];
 
               rendApi.setTab(newTab);
@@ -531,7 +530,6 @@ class Rend {
                 case 'entity': return menuMesh.entityMesh;
                 case 'file': return menuMesh.fileMesh;
                 case 'servers': return menuMesh.serversMesh;
-                case 'wallet': return menuMesh.walletMesh;
                 case 'options': return menuMesh.configMesh;
                 default: return null;
               }

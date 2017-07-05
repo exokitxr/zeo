@@ -4,14 +4,7 @@ import {
   WORLD_WIDTH,
   WORLD_HEIGHT,
   WORLD_DEPTH,
-
-  TAGS_WIDTH,
-  TAGS_HEIGHT,
-  TAGS_WORLD_WIDTH,
-  TAGS_WORLD_HEIGHT,
-  TAGS_WORLD_DEPTH,
 } from './lib/constants/wallet';
-import walletRender from './lib/render/wallet';
 import menuUtils from './lib/utils/menu';
 import vridApi from 'vrid/lib/frontend-api';
 
@@ -116,7 +109,6 @@ class Wallet {
         const {sfx} = assets;
 
         const transparentMaterial = biolumi.getTransparentMaterial();
-        const walletRenderer = walletRender.makeRenderer({creatureUtils});
 
         const oneVector = new THREE.Vector3(1, 1, 1);
         const forwardVector = new THREE.Vector3(0, 0, -1);
@@ -301,101 +293,96 @@ class Wallet {
           };
 
           let geometryNeedsUpdate = false;
-          mesh.update = () => {
-            const _updateHovers = () => {
-              const {gamepads} = webvr.getStatus();
+          mesh.updateGeometry = () => {
+            if (geometryNeedsUpdate) {
+              const {geometry} = mesh;
+              const positionsAttribute = geometry.getAttribute('position');
+              const {array: positions} = positionsAttribute;
+              const colorsAttribute = geometry.getAttribute('color');
+              const {array: colors} = colorsAttribute;
+              const dysAttribute = geometry.getAttribute('dy');
+              const {array: dys} = dysAttribute;
 
-              SIDES.forEach(side => {
-                const gamepad = gamepads[side];
-                const {worldPosition: controllerPosition} = gamepad;
-                const hoverState = hoverStates[side];
+              let attributeIndex = 0;
+              for (let i = 0; i < assetInstances.length; i++) {
+                const asset = assetInstances[i];
 
-                let closestAsset = null;
-                let closestAssetIndex = -1;
-                let closestAssetDistance = Infinity;
-                for (let i = 0; i < assetInstances.length; i++) {
-                  const asset = assetInstances[i];
-                  const distance = controllerPosition.distanceTo(asset.position);
+                if (asset.isVisible()) {
+                  const {geometry: assetGeometry} = asset;
+                  const matrix = asset.getMatrix();
 
-                  if (closestAsset === null || distance < closestAssetDistance) {
-                    closestAsset = asset;
-                    closestAssetIndex = i;
-                    closestAssetDistance = distance;
-                  }
+                  const newGeometry = assetGeometry.clone()
+                    .applyMatrix(matrix);
+                  const newPositions = newGeometry.getAttribute('position').array;
+                  positions.set(newPositions, attributeIndex);
+                  const newColors = newGeometry.getAttribute('color').array;
+                  colors.set(newColors, attributeIndex);
+                  const geometryDys = newGeometry.getAttribute('dy').array;
+                  const newDys = asset.isGrabbed() ? new Float32Array(geometryDys.length) : geometryDys;
+                  dys.set(newDys, attributeIndex / 3 * 2);
+
+                  attributeIndex += newPositions.length;
                 }
-
-                if (closestAssetDistance < 0.2) {
-                  hoverState.asset = closestAsset;
-
-                  const {notification: oldNotification} = hoverState;
-                  if (!oldNotification || oldNotification.asset !== closestAsset) {
-                    if (oldNotification) {
-                      notification.removeNotification(oldNotification);
-                    }
-
-                    const {asset, quantity} = closestAsset;
-                    const newNotification = notification.addNotification(`This is ${quantity} ${asset}.`);
-                    newNotification.asset = closestAsset;
-
-                    hoverState.notification = newNotification;
-                  }
-                } else {
-                  const {asset} = hoverState;
-
-                  if (asset) {
-                    const {notification: oldNotification} = hoverState;
-                    notification.removeNotification(oldNotification);
-
-                    hoverState.asset = null;
-                    hoverState.notification = null;
-                  }
-                }
-              });
-            };
-            const _updateGeometry = () => {
-              if (geometryNeedsUpdate) {
-                const {geometry} = mesh;
-                const positionsAttribute = geometry.getAttribute('position');
-                const {array: positions} = positionsAttribute;
-                const colorsAttribute = geometry.getAttribute('color');
-                const {array: colors} = colorsAttribute;
-                const dysAttribute = geometry.getAttribute('dy');
-                const {array: dys} = dysAttribute;
-
-                let attributeIndex = 0;
-                for (let i = 0; i < assetInstances.length; i++) {
-                  const asset = assetInstances[i];
-
-                  if (asset.isVisible()) {
-                    const {geometry: assetGeometry} = asset;
-                    const matrix = asset.getMatrix();
-
-                    const newGeometry = assetGeometry.clone()
-                      .applyMatrix(matrix);
-                    const newPositions = newGeometry.getAttribute('position').array;
-                    positions.set(newPositions, attributeIndex);
-                    const newColors = newGeometry.getAttribute('color').array;
-                    colors.set(newColors, attributeIndex);
-                    const geometryDys = newGeometry.getAttribute('dy').array;
-                    const newDys = asset.isGrabbed() ? new Float32Array(geometryDys.length) : geometryDys;
-                    dys.set(newDys, attributeIndex / 3 * 2);
-
-                    attributeIndex += newPositions.length;
-                  }
-                }
-
-                positionsAttribute.needsUpdate = true;
-                colorsAttribute.needsUpdate = true;
-                dysAttribute.needsUpdate = true;
-
-                geometry.setDrawRange(0, attributeIndex / 3);
-
-                geometryNeedsUpdate = false;
               }
-            };
 
-            _updateHovers();
-            _updateGeometry();
+              positionsAttribute.needsUpdate = true;
+              colorsAttribute.needsUpdate = true;
+              dysAttribute.needsUpdate = true;
+
+              geometry.setDrawRange(0, attributeIndex / 3);
+
+              geometryNeedsUpdate = false;
+            }
+          };
+          mesh.updateHovers = () => {
+            const {gamepads} = webvr.getStatus();
+
+            SIDES.forEach(side => {
+              const gamepad = gamepads[side];
+              const {worldPosition: controllerPosition} = gamepad;
+              const hoverState = hoverStates[side];
+
+              let closestAsset = null;
+              let closestAssetIndex = -1;
+              let closestAssetDistance = Infinity;
+              for (let i = 0; i < assetInstances.length; i++) {
+                const asset = assetInstances[i];
+                const distance = controllerPosition.distanceTo(asset.position);
+
+                if (closestAsset === null || distance < closestAssetDistance) {
+                  closestAsset = asset;
+                  closestAssetIndex = i;
+                  closestAssetDistance = distance;
+                }
+              }
+
+              if (closestAssetDistance < 0.2) {
+                hoverState.asset = closestAsset;
+
+                const {notification: oldNotification} = hoverState;
+                if (!oldNotification || oldNotification.asset !== closestAsset) {
+                  if (oldNotification) {
+                    notification.removeNotification(oldNotification);
+                  }
+
+                  const {asset, quantity} = closestAsset;
+                  const newNotification = notification.addNotification(`This is ${quantity} ${asset}.`);
+                  newNotification.asset = closestAsset;
+
+                  hoverState.notification = newNotification;
+                }
+              } else {
+                const {asset} = hoverState;
+
+                if (asset) {
+                  const {notification: oldNotification} = hoverState;
+                  notification.removeNotification(oldNotification);
+
+                  hoverState.asset = null;
+                  hoverState.notification = null;
+                }
+              }
+            });
           };
 
           return mesh;
@@ -419,7 +406,7 @@ class Wallet {
           keyboardFocusState: null,
         };
 
-        const menuMesh = (() => {
+        /* const menuMesh = (() => {
           const object = new THREE.Object3D();
           object.visible = false;
 
@@ -484,14 +471,7 @@ class Wallet {
         menuMesh.updateMatrixWorld();
 
         rend.reindex();
-        rend.updateMatrixWorld(menuMesh);
-
-        const _updatePages = () => {
-          const {planeMesh} = menuMesh;
-          const {page} = planeMesh;
-          page.update();
-        };
-        _updatePages();
+        rend.updateMatrixWorld(menuMesh); */
 
         const _resJson = res => {
           if (res.status >= 200 && res.status < 300) {
@@ -507,21 +487,16 @@ class Wallet {
           credentials: 'include',
         })
           .then(_resJson);
-        const _updateAssets = assets => {
-          if (assets !== null) {
+        const _refreshAssets = () => _requestAssets()
+          .then(assets => {
             walletState.page = 0;
             walletState.assets = assets;
             walletState.numTags = assets.length;
-          } else {
-            walletState.error = true;
-          }
-        };
-        const _refreshAssets = () => _requestAssets()
-          .then(assets => {
-            _updateAssets(assets);
+
+            gridAssetsMesh.updateAssets(assets);
           })
           .catch(err => {
-            _updateAssets(null);
+            walletState.error = true;
 
             return Promise.reject(err);
           });
@@ -532,7 +507,6 @@ class Wallet {
           _refreshAssets()
             .then(() => {
               walletState.loading = false;
-              _updatePages();
 
               next();
             })
@@ -540,7 +514,6 @@ class Wallet {
               console.warn(err);
 
               walletState.loading = false;
-              _updatePages();
 
               next();
             });
@@ -552,32 +525,16 @@ class Wallet {
           const {loaded} = walletState;
 
           if (!loaded) {
-            return _refreshAssets()
+            _refreshAssets()
               .then(() => {
                 walletState.loaded = true;
+              })
+              .catch(err => {
+                console.warn(err);
               });
-          } else {
-            return Promise.resolve();
           }
         };
-        const _ensureInitialLoaded = () => {
-          const {loaded} = walletState;
-
-          if (!loaded) {
-            walletState.loading = true;
-            _updatePages();
-
-            return _refreshAssets()
-              .then(() => {
-                walletState.loaded = true;
-                walletState.loading = false;
-
-                _updatePages();
-              });
-          } else {
-            return Promise.resolve();
-          }
-        };
+        _ensureLoaded();
 
         const _trigger = e => {
           const {side} = e;
@@ -773,17 +730,22 @@ class Wallet {
           priority: 1,
         });
 
+        const slotsWidth = 4;
+        const numSlots = slotsWidth * slotsWidth;
+        const slotSize = 0.2;
+        const slotPlatformHeight = slotSize / 5;
+        const slotSpacing = slotSize / 2;
+        const gridWidth = (slotSize * slotsWidth) + (slotSpacing * (slotsWidth - 1));
         const gridState = {
           side: null,
         };
-        const gridMesh = (() => {
-          const slotsWidth = 4;
-          const numSlots = slotsWidth * slotsWidth;
-          const slotSize = 0.2;
-          const slotPlatformHeight = slotSize / 5;
-          const slotSpacing = slotSize / 2;
-          const gridWidth = (slotSize * slotsWidth) + (slotSpacing * (slotsWidth - 1));
 
+        const _snapDotPosition = p => new THREE.Vector2(
+          Math.min(Math.floor(((p.x + 1) / 2) * slotsWidth), slotsWidth - 1),
+          Math.min(Math.floor(((-p.y + 1) / 2) * slotsWidth), slotsWidth - 1)
+        );
+
+        const gridMesh = (() => {
           const slotGeometry = new THREE.BoxBufferGeometry(slotSize, slotPlatformHeight, slotSize);
           const slotPositions = slotGeometry.getAttribute('position').array;
           const numSlotPositions = slotPositions.length / 3;
@@ -824,18 +786,12 @@ class Wallet {
           const indexAttribute = new THREE.BufferAttribute(indices, 1);
           geometry.setIndex(indexAttribute);
 
-          const dotPosition = new THREE.Vector2(0, 0);
-          dotPosition.snap = function() {
-            return new THREE.Vector2(
-              Math.min(Math.floor(((this.x + 1) / 2) * slotsWidth), slotsWidth - 1),
-              Math.min(Math.floor(((-this.y + 1) / 2) * slotsWidth), slotsWidth - 1)
-            );
-          };
-          const _render = () => {
+          const _render = (x, y) => {
+            const dotPosition = new THREE.Vector2(x, y);
+            const dotPositionSnap = _snapDotPosition(dotPosition);
+
             let attributeIndex = 0;
             let indexIndex = 0;
-
-            const dotPositionSnap = dotPosition.snap();
 
             for (let y = 0; y < slotsWidth; y++) {
               for (let x = 0; x < slotsWidth; x++) {
@@ -897,15 +853,24 @@ class Wallet {
             colorAttribute.needsUpdate = true;
             // indexAttribute.needsUpdate = true;
           };
-          _render();
+          _render(0, 0);
 
           const material = gridMaterial;
 
           const mesh = new THREE.Mesh(geometry, material);
           mesh.visible = false;
 
-          const gridAssetsMesh = _makeAssetsMesh();
-          const assetInstance = gridAssetsMesh.addAsset(
+          mesh.updatePoint = (x, y) => {
+            _render(x, y);
+          };
+
+          return mesh;
+        })();
+        scene.add(gridMesh);
+
+        const gridAssetsMesh = (() => {
+          const mesh = _makeAssetsMesh();
+          /* const assetInstance = gridAssetsMesh.addAsset(
             'wallet:CRD',
             new THREE.Vector3(-gridWidth/2 + slotSize/2 + (0 * (slotSize + slotSpacing)), gridWidth/2 - slotSize/2 - (0 * (slotSize + slotSpacing)), 0),
             zeroQuaternion,
@@ -913,33 +878,55 @@ class Wallet {
             'CRD',
             1
           );
-          assetInstance.hovered = false;
-          mesh.add(gridAssetsMesh);
+          assetInstance.hovered = false; */
 
-          mesh.update = (x, y) => {
-            dotPosition.set(x, y);
-            _render();
+          const assetInstances = [];
+          let hoveredAssetInstance = null;
+          mesh.updateAssets = assets => {
+            assetInstances.length = 0;
 
-            const dotPositionSnap = dotPosition.snap();
-            if (dotPositionSnap.x === 0 && dotPositionSnap.y === 0) {
-              if (!assetInstance.hovered) {
-                assetInstance.update(assetInstance.position, assetInstance.rotation, oneVector.clone().multiplyScalar(0.7));
-                assetInstance.hovered = true;
-              }
-            } else {
-              if (assetInstance.hovered) {
-                assetInstance.update(assetInstance.position, assetInstance.rotation, oneVector.clone().multiplyScalar(0.6));
-                assetInstance.hovered = false;
-              }
+            for (let i = 0; i < assets.length; i++) {
+              const {asset, quantity} = assets[i];
+              const x = i % gridWidth;
+              const y = Math.floor(i / gridWidth);
+              const assetInstance = gridAssetsMesh.addAsset(
+                'wallet:' + asset,
+                new THREE.Vector3(
+                  -gridWidth/2 + slotSize/2 + (x * (slotSize + slotSpacing)),
+                  gridWidth/2 - slotSize/2 - (y * (slotSize + slotSpacing)),
+                  0
+                ),
+                zeroQuaternion,
+                oneVector.clone().multiplyScalar(0.6),
+                asset,
+                quantity
+              );
+              assetInstances.push(assetInstance);
             }
 
-            gridAssetsMesh.update();
+            mesh.updateGeometry();
           };
+          mesh.updatePoint = (x, y) => {
+            const dotPosition = new THREE.Vector2(x, y);
+            const dotPositionSnap = _snapDotPosition(dotPosition);
 
+            if (hoveredAssetInstance !== null) {
+              hoveredAssetInstance.update(hoveredAssetInstance.position, hoveredAssetInstance.rotation, oneVector.clone().multiplyScalar(0.6));
+              hoveredAssetInstance = null;
+            }
+
+            const index = dotPositionSnap.x + (dotPositionSnap.y * slotsWidth);
+            if (index < assetInstances.length) {
+              const assetInstance = assetInstances[index];
+              assetInstance.update(assetInstance.position, assetInstance.rotation, oneVector.clone().multiplyScalar(0.7));
+              hoveredAssetInstance = assetInstance;
+            }
+
+            mesh.updateGeometry();
+          };
           return mesh;
         })();
-        scene.add(gridMesh);
-        gridMesh.updateMatrixWorld();
+        gridMesh.add(gridAssetsMesh);
 
         const _padtouchdown = e => {
           const {side} = e;
@@ -976,20 +963,8 @@ class Wallet {
           priority: 1,
         });
 
-        const _tabchange = tab => {
-          if (tab === 'wallet') {
-            keyboard.tryBlur();
-
-            _ensureInitialLoaded()
-              .catch(err => {
-                console.warn(err);
-              });
-          }
-        };
-        rend.on('tabchange', _tabchange);
-
         const _update = () => {
-          const _updateGridMesh = () => {
+          const _updateGrid = () => {
             const {side} = gridState;
 
             if (side !== null) {
@@ -997,18 +972,20 @@ class Wallet {
               const gamepad = gamepads[side];
               const {axes: [x, y]} = gamepad;
 
-              gridMesh.update(x, y);
+              gridMesh.updatePoint(x, y);
+              gridAssetsMesh.updatePoint(x, y);
             }
           };
-          const _updateAssetsMesh = () => {
-            assetsMesh.update();
+          const _updateAssets = () => {
+            assetsMesh.updateGeometry();
+            assetsMesh.updateHovers();
           };
           const _updateAssetsMaterial = () => {
             assetsMaterial.uniforms.theta.value = (Date.now() * ROTATE_SPEED * (Math.PI * 2) % (Math.PI * 2));
           };
 
-          _updateGridMesh();
-          _updateAssetsMesh();
+          _updateGrid();
+          _updateAssets();
           _updateAssetsMaterial();
         };
         rend.on('update', _update);
