@@ -222,6 +222,16 @@ class Hand {
           }
 
           setState(position, rotation, scale) {
+            if (this.setStateLocal(position, rotation, scale)) {
+              _broadcast('setState', [this.id, position, rotation, scale]);
+
+              return true;
+            } else {
+              return false;
+            }
+          }
+
+          setStateLocal(position, rotation, scale) {
             if (!_arrayEquals(this.position, position) || !_arrayEquals(this.rotation, rotation) || !_arrayEquals(this.scale, scale)) {
               this.position = position;
               this.rotation = rotation;
@@ -232,9 +242,11 @@ class Hand {
                 rotation,
                 scale,
               });
-            }
 
-            _broadcast('setState', [this.id, position, rotation, scale]);
+              return true;
+            } else {
+              return false;
+            }
           }
 
           update(position, rotation, scale) {
