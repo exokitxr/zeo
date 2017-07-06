@@ -5,6 +5,7 @@ importScripts('/archae/three/three.js');
 const {exports: THREE} = self.module;
 self.module = {};
 
+const oneVector = new THREE.Vector3(1, 1, 1);
 const downVector = new THREE.Vector3(0, -1, 0);
 const zeroQuaternion = new THREE.Quaternion();
 
@@ -13,11 +14,12 @@ const staticBoxBodies = [];
 const staticHeightfieldBodies = [];
 
 class BoxBody {
-  constructor(id, {position = [0, 0, 0], rotation = [0, 0, 0, 1], scale = [0.1, 0.1, 0.1], velocity = [0, 0, 0]} = {}) {
+  constructor(id, {position = [0, 0, 0], rotation = [0, 0, 0, 1], scale = [1, 1, 1], size = [0.1, 0.1, 0.1], velocity = [0, 0, 0]} = {}) {
     this.id = id;
     this.position = position;
     this.rotation = rotation;
     this.scale = scale;
+    this.size = size;
     this.velocity = velocity;
   }
 
@@ -58,7 +60,8 @@ const _makeDynamicBoxBody = (position, size) => {
   const body = new BoxBody(id, {
     position,
     rotation: zeroQuaternion.toArray(),
-    scale: size,
+    scale: oneVector.toArray(),
+    size: size,
   });
   dynamicBoxBodies.push(body);
   return body;
@@ -181,6 +184,7 @@ self.onmessage = e => {
       break;
     }
     case 'removeBody': {
+      const {args} = data;
       const [id] = args;
 
       let index = dynamicBoxBodies.findIndex(body => body.id === id);
@@ -199,6 +203,7 @@ self.onmessage = e => {
       break;
     }
     case 'setState': {
+      const {args} = data;
       const [id, spec] = args;
 
       break;

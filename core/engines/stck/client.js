@@ -88,7 +88,8 @@ class Stck {
           worker.requestAddBody(id, 'dynamicBox', {
             position: position,
             rotation: [0, 0, 0, 1],
-            scale: size,
+            scale: [1, 1, 1],
+            size: size,
           });
 
           return body;
