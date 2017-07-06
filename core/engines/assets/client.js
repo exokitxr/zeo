@@ -1,4 +1,3 @@
-import murmur from 'murmurhash';
 import {
   LABEL_WIDTH,
   LABEL_HEIGHT,
@@ -132,6 +131,7 @@ class Assets {
       archae.requestPlugins([
         '/core/engines/three',
         '/core/engines/biolumi',
+        '/core/utils/hash-utils',
         '/core/utils/creature-utils',
       ]),
       _requestJson(hmdModelPath),
@@ -143,6 +143,7 @@ class Assets {
         [
           three,
           biolumi,
+          hashUtils,
           creatureUtils,
         ],
         hmdModelJson,
@@ -152,6 +153,7 @@ class Assets {
       ]) => {
         if (live) {
           const {THREE, scene, camera} = three;
+          const {murmur} = hashUtils;
 
           const menuRenderer = menuRender.makeRenderer({
             creatureUtils,
