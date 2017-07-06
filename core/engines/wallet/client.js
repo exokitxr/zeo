@@ -243,27 +243,6 @@ class Wallet {
               this.geometry = geometry;
 
               this._visible = true;
-
-              if (grabbable) {
-                grabbable.on('grab', e => {
-                  const {side} = e;
-                  walletApi.emit('grab', {
-                    side: side,
-                    item: this,
-                  });
-
-                  geometryNeedsUpdate = true;
-                });
-                grabbable.on('release', e => {
-                  const {side} = e;
-                  walletApi.emit('release', {
-                    side: side,
-                    item: this,
-                  });
-
-                  geometryNeedsUpdate = true;
-                });
-              }
             }
 
             getMatrix() {
@@ -311,7 +290,7 @@ class Wallet {
                 dys[(i * 2) + 1] = positions[(i * 3) + 2] * scale.z;
               }
 
-              geometryNeedsUpdate = true;
+              mesh.geometryNeedsUpdate = true;
             }
 
             destroy() {
@@ -324,6 +303,7 @@ class Wallet {
 
           const assetInstances = [];
           mesh.getAssetInstance = id => assetInstances.find(assetInstance => assetInstance.id === id);
+          mesh.geometryNeedsUpdate = false;
           mesh.addAssetInstance = (id, position, rotation, scale, asset, quantity, owner, grabbable) => {
             const geometry = (() => {
               const imageData = assets.getSpriteImageData('asset:' + asset);
@@ -342,7 +322,7 @@ class Wallet {
             const assetInstance = new AssetInstance(id, position, rotation, scale, asset, quantity, owner, grabbable, geometry);
             assetInstances.push(assetInstance);
 
-            geometryNeedsUpdate = true;
+            mesh.geometryNeedsUpdate = true;
 
             return assetInstance;
           };
@@ -350,12 +330,10 @@ class Wallet {
             const assetInstance = assetInstances.splice(assetInstances.findIndex(assetInstance => assetInstance.id === id), 1)[0];
             assetInstance.destroy();
 
-            geometryNeedsUpdate = true;
+            mesh.geometryNeedsUpdate = true;
           };
-
-          let geometryNeedsUpdate = false;
           mesh.updateGeometry = () => {
-            if (geometryNeedsUpdate) {
+            if (mesh.geometryNeedsUpdate) {
               const {geometry} = mesh;
               const positionsAttribute = geometry.getAttribute('position');
               const {array: positions} = positionsAttribute;
@@ -392,7 +370,7 @@ class Wallet {
 
               geometry.setDrawRange(0, attributeIndex / 3);
 
-              geometryNeedsUpdate = false;
+              mesh.geometryNeedsUpdate = false;
             }
           };
           mesh.updateHovers = () => {
@@ -1173,6 +1151,13 @@ class Wallet {
               const hoverState = hoverStates[side];
 
               hoverState.worldGrabAsset = assetInstance;
+
+              this.emit('grab', {
+                side: side,
+                item: assetInstance,
+              });
+
+              assetsMesh.geometryNeedsUpdate = true;
             });
             grabbable.on('release', e => {
               const {side} = e;
@@ -1185,7 +1170,7 @@ console.log('remove asset instance with owner', {owner: assetInstance.owner, loc
                 // if (assetInstance.owner === localUserId) {
                   walletApi.emit('removeTag', assetInstance.id);
                 // } else {
-                  assetInstance.hide(); // for better UX
+                  // assetInstance.hide(); // for better UX
                   // XXX need to charge the owner to ourselves
                 // }
 
@@ -1217,7 +1202,14 @@ console.log('remove asset instance with owner', {owner: assetInstance.owner, loc
                       assetInstance.show();
                     }
                   }); */
+              } else {
+                this.emit('release', {
+                  side: side,
+                  item: assetInstance,
+                });
               }
+
+              assetsMesh.geometryNeedsUpdate = true;
             });
             grabbable.on('update', ({position, rotation, scale}) => {
               assetInstance.setState(
