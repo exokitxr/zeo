@@ -83,6 +83,7 @@ class Wallet {
       '/core/engines/rend',
       '/core/engines/tags',
       '/core/engines/multiplayer',
+      '/core/engines/stck',
       '/core/engines/notification',
       '/core/utils/js-utils',
       '/core/utils/creature-utils',
@@ -99,6 +100,7 @@ class Wallet {
       rend,
       tags,
       multiplayer,
+      stck,
       notification,
       jsUtils,
       creatureUtils,
@@ -360,7 +362,18 @@ class Wallet {
             setState(position, rotation, scale) {
               super.setState(position, rotation, scale);
 
-              const {geometry} = this;
+              this.updateGeometry();
+            }
+
+            setStateLocal(position, rotation, scale) {
+              super.setStateLocal(position, rotation, scale);
+
+              this.updateGeometry();
+            }
+
+            updateGeometry() {
+              const {position, rotation, scale, geometry} = this;
+
               const positions = geometry.getAttribute('position').array;
               const numPositions = positions.length / 3;
               const dys = geometry.getAttribute('dy').array;
@@ -1225,7 +1238,7 @@ class Wallet {
             const rotation = new THREE.Quaternion(matrix[3], matrix[4], matrix[5], matrix[6]);
             const scale = new THREE.Vector3(matrix[7], matrix[8], matrix[9]);
 
-            assetsMesh.addAssetInstance(
+            const assetInstance = assetsMesh.addAssetInstance(
               id,
               {
                 position: position.toArray(),
@@ -1236,6 +1249,26 @@ class Wallet {
                 owner
               }
             );
+
+            // XXX also integrate this on pulling asset from body
+            let body = null;
+            const _addBody = () => {
+              body = stck.makeDynamicBoxBody(assetInstance.position, [0.1, 0.1, 0.1]);
+              body.on('update', ({position, rotation, scale}) => {
+                assetInstance.setStateLocal(position, rotation, scale);
+              });
+            };
+            const _removeBody = () => {
+              stck.destroyBody(body);
+              body = null;
+            };
+            assetInstance.on('release', () => {
+              _addBody();
+            });
+            assetInstance.on('grab', () => {
+              _removeBody();
+            });
+            _addBody();
           }
 
           removeAsset(item) {
