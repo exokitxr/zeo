@@ -28,6 +28,7 @@ class Zeo {
       const loaderOverlay = $('#loader-overlay')[0];
       const loaderPlugin = $('#loader-plugin')[0];
 
+      let loggedIn = false;
       const pendingPlugins = [];
       const pluginloadstart = plugin => {
         if (!pendingPlugins.includes(plugin)) {
@@ -46,10 +47,14 @@ class Zeo {
 
       const _updateText = () => {
         loaderPlugin.innerText = (() => {
-          if (pendingPlugins.length > 0) {
-            return pendingPlugins[0];
+          if (!loggedIn) {
+            return 'Logging in...';
           } else {
-             return 'Waiting for plugins...';
+            if (pendingPlugins.length > 0) {
+              return pendingPlugins[0];
+            } else {
+              return 'Waiting for plugins...';
+            }
           }
         })();
       };
@@ -62,12 +67,18 @@ class Zeo {
       };
       cleanups.push(cleanup);
 
+      const _setLoggedIn = () => {
+        loggedIn = true;
+
+        _updateText();
+      };
       const _destroy = () => {
         cleanup();
         cleanups.splice(cleanups.indexOf(cleanup), 1);
       };
 
       accept({
+        setLoggedIn: _setLoggedIn,
         destroy: _destroy,
       });
     });
@@ -75,6 +86,29 @@ class Zeo {
     return _requestBlocker()
       .then(blocker => {
         if (live) {
+          const _resJson = res => {
+            if (res.status >= 200 && res.status < 300) {
+              return res.json();
+            } else {
+              return null;
+            }
+          };
+          const _requestLogin = () => fetch(`${siteUrl}/id/api/address`, {
+            credentials: 'include',
+          })
+            .then(_resJson)
+            .then(({address}) => {
+              blocker.setLoggedIn();
+
+              return Promise.resolve(address);
+            })
+            .catch(err => {
+              console.warn(err);
+
+              blocker.setLoggedIn();
+
+              return Promise.resolve(null);
+            });
           const _requestPlugins = () => archae.requestPlugins([
             '/core/engines/bootstrap',
             '/core/engines/input',
@@ -119,49 +153,55 @@ class Zeo {
             '/core/utils/sprite-utils',
           ]);
 
-          return _requestPlugins()
+          return Promise.all([
+            _requestLogin(),
+            _requestPlugins(),
+          ])
             .then(([
-              bootstrap,
-              input,
-              webvr,
-              three,
-              anima,
-              assets,
-              cyborg,
-              biolumi,
-              rend,
-              keyboard,
-              intersect,
-              teleport,
-              scale,
-              hand,
-              transform,
-              loader,
-              tags,
-              broadcast,
-              world,
-              entity,
-              file,
-              servers,
-              wallet,
-              notification,
-              payment,
-              config,
-              multiplayer,
-              voicechat,
-              fs,
-              somnifer,
-              physics,
-              jsUtils,
-              typeUtils,
-              networkUtils,
-              geometryUtils,
-              hashUtils,
-              randomUtils,
-              textUtils,
-              menuUtils,
-              creatureUtils,
-              spriteUtils,
+              address,
+              [
+                bootstrap,
+                input,
+                webvr,
+                three,
+                anima,
+                assets,
+                cyborg,
+                biolumi,
+                rend,
+                keyboard,
+                intersect,
+                teleport,
+                scale,
+                hand,
+                transform,
+                loader,
+                tags,
+                broadcast,
+                world,
+                entity,
+                file,
+                servers,
+                wallet,
+                notification,
+                payment,
+                config,
+                multiplayer,
+                voicechat,
+                fs,
+                somnifer,
+                physics,
+                jsUtils,
+                typeUtils,
+                networkUtils,
+                geometryUtils,
+                hashUtils,
+                randomUtils,
+                textUtils,
+                menuUtils,
+                creatureUtils,
+                spriteUtils,
+              ],
             ]) => {
               if (live) {
                 blocker.destroy();
@@ -172,6 +212,9 @@ class Zeo {
                 const {events} = jsUtils;
                 const {EventEmitter} = events;
 
+                address = address || _makeId(); // if we failed to get the user's address, make one up
+                bootstrap.setAddress(address);
+                rend.setAddress(address);
                 const supportsWebVR = webvr.supportsWebVR();
 
                 const updates = [];
@@ -807,6 +850,7 @@ class Zeo {
   }
 }
 
+const _makeId = () => Math.random().toString(36).substring(7);
 const _getQueryVariable = (url, variable) => {
   const match = url.match(/\?(.+)$/);
   const query = match ? match[1] : '';

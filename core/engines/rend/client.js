@@ -62,6 +62,7 @@ class Rend {
       '/core/engines/assets',
       '/core/utils/js-utils',
       '/core/utils/geometry-utils',
+      '/core/utils/hash-utils',
       '/core/utils/creature-utils',
     ]).then(([
       bootstrap,
@@ -72,12 +73,14 @@ class Rend {
       assets,
       jsUtils,
       geometryUtils,
+      hashUtils,
       creatureUtils,
     ]) => {
       if (live) {
         const {THREE, scene, camera, renderer} = three;
         const {events} = jsUtils;
         const {EventEmitter} = events;
+        const {murmur} = hashUtils;
         const {sfx} = assets;
 
         const transparentMaterial = biolumi.getTransparentMaterial();
@@ -107,8 +110,7 @@ class Rend {
           url: '',
           address: '',
           port: 0,
-          name: '',
-          username: names[Math.floor(Math.random() * names.length)],
+          username: '',
           users: [],
         };
         const menuState = {
@@ -562,6 +564,12 @@ class Rend {
 
           registerAuxObject(name, object) {
             auxObjects[name] = object;
+          }
+
+          setAddress(address) {
+            statusState.username = names[Math.floor((murmur(address) / 0xFFFFFFFF) * names.length)];
+
+            _updatePages();
           }
 
           getStatus(name) {
