@@ -915,7 +915,6 @@ class World {
             const {args: [userId, id, {name, value}]} = m;
 
             const tagMesh = _handleSetTagAttribute(userId, id, {name, value});
-
             // this prevents this mutation from triggering an infinite recursion multiplayer update
             // we simply ignore this mutation during the next entity mutation tick
             if (tagMesh) {
@@ -926,6 +925,25 @@ class World {
                 type: 'setAttribute',
                 args: [id, name, value],
               });
+            }
+          } else if (type === 'setTagAttributes') {
+            const {args: [userId, id, newAttributes]} = m;
+
+            for (let i = 0; i < newAttributes.length; i++) {
+              const newAttribute = newAttributes[i];
+              const {name, value} = newAttribute;
+              const tagMesh = _handleSetTagAttribute(userId, id, {name, value});
+              // this prevents this mutation from triggering an infinite recursion multiplayer update
+              // we simply ignore this mutation during the next entity mutation tick
+              if (tagMesh) {
+                const {item} = tagMesh;
+                const {id} = item;
+
+                tags.ignoreEntityMutation({
+                  type: 'setAttribute',
+                  args: [id, name, value],
+                });
+              }
             }
           } else if (type === 'tagOpen') {
             const {args: [userId, id]} = m;
