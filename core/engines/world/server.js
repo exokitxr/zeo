@@ -147,7 +147,7 @@ class World {
               const _setTagAttribute = (userId, id, {name, value}) => {
                 const itemSpec = tagsJson.tags[id];
                 const {attributes} = itemSpec;
-                if (attributeValue !== undefined) {
+                if (value !== undefined) {
                   attributes[name] = {
                     value,
                   };
@@ -158,6 +158,27 @@ class World {
                 _saveTags();
 
                 _broadcast('setTagAttribute', [userId, id, {name, value}]);
+              };
+              const _setTagAttributes = (userId, id, newAttributes) => {
+                const itemSpec = tagsJson.tags[id];
+                const {attributes} = itemSpec;
+
+                for (let i = 0; i < newAttributes.length; i++) {
+                  const newAttribute = newAttributes[i];
+                  const {name, value} = newAttribute;
+
+                  if (value !== undefined) {
+                    attributes[name] = {
+                      value,
+                    };
+                  } else {
+                    delete attributes[name];
+                  }
+                }
+
+                _saveTags();
+
+                _broadcast('setTagAttributes', [userId, id, newAttributes]);
               };
 
               c.on('message', s => {
@@ -206,6 +227,10 @@ class World {
                     const [userId, id, {name, value}] = args;
 
                     _setTagAttribute(userId, id, {name, value});
+                  } else if (method === 'setTagAttributes') {
+                    const [userId, id, newAttributes] = args;
+
+                    _setTagAttributes(userId, id, newAttributes);
                   } else if (method === 'loadModule') {
                     const [userId, id] = args;
 
@@ -273,7 +298,20 @@ class World {
 
                         vridApi.requestCreatePack(srcAddress, dstAddress, asset, quantity, privateKey)
                           .then(() => {
-                            _setTagAttribute(owner, id, {name: 'owner', value: dstAddress}); // XXX also set the publicKey so clients can unpack the asset
+                            _setTagAttributes(
+                              owner,
+                              id,
+                              [
+                                {
+                                  name: 'owner',
+                                  value: dstAddress,
+                                },
+                                {
+                                  name: 'privateKey',
+                                  value: privateKey,
+                                }
+                              ]
+                            );
                           })
                           .catch(err => {
                             console.warn(err);
