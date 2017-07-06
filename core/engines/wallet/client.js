@@ -304,9 +304,9 @@ class Wallet {
               })
                 .then(() => {})
                 .catch(err => {
-                  if (err.status === 402) { // insufficient funds, delete the asset since there's no way it's valid
+                  if (err.status === 402) { // insufficient funds, succeed anyway since there's no way it's valid
                     return Promise.resolve();
-                  } else { // failed to send, so re-show
+                  } else {
                     return Promise.reject(err);
                   }
                 });
