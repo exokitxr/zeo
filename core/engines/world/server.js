@@ -206,67 +206,6 @@ class World {
                     const [userId, id, {name, value}] = args;
 
                     _setTagAttribute(userId, id, {name, value});
-                  } else if (method === 'tagClose') {
-                    const [userId, id] = args;
-
-                    const itemSpec = tagsJson.tags[id];
-                    itemSpec.open = false;
-
-                    _saveTags();
-
-                    _broadcast('tagClose', [userId, id]);
-                  } else if (method === 'tagOpenDetails') {
-                    const [userId, id] = args;
-
-                    const itemSpec = tagsJson.tags[id];
-                    itemSpec.details = true;
-
-                    _saveTags();
-
-                    _broadcast('tagOpenDetails', [userId, id]);
-                  } else if (method === 'tagCloseDetails') {
-                    const [userId, id] = args;
-
-                    const itemSpec = tagsJson.tags[id];
-                    itemSpec.details = false;
-
-                    _saveTags();
-
-                    _broadcast('tagCloseDetails', [userId, id]);
-                  } else if (method === 'tagPlay') {
-                    const [userId, id] = args;
-
-                    const itemSpec = tagsJson.tags[id];
-                    itemSpec.paused = false;
-
-                    _saveTags();
-
-                    _broadcast('tagPlay', [userId, id]);
-                  } else if (method === 'tagPause') {
-                    const [userId, id] = args;
-
-                    const itemSpec = tagsJson.tags[id];
-                    itemSpec.paused = true;
-
-                    _saveTags();
-
-                    _broadcast('tagPause', [userId, id]);
-                  } else if (method === 'tagSeek') {
-                    const [userId, id, value] = args;
-
-                    const itemSpec = tagsJson.tags[id];
-                    itemSpec.value = value;
-
-                    _saveTags();
-
-                    _broadcast('tagSeek', [userId, id, value]);
-                  } else if (method === 'tagSeekUpdate') {
-                    const [userId, id, value] = args;
-
-                    const itemSpec = tagsJson.tags[id];
-                    itemSpec.value = value;
-
-                    _saveTags();
                   } else if (method === 'loadModule') {
                     const [userId, id] = args;
 
