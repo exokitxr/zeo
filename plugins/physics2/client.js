@@ -32,7 +32,7 @@ class Physics2 {
           zeroVector.toArray()
         );
         body.on('update', ({position, rotation, scale, velocity}) => {
-          console.log('got update', position.join(','));
+          // console.log('got update', position.join(','));
         });
 
         const _keypress = e => {
