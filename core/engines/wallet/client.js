@@ -111,7 +111,6 @@ class Wallet {
         const {sfx} = assets;
 
         const transparentMaterial = biolumi.getTransparentMaterial();
-        const localUserId = multiplayer.getId();
 
         const oneVector = new THREE.Vector3(1, 1, 1);
         const forwardVector = new THREE.Vector3(0, 0, -1);
@@ -166,7 +165,7 @@ class Wallet {
             dst[startIndexIndex + i] = src[i] + startAttributeIndex;
           }
         };
-        const _requestCreateCharge = ({asset, quantity, srcAddress, dstAddress, privateKey}) => fetch(`${siteUrl}/id/api/charge`, {
+        const _requestCreateCharge = ({srcAddress, dstAddress, srcAsset, srcQuantity}) => fetch(`${siteUrl}/id/api/charge`, {
           method: 'POST',
           headers: (() => {
             const headers = new Headers();
@@ -174,11 +173,12 @@ class Wallet {
             return headers;
           })(),
           body: JSON.stringify({
-            asset: asset,
-            quantity: quantity,
             srcAddress: srcAddress,
             dstAddress: dstAddress,
-            privateKey: privateKey,
+            srcAsset: srcAsset,
+            srcQuantity: srcQuantity,
+            dstAsset: null,
+            dstQuantity: 0,
           }),
           credentials: 'include',
         })
@@ -291,6 +291,25 @@ class Wallet {
               }
 
               mesh.geometryNeedsUpdate = true;
+            }
+
+            requestChangeOwner(dstAddress) {
+              const {asset: srcAsset, quantity: srcQuantity, owner: srcAddress} = this;
+
+              return _requestCreateCharge({
+                srcAddress: srcAddress,
+                dstAddress: dstAddress,
+                srcAsset: srcAsset,
+                srcQuantity: srcQuantity,
+              })
+                .then(() => {})
+                .catch(err => {
+                  if (err.status === 402) { // insufficient funds, delete the asset since there's no way it's valid
+                    return Promise.resolve();
+                  } else { // failed to send, so re-show
+                    return Promise.reject(err);
+                  }
+                });
             }
 
             destroy() {
@@ -1016,6 +1035,7 @@ class Wallet {
             const {worldRotation: rotation, worldScale: scale} = gamepad;
 
             const id = _makeId();
+            const owner = bootstrap.getAddress();
             const itemSpec = {
               type: 'asset',
               id: id,
@@ -1032,7 +1052,7 @@ class Wallet {
                   value: quantity,
                 },
                 owner: {
-                  value: localUserId,
+                  value: owner,
                 },
               },
               metadata: {},
@@ -1166,42 +1186,23 @@ class Wallet {
               hoverState.worldGrabAsset = null;
 
               if (_isInBody(assetInstance.position)) {
-console.log('remove asset instance with owner', {owner: assetInstance.owner, localUserId});
-                // if (assetInstance.owner === localUserId) {
+                const localAddress = bootstrap.getAddress();
+
+                if (assetInstance.owner === localAddress) {
                   walletApi.emit('removeTag', assetInstance.id);
-                // } else {
-                  // assetInstance.hide(); // for better UX
-                  // XXX need to charge the owner to ourselves
-                // }
+                } else {
+                  assetInstance.hide(); // for better UX
 
-                /* const {
-                  address: {value: address},
-                  privateKey: {value: privateKey},
-                } = attributes;
-                const dstAddress = bootstrap.getAddress();
-                _requestCreateCharge({
-                  asset: asset,
-                  quantity: quantity,
-                  srcAddress: address,
-                  dstAddress: dstAddress,
-                  privateKey: privateKey,
-                })
-                  .then(() => {
-                    hand.destroyGrabbable(grabbable);
+                  assetInstance.requestChangeOwner(localAddress)
+                    .then(() => {
+                      walletApi.emit('removeTag', assetInstance.id);
+                    })
+                    .catch(err => {
+                      console.warn(err);
 
-                    walletApi.emit('removeTag', item.id);
-                  })
-                  .catch(err => {
-                    console.warn(err);
-
-                    if (err.status === 402) { // insufficient funds, delete the asset since there's no way it's valid
-                      hand.destroyGrabbable(grabbable);
-
-                      walletApi.emit('removeTag', item.id);
-                    } else { // failed to send, so re-show
                       assetInstance.show();
-                    }
-                  }); */
+                    });
+                }
               } else {
                 this.emit('release', {
                   side: side,
