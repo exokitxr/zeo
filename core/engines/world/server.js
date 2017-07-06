@@ -166,7 +166,7 @@ class World {
                 if (typeof m === 'object' && m !== null && typeof m.method === 'string' && Array.isArray(m.args) && typeof m.id === 'string') {
                   const {method, id, args} = m;
 
-                  let cb = (err = null, result = null) => {
+                  const cb = (err = null, result = null) => {
                     if (c.readyState === OPEN) {
                       const e = {
                         type: 'response',
@@ -182,30 +182,14 @@ class World {
                   if (method === 'addTag') {
                     const [userId, itemSpec] = args;
 
-                    cb = (cb => err => {
-                      if (!err) {
-                        _broadcast('addTag', [userId, itemSpec]);
-                      }
-
-                      cb(err);
-                    })(cb);
-
                     const {id} = itemSpec;
                     tagsJson.tags[id] = itemSpec;
 
                     _saveTags();
 
-                    cb();
+                    _broadcast('addTag', [userId, itemSpec]);
                   } else if (method === 'addTags') {
                     const [userId, itemSpecs] = args;
-
-                    cb = (cb => err => {
-                      if (!err) {
-                        _broadcast('addTags', [userId, itemSpecs]);
-                      }
-
-                      cb(err);
-                    })(cb);
 
                     for (let i = 0; i < itemSpecs.length; i++) {
                       const itemSpec = itemSpecs[i];
@@ -215,7 +199,7 @@ class World {
 
                     _saveTags();
 
-                    cb();
+                    _broadcast('addTags', [userId, itemSpecs]);
                   } else if (method === 'removeTag') {
                     const [userId, id] = args;
 
@@ -225,14 +209,6 @@ class World {
                   } else if (method === 'removeTags') {
                     const [userId, ids] = args;
 
-                    cb = (cb => err => {
-                      if (!err) {
-                        _broadcast('removeTags', [userId, ids]);
-                      }
-
-                      cb(err);
-                    })(cb);
-
                     for (let i = 0; i < ids.length; i++) {
                       const id = ids[i];
                       delete tagsJson.tags[id];
@@ -240,7 +216,7 @@ class World {
 
                     _saveTags();
 
-                    cb();
+                    _broadcast('removeTags', [userId, ids]);
                   } else if (method === 'setTagAttribute') {
                     const [userId, id, {name, value}] = args;
 
@@ -250,105 +226,57 @@ class World {
                   } else if (method === 'tagClose') {
                     const [userId, id] = args;
 
-                    cb = (cb => err => {
-                      if (!err) {
-                        _broadcast('tagClose', [userId, id]);
-                      }
-
-                      cb(err);
-                    })(cb);
-
                     const itemSpec = tagsJson.tags[id];
                     itemSpec.open = false;
 
                     _saveTags();
 
-                    cb();
+                    _broadcast('tagClose', [userId, id]);
                   } else if (method === 'tagOpenDetails') {
                     const [userId, id] = args;
-
-                    cb = (cb => err => {
-                      if (!err) {
-                        _broadcast('tagOpenDetails', [userId, id]);
-                      }
-
-                      cb(err);
-                    })(cb);
 
                     const itemSpec = tagsJson.tags[id];
                     itemSpec.details = true;
 
                     _saveTags();
 
-                    cb();
+                    _broadcast('tagOpenDetails', [userId, id]);
                   } else if (method === 'tagCloseDetails') {
                     const [userId, id] = args;
-
-                    cb = (cb => err => {
-                      if (!err) {
-                        _broadcast('tagCloseDetails', [userId, id]);
-                      }
-
-                      cb(err);
-                    })(cb);
 
                     const itemSpec = tagsJson.tags[id];
                     itemSpec.details = false;
 
                     _saveTags();
 
-                    cb();
+                    _broadcast('tagCloseDetails', [userId, id]);
                   } else if (method === 'tagPlay') {
                     const [userId, id] = args;
-
-                    cb = (cb => err => {
-                      if (!err) {
-                        _broadcast('tagPlay', [userId, id]);
-                      }
-
-                      cb(err);
-                    })(cb);
 
                     const itemSpec = tagsJson.tags[id];
                     itemSpec.paused = false;
 
                     _saveTags();
 
-                    cb();
+                    _broadcast('tagPlay', [userId, id]);
                   } else if (method === 'tagPause') {
                     const [userId, id] = args;
-
-                    cb = (cb => err => {
-                      if (!err) {
-                        _broadcast('tagPause', [userId, id]);
-                      }
-
-                      cb(err);
-                    })(cb);
 
                     const itemSpec = tagsJson.tags[id];
                     itemSpec.paused = true;
 
                     _saveTags();
 
-                    cb();
+                    _broadcast('tagPause', [userId, id]);
                   } else if (method === 'tagSeek') {
                     const [userId, id, value] = args;
-
-                    cb = (cb => err => {
-                      if (!err) {
-                        _broadcast('tagSeek', [userId, id, value]);
-                      }
-
-                      cb(err);
-                    })(cb);
 
                     const itemSpec = tagsJson.tags[id];
                     itemSpec.value = value;
 
                     _saveTags();
 
-                    cb();
+                    _broadcast('tagSeek', [userId, id, value]);
                   } else if (method === 'tagSeekUpdate') {
                     const [userId, id, value] = args;
 
