@@ -1256,12 +1256,12 @@ class Wallet {
 }
 
 const _makeId = () => Math.random().toString(36).substring(7);
-const _arrayToBase64 = array => {
+/* const _arrayToBase64 = array => {
   let binary = '';
   for (let i = 0; i < array.byteLength; i++) {
     binary += String.fromCharCode(array[i]);
   }
   return btoa(binary);
-};
+}; */
 
 module.exports = Wallet;
