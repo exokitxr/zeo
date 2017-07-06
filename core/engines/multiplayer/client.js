@@ -7,7 +7,6 @@ class Multiplayer {
 
   mount() {
     const {_archae: archae} = this;
-    const {metadata: {server: {enabled: serverEnabled}}} = archae;
 
     const cleanups = [];
     this._cleanup = () => {
@@ -49,6 +48,85 @@ class Multiplayer {
         const zeroVector = new THREE.Vector3();
         const zeroQuaternion = new THREE.Quaternion();
         const oneVector = new THREE.Vector3(1, 1, 1);
+
+        let connection = null;
+        const _addressChange = ({address, username}) => {
+          connection = new AutoWs(_relativeWsUrl('archae/multiplayerWs?id=' + encodeURIComponent(multiplayerApi.getId()) + '&address=' + encodeURIComponent(address) + '&username=' + encodeURIComponent(username)));
+          connection.on('message', msg => {
+            const m = JSON.parse(msg.data);
+            const {type} = m;
+
+            if (type === 'init') {
+              const {statuses} = m;
+
+              for (let i = 0; i < statuses.length; i++) {
+                const statusEntry = statuses[i];
+                _handleStatusEntry(statusEntry);
+              }
+
+              rend.setStatus('users', multiplayerApi.getUsers());
+            } else if (type === 'status') {
+              const statusEntry = m;
+              _handleStatusEntry(statusEntry);
+
+              rend.setStatus('users', multiplayerApi.getUsers());
+            } else {
+              console.log('unknown message type', JSON.stringify(type));
+            }
+          });
+
+          const _handleStatusEntry = statusEntry => {
+            const {id, status} = statusEntry;
+
+            const playerStatus = multiplayerApi.getPlayerStatus(id);
+            if (status) {
+              if (!playerStatus) {
+                multiplayerApi.emit('playerEnter', {id, status});
+
+                multiplayerApi.setPlayerStatus(id, status);
+              } else {
+                multiplayerApi.emit('playerStatusUpdate', {id, status});
+
+                if ('username' in status) {
+                  playerStatus.username = status.username;
+                }
+                if ('hmd' in status) {
+                  playerStatus.hmd = status.hmd;
+                }
+                if ('controllers' in status) {
+                  playerStatus.controllers = status.controllers;
+                }
+              }
+            } else {
+              if (playerStatus) {
+                multiplayerApi.emit('playerLeave', {id});
+
+                multiplayerApi.deletePlayerStatus(id);
+              } else {
+                console.warn('Ignoring duplicate player leave message', {id});
+              }
+            }
+          };
+          const _status = status => {
+            const e = {
+              type: 'status',
+              status,
+            };
+            const es = JSON.stringify(e);
+
+            connection.send(es);
+          };
+          multiplayerApi.on('status', _status);
+
+          cleanups.push(() => {
+            multiplayerApi.reset();
+
+            connection.destroy();
+
+            multiplayerApi.removeListener('status', _status);
+          });
+        };
+        rend.once('addressChange', _addressChange);
 
         class MutiplayerInterface extends EventEmitter {
           constructor(id) {
@@ -385,90 +463,9 @@ class Multiplayer {
         };
         rend.on('update', _update);
 
-        const connection = (() => {
-          if (serverEnabled) {
-            const connection = new AutoWs(_relativeWsUrl('archae/multiplayerWs?id=' + encodeURIComponent(multiplayerApi.getId()) + '&username=' + encodeURIComponent(rend.getStatus('username'))));
-            connection.on('message', msg => {
-              const m = JSON.parse(msg.data);
-              const {type} = m;
-
-              if (type === 'init') {
-                const {statuses} = m;
-
-                for (let i = 0; i < statuses.length; i++) {
-                  const statusEntry = statuses[i];
-                  _handleStatusEntry(statusEntry);
-                }
-
-                rend.setStatus('users', multiplayerApi.getUsers());
-              } else if (type === 'status') {
-                const statusEntry = m;
-                _handleStatusEntry(statusEntry);
-
-                rend.setStatus('users', multiplayerApi.getUsers());
-              } else {
-                console.log('unknown message type', JSON.stringify(type));
-              }
-            });
-
-            const _handleStatusEntry = statusEntry => {
-              const {id, status} = statusEntry;
-
-              const playerStatus = multiplayerApi.getPlayerStatus(id);
-              if (status) {
-                if (!playerStatus) {
-                  multiplayerApi.emit('playerEnter', {id, status});
-
-                  multiplayerApi.setPlayerStatus(id, status);
-                } else {
-                  multiplayerApi.emit('playerStatusUpdate', {id, status});
-
-                  if ('username' in status) {
-                    playerStatus.username = status.username;
-                  }
-                  if ('hmd' in status) {
-                    playerStatus.hmd = status.hmd;
-                  }
-                  if ('controllers' in status) {
-                    playerStatus.controllers = status.controllers;
-                  }
-                }
-              } else {
-                if (playerStatus) {
-                  multiplayerApi.emit('playerLeave', {id});
-
-                  multiplayerApi.deletePlayerStatus(id);
-                } else {
-                  console.warn('Ignoring duplicate player leave message', {id});
-                }
-              }
-            };
-            const _status = status => {
-              const e = {
-                type: 'status',
-                status,
-              };
-              const es = JSON.stringify(e);
-
-              connection.send(es);
-            };
-            multiplayerApi.on('status', _status);
-
-            cleanups.push(() => {
-              multiplayerApi.reset();
-
-              connection.destroy();
-
-              multiplayerApi.removeListener('status', _status);
-            });
-
-            return connection;
-          } else {
-            return null;
-          }
-        })();
-
         cleanups.push(() => {
+          rend.removeListener('addressChange', _addressChange);
+
           multiplayerApi.removeListener('playerStatusUpdate', playerStatusUpdate);
           multiplayerApi.removeListener('playerEnter', playerEnter);
           multiplayerApi.removeListener('playerLeave', playerLeave);
