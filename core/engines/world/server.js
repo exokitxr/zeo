@@ -58,11 +58,15 @@ class World {
     });
 
     return Promise.all([
+      archae.requestPlugins([
+        '/core/engines/multiplayer',
+      ]),
       _requestTagsJson(),
       _requestFilesJson(),
       _ensureWorldPath(),
     ])
       .then(([
+        [multiplayer],
         tagsJson,
         filesJson,
         ensureWorldPathResult,
@@ -70,8 +74,26 @@ class World {
         if (live) {
           const usersJson = {};
 
-          const connections = [];
+          const _saveFile = (p, j) => new Promise((accept, reject) => {
+            fs.writeFile(p, JSON.stringify(j, null, 2), 'utf8', err => {
+              if (!err) {
+                accept();
+              } else {
+                reject(err);
+              }
+            });
+          });
+          const _saveTags = _debounce(next => {
+            _saveFile(worldTagsJsonPath, tagsJson)
+              .then(() => {
+                next();
+              })
+              .catch(err => {
+                console.warn(err);
+              });
+          });
 
+          const connections = [];
           wss.on('connection', c => {
             const {url} = c.upgradeReq;
 
@@ -383,30 +405,39 @@ class World {
               });
             }
           });
-          const _saveFile = (p, j) => new Promise((accept, reject) => {
-            fs.writeFile(p, JSON.stringify(j, null, 2), 'utf8', err => {
-              if (!err) {
-                accept();
-              } else {
-                reject(err);
+
+          const _playerLeave = ({address}) => {
+            const {tags} = tagsJson;
+
+            const disownedAssetTags = [];
+            for (const id in tags) {
+              const tag = tags[id];
+              const {type} = tag;
+
+              if (type === 'asset') {
+                const {attributes} = tag;
+                const {owner} = attributes;
+
+                if (owner) {
+                  const {value: ownerValue} = owner;
+
+                  if (ownerValue === address) {
+                    disownedAssetTags.push(tag);
+                  }
+                }
               }
-            });
-          });
-          const _saveTags = _debounce(next => {
-            _saveFile(worldTagsJsonPath, tagsJson)
-              .then(() => {
-                next();
-              })
-              .catch(err => {
-                console.warn(err);
-              });
-          });
+            }
+console.log('disowned asset tags', JSON.stringify(disownedAssetTags, null, 2)); // XXX disown these to the server
+          };
+          multiplayer.on('playerLeave', _playerLeave);
 
           this._cleanup = () => {
             for (let i = 0; i < connections.length; i++) {
               const connection = connections[i];
               connection.close();
             }
+
+            multiplayer.removeListener('playerLeave', _playerLeave);
           };
 
           const _getTags = () => tagsJson.tags;
