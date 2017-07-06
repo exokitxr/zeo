@@ -1,5 +1,3 @@
-const murmur = require('murmurhash');
-
 class Physics {
   constructor(archae) {
     this._archae = archae;
@@ -22,6 +20,7 @@ class Physics {
       '/core/utils/js-utils',
       '/core/utils/geometry-utils',
       '/core/utils/network-utils',
+      '/core/utils/hash-utils',
     ]).then(([
       three,
       input,
@@ -31,12 +30,14 @@ class Physics {
       jsUtils,
       geometryUtils,
       networkUtils,
+      hashUtils,
     ]) => {
       if (live) {
         const {THREE, scene, camera} = three;
         const {events} = jsUtils;
         const {EventEmitter} = events;
         const {AutoWs} = networkUtils;
+        const {murmur} = hashUtils;
 
         const localUserId = multiplayer.getId();
 
