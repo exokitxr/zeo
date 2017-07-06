@@ -1,0 +1,7 @@
+{
+  "name": "stck",
+  "description": "Provides simple physics for the zeo core.",
+  "version": "0.0.1",
+  "client": "client.js",
+  "dependencies": {}
+}

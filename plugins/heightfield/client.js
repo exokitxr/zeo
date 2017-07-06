@@ -12,7 +12,7 @@ class Heightfield {
 
   mount() {
     const {_archae: archae} = this;
-    const {three, render, pose, world, teleport, physics, utils: {random: {chnkr}}} = zeo;
+    const {three, render, pose, world, teleport, /*physics,*/ stck, utils: {random: {chnkr}}} = zeo;
     const {THREE, scene} = three;
 
     const mapChunkMaterial = new THREE.MeshPhongMaterial({
@@ -78,8 +78,6 @@ class Heightfield {
           ),
           Math.max(Math.sqrt((NUM_CELLS / 2) * (NUM_CELLS / 2) * 3), (maxY - minY) / 2)
         );
-        geometry.heightfield = heightfield;
-
         return geometry;
       })();
       const material = mapChunkMaterial;
@@ -87,6 +85,7 @@ class Heightfield {
       const mesh = new THREE.Mesh(geometry, material);
       // mesh.frustumCulled = false;
 
+      mesh.heightfield = heightfield
       mesh.destroy = () => {
         geometry.dispose();
       };
@@ -110,7 +109,7 @@ class Heightfield {
           flat: true,
         });
 
-        const physicsBody = physics.makeBody(mapChunkMesh, 'heightfield:' + x + ':' + z, {
+        /* const physicsBody = physics.makeBody(mapChunkMesh, 'heightfield:' + x + ':' + z, {
           mass: 0,
           position: [
             (NUM_CELLS / 2) + (x * NUM_CELLS),
@@ -122,15 +121,29 @@ class Heightfield {
           bindObject: false,
           bindConnection: false,
         });
-        mapChunkMesh.physicsBody = physicsBody;
+        mapChunkMesh.physicsBody = physicsBody; */
+        const {heightfield} = mapChunkMesh;
+        const stckBody = stck.makeStaticHeightfieldBody(
+          [
+            x * NUM_CELLS,
+            0,
+            z * NUM_CELLS,
+          ],
+          NUM_CELLS,
+          NUM_CELLS,
+          heightfield
+        );
+        mapChunkMesh.stckBody = stckBody;
 
         mapChunkMesh.targeted = true;
       };
       const _removeTarget = mapChunkMesh => {
         teleport.removeTarget(mapChunkMesh);
 
-        const {physicsBody} = mapChunkMesh;
-        physics.destroyBody(physicsBody);
+        /* const {physicsBody} = mapChunkMesh;
+        physics.destroyBody(physicsBody); */
+        const {stckBody} = mapChunkMesh;
+        stck.destroyBody(stckBody);
 
         mapChunkMesh.targeted = false;
       };
