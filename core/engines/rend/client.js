@@ -242,6 +242,16 @@ class Rend {
           _setConnectionState(connectionState);
         }
 
+        const _addressChange = address => {
+          const username = names[Math.floor((murmur(address) / 0xFFFFFFFF) * names.length)];
+          statusState.username = username;
+
+          _updatePages();
+
+          rendApi.emit('addressChange', {address, username});
+        };
+        bootstrap.on('addressChange', _addressChange);
+
         const trigger = e => {
           const {side} = e;
 
@@ -414,6 +424,7 @@ class Rend {
           });
 
           broadcast.removeListener('connectionStateChange', _connectionStateChange);
+          bootstrap.removeListener('addressChange', _addressChange);
 
           input.removeListener('trigger', trigger);
           input.removeListener('click', click);
@@ -564,12 +575,6 @@ class Rend {
 
           registerAuxObject(name, object) {
             auxObjects[name] = object;
-          }
-
-          setAddress(address) {
-            statusState.username = names[Math.floor((murmur(address) / 0xFFFFFFFF) * names.length)];
-
-            _updatePages();
           }
 
           getStatus(name) {

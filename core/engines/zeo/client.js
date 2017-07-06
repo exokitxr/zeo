@@ -214,7 +214,6 @@ class Zeo {
 
                 address = address || _makeId(); // if we failed to get the user's address, make one up
                 bootstrap.setAddress(address);
-                rend.setAddress(address);
                 const supportsWebVR = webvr.supportsWebVR();
 
                 const updates = [];

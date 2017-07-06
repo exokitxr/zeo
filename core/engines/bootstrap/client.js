@@ -100,6 +100,8 @@ class Bootstrap {
 
             setAddress(newAddress) {
               address = newAddress;
+
+              this.emit('addressChange', newAddress);
             }
 
             navigate(url) {
