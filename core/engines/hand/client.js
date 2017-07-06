@@ -331,9 +331,13 @@ class Hand {
         class HandApi {
           makeGrabbable(id, options) {
             const grabbable = new Grabbable(id, options);
-            grabbable.add();
-            grabbables[id] = grabbable;
+            this.addGrabbable(grabbable);
             return grabbable;
+          }
+
+          addGrabbable(grabbable) {
+            grabbable.add();
+            grabbables[grabbable.id] = grabbable;
           }
 
           destroyGrabbable(grabbable) {
@@ -342,6 +346,7 @@ class Hand {
             delete grabbables[id];
           }
         }
+        HandApi.prototype.Grabbable = Grabbable;
         const handApi = new HandApi();
 
         return handApi;
