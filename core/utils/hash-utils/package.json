@@ -1,0 +1,9 @@
+{
+  "name": "hash-utils",
+  "description": "Provides hash function utilities for the zeo core.",
+  "version": "0.0.1",
+  "client": "client.js",
+  "dependencies": {
+    "murmurhash": "0.0.2"
+  }
+}
