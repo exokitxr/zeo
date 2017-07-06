@@ -108,6 +108,7 @@ class Wallet {
         const {THREE, scene, camera} = three;
         const {events} = jsUtils;
         const {EventEmitter} = events;
+        const {Grabbable} = hand;
         const {sfx} = assets;
 
         const transparentMaterial = biolumi.getTransparentMaterial();
@@ -220,38 +221,122 @@ class Wallet {
             return mesh;
           })();
 
-          class AssetInstance { // XXX make this a subclass of Grabbable
+          class AssetInstance extends Grabbable {
             constructor(
               id,
-              position,
-              rotation,
-              scale,
-              asset,
-              quantity,
-              owner,
-              grabbable,
-              geometry
+              {
+                position,
+                rotation,
+                scale,
+                asset,
+                quantity,
+                owner,
+              }
             ) {
-              this.id = id;
-              this.position = position;
-              this.rotation = rotation;
-              this.scale = scale;
+              super(id, {position, rotation, scale});
+
               this.asset = asset;
               this.quantity = quantity;
               this.owner = owner;
-              this.grabbable = grabbable;
+
+              const geometry = (() => {
+                const imageData = assets.getSpriteImageData('asset:' + asset);
+                const pixelSize = 0.02;
+                const geometry = spriteUtils.makeImageDataGeometry(imageData, pixelSize);
+                const positions = geometry.getAttribute('position').array;
+                const numPositions = positions.length / 3;
+                const dys = new Float32Array(numPositions * 2);
+                for (let i = 0; i < numPositions; i++) {
+                  dys[(i * 2) + 0] = positions[(i * 3) + 0] * scale[0];
+                  dys[(i * 2) + 1] = positions[(i * 3) + 2] * scale[2];
+                }
+                geometry.addAttribute('dy', new THREE.BufferAttribute(dys, 2));
+                return geometry;
+              })();
               this.geometry = geometry;
 
               this._visible = true;
             }
 
+            emit(t, e) {
+              switch (t) {
+                case 'grab': {
+                  const {userId, side} = e;
+                  const hoverState = hoverStates[side];
+
+                  hoverState.worldGrabAsset = this;
+
+                  super.emit(t, {
+                    userId,
+                    side,
+                    item: this,
+                  });
+
+                  assetsMesh.geometryNeedsUpdate = true;
+
+                  break;
+                }
+                case 'release': {
+                  const {userId, side} = e;
+                  const hoverState = hoverStates[side];
+                  const {id, position, owner} = this;
+
+                  hoverState.worldGrabAsset = null;
+
+                  if (_isInBody(new THREE.Vector3().fromArray(position))) {
+                    const localAddress = bootstrap.getAddress();
+
+                    if (owner === localAddress) {
+                      walletApi.emit('removeTag', id);
+                    } else {
+                      this.hide(); // for better UX
+
+                      this.requestChangeOwner(localAddress)
+                        .then(() => {
+                          walletApi.emit('removeTag', this.id);
+                        })
+                        .catch(err => {
+                          console.warn(err);
+
+                          this.show();
+                        });
+                    }
+                  } else {
+                    super.emit(t, {
+                      userId,
+                      side,
+                      item: this,
+                    });
+                  }
+
+                  assetsMesh.geometryNeedsUpdate = true;
+
+                  break;
+                }
+                case 'update': {
+                  super.emit(t, e);
+
+                  assetsMesh.geometryNeedsUpdate = true;
+
+                  break;
+                }
+                default: {
+                  super.emit(t, e);
+                }
+              }
+            }
+
             getMatrix() {
               const {position, rotation, scale} = this;
+              const positionVector = new THREE.Vector3().fromArray(position);
+              const rotationQuaternion = new THREE.Quaternion().fromArray(rotation);
+              const scaleVector = new THREE.Vector3().fromArray(scale);
               const grabbed = this.isGrabbed();
-              const newQuaternion = !grabbed ? zeroQuaternion : rotation.clone().multiply(forwardQuaternion);
-              const newPosition = !grabbed ? position : position.clone().add(new THREE.Vector3(0, 0, -0.02 / 2).applyQuaternion(newQuaternion));
+
+              const newQuaternion = !grabbed ? zeroQuaternion : rotationQuaternion.clone().multiply(forwardQuaternion);
+              const newPosition = !grabbed ? positionVector : positionVector.clone().add(new THREE.Vector3(0, 0, -0.02 / 2).applyQuaternion(newQuaternion));
               const hovered = SIDES.some(side => hoverStates[side].asset === this);
-              const newScale = hovered ? scale.clone().multiplyScalar(1.25) : scale;
+              const newScale = hovered ? scaleVector.clone().multiplyScalar(1.25) : scaleVector;
 
               return new THREE.Matrix4().compose(
                 newPosition,
@@ -272,22 +357,16 @@ class Wallet {
               this._visible = false;
             }
 
-            isGrabbed() {
-              return Boolean(this.grabbable) && this.grabbable.isGrabbed();
-            }
-
             setState(position, rotation, scale) {
-              this.position.copy(position);
-              this.rotation.copy(rotation);
-              this.scale.copy(scale);
+              super.setState(position, rotation, scale);
 
               const {geometry} = this;
               const positions = geometry.getAttribute('position').array;
               const numPositions = positions.length / 3;
               const dys = geometry.getAttribute('dy').array;
               for (let i = 0; i < numPositions; i++) {
-                dys[(i * 2) + 0] = positions[(i * 3) + 0] * scale.x;
-                dys[(i * 2) + 1] = positions[(i * 3) + 2] * scale.z;
+                dys[(i * 2) + 0] = positions[(i * 3) + 0] * scale[0];
+                dys[(i * 2) + 1] = positions[(i * 3) + 2] * scale[2];
               }
 
               mesh.geometryNeedsUpdate = true;
@@ -311,34 +390,14 @@ class Wallet {
                   }
                 });
             }
-
-            destroy() {
-              const {grabbable} = this;
-              if (grabbable) {
-                hand.destroyGrabbable(grabbable);
-              }
-            }
           }
 
           const assetInstances = [];
           mesh.getAssetInstance = id => assetInstances.find(assetInstance => assetInstance.id === id);
           mesh.geometryNeedsUpdate = false;
-          mesh.addAssetInstance = (id, position, rotation, scale, asset, quantity, owner, grabbable) => {
-            const geometry = (() => {
-              const imageData = assets.getSpriteImageData('asset:' + asset);
-              const pixelSize = 0.02;
-              const geometry = spriteUtils.makeImageDataGeometry(imageData, pixelSize);
-              const positions = geometry.getAttribute('position').array;
-              const numPositions = positions.length / 3;
-              const dys = new Float32Array(numPositions * 2);
-              for (let i = 0; i < numPositions; i++) {
-                dys[(i * 2) + 0] = positions[(i * 3) + 0] * scale.x;
-                dys[(i * 2) + 1] = positions[(i * 3) + 2] * scale.z;
-              }
-              geometry.addAttribute('dy', new THREE.BufferAttribute(dys, 2));
-              return geometry;
-            })();
-            const assetInstance = new AssetInstance(id, position, rotation, scale, asset, quantity, owner, grabbable, geometry);
+          mesh.addAssetInstance = (id, {position, rotation, scale, asset, quantity, owner}) => {
+            const assetInstance = new AssetInstance(id, {position, rotation, scale, asset, quantity, owner});
+            hand.addGrabbable(assetInstance);
             assetInstances.push(assetInstance);
 
             mesh.geometryNeedsUpdate = true;
@@ -347,7 +406,7 @@ class Wallet {
           };
           mesh.removeAssetInstance = id => {
             const assetInstance = assetInstances.splice(assetInstances.findIndex(assetInstance => assetInstance.id === id), 1)[0];
-            assetInstance.destroy();
+            hand.destroyGrabbable(assetInstance);
 
             mesh.geometryNeedsUpdate = true;
           };
@@ -405,7 +464,7 @@ class Wallet {
               let closestAssetDistance = Infinity;
               for (let i = 0; i < assetInstances.length; i++) {
                 const assetInstance = assetInstances[i];
-                const distance = controllerPosition.distanceTo(assetInstance.position);
+                const distance = controllerPosition.distanceTo(new THREE.Vector3().fromArray(assetInstance.position));
 
                 if (closestAsset === null || distance < closestAssetDistance) {
                   closestAsset = assetInstance;
@@ -588,13 +647,15 @@ class Wallet {
           const {loaded} = walletState;
 
           if (!loaded) {
-            _refreshAssets()
+            return _refreshAssets()
               .then(() => {
                 walletState.loaded = true;
               })
               .catch(err => {
                 console.warn(err);
               });
+          } else {
+            return Promise.resolve();
           }
         };
         _ensureLoaded();
@@ -815,17 +876,18 @@ class Wallet {
               const y = Math.floor(i / gridWidth);
               const assetInstance = mesh.addAssetInstance(
                 `wallet:${side}:${asset}`,
-                new THREE.Vector3(
-                  -gridWidth/2 + slotSize/2 + (x * (slotSize + slotSpacing)),
-                  gridWidth/2 - slotSize/2 - (y * (slotSize + slotSpacing)),
-                  0
-                ),
-                zeroQuaternion,
-                oneVector.clone().multiplyScalar(0.6),
-                asset,
-                quantity,
-                null,
-                null
+                {
+                  position: [
+                    -gridWidth/2 + slotSize/2 + (x * (slotSize + slotSpacing)),
+                    gridWidth/2 - slotSize/2 - (y * (slotSize + slotSpacing)),
+                    0
+                  ],
+                  rotation: zeroQuaternion.toArray(),
+                  scale: oneVector.clone().multiplyScalar(0.6).toArray(),
+                  asset,
+                  quantity,
+                  owner: null,
+                }
               );
               assetInstances.push(assetInstance);
             }
@@ -839,7 +901,7 @@ class Wallet {
             const _clearBodyAsset = () => {
               const {bodyAsset} = hoverState;
               if (bodyAsset !== null) {
-                bodyAsset.setState(bodyAsset.position, bodyAsset.rotation, oneVector.clone().multiplyScalar(0.6));
+                bodyAsset.setState(bodyAsset.position, bodyAsset.rotation, oneVector.clone().multiplyScalar(0.6).toArray());
                 hoverState.bodyAsset = null;
               }
             };
@@ -860,7 +922,7 @@ class Wallet {
                 _clearBodyAsset();
                 _clearBodyNotification();
 
-                assetInstance.setState(assetInstance.position, assetInstance.rotation, oneVector.clone().multiplyScalar(0.7));
+                assetInstance.setState(assetInstance.position, assetInstance.rotation, oneVector.clone().multiplyScalar(0.7).toArray());
                 hoverState.bodyAsset = assetInstance;
               }
             } else {
@@ -1060,8 +1122,7 @@ class Wallet {
             walletApi.emit('addAsset', itemSpec);
 
             const assetInstance = assetsMesh.getAssetInstance(id);
-            const {grabbable} = assetInstance;
-            grabbable.grab(side);
+            assetInstance.grab(side);
 
             e.stopImmediatePropagation();
           }
@@ -1164,63 +1225,17 @@ class Wallet {
             const rotation = new THREE.Quaternion(matrix[3], matrix[4], matrix[5], matrix[6]);
             const scale = new THREE.Vector3(matrix[7], matrix[8], matrix[9]);
 
-            const grabbable = hand.makeGrabbable(item.id);
-            grabbable.setState(position.toArray(), rotation.toArray(), scale.toArray());
-            grabbable.on('grab', e => {
-              const {side} = e;
-              const hoverState = hoverStates[side];
-
-              hoverState.worldGrabAsset = assetInstance;
-
-              this.emit('grab', {
-                side: side,
-                item: assetInstance,
-              });
-
-              assetsMesh.geometryNeedsUpdate = true;
-            });
-            grabbable.on('release', e => {
-              const {side} = e;
-              const hoverState = hoverStates[side];
-
-              hoverState.worldGrabAsset = null;
-
-              if (_isInBody(assetInstance.position)) {
-                const localAddress = bootstrap.getAddress();
-
-                if (assetInstance.owner === localAddress) {
-                  walletApi.emit('removeTag', assetInstance.id);
-                } else {
-                  assetInstance.hide(); // for better UX
-
-                  assetInstance.requestChangeOwner(localAddress)
-                    .then(() => {
-                      walletApi.emit('removeTag', assetInstance.id);
-                    })
-                    .catch(err => {
-                      console.warn(err);
-
-                      assetInstance.show();
-                    });
-                }
-              } else {
-                this.emit('release', {
-                  side: side,
-                  item: assetInstance,
-                });
+            assetsMesh.addAssetInstance(
+              id,
+              {
+                position: position.toArray(),
+                rotation: rotation.toArray(),
+                scale: scale.toArray(),
+                asset,
+                quantity,
+                owner
               }
-
-              assetsMesh.geometryNeedsUpdate = true;
-            });
-            grabbable.on('update', ({position, rotation, scale}) => {
-              assetInstance.setState(
-                new THREE.Vector3().fromArray(position),
-                new THREE.Quaternion().fromArray(rotation),
-                new THREE.Vector3().fromArray(scale)
-              );
-            });
-
-            const assetInstance = assetsMesh.addAssetInstance(id, position, rotation, scale, asset, quantity, owner, grabbable);
+            );
           }
 
           removeAsset(item) {
