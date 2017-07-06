@@ -3,7 +3,7 @@ const fs = require('fs');
 const crypto = require('crypto');
 
 const mkdirp = require('mkdirp');
-const vridApi = require('vrid/lib/backend-api');
+const vridApiLib = require('vrid/lib/backend-api');
 
 const OPEN = 1; // ws.OPEN
 
@@ -21,7 +21,10 @@ class World {
 
   mount() {
     const {_archae: archae} = this;
+    const {metadata: {crds: {url: crdsUrl}}} = archae;
     const {app, wss, dirname, dataDirectory} = archae.getCore();
+
+    const vridApi = vridApiLib({crdsUrl});
 
     let live = true;
     this._cleanup = () => {
