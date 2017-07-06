@@ -164,20 +164,7 @@ class World {
                 const m = _jsonParse(s);
 
                 if (typeof m === 'object' && m !== null && typeof m.method === 'string' && Array.isArray(m.args) && typeof m.id === 'string') {
-                  const {method, id, args} = m;
-
-                  const cb = (err = null, result = null) => {
-                    if (c.readyState === OPEN) {
-                      const e = {
-                        type: 'response',
-                        id: id,
-                        error: err,
-                        result: result,
-                      };
-                      const es = JSON.stringify(e);
-                      c.send(es);
-                    }
-                  };
+                  const {method, args} = m;
 
                   if (method === 'addTag') {
                     const [userId, itemSpec] = args;
@@ -204,8 +191,6 @@ class World {
                     const [userId, id] = args;
 
                     _removeTag(userId, id);
-
-                    cb();
                   } else if (method === 'removeTags') {
                     const [userId, ids] = args;
 
@@ -221,8 +206,6 @@ class World {
                     const [userId, id, {name, value}] = args;
 
                     _setTagAttribute(userId, id, {name, value});
-
-                    cb();
                   } else if (method === 'tagClose') {
                     const [userId, id] = args;
 
@@ -284,23 +267,16 @@ class World {
                     itemSpec.value = value;
 
                     _saveTags();
-
-                    cb();
                   } else if (method === 'loadModule') {
                     const [userId, id] = args;
 
                     _broadcast('loadModule', [userId, id]);
-
-                    cb();
                   } else if (method === 'unloadModule') {
                     const [userId, id] = args;
 
                     _broadcast('unloadModule', [userId, id]);
-
-                    cb();
                   } else {
-                    const err = new Error('no such method:' + JSON.stringify(method));
-                    cb(err.stack);
+                    console.warn('no such method:' + JSON.stringify(method));
                   }
                 } else {
                   console.warn('invalid message', m);

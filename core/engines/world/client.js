@@ -178,52 +178,33 @@ class World {
         }
         const elementManager = new ElementManager();
 
-        const requestHandlers = new Map();
-        const _request = (method, args, cb) => {
+        const _request = (method, args) => {
           if (connection) {
-            const id = _makeId();
-
             const e = {
               method,
               args,
-              id,
             };
             const es = JSON.stringify(e);
             connection.send(es);
-
-            const requestHandler = (err, result) => {
-              if (!err) {
-                cb(null, result);
-              } else {
-                cb(err);
-              }
-
-              requestHandlers.delete(id);
-            };
-            requestHandlers.set(id, requestHandler);
-          } else {
-            setTimeout(() => {
-              cb(null);
-            });
           }
         };
         const _addTag = (itemSpec, {element = null} = {}) => {
           const newElement = _handleAddTag(localUserId, itemSpec, {element});
-          _request('addTag', [localUserId, itemSpec], _warnError);
+          _request('addTag', [localUserId, itemSpec]);
           return newElement;
         };
         const _addTags = (itemSpecs) => {
           _handleAddTags(localUserId, itemSpecs);
-          _request('addTags', [localUserId, itemSpecs], _warnError);
+          _request('addTags', [localUserId, itemSpecs]);
         };
         const _removeTag = id => {
           const newElement = _handleRemoveTag(localUserId, id);
-          _request('removeTag', [localUserId, id], _warnError);
+          _request('removeTag', [localUserId, id]);
           return newElement;
         };
         const _removeTags = ids => {
           _handleRemoveTags(localUserId, ids);
-          _request('removeTags', [localUserId, ids], _warnError);
+          _request('removeTags', [localUserId, ids]);
         };
 
         const _handleAddTag = (userId, itemSpec, {element = null} = {}) => {
@@ -670,7 +651,7 @@ class World {
         };
         tags.on('mutateRemoveEntity', _mutateRemoveEntity);
         const _mutateSetAttribute = ({id, name, value}) => {
-          _request('setTagAttribute', [localUserId, id, {name, value}], _warnError);
+          _request('setTagAttribute', [localUserId, id, {name, value}]);
         };
         tags.on('mutateSetAttribute', _mutateSetAttribute);
         const _tagsSetAttribute = ({id, name, value}) => {
@@ -678,37 +659,37 @@ class World {
         };
         tags.on('setAttribute', _tagsSetAttribute);
         const _tagsOpen = ({id}) => {
-          _request('tagOpen', [localUserId, id], _warnError);
+          _request('tagOpen', [localUserId, id]);
 
           _handleTagOpen(localUserId, id);
         };
         tags.on('open', _tagsOpen);
         const _tagsClose = ({id}) => {
-          _request('tagClose', [localUserId, id], _warnError);
+          _request('tagClose', [localUserId, id]);
 
           _handleTagClose(localUserId, id);
         };
         tags.on('close', _tagsClose);
         const _tagsPlay = ({id}) => {
-          _request('tagPlay', [localUserId, id], _warnError);
+          _request('tagPlay', [localUserId, id]);
 
           _handleTagPlay(localUserId, id);
         };
         tags.on('play', _tagsPlay);
         const _tagsPause = ({id}) => {
-          _request('tagPause', [localUserId, id], _warnError);
+          _request('tagPause', [localUserId, id]);
 
           _handleTagPause(localUserId, id);
         };
         tags.on('pause', _tagsPause);
         const _tagsSeek = ({id, value}) => {
-          _request('tagSeek', [localUserId, id, value], _warnError);
+          _request('tagSeek', [localUserId, id, value]);
 
           _handleTagSeek(localUserId, id, value);
         };
         tags.on('seek', _tagsSeek);
         const _tagsSeekUpdate = ({id, value}) => {
-          _request('tagSeekUpdate', [localUserId, id, value], _warnError);
+          _request('tagSeekUpdate', [localUserId, id, value]);
         };
         tags.on('seekUpdate', _tagsSeekUpdate);
         const _reinstallModule = ({id}) => {
@@ -716,12 +697,12 @@ class World {
           const {item} = tagMesh;
           const {name, displayName} = item;
 
-          _request('unloadModule', [localUserId, displayName], _warnError);
+          _request('unloadModule', [localUserId, displayName]);
           _handleUnloadModule(localUserId, displayName);
 
           loader.removePlugin(name)
             .then(() => {
-              _request('loadModule', [localUserId, name], _warnError);
+              _request('loadModule', [localUserId, name]);
               _handleLoadModule(localUserId, name);
             })
             .catch(err => {
@@ -1103,11 +1084,6 @@ const _makeFileId = () => {
   return array.reduce((acc, i) => {
     return acc + _padNumber(i.toString(16), 2);
   }, '');
-};
-const _warnError = err => {
-  if (err) {
-    console.warn(err);
-  }
 };
 const _formatQueryString = o => {
   const result = [];
