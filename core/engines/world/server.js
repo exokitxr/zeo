@@ -97,6 +97,63 @@ class World {
                 console.warn(err);
               });
           });
+          const _broadcastGlobal = (type, args) => {
+            if (connections.length > 0) {
+              const e = {
+                type,
+                args,
+              };
+              const es = JSON.stringify(e);
+
+              for (let i = 0; i < connections.length; i++) {
+                const connection = connections[i];
+                connection.send(es);
+              }
+            }
+          };
+          const _removeTag = (userId, id) => {
+            delete tagsJson.tags[id];
+
+            _saveTags();
+
+            _broadcastGlobal('removeTag', [userId, id]);
+          };
+          const _setTagAttribute = (userId, id, {name, value}) => {
+            const itemSpec = tagsJson.tags[id];
+            const {attributes} = itemSpec;
+            if (value !== undefined) {
+              attributes[name] = {
+                value,
+              };
+            } else {
+              delete attributes[name];
+            }
+
+            _saveTags();
+
+            _broadcastGlobal('setTagAttribute', [userId, id, {name, value}]);
+          };
+          const _setTagAttributes = (userId, id, newAttributes) => {
+            const itemSpec = tagsJson.tags[id];
+            const {attributes} = itemSpec;
+
+            for (let i = 0; i < newAttributes.length; i++) {
+              const newAttribute = newAttributes[i];
+              const {name, value} = newAttribute;
+
+              if (value !== undefined) {
+                attributes[name] = {
+                  value,
+                };
+              } else {
+                delete attributes[name];
+              }
+            }
+
+            _saveTags();
+
+            _broadcastGlobal('setTagAttributes', [userId, id, newAttributes]);
+          };
 
           const connections = [];
           wss.on('connection', c => {
@@ -124,7 +181,7 @@ class World {
               };
               _sendInit();
 
-              const _broadcast = (type, args) => {
+              const _broadcastLocal = (type, args) => {
                 if (connections.some(connection => connection !== c)) {
                   const e = {
                     type,
@@ -145,7 +202,7 @@ class World {
 
                 _saveTags();
 
-                _broadcast('removeTag', [userId, id]);
+                _broadcastLocal('removeTag', [userId, id]);
               };
               const _setTagAttribute = (userId, id, {name, value}) => {
                 const itemSpec = tagsJson.tags[id];
@@ -160,7 +217,7 @@ class World {
 
                 _saveTags();
 
-                _broadcast('setTagAttribute', [userId, id, {name, value}]);
+                _broadcastLocal('setTagAttribute', [userId, id, {name, value}]);
               };
               const _setTagAttributes = (userId, id, newAttributes) => {
                 const itemSpec = tagsJson.tags[id];
@@ -181,7 +238,7 @@ class World {
 
                 _saveTags();
 
-                _broadcast('setTagAttributes', [userId, id, newAttributes]);
+                _broadcastLocal('setTagAttributes', [userId, id, newAttributes]);
               };
 
               c.on('message', s => {
@@ -198,7 +255,7 @@ class World {
 
                     _saveTags();
 
-                    _broadcast('addTag', [userId, itemSpec]);
+                    _broadcastLocal('addTag', [userId, itemSpec]);
                   } else if (method === 'addTags') {
                     const [userId, itemSpecs] = args;
 
@@ -210,7 +267,7 @@ class World {
 
                     _saveTags();
 
-                    _broadcast('addTags', [userId, itemSpecs]);
+                    _broadcastLocal('addTags', [userId, itemSpecs]);
                   } else if (method === 'removeTag') {
                     const [userId, id] = args;
 
@@ -225,7 +282,7 @@ class World {
 
                     _saveTags();
 
-                    _broadcast('removeTags', [userId, ids]);
+                    _broadcastLocal('removeTags', [userId, ids]);
                   } else if (method === 'setTagAttribute') {
                     const [userId, id, {name, value}] = args;
 
@@ -237,11 +294,11 @@ class World {
                   } else if (method === 'loadModule') {
                     const [userId, id] = args;
 
-                    _broadcast('loadModule', [userId, id]);
+                    _broadcastLocal('loadModule', [userId, id]);
                   } else if (method === 'unloadModule') {
                     const [userId, id] = args;
 
-                    _broadcast('unloadModule', [userId, id]);
+                    _broadcastLocal('unloadModule', [userId, id]);
                   } else {
                     console.warn('no such method:' + JSON.stringify(method));
                   }
@@ -298,8 +355,9 @@ class World {
                         const {value: quantity} = quantityAttribute;
                         const privateKey = crypto.randomBytes(32);
                         const dstAddress = vridApi.getAddress(privateKey);
+                        const privateKeyString = privateKey.toString('base64');
 
-                        vridApi.requestCreatePack(srcAddress, dstAddress, asset, quantity, privateKey)
+                        vridApi.requestCreatePack(srcAddress, dstAddress, asset, quantity, privateKeyString)
                           .then(() => {
                             _setTagAttributes(
                               owner,
