@@ -43,9 +43,13 @@ class Stck {
         };
         worker.onmessage = e => {
           const {data} = e;
-          const {id, position, rotation, scale, velocity} = data;
+          const {id} = data;
           const body = bodies[id];
-          body.update(position, rotation, scale, velocity);
+
+          if (body) {
+            const {position, rotation, scale, velocity} = data;
+            body.update(position, rotation, scale, velocity);
+          }
         };
 
         class Body extends EventEmitter {
