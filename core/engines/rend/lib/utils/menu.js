@@ -127,6 +127,9 @@ const castValueStringToValue = (s, type, min, max, step, options) => {
     case 'file': {
       return s;
     }
+    case 'json': {
+      return _jsonParse(s);
+    }
     default: {
       return s;
     }

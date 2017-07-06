@@ -380,6 +380,9 @@ const makeRenderer = ({typeUtils, creatureUtils}) => {
           </div>
         `;
       }
+      case 'json': {
+        return '';
+      }
       default: {
         return '';
       }
