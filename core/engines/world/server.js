@@ -283,7 +283,7 @@ class World {
                   const {owner: ownerAttribute} = attributes;
 
                   if (ownerAttribute) {
-                    const {value: owner} = owner;
+                    const {value: owner} = ownerAttribute;
 
                     if (owner === address) {
                       const {asset: assetAttribute} = attributes;
