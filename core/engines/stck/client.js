@@ -1,6 +1,3 @@
-const FPS = 1000 / 90;
-const GRAVITY = -9.8;
-
 class Stck {
   constructor(archae) {
     this._archae = archae;
@@ -15,150 +12,103 @@ class Stck {
     };
 
     return archae.requestPlugins([
-      '/core/engines/three',
       '/core/utils/js-utils',
     ]).then(([
-      three,
       jsUtils,
     ]) => {
       if (live) {
-        const {THREE} = three;
         const {events} = jsUtils;
         const {EventEmitter} = events;
 
-        const downVector = new THREE.Vector3(0, -1, 0);
-        const zeroQuaternion = new THREE.Quaternion();
+        const bodies = {};
 
-        const dynamicBoxBodies = [];
-        const staticBoxBodies = [];
-        const staticHeightfieldBodies = [];
+        const worker = new Worker('archae/plugins/_core_engines_stck/build/worker.js');
+        worker.requestAddBody = (id, type, spec) => {
+          worker.postMessage({
+            method: 'addBody',
+            args: [id, type, spec],
+          });
+        };
+        worker.requestRemoveBody = (id) => {
+          worker.postMessage({
+            method: 'removeBody',
+            args: [id],
+          });
+        };
+        worker.requestSetState = (id, spec) => {
+          worker.postMessage({
+            method: 'setState',
+            args: [id, spec],
+          });
+        };
+        worker.onmessage = e => {
+          const {data} = e;
+          const {id, position, rotation, scale, velocity} = data;
+          const body = bodies[id];
+          body.update(position, rotation, scale, velocity);
+        };
 
-        class BoxBody extends EventEmitter {
-          constructor(id, {position = [0, 0, 0], rotation = [0, 0, 0, 1], scale = [0.1, 0.1, 0.1], velocity = [0, 0, 0]} = {}) {
+        class Body extends EventEmitter {
+          constructor(id) {
             super();
 
             this.id = id;
-            this.position = position;
-            this.rotation = rotation;
-            this.scale = scale;
-            this.velocity = velocity;
           }
 
-          update() {
-            const {position, rotation, scale, vecocity} = this;
+          setState(position, rotation, scale, velocity) {
+            const {id} = this;
 
+            worker.requestSetState(id, {
+              position,
+              rotation,
+              scale,
+              velocity,
+            });
+          }
+
+          update(position, rotation, scale, velocity) {
             this.emit('update', {
               position,
               rotation,
               scale,
-              vecocity,
+              velocity,
             });
           }
-
-          setState(position, rotation, scale, velocity) {
-            this.position = position;
-            this.rotation = rotation;
-            this.scale = scale;
-            this.velocity = velocity;
-
-            this.update();
-          }
         }
-
-        class HeightfieldBody {
-          constructor(id, {position = [0, 0, 0], width = 0, depth = 0, data = new Float32Array(0)} = {}) {
-            this.id = id;
-            this.position = position;
-            this.width = width;
-            this.depth = depth;
-            this.data = data;
-          }
-        }
-
-        let lastUpdateTime = Date.now();
-        const interval = setInterval(() => {
-          const now = Date.now();
-          const timeDiff = now - lastUpdateTime;
-
-          for (let i = 0; i < dynamicBoxBodies.length; i++) {
-            const body = dynamicBoxBodies[i];
-            const {position} = body;
-            const nextPosition = new THREE.Vector3()
-              .fromArray(position)
-              .add(downVector.clone().multiplyScalar(0.01 * timeDiff));
-
-            for (let j = 0; j < staticHeightfieldBodies.length; j++) {
-              const staticHeightfieldBody = staticHeightfieldBodies[j];
-              const min = new THREE.Vector2(staticHeightfieldBody.position[0], staticHeightfieldBody.position[2]);
-              const max = min.clone().add(new THREE.Vector2(staticHeightfieldBody.width, staticHeightfieldBody.depth));
-              const nextPosition2D = new THREE.Vector2(nextPosition.x, nextPosition.z);
-
-              if (nextPosition2D.x >= min.x && nextPosition2D.x < max.x && nextPosition2D.y >= min.y && nextPosition2D.y < max.y) { // if heightfield applies
-                const ax = Math.floor(nextPosition2D.x);
-                const ay = Math.floor(nextPosition2D.y);
-
-                const positions = ((nextPosition2D.x - ax) <= (nextPosition2D.y - ay)) ? [ // top left triangle
-                  new THREE.Vector2(ax, ay),
-                  new THREE.Vector2(ax + 1, ay),
-                  new THREE.Vector2(ax, ay + 1),
-                ] : [ // bottom right triangle
-                  new THREE.Vector2(ax + 1, ay),
-                  new THREE.Vector2(ax, ay + 1),
-                  new THREE.Vector2(ax + 1, ay + 1),
-                ];
-                const indexes = positions.map(({x, y}) => (x - min.x) + ((y - min.y) * staticHeightfieldBody.width));
-                const elevations = indexes.map(index => staticHeightfieldBody.data[index] + staticHeightfieldBody.position[1]);
-                const baryCoord = new THREE.Triangle(
-                  new THREE.Vector3(positions[0].x, 0, positions[0].y),
-                  new THREE.Vector3(positions[1].x, 0, positions[1].y),
-                  new THREE.Vector3(positions[2].x, 0, positions[2].y)
-                ).barycoordFromPoint(
-                  new THREE.Vector3(nextPosition2D.x, 0, nextPosition2D.y)
-                );
-                const elevation = baryCoord.x * elevations[0] +
-                  baryCoord.y * elevations[1] +
-                  baryCoord.z * elevations[2];
-
-                nextPosition.y = Math.max(nextPosition.y, elevation);
-
-                const nextPositionArray = nextPosition.toArray();
-                if (!_arrayEquals(nextPositionArray, position)) {
-                  body.setState(nextPositionArray, body.rotation, body.scale, body.velocity);
-                }
-              }
-            }
-          }
-
-          lastUpdateTime = now;
-        }, FPS);
-
-        this._cleanup = () => {
-          clearInterval(interval);
-        };
 
         const _makeDynamicBoxBody = (position, size) => {
           const id = _makeId();
-          const body = new BoxBody(id, {
-            position,
-            rotation: zeroQuaternion.toArray(),
+          const body = new Body(id);
+          bodies[id] = body;
+
+          worker.requestAddBody(id, 'dynamicBox', {
+            position: position,
+            rotation: [0, 0, 0, 1],
             scale: size,
           });
-          dynamicBoxBodies.push(body);
+
           return body;
         };
         const _makeStaticHeightfieldBody = (position, width, depth, data) => {
           const id = _makeId();
-          const body = new HeightfieldBody(id, {
+          const body = new Body(id);
+          bodies[id] = body;
+
+          worker.requestAddBody(id, 'staticHeightfield', {
             position,
             width,
             depth,
             data,
           });
-          staticHeightfieldBodies.push(body);
+
           return body;
         };
         const _destroyBody = body => {
-          bodies.splice(bodies.indexOf(body), 1);
+          const {id} = body;
+
+          worker.requestRemoveBody(id);
+
+          delete bodies[id];
         };
 
         return {
@@ -177,5 +127,55 @@ class Stck {
 
 const _makeId = () => Math.random().toString(36).substring(7);
 const _arrayEquals = (a, b) => a[0] === b[0] && a[1] === b[1] && a[2] === b[2];
+const _arrayToBase64 = bytes => {
+  var base64    = ''
+  var encodings = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+
+  var byteLength    = bytes.byteLength
+  var byteRemainder = byteLength % 3
+  var mainLength    = byteLength - byteRemainder
+
+  var a, b, c, d
+  var chunk
+
+  // Main loop deals with bytes in chunks of 3
+  for (var i = 0; i < mainLength; i = i + 3) {
+    // Combine the three bytes into a single integer
+    chunk = (bytes[i] << 16) | (bytes[i + 1] << 8) | bytes[i + 2]
+
+    // Use bitmasks to extract 6-bit segments from the triplet
+    a = (chunk & 16515072) >> 18 // 16515072 = (2^6 - 1) << 18
+    b = (chunk & 258048)   >> 12 // 258048   = (2^6 - 1) << 12
+    c = (chunk & 4032)     >>  6 // 4032     = (2^6 - 1) << 6
+    d = chunk & 63               // 63       = 2^6 - 1
+
+    // Convert the raw binary segments to the appropriate ASCII encoding
+    base64 += encodings[a] + encodings[b] + encodings[c] + encodings[d]
+  }
+
+  // Deal with the remaining bytes and padding
+  if (byteRemainder == 1) {
+    chunk = bytes[mainLength]
+
+    a = (chunk & 252) >> 2 // 252 = (2^6 - 1) << 2
+
+    // Set the 4 least significant bits to zero
+    b = (chunk & 3)   << 4 // 3   = 2^2 - 1
+
+    base64 += encodings[a] + encodings[b] + '=='
+  } else if (byteRemainder == 2) {
+    chunk = (bytes[mainLength] << 8) | bytes[mainLength + 1]
+
+    a = (chunk & 64512) >> 10 // 64512 = (2^6 - 1) << 10
+    b = (chunk & 1008)  >>  4 // 1008  = (2^6 - 1) << 4
+
+    // Set the 2 least significant bits to zero
+    c = (chunk & 15)    <<  2 // 15    = 2^4 - 1
+
+    base64 += encodings[a] + encodings[b] + encodings[c] + '='
+  }
+
+  return base64
+};
 
 module.exports = Stck;
