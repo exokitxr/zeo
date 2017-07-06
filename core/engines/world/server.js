@@ -1,7 +1,9 @@
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 
 const mkdirp = require('mkdirp');
+const vridApi = require('vrid/lib/backend-api');
 
 const OPEN = 1; // ws.OPEN
 
@@ -135,6 +137,28 @@ class World {
                   }
                 }
               };
+              const _removeTag = (userId, id) => {
+                delete tagsJson.tags[id];
+
+                _saveTags();
+
+                _broadcast('removeTag', [userId, id]);
+              };
+              const _setTagAttribute = (userId, id, {name, value}) => {
+                const itemSpec = tagsJson.tags[id];
+                const {attributes} = itemSpec;
+                if (attributeValue !== undefined) {
+                  attributes[name] = {
+                    value,
+                  };
+                } else {
+                  delete attributes[name];
+                }
+
+                _saveTags();
+
+                _broadcast('setTagAttribute', [userId, id, {name, value}]);
+              };
 
               c.on('message', s => {
                 const m = _jsonParse(s);
@@ -195,17 +219,7 @@ class World {
                   } else if (method === 'removeTag') {
                     const [userId, id] = args;
 
-                    cb = (cb => err => {
-                      if (!err) {
-                        _broadcast('removeTag', [userId, id]);
-                      }
-
-                      cb(err);
-                    })(cb);
-
-                    delete tagsJson.tags[id];
-
-                    _saveTags();
+                    _removeTag(userId, id);
 
                     cb();
                   } else if (method === 'removeTags') {
@@ -228,27 +242,9 @@ class World {
 
                     cb();
                   } else if (method === 'setTagAttribute') {
-                    const [userId, id, {name: attributeName, value: attributeValue}] = args;
+                    const [userId, id, {name, value}] = args;
 
-                    cb = (cb => err => {
-                      if (!err) {
-                        _broadcast('setTagAttribute', [userId, id, {name: attributeName, value: attributeValue}]);
-                      }
-
-                      cb(err);
-                    })(cb);
-
-                    const itemSpec = tagsJson.tags[id];
-                    const {attributes} = itemSpec;
-                    if (attributeValue !== undefined) {
-                      attributes[attributeName] = {
-                        value: attributeValue,
-                      };
-                    } else {
-                      delete attributes[attributeName];
-                    }
-
-                    _saveTags();
+                    _setTagAttribute(userId, id, {name, value});
 
                     cb();
                   } else if (method === 'tagClose') {
@@ -409,25 +405,49 @@ class World {
           const _playerLeave = ({address}) => {
             const {tags} = tagsJson;
 
-            const disownedAssetTags = [];
-            for (const id in tags) {
-              const tag = tags[id];
-              const {type} = tag;
+            const _inheritAbandonedAssets = (tags, address) => {
+              for (const id in tags) {
+                const tag = tags[id];
+                const {type} = tag;
 
-              if (type === 'asset') {
-                const {attributes} = tag;
-                const {owner} = attributes;
+                if (type === 'asset') {
+                  const {attributes} = tag;
+                  const {owner: ownerAttribute} = attributes;
 
-                if (owner) {
-                  const {value: ownerValue} = owner;
+                  if (ownerAttribute) {
+                    const {value: owner} = owner;
 
-                  if (ownerValue === address) {
-                    disownedAssetTags.push(tag);
+                    if (owner === address) {
+                      const {asset: assetAttribute} = attributes;
+                      const {quantity: quantityAttribute} = attributes;
+
+                      if (assetAttribute && quantityAttribute) {
+                        const srcAddress = address;
+                        const {value: asset} = assetAttribute;
+                        const {value: quantity} = quantityAttribute;
+                        const privateKey = crypto.randomBytes(32);
+                        const dstAddress = vridApi.getAddress(privateKey);
+
+                        vridApi.requestCreatePack(srcAddress, dstAddress, asset, quantity, privateKey)
+                          .then(() => {
+                            _setTagAttribute(owner, id, {name: 'owner', value: dstAddress}); // XXX also set the publicKey so clients can unpack the asset
+                          })
+                          .catch(err => {
+                            console.warn(err);
+
+                            // remove the tag since we failed to inherit it
+                            _removeTag(owner, id);
+                          });
+                      } else {
+                        // remove the tag since it's corrupted
+                        _removeTag(owner, id);
+                      }
+                    }
                   }
                 }
               }
-            }
-console.log('disowned asset tags', JSON.stringify(disownedAssetTags, null, 2)); // XXX disown these to the server
+            };
+            _inheritAbandonedAssets(tags, address);
           };
           multiplayer.on('playerLeave', _playerLeave);
 
