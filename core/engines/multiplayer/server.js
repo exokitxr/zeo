@@ -13,13 +13,6 @@ class Multiplayer {
     const connections = [];
     const statuses = new Map();
 
-    function serverMultiplayerStatuses(req, res, next) {
-      res.json({
-        statuses: _getAllStatuses(),
-      });
-    }
-    app.get('/archae/multiplayer/statuses.json', serverMultiplayerStatuses);
-
     const _getAllStatuses = () => {
       const result = [];
 
