@@ -60,28 +60,6 @@ class Bootstrap {
           const worldTimer = new WorldTimer();
 
           let address = null;
-          const _resJson = res => {
-            if (res.status >= 200 && res.status < 300) {
-              return res.json();
-            } else {
-              return null;
-            }
-          };
-          const _loadAddress = () => {
-            fetch(`${siteUrl}/id/api/address`, {
-              credentials: 'include',
-            })
-              .then(_resJson)
-              .then(({address: newAddress}) => {
-                address = newAddress;
-              })
-              .catch(err => {
-                console.warn(err);
-
-                setTimeout(_loadAddress, 1000);
-              });
-          };
-          _loadAddress();
 
           class BootstrapApi extends EventEmitter {
             getInitialUrl() {
@@ -120,19 +98,12 @@ class Bootstrap {
               return address;
             }
 
-            navigate(url) {
-              document.location.href = url;
+            setAddress(newAddress) {
+              address = newAddress;
             }
 
-            requestLogout() {
-              return fetch('server/logout', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                credentials: 'same-origin',
-              })
-                .then(_resJson);
+            navigate(url) {
+              document.location.href = url;
             }
           }
           const bootstrapApi = new BootstrapApi();
