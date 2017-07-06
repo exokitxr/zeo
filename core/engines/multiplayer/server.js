@@ -99,6 +99,7 @@ class Multiplayer {
               if (!hadStatus) {
                 multiplayerApi.emit('playerEnter', {
                   id: id,
+                  address: address,
                   status: newStatus,
                 });
               }
@@ -122,7 +123,7 @@ class Multiplayer {
 
             connections.splice(connections.indexOf(c), 1);
 
-            multiplayerApi.emit('playerLeave', {id});
+            multiplayerApi.emit('playerLeave', {id, address});
           });
 
           connections.push(c);
