@@ -1,3 +1,5 @@
+const events = require('events');
+const {EventEmitter} = events;
 const path = require('path');
 
 class Multiplayer {
@@ -93,6 +95,13 @@ class Multiplayer {
                   connection.send(es);
                 }
               }
+
+              if (!hadStatus) {
+                multiplayerApi.emit('playerEnter', {
+                  id: id,
+                  status: newStatus,
+                });
+              }
             }
           });
           c.on('close', () => {
@@ -112,6 +121,8 @@ class Multiplayer {
             }
 
             connections.splice(connections.indexOf(c), 1);
+
+            multiplayerApi.emit('playerLeave', {id});
           });
 
           connections.push(c);
@@ -135,6 +146,9 @@ class Multiplayer {
 
       delete transient.multiplayer;
     };
+
+    const multiplayerApi = new EventEmitter();
+    return multiplayerApi;
   }
 
   unmount() {
