@@ -1,0 +1,7 @@
+{
+  "name": "physics2",
+  "version": "0.0.1",
+  "description": "Physics test 2.",
+  "client": "client.js",
+  "dependencies": {}
+}

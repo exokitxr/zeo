@@ -141,6 +141,7 @@ class Zeo {
             '/core/engines/fs',
             '/core/engines/somnifer',
             '/core/engines/physics',
+            '/core/engines/stck',
             '/core/utils/js-utils',
             '/core/utils/type-utils',
             '/core/utils/network-utils',
@@ -191,6 +192,7 @@ class Zeo {
                 fs,
                 somnifer,
                 physics,
+                stck,
                 jsUtils,
                 typeUtils,
                 networkUtils,
@@ -703,6 +705,20 @@ class Zeo {
                         }
                       }
 
+                      class ZeoStckApi {
+                        makeDynamicBoxBody() {
+                          return stck.makeDynamicBoxBody.apply(stck, arguments);
+                        }
+
+                        makeStaticHeightfieldBody() {
+                          return stck.makeStaticHeightfieldBody.apply(stck, arguments);
+                        }
+
+                        destroyBody(body) {
+                          stck.destroyBody(body);
+                        }
+                      }
+
                       class ZeoIntersectApi {
                         makeIntersecter() {
                           return intersect.makeIntersecter();
@@ -820,6 +836,7 @@ class Zeo {
                           this.ui = new ZeoUiApi();
                           this.sound = new ZeoSoundApi();
                           this.physics = new ZeoPhysicsApi();
+                          this.stck = new ZeoStckApi();
                           this.intersect = new ZeoIntersectApi();
                           this.teleport = new ZeoTeleportApi();
                           this.hands = new ZeoHandsApi();
