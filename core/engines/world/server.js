@@ -184,7 +184,7 @@ class World {
               c.on('message', s => {
                 const m = _jsonParse(s);
 
-                if (typeof m === 'object' && m !== null && typeof m.method === 'string' && Array.isArray(m.args) && typeof m.id === 'string') {
+                if (typeof m === 'object' && m !== null && typeof m.method === 'string' && Array.isArray(m.args)) {
                   const {method, args} = m;
 
                   if (method === 'addTag') {
