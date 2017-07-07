@@ -230,11 +230,11 @@ class Multiplayer {
           object.add(hmd);
           object.hmd = hmd;
 
-          const label = resource.makePlayerLabelMesh({
+          /* const label = resource.makePlayerLabelMesh({
             username: status.username,
           });
           object.add(label);
-          object.label = label;
+          object.label = label; */
 
           const menu = resource.makePlayerMenuMesh({
             username: status.username,
@@ -276,14 +276,14 @@ class Multiplayer {
               rightController.scale.fromArray(rightControllerStatus.scale);
               rightController.updateMatrixWorld();
             };
-            const _updateLabel = () => {
+            /* const _updateLabel = () => {
               const {hmd: hmdStatus, username} = status;
 
               label.update({
                 hmdStatus,
                 username,
               });
-            };
+            }; */
             const _updateMetadata = () => {
               const {metadata: {menu: menuStatus}, username} = status;
 
@@ -295,11 +295,11 @@ class Multiplayer {
 
             _updateHmd();
             _updateControllers();
-            _updateLabel();
+            // _updateLabel();
             _updateMetadata();
           };
           object.destroy = () => {
-            label.destroy();
+            // label.destroy();
           };
 
           return object;
