@@ -115,7 +115,7 @@ class Ocean {
             vertexShader: OCEAN_SHADER.vertexShader,
             fragmentShader: OCEAN_SHADER.fragmentShader,
             transparent: true,
-            // depthTest: false,
+            depthWrite: false,
           });
 
           const result = new THREE.Mesh(geometry, material);
