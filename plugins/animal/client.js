@@ -34,7 +34,7 @@ const ANIMAL_SHADER = {
   ].join("\n")
 };
 
-class Chest {
+class Animal {
   constructor(archae) {
     this._archae = archae;
   }
@@ -164,4 +164,4 @@ class Chest {
   }
 }
 
-module.exports = Chest;
+module.exports = Animal;
