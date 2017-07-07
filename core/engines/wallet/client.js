@@ -143,14 +143,6 @@ class Wallet {
           fontStyle: biolumi.getFontStyle(),
         };
 
-        /* const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
-        const _decomposeMatrix = matrix => {
-          const position = new THREE.Vector3();
-          const rotation = new THREE.Quaternion();
-          const scale = new THREE.Vector3();
-          matrix.decompose(position, rotation, scale);
-          return {position, rotation, scale};
-        }; */
         const _isInBody = p => {
           const {hmd} = webvr.getStatus();
           const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmd;
