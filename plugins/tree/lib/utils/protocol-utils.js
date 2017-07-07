@@ -1,30 +1,33 @@
 const UINT32_SIZE = 4;
 const INT32_SIZE = 4;
 const FLOAT32_SIZE = 4;
-const TREE_GEOMETRY_HEADER_ENTRIES = 3;
+const TREE_GEOMETRY_HEADER_ENTRIES = 4;
 const TREE_GEOMETRY_HEADER_SIZE = UINT32_SIZE * TREE_GEOMETRY_HEADER_ENTRIES;
 
 const _getTreeGeometrySizeFromMetadata = metadata => {
-  const {numPositions, numColors, numIndices} = metadata;
+  const {numPositions, numColors, numIndices, numTrees} = metadata;
 
   return TREE_GEOMETRY_HEADER_SIZE + // header
     (FLOAT32_SIZE * numPositions) + // positions
     (FLOAT32_SIZE * numColors) + // colors
     (UINT32_SIZE * numIndices) + // indices
+    (UINT32_SIZE * numTrees) + // trees
     (UINT32_SIZE * 2); // height range
 };
 
 const _getTreeGeometrySize = treeGeometry => {
-  const {positions, colors, indices} = treeGeometry;
+  const {positions, colors, indices, trees} = treeGeometry;
 
   const numPositions = positions.length;
   const numColors = colors.length;
   const numIndices = indices.length;
+  const numTrees = trees.length;
 
   return _getTreeGeometrySizeFromMetadata({
     numPositions,
     numColors,
     numIndices,
+    numTrees,
   });
 };
 
@@ -33,18 +36,20 @@ const _getTreeGeometryBufferSize = (arrayBuffer, byteOffset) => {
   const numPositions = headerBuffer[0];
   const numColors = headerBuffer[1];
   const numIndices = headerBuffer[2];
+  const numTrees = headerBuffer[3];
 
   return _getTreeGeometrySizeFromMetadata({
     numPositions,
     numColors,
     numIndices,
+    numTrees,
   });
 };
 
 // stringification
 
 const stringifyTreeGeometry = (treeGeometry, arrayBuffer, byteOffset) => {
-  const {positions, colors, indices, heightRange} = treeGeometry;
+  const {positions, colors, indices, trees, heightRange} = treeGeometry;
 
   if (arrayBuffer === undefined || byteOffset === undefined) {
     const bufferSize = _getTreeGeometrySize(treeGeometry);
@@ -56,19 +61,29 @@ const stringifyTreeGeometry = (treeGeometry, arrayBuffer, byteOffset) => {
   headerBuffer[0] = positions.length;
   headerBuffer[1] = colors.length;
   headerBuffer[2] = indices.length;
+  headerBuffer[3] = trees.length;
+  byteOffset += TREE_GEOMETRY_HEADER_SIZE;
 
-  const positionsBuffer = new Float32Array(arrayBuffer, byteOffset + TREE_GEOMETRY_HEADER_SIZE, positions.length);
+  const positionsBuffer = new Float32Array(arrayBuffer, byteOffset, positions.length);
   positionsBuffer.set(positions);
+  byteOffset += FLOAT32_SIZE * positions.length;
 
-  const colorsBuffer = new Float32Array(arrayBuffer, byteOffset + TREE_GEOMETRY_HEADER_SIZE + (FLOAT32_SIZE * positions.length), colors.length);
+  const colorsBuffer = new Float32Array(arrayBuffer, byteOffset, colors.length);
   colorsBuffer.set(colors);
+  byteOffset += FLOAT32_SIZE * colors.length;
 
-  const indicesBuffer = new Uint32Array(arrayBuffer, byteOffset + TREE_GEOMETRY_HEADER_SIZE + (FLOAT32_SIZE * positions.length) + (FLOAT32_SIZE * colors.length), indices.length);
+  const indicesBuffer = new Uint32Array(arrayBuffer, byteOffset, indices.length);
   indicesBuffer.set(indices);
+  byteOffset += UINT32_SIZE * indices.length;
 
-  const heightRangeBuffer = new Float32Array(arrayBuffer, byteOffset + TREE_GEOMETRY_HEADER_SIZE + (FLOAT32_SIZE * positions.length) + (FLOAT32_SIZE * colors.length) + (UINT32_SIZE * indices.length), 2);
+  const treesBuffer = new Uint32Array(arrayBuffer, byteOffset, trees.length);
+  treesBuffer.set(trees);
+  byteOffset += FLOAT32_SIZE * trees.length;
+
+  const heightRangeBuffer = new Float32Array(arrayBuffer, byteOffset, 2);
   heightRangeBuffer[0] = heightRange[0];
   heightRangeBuffer[1] = heightRange[1];
+  byteOffset += UINT32_SIZE * 2;
 
   return arrayBuffer;
 };
@@ -111,21 +126,31 @@ const parseTreeGeometry = (arrayBuffer, byteOffset) => {
   const numPositions = headerBuffer[0];
   const numColors = headerBuffer[1];
   const numIndices = headerBuffer[2];
+  const numTrees = headerBuffer[3];
+  byteOffset += TREE_GEOMETRY_HEADER_SIZE;
 
-  const positionsBuffer = new Float32Array(arrayBuffer, byteOffset + TREE_GEOMETRY_HEADER_SIZE, numPositions);
+  const positionsBuffer = new Float32Array(arrayBuffer, byteOffset, numPositions);
   const positions = positionsBuffer;
+  byteOffset += FLOAT32_SIZE * numPositions;
 
-  const colorsBuffer = new Float32Array(arrayBuffer, byteOffset + TREE_GEOMETRY_HEADER_SIZE + (FLOAT32_SIZE * numPositions), numColors);
+  const colorsBuffer = new Float32Array(arrayBuffer, byteOffset, numColors);
   const colors = colorsBuffer;
+  byteOffset += FLOAT32_SIZE * numColors;
 
-  const indicesBuffer = new Uint32Array(arrayBuffer, byteOffset + TREE_GEOMETRY_HEADER_SIZE + (FLOAT32_SIZE * numPositions) + (FLOAT32_SIZE * numColors), numIndices);
+  const indicesBuffer = new Uint32Array(arrayBuffer, byteOffset, numIndices);
   const indices = indicesBuffer;
+  byteOffset += UINT32_SIZE * numIndices;
 
-  const heightRangeBuffer = new Float32Array(arrayBuffer, byteOffset + TREE_GEOMETRY_HEADER_SIZE + (FLOAT32_SIZE * numPositions) + (FLOAT32_SIZE * numColors) + (UINT32_SIZE * numIndices), 2);
+  const treesBuffer = new Uint32Array(arrayBuffer, byteOffset, numTrees);
+  const trees = treesBuffer;
+  byteOffset += FLOAT32_SIZE * numTrees;
+
+  const heightRangeBuffer = new Float32Array(arrayBuffer, byteOffset, 2);
   const heightRange = [
     heightRangeBuffer[0],
     heightRangeBuffer[1],
   ];
+  byteOffset += UINT32_SIZE * 2;
 
   return {
     positions,
