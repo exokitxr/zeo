@@ -166,10 +166,10 @@ class Cyborg {
               mesh.worldScale = new THREE.Vector3(1, 1, 1);
               this.mesh = mesh;
 
-              const labelMesh = assets.makePlayerLabelMesh({
+              /* const labelMesh = assets.makePlayerLabelMesh({
                 username: rend.getStatus('username'),
               });
-              this.labelMesh = labelMesh;
+              this.labelMesh = labelMesh; */
 
               const hudMesh = (() => {
                 const object = new THREE.Object3D();
@@ -237,7 +237,7 @@ class Cyborg {
                 mesh.worldRotation.copy(hmdStatus.worldRotation);
                 mesh.worldScale.copy(hmdStatus.worldScale);
 
-                const {labelMesh} = this;
+                /* const {labelMesh} = this;
                 labelMesh.update({
                   hmdStatus: {
                     position: hmdStatus.position.toArray(),
@@ -249,7 +249,7 @@ class Cyborg {
                     scale: hmdStatus.scale.toArray(),
                   },
                   username: rend.getStatus('username'),
-                });
+                }); */
               };
               const _updateHmdMesh = () => {
                 const {hudMesh} = this;
@@ -359,10 +359,10 @@ class Cyborg {
           const player = new Player();
 
           const hmd = new Hmd();
-          const {mesh: hmdMesh, hudMesh: hmdHudMesh, labelMesh: hmdLabelMesh} = hmd;
+          const {mesh: hmdMesh, hudMesh: hmdHudMesh/*, labelMesh: hmdLabelMesh*/} = hmd;
           camera.parent.add(hmdMesh);
           camera.parent.add(hmdHudMesh);
-          camera.parent.add(hmdLabelMesh);
+          // camera.parent.add(hmdLabelMesh);
 
           const controllers = {
             left: new Controller(),
@@ -410,15 +410,15 @@ class Cyborg {
           };
           rend.on('update', _update);
           const _renderStart = () => {
-            const {mesh: hmdMesh, labelMesh: hmdLabelMesh} = hmd;
+            const {mesh: hmdMesh/*, labelMesh: hmdLabelMesh*/} = hmd;
             hmdMesh.visible = false;
-            hmdLabelMesh.visible = false;
+            // hmdLabelMesh.visible = false;
           };
           rend.on('renderStart', _renderStart);
           const _renderEnd = () => {
-            const {mesh: hmdMesh, labelMesh: hmdLabelMesh} = hmd;
+            const {mesh: hmdMesh/*, labelMesh: hmdLabelMesh*/} = hmd;
             hmdMesh.visible = true;
-            hmdLabelMesh.visible = true;
+            // hmdLabelMesh.visible = true;
           };
           rend.on('renderEnd', _renderEnd);
 
@@ -436,10 +436,10 @@ class Cyborg {
 
             solidMaterial.dispose();
 
-            const {mesh: hmdMesh, hudMesh: hmdHudMesh, labelMesh: hmdLabelMesh} = hmd;
+            const {mesh: hmdMesh, hudMesh: hmdHudMesh/*, labelMesh: hmdLabelMesh*/} = hmd;
             camera.parent.remove(hmdMesh); // XXX need to destroy these meshes to prevent memory leaks
             camera.parent.remove(hmdHudMesh);
-            camera.parent.remove(hmdLabelMesh);
+            // camera.parent.remove(hmdLabelMesh);
             SIDES.forEach(side => {
               const controller = controllers[side];
               const {mesh: controllerMesh} = controller;
