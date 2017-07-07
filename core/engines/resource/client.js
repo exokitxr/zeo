@@ -29,6 +29,7 @@ const SFX = [
   'digi_powerdown',
   'digi_select',
   'digi_slide',
+  'drop',
 ];
 
 class Assets {

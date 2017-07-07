@@ -261,6 +261,8 @@ class Wallet {
                         });
                     }
 
+                    sfx.drop.trigger();
+
                     const {asset, quantity} = this;
                     const newNotification = notification.addNotification(`Stored ${quantity} ${asset}.`);
                     setTimeout(() => {
@@ -862,6 +864,8 @@ class Wallet {
             const assetInstance = assetsMesh.getAssetInstance(id);
             assetInstance.grab(side);
             _bindAssetInstancePhysics(assetInstance, false);
+
+            sfx.drop.trigger();
 
             const newNotification = notification.addNotification(`Pulled out ${quantity} ${asset}.`);
             setTimeout(() => {
