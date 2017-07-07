@@ -531,10 +531,10 @@ class Wallet {
           inputText: '',
           // address: null,
           asset: null,
-          bill: null,
           assets: [],
           numTags: 0,
-          // page: 0,
+          page: 0,
+          bill: null,
         };
         const focusState = {
           keyboardFocusState: null,
@@ -555,6 +555,7 @@ class Wallet {
                 error,
                 inputText,
                 asset,
+                bill,
                 assets,
                 numTags,
                 page,
@@ -568,7 +569,7 @@ class Wallet {
 
               return {
                 type: 'html',
-                src: walletRenderer.getWalletPageSrc({loading, error, inputText, inputValue, asset, assets, numTags, page, focus}),
+                src: walletRenderer.getWalletPageSrc({loading, error, inputText, inputValue, asset, assets, numTags, page, bill, focus}),
                 x: 0,
                 y: 0,
                 w: WIDTH,
