@@ -12,7 +12,7 @@ class Tree {
 
   mount() {
     const {_archae: archae} = this;
-    const {three, render, pose, utils: {random: {chnkr}}} = zeo;
+    const {three, render, pose, input, utils: {random: {chnkr}}} = zeo;
     const {THREE, scene, camera} = three;
 
     const upVector = new THREE.Vector3(0, 1, 0);
@@ -86,6 +86,53 @@ class Tree {
       return mesh;
     };
 
+    const items = [];
+    const _addItems = treeChunkData => {
+      const {trees} = treeChunkData;
+      const numTrees = trees.length / 3;
+      let startTree = null;
+      for (let i = 0; i < numTrees; i++) {
+        const v = new THREE.Vector3().fromArray(trees, i * 3);
+        const b = new THREE.Box3(
+          v.clone().add(new THREE.Vector3(-0.5, 0, -0.5)),
+          v.clone().add(new THREE.Vector3(0.5, 2, 0.5))
+        );
+        items.push(b);
+
+        if (startTree === null) {
+          startTree = b;
+        }
+      }
+
+      return [startTree, numTrees];
+    };
+    const _removeItems = itemRange => {
+      const [startTree, numTrees] = itemRange;
+      const index = items.findIndex(startTree);
+      items.splice(index, numTrees);
+    };
+    const _getHoveredItem = side => {
+      const {gamepads} = pose.getStatus();
+      const gamepad = gamepads[side];
+      const {worldPosition: controllerPosition} = gamepad;
+
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (item.containsPoint(controllerPosition)) {
+          return item;
+        }
+      }
+      return null;
+    };
+
+    const _gripdown = e => {
+      const {side} = e;
+      const hoveredItem = _getHoveredItem(side);
+
+      console.log('hovered tree item', hoveredItem); // XXX
+    };
+    input.on('gripdown', _gripdown);
+
     const chunker = chnkr.makeChunker({
       resolution: 32,
       range: 2,
@@ -104,15 +151,24 @@ class Tree {
             const treeChunkMesh = _makeTreeChunkMesh(treeChunkData, x, z);
             scene.add(treeChunkMesh);
 
-            chunk.data = treeChunkMesh;
+            const itemRange = _addItems(treeChunkData);
+
+            chunk.data = {
+              treeChunkMesh,
+              itemRange,
+            };
           });
       });
       return Promise.all(addedPromises)
         .then(() => {
           removed.forEach(chunk => {
-            const {data: treeChunkMesh} = chunk;
+            const {data} = chunk;
+            const {treeChunkMesh} = data;
             scene.remove(treeChunkMesh);
             treeChunkMesh.destroy();
+
+            const {itemRange} = data;
+             _removeItems(itemRange);
           });
         })
     };
@@ -155,6 +211,7 @@ class Tree {
 
       treeMaterial.dispose();
 
+      input.removeListener('gripdown', _gripdown);
       render.removeListener('update', _update);
     };
   }

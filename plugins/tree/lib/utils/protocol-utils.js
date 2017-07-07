@@ -76,7 +76,7 @@ const stringifyTreeGeometry = (treeGeometry, arrayBuffer, byteOffset) => {
   indicesBuffer.set(indices);
   byteOffset += UINT32_SIZE * indices.length;
 
-  const treesBuffer = new Uint32Array(arrayBuffer, byteOffset, trees.length);
+  const treesBuffer = new Float32Array(arrayBuffer, byteOffset, trees.length);
   treesBuffer.set(trees);
   byteOffset += FLOAT32_SIZE * trees.length;
 
@@ -141,7 +141,7 @@ const parseTreeGeometry = (arrayBuffer, byteOffset) => {
   const indices = indicesBuffer;
   byteOffset += UINT32_SIZE * numIndices;
 
-  const treesBuffer = new Uint32Array(arrayBuffer, byteOffset, numTrees);
+  const treesBuffer = new Float32Array(arrayBuffer, byteOffset, numTrees);
   const trees = treesBuffer;
   byteOffset += FLOAT32_SIZE * numTrees;
 
@@ -156,6 +156,7 @@ const parseTreeGeometry = (arrayBuffer, byteOffset) => {
     positions,
     colors,
     indices,
+    trees,
     heightRange,
   };
 };
