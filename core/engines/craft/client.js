@@ -163,21 +163,25 @@ class Craft {
 
         const _trigger = e => {
           const {side} = e;
-          const {gamepads} = webvr.getStatus();
+          const status = webvr.getStatus();
+          const {gamepads} = status;
           const gamepad = gamepads[side];
 
           if (gamepad.buttons.grip.pressed) {
             const gridMesh = gridMeshes[localUserId];
 
             if (!gridMesh) {
-              const {worldPosition: controllerPosition, worldRotation: controllerRotation} = gamepad;
-              const controllerEuler = new THREE.Euler().setFromQuaternion(controllerRotation, camera.rotation.order);
-              controllerEuler.x = 0;
-              controllerEuler.z = 0;
+              const {hmd} = status;
+              const {worldRotation: hmdRotation} = hmd;
+              const hmdEuler = new THREE.Euler().setFromQuaternion(hmdRotation, camera.rotation.order);
+              hmdEuler.x = 0;
+              hmdEuler.y += Math.PI;
+              hmdEuler.z = 0;
+              const {worldPosition: controllerPosition} = gamepad;
 
               const gridMesh = _makeGridMesh();
               gridMesh.position.copy(controllerPosition);
-              gridMesh.rotation.copy(controllerEuler);
+              gridMesh.rotation.copy(hmdEuler);
               gridMesh.updateMatrixWorld();
 
               scene.add(gridMesh);
