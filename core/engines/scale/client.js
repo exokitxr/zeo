@@ -72,7 +72,7 @@ class Scale {
 
           if (gamepad) {
             const scaleState = scaleStates[side];
-            scaleState.gripStart = new THREE.Vector3().fromArray(gamepad.pose.position);
+            scaleState.gripStart = gamepad.position.clone();
           }
         };
         input.on('gripdown', _gripdown);

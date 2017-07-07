@@ -27,6 +27,16 @@ const DEFAULT_HEIGHT = 1080;
 const DEFAULT_ASPECT_RATIO = DEFAULT_WIDTH / DEFAULT_HEIGHT;
 
 const CONTROLLER_DEFAULT_OFFSETS = [0.2, -0.1, -0.2];
+const DEFAULT_GAMEPAD_POSES = [
+  {
+    position: [-CONTROLLER_DEFAULT_OFFSETS[0], CONTROLLER_DEFAULT_OFFSETS[1], CONTROLLER_DEFAULT_OFFSETS[2]],
+    orientation: [0, 0, 0, 1],
+  },
+  {
+    position: [CONTROLLER_DEFAULT_OFFSETS[0], CONTROLLER_DEFAULT_OFFSETS[1], CONTROLLER_DEFAULT_OFFSETS[2]],
+    orientation: [0, 0, 0, 1],
+  },
+];
 
 const POSITION_SPEED = 0.05;
 const POSITION_SPEED_FAST = POSITION_SPEED * 5;
@@ -117,10 +127,14 @@ class WebVR {
           matrix.decompose(position, rotation, scale);
           return {position, rotation, scale};
         };
+        const _decomposeMatrixTo = (matrix, position, rotation, scale) => {
+          matrix.decompose(position, rotation, scale);
+        };
         const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
 
         const zeroVector = new THREE.Vector3();
         const zeroQuaternion = new THREE.Quaternion();
+        const oneVector = new THREE.Vector3(1, 1, 1);
 
         const THREEVREffect = VREffect(THREE);
 
@@ -134,15 +148,34 @@ class WebVR {
         })[0];
 
         const _getPropertiesFromPose = pose => {
-          const position = (pose && pose.position !== null) ? new THREE.Vector3().fromArray(pose.position) : new THREE.Vector3(0, 0, 0);
-          const rotation = (pose && pose.orientation !== null) ? new THREE.Quaternion().fromArray(pose.orientation) : new THREE.Quaternion(0, 0, 0, 1);
-          const scale = new THREE.Vector3(1, 1, 1);
+          const position = (pose && pose.position !== null) ? new THREE.Vector3().fromArray(pose.position) : zeroVector;
+          const rotation = (pose && pose.orientation !== null) ? new THREE.Quaternion().fromArray(pose.orientation) : zeroQuaternion;
+          const scale = oneVector;
           return {position, rotation, scale};
         };
+        const _getPropertiesFromPoseTo = (pose, position, rotation, scale) => {
+          if (pose && pose.position !== null) {
+            position.fromArray(pose.position);
+          } else {
+            position.copy(zeroVector);
+          }
+          if (pose && pose.orientation !== null) {
+            rotation.fromArray(pose.orientation);
+          } else {
+            rotation.copy(zeroQuaternion);
+          }
+          scale.copy(oneVector);
+        };
+
+        class Status {
+          constructor(hmd, gamepads) {
+            this.hmd = hmd;
+            this.gamepads = gamepads;
+          }
+        }
 
         class HmdStatus {
-          constructor(pose, position, rotation, scale, worldPosition, worldRotation, worldScale) {
-            this.pose = pose;
+          constructor(position, rotation, scale, worldPosition, worldRotation, worldScale) {
             this.position = position;
             this.rotation = rotation;
             this.scale = scale;
@@ -158,8 +191,7 @@ class WebVR {
           }
         }
         class GamepadStatus {
-          constructor(pose, position, rotation, scale, worldPosition, worldRotation, worldScale, buttons, axes) {
-            this.pose = pose;
+          constructor(position, rotation, scale, worldPosition, worldRotation, worldScale, buttons, axes) {
             this.position = position;
             this.rotation = rotation;
             this.scale = scale;
@@ -169,6 +201,21 @@ class WebVR {
             this.buttons = buttons;
             this.axes = axes;
           }
+
+          reset(index) {
+            _getPropertiesFromPoseTo(
+              DEFAULT_GAMEPAD_POSES[index],
+              this.position,
+              this.rotation,
+              this.scale
+            );
+            this.worldPosition.copy(this.position);
+            this.worldRotation.copy(this.rotation);
+            this.worldScale.copy(this.scale);
+            this.buttons.reset();
+            this.axes[0] = 0;
+            this.axes[1] = 0;
+          }
         }
         class GamepadButtons {
           constructor(pad, trigger, grip, menu) {
@@ -177,6 +224,13 @@ class WebVR {
             this.grip = grip;
             this.menu = menu;
           }
+
+          reset() {
+            this.pad.reset();
+            this.trigger.reset();
+            this.grip.reset();
+            this.menu.reset();
+          }
         }
         class GamepadButton {
           constructor(touched, pressed, value) {
@@ -184,13 +238,18 @@ class WebVR {
             this.pressed = pressed;
             this.value = value;
           }
+
+          reset() {
+            this.touched = false;
+            this.pressed = false;
+            this.value = 0;
+          }
         }
 
         const _makeDefaultHmdStatus = () => (() => {
           const {position: worldPosition, rotation: worldRotation, scale: worldScale} = _decomposeObjectMatrixWorld(camera);
 
           return new HmdStatus(
-            null,
             camera.position.clone(),
             camera.quaternion.clone(),
             camera.scale.clone(),
@@ -199,14 +258,11 @@ class WebVR {
             worldScale
           );
         })();
-        const _makeDefaultGamepadStatus = (index, stageMatrix) => {
-          const pose = {
-            position: [CONTROLLER_DEFAULT_OFFSETS[0] * ((index === 0) ? -1 : 1), CONTROLLER_DEFAULT_OFFSETS[1], CONTROLLER_DEFAULT_OFFSETS[2]],
-            orientation: [0, 0, 0, 1],
-          };
-          const {position, rotation, scale} = _getPropertiesFromPose(pose);
-          const {position: worldPosition, rotation: worldRotation, scale: worldScale} =
-            _decomposeMatrix(new THREE.Matrix4().compose(position, rotation, scale).premultiply(stageMatrix));
+        const _makeDefaultGamepadStatus = index => {
+          const {position, rotation, scale} = _getPropertiesFromPose(DEFAULT_GAMEPAD_POSES[index]);
+          const worldPosition = position.clone();
+          const worldRotation = rotation.clone();
+          const worldScale = scale.clone();
 
           const _makeDefaultButtonStatus = () => new GamepadButton(false, false, 0);
           const buttons = new GamepadButtons(
@@ -218,7 +274,6 @@ class WebVR {
           const axes = [0, 0];
 
           return new GamepadStatus(
-            pose,
             position,
             rotation,
             scale,
@@ -248,13 +303,13 @@ class WebVR {
             const lookMatrix = new THREE.Matrix4();
             this.lookMatrix = lookMatrix;
 
-            this.status = {
-              hmd: _makeDefaultHmdStatus(),
-              gamepads: new GamepadsStatus(
-                _makeDefaultGamepadStatus(0, stageMatrix),
-                _makeDefaultGamepadStatus(1, stageMatrix)
-              ),
-            };
+            this.status = new Status(
+              _makeDefaultHmdStatus(),
+              new GamepadsStatus(
+                _makeDefaultGamepadStatus(0),
+                _makeDefaultGamepadStatus(1)
+              )
+            );
 
             this._frameData = null;
           }
@@ -616,64 +671,58 @@ class WebVR {
           }
 
           updateStatus() {
-            const _getHmdStatus = () => {
-              const {display, stageMatrix, _frameData: frameData} = this;
-              if (display && frameData) {
+            const _setHmdStatus = () => {
+              const {display, _frameData: frameData} = this;
+              if (display) {
                 display.getFrameData(frameData);
               }
-              const pose = frameData && frameData.pose;
-              const {position, rotation, scale} = _getPropertiesFromPose(pose);
-              const {position: worldPosition, rotation: worldRotation, scale: worldScale} =
-                _decomposeMatrix(new THREE.Matrix4().compose(position, rotation, scale).premultiply(stageMatrix));
-
-              return new HmdStatus(
-                pose,
-                position,
-                rotation,
-                scale,
-                worldPosition,
-                worldRotation,
-                worldScale
+              _getPropertiesFromPoseTo(
+                frameData.pose,
+                this.status.hmd.position,
+                this.status.hmd.rotation,
+                this.status.hmd.scale
+              );
+              _decomposeMatrixTo(
+                new THREE.Matrix4().compose(this.status.hmd.position, this.status.hmd.rotation, this.status.hmd.scale).premultiply(this.stageMatrix),
+                this.status.hmd.worldPosition,
+                this.status.hmd.worldRotation,
+                this.status.hmd.worldScale
               );
             };
-            const _getGamepadsStatus = () => {
-              const {display, stageMatrix} = this;
-              const gamepads = (() => {
-                if (display) {
-                  if (display.getGamepads) {
-                    const gamepads = display.getGamepads();
-                    const [left, right] = gamepads;
+            const _setGamepadsStatus = () => {
+              const {display} = this;
 
-                    return new GamepadsStatus(left, right);
-                  } else {
-                    let left = null;
-                    let right = null;
+              if (display) {
+                if (display.getGamepads) {
+                  const gamepads = display.getGamepads();
+                  const [left, right] = gamepads;
 
-                    const gamepads = navigator.getGamepads();
-                    for (let i = 0; i < gamepads.length; i++) {
-                      const gamepad = gamepads[i];
+                  _setGamepadStatus('left', left);
+                  _setGamepadStatus('right', right);
+                } else {
+                  const gamepads = navigator.getGamepads();
 
-                      if (gamepad) {
-                        const {hand} = gamepad;
+                  for (let i = 0; i < gamepads.length; i++) {
+                    const gamepad = gamepads[i];
 
-                        if (hand === 'left') {
-                          left = gamepad;
-                        } else if (hand === 'right') {
-                          right = gamepad;
-                        }
+                    if (gamepad) {
+                      const {hand} = gamepad;
+
+                      if (hand === 'left') {
+                        _setGamepadStatus('left', gamepad);
+                      } else if (hand === 'right') {
+                        _setGamepadStatus('right', gamepad);
                       }
                     }
-
-                    return new GamepadsStatus(left, right);
                   }
-                } else {
-                  return new GamepadsStatus(null, null);
                 }
-              })();
+              }
+            };
+            const _setGamepadStatus = (side, gamepad) => {
+              const gamepadStatus = this.status.gamepads[side];
 
-              const _isGamepadAvailable = gamepad => Boolean(gamepad) && Boolean(gamepad.pose) && gamepad.pose.position !== null && gamepad.pose.orientation !== null;
-              const _getGamepadPose = gamepad => {
-                const {pose, buttons: [padButton, triggerButton, gripButton, menuButton], axes: [x, y]} = gamepad;
+              if (_isGamepadAvailable(gamepad)) {
+                const {pose, buttons: [pad, trigger, grip, menu], axes: [x, y]} = gamepad;
 
                 const _getGamepadButtonStatus = button => {
                   if (button) {
@@ -684,91 +733,76 @@ class WebVR {
                   }
                 };
 
-                const {position, rotation, scale} = _getPropertiesFromPose(pose);
-                const {position: worldPosition, rotation: worldRotation, scale: worldScale} =
-                  _decomposeMatrix(new THREE.Matrix4().compose(position, rotation, scale).premultiply(stageMatrix));
-                const buttons = new GamepadButtons(
-                  _getGamepadButtonStatus(padButton),
-                  _getGamepadButtonStatus(triggerButton),
-                  _getGamepadButtonStatus(gripButton),
-                  _getGamepadButtonStatus(menuButton)
-                );
-                const axes = [x, y];
-
-                return new GamepadStatus(
+                _getPropertiesFromPoseTo(
                   pose,
-                  position,
-                  rotation,
-                  scale,
-                  worldPosition,
-                  worldRotation,
-                  worldScale,
-                  buttons,
-                  axes
+                  gamepadStatus.position,
+                  gamepadStatus.rotation,
+                  gamepadStatus.scale
                 );
-              };
+                _decomposeMatrixTo(
+                  new THREE.Matrix4().compose(gamepadStatus.position, gamepadStatus.rotation, gamepadStatus.scale).premultiply(this.stageMatrix),
+                  gamepadStatus.worldPosition,
+                  gamepadStatus.worldRotation,
+                  gamepadStatus.worldScale
+                );
 
-              return new GamepadsStatus(
-                _isGamepadAvailable(gamepads.left) ? _getGamepadPose(gamepads.left) : _makeDefaultGamepadStatus(0, stageMatrix),
-                _isGamepadAvailable(gamepads.right) ? _getGamepadPose(gamepads.right) : _makeDefaultGamepadStatus(1, stageMatrix)
-              );
-            };
+                const buttons = {pad, trigger, grip, menu};
+                const axes = [x, y];
+                for (let e = 0; e < EVENT_SPECS.length; e++) {
+                  const eventSpec = EVENT_SPECS[e];
+                  const {buttonName, rootName, downName, upName, touchName, touchdownName, touchupName} = eventSpec;
 
-            const {status: oldStatus} = this;
-            const stageMatrix = this.getStageMatrix();
-            const newStatus = {
-              hmd: _getHmdStatus(),
-              gamepads: _getGamepadsStatus(),
-            };
-            this.setStatus(newStatus);
+                  const oldPressed = gamepadStatus.buttons[buttonName].pressed;
+                  const newPressed = buttons[buttonName].pressed;
+                  if (!oldPressed && newPressed) {
+                    input.triggerEvent(downName, new VrEvent(side));
+                  } else if (oldPressed && !newPressed) {
+                    input.triggerEvent(upName, new VrEvent(side));
+                    input.triggerEvent(rootName, new VrEvent(side));
+                  }
 
-            const _makeEvent = (side, rootName, gamepadStatus) => new VrEvent(
-              side,
-              (rootName === 'pad') ? (gamepadStatus ? [gamepadStatus.axes[0], gamepadStatus.axes[1]] : [0, 0]) : null
-            );
-
-            for (let s = 0; s < SIDES.length; s++) {
-              const side = SIDES[s];
-              const {gamepads: oldGamepadsStatus} = oldStatus;
-              const oldGamepadStatus = oldGamepadsStatus[side];
-              const {gamepads: newGamepadsStatus} = newStatus;
-              const newGamepadStatus = newGamepadsStatus[side];
-
-              for (let e = 0; e < EVENT_SPECS.length; e++) {
-                const eventSpec = EVENT_SPECS[e];
-                const {buttonName, rootName, downName, upName, touchName, touchdownName, touchupName} = eventSpec;
-
-                const oldPressed = Boolean(oldGamepadStatus) && oldGamepadStatus.buttons[buttonName].pressed;
-                const newPressed = Boolean(newGamepadStatus) && newGamepadStatus.buttons[buttonName].pressed;
-                if (!oldPressed && newPressed) {
-                  input.triggerEvent(downName, _makeEvent(side, rootName, newGamepadStatus));
-                } else if (oldPressed && !newPressed) {
-                  input.triggerEvent(upName, _makeEvent(side, rootName, newGamepadStatus));
-                  input.triggerEvent(rootName, _makeEvent(side, rootName, newGamepadStatus));
+                  const oldTouched = gamepadStatus.buttons[buttonName].touched;
+                  const newTouched = buttons[buttonName].touched;
+                  if (!oldTouched && newTouched) {
+                    input.triggerEvent(touchdownName, new VrEvent(side));
+                  } else if (oldTouched && !newTouched) {
+                    input.triggerEvent(touchupName, new VrEvent(side));
+                    input.triggerEvent(touchName, new VrEvent(side));
+                  }
                 }
 
-                const oldTouched = Boolean(oldGamepadStatus) && oldGamepadStatus.buttons[buttonName].touched;
-                const newTouched = Boolean(newGamepadStatus) && newGamepadStatus.buttons[buttonName].touched;
-                if (!oldTouched && newTouched) {
-                  input.triggerEvent(touchdownName, _makeEvent(side, rootName, newGamepadStatus));
-                } else if (oldTouched && !newTouched) {
-                  input.triggerEvent(touchupName, _makeEvent(side, rootName, newGamepadStatus));
-                  input.triggerEvent(touchName, _makeEvent(side, rootName, newGamepadStatus));
-                }
+                _setGamepadButtonStatus(pad, gamepadStatus.buttons.pad);
+                _setGamepadButtonStatus(trigger, gamepadStatus.buttons.trigger);
+                _setGamepadButtonStatus(grip, gamepadStatus.buttons.grip);
+                _setGamepadButtonStatus(menu, gamepadStatus.buttons.menu);
+                _setGamepadAxes(axes, gamepadStatus.axes);
+              } else {
+                gamepadStatus.reset(side === 'left' ? 0 : 1);
               }
+            };
+            const _setGamepadButtonStatus = (src, dst) => {
+              dst.touched = src.touched;
+              dst.pressed = src.pressed;
+              dst.value = src.value;
+            };
+            const _setGamepadAxes = (src, dst) => {
+              dst[0] = src[0];
+              dst[1] = src[1];
             }
+            function _isGamepadAvailable(gamepad) {
+              return Boolean(gamepad) && Boolean(gamepad.pose) && gamepad.pose.position !== null && gamepad.pose.orientation !== null;
+            }
+
+            _setHmdStatus();
+            _setGamepadsStatus();
           }
 
           getStatus() {
             return this.status;
           }
 
-          setStatus(status) {
-            this.status = status;
-          }
-
           getStageMatrix() {
-            return this.stageMatrix.clone();
+            return this.stageMatrix;
           }
 
           setStageMatrix(stageMatrix) {
