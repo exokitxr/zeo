@@ -26,18 +26,24 @@ class Craft {
     return archae.requestPlugins([
       '/core/engines/three',
       '/core/engines/webvr',
+      '/core/engines/input',
       '/core/engines/rend',
+      '/core/engines/multiplayer',
       // '/core/utils/js-utils',
     ]).then(([
       three,
       webvr,
+      input,
       rend,
+      multiplayer,
       // jsUtils,
     ]) => {
       if (live) {
-        const {THREE, scene} = three;
+        const {THREE, scene, camera} = three;
         /* const {events} = jsUtils;
         const {EventEmitter} = events; */
+
+        const localUserId = multiplayer.getId();
 
         const wireMaterial = new THREE.MeshBasicMaterial({
           color: 0x000000,
@@ -55,7 +61,7 @@ class Craft {
         };
 
         const gridGeometry = (() => {
-          const cylinderGeometry = new THREE.CylinderBufferGeometry(0.0005, 0.0005, size, 3, 1);
+          const cylinderGeometry = new THREE.CylinderBufferGeometry(0.001, 0.001, size, 3, 1);
           const boxGeometry = (() => {
             const positions = new Float32Array(cylinderGeometry.getAttribute('position').array.length * 4 * 3);
             const indices = new Uint16Array(cylinderGeometry.index.array.length * 4 * 3);
@@ -127,8 +133,8 @@ class Craft {
               for (let y = 0; y < width; y++) {
                 const position = new THREE.Vector3(
                   -(((width * size) + ((width - 1) * spacing)) / 2) + (size / 2) + (x * (size + spacing)),
-                  -size / 4,
-                  (((width * size) + ((width - 1) * spacing)) / 2) - (size / 2) - (y * (size + spacing))
+                  (((width * size) + ((width - 1) * spacing)) / 2) - (size / 2) - (y * (size + spacing)),
+                  0
                 );
                 const newPositions = boxGeometry.clone()
                   .applyMatrix(new THREE.Matrix4().makeTranslation(position.x, position.y, position.z))
@@ -151,23 +157,54 @@ class Craft {
           return gridGeometry;
         })();
 
-        const gridMesh = new THREE.Mesh(gridGeometry, wireMaterial);
-        scene.add(gridMesh);
+        const gridMeshes = {};
+
+        const _makeGridMesh = () => new THREE.Mesh(gridGeometry, wireMaterial);
+
+        const _trigger = e => {
+          const {side} = e;
+          const {gamepads} = webvr.getStatus();
+          const gamepad = gamepads[side];
+
+          if (gamepad.buttons.grip.pressed) {
+            const gridMesh = gridMeshes[localUserId];
+
+            if (!gridMesh) {
+              const {worldPosition: controllerPosition, worldRotation: controllerRotation} = gamepad;
+              const controllerEuler = new THREE.Euler().setFromQuaternion(controllerRotation, camera.rotation.order);
+              controllerEuler.x = 0;
+              controllerEuler.z = 0;
+
+              const gridMesh = _makeGridMesh();
+              gridMesh.position.copy(controllerPosition);
+              gridMesh.rotation.copy(controllerEuler);
+              gridMesh.updateMatrixWorld();
+
+              scene.add(gridMesh);
+              gridMeshes[localUserId] = gridMesh;
+            } else {
+              scene.remove(gridMesh);
+              delete gridMeshes[localUserId];
+            }
+
+            e.stopImmediatePropagation();
+          }
+        };
+        input.on('trigger', _trigger);
 
         const _update = () => {
-          const {gamepads} = webvr.getStatus();
+          /* const {gamepads} = webvr.getStatus();
           const gamepad = gamepads.right;
           const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale} = gamepad;
           gridMesh.position.copy(controllerPosition);
           gridMesh.quaternion.copy(controllerRotation);
           gridMesh.scale.copy(controllerScale);
-          gridMesh.updateMatrixWorld();
+          gridMesh.updateMatrixWorld(); */
         };
         rend.on('update', _update);
 
         this._cleanup = () => {
-          scene.remove(gridMesh);
-
+          input.removeListener('trigger', _trigger);
           rend.removeListener('update', _update);
         };
       }
