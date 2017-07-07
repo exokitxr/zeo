@@ -450,8 +450,10 @@ const _makeTreeChunkGeometry = (x, y, treeTemplates, points, heightRange) => {
   // const normals = new Float32Array(NUM_POSITIONS_CHUNK * 3);
   const colors = new Float32Array(NUM_POSITIONS_CHUNK * 3);
   const indices = new Uint32Array(NUM_POSITIONS_CHUNK * 3);
+  const trees = new Float32Array(NUM_POSITIONS_CHUNK * 3);
   let attributeIndex = 0;
   let indexIndex = 0;
+  let treeIndex = 0;
 
   const position = new THREE.Vector3();
   const quaternion = new THREE.Quaternion();
@@ -459,7 +461,6 @@ const _makeTreeChunkGeometry = (x, y, treeTemplates, points, heightRange) => {
   const matrix = new THREE.Matrix4();
 
   const treeProbability = 0.025;
-  let treeIndex = 0;
 
   for (let dy = 0; dy < NUM_CELLS_OVERSCAN; dy++) {
     for (let dx = 0; dx < NUM_CELLS_OVERSCAN; dx++) {
@@ -482,9 +483,12 @@ const _makeTreeChunkGeometry = (x, y, treeTemplates, points, heightRange) => {
         colors.set(newColors, attributeIndex);
         const newIndices = geometry.index.array;
         _copyIndices(newIndices, indices, indexIndex, attributeIndex / 3);
+        const newTrees = Float32Array.from(position.toArray());
+        trees.set(newTrees, treeIndex);
 
         attributeIndex += newPositions.length;
         indexIndex += newIndices.length;
+        treeIndex += newTrees.length;
       }
     }
   }
@@ -493,6 +497,7 @@ const _makeTreeChunkGeometry = (x, y, treeTemplates, points, heightRange) => {
     positions: new Float32Array(positions.buffer, positions.byteOffset, attributeIndex),
     colors: new Float32Array(colors.buffer, colors.byteOffset, attributeIndex),
     indices: new Uint32Array(indices.buffer, indices.byteOffset, indexIndex),
+    trees: new Float32Array(trees.buffer, trees.byteOffset, treeIndex),
     heightRange: [
       heightRange[0],
       heightRange[1] + 20, // account for tree height
