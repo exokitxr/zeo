@@ -45,6 +45,7 @@ class Craft {
 
         const localUserId = multiplayer.getId();
 
+        const oneVector = new THREE.Vector3(1, 1, 1);
         const wireMaterial = new THREE.MeshBasicMaterial({
           color: 0x000000,
           transparent: true,
@@ -53,12 +54,18 @@ class Craft {
         const size = 0.1;
         const spacing = size / 4;
         const directions = DIRECTIONS.map(direction => new THREE.Vector3().fromArray(direction).multiplyScalar(size / 2));
+        const width = 3;
 
         const _copyIndices = (src, dst, startIndexIndex, startAttributeIndex) => {
           for (let i = 0; i < src.length; i++) {
             dst[startIndexIndex + i] = src[i] + startAttributeIndex;
           }
         };
+        const _getGridPosition = (x, y) => new THREE.Vector3(
+          -(((width * size) + ((width - 1) * spacing)) / 2) + (size / 2) + (x * (size + spacing)),
+          (((width * size) + ((width - 1) * spacing)) / 2) - (size / 2) - (y * (size + spacing)),
+          0
+        );
 
         const gridGeometry = (() => {
           const cylinderGeometry = new THREE.CylinderBufferGeometry(0.001, 0.001, size, 3, 1);
@@ -123,7 +130,6 @@ class Craft {
             return geometry;
           })();
           const gridGeometry = (() => {
-            const width = 3;
             const positions = new Float32Array(boxGeometry.getAttribute('position').array.length * width * width);
             const indices = new Uint16Array(boxGeometry.index.array.length * width * width);
             let attributeIndex = 0;
@@ -131,11 +137,7 @@ class Craft {
 
             for (let x = 0; x < width; x++) {
               for (let y = 0; y < width; y++) {
-                const position = new THREE.Vector3(
-                  -(((width * size) + ((width - 1) * spacing)) / 2) + (size / 2) + (x * (size + spacing)),
-                  (((width * size) + ((width - 1) * spacing)) / 2) - (size / 2) - (y * (size + spacing)),
-                  0
-                );
+                const position = _getGridPosition(x, y);
                 const newPositions = boxGeometry.clone()
                   .applyMatrix(new THREE.Matrix4().makeTranslation(position.x, position.y, position.z))
                   .getAttribute('position').array;
@@ -159,7 +161,31 @@ class Craft {
 
         const gridMeshes = {};
 
-        const _makeGridMesh = () => new THREE.Mesh(gridGeometry, wireMaterial);
+        const _makeGridMesh = (position, rotation, scale) => {
+          const mesh = new THREE.Mesh(gridGeometry, wireMaterial);
+          mesh.position.copy(position);
+          mesh.quaternion.copy(rotation);
+          mesh.scale.copy(scale);
+          mesh.updateMatrixWorld();
+
+          mesh.positions = (() => {
+            const result = Array(width * width);
+            for (let y = 0; y < width; y++) {
+              for (let x = 0; x < width; x++) {
+                const index = x + (y * width);
+                const p = _getGridPosition(x, y)
+                  .multiply(scale)
+                  .applyQuaternion(rotation)
+                  .add(position);
+                p.offset = [x, y];
+                result[index] = p;
+              }
+            }
+            return result;
+          })();
+
+          return mesh;
+        }
 
         const _trigger = e => {
           const {side} = e;
@@ -177,13 +203,10 @@ class Craft {
               hmdEuler.x = 0;
               hmdEuler.y += Math.PI;
               hmdEuler.z = 0;
+              const hmdQuaternion = new THREE.Quaternion().setFromEuler(hmdEuler);
               const {worldPosition: controllerPosition} = gamepad;
 
-              const gridMesh = _makeGridMesh();
-              gridMesh.position.copy(controllerPosition);
-              gridMesh.rotation.copy(hmdEuler);
-              gridMesh.updateMatrixWorld();
-
+              const gridMesh = _makeGridMesh(controllerPosition, hmdQuaternion, oneVector);
               scene.add(gridMesh);
               gridMeshes[localUserId] = gridMesh;
             } else {
@@ -195,6 +218,36 @@ class Craft {
           }
         };
         input.on('trigger', _trigger);
+
+        const _gripdown = e => {
+          const {side} = e;
+          const {gamepads} = webvr.getStatus();
+          const gamepad = gamepads[side];
+          const {worldPosition: controllerPosition} = gamepad;
+
+          const hoveredSpec = (() => {
+            for (const userId in gridMeshes) {
+              const gridMesh = gridMeshes[userId];
+              const {positions} = gridMesh;
+
+              for (let j = 0; j < positions.length; j++) {
+                const position = positions[j];
+
+                if (controllerPosition.distanceTo(position) < (size + (spacing / 2))) {
+                  const {offset} = position;
+
+                  return {
+                    gridMesh,
+                    offset,
+                  };
+                }
+              }
+            }
+            return null;
+          })();
+          console.log('got grid position', hoveredSpec); // XXX
+        };
+        input.on('gripdown', _gripdown);
 
         const _update = () => {
           /* const {gamepads} = webvr.getStatus();
