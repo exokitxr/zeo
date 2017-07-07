@@ -104,7 +104,7 @@ class Items {
     };
     const _removeItems = itemRange => {
       const [startItem, numItems] = itemRange;
-      const index = items.findIndex(startItem);
+      const index = items.indexOf(startItem);
       items.splice(index, numItems);
     };
     const _getHoveredItem = side => {

@@ -128,7 +128,7 @@ class Tree {
           };
           const _removeItems = itemRange => {
             const [startTree, numTrees] = itemRange;
-            const index = items.findIndex(startTree);
+            const index = items.indexOf(startTree);
             items.splice(index, numTrees);
           };
           const _getHoveredItem = side => {
