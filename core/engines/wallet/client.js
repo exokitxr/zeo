@@ -1097,6 +1097,30 @@ class Wallet {
           priority: 1,
         });
 
+        const _bindAssetInstancePhysics = (assetInstance, immediate) => {
+          let body = null;
+          const _addBody = () => {
+            body = stck.makeDynamicBoxBody(assetInstance.position, [0.1, 0.1, 0.1]);
+            body.on('update', ({position, rotation, scale, velocity}) => {
+              assetInstance.setStateLocal(position, rotation, scale);
+            });
+          };
+          const _removeBody = () => {
+            stck.destroyBody(body);
+            body = null;
+          };
+          assetInstance.on('release', () => {
+            _addBody();
+          });
+          assetInstance.on('grab', () => {
+            _removeBody();
+          });
+
+          if (immediate) {
+            _addBody();
+          }
+        };
+
         const _gripdown = e => {
           const {side} = e;
           const {gamepads} = webvr.getStatus();
@@ -1136,6 +1160,7 @@ class Wallet {
 
             const assetInstance = assetsMesh.getAssetInstance(id);
             assetInstance.grab(side);
+            _bindAssetInstancePhysics(assetInstance, false);
 
             e.stopImmediatePropagation();
           }
@@ -1169,8 +1194,8 @@ class Wallet {
                   hoverState.bodyNotification = notification.addNotification(`Grab to pull ${quantity} ${asset}.`);
                 }
               } else if (!isInBody && bodyNotification) {
-                 notification.removeNotification(bodyNotification);
-                 hoverState.bodyNotification = null;
+                notification.removeNotification(bodyNotification);
+                hoverState.bodyNotification = null;
               }
             });
           };
@@ -1249,26 +1274,7 @@ class Wallet {
                 owner
               }
             );
-
-            // XXX also integrate this on pulling asset from body
-            let body = null;
-            const _addBody = () => {
-              body = stck.makeDynamicBoxBody(assetInstance.position, [0.1, 0.1, 0.1]);
-              body.on('update', ({position, rotation, scale, velocity}) => {
-                assetInstance.setStateLocal(position, rotation, scale);
-              });
-            };
-            const _removeBody = () => {
-              stck.destroyBody(body);
-              body = null;
-            };
-            assetInstance.on('release', () => {
-              _addBody();
-            });
-            assetInstance.on('grab', () => {
-              _removeBody();
-            });
-            _addBody();
+            _bindAssetInstancePhysics(assetInstance, true);
           }
 
           removeAsset(item) {
