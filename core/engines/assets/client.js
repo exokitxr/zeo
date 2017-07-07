@@ -10,6 +10,7 @@ import {
   WORLD_MENU_HEIGHT,
 } from './lib/constants/menu';
 import menuRender from './lib/render/menu';
+import sfxr from 'sfxr';
 
 const hmdModelPath = 'archae/assets/models/hmd/hmd.json';
 const controllerModelPath = 'archae/assets/models/controller/controller.json';
@@ -59,30 +60,6 @@ class Assets {
         img.onerror = null;
       };
     });
-    const _requestAudio = url => new Promise((accept, reject) => {
-      const audio = document.createElement('audio');
-
-      audio.oncanplay = () => {
-        _cleanup();
-
-        accept(audio);
-      };
-      audio.onerror = err => {
-        reject(err);
-      };
-
-      audio.crossOrigin = true;
-      audio.src = url;
-
-      document.body.appendChild(audio);
-
-      const _cleanup = () => {
-        audio.oncanplay = null;
-        audio.onerror = null;
-
-        document.body.removeChild(audio);
-      };
-    });
     const _requestSpritesheet = () => Promise.all([
       _requestImage(imgPath + '/spritesheet.png'),
       _requestJson(imgPath + '/spritesheet.json'),
@@ -107,22 +84,11 @@ class Assets {
           json,
         };
       });
-    const _requestSfx = () => Promise.all(SFX.map(sfx => _requestAudio(sfxPath + '/' + sfx + '.ogg')))
+    const _requestSfx = () => Promise.all(SFX.map(sfx => sfxr.requestSfx(sfxPath + '/' + sfx + '.ogg')))
       .then(audios => {
         const result = {};
         for (let i = 0; i < SFX.length; i++) {
-          const sfx = SFX[i];
-          const audio = audios[i];
-
-          audio.trigger = () => {
-            audio.currentTime = 0;
-
-            if (audio.paused) {
-              audio.play();
-            }
-          };
-
-          result[sfx] = audio;
+          result[SFX[i]] = audios[i];
         }
         return result;
       });

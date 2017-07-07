@@ -5,6 +5,7 @@
   "client": "client.js",
   "server": "server.js",
   "dependencies": {
-    "controllerjs": "0.0.3"
+    "controllerjs": "0.0.3",
+    "sfxr": "0.0.1"
   }
 }
