@@ -2,6 +2,7 @@ const SIDES = ['left', 'right'];
 
 class Physics2 {
   mount() {
+    return;
     const {three, elements, input, stck} = zeo;
     const {THREE, scene} = three;
 
