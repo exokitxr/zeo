@@ -95,11 +95,17 @@ class Cyborg {
                     position: controllers.left.mesh.position.clone(),
                     rotation: controllers.left.mesh.quaternion.clone(),
                     scale: controllers.left.mesh.scale.clone(),
+                    worldPosition: controllers.left.mesh.worldPosition.clone(),
+                    worldRotation: controllers.left.mesh.worldRotation.clone(),
+                    worldScale: controllers.left.mesh.worldScale.clone(),
                   },
                   right: {
                     position: controllers.right.mesh.position.clone(),
                     rotation: controllers.right.mesh.quaternion.clone(),
                     scale: controllers.right.mesh.scale.clone(),
+                    worldPosition: controllers.right.mesh.worldPosition.clone(),
+                    worldRotation: controllers.right.mesh.worldRotation.clone(),
+                    worldScale: controllers.right.mesh.worldScale.clone(),
                   },
                 },
               };
@@ -127,8 +133,8 @@ class Cyborg {
                   for (let i = 0; i < prevStatuses.length - 1; i++) {
                     const prevStatus = prevStatuses[i];
                     const nextStatus = prevStatuses[i + 1];
-                    const positionDiff = nextStatus.status.controllers[side].position.clone()
-                      .sub(prevStatus.status.controllers[side].position);
+                    const positionDiff = nextStatus.status.controllers[side].worldPosition.clone()
+                      .sub(prevStatus.status.controllers[side].worldPosition);
                     result[i] = positionDiff;
                   }
                   return result;
@@ -156,8 +162,8 @@ class Cyborg {
                   for (let i = 0; i < prevStatuses.length - 1; i++) {
                     const prevStatus = prevStatuses[i];
                     const nextStatus = prevStatuses[i + 1];
-                    const quaternionDiff = nextStatus.status.controllers[side].rotation.clone()
-                      .multiply(prevStatus.status.controllers[side].rotation.clone().inverse());
+                    const quaternionDiff = nextStatus.status.controllers[side].worldRotation.clone()
+                      .multiply(prevStatus.status.controllers[side].worldRotation.clone().inverse());
                     const axisAngle = (() => {
                       const x = quaternionDiff.x / Math.sqrt(1 - (quaternionDiff.w * quaternionDiff.w));
                       const y = quaternionDiff.y / Math.sqrt(1 - (quaternionDiff.w * quaternionDiff.w));
@@ -192,6 +198,9 @@ class Cyborg {
           class Hmd {
             constructor() {
               const mesh = hmdModelMesh.clone(true)
+              mesh.worldPosition = new THREE.Vector3();
+              mesh.worldRotation = new THREE.Quaternion();
+              mesh.worldScale = new THREE.Vector3(1, 1, 1);
               this.mesh = mesh;
 
               const labelMesh = assets.makePlayerLabelMesh({
@@ -200,12 +209,16 @@ class Cyborg {
               this.labelMesh = labelMesh;
             }
 
-            update(hmdStatus, gamepadStatus) {
+            update(hmdStatus) {
               const {mesh} = this;
               mesh.position.copy(hmdStatus.position);
               mesh.quaternion.copy(hmdStatus.rotation);
               mesh.scale.copy(hmdStatus.scale);
               mesh.updateMatrixWorld();
+
+              mesh.worldPosition.copy(hmdStatus.worldPosition);
+              mesh.worldRotation.copy(hmdStatus.worldRotation);
+              mesh.worldScale.copy(hmdStatus.worldScale);
 
               const {labelMesh} = this;
               labelMesh.update({
@@ -228,6 +241,10 @@ class Cyborg {
             constructor() {
               const mesh = (() => {
                 const object = new THREE.Object3D();
+
+                object.worldPosition = new THREE.Vector3();
+                object.worldRotation = new THREE.Quaternion();
+                object.worldScale = new THREE.Vector3(1, 1, 1);
 
                 const controllerMesh = controllerModelMesh.clone(true);
                 // const controllerMesh = mesh.children[0];
@@ -269,6 +286,11 @@ class Cyborg {
               mesh.position.copy(gamepadStatus.position);
               mesh.quaternion.copy(gamepadStatus.rotation);
               mesh.scale.copy(gamepadStatus.scale);
+              mesh.updateMatrixWorld();
+
+              mesh.worldPosition.copy(gamepadStatus.worldPosition);
+              mesh.worldRotation.copy(gamepadStatus.worldRotation);
+              mesh.worldScale.copy(gamepadStatus.worldScale);
 
               const {buttons} = gamepadStatus;
               if (!buttons.trigger.pressed && mesh.rayMesh.material.color.getHex() !== RAY_COLOR) {
@@ -276,8 +298,6 @@ class Cyborg {
               } else if (buttons.trigger.pressed && mesh.rayMesh.material.color.getHex() !== RAY_HIGHLIGHT_COLOR) {
                 mesh.rayMesh.material.color.setHex(RAY_HIGHLIGHT_COLOR);
               }
-
-              mesh.updateMatrixWorld();
             }
           }
 
