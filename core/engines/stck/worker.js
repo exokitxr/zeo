@@ -1,12 +1,13 @@
 const FPS = 1000 / 90;
-const GRAVITY = -9.8;
+const GRAVITY = -9.8 / Math.pow(1000, 2);
 
 importScripts('/archae/three/three.js');
 const {exports: THREE} = self.module;
 self.module = {};
 
+const zeroVector = new THREE.Vector3();
 const oneVector = new THREE.Vector3(1, 1, 1);
-const downVector = new THREE.Vector3(0, -1, 0);
+const upVector = new THREE.Vector3(0, 1, 0);
 const zeroQuaternion = new THREE.Quaternion();
 
 const dynamicBoxBodies = [];
@@ -24,14 +25,14 @@ class BoxBody {
   }
 
   update() {
-    const {id, position, rotation, scale, vecocity} = this;
+    const {id, position, rotation, scale, velocity} = this;
 
     postMessage({
       id,
       position,
       rotation,
       scale,
-      vecocity,
+      velocity,
     });
   }
 
@@ -55,29 +56,6 @@ class HeightfieldBody {
   }
 }
 
-const _makeDynamicBoxBody = (position, size) => {
-  const id = _makeId();
-  const body = new BoxBody(id, {
-    position,
-    rotation: zeroQuaternion.toArray(),
-    scale: oneVector.toArray(),
-    size: size,
-  });
-  dynamicBoxBodies.push(body);
-  return body;
-};
-const _makeStaticHeightfieldBody = (position, width, depth, data) => {
-  const id = _makeId();
-  const body = new HeightfieldBody(id, {
-    position,
-    width,
-    depth,
-    data,
-  });
-  staticHeightfieldBodies.push(body);
-  return body;
-};
-
 let lastUpdateTime = Date.now();
 const interval = setInterval(() => {
   const now = Date.now();
@@ -85,10 +63,13 @@ const interval = setInterval(() => {
 
   for (let i = 0; i < dynamicBoxBodies.length; i++) {
     const body = dynamicBoxBodies[i];
-    const {position} = body;
+    const {position, velocity} = body;
+    const nextVelocity = new THREE.Vector3()
+      .fromArray(velocity)
+      .add(upVector.clone().multiplyScalar(GRAVITY * timeDiff));
     const nextPosition = new THREE.Vector3()
       .fromArray(position)
-      .add(downVector.clone().multiplyScalar(0.01 * timeDiff));
+      .add(nextVelocity.clone().multiplyScalar(timeDiff));
 
     for (let j = 0; j < staticHeightfieldBodies.length; j++) {
       const staticHeightfieldBody = staticHeightfieldBodies[j];
@@ -100,7 +81,7 @@ const interval = setInterval(() => {
         const ax = Math.floor(nextPosition2D.x);
         const ay = Math.floor(nextPosition2D.y);
 
-        const positions = ((nextPosition2D.x - ax) <= (nextPosition2D.y - ay)) ? [ // top left triangle
+        const positions = ((nextPosition2D.x - ax) <= (1 - (nextPosition2D.y - ay))) ? [ // top left triangle
           new THREE.Vector2(ax, ay),
           new THREE.Vector2(ax + 1, ay),
           new THREE.Vector2(ax, ay + 1),
@@ -109,7 +90,7 @@ const interval = setInterval(() => {
           new THREE.Vector2(ax, ay + 1),
           new THREE.Vector2(ax + 1, ay + 1),
         ];
-        const indexes = positions.map(({x, y}) => (x - min.x) + ((y - min.y) * staticHeightfieldBody.width));
+        const indexes = positions.map(({x, y}) => (x - min.x) + ((y - min.y) * (staticHeightfieldBody.width + 1)));
         const elevations = indexes.map(index => staticHeightfieldBody.data[index] + staticHeightfieldBody.position[1]);
         const baryCoord = new THREE.Triangle(
           new THREE.Vector3(positions[0].x, 0, positions[0].y),
@@ -123,12 +104,21 @@ const interval = setInterval(() => {
           baryCoord.z * elevations[2];
 
         nextPosition.y = Math.max(nextPosition.y, elevation);
-
-        const nextPositionArray = nextPosition.toArray();
-        if (!_arrayEquals(nextPositionArray, position)) {
-          body.setState(nextPositionArray, body.rotation, body.scale, body.velocity);
-        }
       }
+    }
+
+    const nextPositionArray = nextPosition.toArray();
+    const positionDiff = !_arrayEquals(nextPositionArray, position);
+
+    if (!positionDiff) {
+      nextVelocity.copy(zeroVector);
+    }
+
+    const nextVelocityArray = nextVelocity.toArray();
+    const velocityDiff = !_arrayEquals(nextVelocityArray, velocity);
+
+    if (positionDiff || velocityDiff) {
+      body.setState(nextPositionArray, body.rotation, body.scale, nextVelocityArray);
     }
   }
 

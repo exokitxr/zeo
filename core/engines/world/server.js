@@ -369,7 +369,7 @@ class World {
                                 },
                                 {
                                   name: 'privateKey',
-                                  value: privateKey,
+                                  value: privateKeyString,
                                 }
                               ]
                             );

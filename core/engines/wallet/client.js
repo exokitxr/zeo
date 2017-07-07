@@ -1254,7 +1254,7 @@ class Wallet {
             let body = null;
             const _addBody = () => {
               body = stck.makeDynamicBoxBody(assetInstance.position, [0.1, 0.1, 0.1]);
-              body.on('update', ({position, rotation, scale}) => {
+              body.on('update', ({position, rotation, scale, velocity}) => {
                 assetInstance.setStateLocal(position, rotation, scale);
               });
             };
