@@ -47,7 +47,7 @@ class Cloud {
       vertexShader: CLOUD_SHADER.vertexShader,
       fragmentShader: CLOUD_SHADER.fragmentShader,
       transparent: true,
-      // depthTest: false,
+      depthWrite: false,
     });
     /* const cloudsMaterial = new THREE.MeshBasicMaterial({
       color: 0xFFFFFF,
