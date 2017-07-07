@@ -6,7 +6,7 @@ import {
   WORLD_DEPTH,
 } from './lib/constants/wallet';
 import menuUtils from './lib/utils/menu';
-import vridApi from 'vrid/lib/frontend-api';
+// import vridApi from 'vrid/lib/frontend-api';
 
 const TAGS_PER_ROW = 4;
 const TAGS_ROWS_PER_PAGE = 6;
