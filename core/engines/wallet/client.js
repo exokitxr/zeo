@@ -917,17 +917,25 @@ class Wallet {
           }
         };
 
+        const lastGripDownTimes = {
+          left: 0,
+          right: 0,
+        };
         const _gripdown = e => {
           const {side} = e;
-          const {gamepads} = webvr.getStatus();
-          const gamepad = gamepads[side];
-          const {worldPosition: position} = gamepad;
+          const lastGripDownTime = lastGripDownTimes[side];
           const hoverState = hoverStates[side];
-          const {worldGrabAsset, bodyAsset} = hoverState;
+          const {worldGrabAsset} = hoverState;
+          const {bill} = walletState;
 
-          if (_isInBody(position) && bodyAsset && !worldGrabAsset) {
-            const {asset, quantity} = bodyAsset;
-            const {worldRotation: rotation, worldScale: scale} = gamepad;
+          const now = Date.now();
+          const timeDiff = now - lastGripDownTime;
+
+          if (timeDiff < 500 && !worldGrabAsset && bill) {
+            const {asset, quantity} = bill;
+            const {gamepads} = webvr.getStatus();
+            const gamepad = gamepads[side];
+            const {worldPosition: position, worldRotation: rotation, worldScale: scale} = gamepad;
 
             const id = _makeId();
             const owner = bootstrap.getAddress();
@@ -958,8 +966,12 @@ class Wallet {
             assetInstance.grab(side);
             _bindAssetInstancePhysics(assetInstance, false);
 
-            e.stopImmediatePropagation();
+            lastGripDownTimes[side] = 0;
+          } else {
+            lastGripDownTimes[side] = now;
           }
+
+          e.stopImmediatePropagation();
         };
         input.on('gripdown', _gripdown, {
           priority: -1,
