@@ -152,7 +152,7 @@ class Wallet {
               new THREE.Vector3(0, -0.4, 0)
                 .applyQuaternion(new THREE.Quaternion().setFromRotationMatrix(externalMatrix))
             );
-          return p.distanceTo(bodyPosition) < 0.35;
+          return p.distanceTo(bodyPosition) < 0.2;
         };
         const _snapDotPosition = p => new THREE.Vector2(
           Math.min(Math.floor(((p.x + 1) / 2) * slotsWidth), slotsWidth - 1),
@@ -298,6 +298,12 @@ class Wallet {
                           this.show();
                         });
                     }
+
+                    const {asset, quantity} = this;
+                    const newNotification = notification.addNotification(`Stored ${quantity} ${asset}.`);
+                    setTimeout(() => {
+                      notification.removeNotification(newNotification);
+                    }, 3000);
                   } else {
                     super.emit(t, {
                       userId,
@@ -459,57 +465,6 @@ class Wallet {
               mesh.geometryNeedsUpdate = false;
             }
           };
-          /* mesh.updateHovers = () => {
-            const {gamepads} = webvr.getStatus();
-
-            SIDES.forEach(side => {
-              const gamepad = gamepads[side];
-              const {worldPosition: controllerPosition} = gamepad;
-              const hoverState = hoverStates[side];
-
-              let closestAsset = null;
-              let closestAssetIndex = -1;
-              let closestAssetDistance = Infinity;
-              for (let i = 0; i < assetInstances.length; i++) {
-                const assetInstance = assetInstances[i];
-                const distance = controllerPosition.distanceTo(new THREE.Vector3().fromArray(assetInstance.position));
-
-                if (closestAsset === null || distance < closestAssetDistance) {
-                  closestAsset = assetInstance;
-                  closestAssetIndex = i;
-                  closestAssetDistance = distance;
-                }
-              }
-
-              if (closestAssetDistance < 0.2) {
-                hoverState.worldAsset = closestAsset;
-
-                const {worldGrabNotification: oldWorldGrabNotification} = hoverState;
-                if (!oldWorldGrabNotification || oldWorldGrabNotification.assetInstance !== closestAsset) {
-                  if (oldWorldGrabNotification) {
-                    notification.removeNotification(oldWorldGrabNotification);
-                  }
-
-                  const {asset, quantity} = closestAsset;
-                  const newWorldGrabNotification = notification.addNotification(`This is ${quantity} ${asset}.`);
-                  newWorldGrabNotification.assetInstance = closestAsset;
-
-                  hoverState.worldGrabNotification = newWorldGrabNotification;
-                }
-              } else {
-                const {worldAsset} = hoverState;
-                if (worldAsset) {
-                  hoverState.worldAsset = null;
-                }
-
-                const {worldGrabNotification} = hoverState;
-                if (worldGrabNotification) {
-                  notification.removeNotification(worldGrabNotification);
-                  hoverState.worldGrabNotification = null;
-                }
-              }
-            });
-          }; */
 
           return mesh;
         };
@@ -958,6 +913,11 @@ class Wallet {
             assetInstance.grab(side);
             _bindAssetInstancePhysics(assetInstance, false);
 
+            const newNotification = notification.addNotification(`Pulled out ${quantity} ${asset}.`);
+            setTimeout(() => {
+              notification.removeNotification(newNotification);
+            }, 3000);
+
             lastGripDownTimes[side] = 0;
           } else {
             lastGripDownTimes[side] = now;
@@ -977,44 +937,13 @@ class Wallet {
         rend.on('tabchange', _tabchange);
 
         const _update = () => {
-          /* const _updateHover = () => {
-            const {gamepads} = webvr.getStatus();
-
-            SIDES.forEach(side => {
-              const gamepad = gamepads[side];
-              const {worldPosition: controllerPosition} = gamepad;
-              const hoverState = hoverStates[side];
-              const {worldGrabAsset, worldReleaseNotification, bodyAsset, bodyNotification} = hoverState;
-              const isInBody = _isInBody(controllerPosition);
-
-              if ((isInBody && worldGrabAsset) && !worldReleaseNotification) {
-                const {asset, quantity} = worldGrabAsset;
-                hoverState.worldReleaseNotification = notification.addNotification(`Release to store ${quantity} ${asset}.`);
-              } else if (!(isInBody && worldGrabAsset) && worldReleaseNotification) {
-                notification.removeNotification(worldReleaseNotification);
-                hoverState.worldReleaseNotification = null;
-              }
-
-              if (isInBody && !bodyNotification) {
-                if (bodyAsset !== null) {
-                  const {asset, quantity} = bodyAsset;
-                  hoverState.bodyNotification = notification.addNotification(`Grab to pull ${quantity} ${asset}.`);
-                }
-              } else if (!isInBody && bodyNotification) {
-                notification.removeNotification(bodyNotification);
-                hoverState.bodyNotification = null;
-              }
-            });
-          }; */
           const _updateAssets = () => {
             assetsMesh.updateGeometry();
-            // assetsMesh.updateHovers();
           };
           const _updateAssetsMaterial = () => {
             assetsMaterial.uniforms.theta.value = (Date.now() * ROTATE_SPEED * (Math.PI * 2) % (Math.PI * 2));
           };
 
-          // _updateHover();
           _updateAssets();
           _updateAssetsMaterial();
         };
