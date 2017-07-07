@@ -109,6 +109,10 @@ const interval = setInterval(() => {
         }
       }
     }
+    if (nextPosition.y < 0) {
+      nextPosition.y = 0;
+      nextVelocity.copy(zeroVector);
+    }
 
     const nextPositionArray = nextPosition.toArray();
     const positionDiff = !_arrayEquals(nextPositionArray, position);
