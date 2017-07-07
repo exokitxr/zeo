@@ -86,6 +86,7 @@ class Skybox {
           })();
 
           const mesh = new THREE.Mesh(geometry, materials);
+          mesh.frustumCulled = false;
           return mesh;
         })();
         entityObject.add(skyboxMesh);
