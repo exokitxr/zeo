@@ -467,7 +467,7 @@ class Wallet {
               mesh.geometryNeedsUpdate = false;
             }
           };
-          mesh.updateHovers = () => {
+          /* mesh.updateHovers = () => {
             const {gamepads} = webvr.getStatus();
 
             SIDES.forEach(side => {
@@ -517,7 +517,7 @@ class Wallet {
                 }
               }
             });
-          };
+          }; */
 
           return mesh;
         };
@@ -973,7 +973,7 @@ class Wallet {
         rend.on('tabchange', _tabchange);
 
         const _update = () => {
-          const _updateHover = () => {
+          /* const _updateHover = () => {
             const {gamepads} = webvr.getStatus();
 
             SIDES.forEach(side => {
@@ -1001,16 +1001,16 @@ class Wallet {
                 hoverState.bodyNotification = null;
               }
             });
-          };
+          }; */
           const _updateAssets = () => {
             assetsMesh.updateGeometry();
-            assetsMesh.updateHovers();
+            // assetsMesh.updateHovers();
           };
           const _updateAssetsMaterial = () => {
             assetsMaterial.uniforms.theta.value = (Date.now() * ROTATE_SPEED * (Math.PI * 2) % (Math.PI * 2));
           };
 
-          _updateHover();
+          // _updateHover();
           _updateAssets();
           _updateAssetsMaterial();
         };
