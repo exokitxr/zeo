@@ -149,7 +149,9 @@ class Tree {
             const {side} = e;
             const hoveredItem = _getHoveredItem(side);
 
-            chopSfx.trigger();
+            if (hoveredItem !== null) {
+              chopSfx.trigger();
+            }
           };
           input.on('gripdown', _gripdown);
 
