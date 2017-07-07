@@ -108,11 +108,11 @@ class Tree {
 
           const items = [];
           const _addItems = treeChunkData => {
-            const {trees} = treeChunkData;
-            const numTrees = trees.length / 3;
+            const {trees: treesData} = treeChunkData;
+            const numTrees = treesData.length / 3;
             let startTree = null;
             for (let i = 0; i < numTrees; i++) {
-              const v = new THREE.Vector3().fromArray(trees, i * 3);
+              const v = new THREE.Vector3().fromArray(treesData, i * 3);
               const b = new THREE.Box3(
                 v.clone().add(new THREE.Vector3(-0.5, 0, -0.5)),
                 v.clone().add(new THREE.Vector3(0.5, 2, 0.5))
