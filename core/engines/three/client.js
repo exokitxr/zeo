@@ -37,7 +37,7 @@ class Three {
         scene.fog = new THREE.FogExp2(0xFFFFFF, 0);
 
         const camera = (() => {
-          const result = new THREE.PerspectiveCamera(90, window.innerWidth / window.innerHeight, 0.01, 100000);
+          const result = new THREE.PerspectiveCamera(90, window.innerWidth / window.innerHeight, 0.01, 10 * 1024);
           result.position.x = 0;
           result.position.y = DEFAULT_USER_HEIGHT;
           result.position.z = 0;
