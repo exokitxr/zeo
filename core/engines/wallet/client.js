@@ -5,6 +5,7 @@ import {
   WORLD_HEIGHT,
   WORLD_DEPTH,
 } from './lib/constants/wallet';
+import walletRender from './lib/render/wallet';
 import menuUtils from './lib/utils/menu';
 // import vridApi from 'vrid/lib/frontend-api';
 
@@ -115,7 +116,7 @@ class Wallet {
         const {Grabbable} = hand;
         const {sfx} = assets;
 
-        const transparentMaterial = biolumi.getTransparentMaterial();
+        const walletRenderer = walletRender.makeRenderer({creatureUtils});
 
         const oneVector = new THREE.Vector3(1, 1, 1);
         const forwardVector = new THREE.Vector3(0, 0, -1);
@@ -526,11 +527,11 @@ class Wallet {
         const walletState = {
           loaded: false,
           loading: true,
-          // charging: false,
           error: false,
-          // inputText: '',
-          address: null,
-          // asset: null,
+          inputText: '',
+          // address: null,
+          asset: null,
+          bill: null,
           assets: [],
           numTags: 0,
           // page: 0,
@@ -539,7 +540,7 @@ class Wallet {
           keyboardFocusState: null,
         };
 
-        /* const menuMesh = (() => {
+        const menuMesh = (() => {
           const object = new THREE.Object3D();
           object.visible = false;
 
@@ -551,7 +552,6 @@ class Wallet {
             const mesh = worldUi.makePage(({
               wallet: {
                 loading,
-                charging,
                 error,
                 inputText,
                 asset,
@@ -568,7 +568,7 @@ class Wallet {
 
               return {
                 type: 'html',
-                src: walletRenderer.getWalletPageSrc({loading, charging, error, inputText, inputValue, asset, assets, numTags, page, focus}),
+                src: walletRenderer.getWalletPageSrc({loading, error, inputText, inputValue, asset, assets, numTags, page, focus}),
                 x: 0,
                 y: 0,
                 w: WIDTH,
@@ -584,7 +584,6 @@ class Wallet {
               worldHeight: WORLD_HEIGHT,
               isEnabled: () => rend.isOpen(),
             });
-            mesh.receiveShadow = true;
 
             const {page} = mesh;
             rend.addPage(page);
@@ -604,7 +603,14 @@ class Wallet {
         menuMesh.updateMatrixWorld();
 
         rend.reindex();
-        rend.updateMatrixWorld(menuMesh); */
+        rend.updateMatrixWorld(menuMesh);
+
+        const _updatePages = () => {
+          const {planeMesh} = menuMesh;
+          const {page} = planeMesh;
+          page.update();
+        };
+        _updatePages();
 
         const _resJson = res => {
           if (res.status >= 200 && res.status < 300) {
@@ -625,12 +631,10 @@ class Wallet {
             walletState.page = 0;
             walletState.assets = assets;
             walletState.numTags = assets.length;
+            walletState.asset = null;
+            walletState.bill = null;
 
-            SIDES.forEach(side => {
-              const gridMesh = gridMeshes[side];
-              const {gridAssetsMesh} = gridMesh;
-              gridAssetsMesh.updateAssets(assets);
-            });
+            _updatePages();
           })
           .catch(err => {
             walletState.error = true;
@@ -665,18 +669,32 @@ class Wallet {
             return _refreshAssets()
               .then(() => {
                 walletState.loaded = true;
-              })
-              .catch(err => {
-                console.warn(err);
               });
           } else {
             return Promise.resolve();
           }
         };
-        _ensureLoaded();
+        const _ensureInitialLoaded = () => {
+          const {loaded} = walletState;
+
+          if (!loaded) {
+            walletState.loading = true;
+            _updatePages();
+
+            return _refreshAssets()
+              .then(() => {
+                walletState.loaded = true;
+                walletState.loading = false;
+
+                _updatePages();
+              });
+          } else {
+            return Promise.resolve();
+          }
+        };
 
         const _trigger = e => {
-          /* const {side} = e;
+          const {side} = e;
 
           const _clickMenu = () => {
             const hoverState = rend.getHoverState(side);
@@ -743,7 +761,13 @@ class Wallet {
               const asset = match[1];
               const quantity = parseFloat(match[2]);
 
-              const status = webvr.getStatus();
+              walletState.bill = {
+                asset,
+                quantity,
+              };
+              _updatePages();
+
+              /* const status = webvr.getStatus();
               const {hmd} = status;
               const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmd;
 
@@ -820,15 +844,7 @@ class Wallet {
                   console.warn(err);
 
                   _cleanupCharging();
-                });
-
-              walletState.charging = true;
-              _updatePages();
-
-              const _cleanupCharging = () => {
-                walletState.charging = false;
-                _updatePages();
-              };
+                }); */
 
               return true;
             } else if (onclick === 'wallet:manage') {
@@ -848,7 +864,7 @@ class Wallet {
             const hoverState = rend.getHoverState(side);
             const {target} = hoverState;
 
-            if (target && target.mesh && target.mesh.parent === walletMesh) {
+            if (target && target.mesh && target.mesh.parent === menuMesh) {
               return true;
             } else {
               return false;
@@ -863,7 +879,7 @@ class Wallet {
             sfx.digi_plink.trigger();
 
             e.stopImmediatePropagation();
-          } */
+          }
         };
         input.on('trigger', _trigger, {
           priority: 1,
@@ -950,155 +966,6 @@ class Wallet {
           return mesh;
         };
 
-        const slotGeometry = new THREE.BoxBufferGeometry(slotSize, slotPlatformHeight, slotSize);
-        const numSlotPositions = slotGeometry.getAttribute('position').array.length / 3;
-        const numSlotColors = numSlotPositions;
-        const numSlotIndices = slotGeometry.index.array.length / 3;
-        const lightSlotColor = new THREE.Color(0x2196F3);
-        const darkSlotColor = lightSlotColor.clone().multiplyScalar(0.6);
-        const whiteSlotColor = new THREE.Color(0xCCCCCC);
-        const blackSlotColor = whiteSlotColor.clone().multiplyScalar(0.6);
-
-        const dotSize = slotSize / 4;
-        const dotGeometry = new THREE.BoxBufferGeometry(dotSize, dotSize, dotSize);
-        const dotPositions = dotGeometry.getAttribute('position').array;
-        const numDotPositions = dotPositions.length / 3;
-        const numDotColors = numDotPositions;
-        const numDotIndices = slotGeometry.index.array.length / 3;
-
-        const _makeGridMesh = side => {
-          const geometry = new THREE.BufferGeometry();
-          const positions = new Float32Array(numSlotPositions * 3 * numSlots + numDotPositions * 3);
-          const positionAttribute = new THREE.BufferAttribute(positions, 3);
-          geometry.addAttribute('position', positionAttribute);
-          const colors = new Float32Array(numSlotColors * 3 * numSlots + numDotColors * 3);
-          const colorAttribute = new THREE.BufferAttribute(colors, 3);
-          geometry.addAttribute('color', colorAttribute);
-          const indices = new Uint16Array(numSlotIndices * 3 * numSlots + numDotIndices * 4);
-          const indexAttribute = new THREE.BufferAttribute(indices, 1);
-          geometry.setIndex(indexAttribute);
-
-          const _render = (x, y) => {
-            const dotPosition = new THREE.Vector2(x, y);
-            const dotPositionSnap = _snapDotPosition(dotPosition);
-
-            let attributeIndex = 0;
-            let indexIndex = 0;
-
-            for (let y = 0; y < slotsWidth; y++) {
-              for (let x = 0; x < slotsWidth; x++) {
-                const slotGeometryClone = slotGeometry.clone()
-                  .applyMatrix(new THREE.Matrix4().makeTranslation(
-                    -(gridWidth / 2) + (slotSize / 2) + (x * (slotSize + slotSpacing)),
-                    (gridWidth / 2) - slotSize - (slotPlatformHeight / 2) - (y * (slotSize + slotSpacing)),
-                    0
-                  ));
-                const slotClonePositions = slotGeometryClone.getAttribute('position').array;
-                const slotCloneIndices = slotGeometryClone.index.array;
-                positions.set(slotClonePositions, attributeIndex);
-                for (let i = 0; i < numDotColors; i++) {
-                  const baseIndex = i * 3;
-                  const z = dotPositions[baseIndex + 2];
-                  const color = (() => {
-                    if (x === dotPositionSnap.x && y === dotPositionSnap.y) {
-                      return z > 0 ? lightSlotColor : darkSlotColor;
-                    } else {
-                      return z > 0 ? whiteSlotColor : blackSlotColor;
-                    }
-                  })();
-
-                  colors[attributeIndex + baseIndex + 0] = color.r;
-                  colors[attributeIndex + baseIndex + 1] = color.g;
-                  colors[attributeIndex + baseIndex + 2] = color.b;
-                }
-                _copyIndices(slotCloneIndices, indices, indexIndex, attributeIndex / 3);
-
-                attributeIndex += slotClonePositions.length;
-                indexIndex += slotCloneIndices.length;
-              }
-            }
-
-            const dotCloneGeometry = dotGeometry.clone()
-              .applyMatrix(new THREE.Matrix4().makeTranslation(
-                dotPosition.x * gridWidth/2,
-                dotPosition.y * gridWidth/2,
-                0
-              ));
-            const dotClonePositions = dotCloneGeometry.getAttribute('position').array;
-            positions.set(dotClonePositions, attributeIndex);
-            for (let i = 0; i < numDotColors; i++) {
-              const baseIndex = i * 3;
-              const z = dotPositions[baseIndex + 2];
-              const color = z > 0 ? lightSlotColor : darkSlotColor;
-
-              colors[attributeIndex + baseIndex + 0] = color.r;
-              colors[attributeIndex + baseIndex + 1] = color.g;
-              colors[attributeIndex + baseIndex + 2] = color.b;
-            }
-            const dotCloneIndices = dotCloneGeometry.index.array;
-            _copyIndices(dotCloneIndices, indices, indexIndex, attributeIndex / 3);
-            attributeIndex += dotClonePositions.length;
-            indexIndex += dotCloneIndices.length;
-
-            positionAttribute.needsUpdate = true;
-            colorAttribute.needsUpdate = true;
-            // indexAttribute.needsUpdate = true;
-          };
-          _render(0, 0);
-
-          const material = gridMaterial;
-
-          const mesh = new THREE.Mesh(geometry, material);
-          mesh.visible = false;
-
-          const gridAssetsMesh = _makeGridAssetsMesh(side);
-          mesh.add(gridAssetsMesh);
-          mesh.gridAssetsMesh = gridAssetsMesh;
-
-          mesh.updatePoint = (x, y) => {
-            _render(x, y);
-
-            gridAssetsMesh.updatePoint(x, y);
-          };
-
-          return mesh;
-        };
-        const gridMeshes = {
-          left: _makeGridMesh('left'),
-          right: _makeGridMesh('right'),
-        };
-        scene.add(gridMeshes.left);
-        scene.add(gridMeshes.right);
-
-        const _padtouchdown = e => {
-          const {side} = e;
-          const gridMesh = gridMeshes[side];
-          const {hmd} = webvr.getStatus();
-          const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmd;
-
-          gridMesh.position.copy(hmdPosition.clone().add(forwardVector.clone().applyQuaternion(hmdRotation)));
-          gridMesh.quaternion.copy(hmdRotation);
-          gridMesh.updateMatrixWorld();
-
-          if (!gridMesh.visible) {
-            gridMesh.visible = true;
-          }
-        };
-        input.on('padtouchdown', _padtouchdown, {
-          priority: 1,
-        });
-        const _padtouchup = e => {
-          const {side} = e;
-          const gridMesh = gridMeshes[side];
-
-          if (gridMesh.visible) {
-            gridMesh.visible = false;
-          }
-        };
-        input.on('padtouchup', _padtouchup, {
-          priority: 1,
-        });
-
         const _bindAssetInstancePhysics = (assetInstance, immediate) => {
           let body = null;
           const _addBody = ({velocity = [0, 0, 0]} = {}) => {
@@ -1178,6 +1045,13 @@ class Wallet {
           priority: -1,
         });
 
+        const _tabchange = tab => {
+          if (tab === 'wallet') {
+            _ensureInitialLoaded();
+          }
+        };
+        rend.on('tabchange', _tabchange);
+
         const _update = () => {
           const _updateHover = () => {
             const {gamepads} = webvr.getStatus();
@@ -1208,19 +1082,6 @@ class Wallet {
               }
             });
           };
-          const _updateGrid = () => {
-            const {gamepads} = webvr.getStatus();
-
-            SIDES.forEach(side => {
-              const gamepad = gamepads[side];
-              const {axes: [x, y]} = gamepad;
-              const gridMesh = gridMeshes[side];
-              const {gridAssetsMesh} = gridMesh;
-
-              gridMesh.updatePoint(x, y);
-              gridAssetsMesh.updatePoint(x, y);
-            });
-          };
           const _updateAssets = () => {
             assetsMesh.updateGeometry();
             assetsMesh.updateHovers();
@@ -1230,19 +1091,14 @@ class Wallet {
           };
 
           _updateHover();
-          _updateGrid();
           _updateAssets();
           _updateAssetsMaterial();
         };
         rend.on('update', _update);
 
         cleanups.push(() => {
-          scene.remove(gridMeshes.left);
-          scene.remove(gridMeshes.right);
 
           input.removeListener('trigger', _trigger);
-          input.removeListener('padtouchdown', _padtouchdown);
-          input.removeListener('padtouchup', _padtouchup);
           input.removeListener('gripdown', _gripdown);
 
           rend.removeListener('tabchange', _tabchange);

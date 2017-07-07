@@ -27,6 +27,7 @@ class Build {
   }
 
   mount() {
+    return;
     const {_archae: archae} = this;
     const {three, pose, input, render, teleport} = zeo;
     const {THREE, scene, camera} = three;
