@@ -12,7 +12,7 @@ class Items {
 
   mount() {
     const {_archae: archae} = this;
-    const {three, render, pose, utils: {random: {chnkr}}} = zeo;
+    const {three, render, pose, input, utils: {random: {chnkr}}} = zeo;
     const {THREE, scene, camera} = three;
 
     const itemsMaterial = new THREE.MeshBasicMaterial({
@@ -77,6 +77,58 @@ class Items {
       return mesh;
     };
 
+    class Item {
+      constructor(type, position) {
+        this.type = type;
+        this.position = position;
+      }
+    }
+
+    const items = [];
+    const _addItems = itemsChunkMesh => {
+      const {items: itemsData} = itemsChunkMesh;
+      const numItems = itemsData.length / 4;
+      let startItem = null;
+      for (let i = 0; i < numItems; i++) {
+        const type = itemsData[(i * 4) + 0];
+        const position = new THREE.Vector3().fromArray(itemsData, (i * 4) + 1);
+        const item = new Item(type, position);
+        items.push(item);
+
+        if (startItem === null) {
+          startItem = item;
+        }
+      }
+
+      return [startItem, numItems];
+    };
+    const _removeItems = itemRange => {
+      const [startItem, numItems] = itemRange;
+      const index = items.findIndex(startItem);
+      items.splice(index, numItems);
+    };
+    const _getHoveredItem = side => {
+      const {gamepads} = pose.getStatus();
+      const gamepad = gamepads[side];
+      const {worldPosition: controllerPosition} = gamepad;
+
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (controllerPosition.distanceTo(item.position) < 0.2) {
+          return item;
+        }
+      }
+      return null;
+    };
+
+    const _gripdown = e => {
+      const {side} = e;
+      const hoveredItem = _getHoveredItem(side);
+
+      console.log('got hovered item', hoveredItem);
+    };
+    input.on('gripdown', _gripdown);
+
     const chunker = chnkr.makeChunker({
       resolution: 32,
       range: 2,
@@ -95,15 +147,24 @@ class Items {
             const itemsChunkMesh = _makeItemsChunkMesh(itemsChunkData, x, z);
             scene.add(itemsChunkMesh);
 
-            chunk.data = itemsChunkMesh;
+            const itemRange = _addItems(itemsChunkData);
+
+            chunk.data = {
+              itemsChunkMesh,
+              itemRange,
+            };
           });
       });
       return Promise.all(addedPromises)
         .then(() => {
           removed.forEach(chunk => {
-            const {data: itemsChunkMesh} = chunk;
+            const {data} = chunk;
+            const {itemsChunkMesh} = data;
             scene.remove(itemsChunkMesh);
             itemsChunkMesh.destroy();
+
+            const {itemRange} = data;
+            _removeItems(itemRange);
           });
         })
     };

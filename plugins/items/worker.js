@@ -10,6 +10,7 @@ const {
   NUM_CELLS_OVERSCAN,
 
   DEFAULT_SEED,
+  ITEMS,
 } = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
 
@@ -40,7 +41,7 @@ const _copyIndices = (src, dst, startIndexIndex, startAttributeIndex) => {
 };
 
 const itemsGeometries = [
-  (() => {
+  (() => { // stick
     const resolution = 12;
     const baseLine1 = new THREE.Line3(
       new THREE.Vector3(0, 0, -resolution * 0.35),
@@ -101,7 +102,7 @@ const itemsGeometries = [
 
     return geometry;
   })(),
-  (() => {
+  (() => { // rock
     const resolution = 12;
     const baseLine1 = new THREE.Line3(
       new THREE.Vector3(0, 0, -resolution * 0.15),
@@ -169,8 +170,10 @@ const _makeItemsChunkMesh = (x, y, itemsGeometries, points, heightRange) => {
   const normals = new Float32Array(NUM_POSITIONS_CHUNK * 3);
   const colors = new Float32Array(NUM_POSITIONS_CHUNK * 3);
   const indices = new Uint32Array(NUM_POSITIONS_CHUNK * 3);
+  const items = new Float32Array(NUM_POSITIONS_CHUNK * 3);
   let attributeIndex = 0;
   let indexIndex = 0;
+  let itemIndex = 0;
 
   const position = new THREE.Vector3();
   const quaternion = new THREE.Quaternion();
@@ -192,7 +195,8 @@ const _makeItemsChunkMesh = (x, y, itemsGeometries, points, heightRange) => {
         )
         quaternion.setFromAxisAngle(upVector, Math.random() * Math.PI * 2);
         matrix.compose(position, quaternion, scale);
-        const geometry = itemsGeometries[Math.floor(Math.random() * itemsGeometries.length)]
+        const typeIndex = Math.floor(Math.random() * ITEMS.length);
+        const geometry = itemsGeometries[typeIndex]
           .clone()
           .applyMatrix(matrix);
         const newPositions = geometry.getAttribute('position').array;
@@ -203,9 +207,12 @@ const _makeItemsChunkMesh = (x, y, itemsGeometries, points, heightRange) => {
         colors.set(newColors, attributeIndex);
         const newIndices = geometry.index.array;
         _copyIndices(newIndices, indices, indexIndex, attributeIndex / 3);
+        const newItems = Float32Array.from([typeIndex].concat(position.toArray()));
+        items.set(newItems, itemIndex);
 
         attributeIndex += newPositions.length;
         indexIndex += newIndices.length;
+        itemIndex += newItems.length;
       }
     }
   }
@@ -215,6 +222,7 @@ const _makeItemsChunkMesh = (x, y, itemsGeometries, points, heightRange) => {
     normals: new Float32Array(normals.buffer, normals.byteOffset, attributeIndex),
     colors: new Float32Array(colors.buffer, colors.byteOffset, attributeIndex),
     indices: new Uint32Array(indices.buffer, indices.byteOffset, indexIndex),
+    items: new Float32Array(items.buffer, items.byteOffset, itemIndex),
     heightRange: [
       heightRange[0],
       heightRange[1] + 1, // account for item height
