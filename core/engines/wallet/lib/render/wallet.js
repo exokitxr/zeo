@@ -11,14 +11,14 @@ const numTagsPerPage = 6;
 
 const makeRenderer = ({creatureUtils}) => {
 
-const getWalletPageSrc = ({loading, error, inputText, inputValue, asset, assets, numTags, page, focus}) => {
+const getWalletPageSrc = ({loading, error, inputText, inputValue, asset, assets, numTags, page, bill, focus}) => {
   return `\
     <div style="display: flex; min-height: ${HEIGHT}px;">
       ${!error ?
         (asset === null ?
-          getAssetsPageSrc({loading, inputText, inputValue, assets, numTags, page, focus})
+          getAssetsPageSrc({loading, inputText, inputValue, assets, numTags, page, bill, focus})
         :
-          getAssetPageSrc(asset)
+          getAssetPageSrc({asset, bill})
         )
       :
         `<div style="display: flex; margin-bottom: 100px; font-size: 30px; align-items: center; justify-content: center; flex-grow: 1; flex-direction: column;">
@@ -29,7 +29,7 @@ const getWalletPageSrc = ({loading, error, inputText, inputValue, asset, assets,
     </div>
   `;
 };
-const getAssetsPageSrc = ({loading, inputText, inputValue, assets, numTags, page, focus}) => {
+const getAssetsPageSrc = ({loading, inputText, inputValue, assets, numTags, page, bill, focus}) => {
   const leftSrc = `\
     <div style="display: flex; padding: 30px; flex-grow: 1; flex-direction: column;">
       <div style="display: flex; font-size: 36px; line-height: 1.4; align-items: center;">
@@ -47,7 +47,7 @@ const getAssetsPageSrc = ({loading, inputText, inputValue, assets, numTags, page
           `<div style="display: flex; flex-grow: 1; flex-direction: column;">
             ${assets
               .slice(page * numTagsPerPage, (page + 1) * numTagsPerPage)
-              .map(assetSpec => getAssetSrc(assetSpec))
+              .map(assetSpec => getAssetSrc(assetSpec, bill))
               .join('\n')}
           </div>`
         : `\
@@ -84,24 +84,14 @@ const getAssetsPageSrc = ({loading, inputText, inputValue, assets, numTags, page
     </div>
   `;
 };
-const getAssetSrc = assetSpec => {
+const getAssetSrc = (assetSpec, bill) => {
   const {asset, quantity} = assetSpec;
   const quantityString = _commaizeQuantity(quantity);
   const id = asset; // XXX
-  const isStatic = true;
-  const isSub = false;
-  const tagName = isStatic ? 'a' : 'div';
-  const linkTagName = isStatic ? 'div' : 'a';
-  const onclick = (() => {
-    if (!isSub) {
-      return `asset:main:${id}`;
-    } else {
-      return `asset:bill:${id}:${quantity}`;
-    }
-  })();
+  const billFocus = Boolean(bill) && bill.asset === asset;
 
   return `\
-    <${tagName} style="position: relative; display: flex; padding-bottom: 20px; border-bottom: 1px solid #EEE; text-decoration: none; overflow: hidden; box-sizing: border-box;" onclick="${onclick}">
+    <a style="position: relative; display: flex; padding-bottom: 20px; ${billFocus ? 'background-color: #000; color: #FFF;' : 'border-bottom: 1px solid #EEE;'} text-decoration: none; overflow: hidden; box-sizing: border-box;" onclick="asset:main:${id}">
       <div style="display: flex; margin-left: -30px; margin-right: -80px; padding-left: 30px; padding-right: 80px; flex-grow: 1; flex-direction: column; box-sizing: border-box;">
         <div style="display: flex; flex-grow: 1;">
           ${creatureUtils.makeSvgCreature('asset:' + asset, {
@@ -118,11 +108,12 @@ const getAssetSrc = assetSpec => {
           </div>
         </div>
       </div>
-    </${tagName}>
+    </a>
   `;
 };
-const getAssetPageSrc = ({asset, quantity}) => {
+const getAssetPageSrc = ({asset: {asset, quantity}, bill}) => {
   const quantityString = _commaizeQuantity(quantity);
+  const billFocusQuantity = (bill && bill.asset === asset) ? bill.quantity : null;
 
   return `\
     <div style="display: flex; position: relative; width: ${WIDTH}; height: ${HEIGHT}px;">
@@ -151,7 +142,7 @@ const getAssetPageSrc = ({asset, quantity}) => {
               const id = asset; // XXX
               const billQuantityString = _commaizeQuantity(billQuantity);
 
-              return `<a style="display: flex; width: ${(WIDTH - (30 * 2) - 20) / 3}px; padding: 10px; font-size: 30px; font-weight: 400; box-sizing: border-box;" onclick="asset:bill:${id}:${billQuantity}">¤ ${billQuantityString}</a>`;
+              return `<a style="display: flex; width: ${(WIDTH - (30 * 2) - 20) / 3}px; padding: 10px; ${billFocusQuantity === billQuantity ? 'background-color: #000; color: #FFF;' : ''} font-size: 30px; font-weight: 400; box-sizing: border-box;" onclick="asset:bill:${id}:${billQuantity}">¤ ${billQuantityString}</a>`;
             })
             .join('\n')
           }
