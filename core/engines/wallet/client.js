@@ -118,6 +118,7 @@ class Wallet {
 
         const walletRenderer = walletRender.makeRenderer({creatureUtils});
 
+        const zeroVector = new THREE.Vector3();
         const oneVector = new THREE.Vector3(1, 1, 1);
         const forwardVector = new THREE.Vector3(0, 0, -1);
         const zeroQuaternion = new THREE.Quaternion();
@@ -131,9 +132,6 @@ class Wallet {
           fragmentShader: ASSET_SHADER.fragmentShader,
           // transparent: true,
           // depthTest: false,
-        });
-        const gridMaterial = new THREE.MeshBasicMaterial({
-          vertexColors: THREE.VertexColors,
         });
         const mainFontSpec = {
           fonts: biolumi.getFonts(),
@@ -196,27 +194,7 @@ class Wallet {
         };
 
         const _makeAssetsMesh = () => {
-          const mesh = (() => {
-            const geometry = new THREE.BufferGeometry();
-            const positions = new Float32Array(NUM_POSITIONS * 3);
-            geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
-            const colors = new Float32Array(NUM_POSITIONS * 3);
-            geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
-            const dys = new Float32Array(NUM_POSITIONS * 2);
-            geometry.addAttribute('dy', new THREE.BufferAttribute(dys, 2));
-            // geometry.setIndex(new THREE.BufferAttribute(new Uint16Array(NUM_POSITIONS * 3), 1));
-            geometry.setDrawRange(0, 0);
-            geometry.boundingSphere = new THREE.Sphere(
-              new THREE.Vector3(0, 0, 0),
-              1
-            );
-
-            const material = assetsMaterial;
-
-            const mesh = new THREE.Mesh(geometry, material);
-            mesh.frustumCulled = false;
-            return mesh;
-          })();
+          const mesh = new THREE.Object3D();
 
           class AssetInstance extends Grabbable {
             constructor(
@@ -235,22 +213,6 @@ class Wallet {
               this.asset = asset;
               this.quantity = quantity;
               this.owner = owner;
-
-              const geometry = (() => {
-                const imageData = assets.getSpriteImageData('asset:' + asset);
-                const pixelSize = 0.02;
-                const geometry = spriteUtils.makeImageDataGeometry(imageData, pixelSize);
-                const positions = geometry.getAttribute('position').array;
-                const numPositions = positions.length / 3;
-                const dys = new Float32Array(numPositions * 2);
-                for (let i = 0; i < numPositions; i++) {
-                  dys[(i * 2) + 0] = positions[(i * 3) + 0] * scale[0];
-                  dys[(i * 2) + 1] = positions[(i * 3) + 2] * scale[2];
-                }
-                geometry.addAttribute('dy', new THREE.BufferAttribute(dys, 2));
-                return geometry;
-              })();
-              this.geometry = geometry;
 
               this._visible = true;
             }
@@ -312,19 +274,17 @@ class Wallet {
                     });
                   }
 
-                  assetsMesh.geometryNeedsUpdate = true;
-
                   break;
                 }
                 case 'update': {
                   super.emit(t, e);
 
-                  assetsMesh.geometryNeedsUpdate = true;
-
                   break;
                 }
                 default: {
                   super.emit(t, e);
+
+                  break;
                 }
               }
             }
@@ -360,32 +320,6 @@ class Wallet {
               this._visible = false;
             }
 
-            setState(position, rotation, scale) {
-              super.setState(position, rotation, scale);
-
-              this.updateGeometry();
-            }
-
-            setStateLocal(position, rotation, scale) {
-              super.setStateLocal(position, rotation, scale);
-
-              this.updateGeometry();
-            }
-
-            updateGeometry() {
-              const {position, rotation, scale, geometry} = this;
-
-              const positions = geometry.getAttribute('position').array;
-              const numPositions = positions.length / 3;
-              const dys = geometry.getAttribute('dy').array;
-              for (let i = 0; i < numPositions; i++) {
-                dys[(i * 2) + 0] = positions[(i * 3) + 0] * scale[0];
-                dys[(i * 2) + 1] = positions[(i * 3) + 2] * scale[2];
-              }
-
-              mesh.geometryNeedsUpdate = true;
-            }
-
             requestChangeOwner(dstAddress) {
               const {asset: srcAsset, quantity: srcQuantity, owner: srcAddress} = this;
 
@@ -408,13 +342,68 @@ class Wallet {
 
           const assetInstances = [];
           mesh.getAssetInstance = id => assetInstances.find(assetInstance => assetInstance.id === id);
-          mesh.geometryNeedsUpdate = false;
           mesh.addAssetInstance = (id, {position, rotation, scale, asset, quantity, owner}) => {
             const assetInstance = new AssetInstance(id, {position, rotation, scale, asset, quantity, owner});
             hand.addGrabbable(assetInstance);
             assetInstances.push(assetInstance);
 
-            mesh.geometryNeedsUpdate = true;
+            const mesh = (() => {
+              const geometry = (() => {
+                const imageData = assets.getSpriteImageData('asset:' + asset);
+                const pixelSize = 0.02;
+                const geometry = spriteUtils.makeImageDataGeometry(imageData, pixelSize);
+                const positions = geometry.getAttribute('position').array;
+                const numPositions = positions.length / 3;
+                const dys = new Float32Array(numPositions * 2);
+                for (let i = 0; i < numPositions; i++) {
+                  dys[(i * 2) + 0] = positions[(i * 3) + 0] * scale[0];
+                  dys[(i * 2) + 1] = positions[(i * 3) + 2] * scale[2];
+                }
+                geometry.addAttribute('dy', new THREE.BufferAttribute(dys, 2));
+                geometry.dys = dys;
+                geometry.zeroDys = new Float32Array(dys.length);
+                geometry.boundingSphere = new THREE.Sphere(
+                  zeroVector,
+                  1
+                );
+                return geometry;
+              })();
+
+              const material = assetsMaterial;
+
+              const mesh = new THREE.Mesh(geometry, material);
+
+              mesh.destroy = () => {
+                geometry.dispose();
+              };
+
+              return mesh;
+            })();
+            scene.add(mesh);
+            assetInstance.mesh = mesh;
+
+            assetInstance.on('grab', () => {
+              const {geometry} = mesh;
+              const dyAttribute = geometry.getAttribute('dy');
+              dyAttribute.array = geometry.zeroDys;
+              dyAttribute.needsUpdate = true;
+            });
+            assetInstance.on('release', () => {
+              const {geometry} = mesh;
+              const dyAttribute = geometry.getAttribute('dy');
+              dyAttribute.array = geometry.dys;
+              dyAttribute.needsUpdate = true;
+            });
+            assetInstance.on('update', ({position, rotation, scale}) => {
+              mesh.position.fromArray(position);
+              mesh.quaternion.fromArray(rotation);
+              if (assetInstance.isGrabbed()) {
+                mesh.quaternion.multiply(forwardQuaternion);
+                mesh.position.add(new THREE.Vector3(0, 0, -0.02 / 2).applyQuaternion(mesh.quaternion));
+              }
+              mesh.scale.fromArray(scale);
+              mesh.updateMatrixWorld();
+            });
 
             return assetInstance;
           };
@@ -422,48 +411,9 @@ class Wallet {
             const assetInstance = assetInstances.splice(assetInstances.findIndex(assetInstance => assetInstance.id === id), 1)[0];
             hand.destroyGrabbable(assetInstance);
 
-            mesh.geometryNeedsUpdate = true;
-          };
-          mesh.updateGeometry = () => {
-            if (mesh.geometryNeedsUpdate) {
-              const {geometry} = mesh;
-              const positionsAttribute = geometry.getAttribute('position');
-              const {array: positions} = positionsAttribute;
-              const colorsAttribute = geometry.getAttribute('color');
-              const {array: colors} = colorsAttribute;
-              const dysAttribute = geometry.getAttribute('dy');
-              const {array: dys} = dysAttribute;
-
-              let attributeIndex = 0;
-              for (let i = 0; i < assetInstances.length; i++) {
-                const assetInstance = assetInstances[i];
-
-                if (assetInstance.isVisible()) {
-                  const {geometry: assetGeometry} = assetInstance;
-                  const matrix = assetInstance.getMatrix();
-
-                  const newGeometry = assetGeometry.clone()
-                    .applyMatrix(matrix);
-                  const newPositions = newGeometry.getAttribute('position').array;
-                  positions.set(newPositions, attributeIndex);
-                  const newColors = newGeometry.getAttribute('color').array;
-                  colors.set(newColors, attributeIndex);
-                  const geometryDys = newGeometry.getAttribute('dy').array;
-                  const newDys = assetInstance.isGrabbed() ? new Float32Array(geometryDys.length) : geometryDys;
-                  dys.set(newDys, attributeIndex / 3 * 2);
-
-                  attributeIndex += newPositions.length;
-                }
-              }
-
-              positionsAttribute.needsUpdate = true;
-              colorsAttribute.needsUpdate = true;
-              dysAttribute.needsUpdate = true;
-
-              geometry.setDrawRange(0, attributeIndex / 3);
-
-              mesh.geometryNeedsUpdate = false;
-            }
+            const {mesh} = assetInstance;
+            scene.remove(mesh);
+            mesh.destroy();
           };
 
           return mesh;
@@ -937,15 +887,7 @@ class Wallet {
         rend.on('tabchange', _tabchange);
 
         const _update = () => {
-          const _updateAssets = () => {
-            assetsMesh.updateGeometry();
-          };
-          const _updateAssetsMaterial = () => {
-            assetsMaterial.uniforms.theta.value = (Date.now() * ROTATE_SPEED * (Math.PI * 2) % (Math.PI * 2));
-          };
-
-          _updateAssets();
-          _updateAssetsMaterial();
+          assetsMaterial.uniforms.theta.value = (Date.now() * ROTATE_SPEED * (Math.PI * 2) % (Math.PI * 2));
         };
         rend.on('update', _update);
 
