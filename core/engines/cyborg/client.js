@@ -142,7 +142,7 @@ class Cyborg {
                 const positionDiffAcc = new THREE.Vector3(0, 0, 0);
                 for (let i = 0; i < positionDiffs.length; i++) {
                   const positionDiff = positionDiffs[positionDiffs.length - 1 - i];
-                  positionDiffAcc.add(positionDiff.clone().divideScalar(Math.pow(2, i)));
+                  positionDiffAcc.add(positionDiff);
                 }
 
                 const firstStatus = prevStatuses[0];
@@ -183,7 +183,7 @@ class Cyborg {
                 const angleDiffAcc = new THREE.Vector3(0, 0, 0);
                 for (let i = 0; i < angleDiffs.length; i++) {
                   const angleDiff = angleDiffs[angleDiffs.length - 1 - i];
-                  angleDiffAcc.add(angleDiff.clone().divideScalar(Math.pow(2, i)));
+                  angleDiffAcc.add(angleDiff);
                 }
 
                 const firstStatus = prevStatuses[0];
