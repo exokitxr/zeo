@@ -1,3 +1,5 @@
+const mod = require('mod-loop');
+
 const POSITION_SPEED = 0.05;
 const POSITION_SPEED_FAST = POSITION_SPEED * 5;
 const ROTATION_SPEED = 0.02 / (Math.PI * 2);
@@ -48,6 +50,7 @@ class Cyborg {
           const {events} = jsUtils;
           const {EventEmitter} = events;
 
+          const zeroVector = new THREE.Vector3();
           const solidMaterial = new THREE.MeshPhongMaterial({
             color: 0x666666,
             shininess: 0,
@@ -60,138 +63,98 @@ class Cyborg {
           const RAY_COLOR = 0x44c2ff;
           const RAY_HIGHLIGHT_COLOR = new THREE.Color(RAY_COLOR).multiplyScalar(0.5).getHex();
 
+          class PRS {
+            constructor() {
+              this.position = new THREE.Vector3();
+              this.rotation = new THREE.Quaternion();
+              this.scale = new THREE.Vector3(1, 1, 1);
+              this.worldPosition = new THREE.Vector3();
+              this.worldRotation = new THREE.Quaternion();
+              this.worldScale = new THREE.Vector3(1, 1, 1);
+            }
+          }
+
+          class PrevStatus {
+            constructor() {
+              // this.hmd = new PRS();
+              this.controllers = {
+                left: new PRS(),
+                right: new PRS(),
+              };
+              this.timestamp = 0;
+            }
+          }
+
           class Player extends EventEmitter {
             constructor() {
               super();
 
-              const _makePositionRotationScale = () => ({
-                position: new THREE.Vector3(),
-                rotation: new THREE.Quaternion(),
-                scale: new THREE.Vector3(1, 1, 1),
-              });
-              this.prevStatuses = [
-                {
-                  status: {
-                    hmd: _makePositionRotationScale(),
-                    controllers: {
-                      left: _makePositionRotationScale(),
-                      right: _makePositionRotationScale(),
-                    },
-                  },
-                  timestamp: Date.now(),
-                }
-              ];
-            }
-
-            getStatus() {
-              return {
-                hmd: {
-                  position: camera.position.clone(),
-                  rotation: camera.quaternion.clone(),
-                  scale: camera.scale.clone(),
-                },
-                controllers: {
-                  left: {
-                    position: controllers.left.mesh.position.clone(),
-                    rotation: controllers.left.mesh.quaternion.clone(),
-                    scale: controllers.left.mesh.scale.clone(),
-                    worldPosition: controllers.left.mesh.worldPosition.clone(),
-                    worldRotation: controllers.left.mesh.worldRotation.clone(),
-                    worldScale: controllers.left.mesh.worldScale.clone(),
-                  },
-                  right: {
-                    position: controllers.right.mesh.position.clone(),
-                    rotation: controllers.right.mesh.quaternion.clone(),
-                    scale: controllers.right.mesh.scale.clone(),
-                    worldPosition: controllers.right.mesh.worldPosition.clone(),
-                    worldRotation: controllers.right.mesh.worldRotation.clone(),
-                    worldScale: controllers.right.mesh.worldScale.clone(),
-                  },
-                },
-              };
+              const prevStatuses = Array(NUM_PREV_STATUSES);
+              for (let i = 0; i < NUM_PREV_STATUSES; i++) {
+                prevStatuses[i] = new PrevStatus();
+              }
+              this.prevStatuses = prevStatuses;
+              this.prevStatusIndex = NUM_PREV_STATUSES;
             }
 
             snapshotStatus() {
-              const snapshot = {
-                status: this.getStatus(),
-                timestamp: Date.now(),
-              };
+              this.prevStatusIndex = mod(this.prevStatusIndex + 1, NUM_PREV_STATUSES);
 
-              this.prevStatuses.push(snapshot);
+              const prevStatus = this.prevStatuses[this.prevStatusIndex];
 
-              while (this.prevStatuses.length > NUM_PREV_STATUSES) {
-                this.prevStatuses.shift();
-              }
+              /* prevStatus.hmd.position.copy(camera.position);
+              prevStatus.hmd.rotation.copy(camera.quaternion);
+              prevStatus.hmd.scale.copy(camera.scale);
+              prevStatus.hmd.worldPosition.copy(camera.position);
+              prevStatus.hmd.worldRotation.copy(camera.quaternion);
+              prevStatus.hmd.worldScale.copy(camera.scale); */
+
+              prevStatus.controllers.left.position.copy(controllers.left.mesh.position);
+              prevStatus.controllers.left.rotation.copy(controllers.left.mesh.quaternion);
+              prevStatus.controllers.left.scale.copy(controllers.left.mesh.scale);
+              prevStatus.controllers.left.worldPosition.copy(controllers.left.mesh.worldPosition);
+              prevStatus.controllers.left.worldRotation.copy(controllers.left.mesh.worldRotation);
+              prevStatus.controllers.left.worldScale.copy(controllers.left.mesh.worldScale);
+
+              prevStatus.controllers.right.position.copy(controllers.right.mesh.position);
+              prevStatus.controllers.right.rotation.copy(controllers.right.mesh.quaternion);
+              prevStatus.controllers.right.scale.copy(controllers.right.mesh.scale);
+              prevStatus.controllers.right.worldPosition.copy(controllers.right.mesh.worldPosition);
+              prevStatus.controllers.right.worldRotation.copy(controllers.right.mesh.worldRotation);
+              prevStatus.controllers.right.worldScale.copy(controllers.right.mesh.worldScale);
+
+              prevStatus.timestamp = Date.now();
             }
 
             getControllerLinearVelocity(side) {
-              const {prevStatuses} = this;
+              const {prevStatuses, prevStatusIndex} = this;
 
-              if (prevStatuses.length > 1) {
-                const positionDiffs = (() => {
-                  const result = Array(prevStatuses.length - 1);
-                  for (let i = 0; i < prevStatuses.length - 1; i++) {
-                    const prevStatus = prevStatuses[i];
-                    const nextStatus = prevStatuses[i + 1];
-                    const positionDiff = nextStatus.status.controllers[side].worldPosition.clone()
-                      .sub(prevStatus.status.controllers[side].worldPosition);
-                    result[i] = positionDiff;
-                  }
-                  return result;
-                })();
-                const positionDiffAcc = new THREE.Vector3(0, 0, 0);
-                for (let i = 0; i < positionDiffs.length; i++) {
-                  const positionDiff = positionDiffs[positionDiffs.length - 1 - i];
-                  positionDiffAcc.add(positionDiff);
-                }
+              const lastStatus = prevStatuses[prevStatusIndex];
+              const firstStatus = prevStatuses[mod(prevStatusIndex + 1, NUM_PREV_STATUSES)];
 
-                const firstStatus = prevStatuses[0];
-                const lastStatus = prevStatuses[prevStatuses.length - 1];
-                return positionDiffAcc.divideScalar((lastStatus.timestamp - firstStatus.timestamp) / 1000);
-              } else {
-                return new THREE.Vector3(0, 0, 0);
-              }
+              const positionDiff = lastStatus.controllers[side].worldPosition.clone()
+                .sub(firstStatus.controllers[side].worldPosition);
+              const timeDiff = lastStatus.timestamp - firstStatus.timestamp;
+              return timeDiff > 0 ? positionDiff.divideScalar(timeDiff / 1000) : zeroVector;
             }
 
             getControllerAngularVelocity(side) {
-              const {prevStatuses} = this;
+              const {prevStatuses, prevStatusIndex} = this;
 
-              if (prevStatuses.length > 1) {
-                const angleDiffs = (() => {
-                  const result = Array(prevStatuses.length - 1);
-                  for (let i = 0; i < prevStatuses.length - 1; i++) {
-                    const prevStatus = prevStatuses[i];
-                    const nextStatus = prevStatuses[i + 1];
-                    const quaternionDiff = nextStatus.status.controllers[side].worldRotation.clone()
-                      .multiply(prevStatus.status.controllers[side].worldRotation.clone().inverse());
-                    const axisAngle = (() => {
-                      const x = quaternionDiff.x / Math.sqrt(1 - (quaternionDiff.w * quaternionDiff.w));
-                      const y = quaternionDiff.y / Math.sqrt(1 - (quaternionDiff.w * quaternionDiff.w));
-                      const z = quaternionDiff.y / Math.sqrt(1 - (quaternionDiff.w * quaternionDiff.w));
-                      const angle = 2 * Math.acos(quaternionDiff.w);
+              const lastStatus = prevStatuses[prevStatusIndex];
+              const firstStatus = prevStatuses[mod(prevStatusIndex + 1, NUM_PREV_STATUSES)];
 
-                      return {
-                        axis: new THREE.Vector3(x, y, z),
-                        angle: angle,
-                      };
-                    })();
-                    const angleDiff = axisAngle.axis.clone().multiplyScalar(axisAngle.angle);
-                    result[i] = angleDiff;
-                  }
-                  return result;
-                })();
-                const angleDiffAcc = new THREE.Vector3(0, 0, 0);
-                for (let i = 0; i < angleDiffs.length; i++) {
-                  const angleDiff = angleDiffs[angleDiffs.length - 1 - i];
-                  angleDiffAcc.add(angleDiff);
-                }
-
-                const firstStatus = prevStatuses[0];
-                const lastStatus = prevStatuses[prevStatuses.length - 1];
-                return angleDiffAcc.divideScalar((lastStatus.timestamp - firstStatus.timestamp) / 1000);
-              } else {
-                return new THREE.Vector3(0, 0, 0);
-              }
+              const quaternionDiff = lastStatus.controllers[side].worldRotation.clone()
+                .multiply(firstStatus.controllers[side].worldRotation.clone().inverse());
+              const angleDiff = (() => {
+                const x = quaternionDiff.x / Math.sqrt(1 - (quaternionDiff.w * quaternionDiff.w));
+                const y = quaternionDiff.y / Math.sqrt(1 - (quaternionDiff.w * quaternionDiff.w));
+                const z = quaternionDiff.z / Math.sqrt(1 - (quaternionDiff.w * quaternionDiff.w));
+                const angle = 2 * Math.acos(quaternionDiff.w);
+                return new THREE.Vector3(x, y, z).multiplyScalar(angle);
+              })();
+              const timeDiff = lastStatus.timestamp - firstStatus.timestamp;
+              return timeDiff > 0 ? positionDiff.divideScalar(timeDiff / 1000) : zeroVector;
             }
           }
 
