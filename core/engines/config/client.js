@@ -80,7 +80,7 @@ class Config {
         '/core/engines/webvr',
         '/core/engines/keyboard',
         '/core/engines/biolumi',
-        '/core/engines/assets',
+        '/core/engines/resource',
         '/core/engines/rend',
         '/core/utils/js-utils',
       ]),
@@ -93,7 +93,7 @@ class Config {
         webvr,
         keyboard,
         biolumi,
-        assets,
+        resource,
         rend,
         jsUtils,
       ],
@@ -104,7 +104,7 @@ class Config {
         const {THREE, scene} = three;
         const {events} = jsUtils;
         const {EventEmitter} = events;
-        const {sfx} = assets;
+        const {sfx} = resource;
 
         const _decomposeObjectMatrixWorld = object => {
           const position = new THREE.Vector3();

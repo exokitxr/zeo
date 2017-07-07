@@ -59,7 +59,7 @@ class Rend {
       '/core/engines/three',
       '/core/engines/webvr',
       '/core/engines/biolumi',
-      '/core/engines/assets',
+      '/core/engines/resource',
       '/core/utils/js-utils',
       '/core/utils/geometry-utils',
       '/core/utils/hash-utils',
@@ -70,7 +70,7 @@ class Rend {
       three,
       webvr,
       biolumi,
-      assets,
+      resource,
       jsUtils,
       geometryUtils,
       hashUtils,
@@ -81,7 +81,7 @@ class Rend {
         const {events} = jsUtils;
         const {EventEmitter} = events;
         const {murmur} = hashUtils;
-        const {sfx} = assets;
+        const {sfx} = resource;
 
         const transparentMaterial = biolumi.getTransparentMaterial();
 

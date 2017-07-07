@@ -78,7 +78,7 @@ class Wallet {
       '/core/engines/input',
       '/core/engines/webvr',
       '/core/engines/biolumi',
-      '/core/engines/assets',
+      '/core/engines/resource',
       '/core/engines/cyborg',
       '/core/engines/keyboard',
       '/core/engines/hand',
@@ -96,7 +96,7 @@ class Wallet {
       input,
       webvr,
       biolumi,
-      assets,
+      resource,
       cyborg,
       keyboard,
       hand,
@@ -114,7 +114,7 @@ class Wallet {
         const {events} = jsUtils;
         const {EventEmitter} = events;
         const {Grabbable} = hand;
-        const {sfx} = assets;
+        const {sfx} = resource;
 
         const walletRenderer = walletRender.makeRenderer({creatureUtils});
 
@@ -349,7 +349,7 @@ class Wallet {
 
             const mesh = (() => {
               const geometry = (() => {
-                const imageData = assets.getSpriteImageData('asset:' + asset);
+                const imageData = resource.getSpriteImageData('asset:' + asset);
                 const pixelSize = 0.02;
                 const geometry = spriteUtils.makeImageDataGeometry(imageData, pixelSize);
                 const positions = geometry.getAttribute('position').array;

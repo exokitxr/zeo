@@ -74,7 +74,7 @@ class Keyboard {
         '/core/engines/three',
         '/core/engines/webvr',
         '/core/engines/biolumi',
-        '/core/engines/assets',
+        '/core/engines/resource',
         '/core/engines/rend',
         '/core/utils/js-utils',
         '/core/utils/geometry-utils',
@@ -89,7 +89,7 @@ class Keyboard {
         three,
         webvr,
         biolumi,
-        assets,
+        resource,
         rend,
         jsUtils,
         geometryUtils,
@@ -103,7 +103,7 @@ class Keyboard {
         const {THREE, scene, camera} = three;
         const {events} = jsUtils;
         const {EventEmitter} = events;
-        const {sfx} = assets;
+        const {sfx} = resource;
 
         const transparentImg = biolumi.getTransparentImg();
         const transparentMaterial = biolumi.getTransparentMaterial();
