@@ -140,7 +140,7 @@ class Zeo {
             '/core/engines/voicechat',
             '/core/engines/fs',
             '/core/engines/somnifer',
-            '/core/engines/physics',
+            // '/core/engines/physics',
             '/core/engines/stck',
             '/core/utils/js-utils',
             '/core/utils/type-utils',
@@ -191,7 +191,7 @@ class Zeo {
                 voicechat,
                 fs,
                 somnifer,
-                physics,
+                // physics,
                 stck,
                 jsUtils,
                 typeUtils,
@@ -691,7 +691,7 @@ class Zeo {
                         }
                       }
 
-                      class ZeoPhysicsApi {
+                      /* class ZeoPhysicsApi {
                         makeBody(object, id, opts) {
                           return physics.makeBody(object, id, opts);
                         }
@@ -703,7 +703,7 @@ class Zeo {
                         refresh() {
                           physics.refresh();
                         }
-                      }
+                      } */
 
                       class ZeoStckApi {
                         makeDynamicBoxBody() {
@@ -835,7 +835,7 @@ class Zeo {
                           this.broadcast = new ZeoBroadcastApi();
                           this.ui = new ZeoUiApi();
                           this.sound = new ZeoSoundApi();
-                          this.physics = new ZeoPhysicsApi();
+                          // this.physics = new ZeoPhysicsApi();
                           this.stck = new ZeoStckApi();
                           this.intersect = new ZeoIntersectApi();
                           this.teleport = new ZeoTeleportApi();
