@@ -80,7 +80,7 @@ class Stck {
           }
         }
 
-        const _makeDynamicBoxBody = (position, size) => {
+        const _makeDynamicBoxBody = (position, size, velocity) => {
           const id = _makeId();
           const body = new Body(id);
           bodies[id] = body;
@@ -90,6 +90,7 @@ class Stck {
             rotation: [0, 0, 0, 1],
             scale: [1, 1, 1],
             size: size,
+            velocity: velocity,
           });
 
           return body;

@@ -78,6 +78,7 @@ class Wallet {
       '/core/engines/webvr',
       '/core/engines/biolumi',
       '/core/engines/assets',
+      '/core/engines/cyborg',
       '/core/engines/keyboard',
       '/core/engines/hand',
       '/core/engines/rend',
@@ -95,6 +96,7 @@ class Wallet {
       webvr,
       biolumi,
       assets,
+      cyborg,
       keyboard,
       hand,
       rend,
@@ -1099,9 +1101,10 @@ class Wallet {
 
         const _bindAssetInstancePhysics = (assetInstance, immediate) => {
           let body = null;
-          const _addBody = () => {
-            body = stck.makeDynamicBoxBody(assetInstance.position, [0.1, 0.1, 0.1]);
-            body.on('update', ({position, rotation, scale, velocity}) => {
+          const _addBody = ({velocity = [0, 0, 0]} = {}) => {
+            const size = [0.1, 0.1, 0.1];
+            body = stck.makeDynamicBoxBody(assetInstance.position, size, velocity);
+            body.on('update', ({position, rotation, scale}) => {
               assetInstance.setStateLocal(position, rotation, scale);
             });
           };
@@ -1109,8 +1112,14 @@ class Wallet {
             stck.destroyBody(body);
             body = null;
           };
-          assetInstance.on('release', () => {
-            _addBody();
+          assetInstance.on('release', e => {
+            const {side} = e;
+            const player = cyborg.getPlayer();
+            const linearVelocity = player.getControllerLinearVelocity(side);
+
+            _addBody({
+              velocity: linearVelocity.toArray(),
+            });
           });
           assetInstance.on('grab', () => {
             _removeBody();

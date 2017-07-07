@@ -1,5 +1,5 @@
 const FPS = 1000 / 90;
-const GRAVITY = -9.8 / Math.pow(1000, 2);
+const GRAVITY = -9.8 / 1000;
 
 importScripts('/archae/three/three.js');
 const {exports: THREE} = self.module;
@@ -69,7 +69,7 @@ const interval = setInterval(() => {
       .add(upVector.clone().multiplyScalar(GRAVITY * timeDiff));
     const nextPosition = new THREE.Vector3()
       .fromArray(position)
-      .add(nextVelocity.clone().multiplyScalar(timeDiff));
+      .add(nextVelocity.clone().multiplyScalar(timeDiff / 1000));
 
     for (let j = 0; j < staticHeightfieldBodies.length; j++) {
       const staticHeightfieldBody = staticHeightfieldBodies[j];
@@ -103,16 +103,15 @@ const interval = setInterval(() => {
           baryCoord.y * elevations[1] +
           baryCoord.z * elevations[2];
 
-        nextPosition.y = Math.max(nextPosition.y, elevation);
+        if (nextPosition.y < elevation) {
+          nextPosition.y = elevation;
+          nextVelocity.copy(zeroVector);
+        }
       }
     }
 
     const nextPositionArray = nextPosition.toArray();
     const positionDiff = !_arrayEquals(nextPositionArray, position);
-
-    if (!positionDiff) {
-      nextVelocity.copy(zeroVector);
-    }
 
     const nextVelocityArray = nextVelocity.toArray();
     const velocityDiff = !_arrayEquals(nextVelocityArray, velocity);
@@ -140,11 +139,12 @@ self.onmessage = e => {
 
       switch (type) {
         case 'dynamicBox': {
-          const {position, rotation, scale} = spec;
+          const {position, rotation, scale, velocity} = spec;
           const body = new BoxBody(id, {
             position,
             rotation,
             scale,
+            velocity,
           });
           dynamicBoxBodies.push(body);
 
@@ -152,8 +152,6 @@ self.onmessage = e => {
         }
         case 'staticHeightfield': {
           const {position, width, depth, data} = spec;
-          /* const dataU8Array = _base64ToArray(dataString);
-          const data = new Float32Array(dataU8Array.buffer, dataU8Array.byteOffset, dataU8Array.length / 4); */
           const body = new HeightfieldBody(id, {
             position,
             width,
