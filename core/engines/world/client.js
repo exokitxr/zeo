@@ -47,7 +47,7 @@ class World {
       '/core/engines/cyborg',
       '/core/engines/multiplayer',
       '/core/engines/biolumi',
-      '/core/engines/assets',
+      '/core/engines/resource',
       '/core/engines/rend',
       '/core/engines/wallet',
       '/core/engines/keyboard',
@@ -67,7 +67,7 @@ class World {
       cyborg,
       multiplayer,
       biolumi,
-      assets,
+      resource,
       rend,
       wallet,
       keyboard,
@@ -83,7 +83,7 @@ class World {
       if (live) {
         const {THREE, scene, camera} = three;
         const {AutoWs} = networkUtils;
-        const {sfx} = assets;
+        const {sfx} = resource;
 
         const worldRenderer = worldRender.makeRenderer({creatureUtils});
 

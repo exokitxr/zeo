@@ -76,7 +76,7 @@ class Entity {
         '/core/engines/input',
         '/core/engines/webvr',
         '/core/engines/biolumi',
-        '/core/engines/assets',
+        '/core/engines/resource',
         '/core/engines/rend',
         '/core/engines/tags',
         '/core/engines/fs',
@@ -95,7 +95,7 @@ class Entity {
         input,
         webvr,
         biolumi,
-        assets,
+        resource,
         rend,
         tags,
         fs,
@@ -110,7 +110,7 @@ class Entity {
     ]) => {
       if (live) {
         const {THREE, scene} = three;
-        const {sfx} = assets;
+        const {sfx} = resource;
 
         const entityRenderer = entityRender.makeRenderer({typeUtils, creatureUtils});
 

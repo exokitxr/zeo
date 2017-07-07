@@ -26,7 +26,7 @@ class Cyborg {
       '/core/engines/bootstrap',
       '/core/engines/three',
       '/core/engines/webvr',
-      '/core/engines/assets',
+      '/core/engines/resource',
       '/core/engines/biolumi',
       '/core/engines/rend',
       '/core/engines/multiplayer',
@@ -37,7 +37,7 @@ class Cyborg {
         bootstrap,
         three,
         webvr,
-        assets,
+        resource,
         biolumi,
         rend,
         multiplayer,
@@ -46,7 +46,7 @@ class Cyborg {
       ]) => {
         if (live) {
           const {THREE, camera} = three;
-          const {models: {hmdModelMesh, controllerModelMesh}} = assets;
+          const {models: {hmdModelMesh, controllerModelMesh}} = resource;
           const {events} = jsUtils;
           const {EventEmitter} = events;
 
@@ -166,7 +166,7 @@ class Cyborg {
               mesh.worldScale = new THREE.Vector3(1, 1, 1);
               this.mesh = mesh;
 
-              /* const labelMesh = assets.makePlayerLabelMesh({
+              /* const labelMesh = resource.makePlayerLabelMesh({
                 username: rend.getStatus('username'),
               });
               this.labelMesh = labelMesh; */

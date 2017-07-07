@@ -46,7 +46,7 @@ class Servers {
       '/core/engines/three',
       '/core/engines/webvr',
       '/core/engines/biolumi',
-      '/core/engines/assets',
+      '/core/engines/resource',
       '/core/engines/rend',
       '/core/utils/js-utils',
       '/core/utils/creature-utils',
@@ -56,7 +56,7 @@ class Servers {
       three,
       webvr,
       biolumi,
-      assets,
+      resource,
       rend,
       jsUtils,
       creatureUtils,
@@ -65,7 +65,7 @@ class Servers {
         const {THREE, scene} = three;
         const {events} = jsUtils;
         const {EventEmitter} = events;
-        const {sfx} = assets;
+        const {sfx} = resource;
 
         const menuRenderer = menuRender.makeRenderer({
           creatureUtils,

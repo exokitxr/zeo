@@ -41,7 +41,7 @@ class FileEngine {
       '/core/engines/input',
       '/core/engines/webvr',
       '/core/engines/biolumi',
-      '/core/engines/assets',
+      '/core/engines/resource',
       '/core/engines/rend',
       '/core/engines/tags',
       '/core/engines/fs',
@@ -53,7 +53,7 @@ class FileEngine {
       input,
       webvr,
       biolumi,
-      assets,
+      resource,
       rend,
       tags,
       fs,
@@ -63,7 +63,7 @@ class FileEngine {
     ]) => {
       if (live) {
         const {THREE} = three;
-        const {sfx} = assets;
+        const {sfx} = resource;
 
         const fileRenderer = fileRender.makeRenderer({creatureUtils});
 

@@ -24,7 +24,7 @@ class Multiplayer {
     return archae.requestPlugins([
       '/core/engines/three',
       '/core/engines/webvr',
-      '/core/engines/assets',
+      '/core/engines/resource',
       '/core/engines/biolumi',
       '/core/engines/rend',
       '/core/utils/js-utils',
@@ -32,7 +32,7 @@ class Multiplayer {
     ]).then(([
       three,
       webvr,
-      assets,
+      resource,
       biolumi,
       rend,
       jsUtils,
@@ -40,7 +40,7 @@ class Multiplayer {
     ]) => {
       if (live) {
         const {THREE, scene, camera} = three;
-        const {models: {hmdModelMesh, controllerModelMesh}} = assets;
+        const {models: {hmdModelMesh, controllerModelMesh}} = resource;
         const {events} = jsUtils;
         const {EventEmitter} = events;
         const {AutoWs} = networkUtils;
@@ -230,13 +230,13 @@ class Multiplayer {
           object.add(hmd);
           object.hmd = hmd;
 
-          const label = assets.makePlayerLabelMesh({
+          const label = resource.makePlayerLabelMesh({
             username: status.username,
           });
           object.add(label);
           object.label = label;
 
-          const menu = assets.makePlayerMenuMesh({
+          const menu = resource.makePlayerMenuMesh({
             username: status.username,
           });
           object.add(menu);
