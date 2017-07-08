@@ -89,7 +89,7 @@ class Tools {
       return workerPromise;
     };
 
-    const itemSpec = {
+    const itemApi = {
       asset: 'HAMMER',
       itemAddedCallback(grabbable) {
         const polygonMeshes = {};
@@ -340,11 +340,23 @@ class Tools {
         delete grabbable[dataSymbol];
       },
     };
+    items.registerItem(this, itemApi);
 
-    items.registerItem(this, itemSpec);
+    const itemRecipe = {
+      output: 'HAMMER',
+      width: 2,
+      height: 3,
+      input: [
+        'STONE', 'STONE',
+        null, 'WOOD',
+        null, 'WOOD',
+      ],
+    };
+    items.registerRecipe(this, itemRecipe);
 
     this._cleanup = () => {
-      items.unregisterItem(this, itemSpec);
+      items.unregisterItem(this, itemApi);
+      items.unregisterRecipe(this, itemRecipe);
 
       if (worker !== null) {
         worker.terminate();
