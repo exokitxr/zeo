@@ -291,25 +291,6 @@ class Wallet {
               }
             }
 
-            getMatrix() {
-              const {position, rotation, scale} = this;
-              const positionVector = new THREE.Vector3().fromArray(position);
-              const rotationQuaternion = new THREE.Quaternion().fromArray(rotation);
-              const scaleVector = new THREE.Vector3().fromArray(scale);
-              const grabbed = this.isGrabbed();
-
-              const newQuaternion = !grabbed ? zeroQuaternion : rotationQuaternion.clone().multiply(forwardQuaternion);
-              const newPosition = !grabbed ? positionVector : positionVector.clone().add(new THREE.Vector3(0, 0, -0.02 / 2).applyQuaternion(newQuaternion));
-              const hovered = SIDES.some(side => hoverStates[side].asset === this);
-              const newScale = hovered ? scaleVector.clone().multiplyScalar(1.25) : scaleVector;
-
-              return new THREE.Matrix4().compose(
-                newPosition,
-                newQuaternion,
-                newScale
-              );
-            }
-
             isVisible() {
               return this._visible;
             }
