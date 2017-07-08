@@ -335,7 +335,7 @@ class Wallet {
 
             const mesh = (() => {
               const geometry = (() => {
-                const imageData = resource.getSpriteImageData('asset:' + asset);
+                const imageData = resource.getSpriteImageData(asset);
                 const geometry = spriteUtils.makeImageDataGeometry(imageData, pixelSize);
                 const positions = geometry.getAttribute('position').array;
                 const numPositions = positions.length / 3;

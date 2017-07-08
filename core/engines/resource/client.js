@@ -63,11 +63,13 @@ class Assets {
     });
     const _requestSpritesheet = () => Promise.all([
       _requestImage(imgPath + '/spritesheet.png'),
-      _requestJson(imgPath + '/spritesheet.json'),
+      _requestJson(imgPath + '/sprites.json'),
+      _requestJson(imgPath + '/assets.json'),
     ])
       .then(([
         img,
-        json,
+        spriteCoords,
+        assetSprites,
       ]) => {
         const canvas = document.createElement('canvas');
         canvas.width = img.width;
@@ -77,12 +79,13 @@ class Assets {
         const spriteSize = 16;
         canvas.getSpriteImageData = (x, y, w, h) => ctx.getImageData(x, y, spriteSize, spriteSize);
 
-        const names = Object.keys(json);
+        const spriteNames = Object.keys(spriteCoords);
 
         return {
           canvas,
-          names,
-          json,
+          spriteNames,
+          spriteCoords,
+          assetSprites,
         };
       });
     const _requestSfx = () => Promise.all(SFX.map(sfx => sfxr.requestSfx(sfxPath + '/' + sfx + '.ogg')))
@@ -153,8 +156,9 @@ class Assets {
             controllerModelMesh,
           ]) => {
             const _getSpriteImageData = s => {
-              const spriteName = spritesheet.names[Math.floor((murmur(s) / 0xFFFFFFFF) * spritesheet.names.length)];
-              const spriteCoods = spritesheet.json[spriteName];
+              const spriteName = spritesheet.assetSprites[s] ||
+                spritesheet.spriteNames[Math.floor((murmur(s) / 0xFFFFFFFF) * spritesheet.spriteNames.length)];
+              const spriteCoods = spritesheet.spriteCoords[spriteName];
               const [x, y] = spriteCoods;
               const imageData = spritesheet.canvas.getSpriteImageData(x, y);
               return imageData;

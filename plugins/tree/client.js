@@ -173,7 +173,7 @@ class Tree {
               indexAttribute.needsUpdate = true;
 
               const id = _makeId();
-              const asset = 'TREE';
+              const asset = 'WOOD';
               const {gamepads} = pose.getStatus();
               const gamepad = gamepads[side];
               const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale} = gamepad;

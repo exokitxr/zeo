@@ -5,7 +5,7 @@ const NUM_CELLS_OVERSCAN = NUM_CELLS + OVERSCAN;
 const DEFAULT_SEED = 'a';
 
 const ITEMS = [
-  'STICK',
+  'WOOD',
   'STONE',
 ];
 
