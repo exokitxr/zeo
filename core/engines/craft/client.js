@@ -369,15 +369,13 @@ class Craft {
           for (let x = 0; x < (gridWidth - width + 1); x++) {
             for (let y = 0; y < (gridWidth - height + 1); y++) {
               const fullInput = _makeNullInput(gridWidth, gridWidth);
-              _drawInput(fullInput, gridWidth, gridWidth, fullInput, x, y, width, height);
+              _drawInput(fullInput, gridWidth, gridWidth, input, x, y, width, height);
               result.push(fullInput);
             }
           }
           return result;
         };
-        const _hashRecipeInput = input => murmur(
-          JSON.stringify(input)
-        );
+        const _hashRecipeInput = input => JSON.stringify(input);
         const _addRecipe = recipe => {
           const inputs = _getRecipeVariantInputs(recipe);
 
@@ -469,8 +467,11 @@ class Craft {
             return gridMesh.positions[index];
           }
 
-          setGridIndex(index, item) {
-            grid[index] = item;
+          setGridIndex(index, asset) {
+            grid[index] = asset;
+
+            const output = _getRecipeOutput(grid);
+            console.log('got recipe output', output); // XXX
           }
 
           registerRecipe(pluginInstance, recipe) {
