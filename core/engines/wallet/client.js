@@ -142,6 +142,9 @@ class Wallet {
           fontWeight: biolumi.getFontWeight(),
           fontStyle: biolumi.getFontStyle(),
         };
+        const pixelSize = 0.015;
+        const numPixels = 12;
+        const assetSize = pixelSize * numPixels;
 
         const _isInBody = p => {
           const {hmd} = webvr.getStatus();
@@ -333,7 +336,6 @@ class Wallet {
             const mesh = (() => {
               const geometry = (() => {
                 const imageData = resource.getSpriteImageData('asset:' + asset);
-                const pixelSize = 0.015;
                 const geometry = spriteUtils.makeImageDataGeometry(imageData, pixelSize);
                 const positions = geometry.getAttribute('position').array;
                 const numPositions = positions.length / 3;
@@ -778,7 +780,7 @@ class Wallet {
           let grabbed = false;
           let body = null;
           const _addBody = ({velocity = [0, 0, 0]} = {}) => {
-            const size = [0.1, 0.1, 0.1];
+            const size = [assetSize, assetSize, assetSize];
             body = stck.makeDynamicBoxBody(assetInstance.position, size, velocity);
             body.on('update', ({position, rotation, scale}) => {
               assetInstance.setStateLocal(position, rotation, scale);
