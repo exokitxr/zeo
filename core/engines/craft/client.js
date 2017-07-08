@@ -51,7 +51,7 @@ class Craft {
         const forwardVector = new THREE.Vector3(0, 0, -1);
         const size = 0.15;
 
-        const spacing = size / 4;
+        const spacing = size / 2;
         const width = 3;
 
         const directions = DIRECTIONS.map(direction => new THREE.Vector3().fromArray(direction).multiplyScalar(size / 2));
@@ -318,7 +318,7 @@ class Craft {
           priority: 0,
         });
 
-        const hoverDistance = (size + spacing) / 2;
+        const hoverDistance = _sq((size + spacing) / 2);
         const _getHoveredIndex = p => {
           if (gridMesh.visible) {
             const {positions} = gridMesh;
