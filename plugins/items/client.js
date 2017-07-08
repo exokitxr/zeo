@@ -125,7 +125,7 @@ class Items {
       const {side} = e;
       const hoveredItem = _getHoveredItem(side);
 
-      console.log('got hovered item', hoveredItem);
+      console.log('got hovered item', hoveredItem); // XXX
     };
     input.on('gripdown', _gripdown);
 
