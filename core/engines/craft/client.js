@@ -289,7 +289,6 @@ class Craft {
         input.on('triggerdown', _triggerdown, {
           priority: 0,
         });
-
         const _gripdown = e => {
           const {side} = e;
           const {gamepads} = webvr.getStatus();
@@ -298,12 +297,28 @@ class Craft {
           const index = _getHoveredIndex(controllerPosition);
 
           if (index !== -1) {
-            craftApi.grip(side, index);
-
-            e.stopImmediatePropagation();
+            craftApi.gripdown(side, index, () => {
+              e.stopImmediatePropagation();
+            });
           }
         };
         input.on('gripdown', _gripdown, {
+          priority: 0,
+        });
+        const _gripup = e => {
+          const {side} = e;
+          const {gamepads} = webvr.getStatus();
+          const gamepad = gamepads[side];
+          const {worldPosition: controllerPosition} = gamepad;
+          const index = _getHoveredIndex(controllerPosition);
+
+          if (index !== -1) {
+            craftApi.gripup(side, index, () => {
+              e.stopImmediatePropagation();
+            });
+          }
+        };
+        input.on('gripup', _gripup, {
           priority: 0,
         });
 
@@ -403,8 +418,12 @@ class Craft {
             this.emit('trigger', {side, index});
           }
 
-          grip(side, index) {
-            this.emit('grip', {side, index});
+          gripdown(side, index, stopImmediatePropagation) {
+            this.emit('gripdown', {side, index, stopImmediatePropagation});
+          }
+
+          gripup(side, index, stopImmediatePropagation) {
+            this.emit('gripup', {side, index, stopImmediatePropagation});
           }
         }
         const craftApi = new CraftApi();

@@ -849,7 +849,7 @@ class Wallet {
           priority: -1,
         });
 
-        const _craftGrip = e => {
+        const _craftGripdown = e => {
           const {side, index} = e;
           const hoverState = hoverStates[side];
           const {worldGrabAsset} = hoverState;
@@ -860,9 +860,33 @@ class Wallet {
             gridItem.enablePhysics();
 
             craft.setGridIndex(index, null);
+
+            e.stopImmediatePropagation();
           }
         };
-        craft.on('grip', _craftGrip, {
+        craft.on('gripdown', _craftGripdown, {
+          priority: -1,
+        });
+
+        const _craftGripup = e => {
+          const {side, index} = e;
+          const hoverState = hoverStates[side];
+          const {worldGrabAsset} = hoverState;
+          const gridItem = craft.getGridIndex(index);
+
+          if (worldGrabAsset && !gridItem) {
+            worldGrabAsset.disablePhysics();
+            worldGrabAsset.release();
+
+            const indexPosition = craft.getGridIndexPosition(index);
+            worldGrabAsset.setStateLocal(indexPosition.toArray(), zeroQuaternion.toArray(), oneVector.toArray());
+
+            craft.setGridIndex(index, worldGrabAsset);
+
+            e.stopImmediatePropagation();
+          }
+        };
+        craft.on('gripup', _craftGripup, {
           priority: -1,
         });
 
@@ -962,7 +986,8 @@ class Wallet {
           input.removeListener('trigger', _trigger);
 
           craft.removeListener('trigger', _craftTtrigger);
-          craft.removeListener('grip', _craftGrip);
+          craft.removeListener('gripdown', _craftGripdown);
+          craft.removeListener('gripup', _craftGripup);
           craft.removeListener('close', _craftClose);
 
           rend.removeListener('tabchange', _tabchange);
