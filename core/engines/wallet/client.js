@@ -89,7 +89,6 @@ class Wallet {
       '/core/engines/stck',
       '/core/engines/notification',
       '/core/utils/js-utils',
-      '/core/utils/hash-utils',
       '/core/utils/creature-utils',
       '/core/utils/sprite-utils',
     ]).then(([
@@ -109,14 +108,12 @@ class Wallet {
       stck,
       notification,
       jsUtils,
-      hashUtils,
       creatureUtils,
       spriteUtils,
     ]) => {
       if (live) {
         const {THREE, scene, camera} = three;
         const {events} = jsUtils;
-        const {murmur} = hashUtils;
         const {EventEmitter} = events;
         const {Grabbable} = hand;
         const {sfx} = resource;
@@ -840,11 +837,19 @@ class Wallet {
           }
         };
 
+        const grid = Array(3 * 3);
+        const _resetGrid = () => {
+          for (let i = 0; i < (3 * 3); i++) {
+            grid[i] = null;
+          }
+        };
+        _resetGrid();
+
         const _craftTrigger = e => {
           const {side, index} = e;
           const hoverState = hoverStates[side];
           const {worldGrabAsset} = hoverState;
-          const gridItem = craft.getGridIndex(index);
+          const gridItem = grid[index];
 
           if (worldGrabAsset && !gridItem) {
             worldGrabAsset.disablePhysics();
@@ -853,7 +858,9 @@ class Wallet {
             const indexPosition = craft.getGridIndexPosition(index);
             worldGrabAsset.setStateLocal(indexPosition.toArray(), zeroQuaternion.toArray(), oneVector.toArray());
 
-            craft.setGridIndex(index, worldGrabAsset);
+            grid[index] = worldGrabAsset;
+            const {asset} = worldGrabAsset;
+            craft.setGridIndex(index, asset);
           }
         };
         craft.on('trigger', _craftTrigger, {
@@ -864,12 +871,13 @@ class Wallet {
           const {side, index} = e;
           const hoverState = hoverStates[side];
           const {worldGrabAsset} = hoverState;
-          const gridItem = craft.getGridIndex(index);
+          const gridItem = grid[index];
 
           if (!worldGrabAsset && gridItem) {
             gridItem.grab(side);
             gridItem.enablePhysics();
 
+            grid[index] = null;
             craft.setGridIndex(index, null);
 
             e.stopImmediatePropagation();
@@ -883,7 +891,7 @@ class Wallet {
           const {side, index} = e;
           const hoverState = hoverStates[side];
           const {worldGrabAsset} = hoverState;
-          const gridItem = craft.getGridIndex(index);
+          const gridItem = grid[index];
 
           if (worldGrabAsset && !gridItem) {
             worldGrabAsset.disablePhysics();
@@ -892,7 +900,9 @@ class Wallet {
             const indexPosition = craft.getGridIndexPosition(index);
             worldGrabAsset.setStateLocal(indexPosition.toArray(), zeroQuaternion.toArray(), oneVector.toArray());
 
-            craft.setGridIndex(index, worldGrabAsset);
+            grid[index] = worldGrabAsset;
+            const {asset} = worldGrabAsset;
+            craft.setGridIndex(index, asset);
 
             e.stopImmediatePropagation();
           }
@@ -900,6 +910,18 @@ class Wallet {
         craft.on('gripup', _craftGripup, {
           priority: -1,
         });
+        const _craftClose = () => {
+          for (let i = 0; i < grid.length; i++) {
+            const item = grid[i];
+
+            if (item) {
+              item.enablePhysics();
+            }
+          }
+
+          _resetGrid();
+        };
+        craft.on('close', _craftClose);
 
         const lastGripDownTimes = {
           left: 0,
@@ -967,19 +989,6 @@ class Wallet {
         input.on('gripdown', _gripdown, {
           priority: -2,
         });
-
-        const _craftClose = () => {
-          const grid = craft.getGrid();
-
-          for (let i = 0; i < grid.length; i++) {
-            const item = grid[i];
-
-            if (item) {
-              item.enablePhysics();
-            }
-          }
-        };
-        craft.on('close', _craftClose);
 
         const _tabchange = tab => {
           if (tab === 'wallet') {

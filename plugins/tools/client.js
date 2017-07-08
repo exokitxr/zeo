@@ -29,9 +29,8 @@ class Tools {
   }
 
   mount() {
-    return;
     const {_archae: archae} = this;
-    const {three, pose, input, render, teleport} = zeo;
+    const {three, pose, input, render, teleport, items} = zeo;
     const {THREE, scene, camera} = three;
 
     const forwardVector = new THREE.Vector3(0, 0, -1);
