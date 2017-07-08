@@ -89,6 +89,7 @@ class Wallet {
       '/core/engines/stck',
       '/core/engines/notification',
       '/core/utils/js-utils',
+      '/core/utils/hash-utils',
       '/core/utils/creature-utils',
       '/core/utils/sprite-utils',
     ]).then(([
@@ -108,12 +109,14 @@ class Wallet {
       stck,
       notification,
       jsUtils,
+      hashUtils,
       creatureUtils,
       spriteUtils,
     ]) => {
       if (live) {
         const {THREE, scene, camera} = three;
         const {events} = jsUtils;
+        const {murmur} = hashUtils;
         const {EventEmitter} = events;
         const {Grabbable} = hand;
         const {sfx} = resource;
@@ -781,8 +784,8 @@ class Wallet {
           let grabbed = false;
           let body = null;
           const _addBody = ({velocity = [0, 0, 0]} = {}) => {
-            const size = [assetSize, assetSize, assetSize];
-            body = stck.makeDynamicBoxBody(assetInstance.position, size, velocity);
+            const sizeArray = [assetSize, assetSize, assetSize];
+            body = stck.makeDynamicBoxBody(assetInstance.position, sizeArray, velocity);
             body.on('update', ({position, rotation, scale}) => {
               assetInstance.setStateLocal(position, rotation, scale);
             });
@@ -1044,6 +1047,75 @@ class Wallet {
           }
         };
 
+        const gridWidth = 3;
+        const recipes = {};
+        const _makeNullInput = (width, height) => {
+          const result = Array(width * height);
+          for (let i = 0; i < (width * height); i++) {
+            result[i] = null;
+          }
+          return result;
+        };
+        const _drawInput = (canvas, canvasWidth, canvasHeight, data, x, y, width, height) => {
+          for (let dy = 0; dy < height; dy++) {
+           for (let dx = 0; dx < width; dx++) {
+              const canvasIndex = (x + dx) + ((y + dy) * canvasWidth);
+              const dataIndex = dx + (dy * width);
+              canvas[canvasIndex] = data[dataIndex];
+            }
+          }
+        };
+        const _getRecipeVariantInputs = recipe => {
+          const {width, height, input} = recipe;
+
+          const result = [];
+          for (let x = 0; x < (gridWidth - width + 1); x++) {
+            for (let y = 0; y < (gridWidth - height + 1); y++) {
+              const fullInput = _makeNullInput(gridWidth, gridWidth);
+              _drawInput(fullInput, gridWidth, gridWidth, fullInput, x, y, width, height);
+              result.push(fullInput);
+            }
+          }
+          return result;
+        };
+        const _hashRecipeInput = input => murmur(
+          JSON.stringify(input)
+        );
+        const _addRecipe = recipe => {
+          const inputs = _getRecipeVariantInputs(recipe);
+
+          for (let i = 0; i < inputs.length; i++) {
+            const input = inputs[i];
+            const hash = _hashRecipeInput(input);
+
+            let entry = recipes[hash];
+            if (!entry) {
+              entry = [recipe.output, 0];
+              recipes[hash] = entry;
+            }
+            entry[1]++;
+          }
+        };
+        const _removeRecipe = recipe => {
+          const inputs = _getRecipeVariantInputs(recipe);
+
+          for (let i = 0; i < inputs.length; i++) {
+            const input = inputs[i];
+            const hash = _hashRecipeInput(input);
+
+            const entry = recipes[hash];
+            entry[1]--;
+            if (entry[1] === 0) {
+              delete recipes[hash];
+            }
+          }
+        };
+        const _getRecipeOutput = input => {
+          const hash = _hashRecipeInput(input);
+          const entry = recipes[hash];
+          return entry ? entry[0] : null;
+        };
+
         cleanups.push(() => {
           input.removeListener('trigger', _trigger);
 
@@ -1103,6 +1175,18 @@ class Wallet {
             }
 
             _unbindItemApi(itemApi);
+          }
+
+          registerRecipe(pluginInstance, recipe) {
+            _addRecipe(recipe);
+          }
+
+          unregisterRecipe(pluginInstance, recipe) {
+            _removeRecipe(recipe);
+          }
+
+          getRecipeOutput(input) {
+            return _getRecipeOutput(input);
           }
 
           addAsset(item) {

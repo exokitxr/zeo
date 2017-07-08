@@ -776,6 +776,14 @@ class Zeo {
                           wallet.unregisterItem(pluginInstance, itemApi);
                         }
 
+                        registerRecipe(pluginInstance, recipe) {
+                          wallet.registerRecipe(pluginInstance, recipe);
+                        }
+
+                        unregisterRecipe(pluginInstance, recipe) {
+                          wallet.unregisterRecipe(pluginInstance, recipe);
+                        }
+
                         on() {
                           return wallet.on.apply(wallet, arguments);
                         }
