@@ -78,21 +78,27 @@ class Items {
     };
 
     class Item {
-      constructor(type, position) {
+      constructor(mesh, type, startIndex, endIndex, position) {
+        this.mesh = mesh;
         this.type = type;
+        this.startIndex = startIndex;
+        this.endIndex = endIndex;
         this.position = position;
       }
     }
 
     const items = [];
-    const _addItems = itemsChunkMesh => {
-      const {items: itemsData} = itemsChunkMesh;
+    const _addItems = (mesh, data) => {
+      const {items: itemsData} = data;
       const numItems = itemsData.length / 4;
       let startItem = null;
       for (let i = 0; i < numItems; i++) {
-        const type = itemsData[(i * 4) + 0];
-        const position = new THREE.Vector3().fromArray(itemsData, (i * 4) + 1);
-        const item = new Item(type, position);
+        const baseIndex = i * 6;
+        const type = itemsData[baseIndex + 0];
+        const startIndex = itemsData[baseIndex + 1];
+        const endIndex = itemsData[baseIndex + 2];
+        const position = new THREE.Vector3().fromArray(itemsData, baseIndex + 3);
+        const item = new Item(mesh, type, startIndex, endIndex, position);
         items.push(item);
 
         if (startItem === null) {
@@ -125,7 +131,18 @@ class Items {
       const {side} = e;
       const hoveredItem = _getHoveredItem(side);
 
-      // console.log('got hovered item', hoveredItem); // XXX
+      if (hoveredItem) {
+        const {mesh, startIndex, endIndex} = hoveredItem;
+        const {geometry} = mesh;
+        const indexAttribute = geometry.index;
+        const indices = indexAttribute.array;
+        for (let i = startIndex; i < endIndex; i++) {
+          indices[i] = 0;
+        }
+        indexAttribute.needsUpdate = true;
+
+        // XXX generate and grab the asset here
+      }
     };
     input.on('gripdown', _gripdown);
 
@@ -147,7 +164,7 @@ class Items {
             const itemsChunkMesh = _makeItemsChunkMesh(itemsChunkData, x, z);
             scene.add(itemsChunkMesh);
 
-            const itemRange = _addItems(itemsChunkData);
+            const itemRange = _addItems(itemsChunkMesh, itemsChunkData);
 
             chunk.data = {
               itemsChunkMesh,

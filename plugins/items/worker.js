@@ -207,7 +207,7 @@ const _makeItemsChunkMesh = (x, y, itemsGeometries, points, heightRange) => {
         colors.set(newColors, attributeIndex);
         const newIndices = geometry.index.array;
         _copyIndices(newIndices, indices, indexIndex, attributeIndex / 3);
-        const newItems = Float32Array.from([typeIndex].concat(position.toArray()));
+        const newItems = Float32Array.from([typeIndex, indexIndex, indexIndex + newIndices.length, position.x, position.y, position.z]);
         items.set(newItems, itemIndex);
 
         attributeIndex += newPositions.length;
