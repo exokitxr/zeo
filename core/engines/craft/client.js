@@ -79,6 +79,13 @@ class Craft {
             "}"
           ].join("\n")
         };
+        const gridMaterial = new THREE.ShaderMaterial({
+          uniforms: THREE.UniformsUtils.clone(craftShader.uniforms),
+          vertexShader: craftShader.vertexShader,
+          fragmentShader: craftShader.fragmentShader,
+          transparent: true,
+          // depthWrite: false,
+        });
 
         const _copyIndices = (src, dst, startIndexIndex, startAttributeIndex) => {
           for (let i = 0; i < src.length; i++) {
@@ -199,40 +206,33 @@ class Craft {
           return gridGeometry;
         })();
 
-        const gridMeshes = {};
+        const gridMesh = (() => {
+          const mesh = new THREE.Mesh(gridGeometry, gridMaterial);
+          mesh.visible = false;
 
-        const _makeGridMesh = (position, rotation, scale) => {
-          const material = new THREE.ShaderMaterial({
-            uniforms: THREE.UniformsUtils.clone(craftShader.uniforms),
-            vertexShader: craftShader.vertexShader,
-            fragmentShader: craftShader.fragmentShader,
-            transparent: true,
-            // depthWrite: false,
-          });
+          const positions = Array(width * width);
+          for (let i = 0; i < positions.length; i++) {
+            positions[i] = new THREE.Vector3();
+          }
+          mesh.positions = positions;
+          mesh.updatePositions = () => {
+            const {position, quaternion, scale} = mesh;
 
-          const mesh = new THREE.Mesh(gridGeometry, material);
-          mesh.position.copy(position);
-          mesh.quaternion.copy(rotation);
-          mesh.scale.copy(scale);
-          mesh.updateMatrixWorld();
-
-          mesh.positions = (() => {
-            const result = Array(width * width);
             for (let y = 0; y < width; y++) {
               for (let x = 0; x < width; x++) {
                 const index = x + (y * width);
                 const p = _getGridPosition(x, y)
                   .multiply(scale)
-                  .applyQuaternion(rotation)
+                  .applyQuaternion(quaternion)
                   .add(position);
-                result[index] = p;
+                positions[index].copy(p);
               }
             }
-            return result;
-          })();
+          };
 
           return mesh;
-        }
+        })();
+        scene.add(gridMesh);
 
         const _trigger = e => {
           const {side} = e;
@@ -241,9 +241,7 @@ class Craft {
           const gamepad = gamepads[side];
 
           if (gamepad.buttons.grip.pressed) {
-            const gridMesh = gridMeshes[localUserId];
-
-            if (!gridMesh) {
+            if (!gridMesh.visible) {
               const {hmd} = status;
               const {worldRotation: hmdRotation} = hmd;
               const hmdEuler = new THREE.Euler().setFromQuaternion(hmdRotation, camera.rotation.order);
@@ -253,12 +251,15 @@ class Craft {
               const hmdQuaternion = new THREE.Quaternion().setFromEuler(hmdEuler);
               const {worldPosition: controllerPosition} = gamepad;
 
-              const gridMesh = _makeGridMesh(controllerPosition, hmdQuaternion, oneVector);
-              scene.add(gridMesh);
-              gridMeshes[localUserId] = gridMesh;
+              gridMesh.position.copy(controllerPosition);
+              gridMesh.quaternion.copy(hmdQuaternion);
+              gridMesh.scale.copy(oneVector);
+              gridMesh.updateMatrixWorld();
+              gridMesh.visible = true;
+
+              gridMesh.updatePositions();
             } else {
-              scene.remove(gridMesh);
-              delete gridMeshes[localUserId];
+              gridMesh.visible = false;
             }
 
             e.stopImmediatePropagation();
@@ -267,10 +268,8 @@ class Craft {
         input.on('trigger', _trigger);
 
         const hoverDistance = (size + spacing) / 2;
-        const hoverOutrangeDistance = _sq((size + spacing) * width);
-        const _getHoveredSpec = p => {
-          for (const userId in gridMeshes) {
-            const gridMesh = gridMeshes[userId];
+        const _getHoveredIndex = p => {
+          if (gridMesh.visible) {
             const {positions} = gridMesh;
 
             for (let j = 0; j < positions.length; j++) {
@@ -278,39 +277,43 @@ class Craft {
               const distance = p.distanceTo(position);
 
               if (distance < hoverDistance) {
-                const {offset} = position;
-                const index = j;
-
-                return {
-                  gridMesh,
-                  index,
-                };
-              } else if (distance > hoverOutrangeDistance) { // optimization
-                return null;
+                return j;
               }
             }
+            return -1;
+          } else {
+            return -1;
           }
-          return null;
         };
 
         const _update = () => {
-          const gridMesh = gridMeshes[localUserId];
+          if (gridMesh.visible) {
+            const status = webvr.getStatus();
+            const {hmd} = status;
+            const {worldPosition: hmdPosition} = hmd;
 
-          if (gridMesh) {
-            for (let i = 0; i < SIDES.length; i++) {
-              const side = SIDES[i];
-              const {gamepads} = webvr.getStatus();
-              const gamepad = gamepads[side];
-              const {worldPosition: controllerPosition} = gamepad;
-              const hoveredSpec = _getHoveredSpec(controllerPosition);
-              const index = (hoveredSpec && hoveredSpec.gridMesh === gridMesh) ? hoveredSpec.index : -1;
-              gridMesh.material.uniforms.gselected.value[side === 'left' ? 'x' : 'y'] = index;
+            if (hmdPosition.distanceTo(gridMesh.position) < 3) {
+              for (let i = 0; i < SIDES.length; i++) {
+                const side = SIDES[i];
+                const {gamepads} = status;
+                const gamepad = gamepads[side];
+                const {worldPosition: controllerPosition} = gamepad;
+                const index = _getHoveredIndex(controllerPosition);
+                gridMesh.material.uniforms.gselected.value[side === 'left' ? 'x' : 'y'] = index;
+              }
+            } else {
+              gridMesh.visible = false;
             }
           }
         };
         rend.on('update', _update);
 
         this._cleanup = () => {
+          scene.remove(gridMesh);
+
+          gridGeometry.dispose();
+          gridMaterial.dispose();
+
           input.removeListener('trigger', _trigger);
           rend.removeListener('update', _update);
         };
