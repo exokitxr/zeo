@@ -1,7 +1,7 @@
 {
-  "name": "build",
+  "name": "tools",
   "version": "0.0.1",
-  "description": "Build structures with polygonized voxels.",
+  "description": "Tools for crafting.",
   "client": "client.js",
   "builds": {
     "worker": "worker.js"

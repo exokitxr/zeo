@@ -768,6 +768,14 @@ class Zeo {
                           wallet.destroyItem(item);
                         }
 
+                        registerItem(pluginInstance, itemApi) {
+                          wallet.registerItem(pluginInstance, itemApi);
+                        }
+
+                        unregisterItem(pluginInstance, itemApi) {
+                          wallet.unregisterItem(pluginInstance, itemApi);
+                        }
+
                         on() {
                           return wallet.on.apply(wallet, arguments);
                         }
