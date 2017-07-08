@@ -48,7 +48,7 @@ class Craft {
 
         const oneVector = new THREE.Vector3(1, 1, 1);
         const upVector = new THREE.Vector3(0, 1, 0);
-        const size = 0.1;
+        const size = 0.15;
 
         const spacing = size / 4;
         const width = 3;
@@ -76,7 +76,7 @@ class Craft {
             "  if (abs(gselected.x - vselected) < 0.1 || abs(gselected.y - vselected) < 0.1) {",
             "    gl_FragColor = vec4(0.12941176470588237, 0.5882352941176471, 0.9529411764705882, 1.0);",
             "  } else {",
-            "    gl_FragColor = vec4(0.5, 0.5, 0.5, 0.75);",
+            "    gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);",
             "  }",
             "}"
           ].join("\n")
@@ -85,7 +85,7 @@ class Craft {
           uniforms: THREE.UniformsUtils.clone(craftShader.uniforms),
           vertexShader: craftShader.vertexShader,
           fragmentShader: craftShader.fragmentShader,
-          transparent: true,
+          // transparent: true,
           // depthWrite: false,
         });
 
@@ -102,7 +102,7 @@ class Craft {
         const _sq = n => Math.sqrt(n*n*2);
 
         const gridGeometry = (() => {
-          const cylinderGeometry = new THREE.CylinderBufferGeometry(0.001, 0.001, size, 3, 1);
+          const cylinderGeometry = new THREE.CylinderBufferGeometry(0.002, 0.002, size, 3, 1);
           const boxGeometry = (() => {
             const positions = new Float32Array(cylinderGeometry.getAttribute('position').array.length * 4 * 3);
             const indices = new Uint16Array(cylinderGeometry.index.array.length * 4 * 3);
@@ -243,7 +243,7 @@ class Craft {
           const gamepad = gamepads[side];
 
           if (gamepad.buttons.grip.pressed) {
-          const {worldPosition: controllerPosition} = gamepad;
+            const {worldPosition: controllerPosition} = gamepad;
 
             if (!gridMesh.visible) {
               const {hmd} = status;
@@ -268,23 +268,43 @@ class Craft {
               gridMesh.visible = true;
 
               gridMesh.updatePositions();
+
+              craftApi.open();
             } else {
               const index = _getHoveredIndex(controllerPosition);
-              if (index !== -1) {
-                craftApi.accept();
-              } else {
-                craftApi.reject();
-              }
-              _resetGrid();
 
-              gridMesh.visible = false;
+              if (index !== -1) {
+                craftApi.trigger(side, index);
+              } else {
+                craftApi.close();
+                _resetGrid();
+
+                gridMesh.visible = false;
+              }
             }
 
             e.stopImmediatePropagation();
           }
         };
         input.on('triggerdown', _triggerdown, {
-          priority: -2,
+          priority: 0,
+        });
+
+        const _gripdown = e => {
+          const {side} = e;
+          const {gamepads} = webvr.getStatus();
+          const gamepad = gamepads[side];
+          const {worldPosition: controllerPosition} = gamepad;
+          const index = _getHoveredIndex(controllerPosition);
+
+          if (index !== -1) {
+            craftApi.grip(side, index);
+
+            e.stopImmediatePropagation();
+          }
+        };
+        input.on('gripdown', _gripdown, {
+          priority: 0,
         });
 
         const hoverDistance = (size + spacing) / 2;
@@ -343,6 +363,7 @@ class Craft {
           gridMaterial.dispose();
 
           input.removeListener('triggerdown', _triggerdown);
+          input.removeListener('gripdown', _gripdown);
           rend.removeListener('update', _update);
         };
 
@@ -370,12 +391,20 @@ class Craft {
             grid[index] = item;
           }
 
-          accept() {
-            this.emit('accept');
+          open() {
+            this.emit('open');
           }
 
-          reject() {
-            this.emit('reject');
+          close() {
+            this.emit('close');
+          }
+
+          trigger(side, index) {
+            this.emit('trigger', {side, index});
+          }
+
+          grip(side, index) {
+            this.emit('grip', {side, index});
           }
         }
         const craftApi = new CraftApi();
