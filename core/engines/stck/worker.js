@@ -63,7 +63,7 @@ const interval = setInterval(() => {
 
   for (let i = 0; i < dynamicBoxBodies.length; i++) {
     const body = dynamicBoxBodies[i];
-    const {position, velocity} = body;
+    const {position, velocity, size} = body;
     const nextVelocity = new THREE.Vector3()
       .fromArray(velocity)
       .add(upVector.clone().multiplyScalar(GRAVITY * timeDiff));
@@ -103,14 +103,14 @@ const interval = setInterval(() => {
           baryCoord.y * elevations[1] +
           baryCoord.z * elevations[2];
 
-        if (nextPosition.y < elevation) {
-          nextPosition.y = elevation;
+        if ((nextPosition.y - (size[1] / 2)) < elevation) {
+          nextPosition.y = elevation + (size[1] / 2);
           nextVelocity.copy(zeroVector);
         }
       }
     }
-    if (nextPosition.y < 0) {
-      nextPosition.y = 0;
+    if ((nextPosition.y - (size[1] / 2)) < 0) {
+      nextPosition.y = size[1] / 2;
       nextVelocity.copy(zeroVector);
     }
 
@@ -143,11 +143,12 @@ self.onmessage = e => {
 
       switch (type) {
         case 'dynamicBox': {
-          const {position, rotation, scale, velocity} = spec;
+          const {position, rotation, scale, size, velocity} = spec;
           const body = new BoxBody(id, {
             position,
             rotation,
             scale,
+            size,
             velocity,
           });
           dynamicBoxBodies.push(body);
