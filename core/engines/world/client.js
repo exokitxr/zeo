@@ -719,10 +719,10 @@ class World {
         };
         tags.on('loadTags', _loadTags);
 
-        const _walletAddAsset = itemSpec => {
+        const _walletAddTag = itemSpec => {
           _addTag(itemSpec);
         };
-        wallet.on('addAsset', _walletAddAsset);
+        wallet.on('addTag', _walletAddTag);
         const _walletRemoveTag = id => {
           _removeTag(id);
         };

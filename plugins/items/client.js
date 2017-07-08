@@ -1,5 +1,7 @@
 const {
   NUM_CELLS,
+
+  ITEMS,
 } = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
 
@@ -12,7 +14,7 @@ class Items {
 
   mount() {
     const {_archae: archae} = this;
-    const {three, render, pose, input, utils: {random: {chnkr}}} = zeo;
+    const {three, render, pose, input, items, utils: {random: {chnkr}}} = zeo;
     const {THREE, scene, camera} = three;
 
     const itemsMaterial = new THREE.MeshBasicMaterial({
@@ -77,7 +79,7 @@ class Items {
       return mesh;
     };
 
-    class Item {
+    class TrackedItem {
       constructor(mesh, type, startIndex, endIndex, position) {
         this.mesh = mesh;
         this.type = type;
@@ -87,8 +89,8 @@ class Items {
       }
     }
 
-    const items = [];
-    const _addItems = (mesh, data) => {
+    const trackedItems = [];
+    const _addTrackedItems = (mesh, data) => {
       const {items: itemsData} = data;
       const numItems = itemsData.length / 4;
       let startItem = null;
@@ -98,30 +100,29 @@ class Items {
         const startIndex = itemsData[baseIndex + 1];
         const endIndex = itemsData[baseIndex + 2];
         const position = new THREE.Vector3().fromArray(itemsData, baseIndex + 3);
-        const item = new Item(mesh, type, startIndex, endIndex, position);
-        items.push(item);
+        const trackedItem = new TrackedItem(mesh, type, startIndex, endIndex, position);
+        trackedItems.push(trackedItem);
 
         if (startItem === null) {
-          startItem = item;
+          startItem = trackedItem;
         }
       }
 
       return [startItem, numItems];
     };
-    const _removeItems = itemRange => {
+    const _removeTrackedItems = itemRange => {
       const [startItem, numItems] = itemRange;
-      const index = items.indexOf(startItem);
-      items.splice(index, numItems);
+      trackedItems.splice(trackedItems.indexOf(startItem), numItems);
     };
     const _getHoveredItem = side => {
       const {gamepads} = pose.getStatus();
       const gamepad = gamepads[side];
       const {worldPosition: controllerPosition} = gamepad;
 
-      for (let i = 0; i < items.length; i++) {
-        const item = items[i];
-        if (controllerPosition.distanceTo(item.position) < 0.2) {
-          return item;
+      for (let i = 0; i < trackedItems.length; i++) {
+        const trackedItem = trackedItems[i];
+        if (controllerPosition.distanceTo(trackedItem.position) < 0.2) {
+          return trackedItem;
         }
       }
       return null;
@@ -132,7 +133,7 @@ class Items {
       const hoveredItem = _getHoveredItem(side);
 
       if (hoveredItem) {
-        const {mesh, startIndex, endIndex} = hoveredItem;
+        const {mesh, type, startIndex, endIndex} = hoveredItem;
         const {geometry} = mesh;
         const indexAttribute = geometry.index;
         const indices = indexAttribute.array;
@@ -141,7 +142,24 @@ class Items {
         }
         indexAttribute.needsUpdate = true;
 
-        // XXX generate and grab the asset here
+        const id = _makeId();
+        const asset = ITEMS[type];
+        const {gamepads} = pose.getStatus();
+        const gamepad = gamepads[side];
+        const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale} = gamepad;
+        const assetInstance = items.makeItem({ // XXX clean up this API
+          type: 'asset',
+          id: id,
+          name: asset,
+          displayName: asset,
+          attributes: {
+            position: {value: controllerPosition.toArray().concat(controllerRotation.toArray()).concat(controllerScale.toArray())},
+            asset: {value: asset},
+            quantity: {value: 1},
+            owner: {value: null},
+          },
+        });
+        assetInstance.grab(side);
       }
     };
     input.on('gripdown', _gripdown);
@@ -164,7 +182,7 @@ class Items {
             const itemsChunkMesh = _makeItemsChunkMesh(itemsChunkData, x, z);
             scene.add(itemsChunkMesh);
 
-            const itemRange = _addItems(itemsChunkMesh, itemsChunkData);
+            const itemRange = _addTrackedItems(itemsChunkMesh, itemsChunkData);
 
             chunk.data = {
               itemsChunkMesh,
@@ -181,7 +199,7 @@ class Items {
             itemsChunkMesh.destroy();
 
             const {itemRange} = data;
-            _removeItems(itemRange);
+            _removeTrackedItems(itemRange);
           });
         })
     };
@@ -232,5 +250,6 @@ class Items {
     this._cleanup();
   }
 }
+const _makeId = () => Math.random().toString(36).substring(7);
 
 module.exports = Items;

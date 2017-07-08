@@ -933,7 +933,7 @@ class Wallet {
               },
               metadata: {},
             };
-            walletApi.emit('addAsset', itemSpec);
+            walletApi.emit('addTag', itemSpec);
 
             const assetInstance = assetsMesh.getAssetInstance(id);
             assetInstance.grab(side);
@@ -1002,6 +1002,20 @@ class Wallet {
 
           getAsset(id) {
             return assetsMesh.getAssetInstance(id);
+          }
+
+          makeItem(itemSpec) {
+            const {id} = itemSpec;
+
+            walletApi.emit('addTag', itemSpec);
+
+            const assetInstance = assetsMesh.getAssetInstance(id);
+            return assetInstance;
+          }
+
+          destroyItem(itemSpec) {
+            const {id} = itemSpec;
+            walletApi.emit('removeTag', id);
           }
 
           addAsset(item) {
