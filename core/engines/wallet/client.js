@@ -84,6 +84,7 @@ class Wallet {
       '/core/engines/hand',
       '/core/engines/rend',
       '/core/engines/tags',
+      '/core/engines/craft',
       '/core/engines/multiplayer',
       '/core/engines/stck',
       '/core/engines/notification',
@@ -102,6 +103,7 @@ class Wallet {
       hand,
       rend,
       tags,
+      craft,
       multiplayer,
       stck,
       notification,
@@ -183,10 +185,6 @@ class Wallet {
         const _makeHoverState = () => ({
           worldAsset: null,
           worldGrabAsset: null,
-          worldGrabNotification: null,
-          worldReleaseNotification: null,
-          bodyAsset: null,
-          bodyNotification: null,
         });
         const hoverStates = {
           left: _makeHoverState(),
@@ -213,8 +211,6 @@ class Wallet {
               this.asset = asset;
               this.quantity = quantity;
               this.owner = owner;
-
-              this._visible = true;
             }
 
             emit(t, e) {
@@ -291,16 +287,20 @@ class Wallet {
               }
             }
 
-            isVisible() {
-              return this._visible;
-            }
-
             show() {
-              this._visible = true;
+              this.emit('show');
             }
 
             hide() {
-              this._visible = false;
+              this.emit('hide');
+            }
+
+            enablePhysics() { // XXX need to feed this through multiplayer
+              this.emit('enablePhysics');
+            }
+
+            disablePhysics() {
+              this.emit('disablePhysics');
             }
 
             requestChangeOwner(dstAddress) {
@@ -380,12 +380,19 @@ class Wallet {
             assetInstance.on('update', ({position, rotation, scale}) => {
               mesh.position.fromArray(position);
               mesh.quaternion.fromArray(rotation);
+              mesh.scale.fromArray(scale);
               if (assetInstance.isGrabbed()) {
                 mesh.quaternion.multiply(forwardQuaternion);
                 mesh.position.add(new THREE.Vector3(0, 0, -0.02 / 2).applyQuaternion(mesh.quaternion));
+                mesh.scale.multiplyScalar(0.5);
               }
-              mesh.scale.fromArray(scale);
               mesh.updateMatrixWorld();
+            });
+            assetInstance.on('show', () => {
+              mesh.visible = true;
+            });
+            assetInstance.on('hide', () => {
+              mesh.visible = false;
             });
 
             return assetInstance;
@@ -767,6 +774,8 @@ class Wallet {
         });
 
         const _bindAssetInstancePhysics = (assetInstance, immediate) => {
+          let enabled = true;
+          let grabbed = false;
           let body = null;
           const _addBody = ({velocity = [0, 0, 0]} = {}) => {
             const size = [0.1, 0.1, 0.1];
@@ -779,23 +788,74 @@ class Wallet {
             stck.destroyBody(body);
             body = null;
           };
-          assetInstance.on('release', e => {
-            const {side} = e;
-            const player = cyborg.getPlayer();
-            const linearVelocity = player.getControllerLinearVelocity(side);
 
-            _addBody({
-              velocity: linearVelocity.toArray(),
-            });
+          assetInstance.on('release', e => {
+            grabbed = false;
+
+            if (enabled && !body) {
+              const {side} = e;
+              const player = cyborg.getPlayer();
+              const linearVelocity = player.getControllerLinearVelocity(side);
+
+              _addBody({
+                velocity: linearVelocity.toArray(),
+              });
+            }
           });
           assetInstance.on('grab', () => {
-            _removeBody();
+            grabbed = true;
+
+            if (body) {
+              _removeBody();
+            }
+          });
+          assetInstance.on('enablePhysics', () => {
+            enabled = true;
+
+            if (!grabbed && !body) {
+              _addBody();
+            }
+          });
+          assetInstance.on('disablePhysics', () => {
+            enabled = false;
+
+            if (body) {
+              _removeBody();
+            }
           });
 
           if (immediate) {
             _addBody();
           }
         };
+
+        const _triggerdown = e => {
+          const {side} = e;
+          const hoverState = hoverStates[side];
+          const {worldGrabAsset} = hoverState;
+
+          if (worldGrabAsset) {
+            const gridIndex = craft.getHoveredGridIndex(side);
+
+            if (gridIndex !== -1) {
+              const gridItem = craft.getGridIndex(gridIndex);
+
+              if (!gridItem) {
+                craft.setGridIndex(gridIndex, worldGrabAsset);
+
+                worldGrabAsset.disablePhysics();
+                worldGrabAsset.release();
+                const gridIndexPosition = craft.getGridIndexPosition(gridIndex);
+                worldGrabAsset.setStateLocal(gridIndexPosition.toArray(), zeroQuaternion.toArray(), oneVector.toArray());
+
+                e.stopImmediatePropagation();
+              }
+            }
+          }
+        };
+        input.on('triggerdown', _triggerdown, {
+          priority: -1,
+        });
 
         const lastGripDownTimes = {
           left: 0,
@@ -864,6 +924,24 @@ class Wallet {
           priority: -1,
         });
 
+        const _accept = () => {
+          const grid = craft.getGrid().slice();
+          console.log('accept grid', grid);
+        };
+        craft.on('accept', _accept);
+        const _reject = () => {
+          const grid = craft.getGrid();
+
+          for (let i = 0; i < grid.length; i++) {
+            const item = grid[i];
+
+            if (item) {
+              item.enablePhysics();
+            }
+          }
+        };
+        craft.on('reject', _reject);
+
         const _tabchange = tab => {
           if (tab === 'wallet') {
             _ensureInitialLoaded();
@@ -877,9 +955,11 @@ class Wallet {
         rend.on('update', _update);
 
         cleanups.push(() => {
-
-          input.removeListener('trigger', _trigger);
+          input.removeListener('triggerdown', _triggerdown);
           input.removeListener('gripdown', _gripdown);
+
+          craft.removeListener('accept', _accept);
+          craft.removeListener('reject', _reject);
 
           rend.removeListener('tabchange', _tabchange);
           rend.removeListener('update', _update);
