@@ -49,12 +49,12 @@ class Craft {
         const oneVector = new THREE.Vector3(1, 1, 1);
         const upVector = new THREE.Vector3(0, 1, 0);
         const forwardVector = new THREE.Vector3(0, 0, -1);
-        const size = 0.15;
 
-        const spacing = size / 2;
-        const width = 3;
+        const gridSize = 0.15;
+        const gridSpacing = gridSize / 2;
+        const gridWidth = 3;
 
-        const directions = DIRECTIONS.map(direction => new THREE.Vector3().fromArray(direction).multiplyScalar(size / 2));
+        const directions = DIRECTIONS.map(direction => new THREE.Vector3().fromArray(direction).multiplyScalar(gridSize / 2));
         const craftShader = {
           uniforms: {
             gselected: {
@@ -96,14 +96,14 @@ class Craft {
           }
         };
         const _getGridPosition = (x, y) => new THREE.Vector3(
-          -(((width * size) + ((width - 1) * spacing)) / 2) + (size / 2) + (x * (size + spacing)),
-          (((width * size) + ((width - 1) * spacing)) / 2) - (size / 2) - (y * (size + spacing)),
+          -(((gridWidth * gridSize) + ((gridWidth - 1) * gridSpacing)) / 2) + (gridSize / 2) + (x * (gridSize + gridSpacing)),
+          (((gridWidth * gridSize) + ((gridWidth - 1) * gridSpacing)) / 2) - (gridSize / 2) - (y * (gridSize + gridSpacing)),
           0
         );
         const _sq = n => Math.sqrt(n*n*2);
 
         const gridGeometry = (() => {
-          const cylinderGeometry = new THREE.CylinderBufferGeometry(0.002, 0.002, size, 3, 1);
+          const cylinderGeometry = new THREE.CylinderBufferGeometry(0.002, 0.002, gridSize, 3, 1);
           const boxGeometry = (() => {
             const positions = new Float32Array(cylinderGeometry.getAttribute('position').array.length * 4 * 3);
             const indices = new Uint16Array(cylinderGeometry.index.array.length * 4 * 3);
@@ -124,7 +124,7 @@ class Craft {
                   .add(direction2)
                   .divideScalar(2);
                 const newPositions = (() => {
-                  if (diff.x === size && diff.y === 0 && diff.z === 0 && direction1.x < 0 && direction2.x > 0) {
+                  if (diff.x === gridSize && diff.y === 0 && diff.z === 0 && direction1.x < 0 && direction2.x > 0) {
                     return cylinderGeometry.clone()
                       .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(
                         new THREE.Vector3(0, 1, 0),
@@ -132,11 +132,11 @@ class Craft {
                       )))
                       .applyMatrix(new THREE.Matrix4().makeTranslation(position.x, position.y, position.z))
                       .getAttribute('position').array;
-                  } else if (diff.x === 0 && diff.y === size && diff.z === 0 && direction1.y < 0 && direction2.y > 0) {
+                  } else if (diff.x === 0 && diff.y === gridSize && diff.z === 0 && direction1.y < 0 && direction2.y > 0) {
                     return cylinderGeometry.clone()
                       .applyMatrix(new THREE.Matrix4().makeTranslation(position.x, position.y, position.z))
                       .getAttribute('position').array;
-                  } else if (diff.x === 0 && diff.y === 0 && diff.z === size && direction1.z < 0 && direction2.z > 0) {
+                  } else if (diff.x === 0 && diff.y === 0 && diff.z === gridSize && direction1.z < 0 && direction2.z > 0) {
                     return cylinderGeometry.clone()
                       .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(
                         new THREE.Vector3(0, 1, 0),
@@ -165,17 +165,17 @@ class Craft {
             return geometry;
           })();
           const gridGeometry = (() => {
-            const positions = new Float32Array(boxGeometry.getAttribute('position').array.length * width * width);
-            const selecteds = new Float32Array(boxGeometry.getAttribute('position').array.length / 3 * width * width);
-            const indices = new Uint16Array(boxGeometry.index.array.length * width * width);
+            const positions = new Float32Array(boxGeometry.getAttribute('position').array.length * gridWidth * gridWidth);
+            const selecteds = new Float32Array(boxGeometry.getAttribute('position').array.length / 3 * gridWidth * gridWidth);
+            const indices = new Uint16Array(boxGeometry.index.array.length * gridWidth * gridWidth);
             let attributeIndex = 0;
             let selectedIndex = 0;
             let indexIndex = 0;
 
-            for (let x = 0; x < width; x++) {
-              for (let y = 0; y < width; y++) {
+            for (let x = 0; x < gridWidth; x++) {
+              for (let y = 0; y < gridWidth; y++) {
                 const position = _getGridPosition(x, y);
-                const index = x + (y * width);
+                const index = x + (y * gridWidth);
 
                 const newPositions = boxGeometry.clone()
                   .applyMatrix(new THREE.Matrix4().makeTranslation(position.x, position.y, position.z))
@@ -213,7 +213,7 @@ class Craft {
           const mesh = new THREE.Mesh(gridGeometry, gridMaterial);
           mesh.visible = false;
 
-          const positions = Array(width * width);
+          const positions = Array(gridWidth * gridWidth);
           for (let i = 0; i < positions.length; i++) {
             positions[i] = new THREE.Vector3();
           }
@@ -221,9 +221,9 @@ class Craft {
           mesh.updatePositions = () => {
             const {position, quaternion, scale} = mesh;
 
-            for (let y = 0; y < width; y++) {
-              for (let x = 0; x < width; x++) {
-                const index = x + (y * width);
+            for (let y = 0; y < gridWidth; y++) {
+              for (let x = 0; x < gridWidth; x++) {
+                const index = x + (y * gridWidth);
                 const p = _getGridPosition(x, y)
                   .multiply(scale)
                   .applyQuaternion(quaternion)
@@ -318,7 +318,7 @@ class Craft {
           priority: 0,
         });
 
-        const hoverDistance = _sq((size + spacing) / 2);
+        const hoverDistance = _sq((gridSize + gridSpacing) / 2);
         const _getHoveredIndex = p => {
           if (gridMesh.visible) {
             const {positions} = gridMesh;
@@ -337,13 +337,81 @@ class Craft {
           }
         };
 
-        const grid = Array(width * width);
+        const grid = Array(gridWidth * gridWidth);
         const _resetGrid = () => {
           for (let i = 0; i < grid.length; i++) {
             grid[i] = null;
           }
         };
         _resetGrid();
+
+        const recipes = {};
+        const _makeNullInput = (width, height) => {
+          const result = Array(width * height);
+          for (let i = 0; i < (width * height); i++) {
+            result[i] = null;
+          }
+          return result;
+        };
+        const _drawInput = (canvas, canvasWidth, canvasHeight, data, x, y, width, height) => {
+          for (let dy = 0; dy < height; dy++) {
+           for (let dx = 0; dx < width; dx++) {
+              const canvasIndex = (x + dx) + ((y + dy) * canvasWidth);
+              const dataIndex = dx + (dy * width);
+              canvas[canvasIndex] = data[dataIndex];
+            }
+          }
+        };
+        const _getRecipeVariantInputs = recipe => {
+          const {width, height, input} = recipe;
+
+          const result = [];
+          for (let x = 0; x < (gridWidth - width + 1); x++) {
+            for (let y = 0; y < (gridWidth - height + 1); y++) {
+              const fullInput = _makeNullInput(gridWidth, gridWidth);
+              _drawInput(fullInput, gridWidth, gridWidth, fullInput, x, y, width, height);
+              result.push(fullInput);
+            }
+          }
+          return result;
+        };
+        const _hashRecipeInput = input => murmur(
+          JSON.stringify(input)
+        );
+        const _addRecipe = recipe => {
+          const inputs = _getRecipeVariantInputs(recipe);
+
+          for (let i = 0; i < inputs.length; i++) {
+            const input = inputs[i];
+            const hash = _hashRecipeInput(input);
+
+            let entry = recipes[hash];
+            if (!entry) {
+              entry = [recipe.output, 0];
+              recipes[hash] = entry;
+            }
+            entry[1]++;
+          }
+        };
+        const _removeRecipe = recipe => {
+          const inputs = _getRecipeVariantInputs(recipe);
+
+          for (let i = 0; i < inputs.length; i++) {
+            const input = inputs[i];
+            const hash = _hashRecipeInput(input);
+
+            const entry = recipes[hash];
+            entry[1]--;
+            if (entry[1] === 0) {
+              delete recipes[hash];
+            }
+          }
+        };
+        const _getRecipeOutput = input => {
+          const hash = _hashRecipeInput(input);
+          const entry = recipes[hash];
+          return entry ? entry[0] : null;
+        };
 
         const _update = () => {
           if (gridMesh.visible) {
@@ -403,6 +471,14 @@ class Craft {
 
           setGridIndex(index, item) {
             grid[index] = item;
+          }
+
+          registerRecipe(pluginInstance, recipe) {
+            _addRecipe(recipe);
+          }
+
+          unregisterRecipe(pluginInstance, recipe) {
+            _removeRecipe(recipe);
           }
 
           open() {
