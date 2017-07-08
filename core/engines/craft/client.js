@@ -30,19 +30,19 @@ class Craft {
       '/core/engines/input',
       '/core/engines/rend',
       '/core/engines/multiplayer',
-      // '/core/utils/js-utils',
+      '/core/utils/js-utils',
     ]).then(([
       three,
       webvr,
       input,
       rend,
       multiplayer,
-      // jsUtils,
+      jsUtils,
     ]) => {
       if (live) {
         const {THREE, scene, camera} = three;
-        /* const {events} = jsUtils;
-        const {EventEmitter} = events; */
+        const {events} = jsUtils;
+        const {EventEmitter} = events;
 
         const localUserId = multiplayer.getId();
 
@@ -236,17 +236,18 @@ class Craft {
         })();
         scene.add(gridMesh);
 
-        const _trigger = e => {
+        const _triggerdown = e => {
           const {side} = e;
           const status = webvr.getStatus();
           const {gamepads} = status;
           const gamepad = gamepads[side];
 
           if (gamepad.buttons.grip.pressed) {
+          const {worldPosition: controllerPosition} = gamepad;
+
             if (!gridMesh.visible) {
               const {hmd} = status;
               const {worldPosition: hmdPosition} = hmd;
-              const {worldPosition: controllerPosition} = gamepad;
               const hmdEuler = new THREE.Euler().setFromQuaternion(
                 new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().lookAt(
                   hmdPosition,
@@ -268,13 +269,23 @@ class Craft {
 
               gridMesh.updatePositions();
             } else {
+              const index = _getHoveredIndex(controllerPosition);
+              if (index !== -1) {
+                craftApi.accept();
+              } else {
+                craftApi.reject();
+              }
+              _resetGrid();
+
               gridMesh.visible = false;
             }
 
             e.stopImmediatePropagation();
           }
         };
-        input.on('trigger', _trigger);
+        input.on('triggerdown', _triggerdown, {
+          priority: -2,
+        });
 
         const hoverDistance = (size + spacing) / 2;
         const _getHoveredIndex = p => {
@@ -294,6 +305,14 @@ class Craft {
             return -1;
           }
         };
+
+        const grid = Array(width * width);
+        const _resetGrid = () => {
+          for (let i = 0; i < grid.length; i++) {
+            grid[i] = null;
+          }
+        };
+        _resetGrid();
 
         const _update = () => {
           if (gridMesh.visible) {
@@ -323,9 +342,45 @@ class Craft {
           gridGeometry.dispose();
           gridMaterial.dispose();
 
-          input.removeListener('trigger', _trigger);
+          input.removeListener('triggerdown', _triggerdown);
           rend.removeListener('update', _update);
         };
+
+        class CraftApi extends EventEmitter {
+          getHoveredGridIndex(side) {
+            const {gamepads} = webvr.getStatus();
+            const gamepad = gamepads[side];
+            const {worldPosition: controllerPosition} = gamepad;
+            return _getHoveredIndex(controllerPosition);
+          }
+
+          getGrid() {
+            return grid;
+          }
+
+          getGridIndex(index) {
+            return grid[index];
+          }
+
+          getGridIndexPosition(index) {
+            return gridMesh.positions[index];
+          }
+
+          setGridIndex(index, item) {
+            grid[index] = item;
+          }
+
+          accept() {
+            this.emit('accept');
+          }
+
+          reject() {
+            this.emit('reject');
+          }
+        }
+        const craftApi = new CraftApi();
+
+        return craftApi;
       }
     });
   }
