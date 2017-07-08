@@ -48,6 +48,7 @@ class Craft {
 
         const oneVector = new THREE.Vector3(1, 1, 1);
         const upVector = new THREE.Vector3(0, 1, 0);
+        const forwardVector = new THREE.Vector3(0, 0, -1);
         const size = 0.15;
 
         const spacing = size / 4;
@@ -247,21 +248,16 @@ class Craft {
 
             if (!gridMesh.visible) {
               const {hmd} = status;
-              const {worldPosition: hmdPosition} = hmd;
-              const hmdEuler = new THREE.Euler().setFromQuaternion(
-                new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().lookAt(
-                  hmdPosition,
-                  controllerPosition,
-                  upVector
-                )),
-                camera.rotation.order
-              );
+              const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmd;
+              const hmdEuler = new THREE.Euler().setFromQuaternion(hmdRotation, camera.rotation.order);
               hmdEuler.x = 0;
-              hmdEuler.y += Math.PI;
               hmdEuler.z = 0;
               const hmdQuaternion = new THREE.Quaternion().setFromEuler(hmdEuler);
 
-              gridMesh.position.copy(controllerPosition);
+              gridMesh.position.copy(
+                hmdPosition.clone()
+                  .add(forwardVector.clone().multiplyScalar(0.6).applyQuaternion(hmdQuaternion))
+              );
               gridMesh.quaternion.copy(hmdQuaternion);
               gridMesh.scale.copy(oneVector);
               gridMesh.updateMatrixWorld();
