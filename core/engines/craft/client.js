@@ -9,6 +9,7 @@ const DIRECTIONS = [
   [1, 1, -1],
   [1, 1, 1],
 ];
+const SIDES = ['left', 'right'];
 
 class Craft {
   constructor(archae) {
@@ -46,15 +47,38 @@ class Craft {
         const localUserId = multiplayer.getId();
 
         const oneVector = new THREE.Vector3(1, 1, 1);
-        const wireMaterial = new THREE.MeshBasicMaterial({
-          color: 0x000000,
-          transparent: true,
-          opacity: 0.5,
-        });
         const size = 0.1;
         const spacing = size / 4;
-        const directions = DIRECTIONS.map(direction => new THREE.Vector3().fromArray(direction).multiplyScalar(size / 2));
         const width = 3;
+
+        const directions = DIRECTIONS.map(direction => new THREE.Vector3().fromArray(direction).multiplyScalar(size / 2));
+        const craftShader = {
+          uniforms: {
+            gselected: {
+              type: 'v2',
+              value: new THREE.Vector2(-1, -1),
+            },
+          },
+          vertexShader: [
+            "attribute float selected;",
+            "varying float vselected;",
+            "void main() {",
+            "  gl_Position = projectionMatrix * modelViewMatrix * vec4(position.x, position.y, position.z, 1.0);",
+            "  vselected = selected;",
+            "}"
+          ].join("\n"),
+          fragmentShader: [
+            "uniform vec2 gselected;",
+            "varying float vselected;",
+            "void main() {",
+            "  if (abs(gselected.x - vselected) < 0.1 || abs(gselected.y - vselected) < 0.1) {",
+            "    gl_FragColor = vec4(0.12941176470588237, 0.5882352941176471, 0.9529411764705882, 1.0);",
+            "  } else {",
+            "    gl_FragColor = vec4(0.0, 0.0, 0.0, 0.75);",
+            "  }",
+            "}"
+          ].join("\n")
+        };
 
         const _copyIndices = (src, dst, startIndexIndex, startAttributeIndex) => {
           for (let i = 0; i < src.length; i++) {
@@ -66,6 +90,7 @@ class Craft {
           (((width * size) + ((width - 1) * spacing)) / 2) - (size / 2) - (y * (size + spacing)),
           0
         );
+        const _sq = n => Math.sqrt(n*n*2);
 
         const gridGeometry = (() => {
           const cylinderGeometry = new THREE.CylinderBufferGeometry(0.001, 0.001, size, 3, 1);
@@ -131,27 +156,42 @@ class Craft {
           })();
           const gridGeometry = (() => {
             const positions = new Float32Array(boxGeometry.getAttribute('position').array.length * width * width);
+            const selecteds = new Float32Array(boxGeometry.getAttribute('position').array.length / 3 * width * width);
             const indices = new Uint16Array(boxGeometry.index.array.length * width * width);
             let attributeIndex = 0;
+            let selectedIndex = 0;
             let indexIndex = 0;
 
             for (let x = 0; x < width; x++) {
               for (let y = 0; y < width; y++) {
                 const position = _getGridPosition(x, y);
+                const index = x + (y * width);
+
                 const newPositions = boxGeometry.clone()
                   .applyMatrix(new THREE.Matrix4().makeTranslation(position.x, position.y, position.z))
                   .getAttribute('position').array;
                 positions.set(newPositions, attributeIndex);
+                const newSelecteds = (() => {
+                  const numNewPositions = newPositions.length / 3;
+                  const result = new Float32Array(numNewPositions);
+                  for (let i = 0; i < numNewPositions; i++) {
+                    result[i] = index;
+                  }
+                  return result;
+                })();
+                selecteds.set(newSelecteds, selectedIndex);
                 const newIndices = boxGeometry.index.array;
                 _copyIndices(newIndices, indices, indexIndex, attributeIndex / 3);
 
                 attributeIndex += newPositions.length;
+                selectedIndex += newSelecteds.length;
                 indexIndex += newIndices.length;
               }
             }
 
             const geometry = new THREE.BufferGeometry();
             geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+            geometry.addAttribute('selected', new THREE.BufferAttribute(selecteds, 1));
             geometry.setIndex(new THREE.BufferAttribute(indices, 1));
             return geometry;
           })();
@@ -162,7 +202,15 @@ class Craft {
         const gridMeshes = {};
 
         const _makeGridMesh = (position, rotation, scale) => {
-          const mesh = new THREE.Mesh(gridGeometry, wireMaterial);
+          const material = new THREE.ShaderMaterial({
+            uniforms: THREE.UniformsUtils.clone(craftShader.uniforms),
+            vertexShader: craftShader.vertexShader,
+            fragmentShader: craftShader.fragmentShader,
+            transparent: true,
+            // depthWrite: false,
+          });
+
+          const mesh = new THREE.Mesh(gridGeometry, material);
           mesh.position.copy(position);
           mesh.quaternion.copy(rotation);
           mesh.scale.copy(scale);
@@ -177,7 +225,6 @@ class Craft {
                   .multiply(scale)
                   .applyQuaternion(rotation)
                   .add(position);
-                p.offset = [x, y];
                 result[index] = p;
               }
             }
@@ -219,44 +266,47 @@ class Craft {
         };
         input.on('trigger', _trigger);
 
-        const _gripdown = e => {
-          const {side} = e;
-          const {gamepads} = webvr.getStatus();
-          const gamepad = gamepads[side];
-          const {worldPosition: controllerPosition} = gamepad;
+        const hoverDistance = (size + spacing) / 2;
+        const hoverOutrangeDistance = _sq((size + spacing) * width);
+        const _getHoveredSpec = p => {
+          for (const userId in gridMeshes) {
+            const gridMesh = gridMeshes[userId];
+            const {positions} = gridMesh;
 
-          const hoveredSpec = (() => {
-            for (const userId in gridMeshes) {
-              const gridMesh = gridMeshes[userId];
-              const {positions} = gridMesh;
+            for (let j = 0; j < positions.length; j++) {
+              const position = positions[j];
+              const distance = p.distanceTo(position);
 
-              for (let j = 0; j < positions.length; j++) {
-                const position = positions[j];
+              if (distance < hoverDistance) {
+                const {offset} = position;
+                const index = j;
 
-                if (controllerPosition.distanceTo(position) < (size + (spacing / 2))) {
-                  const {offset} = position;
-
-                  return {
-                    gridMesh,
-                    offset,
-                  };
-                }
+                return {
+                  gridMesh,
+                  index,
+                };
+              } else if (distance > hoverOutrangeDistance) { // optimization
+                return null;
               }
             }
-            return null;
-          })();
-          console.log('got grid position', hoveredSpec); // XXX
+          }
+          return null;
         };
-        input.on('gripdown', _gripdown);
 
         const _update = () => {
-          /* const {gamepads} = webvr.getStatus();
-          const gamepad = gamepads.right;
-          const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale} = gamepad;
-          gridMesh.position.copy(controllerPosition);
-          gridMesh.quaternion.copy(controllerRotation);
-          gridMesh.scale.copy(controllerScale);
-          gridMesh.updateMatrixWorld(); */
+          const gridMesh = gridMeshes[localUserId];
+
+          if (gridMesh) {
+            for (let i = 0; i < SIDES.length; i++) {
+              const side = SIDES[i];
+              const {gamepads} = webvr.getStatus();
+              const gamepad = gamepads[side];
+              const {worldPosition: controllerPosition} = gamepad;
+              const hoveredSpec = _getHoveredSpec(controllerPosition);
+              const index = (hoveredSpec && hoveredSpec.gridMesh === gridMesh) ? hoveredSpec.index : -1;
+              gridMesh.material.uniforms.gselected.value[side === 'left' ? 'x' : 'y'] = index;
+            }
+          }
         };
         rend.on('update', _update);
 
