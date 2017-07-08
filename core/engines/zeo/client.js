@@ -777,11 +777,11 @@ class Zeo {
                         }
 
                         registerRecipe(pluginInstance, recipe) {
-                          wallet.registerRecipe(pluginInstance, recipe);
+                          craft.registerRecipe(pluginInstance, recipe);
                         }
 
                         unregisterRecipe(pluginInstance, recipe) {
-                          wallet.unregisterRecipe(pluginInstance, recipe);
+                          craft.unregisterRecipe(pluginInstance, recipe);
                         }
 
                         on() {
