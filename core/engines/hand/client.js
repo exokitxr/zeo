@@ -298,7 +298,7 @@ class Hand {
           }
         };
         input.on('gripdown', _gripdown, {
-          priority: 1,
+          priority: -1,
         });
         const _gripup = e => {
           const {side} = e;
@@ -314,7 +314,7 @@ class Hand {
           }
         };
         input.on('gripup', _gripup, {
-          priority: 1,
+          priority: -1,
         });
 
         const _update = () => {

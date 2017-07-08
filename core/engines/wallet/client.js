@@ -333,7 +333,7 @@ class Wallet {
             const mesh = (() => {
               const geometry = (() => {
                 const imageData = resource.getSpriteImageData('asset:' + asset);
-                const pixelSize = 0.02;
+                const pixelSize = 0.015;
                 const geometry = spriteUtils.makeImageDataGeometry(imageData, pixelSize);
                 const positions = geometry.getAttribute('position').array;
                 const numPositions = positions.length / 3;
@@ -384,7 +384,7 @@ class Wallet {
               if (assetInstance.isGrabbed()) {
                 mesh.quaternion.multiply(forwardQuaternion);
                 mesh.position.add(new THREE.Vector3(0, 0, -0.02 / 2).applyQuaternion(mesh.quaternion));
-                mesh.scale.multiplyScalar(0.5);
+                // mesh.scale.multiplyScalar(0.5);
               }
               mesh.updateMatrixWorld();
             });
@@ -829,31 +829,40 @@ class Wallet {
           }
         };
 
-        const _triggerdown = e => {
-          const {side} = e;
+        const _craftTrigger = e => {
+          const {side, index} = e;
           const hoverState = hoverStates[side];
           const {worldGrabAsset} = hoverState;
+          const gridItem = craft.getGridIndex(index);
 
-          if (worldGrabAsset) {
-            const gridIndex = craft.getHoveredGridIndex(side);
+          if (worldGrabAsset && !gridItem) {
+            worldGrabAsset.disablePhysics();
+            worldGrabAsset.release();
 
-            if (gridIndex !== -1) {
-              const gridItem = craft.getGridIndex(gridIndex);
+            const indexPosition = craft.getGridIndexPosition(index);
+            worldGrabAsset.setStateLocal(indexPosition.toArray(), zeroQuaternion.toArray(), oneVector.toArray());
 
-              if (!gridItem) {
-                craft.setGridIndex(gridIndex, worldGrabAsset);
-
-                worldGrabAsset.disablePhysics();
-                worldGrabAsset.release();
-                const gridIndexPosition = craft.getGridIndexPosition(gridIndex);
-                worldGrabAsset.setStateLocal(gridIndexPosition.toArray(), zeroQuaternion.toArray(), oneVector.toArray());
-
-                e.stopImmediatePropagation();
-              }
-            }
+            craft.setGridIndex(index, worldGrabAsset);
           }
         };
-        input.on('triggerdown', _triggerdown, {
+        craft.on('trigger', _craftTrigger, {
+          priority: -1,
+        });
+
+        const _craftGrip = e => {
+          const {side, index} = e;
+          const hoverState = hoverStates[side];
+          const {worldGrabAsset} = hoverState;
+          const gridItem = craft.getGridIndex(index);
+
+          if (!worldGrabAsset && gridItem) {
+            gridItem.grab(side);
+            gridItem.enablePhysics();
+
+            craft.setGridIndex(index, null);
+          }
+        };
+        craft.on('grip', _craftGrip, {
           priority: -1,
         });
 
@@ -921,15 +930,10 @@ class Wallet {
           e.stopImmediatePropagation();
         };
         input.on('gripdown', _gripdown, {
-          priority: -1,
+          priority: -2,
         });
 
-        const _accept = () => {
-          const grid = craft.getGrid().slice();
-          console.log('accept grid', grid);
-        };
-        craft.on('accept', _accept);
-        const _reject = () => {
+        const _craftClose = () => {
           const grid = craft.getGrid();
 
           for (let i = 0; i < grid.length; i++) {
@@ -940,7 +944,7 @@ class Wallet {
             }
           }
         };
-        craft.on('reject', _reject);
+        craft.on('close', _craftClose);
 
         const _tabchange = tab => {
           if (tab === 'wallet') {
@@ -955,11 +959,11 @@ class Wallet {
         rend.on('update', _update);
 
         cleanups.push(() => {
-          input.removeListener('triggerdown', _triggerdown);
-          input.removeListener('gripdown', _gripdown);
+          input.removeListener('trigger', _trigger);
 
-          craft.removeListener('accept', _accept);
-          craft.removeListener('reject', _reject);
+          craft.removeListener('trigger', _craftTtrigger);
+          craft.removeListener('grip', _craftGrip);
+          craft.removeListener('close', _craftClose);
 
           rend.removeListener('tabchange', _tabchange);
           rend.removeListener('update', _update);
