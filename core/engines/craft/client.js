@@ -361,6 +361,9 @@ class Craft {
                 gridMesh.material.uniforms.gselected.value[side === 'left' ? 'x' : 'y'] = index;
               }
             } else {
+              craftApi.close();
+              _resetGrid();
+
               gridMesh.visible = false;
             }
           }
