@@ -327,6 +327,7 @@ class Wallet {
           }
 
           const assetInstances = [];
+          mesh.getAssetInstances = id => assetInstances;
           mesh.getAssetInstance = id => assetInstances.find(assetInstance => assetInstance.id === id);
           mesh.addAssetInstance = (id, {position, rotation, scale, asset, quantity, owner}) => {
             const assetInstance = new AssetInstance(id, {position, rotation, scale, asset, quantity, owner});
@@ -825,6 +826,11 @@ class Wallet {
               _removeBody();
             }
           });
+          assetInstance.on('destroy', () => {
+            if (body) {
+              _removeBody();
+            }
+          });
 
           if (immediate) {
             _addBody();
@@ -984,6 +990,60 @@ class Wallet {
         };
         rend.on('update', _update);
 
+        const itemApis = {};
+        const _bindItem = assetInstance => {
+          const {asset} = assetInstance;
+          const entry = itemApis[asset];
+
+          if (entry) {
+            for (let i = 0; i < entry.length; i++) {
+              const itemApi = entry[i];
+
+              if (typeof itemApi.itemAddedCallback === 'function') {
+                itemApi.itemAddedCallback(assetInstance);
+              }
+            }
+          }
+        };
+        const _unbindItem = assetInstance => {
+          const {asset} = assetInstance;
+          const entry = itemApis[asset];
+
+          if (entry) {
+            for (let i = 0; i < entry.length; i++) {
+              const itemApi = entry[i];
+
+              if (typeof itemApi.itemRemovedCallback === 'function') {
+                itemApi.itemRemovedCallback(assetInstance);
+              }
+            }
+          }
+        };
+        const _bindItemApi = itemApi => {
+          if (typeof itemApi.itemAddedCallback === 'function') {
+            const {asset} = itemApi;
+            const boundAssetInstances = assetsMesh.getAssetInstances()
+              .filter(assetInstance => assetInstance.asset === asset);
+
+            for (let i = 0; i < boundAssetInstances.length; i++) {
+              const assetInstance = boundAssetInstances[i];
+              itemApi.itemAddedCallback(assetInstance);
+            }
+          }
+        };
+        const _unbindItemApi = itemApi => {
+          if (typeof itemApi.itemRemovedCallback === 'function') {
+            const {asset} = itemApi;
+            const boundAssetInstances = assetsMesh.getAssetInstances()
+              .filter(assetInstance => assetInstance.asset === asset);
+
+            for (let i = 0; i < boundAssetInstances.length; i++) {
+              const assetInstance = boundAssetInstances[i];
+              itemApi.itemRemovedCallback(assetInstance);
+            }
+          }
+        };
+
         cleanups.push(() => {
           input.removeListener('trigger', _trigger);
 
@@ -1020,6 +1080,31 @@ class Wallet {
             walletApi.emit('removeTag', id);
           }
 
+          registerItem(pluginInstance, itemApi) {
+            const {asset} = itemApi;
+
+            let entry = itemApis[asset];
+            if (!entry) {
+              entry = [];
+              itemApis[asset] = entry;
+            }
+            entry.push(itemApi);
+
+            _bindItemApi(itemApi);
+          }
+
+          unregisterItem(pluginInstance, itemApi) {
+            const {asset} = itemApi;
+
+            const entry = itemApis[asset];
+            entry.splice(entry.indexOf(itemApi), 1);
+            if (entry.length === 0) {
+              delete itemApis[asset];
+            }
+
+            _unbindItemApi(itemApi);
+          }
+
           addAsset(item) {
             const {id, attributes} = item;
             const {
@@ -1045,9 +1130,13 @@ class Wallet {
               }
             );
             _bindAssetInstancePhysics(assetInstance, true);
+
+            _bindItem(assetInstance);
           }
 
           removeAsset(item) {
+            _unbindItem(assetInstance);
+
             const {id} = item;
             assetsMesh.removeAssetInstance(id);
           }
