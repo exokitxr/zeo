@@ -114,7 +114,7 @@ class Items {
       const [startItem, numItems] = itemRange;
       trackedItems.splice(trackedItems.indexOf(startItem), numItems);
     };
-    const _getHoveredItem = side => {
+    const _getHoveredTrackedItem = side => {
       const {gamepads} = pose.getStatus();
       const gamepad = gamepads[side];
       const {worldPosition: controllerPosition} = gamepad;
@@ -130,10 +130,10 @@ class Items {
 
     const _gripdown = e => {
       const {side} = e;
-      const hoveredItem = _getHoveredItem(side);
+      const trackedItem = _getHoveredTrackedItem(side);
 
-      if (hoveredItem) {
-        const {mesh, type, startIndex, endIndex} = hoveredItem;
+      if (trackedItem) {
+        const {mesh, type, startIndex, endIndex} = trackedItem;
         const {geometry} = mesh;
         const indexAttribute = geometry.index;
         const indices = indexAttribute.array;

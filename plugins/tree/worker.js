@@ -483,7 +483,7 @@ const _makeTreeChunkGeometry = (x, y, treeTemplates, points, heightRange) => {
         colors.set(newColors, attributeIndex);
         const newIndices = geometry.index.array;
         _copyIndices(newIndices, indices, indexIndex, attributeIndex / 3);
-        const newTrees = Float32Array.from(position.toArray());
+        const newTrees = Float32Array.from([indexIndex, indexIndex + newIndices.length, position.x, position.y, position.z]);
         trees.set(newTrees, treeIndex);
 
         attributeIndex += newPositions.length;
