@@ -13,7 +13,7 @@ class Tree {
 
   mount() {
     const {_archae: archae} = this;
-    const {three, render, pose, input, utils: {random: {chnkr}}} = zeo;
+    const {three, render, pose, input, items, utils: {random: {chnkr}}} = zeo;
     const {THREE, scene, camera} = three;
 
     const upVector = new THREE.Vector3(0, 1, 0);
@@ -67,7 +67,6 @@ class Tree {
         chopSfx,
       ]) => {
         if (live) {
-
           const _requestTreeGenerate = (x, y) => worker.requestGenerate(x, y)
             .then(treeChunkBuffer => protocolUtils.parseTreeGeometry(treeChunkBuffer));
 
@@ -106,23 +105,36 @@ class Tree {
             return mesh;
           };
 
+          class TrackedTree {
+            constructor(mesh, box, startIndex, endIndex) {
+              this.mesh = mesh;
+              this.box = box;
+              this.startIndex = startIndex;
+              this.endIndex = endIndex;
+            }
+          }
+
           const trackedTrees = [];
-          const _addTrackedTrees = treeChunkData => {
-            const {trees: treesData} = treeChunkData;
+          const _addTrackedTrees = (mesh, data) => {
+            const {trees: treesData} = data;
             const numTrees = treesData.length / 3;
             const treeBaseWidth = 1.5; // XXX compute this accurately
             const treeBaseHeight = 2;
             let startTree = null;
             for (let i = 0; i < numTrees; i++) {
-              const v = new THREE.Vector3().fromArray(treesData, i * 3);
-              const b = new THREE.Box3(
-                v.clone().add(new THREE.Vector3(-treeBaseWidth/2, 0, -treeBaseWidth/2)),
-                v.clone().add(new THREE.Vector3(treeBaseWidth/2, treeBaseHeight, treeBaseWidth/2))
+              const baseIndex = i * 5;
+              const startIndex = treesData[baseIndex + 0];
+              const endIndex = treesData[baseIndex + 1];
+              const basePosition = new THREE.Vector3().fromArray(treesData, baseIndex + 2);
+              const box = new THREE.Box3(
+                basePosition.clone().add(new THREE.Vector3(-treeBaseWidth/2, 0, -treeBaseWidth/2)),
+                basePosition.clone().add(new THREE.Vector3(treeBaseWidth/2, treeBaseHeight, treeBaseWidth/2))
               );
-              trackedTrees.push(b);
+              const trackedTree = new TrackedTree(mesh, box, startIndex, endIndex);
+              trackedTrees.push(trackedTree);
 
               if (startTree === null) {
-                startTree = b;
+                startTree = trackedTree;
               }
             }
 
@@ -132,14 +144,14 @@ class Tree {
             const [startTree, numTrees] = itemRange;
             trackedTrees.splice(trackedTrees.indexOf(startTree), numTrees);
           };
-          const _getHoveredItem = side => {
+          const _getHoveredTrackedTree = side => {
             const {gamepads} = pose.getStatus();
             const gamepad = gamepads[side];
             const {worldPosition: controllerPosition} = gamepad;
 
             for (let i = 0; i < trackedTrees.length; i++) {
               const trackedTree = trackedTrees[i];
-              if (trackedTree.containsPoint(controllerPosition)) {
+              if (trackedTree.box.containsPoint(controllerPosition)) {
                 return trackedTree;
               }
             }
@@ -148,9 +160,37 @@ class Tree {
 
           const _gripdown = e => {
             const {side} = e;
-            const hoveredItem = _getHoveredItem(side);
+            const trackedTree = _getHoveredTrackedTree(side);
 
-            if (hoveredItem !== null) {
+            if (trackedTree) {
+              const {mesh, startIndex, endIndex} = trackedTree;
+              const {geometry} = mesh;
+              const indexAttribute = geometry.index;
+              const indices = indexAttribute.array;
+              for (let i = startIndex; i < endIndex; i++) {
+                indices[i] = 0;
+              }
+              indexAttribute.needsUpdate = true;
+
+              const id = _makeId();
+              const asset = 'TREE';
+              const {gamepads} = pose.getStatus();
+              const gamepad = gamepads[side];
+              const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale} = gamepad;
+              const assetInstance = items.makeItem({ // XXX clean up this API
+                type: 'asset',
+                id: id,
+                name: asset,
+                displayName: asset,
+                attributes: {
+                  position: {value: controllerPosition.toArray().concat(controllerRotation.toArray()).concat(controllerScale.toArray())},
+                  asset: {value: asset},
+                  quantity: {value: 1},
+                  owner: {value: null},
+                },
+              });
+              assetInstance.grab(side);
+
               chopSfx.trigger();
             }
           };
@@ -174,7 +214,7 @@ class Tree {
                   const treeChunkMesh = _makeTreeChunkMesh(treeChunkData, x, z);
                   scene.add(treeChunkMesh);
 
-                  const itemRange = _addTrackedTrees(treeChunkData);
+                  const itemRange = _addTrackedTrees(treeChunkMesh, treeChunkData);
 
                   chunk.data = {
                     treeChunkMesh,
@@ -245,5 +285,6 @@ class Tree {
     this._cleanup();
   }
 }
+const _makeId = () => Math.random().toString(36).substring(7);
 
 module.exports = Tree;
