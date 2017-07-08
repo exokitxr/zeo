@@ -760,6 +760,14 @@ class Zeo {
                           return wallet.getAsset(id);
                         }
 
+                        makeItem(itemSpec) {
+                          return wallet.makeItem(itemSpec);
+                        }
+
+                        destroyItem(item) {
+                          wallet.destroyItem(item);
+                        }
+
                         on() {
                           return wallet.on.apply(wallet, arguments);
                         }

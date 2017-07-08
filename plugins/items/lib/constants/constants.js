@@ -5,8 +5,8 @@ const NUM_CELLS_OVERSCAN = NUM_CELLS + OVERSCAN;
 const DEFAULT_SEED = 'a';
 
 const ITEMS = [
-  'stick',
-  'rock',
+  'STICK',
+  'STONE',
 ];
 
 module.exports = {

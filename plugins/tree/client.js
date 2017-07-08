@@ -106,8 +106,8 @@ class Tree {
             return mesh;
           };
 
-          const items = [];
-          const _addItems = treeChunkData => {
+          const trackedTrees = [];
+          const _addTrackedTrees = treeChunkData => {
             const {trees: treesData} = treeChunkData;
             const numTrees = treesData.length / 3;
             let startTree = null;
@@ -117,7 +117,7 @@ class Tree {
                 v.clone().add(new THREE.Vector3(-0.5, 0, -0.5)),
                 v.clone().add(new THREE.Vector3(0.5, 2, 0.5))
               );
-              items.push(b);
+              trackedTrees.push(b);
 
               if (startTree === null) {
                 startTree = b;
@@ -126,20 +126,19 @@ class Tree {
 
             return [startTree, numTrees];
           };
-          const _removeItems = itemRange => {
+          const _removeTrackedTrees = itemRange => {
             const [startTree, numTrees] = itemRange;
-            const index = items.indexOf(startTree);
-            items.splice(index, numTrees);
+            trackedTrees.splice(trackedTrees.indexOf(startTree), numTrees);
           };
           const _getHoveredItem = side => {
             const {gamepads} = pose.getStatus();
             const gamepad = gamepads[side];
             const {worldPosition: controllerPosition} = gamepad;
 
-            for (let i = 0; i < items.length; i++) {
-              const item = items[i];
-              if (item.containsPoint(controllerPosition)) {
-                return item;
+            for (let i = 0; i < trackedTrees.length; i++) {
+              const trackedTree = trackedTrees[i];
+              if (trackedTree.containsPoint(controllerPosition)) {
+                return trackedTree;
               }
             }
             return null;
@@ -173,7 +172,7 @@ class Tree {
                   const treeChunkMesh = _makeTreeChunkMesh(treeChunkData, x, z);
                   scene.add(treeChunkMesh);
 
-                  const itemRange = _addItems(treeChunkData);
+                  const itemRange = _addTrackedTrees(treeChunkData);
 
                   chunk.data = {
                     treeChunkMesh,
@@ -190,7 +189,7 @@ class Tree {
                   treeChunkMesh.destroy();
 
                   const {itemRange} = data;
-                   _removeItems(itemRange);
+                  _removeTrackedTrees(itemRange);
                 });
               })
           };
