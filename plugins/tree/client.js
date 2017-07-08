@@ -110,12 +110,14 @@ class Tree {
           const _addTrackedTrees = treeChunkData => {
             const {trees: treesData} = treeChunkData;
             const numTrees = treesData.length / 3;
+            const treeBaseWidth = 1.5; // XXX compute this accurately
+            const treeBaseHeight = 2;
             let startTree = null;
             for (let i = 0; i < numTrees; i++) {
               const v = new THREE.Vector3().fromArray(treesData, i * 3);
               const b = new THREE.Box3(
-                v.clone().add(new THREE.Vector3(-0.5, 0, -0.5)),
-                v.clone().add(new THREE.Vector3(0.5, 2, 0.5))
+                v.clone().add(new THREE.Vector3(-treeBaseWidth/2, 0, -treeBaseWidth/2)),
+                v.clone().add(new THREE.Vector3(treeBaseWidth/2, treeBaseHeight, treeBaseWidth/2))
               );
               trackedTrees.push(b);
 
