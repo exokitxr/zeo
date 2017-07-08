@@ -47,7 +47,9 @@ class Craft {
         const localUserId = multiplayer.getId();
 
         const oneVector = new THREE.Vector3(1, 1, 1);
+        const upVector = new THREE.Vector3(0, 1, 0);
         const size = 0.1;
+
         const spacing = size / 4;
         const width = 3;
 
@@ -74,7 +76,7 @@ class Craft {
             "  if (abs(gselected.x - vselected) < 0.1 || abs(gselected.y - vselected) < 0.1) {",
             "    gl_FragColor = vec4(0.12941176470588237, 0.5882352941176471, 0.9529411764705882, 1.0);",
             "  } else {",
-            "    gl_FragColor = vec4(0.0, 0.0, 0.0, 0.75);",
+            "    gl_FragColor = vec4(0.5, 0.5, 0.5, 0.75);",
             "  }",
             "}"
           ].join("\n")
@@ -243,13 +245,20 @@ class Craft {
           if (gamepad.buttons.grip.pressed) {
             if (!gridMesh.visible) {
               const {hmd} = status;
-              const {worldRotation: hmdRotation} = hmd;
-              const hmdEuler = new THREE.Euler().setFromQuaternion(hmdRotation, camera.rotation.order);
+              const {worldPosition: hmdPosition} = hmd;
+              const {worldPosition: controllerPosition} = gamepad;
+              const hmdEuler = new THREE.Euler().setFromQuaternion(
+                new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().lookAt(
+                  hmdPosition,
+                  controllerPosition,
+                  upVector
+                )),
+                camera.rotation.order
+              );
               hmdEuler.x = 0;
               hmdEuler.y += Math.PI;
               hmdEuler.z = 0;
               const hmdQuaternion = new THREE.Quaternion().setFromEuler(hmdEuler);
-              const {worldPosition: controllerPosition} = gamepad;
 
               gridMesh.position.copy(controllerPosition);
               gridMesh.quaternion.copy(hmdQuaternion);
