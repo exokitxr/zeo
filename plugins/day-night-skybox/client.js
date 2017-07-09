@@ -2,36 +2,43 @@ const SkyShader = require('./lib/three-extra/SkyShader');
 
 class DayNightSkybox {
   mount() {
-    const {three: {THREE}, elements, render, world, utils: {geometry: geometryUtils}} = zeo;
+    const {three, elements, render, world, utils: {geometry: geometryUtils}} = zeo;
+    const {THREE, scene} = three;
 
     const THREESky = SkyShader(THREE);
 
     const MAP_SUN_MATERIAL = new THREE.MeshBasicMaterial({
-      color: 0xffffff,
+      color: 0xFFFFFF,
       fog: false,
+      transparent: true,
+      opacity: 0.8,
     });
     // MAP_SUN_MATERIAL.depthTest = false;
     const MAP_STARS_MATERIAL = new THREE.PointsMaterial({
       color: 0xFFFFFF,
-      size: 50,
+      size: 5,
       fog: false,
       // opacity: 1,
       transparent: true,
     });
     // MAP_STARS_MATERIAL.depthTest = false;
-    const MAP_MOON_MATERIAL = new THREE.MeshPhongMaterial({
-      color: 0x808080,
+    /* const MAP_MOON_MATERIAL = new THREE.MeshBasicMaterial({
+      color: 0xFFFFFF,
       // emissive: 0x333333,
       // specular: 0x000000,
-      shininess: 0,
+      // shininess: 0,
       // side: THREE.BackSide,
-      shading: THREE.FlatShading,
+      // shading: THREE.FlatShading,
       // vertexColors: THREE.VertexColors,
       fog: false,
-    });
+      transparent: true,
+      opacity: 0.8,
+    }); */
     // MAP_MOON_MATERIAL.depthTest = false;
 
     const zeroVector = new THREE.Vector3(0, 0, 0);
+
+    const updates = [];
 
     const skyboxEntity = {
       attributes: {
@@ -72,28 +79,33 @@ class DayNightSkybox {
           object.sky = sky;
 
           const sunSphere = (() => {
-            const geometry = geometryUtils.unindexBufferGeometry(new THREE.SphereBufferGeometry(20000, 5, 4));
+            const geometry = new THREE.SphereBufferGeometry(200, 5, 3);
+              /* .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(
+                new THREE.Vector3(0, 0, -1),
+                new THREE.Vector3(0, -1, 0),
+              ))); */
             const material = MAP_SUN_MATERIAL;
             const sunSphere = new THREE.Mesh(geometry, material);
+            sunSphere.rotation.order = 'ZXY';
             // sunSphere.position.y = -700000;
-            sunSphere.distance = 300000;
+            sunSphere.distance = 5000;
             // sunSphere.frustumCulled = false;
-            sunSphere.renderOrder = 1;
+            // sunSphere.renderOrder = 1;
             return sunSphere;
           })();
           object.add(sunSphere);
           object.sunSphere = sunSphere;
 
-          const sunLight = (() => {
+          /* const sunLight = (() => {
             const light = new THREE.DirectionalLight(0xFFFFFF, 2);
             light.position.copy(sunSphere.position);
             return light;
           })();
           object.add(sunLight);
-          object.sunLight = sunLight;
+          object.sunLight = sunLight; */
 
           const starsMesh = (() => {
-            const numStars = 500;
+            const numStars = 1000;
 
             const geometry = (() => {
               const result = new THREE.BufferGeometry();
@@ -102,7 +114,7 @@ class DayNightSkybox {
               const upVector = new THREE.Vector3(0, 1, 0);
 
               for (let i = 0; i < numStars; i++) {
-                const radius = 10000 + (Math.random() * (20000 - 10000));
+                const radius = 2500 + (Math.random() * 2500);
                 const magnitudeVector = new THREE.Vector3(0, radius, 0);
                 const directionVector = new THREE.Vector3(-0.5 + Math.random(), -0.5 + Math.random(), -0.5 + Math.random()).normalize();
                 const quaternion = new THREE.Quaternion().setFromUnitVectors(upVector, directionVector);
@@ -127,12 +139,13 @@ class DayNightSkybox {
           object.starsMesh = starsMesh;
 
           const moonSphere = (() => {
-            const geometry = geometryUtils.unindexBufferGeometry(new THREE.SphereBufferGeometry(20000, 5, 4));
-            const material = MAP_MOON_MATERIAL;
+            const geometry = new THREE.SphereBufferGeometry(100, 5, 3);
+            const material = MAP_SUN_MATERIAL;
             const moonSphere = new THREE.Mesh(geometry, material);
+            moonSphere.rotation.order = 'ZXY';
             // moonSphere.position.z = -700000;
             // moonSphere.frustumCulled = false;
-            moonSphere.renderOrder = 1;
+            // moonSphere.renderOrder = 1;
             return moonSphere;
           })();
           object.add(moonSphere);
@@ -144,9 +157,9 @@ class DayNightSkybox {
         entityApi.mesh = mesh;
 
         const update = () => {
-          const {sky, sunSphere, sunLight, starsMesh, moonSphere} = mesh;
+          const {sky, sunSphere/* , sunLight*/, starsMesh, moonSphere} = mesh;
 
-          let worldTime = world.getWorldTime();
+          let worldTime = world.getWorldTime() * 20;
 
           const speed = 1;
           // const speed = 50;
@@ -167,12 +180,13 @@ class DayNightSkybox {
           // sunSphere.rotation.x = Math.PI / 2;
           // sunSphere.rotation.y = Math.PI / 2;
           sunSphere.rotation.z = -phi;
-          sunSphere.rotation.order = 'ZXY';
+          sunSphere.updateMatrixWorld();
 
-          sunLight.position.set(x, y, z);
-          sunLight.lookAt(zeroVector);
+          /* sunLight.position.set(x, y, z);
+          sunLight.lookAt(zeroVector); */
 
           starsMesh.rotation.z = -sky.azimuth * (Math.PI * 2);
+          starsMesh.updateMatrixWorld();
           const nightCutoff = 0.1;
           const nightWidth = 0.5 + (nightCutoff * 2);
           const nightRatio = (() => {
@@ -185,8 +199,7 @@ class DayNightSkybox {
             }
           })();
           const nightAmplitude = Math.sin(nightRatio * Math.PI);
-          const starsOpacity = 0.75;
-          const starsAmplitude = nightAmplitude * starsOpacity;
+          const starsAmplitude = nightAmplitude;
           starsMesh.material.opacity = starsAmplitude;
 
           moonSphere.position.x = -x;
@@ -195,7 +208,7 @@ class DayNightSkybox {
           // moonSphere.rotation.x = Math.PI / 2;
           // moonSphere.rotation.y = Math.PI / 2;
           moonSphere.rotation.z = -phi;
-          moonSphere.rotation.order = 'ZXY';
+          moonSphere.updateMatrixWorld();
         };
         updates.push(update);
 
@@ -211,7 +224,7 @@ class DayNightSkybox {
         entityApi._cleanup();
       },
       entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-        c0onst entityApi = entityElement.getEntityApi();
+        const entityApi = entityElement.getEntityApi();
 
         switch (name) {
           case 'position': {
@@ -228,7 +241,6 @@ class DayNightSkybox {
     };
     elements.registerEntity(this, skyboxEntity);
 
-    const updates = [];
     const _update = () => {
       for (let i = 0; i < updates.length; i++) {
         const update = updates[i];
