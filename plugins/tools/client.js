@@ -258,11 +258,17 @@ class Tools {
         const _triggerdown = e => {
           if (grabbed) {
             drawing = true;
+
+            e.stopImmediatePropagation();
           }
         };
         input.on('triggerdown', _triggerdown);
         const _triggerup = e => {
-          drawing = false;
+          if (drawing) {
+            drawing = false;
+
+            e.stopImmediatePropagation();
+          }
         };
         input.on('triggerup', _triggerup);
         const _grab = e => {
