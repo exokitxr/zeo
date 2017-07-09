@@ -118,6 +118,7 @@ class Wallet {
 
         const walletRenderer = walletRender.makeRenderer({creatureUtils});
         const outputSymbol = craft.getOutputSymbol();
+        const localUserId = multiplayer.getId();
 
         const zeroVector = new THREE.Vector3();
         const oneVector = new THREE.Vector3(1, 1, 1);
@@ -937,7 +938,8 @@ class Wallet {
 
           const id = _makeId();
           const indexPosition = craft.getGridIndexPosition(outputSymbol);
-          const assetInstance = walletApi.makeItem({ // XXX needs to be destroyed if the player leaves
+          const localAddress = bootstrap.getAddress();
+          const assetInstance = walletApi.makeItem({
             type: 'asset',
             id: id,
             name: asset,
@@ -947,6 +949,7 @@ class Wallet {
               asset: {value: asset},
               quantity: {value: 1},
               owner: {value: null},
+              bindOwner: {value: localAddress},
             },
           });
           assetInstance.mesh.position.copy(indexPosition);
@@ -991,18 +994,11 @@ class Wallet {
               name: asset,
               displayName: asset,
               attributes: {
-                position: {
-                  value: position.toArray().concat(rotation.toArray()).concat(scale.toArray()),
-                },
-                asset: {
-                  value: asset,
-                },
-                quantity: {
-                  value: quantity,
-                },
-                owner: {
-                  value: owner,
-                },
+                position: {value: position.toArray().concat(rotation.toArray()).concat(scale.toArray())},
+                asset: {value: asset},
+                quantity: {value: quantity},
+                owner: {value: owner},
+                bindOwner: {value: null},
               },
               metadata: {},
             };
