@@ -42,8 +42,9 @@ class Tools {
       shading: THREE.FlatShading,
     });
 
-    const _makeWorkerPromise = () => {
-      const worker = new Worker('archae/plugins/_plugins_tools/build/worker.js');
+    let worker = null;
+    const _initializeWorker = () => {
+      worker = new Worker('archae/plugins/_plugins_tools/build/worker.js');
       const queue = [];
       worker.requestMesh = (x, y, z, points, resultBuffer) => new Promise((accept, reject) => {
         worker.postMessage({
@@ -66,31 +67,13 @@ class Tools {
         const cb = queue.shift();
         cb(data);
       };
-      return Promise.resolve(worker);
-    };
-
-    let worker = null;
-    let workerPromise = null;
-    const _requestWorker = () => {
-      if (!workerPromise) {
-        workerPromise = _makeWorkerPromise()
-          .then(newWorker => {
-            worker = newWorker;
-
-            return Promise.resolve(newWorker);
-          })
-          .catch(err => {
-             workerPromise = null;
-
-            return Promise.reject(err);
-          });
-      }
-      return workerPromise;
     };
 
     const itemApi = {
       asset: 'HAMMER',
       itemAddedCallback(grabbable) {
+        _initializeWorker();
+
         const polygonMeshes = {};
 
         const _makePolygonMesh = (ox, oy, oz) => {
