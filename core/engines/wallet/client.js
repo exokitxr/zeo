@@ -923,6 +923,17 @@ class Wallet {
           _resetGrid();
         };
         craft.on('close', _craftClose);
+        const _craftTeleport = () => {
+          for (let i = 0; i < grid.length; i++) {
+            const assetInstance = grid[i];
+
+            if (assetInstance) {
+              const indexPosition = craft.getGridIndexPosition(i);
+              assetInstance.setState(indexPosition.toArray(), zeroQuaternion.toArray(), oneVector.toArray());
+            }
+          }
+        };
+        craft.on('teleport', _craftTeleport);
         const _craftOutput = asset => {
           const outputItem = grid[outputSymbol];
           if (outputItem) {
@@ -1115,6 +1126,7 @@ class Wallet {
           craft.removeListener('gripdown', _craftGripdown);
           craft.removeListener('gripup', _craftGripup);
           craft.removeListener('close', _craftClose);
+          craft.removeListener('teleport', _craftTeleport);
           craft.removeListener('output', _craftOutput);
 
           rend.removeListener('tabchange', _tabchange);

@@ -360,6 +360,8 @@ class Craft {
             gridMesh.updateMatrixWorld();
 
             gridMesh.updatePositions();
+
+            craftApi.emit('teleport');
           }
         };
         teleport.on('teleport', _teleport);
@@ -495,16 +497,12 @@ class Craft {
             return _getHoveredIndex(controllerPosition);
           }
 
-          getGrid() {
-            return grid;
+          getGridIndexPosition(index) {
+            return gridMesh.positions[index];
           }
 
           getGridIndex(index) {
             return grid[index];
-          }
-
-          getGridIndexPosition(index) {
-            return gridMesh.positions[index];
           }
 
           setGridIndex(index, asset) {
