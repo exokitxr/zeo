@@ -281,7 +281,7 @@ class Craft {
 
               gridMesh.updatePositions();
 
-              craftApi.open();
+              craftApi.emit('open');
             } else {
               const index = _getHoveredIndex(controllerPosition);
 
@@ -289,9 +289,6 @@ class Craft {
                 craftApi.trigger(side, index);
               } else {
                 craftApi.close();
-                _resetGrid();
-
-                gridMesh.visible = false;
               }
             }
 
@@ -445,9 +442,6 @@ class Craft {
               }
             } else {
               craftApi.close();
-              _resetGrid();
-
-              gridMesh.visible = false;
             }
           }
         };
@@ -495,6 +489,13 @@ class Craft {
             }
           }
 
+          close() {
+            craftApi.emit('close');
+            _resetGrid();
+
+            gridMesh.visible = false;
+          }
+
           registerRecipe(pluginInstance, recipe) {
             _addRecipe(recipe);
           }
@@ -505,14 +506,6 @@ class Craft {
 
           getOutputSymbol() {
             return outputSymbol;
-          }
-
-          open() {
-            this.emit('open');
-          }
-
-          close() {
-            this.emit('close');
           }
 
           trigger(side, index) {

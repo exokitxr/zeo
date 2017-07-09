@@ -1593,14 +1593,23 @@ class Tags {
             }
 
             setAttribute(attributeName, newValue) {
-              const {instance} = this;
-              if (instance) {
-                const entityElement = instance;
+              const {type} = this;
+
+              if (type === 'entity') {
+                const {instance: entityElement} = this;
 
                 if (newValue !== undefined) {
                   entityElement.setAttribute(attributeName, _stringifyAttribute(newValue));
                 } else {
                   entityElement.removeAttribute(attributeName);
+                }
+              } else if (type === 'asset') {
+                const {attributes} = this;
+
+                if (newValue !== undefined) {
+                  attributes[attributeName] = newValue;
+                } else {
+                  delete attributes[attributeName];
                 }
               }
             }
@@ -2006,7 +2015,7 @@ class Tags {
               );
               object.item = item;
 
-              if (itemSpec.type === 'entity') {
+              if (itemSpec.type === 'entity' || itemSpec.type === 'asset') {
                 object.setAttribute = (attribute, value) => {
                   item.setAttribute(attribute, value);
                 };

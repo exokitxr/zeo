@@ -206,6 +206,10 @@ class World {
           _handleRemoveTags(localUserId, ids);
           _request('removeTags', [localUserId, ids]);
         };
+        const _setTagAttributes = (id, newAttributes) => {
+          _handleSetTagAttributes(localUserId, id, newAttributes);
+          _request('setTagAttributes', [localUserId, id, newAttributes]);
+        };
 
         const _handleAddTag = (userId, itemSpec, {element = null} = {}) => {
           const tagMesh = tags.makeTag(itemSpec);
@@ -263,6 +267,14 @@ class World {
           tagMesh.setAttribute(name, value);
 
           return tagMesh;
+        };
+        const _handleSetTagAttributes = (userId, id, newAttributes) => {
+          // same for local and remote user ids
+
+          return newAttributes.map(newAttribute => {
+            const {name, value} = newAttribute;
+            return _handleSetTagAttribute(userId, id, {name, value});
+          });
         };
         const _handleTagOpen = (userId, id) => {
           // same for local and remote user ids
@@ -727,6 +739,10 @@ class World {
           _removeTag(id);
         };
         wallet.on('removeTag', _walletRemoveTag);
+        const _walletSetTagAttributes = (id, newAttributes) => {
+          _setTagAttributes(id, newAttributes);
+        };
+        wallet.on('setTagAttributes', _walletSetTagAttributes);
 
         const _download = ({id}) => {
           const a = document.createElement('a');
@@ -917,33 +933,22 @@ class World {
             const tagMesh = _handleSetTagAttribute(userId, id, {name, value});
             // this prevents this mutation from triggering an infinite recursion multiplayer update
             // we simply ignore this mutation during the next entity mutation tick
-            if (tagMesh) {
-              const {item} = tagMesh;
-              const {id} = item;
+            tags.ignoreEntityMutation({
+              type: 'setAttribute',
+              args: [id, name, value],
+            });
+          } else if (type === 'setTagAttributes') {
+            const {args: [userId, id, newAttributes]} = m;
 
+            const tagMeshes = _handleSetTagAttributes(userId, id, newAttributes);
+            for (let i = 0; i < tagMeshes.length; i++) {
+              const tagMesh = tagMeshes[i];
+              // this prevents this mutation from triggering an infinite recursion multiplayer update
+              // we simply ignore this mutation during the next entity mutation tick
               tags.ignoreEntityMutation({
                 type: 'setAttribute',
                 args: [id, name, value],
               });
-            }
-          } else if (type === 'setTagAttributes') {
-            const {args: [userId, id, newAttributes]} = m;
-
-            for (let i = 0; i < newAttributes.length; i++) {
-              const newAttribute = newAttributes[i];
-              const {name, value} = newAttribute;
-              const tagMesh = _handleSetTagAttribute(userId, id, {name, value});
-              // this prevents this mutation from triggering an infinite recursion multiplayer update
-              // we simply ignore this mutation during the next entity mutation tick
-              if (tagMesh) {
-                const {item} = tagMesh;
-                const {id} = item;
-
-                tags.ignoreEntityMutation({
-                  type: 'setAttribute',
-                  args: [id, name, value],
-                });
-              }
             }
           } else if (type === 'tagOpen') {
             const {args: [userId, id]} = m;
@@ -1023,6 +1028,7 @@ class World {
 
           wallet.removeListener('addAsset', _walletAddAsset);
           wallet.removeListener('removeTag', _walletRemoveTag);
+          wallet.removeListener('setTagAttributes', _walletSetTagAttributes);
 
           fs.removeListener('upload', _upload);
 

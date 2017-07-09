@@ -34,7 +34,7 @@ class Tools {
     const {THREE, scene, camera} = three;
 
     const forwardVector = new THREE.Vector3(0, 0, -1);
-    const dotMeshQuaternion = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 8, 0, 0, camera.rotation.order));
+    const dotMeshBaseQuaternion = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 8, 0, 0, camera.rotation.order));
 
     const polygonMeshMaterial = new THREE.MeshPhongMaterial({
       color: 0x9E9E9E,
@@ -286,14 +286,14 @@ class Tools {
               const grabbableRotation = new THREE.Quaternion().fromArray(grabbable.rotation);
               const grabbableScale = new THREE.Vector3(1, 1, 1).fromArray(grabbable.scale);
 
-              const position = controllerPosition.clone()
+              const position = grabbablePosition.clone()
                 .add(
                   forwardVector.clone()
                     .multiplyScalar(5)
-                    .applyQuaternion(controllerRotation)
+                    .applyQuaternion(grabbableRotation)
                 );
               dotMesh.position.copy(position);
-              dotMesh.quaternion.copy(controllerRotation.clone().multiply(dotMeshQuaternion));
+              dotMesh.quaternion.copy(grabbableRotation.clone().multiply(dotMeshBaseQuaternion));
               dotMesh.updateMatrixWorld();
             }
           };
