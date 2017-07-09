@@ -21,7 +21,6 @@ const DEFAULT_MATRIX = [
 const NUM_POSITIONS = 100 * 1024;
 const ROTATE_SPEED = 0.0004;
 const CREDIT_ASSET_NAME = 'CRD';
-
 const ASSET_SHADER = {
   uniforms: {
     theta: {
@@ -47,7 +46,6 @@ const ASSET_SHADER = {
     "}"
   ].join("\n")
 };
-
 const SIDES = ['left', 'right'];
 
 class Wallet {
@@ -119,6 +117,7 @@ class Wallet {
         const {sfx} = resource;
 
         const walletRenderer = walletRender.makeRenderer({creatureUtils});
+        const outputSymbol = craft.getOutputSymbol();
 
         const zeroVector = new THREE.Vector3();
         const oneVector = new THREE.Vector3(1, 1, 1);
@@ -837,11 +836,14 @@ class Wallet {
           }
         };
 
-        const grid = Array(3 * 3);
+        const gridWidth = 3;
+        const grid = Array(gridWidth * gridWidth);
         const _resetGrid = () => {
-          for (let i = 0; i < (3 * 3); i++) {
+          for (let i = 0; i < (gridWidth * gridWidth); i++) {
             grid[i] = null;
           }
+
+          grid[outputSymbol] = null;
         };
         _resetGrid();
 
@@ -919,9 +921,47 @@ class Wallet {
             }
           }
 
+          const outputItem = grid[outputSymbol];
+          if (outputItem) {
+            walletApi.destroyItem(outputItem);
+          }
+
           _resetGrid();
         };
         craft.on('close', _craftClose);
+        const _craftOutput = asset => {
+          const outputItem = grid[outputSymbol];
+          if (outputItem) {
+            walletApi.destroyItem(outputItem);
+          }
+
+          const id = _makeId();
+          const indexPosition = craft.getGridIndexPosition(outputSymbol);
+          const assetInstance = walletApi.makeItem({ // XXX needs to be destroyed if the player leaves
+            type: 'asset',
+            id: id,
+            name: asset,
+            displayName: asset,
+            attributes: {
+              position: {value: indexPosition.toArray().concat(zeroQuaternion.toArray()).concat(oneVector.toArray())},
+              asset: {value: asset},
+              quantity: {value: 1},
+              owner: {value: null},
+            },
+          });
+          assetInstance.mesh.position.copy(indexPosition);
+          assetInstance.mesh.quaternion.copy(zeroQuaternion);
+          assetInstance.mesh.scale.copy(oneVector);
+          assetInstance.mesh.updateMatrixWorld();
+          assetInstance.disablePhysics(); // XXX should be initialized with this to prevent race conditions
+
+          assetInstance.on('grab', () => {
+            console.log('grab crafted asset instance', assetInstance); // XXX need to destroy the inputs and inherit the asset to the owner
+          });
+
+          grid[outputSymbol] = assetInstance;
+        };
+        craft.on('output', _craftOutput);
 
         const lastGripDownTimes = {
           left: 0,
@@ -1063,6 +1103,7 @@ class Wallet {
           craft.removeListener('gripdown', _craftGripdown);
           craft.removeListener('gripup', _craftGripup);
           craft.removeListener('close', _craftClose);
+          craft.removeListener('output', _craftOutput);
 
           rend.removeListener('tabchange', _tabchange);
           rend.removeListener('update', _update);
@@ -1150,10 +1191,10 @@ class Wallet {
             _bindItem(assetInstance);
           }
 
-          removeAsset(item) {
+          removeAsset(assetInstance) {
             _unbindItem(assetInstance);
 
-            const {id} = item;
+            const {id} = assetInstance;
             assetsMesh.removeAssetInstance(id);
           }
         }
