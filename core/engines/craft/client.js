@@ -31,6 +31,7 @@ class Craft {
       '/core/engines/webvr',
       '/core/engines/input',
       '/core/engines/rend',
+      '/core/engines/teleport',
       '/core/engines/multiplayer',
       '/core/utils/js-utils',
     ]).then(([
@@ -38,6 +39,7 @@ class Craft {
       webvr,
       input,
       rend,
+      teleport,
       multiplayer,
       jsUtils,
     ]) => {
@@ -331,6 +333,37 @@ class Craft {
           priority: -1,
         });
 
+        const _teleport = () => {
+          if (gridMesh.visible) {
+            const {hmd} = webvr.getStatus();
+            const {worldPosition: hmdPosition} = hmd;
+            const hmdEuler = new THREE.Euler().setFromQuaternion(
+              new THREE.Quaternion().setFromRotationMatrix(
+                new THREE.Matrix4().lookAt(
+                  hmdPosition,
+                  gridMesh.position,
+                  upVector
+                )
+              ),
+              camera.rotation.order
+            );
+            hmdEuler.x = 0;
+            hmdEuler.z = 0;
+            const hmdQuaternion = new THREE.Quaternion().setFromEuler(hmdEuler);
+
+            gridMesh.position.copy(
+              hmdPosition.clone()
+                .add(forwardVector.clone().multiplyScalar(0.6).applyQuaternion(hmdQuaternion))
+            );
+            gridMesh.quaternion.copy(hmdQuaternion);
+            gridMesh.scale.copy(oneVector);
+            gridMesh.updateMatrixWorld();
+
+            gridMesh.updatePositions();
+          }
+        };
+        teleport.on('teleport', _teleport);
+
         const hoverDistance = _sq((gridSize + gridSpacing) / 2);
         const _getHoveredIndex = p => {
           if (gridMesh.visible) {
@@ -427,21 +460,14 @@ class Craft {
 
         const _update = () => {
           if (gridMesh.visible) {
-            const status = webvr.getStatus();
-            const {hmd} = status;
-            const {worldPosition: hmdPosition} = hmd;
+            const {gamepads} = webvr.getStatus();
 
-            if (hmdPosition.distanceTo(gridMesh.position) < 3) {
-              for (let i = 0; i < SIDES.length; i++) {
-                const side = SIDES[i];
-                const {gamepads} = status;
-                const gamepad = gamepads[side];
-                const {worldPosition: controllerPosition} = gamepad;
-                const index = _getHoveredIndex(controllerPosition);
-                gridMesh.material.uniforms.gselected.value[side === 'left' ? 'x' : 'y'] = index;
-              }
-            } else {
-              craftApi.close();
+            for (let i = 0; i < SIDES.length; i++) {
+              const side = SIDES[i];
+              const gamepad = gamepads[side];
+              const {worldPosition: controllerPosition} = gamepad;
+              const index = _getHoveredIndex(controllerPosition);
+              gridMesh.material.uniforms.gselected.value[side === 'left' ? 'x' : 'y'] = index;
             }
           }
         };
@@ -455,6 +481,9 @@ class Craft {
 
           input.removeListener('triggerdown', _triggerdown);
           input.removeListener('gripdown', _gripdown);
+
+          teleport.removeListener('teleport', _teleport);
+
           rend.removeListener('update', _update);
         };
 
