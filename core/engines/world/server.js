@@ -383,9 +383,9 @@ class World {
                       // remove the tag since it's corrupted
                       _removeTag(owner, id);
                     }
+                  } else if (bindOwner === address) {
+                    _removeTag(owner, id);
                   }
-                } else if (bindOwner === address) {
-                  _removeTag(owner, id);
                 }
               }
             };
