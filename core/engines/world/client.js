@@ -206,6 +206,10 @@ class World {
           _handleRemoveTags(localUserId, ids);
           _request('removeTags', [localUserId, ids]);
         };
+        const _setTagAttribute = (id, {name, value}) => {
+          _handleSetTagAttribute(localUserId, id, {name, value});
+          _request('setTagAttribute', [localUserId, id, {name, value}]);
+        };
         const _setTagAttributes = (id, newAttributes) => {
           _handleSetTagAttributes(localUserId, id, newAttributes);
           _request('setTagAttributes', [localUserId, id, newAttributes]);
@@ -266,6 +270,11 @@ class World {
           const tagMesh = elementManager.getTagMesh(id);
           tagMesh.setAttribute(name, value);
 
+          const {item} = tagMesh;
+          if (item.type === 'asset') {
+            wallet.setAssetAttribute(item, name, value);
+          }
+
           return tagMesh;
         };
         const _handleSetTagAttributes = (userId, id, newAttributes) => {
@@ -273,7 +282,14 @@ class World {
 
           return newAttributes.map(newAttribute => {
             const {name, value} = newAttribute;
-            return _handleSetTagAttribute(userId, id, {name, value});
+            const tagMesh = _handleSetTagAttribute(userId, id, {name, value});
+
+            const {item} = tagMesh;
+            if (item.type === 'asset') {
+              wallet.setAssetAttribute(item, name, value);
+            }
+
+            return tagMesh;
           });
         };
         const _handleTagOpen = (userId, id) => {
@@ -739,6 +755,10 @@ class World {
           _removeTag(id);
         };
         wallet.on('removeTag', _walletRemoveTag);
+        const _walletSetTagAttribute = (id, {name, value}) => {
+          _setTagAttribute(id, {name, value});
+        };
+        wallet.on('setTagAttribute', _walletSetTagAttribute);
         const _walletSetTagAttributes = (id, newAttributes) => {
           _setTagAttributes(id, newAttributes);
         };
@@ -1028,6 +1048,7 @@ class World {
 
           wallet.removeListener('addAsset', _walletAddAsset);
           wallet.removeListener('removeTag', _walletRemoveTag);
+          wallet.removeListener('setTagAttribute', _walletSetTagAttribute);
           wallet.removeListener('setTagAttributes', _walletSetTagAttributes);
 
           fs.removeListener('upload', _upload);
