@@ -866,9 +866,7 @@ class Wallet {
             craft.setGridIndex(index, asset);
           }
         };
-        craft.on('trigger', _craftTrigger, {
-          priority: -1,
-        });
+        craft.on('trigger', _craftTrigger);
 
         const _craftGripdown = e => {
           const {side, index} = e;
@@ -886,9 +884,7 @@ class Wallet {
             e.stopImmediatePropagation();
           }
         };
-        craft.on('gripdown', _craftGripdown, {
-          priority: -1,
-        });
+        craft.on('gripdown', _craftGripdown);
 
         const _craftGripup = e => {
           const {side, index} = e;
@@ -910,9 +906,7 @@ class Wallet {
             e.stopImmediatePropagation();
           }
         };
-        craft.on('gripup', _craftGripup, {
-          priority: -1,
-        });
+        craft.on('gripup', _craftGripup);
         const _craftClose = () => {
           for (let i = 0; i < grid.length; i++) {
             const item = grid[i];
