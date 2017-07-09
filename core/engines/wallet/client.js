@@ -956,10 +956,32 @@ class Wallet {
           assetInstance.mesh.quaternion.copy(zeroQuaternion);
           assetInstance.mesh.scale.copy(oneVector);
           assetInstance.mesh.updateMatrixWorld();
-          assetInstance.disablePhysics(); // XXX should be initialized with this to prevent race conditions
+          assetInstance.disablePhysics(); // XXX should be initialized with this to prevent race conditions; also needs to carry over to multiplayer
 
           assetInstance.on('grab', () => {
-            console.log('grab crafted asset instance', assetInstance); // XXX need to destroy the inputs and inherit the asset to the owner
+            walletApi.emit('setTagAttributes', id, [
+              {
+                name: 'owner',
+                value: localAddress,
+              },
+              {
+                name: 'bindOwner',
+                value: null,
+              },
+            ]);
+
+            for (let i = 0; i < grid.length; i++) {
+              const inputAssetInstance = grid[i];
+
+              if (inputAssetInstance !== null) {
+                walletApi.destroyItem(inputAssetInstance);
+              }
+            }
+            _resetGrid();
+
+            craft.close();
+
+            assetInstance.enablePhysics();
           });
 
           grid[outputSymbol] = assetInstance;
