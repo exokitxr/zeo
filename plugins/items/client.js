@@ -157,6 +157,8 @@ class Items {
             asset: {value: asset},
             quantity: {value: 1},
             owner: {value: null},
+            bindOwner: {value: null},
+            physics: {value: false},
           },
         });
         assetInstance.grab(side);
