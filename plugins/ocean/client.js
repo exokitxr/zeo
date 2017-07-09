@@ -1,6 +1,6 @@
 const murmur = require('murmurhash');
 
-const NUM_CELLS = 128;
+const NUM_CELLS = 256;
 const SCALE = 4;
 
 const OCEAN_SHADER = {
