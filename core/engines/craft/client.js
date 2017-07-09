@@ -11,6 +11,8 @@ const DIRECTIONS = [
 ];
 const SIDES = ['left', 'right'];
 
+const outputSymbol = Symbol();
+
 class Craft {
   constructor(archae) {
     this._archae = archae;
@@ -165,39 +167,44 @@ class Craft {
             return geometry;
           })();
           const gridGeometry = (() => {
-            const positions = new Float32Array(boxGeometry.getAttribute('position').array.length * gridWidth * gridWidth);
-            const selecteds = new Float32Array(boxGeometry.getAttribute('position').array.length / 3 * gridWidth * gridWidth);
-            const indices = new Uint16Array(boxGeometry.index.array.length * gridWidth * gridWidth);
+            const positions = new Float32Array(boxGeometry.getAttribute('position').array.length * ((gridWidth * gridWidth) + 1));
+            const selecteds = new Float32Array((boxGeometry.getAttribute('position').array.length / 3) * ((gridWidth * gridWidth) + 1));
+            const indices = new Uint16Array(boxGeometry.index.array.length * ((gridWidth * gridWidth) + 1));
             let attributeIndex = 0;
             let selectedIndex = 0;
             let indexIndex = 0;
 
+            const _addBox = (x, y) => {
+              const position = _getGridPosition(x, y);
+              const selected = x + (y * gridWidth);
+
+              const newPositions = boxGeometry.clone()
+                .applyMatrix(new THREE.Matrix4().makeTranslation(position.x, position.y, position.z))
+                .getAttribute('position').array;
+              positions.set(newPositions, attributeIndex);
+              const newSelecteds = (() => {
+                const numNewPositions = newPositions.length / 3;
+                const result = new Float32Array(numNewPositions);
+                for (let i = 0; i < numNewPositions; i++) {
+                  result[i] = selected;
+                }
+                return result;
+              })();
+              selecteds.set(newSelecteds, selectedIndex);
+              const newIndices = boxGeometry.index.array;
+              _copyIndices(newIndices, indices, indexIndex, attributeIndex / 3);
+
+              attributeIndex += newPositions.length;
+              selectedIndex += newSelecteds.length;
+              indexIndex += newIndices.length;
+            };
+
             for (let x = 0; x < gridWidth; x++) {
               for (let y = 0; y < gridWidth; y++) {
-                const position = _getGridPosition(x, y);
-                const index = x + (y * gridWidth);
-
-                const newPositions = boxGeometry.clone()
-                  .applyMatrix(new THREE.Matrix4().makeTranslation(position.x, position.y, position.z))
-                  .getAttribute('position').array;
-                positions.set(newPositions, attributeIndex);
-                const newSelecteds = (() => {
-                  const numNewPositions = newPositions.length / 3;
-                  const result = new Float32Array(numNewPositions);
-                  for (let i = 0; i < numNewPositions; i++) {
-                    result[i] = index;
-                  }
-                  return result;
-                })();
-                selecteds.set(newSelecteds, selectedIndex);
-                const newIndices = boxGeometry.index.array;
-                _copyIndices(newIndices, indices, indexIndex, attributeIndex / 3);
-
-                attributeIndex += newPositions.length;
-                selectedIndex += newSelecteds.length;
-                indexIndex += newIndices.length;
+                _addBox(x, y);
               }
             }
+            _addBox(gridWidth, 1);
 
             const geometry = new THREE.BufferGeometry();
             geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
@@ -213,10 +220,14 @@ class Craft {
           const mesh = new THREE.Mesh(gridGeometry, gridMaterial);
           mesh.visible = false;
 
-          const positions = Array(gridWidth * gridWidth);
-          for (let i = 0; i < positions.length; i++) {
-            positions[i] = new THREE.Vector3();
-          }
+          const positions = (() => {
+            const result = Array(gridWidth * gridWidth);
+            for (let i = 0; i < (gridWidth * gridWidth); i++) {
+              result[i] = new THREE.Vector3();
+            }
+            result[outputSymbol] = new THREE.Vector3();
+            return result;
+          })();
           mesh.positions = positions;
           mesh.updatePositions = () => {
             const {position, quaternion, scale} = mesh;
@@ -231,6 +242,11 @@ class Craft {
                 positions[index].copy(p);
               }
             }
+            const p = _getGridPosition(gridWidth, 1)
+              .multiply(scale)
+              .applyQuaternion(quaternion)
+              .add(position);
+            positions[outputSymbol].copy(p);
           };
 
           return mesh;
@@ -342,6 +358,7 @@ class Craft {
           for (let i = 0; i < grid.length; i++) {
             grid[i] = null;
           }
+          grid[outputSymbol] = null;
         };
         _resetGrid();
 
@@ -471,7 +488,11 @@ class Craft {
             grid[index] = asset;
 
             const output = _getRecipeOutput(grid);
-            console.log('got recipe output', output); // XXX
+            if (grid[outputSymbol] !== output) {
+              grid[outputSymbol] = output;
+
+              this.emit('output', output);
+            }
           }
 
           registerRecipe(pluginInstance, recipe) {
@@ -480,6 +501,10 @@ class Craft {
 
           unregisterRecipe(pluginInstance, recipe) {
             _removeRecipe(recipe);
+          }
+
+          getOutputSymbol() {
+            return outputSymbol;
           }
 
           open() {
