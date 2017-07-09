@@ -340,52 +340,52 @@ class World {
 
                 if (type === 'asset') {
                   const {attributes} = tag;
-                  const {owner: ownerAttribute} = attributes;
+                  const {owner: ownerAttribute, bindOwner: bindOwnerAttribute} = attributes;
+                  const owner = ownerAttribute ? ownerAttribute.value : null;
+                  const bindOwner = bindOwnerAttribute ? bindOwnerAttribute.value : null;
 
-                  if (ownerAttribute) {
-                    const {value: owner} = ownerAttribute;
+                  if (owner === address) {
+                    const {asset: assetAttribute} = attributes;
+                    const {quantity: quantityAttribute} = attributes;
 
-                    if (owner === address) {
-                      const {asset: assetAttribute} = attributes;
-                      const {quantity: quantityAttribute} = attributes;
+                    if (assetAttribute && quantityAttribute) {
+                      const srcAddress = address;
+                      const {value: asset} = assetAttribute;
+                      const {value: quantity} = quantityAttribute;
+                      const privateKey = crypto.randomBytes(32);
+                      const dstAddress = vridApi.getAddress(privateKey);
+                      const privateKeyString = privateKey.toString('base64');
 
-                      if (assetAttribute && quantityAttribute) {
-                        const srcAddress = address;
-                        const {value: asset} = assetAttribute;
-                        const {value: quantity} = quantityAttribute;
-                        const privateKey = crypto.randomBytes(32);
-                        const dstAddress = vridApi.getAddress(privateKey);
-                        const privateKeyString = privateKey.toString('base64');
+                      vridApi.requestCreatePack(srcAddress, dstAddress, asset, quantity, privateKeyString)
+                        .then(() => {
+                          _setTagAttributes(
+                            owner,
+                            id,
+                            [
+                              {
+                                name: 'owner',
+                                value: dstAddress,
+                              },
+                              {
+                                name: 'privateKey',
+                                value: privateKeyString,
+                              }
+                            ]
+                          );
+                        })
+                        .catch(err => {
+                          console.warn(err);
 
-                        vridApi.requestCreatePack(srcAddress, dstAddress, asset, quantity, privateKeyString)
-                          .then(() => {
-                            _setTagAttributes(
-                              owner,
-                              id,
-                              [
-                                {
-                                  name: 'owner',
-                                  value: dstAddress,
-                                },
-                                {
-                                  name: 'privateKey',
-                                  value: privateKeyString,
-                                }
-                              ]
-                            );
-                          })
-                          .catch(err => {
-                            console.warn(err);
-
-                            // remove the tag since we failed to inherit it
-                            _removeTag(owner, id);
-                          });
-                      } else {
-                        // remove the tag since it's corrupted
-                        _removeTag(owner, id);
-                      }
+                          // remove the tag since we failed to inherit it
+                          _removeTag(owner, id);
+                        });
+                    } else {
+                      // remove the tag since it's corrupted
+                      _removeTag(owner, id);
                     }
                   }
+                } else if (bindOwner === address) {
+                  _removeTag(owner, id);
                 }
               }
             };
