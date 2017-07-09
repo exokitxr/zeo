@@ -14,6 +14,9 @@ const protocolUtils = require('./lib/utils/protocol-utils');
 
 const NUM_POSITIONS = 20 * 1024;
 const NUM_POSITIONS_CHUNK = 100 * 1024;
+const TEXTURE_SIZE = 512;
+const TEXTURE_CHUNK_SIZE = 32;
+const NUM_TEXTURE_CHUNKS_WIDTH = TEXTURE_SIZE / TEXTURE_CHUNK_SIZE;
 
 const upVector = new THREE.Vector3(0, 1, 0);
 
@@ -25,6 +28,15 @@ const elevationNoise = generator.uniform({
   octaves: 8,
 });
 
+class Triangle {
+  constructor(a, b, c) {
+    this.a = a;
+    this.b = b;
+    this.c = c;
+  }
+}
+
+const baseColor = new THREE.Color(0x8db360);
 const grassColors = (() => {
   const result = new Float32Array(9 * 3);
   const baseColor = new THREE.Color(0x8db360);
@@ -35,6 +47,99 @@ const grassColors = (() => {
     result[(i * 3) + 2] = c.b;
   }
   return result;
+})();
+const _isPointInTriangle = (p, tri) => {
+  const {a: p0, b: p1, c: p2} = tri;
+  const A = 1/2 * (-p1.y * p2.x + p0.y * (-p1.x + p2.x) + p0.x * (p1.y - p2.y) + p1.x * p2.y);
+  const sign = A < 0 ? -1 : 1;
+  const s = (p0.y * p2.x - p0.x * p2.y + (p2.y - p0.y) * p.x + (p0.x - p2.x) * p.y) * sign;
+  const t = (p0.x * p1.y - p0.y * p1.x + (p0.y - p1.y) * p.x + (p1.x - p0.x) * p.y) * sign;
+  
+  return s > 0 && t > 0 && (s + t) < 2 * A * sign;
+};
+const _isPointInTriangles = (p, ts) => {
+  for (let i = 0; i < ts.length; i++) {
+    const t = ts[i];
+    if (_isPointInTriangle(p, t)) {
+      return true;
+    }
+  }
+  return false;
+};
+const grassTextureAtlas = (() => {
+  const baseColorArray = Uint8Array.from(baseColor.toArray().concat([1]).map(v => Math.floor(v * 255)));
+  const transparentColorArray = Uint8Array.from([255, 255, 255, 0]);
+
+  const data = new Uint8Array(TEXTURE_SIZE * TEXTURE_SIZE * 4);
+  for (let y = 0; y < NUM_TEXTURE_CHUNKS_WIDTH; y++) {
+    for (let x = 0; x < NUM_TEXTURE_CHUNKS_WIDTH; x++) {
+      const numBlades = Math.floor(3 + (Math.random() * 4));
+      const numTrianglesPerBlade = 5;
+      const numTriangles = numBlades * numTrianglesPerBlade;
+      const triangles = Array(numTriangles);
+      for (let i = 0; i < numBlades; i++) {
+        const type = Math.random() < 0.5 ? -1 : 0;
+        const flip = Math.random() < 0.5 ? -1 : 1;
+        const w = (type === -1) ? 0.3 : 0.4;
+        const h = type === -1 ? 0.6 : 0.25;
+        const ox = (Math.random() * (1 - w)) + (flip === -1 ? w : 0);
+        const sy = (1 / h) * (0.25 + Math.random() * 0.75);
+        const points = (type === -1 ? [
+          new THREE.Vector2(0, 0),
+          new THREE.Vector2(0.1, 0),
+          new THREE.Vector2(0.05, 0.2),
+          new THREE.Vector2(0.15, 0.2),
+          new THREE.Vector2(0.125, 0.4),
+          new THREE.Vector2(0.2, 0.4),
+          new THREE.Vector2(0.3, 0.6),
+        ] : [
+          new THREE.Vector2(0, 0.2),
+          new THREE.Vector2(0.125, 0.125),
+          new THREE.Vector2(0.1, 0),
+          new THREE.Vector2(0.2, 0),
+          new THREE.Vector2(0.2, 0.13),
+          new THREE.Vector2(0.3, 0.13),
+          new THREE.Vector2(0.4, 0.25),
+        ]).map(v => v
+          .multiply(new THREE.Vector2(flip, sy))
+          .add(new THREE.Vector2(ox, 0))
+        );
+
+        for (let j = 0; j < numTrianglesPerBlade; j++) {
+          const triangle = new Triangle(
+            points[j + 0],
+            points[j + 1],
+            points[j + 2],
+          );
+          triangles[i * numTrianglesPerBlade + j] = triangle;
+        }
+      }
+
+      for (let dy = 0; dy < TEXTURE_CHUNK_SIZE; dy++) {
+        for (let dx = 0; dx < TEXTURE_CHUNK_SIZE; dx++) {
+          const ax = (x * TEXTURE_CHUNK_SIZE) + dx;
+          const ay = (y * TEXTURE_CHUNK_SIZE) + dy;
+          const baseIndex = (ax + (ay * TEXTURE_SIZE)) * 4;
+
+          data.set(
+            _isPointInTriangles(
+              new THREE.Vector2(dx / TEXTURE_CHUNK_SIZE, 1 - (dy / TEXTURE_CHUNK_SIZE)),
+              triangles
+            ) ? Float32Array.from(
+              baseColor.clone()
+                .multiplyScalar(0.4 + ((1 - (dy / TEXTURE_CHUNK_SIZE)) * 0.8))
+              .toArray()
+              .concat([1])
+              .map(v => Math.floor(v * 255))
+            ) : transparentColorArray,
+            baseIndex,
+            4
+          );
+        }
+      }
+    }
+  }
+  return data;
 })();
 const grassGeometries = [
   (() => {
@@ -130,7 +235,7 @@ const grassGeometries = [
 ];
 
 const grassTemplates = (() => {
-  const numGrassesPerPatch = 30;
+  const numGrassesPerPatch = 30 / 3;
   const positions = new Float32Array(numGrassesPerPatch * 9 * 3);
   const colors = new Float32Array(numGrassesPerPatch * 9 * 3);
   let attributeIndex = 0;
@@ -204,6 +309,7 @@ const _makeGrassChunkMesh = (x, y, grassGeometry, points, heightRange) => {
   return {
     positions: new Float32Array(positions.buffer, positions.byteOffset, attributeIndex),
     colors: new Float32Array(colors.buffer, colors.byteOffset, attributeIndex),
+    textureAtlas: grassTextureAtlas,
     heightRange: [
       heightRange[0],
       heightRange[1] + 1, // account for grass height

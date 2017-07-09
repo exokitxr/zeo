@@ -1,27 +1,31 @@
 const UINT32_SIZE = 4;
 const INT32_SIZE = 4;
 const FLOAT32_SIZE = 4;
-const GRASS_GEOMETRY_HEADER_ENTRIES = 2;
+const UINT8_SIZE = 1;
+const GRASS_GEOMETRY_HEADER_ENTRIES = 3;
 const GRASS_GEOMETRY_HEADER_SIZE = UINT32_SIZE * GRASS_GEOMETRY_HEADER_ENTRIES;
 
 const _getGrassGeometrySizeFromMetadata = metadata => {
-  const {numPositions, numNormals, numColors, numIndices} = metadata;
+  const {numPositions, numNormals, numColors, numTextureAtlas} = metadata;
 
   return GRASS_GEOMETRY_HEADER_SIZE + // header
     (FLOAT32_SIZE * numPositions) + // positions
     (FLOAT32_SIZE * numColors) + // colors
+    (UINT8_SIZE * numTextureAtlas) + // texture atlas
     (FLOAT32_SIZE * 2); // height range
 };
 
 const _getGrassGeometrySize = grassGeometry => {
-  const {positions, colors} = grassGeometry;
+  const {positions, colors, textureAtlas} = grassGeometry;
 
   const numPositions = positions.length;
   const numColors = colors.length;
+  const numTextureAtlas = textureAtlas.length;
 
   return _getGrassGeometrySizeFromMetadata({
     numPositions,
     numColors,
+    numTextureAtlas,
   });
 };
 
@@ -29,17 +33,19 @@ const _getGrassGeometryBufferSize = (arrayBuffer, byteOffset) => {
   const headerBuffer = new Uint32Array(arrayBuffer, byteOffset, GRASS_GEOMETRY_HEADER_ENTRIES);
   const numPositions = headerBuffer[0];
   const numColors = headerBuffer[1];
+  const numTextureAtlas = headerBuffer[2];
 
   return _getGrassGeometrySizeFromMetadata({
     numPositions,
     numColors,
+    numTextureAtlas,
   });
 };
 
 // stringification
 
 const stringifyGrassGeometry = (grassGeometry, arrayBuffer, byteOffset) => {
-  const {positions, colors, heightRange} = grassGeometry;
+  const {positions, colors, textureAtlas, heightRange} = grassGeometry;
 
   if (arrayBuffer === undefined || byteOffset === undefined) {
     const bufferSize = _getGrassGeometrySize(grassGeometry);
@@ -50,16 +56,25 @@ const stringifyGrassGeometry = (grassGeometry, arrayBuffer, byteOffset) => {
   const headerBuffer = new Uint32Array(arrayBuffer, byteOffset, GRASS_GEOMETRY_HEADER_ENTRIES);
   headerBuffer[0] = positions.length;
   headerBuffer[1] = colors.length;
+  headerBuffer[2] = textureAtlas.length;
+  byteOffset += GRASS_GEOMETRY_HEADER_SIZE;
 
-  const positionsBuffer = new Float32Array(arrayBuffer, byteOffset + GRASS_GEOMETRY_HEADER_SIZE, positions.length);
+  const positionsBuffer = new Float32Array(arrayBuffer, byteOffset, positions.length);
   positionsBuffer.set(positions);
+  byteOffset += FLOAT32_SIZE * positions.length;
 
-  const colorsBuffer = new Float32Array(arrayBuffer, byteOffset + GRASS_GEOMETRY_HEADER_SIZE + (FLOAT32_SIZE * positions.length), colors.length);
+  const colorsBuffer = new Float32Array(arrayBuffer, byteOffset, colors.length);
   colorsBuffer.set(colors);
+  byteOffset += FLOAT32_SIZE * colors.length;
 
-  const heightRangeBuffer = new Float32Array(arrayBuffer, byteOffset + GRASS_GEOMETRY_HEADER_SIZE + (FLOAT32_SIZE * positions.length) + (FLOAT32_SIZE * colors.length), 2);
+  const textureAtlasBuffer = new Uint8Array(arrayBuffer, byteOffset, textureAtlas.length);
+  textureAtlasBuffer.set(textureAtlas);
+  byteOffset += UINT8_SIZE * textureAtlas.length;
+
+  const heightRangeBuffer = new Float32Array(arrayBuffer, byteOffset, 2);
   heightRangeBuffer[0] = heightRange[0];
   heightRangeBuffer[1] = heightRange[1];
+  byteOffset += FLOAT32_SIZE * 2;
 
   return arrayBuffer;
 };
@@ -101,22 +116,32 @@ const parseGrassGeometry = (arrayBuffer, byteOffset) => {
   const headerBuffer = new Uint32Array(arrayBuffer, byteOffset, GRASS_GEOMETRY_HEADER_ENTRIES);
   const numPositions = headerBuffer[0];
   const numColors = headerBuffer[1];
+  const numTextureAtlas = headerBuffer[2];
+  byteOffset += GRASS_GEOMETRY_HEADER_SIZE;
 
-  const positionsBuffer = new Float32Array(arrayBuffer, byteOffset + GRASS_GEOMETRY_HEADER_SIZE, numPositions);
+  const positionsBuffer = new Float32Array(arrayBuffer, byteOffset, numPositions);
   const positions = positionsBuffer;
+  byteOffset += FLOAT32_SIZE * numPositions;
 
-  const colorsBuffer = new Float32Array(arrayBuffer, byteOffset + GRASS_GEOMETRY_HEADER_SIZE + (FLOAT32_SIZE * numPositions), numColors);
+  const colorsBuffer = new Float32Array(arrayBuffer, byteOffset, numColors);
   const colors = colorsBuffer;
+  byteOffset += FLOAT32_SIZE * numColors;
 
-  const heightRangeBuffer = new Float32Array(arrayBuffer, byteOffset + GRASS_GEOMETRY_HEADER_SIZE + (FLOAT32_SIZE * numPositions) + (FLOAT32_SIZE * numColors), 2);
+  const textureAtlasBuffer = new Uint8Array(arrayBuffer, byteOffset, numTextureAtlas);
+  const textureAtlas = textureAtlasBuffer;
+  byteOffset += UINT8_SIZE * numTextureAtlas;
+
+  const heightRangeBuffer = new Float32Array(arrayBuffer, byteOffset, 2);
   const heightRange = [
     heightRangeBuffer[0],
     heightRangeBuffer[1],
   ];
+  byteOffset += FLOAT32_SIZE * 2;
 
   return {
     positions,
     colors,
+    textureAtlas,
     heightRange,
   };
 };
