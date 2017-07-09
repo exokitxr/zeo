@@ -296,7 +296,7 @@ class Craft {
           }
         };
         input.on('triggerdown', _triggerdown, {
-          priority: 0,
+          priority: -1,
         });
         const _gripdown = e => {
           const {side} = e;
@@ -312,7 +312,7 @@ class Craft {
           }
         };
         input.on('gripdown', _gripdown, {
-          priority: 0,
+          priority: -1,
         });
         const _gripup = e => {
           const {side} = e;
@@ -328,7 +328,7 @@ class Craft {
           }
         };
         input.on('gripup', _gripup, {
-          priority: 0,
+          priority: -1,
         });
 
         const hoverDistance = _sq((gridSize + gridSpacing) / 2);
