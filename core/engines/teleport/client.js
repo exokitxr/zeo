@@ -23,6 +23,7 @@ class Teleport {
       '/core/engines/rend',
       '/core/engines/intersect',
       '/core/engines/cyborg',
+      '/core/utils/js-utils',
     ]).then(([
       bootstrap,
       three,
@@ -31,17 +32,20 @@ class Teleport {
       rend,
       intersect,
       cyborg,
+      jsUtils,
     ]) => {
       if (live) {
         const {THREE, scene, camera} = three;
+        const {events} = jsUtils;
+        const {EventEmitter} = events;
 
-        const _decomposeMatrix = matrix => {
+        /* const _decomposeMatrix = matrix => {
           const position = new THREE.Vector3();
           const rotation = new THREE.Quaternion();
           const scale = new THREE.Vector3();
           matrix.decompose(position, rotation, scale);
           return {position, rotation, scale};
-        };
+        }; */
 
         const upVector = new THREE.Vector3(0, 1, 0);
         const forwardVector = new THREE.Vector3(0, 0, -1);
@@ -229,9 +233,6 @@ class Teleport {
                         teleportFloorMesh.position.z
                       )) // move to teleport location
                   );
-
-                  webvr.updateStatus();
-                  cyborg.update();
                 } else if (vrMode === 'keyboard') {
                   webvr.setStageMatrix(
                     camera.matrixWorldInverse.clone()
@@ -240,10 +241,12 @@ class Teleport {
                       .premultiply(teleportFloorMesh.matrixWorld) // move to teleport location
                       .premultiply(webvr.getSittingToStandingTransform()) // move above target
                   );
-
-                  webvr.updateStatus();
-                  cyborg.update();
                 }
+
+                webvr.updateStatus();
+                cyborg.update();
+
+                teleportApi.emit('teleport');
 
                 teleportState.teleportFloorPoint = null;
               } else if (teleportAirPoint) {
@@ -264,9 +267,6 @@ class Teleport {
                         teleportAirMesh.position.z
                       )) // move to teleport location
                   );
-
-                  webvr.updateStatus();
-                  cyborg.update();
                 } else if (vrMode === 'keyboard') {
                   webvr.setStageMatrix(
                     camera.matrixWorldInverse.clone()
@@ -275,10 +275,12 @@ class Teleport {
                       .premultiply(teleportAirMesh.matrixWorld) // move to teleport location
                       .premultiply(webvr.getSittingToStandingTransform()) // move above target
                   );
-
-                  webvr.updateStatus();
-                  cyborg.update();
                 }
+
+                webvr.updateStatus();
+                cyborg.update();
+
+                teleportApi.emit('teleport');
 
                 teleportState.teleportAirPoint = null;
               }
@@ -304,29 +306,31 @@ class Teleport {
 
           input.removeListener('paddown', _paddown);
           input.removeListener('padup', _padup);
+
           rend.removeListener('update', _update);
         };
 
-        const _addTarget = (object, {flat = false} = {}) => {
-          intersecter.addTarget(object);
+        class TeleportApi extends EventEmitter {
+          addTarget(object, {flat = false} = {}) {
+            intersecter.addTarget(object);
 
-          const metadata = new Metadata(flat);
-          metadatas.set(object, metadata);
-        };
-        const _removeTarget = object => {
-          intersecter.removeTarget(object);
+            const metadata = new Metadata(flat);
+            metadatas.set(object, metadata);
+          }
 
-          metadatas.delete(object);
-        };
-        const _reindex = () => {
-          intersecter.reindex();
-        };
+          removeTarget(object) {
+            intersecter.removeTarget(object);
 
-        return {
-          addTarget: _addTarget,
-          removeTarget: _removeTarget,
-          reindex: _reindex,
-        };
+            metadatas.delete(object);
+          }
+
+          reindex() {
+            intersecter.reindex();
+          }
+        }
+        const teleportApi = new TeleportApi();
+
+        return teleportApi;
       }
     });
   }
