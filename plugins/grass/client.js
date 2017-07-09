@@ -48,7 +48,16 @@ class Grass {
       .then(grassChunkBuffer => protocolUtils.parseGrassGeometry(grassChunkBuffer));
 
     const _makeGrassChunkMesh = (grassChunkData, x, z) => {
-      const {positions, colors, heightRange} = grassChunkData;
+      const {positions, colors, textureAtlas, heightRange} = grassChunkData;
+const canvas = document.createElement('canvas');
+const size = 512;
+canvas.width = size;
+canvas.height = size;
+const ctx = canvas.getContext('2d');
+const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+imageData.data.set(textureAtlas);
+ctx.putImageData(imageData, 0, 0);
+document.body.insertBefore(canvas, document.body.childNodes[0]);
 
       const geometry = (() => {
         let geometry = new THREE.BufferGeometry();
