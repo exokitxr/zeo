@@ -3,7 +3,7 @@ const {
 } = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
 
-const TEXTURE_SIZE = 2048;
+const TEXTURE_SIZE = 1024;
 const NUM_POSITIONS_CHUNK = 200 * 1024;
 
 class Grass {

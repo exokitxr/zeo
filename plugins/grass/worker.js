@@ -14,7 +14,7 @@ const protocolUtils = require('./lib/utils/protocol-utils');
 
 const NUM_POSITIONS = 20 * 1024;
 const NUM_POSITIONS_CHUNK = 100 * 1024;
-const TEXTURE_SIZE = 2048;
+const TEXTURE_SIZE = 1024;
 const TEXTURE_CHUNK_SIZE = 512;
 const NUM_TEXTURE_CHUNKS_WIDTH = TEXTURE_SIZE / TEXTURE_CHUNK_SIZE;
 
