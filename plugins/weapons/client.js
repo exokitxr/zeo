@@ -318,7 +318,7 @@ class Weapons {
                   THREE.NearestFilter,
                   THREE.RGBAFormat,
                   THREE.UnsignedByteType,
-                  16
+                  1
                 );
                 texture.needsUpdate = true;
                 return texture;
