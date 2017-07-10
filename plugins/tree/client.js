@@ -4,6 +4,7 @@ const {
 } = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
 
+const TEXTURE_SIZE = 1024;
 const NUM_POSITIONS_CHUNK = 200 * 1024;
 
 class Tree {
@@ -22,62 +23,100 @@ class Tree {
       new THREE.Vector3(1, 0, 0)
     );
 
-    const treeMaterial = new THREE.MeshBasicMaterial({
-      // color: 0xFFFFFF,
-      // shininess: 0,
-      // shading: THREE.FlatShading,
-      vertexColors: THREE.VertexColors,
-      side: THREE.DoubleSide,
-    });
-
     let live = true;
     this._cleanup = () => {
       live = false;
     };
 
-    const _requestWorker = () => {
-      const worker = new Worker('archae/plugins/_plugins_tree/build/worker.js');
-      const queue = [];
-      worker.requestGenerate = (x, y) => new Promise((accept, reject) => {
-        const buffer = new ArrayBuffer(NUM_POSITIONS_CHUNK * 3);
-        worker.postMessage({
-          x,
-          y,
-          buffer,
-        }, [buffer]);
-        queue.push(buffer => {
-          accept(buffer);
-        });
+    const worker = new Worker('archae/plugins/_plugins_tree/build/worker.js');
+    const queue = [];
+    worker.requestGenerate = (x, y) => new Promise((accept, reject) => {
+      const buffer = new ArrayBuffer(NUM_POSITIONS_CHUNK * 3);
+      worker.postMessage({
+        type: 'chunk',
+        x,
+        y,
+        buffer,
+      }, [buffer]);
+      queue.push(buffer => {
+        accept(buffer);
       });
-      worker.onmessage = e => {
-        const {data: buffer} = e;
-        const cb = queue.shift();
-        cb(buffer);
-      }
+    });
+    worker.requestTexture = () => new Promise((accept, reject) => {
+      const buffer = new ArrayBuffer(TEXTURE_SIZE * TEXTURE_SIZE  * 4);
+      worker.postMessage({
+        type: 'texture',
+        buffer,
+      }, [buffer]);
+      queue.push(buffer => {
+        const canvas = document.createElement('canvas');
+        canvas.width = TEXTURE_SIZE;
+        canvas.height = TEXTURE_SIZE;
+        const ctx = canvas.getContext('2d');
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        imageData.data.set(new Uint8Array(buffer));
+        ctx.putImageData(imageData, 0, 0);
 
-      return Promise.resolve(worker);
+        accept(canvas);
+      });
+    });
+    worker.onmessage = e => {
+      const {data: buffer} = e;
+      const cb = queue.shift();
+      cb(buffer);
     };
 
     return Promise.all([
-      _requestWorker(),
+      worker.requestTexture(),
       sfxr.requestSfx('archae/tree/sfx/chop.ogg'),
     ])
       .then(([
-        worker,
+        textureImg,
         chopSfx,
       ]) => {
         if (live) {
+/* document.body.insertBefore(textureImg, document.body.childNodes[0]); // XXX
+textureImg.style.width = '400px'; */
+          const texture = new THREE.Texture(
+            textureImg,
+            THREE.UVMapping,
+            THREE.ClampToEdgeWrapping,
+            THREE.ClampToEdgeWrapping,
+            // THREE.LinearMipMapLinearFilter,
+            // THREE.LinearMipMapLinearFilter,
+            THREE.NearestMipMapLinearFilter,
+            THREE.NearestMipMapLinearFilter,
+            // THREE.NearestMipMapNearestFilter,
+            // THREE.NearestMipMapNearestFilter,
+            // THREE.LinearFilter,
+            // THREE.LinearFilter,
+            // THREE.NearestFilter,
+            // THREE.NearestFilter,
+            THREE.RGBAFormat,
+            THREE.UnsignedByteType,
+            16
+          );
+          texture.needsUpdate = true;
+          const treeMaterial = new THREE.MeshBasicMaterial({
+            // color: 0x000000,
+            // shininess: 0,
+            // shading: THREE.FlatShading,
+            side: THREE.DoubleSide,
+            map: texture,
+            transparent: true,
+            alphaTest: 0.5,
+          });
+
           const _requestTreeGenerate = (x, y) => worker.requestGenerate(x, y)
             .then(treeChunkBuffer => protocolUtils.parseTreeGeometry(treeChunkBuffer));
 
           const _makeTreeChunkMesh = (treeChunkData, x, z) => {
-            const {position, positions, /*normals, */colors, indices, heightRange} = treeChunkData;
+            const {position, positions, uvs, indices, heightRange} = treeChunkData;
 
             const geometry = (() => {
               let geometry = new THREE.BufferGeometry();
               geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
-              // geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
-              geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
+              geometry.addAttribute('uv', new THREE.BufferAttribute(uvs, 2));
               geometry.setIndex(new THREE.BufferAttribute(indices, 1));
               const [minY, maxY] = heightRange;
               geometry.boundingSphere = new THREE.Sphere(
@@ -88,8 +127,6 @@ class Tree {
                 ),
                 Math.max(Math.sqrt((NUM_CELLS / 2) * (NUM_CELLS / 2) * 3), (maxY - minY) / 2)
               );
-
-              // geometry.computeBoundingSphere();
 
               return geometry;
             })();
@@ -213,6 +250,7 @@ class Tree {
 
               return _requestTreeGenerate(x, z)
                 .then(treeChunkData => {
+window.treeChunkData = treeChunkData;
                   const treeChunkMesh = _makeTreeChunkMesh(treeChunkData, x, z);
                   scene.add(treeChunkMesh);
 
