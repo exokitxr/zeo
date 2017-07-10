@@ -15,7 +15,7 @@ class Heightfield {
 
   mount() {
     const {_archae: archae} = this;
-    const {three, render, pose, world, teleport, /*physics,*/ stck, utils: {random: {chnkr}}} = zeo;
+    const {three, render, pose, world, elements, teleport, /*physics,*/ stck, utils: {random: {chnkr}}} = zeo;
     const {THREE, scene} = three;
 
     const mapChunkMaterial = new THREE.MeshPhongMaterial({
@@ -56,14 +56,42 @@ class Heightfield {
       cb(buffer);
     };
 
+    let lightmapElement = null;
+    const _bindLightmaps = () => {
+      // XXX
+    };
+    const _unbindLightmaps = () => {
+      // XXX
+    };
+    const _bindLightmap = mesh => {
+      // XXX
+    };
+    const _unbindLightmap = mesh => {
+      // XXX
+    };
+    const _elementAdded = entityElement => {
+      if (entityElement.tagName.toLowerCase() === 'plugins-lightmap') {
+        lightmapElement = entityElement;
+
+        _bindLightmaps();
+      }
+    };
+    elements.on('elementAdded', _elementAdded);
+    const _elementRemoved = entityElement => {
+      if (entityElement.tagName.toLowerCase() === 'plugins-lightmap') {
+        _unbindLightmaps();
+
+        lightmapElement = null;
+      }
+    };
+    elements.on('elementRemoved', _elementRemoved);
+
     const _bootstrap = () => worker.requestOriginHeight()
       .then(originHeight => {
         world.setSpawnMatrix(new THREE.Matrix4().makeTranslation(0, originHeight, 0));
       });
-
     const _requestGenerate = (x, y) => worker.requestGenerate(x, y)
       .then(mapChunkBuffer => protocolUtils.parseMapChunk(mapChunkBuffer));
-
     const _makeMapChunkMesh = (mapChunkData, x, z) => {
       const {position, positions, normals, colors, heightfield, heightRange} = mapChunkData;
 
@@ -91,68 +119,19 @@ class Heightfield {
       const mesh = new THREE.Mesh(geometry, material);
       // mesh.frustumCulled = false;
 
+      mesh.offset = new THREE.Vector2(x, z);
       mesh.heightfield = heightfield;
-
-      const lightmap = new Uint8Array((NUM_CELLS + 1) * (NUM_CELLS + 1) * NUM_CELLS_HEIGHT);
-      let ambient = 0;
-      const _clamp = (n, l) => Math.min(Math.max(n, 0), l);
-      const _isInRange = (n, l) => n >= 0 && n <= l;
-      mesh.setAmbient = newAmbient => {
-        ambient = newAmbient;
-      };
-      mesh.setSphere = (x, y, z, r) => {
-        const dr = r - 1;
-        const maxDistance = Math.sqrt(dr*dr*3);
-        for (let dx = -dr; dx <= dr; dx++) {
-          for (let dy = -dr; dy <= dr; dy++) {
-            for (let dz = -dr; dz <= dr; dz++) {
-              const lx = Math.floor(x + dx);
-              const ly = Math.floor(y + dy - HEIGHT_OFFSET);
-              const lz = Math.floor(z + dz);
-
-              if (_isInRange(lx, NUM_CELLS + 1) && _isInRange(ly, NUM_CELLS_HEIGHT) && _isInRange(lz, NUM_CELLS + 1)) {
-                const lightmapIndex = lx + (ly * (NUM_CELLS + 1)) + (lz * (NUM_CELLS + 1) * (NUM_CELLS + 1));
-                lightmap[lightmapIndex] = Math.max(
-                  (maxDistance - new THREE.Vector3(dx, dy, dz).length()) / maxDistance * 255,
-                  lightmap[lightmapIndex]
-                );
-              }
-            }
-          }
-        }
-      };
-      mesh.resetLightmap = () => {
-        lightmap.fill(0);
-      };
-      mesh.bakeLightmap = () => {
-        const {geometry} = mesh;
-        const positions = geometry.getAttribute('position').array;
-        const colorAttribute = geometry.getAttribute('color');
-        const colors = colorAttribute.array;
-        const {initialColors} = geometry;
-        const numPositions = positions.length / 3;
-        for (let i = 0; i < numPositions; i++) {
-          const baseIndex = i * 3;
-          const x = _clamp(Math.floor(positions[baseIndex + 0]), NUM_CELLS + 1);
-          const y = _clamp(Math.floor(positions[baseIndex + 1] - HEIGHT_OFFSET), NUM_CELLS_HEIGHT);
-          const z = _clamp(Math.floor(positions[baseIndex + 2]), NUM_CELLS + 1);
-          const lightmapIndex = x + (y * (NUM_CELLS + 1)) + (z * (NUM_CELLS + 1) * (NUM_CELLS + 1));
-          const v = (lightmap[lightmapIndex] + ambient) / 255;
-
-          colors[baseIndex + 0] = initialColors[baseIndex + 0] * v;
-          colors[baseIndex + 1] = initialColors[baseIndex + 1] * v;
-          colors[baseIndex + 2] = initialColors[baseIndex + 2] * v;
-        }
-
-        colorAttribute.needsUpdate = true;
-      };
+      mesh.lightmap = null;
+      if (lightmapElement) {
+        _bindLightmap(mesh);
+      }
       mesh.destroy = () => {
         geometry.dispose();
-      };
 
-      mesh.setAmbient(255 * 0.5);
-      mesh.setSphere(NUM_CELLS / 2, 32, NUM_CELLS / 2, 10);
-      mesh.bakeLightmap();
+        if (mesh.lightmap) {
+          _unbindLightmap(mesh);
+        }
+      };
 
       return mesh;
     };
@@ -302,6 +281,9 @@ class Heightfield {
 
         this._cleanup = () => {
           // XXX remove chunks from the scene here
+
+          elements.removeListener('elementAdded', _elementAdded);
+          elements.removeListener('elementRemoved', _elementRemoved);
 
           render.removeListener('update', _update);
         };

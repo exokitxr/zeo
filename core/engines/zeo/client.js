@@ -546,7 +546,13 @@ class Zeo {
                           rend.on('update', () => {
                             this.emit('update');
                           });
-                          rend.on('updateEye', camera => {
+                          rend.on('updateStart', () => {
+                            this.emit('updateStart');
+                          });
+                          rend.on('updateEnd', () => {
+                            this.emit('updateEnd');
+                          });
+                          /* rend.on('updateEye', camera => {
                             this.emit('updateEye', camera);
                           });
                           rend.on('renderStart', () => {
@@ -557,7 +563,7 @@ class Zeo {
                           });
                           tags.on('mutate', () => {
                             this.emit('mutate');
-                          });
+                          }); */
                         }
                       }
 
@@ -576,6 +582,18 @@ class Zeo {
 
                         makeFile(options) {
                           return world.makeFile(options);
+                        }
+
+                        on(event, handler) {
+                          return tags.on(event, handler);
+                        }
+
+                        removeListener(event, handler) {
+                          return tags.removeListener(event, handler);
+                        }
+
+                        removeAllListeners(event) {
+                          return tags.removeAllListeners(event);
                         }
                       }
 
