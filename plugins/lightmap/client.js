@@ -5,7 +5,9 @@ class Lightmap {
 
   mount() {
     // const {_archae: archae} = this;
-    const {utils: {js: events: {EventEmitter}}} = zeo;
+    const {elements, utils: {js: jsUtils}} = zeo;
+    const {events} = jsUtils;
+    const {EventEmitter} = events;
 
     class Lightmap extends EventEmitter {
       constructor(ox, oz, width, height, depth, heightOffset) {
@@ -123,7 +125,7 @@ class Lightmap {
     }
 
     class Lightmapper {
-      constructor({width = 32 + 1, height = 128, depth, 32 + 1, heightOffset = -32} = {}) {
+      constructor({width = 32 + 1, height = 128, depth = 32 + 1, heightOffset = -32} = {}) {
         this.width = width;
         this.height = height;
         this.depth = depth;
@@ -165,10 +167,19 @@ class Lightmap {
       }
     };
 
-    const _makeLightmapper = options => new Lightmapper(options);
+    const lightmapEntity = {
+      // attributes: {},
+      entityAddedCallback(entityElement) {
+console.log('set lightmap entity element', entityElement); // XXX
+        entityElement.makeLightmapper = options => new Lightmapper(options);
+      },
+      /* entityRemovedCallback(entityElement) {
+      }, */
+    };
+    elements.registerEntity(this, lightmapEntity);
 
-    return {
-      makeLightmapper: _makeLightmapper,
+    this._cleanup = () => {
+      elements.unregisterEntity(this, lightmapEntity);
     };
   }
 

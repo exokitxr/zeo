@@ -7,6 +7,7 @@ const {
 const protocolUtils = require('./lib/utils/protocol-utils');
 
 const NUM_POSITIONS_CHUNK = 100 * 1024;
+const LIGHTMAP_PLUGIN = 'plugins-lightmap';
 
 class Heightfield {
   constructor(archae) {
@@ -56,35 +57,67 @@ class Heightfield {
       cb(buffer);
     };
 
-    let lightmapElement = null;
+    let lightmapper = null;
+    const _bindLightmapper = lightmapElement => {
+      lightmapper = lightmapElement.makeLightmapper({
+        width: (NUM_CELLS + 1),
+        height: NUM_CELLS_HEIGHT,
+        depth: (NUM_CELLS + 1),
+        heightOffset: HEIGHT_OFFSET,
+      });
+
+      _bindLightmaps();
+    };
+    const _unbindLightmapper = () => {
+      _unbindLightmaps();
+
+      lightmapper = null;
+    };
     const _bindLightmaps = () => {
-      // XXX
+      for (let i = 0; i < mapChunkMeshes.length; i++) {
+        const mapChunkMesh = mapChunkMeshes[i];
+        _bindLightmap(mapChunkMesh);
+      }
     };
     const _unbindLightmaps = () => {
-      // XXX
+      for (let i = 0; i < mapChunkMeshes.length; i++) {
+        const mapChunkMesh = mapChunkMeshes[i];
+        _unbindLightmap(mapChunkMesh);
+      }
     };
-    const _bindLightmap = mesh => {
-      // XXX
+    const _bindLightmap = mapChunkMesh => {
+      const {offset} = mapChunkMesh;
+      const {x, y} = offset;
+      const lightmap = lightmapper.getLightmapAt(x, y);
+      lightmap.on('update', () => {
+        console.log('lightmap update', lightmap);
+      });
+      mapChunkMesh.lightmap = lightmap;
     };
-    const _unbindLightmap = mesh => {
-      // XXX
+    const _unbindLightmap = mapChunkMesh => {
+      lightmapper.releaseLightmap(mapChunkMesh.lightmap);
+      mapChunkMesh.lightmap = null;
     };
-    const _elementAdded = entityElement => {
-      if (entityElement.tagName.toLowerCase() === 'plugins-lightmap') {
-        lightmapElement = entityElement;
-
-        _bindLightmaps();
+    const _elementAdded = entityElement => { // XXX use a first-class binding listener here
+      if (entityElement.tagName.toLowerCase() === LIGHTMAP_PLUGIN) {
+        _bindLightmapper(entityElement);
       }
     };
     elements.on('elementAdded', _elementAdded);
     const _elementRemoved = entityElement => {
-      if (entityElement.tagName.toLowerCase() === 'plugins-lightmap') {
-        _unbindLightmaps();
-
-        lightmapElement = null;
+      if (entityElement.tagName.toLowerCase() === LIGHTMAP_PLUGIN) {
+        _unbindLightmapper();
       }
     };
     elements.on('elementRemoved', _elementRemoved);
+    const _initLightmapper = () => {
+      const lightmapElement = elements.getWorldElement().querySelector(LIGHTMAP_PLUGIN);
+
+      if (lightmapElement) {
+        _bindLightmapper(lightmapElement);
+      }
+    };
+    _initLightmapper();
 
     const _bootstrap = () => worker.requestOriginHeight()
       .then(originHeight => {
@@ -100,7 +133,7 @@ class Heightfield {
         geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
         geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
         geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
-        const initialColors = new Float32Array(colors.length);
+        const initialColors = new Float32Array(colors.length); // for lightmap
         initialColors.set(colors);
         geometry.initialColors = initialColors;
         const [minY, maxY] = heightRange;
@@ -121,10 +154,12 @@ class Heightfield {
 
       mesh.offset = new THREE.Vector2(x, z);
       mesh.heightfield = heightfield;
+
       mesh.lightmap = null;
-      if (lightmapElement) {
+      if (lightmapper) {
         _bindLightmap(mesh);
       }
+
       mesh.destroy = () => {
         geometry.dispose();
 
@@ -140,6 +175,7 @@ class Heightfield {
       resolution: 32,
       range: 4,
     });
+    const mapChunkMeshes = [];
 
     const _requestRefreshMapChunks = () => {
       const {hmd} = pose.getStatus();
@@ -198,6 +234,7 @@ class Heightfield {
           .then(mapChunkData => {
             const mapChunkMesh = _makeMapChunkMesh(mapChunkData, x, z);
             scene.add(mapChunkMesh);
+            mapChunkMeshes.push(mapChunkMesh);
 
             const {lod} = chunk;
             if (lod === 1 && !mapChunkMesh.targeted) {
@@ -215,6 +252,7 @@ class Heightfield {
             const {data: mapChunkMesh} = chunk;
             scene.remove(mapChunkMesh);
             mapChunkMesh.destroy();
+            mapChunkMeshes.splice(mapChunkMeshes.indexOf(mapChunkMesh), 1);
 
             const {lod} = chunk;
             if (lod !== 1 && mapChunkMesh.targeted) {
