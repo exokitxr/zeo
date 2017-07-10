@@ -29,7 +29,7 @@ class Scale {
       if (live) {
         const {THREE, scene, camera} = three;
 
-        const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
+        /* const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
         const _decomposeMatrix = matrix => {
           const position = new THREE.Vector3();
           const rotation = new THREE.Quaternion();
@@ -40,7 +40,7 @@ class Scale {
             rotation,
             scale,
           };
-        };
+        }; */
         const _avgVectors = a => {
           const result = new THREE.Vector3();
           for (let i = 0; i < a.length; i++) {
@@ -92,11 +92,11 @@ class Scale {
             const haveGamepads = SIDES.every(side => Boolean(gamepads[side]));
 
             if (haveGamepads) {
-              const scaleMid = new THREE.Vector3().fromArray(gamepads.left.pose.position)
-                .add(new THREE.Vector3().fromArray(gamepads.right.pose.position))
+              const scaleMid = gamepads.left.position.clone()
+                .add(gamepads.right.position)
                 .divideScalar(2);
-              const scaleDistance = new THREE.Vector3().fromArray(gamepads.left.pose.position)
-                .distanceTo(new THREE.Vector3().fromArray(gamepads.right.pose.position));
+              const scaleDistance = gamepads.left.position.clone()
+                .distanceTo(gamepads.right.position);
 
               let {startScaleMid, startScaleDistance, startStageMatrix} = scaleState;
               if (startScaleMid === null) {
