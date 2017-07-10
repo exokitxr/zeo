@@ -1,8 +1,11 @@
-(function (global, factory) {
-	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
-	typeof define === 'function' && define.amd ? define(['exports'], factory) :
-	(factory((global.THREE = global.THREE || {})));
-}(this, (function (exports) { 'use strict';
+if (typeof self === 'object' && typeof global === 'undefined') {
+  self.module = {};
+}
+
+module.exports = (() => {
+  'use strict';
+
+  const exports = {};
 
 	// Polyfills
 
@@ -44105,6 +44108,6 @@
 	exports.Projector = Projector;
 	exports.CanvasRenderer = CanvasRenderer;
 
-	Object.defineProperty(exports, '__esModule', { value: true });
+  return exports;
 
-})));
+})();
