@@ -168,7 +168,7 @@ class Items {
 
     const chunker = chnkr.makeChunker({
       resolution: 32,
-      range: 2,
+      range: 1,
     });
 
     const _requestRefreshGrassChunks = () => {
