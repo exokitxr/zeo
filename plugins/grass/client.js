@@ -71,17 +71,17 @@ class Grass {
             THREE.ClampToEdgeWrapping,
             // THREE.LinearMipMapLinearFilter,
             // THREE.LinearMipMapLinearFilter,
-            // THREE.NearestMipMapLinearFilter,
-            // THREE.NearestMipMapLinearFilter,
+            THREE.NearestMipMapLinearFilter,
+            THREE.NearestMipMapLinearFilter,
             // THREE.NearestMipMapNearestFilter,
             // THREE.NearestMipMapNearestFilter,
-            THREE.LinearFilter,
-            THREE.LinearFilter,
+            // THREE.LinearFilter,
+            // THREE.LinearFilter,
             // THREE.NearestFilter,
             // THREE.NearestFilter,
             THREE.RGBAFormat,
             THREE.UnsignedByteType,
-            1
+            16
           );
           texture.needsUpdate = true;
           const grassMaterial = new THREE.MeshBasicMaterial({
@@ -92,7 +92,7 @@ class Grass {
             side: THREE.DoubleSide,
             map: texture,
             transparent: true,
-            alphaTest: 0.9,
+            alphaTest: 0.5,
           });
 
           const _requestGrassGenerate = (x, y) => worker.requestGenerate(x, y)
