@@ -1,5 +1,8 @@
 const {
   NUM_CELLS,
+
+  NUM_CELLS_HEIGHT,
+  HEIGHT_OFFSET,
 } = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
 
@@ -69,6 +72,9 @@ class Heightfield {
         geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
         geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
         geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
+        const initialColors = new Float32Array(colors.length);
+        initialColors.set(colors);
+        geometry.initialColors = initialColors;
         const [minY, maxY] = heightRange;
         geometry.boundingSphere = new THREE.Sphere(
           new THREE.Vector3(
@@ -85,10 +91,68 @@ class Heightfield {
       const mesh = new THREE.Mesh(geometry, material);
       // mesh.frustumCulled = false;
 
-      mesh.heightfield = heightfield
+      mesh.heightfield = heightfield;
+
+      const lightmap = new Uint8Array((NUM_CELLS + 1) * (NUM_CELLS + 1) * NUM_CELLS_HEIGHT);
+      let ambient = 0;
+      const _clamp = (n, l) => Math.min(Math.max(n, 0), l);
+      const _isInRange = (n, l) => n >= 0 && n <= l;
+      mesh.setAmbient = newAmbient => {
+        ambient = newAmbient;
+      };
+      mesh.setSphere = (x, y, z, r) => {
+        const dr = r - 1;
+        const maxDistance = Math.sqrt(dr*dr*3);
+        for (let dx = -dr; dx <= dr; dx++) {
+          for (let dy = -dr; dy <= dr; dy++) {
+            for (let dz = -dr; dz <= dr; dz++) {
+              const lx = Math.floor(x + dx);
+              const ly = Math.floor(y + dy - HEIGHT_OFFSET);
+              const lz = Math.floor(z + dz);
+
+              if (_isInRange(lx, NUM_CELLS + 1) && _isInRange(ly, NUM_CELLS_HEIGHT) && _isInRange(lz, NUM_CELLS + 1)) {
+                const lightmapIndex = lx + (ly * (NUM_CELLS + 1)) + (lz * (NUM_CELLS + 1) * (NUM_CELLS + 1));
+                lightmap[lightmapIndex] = Math.max(
+                  (maxDistance - new THREE.Vector3(dx, dy, dz).length()) / maxDistance * 255,
+                  lightmap[lightmapIndex]
+                );
+              }
+            }
+          }
+        }
+      };
+      mesh.resetLightmap = () => {
+        lightmap.fill(0);
+      };
+      mesh.bakeLightmap = () => {
+        const {geometry} = mesh;
+        const positions = geometry.getAttribute('position').array;
+        const colorAttribute = geometry.getAttribute('color');
+        const colors = colorAttribute.array;
+        const {initialColors} = geometry;
+        const numPositions = positions.length / 3;
+        for (let i = 0; i < numPositions; i++) {
+          const baseIndex = i * 3;
+          const x = _clamp(Math.floor(positions[baseIndex + 0]), NUM_CELLS + 1);
+          const y = _clamp(Math.floor(positions[baseIndex + 1] - HEIGHT_OFFSET), NUM_CELLS_HEIGHT);
+          const z = _clamp(Math.floor(positions[baseIndex + 2]), NUM_CELLS + 1);
+          const lightmapIndex = x + (y * (NUM_CELLS + 1)) + (z * (NUM_CELLS + 1) * (NUM_CELLS + 1));
+          const v = (lightmap[lightmapIndex] + ambient) / 255;
+
+          colors[baseIndex + 0] = initialColors[baseIndex + 0] * v;
+          colors[baseIndex + 1] = initialColors[baseIndex + 1] * v;
+          colors[baseIndex + 2] = initialColors[baseIndex + 2] * v;
+        }
+
+        colorAttribute.needsUpdate = true;
+      };
       mesh.destroy = () => {
         geometry.dispose();
       };
+
+      mesh.setAmbient(255 * 0.5);
+      mesh.setSphere(NUM_CELLS / 2, 32, NUM_CELLS / 2, 10);
+      mesh.bakeLightmap();
 
       return mesh;
     };
