@@ -217,51 +217,20 @@ class Tags {
           document.body.appendChild(rootWorldElement);
 
           const _addEntityCallback = (componentElement, entityElement) => {
-            const _updateObject = () => {
-              let {_object: object, _numComponents: numComponents} = entityElement;
+            let {_object: object, _numComponents: numComponents} = entityElement;
 
-              if (numComponents === undefined) {
-                numComponents = 0;
-              }
-              numComponents++;
-              entityElement._numComponents = numComponents;
+            if (numComponents === undefined) {
+              numComponents = 0;
+            }
+            numComponents++;
+            entityElement._numComponents = numComponents;
 
-              if (numComponents === 1) {
-                entityElement._object = null; // defer construction/add of the actual object until requested by the component
-              }
-            };
-            const _updateLine = () => {
-              /* let {_lines: componentLines} = componentElement;
-              if (!componentLines) {
-                componentLines = new Map();
-                componentElement._lines = componentLines;
-              }
-              const line = (() => {
-                const line = linesMesh.addLine();
-                const {_baseObject: componentApi} = componentElement;
-                const componentApiTagName = componentApiTags.get(componentApi);
-                const moduleTagMesh = tagMeshes.find(tagMesh =>
-                  tagMesh.item.type === 'module' &&
-                  tagMesh.item.name === componentApiTagName &&
-                  !(tagMesh.item.metadata && tagMesh.item.metadata.isStatic)
-                );
-                const {tipMesh: moduleTipMesh} = moduleTagMesh;
-                const entityId = entityElement.item.id;
-                const entityTagMesh = tagMeshes.find(tagMesh => tagMesh.item.type === 'entity' && tagMesh.item.id === entityId);
-                const {tipMesh: entityTipMesh} = entityTagMesh;
-                line.set(moduleTipMesh, entityTipMesh);
-                return line;
-              })();
-              linesMesh.render();
-              componentLines.set(entityElement, line); */
-            };
-            const _doCallback = () => {
-              componentElement.entityAddedCallback(entityElement);
-            };
+            if (numComponents === 1) {
+              entityElement._object = null; // defer construction/add of the actual object until requested by the component
+            }
 
-            _updateObject();
-            _updateLine();
-            _doCallback();
+            componentElement.entityAddedCallback(entityElement);
+            tagsApi.emit('elementAdded', entityElement);
           };
           const _entityValueChangedCallbacks = (componentApi, componentElement, entityElement, entityAttributes) => {
             const {attributes: componentAttributes = {}} = componentApi;
@@ -291,31 +260,18 @@ class Tags {
             }
           };
           const _removeEntityCallback = (componentElement, entityElement) => {
-            const _updateLine = () => {
-              /* const {_lines: componentLines} = componentElement;
-              const line = componentLines.get(entityElement);
-              linesMesh.removeLine(line);
-              linesMesh.render();
-              componentLines.delete(line); */
-            };
-            const _updateObject = () => {
-              let {_object: object, _numComponents: numComponents} = entityElement;
+            let {_object: object, _numComponents: numComponents} = entityElement;
 
-              numComponents--;
-              entityElement._numComponents = numComponents;
+            numComponents--;
+            entityElement._numComponents = numComponents;
 
-              if (numComponents === 0) {
-                scene.remove(object);
-                entityElement._object = null;
-              }
-            };
-            const _doCallback = () => {
-              componentElement.entityRemovedCallback(entityElement);
-            };
+            if (numComponents === 0) {
+              scene.remove(object);
+              entityElement._object = null;
+            }
 
-            _updateLine();
-            _updateObject();
-            _doCallback();
+            componentElement.entityRemovedCallback(entityElement);
+            tagsApi.emit('elementRemoved', entityElement);
           };
 
           const _getElementJsonAttributes = element => {
@@ -2139,6 +2095,64 @@ class Tags {
             getTagComponentApis(tag) {
               return tagComponentApis[tag];
             }
+
+            /* querySelector(selector) {
+              return worldElement.querySelector(selector);
+            }
+
+            requestElement(selector, {timeout = 30 * 1000} = {}) {
+              selector = selector.toUpperCase();
+              const element = this.querySelector(selector);
+
+              if (element) {
+                return Promise.resolve(element);
+              } else {
+                let _elementAdded = null;
+                const _requestElementAdded = () => new Promise((accept, reject) => {
+                  _elementAdded = element => {
+                    const {tagName} = element;
+
+                    if (tagName === selector) {
+                      accept(element);
+                    }
+                  };
+                  this.on('elementAdded', _elementAdded);
+                });
+                let timeoutInstance = null;
+                const _requestTimeout = () => new Promise((accept, reject) => {
+                  timeoutInstance = setTimeout(() => {
+                    timeoutInstance = null;
+
+                    const err = new Error('element request timed out');
+                    err.code = 'ETIMEOUT';
+                    reject(err);
+                  }, timeout);
+                });
+
+                const _cleanup = () => {
+                  this.removeListener('elementAdded', _elementAdded);
+
+                  if (timeoutInstance !== null) {
+                    clearTimeout(timeoutInstance);
+                  }
+                };
+
+                return Promise.race([
+                  _requestElementAdded(),
+                  _requestTimeout(),
+                ])
+                  .then(element => {
+                    _cleanup();
+
+                    return Promise.resolve(element);
+                  })
+                  .catch(err => {
+                    _cleanup();
+
+                    return Promise.reject(err);
+                  });
+              }
+            } */
 
             loadTags(itemSpecs) {
               this.emit('loadTags', {
