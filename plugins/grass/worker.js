@@ -62,7 +62,7 @@ const _isPointInTriangles = (p, ts) => {
   return false;
 };
 const grassTextureAtlas = (() => {
-  const transparentColorArray = Uint8Array.from([255, 255, 255, 0]);
+  const transparentColorArray = Uint8Array.from([0, 0, 0, 0]);
 
   const data = new Uint8Array(TEXTURE_SIZE * TEXTURE_SIZE * 4);
   for (let y = 0; y < NUM_TEXTURE_CHUNKS_WIDTH; y++) {
@@ -137,7 +137,7 @@ const grassTextureAtlas = (() => {
 })();
 
 const grassTemplates = (() => {
-  const numGrassesPerPatch = Math.floor(3 + Math.random() * 3);
+  const numGrassesPerPatch = Math.floor(4 + Math.random() * 4);
   const positions = new Float32Array(NUM_POSITIONS * 3);
   const uvs = new Float32Array(NUM_POSITIONS * 2);
   const indices = new Uint16Array(NUM_POSITIONS);
