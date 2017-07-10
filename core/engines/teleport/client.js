@@ -39,21 +39,20 @@ class Teleport {
         const {events} = jsUtils;
         const {EventEmitter} = events;
 
-        /* const _decomposeMatrix = matrix => {
+        const _decomposeMatrix = matrix => {
           const position = new THREE.Vector3();
           const rotation = new THREE.Quaternion();
           const scale = new THREE.Vector3();
           matrix.decompose(position, rotation, scale);
           return {position, rotation, scale};
-        }; */
+        };
 
-        const upVector = new THREE.Vector3(0, 1, 0);
         const forwardVector = new THREE.Vector3(0, 0, -1);
         const teleportMeshMaterial = new THREE.MeshPhongMaterial({
-          color: 0xFFC107,
+          color: 0xF44336,
           shading: THREE.FlatShading,
-          opacity: 0.5,
-          transparent: true,
+          // opacity: 0.5,
+          // transparent: true,
         });
 
         const intersecter = intersect.makeIntersecter({
@@ -217,16 +216,22 @@ class Teleport {
 
               if (teleportFloorPoint) {
                 const vrMode = bootstrap.getVrMode();
+
                 if (vrMode === 'hmd') {
-                  const spawnTransform = webvr.getSpawnTransform();
-                  const hmdStagePosition = hmdLocalPosition.clone().applyMatrix4(spawnTransform);
+                  // const spawnTransform = webvr.getSpawnTransform();
+                  // const hmdStagePosition = hmdLocalPosition.clone().applyMatrix4(spawnTransform);
+                  const cameraPosition = camera.getWorldPosition();
                   const teleportMeshEuler = new THREE.Euler().setFromQuaternion(teleportFloorMesh.quaternion, 'XZY');
                   teleportMeshEuler.y = 0;
                   webvr.setStageMatrix(
-                    camera.matrixWorldInverse.clone()
-                      .multiply(spawnTransform) // move back to origin
-                      .premultiply(new THREE.Matrix4().makeTranslation(-hmdStagePosition.x, 0, -hmdStagePosition.z))
-                      .premultiply(new THREE.Matrix4().makeRotationFromEuler(teleportMeshEuler))
+                    webvr.getStageMatrix().clone()
+                      .premultiply(new THREE.Matrix4().makeTranslation(
+                        -cameraPosition.x,
+                        -cameraPosition.y,
+                        -cameraPosition.z
+                      )) // move back to origin
+                      .premultiply(new THREE.Matrix4().makeTranslation(0, hmdLocalPosition.y, 0)) // move to height
+                      .premultiply(new THREE.Matrix4().makeRotationFromEuler(teleportMeshEuler)) // rotate to mesh normal
                       .premultiply(new THREE.Matrix4().makeTranslation(
                         teleportFloorMesh.position.x,
                         teleportFloorMesh.position.y,
@@ -251,16 +256,22 @@ class Teleport {
                 teleportState.teleportFloorPoint = null;
               } else if (teleportAirPoint) {
                 const vrMode = bootstrap.getVrMode();
+
                 if (vrMode === 'hmd') {
-                  const spawnTransform = webvr.getSpawnTransform();
-                  const hmdStagePosition = hmdLocalPosition.clone().applyMatrix4(spawnTransform);
+                  // const spawnTransform = webvr.getSpawnTransform();
+                  // const hmdStagePosition = hmdLocalPosition.clone().applyMatrix4(spawnTransform);
+                  const cameraPosition = camera.getWorldPosition();
                   const teleportMeshEuler = new THREE.Euler().setFromQuaternion(teleportAirMesh.quaternion, 'XZY');
                   teleportMeshEuler.y = 0;
                   webvr.setStageMatrix(
-                    camera.matrixWorldInverse.clone()
-                      .multiply(spawnTransform) // move back to origin
-                      .premultiply(new THREE.Matrix4().makeTranslation(-hmdStagePosition.x, 0, -hmdStagePosition.z))
-                      .premultiply(new THREE.Matrix4().makeRotationFromEuler(teleportMeshEuler))
+                    webvr.getStageMatrix().clone()
+                      .premultiply(new THREE.Matrix4().makeTranslation(
+                        -cameraPosition.x,
+                        -cameraPosition.y,
+                        -cameraPosition.z
+                      )) // move back to origin
+                      .premultiply(new THREE.Matrix4().makeTranslation(0, hmdLocalPosition.y, 0)) // move to height
+                      .premultiply(new THREE.Matrix4().makeRotationFromEuler(teleportMeshEuler)) // rotate to mesh normal
                       .premultiply(new THREE.Matrix4().makeTranslation(
                         teleportAirMesh.position.x,
                         teleportAirMesh.position.y,
