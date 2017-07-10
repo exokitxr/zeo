@@ -19911,7 +19911,7 @@ module.exports = (() => {
 
 		function onVRDisplayPresentChange() {
 
-			if ( device.isPresenting ) {
+			if ( device && device.isPresenting ) { // XXX
 
 				var eyeParameters = device.getEyeParameters( 'left' );
 				var renderWidth = eyeParameters.renderWidth;
@@ -21349,9 +21349,9 @@ module.exports = (() => {
 
 			function onFrame() {
 
-				callback();
-
+if (callback() !== false) { // XXX
 				( vr.getDevice() || window ).requestAnimationFrame( onFrame );
+}
 
 			}
 
