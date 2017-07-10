@@ -1,0 +1,7 @@
+{
+  "name": "lightmap",
+  "version": "0.0.1",
+  "description": "Lightmap tracking.",
+  "client": "client.js",
+  "dependencies": {}
+}
