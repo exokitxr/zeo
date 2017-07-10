@@ -330,11 +330,11 @@ class WebVR {
             display = null,
             stereoscopic = false,
             update = () => {},
-            updateEye = () => {},
+            // updateEye = () => {},
             updateStart = () => {},
             updateEnd = () => {},
-            renderStart = () => {},
-            renderEnd = () => {},
+            // renderStart = () => {},
+            // renderEnd = () => {},
           }) {
             let cleanups = [];
             const _destroy = () => {
@@ -347,7 +347,7 @@ class WebVR {
 
             const result = new Promise((accept, reject) => {
               if (!this.isOpen) {
-                let effect = null;
+                // let effect = null;
 
                 const _initialize = () => {
                   this.display = display;
@@ -361,7 +361,10 @@ class WebVR {
                   this._frameData = frameData;
 
                   if (display && stereoscopic) {
-                    const {getVRDisplays} = navigator; // HACK to prevent VREffect from initializing VR displays
+                    renderer.vr.enabled = true;
+                    renderer.vr.setDevice(display);
+
+                    /* const {getVRDisplays} = navigator; // HACK to prevent VREffect from initializing VR displays
                     navigator.getVRDisplays = null;
                     effect = new THREEVREffect(renderer);
                     navigator.getVRDisplays = getVRDisplays;
@@ -377,10 +380,10 @@ class WebVR {
                       renderEnd();
                     };
                     effect.isPresenting = true;
-                    effect.autoSubmitFrame = false;
+                    effect.autoSubmitFrame = false; */
 
                     const resize = () => {
-                      effect.setSize(window.innerWidth, window.innerHeight);
+                      renderer.setSize(window.innerWidth, window.innerHeight);
                     };
                     window.addEventListener('resize', resize);
                     window.addEventListener('vrdisplaypresentchange', resize);
@@ -389,8 +392,8 @@ class WebVR {
                       this.display = null;
                       this.stereoscopic = false;
 
-                      effect = null;
-
+                      renderer.vr.enabled = false;
+                      renderer.vr.setDevice(null);
                       renderer.setSize(window.innerWidth, window.innerHeight);
                       renderer.setPixelRatio(window.devicePixelRatio);
 
@@ -444,8 +447,8 @@ class WebVR {
 
                       update(); // update plugins
 
-                      if (effect) {
-                        const scale = (() => {
+                      if (renderer.vr.enabled) {
+                        /* const scale = (() => {
                           const vector = new THREE.Vector3();
                           const {elements} = camera.parent.matrix;
                           const sx = vector.set(elements[0], elements[1], elements[2]).length();
@@ -453,53 +456,43 @@ class WebVR {
                           const sz = vector.set(elements[8], elements[9], elements[10]).length();
                           return vector.set(sx, sy, sz);
                         })();
-                        effect.scale = (scale.x + scale.y + scale.z) / 3;
-                        effect.render(scene, camera); // perform binocular render
+                        effect.scale = (scale.x + scale.y + scale.z) / 3; */
+                        renderer.render(scene, camera); // perform binocular render
                       } else {
+                        if (display) {
+                          display.handleInput();
+                        }
+
                         // manual events since the effect won't call them
-                        updateEye(camera);
-                        renderStart();
+                        // updateEye(camera);
                         renderer.render(scene, camera); // perform monocular eye render
-                        renderEnd();
                       }
 
                       updateEnd(); // notify frame end
                     };
 
-                    const _requestAnimationFrame = fn => (display && display.isPresenting) ?
-                      display.requestAnimationFrame(fn)
-                    :
-                      requestAnimationFrame(fn);
-                    const _cancelAnimationFrame = animationFrame => (display && display.isPresenting) ?
-                      display.cancelAnimationFrame(animationFrame)
-                    :
-                      cancelAnimationFrame(animationFrame);
-                    const _submitFrame = () => {
-                      if (display && display.isPresenting) {
-                        display.getFrameData(frameData); // prevent timeshifting
-                        display.submitFrame();
-                      }
-                    };
+                    const _animate = fn => {
+                      let live = true;
 
-                    let animationFrame = null;
-                    const _recurse = () => {
-                      animationFrame = _requestAnimationFrame(() => {
-                        animationFrame = null;
+                      renderer.animate(() => {
+                        if (live) {
+                          this.updateStatus();
+                          _render();
 
-                        this.updateStatus();
-                        _render();
-                        _submitFrame();
-
-                        _recurse();
+                          return true;
+                        } else {
+                          return false;
+                        }
                       });
+
+                      return () => {
+                        live = false;
+                      };
                     };
-                    _recurse();
+                    const cancelAnimate = _animate();
 
                     cleanups.push(() => {
-                      if (animationFrame) {
-                        _cancelAnimationFrame(animationFrame);
-                        animationFrame = null;
-                      }
+                      cancelAnimate();
                     });
                   };
                   _renderLoop();
@@ -524,11 +517,11 @@ class WebVR {
           requestEnterVR({
             stereoscopic = true,
             update = () => {},
-            updateEye = () => {},
+            // updateEye = () => {},
             updateStart = () => {},
             updateEnd = () => {},
-            renderStart = () => {},
-            renderEnd = () => {},
+            // renderStart = () => {},
+            // renderEnd = () => {},
             onExit = () => {},
           }) {
             // NOTE: these promises *need* to be synchronous because the WebVR api can only be triggered in the same tick as a user action
@@ -638,11 +631,11 @@ class WebVR {
                         display,
                         stereoscopic,
                         update,
-                        updateEye,
+                        // updateEye,
                         updateStart,
                         updateEnd,
-                        renderStart,
-                        renderEnd,
+                        // renderStart,
+                        // renderEnd,
                       });
 
                       cleanups.push(() => {
@@ -1163,49 +1156,6 @@ class WebVR {
             return Promise.resolve();
           }
 
-          requestAnimationFrame(fn) {
-            return requestAnimationFrame(() => {
-              const _updateDisplay = () => {
-                const {position, rotation, keys} = this;
-
-                const moveVector = new THREE.Vector3();
-                const speed = keys.shift ? POSITION_SPEED_FAST : POSITION_SPEED;
-                let moved = false;
-                if (keys.up) {
-                  moveVector.z -= speed;
-                  moved = true;
-                }
-                if (keys.down) {
-                  moveVector.z += speed;
-                  moved = true;
-                }
-                if (keys.left) {
-                  moveVector.x -= speed;
-                  moved = true;
-                }
-                if (keys.right) {
-                  moveVector.x += speed;
-                  moved = true;
-                }
-
-                if (moved) {
-                  moveVector.applyQuaternion(rotation);
-                  position.add(moveVector);
-
-                  this.updateMatrix();
-                  this.updateGamepads();
-                }
-              };
-
-              _updateDisplay();
-              fn();
-            });
-          }
-
-          cancelAnimationFrame(animationFrame) {
-            cancelAnimationFrame(animationFrame);
-          }
-
           resetPose() {
             this.position.set(0, 0, 0);
             const euler = new THREE.Euler().setFromQuaternion(this.rotation, camera.rotation.order);
@@ -1279,6 +1229,38 @@ class WebVR {
 
           submitFrame(pose) {
             // nothing
+          }
+
+          handleInput() {
+            const {position, rotation, keys} = this;
+
+            const moveVector = new THREE.Vector3();
+            const speed = keys.shift ? POSITION_SPEED_FAST : POSITION_SPEED;
+            let moved = false;
+            if (keys.up) {
+              moveVector.z -= speed;
+              moved = true;
+            }
+            if (keys.down) {
+              moveVector.z += speed;
+              moved = true;
+            }
+            if (keys.left) {
+              moveVector.x -= speed;
+              moved = true;
+            }
+            if (keys.right) {
+              moveVector.x += speed;
+              moved = true;
+            }
+
+            if (moved) {
+              moveVector.applyQuaternion(rotation);
+              position.add(moveVector);
+
+              this.updateMatrix();
+              this.updateGamepads();
+            }
           }
 
           getGamepads() {
