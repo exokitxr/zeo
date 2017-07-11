@@ -2,6 +2,9 @@ const NUM_CELLS = 32;
 const OVERSCAN = 1;
 const NUM_CELLS_OVERSCAN = NUM_CELLS + OVERSCAN;
 
+const NUM_CELLS_HEIGHT = 128;
+const HEIGHT_OFFSET = -32;
+
 const DEFAULT_SEED = 'a';
 
 const ITEMS = [
@@ -13,6 +16,9 @@ module.exports = {
   NUM_CELLS,
   OVERSCAN,
   NUM_CELLS_OVERSCAN,
+
+  NUM_CELLS_HEIGHT,
+  HEIGHT_OFFSET,
   
   DEFAULT_SEED,
 
