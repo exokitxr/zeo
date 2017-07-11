@@ -81,7 +81,11 @@ varying vec3 vViewPosition;
 #endif
 
 void main() {
-  float u = (floor(vPosition.x) + (floor(vPosition.z) * ${(NUM_CELLS + 1).toFixed(8)}) + 0.5) / (${(NUM_CELLS + 1).toFixed(8)} * ${(NUM_CELLS + 1).toFixed(8)});
+  float u = (
+    floor(mod(vPosition.x, ${NUM_CELLS.toFixed(8)})) +
+    (floor(mod(vPosition.z, ${NUM_CELLS.toFixed(8)})) * ${(NUM_CELLS + 1).toFixed(8)}) +
+    0.5
+  ) / (${(NUM_CELLS + 1).toFixed(8)} * ${(NUM_CELLS + 1).toFixed(8)});
   float v = (floor(vPosition.y - ${HEIGHT_OFFSET.toFixed(8)}) + 0.5) / ${NUM_CELLS_HEIGHT.toFixed(8)};
   vec4 diffuseColor = texture2D( lightMap, vec2(u, v) );
 
