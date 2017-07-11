@@ -142,16 +142,7 @@ class Entity {
 
         const _decorateEntity = entity => {
           const {id, name, displayName, module, attributes, instancing} = entity;
-
           const attributeSpecs = tags.getAttributeSpecs(module);
-          for (const attributeName in attributes) {
-            const attribute = attributes[attributeName];
-            const {value} = attribute;
-
-            const attributeSpec = attributeSpecs.find(attributeSpec => attributeSpec.name === attributeName);
-            attributeSpec.value = value;
-          }
-
           return {id, name, displayName, attributes: attributeSpecs, instancing};
         };
         const _updateNpm = () => {
