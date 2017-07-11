@@ -87,9 +87,13 @@ varying vec3 vNormal;
 void main() {
   vec4 diffuseColor = texture2D( map, vUv );
 
-  float lu = (floor(vPosition.x) + (floor(vPosition.z) * ${(NUM_CELLS + 1).toFixed(8)}) + 0.5) / (${(NUM_CELLS + 1).toFixed(8)} * ${(NUM_CELLS + 1).toFixed(8)});
-  float lv = (floor(vPosition.y - ${HEIGHT_OFFSET.toFixed(8)}) + 0.5) / ${NUM_CELLS_HEIGHT.toFixed(8)};
-  vec3 lightColor = texture2D( lightMap, vec2(lu, lv) ).rgb * 1.5;
+  float u = (
+    floor(mod(vPosition.x, ${NUM_CELLS.toFixed(8)})) +
+    (floor(mod(vPosition.z, ${NUM_CELLS.toFixed(8)})) * ${(NUM_CELLS + 1).toFixed(8)}) +
+    0.5
+  ) / (${(NUM_CELLS + 1).toFixed(8)} * ${(NUM_CELLS + 1).toFixed(8)});
+  float v = (floor(vPosition.y - ${HEIGHT_OFFSET.toFixed(8)}) + 0.5) / ${NUM_CELLS_HEIGHT.toFixed(8)};
+  vec3 lightColor = texture2D( lightMap, vec2(u, v) ).rgb * 1.5;
 
 #ifdef USE_COLOR
 	diffuseColor.rgb *= vColor;
