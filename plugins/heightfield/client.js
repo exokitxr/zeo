@@ -11,7 +11,7 @@ const LIGHTMAP_PLUGIN = 'plugins-lightmap';
 
 const HEIGHTFIELD_SHADER = {
   uniforms: {
-    worldTime: {
+    lightMap: {
       type: 't',
       value: null,
     },
@@ -33,24 +33,18 @@ attribute vec2 uv; */
 	attribute vec3 color;
 #endif
 
+varying vec3 vPosition;
 varying vec3 vViewPosition;
 #ifndef FLAT_SHADED
 	varying vec3 vNormal;
 #endif
 #define saturate(a) clamp( a, 0.0, 1.0 )
 
-#if defined( USE_MAP )
-	varying vec2 vUv;
-#endif
-
 #ifdef USE_COLOR
 	varying vec3 vColor;
 #endif
 
 void main() {
-#if defined( USE_MAP )
-	vUv = uv;
-#endif
 #ifdef USE_COLOR
 	vColor.xyz = color.xyz;
 #endif
@@ -62,6 +56,7 @@ void main() {
   vec4 mvPosition = modelViewMatrix * vec4( position.xyz, 1.0 );
   gl_Position = projectionMatrix * mvPosition;
 
+	vPosition = position.xyz;
 	vViewPosition = - mvPosition.xyz;
 }
 `,
@@ -71,6 +66,7 @@ precision highp int;
 #define USE_COLOR
 #define FLAT_SHADED
 // uniform mat4 viewMatrix;
+uniform sampler2D lightMap;
 
 #define saturate(a) clamp( a, 0.0, 1.0 )
 
@@ -78,24 +74,16 @@ precision highp int;
 	varying vec3 vColor;
 #endif
 
-#if defined( USE_MAP )
-	varying vec2 vUv;
-#endif
-#ifdef USE_MAP
-	uniform sampler2D map;
-#endif
-
+varying vec3 vPosition;
 varying vec3 vViewPosition;
 #ifndef FLAT_SHADED
 	varying vec3 vNormal;
 #endif
 
 void main() {
-	vec4 diffuseColor = vec4( 1.0 );
-#ifdef USE_MAP
-	vec4 texelColor = texture2D( map, vUv );
-	diffuseColor *= texelColor;
-#endif
+  float u = (floor(vPosition.x) + (floor(vPosition.z) * ${(NUM_CELLS + 1).toFixed(8)}) + 0.5) / (${(NUM_CELLS + 1).toFixed(8)} * ${(NUM_CELLS + 1).toFixed(8)});
+  float v = (floor(vPosition.y - ${HEIGHT_OFFSET.toFixed(8)}) + 0.5) / ${NUM_CELLS_HEIGHT.toFixed(8)};
+  vec4 diffuseColor = texture2D( lightMap, vec2(u, v) );
 
 #ifdef USE_COLOR
 	diffuseColor.rgb *= vColor;
@@ -138,16 +126,6 @@ class Heightfield {
     const {three, render, pose, world, elements, teleport, /*physics,*/ stck, utils: {random: {chnkr}}} = zeo;
     const {THREE, scene} = three;
 
-    const mapChunkMaterial = new THREE.ShaderMaterial({
-      uniforms: THREE.UniformsUtils.clone(HEIGHTFIELD_SHADER.uniforms),
-      vertexShader: HEIGHTFIELD_SHADER.vertexShader,
-      fragmentShader: HEIGHTFIELD_SHADER.fragmentShader,
-      transparent: true,
-      extensions: {
-        derivatives: true,
-      },
-    });
-
     const worker = new Worker('archae/plugins/_plugins_heightfield/build/worker.js');
     const queue = [];
     worker.requestOriginHeight = () => new Promise((accept, reject) => {
@@ -189,7 +167,7 @@ class Heightfield {
         heightOffset: HEIGHT_OFFSET,
       });
       lightmapper.add(new Lightmapper.Ambient(255 * 0.1));
-      lightmapper.add(new Lightmapper.Sphere(NUM_CELLS / 2, 24, NUM_CELLS / 2, 8, 1.5));
+      lightmapper.add(new Lightmapper.Sphere(NUM_CELLS / 2, 24, NUM_CELLS / 2, 12, 1.5));
 
       _bindLightmaps();
     };
@@ -214,7 +192,9 @@ class Heightfield {
       const {offset} = mapChunkMesh;
       const {x, y} = offset;
       const lightmap = lightmapper.getLightmapAt(x * NUM_CELLS, y * NUM_CELLS);
-      lightmapper.add(mapChunkMesh);
+// if (!(x === 0 && y === 0)) {
+      mapChunkMesh.material.uniforms.lightMap.value = lightmap.texture;
+// }
       mapChunkMesh.lightmap = lightmap;
     };
     const _unbindLightmap = mapChunkMesh => {
@@ -256,7 +236,15 @@ class Heightfield {
         );
         return geometry;
       })();
-      const material = mapChunkMaterial;
+      const material = new THREE.ShaderMaterial({
+        uniforms: THREE.UniformsUtils.clone(HEIGHTFIELD_SHADER.uniforms),
+        vertexShader: HEIGHTFIELD_SHADER.vertexShader,
+        fragmentShader: HEIGHTFIELD_SHADER.fragmentShader,
+        transparent: true,
+        extensions: {
+          derivatives: true,
+        },
+      });
 
       const mesh = new THREE.Mesh(geometry, material);
       // mesh.frustumCulled = false;

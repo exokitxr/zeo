@@ -1,21 +1,3 @@
-const DIRECTIONS = (() => {
-  const result = [];
-  for (let x = -1; x <= 1; x++) {
-    if (x !== 0) {
-      for (let y = -1; y <= 1; y++) {
-        if (y !== 0) {
-          for (let z = -1; z <= 1; z++) {
-            if (z !== 0) {
-              result.push([x, y, z]);
-            }
-          }
-        }
-      }
-    }
-  }
-  return result;
-})();
-
 const needsUpdateSymbol = Symbol();
 const initialColorsSymbol = Symbol();
 
@@ -72,13 +54,29 @@ class Lightmap {
         this.depth = depth;
         this.heightOffset = heightOffset;
 
-        this.lightmap = new Uint8Array(width * height * depth);
+        const lightmap = new Uint8Array((width + 1) * (depth + 1) * height);
+        this.lightmap = lightmap;
+        const texture = new THREE.DataTexture(
+          lightmap,
+          (width + 1) * (depth + 1),
+          height,
+          THREE.LuminanceFormat,
+          THREE.UnsignedByteType,
+          THREE.UVMapping,
+          THREE.ClampToEdgeWrapping,
+          THREE.ClampToEdgeWrapping,
+          THREE.NearestFilter,
+          THREE.NearestFilter,
+          1
+        );
+        // texture.needsUpdate = true;
+        this.texture = texture;
         this.rendered = false;
         this.refCount = 0;
       }
 
       update(shapes) {
-        const {ox, oz, width, height, depth, heightOffset, lightmap, rendered} = this;
+        const {ox, oz, width, height, depth, heightOffset, lightmap, texture, rendered} = this;
 
         const _renderShapes = force => {
           let updated = false;
@@ -95,6 +93,8 @@ class Lightmap {
             })();
 
             lightmap.fill(ambientValue);
+
+            texture.needsUpdate = true;
           };
 
           if (force) {
@@ -162,17 +162,13 @@ class Lightmap {
               }
             }
           }
-
-          return updated;
         };
 
         const forceShapesUpdate = !rendered;
-        const lightmapUpdated = _renderShapes(forceShapesUpdate);
+        _renderShapes(forceShapesUpdate);
         if (!rendered) {
           this.rendered = true;
         }
-
-        return lightmapUpdated;
       }
 
       addRef() {
@@ -198,7 +194,6 @@ class Lightmap {
         this.heightOffset = heightOffset;
 
         this._lightmaps = {};
-        this._meshes = [];
         this._shapes = [];
       }
 
@@ -223,87 +218,20 @@ class Lightmap {
         lightmap.removeRef();
       }
 
-      add(o) {
-        if (o instanceof THREE.Object3D) {
-          this._meshes.push(o);
-        } else {
-          this._shapes.push(o);
-        }
+      add(shape) {
+        this._shapes.push(shape);
       }
 
-      remove(o) {
-        if (o instanceof THREE.Object3D) {
-          this._meshes.splice(this._meshes.indexOf(o), 1);
-        } else {
-          this._shapes.splice(this._shapes.indexOf(o), 1);
-        }
+      remove(shape) {
+        this._shapes.splice(this._shapes.indexOf(shape), 1);
       }
 
       update() {
-        const {width, depth, height, heightOffset, _lightmaps: lightmaps, _shapes: shapes, _meshes: meshes} = this;
+        const {width, depth, height, heightOffset, _lightmaps: lightmaps, _shapes: shapes} = this;
 
-        const updatedLightmaps = (() => {
-          const result = {};
-          let updated = false;
-          for (const index in lightmaps) {
-            const lightmap = lightmaps[index];
-            const updated = lightmap.update(shapes);
-
-            if (updated) {
-              result[index] = true;
-            }
-          }
-          return result;
-        })();
-        const numUpdatedLightmaps = Object.keys(updatedLightmaps).length;
-
-        for (let i = 0; i < meshes.length; i++) {
-          const mesh = meshes[i];
-
-          if (numUpdatedLightmaps > 0 || mesh[needsUpdateSymbol]) {
-            let updated = false;
-
-            const {geometry} = mesh;
-            const positions = geometry.getAttribute('position').array;
-            const colorAttribute = geometry.getAttribute('color');
-            const colors = colorAttribute.array;
-            let {[initialColorsSymbol]: initialColors} = geometry;
-            if (!initialColors) {
-              initialColors = new Float32Array(colors.length);
-              initialColors.set(colors);
-              geometry[initialColorsSymbol] = initialColors;
-            }
-            const numPositions = positions.length / 3;
-            for (let j = 0; j < numPositions; j++) {
-              const baseIndex = j * 3;
-              const ox = Math.floor(positions[baseIndex + 0] / width);
-              const oz = Math.floor(positions[baseIndex + 2] / depth);
-              const lightmapsIndex = ox + ':' + oz;
-              const lightmap = lightmaps[lightmapsIndex];
-
-              if (lightmap) {
-                const ax = _clamp(Math.floor(positions[baseIndex + 0] - (ox * width)), width);
-                const ay = _clamp(Math.floor(positions[baseIndex + 1] - heightOffset), height);
-                const az = _clamp(Math.floor(positions[baseIndex + 2] - (oz * depth)), depth);
-                const lightmapIndex = ax + (az * (width + 1)) + (ay * (width + 1) * (depth + 1));
-                const v = lightmap.lightmap[lightmapIndex] / 255;
-
-                colors[baseIndex + 0] = initialColors[baseIndex + 0] * v;
-                colors[baseIndex + 1] = initialColors[baseIndex + 1] * v;
-                colors[baseIndex + 2] = initialColors[baseIndex + 2] * v;
-
-                updated = true;
-              }
-            }
-
-            if (updated) {
-              colorAttribute.needsUpdate = true;
-            }
-          }
-
-          if (mesh[needsUpdateSymbol]) {
-            mesh[needsUpdateSymbol] = false;
-          }
+        for (const index in lightmaps) {
+          const lightmap = lightmaps[index];
+          lightmap.update(shapes);
         }
 
         for (let i = 0; i < shapes.length; i++) {
