@@ -108,7 +108,7 @@ void main() {
 #endif
 
   float dotNL = saturate( dot( normal, normalize(vec3(1.0, -1.0, 1.0) + vViewPosition) ) );
-  float irradiance = 1.0 + (dotNL * 2.0);
+  float irradiance = 0.2 + (dotNL * 2.0);
 	vec3 outgoingLight = irradiance * diffuseColor.rgb;
 
 	gl_FragColor = vec4( outgoingLight, diffuseColor.a );
@@ -192,15 +192,12 @@ class Heightfield {
       const {offset} = mapChunkMesh;
       const {x, y} = offset;
       const lightmap = lightmapper.getLightmapAt(x * NUM_CELLS, y * NUM_CELLS);
-// if (!(x === 0 && y === 0)) {
       mapChunkMesh.material.uniforms.lightMap.value = lightmap.texture;
-// }
       mapChunkMesh.lightmap = lightmap;
     };
     const _unbindLightmap = mapChunkMesh => {
       const {lightmap} = mapChunkMesh;
       lightmapper.releaseLightmap(lightmap);
-      lightmapper.remove(mapChunkMesh);
       mapChunkMesh.lightmap = null;
     };
     const elementListener = elements.makeListener(LIGHTMAP_PLUGIN);
