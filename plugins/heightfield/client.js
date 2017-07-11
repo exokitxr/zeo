@@ -59,12 +59,16 @@ class Heightfield {
 
     let lightmapper = null;
     const _bindLightmapper = lightmapElement => {
-      lightmapper = lightmapElement.makeLightmapper({
+      const {Lightmapper} = lightmapElement;
+
+      lightmapper = new Lightmapper({
         width: NUM_CELLS,
         height: NUM_CELLS_HEIGHT,
         depth: NUM_CELLS,
         heightOffset: HEIGHT_OFFSET,
       });
+      lightmapper.add(new Lightmapper.Ambient(255 * 0.1));
+      lightmapper.add(new Lightmapper.Sphere(NUM_CELLS / 2, 24, NUM_CELLS / 2, 8, 1.5));
 
       _bindLightmaps();
     };
@@ -89,13 +93,13 @@ class Heightfield {
       const {offset} = mapChunkMesh;
       const {x, y} = offset;
       const lightmap = lightmapper.getLightmapAt(x * NUM_CELLS, y * NUM_CELLS);
-      lightmap.on('update', () => {
-        console.log('lightmap update', lightmap);
-      });
+      lightmap.add(mapChunkMesh);
       mapChunkMesh.lightmap = lightmap;
     };
     const _unbindLightmap = mapChunkMesh => {
-      lightmapper.releaseLightmap(mapChunkMesh.lightmap);
+      const {lightmap} = mapChunkMesh;
+      lightmap.remove(mapChunkMesh);
+      lightmapper.releaseLightmap(lightmap);
       mapChunkMesh.lightmap = null;
     };
     const elementListener = elements.makeListener(LIGHTMAP_PLUGIN);
@@ -299,8 +303,23 @@ class Heightfield {
           }
         };
 
+        let lastLightmapUpdate = Date.now();
+        const tryLightmapUpdate = () => {
+          const now = Date.now();
+          const timeDiff = now - lastLightmapUpdate;
+
+          if (timeDiff > 500) {
+            if (lightmapper) {
+              lightmapper.update();
+            }
+
+            lastLightmapUpdate = now;
+          }
+        };
+
         const _update = () => {
           tryMapChunkUpdate();
+          tryLightmapUpdate();
         };
         render.on('update', _update);
 
