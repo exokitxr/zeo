@@ -104,9 +104,6 @@ void main() {
 	float flipNormal = 1.0;
 #endif
 
-  /* float dotNL = saturate( dot( vNormal, normalize(vec3(1.0, -1.0, 1.0) + vViewPosition) ) );
-  float irradiance = 1.0 + (dotNL * 2.0);
-	vec3 outgoingLight = irradiance * diffuseColor.rgb; */
   vec3 outgoingLight = diffuseColor.rgb * lightColor;
 
 	gl_FragColor = vec4( outgoingLight, diffuseColor.a );

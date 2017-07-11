@@ -1,11 +1,96 @@
 const {
   NUM_CELLS,
 
+  NUM_CELLS_HEIGHT,
+  HEIGHT_OFFSET,
+
   ITEMS,
 } = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
 
 const NUM_POSITIONS_CHUNK = 200 * 1024;
+const LIGHTMAP_PLUGIN = 'plugins-lightmap';
+
+const ITEMS_SHADER = {
+  uniforms: {
+    map: {
+      type: 't',
+      value: null,
+    },
+    lightMap: {
+      type: 't',
+      value: null,
+    },
+  },
+  vertexShader: `\
+precision highp float;
+precision highp int;
+#define USE_COLOR
+/*uniform mat4 modelMatrix;
+uniform mat4 modelViewMatrix;
+uniform mat4 projectionMatrix;
+uniform mat4 viewMatrix;
+uniform mat3 normalMatrix;
+attribute vec3 position;
+attribute vec3 normal;
+attribute vec2 uv; */
+#ifdef USE_COLOR
+	attribute vec3 color;
+#endif
+
+varying vec3 vPosition;
+varying vec3 vViewPosition;
+#define saturate(a) clamp( a, 0.0, 1.0 )
+
+#ifdef USE_COLOR
+	varying vec3 vColor;
+#endif
+
+void main() {
+#ifdef USE_COLOR
+	vColor.xyz = color.xyz;
+#endif
+
+  vec4 mvPosition = modelViewMatrix * vec4( position.xyz, 1.0 );
+  gl_Position = projectionMatrix * mvPosition;
+
+	vPosition = position.xyz;
+	vViewPosition = - mvPosition.xyz;
+}
+`,
+  fragmentShader: `\
+precision highp float;
+precision highp int;
+#define USE_COLOR
+// uniform mat4 viewMatrix;
+uniform sampler2D lightMap;
+
+#define saturate(a) clamp( a, 0.0, 1.0 )
+
+#ifdef USE_COLOR
+	varying vec3 vColor;
+#endif
+
+varying vec3 vPosition;
+varying vec3 vViewPosition;
+
+void main() {
+  vec4 diffuseColor = vec4(vColor, 1.0);
+
+  float lu = (floor(vPosition.x) + (floor(vPosition.z) * ${(NUM_CELLS + 1).toFixed(8)}) + 0.5) / (${(NUM_CELLS + 1).toFixed(8)} * ${(NUM_CELLS + 1).toFixed(8)});
+  float lv = (floor(vPosition.y - ${HEIGHT_OFFSET.toFixed(8)}) + 0.5) / ${NUM_CELLS_HEIGHT.toFixed(8)};
+  vec3 lightColor = texture2D( lightMap, vec2(lu, lv) ).rgb * 2.0;
+
+#ifdef USE_COLOR
+	diffuseColor.rgb *= vColor;
+#endif
+
+  vec3 outgoingLight = diffuseColor.rgb * lightColor;
+
+	gl_FragColor = vec4( outgoingLight, diffuseColor.a );
+}
+`
+};
 
 class Items {
   constructor(archae) {
@@ -14,16 +99,8 @@ class Items {
 
   mount() {
     const {_archae: archae} = this;
-    const {three, render, pose, input, items, utils: {random: {chnkr}}} = zeo;
-    const {THREE, scene, camera} = three;
-
-    const itemsMaterial = new THREE.MeshBasicMaterial({
-      // color: 0xFFFFFF,
-      // shininess: 0,
-      // shading: THREE.FlatShading,
-      vertexColors: THREE.VertexColors,
-      // side: THREE.DoubleSide,
-    });
+    const {three, render, pose, input, items, elements, utils: {random: {chnkr}}} = zeo;
+    const {THREE, scene} = three;
 
     const worker = new Worker('archae/plugins/_plugins_items/build/worker.js');
     const queue = [];
@@ -43,6 +120,59 @@ class Items {
       const cb = queue.shift();
       cb(buffer);
     };
+
+    let lightmapper = null;
+    const _bindLightmapper = lightmapElement => {
+      const {Lightmapper} = lightmapElement;
+
+      lightmapper = new Lightmapper({
+        width: NUM_CELLS,
+        height: NUM_CELLS_HEIGHT,
+        depth: NUM_CELLS,
+        heightOffset: HEIGHT_OFFSET,
+      });
+      lightmapper.add(new Lightmapper.Ambient(255 * 0.1));
+      lightmapper.add(new Lightmapper.Sphere(NUM_CELLS / 2, 24, NUM_CELLS / 2, 12, 1.5));
+
+      _bindLightmaps();
+    };
+    const _unbindLightmapper = () => {
+      _unbindLightmaps();
+
+      lightmapper = null;
+    };
+    const _bindLightmaps = () => {
+      for (let i = 0; i < itemsChunkMeshes.length; i++) {
+        const itemsChunkMesh = itemsChunkMeshes[i];
+        _bindLightmap(itemsChunkMesh);
+      }
+    };
+    const _unbindLightmaps = () => {
+      for (let i = 0; i < itemsChunkMeshes.length; i++) {
+        const itemsChunkMesh = itemsChunkMeshes[i];
+        _unbindLightmap(itemsChunkMesh);
+      }
+    };
+    const _bindLightmap = itemsChunkMesh => {
+      const {offset} = itemsChunkMesh;
+      const {x, y} = offset;
+      const lightmap = lightmapper.getLightmapAt(x * NUM_CELLS, y * NUM_CELLS);
+      itemsChunkMesh.material.uniforms.lightMap.value = lightmap.texture;
+      itemsChunkMesh.lightmap = lightmap;
+    };
+    const _unbindLightmap = itemsChunkMesh => {
+      const {lightmap} = itemsChunkMesh;
+      lightmapper.releaseLightmap(lightmap);
+      itemsChunkMesh.lightmap = null;
+    };
+    const elementListener = elements.makeListener(LIGHTMAP_PLUGIN);
+    elementListener.on('add', entityElement => {
+      _bindLightmapper(entityElement);
+    });
+    elementListener.on('remove', () => {
+      _unbindLightmapper();
+    });
+
     const _requestItemsGenerate = (x, y) => worker.requestGenerate(x, y)
       .then(itemsChunkBuffer => protocolUtils.parseItemsChunk(itemsChunkBuffer));
 
@@ -67,13 +197,32 @@ class Items {
 
         return geometry;
       })();
-      const material = itemsMaterial;
+      const material = new THREE.ShaderMaterial({
+        uniforms: THREE.UniformsUtils.clone(ITEMS_SHADER.uniforms),
+        vertexShader: ITEMS_SHADER.vertexShader,
+        fragmentShader: ITEMS_SHADER.fragmentShader,
+        // side: THREE.DoubleSide,
+        // transparent: true,
+        /* extensions: {
+          derivatives: true,
+        }, */
+      });
 
       const mesh = new THREE.Mesh(geometry, material);
       // mesh.frustumCulled = false;
 
+      mesh.offset = new THREE.Vector2(x, z);
+      mesh.lightmap = null;
+      if (lightmapper) {
+        _bindLightmap(mesh);
+      }
+
       mesh.destroy = () => {
         geometry.dispose();
+
+        if (mesh.lightmap) {
+          _unbindLightmap(mesh);
+        }
       };
 
       return mesh;
@@ -170,6 +319,7 @@ class Items {
       resolution: 32,
       range: 1,
     });
+    const itemsChunkMeshes = [];
 
     const _requestRefreshGrassChunks = () => {
       const {hmd} = pose.getStatus();
@@ -183,6 +333,8 @@ class Items {
           .then(itemsChunkData => {
             const itemsChunkMesh = _makeItemsChunkMesh(itemsChunkData, x, z);
             scene.add(itemsChunkMesh);
+
+            itemsChunkMeshes.push(itemsChunkMesh);
 
             const itemRange = _addTrackedItems(itemsChunkMesh, itemsChunkData);
 
@@ -198,6 +350,9 @@ class Items {
             const {data} = chunk;
             const {itemsChunkMesh} = data;
             scene.remove(itemsChunkMesh);
+
+            itemsChunkMeshes.splice(itemsChunkMeshes.indexOf(itemsChunkMesh), 1);
+
             itemsChunkMesh.destroy();
 
             const {itemRange} = data;
@@ -234,15 +389,30 @@ class Items {
       }
     };
 
+    let lastLightmapUpdate = Date.now();
+    const tryLightmapUpdate = () => {
+      const now = Date.now();
+      const timeDiff = now - lastLightmapUpdate;
+
+      if (timeDiff > 500) {
+        if (lightmapper) {
+          lightmapper.update();
+        }
+
+        lastLightmapUpdate = now;
+      }
+    };
+
     const _update = () => {
       tryGrassChunkUpdate();
+      tryLightmapUpdate();
     };
     render.on('update', _update);
 
     this._cleanup = () => {
       // XXX remove old items meshes here
 
-      itemsMaterial.dispose();
+      elements.destroyListener(elementListener);
 
       render.removeListener('update', _update);
     };
