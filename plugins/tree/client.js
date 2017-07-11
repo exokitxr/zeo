@@ -1,11 +1,119 @@
 const sfxr = require('sfxr');
 const {
   NUM_CELLS,
+
+  NUM_CELLS_HEIGHT,
+  HEIGHT_OFFSET,
 } = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
 
 const TEXTURE_SIZE = 1024;
 const NUM_POSITIONS_CHUNK = 200 * 1024;
+const LIGHTMAP_PLUGIN = 'plugins-lightmap';
+
+const TREE_SHADER = {
+  uniforms: {
+    map: {
+      type: 't',
+      value: null,
+    },
+    lightMap: {
+      type: 't',
+      value: null,
+    },
+  },
+  vertexShader: `\
+precision highp float;
+precision highp int;
+#define USE_COLOR
+/*uniform mat4 modelMatrix;
+uniform mat4 modelViewMatrix;
+uniform mat4 projectionMatrix;
+uniform mat4 viewMatrix;
+uniform mat3 normalMatrix;
+attribute vec3 position;
+attribute vec3 normal;
+attribute vec2 uv; */
+#ifdef USE_COLOR
+	attribute vec3 color;
+#endif
+
+varying vec3 vPosition;
+varying vec3 vViewPosition;
+varying vec2 vUv;
+varying vec3 vNormal;
+#define saturate(a) clamp( a, 0.0, 1.0 )
+
+#ifdef USE_COLOR
+	varying vec3 vColor;
+#endif
+
+void main() {
+#ifdef USE_COLOR
+	vColor.xyz = color.xyz;
+#endif
+
+  vUv = uv;
+	vNormal = normal;
+
+  vec4 mvPosition = modelViewMatrix * vec4( position.xyz, 1.0 );
+  gl_Position = projectionMatrix * mvPosition;
+
+	vPosition = position.xyz;
+	vViewPosition = - mvPosition.xyz;
+}
+`,
+  fragmentShader: `\
+precision highp float;
+precision highp int;
+#define USE_COLOR
+#define ALPHATEST 0.5
+#define DOUBLE_SIDED
+// uniform mat4 viewMatrix;
+uniform sampler2D map;
+uniform sampler2D lightMap;
+
+#define saturate(a) clamp( a, 0.0, 1.0 )
+
+#ifdef USE_COLOR
+	varying vec3 vColor;
+#endif
+
+varying vec3 vPosition;
+varying vec3 vViewPosition;
+varying vec2 vUv;
+varying vec3 vNormal;
+
+void main() {
+  vec4 diffuseColor = texture2D( map, vUv );
+
+  float lu = (floor(vPosition.x) + (floor(vPosition.z) * ${(NUM_CELLS + 1).toFixed(8)}) + 0.5) / (${(NUM_CELLS + 1).toFixed(8)} * ${(NUM_CELLS + 1).toFixed(8)});
+  float lv = (floor(vPosition.y - ${HEIGHT_OFFSET.toFixed(8)}) + 0.5) / ${NUM_CELLS_HEIGHT.toFixed(8)};
+  vec3 lightColor = texture2D( lightMap, vec2(lu, lv) ).rgb * 1.5;
+
+#ifdef USE_COLOR
+	diffuseColor.rgb *= vColor;
+#endif
+
+#ifdef ALPHATEST
+	if ( diffuseColor.a < ALPHATEST ) discard;
+#endif
+
+#ifdef DOUBLE_SIDED
+	float flipNormal = ( float( gl_FrontFacing ) * 2.0 - 1.0 );
+#else
+	float flipNormal = 1.0;
+#endif
+
+  /* float dotNL = saturate( dot( vNormal, normalize(vec3(1.0, -1.0, 1.0) + vViewPosition) ) );
+  float irradiance = 1.0 + (dotNL * 2.0);
+	vec3 outgoingLight = irradiance * diffuseColor.rgb; */
+  vec3 outgoingLight = diffuseColor.rgb * lightColor;
+
+	gl_FragColor = vec4( outgoingLight, diffuseColor.a );
+}
+`
+};
 
 class Tree {
   constructor(archae) {
@@ -14,7 +122,7 @@ class Tree {
 
   mount() {
     const {_archae: archae} = this;
-    const {three, render, pose, input, items, utils: {random: {chnkr}}} = zeo;
+    const {three, render, pose, input, elements, items, utils: {random: {chnkr}}} = zeo;
     const {THREE, scene, camera} = three;
 
     const upVector = new THREE.Vector3(0, 1, 0);
@@ -71,14 +179,12 @@ class Tree {
       sfxr.requestSfx('archae/tree/sfx/chop.ogg'),
     ])
       .then(([
-        textureImg,
+        mapTextureImg,
         chopSfx,
       ]) => {
         if (live) {
-/* document.body.insertBefore(textureImg, document.body.childNodes[0]); // XXX
-textureImg.style.width = '400px'; */
-          const texture = new THREE.Texture(
-            textureImg,
+          const mapTexture = new THREE.Texture(
+            mapTextureImg,
             THREE.UVMapping,
             THREE.ClampToEdgeWrapping,
             THREE.ClampToEdgeWrapping,
@@ -96,15 +202,58 @@ textureImg.style.width = '400px'; */
             THREE.UnsignedByteType,
             16
           );
-          texture.needsUpdate = true;
-          const treeMaterial = new THREE.MeshBasicMaterial({
-            // color: 0x000000,
-            // shininess: 0,
-            // shading: THREE.FlatShading,
-            side: THREE.DoubleSide,
-            map: texture,
-            transparent: true,
-            alphaTest: 0.5,
+          mapTexture.needsUpdate = true;
+
+          let lightmapper = null;
+          const _bindLightmapper = lightmapElement => {
+            const {Lightmapper} = lightmapElement;
+
+            lightmapper = new Lightmapper({
+              width: NUM_CELLS,
+              height: NUM_CELLS_HEIGHT,
+              depth: NUM_CELLS,
+              heightOffset: HEIGHT_OFFSET,
+            });
+            lightmapper.add(new Lightmapper.Ambient(255 * 0.1));
+            lightmapper.add(new Lightmapper.Sphere(NUM_CELLS / 2, 24, NUM_CELLS / 2, 12, 1.5));
+
+            _bindLightmaps();
+          };
+          const _unbindLightmapper = () => {
+            _unbindLightmaps();
+
+            lightmapper = null;
+          };
+          const _bindLightmaps = () => {
+            for (let i = 0; i < treeChunkMeshes.length; i++) {
+              const treeChunkMesh = treeChunkMeshes[i];
+              _bindLightmap(treeChunkMesh);
+            }
+          };
+          const _unbindLightmaps = () => {
+            for (let i = 0; i < treeChunkMeshes.length; i++) {
+              const treeChunkMesh = treeChunkMeshes[i];
+              _unbindLightmap(treeChunkMesh);
+            }
+          };
+          const _bindLightmap = treeChunkMesh => {
+            const {offset} = treeChunkMesh;
+            const {x, y} = offset;
+            const lightmap = lightmapper.getLightmapAt(x * NUM_CELLS, y * NUM_CELLS);
+            treeChunkMesh.material.uniforms.lightMap.value = lightmap.texture;
+            treeChunkMesh.lightmap = lightmap;
+          };
+          const _unbindLightmap = treeChunkMesh => {
+            const {lightmap} = treeChunkMesh;
+            lightmapper.releaseLightmap(lightmap);
+            treeChunkMesh.lightmap = null;
+          };
+          const elementListener = elements.makeListener(LIGHTMAP_PLUGIN);
+          elementListener.on('add', entityElement => {
+            _bindLightmapper(entityElement);
+          });
+          elementListener.on('remove', () => {
+            _unbindLightmapper();
           });
 
           const _requestTreeGenerate = (x, y) => worker.requestGenerate(x, y)
@@ -130,13 +279,35 @@ textureImg.style.width = '400px'; */
 
               return geometry;
             })();
-            const material = treeMaterial;
+
+            const uniforms = THREE.UniformsUtils.clone(TREE_SHADER.uniforms);
+            uniforms.map.value = mapTexture;
+            const material = new THREE.ShaderMaterial({
+              uniforms: uniforms,
+              vertexShader: TREE_SHADER.vertexShader,
+              fragmentShader: TREE_SHADER.fragmentShader,
+              side: THREE.DoubleSide,
+              transparent: true,
+              /* extensions: {
+                derivatives: true,
+              }, */
+            });
 
             const mesh = new THREE.Mesh(geometry, material);
             // mesh.frustumCulled = false;
 
+            mesh.offset = new THREE.Vector2(x, z);
+            mesh.lightmap = null;
+            if (lightmapper) {
+              _bindLightmap(mesh);
+            }
+
             mesh.destroy = () => {
               geometry.dispose();
+
+              if (mesh.lightmap) {
+                _unbindLightmap(mesh);
+              }
             };
 
             return mesh;
@@ -239,6 +410,7 @@ textureImg.style.width = '400px'; */
             resolution: 32,
             range: 2,
           });
+          const treeChunkMeshes = [];
 
           const _requestRefreshTreeChunks = () => {
             const {hmd} = pose.getStatus();
@@ -250,9 +422,9 @@ textureImg.style.width = '400px'; */
 
               return _requestTreeGenerate(x, z)
                 .then(treeChunkData => {
-window.treeChunkData = treeChunkData;
                   const treeChunkMesh = _makeTreeChunkMesh(treeChunkData, x, z);
                   scene.add(treeChunkMesh);
+                  treeChunkMeshes.push(treeChunkMesh);
 
                   const itemRange = _addTrackedTrees(treeChunkMesh, treeChunkData);
 
@@ -268,6 +440,8 @@ window.treeChunkData = treeChunkData;
                   const {data} = chunk;
                   const {treeChunkMesh} = data;
                   scene.remove(treeChunkMesh);
+                  treeChunkMeshes.splice(treeChunkMeshes.indexOf(treeChunkMesh), 1);
+
                   treeChunkMesh.destroy();
 
                   const {itemRange} = data;
@@ -304,15 +478,30 @@ window.treeChunkData = treeChunkData;
             }
           };
 
+          let lastLightmapUpdate = Date.now();
+          const tryLightmapUpdate = () => {
+            const now = Date.now();
+            const timeDiff = now - lastLightmapUpdate;
+
+            if (timeDiff > 500) {
+              if (lightmapper) {
+                lightmapper.update();
+              }
+
+              lastLightmapUpdate = now;
+            }
+          };
+
           const _update = () => {
             tryTreeChunkUpdate();
+            tryLightmapUpdate();
           };
           render.on('update', _update);
 
           this._cleanup = () => {
             // XXX remove old tree meshes here
 
-            treeMaterial.dispose();
+            elements.destroyListener(elementListener);
 
             input.removeListener('gripdown', _gripdown);
             render.removeListener('update', _update);

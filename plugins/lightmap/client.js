@@ -13,8 +13,6 @@ class Lightmap {
         this.type = 'ambient';
 
         this.v = v;
-
-        this.needsUpdate = true;
       }
     }
     class Sphere {
@@ -26,8 +24,6 @@ class Lightmap {
         this.z = z;
         this.r = r;
         this.v = v;
-
-        this.needsUpdate = true;
       }
     }
     class Voxel {
@@ -38,8 +34,6 @@ class Lightmap {
         this.y = y;
         this.z = z;
         this.v = v;
-
-        this.needsUpdate = true;
       }
     }
 
@@ -71,12 +65,12 @@ class Lightmap {
         );
         // texture.needsUpdate = true;
         this.texture = texture;
-        this.rendered = false;
         this.refCount = 0;
+        this.needsUpdate = true;
       }
 
-      update(shapes) {
-        const {ox, oz, width, height, depth, heightOffset, lightmap, texture, rendered} = this;
+      update(shapes, force) {
+        const {ox, oz, width, height, depth, heightOffset, lightmap, texture, needsUpdate} = this;
 
         const _renderShapes = force => {
           let updated = false;
@@ -104,70 +98,66 @@ class Lightmap {
 
           for (let i = 0; i < shapes.length; i++) {
             const shape = shapes[i];
+            const {type} = shape;
 
-            if (shape.needsUpdate) {
-              const {type} = shape;
+            switch (type) {
+              case 'sphere': {
+                const {x, y, z, r, v} = shape;
+                const ax = x - (ox * width);
+                const ay = y - heightOffset;
+                const az = z - (oz * depth);
 
-              switch (type) {
-                case 'sphere': {
-                  const {x, y, z, r, v} = shape;
-                  const ax = x - (ox * width);
-                  const ay = y - heightOffset;
-                  const az = z - (oz * depth);
+                const dr = r - 1;
+                const maxDistance = Math.sqrt(dr*dr*3);
+                for (let dx = -dr; dx <= dr; dx++) {
+                  for (let dy = -dr; dy <= dr; dy++) {
+                    for (let dz = -dr; dz <= dr; dz++) {
+                      const lx = Math.floor(ax + dx);
+                      const ly = Math.floor(ay + dy);
+                      const lz = Math.floor(az + dz);
 
-                  const dr = r - 1;
-                  const maxDistance = Math.sqrt(dr*dr*3);
-                  for (let dx = -dr; dx <= dr; dx++) {
-                    for (let dy = -dr; dy <= dr; dy++) {
-                      for (let dz = -dr; dz <= dr; dz++) {
-                        const lx = Math.floor(ax + dx);
-                        const ly = Math.floor(ay + dy);
-                        const lz = Math.floor(az + dz);
-
-                        if (_isInRange(lx, width + 1) && _isInRange(ly, height) && _isInRange(lz, depth + 1)) {
-                          if (!updated) {
-                            _initializeUpdate();
-                            updated = true;
-                          }
-
-                          const distanceFactor = (maxDistance - new THREE.Vector3(dx, dy, dz).length()) / maxDistance;
-                          const lightmapIndex = lx + (lz * (width + 1)) + (ly * (width + 1) * (depth + 1));
-                          lightmap[lightmapIndex] = Math.max(
-                            Math.min(distanceFactor * distanceFactor * v, 1) * 255,
-                            lightmap[lightmapIndex]
-                          );
+                      if (_isInRange(lx, width + 1) && _isInRange(ly, height) && _isInRange(lz, depth + 1)) {
+                        if (!updated) {
+                          _initializeUpdate();
+                          updated = true;
                         }
+
+                        const distanceFactor = (maxDistance - new THREE.Vector3(dx, dy, dz).length()) / maxDistance;
+                        const lightmapIndex = lx + (lz * (width + 1)) + (ly * (width + 1) * (depth + 1));
+                        lightmap[lightmapIndex] = Math.max(
+                          Math.min(distanceFactor * distanceFactor * v, 1) * 255,
+                          lightmap[lightmapIndex]
+                        );
                       }
                     }
                   }
-
-                  break;
                 }
-                case 'voxel': {
-                  const {x, y, z, r} = shape;
-                  const ax = x - (ox * width);
-                  const ay = y - heightOffset;
-                  const az = z - (ox * height);
 
-                  if (_isInRange(ax, width + 1) && _isInRange(ay, height) && _isInRange(az, depth + 1)) {
-                    if (!updated) {
-                      _initializeUpdate();
-                      updated = true;
-                    }
+                break;
+              }
+              case 'voxel': {
+                const {x, y, z, r} = shape;
+                const ax = x - (ox * width);
+                const ay = y - heightOffset;
+                const az = z - (ox * height);
 
-                    const lightmapIndex = ax + (az * (width + 1)) + (ay * (width + 1) * (depth + 1));
-                    lightmap[lightmapIndex] = Math.max(v, lightmap[lightmapIndex]);
+                if (_isInRange(ax, width + 1) && _isInRange(ay, height) && _isInRange(az, depth + 1)) {
+                  if (!updated) {
+                    _initializeUpdate();
+                    updated = true;
                   }
+
+                  const lightmapIndex = ax + (az * (width + 1)) + (ay * (width + 1) * (depth + 1));
+                  lightmap[lightmapIndex] = Math.max(v, lightmap[lightmapIndex]);
                 }
               }
             }
           }
         };
 
-        const forceShapesUpdate = !rendered;
-        _renderShapes(forceShapesUpdate);
-        if (!rendered) {
-          this.rendered = true;
+        _renderShapes(needsUpdate || force);
+        if (needsUpdate) {
+          this.needsUpdate = false;
         }
       }
 
@@ -183,6 +173,7 @@ class Lightmap {
 
       destroy() {
         this.texture.dispose();
+        this.texture = null;
 
         this.emit('destroy');
       }
@@ -194,6 +185,8 @@ class Lightmap {
         this.height = height;
         this.depth = depth;
         this.heightOffset = heightOffset;
+
+        this.needsUpdate = false;
 
         this._lightmaps = {};
         this._shapes = [];
@@ -222,25 +215,26 @@ class Lightmap {
 
       add(shape) {
         this._shapes.push(shape);
+
+        this.needsUpdate = true;
       }
 
       remove(shape) {
         this._shapes.splice(this._shapes.indexOf(shape), 1);
+
+        this.needsUpdate = true;
       }
 
       update() {
-        const {width, depth, height, heightOffset, _lightmaps: lightmaps, _shapes: shapes} = this;
+        const {width, depth, height, heightOffset, needsUpdate, _lightmaps: lightmaps, _shapes: shapes} = this;
 
         for (const index in lightmaps) {
           const lightmap = lightmaps[index];
-          lightmap.update(shapes);
+          lightmap.update(shapes, needsUpdate);
         }
 
-        for (let i = 0; i < shapes.length; i++) {
-          const shape = shapes[i];
-          if (shape.needsUpdate) {
-            shape.needsUpdate = false;
-          }
+        if (needsUpdate) {
+          this.needsUpdate = false;
         }
       }
     };
