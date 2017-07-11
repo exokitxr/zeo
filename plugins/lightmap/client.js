@@ -1,9 +1,13 @@
+const NUM_CELLS = 32;
+const NUM_CELLS_HEIGHT = 128;
+const HEIGHT_OFFSET = -32;
+
 const needsUpdateSymbol = Symbol();
 const initialColorsSymbol = Symbol();
 
 class Lightmap {
   mount() {
-    const {three, elements, utils: {js: jsUtils}} = zeo;
+    const {three, elements, render, utils: {js: jsUtils}} = zeo;
     const {THREE} = three;
     const {events} = jsUtils;
     const {EventEmitter} = events;
@@ -72,29 +76,18 @@ class Lightmap {
       update(shapes, force) {
         const {ox, oz, width, height, depth, heightOffset, lightmap, texture, needsUpdate} = this;
 
-        const _renderShapes = force => {
-          let updated = false;
-          const _initializeUpdate = () => {
-            const ambientValue = (() => {
-              let result = 0;
-              for (let i = 0; i < shapes.length; i++) {
-                const shape = shapes[i];
-                if (shape.type === 'ambient') {
-                  result += shape.v;
-                }
+        const _renderShapes = () => {
+          const ambientValue = (() => {
+            let result = 0;
+            for (let i = 0; i < shapes.length; i++) {
+              const shape = shapes[i];
+              if (shape.type === 'ambient') {
+                result += shape.v;
               }
-              return result;
-            })();
-
-            lightmap.fill(ambientValue);
-
-            texture.needsUpdate = true;
-          };
-
-          if (force) {
-            _initializeUpdate();
-            updated = true;
-          }
+            }
+            return result;
+          })();
+          lightmap.fill(ambientValue);
 
           for (let i = 0; i < shapes.length; i++) {
             const shape = shapes[i];
@@ -117,11 +110,6 @@ class Lightmap {
                       const lz = Math.floor(az + dz);
 
                       if (_isInRange(lx, width + 1) && _isInRange(ly, height) && _isInRange(lz, depth + 1)) {
-                        if (!updated) {
-                          _initializeUpdate();
-                          updated = true;
-                        }
-
                         const distanceFactor = (maxDistance - new THREE.Vector3(dx, dy, dz).length()) / maxDistance;
                         const lightmapIndex = lx + (lz * (width + 1)) + (ly * (width + 1) * (depth + 1));
                         lightmap[lightmapIndex] = Math.max(
@@ -142,22 +130,22 @@ class Lightmap {
                 const az = z - (ox * height);
 
                 if (_isInRange(ax, width + 1) && _isInRange(ay, height) && _isInRange(az, depth + 1)) {
-                  if (!updated) {
-                    _initializeUpdate();
-                    updated = true;
-                  }
-
                   const lightmapIndex = ax + (az * (width + 1)) + (ay * (width + 1) * (depth + 1));
                   lightmap[lightmapIndex] = Math.max(v, lightmap[lightmapIndex]);
                 }
               }
             }
           }
+
+          texture.needsUpdate = true;
         };
 
-        _renderShapes(needsUpdate || force);
-        if (needsUpdate) {
-          this.needsUpdate = false;
+        if (needsUpdate || force) {
+          _renderShapes();
+
+          if (needsUpdate) {
+            this.needsUpdate = false;
+          }
         }
       }
 
@@ -245,6 +233,28 @@ class Lightmap {
     const lightmapEntity = {
       entityAddedCallback(entityElement) {
         entityElement.Lightmapper = Lightmapper;
+
+        const lightmapper = new Lightmapper({
+          width: NUM_CELLS,
+          height: NUM_CELLS_HEIGHT,
+          depth: NUM_CELLS,
+          heightOffset: HEIGHT_OFFSET,
+        });
+        lightmapper.add(new Lightmapper.Ambient(255 * 0.1));
+        lightmapper.add(new Lightmapper.Sphere(NUM_CELLS / 2, 24, NUM_CELLS / 2, 12, 1.5));
+        entityElement.lightmapper = lightmapper;
+
+        const _update = () => {
+          lightmapper.update();
+        };
+        render.on('update', _update);
+
+        entityElement._cleanup = () => {
+          render.removeListener('update', _update);
+        };
+      },
+      entityRemovedCallback(entityElement) {
+        entityElement._cleanup();
       },
     };
     elements.registerEntity(this, lightmapEntity);

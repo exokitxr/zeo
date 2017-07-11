@@ -192,16 +192,7 @@ class Grass {
 
           let lightmapper = null;
           const _bindLightmapper = lightmapElement => {
-            const {Lightmapper} = lightmapElement;
-
-            lightmapper = new Lightmapper({
-              width: NUM_CELLS,
-              height: NUM_CELLS_HEIGHT,
-              depth: NUM_CELLS,
-              heightOffset: HEIGHT_OFFSET,
-            });
-            lightmapper.add(new Lightmapper.Ambient(255 * 0.1));
-            lightmapper.add(new Lightmapper.Sphere(NUM_CELLS / 2, 24, NUM_CELLS / 2, 12, 1.5));
+            lightmapper = lightmapElement.lightmapper;
 
             _bindLightmaps();
           };
@@ -363,23 +354,8 @@ class Grass {
             }
           };
 
-          let lastLightmapUpdate = Date.now();
-          const tryLightmapUpdate = () => {
-            const now = Date.now();
-            const timeDiff = now - lastLightmapUpdate;
-
-            if (timeDiff > 500) {
-              if (lightmapper) {
-                lightmapper.update();
-              }
-
-              lastLightmapUpdate = now;
-            }
-          };
-
           const _update = () => {
             tryGrassChunkUpdate();
-            tryLightmapUpdate();
           };
           render.on('update', _update);
 
