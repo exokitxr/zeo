@@ -232,8 +232,6 @@ class Lightmap {
 
     const lightmapEntity = {
       entityAddedCallback(entityElement) {
-        entityElement.Lightmapper = Lightmapper;
-
         const lightmapper = new Lightmapper({
           width: NUM_CELLS,
           height: NUM_CELLS_HEIGHT,
