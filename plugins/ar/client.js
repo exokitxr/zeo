@@ -115,7 +115,7 @@ class Ar {
 
         entityApi._cleanup();
       },
-      attributeValueChangedCallback(entityElement, name, oldValue, newValue) {
+      entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
         const entityApi = entityElement.getEntityApi();
 
         switch (name) {

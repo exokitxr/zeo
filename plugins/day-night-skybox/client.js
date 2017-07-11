@@ -2,7 +2,7 @@ const SkyShader = require('./lib/three-extra/SkyShader');
 
 class DayNightSkybox {
   mount() {
-    const {three, elements, render, world, utils: {geometry: geometryUtils}} = zeo;
+    const {three, elements, render, world} = zeo;
     const {THREE, scene} = three;
 
     const THREESky = SkyShader(THREE);
@@ -52,9 +52,6 @@ class DayNightSkybox {
         }
       },
       entityAddedCallback(entityElement) {
-        const entityApi = entityElement.getEntityApi();
-        const entityObject = entityElement.getObject();
-
         const mesh = (() => {
           const object = new THREE.Object3D();
 
@@ -153,8 +150,8 @@ class DayNightSkybox {
 
           return object;
         })();
-        entityObject.add(mesh);
-        entityApi.mesh = mesh;
+        scene.add(mesh);
+        entityElement.mesh = mesh;
 
         const update = () => {
           const {sky, sunSphere/* , sunLight*/, starsMesh, moonSphere} = mesh;
@@ -212,23 +209,19 @@ class DayNightSkybox {
         };
         updates.push(update);
 
-        entityApi._cleanup = () => {
+        entityElement._cleanup = () => {
           scene.remove(mesh);
 
           updates.splice(updates.indexOf(update), 1);
         };
       },
       entityRemovedCallback(entityElement) {
-        const entityApi = entityElement.getEntityApi();
-
-        entityApi._cleanup();
+        entityElement._cleanup();
       },
       entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-        const entityApi = entityElement.getEntityApi();
-
         switch (name) {
           case 'position': {
-            const {mesh} = entityApi;
+            const {mesh} = entityElement;
 
             mesh.position.set(newValue[0], newValue[1], newValue[2]);
             mesh.quaternion.set(newValue[3], newValue[4], newValue[5], newValue[6]);

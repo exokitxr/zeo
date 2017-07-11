@@ -86,9 +86,6 @@ class Cloud {
         },
       },
       entityAddedCallback(entityElement) {
-        const entityApi = entityElement.getEntityApi();
-        const entityObject = entityElement.getObject();
-
         const chunker = chnkr.makeChunker({
           resolution: NUM_CELLS,
           range: 3,
@@ -180,7 +177,7 @@ class Cloud {
         };
         updates.push(update);
 
-        entityApi._cleanup = () => {
+        entityElement._cleanup = () => {
           for (let i = 0; i < cloudChunkMeshes.length; i++) {
             const cloudChunkMesh = cloudChunkMeshes[i];
             scene.remove(cloudChunkMesh);
@@ -190,16 +187,12 @@ class Cloud {
         };
       },
       entityRemovedCallback(entityElement) {
-        const entityApi = entityElement.getEntityApi();
-
-        entityApi._cleanup();
+        entityElement._cleanup();
       },
       entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-        const entityApi = entityElement.getEntityApi();
-
         switch (name) {
           case 'position': {
-            const {cloudsMesh} = entityApi;
+            const {cloudsMesh} = entityElement;
 
             cloudsMesh.position.set(newValue[0], newValue[1], newValue[2]);
             cloudsMesh.quaternion.set(newValue[3], newValue[4], newValue[5], newValue[6]);
