@@ -93,13 +93,13 @@ class Heightfield {
       const {offset} = mapChunkMesh;
       const {x, y} = offset;
       const lightmap = lightmapper.getLightmapAt(x * NUM_CELLS, y * NUM_CELLS);
-      lightmap.add(mapChunkMesh);
+      lightmapper.add(mapChunkMesh);
       mapChunkMesh.lightmap = lightmap;
     };
     const _unbindLightmap = mapChunkMesh => {
       const {lightmap} = mapChunkMesh;
-      lightmap.remove(mapChunkMesh);
       lightmapper.releaseLightmap(lightmap);
+      lightmapper.remove(mapChunkMesh);
       mapChunkMesh.lightmap = null;
     };
     const elementListener = elements.makeListener(LIGHTMAP_PLUGIN);
@@ -124,9 +124,6 @@ class Heightfield {
         geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
         geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
         geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
-        const initialColors = new Float32Array(colors.length); // for lightmap
-        initialColors.set(colors);
-        geometry.initialColors = initialColors;
         const [minY, maxY] = heightRange;
         geometry.boundingSphere = new THREE.Sphere(
           new THREE.Vector3(

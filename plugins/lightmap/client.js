@@ -17,6 +17,7 @@ const DIRECTIONS = (() => {
 })();
 
 const needsUpdateSymbol = Symbol();
+const initialColorsSymbol = Symbol();
 
 class Lightmap {
   mount() {
@@ -63,9 +64,6 @@ class Lightmap {
     class Lightmap extends EventEmitter {
       constructor(ox, oz, width, height, depth, heightOffset) {
         super();
-if (ox === 0 && oz === 0) {
-window.lightmap = this;
-}
 
         this.ox = ox;
         this.oz = oz;
@@ -75,25 +73,12 @@ window.lightmap = this;
         this.heightOffset = heightOffset;
 
         this.lightmap = new Uint8Array(width * height * depth);
-        this.meshes = [];
         this.rendered = false;
         this.refCount = 0;
       }
 
-      add(mesh) {
-        mesh[needsUpdateSymbol] = true;
-
-        this.meshes.push(mesh);
-      }
-
-      remove(mesh) {
-        mesh[needsUpdateSymbol] = false;
-
-        this.meshes.splice(this.meshes.indexOf(mesh), 1);
-      }
-
       update(shapes) {
-        const {ox, oz, width, height, depth, heightOffset, lightmap, meshes, rendered} = this;
+        const {ox, oz, width, height, depth, heightOffset, lightmap, rendered} = this;
 
         const _renderShapes = force => {
           let updated = false;
@@ -180,51 +165,14 @@ window.lightmap = this;
 
           return updated;
         };
-        const _renderMeshes = force => { // XXX this should be moved up a layer
-          if (meshes.length > 0) {
-            const x = this.ox * this.width;
-            const z = this.oz * this.depth;
-
-            for (let i = 0; i < meshes.length; i++) {
-              const mesh = meshes[i];
-
-              if (mesh[needsUpdateSymbol] || force) {
-                const {geometry} = mesh;
-                const positions = geometry.getAttribute('position').array;
-                const colorAttribute = geometry.getAttribute('color');
-                const colors = colorAttribute.array;
-                const {initialColors} = geometry;
-                const numPositions = positions.length / 3;
-
-                for (let j = 0; j < numPositions; j++) {
-                  const baseIndex = j * 3;
-                  const ax = _clamp(Math.floor(positions[baseIndex + 0] - x), width);
-                  const ay = _clamp(Math.floor(positions[baseIndex + 1] - heightOffset), height);
-                  const az = _clamp(Math.floor(positions[baseIndex + 2] - z), depth);
-                  const lightmapIndex = ax + (az * (width + 1)) + (ay * (width + 1) * (depth + 1));
-                  const v = lightmap[lightmapIndex] / 255;
-
-                  colors[baseIndex + 0] = initialColors[baseIndex + 0] * v;
-                  colors[baseIndex + 1] = initialColors[baseIndex + 1] * v;
-                  colors[baseIndex + 2] = initialColors[baseIndex + 2] * v;
-                }
-
-                colorAttribute.needsUpdate = true;
-
-                if (mesh[needsUpdateSymbol]) {
-                  mesh[needsUpdateSymbol] = false;
-                }
-              }
-            }
-          }
-        };
 
         const forceShapesUpdate = !rendered;
         const lightmapUpdated = _renderShapes(forceShapesUpdate);
-        _renderMeshes(lightmapUpdated);
         if (!rendered) {
           this.rendered = true;
         }
+
+        return lightmapUpdated;
       }
 
       addRef() {
@@ -250,6 +198,7 @@ window.lightmap = this;
         this.heightOffset = heightOffset;
 
         this._lightmaps = {};
+        this._meshes = [];
         this._shapes = [];
       }
 
@@ -257,7 +206,7 @@ window.lightmap = this;
         const {width, height, depth, heightOffset, _lightmaps: lightmaps} = this;
         const ox = Math.floor(x / width);
         const oz = Math.floor(z / depth);
-        const index = ox + (oz * width);
+        const index = ox + ':' + oz;
         let entry = lightmaps[index];
         if (!entry) {
           entry = new Lightmap(ox, oz, width, height, depth, heightOffset);
@@ -274,20 +223,87 @@ window.lightmap = this;
         lightmap.removeRef();
       }
 
-      add(shape) {
-        this._shapes.push(shape);
+      add(o) {
+        if (o instanceof THREE.Object3D) {
+          this._meshes.push(o);
+        } else {
+          this._shapes.push(o);
+        }
       }
 
-      remove(shape) {
-        this._shapes.splice(this._shapes.indexOf(shape), 1);
+      remove(o) {
+        if (o instanceof THREE.Object3D) {
+          this._meshes.splice(this._meshes.indexOf(o), 1);
+        } else {
+          this._shapes.splice(this._shapes.indexOf(o), 1);
+        }
       }
 
       update() {
-        const {_lightmaps: lightmaps, _shapes: shapes} = this;
+        const {width, depth, height, heightOffset, _lightmaps: lightmaps, _shapes: shapes, _meshes: meshes} = this;
 
-        for (const index in lightmaps) {
-          const lightmap = lightmaps[index];
-          lightmap.update(shapes);
+        const updatedLightmaps = (() => {
+          const result = {};
+          let updated = false;
+          for (const index in lightmaps) {
+            const lightmap = lightmaps[index];
+            const updated = lightmap.update(shapes);
+
+            if (updated) {
+              result[index] = true;
+            }
+          }
+          return result;
+        })();
+        const numUpdatedLightmaps = Object.keys(updatedLightmaps).length;
+
+        for (let i = 0; i < meshes.length; i++) {
+          const mesh = meshes[i];
+
+          if (numUpdatedLightmaps > 0 || mesh[needsUpdateSymbol]) {
+            let updated = false;
+
+            const {geometry} = mesh;
+            const positions = geometry.getAttribute('position').array;
+            const colorAttribute = geometry.getAttribute('color');
+            const colors = colorAttribute.array;
+            let {[initialColorsSymbol]: initialColors} = geometry;
+            if (!initialColors) {
+              initialColors = new Float32Array(colors.length);
+              initialColors.set(colors);
+              geometry[initialColorsSymbol] = initialColors;
+            }
+            const numPositions = positions.length / 3;
+            for (let j = 0; j < numPositions; j++) {
+              const baseIndex = j * 3;
+              const ox = Math.floor(positions[baseIndex + 0] / width);
+              const oz = Math.floor(positions[baseIndex + 2] / depth);
+              const lightmapsIndex = ox + ':' + oz;
+              const lightmap = lightmaps[lightmapsIndex];
+
+              if (lightmap) {
+                const ax = _clamp(Math.floor(positions[baseIndex + 0] - (ox * width)), width);
+                const ay = _clamp(Math.floor(positions[baseIndex + 1] - heightOffset), height);
+                const az = _clamp(Math.floor(positions[baseIndex + 2] - (oz * depth)), depth);
+                const lightmapIndex = ax + (az * (width + 1)) + (ay * (width + 1) * (depth + 1));
+                const v = lightmap.lightmap[lightmapIndex] / 255;
+
+                colors[baseIndex + 0] = initialColors[baseIndex + 0] * v;
+                colors[baseIndex + 1] = initialColors[baseIndex + 1] * v;
+                colors[baseIndex + 2] = initialColors[baseIndex + 2] * v;
+
+                updated = true;
+              }
+            }
+
+            if (updated) {
+              colorAttribute.needsUpdate = true;
+            }
+          }
+
+          if (mesh[needsUpdateSymbol]) {
+            mesh[needsUpdateSymbol] = false;
+          }
         }
 
         for (let i = 0; i < shapes.length; i++) {
