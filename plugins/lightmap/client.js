@@ -109,7 +109,7 @@ class Lightmap {
                       const ly = Math.floor(ay + dy);
                       const lz = Math.floor(az + dz);
 
-                      if (_isInRange(lx, width + 1) && _isInRange(ly, height) && _isInRange(lz, depth + 1)) {
+                      if (_isInRange(lx, width) && _isInRange(ly, height) && _isInRange(lz, depth)) {
                         const distanceFactor = (maxDistance - new THREE.Vector3(dx, dy, dz).length()) / maxDistance;
                         const lightmapIndex = lx + (lz * (width + 1)) + (ly * (width + 1) * (depth + 1));
                         lightmap[lightmapIndex] = Math.max(
@@ -129,7 +129,7 @@ class Lightmap {
                 const ay = y - heightOffset;
                 const az = z - (ox * height);
 
-                if (_isInRange(ax, width + 1) && _isInRange(ay, height) && _isInRange(az, depth + 1)) {
+                if (_isInRange(ax, width) && _isInRange(ay, height) && _isInRange(az, depth)) {
                   const lightmapIndex = ax + (az * (width + 1)) + (ay * (width + 1) * (depth + 1));
                   lightmap[lightmapIndex] = Math.max(v, lightmap[lightmapIndex]);
                 }
