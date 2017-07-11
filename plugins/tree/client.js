@@ -105,9 +105,6 @@ void main() {
 	float flipNormal = 1.0;
 #endif
 
-  /* float dotNL = saturate( dot( vNormal, normalize(vec3(1.0, -1.0, 1.0) + vViewPosition) ) );
-  float irradiance = 1.0 + (dotNL * 2.0);
-	vec3 outgoingLight = irradiance * diffuseColor.rgb; */
   vec3 outgoingLight = diffuseColor.rgb * lightColor;
 
 	gl_FragColor = vec4( outgoingLight, diffuseColor.a );
@@ -206,16 +203,7 @@ class Tree {
 
           let lightmapper = null;
           const _bindLightmapper = lightmapElement => {
-            const {Lightmapper} = lightmapElement;
-
-            lightmapper = new Lightmapper({
-              width: NUM_CELLS,
-              height: NUM_CELLS_HEIGHT,
-              depth: NUM_CELLS,
-              heightOffset: HEIGHT_OFFSET,
-            });
-            lightmapper.add(new Lightmapper.Ambient(255 * 0.1));
-            lightmapper.add(new Lightmapper.Sphere(NUM_CELLS / 2, 24, NUM_CELLS / 2, 12, 1.5));
+            lightmapper = lightmapElement.lightmapper;
 
             _bindLightmaps();
           };
@@ -478,23 +466,8 @@ class Tree {
             }
           };
 
-          let lastLightmapUpdate = Date.now();
-          const tryLightmapUpdate = () => {
-            const now = Date.now();
-            const timeDiff = now - lastLightmapUpdate;
-
-            if (timeDiff > 500) {
-              if (lightmapper) {
-                lightmapper.update();
-              }
-
-              lastLightmapUpdate = now;
-            }
-          };
-
           const _update = () => {
             tryTreeChunkUpdate();
-            tryLightmapUpdate();
           };
           render.on('update', _update);
 
