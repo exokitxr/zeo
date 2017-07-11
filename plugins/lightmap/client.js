@@ -182,6 +182,8 @@ class Lightmap {
       }
 
       destroy() {
+        this.texture.dispose();
+
         this.emit('destroy');
       }
     }
