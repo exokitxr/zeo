@@ -4,7 +4,8 @@ const SHADOW_MAP_SIZE = 2048;
 
 class DirectionalLight {
   mount() {
-    const {three: {THREE}, elements} = zeo;
+    const {three, elements} = zeo;
+    const {THREE, scene} = three;
 
     const geometryUtils = geometryutils({THREE});
 
@@ -43,9 +44,6 @@ class DirectionalLight {
         },
       },
       entityAddedCallback(entityElement) {
-        const entityApi = entityElement.getEntityApi();
-        const entityObject = entityElement.getObject();
-
         const mesh = (() => {
           const geometry = (() => {
             const coreSize = 0.1;
@@ -67,8 +65,8 @@ class DirectionalLight {
 
           return new THREE.Mesh(geometry, material);
         })();
-        entityObject.add(mesh);
-        entityApi.mesh = mesh;
+        scene.add(mesh);
+        entityElement.mesh = mesh;
 
         const light = (() => {
           const light = new THREE.DirectionalLight(0xFFFFFF, 2);
@@ -77,25 +75,21 @@ class DirectionalLight {
           // light.castShadow = true;
           return light;
         })();
-        entityObject.add(light);
-        entityApi.light = light;
+        scene.add(light);
+        entityElement.light = light;
 
-        entityApi._cleanup = () => {
-          entityObject.remove(mesh);
-          entityObject.remove(light);
+        entityElement._cleanup = () => {
+          scene.remove(mesh);
+          scene.remove(light);
         };
       },
       entityRemovedCallback(entityElement) {
-        const entityApi = entityElement.getEntityApi();
-
-        entityApi._cleanup();
+        entityElement._cleanup();
       },
       entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-        const entityApi = entityElement.getEntityApi();
-
         switch (name) {
           case 'position': {
-            const {mesh, light} = entityApi;
+            const {mesh, light} = entityElement;
 
             mesh.position.set(newValue[0], newValue[1], newValue[2]);
             mesh.updateMatrixWorld();
@@ -106,7 +100,7 @@ class DirectionalLight {
             break;
           }
           case 'lookat': {
-            const {mesh, light} = entityApi;
+            const {mesh, light} = entityElement;
 
             const lookAtVector = new THREE.Vector3(newValue[0], newValue[1], newValue[2]);
             mesh.lookAt(lookAtVector);
@@ -118,21 +112,21 @@ class DirectionalLight {
             break;
           }
           case 'color': {
-            const {light} = entityApi;
+            const {light} = entityElement;
 
             light.color.setStyle(newValue);
 
             break;
           }
           case 'intensity': {
-            const {light} = entityApi;
+            const {light} = entityElement;
 
             light.intensity = newValue;
 
             break;
           }
           case 'shadow': {
-            const {light} = entityApi;
+            const {light} = entityElement;
 
             light.castShadow = newValue;
 

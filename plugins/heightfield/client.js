@@ -60,9 +60,9 @@ class Heightfield {
     let lightmapper = null;
     const _bindLightmapper = lightmapElement => {
       lightmapper = lightmapElement.makeLightmapper({
-        width: (NUM_CELLS + 1),
+        width: NUM_CELLS,
         height: NUM_CELLS_HEIGHT,
-        depth: (NUM_CELLS + 1),
+        depth: NUM_CELLS,
         heightOffset: HEIGHT_OFFSET,
       });
 
@@ -88,7 +88,7 @@ class Heightfield {
     const _bindLightmap = mapChunkMesh => {
       const {offset} = mapChunkMesh;
       const {x, y} = offset;
-      const lightmap = lightmapper.getLightmapAt(x, y);
+      const lightmap = lightmapper.getLightmapAt(x * NUM_CELLS, y * NUM_CELLS);
       lightmap.on('update', () => {
         console.log('lightmap update', lightmap);
       });
@@ -98,26 +98,13 @@ class Heightfield {
       lightmapper.releaseLightmap(mapChunkMesh.lightmap);
       mapChunkMesh.lightmap = null;
     };
-    const _elementAdded = entityElement => { // XXX use a first-class binding listener here
-      if (entityElement.tagName.toLowerCase() === LIGHTMAP_PLUGIN) {
-        _bindLightmapper(entityElement);
-      }
-    };
-    elements.on('elementAdded', _elementAdded);
-    const _elementRemoved = entityElement => {
-      if (entityElement.tagName.toLowerCase() === LIGHTMAP_PLUGIN) {
-        _unbindLightmapper();
-      }
-    };
-    elements.on('elementRemoved', _elementRemoved);
-    const _initLightmapper = () => {
-      const lightmapElement = elements.getWorldElement().querySelector(LIGHTMAP_PLUGIN);
-
-      if (lightmapElement) {
-        _bindLightmapper(lightmapElement);
-      }
-    };
-    _initLightmapper();
+    const elementListener = elements.makeListener(LIGHTMAP_PLUGIN);
+    elementListener.on('add', entityElement => {
+      _bindLightmapper(entityElement);
+    });
+    elementListener.on('remove', () => {
+      _unbindLightmapper();
+    });
 
     const _bootstrap = () => worker.requestOriginHeight()
       .then(originHeight => {
@@ -320,8 +307,7 @@ class Heightfield {
         this._cleanup = () => {
           // XXX remove chunks from the scene here
 
-          elements.removeListener('elementAdded', _elementAdded);
-          elements.removeListener('elementRemoved', _elementRemoved);
+          elements.destroyListener(elementListener);
 
           render.removeListener('update', _update);
         };

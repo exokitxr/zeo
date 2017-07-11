@@ -2,7 +2,8 @@ const geometryutils = require('geometryutils');
 
 class AmbientLight {
   mount() {
-    const {three: {THREE, scene, camera}, elements} = zeo;
+    const {three, elements} = zeo;
+    const {THREE, scene, camera} = three;
 
     const geometryUtils = geometryutils({THREE});
 
@@ -29,9 +30,6 @@ class AmbientLight {
         },
       },
       entityAddedCallback(entityElement) {
-        const entityApi = entityElement.getEntityApi();
-        const entityObject = entityElement.getObject();
-
         const mesh = (() => {
           const geometry = (() => {
             const coreSize = 0.1;
@@ -80,29 +78,25 @@ class AmbientLight {
 
           return new THREE.Mesh(geometry, material);
         })();
-        entityObject.add(mesh);
-        entityApi.mesh = mesh;
+        scene.add(mesh);
+        entityElement.mesh = mesh;
 
         const light = new THREE.AmbientLight(0xFFFFFF, 0.2);
         scene.add(light);
-        entityApi.light = light;
+        entityElement.light = light;
 
-        entityApi._cleanup = () => {
-          entityObject.remove(mesh);
+        entityElement._cleanup = () => {
+          scene.remove(mesh);
           scene.remove(light);
         };
       },
       entityRemovedCallback(entityElement) {
-        const entityApi = entityElement.getEntityApi();
-
-        entityApi._cleanup();
+        entityElement._cleanup();
       },
       entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-        const entityApi = entityElement.getEntityApi();
-
         switch (name) {
           case 'position': {
-            const {mesh, light} = entityApi;
+            const {mesh, light} = entityElement;
 
             mesh.position.set(newValue[0], newValue[1], newValue[2]);
             mesh.updateMatrixWorld();
@@ -113,7 +107,7 @@ class AmbientLight {
             break;
           }
           case 'color': {
-            const {light} = entityApi;
+            const {light} = entityElement;
 
             light.color.setStyle(newValue);
             light.updateMatrixWorld();
@@ -121,7 +115,7 @@ class AmbientLight {
             break;
           }
           case 'intensity': {
-            const {light} = entityApi;
+            const {light} = entityElement;
 
             light.intensity = newValue;
 

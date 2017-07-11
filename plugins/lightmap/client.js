@@ -38,7 +38,7 @@ class Lightmap {
         const ay = y - heightOffset;
         const az = z - (ox * height);
 
-        const lightmapIndex = ax + (az * width) + (ay * width * height);
+        const lightmapIndex = ax + (az * (width + 1)) + (ay * (width + 1) * (depth + 1));
         lightmap[lightmapIndex] = v;
       }
 
@@ -46,7 +46,7 @@ class Lightmap {
         const {ox, oz, width, height, depth, heightOffset, lightmap} = this;
         const ax = x - (ox * width);
         const ay = y - heightOffset;
-        const az = z - (ox * height);
+        const az = z - (oz * depth);
 
         const dr = r - 1;
         const maxDistance = Math.sqrt(dr*dr*3);
@@ -57,8 +57,8 @@ class Lightmap {
               const ly = Math.floor(ay + dy);
               const lz = Math.floor(az + dz);
 
-              if (_isInRange(lx, width) && _isInRange(ly, height) && _isInRange(lz, depth)) {
-                const lightmapIndex = lx + (lz * width) + (ly * width * height);
+              if (_isInRange(lx, width + 1) && _isInRange(ly, height) && _isInRange(lz, depth + 1)) {
+                const lightmapIndex = lx + (lz * (width + 1)) + (ly * (width + 1) * (depth + 1));
                 lightmap[lightmapIndex] = Math.max(
                   (maxDistance - new THREE.Vector3(dx, dy, dz).length()) / maxDistance * 255,
                   lightmap[lightmapIndex]
@@ -90,7 +90,7 @@ class Lightmap {
           const x = _clamp(Math.floor(positions[baseIndex + 0]), width);
           const y = _clamp(Math.floor(positions[baseIndex + 1] - heightOffset), height);
           const z = _clamp(Math.floor(positions[baseIndex + 2]), depth);
-          const lightmapIndex = x + (y * width) + (z * width * depth);
+          const lightmapIndex = x + (y * (width + 1)) + (z * (width + 1) * (depth + 1));
           const v = (lightmap[lightmapIndex] + ambient) / 255;
 
           colors[baseIndex + 0] = initialColors[baseIndex + 0] * v;
@@ -170,7 +170,7 @@ class Lightmap {
     const lightmapEntity = {
       // attributes: {},
       entityAddedCallback(entityElement) {
-console.log('set lightmap entity element', entityElement); // XXX
+console.log('set lightmap entity element', this, entityElement); // XXX
         entityElement.makeLightmapper = options => new Lightmapper(options);
       },
       /* entityRemovedCallback(entityElement) {

@@ -1,5 +1,3 @@
-const murmur = require('murmurhash');
-
 const NUM_CELLS = 256;
 const SCALE = 4;
 
@@ -55,7 +53,10 @@ const DATA = {
 
 class Ocean {
   mount() {
-    const {three: {THREE, scene}, render, elements, pose, world, utils: {random: {chnkr}}} = zeo;
+    const {three, render, elements, pose, world, utils: {random: randomUtils, hash: hashUtils}} = zeo;
+    const {THREE, scene} = three;
+    const {chnkr} = randomUtils;
+    const {murmur} = hashUtils;
 
     const updates = [];
     const _update = () => {
@@ -77,9 +78,6 @@ class Ocean {
         },
       },
       entityAddedCallback(entityElement) {
-        const entityApi = entityElement.getEntityApi();
-        const entityObject = entityElement.getObject();
-
         const chunker = chnkr.makeChunker({
           resolution: NUM_CELLS,
           range: 2,
@@ -172,26 +170,22 @@ class Ocean {
         };
         updates.push(update);
       
-        entityApi._cleanup = () => {
+        entityElement._cleanup = () => {
           for (let i = 0; i < meshes.length; i++) {
             const mesh = meshes[i];
-            entityObject.remove(mesh);
+            scene.remove(mesh);
           }
 
           updates.splice(updates.indexOf(update), 1);
         };
       },
       entityRemovedCallback(entityElement) {
-        const entityApi = entityElement.getEntityApi();
-
-        entityApi._cleanup();
+        entityElement._cleanup();
       },
       entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-        const entityApi = entityElement.getEntityApi();
-
         switch (name) {
           case 'position': {
-            const {mesh} = entityApi;
+            const {mesh} = entityElement;
 
             mesh.position.set(newValue[0], newValue[1], newValue[2]);
             mesh.quaternion.set(newValue[3], newValue[4], newValue[5], newValue[6]);

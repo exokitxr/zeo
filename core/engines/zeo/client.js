@@ -584,7 +584,15 @@ class Zeo {
                           return world.makeFile(options);
                         }
 
-                        on(event, handler) {
+                        makeListener(selector) {
+                          return tags.makeListener(selector);
+                        }
+
+                        destroyListener(listener) {
+                          tags.destroyListener(listener);
+                        }
+
+                        /* on(event, handler) {
                           return tags.on(event, handler);
                         }
 
@@ -594,7 +602,7 @@ class Zeo {
 
                         removeAllListeners(event) {
                           return tags.removeAllListeners(event);
-                        }
+                        } */
                       }
 
                       class ZeoWorldApi {

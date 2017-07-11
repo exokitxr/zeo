@@ -22,7 +22,7 @@ import {
   WORLD_MENU_WIDTH,
   WORLD_MENU_HEIGHT,
 } from './lib/constants/tags';
-import menuUtilser from './lib/utils/menu';
+import menuUtils from './lib/utils/menu';
 import tagsRender from './lib/render/tags';
 
 const SIDES = ['left', 'right'];
@@ -117,7 +117,6 @@ class Tags {
 
           const transparentImg = biolumi.getTransparentImg();
 
-          const menuUtils = menuUtilser.makeUtils({THREE, scene});
           const tagsRenderer = tagsRender.makeRenderer({typeUtils, creatureUtils});
 
           const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
@@ -213,11 +212,10 @@ class Tags {
 
           const rootWorldElement = document.createElement('world');
           rootWorldElement.style.cssText = 'display: none !important;';
-          const localEventSymbol = Symbol();
           document.body.appendChild(rootWorldElement);
 
-          const _addEntityCallback = (componentElement, entityElement) => {
-            let {_object: object, _numComponents: numComponents} = entityElement;
+          const _addEntityCallback = (componentApi, entityElement) => {
+            let {_numComponents: numComponents} = entityElement;
 
             if (numComponents === undefined) {
               numComponents = 0;
@@ -225,14 +223,13 @@ class Tags {
             numComponents++;
             entityElement._numComponents = numComponents;
 
-            if (numComponents === 1) {
-              entityElement._object = null; // defer construction/add of the actual object until requested by the component
-            }
+            componentApi.entityAddedCallback(entityElement);
 
-            componentElement.entityAddedCallback(entityElement);
-            tagsApi.emit('elementAdded', entityElement);
+            if (numComponents === 1) {
+              tagsApi.emit('elementAdded', entityElement);
+            }
           };
-          const _entityValueChangedCallbacks = (componentApi, componentElement, entityElement, entityAttributes) => {
+          const _entityValueChangedCallbacks = (componentApi, entityElement, entityAttributes) => {
             const {attributes: componentAttributes = {}} = componentApi;
 
             for (const componentAttributeName in componentAttributes) {
@@ -245,7 +242,7 @@ class Tags {
                 const oldValue = null;
                 const newValue = attributeValueJson;
 
-                componentElement.entityAttributeValueChangedCallback(entityElement, componentAttributeName, oldValue, newValue);
+                componentApi.entityAttributeValueChangedCallback(entityElement, componentAttributeName, oldValue, newValue);
 
                 const {item} = entityElement;
                 const {id: entityId} = item;
@@ -259,19 +256,17 @@ class Tags {
               }
             }
           };
-          const _removeEntityCallback = (componentElement, entityElement) => {
-            let {_object: object, _numComponents: numComponents} = entityElement;
+          const _removeEntityCallback = (componentApi, entityElement) => {
+            let {_numComponents: numComponents} = entityElement;
 
             numComponents--;
             entityElement._numComponents = numComponents;
 
-            if (numComponents === 0) {
-              scene.remove(object);
-              entityElement._object = null;
-            }
+            componentApi.entityRemovedCallback(entityElement);
 
-            componentElement.entityRemovedCallback(entityElement);
-            tagsApi.emit('elementRemoved', entityElement);
+            if (numComponents === 0) {
+              tagsApi.emit('elementRemoved', entityElement);
+            }
           };
 
           const _getElementJsonAttributes = element => {
@@ -332,14 +327,12 @@ class Tags {
               .then(existed => {
                 if (existed) {
                   const componentApis = tagComponentApis[module] || [];
-                  const componentElements = tagComponentInstances[module] || [];
 
                   for (let i = 0; i < componentApis.length; i++) {
                     const componentApi = componentApis[i];
-                    const componentElement = componentElements[i];
 
-                    _addEntityCallback(componentElement, element);
-                    _entityValueChangedCallbacks(componentApi, componentElement, element, entityAttributes);
+                    _addEntityCallback(componentApi, element);
+                    _entityValueChangedCallbacks(componentApi, element, entityAttributes);
                   }
                 }
 
@@ -358,10 +351,10 @@ class Tags {
               });
             }
 
-            const componentElements = tagComponentInstances[module];
-            for (let i = 0; i < componentElements.length; i++) {
-              const componentElement = componentElements[i];
-              _removeEntityCallback(componentElement, element);
+            const componentApis = tagComponentApis[module];
+            for (let i = 0; i < componentApis.length; i++) {
+              const componentApi = componentApis[i];
+              _removeEntityCallback(componentApi, element);
             }
 
             _removeModule(module)
@@ -443,10 +436,8 @@ class Tags {
 
                     const {module} = entityItem;
                     const componentApis = tagComponentApis[module] || [];
-                    const componentElements = tagComponentInstances[module] || [];
                     for (let i = 0; i < componentApis.length; i++) {
                       const componentApi = componentApis[i];
-                      const componentElement = componentElements[i];
                       const {attributes: componentAttributes = []} = componentApi;
                       const componentAttribute = componentAttributes[attributeName];
 
@@ -455,7 +446,7 @@ class Tags {
                         const oldAttributeValue = oldValueJson;
                         const newAttributeValue = newValueJson;
 
-                        componentElement.entityAttributeValueChangedCallback(entityElement, attributeName, oldAttributeValue, newAttributeValue);
+                        componentApi.entityAttributeValueChangedCallback(entityElement, attributeName, oldAttributeValue, newAttributeValue);
 
                         tagsApi.emit('attributeValueChanged', {
                           entityId: entityId,
@@ -1797,7 +1788,6 @@ class Tags {
 
           const tagMeshes = [];
           const tagComponentApis = {}; // plugin name -> [ component api ]
-          const tagComponentInstances = {}; // plugin name -> [ component element ]
 
           const _getAttributeSpec = (module, attributeName) => {
             const componentApis = tagComponentApis[module] || [];
@@ -1863,10 +1853,7 @@ class Tags {
 
           class TagsApi extends EventEmitter {
             registerEntity(pluginInstance, componentApi) {
-              // create element
-              const baseObject = componentApi;
-              const componentElement = menuUtils.makeZeoComponentElement(baseObject);
-              componentElement.componentApi = componentApi
+              componentApi = menuUtils.normalizeComponentApi(componentApi);
 
               const name = archae.getPath(pluginInstance);
 
@@ -1877,13 +1864,6 @@ class Tags {
               }
               tagComponentApiComponents.push(componentApi);
 
-              let tagComponentInstanceInstances = tagComponentInstances[name];
-              if (!tagComponentInstanceInstances) {
-                tagComponentInstanceInstances = [];
-                tagComponentInstances[name] = tagComponentInstanceInstances;
-              }
-              tagComponentInstanceInstances.push(componentElement);
-
               const entityTags = tagMeshes.filter(({item}) => item.type === 'entity' && item.module === name);
               for (let i = 0; i < entityTags.length; i++) {
                 const entityTag = entityTags[i];
@@ -1891,20 +1871,16 @@ class Tags {
                 const {instance: entityElement} = item;
 
                 if (entityElement) {
-                  _addEntityCallback(componentElement, entityElement);
+                  _addEntityCallback(componentApi, entityElement);
 
                    const entityAttributes = _getElementJsonAttributes(entityElement);
-                  _entityValueChangedCallbacks(componentApi, componentElement, entityElement, entityAttributes);
+                  _entityValueChangedCallbacks(componentApi, entityElement, entityAttributes);
                 }
               }
             }
 
             unregisterEntity(pluginInstance, componentApiToRemove) {
               const name = archae.getPath(pluginInstance);
-
-              const componentElements = tagComponentInstances[name];
-              const componentElementIndex = componentElements.findIndex(componentElement => componentElement.componentApi === componentApiToRemove);
-              const componentElement = componentElements[componentElementIndex];
 
               const entityTags = tagMeshes.filter(({item}) => item.type === 'entity' && item.module === name && !item.instancing);
               for (let i = 0; i < entityTags.length; i++) {
@@ -1913,13 +1889,8 @@ class Tags {
                 const {instance: entityElement} = item;
 
                 if (entityElement) {
-                  _removeEntityCallback(componentElement, entityElement);
+                  _removeEntityCallback(componentApi, entityElement);
                 }
-              }
-
-              componentElements.splice(componentElementIndex, 1);
-              if (componentElements.length === 0) {
-                delete tagComponentInstances[name];
               }
 
               const tagComponentApiComponents = tagComponentApis[name];
@@ -2096,8 +2067,50 @@ class Tags {
               return tagComponentApis[tag];
             }
 
+            makeListener(selector) {
+              const listener = new EventEmitter();
+
+              const _elementAdded = entityElement => {
+                if (entityElement.matches(selector)) {
+                  listener.emit('add', entityElement);
+                }
+              };
+              this.on('elementAdded', _elementAdded);
+              const _elementRemoved = entityElement => {
+                if (entityElement.matches(selector)) {
+                  listener.emit('remove', entityElement);
+                }
+              };
+              this.on('elementRemoved', _elementRemoved);
+
+              const initialEntityElement = rootEntitiesElement.querySelector(selector);
+              let timeout = null;
+              if (initialEntityElement && ('_numComponents' in initialEntityElement) && initialEntityElement._numComponents > 0) {
+                timeout = setTimeout(() => {
+                  timeout = null;
+
+                  listener.emit('add', initialEntityElement);
+                });
+              }
+
+              listener.destroy = () => {
+                this.removeListener('elementAdded', _elementAdded);
+                this.removeListener('elementRemoved', _elementRemoved);
+
+                if (timeout !== null) {
+                  clearTimeout(timeout);
+                }
+              };
+
+              return listener;
+            }
+
+            destroyListener(listener) {
+              listener.destroy();
+            }
+
             /* querySelector(selector) {
-              return worldElement.querySelector(selector);
+              return rootWorldElement.querySelector(selector);
             }
 
             requestElement(selector, {timeout = 30 * 1000} = {}) {
