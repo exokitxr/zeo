@@ -28,6 +28,7 @@ import tagsRender from './lib/render/tags';
 const SIDES = ['left', 'right'];
 const AXES = ['x', 'y', 'z'];
 
+const normalizedSymbol = Symbol();
 const itemInstanceSymbol = Symbol();
 const itemInstancingSymbol = Symbol();
 const itemPageSymbol = Symbol();
@@ -1853,7 +1854,8 @@ class Tags {
 
           class TagsApi extends EventEmitter {
             registerEntity(pluginInstance, componentApi) {
-              componentApi = menuUtils.normalizeComponentApi(componentApi);
+              const normalizedComponentApi = menuUtils.normalizeComponentApi(componentApi);
+              componentApi[normalizedSymbol] = normalizedComponentApi;
 
               const name = archae.getPath(pluginInstance);
 
@@ -1862,7 +1864,7 @@ class Tags {
                 tagComponentApiComponents = [];
                 tagComponentApis[name] = tagComponentApiComponents;
               }
-              tagComponentApiComponents.push(componentApi);
+              tagComponentApiComponents.push(normalizedComponentApi);
 
               const entityTags = tagMeshes.filter(({item}) => item.type === 'entity' && item.module === name);
               for (let i = 0; i < entityTags.length; i++) {
@@ -1871,15 +1873,17 @@ class Tags {
                 const {instance: entityElement} = item;
 
                 if (entityElement) {
-                  _addEntityCallback(componentApi, entityElement);
+                  _addEntityCallback(normalizedComponentApi, entityElement);
 
                    const entityAttributes = _getElementJsonAttributes(entityElement);
-                  _entityValueChangedCallbacks(componentApi, entityElement, entityAttributes);
+                  _entityValueChangedCallbacks(normalizedComponentApi, entityElement, entityAttributes);
                 }
               }
             }
 
-            unregisterEntity(pluginInstance, componentApiToRemove) {
+            unregisterEntity(pluginInstance, componentApi) {
+              const {[normalizedSymbol]: normalizedComponentApi} = componentApi;
+
               const name = archae.getPath(pluginInstance);
 
               const entityTags = tagMeshes.filter(({item}) => item.type === 'entity' && item.module === name && !item.instancing);
@@ -1889,12 +1893,12 @@ class Tags {
                 const {instance: entityElement} = item;
 
                 if (entityElement) {
-                  _removeEntityCallback(componentApi, entityElement);
+                  _removeEntityCallback(normalizedComponentApi, entityElement);
                 }
               }
 
               const tagComponentApiComponents = tagComponentApis[name];
-              tagComponentApiComponents.splice(tagComponentApiComponents.indexOf(componentApiToRemove), 1);
+              tagComponentApiComponents.splice(tagComponentApiComponents.indexOf(normalizedComponentApi), 1);
               if (tagComponentApiComponents.length === 0) {
                 delete tagComponentApis[name];
               }

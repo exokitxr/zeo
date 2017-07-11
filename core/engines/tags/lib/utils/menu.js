@@ -2,7 +2,7 @@ class ComponentApi {
   constructor(baseObject) {
     this.attributes = baseObject.attributes || {};
     this.entityAddedCallback = baseObject.entityAddedCallback || nop;
-    this.entityRmovedCallback = baseObject.entityRemovedCallback || nop;
+    this.entityRemovedCallback = baseObject.entityRemovedCallback || nop;
     this.entityAttributeValueChangedCallback = baseObject.entityAttributeValueChangedCallback || nop;
   }
 }
