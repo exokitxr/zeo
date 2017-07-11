@@ -9,6 +9,125 @@ const protocolUtils = require('./lib/utils/protocol-utils');
 const NUM_POSITIONS_CHUNK = 100 * 1024;
 const LIGHTMAP_PLUGIN = 'plugins-lightmap';
 
+const HEIGHTFIELD_SHADER = {
+  uniforms: {
+    worldTime: {
+      type: 't',
+      value: null,
+    },
+  },
+  vertexShader: `\
+precision highp float;
+precision highp int;
+#define USE_COLOR
+#define FLAT_SHADED
+/*uniform mat4 modelMatrix;
+uniform mat4 modelViewMatrix;
+uniform mat4 projectionMatrix;
+uniform mat4 viewMatrix;
+uniform mat3 normalMatrix;
+attribute vec3 position;
+attribute vec3 normal;
+attribute vec2 uv; */
+#ifdef USE_COLOR
+	attribute vec3 color;
+#endif
+
+varying vec3 vViewPosition;
+#ifndef FLAT_SHADED
+	varying vec3 vNormal;
+#endif
+#define saturate(a) clamp( a, 0.0, 1.0 )
+
+#if defined( USE_MAP )
+	varying vec2 vUv;
+#endif
+
+#ifdef USE_COLOR
+	varying vec3 vColor;
+#endif
+
+void main() {
+#if defined( USE_MAP )
+	vUv = uv;
+#endif
+#ifdef USE_COLOR
+	vColor.xyz = color.xyz;
+#endif
+
+#ifndef FLAT_SHADED
+	vNormal = normal;
+#endif
+
+  vec4 mvPosition = modelViewMatrix * vec4( position.xyz, 1.0 );
+  gl_Position = projectionMatrix * mvPosition;
+
+	vViewPosition = - mvPosition.xyz;
+}
+`,
+  fragmentShader: `\
+precision highp float;
+precision highp int;
+#define USE_COLOR
+#define FLAT_SHADED
+// uniform mat4 viewMatrix;
+
+#define saturate(a) clamp( a, 0.0, 1.0 )
+
+#ifdef USE_COLOR
+	varying vec3 vColor;
+#endif
+
+#if defined( USE_MAP )
+	varying vec2 vUv;
+#endif
+#ifdef USE_MAP
+	uniform sampler2D map;
+#endif
+
+varying vec3 vViewPosition;
+#ifndef FLAT_SHADED
+	varying vec3 vNormal;
+#endif
+
+void main() {
+	vec4 diffuseColor = vec4( 1.0 );
+#ifdef USE_MAP
+	vec4 texelColor = texture2D( map, vUv );
+	diffuseColor *= texelColor;
+#endif
+
+#ifdef USE_COLOR
+	diffuseColor.rgb *= vColor;
+#endif
+
+#ifdef ALPHATEST
+	if ( diffuseColor.a < ALPHATEST ) discard;
+#endif
+
+#ifdef DOUBLE_SIDED
+	float flipNormal = ( float( gl_FrontFacing ) * 2.0 - 1.0 );
+#else
+	float flipNormal = 1.0;
+#endif
+
+#ifdef FLAT_SHADED
+	vec3 fdx = vec3( dFdx( vViewPosition.x ), dFdx( vViewPosition.y ), dFdx( vViewPosition.z ) );
+	vec3 fdy = vec3( dFdy( vViewPosition.x ), dFdy( vViewPosition.y ), dFdy( vViewPosition.z ) );
+	vec3 normal = normalize( cross( fdx, fdy ) );
+#else
+	vec3 normal = vNormal;
+#endif
+
+  float dotNL = saturate( dot( normal, normalize(vec3(1.0, -1.0, 1.0) + vViewPosition) ) );
+  float irradiance = 1.0 + (dotNL * 2.0);
+	vec3 outgoingLight = irradiance * diffuseColor.rgb;
+
+	gl_FragColor = vec4( outgoingLight, diffuseColor.a );
+}
+`
+};
+
 class Heightfield {
   constructor(archae) {
     this._archae = archae;
@@ -19,12 +138,14 @@ class Heightfield {
     const {three, render, pose, world, elements, teleport, /*physics,*/ stck, utils: {random: {chnkr}}} = zeo;
     const {THREE, scene} = three;
 
-    const mapChunkMaterial = new THREE.MeshPhongMaterial({
-      // color: 0xFFFFFF,
-      shininess: 0,
-      shading: THREE.FlatShading,
-      vertexColors: THREE.VertexColors,
-      // side: THREE.DoubleSide,
+    const mapChunkMaterial = new THREE.ShaderMaterial({
+      uniforms: THREE.UniformsUtils.clone(HEIGHTFIELD_SHADER.uniforms),
+      vertexShader: HEIGHTFIELD_SHADER.vertexShader,
+      fragmentShader: HEIGHTFIELD_SHADER.fragmentShader,
+      transparent: true,
+      extensions: {
+        derivatives: true,
+      },
     });
 
     const worker = new Worker('archae/plugins/_plugins_heightfield/build/worker.js');
