@@ -67,7 +67,7 @@ void main() {
 precision highp float;
 precision highp int;
 #define USE_COLOR
-#define ALPHATEST 0.5
+#define ALPHATEST 0.8
 #define DOUBLE_SIDED
 // uniform mat4 viewMatrix;
 uniform sampler2D map;

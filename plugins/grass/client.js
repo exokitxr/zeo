@@ -66,7 +66,7 @@ void main() {
 precision highp float;
 precision highp int;
 #define USE_COLOR
-#define ALPHATEST 0.5
+#define ALPHATEST 0.8
 #define DOUBLE_SIDED
 // uniform mat4 viewMatrix;
 uniform sampler2D map;
@@ -88,7 +88,7 @@ void main() {
 
   float lu = (floor(vPosition.x) + (floor(vPosition.z) * ${(NUM_CELLS + 1).toFixed(8)}) + 0.5) / (${(NUM_CELLS + 1).toFixed(8)} * ${(NUM_CELLS + 1).toFixed(8)});
   float lv = (floor(vPosition.y - ${HEIGHT_OFFSET.toFixed(8)}) + 0.5) / ${NUM_CELLS_HEIGHT.toFixed(8)};
-  vec3 lightColor = texture2D( lightMap, vec2(lu, lv) ).rgb * 1.5;
+  vec3 lightColor = texture2D( lightMap, vec2(lu, lv) ).rgb * 1.0;
 
 #ifdef USE_COLOR
 	diffuseColor.rgb *= vColor;
