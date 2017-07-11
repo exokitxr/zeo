@@ -232,7 +232,7 @@ class Heightfield {
         uniforms: THREE.UniformsUtils.clone(HEIGHTFIELD_SHADER.uniforms),
         vertexShader: HEIGHTFIELD_SHADER.vertexShader,
         fragmentShader: HEIGHTFIELD_SHADER.fragmentShader,
-        transparent: true,
+        // transparent: true,
         extensions: {
           derivatives: true,
         },
