@@ -107,7 +107,7 @@ void main() {
 	vec3 normal = vNormal;
 #endif
 
-  float dotNL = saturate( dot( normal, normalize(vec3(1.0, -1.0, 1.0) + vViewPosition) ) );
+  float dotNL = saturate( dot( normal, normalize(vViewPosition)) );
   float irradiance = 0.2 + (dotNL * 2.0);
 	vec3 outgoingLight = irradiance * diffuseColor.rgb;
 
