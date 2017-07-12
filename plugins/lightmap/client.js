@@ -238,8 +238,8 @@ class Lightmap {
           depth: NUM_CELLS,
           heightOffset: HEIGHT_OFFSET,
         });
-        lightmapper.add(new Lightmapper.Ambient(255 * 0.1));
-        lightmapper.add(new Lightmapper.Sphere(0, 32, 0, 10, 1.5));
+        // lightmapper.add(new Lightmapper.Ambient(255 * 0.1));
+        lightmapper.add(new Lightmapper.Sphere(0, 32, 0, 8, 1.5));
         entityElement.lightmapper = lightmapper;
 
         const _update = () => {

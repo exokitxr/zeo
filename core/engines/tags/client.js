@@ -2181,6 +2181,10 @@ class Tags {
               return rootWorldElement;
             }
 
+            getEntitiesElement() {
+              return rootEntitiesElement;
+            }
+
             message(detail) {
               const e = new CustomEvent('message', {
                 detail: detail,
