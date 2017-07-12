@@ -11,6 +11,7 @@ const ITEMS = [
   'WOOD',
   'STONE',
   'COAL',
+  'IRON',
 ];
 
 module.exports = {
