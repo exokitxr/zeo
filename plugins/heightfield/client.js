@@ -66,6 +66,7 @@ precision highp int;
 #define USE_COLOR
 #define FLAT_SHADED
 // uniform mat4 viewMatrix;
+uniform vec3 ambientLightColor;
 uniform sampler2D lightMap;
 
 #define saturate(a) clamp( a, 0.0, 1.0 )
@@ -112,7 +113,7 @@ void main() {
 #endif
 
   float dotNL = saturate( dot( normal, normalize(vViewPosition)) );
-  float irradiance = 0.2 + (dotNL * 2.0);
+  vec3 irradiance = ambientLightColor + (dotNL * 2.0);
 	vec3 outgoingLight = irradiance * diffuseColor.rgb;
 
 	gl_FragColor = vec4( outgoingLight, diffuseColor.a );
@@ -229,9 +230,13 @@ class Heightfield {
         return geometry;
       })();
       const material = new THREE.ShaderMaterial({
-        uniforms: THREE.UniformsUtils.clone(HEIGHTFIELD_SHADER.uniforms),
+        uniforms: Object.assign(
+          THREE.UniformsUtils.clone(THREE.UniformsLib.lights),
+          THREE.UniformsUtils.clone(HEIGHTFIELD_SHADER.uniforms)
+        ),
         vertexShader: HEIGHTFIELD_SHADER.vertexShader,
         fragmentShader: HEIGHTFIELD_SHADER.fragmentShader,
+        lights: true,
         // transparent: true,
         extensions: {
           derivatives: true,
