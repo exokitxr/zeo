@@ -757,6 +757,10 @@ class Zeo {
                         reindex() {
                           teleport.reindex();
                         }
+
+                        getHoverState(side) {
+                          return teleport.getHoverState(side);
+                        }
                       }
 
                       class ZeoHandsApi {

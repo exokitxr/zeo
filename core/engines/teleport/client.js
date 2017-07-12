@@ -340,6 +340,12 @@ class Teleport {
           reindex() {
             intersecter.reindex();
           }
+
+          getHoverState(side) {
+            intersecter.update(side);
+
+            return intersecter.getHoverState(side);
+          }
         }
         const teleportApi = new TeleportApi();
 
