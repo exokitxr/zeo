@@ -15,6 +15,10 @@ const HEIGHTFIELD_SHADER = {
       type: 't',
       value: null,
     },
+    d: {
+      type: 'v2',
+      value: null,
+    },
   },
   vertexShader: `\
 precision highp float;
@@ -67,6 +71,7 @@ precision highp int;
 #define FLAT_SHADED
 // uniform mat4 viewMatrix;
 uniform vec3 ambientLightColor;
+uniform vec2 d;
 uniform sampler2D lightMap;
 
 #define saturate(a) clamp( a, 0.0, 1.0 )
@@ -83,8 +88,8 @@ varying vec3 vViewPosition;
 
 void main() {
   float u = (
-    floor(mod(vPosition.x, ${NUM_CELLS.toFixed(8)})) +
-    (floor(mod(vPosition.z, ${NUM_CELLS.toFixed(8)})) * ${(NUM_CELLS + 1).toFixed(8)}) +
+    floor(clamp(vPosition.x - d.x, 0.0, ${(NUM_CELLS).toFixed(8)})) +
+    (floor(clamp(vPosition.z - d.y, 0.0, ${(NUM_CELLS).toFixed(8)})) * ${(NUM_CELLS + 1).toFixed(8)}) +
     0.5
   ) / (${(NUM_CELLS + 1).toFixed(8)} * ${(NUM_CELLS + 1).toFixed(8)});
   float v = (floor(vPosition.y - ${HEIGHT_OFFSET.toFixed(8)}) + 0.5) / ${NUM_CELLS_HEIGHT.toFixed(8)};
@@ -229,11 +234,13 @@ class Heightfield {
         );
         return geometry;
       })();
+      const uniforms = Object.assign(
+        THREE.UniformsUtils.clone(THREE.UniformsLib.lights),
+        THREE.UniformsUtils.clone(HEIGHTFIELD_SHADER.uniforms)
+      );
+      uniforms.d.value = new THREE.Vector2(x * NUM_CELLS, z * NUM_CELLS);
       const material = new THREE.ShaderMaterial({
-        uniforms: Object.assign(
-          THREE.UniformsUtils.clone(THREE.UniformsLib.lights),
-          THREE.UniformsUtils.clone(HEIGHTFIELD_SHADER.uniforms)
-        ),
+        uniforms: uniforms,
         vertexShader: HEIGHTFIELD_SHADER.vertexShader,
         fragmentShader: HEIGHTFIELD_SHADER.fragmentShader,
         lights: true,

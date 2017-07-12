@@ -21,6 +21,10 @@ const ITEMS_SHADER = {
       type: 't',
       value: null,
     },
+    d: {
+      type: 'v2',
+      value: null,
+    },
   },
   vertexShader: `\
 precision highp float;
@@ -65,6 +69,7 @@ precision highp int;
 // uniform mat4 viewMatrix;
 uniform vec3 ambientLightColor;
 uniform sampler2D lightMap;
+uniform vec2 d;
 
 #define saturate(a) clamp( a, 0.0, 1.0 )
 
@@ -79,8 +84,8 @@ void main() {
   vec4 diffuseColor = vec4(vColor, 1.0);
 
   float u = (
-    floor(mod(vPosition.x, ${NUM_CELLS.toFixed(8)})) +
-    (floor(mod(vPosition.z, ${NUM_CELLS.toFixed(8)})) * ${(NUM_CELLS + 1).toFixed(8)}) +
+    floor(clamp(vPosition.x - d.x, 0.0, ${(NUM_CELLS).toFixed(8)})) +
+    (floor(clamp(vPosition.z - d.y, 0.0, ${(NUM_CELLS).toFixed(8)})) * ${(NUM_CELLS + 1).toFixed(8)}) +
     0.5
   ) / (${(NUM_CELLS + 1).toFixed(8)} * ${(NUM_CELLS + 1).toFixed(8)});
   float v = (floor(vPosition.y - ${HEIGHT_OFFSET.toFixed(8)}) + 0.5) / ${NUM_CELLS_HEIGHT.toFixed(8)};
@@ -193,11 +198,13 @@ class Items {
 
         return geometry;
       })();
+      const uniforms = Object.assign(
+        THREE.UniformsUtils.clone(THREE.UniformsLib.lights),
+        THREE.UniformsUtils.clone(ITEMS_SHADER.uniforms)
+      );
+      uniforms.d.value = new THREE.Vector2(x * NUM_CELLS, z * NUM_CELLS);
       const material = new THREE.ShaderMaterial({
-        uniforms: Object.assign(
-          THREE.UniformsUtils.clone(THREE.UniformsLib.lights),
-          THREE.UniformsUtils.clone(ITEMS_SHADER.uniforms)
-        ),
+        uniforms: uniforms,
         vertexShader: ITEMS_SHADER.vertexShader,
         fragmentShader: ITEMS_SHADER.fragmentShader,
         lights: true,
