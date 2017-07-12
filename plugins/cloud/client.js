@@ -5,6 +5,7 @@ const protocolUtils = require('./lib/utils/protocol-utils');
 
 const NUM_POSITIONS_CHUNK = 200 * 1024;
 const CLOUD_SPEED = 1;
+const DAY_NIGHT_SKYBOX_PLUGIN = 'plugins-day-night-skybox';
 
 const CLOUD_SHADER = {
   uniforms: {
@@ -12,18 +13,25 @@ const CLOUD_SHADER = {
       type: 'f',
       value: 0,
     },
+    sunIntensity: {
+      type: 'f',
+      value: 0,
+    },
   },
-  vertexShader: [
-    "uniform float worldTime;",
-    "void main() {",
-    `  gl_Position = projectionMatrix * modelViewMatrix * vec4(position.x - ((worldTime / 1000.0) * ${CLOUD_SPEED.toFixed(8)}), position.y, position.z, 1.0);`,
-    "}"
-  ].join("\n"),
-  fragmentShader: [
-    "void main() {",
-    "  gl_FragColor = vec4(1.0, 1.0, 1.0, 0.5);",
-    "}"
-  ].join("\n")
+  vertexShader: `\
+uniform float worldTime;
+
+void main() {
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(position.x - ((worldTime / 1000.0) * ${CLOUD_SPEED.toFixed(8)}), position.y, position.z, 1.0);
+}
+`,
+  fragmentShader: `\
+uniform float sunIntensity;
+
+void main() {
+  gl_FragColor = vec4((0.5 + 0.5 * sunIntensity) * vec3(1.0), 0.5);
+}
+`
 };
 
 class Cloud {
@@ -174,6 +182,10 @@ class Cloud {
           tryCloudChunkUpdate();
 
           cloudsMaterial.uniforms.worldTime.value = world.getWorldTime();
+          cloudsMaterial.uniforms.sunIntensity.value = (() => {
+            const dayNightSkyboxEntity = elements.getEntitiesElement().querySelector(DAY_NIGHT_SKYBOX_PLUGIN);
+            return (dayNightSkyboxEntity && dayNightSkyboxEntity.getSunIntensity) ? dayNightSkyboxEntity.getSunIntensity() : 0;
+          })();
         };
         updates.push(update);
 

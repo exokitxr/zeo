@@ -193,7 +193,7 @@ const skyShader = {
 			"float sundisk = smoothstep(sunAngularDiameterCos,sunAngularDiameterCos+0.00002,cosTheta);",
 			"L0 += (vSunE * 19000.0 * Fex)*sundisk;",
 
-			"vec3 texColor = (Lin) * 0.04 + (vec3(0.0, 0.0003, 0.00075) * 50.0);",
+			"vec3 texColor = (Lin) * 0.04 + (vec3(0.0, 0.0003, 0.00075) * 10.0);",
 
 			"vec3 curr = Uncharted2Tonemap((log2(2.0/pow(luminance,4.0)))*texColor);",
 			"vec3 color = curr*whiteScale;",
