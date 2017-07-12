@@ -75,7 +75,7 @@ const itemsGeometries = [
       positions[baseIndex + 2] = positionsArray[i][2];
     }
     const colors = new Float32Array(numPositions * 3);
-    const baseColor = new THREE.Color(0x795548);
+    const baseColor = new THREE.Color(0x795548).multiplyScalar(0.8);
     for (let i = 0; i < numPositions; i++) {
       const baseIndex = i * 3;
       const z = positions[baseIndex + 2];
@@ -136,7 +136,7 @@ const itemsGeometries = [
       positions[baseIndex + 2] = positionsArray[i][2];
     }
     const colors = new Float32Array(numPositions * 3);
-    const baseColor = new THREE.Color(0x9E9E9E).multiplyScalar(1.2);
+    const baseColor = new THREE.Color(0x9E9E9E).multiplyScalar(0.8);
     for (let i = 0; i < numPositions; i++) {
       const baseIndex = i * 3;
       const y = positions[baseIndex + 1];
