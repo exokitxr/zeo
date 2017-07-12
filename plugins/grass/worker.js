@@ -103,7 +103,7 @@ const grassTextureAtlas = (() => {
           const triangle = new Triangle(
             points[j + 0],
             points[j + 1],
-            points[j + 2],
+            points[j + 2]
           );
           triangles[i * numTrianglesPerBlade + j] = triangle;
         }

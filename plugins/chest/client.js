@@ -171,7 +171,7 @@ class Chest {
                         new THREE.Color(
                           newColors[baseIndex + 0],
                           newColors[baseIndex + 1],
-                          newColors[baseIndex + 2],
+                          newColors[baseIndex + 2]
                         ).getHSL().l * 3.5
                       );
                       colors[attributeIndex + baseIndex + 0] = color.r;
