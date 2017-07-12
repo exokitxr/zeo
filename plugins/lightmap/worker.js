@@ -262,14 +262,14 @@ self.onmessage = e => {
   } else if (type === 'removeShape') {
     const {id} = data;
 
-    const index = shapes.findIndex(shape => shape.id);
+    const index = shapes.findIndex(shape => shape.id === id);
     shapes.splice(index, 1);
   } else if (type === 'removeShapes') {
     const {ids} = data;
 
     for (let i = 0; i < ids.length; i++) {
       const id = ids[i];
-      const index = shapes.findIndex(shape => shape.id);
+      const index = shapes.findIndex(shape => shape.id === id);
       shapes.splice(index, 1);
     }
   } else if (type === 'requestUpdate') {
