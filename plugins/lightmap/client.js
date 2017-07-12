@@ -332,16 +332,12 @@ class Lightmap {
           if (!updating) {
             lightmapper.update()
               .then(() => {
-                setTimeout(() => {
-                  updating = false;
-                });
+                updating = false;
               })
               .catch(err => {
                 console.warn(err.stack);
 
-                setTimeout(() => {
-                  updating = false;
-                });
+                updating = false;
               });
 
             updating = true;
