@@ -75,7 +75,7 @@ void main() {
   fragmentShader: `\
 precision highp float;
 precision highp int;
-#define ALPHATEST 0.8
+#define ALPHATEST 0.7
 #define DOUBLE_SIDED
 // uniform mat4 viewMatrix;
 uniform vec3 ambientLightColor;
