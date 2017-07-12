@@ -63,6 +63,7 @@ precision highp float;
 precision highp int;
 #define USE_COLOR
 // uniform mat4 viewMatrix;
+uniform vec3 ambientLightColor;
 uniform sampler2D lightMap;
 
 #define saturate(a) clamp( a, 0.0, 1.0 )
@@ -83,7 +84,7 @@ void main() {
     0.5
   ) / (${(NUM_CELLS + 1).toFixed(8)} * ${(NUM_CELLS + 1).toFixed(8)});
   float v = (floor(vPosition.y - ${HEIGHT_OFFSET.toFixed(8)}) + 0.5) / ${NUM_CELLS_HEIGHT.toFixed(8)};
-  vec3 lightColor = texture2D( lightMap, vec2(u, v) ).rgb * 2.0;
+  vec3 lightColor = ambientLightColor + texture2D( lightMap, vec2(u, v) ).rgb * 2.0;
 
 #ifdef USE_COLOR
 	diffuseColor.rgb *= vColor;
@@ -193,9 +194,13 @@ class Items {
         return geometry;
       })();
       const material = new THREE.ShaderMaterial({
-        uniforms: THREE.UniformsUtils.clone(ITEMS_SHADER.uniforms),
+        uniforms: Object.assign(
+          THREE.UniformsUtils.clone(THREE.UniformsLib.lights),
+          THREE.UniformsUtils.clone(ITEMS_SHADER.uniforms)
+        ),
         vertexShader: ITEMS_SHADER.vertexShader,
         fragmentShader: ITEMS_SHADER.fragmentShader,
+        lights: true,
         // side: THREE.DoubleSide,
         // transparent: true,
         /* extensions: {

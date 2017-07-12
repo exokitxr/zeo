@@ -70,6 +70,7 @@ precision highp int;
 #define ALPHATEST 0.8
 #define DOUBLE_SIDED
 // uniform mat4 viewMatrix;
+uniform vec3 ambientLightColor;
 uniform sampler2D map;
 uniform sampler2D lightMap;
 
@@ -93,7 +94,7 @@ void main() {
     0.5
   ) / (${(NUM_CELLS + 1).toFixed(8)} * ${(NUM_CELLS + 1).toFixed(8)});
   float v = (floor(vPosition.y - ${HEIGHT_OFFSET.toFixed(8)}) + 0.5) / ${NUM_CELLS_HEIGHT.toFixed(8)};
-  vec3 lightColor = texture2D( lightMap, vec2(u, v) ).rgb * 1.5;
+  vec3 lightColor = ambientLightColor + texture2D( lightMap, vec2(u, v) ).rgb * 1.5;
 
 #ifdef USE_COLOR
 	diffuseColor.rgb *= vColor;
@@ -272,17 +273,18 @@ class Tree {
               return geometry;
             })();
 
-            const uniforms = THREE.UniformsUtils.clone(TREE_SHADER.uniforms);
+            const uniforms = Object.assign(
+              THREE.UniformsUtils.clone(THREE.UniformsLib.lights),
+              THREE.UniformsUtils.clone(TREE_SHADER.uniforms)
+            );
             uniforms.map.value = mapTexture;
             const material = new THREE.ShaderMaterial({
               uniforms: uniforms,
               vertexShader: TREE_SHADER.vertexShader,
               fragmentShader: TREE_SHADER.fragmentShader,
+              lights: true,
               side: THREE.DoubleSide,
               transparent: true,
-              /* extensions: {
-                derivatives: true,
-              }, */
             });
 
             const mesh = new THREE.Mesh(geometry, material);
