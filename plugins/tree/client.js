@@ -252,7 +252,7 @@ class Tree {
               const x = trees[baseIndex + 2];
               const y = trees[baseIndex + 3];
               const z = trees[baseIndex + 4];
-              const shape = new Lightmapper.Cylinder(x, y, z, 16, 8, 0.15, Lightmapper.SubBlend);
+              const shape = new Lightmapper.Cylinder(x, y, z, 12, 8, 0.15, Lightmapper.SubBlend);
               lightmapper.add(shape);
               shapes[i] = shape;
             }
