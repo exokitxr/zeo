@@ -195,7 +195,7 @@ const treeTextureAtlas = (() => {
             const triangle = new Triangle(
               points[baseIndex + 0],
               points[baseIndex + 1],
-              points[baseIndex + 2],
+              points[baseIndex + 2]
             );
             triangles.push(triangle);
           }
