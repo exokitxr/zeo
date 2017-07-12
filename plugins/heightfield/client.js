@@ -419,7 +419,7 @@ class Heightfield {
         const updateMeshes = () => {
           const sunIntensity = (() => {
             const dayNightSkyboxEntity = elements.getEntitiesElement().querySelector(DAY_NIGHT_SKYBOX_PLUGIN);
-            return dayNightSkyboxEntity ? dayNightSkyboxEntity.getSunIntensity() : 0;
+            return (dayNightSkyboxEntity && dayNightSkyboxEntity.getSunIntensity) ? dayNightSkyboxEntity.getSunIntensity() : 0;
           })();
 
           for (let i = 0; i < mapChunkMeshes.length; i++) {

@@ -10,6 +10,7 @@ const protocolUtils = require('./lib/utils/protocol-utils');
 
 const NUM_POSITIONS_CHUNK = 200 * 1024;
 const LIGHTMAP_PLUGIN = 'plugins-lightmap';
+const DAY_NIGHT_SKYBOX_PLUGIN = 'plugins-day-night-skybox';
 
 const ITEMS_SHADER = {
   uniforms: {
@@ -25,11 +26,14 @@ const ITEMS_SHADER = {
       type: 'v2',
       value: null,
     },
+    sunIntensity: {
+      type: 'f',
+      value: 0,
+    },
   },
   vertexShader: `\
 precision highp float;
 precision highp int;
-#define USE_COLOR
 /*uniform mat4 modelMatrix;
 uniform mat4 modelViewMatrix;
 uniform mat4 projectionMatrix;
@@ -38,22 +42,15 @@ uniform mat3 normalMatrix;
 attribute vec3 position;
 attribute vec3 normal;
 attribute vec2 uv; */
-#ifdef USE_COLOR
-	attribute vec3 color;
-#endif
+attribute vec3 color;
 
 varying vec3 vPosition;
 varying vec3 vViewPosition;
-#define saturate(a) clamp( a, 0.0, 1.0 )
 
-#ifdef USE_COLOR
-	varying vec3 vColor;
-#endif
+varying vec3 vColor;
 
 void main() {
-#ifdef USE_COLOR
 	vColor.xyz = color.xyz;
-#endif
 
   vec4 mvPosition = modelViewMatrix * vec4( position.xyz, 1.0 );
   gl_Position = projectionMatrix * mvPosition;
@@ -65,18 +62,13 @@ void main() {
   fragmentShader: `\
 precision highp float;
 precision highp int;
-#define USE_COLOR
 // uniform mat4 viewMatrix;
 uniform vec3 ambientLightColor;
 uniform sampler2D lightMap;
 uniform vec2 d;
+uniform float sunIntensity;
 
-#define saturate(a) clamp( a, 0.0, 1.0 )
-
-#ifdef USE_COLOR
-	varying vec3 vColor;
-#endif
-
+varying vec3 vColor;
 varying vec3 vPosition;
 varying vec3 vViewPosition;
 
@@ -89,13 +81,9 @@ void main() {
     0.5
   ) / (${(NUM_CELLS + 1).toFixed(8)} * ${(NUM_CELLS + 1).toFixed(8)});
   float v = (floor(vPosition.y - ${HEIGHT_OFFSET.toFixed(8)}) + 0.5) / ${NUM_CELLS_HEIGHT.toFixed(8)};
-  vec3 lightColor = ambientLightColor + texture2D( lightMap, vec2(u, v) ).rgb * 2.0;
+  vec3 lightColor = texture2D( lightMap, vec2(u, v) ).rgb * 2.0;
 
-#ifdef USE_COLOR
-	diffuseColor.rgb *= vColor;
-#endif
-
-  vec3 outgoingLight = diffuseColor.rgb * lightColor;
+	vec3 outgoingLight = (ambientLightColor * 0.2 + diffuseColor.rgb) * ((0.1 + sunIntensity * 0.9) + (lightColor.rgb * (1.0 - sunIntensity)));
 
 	gl_FragColor = vec4( outgoingLight, diffuseColor.a );
 }
@@ -395,9 +383,21 @@ class Items {
         updateQueued = true;
       }
     };
+    const updateMeshes = () => {
+      const sunIntensity = (() => {
+        const dayNightSkyboxEntity = elements.getEntitiesElement().querySelector(DAY_NIGHT_SKYBOX_PLUGIN);
+        return (dayNightSkyboxEntity && dayNightSkyboxEntity.getSunIntensity) ? dayNightSkyboxEntity.getSunIntensity() : 0;
+      })();
+
+      for (let i = 0; i < itemsChunkMeshes.length; i++) {
+        const itemsChunkMesh = itemsChunkMeshes[i];
+        itemsChunkMesh.material.uniforms.sunIntensity.value = sunIntensity;
+      }
+    };
 
     const _update = () => {
       tryGrassChunkUpdate();
+      updateMeshes();
     };
     render.on('update', _update);
 
