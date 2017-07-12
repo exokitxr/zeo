@@ -580,6 +580,10 @@ class Zeo {
                           return tags.getWorldElement();
                         }
 
+                        getEntitiesElement() {
+                          return tags.getEntitiesElement();
+                        }
+
                         makeFile(options) {
                           return world.makeFile(options);
                         }

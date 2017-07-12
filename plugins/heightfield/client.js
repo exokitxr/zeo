@@ -8,6 +8,7 @@ const protocolUtils = require('./lib/utils/protocol-utils');
 
 const NUM_POSITIONS_CHUNK = 100 * 1024;
 const LIGHTMAP_PLUGIN = 'plugins-lightmap';
+const DAY_NIGHT_SKYBOX_PLUGIN = 'plugins-day-night-skybox';
 
 const HEIGHTFIELD_SHADER = {
   uniforms: {
@@ -18,6 +19,10 @@ const HEIGHTFIELD_SHADER = {
     d: {
       type: 'v2',
       value: null,
+    },
+    sunIntensity: {
+      type: 'f',
+      value: 0,
     },
   },
   vertexShader: `\
@@ -71,8 +76,9 @@ precision highp int;
 #define FLAT_SHADED
 // uniform mat4 viewMatrix;
 uniform vec3 ambientLightColor;
-uniform vec2 d;
 uniform sampler2D lightMap;
+uniform vec2 d;
+uniform float sunIntensity;
 
 #define saturate(a) clamp( a, 0.0, 1.0 )
 
@@ -87,17 +93,15 @@ varying vec3 vViewPosition;
 #endif
 
 void main() {
+	vec4 diffuseColor = vec4(vColor, 1.0);
+
   float u = (
     floor(clamp(vPosition.x - d.x, 0.0, ${(NUM_CELLS).toFixed(8)})) +
     (floor(clamp(vPosition.z - d.y, 0.0, ${(NUM_CELLS).toFixed(8)})) * ${(NUM_CELLS + 1).toFixed(8)}) +
     0.5
   ) / (${(NUM_CELLS + 1).toFixed(8)} * ${(NUM_CELLS + 1).toFixed(8)});
   float v = (floor(vPosition.y - ${HEIGHT_OFFSET.toFixed(8)}) + 0.5) / ${NUM_CELLS_HEIGHT.toFixed(8)};
-  vec4 diffuseColor = texture2D( lightMap, vec2(u, v) );
-
-#ifdef USE_COLOR
-	diffuseColor.rgb *= vColor;
-#endif
+  vec4 lightColor = texture2D( lightMap, vec2(u, v) );
 
 #ifdef ALPHATEST
 	if ( diffuseColor.a < ALPHATEST ) discard;
@@ -118,8 +122,8 @@ void main() {
 #endif
 
   float dotNL = saturate( dot( normal, normalize(vViewPosition)) );
-  vec3 irradiance = ambientLightColor + (dotNL * 2.0);
-	vec3 outgoingLight = irradiance * diffuseColor.rgb;
+  vec3 irradiance = ambientLightColor + (dotNL * 1.5);
+	vec3 outgoingLight = irradiance * diffuseColor.rgb * (0.1 + sunIntensity * 0.9) + (lightColor.rgb * (1.0 - sunIntensity));
 
 	gl_FragColor = vec4( outgoingLight, diffuseColor.a );
 }
@@ -412,9 +416,21 @@ class Heightfield {
             updateQueued = true;
           }
         };
+        const updateMeshes = () => {
+          const sunIntensity = (() => {
+            const dayNightSkyboxEntity = elements.getEntitiesElement().querySelector(DAY_NIGHT_SKYBOX_PLUGIN);
+            return dayNightSkyboxEntity ? dayNightSkyboxEntity.getSunIntensity() : 0;
+          })();
+
+          for (let i = 0; i < mapChunkMeshes.length; i++) {
+            const mapChunkMesh = mapChunkMeshes[i];
+            mapChunkMesh.material.uniforms.sunIntensity.value = sunIntensity;
+          }
+        };
 
         const _update = () => {
           tryMapChunkUpdate();
+          updateMeshes();
         };
         render.on('update', _update);
 

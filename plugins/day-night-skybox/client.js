@@ -178,24 +178,6 @@ class DayNightSkybox {
           sunSphere.rotation.z = -phi;
           sunSphere.updateMatrixWorld();
 
-          const sunIntensity = (() => {
-            const sunIntensity = zenithAngleCos => {
-              zenithAngleCos = Math.min(Math.max(zenithAngleCos, -1), 1);
-              return Math.max(0, 1 - Math.pow(Math.E, -((cutoffAngle - Math.acos(zenithAngleCos))/steepness)));
-            };
-
-            const cutoffAngle = Math.PI/1.95;
-		        const steepness = 1.5;
-            const maxSunIntensity = sunIntensity(1);
-
-            return sunIntensity(
-              sunSphere.position.clone()
-                .normalize()
-                .dot(upVector)
-            ) / maxSunIntensity;
-          })();
-// console.log('intensity', sunIntensity); // XXX
-
           starsMesh.rotation.z = -sky.azimuth * (Math.PI * 2);
           starsMesh.updateMatrixWorld();
           const nightCutoff = 0.1;
@@ -220,8 +202,31 @@ class DayNightSkybox {
           // moonSphere.rotation.y = Math.PI / 2;
           moonSphere.rotation.z = -phi;
           moonSphere.updateMatrixWorld();
+
+          sunIntensityCache = null;
         };
         updates.push(update);
+
+        const sunIntensity = zenithAngleCos => {
+          zenithAngleCos = Math.min(Math.max(zenithAngleCos, -1), 1);
+          return Math.max(0, 1 - Math.pow(Math.E, -((cutoffAngle - Math.acos(zenithAngleCos))/steepness)));
+        };
+        const cutoffAngle = Math.PI/1.95;
+        const steepness = 1.5;
+        const maxSunIntensity = sunIntensity(1);
+
+        let sunIntensityCache = null;
+        entityElement.getSunIntensity = () => {
+          if (sunIntensityCache === null) {
+            sunIntensityCache = sunIntensity(
+              mesh.sunSphere.position.clone()
+                .normalize()
+                .dot(upVector)
+            ) / maxSunIntensity;
+          }
+
+          return sunIntensityCache;
+        };
 
         entityElement._cleanup = () => {
           scene.remove(mesh);
