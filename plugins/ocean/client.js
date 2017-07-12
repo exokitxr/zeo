@@ -1,5 +1,6 @@
 const NUM_CELLS = 256;
 const SCALE = 4;
+const DAY_NIGHT_SKYBOX_PLUGIN = 'plugins-day-night-skybox';
 
 const OCEAN_SHADER = {
   uniforms: {
@@ -13,19 +14,23 @@ const OCEAN_SHADER = {
     fogDensity: {
       type: 'f',
     },
+    sunIntensity: {
+      type: 'f',
+      value: 0,
+    },
   },
   vertexShader: [
     "uniform float worldTime;",
     "attribute vec3 wave;",
     "attribute float color;",
-    "varying float vcolor;",
+    "varying float vColor;",
     "varying float fogDepth;",
     "void main() {",
     "  float ang = wave[0];",
     "  float amp = wave[1];",
     "  float speed = wave[2];",
     "  gl_Position = projectionMatrix * modelViewMatrix * vec4(position.x, position.y, ((sin(ang + (speed * worldTime))) * amp), 1.0);",
-    "  vcolor = color;",
+    "  vColor = color;",
     "  vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );",
     "  fogDepth = -mvPosition.z;",
     "}"
@@ -35,10 +40,11 @@ const OCEAN_SHADER = {
     "#define whiteCompliment(a) ( 1.0 - saturate( a ) )",
 		"uniform vec3 fogColor;",
     "uniform float fogDensity;",
-    "varying float vcolor;",
+    "uniform float sunIntensity;",
+    "varying float vColor;",
     "varying float fogDepth;",
     "void main() {",
-    "  gl_FragColor = vec4(vec3(0.25, 0.25, 0.5) * vcolor, 0.95);",
+    "  gl_FragColor = vec4((0.2 + 0.8 * sunIntensity) * (vec3(0.25, 0.25, 0.5) * vColor), 0.9);",
     "  float fogFactor = whiteCompliment( exp2( - fogDensity * fogDensity * fogDepth * fogDepth * LOG2 ) );",
     "  gl_FragColor.rgb = mix( gl_FragColor.rgb, fogColor, fogFactor );",
     "}"
@@ -54,9 +60,19 @@ const DATA = {
 class Ocean {
   mount() {
     const {three, render, elements, pose, world, utils: {random: randomUtils, hash: hashUtils}} = zeo;
-    const {THREE, scene} = three;
+    const {THREE, scene, renderer} = three;
     const {chnkr} = randomUtils;
     const {murmur} = hashUtils;
+
+    const uniforms = THREE.UniformsUtils.clone(OCEAN_SHADER.uniforms);
+    uniforms.fogColor.value = scene.fog.color;
+    uniforms.fogDensity.value = scene.fog.density;
+    const oceanMaterial = new THREE.ShaderMaterial({
+      uniforms: uniforms,
+      vertexShader: OCEAN_SHADER.vertexShader,
+      fragmentShader: OCEAN_SHADER.fragmentShader,
+      transparent: true,
+    });
 
     const updates = [];
     const _update = () => {
@@ -105,33 +121,25 @@ class Ocean {
           geometry.addAttribute('wave', new THREE.BufferAttribute(waves, 3));
           geometry.addAttribute('color', new THREE.BufferAttribute(colors, 1));
 
-          const uniforms = THREE.UniformsUtils.clone(OCEAN_SHADER.uniforms);
-          uniforms.fogColor.value = scene.fog.color;
-          uniforms.fogDensity.value = scene.fog.density;
-          const material = new THREE.ShaderMaterial({
-            uniforms,
-            vertexShader: OCEAN_SHADER.vertexShader,
-            fragmentShader: OCEAN_SHADER.fragmentShader,
-            transparent: true,
-            // depthWrite: false,
-          });
+          const material = oceanMaterial;
 
-          const result = new THREE.Mesh(geometry, material);
-          result.position.set(ox * NUM_CELLS, 0, oy * NUM_CELLS);
-          result.quaternion.set(-0.7071067811865475, 0, 0, 0.7071067811865475);
-          result.updateMatrixWorld();
+          const mesh = new THREE.Mesh(geometry, material);
+          mesh.position.set(ox * NUM_CELLS, 0, oy * NUM_CELLS);
+          mesh.quaternion.set(-0.7071067811865475, 0, 0, 0.7071067811865475);
+          mesh.updateMatrixWorld();
+          mesh.renderOrder = -100;
 
-          result.update = () => {
+          mesh.update = () => {
             const worldTime = world.getWorldTime();
             uniforms.worldTime.value = worldTime;
             uniforms.fogColor.value = scene.fog.color;
             uniforms.fogDensity.value = scene.fog.density;
           };
-          result.destroy = () => {
+          mesh.destroy = () => {
             geometry.dispose();
           };
 
-          return result;
+          return mesh;
         };
         const meshes = [];
 
@@ -164,9 +172,16 @@ class Ocean {
               mesh.update();
             }
           };
+          const _updateMaterial = () => {
+            oceanMaterial.uniforms.sunIntensity.value = (() => {
+              const dayNightSkyboxEntity = elements.getEntitiesElement().querySelector(DAY_NIGHT_SKYBOX_PLUGIN);
+              return (dayNightSkyboxEntity && dayNightSkyboxEntity.getSunIntensity) ? dayNightSkyboxEntity.getSunIntensity() : 0;
+            })();
+          };
 
           _updateOceanChunks();
           _updateMeshes();
+          _updateMaterial();
         };
         updates.push(update);
       
