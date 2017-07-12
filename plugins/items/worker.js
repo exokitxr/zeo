@@ -14,6 +14,7 @@ const {
 } = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
 
+const NUM_POSITIONS = 10 * 1024;
 const NUM_POSITIONS_CHUNK = 500 * 1024;
 
 const upVector = new THREE.Vector3(0, 1, 0);
@@ -202,11 +203,178 @@ const itemsGeometries = [
     geometry.addAttribute('position', new THREE.BufferAttribute(new Float32Array(positions.buffer, positions.byteOffset, positions.length), 3));
     geometry.addAttribute('color', new THREE.BufferAttribute(new Float32Array(colors.buffer, colors.byteOffset, colors.length), 3));
     geometry.setIndex(new THREE.BufferAttribute(indices, 1));
-
     geometry.applyMatrix(new THREE.Matrix4().makeScale(1 / resolution, 1 / resolution, 1 / resolution));
     geometry.computeVertexNormals();
 
     return geometry;
+  })(),
+  (() => { // iron
+    const resolution = 10;
+    const box = new THREE.Box3().setFromCenterAndSize(
+      new THREE.Vector3(0, resolution/10/2, 0),
+      new THREE.Vector3(resolution/2, resolution/10, resolution/2)
+    );
+    const line = new THREE.Line3(
+      new THREE.Vector3(0, 0, 0),
+      new THREE.Vector3(0, resolution/8, 0)
+    );
+    const {positions: positionsArray, cells: cellsArray} = _marchCubes((x, y, z) => {
+      if (y > 0) {
+        const v = new THREE.Vector3(x, y, z);
+        return -1 +
+          Math.min(
+            box.distanceToPoint(v),
+            v.distanceTo(line.closestPointToPoint(v, true)) * Math.pow(y, 0.8) / 4,
+          );
+      } else {
+        return 2;
+      }
+    }, resolution);
+
+    const coreGeometry = (() => {
+      const geometry = new THREE.BufferGeometry();
+      const numPositions = positionsArray.length;
+      const positions = new Float32Array(numPositions * 3);
+      for (let i = 0; i < numPositions; i++) {
+        const baseIndex = i * 3;
+        positions[baseIndex + 0] = positionsArray[i][0];
+        positions[baseIndex + 1] = positionsArray[i][1];
+        positions[baseIndex + 2] = positionsArray[i][2];
+      }
+      const colors = new Float32Array(numPositions * 3);
+      const baseColor = new THREE.Color(0x808080);
+      const rustColor = new THREE.Color(0xB7410E);
+      const _getCachedRandom = (() => {
+        let cache = {};
+
+        return k => {
+          const entry = cache[k];
+
+          if (entry !== undefined) {
+            return entry;
+          } else {
+            const entry = Math.random();
+            cache[k] = entry;
+            return entry;
+          }
+        };
+      })();
+      for (let i = 0; i < numPositions; i++) {
+        const baseIndex = i * 3;
+        const y = positions[baseIndex + 1];
+        const yFactor = (y / resolution) + 0.5;
+        const color = baseColor.clone()
+          .multiplyScalar(((yFactor - 0.5) * 4))
+          .lerp(rustColor, _getCachedRandom(positions[baseIndex + 0] + ':' + positions[baseIndex + 1] + ':' + positions[baseIndex + 2]) * 0.4);
+        colors[baseIndex + 0] = color.r;
+        colors[baseIndex + 1] = color.g;
+        colors[baseIndex + 2] = color.b;
+      }
+      const numCells = cellsArray.length;
+      const indices = new Uint16Array(numCells * 3);
+      for (let i = 0; i < numCells; i++) {
+        const baseIndex = i * 3;
+        indices[baseIndex + 0] = cellsArray[i][0];
+        indices[baseIndex + 1] = cellsArray[i][1];
+        indices[baseIndex + 2] = cellsArray[i][2];
+      }
+      geometry.addAttribute('position', new THREE.BufferAttribute(new Float32Array(positions.buffer, positions.byteOffset, positions.length), 3));
+      geometry.addAttribute('color', new THREE.BufferAttribute(new Float32Array(colors.buffer, colors.byteOffset, colors.length), 3));
+      geometry.setIndex(new THREE.BufferAttribute(indices, 1));
+
+      geometry
+        .applyMatrix(new THREE.Matrix4().makeScale(1.5 / resolution, 1.5 / resolution, 1.5 / resolution))
+        .applyMatrix(new THREE.Matrix4().makeTranslation(0, -1 / resolution, 0));
+      geometry.computeVertexNormals();
+
+      return geometry;
+    })();
+    return coreGeometry;
+    /* const rustGeometry = (() => {
+      const resolution = 12;
+      const point = new THREE.Vector3(0, 0.2, 0);
+      const {positions: positionsArray, cells: cellsArray} = _marchCubes((x, y, z) => {
+        const v = new THREE.Vector3(x, y, z);
+        return -(resolution / 12) + v.distanceTo(point);
+      }, resolution);
+
+      const geometry = new THREE.BufferGeometry();
+      const numPositions = positionsArray.length;
+      const positions = new Float32Array(numPositions * 3);
+      for (let i = 0; i < numPositions; i++) {
+        const baseIndex = i * 3;
+        positions[baseIndex + 0] = positionsArray[i][0];
+        positions[baseIndex + 1] = positionsArray[i][1];
+        positions[baseIndex + 2] = positionsArray[i][2];
+      }
+      const colors = new Float32Array(numPositions * 3);
+      const baseColor = new THREE.Color(0xB7410E);
+      for (let i = 0; i < numPositions; i++) {
+        const baseIndex = i * 3;
+        const y = positions[baseIndex + 1];
+        const yFactor = Math.abs(y / resolution) + 0.5;
+        const color = baseColor.clone().multiplyScalar(yFactor);
+        colors[baseIndex + 0] = color.r;
+        colors[baseIndex + 1] = color.g;
+        colors[baseIndex + 2] = color.b;
+      }
+      const numCells = cellsArray.length;
+      const indices = new Uint16Array(numCells * 3);
+      for (let i = 0; i < numCells; i++) {
+        const baseIndex = i * 3;
+        indices[baseIndex + 0] = cellsArray[i][0];
+        indices[baseIndex + 1] = cellsArray[i][1];
+        indices[baseIndex + 2] = cellsArray[i][2];
+      }
+      geometry.addAttribute('position', new THREE.BufferAttribute(new Float32Array(positions.buffer, positions.byteOffset, positions.length), 3));
+      geometry.addAttribute('color', new THREE.BufferAttribute(new Float32Array(colors.buffer, colors.byteOffset, colors.length), 3));
+      geometry.setIndex(new THREE.BufferAttribute(indices, 1));
+      geometry.computeVertexNormals();
+      return geometry;
+    })();
+    const geometries = [
+      coreGeometry,
+      rustGeometry.clone()
+        .applyMatrix(new THREE.Matrix4().makeScale(1 / resolution, 1 / resolution, 1 / resolution))
+        .applyMatrix(new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(-Math.PI/2, 0, 0, 'YXZ')))
+        .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.3, 0)),
+      rustGeometry.clone()
+        .applyMatrix(new THREE.Matrix4().makeScale(1 / resolution, 1 / resolution, 1 / resolution))
+        .applyMatrix(new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(-Math.PI/2, Math.PI, 0, 'YXZ')))
+        .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.2, 0.3)),
+      rustGeometry.clone()
+        .applyMatrix(new THREE.Matrix4().makeScale(1 / resolution, 1 / resolution, 1 / resolution))
+        .applyMatrix(new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(-Math.PI/2, Math.PI/3, 0, 'YXZ')))
+        .applyMatrix(new THREE.Matrix4().makeTranslation(-0.35, 0.2, -0.2)),
+    ];
+
+    const positions = new Float32Array(NUM_POSITIONS);
+    const normals = new Float32Array(NUM_POSITIONS);
+    const colors = new Float32Array(NUM_POSITIONS);
+    const indices = new Uint16Array(NUM_POSITIONS);
+    let attributeIndex = 0;
+    let indexIndex = 0;
+    for (let i = 0; i < geometries.length; i++) {
+      const newGeometry = geometries[i];
+      const newPositions = newGeometry.getAttribute('position').array;
+      positions.set(newPositions, attributeIndex);
+      const newNormals = newGeometry.getAttribute('normal').array;
+      normals.set(newNormals, attributeIndex);
+      const newColors = newGeometry.getAttribute('color').array;
+      colors.set(newColors, attributeIndex);
+      const newIndices = newGeometry.index.array;
+      _copyIndices(newIndices, indices, indexIndex, attributeIndex / 3);
+
+      attributeIndex += newPositions.length;
+      indexIndex += newIndices.length;
+    }
+
+    const geometry = new THREE.BufferGeometry();
+    geometry.addAttribute('position', new THREE.BufferAttribute(new Float32Array(positions.buffer, positions.byteOffset, attributeIndex), 3));
+    geometry.addAttribute('normal', new THREE.BufferAttribute(new Float32Array(normals.buffer, normals.byteOffset, attributeIndex), 3));
+    geometry.addAttribute('color', new THREE.BufferAttribute(new Float32Array(colors.buffer, colors.byteOffset, attributeIndex), 3));
+    geometry.setIndex(new THREE.BufferAttribute(new Uint16Array(indices.buffer, indices.byteOffset, indexIndex), 1));
+    return geometry; */
   })(),
 ];
 
