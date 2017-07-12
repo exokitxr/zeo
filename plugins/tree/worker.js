@@ -54,8 +54,8 @@ const _copyIndices = (src, dst, startIndexIndex, startAttributeIndex) => {
 };
 
 const baseLeafColor = new THREE.Color(0x8BC34A);
-const baseTrunkColor = new THREE.Color(0x795548).multiplyScalar(0.8);
-const lightTrunkColor = new THREE.Color(0x5D4037).multiplyScalar(0.8);
+const baseTrunkColor = new THREE.Color(0x795548);
+const lightTrunkColor = new THREE.Color(0x5D4037);
 const _isPointInBox = (p, b) => p.x >= b.min.x && p.x < b.max.x && p.y >= b.min.y && p.y < b.max.y;
 const _isPointInBoxes = (p, bs) => {
   for (let i = 0; i < bs.length; i++) {
