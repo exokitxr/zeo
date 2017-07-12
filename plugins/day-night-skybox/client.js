@@ -36,7 +36,8 @@ class DayNightSkybox {
     }); */
     // MAP_MOON_MATERIAL.depthTest = false;
 
-    const zeroVector = new THREE.Vector3(0, 0, 0);
+    const zeroVector = new THREE.Vector3();
+    const upVector = new THREE.Vector3(0, 1, 0);
 
     const updates = [];
 
@@ -108,8 +109,6 @@ class DayNightSkybox {
               const result = new THREE.BufferGeometry();
               const vertices = new Float32Array(numStars * 3);
 
-              const upVector = new THREE.Vector3(0, 1, 0);
-
               for (let i = 0; i < numStars; i++) {
                 const radius = 2500 + (Math.random() * 2500);
                 const magnitudeVector = new THREE.Vector3(0, radius, 0);
@@ -179,8 +178,23 @@ class DayNightSkybox {
           sunSphere.rotation.z = -phi;
           sunSphere.updateMatrixWorld();
 
-          /* sunLight.position.set(x, y, z);
-          sunLight.lookAt(zeroVector); */
+          const sunIntensity = (() => {
+            const sunIntensity = zenithAngleCos => {
+              zenithAngleCos = Math.min(Math.max(zenithAngleCos, -1), 1);
+              return Math.max(0, 1 - Math.pow(Math.E, -((cutoffAngle - Math.acos(zenithAngleCos))/steepness)));
+            };
+
+            const cutoffAngle = Math.PI/1.95;
+		        const steepness = 1.5;
+            const maxSunIntensity = sunIntensity(1);
+
+            return sunIntensity(
+              sunSphere.position.clone()
+                .normalize()
+                .dot(upVector)
+            ) / maxSunIntensity;
+          })();
+// console.log('intensity', sunIntensity); // XXX
 
           starsMesh.rotation.z = -sky.azimuth * (Math.PI * 2);
           starsMesh.updateMatrixWorld();
