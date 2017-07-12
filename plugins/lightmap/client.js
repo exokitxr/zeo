@@ -313,9 +313,7 @@ class Lightmap {
         entityElement.lightmapper = lightmapper;
 
         const _update = () => {
-if (!window.lol) {
           lightmapper.update();
-}
         };
         render.on('update', _update);
 
