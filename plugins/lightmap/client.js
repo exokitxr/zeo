@@ -24,10 +24,10 @@ class Lightmap {
       constructor(x, y, z, r, v, blend = Lightmapper.AddBlend) {
         this.type = 'sphere';
 
-        this.x = x;
-        this.y = y;
-        this.z = z;
-        this.r = r;
+        this.x = Math.floor(x);
+        this.y = Math.floor(y);
+        this.z = Math.floor(z);
+        this.r = Math.floor(r);
         this.v = v;
         this.blend = blend;
       }
@@ -36,11 +36,11 @@ class Lightmap {
       constructor(x, y, z, h, r, v, blend = Lightmapper.AddBlend) {
         this.type = 'cylinder';
 
-        this.x = x;
-        this.y = y;
-        this.z = z;
-        this.h = h;
-        this.r = r;
+        this.x = Math.floor(x);
+        this.y = Math.floor(y);
+        this.z = Math.floor(z);
+        this.h = Math.floor(h);
+        this.r = Math.floor(r);
         this.v = v;
         this.blend = blend;
       }
@@ -49,9 +49,9 @@ class Lightmap {
       constructor(x, y, z, v, blend = Lightmapper.AddBlend) {
         this.type = 'voxel';
 
-        this.x = x;
-        this.y = y;
-        this.z = z;
+        this.x = Math.floor(x);
+        this.y = Math.floor(y);
+        this.z = Math.floor(z);
         this.v = v;
         this.blend = blend;
       }
@@ -93,6 +93,10 @@ class Lightmap {
         const {ox, oz, width, height, depth, heightOffset, lightmap, texture, needsUpdate} = this;
 
         const _renderShapes = () => {
+          const width1 = width + 1;
+          const depth1 = depth + 1;
+          const width1depth1 = width1 * depth1;
+
           const _renderShape = shape => {
             const {type} = shape;
 
@@ -105,16 +109,16 @@ class Lightmap {
 
                 const dr = r - 1;
                 const maxDistance = Math.sqrt(dr*dr*3);
-                for (let dx = -dr; dx <= dr; dx++) {
-                  for (let dy = -dr; dy <= dr; dy++) {
-                    for (let dz = -dr; dz <= dr; dz++) {
-                      const lx = Math.floor(ax + dx);
-                      const ly = Math.floor(ay + dy);
-                      const lz = Math.floor(az + dz);
+                for (let dy = -dr; dy <= dr; dy++) {
+                  for (let dz = -dr; dz <= dr; dz++) {
+                    for (let dx = -dr; dx <= dr; dx++) {
+                      const lx = ax + dx;
+                      const ly = ay + dy;
+                      const lz = az + dz;
 
                       if (_isInRange(lx, width) && _isInRange(ly, height) && _isInRange(lz, depth)) {
-                        const distanceFactor = (maxDistance - new THREE.Vector3(dx, dy, dz).length()) / maxDistance;
-                        const lightmapIndex = lx + (lz * (width + 1)) + (ly * (width + 1) * (depth + 1));
+                        const distanceFactor = (maxDistance - Math.sqrt(dx*dx + dy*dy + dz*dz)) / maxDistance;
+                        const lightmapIndex = lx + (lz * width1) + (ly * width1depth1);
                         lightmap[lightmapIndex] = blend(lightmap[lightmapIndex], Math.min(distanceFactor * distanceFactor * v, 1) * 255);
                       }
                     }
@@ -131,17 +135,17 @@ class Lightmap {
 
                 const dr = r - 1;
                 const maxDistance = Math.sqrt(dr*dr*2);
-                for (let dx = -dr; dx <= dr; dx++) {
-                  for (let dz = -dr; dz <= dr; dz++) {
-                    const radiusFactor = (maxDistance - new THREE.Vector2(dx, dz).length()) / maxDistance;
+                for (let dz = -dr; dz <= dr; dz++) {
+                  for (let dx = -dr; dx <= dr; dx++) {
+                    const radiusFactor = (maxDistance - Math.sqrt(dx*dx + dz*dz)) / maxDistance;
 
                     for (let dy = 0; dy < h; dy++) {
-                      const lx = Math.floor(ax + dx);
-                      const ly = Math.floor(ay + dy);
-                      const lz = Math.floor(az + dz);
+                      const lx = ax + dx;
+                      const ly = ay + dy;
+                      const lz = az + dz;
 
                       if (_isInRange(lx, width) && _isInRange(ly, height) && _isInRange(lz, depth)) {
-                        const lightmapIndex = lx + (lz * (width + 1)) + (ly * (width + 1) * (depth + 1));
+                        const lightmapIndex = lx + (lz * width1) + (ly * width1depth1);
                         const distanceFactor = radiusFactor * (1 - (dy / h));
                         lightmap[lightmapIndex] = blend(lightmap[lightmapIndex], Math.min(distanceFactor * distanceFactor * v, 1) * 255);
                       }
@@ -158,7 +162,7 @@ class Lightmap {
                 const az = z - (ox * height);
 
                 if (_isInRange(ax, width) && _isInRange(ay, height) && _isInRange(az, depth)) {
-                  const lightmapIndex = ax + (az * (width + 1)) + (ay * (width + 1) * (depth + 1));
+                  const lightmapIndex = ax + (az * width1) + (ay * width1depth1);
                   lightmap[lightmapIndex] = blend(lightmap[lightmapIndex], v);
                 }
 
