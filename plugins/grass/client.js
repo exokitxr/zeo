@@ -111,7 +111,11 @@ void main() {
 	float flipNormal = 1.0;
 #endif
 
-	vec3 outgoingLight = (ambientLightColor * 0.2 + diffuseColor.rgb) * ((0.1 + sunIntensity * 0.9) + (lightColor.rgb * (1.0 - sunIntensity)));
+  vec3 outgoingLight = (ambientLightColor * 0.2 + diffuseColor.rgb) * (0.1 + sunIntensity * 0.9) +
+    diffuseColor.rgb * (
+      min((lightColor.rgb - 0.5) * 2.0, 0.0) * sunIntensity +
+      max((lightColor.rgb - 0.5) * 2.0, 0.0) * (1.0 - sunIntensity)
+    );
 
 	gl_FragColor = vec4( outgoingLight, diffuseColor.a );
 }

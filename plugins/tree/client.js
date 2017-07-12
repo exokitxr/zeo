@@ -100,7 +100,7 @@ void main() {
     0.5
   ) / (${(NUM_CELLS + 1).toFixed(8)} * ${(NUM_CELLS + 1).toFixed(8)});
   float v = (floor(vPosition.y - ${HEIGHT_OFFSET.toFixed(8)}) + 0.5) / ${NUM_CELLS_HEIGHT.toFixed(8)};
-  vec3 lightColor = texture2D( lightMap, vec2(u, v) ).rgb * 1.5;
+  vec3 lightColor = texture2D( lightMap, vec2(u, v) ).rgb;
 
 #ifdef ALPHATEST
 	if ( diffuseColor.a < ALPHATEST ) discard;
@@ -112,7 +112,11 @@ void main() {
 	float flipNormal = 1.0;
 #endif
 
-	vec3 outgoingLight = (ambientLightColor * 0.2 + diffuseColor.rgb) * ((0.1 + sunIntensity * 0.9) + (lightColor.rgb * (1.0 - sunIntensity)));
+  vec3 outgoingLight = (ambientLightColor * 0.2 + diffuseColor.rgb) * (0.1 + sunIntensity * 0.9) +
+    diffuseColor.rgb * (
+      min((lightColor.rgb - 0.5) * 2.0, 0.0) * sunIntensity +
+      max((lightColor.rgb - 0.5) * 2.0, 0.0) * (1.0 - sunIntensity)
+    );
 
 	gl_FragColor = vec4( outgoingLight, diffuseColor.a );
 }
@@ -208,8 +212,10 @@ class Tree {
           );
           mapTexture.needsUpdate = true;
 
+          let Lightmapper = null;
           let lightmapper = null;
           const _bindLightmapper = lightmapElement => {
+            Lightmapper = lightmapElement.Lightmapper;
             lightmapper = lightmapElement.lightmapper;
 
             _bindLightmaps();
@@ -237,11 +243,29 @@ class Tree {
             const lightmap = lightmapper.getLightmapAt(x * NUM_CELLS, y * NUM_CELLS);
             treeChunkMesh.material.uniforms.lightMap.value = lightmap.texture;
             treeChunkMesh.lightmap = lightmap;
+
+            const {trees} = treeChunkMesh;
+            const numTrees = trees.length / 5;
+            const shapes = Array(numTrees);
+            for (let i = 0; i < numTrees; i++) {
+              const baseIndex = i * 5;
+              const x = trees[baseIndex + 2];
+              const y = trees[baseIndex + 3];
+              const z = trees[baseIndex + 4];
+              const shape = new Lightmapper.Cylinder(x, y, z, 16, 8, 0.15, Lightmapper.SubBlend);
+              lightmapper.add(shape);
+              shapes[i] = shape;
+            }
+            treeChunkMesh.shapes = shapes;
           };
           const _unbindLightmap = treeChunkMesh => {
             const {lightmap} = treeChunkMesh;
             lightmapper.releaseLightmap(lightmap);
             treeChunkMesh.lightmap = null;
+
+            const {shapes} = treeChunkMesh;
+            lightmapper.removes(shapes);
+            treeChunkMesh.shapes = null;
           };
           const elementListener = elements.makeListener(LIGHTMAP_PLUGIN);
           elementListener.on('add', entityElement => {
@@ -255,7 +279,7 @@ class Tree {
             .then(treeChunkBuffer => protocolUtils.parseTreeGeometry(treeChunkBuffer));
 
           const _makeTreeChunkMesh = (treeChunkData, x, z) => {
-            const {position, positions, uvs, indices, heightRange} = treeChunkData;
+            const {position, positions, uvs, indices, heightRange, trees} = treeChunkData;
 
             const geometry = (() => {
               let geometry = new THREE.BufferGeometry();
@@ -294,6 +318,7 @@ class Tree {
             // mesh.frustumCulled = false;
 
             mesh.offset = new THREE.Vector2(x, z);
+            mesh.trees = trees;
             mesh.lightmap = null;
             if (lightmapper) {
               _bindLightmap(mesh);

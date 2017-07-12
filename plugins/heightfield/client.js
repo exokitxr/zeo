@@ -123,7 +123,14 @@ void main() {
 
   float dotNL = saturate( dot( normal, normalize(vViewPosition)) );
   vec3 irradiance = ambientLightColor + (dotNL * 1.5);
-	vec3 outgoingLight = irradiance * diffuseColor.rgb * (0.1 + sunIntensity * 0.9) + (lightColor.rgb * (1.0 - sunIntensity));
+  vec3 outgoingLight = diffuseColor.rgb *
+    (
+      (irradiance * (0.1 + sunIntensity * 0.9)) +
+      (
+        min((lightColor.rgb - 0.5) * 2.0, 0.0) * sunIntensity +
+        max((lightColor.rgb - 0.5) * 2.0, 0.0) * (1.0 - sunIntensity)
+      )
+    );
 
 	gl_FragColor = vec4( outgoingLight, diffuseColor.a );
 }

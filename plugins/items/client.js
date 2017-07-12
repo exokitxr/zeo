@@ -81,9 +81,13 @@ void main() {
     0.5
   ) / (${(NUM_CELLS + 1).toFixed(8)} * ${(NUM_CELLS + 1).toFixed(8)});
   float v = (floor(vPosition.y - ${HEIGHT_OFFSET.toFixed(8)}) + 0.5) / ${NUM_CELLS_HEIGHT.toFixed(8)};
-  vec3 lightColor = texture2D( lightMap, vec2(u, v) ).rgb * 2.0;
+  vec3 lightColor = texture2D( lightMap, vec2(u, v) ).rgb;
 
-	vec3 outgoingLight = (ambientLightColor * 0.2 + diffuseColor.rgb) * ((0.1 + sunIntensity * 0.9) + (lightColor.rgb * (1.0 - sunIntensity)));
+  vec3 outgoingLight = (ambientLightColor * 0.2 + diffuseColor.rgb) * (0.1 + sunIntensity * 0.9) +
+    diffuseColor.rgb * (
+      min((lightColor.rgb - 0.5) * 2.0, 0.0) * sunIntensity +
+      max((lightColor.rgb - 0.5) * 2.0, 0.0) * (1.0 - sunIntensity)
+    );
 
 	gl_FragColor = vec4( outgoingLight, diffuseColor.a );
 }

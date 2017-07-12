@@ -13,14 +13,15 @@ class Lightmap {
     const {EventEmitter} = events;
 
     class Ambient {
-      constructor(v) {
+      constructor(v, blend = Lightmapper.AddBlend) {
         this.type = 'ambient';
 
         this.v = v;
+        this.blend = blend;
       }
     }
     class Sphere {
-      constructor(x, y, z, r, v) {
+      constructor(x, y, z, r, v, blend = Lightmapper.AddBlend) {
         this.type = 'sphere';
 
         this.x = x;
@@ -28,16 +29,31 @@ class Lightmap {
         this.z = z;
         this.r = r;
         this.v = v;
+        this.blend = blend;
+      }
+    }
+    class Cylinder {
+      constructor(x, y, z, h, r, v, blend = Lightmapper.AddBlend) {
+        this.type = 'cylinder';
+
+        this.x = x;
+        this.y = y;
+        this.z = z;
+        this.h = h;
+        this.r = r;
+        this.v = v;
+        this.blend = blend;
       }
     }
     class Voxel {
-      constructor(x, y, z, v) {
+      constructor(x, y, z, v, blend = Lightmapper.AddBlend) {
         this.type = 'voxel';
 
         this.x = x;
         this.y = y;
         this.z = z;
         this.v = v;
+        this.blend = blend;
       }
     }
 
@@ -77,25 +93,12 @@ class Lightmap {
         const {ox, oz, width, height, depth, heightOffset, lightmap, texture, needsUpdate} = this;
 
         const _renderShapes = () => {
-          const ambientValue = (() => {
-            let result = 0;
-            for (let i = 0; i < shapes.length; i++) {
-              const shape = shapes[i];
-              if (shape.type === 'ambient') {
-                result += shape.v;
-              }
-            }
-            return result;
-          })();
-          lightmap.fill(ambientValue);
-
-          for (let i = 0; i < shapes.length; i++) {
-            const shape = shapes[i];
+          const _renderShape = shape => {
             const {type} = shape;
 
             switch (type) {
               case 'sphere': {
-                const {x, y, z, r, v} = shape;
+                const {x, y, z, r, v, blend} = shape;
                 const ax = x - (ox * width);
                 const ay = y - heightOffset;
                 const az = z - (oz * depth);
@@ -112,10 +115,35 @@ class Lightmap {
                       if (_isInRange(lx, width) && _isInRange(ly, height) && _isInRange(lz, depth)) {
                         const distanceFactor = (maxDistance - new THREE.Vector3(dx, dy, dz).length()) / maxDistance;
                         const lightmapIndex = lx + (lz * (width + 1)) + (ly * (width + 1) * (depth + 1));
-                        lightmap[lightmapIndex] = Math.max(
-                          Math.min(distanceFactor * distanceFactor * v, 1) * 255,
-                          lightmap[lightmapIndex]
-                        );
+                        lightmap[lightmapIndex] = blend(lightmap[lightmapIndex], Math.min(distanceFactor * distanceFactor * v, 1) * 255);
+                      }
+                    }
+                  }
+                }
+
+                break;
+              }
+              case 'cylinder': {
+                const {x, y, z, h, r, v, blend} = shape;
+                const ax = x - (ox * width);
+                const ay = y - heightOffset;
+                const az = z - (oz * depth);
+
+                const dr = r - 1;
+                const maxDistance = Math.sqrt(dr*dr*2);
+                for (let dx = -dr; dx <= dr; dx++) {
+                  for (let dz = -dr; dz <= dr; dz++) {
+                    const radiusFactor = (maxDistance - new THREE.Vector2(dx, dz).length()) / maxDistance;
+
+                    for (let dy = 0; dy < h; dy++) {
+                      const lx = Math.floor(ax + dx);
+                      const ly = Math.floor(ay + dy);
+                      const lz = Math.floor(az + dz);
+
+                      if (_isInRange(lx, width) && _isInRange(ly, height) && _isInRange(lz, depth)) {
+                        const lightmapIndex = lx + (lz * (width + 1)) + (ly * (width + 1) * (depth + 1));
+                        const distanceFactor = radiusFactor * (1 - (dy / h));
+                        lightmap[lightmapIndex] = blend(lightmap[lightmapIndex], Math.min(distanceFactor * distanceFactor * v, 1) * 255);
                       }
                     }
                   }
@@ -124,16 +152,46 @@ class Lightmap {
                 break;
               }
               case 'voxel': {
-                const {x, y, z, r} = shape;
+                const {x, y, z, r, blend} = shape;
                 const ax = x - (ox * width);
                 const ay = y - heightOffset;
                 const az = z - (ox * height);
 
                 if (_isInRange(ax, width) && _isInRange(ay, height) && _isInRange(az, depth)) {
                   const lightmapIndex = ax + (az * (width + 1)) + (ay * (width + 1) * (depth + 1));
-                  lightmap[lightmapIndex] = Math.max(v, lightmap[lightmapIndex]);
+                  lightmap[lightmapIndex] = blend(lightmap[lightmapIndex], v);
                 }
+
+                break;
               }
+            }
+          };
+
+          const ambientValue = (() => {
+            let result = 0;
+            for (let i = 0; i < shapes.length; i++) {
+              const shape = shapes[i];
+              if (shape.type === 'ambient') {
+                result += shape.v;
+              }
+            }
+            return result;
+          })();
+          lightmap.fill(ambientValue);
+
+          // add/sub
+          for (let i = 0; i < shapes.length; i++) {
+            const shape = shapes[i];
+            if (shape.blend !== Lightmapper.MaxBlend) {
+              _renderShape(shape);
+            }
+          }
+
+          // max
+          for (let i = 0; i < shapes.length; i++) {
+            const shape = shapes[i];
+            if (shape.blend === Lightmapper.MaxBlend) {
+              _renderShape(shape);
             }
           }
 
@@ -213,6 +271,12 @@ class Lightmap {
         this.needsUpdate = true;
       }
 
+      removes(shapes) {
+        this._shapes = this._shapes.filter(shape => !shapes.includes(shape));
+
+        this.needsUpdate = true;
+      }
+
       update() {
         const {width, depth, height, heightOffset, needsUpdate, _lightmaps: lightmaps, _shapes: shapes} = this;
 
@@ -228,22 +292,30 @@ class Lightmap {
     };
     Lightmapper.Ambient = Ambient;
     Lightmapper.Sphere = Sphere;
+    Lightmapper.Cylinder = Cylinder;
     Lightmapper.Voxel = Voxel;
+    Lightmapper.AddBlend = (a, b) => Math.min(Math.max(a + b, 0), 255);
+    Lightmapper.SubBlend = (a, b) => Math.min(Math.max(a - b, 0), 255);
+    Lightmapper.MaxBlend = (a, b) => Math.max(a, b);
 
     const lightmapEntity = {
       entityAddedCallback(entityElement) {
+        entityElement.Lightmapper = Lightmapper;
+
         const lightmapper = new Lightmapper({
           width: NUM_CELLS,
           height: NUM_CELLS_HEIGHT,
           depth: NUM_CELLS,
           heightOffset: HEIGHT_OFFSET,
         });
-        // lightmapper.add(new Lightmapper.Ambient(255 * 0.1));
-        lightmapper.add(new Lightmapper.Sphere(0, 32, 0, 8, 1.5));
+        lightmapper.add(new Lightmapper.Ambient(255 * 0.5));
+        lightmapper.add(new Lightmapper.Sphere(0, 32, 0, 8, 2, Lightmapper.MaxBlend));
         entityElement.lightmapper = lightmapper;
 
         const _update = () => {
+if (!window.lol) {
           lightmapper.update();
+}
         };
         render.on('update', _update);
 
