@@ -231,7 +231,6 @@ class Cyborg {
                 mesh.position.copy(hmdStatus.position);
                 mesh.quaternion.copy(hmdStatus.rotation);
                 mesh.scale.copy(hmdStatus.scale);
-                mesh.updateMatrixWorld();
 
                 mesh.worldPosition.copy(hmdStatus.worldPosition);
                 mesh.worldRotation.copy(hmdStatus.worldRotation);
@@ -341,7 +340,6 @@ class Cyborg {
               mesh.position.copy(gamepadStatus.position);
               mesh.quaternion.copy(gamepadStatus.rotation);
               mesh.scale.copy(gamepadStatus.scale);
-              mesh.updateMatrixWorld();
 
               mesh.worldPosition.copy(gamepadStatus.worldPosition);
               mesh.worldRotation.copy(gamepadStatus.worldRotation);
@@ -384,13 +382,7 @@ class Cyborg {
           const _getHmd = () => hmd;
           const _getControllers = () => controllers;
           const _update = () => {
-            // update camera
             const {hmd: hmdStatus, gamepads: gamepadsStatus} = webvr.getStatus();
-            camera.position.copy(hmdStatus.position);
-            camera.quaternion.copy(hmdStatus.rotation);
-            camera.scale.copy(hmdStatus.scale);
-            camera.parent.matrix.copy(webvr.getExternalMatrix());
-            camera.parent.updateMatrixWorld(true);
 
             // update hmd
             hmd.update(hmdStatus, gamepadsStatus);
@@ -404,6 +396,13 @@ class Cyborg {
                 controller.update(gamepadStatus);
               }
             });
+
+            // update camera
+            camera.position.copy(hmdStatus.position);
+            camera.quaternion.copy(hmdStatus.rotation);
+            camera.scale.copy(hmdStatus.scale);
+            camera.parent.matrix.copy(webvr.getExternalMatrix());
+            camera.parent.updateMatrixWorld(true);
 
             // snapshot current status
             player.snapshotStatus();
