@@ -163,6 +163,51 @@ const itemsGeometries = [
 
     return geometry;
   })(),
+  (() => { // coal
+    const resolution = 12;
+    const point = new THREE.Vector3(0, 0.2, 0);
+    const {positions: positionsArray, cells: cellsArray} = _marchCubes((x, y, z) => {
+      const v = new THREE.Vector3(x, y, z);
+      return -(resolution / 12) + v.distanceTo(point);
+    }, resolution);
+
+    const geometry = new THREE.BufferGeometry();
+    const numPositions = positionsArray.length;
+    const positions = new Float32Array(numPositions * 3);
+    for (let i = 0; i < numPositions; i++) {
+      const baseIndex = i * 3;
+      positions[baseIndex + 0] = positionsArray[i][0];
+      positions[baseIndex + 1] = positionsArray[i][1];
+      positions[baseIndex + 2] = positionsArray[i][2];
+    }
+    const colors = new Float32Array(numPositions * 3);
+    const baseColor = new THREE.Color(0x212121);
+    for (let i = 0; i < numPositions; i++) {
+      const baseIndex = i * 3;
+      const y = positions[baseIndex + 1];
+      const yFactor = Math.abs(y / resolution) + 0.5;
+      const color = baseColor.clone().multiplyScalar(yFactor);
+      colors[baseIndex + 0] = color.r;
+      colors[baseIndex + 1] = color.g;
+      colors[baseIndex + 2] = color.b;
+    }
+    const numCells = cellsArray.length;
+    const indices = new Uint16Array(numCells * 3);
+    for (let i = 0; i < numCells; i++) {
+      const baseIndex = i * 3;
+      indices[baseIndex + 0] = cellsArray[i][0];
+      indices[baseIndex + 1] = cellsArray[i][1];
+      indices[baseIndex + 2] = cellsArray[i][2];
+    }
+    geometry.addAttribute('position', new THREE.BufferAttribute(new Float32Array(positions.buffer, positions.byteOffset, positions.length), 3));
+    geometry.addAttribute('color', new THREE.BufferAttribute(new Float32Array(colors.buffer, colors.byteOffset, colors.length), 3));
+    geometry.setIndex(new THREE.BufferAttribute(indices, 1));
+
+    geometry.applyMatrix(new THREE.Matrix4().makeScale(1 / resolution, 1 / resolution, 1 / resolution));
+    geometry.computeVertexNormals();
+
+    return geometry;
+  })(),
 ];
 
 const _makeItemsChunkMesh = (x, y, itemsGeometries, points, heightRange) => {

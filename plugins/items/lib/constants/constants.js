@@ -10,6 +10,7 @@ const DEFAULT_SEED = 'a';
 const ITEMS = [
   'WOOD',
   'STONE',
+  'COAL',
 ];
 
 module.exports = {
