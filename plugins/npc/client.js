@@ -1,4 +1,4 @@
-const minecraftSkin = require('./lib/minecraft-skin');
+const skin = require('./lib/skin');
 
 class Npc {
   mount() {
@@ -9,11 +9,6 @@ class Npc {
     this._cleanup = () => {
       live = false;
     };
-
-    const scaleVector = (() => {
-      const scale = 1 / 18;
-      return new THREE.Vector3(scale, scale, scale);
-    })();
 
     const _requestImage = url => new Promise((accept, reject) => {
       const img = new Image();
@@ -53,9 +48,7 @@ class Npc {
     return _requestImage('/archae/npc/img/9')
       .then(skinImg => {
         if (live) {
-          const _makeMesh = skinImg => minecraftSkin(THREE, skinImg, {
-            scale: scaleVector,
-          }).mesh;
+          const _makeMesh = skinImg => skin(THREE, skinImg);
 
           const skinEntity = {
             entityAddedCallback(entityElement) {
