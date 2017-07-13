@@ -1,8 +1,10 @@
 const skin = require('./lib/skin');
 
+const HEIGHTFIELD_PLUGIN = 'plugins-heightfield';
+
 class Npc {
   mount() {
-    const {three, pose, render, utils: {network: networkUtils, random: randomUtils}} = zeo;
+    const {three, pose, elements, render, utils: {network: networkUtils, random: randomUtils}} = zeo;
     const {THREE, scene} = three;
     const {AutoWs} = networkUtils;
     const {chnkr} = randomUtils;
@@ -35,23 +37,38 @@ class Npc {
             const mesh = skin(THREE, skinImg);
 
             const {head, leftArm, rightArm, leftLeg, rightLeg} = mesh;
-            mesh.update = now => {
-              const angle = Math.sin((now % 2000) / 2000 * Math.PI * 2) * Math.PI/4;
+            mesh.update = (now, heightfieldElement) => {
+              const _updatePosition = () => {
+                if (heightfieldElement && heightfieldElement.getElevation) {
+                  const elevation = heightfieldElement.getElevation(mesh.position.x, mesh.position.z);
+                  
+                  if (mesh.position.y !== elevation) {
+                    mesh.position.y = elevation;
+                    mesh.updateMatrixWorld();
+                  }
+                }
+              };
+              const _updateAnimation = () => {
+                const angle = Math.sin((now % 2000) / 2000 * Math.PI * 2) * Math.PI/4;
 
-              head.rotation.y = angle;
-              head.updateMatrixWorld();
+                head.rotation.y = angle;
+                head.updateMatrixWorld();
 
-              leftArm.rotation.x = angle;
-              leftArm.updateMatrixWorld();
+                leftArm.rotation.x = angle;
+                leftArm.updateMatrixWorld();
 
-              rightArm.rotation.x = -angle;
-              rightArm.updateMatrixWorld();
+                rightArm.rotation.x = -angle;
+                rightArm.updateMatrixWorld();
 
-              leftLeg.rotation.x = -angle;
-              leftLeg.updateMatrixWorld();
+                leftLeg.rotation.x = -angle;
+                leftLeg.updateMatrixWorld();
 
-              rightLeg.rotation.x = angle;
-              rightLeg.updateMatrixWorld();
+                rightLeg.rotation.x = angle;
+                rightLeg.updateMatrixWorld();
+              };
+
+              _updatePosition();
+              _updateAnimation();
             };
             mesh.destroy = () => {
               // XXX
@@ -97,10 +114,11 @@ class Npc {
           const _update = () => {
             const _updateMeshes = () => {
               const now = Date.now();
+              const heightfieldElement = elements.getEntitiesElement().querySelector(HEIGHTFIELD_PLUGIN);
 
               for (const id in meshes) {
                 const mesh = meshes[id];
-                mesh.update(now);
+                mesh.update(now, heightfieldElement);
               }
             };
             const _updateNpcChunks = () => {
