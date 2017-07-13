@@ -1,4 +1,4 @@
-const skin = require('./lib/skin');
+const skinLib = require('./lib/skin');
 
 const HEIGHTFIELD_PLUGIN = 'plugins-heightfield';
 
@@ -8,6 +8,8 @@ class Npc {
     const {THREE, scene} = three;
     const {AutoWs} = networkUtils;
     const {chnkr} = randomUtils;
+
+    const skin = skinLib(THREE);
 
     let live = true;
     this._cleanup = () => {
@@ -34,7 +36,7 @@ class Npc {
           const meshes = {};
 
           const _makeMesh = () => {
-            const mesh = skin(THREE, skinImg);
+            const mesh = skin(skinImg);
 
             const {head, leftArm, rightArm, leftLeg, rightLeg} = mesh;
             mesh.update = (now, heightfieldElement) => {
