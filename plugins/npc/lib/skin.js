@@ -745,6 +745,10 @@ const skin = img => {
   mesh.rotation.y = Math.PI;
   mesh.rotation.order = rotationOrder;
   mesh.updateMatrixWorld();
+  mesh.boundingSphere = new THREE.Sphere(
+    new THREE.Vector3(0, 0, 0),
+    2
+  );
 
   mesh.destroy = () => {
     material.dispose();
