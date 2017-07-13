@@ -40,8 +40,6 @@ class Npc {
 
             const {head, leftArm, rightArm, leftLeg, rightLeg} = mesh;
             mesh.update = (now, heightfieldElement) => {
-              return; // XXX make this based on dy offsets and uniforms
-
               const _updatePosition = () => {
                 if (heightfieldElement && heightfieldElement.getElevation) {
                   const elevation = heightfieldElement.getElevation(mesh.position.x, mesh.position.z);
@@ -53,6 +51,7 @@ class Npc {
                 }
               };
               const _updateAnimation = () => {
+                return;
                 const angle = Math.sin((now % 2000) / 2000 * Math.PI * 2) * Math.PI/4;
 
                 head.rotation.y = angle;
@@ -94,7 +93,7 @@ class Npc {
                   scene.add(mesh);
                   meshes[id] = mesh;
                 }
-                mesh.position.set(x, 30, z);
+                mesh.position.set(x, 0, z);
                 mesh.updateMatrixWorld();
               } else {
                 const mesh = meshes[id];
