@@ -224,7 +224,7 @@ const itemsGeometries = [
         return -1 +
           Math.min(
             box.distanceToPoint(v),
-            v.distanceTo(line.closestPointToPoint(v, true)) * Math.pow(y, 0.8) / 4,
+            v.distanceTo(line.closestPointToPoint(v, true)) * Math.pow(y, 0.8) / 4
           );
       } else {
         return 2;
