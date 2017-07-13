@@ -1205,14 +1205,15 @@ class Wallet {
                 item,
               }
             );
-            _bindAssetInstancePhysics(assetInstance);
 
+            _bindAssetInstancePhysics(assetInstance);
             _bindItem(assetInstance);
           }
 
           removeAsset(item) {
             const {id} = item;
             const assetInstance = assetsMesh.getAssetInstance(id);
+
             _unbindItem(assetInstance);
 
             assetsMesh.removeAssetInstance(id);
