@@ -172,6 +172,9 @@ const skin = (THREE, img) => {
   ];
   
   rightArmBox = new THREE.BoxGeometry(4, 12, 4, 0, 0, 0);
+  for (let i = 0; i < rightArmBox.vertices.length; i++) {
+    rightArmBox.vertices[i].y -= 12/2;
+  }
   rightArmBox.faceVertexUvs[0] = [];
   rightArmBox.faceVertexUvs[0][0] = [rightArmRight[3], rightArmRight[0], rightArmRight[2]];
   rightArmBox.faceVertexUvs[0][1] = [rightArmRight[0], rightArmRight[1], rightArmRight[2]];
@@ -187,9 +190,10 @@ const skin = (THREE, img) => {
   rightArmBox.faceVertexUvs[0][11] = [rightArmBack[0], rightArmBack[1], rightArmBack[2]];
   rightArmMesh = new THREE.Mesh(rightArmBox, material);
   rightArmMesh.name = "rightArm";
-  rightArmMesh.position.y = -10 + offsetY;
+  rightArmMesh.position.y = -10 + 12/2 + offsetY;
   rightArmMesh.position.x = -6;
   object.add(rightArmMesh);
+  object.rightArm = rightArmMesh;
   
   // Left Arm Parts
   var leftArmTop = [
@@ -230,6 +234,9 @@ const skin = (THREE, img) => {
   ];
   
   leftArmBox = new THREE.BoxGeometry(4, 12, 4, 0, 0, 0);
+  for (let i = 0; i < leftArmBox.vertices.length; i++) {
+    leftArmBox.vertices[i].y -= 12/2;
+  }
   leftArmBox.faceVertexUvs[0] = [];
   leftArmBox.faceVertexUvs[0][0] = [leftArmRight[3], leftArmRight[0], leftArmRight[2]];
   leftArmBox.faceVertexUvs[0][1] = [leftArmRight[0], leftArmRight[1], leftArmRight[2]];
@@ -245,9 +252,10 @@ const skin = (THREE, img) => {
   leftArmBox.faceVertexUvs[0][11] = [leftArmBack[0], leftArmBack[1], leftArmBack[2]];
   leftArmMesh = new THREE.Mesh(leftArmBox, material);
   leftArmMesh.name = "leftArm";
-  leftArmMesh.position.y = -10 + offsetY;
+  leftArmMesh.position.y = -10 + 12/2 + offsetY;
   leftArmMesh.position.x = 6;
   object.add(leftArmMesh);
+  object.leftArm = leftArmMesh;
   
   // Right Leg Parts
   var rightLegTop = [
@@ -288,6 +296,9 @@ const skin = (THREE, img) => {
   ];
   
   rightLegBox = new THREE.BoxGeometry(4, 12, 4, 0, 0, 0);
+  for (let i = 0; i < rightLegBox.vertices.length; i++) {
+    rightLegBox.vertices[i].y -= 12/2;
+  }
   rightLegBox.faceVertexUvs[0] = [];
   rightLegBox.faceVertexUvs[0][0] = [rightLegRight[3], rightLegRight[0], rightLegRight[2]];
   rightLegBox.faceVertexUvs[0][1] = [rightLegRight[0], rightLegRight[1], rightLegRight[2]];
@@ -303,9 +314,10 @@ const skin = (THREE, img) => {
   rightLegBox.faceVertexUvs[0][11] = [rightLegBack[0], rightLegBack[1], rightLegBack[2]];
   rightLegMesh = new THREE.Mesh(rightLegBox, material);
   rightLegMesh.name = "rightLeg"
-  rightLegMesh.position.y = -22 + offsetY;
+  rightLegMesh.position.y = -22 + 12/2 + offsetY;
   rightLegMesh.position.x = -2;
   object.add(rightLegMesh);
+  object.rightLeg = rightLegMesh;
   
   // Left Leg Parts
   var leftLegTop = [
@@ -345,6 +357,9 @@ const skin = (THREE, img) => {
     new THREE.Vector2(0.4375, 0.1875)
   ];
   leftLegBox = new THREE.BoxGeometry(4, 12, 4, 0, 0, 0);
+  for (let i = 0; i < leftLegBox.vertices.length; i++) {
+    leftLegBox.vertices[i].y -= 12/2;
+  }
   leftLegBox.faceVertexUvs[0] = [];
   leftLegBox.faceVertexUvs[0][0] = [leftLegRight[3], leftLegRight[0], leftLegRight[2]];
   leftLegBox.faceVertexUvs[0][1] = [leftLegRight[0], leftLegRight[1], leftLegRight[2]];
@@ -360,9 +375,10 @@ const skin = (THREE, img) => {
   leftLegBox.faceVertexUvs[0][11] = [leftLegBack[0], leftLegBack[1], leftLegBack[2]];
   leftLegMesh = new THREE.Mesh(leftLegBox, material);
   leftLegMesh.name = "leftLeg";
-  leftLegMesh.position.y = -22 + offsetY;
+  leftLegMesh.position.y = -22 + 12/2 + offsetY;
   leftLegMesh.position.x = 2;
   object.add(leftLegMesh);
+  object.leftLeg = leftLegMesh;
   
   // Head Overlay Parts
   var head2Top = [
@@ -416,9 +432,8 @@ const skin = (THREE, img) => {
   head2Box.faceVertexUvs[0][10] = [head2Back[3], head2Back[0], head2Back[2]];
   head2Box.faceVertexUvs[0][11] = [head2Back[0], head2Back[1], head2Back[2]];
   head2Mesh = new THREE.Mesh(head2Box, material2);
-  head2Mesh.position.y = offsetY;
   head2Mesh.name = "head2"
-    object.add(head2Mesh);
+  headMesh.add(head2Mesh);
   
   // Body Overlay Parts
   var body2Top = [
@@ -473,8 +488,7 @@ const skin = (THREE, img) => {
   body2Box.faceVertexUvs[0][11] = [body2Back[0], body2Back[1], body2Back[2]];
   body2Mesh = new THREE.Mesh(body2Box, material2);
   body2Mesh.name = "body2";
-  body2Mesh.position.y = -10 + offsetY;
-  object.add(body2Mesh);
+  bodyMesh.add(body2Mesh);
   
   // Right Arm Overlay Parts
   var rightArm2Top = [
@@ -529,9 +543,8 @@ const skin = (THREE, img) => {
   rightArm2Box.faceVertexUvs[0][11] = [rightArm2Back[0], rightArm2Back[1], rightArm2Back[2]];
   rightArm2Mesh = new THREE.Mesh(rightArm2Box, material2);
   rightArm2Mesh.name = "rightArm2";
-  rightArm2Mesh.position.y = -10 + offsetY;
-  rightArm2Mesh.position.x = -6;
-  object.add(rightArm2Mesh);
+  rightArm2Mesh.position.y = -12/2;
+  rightArmMesh.add(rightArm2Mesh);
   
   // Left Arm Overlay Parts
   var leftArm2Top = [
@@ -587,10 +600,8 @@ const skin = (THREE, img) => {
   leftArm2Box.faceVertexUvs[0][11] = [leftArm2Back[0], leftArm2Back[1], leftArm2Back[2]];
   leftArm2Mesh = new THREE.Mesh(leftArm2Box, material2);
   leftArm2Mesh.name = "leftArm2";
-  leftArm2Mesh.position.y = -10 + offsetY;
-  leftArm2Mesh.position.x = 6;
-  // leftArm2Mesh.visible = true;
-  object.add(leftArm2Mesh);
+  leftArm2Mesh.position.y = -12/2;
+  leftArmMesh.add(leftArm2Mesh);
   
   // Right Leg Overlay Parts
   var rightLeg2Top = [
@@ -646,9 +657,8 @@ const skin = (THREE, img) => {
   rightLeg2Box.faceVertexUvs[0][11] = [rightLeg2Back[0], rightLeg2Back[1], rightLeg2Back[2]];
   rightLeg2Mesh = new THREE.Mesh(rightLeg2Box, material2);
   rightLeg2Mesh.name = "rightLeg2"
-  rightLeg2Mesh.position.y = -22 + offsetY;
-  rightLeg2Mesh.position.x = -2;
-  object.add(rightLeg2Mesh);
+  rightLeg2Mesh.position.y = -12/2;
+  rightLegMesh.add(rightLeg2Mesh);
   
   // Left Leg Overlay Parts
   var leftLeg2Top = [
@@ -703,9 +713,8 @@ const skin = (THREE, img) => {
   leftLeg2Box.faceVertexUvs[0][11] = [leftLeg2Back[0], leftLeg2Back[1], leftLeg2Back[2]];
   leftLeg2Mesh = new THREE.Mesh(leftLeg2Box, material2);
   leftLeg2Mesh.name = "leftLeg2";
-  leftLeg2Mesh.position.y = -22 + offsetY;
-  leftLeg2Mesh.position.x = 2;
-  object.add(leftLeg2Mesh);
+  leftLeg2Mesh.position.y = -12/2;
+  leftLegMesh.add(leftLeg2Mesh);
 
   object.scale.set(scale, scale, scale);
   object.rotation.y = Math.PI;

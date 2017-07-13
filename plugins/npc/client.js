@@ -2,7 +2,7 @@ const skin = require('./lib/skin');
 
 class Npc {
   mount() {
-    const {three, elements} = zeo;
+    const {three, elements, render} = zeo;
     const {THREE, scene} = three;
 
     let live = true;
@@ -57,9 +57,29 @@ class Npc {
               mesh.updateMatrixWorld();
               scene.add(mesh);
 
+              const {leftArm, rightArm, leftLeg, rightLeg} = mesh;
+              const _update = () => {
+                const angle = Math.sin((Date.now() % 2000) / 2000 * Math.PI * 2) * Math.PI/4;
+
+                leftArm.rotation.x = angle;
+                leftArm.updateMatrixWorld();
+
+                rightArm.rotation.x = -angle;
+                rightArm.updateMatrixWorld();
+
+                leftLeg.rotation.x = -angle;
+                leftLeg.updateMatrixWorld();
+
+                rightLeg.rotation.x = angle;
+                rightLeg.updateMatrixWorld();
+              };
+              render.on('update', _update);
+
               entityElement.cleanup = () => {
                 scene.remove(mesh);
                 // mesh.destroy();
+
+                render.removeListener('update', _update);
               };
             },
             entityRemovedCallback(entityElement) {
