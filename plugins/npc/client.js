@@ -57,9 +57,12 @@ class Npc {
               mesh.updateMatrixWorld();
               scene.add(mesh);
 
-              const {leftArm, rightArm, leftLeg, rightLeg} = mesh;
+              const {head, leftArm, rightArm, leftLeg, rightLeg} = mesh;
               const _update = () => {
                 const angle = Math.sin((Date.now() % 2000) / 2000 * Math.PI * 2) * Math.PI/4;
+
+                head.rotation.y = angle;
+                head.updateMatrixWorld();
 
                 leftArm.rotation.x = angle;
                 leftArm.updateMatrixWorld();

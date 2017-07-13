@@ -1,5 +1,6 @@
 const scale = 1 / 18;
 const offsetY = 22 + 13.5/2 - 8/2;
+const rotationOrder = 'YXZ';
 
 const skin = (THREE, img) => {
   const object = new THREE.Object3D();
@@ -74,7 +75,9 @@ const skin = (THREE, img) => {
   headMesh = new THREE.Mesh(headBox, material);
   headMesh.name = "head";
   headMesh.position.y = offsetY;
+  headMesh.rotation.order = rotationOrder;
   object.add(headMesh);
+  object.head = headMesh;
   
   // Body Parts
   var bodyTop = [
@@ -718,7 +721,7 @@ const skin = (THREE, img) => {
 
   object.scale.set(scale, scale, scale);
   object.rotation.y = Math.PI;
-  object.rotation.order = 'YXZ';
+  object.rotation.order = rotationOrder;
   object.updateMatrixWorld();
 
   return object;
