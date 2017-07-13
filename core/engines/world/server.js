@@ -346,27 +346,12 @@ class World {
                   console.warn('invalid message', m);
                 }
               });
-
-              const cleanups = [];
-              const cleanup = () => {
-                for (let i = 0; i < cleanups.length; i++) {
-                  const cleanup = cleanups[i];
-                  cleanup();
-                }
-              };
-
               c.on('close', () => {
-                cleanup();
-              });
-
-              cleanups.push(() => {
                 delete usersJson[userId];
+                connections.splice(connections.indexOf(c), 1);
               });
 
               connections.push(c);
-              cleanups.push(() => {
-                connections.splice(connections.indexOf(c), 1);
-              });
             }
           });
 
@@ -439,8 +424,8 @@ class World {
           wallet.on('removeTag', _walletRemoveTag);
 
           const _initWallet = () => {
-            for (let i = 0; i < tagsJson.tags.length; i++) {
-              const itemSpec = tagsJson.tags[i];
+            for (const id in tagsJson.tags) {
+              const itemSpec = tagsJson.tags[id];
               const {type} = itemSpec;
 
               if (type === 'asset') {
