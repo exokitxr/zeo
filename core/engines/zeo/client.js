@@ -539,11 +539,9 @@ class Zeo {
                         }
                       }
 
-                      class ZeoRenderApi extends EventEmitter {
+                      class ZeoRenderApi {
                         constructor() {
-                          super();
-
-                          rend.on('update', () => {
+                          /* rend.on('update', () => {
                             this.emit('update');
                           });
                           rend.on('updateStart', () => {
@@ -552,7 +550,7 @@ class Zeo {
                           rend.on('updateEnd', () => {
                             this.emit('updateEnd');
                           });
-                          /* rend.on('updateEye', camera => {
+                          rend.on('updateEye', camera => {
                             this.emit('updateEye', camera);
                           });
                           rend.on('renderStart', () => {
@@ -564,6 +562,18 @@ class Zeo {
                           tags.on('mutate', () => {
                             this.emit('mutate');
                           }); */
+                        }
+
+                        on(event, handler) {
+                          return rend.on(event, handler);
+                        }
+
+                        removeListener(event, handler) {
+                          return rend.removeListener(event, handler);
+                        }
+
+                        removeAllListeners(event) {
+                          return rend.removeAllListeners(event);
                         }
                       }
 
