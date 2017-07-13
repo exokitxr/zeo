@@ -1,6 +1,8 @@
 const path = require('path');
 const fs = require('fs');
 
+const NUM_CELLS = 32;
+
 class Npc {
   constructor(archae) {
     this._archae = archae;
@@ -8,7 +10,7 @@ class Npc {
 
   mount() {
     const {_archae: archae} = this;
-    const {express, app} = archae.getCore();
+    const {express, app, wss} = archae.getCore();
     const {utils: {hash: hashUtils}} = zeo;
     const {murmur} = hashUtils;
 
@@ -34,6 +36,133 @@ class Npc {
         }
         app.use('/archae/npc/img', serveNpcImg);
 
+        const trackedChunks = {};
+        
+        class Npc {
+          constructor(id, position) {
+            this.id = id;
+            this.position = position;
+          }
+        }
+        class TrackedChunk {
+          constructor(ox, oz) {
+            this.ox = ox;
+            this.oz = oz;
+
+            const npcs = (() => {
+              const numNpcs = Math.floor(Math.random() * 3);
+              const result = Array(numNpcs);
+              for (let i = 0; i < numNpcs; i++) {
+                const id = _makeId();
+
+                const dx = Math.random() * NUM_CELLS;
+                const dz = Math.random() * NUM_CELLS;
+
+                const ax = (ox * NUM_CELLS) + dx;
+                const az = (oz * NUM_CELLS) + dz;
+                const position = [ax, az];
+
+                const npc = new Npc(id, position);
+                result[i] = npc;
+              }
+              return result;
+            })();
+            this.npcs = npcs;
+          }
+        }
+
+        const connections = [];
+
+        wss.on('connection', c => {
+          const {url} = c.upgradeReq;
+
+          if (url === '/archae/npmWs') {
+            const localTrackedChunks = {};
+            c.localTrackedChunks = localTrackedChunks;
+
+            const localCleanupSymbol = Symbol();
+
+            c.on('message', e => {
+              const m = JSON.parse(msg);
+
+              if (typeof m === 'object' && m !== null && m.method && m.args) {
+                const {method, args} = m;
+
+                if (method === 'addChunk') {
+                  const [ox, oz] = args;
+
+                  const index = ox + ':' + oz;
+                  let trackedChunk = trackedChunks[index];
+                  if (!trackedChunk) {
+                    trackedChunk = new TrackedChunk();
+                    trackedChunks[index] = trackedChunk;
+                    trackedChunk.on('destroy', () => {
+                      delete trackedChunks[index];
+                    });
+                  }
+
+                  const {npcs} = trackedChunk;
+                  for (let i = 0; i < npcs.length; i++) {
+                    const npc = npcs[i];
+                    const {id, position} = npc;
+
+                    const e = {
+                      type: 'npcStatus',
+                      id,
+                      status: {
+                        position,
+                      },
+                    };
+                    const es = JSON.stringify(e);
+                    c.send(es);
+                  }
+
+                  trackedChunk[localCleanupSymbol] = () => {
+                    const {npcs} = trackedChunk;
+
+                    for (let i = 0; i < npcs.length; i++) {
+                      const npc = npcs[i];
+                      const e = {
+                        type: 'npcStatus',
+                        id,
+                        status: null,
+                      };
+                      const es = JSON.stringify(e);
+                      c.send(es);
+                    }
+                  };
+
+                  localTrackedChunks[index] = trackedChunk;
+                  trackedChunk.addRef();
+                } else if (method === 'removeChunk') {
+                  const [ox, oz] = args;
+
+                  const index = ox + ':' + oz;
+                  const trackedChunk = localTrackedChunks[index];
+                  trackedChunk[localCleanupSymbol]();
+
+                  delete localTrackedChunks[index];
+                  trackedChunk.removeRef();
+                } else {
+                  console.warn('npc invalid message type', {type});
+                }
+              } else {
+                console.warn('npc invalid message', {msg});
+              }
+            });
+            c.on('close', () => {
+              for (const index in localTrackedChunks) {
+                const trackedChunk = localTrackedChunks[index];
+                trackedChunk.removeRef();
+              }
+
+              connections.splice(connections.indexOf(c), 1);
+            });
+
+            connections.push(c);
+          }
+        });
+
         this._cleanup = () => {
           function removeMiddlewares(route, i, routes) {
             if (route.handle.name === 'serveNpcImg') {
@@ -52,5 +181,6 @@ class Npc {
     this._cleanup();
   }
 }
+const _makeId = () => Math.random().toString(36).substring(7);
 
 module.exports = Npc;

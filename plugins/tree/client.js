@@ -355,7 +355,7 @@ class Tree {
               const endIndex = treesData[baseIndex + 1];
               const basePosition = new THREE.Vector3().fromArray(treesData, baseIndex + 2);
 
-              const shape = new Lightmapper.Cylinder(basePosition.x, basePosition.y, basePosition.z, 12, 8, 0.15, Lightmapper.SubBlend);
+              const shape = new Lightmapper.Cylinder(basePosition.x, basePosition.y, basePosition.z, 12, 8, 0.15, Lightmapper.SubBlend); // XXX sometimes not defined
               lightmapper.add(shape);
               const box = new THREE.Box3(
                 basePosition.clone().add(new THREE.Vector3(-treeBaseWidth/2, 0, -treeBaseWidth/2)),
