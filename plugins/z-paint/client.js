@@ -192,7 +192,7 @@ class ZPaint {
                   let currentRemotePaintSpec = null;
                   connection.on('message', msg => {
                     if (typeof msg.data === 'string') {
-                      const e = JSON.parse(msg.data) ;
+                      const e = JSON.parse(msg.data);
                       const {type} = e;
 
                       if (type === 'paintSpec') {

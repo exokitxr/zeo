@@ -283,7 +283,7 @@ class ZPaint {
           } else {
             const m = JSON.parse(msg);
 
-            if (m && typeof m === 'object' && ('type' in m)) {
+            if (typeof m === 'object' && m !== null && ('type' in m)) {
               const {type} = m;
 
               if (type === 'paintSpec') {

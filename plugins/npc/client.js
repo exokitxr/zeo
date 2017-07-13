@@ -2,8 +2,9 @@ const skin = require('./lib/skin');
 
 class Npc {
   mount() {
-    const {three, elements, render} = zeo;
+    const {three, elements, render, utils: {network: networkUtils}} = zeo;
     const {THREE, scene} = three;
+    const {AutoWs} = networkUtils;
 
     let live = true;
     this._cleanup = () => {
@@ -23,76 +24,87 @@ class Npc {
       img.crossOrigin = 'Anonymous';
       img.src = url;
     });
-    const meshes = [];
 
-    class FakeStatus {
-      constructor(hmd, controllers) {
-        this.hmd = hmd;
-        this.controllers = controllers;
-      }
-    }
-    class FakeStatusProperties {
-      constructor(position, rotation, scale) {
-        this.position = position;
-        this.rotation = rotation;
-        this.scale = scale;
-      }
-    }
-    class FakeControllersStatus {
-      constructor(left, right) {
-        this.left = left;
-        this.right = right;
-      }
-    }
-
-    return _requestImage('/archae/npc/img/9')
+    return _requestImage('/archae/npc/img/0')
       .then(skinImg => {
         if (live) {
-          const _makeMesh = skinImg => skin(THREE, skinImg);
+          const meshes = {};
 
-          const skinEntity = {
-            entityAddedCallback(entityElement) {
-              const mesh = _makeMesh(skinImg);
-              mesh.position.set(-2, 30, 0);
-              mesh.updateMatrixWorld();
-              scene.add(mesh);
+          const _makeMesh = () => {
+            const mesh = skin(THREE, skinImg);
 
-              const {head, leftArm, rightArm, leftLeg, rightLeg} = mesh;
-              const _update = () => {
-                const angle = Math.sin((Date.now() % 2000) / 2000 * Math.PI * 2) * Math.PI/4;
+            const {head, leftArm, rightArm, leftLeg, rightLeg} = mesh;
+            mesh.update = now => {
+              const angle = Math.sin((now % 2000) / 2000 * Math.PI * 2) * Math.PI/4;
 
-                head.rotation.y = angle;
-                head.updateMatrixWorld();
+              head.rotation.y = angle;
+              head.updateMatrixWorld();
 
-                leftArm.rotation.x = angle;
-                leftArm.updateMatrixWorld();
+              leftArm.rotation.x = angle;
+              leftArm.updateMatrixWorld();
 
-                rightArm.rotation.x = -angle;
-                rightArm.updateMatrixWorld();
+              rightArm.rotation.x = -angle;
+              rightArm.updateMatrixWorld();
 
-                leftLeg.rotation.x = -angle;
-                leftLeg.updateMatrixWorld();
+              leftLeg.rotation.x = -angle;
+              leftLeg.updateMatrixWorld();
 
-                rightLeg.rotation.x = angle;
-                rightLeg.updateMatrixWorld();
-              };
-              render.on('update', _update);
+              rightLeg.rotation.x = angle;
+              rightLeg.updateMatrixWorld();
+            };
+            mesh.destroy = () => {
+              // XXX
+            };
 
-              entityElement.cleanup = () => {
-                scene.remove(mesh);
-                // mesh.destroy();
-
-                render.removeListener('update', _update);
-              };
-            },
-            entityRemovedCallback(entityElement) {
-              entityElement.cleanup();
-            },
+            return mesh;
           };
-          elements.registerEntity(this, skinEntity);
+
+          const connection = new AutoWs(_relativeWsUrl('archae/npcWs'));
+          connection.on('message', msg => {
+            const e = JSON.parse(msg.data);
+            const {type} = e;
+
+            if (type === 'npcStatus') {
+              const {id, status} = e;
+
+              if (status) {
+                const {position: [x, z]} = status;
+                let mesh = meshes[id];
+                if (!mesh) {
+                  mesh = _makeMesh();
+                  scene.add(mesh);
+                  meshes[id] = mesh;
+                }
+                mesh.position.set(x, 30, z);
+                mesh.updateMatrixWorld();
+              } else {
+                const mesh = meshes[id];
+                scene.remove(mesh);
+                mesh.destroy();
+              }
+            } else {
+              console.warn('npc unknown message type', JSON.stringify(type));
+            }
+          });
+
+          const _update = () => {
+            const now = Date.now();
+
+            for (const id in meshes) {
+              const mesh = meshes[id];
+              mesh.update(now);
+            }
+          };
+          render.on('update', _update);
 
           this._cleanup = () => {
-            elements.unregisterEntity(this, skinEntity);
+            for (const id in meshes) {
+              const mesh = meshes[id];
+              scene.remove(mesh);
+              mesh.destroy();
+            }
+
+            render.removeListener('update', _update);
           };
         }
       });
@@ -102,5 +114,9 @@ class Npc {
     this._cleanup();
   }
 }
+const _relativeWsUrl = s => {
+  const l = window.location;
+  return ((l.protocol === 'https:') ? 'wss://' : 'ws://') + l.host + l.pathname + (!/\/$/.test(l.pathname) ? '/' : '') + s;
+};
 
 module.exports = Npc;
