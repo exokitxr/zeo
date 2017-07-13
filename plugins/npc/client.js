@@ -2,9 +2,10 @@ const skin = require('./lib/skin');
 
 class Npc {
   mount() {
-    const {three, elements, render, utils: {network: networkUtils}} = zeo;
+    const {three, pose, render, utils: {network: networkUtils, random: randomUtils}} = zeo;
     const {THREE, scene} = three;
     const {AutoWs} = networkUtils;
+    const {chnkr} = randomUtils;
 
     let live = true;
     this._cleanup = () => {
@@ -81,19 +82,57 @@ class Npc {
                 const mesh = meshes[id];
                 scene.remove(mesh);
                 mesh.destroy();
+                delete meshes[id];
               }
             } else {
               console.warn('npc unknown message type', JSON.stringify(type));
             }
           });
 
-          const _update = () => {
-            const now = Date.now();
+          const chunker = chnkr.makeChunker({
+            resolution: 32,
+            range: 1,
+          });
 
-            for (const id in meshes) {
-              const mesh = meshes[id];
-              mesh.update(now);
-            }
+          const _update = () => {
+            const _updateMeshes = () => {
+              const now = Date.now();
+
+              for (const id in meshes) {
+                const mesh = meshes[id];
+                mesh.update(now);
+              }
+            };
+            const _updateNpcChunks = () => {
+              const {hmd} = pose.getStatus();
+              const {worldPosition: hmdPosition} = hmd;
+              const {added, removed} = chunker.update(hmdPosition.x, hmdPosition.z);
+
+              for (let i = 0; i < added.length; i++) {
+                const chunk = added[i];
+                const {x, z} = chunk;
+                const e = {
+                  method: 'addChunk',
+                  args: [x, z],
+                };
+                const es = JSON.stringify(e);
+                connection.send(es);
+              }
+
+              for (let i = 0; i < removed.length; i++) {
+                const chunk = removed[i];
+                const {x, z} = chunk;
+                const e = {
+                  method: 'removeChunk',
+                  args: [x, z],
+                };
+                const es = JSON.stringify(e);
+                connection.send(es);
+              }
+            };
+
+            _updateMeshes();
+            _updateNpcChunks();
           };
           render.on('update', _update);
 

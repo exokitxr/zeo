@@ -1,3 +1,5 @@
+const events = require('events');
+const {EventEmitter} = events;
 const path = require('path');
 const fs = require('fs');
 
@@ -44,13 +46,15 @@ class Npc {
             this.position = position;
           }
         }
-        class TrackedChunk {
+        class TrackedChunk extends EventEmitter {
           constructor(ox, oz) {
+            super();
+
             this.ox = ox;
             this.oz = oz;
 
             const npcs = (() => {
-              const numNpcs = Math.floor(Math.random() * 3);
+              const numNpcs = Math.floor(1 + Math.random() * (2 + 1));
               const result = Array(numNpcs);
               for (let i = 0; i < numNpcs; i++) {
                 const id = _makeId();
@@ -68,6 +72,22 @@ class Npc {
               return result;
             })();
             this.npcs = npcs;
+
+            this.refCount = 0;
+          }
+
+          addRef() {
+            this.refCount++;
+          }
+
+          removeRef() {
+            if (--this.refCount === 0) {
+              this.destroy();
+            }
+          }
+
+          destroy() {
+            this.emit('destroy');
           }
         }
 
@@ -76,13 +96,13 @@ class Npc {
         wss.on('connection', c => {
           const {url} = c.upgradeReq;
 
-          if (url === '/archae/npmWs') {
+          if (url === '/archae/npcWs') {
             const localTrackedChunks = {};
             c.localTrackedChunks = localTrackedChunks;
 
             const localCleanupSymbol = Symbol();
 
-            c.on('message', e => {
+            c.on('message', msg => {
               const m = JSON.parse(msg);
 
               if (typeof m === 'object' && m !== null && m.method && m.args) {
@@ -94,7 +114,7 @@ class Npc {
                   const index = ox + ':' + oz;
                   let trackedChunk = trackedChunks[index];
                   if (!trackedChunk) {
-                    trackedChunk = new TrackedChunk();
+                    trackedChunk = new TrackedChunk(ox, oz);
                     trackedChunks[index] = trackedChunk;
                     trackedChunk.on('destroy', () => {
                       delete trackedChunks[index];
@@ -122,6 +142,7 @@ class Npc {
 
                     for (let i = 0; i < npcs.length; i++) {
                       const npc = npcs[i];
+                      const {id} = npc;
                       const e = {
                         type: 'npcStatus',
                         id,
