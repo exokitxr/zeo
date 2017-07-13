@@ -93,7 +93,7 @@ class Npc {
 
         const connections = [];
 
-        wss.on('connection', c => {
+        const _connection = c => {
           const {url} = c.upgradeReq;
 
           if (url === '/archae/npcWs') {
@@ -110,7 +110,6 @@ class Npc {
 
                 if (method === 'addChunk') {
                   const [ox, oz] = args;
-
                   const index = ox + ':' + oz;
                   let trackedChunk = trackedChunks[index];
                   if (!trackedChunk) {
@@ -182,7 +181,8 @@ class Npc {
 
             connections.push(c);
           }
-        });
+        };
+        wss.on('connection', _connection);
 
         this._cleanup = () => {
           function removeMiddlewares(route, i, routes) {
@@ -194,6 +194,8 @@ class Npc {
             }
           }
           app._router.stack.forEach(removeMiddlewares);
+
+          wss.removeListener('connection', _connection);
         };
       });
   }
