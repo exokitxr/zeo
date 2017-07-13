@@ -214,8 +214,7 @@ const rightArmBox = (() => {
   rightArmBox.faceVertexUvs[0][10] = [rightArmBack[3], rightArmBack[0], rightArmBack[2]];
   rightArmBox.faceVertexUvs[0][11] = [rightArmBack[0], rightArmBack[1], rightArmBack[2]];
 
-  const geometry = new THREE.BufferGeometry().fromGeometry(rightArmBox)
-    .applyMatrix(new THREE.Matrix4().makeTranslation(0, -12/2, 0));
+  const geometry = new THREE.BufferGeometry().fromGeometry(rightArmBox);
   const dys = (() => {
     const positions = geometry.getAttribute('position').array;
     const numPositions = positions.length / 3;
@@ -231,7 +230,7 @@ const rightArmBox = (() => {
     return result;
   })();
   geometry.addAttribute('dy', new THREE.BufferAttribute(dys, 3));
-  geometry.applyMatrix(new THREE.Matrix4().makeTranslation(-6, -10 + 12 + offsetY, 0));
+  geometry.applyMatrix(new THREE.Matrix4().makeTranslation(-6, -10 + 12/2 + offsetY, 0));
   return geometry;
 })();
 
@@ -289,8 +288,7 @@ const leftArmBox = (() => {
   leftArmBox.faceVertexUvs[0][9] = [leftArmFront[0], leftArmFront[1], leftArmFront[2]];
   leftArmBox.faceVertexUvs[0][10] = [leftArmBack[3], leftArmBack[0], leftArmBack[2]];
   leftArmBox.faceVertexUvs[0][11] = [leftArmBack[0], leftArmBack[1], leftArmBack[2]];
-  const geometry = new THREE.BufferGeometry().fromGeometry(leftArmBox)
-    .applyMatrix(new THREE.Matrix4().makeTranslation(0, -12/2, 0));
+  const geometry = new THREE.BufferGeometry().fromGeometry(leftArmBox);
   const dys = (() => {
     const positions = geometry.getAttribute('position').array;
     const numPositions = positions.length / 3;
@@ -306,7 +304,7 @@ const leftArmBox = (() => {
     return result;
   })();
   geometry.addAttribute('dy', new THREE.BufferAttribute(dys, 3));
-  geometry.applyMatrix(new THREE.Matrix4().makeTranslation(6, -10 + 12 + offsetY, 0));
+  geometry.applyMatrix(new THREE.Matrix4().makeTranslation(6, -10 + 12/2 + offsetY, 0));
   return geometry;
 })();
 
@@ -364,8 +362,7 @@ const rightLegBox = (() => {
   rightLegBox.faceVertexUvs[0][9] = [rightLegFront[0], rightLegFront[1], rightLegFront[2]];
   rightLegBox.faceVertexUvs[0][10] = [rightLegBack[3], rightLegBack[0], rightLegBack[2]];
   rightLegBox.faceVertexUvs[0][11] = [rightLegBack[0], rightLegBack[1], rightLegBack[2]];
-  const geometry = new THREE.BufferGeometry().fromGeometry(rightLegBox)
-    .applyMatrix(new THREE.Matrix4().makeTranslation(0, -12/2, 0));
+  const geometry = new THREE.BufferGeometry().fromGeometry(rightLegBox);
   const dys = (() => {
     const positions = geometry.getAttribute('position').array;
     const numPositions = positions.length / 3;
@@ -381,7 +378,7 @@ const rightLegBox = (() => {
     return result;
   })();
   geometry.addAttribute('dy', new THREE.BufferAttribute(dys, 3));
-  geometry.applyMatrix(new THREE.Matrix4().makeTranslation(-2, -22 + 12 + offsetY, 0));
+  geometry.applyMatrix(new THREE.Matrix4().makeTranslation(-2, -22 + 12/2 + offsetY, 0));
   return geometry;
 })();
 
@@ -439,8 +436,7 @@ const leftLegBox = (() => {
   leftLegBox.faceVertexUvs[0][9] = [leftLegFront[0], leftLegFront[1], leftLegFront[2]];
   leftLegBox.faceVertexUvs[0][10] = [leftLegBack[3], leftLegBack[0], leftLegBack[2]];
   leftLegBox.faceVertexUvs[0][11] = [leftLegBack[0], leftLegBack[1], leftLegBack[2]];
-  const geometry = new THREE.BufferGeometry().fromGeometry(leftLegBox)
-    .applyMatrix(new THREE.Matrix4().makeTranslation(0, -12/2, 0));
+  const geometry = new THREE.BufferGeometry().fromGeometry(leftLegBox);
   const dys = (() => {
     const positions = geometry.getAttribute('position').array;
     const numPositions = positions.length / 3;
@@ -456,7 +452,7 @@ const leftLegBox = (() => {
     return result;
   })();
   geometry.addAttribute('dy', new THREE.BufferAttribute(dys, 3));
-  geometry.applyMatrix(new THREE.Matrix4().makeTranslation(2, -22 + 12 + offsetY, 0));
+  geometry.applyMatrix(new THREE.Matrix4().makeTranslation(2, -22 + 12/2 + offsetY, 0));
   return geometry;
 })();
 
@@ -626,7 +622,7 @@ const rightArm2Box = (() => {
   rightArm2Box.faceVertexUvs[0][10] = [rightArm2Back[3], rightArm2Back[0], rightArm2Back[2]];
   rightArm2Box.faceVertexUvs[0][11] = [rightArm2Back[0], rightArm2Back[1], rightArm2Back[2]];
   const geometry = new THREE.BufferGeometry().fromGeometry(rightArm2Box)
-    .applyMatrix(new THREE.Matrix4().makeTranslation(0, -12, 0));
+    .applyMatrix(new THREE.Matrix4().makeTranslation(0, -12/2, 0));
   const dys = (() => {
     const positions = geometry.getAttribute('position').array;
     const numPositions = positions.length / 3;
@@ -642,7 +638,7 @@ const rightArm2Box = (() => {
     return result;
   })();
   geometry.addAttribute('dy', new THREE.BufferAttribute(dys, 3));
-  geometry.applyMatrix(new THREE.Matrix4().makeTranslation(-6, -10 + offsetY + 12, 0));
+  geometry.applyMatrix(new THREE.Matrix4().makeTranslation(-6, -10 + offsetY + 12/2, 0));
   return geometry;
 })();
 
@@ -698,7 +694,7 @@ const leftArm2Box = (() => {
   leftArm2Box.faceVertexUvs[0][10] = [leftArm2Back[3], leftArm2Back[0], leftArm2Back[2]];
   leftArm2Box.faceVertexUvs[0][11] = [leftArm2Back[0], leftArm2Back[1], leftArm2Back[2]];
   const geometry = new THREE.BufferGeometry().fromGeometry(leftArm2Box)
-    .applyMatrix(new THREE.Matrix4().makeTranslation(0, -12, 0));
+    .applyMatrix(new THREE.Matrix4().makeTranslation(0, -12/2, 0));
   const dys = (() => {
     const positions = geometry.getAttribute('position').array;
     const numPositions = positions.length / 3;
@@ -714,7 +710,7 @@ const leftArm2Box = (() => {
     return result;
   })();
   geometry.addAttribute('dy', new THREE.BufferAttribute(dys, 3));
-  geometry.applyMatrix(new THREE.Matrix4().makeTranslation(6, -10 + offsetY + 12, 0));
+  geometry.applyMatrix(new THREE.Matrix4().makeTranslation(6, -10 + offsetY + 12/2, 0));
   return geometry;
 })();
 
@@ -769,8 +765,7 @@ const rightLeg2Box = (() => {
   rightLeg2Box.faceVertexUvs[0][9] = [rightLeg2Front[0], rightLeg2Front[1], rightLeg2Front[2]];
   rightLeg2Box.faceVertexUvs[0][10] = [rightLeg2Back[3], rightLeg2Back[0], rightLeg2Back[2]];
   rightLeg2Box.faceVertexUvs[0][11] = [rightLeg2Back[0], rightLeg2Back[1], rightLeg2Back[2]];
-  const geometry = new THREE.BufferGeometry().fromGeometry(rightLeg2Box)
-    .applyMatrix(new THREE.Matrix4().makeTranslation(0, -12, 0));
+  const geometry = new THREE.BufferGeometry().fromGeometry(rightLeg2Box);
   const dys = (() => {
     const positions = geometry.getAttribute('position').array;
     const numPositions = positions.length / 3;
@@ -786,7 +781,7 @@ const rightLeg2Box = (() => {
     return result;
   })();
   geometry.addAttribute('dy', new THREE.BufferAttribute(dys, 3));
-  geometry.applyMatrix(new THREE.Matrix4().makeTranslation(-2, -22 + offsetY + 12, 0));
+  geometry.applyMatrix(new THREE.Matrix4().makeTranslation(-2, -22 + offsetY + 12/2, 0));
   return geometry;
 })();
 
@@ -841,8 +836,7 @@ const leftLeg2Box = (() => {
   leftLeg2Box.faceVertexUvs[0][9] = [leftLeg2Front[0], leftLeg2Front[1], leftLeg2Front[2]];
   leftLeg2Box.faceVertexUvs[0][10] = [leftLeg2Back[3], leftLeg2Back[0], leftLeg2Back[2]];
   leftLeg2Box.faceVertexUvs[0][11] = [leftLeg2Back[0], leftLeg2Back[1], leftLeg2Back[2]];
-  const geometry = new THREE.BufferGeometry().fromGeometry(leftLeg2Box)
-    .applyMatrix(new THREE.Matrix4().makeTranslation(0, -12, 0));
+  const geometry = new THREE.BufferGeometry().fromGeometry(leftLeg2Box);
   const dys = (() => {
     const positions = geometry.getAttribute('position').array;
     const numPositions = positions.length / 3;
@@ -858,7 +852,7 @@ const leftLeg2Box = (() => {
     return result;
   })();
   geometry.addAttribute('dy', new THREE.BufferAttribute(dys, 3));
-  geometry.applyMatrix(new THREE.Matrix4().makeTranslation(2, -22 + offsetY + 12, 0));
+  geometry.applyMatrix(new THREE.Matrix4().makeTranslation(2, -22 + offsetY + 12/2, 0));
   return geometry;
 })();
 
