@@ -110,19 +110,20 @@ class Assets {
       _requestSfx(),
     ])
       .then(([
-        [
-          three,
-          biolumi,
-          hashUtils,
-          creatureUtils,
-        ],
+        plugins,
         hmdModelJson,
         controllerModelJson,
         spritesheet,
         sfx,
       ]) => {
         if (live) {
-          const {THREE, scene, camera} = three;
+          const [
+            three,
+            biolumi,
+            hashUtils,
+            creatureUtils,
+          ] = plugins;
+          const {THREE, camera} = three;
           const {murmur} = hashUtils;
 
           const menuRenderer = menuRender.makeRenderer({
@@ -149,155 +150,169 @@ class Assets {
           const _requestControllerMesh = () => _requestJsonMesh(controllerModelJson, controllerModelPath.replace(/[^\/]+$/, ''));
 
           return Promise.all([
+            Promise.resolve(plugins),
             _requestHmdMesh(),
             _requestControllerMesh(),
-          ]).then(([
-            hmdModelMesh,
-            controllerModelMesh,
-          ]) => {
-            const _getSpriteImageData = s => {
-              const spriteName = spritesheet.assetSprites[s] ||
-                spritesheet.spriteNames[Math.floor((murmur(s) / 0xFFFFFFFF) * spritesheet.spriteNames.length)];
-              const spriteCoods = spritesheet.spriteCoords[spriteName];
-              const [x, y] = spriteCoods;
-              const imageData = spritesheet.canvas.getSpriteImageData(x, y);
-              return imageData;
+            Promise.resolve(spritesheet),
+            Promise.resolve(sfx),
+          ]);
+        }
+      })
+      .then(([
+        [
+          three,
+          biolumi,
+          hashUtils,
+          creatureUtils,
+        ],
+        hmdModelMesh,
+        controllerModelMesh,
+        spritesheet,
+        sfx,
+      ]) => {
+        if (live) {
+          const _getSpriteImageData = s => {
+            const spriteName = spritesheet.assetSprites[s] ||
+              spritesheet.spriteNames[Math.floor((murmur(s) / 0xFFFFFFFF) * spritesheet.spriteNames.length)];
+            const spriteCoods = spritesheet.spriteCoords[spriteName];
+            const [x, y] = spriteCoods;
+            const imageData = spritesheet.canvas.getSpriteImageData(x, y);
+            return imageData;
+          };
+          const _makePlayerLabelMesh = ({username}) => {
+            const labelState = {
+              username: username,
             };
-            const _makePlayerLabelMesh = ({username}) => {
-              const labelState = {
-                username: username,
-              };
 
-              const menuUi = biolumi.makeUi({
-                width: LABEL_WIDTH,
-                height: LABEL_HEIGHT,
-                color: [1, 1, 1, 0],
-              });
-              const mesh = menuUi.makePage(({
+            const menuUi = biolumi.makeUi({
+              width: LABEL_WIDTH,
+              height: LABEL_HEIGHT,
+              color: [1, 1, 1, 0],
+            });
+            const mesh = menuUi.makePage(({
+              label: labelState,
+            }) => ({
+              type: 'html',
+              src: menuRenderer.getLabelSrc({
                 label: labelState,
-              }) => ({
-                type: 'html',
-                src: menuRenderer.getLabelSrc({
-                  label: labelState,
-                }),
-                x: 0,
-                y: 0,
-                w: LABEL_WIDTH,
-                h: LABEL_HEIGHT,
-              }), {
-                type: 'label',
-                state: {
-                  label: labelState,
-                },
-                worldWidth: WORLD_LABEL_WIDTH,
-                worldHeight: WORLD_LABEL_HEIGHT,
-              });
-              mesh.geometry.applyMatrix(new THREE.Matrix4().makeRotationY(Math.PI));
-              mesh.rotation.order = camera.rotation.order;
+              }),
+              x: 0,
+              y: 0,
+              w: LABEL_WIDTH,
+              h: LABEL_HEIGHT,
+            }), {
+              type: 'label',
+              state: {
+                label: labelState,
+              },
+              worldWidth: WORLD_LABEL_WIDTH,
+              worldHeight: WORLD_LABEL_HEIGHT,
+            });
+            mesh.geometry.applyMatrix(new THREE.Matrix4().makeRotationY(Math.PI));
+            mesh.rotation.order = camera.rotation.order;
 
-              const {page} = mesh;
-              page.initialUpdate();
+            const {page} = mesh;
+            page.initialUpdate();
 
-              mesh.update = ({hmdStatus, username}) => {
-                const {position: hmdPosition, rotation: hmdRotation, scale: hmdScale} = hmdStatus;
-                const labelPosition = new THREE.Vector3().fromArray(hmdPosition);
-                const labelRotation = (() => {
-                  const labelEuler = new THREE.Euler().setFromQuaternion(new THREE.Quaternion().fromArray(hmdRotation), camera.rotation.order);
-                  labelEuler.x = 0;
-                  labelEuler.z = 0;
-                  return new THREE.Quaternion().setFromEuler(labelEuler);
-                })();
-                const labelScale = new THREE.Vector3().fromArray(hmdScale);
-                labelPosition.add(new THREE.Vector3(0, WORLD_LABEL_HEIGHT, 0).multiply(labelScale));
+            mesh.update = ({hmdStatus, username}) => {
+              const {position: hmdPosition, rotation: hmdRotation, scale: hmdScale} = hmdStatus;
+              const labelPosition = new THREE.Vector3().fromArray(hmdPosition);
+              const labelRotation = (() => {
+                const labelEuler = new THREE.Euler().setFromQuaternion(new THREE.Quaternion().fromArray(hmdRotation), camera.rotation.order);
+                labelEuler.x = 0;
+                labelEuler.z = 0;
+                return new THREE.Quaternion().setFromEuler(labelEuler);
+              })();
+              const labelScale = new THREE.Vector3().fromArray(hmdScale);
+              labelPosition.add(new THREE.Vector3(0, WORLD_LABEL_HEIGHT, 0).multiply(labelScale));
 
-                mesh.position.copy(labelPosition);
-                mesh.quaternion.copy(labelRotation);
-                mesh.scale.copy(labelScale);
+              mesh.position.copy(labelPosition);
+              mesh.quaternion.copy(labelRotation);
+              mesh.scale.copy(labelScale);
+              mesh.updateMatrixWorld();
+
+              if (username !== labelState.username) {
+                labelState.username = username;
+
+                const {page} = mesh;
+                page.update();
+              }
+            };
+
+            return mesh;
+          };
+          const _makePlayerMenuMesh = ({username}) => {
+            const menuState = {
+              username: username,
+            };
+
+            const menuUi = biolumi.makeUi({
+              width: MENU_WIDTH,
+              height: MENU_HEIGHT,
+              // color: [1, 1, 1, 0],
+            });
+            const mesh = menuUi.makePage(({
+              menu: menuState,
+            }) => ({
+              type: 'html',
+              src: menuRenderer.getMenuSrc({
+                menu: menuState,
+              }),
+              x: 0,
+              y: 0,
+              w: MENU_WIDTH,
+              h: MENU_HEIGHT,
+            }), {
+              type: 'menu',
+              state: {
+                menu: menuState,
+              },
+              worldWidth: WORLD_MENU_WIDTH,
+              worldHeight: WORLD_MENU_HEIGHT,
+            });
+            mesh.rotation.order = camera.rotation.order;
+
+            mesh.update = ({menuStatus, username}) => {
+              const {open} = menuStatus;
+
+              if (open) {
+                const {position, rotation, scale} = menuStatus;
+
+                mesh.position.fromArray(position);
+                mesh.quaternion.fromArray(rotation);
+                mesh.scale.fromArray(scale);
                 mesh.updateMatrixWorld();
 
-                if (username !== labelState.username) {
-                  labelState.username = username;
+                if (username !== menuState.username) {
+                  menuState.username = username;
 
                   const {page} = mesh;
                   page.update();
                 }
-              };
 
-              return mesh;
-            };
-            const _makePlayerMenuMesh = ({username}) => {
-              const menuState = {
-                username: username,
-              };
-
-              const menuUi = biolumi.makeUi({
-                width: MENU_WIDTH,
-                height: MENU_HEIGHT,
-                // color: [1, 1, 1, 0],
-              });
-              const mesh = menuUi.makePage(({
-                menu: menuState,
-              }) => ({
-                type: 'html',
-                src: menuRenderer.getMenuSrc({
-                  menu: menuState,
-                }),
-                x: 0,
-                y: 0,
-                w: MENU_WIDTH,
-                h: MENU_HEIGHT,
-              }), {
-                type: 'menu',
-                state: {
-                  menu: menuState,
-                },
-                worldWidth: WORLD_MENU_WIDTH,
-                worldHeight: WORLD_MENU_HEIGHT,
-              });
-              mesh.rotation.order = camera.rotation.order;
-
-              mesh.update = ({menuStatus, username}) => {
-                const {open} = menuStatus;
-
-                if (open) {
-                  const {position, rotation, scale} = menuStatus;
-
-                  mesh.position.fromArray(position);
-                  mesh.quaternion.fromArray(rotation);
-                  mesh.scale.fromArray(scale);
-                  mesh.updateMatrixWorld();
-
-                  if (username !== menuState.username) {
-                    menuState.username = username;
-
-                    const {page} = mesh;
-                    page.update();
-                  }
-
-                  if (!mesh.visible) {
-                    mesh.visible = true;
-                  }
-                } else {
-                  if (mesh.visible) {
-                    mesh.visible = false;
-                  }
+                if (!mesh.visible) {
+                  mesh.visible = true;
                 }
-              };
-
-              return mesh;
+              } else {
+                if (mesh.visible) {
+                  mesh.visible = false;
+                }
+              }
             };
 
-            return {
-              models: {
-                hmdModelMesh,
-                controllerModelMesh,
-              },
-              sfx: sfx,
-              getSpriteImageData: _getSpriteImageData,
-              makePlayerLabelMesh: _makePlayerLabelMesh,
-              makePlayerMenuMesh: _makePlayerMenuMesh,
-            };
-          });
+            return mesh;
+          };
+
+          return {
+            models: {
+              hmdModelMesh,
+              controllerModelMesh,
+            },
+            sfx: sfx,
+            getSpriteImageData: _getSpriteImageData,
+            makePlayerLabelMesh: _makePlayerLabelMesh,
+            makePlayerMenuMesh: _makePlayerMenuMesh,
+          };
         }
       });
   }
