@@ -40,6 +40,8 @@ class Npc {
 
             const {head, leftArm, rightArm, leftLeg, rightLeg} = mesh;
             mesh.update = (now, heightfieldElement) => {
+              return; // XXX make this based on dy offsets and uniforms
+
               const _updatePosition = () => {
                 if (heightfieldElement && heightfieldElement.getElevation) {
                   const elevation = heightfieldElement.getElevation(mesh.position.x, mesh.position.z);
@@ -71,9 +73,6 @@ class Npc {
 
               _updatePosition();
               _updateAnimation();
-            };
-            mesh.destroy = () => {
-              // XXX
             };
 
             return mesh;

@@ -2,6 +2,12 @@ const scale = 1 / 18;
 const offsetY = 22 + 13.5/2 - 8/2;
 const rotationOrder = 'YXZ';
 
+const _copyIndices = (src, dst, startIndexIndex, startAttributeIndex) => {
+  for (let i = 0; i < src.length; i++) {
+    dst[startIndexIndex + i] = src[i] + startAttributeIndex;
+  }
+};
+
 module.exports = THREE => {
 
 const headBox = (() => {
@@ -56,7 +62,8 @@ const headBox = (() => {
   headBox.faceVertexUvs[0][9] = [headFront[0], headFront[1], headFront[2]];
   headBox.faceVertexUvs[0][10] = [headBack[3], headBack[0], headBack[2]];
   headBox.faceVertexUvs[0][11] = [headBack[0], headBack[1], headBack[2]];
-  return new THREE.BufferGeometry().fromGeometry(headBox);
+  return new THREE.BufferGeometry().fromGeometry(headBox)
+    .applyMatrix(new THREE.Matrix4().makeTranslation(0, offsetY, 0));
 })();
 
 const bodyBox = (() => {
@@ -110,7 +117,8 @@ const bodyBox = (() => {
   bodyBox.faceVertexUvs[0][9] = [bodyFront[0], bodyFront[1], bodyFront[2]];
   bodyBox.faceVertexUvs[0][10] = [bodyBack[3], bodyBack[0], bodyBack[2]];
   bodyBox.faceVertexUvs[0][11] = [bodyBack[0], bodyBack[1], bodyBack[2]];
-  return new THREE.BufferGeometry().fromGeometry(bodyBox);
+  return new THREE.BufferGeometry().fromGeometry(bodyBox)
+    .applyMatrix(new THREE.Matrix4().makeTranslation(0, -10 + offsetY, 0));
 })();
 
 const rightArmBox = (() => {
@@ -167,7 +175,8 @@ const rightArmBox = (() => {
   rightArmBox.faceVertexUvs[0][9] = [rightArmFront[0], rightArmFront[1], rightArmFront[2]];
   rightArmBox.faceVertexUvs[0][10] = [rightArmBack[3], rightArmBack[0], rightArmBack[2]];
   rightArmBox.faceVertexUvs[0][11] = [rightArmBack[0], rightArmBack[1], rightArmBack[2]];
-  return new THREE.BufferGeometry().fromGeometry(rightArmBox);
+  return new THREE.BufferGeometry().fromGeometry(rightArmBox)
+    .applyMatrix(new THREE.Matrix4().makeTranslation(-6, -10 + 12/2 + offsetY, 0));
 })();
 
 const leftArmBox = (() => {
@@ -224,7 +233,8 @@ const leftArmBox = (() => {
   leftArmBox.faceVertexUvs[0][9] = [leftArmFront[0], leftArmFront[1], leftArmFront[2]];
   leftArmBox.faceVertexUvs[0][10] = [leftArmBack[3], leftArmBack[0], leftArmBack[2]];
   leftArmBox.faceVertexUvs[0][11] = [leftArmBack[0], leftArmBack[1], leftArmBack[2]];
-  return new THREE.BufferGeometry().fromGeometry(leftArmBox);
+  return new THREE.BufferGeometry().fromGeometry(leftArmBox)
+    .applyMatrix(new THREE.Matrix4().makeTranslation(6, -10 + 12/2 + offsetY, 0));
 })();
 
 const rightLegBox = (() => {
@@ -281,7 +291,8 @@ const rightLegBox = (() => {
   rightLegBox.faceVertexUvs[0][9] = [rightLegFront[0], rightLegFront[1], rightLegFront[2]];
   rightLegBox.faceVertexUvs[0][10] = [rightLegBack[3], rightLegBack[0], rightLegBack[2]];
   rightLegBox.faceVertexUvs[0][11] = [rightLegBack[0], rightLegBack[1], rightLegBack[2]];
-  return new THREE.BufferGeometry().fromGeometry(rightLegBox);
+  return new THREE.BufferGeometry().fromGeometry(rightLegBox)
+    .applyMatrix(new THREE.Matrix4().makeTranslation(-2, -22 + 12/2 + offsetY, 0));
 })();
 
 const leftLegBox = (() => {
@@ -338,7 +349,8 @@ const leftLegBox = (() => {
   leftLegBox.faceVertexUvs[0][9] = [leftLegFront[0], leftLegFront[1], leftLegFront[2]];
   leftLegBox.faceVertexUvs[0][10] = [leftLegBack[3], leftLegBack[0], leftLegBack[2]];
   leftLegBox.faceVertexUvs[0][11] = [leftLegBack[0], leftLegBack[1], leftLegBack[2]];
-  return new THREE.BufferGeometry().fromGeometry(leftLegBox);
+  return new THREE.BufferGeometry().fromGeometry(leftLegBox)
+    .applyMatrix(new THREE.Matrix4().makeTranslation(2, -22 + 12/2 + offsetY, 0));
 })();
 
 const head2Box = (() => {
@@ -392,7 +404,8 @@ const head2Box = (() => {
   head2Box.faceVertexUvs[0][9] = [head2Front[0], head2Front[1], head2Front[2]];
   head2Box.faceVertexUvs[0][10] = [head2Back[3], head2Back[0], head2Back[2]];
   head2Box.faceVertexUvs[0][11] = [head2Back[0], head2Back[1], head2Back[2]];
-  return new THREE.BufferGeometry().fromGeometry(head2Box);
+  return new THREE.BufferGeometry().fromGeometry(head2Box)
+    .applyMatrix(new THREE.Matrix4().makeTranslation(0, offsetY, 0));
 })();
 
 const body2Box = (() => {
@@ -446,7 +459,8 @@ const body2Box = (() => {
   body2Box.faceVertexUvs[0][9] = [body2Front[0], body2Front[1], body2Front[2]];
   body2Box.faceVertexUvs[0][10] = [body2Back[3], body2Back[0], body2Back[2]];
   body2Box.faceVertexUvs[0][11] = [body2Back[0], body2Back[1], body2Back[2]];
-  return new THREE.BufferGeometry().fromGeometry(body2Box);
+  return new THREE.BufferGeometry().fromGeometry(body2Box)
+    .applyMatrix(new THREE.Matrix4().makeTranslation(0, -10 + offsetY, 0));
 })();
 
 const rightArm2Box = (() => {
@@ -500,7 +514,8 @@ const rightArm2Box = (() => {
   rightArm2Box.faceVertexUvs[0][9] = [rightArm2Front[0], rightArm2Front[1], rightArm2Front[2]];
   rightArm2Box.faceVertexUvs[0][10] = [rightArm2Back[3], rightArm2Back[0], rightArm2Back[2]];
   rightArm2Box.faceVertexUvs[0][11] = [rightArm2Back[0], rightArm2Back[1], rightArm2Back[2]];
-  return new THREE.BufferGeometry().fromGeometry(rightArm2Box);
+  return new THREE.BufferGeometry().fromGeometry(rightArm2Box)
+    .applyMatrix(new THREE.Matrix4().makeTranslation(-6, -10 + offsetY, 0));
 })();
 
 const leftArm2Box = (() => {
@@ -554,7 +569,8 @@ const leftArm2Box = (() => {
   leftArm2Box.faceVertexUvs[0][9] = [leftArm2Front[0], leftArm2Front[1], leftArm2Front[2]];
   leftArm2Box.faceVertexUvs[0][10] = [leftArm2Back[3], leftArm2Back[0], leftArm2Back[2]];
   leftArm2Box.faceVertexUvs[0][11] = [leftArm2Back[0], leftArm2Back[1], leftArm2Back[2]];
-  return new THREE.BufferGeometry().fromGeometry(leftArm2Box);
+  return new THREE.BufferGeometry().fromGeometry(leftArm2Box)
+    .applyMatrix(new THREE.Matrix4().makeTranslation(6, -10 + offsetY, 0));
 })();
 
 const rightLeg2Box = (() => {
@@ -608,7 +624,8 @@ const rightLeg2Box = (() => {
   rightLeg2Box.faceVertexUvs[0][9] = [rightLeg2Front[0], rightLeg2Front[1], rightLeg2Front[2]];
   rightLeg2Box.faceVertexUvs[0][10] = [rightLeg2Back[3], rightLeg2Back[0], rightLeg2Back[2]];
   rightLeg2Box.faceVertexUvs[0][11] = [rightLeg2Back[0], rightLeg2Back[1], rightLeg2Back[2]];
-  return new THREE.BufferGeometry().fromGeometry(rightLeg2Box);
+  return new THREE.BufferGeometry().fromGeometry(rightLeg2Box)
+    .applyMatrix(new THREE.Matrix4().makeTranslation(-2, -22 + offsetY, 0));
 })();
 
 const leftLeg2Box = (() => {
@@ -662,113 +679,79 @@ const leftLeg2Box = (() => {
   leftLeg2Box.faceVertexUvs[0][9] = [leftLeg2Front[0], leftLeg2Front[1], leftLeg2Front[2]];
   leftLeg2Box.faceVertexUvs[0][10] = [leftLeg2Back[3], leftLeg2Back[0], leftLeg2Back[2]];
   leftLeg2Box.faceVertexUvs[0][11] = [leftLeg2Back[0], leftLeg2Back[1], leftLeg2Back[2]];
-  return new THREE.BufferGeometry().fromGeometry(leftLeg2Box);
+  return new THREE.BufferGeometry().fromGeometry(leftLeg2Box)
+    .applyMatrix(new THREE.Matrix4().makeTranslation(2, -22 + offsetY, 0));
+})();
+
+const skinGeometry = (() => {
+  const geometries = [
+    headBox,
+    bodyBox,
+    rightArmBox,
+    leftArmBox,
+    rightLegBox,
+    leftLegBox,
+    head2Box,
+    body2Box,
+    rightArm2Box,
+    leftArm2Box,
+    rightLeg2Box,
+    leftLeg2Box,
+  ];
+
+  const positions = new Float32Array(geometries[0].getAttribute('position').array.length * geometries.length);
+  const uvs = new Float32Array(geometries[0].getAttribute('uv').array.length * geometries.length);
+  // const indices = new Uint16Array(geometries[0].index.array.length * geometries.length);
+  let attributeIndex = 0;
+  let uvIndex = 0;
+  // let indexIndex = 0;
+
+  for (let i = 0; i < geometries.length; i++) {
+    const newGeometry = geometries[i];
+    const newPositions = newGeometry.getAttribute('position').array;
+    positions.set(newPositions, attributeIndex);
+    const newUvs = newGeometry.getAttribute('uv').array;
+    uvs.set(newUvs, uvIndex);
+    /* const newIndices = newGeometry.index.array;
+    _copyIndices(newIndices, indices, indexIndex, attributeIndex / 3); */
+
+    attributeIndex += newPositions.length;
+    uvIndex += newUvs.length;
+    // indexIndex += newIndices.length;
+  }
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+  geometry.addAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+  // geometry.setIndex(new THREE.BufferAttribute(indices, 1));
+  return geometry;
 })();
 
 const skin = img => {
-  const object = new THREE.Object3D();
+  const texture = new THREE.Texture(img);
+	texture.magFilter = THREE.NearestFilter;
+	texture.minFilter = THREE.NearestMipMapNearestFilter;
+  texture.needsUpdate = true;
 
-  var skinTexture = new THREE.Texture(img);
-	skinTexture.magFilter = THREE.NearestFilter;
-	skinTexture.minFilter = THREE.NearestMipMapNearestFilter;
-  skinTexture.needsUpdate = true;
-
-	var material = new THREE.MeshBasicMaterial({
-    map: skinTexture,
-  });
-	var material2 = new THREE.MeshBasicMaterial({
-    map: skinTexture,
+	const material = new THREE.MeshBasicMaterial({
+    map: texture,
     transparent: true,
     side: THREE.DoubleSide,
     alphaTest: 0.5,
   });
 
-  // Head Parts
-  headMesh = new THREE.Mesh(headBox, material);
-  headMesh.name = "head";
-  headMesh.position.y = offsetY;
-  headMesh.rotation.order = rotationOrder;
-  object.add(headMesh);
-  object.head = headMesh;
-  
-  // Body Parts
-  bodyMesh = new THREE.Mesh(bodyBox, material);
-  bodyMesh.name = "body";
-  bodyMesh.position.y = -10 + offsetY;
-  object.add(bodyMesh);
-  
-  // Right Arm Parts
-  rightArmMesh = new THREE.Mesh(rightArmBox, material);
-  rightArmMesh.name = "rightArm";
-  rightArmMesh.position.y = -10 + 12/2 + offsetY;
-  rightArmMesh.position.x = -6;
-  object.add(rightArmMesh);
-  object.rightArm = rightArmMesh;
-  
-  // Left Arm Parts
-  leftArmMesh = new THREE.Mesh(leftArmBox, material);
-  leftArmMesh.name = "leftArm";
-  leftArmMesh.position.y = -10 + 12/2 + offsetY;
-  leftArmMesh.position.x = 6;
-  object.add(leftArmMesh);
-  object.leftArm = leftArmMesh;
-  
-  // Right Leg Parts
-  rightLegMesh = new THREE.Mesh(rightLegBox, material);
-  rightLegMesh.name = "rightLeg"
-  rightLegMesh.position.y = -22 + 12/2 + offsetY;
-  rightLegMesh.position.x = -2;
-  object.add(rightLegMesh);
-  object.rightLeg = rightLegMesh;
-  
-  // Left Leg Parts
-  leftLegMesh = new THREE.Mesh(leftLegBox, material);
-  leftLegMesh.name = "leftLeg";
-  leftLegMesh.position.y = -22 + 12/2 + offsetY;
-  leftLegMesh.position.x = 2;
-  object.add(leftLegMesh);
-  object.leftLeg = leftLegMesh;
-  
-  // Head Overlay Parts
-  head2Mesh = new THREE.Mesh(head2Box, material2);
-  head2Mesh.name = "head2"
-  headMesh.add(head2Mesh);
-  
-  // Body Overlay Parts
-  body2Mesh = new THREE.Mesh(body2Box, material2);
-  body2Mesh.name = "body2";
-  bodyMesh.add(body2Mesh);
-  
-  // Right Arm Overlay Parts
-  rightArm2Mesh = new THREE.Mesh(rightArm2Box, material2);
-  rightArm2Mesh.name = "rightArm2";
-  rightArm2Mesh.position.y = -12/2;
-  rightArmMesh.add(rightArm2Mesh);
-  
-  // Left Arm Overlay Parts
-  leftArm2Mesh = new THREE.Mesh(leftArm2Box, material2);
-  leftArm2Mesh.name = "leftArm2";
-  leftArm2Mesh.position.y = -12/2;
-  leftArmMesh.add(leftArm2Mesh);
-  
-  // Right Leg Overlay Parts
-  rightLeg2Mesh = new THREE.Mesh(rightLeg2Box, material2);
-  rightLeg2Mesh.name = "rightLeg2"
-  rightLeg2Mesh.position.y = -12/2;
-  rightLegMesh.add(rightLeg2Mesh);
-  
-  // Left Leg Overlay Parts
-  leftLeg2Mesh = new THREE.Mesh(leftLeg2Box, material2);
-  leftLeg2Mesh.name = "leftLeg2";
-  leftLeg2Mesh.position.y = -12/2;
-  leftLegMesh.add(leftLeg2Mesh);
+  const mesh = new THREE.Mesh(skinGeometry, material);
+  mesh.scale.set(scale, scale, scale);
+  mesh.rotation.y = Math.PI;
+  mesh.rotation.order = rotationOrder;
+  mesh.updateMatrixWorld();
 
-  object.scale.set(scale, scale, scale);
-  object.rotation.y = Math.PI;
-  object.rotation.order = rotationOrder;
-  object.updateMatrixWorld();
+  mesh.destroy = () => {
+    material.dispose();
+    texture.dispose();
+  };
 
-  return object;
+  return mesh;
 };
 
 return skin;
