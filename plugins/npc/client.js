@@ -51,7 +51,7 @@ class Npc {
                 }
               };
               const _updateAnimation = () => {
-                mesh.material.uniforms.theta.value = Math.sin((now % 2000) / 2000 * Math.PI * 2) * 0.5;
+                mesh.material.uniforms.theta.value = Math.sin((now % 1500) / 1500 * Math.PI * 2) * 0.5;
               };
 
               _updatePosition();
