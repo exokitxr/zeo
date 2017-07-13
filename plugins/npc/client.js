@@ -51,23 +51,7 @@ class Npc {
                 }
               };
               const _updateAnimation = () => {
-                return;
-                const angle = Math.sin((now % 2000) / 2000 * Math.PI * 2) * Math.PI/4;
-
-                head.rotation.y = angle;
-                head.updateMatrixWorld();
-
-                leftArm.rotation.x = angle;
-                leftArm.updateMatrixWorld();
-
-                rightArm.rotation.x = -angle;
-                rightArm.updateMatrixWorld();
-
-                leftLeg.rotation.x = -angle;
-                leftLeg.updateMatrixWorld();
-
-                rightLeg.rotation.x = angle;
-                rightLeg.updateMatrixWorld();
+                mesh.material.uniforms.theta.value = Math.sin((now % 2000) / 2000 * Math.PI * 2) * 0.5;
               };
 
               _updatePosition();
