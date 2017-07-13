@@ -1,3 +1,5 @@
+const events = require('events');
+const {EventEmitter} = events;
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
@@ -65,13 +67,17 @@ class World {
     return Promise.all([
       archae.requestPlugins([
         '/core/engines/multiplayer',
+        '/core/engines/wallet',
       ]),
       _requestTagsJson(),
       _requestFilesJson(),
       _ensureWorldPath(),
     ])
       .then(([
-        [multiplayer],
+        [
+          multiplayer,
+          wallet,
+        ],
         tagsJson,
         filesJson,
         ensureWorldPathResult,
@@ -198,7 +204,13 @@ class World {
                 }
               };
               const _removeTag = (userId, id) => {
+                const itemSpec = tagsJson.tags[id];
                 delete tagsJson.tags[id];
+
+                const {type} = itemSpec;
+                if (type === 'asset') {
+                  wallet.removeAsset(itemSpec);
+                }
 
                 _saveTags();
 
@@ -207,6 +219,8 @@ class World {
               const _setTagAttribute = (userId, id, {name, value}) => {
                 const itemSpec = tagsJson.tags[id];
                 const {attributes} = itemSpec;
+                const oldValue = attributes[name] ? attributes[name].value : undefined;
+
                 if (value !== undefined) {
                   attributes[name] = {
                     value,
@@ -215,17 +229,23 @@ class World {
                   delete attributes[name];
                 }
 
+                const {type} = itemSpec;
+                if (type === 'asset') {
+                  wallet.setAssetAttribute(itemSpec, name, value, oldValue);
+                }
+
                 _saveTags();
 
                 _broadcastLocal('setTagAttribute', [userId, id, {name, value}]);
               };
               const _setTagAttributes = (userId, id, newAttributes) => {
                 const itemSpec = tagsJson.tags[id];
-                const {attributes} = itemSpec;
+                const {type, attributes} = itemSpec;
 
                 for (let i = 0; i < newAttributes.length; i++) {
                   const newAttribute = newAttributes[i];
                   const {name, value} = newAttribute;
+                  const oldValue = attributes[name] ? attributes[name].value : undefined;
 
                   if (value !== undefined) {
                     attributes[name] = {
@@ -233,6 +253,10 @@ class World {
                     };
                   } else {
                     delete attributes[name];
+                  }
+
+                  if (type === 'asset') {
+                    wallet.setAssetAttribute(itemSpec, name, value, oldValue);
                   }
                 }
 
@@ -253,6 +277,11 @@ class World {
                     const {id} = itemSpec;
                     tagsJson.tags[id] = itemSpec;
 
+                    const {type} = itemSpec;
+                    if (type === 'asset') {
+                      wallet.addAsset(itemSpec);
+                    }
+
                     _saveTags();
 
                     _broadcastLocal('addTag', [userId, itemSpec]);
@@ -263,6 +292,11 @@ class World {
                       const itemSpec = itemSpecs[i];
                       const {id} = itemSpec;
                       tagsJson.tags[id] = itemSpec;
+
+                      const {type} = itemSpec;
+                      if (type === 'asset') {
+                        wallet.addAsset(itemSpec);
+                      }
                     }
 
                     _saveTags();
@@ -278,6 +312,12 @@ class World {
                     for (let i = 0; i < ids.length; i++) {
                       const id = ids[i];
                       delete tagsJson.tags[id];
+
+                      const itemSpec = tagsJson.tags[id];
+                      const {type} = itemSpec;
+                      if (type === 'asset') {
+                        wallet.removeAsset(itemSpec);
+                      }
                     }
 
                     _saveTags();
@@ -393,6 +433,23 @@ class World {
           };
           multiplayer.on('playerLeave', _playerLeave);
 
+          const _walletRemoveTag = id => {
+            _removeTag(null, id); // XXX no user id
+          };
+          wallet.on('removeTag', _walletRemoveTag);
+
+          const _initWallet = () => {
+            for (let i = 0; i < tagsJson.tags.length; i++) {
+              const itemSpec = tagsJson.tags[i];
+              const {type} = itemSpec;
+
+              if (type === 'asset') {
+                wallet.addAsset(itemSpec);
+              }
+            }
+          };
+          _initWallet();
+
           this._cleanup = () => {
             for (let i = 0; i < connections.length; i++) {
               const connection = connections[i];
@@ -400,13 +457,17 @@ class World {
             }
 
             multiplayer.removeListener('playerLeave', _playerLeave);
+            wallet.removeListener('removeTag', _walletRemoveTag);
           };
 
-          const _getTags = () => tagsJson.tags;
+          class WorldApi extends EventEmitter {
+            getTags() {
+              return tagsJson.tags;
+            }
+          }
+          const worldApi = new WorldApi();
 
-          return {
-            getTags: _getTags,
-          };
+          return worldApi;
         }
       });
   }
