@@ -1,11 +1,11 @@
 {
-  "name": "skin",
-  "description": "Load minecraft skins.",
+  "name": "npc",
+  "description": "Skinned npcs.",
   "version": "0.0.1",
   "keywords": [],
   "client": "client.js",
   "server": "server.js",
   "dependencies": {
-    "mod-loop": "0.0.2"
+    "minecraft-skin": "^0.1.2"
   }
 }
