@@ -87,6 +87,7 @@ class Wallet {
       '/core/engines/stck',
       '/core/engines/notification',
       '/core/utils/js-utils',
+      '/core/utils/network-utils',
       '/core/utils/creature-utils',
       '/core/utils/sprite-utils',
     ]).then(([
@@ -106,6 +107,7 @@ class Wallet {
       stck,
       notification,
       jsUtils,
+      networkUtils,
       creatureUtils,
       spriteUtils,
     ]) => {
@@ -113,6 +115,7 @@ class Wallet {
         const {THREE, scene, camera} = three;
         const {events} = jsUtils;
         const {EventEmitter} = events;
+        const {AutoWs} = networkUtils;
         const {Grabbable} = hand;
         const {sfx} = resource;
 
@@ -145,6 +148,8 @@ class Wallet {
         const pixelSize = 0.015;
         const numPixels = 12;
         const assetSize = pixelSize * numPixels;
+
+        const connection = new AutoWs(_relativeWsUrl('archae/walletWs'));
 
         const _isInBody = p => {
           const {hmd} = webvr.getStatus();
@@ -228,6 +233,12 @@ class Wallet {
 
                   assetsMesh.geometryNeedsUpdate = true;
 
+                  const {id} = this;
+                  connection.send(JSON.stringify({
+                    method: 'kickAsset',
+                    args: [id],
+                  }));
+
                   break;
                 }
                 case 'release': {
@@ -277,6 +288,11 @@ class Wallet {
                       item: this,
                     });
                   }
+
+                  connection.send(JSON.stringify({
+                    method: 'unkickAsset',
+                    args: [id],
+                  }));
 
                   break;
                 }
@@ -1241,6 +1257,10 @@ class Wallet {
 }
 
 const _makeId = () => Math.random().toString(36).substring(7);
+const _relativeWsUrl = s => {
+  const l = window.location;
+  return ((l.protocol === 'https:') ? 'wss://' : 'ws://') + l.host + l.pathname + (!/\/$/.test(l.pathname) ? '/' : '') + s;
+};
 /* const _arrayToBase64 = array => {
   let binary = '';
   for (let i = 0; i < array.byteLength; i++) {
