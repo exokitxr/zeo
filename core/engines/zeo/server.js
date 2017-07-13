@@ -20,6 +20,7 @@ class Zeo {
       '/core/engines/tags',
       '/core/engines/world',
       '/core/engines/fs',
+      '/core/utils/hash-utils',
       '/core/utils/random-utils',
     ])
       .then(([
@@ -27,6 +28,7 @@ class Zeo {
         tags,
         world,
         fs,
+        hashUtils,
         randomUtils,
       ]) => {
         if (live) {
@@ -68,6 +70,7 @@ class Zeo {
 
           class ZeoUtilsApi {
             constructor() {
+              this.hash = hashUtils;
               this.random = randomUtils;
             }
           }
