@@ -26,7 +26,8 @@ class Npc {
       .then(files => {
         const npcImgStatic = express.static(path.join(__dirname, 'lib', 'img'));
         function serveNpcImg(req, res, next) {
-          const file = files[Math.floor((murmur(req.url) / 0xFFFFFFFF) * files.length)];
+          // const file = files[Math.floor((murmur(req.url) / 0xFFFFFFFF) * files.length)];
+          const file = 'ertsefwe-skin_20170713132536186718.png';
           req.url = path.join('/', file);
 
           npcImgStatic(req, res, next);
