@@ -45,17 +45,18 @@ class Npc {
           const _makeMesh = id => {
             const mesh = skin(skinImg);
 
-            mesh.offset = new THREE.Vector3();
+            mesh.offset = new THREE.Vector3(0, 0, 0);
             mesh.animation = null;
             mesh.hit = null;
 
             mesh.attack = direction => {
               const e = {
-                method: 'hitNpc',
+                method: 'attackNpc',
                 args: [
                   id,
                   mesh.position.toArray(),
                   direction.toArray(),
+                  30,
                 ],
               };
               const es = JSON.stringify(e);
@@ -76,9 +77,9 @@ class Npc {
 
                     mesh.position.copy(positionStart)
                       .lerp(positionEnd, positionFactor);
+                    mesh.offset.set(0, 0, 0);
                     mesh.quaternion.copy(rotationStart)
                       .slerp(rotationEnd, rotationFactor);
-                    mesh.updateMatrixWorld();
 
                     const velocity = positionStart.distanceTo(positionEnd) / duration;
                     const angleRate = 1.5 / velocity;
@@ -108,6 +109,35 @@ class Npc {
                     if (positionFactor >= 1) {
                       mesh.animation = null;
                     }
+                  } else if (mode === 'die') {
+                    const v = Math.min((now - startTime) / duration, 1);
+
+                    if (v < 0.5) {
+                      const positionFactor = v * 2;
+                      const rotationFactor = Math.pow(v * 2, 0.5);
+
+                      mesh.position.copy(positionStart)
+                        .lerp(positionEnd, positionFactor);
+                      mesh.offset
+                        .set(0, 1, 0)
+                        .multiplyScalar(
+                          -Math.pow(((positionFactor - 0.5) * 2), 2) + 1
+                        );
+                      mesh.quaternion.copy(rotationStart)
+                        .slerp(rotationEnd, rotationFactor);
+                    } else {
+                      mesh.position.copy(positionEnd);
+                      mesh.offset.set(0, 0, 0);
+                      mesh.quaternion.copy(rotationEnd);
+                    }
+
+                    mesh.material.uniforms.theta.value = 0;
+
+                    if (v >= 1) {
+                      scene.remove(mesh);
+                      mesh.destroy();
+                      delete meshes[id];
+                    }
                   }
                 }
               };
@@ -117,7 +147,6 @@ class Npc {
                   
                   if (mesh.position.y !== elevation) {
                     mesh.position.y = elevation;
-                    mesh.updateMatrixWorld();
                   }
                 }
 
@@ -160,14 +189,17 @@ class Npc {
               const {id, status} = e;
 
               if (status) {
-                const {position} = status;
+                const {position, rotation, health} = status;
+
                 let mesh = meshes[id];
                 if (!mesh) {
                   mesh = _makeMesh(id);
                   scene.add(mesh);
                   meshes[id] = mesh;
                 }
+
                 mesh.position.fromArray(position);
+                mesh.quaternion.fromArray(rotation);
                 mesh.updateMatrixWorld();
               } else {
                 const mesh = meshes[id];
@@ -191,7 +223,7 @@ class Npc {
                 duration: duration,
                 startTime: now,
               };
-              if (mode === 'hit') {
+              if (mode === 'hit' || mode === 'die') {
                 mesh.hit = {
                   startTime: now,
                 };
