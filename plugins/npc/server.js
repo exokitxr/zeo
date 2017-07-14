@@ -61,7 +61,7 @@ class Npc {
               this.timeout = null;
 
               this.think();
-            }, 500 + Math.random() * 2000);
+            }, 1000 + Math.random() * 4000);
           }
 
           think() {

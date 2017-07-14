@@ -43,6 +43,8 @@ class Npc {
               const _updateAnimation = () => {
                 const {animation} = mesh;
 
+                // mesh.material.uniforms.theta.value = Math.sin((now % 4000) / 4000 * Math.PI * 2) * 0.01 * Math.PI * 2;
+
                 if (animation) {
                   const {mode, positionStart, positionEnd, rotationStart, rotationEnd, duration, startTime} = animation;
                   const positionFactor = Math.min((now - startTime) / duration, 1);
@@ -54,7 +56,9 @@ class Npc {
 
                   const velocity = positionStart.distanceTo(positionEnd) / duration;
                   const angleRate = 1.5 / velocity;
-                  mesh.material.uniforms.theta.value = Math.sin((now % angleRate) / angleRate * Math.PI * 2) * 0.5;
+                  mesh.material.uniforms.theta.value =
+                    Math.sin((now % angleRate) / angleRate * Math.PI * 2) * 0.75 *
+                    Math.pow(Math.sin(positionFactor * Math.PI), 0.5);
 
                   if (positionFactor >= 1) {
                     mesh.animation = null;
