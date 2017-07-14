@@ -5,7 +5,7 @@ const HEIGHTFIELD_PLUGIN = 'plugins-heightfield';
 
 class Npc {
   mount() {
-    const {three, pose, elements, render, utils: {network: networkUtils, random: randomUtils}} = zeo;
+    const {three, pose, elements, input, render, utils: {network: networkUtils, random: randomUtils}} = zeo;
     const {THREE, scene} = three;
     const {AutoWs} = networkUtils;
     const {chnkr} = randomUtils;
@@ -45,12 +45,13 @@ class Npc {
           const _makeMesh = () => {
             const mesh = skin(skinImg);
 
+            mesh.animation = null;
+            mesh.hit = null;
+
             const {head, leftArm, rightArm, leftLeg, rightLeg} = mesh;
             mesh.update = (now, heightfieldElement) => {
               const _updateAnimation = () => {
                 const {animation} = mesh;
-
-                // mesh.material.uniforms.theta.value = Math.sin((now % 4000) / 4000 * Math.PI * 2) * 0.01 * Math.PI * 2;
 
                 if (animation) {
                   const {mode, positionStart, positionEnd, rotationStart, rotationEnd, duration, startTime} = animation;
@@ -82,9 +83,25 @@ class Npc {
                   }
                 }
               };
+              const _updateHit = () => {
+                const {hit} = mesh;
+
+                if (hit) {
+                  const {startTime} = hit;
+                  const timeDiff = now - startTime;
+
+                  if (timeDiff < 300) {
+                    mesh.material.uniforms.hit.value = 1;
+                  } else {
+                    mesh.material.uniforms.hit.value = 0;
+                    mesh.hit = null;
+                  }
+                }
+              };
 
               _updateAnimation();
               _updateElevation();
+              _updateHit();
             };
 
             return mesh;
@@ -138,6 +155,34 @@ class Npc {
             range: 1,
           });
 
+          const _gripdown = e => {
+            const {side} = e;
+            const {gamepads} = pose.getStatus();
+            const gamepad = gamepads[side];
+            const {worldPosition: controllerPosition} = gamepad;
+
+            for (const id in meshes) {
+              const mesh = meshes[id];
+              const box = new THREE.Box3().setFromCenterAndSize(
+                mesh.position.clone().add(new THREE.Vector3(0, 1, 0)),
+                new THREE.Vector3(1, 2, 1)
+              );
+
+              if (box.containsPoint(controllerPosition)) {
+                hurtSfx.trigger();
+
+                mesh.hit = {
+                  startTime: Date.now(),
+                };
+
+                e.stopImmediatePropagation();
+
+                break;
+              }
+            }
+          };
+          input.on('gripdown', _gripdown);
+
           const _update = () => {
             const _updateMeshes = () => {
               const now = Date.now();
@@ -187,6 +232,8 @@ class Npc {
               scene.remove(mesh);
               mesh.destroy();
             }
+
+            input.removeListener('gripdown', _gripdown);
 
             render.removeListener('update', _update);
           };
