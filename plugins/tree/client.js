@@ -243,11 +243,29 @@ class Tree {
             const lightmap = lightmapper.getLightmapAt(x * NUM_CELLS, y * NUM_CELLS);
             treeChunkMesh.material.uniforms.lightMap.value = lightmap.texture;
             treeChunkMesh.lightmap = lightmap;
+
+            const {trees: treesData} = treeChunkMesh;
+            const numTrees = treesData.length / 5;
+            const shapes = Array(numTrees);
+            for (let i = 0; i < numTrees; i++) {
+              const basePosition = new THREE.Vector3().fromArray(treesData, (i * 5) + 2);
+              const shape = new Lightmapper.Cylinder(basePosition.x, basePosition.y, basePosition.z, 12, 8, 0.15, Lightmapper.SubBlend);
+              lightmapper.add(shape);
+              shapes[i] = shape;
+            }
+            treeChunkMesh.shapes = shapes;
           };
           const _unbindLightmap = treeChunkMesh => {
             const {lightmap} = treeChunkMesh;
             lightmapper.releaseLightmap(lightmap);
             treeChunkMesh.lightmap = null;
+
+            const {shapes} = treeChunkMesh;
+            for (let i = 0; i < shapes; i++) {
+              const shape = shapes[i];
+              lightmapper.remove(shape);
+            }
+            treeChunkMesh.shapes = null;
           };
           const elementListener = elements.makeListener(LIGHTMAP_PLUGIN);
           elementListener.on('add', entityElement => {
@@ -302,6 +320,7 @@ class Tree {
             mesh.offset = new THREE.Vector2(x, z);
             mesh.trees = trees;
             mesh.lightmap = null;
+            mesh.shapes = null;
             if (lightmapper) {
               _bindLightmap(mesh);
             }
@@ -318,16 +337,16 @@ class Tree {
           };
 
           class TrackedTree {
-            constructor(mesh, shape, box, startIndex, endIndex) {
+            constructor(mesh, box, treeIndex, startIndex, endIndex) {
               this.mesh = mesh;
               this.box = box;
-              this.shape = shape;
+              this.treeIndex = treeIndex;
               this.startIndex = startIndex;
               this.endIndex = endIndex;
             }
 
-            eraseGeometry() {
-              const {mesh, startIndex, endIndex} = this;
+            erase() {
+              const {mesh, treeIndex, startIndex, endIndex} = this;
               const {geometry} = mesh;
               const indexAttribute = geometry.index;
               const indices = indexAttribute.array;
@@ -335,10 +354,13 @@ class Tree {
                 indices[i] = 0;
               }
               indexAttribute.needsUpdate = true;
-            }
 
-            destroy() {
-              lightmapper.remove(this.shape);
+              const {shapes} = mesh;
+              if (shapes) {
+                const shape = shapes[treeIndex];
+                lightmapper.remove(shape);
+                delete shapes[treeIndex];
+              }
             }
           }
 
@@ -351,17 +373,15 @@ class Tree {
             let startTree = null;
             for (let i = 0; i < numTrees; i++) {
               const baseIndex = i * 5;
-              const startIndex = treesData[baseIndex + 0];
-              const endIndex = treesData[baseIndex + 1];
               const basePosition = new THREE.Vector3().fromArray(treesData, baseIndex + 2);
-
-              const shape = new Lightmapper.Cylinder(basePosition.x, basePosition.y, basePosition.z, 12, 8, 0.15, Lightmapper.SubBlend); // XXX sometimes not defined
-              lightmapper.add(shape);
               const box = new THREE.Box3(
                 basePosition.clone().add(new THREE.Vector3(-treeBaseWidth/2, 0, -treeBaseWidth/2)),
                 basePosition.clone().add(new THREE.Vector3(treeBaseWidth/2, treeBaseHeight, treeBaseWidth/2))
               );
-              const trackedTree = new TrackedTree(mesh, shape, box, startIndex, endIndex);
+              const treeIndex = i;
+              const startIndex = treesData[baseIndex + 0];
+              const endIndex = treesData[baseIndex + 1];
+              const trackedTree = new TrackedTree(mesh, box, treeIndex, startIndex, endIndex);
               trackedTrees.push(trackedTree);
 
               if (startTree === null) {
@@ -373,12 +393,7 @@ class Tree {
           };
           const _removeTrackedTrees = itemRange => {
             const [startTree, numTrees] = itemRange;
-            const removedTrackedTrees = trackedTrees.splice(trackedTrees.indexOf(startTree), numTrees);
-
-            for (let i = 0; i < removedTrackedTrees.length; i++) {
-              const trackedTree = removedTrackedTrees[i];
-              trackedTree.destroy();
-            }
+            trackedTrees.splice(trackedTrees.indexOf(startTree), numTrees);
           };
           const _getHoveredTrackedTree = side => {
             const {gamepads} = pose.getStatus();
@@ -399,8 +414,7 @@ class Tree {
             const trackedTree = _getHoveredTrackedTree(side);
 
             if (trackedTree) {
-              trackedTree.eraseGeometry();
-              trackedTree.destroy();
+              trackedTree.erase();
 
               const id = _makeId();
               const asset = 'WOOD';
