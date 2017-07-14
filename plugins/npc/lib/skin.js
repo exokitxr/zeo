@@ -8,6 +8,10 @@ const SKIN_SHADER = {
       type: 'f',
       value: 0,
     },
+    hit: {
+      type: 'f',
+      value: 0,
+    },
     map: {
       type: 't',
       value: null,
@@ -24,12 +28,16 @@ const SKIN_SHADER = {
     "}"
   ].join("\n"),
   fragmentShader: [
+    "uniform float hit;",
     "uniform sampler2D map;",
     "varying vec2 vUv;",
     "void main() {",
     "  vec4 diffuseColor = texture2D(map, vUv);",
     "  if (diffuseColor.a < 0.5) {",
     "    discard;",
+    "  }",
+    "  if (hit > 0.5) {",
+    "    diffuseColor.r += 0.3;",
     "  }",
     "  gl_FragColor = diffuseColor;",
     "}"
