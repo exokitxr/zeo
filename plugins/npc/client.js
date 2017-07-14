@@ -1,3 +1,4 @@
+const sfxr = require('sfxr');
 const skinLib = require('./lib/skin');
 
 const HEIGHTFIELD_PLUGIN = 'plugins-heightfield';
@@ -30,8 +31,14 @@ class Npc {
       img.src = url;
     });
 
-    return _requestImage('/archae/npc/img/0')
-      .then(skinImg => {
+    return Promise.all([
+      _requestImage('/archae/npc/img/0'),
+      sfxr.requestSfx('archae/npc/sfx/hurt1.ogg'),
+    ])
+      .then(([
+        skinImg,
+        hurtSfx,
+      ]) => {
         if (live) {
           const meshes = {};
 
