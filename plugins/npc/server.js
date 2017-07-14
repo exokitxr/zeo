@@ -18,6 +18,7 @@ class Npc {
     const {murmur} = hashUtils;
 
     const forwardVector = new THREE.Vector3(0, 0, -1);
+    const backVector = new THREE.Vector3(0, 0, 1);
 
     const _readdir = p => new Promise((accept, reject) => {
       fs.readdir(p, (err, files) => {
@@ -48,6 +49,7 @@ class Npc {
         app.use('/archae/npc/sfx', serveNpcSfx);
 
         const trackedChunks = {};
+        const trackedNpcs = {};
         
         class Npc extends EventEmitter {
           constructor(id, position, rotation) {
@@ -66,11 +68,11 @@ class Npc {
             this.timeout = setTimeout(() => {
               this.timeout = null;
 
-              this.think();
+              this.walk();
             }, 1000 + Math.random() * 4000);
           }
 
-          think() {
+          walk() {
             const {position, rotation} = this;
 
             const distance = 2 + Math.random() * 10;
@@ -91,6 +93,35 @@ class Npc {
 
             const animation = {
               mode: 'walk',
+              positionStart: position,
+              positionEnd: positionEnd,
+              rotationStart: rotation,
+              rotationEnd: rotationEnd,
+              duration: duration,
+            };
+            this.emit('animation', animation);
+
+            this.position = positionEnd;
+            this.rotation = rotationEnd;
+
+            this.timeout = setTimeout(() => {
+              this.wait();
+            }, duration);
+          }
+
+          hit(position, direction) {
+            clearTimeout(this.timeout);
+
+            const positionEnd = position.clone().add(direction.clone().multiplyScalar(2));
+            const rotation = new THREE.Quaternion().setFromUnitVectors(
+              backVector,
+              direction
+            );
+            const rotationEnd = rotation;
+            const duration = 500;
+
+            const animation = {
+              mode: 'hit',
               positionStart: position,
               positionEnd: positionEnd,
               rotationStart: rotation,
@@ -224,6 +255,8 @@ class Npc {
                       const es = JSON.stringify(e);
                       c.send(es);
                     });
+
+                    trackedNpcs[id] = npc;
                   }
 
                   trackedChunk[localCleanupSymbol] = () => {
@@ -239,6 +272,8 @@ class Npc {
                       };
                       const es = JSON.stringify(e);
                       c.send(es);
+
+                      delete trackedNpcs[id];
                     }
                   };
 
@@ -253,6 +288,16 @@ class Npc {
 
                   delete localTrackedChunks[index];
                   trackedChunk.removeRef();
+                } else if (method === 'hitNpc') {
+                  const [id, position, direction] = args;
+
+                  const npc = trackedNpcs[id];
+                  if (npc) {
+                    npc.hit(
+                      new THREE.Vector3().fromArray(position),
+                      new THREE.Vector3().fromArray(direction)
+                    );
+                  }
                 } else {
                   console.warn('npc invalid message type', {type});
                 }

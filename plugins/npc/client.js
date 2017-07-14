@@ -42,11 +42,25 @@ class Npc {
         if (live) {
           const meshes = {};
 
-          const _makeMesh = () => {
+          const _makeMesh = id => {
             const mesh = skin(skinImg);
 
+            mesh.offset = new THREE.Vector3();
             mesh.animation = null;
             mesh.hit = null;
+
+            mesh.attack = direction => {
+              const e = {
+                method: 'hitNpc',
+                args: [
+                  id,
+                  mesh.position.toArray(),
+                  direction.toArray(),
+                ],
+              };
+              const es = JSON.stringify(e);
+              connection.send(es);
+            };
 
             const {head, leftArm, rightArm, leftLeg, rightLeg} = mesh;
             mesh.update = (now, heightfieldElement) => {
@@ -55,21 +69,45 @@ class Npc {
 
                 if (animation) {
                   const {mode, positionStart, positionEnd, rotationStart, rotationEnd, duration, startTime} = animation;
-                  const positionFactor = Math.min((now - startTime) / duration, 1);
-                  const rotationFactor = Math.pow(Math.min((now - startTime) / (duration / 4), 1), 0.5);
 
-                  mesh.position.copy(positionStart).lerp(positionEnd, positionFactor);
-                  mesh.quaternion.copy(rotationStart).slerp(rotationEnd, rotationFactor);
-                  mesh.updateMatrixWorld();
+                  if (mode === 'walk') {
+                    const positionFactor = Math.min((now - startTime) / duration, 1);
+                    const rotationFactor = Math.pow(Math.min((now - startTime) / (duration / 4), 1), 0.5);
 
-                  const velocity = positionStart.distanceTo(positionEnd) / duration;
-                  const angleRate = 1.5 / velocity;
-                  mesh.material.uniforms.theta.value =
-                    Math.sin((now % angleRate) / angleRate * Math.PI * 2) * 0.75 *
-                    Math.pow(Math.sin(positionFactor * Math.PI), 0.5);
+                    mesh.position.copy(positionStart)
+                      .lerp(positionEnd, positionFactor);
+                    mesh.quaternion.copy(rotationStart)
+                      .slerp(rotationEnd, rotationFactor);
+                    mesh.updateMatrixWorld();
 
-                  if (positionFactor >= 1) {
-                    mesh.animation = null;
+                    const velocity = positionStart.distanceTo(positionEnd) / duration;
+                    const angleRate = 1.5 / velocity;
+                    mesh.material.uniforms.theta.value =
+                      Math.sin((now % angleRate) / angleRate * Math.PI * 2) * 0.75 *
+                      Math.pow(Math.sin(positionFactor * Math.PI), 0.5);
+
+                    if (positionFactor >= 1) {
+                      mesh.animation = null;
+                    }
+                  } else if (mode === 'hit') {
+                    const positionFactor = Math.min((now - startTime) / duration, 1);
+                    const rotationFactor = Math.pow(Math.min((now - startTime) / (duration / 4), 1), 0.5);
+
+                    mesh.position.copy(positionStart)
+                      .lerp(positionEnd, positionFactor);
+                    mesh.offset
+                      .set(0, 1, 0)
+                      .multiplyScalar(
+                        -Math.pow(((positionFactor - 0.5) * 2), 2) + 1
+                      );
+                    mesh.quaternion.copy(rotationStart)
+                      .slerp(rotationEnd, rotationFactor);
+
+                    mesh.material.uniforms.theta.value = 0;
+
+                    if (positionFactor >= 1) {
+                      mesh.animation = null;
+                    }
                   }
                 }
               };
@@ -82,6 +120,8 @@ class Npc {
                     mesh.updateMatrixWorld();
                   }
                 }
+
+                mesh.position.add(mesh.offset);
               };
               const _updateHit = () => {
                 const {hit} = mesh;
@@ -98,10 +138,14 @@ class Npc {
                   }
                 }
               };
+              const _updateMatrix = () => {
+                mesh.updateMatrixWorld();
+              };
 
               _updateAnimation();
               _updateElevation();
               _updateHit();
+              _updateMatrix();
             };
 
             return mesh;
@@ -119,7 +163,7 @@ class Npc {
                 const {position} = status;
                 let mesh = meshes[id];
                 if (!mesh) {
-                  mesh = _makeMesh();
+                  mesh = _makeMesh(id);
                   scene.add(mesh);
                   meshes[id] = mesh;
                 }
@@ -135,6 +179,8 @@ class Npc {
               const {id, animation} = e;
               const {mode, positionStart, positionEnd, rotationStart, rotationEnd, duration} = animation;
 
+              const now = Date.now();
+
               const mesh = meshes[id];
               mesh.animation = {
                 mode: mode,
@@ -143,8 +189,15 @@ class Npc {
                 rotationStart: new THREE.Quaternion().fromArray(rotationStart),
                 rotationEnd: new THREE.Quaternion().fromArray(rotationEnd),
                 duration: duration,
-                startTime: Date.now(),
+                startTime: now,
               };
+              if (mode === 'hit') {
+                mesh.hit = {
+                  startTime: now,
+                };
+
+                hurtSfx.trigger();
+              }
             } else {
               console.warn('npc unknown message type', JSON.stringify(type));
             }
@@ -157,7 +210,8 @@ class Npc {
 
           const _gripdown = e => {
             const {side} = e;
-            const {gamepads} = pose.getStatus();
+            const status = pose.getStatus();
+            const {gamepads} = status;
             const gamepad = gamepads[side];
             const {worldPosition: controllerPosition} = gamepad;
 
@@ -169,11 +223,14 @@ class Npc {
               );
 
               if (box.containsPoint(controllerPosition)) {
-                hurtSfx.trigger();
-
-                mesh.hit = {
-                  startTime: Date.now(),
-                };
+                const {hmd} = status;
+                const {worldPosition: hmdPosition} = hmd;
+                const direction = mesh.position.clone()
+                  .add(new THREE.Vector3(0, 1, 0))
+                  .sub(hmdPosition);
+                direction.y = 0;
+                direction.normalize();
+                mesh.attack(direction);
 
                 e.stopImmediatePropagation();
 
