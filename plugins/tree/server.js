@@ -9,7 +9,7 @@ class Tree {
     const {_archae: archae} = this;
     const {express, app} = archae.getCore();
 
-    const treeSfxStatic = express.static(path.join(__dirname, 'lib/sfx'));
+    const treeSfxStatic = express.static(path.join(__dirname, 'lib', 'sfx'));
     function serveTreeSfx(req, res, next) {
       treeSfxStatic(req, res, next);
     }
