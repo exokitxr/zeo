@@ -19,7 +19,7 @@ const SKIN_SHADER = {
     "varying vec2 vUv;",
     "void main() {",
     "  float theta2 = theta * dy.z;",
-    "  gl_Position = projectionMatrix * modelViewMatrix * vec4(position.x, position.y - dy.y + (dy.y*cos(theta2) - dy.x*sin(theta2)), position.z - dy.x + (dy.x*cos(theta2) + dy.y*sin(theta2)), 1.0);",
+    "  gl_Position = projectionMatrix * modelViewMatrix * vec4(position.x, position.y - dy.y + (dy.y*cos(theta2) - dy.x*sin(theta2)), position.z + dy.x + (dy.x*cos(theta2) + dy.y*sin(theta2)), 1.0);",
     "  vUv = uv;",
     "}"
   ].join("\n"),
@@ -901,6 +901,7 @@ const skinGeometry = (() => {
   geometry.addAttribute('uv', new THREE.BufferAttribute(uvs, 2));
   geometry.addAttribute('dy', new THREE.BufferAttribute(dys, 3));
   // geometry.setIndex(new THREE.BufferAttribute(indices, 1));
+  geometry.applyMatrix(new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(0, Math.PI, 0, 'YXZ')));
   return geometry;
 })();
 
@@ -922,8 +923,8 @@ const skin = img => {
 
   const mesh = new THREE.Mesh(skinGeometry, material);
   mesh.scale.set(scale, scale, scale);
-  mesh.rotation.y = Math.PI;
-  mesh.rotation.order = rotationOrder;
+  /* mesh.rotation.y = Math.PI;
+  mesh.rotation.order = rotationOrder; */
   mesh.updateMatrixWorld();
   mesh.boundingSphere = new THREE.Sphere(
     new THREE.Vector3(0, 0, 0),
