@@ -17,6 +17,7 @@ class Npc {
     const {THREE} = three;
     const {murmur} = hashUtils;
 
+    const upVector = new THREE.Vector3(0, 1, 0);
     const forwardVector = new THREE.Vector3(0, 0, -1);
     const backVector = new THREE.Vector3(0, 0, 1);
 
@@ -52,12 +53,13 @@ class Npc {
         const trackedNpcs = {};
         
         class Npc extends EventEmitter {
-          constructor(id, position, rotation) {
+          constructor(id, position, rotation, health) {
             super();
 
             this.id = id;
             this.position = position;
             this.rotation = rotation;
+            this.health = health;
 
             this.timeout = null;
 
@@ -109,33 +111,61 @@ class Npc {
             }, duration);
           }
 
-          hit(position, direction) {
+          hit(position, direction, damage) {
             clearTimeout(this.timeout);
 
-            const positionEnd = position.clone().add(direction.clone().multiplyScalar(2));
-            const rotation = new THREE.Quaternion().setFromUnitVectors(
-              backVector,
-              direction
-            );
-            const rotationEnd = rotation;
-            const duration = 500;
+            const health = Math.max(this.health - damage, 0);
+            if (health > 0) {
+              const positionEnd = position.clone().add(direction.clone().multiplyScalar(2));
+              const rotation = new THREE.Quaternion().setFromUnitVectors(
+                backVector,
+                direction
+              );
+              const rotationEnd = rotation;
+              const duration = 500;
 
-            const animation = {
-              mode: 'hit',
-              positionStart: position,
-              positionEnd: positionEnd,
-              rotationStart: rotation,
-              rotationEnd: rotationEnd,
-              duration: duration,
-            };
-            this.emit('animation', animation);
+              const animation = {
+                mode: 'hit',
+                positionStart: position,
+                positionEnd: positionEnd,
+                rotationStart: rotation,
+                rotationEnd: rotationEnd,
+                duration: duration,
+              };
+              this.emit('animation', animation);
 
-            this.position = positionEnd;
-            this.rotation = rotationEnd;
+              this.position = positionEnd;
+              this.rotation = rotationEnd;
+              this.health = health;
 
-            this.timeout = setTimeout(() => {
-              this.wait();
-            }, duration);
+              this.timeout = setTimeout(() => {
+                this.wait();
+              }, duration);
+            } else {
+              const positionEnd = position.clone().add(direction.clone().multiplyScalar(2));
+              const rotation = new THREE.Quaternion().setFromUnitVectors(
+                backVector,
+                direction
+              );
+              const rotationEnd = rotation.clone()
+                .multiply(new THREE.Quaternion().setFromAxisAngle(
+                  backVector,
+                  ((Math.random() < 0.5) ? 1 : -1) * (Math.PI / 2)
+                ));
+              const duration = 1000;
+
+              const animation = {
+                mode: 'die',
+                positionStart: position,
+                positionEnd: positionEnd,
+                rotationStart: rotation,
+                rotationEnd: rotationEnd,
+                duration: duration,
+              };
+              this.emit('animation', animation);
+
+              this.emit('die');
+            }
           }
 
           destroy() {
@@ -161,9 +191,9 @@ class Npc {
                 const ax = (ox * NUM_CELLS) + dx;
                 const az = (oz * NUM_CELLS) + dz;
                 const position = new THREE.Vector3(ax, 0, az);
-                const rotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, Math.random() * Math.PI * 2, 'YXZ'));
+                const rotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, Math.random() * Math.PI * 2, 0, 'YXZ'));
 
-                const npc = new Npc(id, position, rotation);
+                const npc = new Npc(id, position, rotation, 100);
                 result[i] = npc;
               }
               return result;
@@ -220,25 +250,46 @@ class Npc {
                     trackedChunks[index] = trackedChunk;
                     trackedChunk.on('destroy', () => {
                       delete trackedChunks[index];
+
+                      const {npcs} = trackedChunk;
+                      for (let i = 0; i < npcs.length; i++) {
+                        const npc = npcs[i];
+                        const {id} = npc;
+                        delete trackedNpcs[id];
+                      }
                     });
+
+                    const {npcs} = trackedChunk;
+                    for (let i = 0; i < npcs.length; i++) {
+                      const npc = npcs[i];
+                      const {id} = npc;
+                      trackedNpcs[id] = npc;
+
+                      npc.on('die', () => {
+                        npcs.splice(npcs.indexOf(npc), 1);
+                        delete trackedNpcs[id];
+                      });
+                    }
                   }
 
                   const {npcs} = trackedChunk;
+                  const  npcCleanups = Array(npcs.length);
                   for (let i = 0; i < npcs.length; i++) {
                     const npc = npcs[i];
-                    const {id, position} = npc;
+                    const {id, position, rotation} = npc;
 
                     const e = {
                       type: 'npcStatus',
                       id,
                       status: {
                         position: position.toArray(),
+                        rotation: rotation.toArray(),
                       },
                     };
                     const es = JSON.stringify(e);
                     c.send(es);
 
-                    npc.on('animation', animation => {
+                    const _animation = animation => {
                       const {mode, positionStart, positionEnd, rotationStart, rotationEnd, duration} = animation;
                       const e = {
                         type: 'npcAnimation',
@@ -254,26 +305,37 @@ class Npc {
                       };
                       const es = JSON.stringify(e);
                       c.send(es);
-                    });
+                    };
+                    npc.on('animation', _animation);
+                    const _die = () => {
+                      live = false;
+                    };
+                    npc.on('die', _die);
 
-                    trackedNpcs[id] = npc;
+                    let live = true;
+                    const npcCleanup = () => {
+                      if (live) {
+                        const e = {
+                          type: 'npcStatus',
+                          id,
+                          status: null,
+                        };
+                        const es = JSON.stringify(e);
+                        c.send(es);
+
+                        npc.removeListener('animation', _animation);
+                        npc.removeListener('die', _die);
+
+                        live = false;
+                      }
+                    };
+                    npcCleanups[i] = npcCleanup;
                   }
 
                   trackedChunk[localCleanupSymbol] = () => {
-                    const {npcs} = trackedChunk;
-
-                    for (let i = 0; i < npcs.length; i++) {
-                      const npc = npcs[i];
-                      const {id} = npc;
-                      const e = {
-                        type: 'npcStatus',
-                        id,
-                        status: null,
-                      };
-                      const es = JSON.stringify(e);
-                      c.send(es);
-
-                      delete trackedNpcs[id];
+                    for (let i = 0; i < npcCleanups.length; i++) {
+                      const npcCleanup = npcCleanups[i];
+                      npcCleanup();
                     }
                   };
 
@@ -288,14 +350,15 @@ class Npc {
 
                   delete localTrackedChunks[index];
                   trackedChunk.removeRef();
-                } else if (method === 'hitNpc') {
-                  const [id, position, direction] = args;
+                } else if (method === 'attackNpc') {
+                  const [id, position, direction, damage] = args;
 
                   const npc = trackedNpcs[id];
                   if (npc) {
                     npc.hit(
                       new THREE.Vector3().fromArray(position),
-                      new THREE.Vector3().fromArray(direction)
+                      new THREE.Vector3().fromArray(direction),
+                      damage
                     );
                   }
                 } else {
