@@ -41,6 +41,12 @@ class Npc {
         }
         app.use('/archae/npc/img', serveNpcImg);
 
+        const npcSfxStatic = express.static(path.join(__dirname, 'lib', 'sfx'));
+        function serveNpcSfx(req, res, next) {
+          npcSfxStatic(req, res, next);
+        }
+        app.use('/archae/npc/sfx', serveNpcSfx);
+
         const trackedChunks = {};
         
         class Npc extends EventEmitter {
@@ -270,7 +276,7 @@ class Npc {
 
         this._cleanup = () => {
           function removeMiddlewares(route, i, routes) {
-            if (route.handle.name === 'serveNpcImg') {
+            if (route.handle.name === 'serveNpcImg' || route.handle.name === 'serveNpcSfx') {
               routes.splice(i, 1);
             }
             if (route.route) {
