@@ -40,7 +40,28 @@ class Npc {
 
             const {head, leftArm, rightArm, leftLeg, rightLeg} = mesh;
             mesh.update = (now, heightfieldElement) => {
-              const _updatePosition = () => {
+              const _updateAnimation = () => {
+                const {animation} = mesh;
+
+                if (animation) {
+                  const {mode, positionStart, positionEnd, rotationStart, rotationEnd, duration, startTime} = animation;
+                  const positionFactor = Math.min((now - startTime) / duration, 1);
+                  const rotationFactor = Math.pow(Math.min((now - startTime) / (duration / 4), 1), 0.5);
+
+                  mesh.position.copy(positionStart).lerp(positionEnd, positionFactor);
+                  mesh.quaternion.copy(rotationStart).slerp(rotationEnd, rotationFactor);
+                  mesh.updateMatrixWorld();
+
+                  const velocity = positionStart.distanceTo(positionEnd) / duration;
+                  const angleRate = 1.5 / velocity;
+                  mesh.material.uniforms.theta.value = Math.sin((now % angleRate) / angleRate * Math.PI * 2) * 0.5;
+
+                  if (positionFactor >= 1) {
+                    mesh.animation = null;
+                  }
+                }
+              };
+              const _updateElevation = () => {
                 if (heightfieldElement && heightfieldElement.getElevation) {
                   const elevation = heightfieldElement.getElevation(mesh.position.x, mesh.position.z);
                   
@@ -50,12 +71,9 @@ class Npc {
                   }
                 }
               };
-              const _updateAnimation = () => {
-                mesh.material.uniforms.theta.value = Math.sin((now % 1500) / 1500 * Math.PI * 2) * 0.5;
-              };
 
-              _updatePosition();
               _updateAnimation();
+              _updateElevation();
             };
 
             return mesh;
@@ -70,14 +88,14 @@ class Npc {
               const {id, status} = e;
 
               if (status) {
-                const {position: [x, z]} = status;
+                const {position} = status;
                 let mesh = meshes[id];
                 if (!mesh) {
                   mesh = _makeMesh();
                   scene.add(mesh);
                   meshes[id] = mesh;
                 }
-                mesh.position.set(x, 0, z);
+                mesh.position.fromArray(position);
                 mesh.updateMatrixWorld();
               } else {
                 const mesh = meshes[id];
@@ -85,6 +103,20 @@ class Npc {
                 mesh.destroy();
                 delete meshes[id];
               }
+            } else if (type === 'npcAnimation') {
+              const {id, animation} = e;
+              const {mode, positionStart, positionEnd, rotationStart, rotationEnd, duration} = animation;
+
+              const mesh = meshes[id];
+              mesh.animation = {
+                mode: mode,
+                positionStart: new THREE.Vector3().fromArray(positionStart),
+                positionEnd: new THREE.Vector3().fromArray(positionEnd),
+                rotationStart: new THREE.Quaternion().fromArray(rotationStart),
+                rotationEnd: new THREE.Quaternion().fromArray(rotationEnd),
+                duration: duration,
+                startTime: Date.now(),
+              };
             } else {
               console.warn('npc unknown message type', JSON.stringify(type));
             }

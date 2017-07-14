@@ -13,8 +13,11 @@ class Npc {
   mount() {
     const {_archae: archae} = this;
     const {express, app, wss} = archae.getCore();
-    const {utils: {hash: hashUtils}} = zeo;
+    const {three, utils: {hash: hashUtils}} = zeo;
+    const {THREE} = three;
     const {murmur} = hashUtils;
+
+    const forwardVector = new THREE.Vector3(0, 0, -1);
 
     const _readdir = p => new Promise((accept, reject) => {
       fs.readdir(p, (err, files) => {
@@ -40,10 +43,66 @@ class Npc {
 
         const trackedChunks = {};
         
-        class Npc {
-          constructor(id, position) {
+        class Npc extends EventEmitter {
+          constructor(id, position, rotation) {
+            super();
+
             this.id = id;
             this.position = position;
+            this.rotation = rotation;
+
+            this.timeout = null;
+
+            this.wait();
+          }
+
+          wait() {
+            this.timeout = setTimeout(() => {
+              this.timeout = null;
+
+              this.think();
+            }, 500 + Math.random() * 2000);
+          }
+
+          think() {
+            const {position, rotation} = this;
+
+            const distance = 2 + Math.random() * 10;
+            const positionEnd = position.clone()
+              .add(
+                new THREE.Vector3(
+                  -0.5 + Math.random(),
+                  0,
+                  -0.5 + Math.random(),
+                ).normalize().multiplyScalar(distance)
+              );
+            const rotationEnd = new THREE.Quaternion().setFromUnitVectors(
+              forwardVector,
+              positionEnd.clone().sub(position).normalize()
+            );
+            const speed = (0.5 + Math.random() * 1.5) / 1000;
+            const duration = distance / speed;
+
+            const animation = {
+              mode: 'walk',
+              positionStart: position,
+              positionEnd: positionEnd,
+              rotationStart: rotation,
+              rotationEnd: rotationEnd,
+              duration: duration,
+            };
+            this.emit('animation', animation);
+
+            this.position = positionEnd;
+            this.rotation = rotationEnd;
+
+            this.timeout = setTimeout(() => {
+              this.wait();
+            }, duration);
+          }
+
+          destroy() {
+            clearTimeout(this.timeout);
           }
         }
         class TrackedChunk extends EventEmitter {
@@ -64,9 +123,10 @@ class Npc {
 
                 const ax = (ox * NUM_CELLS) + dx;
                 const az = (oz * NUM_CELLS) + dz;
-                const position = [ax, az];
+                const position = new THREE.Vector3(ax, 0, az);
+                const rotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, Math.random() * Math.PI * 2, 'YXZ'));
 
-                const npc = new Npc(id, position);
+                const npc = new Npc(id, position, rotation);
                 result[i] = npc;
               }
               return result;
@@ -87,6 +147,12 @@ class Npc {
           }
 
           destroy() {
+            const {npcs} = this;
+            for (let i = 0; i < npcs.length; i++) {
+              const npc = npcs[i];
+              npc.destroy();
+            }
+
             this.emit('destroy');
           }
         }
@@ -129,11 +195,29 @@ class Npc {
                       type: 'npcStatus',
                       id,
                       status: {
-                        position,
+                        position: position.toArray(),
                       },
                     };
                     const es = JSON.stringify(e);
                     c.send(es);
+
+                    npc.on('animation', animation => {
+                      const {mode, positionStart, positionEnd, rotationStart, rotationEnd, duration} = animation;
+                      const e = {
+                        type: 'npcAnimation',
+                        id,
+                        animation: {
+                          mode,
+                          positionStart: positionStart.toArray(),
+                          positionEnd: positionEnd.toArray(),
+                          rotationStart: rotationStart.toArray(),
+                          rotationEnd: rotationEnd.toArray(),
+                          duration,
+                        },
+                      };
+                      const es = JSON.stringify(e);
+                      c.send(es);
+                    });
                   }
 
                   trackedChunk[localCleanupSymbol] = () => {
