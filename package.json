@@ -40,7 +40,6 @@
     "http-proxy": "^1.16.2",
     "marked": "^0.3.6",
     "mkdirp": "^0.5.1",
-    "modulequery": "0.0.5",
     "nat-upnp": "^1.1.0",
     "rnd": "^1.0.10"
   }
