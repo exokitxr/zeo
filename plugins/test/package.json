@@ -3,6 +3,9 @@
   "version": "0.0.1",
   "description": "Test zeo components.",
   "client": "client.js",
-  "asset": "TEST",
-  "dependencies": {}
+  "vrid": {
+    "asset": "TEST",
+    "types": ["item", "equipment"]
+  },
+  "dpendencies": {}
 }
