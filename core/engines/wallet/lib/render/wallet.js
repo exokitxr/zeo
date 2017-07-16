@@ -11,11 +11,11 @@ const numTagsPerPage = 6 * 4;
 
 const makeRenderer = ({creatureUtils}) => {
 
-const getWalletPageSrc = ({loading, error, inputText, inputValue, asset, assets, numTags, page, focus}) => {
+const getWalletPageSrc = ({loading, error, inputText, inputValue, asset, assets, equipments, numTags, page, focus}) => {
   return `\
     <div style="display: flex; min-height: ${HEIGHT}px;">
       ${!error ?
-        getAssetsPageSrc({loading, inputText, inputValue, asset, assets, numTags, page, focus})
+        getAssetsPageSrc({loading, inputText, inputValue, asset, assets, equipments, numTags, page, focus})
       :
         `<div style="display: flex; margin-bottom: 100px; font-size: 30px; align-items: center; justify-content: center; flex-grow: 1; flex-direction: column;">
           <div style="margin-bottom: 20px; font-size: 30px; font-weight: 400;">Connection problem :/</div>
@@ -25,7 +25,7 @@ const getWalletPageSrc = ({loading, error, inputText, inputValue, asset, assets,
     </div>
   `;
 };
-const getAssetsPageSrc = ({loading, inputText, inputValue, asset, assets, numTags, page, focus}) => {
+const getAssetsPageSrc = ({loading, inputText, inputValue, asset, assets, equipments, numTags, page, focus}) => {
   const leftSrc = `\
     <div style="display: flex; padding: 30px; flex-grow: 1; flex-direction: column;">
       <div style="display: flex; font-size: 36px; line-height: 1.4; align-items: center;">
@@ -39,16 +39,19 @@ const getAssetsPageSrc = ({loading, inputText, inputValue, asset, assets, numTag
       ${loading ?
         `<div style="display: flex; margin-bottom: 100px; font-size: 30px; font-weight: 400; flex-grow: 1; align-items: center; justify-content: center;">Loading...</div>`
       :
-        ((assets.length > 0) ?
-          `<div style="display: flex; width: ${(100 + 10) * 6}px; flex-wrap: wrap;;">
+        `<div style="display: flex;">
+          <div style="display: flex; width: ${(100 + 10) * 6}px; flex-wrap: wrap;">
             ${assets
               .slice(page * numTagsPerPage, (page + 1) * numTagsPerPage)
               .map(assetSpec => getAssetSrc(assetSpec, assetSpec.asset === asset))
               .join('\n')}
-          </div>`
-        : `\
-          <div style="display: flex; margin-bottom: 100px; font-size: 30px; font-weight: 400; flex-grow: 1; align-items: center; justify-content: center;">No assets :/</div>
-        `)
+          </div>
+          <div style="display: flex; width: 100px; flex-direction: column">
+            ${equipments
+              .map(assetSpec => getAssetSrc(assetSpec))
+              .join('\n')}
+          </div>
+        </div>`
       }
     </div>
   `;
@@ -80,26 +83,34 @@ const getAssetsPageSrc = ({loading, inputText, inputValue, asset, assets, numTag
     </div>
   `;
 };
-const getAssetSrc = (assetSpec, focused) => {
-  const {asset, quantity} = assetSpec;
-  const id = asset;
+const getAssetSrc = (assetSpec = null, focused = false) => {
+  if (assetSpec !== null) {
+    const {asset, quantity} = assetSpec;
+    const id = asset;
 
-  return `\
-    <a style="display: flex; width: 100px; height: 100px; margin-right: 10px; margin-bottom: 10px; padding: 10px; ${focused ? 'background-color: #000; color: #FFF;' : 'background-color: #EEE;'} font-size 10px; font-weight: 600; flex-direction: column; box-sizing: border-box;" onclick="asset:main:${id}">
-      <div style="display: flex; flex-grow: 1; justify-content: center; align-items: center;">
-        ${creatureUtils.makeSvgCreature('asset:' + asset, {
-          width: 12,
-          height: 12,
-          viewBox: '0 0 12 12',
-          style: 'width: 50px; height: 50px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;',
-        })}
+    return `\
+      <a style="display: flex; width: 100px; height: 100px; margin-right: 10px; margin-bottom: 10px; padding: 10px; ${focused ? 'background-color: #000; color: #FFF;' : 'background-color: #EEE;'} font-size 10px; font-weight: 600; flex-direction: column; box-sizing: border-box;" onclick="asset:main:${id}">
+        <div style="display: flex; flex-grow: 1; justify-content: center; align-items: center;">
+          ${creatureUtils.makeSvgCreature('asset:' + asset, {
+            width: 12,
+            height: 12,
+            viewBox: '0 0 12 12',
+            style: 'width: 50px; height: 50px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;',
+          })}
+        </div>
+        <div style="display: flex; width: 100%; align-items: center; font-size: 10px; font-weight: 600;">
+          <div style="margin-right: auto; word-break: break-all;">${asset}</div>
+          <div>${quantity}</div>
+        </div>
+      </a>
+    `;
+  } else {
+    return `\
+      <div style="display: flex; width: 100px; height: 100px; margin-bottom: 10px; border: 2px solid; color: #AAA; flex-direction: column; justify-content: center; align-items: center; box-sizing: border-box;">
+        <div style="font-size: 14px; font-weight: 600;">Empty</div>
       </div>
-      <div style="display: flex; width: 100%; align-items: center; font-size: 10px; font-weight: 600;">
-        <div style="margin-right: auto; word-break: break-all;">${asset}</div>
-        <div>${quantity}</div>
-      </div>
-    </a>
-  `;
+    `;
+  }
 };
 
 return {
