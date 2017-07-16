@@ -417,7 +417,7 @@ class Tree {
               trackedTree.erase();
 
               const id = _makeId();
-              const asset = 'WOOD';
+              const asset = 'ITEM.WOOD';
               const {gamepads} = pose.getStatus();
               const gamepad = gamepads[side];
               const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale} = gamepad;
