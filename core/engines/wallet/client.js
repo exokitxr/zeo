@@ -546,12 +546,20 @@ class Wallet {
           .then(assets => {
             walletState.page = 0;
             walletState.asset = null;
-            walletState.assets = assets;
+            walletState.assets = assets.map(({asset, quantity}) => ({
+              id: asset,
+              asset: asset,
+              quantity: quantity,
+            }));
             const equipments = (() => { // XXX actually fetch this
               const numEquipments = 4;
               const result = Array(numEquipments);
               for (let i = 0; i < numEquipments; i++) {
-                result[i] = null;
+                result[i] = {
+                  id: `equipment:${i}`,
+                  asset: null,
+                  quantity: 0,
+                };
               }
               return result;
             })();

@@ -43,12 +43,15 @@ const getAssetsPageSrc = ({loading, inputText, inputValue, asset, assets, equipm
           <div style="display: flex; width: ${(100 + 10) * 6}px; flex-wrap: wrap;">
             ${assets
               .slice(page * numTagsPerPage, (page + 1) * numTagsPerPage)
-              .map(assetSpec => getAssetSrc(assetSpec, assetSpec.asset === asset))
+              .map(assetSpec => {
+                const focused = assetSpec.asset === asset;
+                return getAssetSrc(assetSpec, {focused, equippable: focused, equipPlaceholder: true});
+              })
               .join('\n')}
           </div>
-          <div style="display: flex; width: 100px; flex-direction: column">
+          <div style="display: flex; flex-direction: column">
             ${equipments
-              .map(assetSpec => getAssetSrc(assetSpec))
+              .map(assetSpec => getAssetSrc(assetSpec, {unequippable: assetSpec.asset !== null}))
               .join('\n')}
           </div>
         </div>`
@@ -83,13 +86,24 @@ const getAssetsPageSrc = ({loading, inputText, inputValue, asset, assets, equipm
     </div>
   `;
 };
-const getAssetSrc = (assetSpec = null, focused = false) => {
-  if (assetSpec !== null) {
-    const {asset, quantity} = assetSpec;
-    const id = asset;
+const getAssetSrc = (assetSpec, {focused = false, equippable = false, unequippable = false, equipPlaceholder = false} = {}) => {
+  const {id, asset, quantity} = assetSpec;
 
+  const equipButtonSrc = (() => {
+    if (equippable) {
+       return `<a style="display: flex; width: 100px; height: 30px; border: 2px solid; font-weight: 600; justify-content: center; align-items: center; box-sizing: border-box;" onclick="asset:equip:${id}">Equip</a>`;
+    } else if (unequippable) {
+      return `<a style="position: absolute; top: 36px; right: -40px; display: flex; width: 100px; height: 30px; border: 2px solid; font-weight: 600; justify-content: center; align-items: center; transform: rotateZ(90deg); box-sizing: border-box;" onclick="asset:unequip:${id}">Un-equip</a>`;
+    } else if (equipPlaceholder) {
+      return `<div style="width: 100%; height: 30px;"></div>`;
+    } else {
+      return '';
+    }
+  })();
+
+  if (asset !== null) {
     return `\
-      <div style="display: flex; margin-right: 10px; margin-bottom: 10px; flex-direction: column;">
+      <div style="position: relative; display: flex; margin-right: 10px; margin-bottom: 10px; flex-direction: column;">
         <a style="display: flex; width: 100px; height: 100px; margin-bottom: 10px; padding: 10px; ${focused ? 'background-color: #000; color: #FFF;' : 'background-color: #EEE;'} font-size 10px; font-weight: 600; flex-direction: column; box-sizing: border-box;" onclick="asset:main:${id}">
           <div style="display: flex; flex-grow: 1; justify-content: center; align-items: center;">
             ${creatureUtils.makeSvgCreature('asset:' + asset, {
@@ -101,18 +115,20 @@ const getAssetSrc = (assetSpec = null, focused = false) => {
           </div>
           <div style="display: flex; width: 100%; align-items: center; font-size: 10px; font-weight: 600;">
             <div style="margin-right: auto; word-break: break-all;">${asset}</div>
-            <div>${quantity}</div>
+            ${quantity > 0 ? `<div>${quantity}</div>` : ''}
           </div>
         </a>
-        ${focused ? `<a style="display: flex; width: 100%; height: 30px; border: 2px solid; font-weight: 600; justify-content: center; align-items: center; box-sizing: border-box;" onclick="asset:equip:${id}">Equip</a>` : `<div style="width: 100%; height: 30px;"></div>`}
+        ${equipButtonSrc}
       </div>
     `;
   } else {
     return `\
-      <div style="display: flex; width: 100px; height: 100px; margin-bottom: 10px; border: 2px solid; color: #AAA; flex-direction: column; justify-content: center; align-items: center; box-sizing: border-box;">
-        <div style="font-size: 14px; font-weight: 600;">Empty</div>
+      <div style="position: relative; display: flex; margin-bottom: 10px; padding-right: 40px; flex-direction: column;">
+        <div style="display: flex; width: 100px; height: 100px; border: 2px solid; color: #AAA; flex-direction: column; justify-content: center; align-items: center; box-sizing: border-box;">
+          <div style="font-size: 14px; font-weight: 600;">Empty</div>
+        </div>
+        ${equipButtonSrc}
       </div>
-      ${focused ? `<a style="display: flex; width: 100%; height: 30px; border: 2px solid; font-weight: 600; justify-content: center; align-items: center; box-sizing: border-box;" onclick="asset:equip:${id}">Equip</a>` : `<div style="width: 100%; height: 30px;"></div>`}
     `;
   }
 };
