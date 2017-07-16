@@ -9,6 +9,11 @@ const protocolUtils = require('./lib/utils/protocol-utils');
 
 const TEXTURE_SIZE = 1024;
 const NUM_POSITIONS_CHUNK = 200 * 1024;
+const DEFAULT_MATRIX = [
+  0, 0, 0,
+  0, 0, 0, 1,
+  1, 1, 1,
+];
 const LIGHTMAP_PLUGIN = 'plugins-lightmap';
 const DAY_NIGHT_SKYBOX_PLUGIN = 'plugins-day-night-skybox';
 
@@ -419,16 +424,13 @@ class Tree {
 
               const id = _makeId();
               const asset = 'ITEM.WOOD';
-              const {gamepads} = pose.getStatus();
-              const gamepad = gamepads[side];
-              const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale} = gamepad;
               const assetInstance = items.makeItem({ // XXX clean up this API
                 type: 'asset',
                 id: id,
                 name: asset,
                 displayName: asset,
                 attributes: {
-                  position: {value: controllerPosition.toArray().concat(controllerRotation.toArray()).concat(controllerScale.toArray())},
+                  position: {value: DEFAULT_MATRIX},
                   asset: {value: asset},
                   quantity: {value: 1},
                   owner: {value: null},

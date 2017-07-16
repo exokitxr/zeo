@@ -9,10 +9,6 @@ import walletRender from './lib/render/wallet';
 import menuUtils from './lib/utils/menu';
 // import vridApi from 'vrid/lib/frontend-api';
 
-const TAGS_PER_ROW = 4;
-const TAGS_ROWS_PER_PAGE = 6;
-const TAGS_PER_PAGE = TAGS_PER_ROW * TAGS_ROWS_PER_PAGE;
-const ASSET_TAG_MESH_SCALE = 1.5;
 const DEFAULT_MATRIX = [
   0, 0, 0,
   0, 0, 0, 1,
@@ -1063,7 +1059,7 @@ class Wallet {
           left: _makeLastReleaseSpec(),
           right: _makeLastReleaseSpec(),
         };
-        const _pullItem = (asset, side, position, rotation, scale) => {
+        const _pullItem = (asset, side) => {
           const id = _makeId();
           const owner = bootstrap.getAddress();
           const itemSpec = {
@@ -1072,7 +1068,7 @@ class Wallet {
             name: asset,
             displayName: asset,
             attributes: {
-              position: {value: position.toArray().concat(rotation.toArray()).concat(scale.toArray())},
+              position: {value: DEFAULT_MATRIX},
               asset: {value: asset},
               quantity: {value: 1},
               owner: {value: owner},
@@ -1147,10 +1143,7 @@ class Wallet {
             const lastReleaseTimeDiff = now - timestamp;
 
             if (!worldGrabAsset && asset) {
-              const {gamepads} = webvr.getStatus();
-              const gamepad = gamepads[side];
-              const {worldPosition: position, worldRotation: rotation, worldScale: scale} = gamepad;
-              _pullItem(asset, side, position, rotation, scale);
+              _pullItem(asset, side);
 
               lastGripDownTimes[side] = 0;
 
@@ -1196,8 +1189,7 @@ class Wallet {
           const {worldPosition: position} = gamepad;
 
           if (!worldGrabAsset && asset && _isInBody(position)) {
-            const {worldRotation: rotation, worldScale: scale} = gamepad;
-            _pullItem(asset, side, position, rotation, scale);
+            _pullItem(asset, side);
 
             return true;
           } else {
