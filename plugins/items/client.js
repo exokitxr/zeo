@@ -235,6 +235,17 @@ class Items {
         this.endIndex = endIndex;
         this.position = position;
       }
+
+      erase() {
+        const {mesh, startIndex, endIndex} = this;
+        const {geometry} = mesh;
+        const indexAttribute = geometry.index;
+        const indices = indexAttribute.array;
+        for (let i = startIndex; i < endIndex; i++) {
+          indices[i] = 0;
+        }
+        indexAttribute.needsUpdate = true;
+      }
     }
 
     const trackedItems = [];
@@ -281,16 +292,11 @@ class Items {
       const trackedItem = _getHoveredTrackedItem(side);
 
       if (trackedItem) {
-        const {mesh, type, startIndex, endIndex} = trackedItem;
-        const {geometry} = mesh;
-        const indexAttribute = geometry.index;
-        const indices = indexAttribute.array;
-        for (let i = startIndex; i < endIndex; i++) {
-          indices[i] = 0;
-        }
-        indexAttribute.needsUpdate = true;
+        trackedItem.erase();
+        trackedItems.splice(trackedItems.indexOf(trackedItem), 1);
 
         const id = _makeId();
+        const {type} = trackedItem;
         const asset = ITEMS[type];
         const {gamepads} = pose.getStatus();
         const gamepad = gamepads[side];

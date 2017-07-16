@@ -415,6 +415,7 @@ class Tree {
 
             if (trackedTree) {
               trackedTree.erase();
+              trackedTrees.splice(trackedTrees.indexOf(trackedTree), 1);
 
               const id = _makeId();
               const asset = 'ITEM.WOOD';
