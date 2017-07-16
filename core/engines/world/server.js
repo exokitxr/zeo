@@ -229,11 +229,6 @@ class World {
                   delete attributes[name];
                 }
 
-                const {type} = itemSpec;
-                if (type === 'asset') {
-                  wallet.setAssetAttribute(itemSpec, name, value, oldValue);
-                }
-
                 _saveTags();
 
                 _broadcastLocal('setTagAttribute', [userId, id, {name, value}]);
