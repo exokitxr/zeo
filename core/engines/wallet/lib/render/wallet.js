@@ -46,7 +46,7 @@ const getAssetsPageSrc = ({loading, inputText, inputValue, asset, assets, equipm
               .map(assetSpec => {
                 const focused = assetSpec.asset === asset;
                 const equippable = focused && !equipments.some(equipmentSpec => equipmentSpec.asset === asset);
-                return getAssetSrc(assetSpec, {focused, equippable, equipPlaceholder: true});
+                return getAssetSrc(assetSpec, {focused, clickable: true, equippable, equipPlaceholder: true});
               })
               .join('\n')}
           </div>
@@ -87,7 +87,7 @@ const getAssetsPageSrc = ({loading, inputText, inputValue, asset, assets, equipm
     </div>
   `;
 };
-const getAssetSrc = (assetSpec, {focused = false, equippable = false, unequippable = false, equipPlaceholder = false} = {}) => {
+const getAssetSrc = (assetSpec, {focused = false, clickable = false, equippable = false, unequippable = false, equipPlaceholder = false} = {}) => {
   const {id, asset, quantity} = assetSpec;
 
   const equipButtonSrc = (() => {
@@ -103,9 +103,11 @@ const getAssetSrc = (assetSpec, {focused = false, equippable = false, unequippab
   })();
 
   if (asset !== null) {
+    const linkTagName = clickable ? 'a' : 'div';
+
     return `\
       <div style="position: relative; display: flex; margin-right: 10px; margin-bottom: 10px; flex-direction: column;">
-        <a style="display: flex; width: 100px; height: 100px; padding: 10px; ${focused ? 'background-color: #000; color: #FFF;' : 'background-color: #EEE;'} font-size 10px; font-weight: 600; flex-direction: column; box-sizing: border-box;" onclick="asset:main:${id}">
+        <${linkTagName} style="display: flex; width: 100px; height: 100px; padding: 10px; ${focused ? 'background-color: #000; color: #FFF;' : 'background-color: #EEE;'} font-size 10px; font-weight: 600; flex-direction: column; box-sizing: border-box;" onclick="asset:main:${id}">
           <div style="display: flex; flex-grow: 1; justify-content: center; align-items: center;">
             ${creatureUtils.makeSvgCreature('asset:' + asset, {
               width: 12,
@@ -118,7 +120,7 @@ const getAssetSrc = (assetSpec, {focused = false, equippable = false, unequippab
             <div style="margin-right: auto; word-break: break-all;">${asset}</div>
             ${quantity > 0 ? `<div>${quantity}</div>` : ''}
           </div>
-        </a>
+        </${linkTagName}>
         ${equipButtonSrc}
       </div>
     `;
