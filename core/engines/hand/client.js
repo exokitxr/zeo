@@ -314,7 +314,7 @@ class Hand {
           }
         };
         input.on('gripup', _gripup, {
-          priority: -2,
+          priority: -3,
         });
 
         const _update = () => {
