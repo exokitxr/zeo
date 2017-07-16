@@ -449,7 +449,6 @@ class Wallet {
           assets: [],
           numTags: 0,
           page: 0,
-          bill: null,
         };
         const focusState = {
           keyboardFocusState: null,
@@ -470,7 +469,6 @@ class Wallet {
                 error,
                 inputText,
                 asset,
-                bill,
                 assets,
                 numTags,
                 page,
@@ -484,7 +482,7 @@ class Wallet {
 
               return {
                 type: 'html',
-                src: walletRenderer.getWalletPageSrc({loading, error, inputText, inputValue, asset, assets, numTags, page, bill, focus}),
+                src: walletRenderer.getWalletPageSrc({loading, error, inputText, inputValue, asset, assets, numTags, page, focus}),
                 x: 0,
                 y: 0,
                 w: WIDTH,
@@ -545,10 +543,9 @@ class Wallet {
         const _refreshAssets = () => _requestAssets()
           .then(assets => {
             walletState.page = 0;
+            walletState.asset = null;
             walletState.assets = assets;
             walletState.numTags = assets.length;
-            walletState.asset = null;
-            walletState.bill = null;
 
             _updatePages();
           })
@@ -658,29 +655,10 @@ class Wallet {
 
               return true;
             } else if (match = onclick.match(/^asset:main:(.+)$/)) {
-              const assetName = match[1];
+              const asset = match[1];
 
-              const {assets} = walletState;
-              const asset = assets.find(asset => asset.asset === assetName);
               walletState.asset = asset;
 
-              _updatePages();
-
-              return true;
-            } else if (onclick === 'wallet:back') {
-              walletState.asset = null;
-
-              _updatePages();
-
-              return true;
-            } else if (match = onclick.match(/^asset:bill:(.+):([0-9.]+)$/)) {
-              const asset = match[1];
-              const quantity = parseFloat(match[2]);
-
-              walletState.bill = {
-                asset,
-                quantity,
-              };
               _updatePages();
 
               /* const status = webvr.getStatus();
@@ -1017,13 +995,12 @@ class Wallet {
           const lastGripDownTime = lastGripDownTimes[side];
           const hoverState = hoverStates[side];
           const {worldGrabAsset} = hoverState;
-          const {bill} = walletState;
+          const {asset} = walletState;
 
           const now = Date.now();
           const timeDiff = now - lastGripDownTime;
 
-          if (timeDiff < 500 && !worldGrabAsset && bill) {
-            const {asset, quantity} = bill;
+          if (timeDiff < 500 && !worldGrabAsset && asset) {
             const {gamepads} = webvr.getStatus();
             const gamepad = gamepads[side];
             const {worldPosition: position, worldRotation: rotation, worldScale: scale} = gamepad;
@@ -1038,7 +1015,7 @@ class Wallet {
               attributes: {
                 position: {value: position.toArray().concat(rotation.toArray()).concat(scale.toArray())},
                 asset: {value: asset},
-                quantity: {value: quantity},
+                quantity: {value: 1},
                 owner: {value: owner},
                 bindOwner: {value: null},
                 physics: {value: false},
@@ -1053,7 +1030,7 @@ class Wallet {
 
             sfx.drop.trigger();
 
-            const newNotification = notification.addNotification(`Pulled out ${quantity} ${asset}.`);
+            const newNotification = notification.addNotification(`Pulled out ${asset}.`);
             setTimeout(() => {
               notification.removeNotification(newNotification);
             }, 3000);
