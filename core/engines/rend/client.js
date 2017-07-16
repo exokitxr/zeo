@@ -151,7 +151,6 @@ class Rend {
               },
               worldWidth: WORLD_WIDTH,
               worldHeight: WORLD_HEIGHT,
-              isEnabled: () => rendApi.isOpen(),
             });
             mesh.receiveShadow = true;
 
@@ -198,7 +197,6 @@ class Rend {
               },
               worldWidth: NAVBAR_WORLD_WIDTH,
               worldHeight: NAVBAR_WORLD_HEIGHT,
-              isEnabled: () => rendApi.isOpen(),
             });
             mesh.position.y = (WORLD_HEIGHT / 2) + (NAVBAR_WORLD_HEIGHT / 2);
             mesh.receiveShadow = true;
