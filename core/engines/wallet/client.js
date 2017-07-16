@@ -249,60 +249,34 @@ class Wallet {
                     args: [id],
                   }));
 
+                  _checkGripdown(side);
+
                   break;
                 }
                 case 'release': {
                   const {userId, side} = e;
                   const hoverState = hoverStates[side];
-                  const {id, position, item} = this;
+                  const {id} = this;
+                  /* const {item} = this;
                   const {attributes} = item;
                   const {
                     owner: {value: owner},
-                  } = attributes;
+                  } = attributes; */
 
                   hoverState.worldGrabAsset = null;
 
-                  if (_isInBody(new THREE.Vector3().fromArray(position))) {
-                    const localAddress = bootstrap.getAddress();
-
-                    if (owner === localAddress) {
-                      walletApi.emit('removeTag', id);
-                    } else {
-                      this.hide(); // for better UX
-
-                      this.requestChangeOwner(localAddress)
-                        .then(() => {
-                          walletApi.emit('removeTag', this.id);
-                        })
-                        .catch(err => {
-                          console.warn(err);
-
-                          this.show();
-                        });
-                    }
-
-                    sfx.drop.trigger();
-
-                    const {
-                      asset: {value: asset},
-                      quantity: {value: quantity},
-                    } = attributes;
-                    const newNotification = notification.addNotification(`Stored ${quantity} ${asset}.`);
-                    setTimeout(() => {
-                      notification.removeNotification(newNotification);
-                    }, 3000);
-                  } else {
-                    super.emit(t, {
-                      userId,
-                      side,
-                      item: this,
-                    });
-                  }
+                  super.emit(t, {
+                    userId,
+                    side,
+                    item: this,
+                  });
 
                   connection.send(JSON.stringify({
                     method: 'unkickAsset',
                     args: [id],
                   }));
+
+                  _checkGripup(side, this);
 
                   break;
                 }
@@ -1081,57 +1055,151 @@ class Wallet {
           left: 0,
           right: 0,
         };
-        const _gripdown = e => {
-          const {side} = e;
-          const lastGripDownTime = lastGripDownTimes[side];
-          const hoverState = hoverStates[side];
-          const {worldGrabAsset} = hoverState;
-          const {asset} = walletState;
+        const _makeLastReleaseSpec = () => ({
+          asset: null,
+          timestamp: 0,
+        });
+        const lastReleaseSpecs = {
+          left: _makeLastReleaseSpec(),
+          right: _makeLastReleaseSpec(),
+        };
+        const _pullItem = (asset, side, position, rotation, scale) => {
+          const id = _makeId();
+          const owner = bootstrap.getAddress();
+          const itemSpec = {
+            type: 'asset',
+            id: id,
+            name: asset,
+            displayName: asset,
+            attributes: {
+              position: {value: position.toArray().concat(rotation.toArray()).concat(scale.toArray())},
+              asset: {value: asset},
+              quantity: {value: 1},
+              owner: {value: owner},
+              bindOwner: {value: null},
+              physics: {value: false},
+            },
+            metadata: {},
+          };
+          walletApi.emit('addTag', itemSpec);
 
-          const now = Date.now();
-          const timeDiff = now - lastGripDownTime;
+          const assetInstance = assetsMesh.getAssetInstance(id);
+          assetInstance.grab(side);
+          _bindAssetInstancePhysics(assetInstance);
 
-          if (timeDiff < 500 && !worldGrabAsset && asset) {
+          sfx.drop.trigger();
+          const newNotification = notification.addNotification(`Pulled out ${asset}.`);
+          setTimeout(() => {
+            notification.removeNotification(newNotification);
+          }, 3000);
+        };
+        const _storeItem = assetInstance => {
+          const {id} = assetInstance;
+          walletApi.emit('removeTag', id);
+
+          const {item} = assetInstance;
+          const {attributes} = item;
+          const {
+            owner: {value: owner},
+          } = attributes;
+
+          sfx.drop.trigger();
+          const {
+            asset: {value: asset},
+          } = attributes;
+          const newNotification = notification.addNotification(`Stored ${asset}.`);
+          setTimeout(() => {
+            notification.removeNotification(newNotification);
+          }, 3000);
+        };
+        const _checkGripdown = side => {
+          const vrMode = bootstrap.getVrMode();
+
+          if (vrMode === 'keyboard') { // pull/store on double tap
+            const lastGripDownTime = lastGripDownTimes[side];
+            const hoverState = hoverStates[side];
+            const {worldGrabAsset} = hoverState;
+            const {asset} = walletState;
+
+            const now = Date.now();
+            const gripdownTimeDiff = now - lastGripDownTime;
+
+            if (gripdownTimeDiff < 500) {
+              const lastReleaseSpec = lastReleaseSpecs[side];
+              const {timestamp} = lastReleaseSpec;
+              const lastReleaseTimeDiff = now - timestamp;
+
+              if (lastReleaseTimeDiff < 500) { 
+                const {asset: assetInstance} = lastReleaseSpec;
+                _storeItem(assetInstance);
+
+                lastGripDownTimes[side] = 0;
+                lastReleaseSpec.asset = null;
+                lastReleaseSpec.timestamp = 0;
+
+                // e.stopImmediatePropagation();
+              } else if (!worldGrabAsset && asset) {
+                const {gamepads} = webvr.getStatus();
+                const gamepad = gamepads[side];
+                const {worldPosition: position, worldRotation: rotation, worldScale: scale} = gamepad;
+                _pullItem(asset, side, position, rotation, scale);
+
+                lastGripDownTimes[side] = 0;
+
+                // e.stopImmediatePropagation();
+              }
+            } else {
+              lastGripDownTimes[side] = now;
+            }
+          } else if (vrMode === 'hmd') { // pull on grab body
             const {gamepads} = webvr.getStatus();
             const gamepad = gamepads[side];
-            const {worldPosition: position, worldRotation: rotation, worldScale: scale} = gamepad;
+            const {worldPosition: position} = gamepad;
 
-            const id = _makeId();
-            const owner = bootstrap.getAddress();
-            const itemSpec = {
-              type: 'asset',
-              id: id,
-              name: asset,
-              displayName: asset,
-              attributes: {
-                position: {value: position.toArray().concat(rotation.toArray()).concat(scale.toArray())},
-                asset: {value: asset},
-                quantity: {value: 1},
-                owner: {value: owner},
-                bindOwner: {value: null},
-                physics: {value: false},
-              },
-              metadata: {},
-            };
-            walletApi.emit('addTag', itemSpec);
+            if (!worldGrabAsset && asset && _isInBody(position)) {
+              const {worldRotation: rotation, worldScale: scale} = gamepad;
+              _pullItem(asset, side, position, rotation, scale);
 
-            const assetInstance = assetsMesh.getAssetInstance(id);
-            assetInstance.grab(side);
-            _bindAssetInstancePhysics(assetInstance);
-
-            sfx.drop.trigger();
-
-            const newNotification = notification.addNotification(`Pulled out ${asset}.`);
-            setTimeout(() => {
-              notification.removeNotification(newNotification);
-            }, 3000);
-
-            lastGripDownTimes[side] = 0;
-          } else {
-            lastGripDownTimes[side] = now;
+              e.stopImmediatePropagation();
+            }
           }
+        };
+        const _checkGripup = (side, assetInstance) => {
+          const vrMode = bootstrap.getVrMode();
 
-          e.stopImmediatePropagation();
+          if (vrMode === 'hmd') {
+            const {position} = assetInstance;
+
+            if (_isInBody(new THREE.Vector3().fromArray(position))) {
+              /* const localAddress = bootstrap.getAddress();
+
+              if (owner === localAddress) {
+                walletApi.emit('removeTag', id);
+              } else {
+                this.hide(); // for better UX
+
+                this.requestChangeOwner(localAddress)
+                  .then(() => {
+                    walletApi.emit('removeTag', this.id);
+                  })
+                  .catch(err => {
+                    console.warn(err);
+
+                    this.show();
+                  });
+              } */
+
+              _storeItem(assetInstance);
+            }
+          } else if (vrMode === 'keyboard') {
+            const lastReleaseSpec = lastReleaseSpecs[side];
+            lastReleaseSpec.asset = assetInstance;
+            lastReleaseSpec.timestamp = Date.now();
+          }
+        };
+        const _gripdown = e => {
+          const {side} = e;
+          _checkGripdown(side);
         };
         input.on('gripdown', _gripdown, {
           priority: -2,
