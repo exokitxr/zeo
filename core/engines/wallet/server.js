@@ -98,11 +98,11 @@ constructor(archae) {
       });
       trackedTags[id] = trackedTag;
     };
-    const _unbindTag = trackedTag => {
-      const {id} = trackedTag;
-      delete trackedTags[id];
-
+    const _unbindTag = tagSpec => {
+      const {id} = tagSpec;
+      const trackedTag = trackedTags[id];
       trackedTag.destroy();
+      delete trackedTags[id];
     };
 
     this._cleanup = () => {
@@ -113,36 +113,14 @@ constructor(archae) {
     };
 
     class WalletApi extends EventEmitter {
-      addAsset (tagSpec) {
-        const {type} = tagSpec;
-
-        if (type === 'asset') {
-          const {attributes} = tagSpec;
-          const owner = Boolean(attributes && attributes.owner) ? attributes.owner.value : null;
-
-          if (!owner) {
-            _bindTag(tagSpec);
-          }
-        }
+      addAsset(tagSpec) {
+        _bindTag(tagSpec);
       }
 
       removeAsset(tagSpec) {
-        const {id} = tagSpec;
-        const trackedTag = trackedTags[id];
-        _unbindTag(trackedTag);
+        _unbindTag(tagSpec);
       }
 
-      setAssetAttribute(tagSpec, attributeName, newValue, oldValue) {
-        if (attributeName === 'owner') {
-          if (!oldValue && newValue) {
-            _unbindTag(tagSpec);
-          } else if (oldValue && !newValue) {
-            const {id} = tagSpec;
-            const trackedTag = trackedTags[id];
-            _bindTag(trackedTag);
-          }
-        }
-      }
     }
     const walletApi = new WalletApi();
 

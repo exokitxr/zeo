@@ -230,26 +230,27 @@ class Wallet {
             emit(t, e) {
               switch (t) {
                 case 'grab': {
-                  const {userId, side} = e;
-                  const hoverState = hoverStates[side];
+                  const {side} = e;
+                  if (!(bootstrap.getVrMode() === 'hmd' && _checkGripdownHmd(side))) {
+                    const {userId} = e;
+                    const hoverState = hoverStates[side];
 
-                  hoverState.worldGrabAsset = this;
+                    hoverState.worldGrabAsset = this;
 
-                  super.emit(t, {
-                    userId,
-                    side,
-                    item: this,
-                  });
+                    super.emit(t, {
+                      userId,
+                      side,
+                      item: this,
+                    });
 
-                  assetsMesh.geometryNeedsUpdate = true;
+                    assetsMesh.geometryNeedsUpdate = true;
 
-                  const {id} = this;
-                  connection.send(JSON.stringify({
-                    method: 'kickAsset',
-                    args: [id],
-                  }));
-
-                  _checkGripdown(side);
+                    const {id} = this;
+                    connection.send(JSON.stringify({
+                      method: 'kickAsset',
+                      args: [id],
+                    }));
+                  }
 
                   break;
                 }
@@ -1116,52 +1117,62 @@ class Wallet {
           const vrMode = bootstrap.getVrMode();
 
           if (vrMode === 'keyboard') { // pull/store on double tap
-            const lastGripDownTime = lastGripDownTimes[side];
-            const hoverState = hoverStates[side];
-            const {worldGrabAsset} = hoverState;
-            const {asset} = walletState;
-
-            const now = Date.now();
-            const gripdownTimeDiff = now - lastGripDownTime;
-
-            if (gripdownTimeDiff < 500) {
-              const lastReleaseSpec = lastReleaseSpecs[side];
-              const {timestamp} = lastReleaseSpec;
-              const lastReleaseTimeDiff = now - timestamp;
-
-              if (lastReleaseTimeDiff < 500) { 
-                const {asset: assetInstance} = lastReleaseSpec;
-                _storeItem(assetInstance);
-
-                lastGripDownTimes[side] = 0;
-                lastReleaseSpec.asset = null;
-                lastReleaseSpec.timestamp = 0;
-
-                // e.stopImmediatePropagation();
-              } else if (!worldGrabAsset && asset) {
-                const {gamepads} = webvr.getStatus();
-                const gamepad = gamepads[side];
-                const {worldPosition: position, worldRotation: rotation, worldScale: scale} = gamepad;
-                _pullItem(asset, side, position, rotation, scale);
-
-                lastGripDownTimes[side] = 0;
-
-                // e.stopImmediatePropagation();
-              }
-            } else {
-              lastGripDownTimes[side] = now;
-            }
+            return _checkGripdownKeyboard(side);
           } else if (vrMode === 'hmd') { // pull on grab body
-            const {gamepads} = webvr.getStatus();
-            const gamepad = gamepads[side];
-            const {worldPosition: position} = gamepad;
+            return _checkGripDownHmd(side);
+          } else {
+            return false
+          }
+        };
+        const _checkGripdownKeyboard = side => {
+          const lastGripDownTime = lastGripDownTimes[side];
+          const hoverState = hoverStates[side];
+          const {worldGrabAsset} = hoverState;
+          const {asset} = walletState;
 
-            if (!worldGrabAsset && asset && _isInBody(position)) {
-              const {worldRotation: rotation, worldScale: scale} = gamepad;
+          const now = Date.now();
+          const gripdownTimeDiff = now - lastGripDownTime;
+
+          if (gripdownTimeDiff < 500) {
+            const lastReleaseSpec = lastReleaseSpecs[side];
+            const {timestamp} = lastReleaseSpec;
+            const lastReleaseTimeDiff = now - timestamp;
+
+            if (lastReleaseTimeDiff < 500) {
+              const {asset: assetInstance} = lastReleaseSpec;
+              _storeItem(assetInstance);
+
+              lastGripDownTimes[side] = 0;
+              lastReleaseSpec.asset = null;
+              lastReleaseSpec.timestamp = 0;
+            } else if (!worldGrabAsset && asset) {
+              const {gamepads} = webvr.getStatus();
+              const gamepad = gamepads[side];
+              const {worldPosition: position, worldRotation: rotation, worldScale: scale} = gamepad;
               _pullItem(asset, side, position, rotation, scale);
 
-              e.stopImmediatePropagation();
+              lastGripDownTimes[side] = 0;
             }
+
+            return true;
+          } else {
+            lastGripDownTimes[side] = now;
+
+            return false;
+          }
+        };
+        const _checkGripdownHmd = side => {
+          const {gamepads} = webvr.getStatus();
+          const gamepad = gamepads[side];
+          const {worldPosition: position} = gamepad;
+
+          if (!worldGrabAsset && asset && _isInBody(position)) {
+            const {worldRotation: rotation, worldScale: scale} = gamepad;
+            _pullItem(asset, side, position, rotation, scale);
+
+            return true;
+          } else {
+            return false;
           }
         };
         const _checkGripup = (side, assetInstance) => {
@@ -1199,7 +1210,10 @@ class Wallet {
         };
         const _gripdown = e => {
           const {side} = e;
-          _checkGripdown(side);
+
+          if (_checkGripdown(side)) {
+            e.stopImmediatePropagation();
+          }
         };
         input.on('gripdown', _gripdown, {
           priority: -2,
