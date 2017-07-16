@@ -532,15 +532,21 @@ class Config {
         });
 
         const _update = () => {
-          stats.render();
+          if (configState.statsCheckboxValue) {
+            stats.render();
+          }
         };
         rend.on('update', _update);
         const _updateStart = () => {
-          stats.begin();
+          if (configState.statsCheckboxValue) {
+            stats.begin();
+          }
         };
         rend.on('updateStart', _updateStart);
         const _updateEnd = () => {
-          stats.end();
+          if (configState.statsCheckboxValue) {
+            stats.end();
+          }
         };
         rend.on('updateEnd', _updateEnd);
 
