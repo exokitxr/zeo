@@ -124,7 +124,6 @@ class Assets {
             creatureUtils,
           ] = plugins;
           const {THREE, camera} = three;
-          const {murmur} = hashUtils;
 
           const menuRenderer = menuRender.makeRenderer({
             creatureUtils,
@@ -171,6 +170,9 @@ class Assets {
         sfx,
       ]) => {
         if (live) {
+          const {THREE, camera} = three;
+          const {murmur} = hashUtils;
+
           const _getSpriteImageData = s => {
             const spriteName = spritesheet.assetSprites[s] ||
               spritesheet.spriteNames[Math.floor((murmur(s) / 0xFFFFFFFF) * spritesheet.spriteNames.length)];
