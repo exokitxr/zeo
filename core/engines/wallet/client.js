@@ -156,17 +156,33 @@ class Wallet {
         scene.add(sphere); */
 
         const _isInBody = p => {
-          const {hmd} = webvr.getStatus();
-          const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmd;
-          const hmdEuler = new THREE.Euler().setFromQuaternion(hmdRotation, camera.rotation.order);
-          hmdEuler.z = 0;
-          const hmdQuaternion = new THREE.Quaternion().setFromEuler(hmdEuler);
-          const bodyPosition = hmdPosition.clone()
-            .add(
-              new THREE.Vector3(0, -0.5, 0)
-                .applyQuaternion(hmdQuaternion)
-            );
-          return p.distanceTo(bodyPosition) < 0.35;
+          const vrMode = bootstrap.getVrMode();
+
+          if (vrMode === 'hmd') {
+            const {hmd} = webvr.getStatus();
+            const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmd;
+            const hmdEuler = new THREE.Euler().setFromQuaternion(hmdRotation, camera.rotation.order);
+            hmdEuler.z = 0;
+            const hmdQuaternion = new THREE.Quaternion().setFromEuler(hmdEuler);
+            const bodyPosition = hmdPosition.clone()
+              .add(
+                new THREE.Vector3(0, -0.5, 0)
+                  .applyQuaternion(hmdQuaternion)
+              );
+            return p.distanceTo(bodyPosition) < 0.35;
+          } else if (vrMode === 'keyboard') {
+            const {hmd: {worldPosition, worldRotation}} = webvr.getStatus();
+            const hmdEuler = new THREE.Euler().setFromQuaternion(worldRotation, camera.rotation.order);
+            hmdEuler.x = 0;
+            hmdEuler.z = 0;
+            const hmdQuaternion = new THREE.Quaternion().setFromEuler(hmdEuler);
+            const bodyPosition = worldPosition.clone()
+              .add(
+                new THREE.Vector3(0, -0.4, 0.2)
+                  .applyQuaternion(hmdQuaternion)
+              );
+            return p.distanceTo(bodyPosition) < 0.35;
+          }
         };
         const _snapDotPosition = p => new THREE.Vector2(
           Math.min(Math.floor(((p.x + 1) / 2) * slotsWidth), slotsWidth - 1),
@@ -244,8 +260,6 @@ class Wallet {
                     method: 'kickAsset',
                     args: [id],
                   }));
-
-                  lastGripDownTimes[side] = Date.now();
 
                   break;
                 }
@@ -925,7 +939,7 @@ class Wallet {
         };
         craft.on('trigger', _craftTrigger);
 
-        const _craftGripdown = e => { // gripdown event handlers order: craft, _checkGripdownKeyboardStore, hand, _checkGripdown
+        const _craftGripdown = e => {
           const {side, index} = e;
           const hoverState = hoverStates[side];
           const {worldGrabAsset} = hoverState;
@@ -1047,18 +1061,6 @@ class Wallet {
         };
         craft.on('output', _craftOutput);
 
-        const lastGripDownTimes = {
-          left: 0,
-          right: 0,
-        };
-        const _makeLastReleaseSpec = () => ({
-          asset: null,
-          timestamp: 0,
-        });
-        const lastReleaseSpecs = {
-          left: _makeLastReleaseSpec(),
-          right: _makeLastReleaseSpec(),
-        };
         const _pullItem = (asset, side) => {
           const id = _makeId();
           const owner = bootstrap.getAddress();
@@ -1109,81 +1111,9 @@ class Wallet {
           }, 3000);
         };
         const _checkGripdown = side => {
-          const vrMode = bootstrap.getVrMode();
-
-          if (vrMode === 'keyboard') { // pull/store on double tap
-            return _checkGripdownKeyboard(side);
-          } else if (vrMode === 'hmd') { // pull on grab body
-            return _checkGripDownHmd(side);
-          } else {
-            return false
-          }
-        };
-        const _checkGripdownKeyboard = side => {
-          const now = Date.now();
-
-          if (_checkGripdownKeyboardPull(side, now) || _checkGripdownKeyboardStore(side, now)) {
-            return true;
-          } else {
-            lastGripDownTimes[side] = now;
-
-            return false;
-          }
-        };
-        const _checkGripdownKeyboardPull = (side, now = Date.now()) => {
-          const lastGripDownTime = lastGripDownTimes[side];
           const hoverState = hoverStates[side];
           const {worldGrabAsset} = hoverState;
           const {asset} = walletState;
-
-          const gripdownTimeDiff = now - lastGripDownTime;
-          if (gripdownTimeDiff < 500) {
-            const lastReleaseSpec = lastReleaseSpecs[side];
-            const {timestamp} = lastReleaseSpec;
-            const lastReleaseTimeDiff = now - timestamp;
-
-            if (!worldGrabAsset && asset) {
-              _pullItem(asset, side);
-
-              lastGripDownTimes[side] = 0;
-
-              return true;
-            } else {
-              return false;
-            }
-          } else {
-            return false;
-          }
-        };
-        const _checkGripdownKeyboardStore = (side, now = Date.now()) => {
-          const lastGripDownTime = lastGripDownTimes[side];
-          const hoverState = hoverStates[side];
-          const {worldGrabAsset} = hoverState;
-          const {asset} = walletState;
-
-          const gripdownTimeDiff = now - lastGripDownTime;
-          if (gripdownTimeDiff < 500) {
-            const lastReleaseSpec = lastReleaseSpecs[side];
-            const {timestamp} = lastReleaseSpec;
-            const lastReleaseTimeDiff = now - timestamp;
-
-            if (lastReleaseTimeDiff < 500) {
-              const {asset: assetInstance} = lastReleaseSpec;
-              _storeItem(assetInstance);
-
-              lastGripDownTimes[side] = 0;
-              lastReleaseSpec.asset = null;
-              lastReleaseSpec.timestamp = 0;
-
-              return true;
-            } else {
-              return false;
-            }
-          } else {
-            return false;
-          }
-        };
-        const _checkGripdownHmd = side => {
           const {gamepads} = webvr.getStatus();
           const gamepad = gamepads[side];
           const {worldPosition: position} = gamepad;
@@ -1197,57 +1127,38 @@ class Wallet {
           }
         };
         const _checkGripup = (side, assetInstance) => {
-          const vrMode = bootstrap.getVrMode();
+          const {position} = assetInstance;
 
-          if (vrMode === 'hmd') {
-            const {position} = assetInstance;
+          if (_isInBody(new THREE.Vector3().fromArray(position))) {
+            /* const localAddress = bootstrap.getAddress();
 
-            if (_isInBody(new THREE.Vector3().fromArray(position))) {
-              /* const localAddress = bootstrap.getAddress();
+            if (owner === localAddress) {
+              walletApi.emit('removeTag', id);
+            } else {
+              this.hide(); // for better UX
 
-              if (owner === localAddress) {
-                walletApi.emit('removeTag', id);
-              } else {
-                this.hide(); // for better UX
+              this.requestChangeOwner(localAddress)
+                .then(() => {
+                  walletApi.emit('removeTag', this.id);
+                })
+                .catch(err => {
+                  console.warn(err);
 
-                this.requestChangeOwner(localAddress)
-                  .then(() => {
-                    walletApi.emit('removeTag', this.id);
-                  })
-                  .catch(err => {
-                    console.warn(err);
+                  this.show();
+                });
+            } */
 
-                    this.show();
-                  });
-              } */
-
-              _storeItem(assetInstance);
-            }
-          } else if (vrMode === 'keyboard') {
-            const lastReleaseSpec = lastReleaseSpecs[side];
-            lastReleaseSpec.asset = assetInstance;
-            lastReleaseSpec.timestamp = Date.now();
+            _storeItem(assetInstance);
           }
         };
-        const _gripdown1 = e => {
+        const _gripdown = e => {
           const {side} = e;
-
-          if (bootstrap.getVrMode() === 'keyboard' && _checkGripdownKeyboardStore(side)) {
-            e.stopImmediatePropagation();
-          }
-        };
-        input.on('gripdown', _gripdown1, {
-          priority: -2,
-        });
-        const _gripdown2 = e => {
-          const {side} = e;
-
           if (_checkGripdown(side)) {
             e.stopImmediatePropagation();
           }
         };
-        input.on('gripdown', _gripdown2, {
-          priority: -4,
+        input.on('gripdown', _gripdown, {
+          priority: -2,
         });
 
         const _tabchange = tab => {
@@ -1260,18 +1171,35 @@ class Wallet {
         const _update = () => {
           assetsMaterial.uniforms.theta.value = (Date.now() * ROTATE_SPEED * (Math.PI * 2) % (Math.PI * 2));
 
-          /* const {hmd: {worldPosition, worldRotation}} = webvr.getStatus();
-          const hmdEuler = new THREE.Euler().setFromQuaternion(worldRotation, camera.rotation.order);
-          hmdEuler.z = 0;
-          const hmdQuaternion = new THREE.Quaternion().setFromEuler(hmdEuler);
-          sphere.position.copy(
-            worldPosition.clone()
-              .add(
-                new THREE.Vector3(0, -0.5, 0)
-                  .applyQuaternion(hmdQuaternion)
-              )
-          );
-          sphere.updateMatrixWorld(); */
+          /* const vrMode = bootstrap.getVrMode();
+          if (vrMode === 'hmd') {
+            const {hmd: {worldPosition, worldRotation}} = webvr.getStatus();
+            const hmdEuler = new THREE.Euler().setFromQuaternion(worldRotation, camera.rotation.order);
+            hmdEuler.z = 0;
+            const hmdQuaternion = new THREE.Quaternion().setFromEuler(hmdEuler);
+            sphere.position.copy(
+              worldPosition.clone()
+                .add(
+                  new THREE.Vector3(0, -0.5, 0)
+                    .applyQuaternion(hmdQuaternion)
+                )
+            );
+            sphere.updateMatrixWorld();
+          } else if (vrMode === 'keyboard') {
+            const {hmd: {worldPosition, worldRotation}} = webvr.getStatus();
+            const hmdEuler = new THREE.Euler().setFromQuaternion(worldRotation, camera.rotation.order);
+            hmdEuler.x = 0;
+            hmdEuler.z = 0;
+            const hmdQuaternion = new THREE.Quaternion().setFromEuler(hmdEuler);
+            sphere.position.copy(
+              worldPosition.clone()
+                .add(
+                  new THREE.Vector3(0, -0.4, 0.2)
+                    .applyQuaternion(hmdQuaternion)
+                )
+            );
+            sphere.updateMatrixWorld();
+          } */
         };
         rend.on('update', _update);
 
@@ -1331,8 +1259,7 @@ class Wallet {
 
         cleanups.push(() => {
           input.removeListener('trigger', _trigger);
-          input.removeListener('gripdown', _gripdown1);
-          input.removeListener('gripdown', _gripdown2);
+          input.removeListener('gripdown', _gripdown);
 
           craft.removeListener('trigger', _craftTtrigger);
           craft.removeListener('gripdown', _craftGripdown);
