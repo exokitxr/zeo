@@ -360,6 +360,8 @@ class Chest {
                   lidAnimation = animation.makeAnimation(1, 0, 500);
                   lidOpen = false;
                 }
+
+                e.stopImmediatePropagation();
               }
             };
             input.on('gripdown', _gripdown);
