@@ -657,7 +657,7 @@ class Wallet {
             } else if (match = onclick.match(/^asset:main:(.+)$/)) {
               const asset = match[1];
 
-              walletState.asset = asset;
+              walletState.asset = walletState.asset !== asset ? asset : null;
 
               _updatePages();
 
