@@ -760,6 +760,33 @@ class Wallet {
                 }); */
 
               return true;
+            } else if (match = onclick.match(/^asset:equip:(.+)$/)) {
+              const asset = match[1];
+
+              const {equipments} = walletState;
+              const index = (() => {
+                for (let i = 0; i < equipments.length; i++) {
+                  const equipment = equipments[i];
+                  if (equipment.asset === null) {
+                    return i;
+                  }
+                }
+                return equipments.length - 1;
+              })();
+              equipments[index].asset = asset;
+
+              _updatePages();
+
+              return true;
+            } else if (match = onclick.match(/^asset:unequip:equipment:([0-9]+)$/)) {
+              const index = parseInt(match[1], 10);
+
+              const {equipments} = walletState;
+              equipments[index].asset = null;
+
+              _updatePages();
+
+              return true;
             } else if (onclick === 'wallet:manage') {
               console.log('manage account'); // XXX make this link to the vrid page
 

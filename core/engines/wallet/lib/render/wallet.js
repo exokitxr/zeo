@@ -45,13 +45,14 @@ const getAssetsPageSrc = ({loading, inputText, inputValue, asset, assets, equipm
               .slice(page * numTagsPerPage, (page + 1) * numTagsPerPage)
               .map(assetSpec => {
                 const focused = assetSpec.asset === asset;
-                return getAssetSrc(assetSpec, {focused, equippable: focused, equipPlaceholder: true});
+                const equippable = focused && !equipments.some(equipmentSpec => equipmentSpec.asset === asset);
+                return getAssetSrc(assetSpec, {focused, equippable, equipPlaceholder: true});
               })
               .join('\n')}
           </div>
           <div style="display: flex; flex-direction: column">
             ${equipments
-              .map(assetSpec => getAssetSrc(assetSpec, {unequippable: assetSpec.asset !== null}))
+              .map(equipmentSpec => getAssetSrc(equipmentSpec, {unequippable: equipmentSpec.asset !== null}))
               .join('\n')}
           </div>
         </div>`
@@ -91,11 +92,11 @@ const getAssetSrc = (assetSpec, {focused = false, equippable = false, unequippab
 
   const equipButtonSrc = (() => {
     if (equippable) {
-       return `<a style="display: flex; width: 100px; height: 30px; border: 2px solid; font-weight: 600; justify-content: center; align-items: center; box-sizing: border-box;" onclick="asset:equip:${id}">Equip</a>`;
+       return `<a style="display: flex; width: 100px; height: 30px; margin-top: 10px; border: 2px solid; font-weight: 600; justify-content: center; align-items: center; box-sizing: border-box;" onclick="asset:equip:${id}">Equip</a>`;
     } else if (unequippable) {
       return `<a style="position: absolute; top: 36px; right: -40px; display: flex; width: 100px; height: 30px; border: 2px solid; font-weight: 600; justify-content: center; align-items: center; transform: rotateZ(90deg); box-sizing: border-box;" onclick="asset:unequip:${id}">Un-equip</a>`;
     } else if (equipPlaceholder) {
-      return `<div style="width: 100%; height: 30px;"></div>`;
+      return `<div style="width: 100%; height: 30px; margin-top: 10px;"></div>`;
     } else {
       return '';
     }
@@ -104,7 +105,7 @@ const getAssetSrc = (assetSpec, {focused = false, equippable = false, unequippab
   if (asset !== null) {
     return `\
       <div style="position: relative; display: flex; margin-right: 10px; margin-bottom: 10px; flex-direction: column;">
-        <a style="display: flex; width: 100px; height: 100px; margin-bottom: 10px; padding: 10px; ${focused ? 'background-color: #000; color: #FFF;' : 'background-color: #EEE;'} font-size 10px; font-weight: 600; flex-direction: column; box-sizing: border-box;" onclick="asset:main:${id}">
+        <a style="display: flex; width: 100px; height: 100px; padding: 10px; ${focused ? 'background-color: #000; color: #FFF;' : 'background-color: #EEE;'} font-size 10px; font-weight: 600; flex-direction: column; box-sizing: border-box;" onclick="asset:main:${id}">
           <div style="display: flex; flex-grow: 1; justify-content: center; align-items: center;">
             ${creatureUtils.makeSvgCreature('asset:' + asset, {
               width: 12,
