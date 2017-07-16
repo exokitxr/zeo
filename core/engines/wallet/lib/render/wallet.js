@@ -89,26 +89,30 @@ const getAssetSrc = (assetSpec = null, focused = false) => {
     const id = asset;
 
     return `\
-      <a style="display: flex; width: 100px; height: 100px; margin-right: 10px; margin-bottom: 10px; padding: 10px; ${focused ? 'background-color: #000; color: #FFF;' : 'background-color: #EEE;'} font-size 10px; font-weight: 600; flex-direction: column; box-sizing: border-box;" onclick="asset:main:${id}">
-        <div style="display: flex; flex-grow: 1; justify-content: center; align-items: center;">
-          ${creatureUtils.makeSvgCreature('asset:' + asset, {
-            width: 12,
-            height: 12,
-            viewBox: '0 0 12 12',
-            style: 'width: 50px; height: 50px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;',
-          })}
-        </div>
-        <div style="display: flex; width: 100%; align-items: center; font-size: 10px; font-weight: 600;">
-          <div style="margin-right: auto; word-break: break-all;">${asset}</div>
-          <div>${quantity}</div>
-        </div>
-      </a>
+      <div style="display: flex; margin-right: 10px; margin-bottom: 10px; flex-direction: column;">
+        <a style="display: flex; width: 100px; height: 100px; margin-bottom: 10px; padding: 10px; ${focused ? 'background-color: #000; color: #FFF;' : 'background-color: #EEE;'} font-size 10px; font-weight: 600; flex-direction: column; box-sizing: border-box;" onclick="asset:main:${id}">
+          <div style="display: flex; flex-grow: 1; justify-content: center; align-items: center;">
+            ${creatureUtils.makeSvgCreature('asset:' + asset, {
+              width: 12,
+              height: 12,
+              viewBox: '0 0 12 12',
+              style: 'width: 50px; height: 50px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;',
+            })}
+          </div>
+          <div style="display: flex; width: 100%; align-items: center; font-size: 10px; font-weight: 600;">
+            <div style="margin-right: auto; word-break: break-all;">${asset}</div>
+            <div>${quantity}</div>
+          </div>
+        </a>
+        ${focused ? `<a style="display: flex; width: 100%; height: 30px; border: 2px solid; font-weight: 600; justify-content: center; align-items: center; box-sizing: border-box;" onclick="asset:equip:${id}">Equip</a>` : `<div style="width: 100%; height: 30px;"></div>`}
+      </div>
     `;
   } else {
     return `\
       <div style="display: flex; width: 100px; height: 100px; margin-bottom: 10px; border: 2px solid; color: #AAA; flex-direction: column; justify-content: center; align-items: center; box-sizing: border-box;">
         <div style="font-size: 14px; font-weight: 600;">Empty</div>
       </div>
+      ${focused ? `<a style="display: flex; width: 100%; height: 30px; border: 2px solid; font-weight: 600; justify-content: center; align-items: center; box-sizing: border-box;" onclick="asset:equip:${id}">Equip</a>` : `<div style="width: 100%; height: 30px;"></div>`}
     `;
   }
 };

@@ -447,6 +447,7 @@ class Wallet {
           // address: null,
           asset: null,
           assets: [],
+          equipments: [],
           numTags: 0,
           page: 0,
         };
@@ -470,6 +471,7 @@ class Wallet {
                 inputText,
                 asset,
                 assets,
+                equipments,
                 numTags,
                 page,
               },
@@ -482,7 +484,7 @@ class Wallet {
 
               return {
                 type: 'html',
-                src: walletRenderer.getWalletPageSrc({loading, error, inputText, inputValue, asset, assets, numTags, page, focus}),
+                src: walletRenderer.getWalletPageSrc({loading, error, inputText, inputValue, asset, assets, equipments, numTags, page, focus}),
                 x: 0,
                 y: 0,
                 w: WIDTH,
@@ -545,6 +547,15 @@ class Wallet {
             walletState.page = 0;
             walletState.asset = null;
             walletState.assets = assets;
+            const equipments = (() => { // XXX actually fetch this
+              const numEquipments = 4;
+              const result = Array(numEquipments);
+              for (let i = 0; i < numEquipments; i++) {
+                result[i] = null;
+              }
+              return result;
+            })();
+            walletState.equipments = equipments;
             walletState.numTags = assets.length;
 
             _updatePages();
