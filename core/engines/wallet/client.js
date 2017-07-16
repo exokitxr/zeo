@@ -151,16 +151,26 @@ class Wallet {
 
         const connection = new AutoWs(_relativeWsUrl('archae/walletWs'));
 
+        /* const sphere = new THREE.Mesh(
+          new THREE.SphereBufferGeometry(0.35),
+          new THREE.MeshPhongMaterial({
+            color: 0xFF0000,
+          })
+        );
+        scene.add(sphere); */
+
         const _isInBody = p => {
           const {hmd} = webvr.getStatus();
           const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmd;
-          const externalMatrix = webvr.getExternalMatrix();
+          const hmdEuler = new THREE.Euler().setFromQuaternion(hmdRotation, camera.rotation.order);
+          hmdEuler.z = 0;
+          const hmdQuaternion = new THREE.Quaternion().setFromEuler(hmdEuler);
           const bodyPosition = hmdPosition.clone()
             .add(
-              new THREE.Vector3(0, -0.4, 0)
-                .applyQuaternion(new THREE.Quaternion().setFromRotationMatrix(externalMatrix))
+              new THREE.Vector3(0, -0.5, 0)
+                .applyQuaternion(hmdQuaternion)
             );
-          return p.distanceTo(bodyPosition) < 0.2;
+          return p.distanceTo(bodyPosition) < 0.35;
         };
         const _snapDotPosition = p => new THREE.Vector2(
           Math.min(Math.floor(((p.x + 1) / 2) * slotsWidth), slotsWidth - 1),
@@ -556,7 +566,6 @@ class Wallet {
           credentials: 'include',
         })
           .then(_resJson)
-          .then(equipments => {console.log('loaded', equipments); return equipments;})
           .then(equipments => equipments !== null ? equipments : _makeArray(4))
           .then(equipments => equipments.map((asset, i) => ({id: `equipment:${i}`, asset: asset, quantity: 0})));
         const _refreshAssets = () => Promise.all([
@@ -1137,6 +1146,19 @@ class Wallet {
 
         const _update = () => {
           assetsMaterial.uniforms.theta.value = (Date.now() * ROTATE_SPEED * (Math.PI * 2) % (Math.PI * 2));
+
+          /* const {hmd: {worldPosition, worldRotation}} = webvr.getStatus();
+          const hmdEuler = new THREE.Euler().setFromQuaternion(worldRotation, camera.rotation.order);
+          hmdEuler.z = 0;
+          const hmdQuaternion = new THREE.Quaternion().setFromEuler(hmdEuler);
+          sphere.position.copy(
+            worldPosition.clone()
+              .add(
+                new THREE.Vector3(0, -0.5, 0)
+                  .applyQuaternion(hmdQuaternion)
+              )
+          );
+          sphere.updateMatrixWorld(); */
         };
         rend.on('update', _update);
 
