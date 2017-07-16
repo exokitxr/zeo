@@ -7,7 +7,7 @@ const upImg = require('../img/up');
 const downImg = require('../img/down');
 const chevronLeftImg = require('../img/chevron-left');
 
-const numTagsPerPage = 6;
+const numTagsPerPage = 6 * 4;
 
 const makeRenderer = ({creatureUtils}) => {
 
@@ -40,7 +40,7 @@ const getAssetsPageSrc = ({loading, inputText, inputValue, asset, assets, numTag
         `<div style="display: flex; margin-bottom: 100px; font-size: 30px; font-weight: 400; flex-grow: 1; align-items: center; justify-content: center;">Loading...</div>`
       :
         ((assets.length > 0) ?
-          `<div style="display: flex; flex-grow: 1; flex-direction: column;">
+          `<div style="display: flex; width: ${(100 + 10) * 6}px; flex-wrap: wrap;;">
             ${assets
               .slice(page * numTagsPerPage, (page + 1) * numTagsPerPage)
               .map(assetSpec => getAssetSrc(assetSpec, assetSpec.asset === asset))
@@ -82,36 +82,25 @@ const getAssetsPageSrc = ({loading, inputText, inputValue, asset, assets, numTag
 };
 const getAssetSrc = (assetSpec, focused) => {
   const {asset, quantity} = assetSpec;
-  const quantityString = _commaizeQuantity(quantity);
   const id = asset;
 
   return `\
-    <a style="position: relative; display: flex; padding-bottom: 20px; ${focused ? 'background-color: #000; color: #FFF;' : 'border-bottom: 1px solid #EEE;'} text-decoration: none; overflow: hidden; box-sizing: border-box;" onclick="asset:main:${id}">
-      <div style="display: flex; margin-left: -30px; margin-right: -80px; padding-left: 30px; padding-right: 80px; flex-grow: 1; flex-direction: column; box-sizing: border-box;">
-        <div style="display: flex; flex-grow: 1;">
-          ${creatureUtils.makeSvgCreature('asset:' + asset, {
-            width: 12,
-            height: 12,
-            viewBox: '0 0 12 12',
-            style: 'width: 50px; height: 50px; margin: 10px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;',
-          })}
-          <div style="display: flex; margin-left: 10px; flex-grow: 1; flex-direction: column; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">
-            <h1 style="margin: 0; margin-top: 10px; margin-bottom: 5px; font-size: 24px; font-weight: 400; line-height: 1.4; text-overflow: ellipsis; overflow: hidden;">${asset}</h1>
-            <div style="display: flex; flex-grow: 1; align-items: center;">
-              <div style="padding: 0 5px; border: 2px solid; font-size: 20px; font-weight: 400;">¤ ${quantityString}</div>
-            </div>
-          </div>
-        </div>
+    <a style="display: flex; width: 100px; height: 100px; margin-right: 10px; margin-bottom: 10px; padding: 10px; ${focused ? 'background-color: #000; color: #FFF;' : 'background-color: #EEE;'} font-size 10px; font-weight: 600; flex-direction: column; box-sizing: border-box;" onclick="asset:main:${id}">
+      <div style="display: flex; flex-grow: 1; justify-content: center; align-items: center;">
+        ${creatureUtils.makeSvgCreature('asset:' + asset, {
+          width: 12,
+          height: 12,
+          viewBox: '0 0 12 12',
+          style: 'width: 50px; height: 50px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;',
+        })}
+      </div>
+      <div style="display: flex; width: 100%; align-items: center; font-size: 10px; font-weight: 600;">
+        <div style="margin-right: auto; word-break: break-all;">${asset}</div>
+        <div>${quantity}</div>
       </div>
     </a>
   `;
 };
-const _commaize = n => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-const _commaizeQuantity = quantity =>
-  quantity.toFixed(2)
-  .replace(/^([^.]*)(\.?.*)$/, (all, wholes, decimals) => _commaize(wholes) + decimals)
-  .replace(/(\..*?)0+$/, '$1')
-  .replace(/\.$/, '');
 
 return {
   getWalletPageSrc,
