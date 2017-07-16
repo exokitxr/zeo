@@ -1,16 +1,15 @@
 {
   "CRD": "Weapon_25",
-  "ZEOCOIN": "Misc_68",
-  "STONE": "Misc_42",
-  "WOOD": "Crafting_85",
-  "COAL": "Crafting_55",
-  "IRON": "Crafting_51",
-  "SWORD": "Weapon_06",
-  "HAMMER": "Weapon_46",
-  "PICKAXE": "Pickaxe",
-  "TORCH": "Torch",
-  "AXE": "Weapon_26",
-  "GUN": "Gun_1",
-  "BOW": "Weapon_65",
-  "LIGHTSABER": "Lightsaber"
+  "ITEM.STONE": "Misc_42",
+  "ITEM.WOOD": "Crafting_85",
+  "ITEM.COAL": "Crafting_55",
+  "ITEM.IRON": "Crafting_51",
+  "ITEM.SWORD": "Weapon_06",
+  "ITEM.HAMMER": "Weapon_46",
+  "ITEM.PICKAXE": "Pickaxe",
+  "ITEM.TORCH": "Torch",
+  "ITEM.AXE": "Weapon_26",
+  "ITEM.GUN": "Gun_1",
+  "ITEM.BOW": "Weapon_65",
+  "ITEM.LIGHTSABER": "Lightsaber"
 }
