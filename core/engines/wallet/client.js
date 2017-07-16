@@ -538,12 +538,35 @@ class Wallet {
             });
           }
         };
+        const _resBlob = res => {
+          if (res.status >= 200 && res.status < 300) {
+            return res.blob();
+          } else {
+            return Promise.reject({
+              status: res.status,
+              stack: 'API returned invalid status code: ' + res.status,
+            });
+          }
+        };
         const _requestAssets = () => fetch(`${vridUrl}/id/api/assets`, {
           credentials: 'include',
         })
           .then(_resJson);
-        const _refreshAssets = () => _requestAssets()
-          .then(assets => {
+        const _requestEquipments = () => fetch(`${vridUrl}/id/api/cookie/equipment`, {
+          credentials: 'include',
+        })
+          .then(_resJson)
+          .then(equipments => {console.log('loaded', equipments); return equipments;})
+          .then(equipments => equipments !== null ? equipments : _makeArray(4))
+          .then(equipments => equipments.map((asset, i) => ({id: `equipment:${i}`, asset: asset, quantity: 0})));
+        const _refreshAssets = () => Promise.all([
+          _requestAssets(),
+          _requestEquipments(),
+        ])
+          .then(([
+            assets,
+            equipments,
+          ]) => {
             walletState.page = 0;
             walletState.asset = null;
             walletState.assets = assets.map(({asset, quantity}) => ({
@@ -551,18 +574,6 @@ class Wallet {
               asset: asset,
               quantity: quantity,
             }));
-            const equipments = (() => { // XXX actually fetch this
-              const numEquipments = 4;
-              const result = Array(numEquipments);
-              for (let i = 0; i < numEquipments; i++) {
-                result[i] = {
-                  id: `equipment:${i}`,
-                  asset: null,
-                  quantity: 0,
-                };
-              }
-              return result;
-            })();
             walletState.equipments = equipments;
             walletState.numTags = assets.length;
 
@@ -625,6 +636,29 @@ class Wallet {
           }
         };
 
+        const _saveEquipments = _debounce(next => {
+          const equipments = walletState.equipments.map(({asset}) => asset);
+
+          fetch(`${vridUrl}/id/api/cookie/equipment`, {
+            method: 'POST',
+            headers: (() => {
+              const headers = new Headers();
+              headers.set('Content-Type', 'application/json');
+              return headers;
+            })(),
+            body: JSON.stringify(equipments),
+            credentials: 'include',
+          })
+            .then(_resBlob)
+            .then(() => {
+              next();
+            })
+            .catch(err => {
+              console.warn(err);
+
+              next();
+            });
+        });
         const _trigger = e => {
           const {side} = e;
 
@@ -774,6 +808,7 @@ class Wallet {
                 return equipments.length - 1;
               })();
               equipments[index].asset = asset;
+              _saveEquipments();
 
               _updatePages();
 
@@ -783,6 +818,7 @@ class Wallet {
 
               const {equipments} = walletState;
               equipments[index].asset = null;
+              _saveEquipments();
 
               _updatePages();
 
@@ -1280,9 +1316,39 @@ class Wallet {
 }
 
 const _makeId = () => Math.random().toString(36).substring(7);
+const _makeArray = n => {
+  const result = Array(n);
+  for (let i = 0; i < n; i++) {
+    result[i] = null;
+  }
+  return result;
+};
 const _relativeWsUrl = s => {
   const l = window.location;
   return ((l.protocol === 'https:') ? 'wss://' : 'ws://') + l.host + l.pathname + (!/\/$/.test(l.pathname) ? '/' : '') + s;
+};
+const _debounce = fn => {
+  let running = false;
+  let queued = false;
+
+  const _go = () => {
+    if (!running) {
+      running = true;
+
+      fn(() => {
+        running = false;
+
+        if (queued) {
+          queued = false;
+
+          _go();
+        }
+      });
+    } else {
+      queued = true;
+    }
+  };
+  return _go;
 };
 /* const _arrayToBase64 = array => {
   let binary = '';
