@@ -8,10 +8,10 @@ const HEIGHT_OFFSET = -32;
 const DEFAULT_SEED = 'a';
 
 const ITEMS = [
-  'WOOD',
-  'STONE',
-  'COAL',
-  'IRON',
+  'ITEM.WOOD',
+  'ITEM.STONE',
+  'ITEM.COAL',
+  'ITEM.IRON',
 ];
 
 module.exports = {

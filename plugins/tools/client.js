@@ -334,13 +334,13 @@ class Tools {
         items.registerItem(this, hammerApi);
 
         const hammerRecipe = {
-          output: 'HAMMER',
+          output: 'ITEM.HAMMER',
           width: 2,
           height: 3,
           input: [
-            'STONE', 'STONE',
-            null, 'WOOD',
-            null, 'WOOD',
+            'ITEM.STONE', 'ITEM.STONE',
+            null, 'ITEM.WOOD',
+            null, 'ITEM.WOOD',
           ],
         };
         items.registerRecipe(this, hammerRecipe);
@@ -460,13 +460,13 @@ class Tools {
         items.registerItem(this, torchApi);
 
         const torchRecipe = {
-          output: 'TORCH',
+          output: 'ITEM.TORCH',
           width: 1,
           height: 3,
           input: [
-            'COAL',
-            'WOOD',
-            'WOOD',
+            'ITEM.COAL',
+            'ITEM.WOOD',
+            'ITEM.WOOD',
           ],
         };
         items.registerRecipe(this, torchRecipe);
