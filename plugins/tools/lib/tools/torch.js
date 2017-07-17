@@ -6,7 +6,7 @@ const torch = ({archae}) => {
 
   return () => {
     const torchApi = {
-      asset: 'TORCH',
+      asset: 'ITEM.TORCH',
       itemAddedCallback(grabbable) {
         const dotMesh = (() => {
           const geometry = new THREE.TorusBufferGeometry(0.05, 0.01, 3, 6)
