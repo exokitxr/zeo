@@ -4,7 +4,7 @@
 
 module.exports = THREE => {
 
-function THREEMirror( width, height, options ) {
+function THREEMirror( width, height, options, renderer, scene ) {
 
 	THREE.Mesh.call( this, new THREE.PlaneBufferGeometry( width, height ) );
 
@@ -32,7 +32,7 @@ function THREEMirror( width, height, options ) {
 	var textureMatrix = new THREE.Matrix4();
 
 	var mirrorCamera = new THREE.PerspectiveCamera();
-	mirrorCamera.matrixAutoUpdate = true;
+	// mirrorCamera.matrixAutoUpdate = true;
 
 	var parameters = {
 		minFilter: THREE.LinearFilter,
@@ -190,17 +190,16 @@ function THREEMirror( width, height, options ) {
 
 	}
 
-	scope.onBeforeRender = function ( renderer, scene, camera ) {
-
+	scope.onBeforeRender = (_renderer, _scene, camera) => {
     updateTextureMatrix( camera );
 
-    scope.visible = false;
+    scope.parent.visible = false;
 
     renderer.render( scene, mirrorCamera, renderTarget, true );
+    renderer.setRenderTarget(null);
 
-    scope.visible = true;
-
-	};
+    scope.parent.visible = true;
+  };
 
   scope.destroy = () => {
     scope.geometry.dispose();

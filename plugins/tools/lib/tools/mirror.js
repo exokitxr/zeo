@@ -39,7 +39,7 @@ const mirror = ({archae}) => {
             textureWidth: resolutionWidth,
             textureHeight: resolutionHeight,
             color: 0x808080,
-          });
+          }, renderer, scene);
           object.add(inner);
           object.inner = inner;
 
