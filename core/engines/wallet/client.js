@@ -1267,7 +1267,9 @@ class Wallet {
 
         const itemApis = {};
         const _bindItem = assetInstance => {
-          const {asset} = assetInstance;
+          const {item} = assetInstance;
+          const {attributes} = item;
+          const {asset: {value: asset}} = attributes;
           const entry = itemApis[asset];
 
           if (entry) {
@@ -1281,7 +1283,9 @@ class Wallet {
           }
         };
         const _unbindItem = assetInstance => {
-          const {asset} = assetInstance;
+          const {item} = assetInstance;
+          const {attributes} = item;
+          const {asset: {value: asset}} = attributes;
           const entry = itemApis[asset];
 
           if (entry) {
