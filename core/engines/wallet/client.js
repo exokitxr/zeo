@@ -564,11 +564,14 @@ class Wallet {
           ]) => {
             walletState.page = 0;
             walletState.asset = null;
-            walletState.assets = assets.map(({asset, quantity}) => ({
+            assets = assets.map(({asset, quantity}) => ({
               id: asset,
               asset: asset,
               quantity: quantity,
             }));
+            walletState.assets = assets;
+            equipments = equipments
+              .filter(equipmentSpec => assets.some(assetSpec => assetSpec.asset === equipmentSpec.asset));
             walletState.equipments = equipments;
             walletState.numTags = assets.length;
 
