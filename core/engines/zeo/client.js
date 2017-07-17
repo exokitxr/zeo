@@ -152,6 +152,7 @@ class Zeo {
             '/core/utils/menu-utils',
             '/core/utils/creature-utils',
             '/core/utils/sprite-utils',
+            '/core/utils/vrid-utils',
           ]);
 
           return Promise.all([
@@ -203,6 +204,7 @@ class Zeo {
                 menuUtils,
                 creatureUtils,
                 spriteUtils,
+                vridUtils,
               ],
             ]) => {
               if (live) {

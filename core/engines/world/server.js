@@ -5,7 +5,6 @@ const fs = require('fs');
 const crypto = require('crypto');
 
 const mkdirp = require('mkdirp');
-const vridApiLib = require('vrid/lib/backend-api');
 
 const OPEN = 1; // ws.OPEN
 
@@ -25,8 +24,6 @@ class World {
     const {_archae: archae} = this;
     const {metadata: {crds: {url: crdsUrl}}} = archae;
     const {app, wss, dirname, dataDirectory} = archae.getCore();
-
-    const vridApi = vridApiLib({crdsUrl});
 
     let live = true;
     this._cleanup = () => {
@@ -68,6 +65,7 @@ class World {
       archae.requestPlugins([
         '/core/engines/multiplayer',
         '/core/engines/wallet',
+        '/core/utils/vrid-utils',
       ]),
       _requestTagsJson(),
       _requestFilesJson(),
@@ -77,12 +75,15 @@ class World {
         [
           multiplayer,
           wallet,
+          vridUtils,
         ],
         tagsJson,
         filesJson,
         ensureWorldPathResult,
       ]) => {
         if (live) {
+          const {vridApi} = vridUtils;
+
           const usersJson = {};
 
           const _saveFile = (p, j) => new Promise((accept, reject) => {
