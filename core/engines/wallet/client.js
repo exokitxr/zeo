@@ -7,7 +7,6 @@ import {
 } from './lib/constants/wallet';
 import walletRender from './lib/render/wallet';
 import menuUtils from './lib/utils/menu';
-// import vridApi from 'vrid/lib/frontend-api';
 
 const DEFAULT_MATRIX = [
   0, 0, 0,
@@ -86,6 +85,7 @@ class Wallet {
       '/core/utils/network-utils',
       '/core/utils/creature-utils',
       '/core/utils/sprite-utils',
+      '/core/utils/vrid-utils',
     ]).then(([
       bootstrap,
       three,
@@ -106,6 +106,7 @@ class Wallet {
       networkUtils,
       creatureUtils,
       spriteUtils,
+      vridUtils,
     ]) => {
       if (live) {
         const {THREE, scene, camera} = three;
@@ -114,6 +115,7 @@ class Wallet {
         const {AutoWs} = networkUtils;
         const {Grabbable} = hand;
         const {sfx} = resource;
+        const {vridApi} = vridUtils;
 
         const walletRenderer = walletRender.makeRenderer({creatureUtils});
         const outputSymbol = craft.getOutputSymbol();
@@ -1072,7 +1074,6 @@ class Wallet {
             attributes: {
               position: {value: DEFAULT_MATRIX},
               asset: {value: asset},
-              quantity: {value: 1},
               owner: {value: owner},
               bindOwner: {value: null},
               physics: {value: false},
@@ -1084,6 +1085,16 @@ class Wallet {
           const assetInstance = assetsMesh.getAssetInstance(id);
           assetInstance.grab(side);
           _bindAssetInstancePhysics(assetInstance);
+
+          const address = bootstrap.getAddress();
+          const quantity = 1;
+          vridApi.requestCreateDrop(address, asset, quantity)
+            .then(() => {
+              // nothing
+            })
+            .catch(err => {
+              console.warn(err);
+            });
 
           sfx.drop.trigger();
           const newNotification = notification.addNotification(`Pulled out ${asset}.`);
@@ -1098,13 +1109,20 @@ class Wallet {
           const {item} = assetInstance;
           const {attributes} = item;
           const {
-            owner: {value: owner},
-          } = attributes;
-
-          sfx.drop.trigger();
-          const {
             asset: {value: asset},
           } = attributes;
+
+          const address = bootstrap.getAddress();
+          const quantity = 1;
+          vridApi.requestCreateGet(address, asset, quantity)
+            .then(() => {
+              // nothing
+            })
+            .catch(err => {
+              console.warn(err);
+            });
+
+          sfx.drop.trigger();
           const newNotification = notification.addNotification(`Stored ${asset}.`);
           setTimeout(() => {
             notification.removeNotification(newNotification);
