@@ -553,7 +553,7 @@ class Wallet {
         })
           .then(_resJson)
           .then(equipments => equipments !== null ? equipments : _makeArray(4))
-          .then(equipments => equipments.map((asset, i) => ({id: `equipment:${i}`, asset: asset, quantity: 0})));
+          .then(equipments => equipments.map((asset, i) => ({id: `equipment:${i}`, asset: asset})));
         const _refreshAssets = () => Promise.all([
           _requestAssets(),
           _requestEquipments(),
@@ -1088,9 +1088,34 @@ class Wallet {
 
           const address = bootstrap.getAddress();
           const quantity = 1;
+          const {assets: oldAssets} = walletState;
           vridApi.requestCreateDrop(address, asset, quantity)
             .then(() => {
-              // nothing
+              const {assets: newAssets} = walletState;
+
+              if (oldAssets === newAssets) {
+                const newAsset = newAssets.find(assetSpec => assetSpec.asset === asset);
+                if (newAsset) {
+                  if (--newAsset.quantity === 0) {
+                    newAssets.splice(newAssets.indexOf(newAsset), 1);
+
+                    const {equipments} = walletState;
+                    const removedEquipments = equipments.filter(equipmentSpec => equipmentSpec.asset === asset);
+                    if (removedEquipments.length > 0) {
+                      for (let i = 0; i < equipments.length; i++) {
+                        const equipment = equipments[i];
+                        if (removedEquipments.includes(equipment)) {
+                          equipment.asset = null;
+                        }
+                      }
+
+                      _saveEquipments();
+                    }
+                  }
+
+                  _updatePages();
+                }
+              }
             })
             .catch(err => {
               console.warn(err);
@@ -1114,9 +1139,25 @@ class Wallet {
 
           const address = bootstrap.getAddress();
           const quantity = 1;
+          const {assets: oldAssets} = walletState;
           vridApi.requestCreateGet(address, asset, quantity)
             .then(() => {
-              // nothing
+              const {assets: newAssets} = walletState;
+
+              if (oldAssets === newAssets) {
+                let newAsset = newAssets.find(assetSpec => assetSpec.asset === asset);
+                if (!newAsset) {
+                  newAsset = {
+                    id: asset,
+                    asset: asset,
+                    quantity: 0,
+                  };
+                  newAssets.push(newAsset);
+                }
+                newAsset.quantity++;
+
+                _updatePages();
+              }
             })
             .catch(err => {
               console.warn(err);
