@@ -72,10 +72,20 @@ const mirror = ({archae}) => {
             const material = borderMaterial;
 
             const mesh = new THREE.Mesh(geometry, material);
+
+            mesh.destroy = () => {
+              geometry.dispose();
+            };
+
             return mesh;
           })();
           object.add(outer);
           object.outer = outer;
+
+          object.destroy = () => {
+            inner.destroy();
+            outer.destroy();
+          };
 
           return object;
         })();
