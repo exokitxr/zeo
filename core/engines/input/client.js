@@ -105,6 +105,19 @@ class Input {
       }
     }
 
+    const _preventKeyHijack = e => {
+      // prevent some key combinations from hijacking input
+      if (
+        (e.keyCode === 8) || // Backspace
+        (e.keyCode === 18) || // Alt
+        (e.ctrlKey && e.keyCode === 70) || // Ctrl-F
+        (e.ctrlKey && e.keyCode === 87) || // Ctrl-W
+        (e.ctrlKey && e.keyCode === 83) // Ctrl-S
+      ) {
+        e.preventDefault();
+      }
+    };
+
     const eventRouters = (() => {
       const result = {};
       EVENTS.forEach(event => {
@@ -118,9 +131,21 @@ class Input {
     window.addEventListener('mousemove', eventRouters.mousemove.handle);
     window.addEventListener('mousewheel', eventRouters.mousewheel.handle);
     window.addEventListener('wheel', eventRouters.wheel.handle);
-    window.addEventListener('keypress', eventRouters.keypress.handle);
-    window.addEventListener('keydown', eventRouters.keydown.handle);
-    window.addEventListener('keyup', eventRouters.keyup.handle);
+    const keydown = e => {
+      _preventKeyHijack(e);
+      eventRouters.keydown.handle(e);
+    };
+    window.addEventListener('keydown', keydown);
+    const keypress = e => {
+      _preventKeyHijack(e);
+      eventRouters.keypress.handle(e);
+    };
+    window.addEventListener('keypress', keypress);
+    const keyup = e => {
+      _preventKeyHijack(e);
+      eventRouters.keyup.handle(e);
+    };
+    window.addEventListener('keyup', keyup);
     document.addEventListener('paste', eventRouters.paste.handle);
 
     this._cleanup = () => {
@@ -128,9 +153,9 @@ class Input {
       window.removeEventListener('mousedown', eventRouters.mousedown.handle);
       window.removeEventListener('mouseup', eventRouters.mouseup.handle);
       window.removeEventListener('mousemove', eventRouters.mousemove.handle);
-      window.removeEventListener('keypress', eventRouters.keypress.handle);
-      window.removeEventListener('keydown', eventRouters.keydown.handle);
-      window.removeEventListener('keyup', eventRouters.keyup.handle);
+      window.removeEventListener('keydown', keydown);
+      window.removeEventListener('keypress', keypress);
+      window.removeEventListener('keyup', keyup);
       document.removeEventListener('paste', eventRouters.paste.handle);
     };
 
