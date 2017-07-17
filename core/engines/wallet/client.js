@@ -571,7 +571,7 @@ class Wallet {
             }));
             walletState.assets = assets;
             equipments = equipments
-              .filter(equipmentSpec => assets.some(assetSpec => assetSpec.asset === equipmentSpec.asset));
+              .filter(equipmentSpec => equipmentSpec.asset === null || assets.some(assetSpec => assetSpec.asset === equipmentSpec.asset));
             walletState.equipments = equipments;
             walletState.numTags = assets.length;
 
