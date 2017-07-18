@@ -12,6 +12,8 @@ class Npc {
 
     const skin = skinLib(THREE);
 
+    const zeroQuaternion = new THREE.Quaternion();
+
     let live = true;
     this._cleanup = () => {
       live = false;
@@ -64,21 +66,18 @@ class Npc {
             };
 
             const {head, leftArm, rightArm, leftLeg, rightLeg} = mesh;
+            const headRotation = new THREE.Quaternion();
             mesh.update = (now, heightfieldElement) => {
               const _updateAnimation = () => {
                 const {animation} = mesh;
 
                 if (animation) {
-                  const {mode, positionStart, positionEnd, rotationStart, rotationEnd, duration, startTime} = animation;
-
-                  const headRotation = new THREE.Quaternion().setFromUnitVectors( // XXX
-                    new THREE.Vector3(0, 0, -1),
-                    new THREE.Vector3(-1, 0, -1).normalize()
-                  );
+                  const {mode, positionStart, positionEnd, rotationStart, rotationEnd, headRotationStart, headRotationEnd, duration, startTime} = animation;
 
                   if (mode === 'walk') {
                     const positionFactor = Math.min((now - startTime) / duration, 1);
                     const rotationFactor = Math.pow(Math.min((now - startTime) / (duration / 4), 1), 0.5);
+                    const headRotationFactor = Math.pow(Math.min((now - startTime) / (duration / 8), 1), 0.5);
 
                     mesh.position.copy(positionStart)
                       .lerp(positionEnd, positionFactor);
@@ -86,9 +85,10 @@ class Npc {
                     mesh.quaternion.copy(rotationStart)
                       .slerp(rotationEnd, rotationFactor);
 
+                    headRotation.copy(headRotationStart).slerp(headRotationEnd, headRotationFactor);
+                    mesh.material.uniforms.headRotation.value.set(headRotation.x, headRotation.y, headRotation.z, headRotation.w);
                     const velocity = positionStart.distanceTo(positionEnd) / duration;
                     const angleRate = 1.5 / velocity;
-                    mesh.material.uniforms.headRotation.value.set(headRotation.x, headRotation.y, headRotation.z, headRotation.w);
                     mesh.material.uniforms.theta.value =
                       Math.sin((now % angleRate) / angleRate * Math.PI * 2) * 0.75 *
                       Math.pow(Math.sin(positionFactor * Math.PI), 0.5);
@@ -99,6 +99,7 @@ class Npc {
                   } else if (mode === 'hit') {
                     const positionFactor = Math.min((now - startTime) / duration, 1);
                     const rotationFactor = Math.pow(Math.min((now - startTime) / (duration / 4), 1), 0.5);
+                    const headRotationFactor = Math.pow(Math.min((now - startTime) / (duration / 8), 1), 0.5);
 
                     mesh.position.copy(positionStart)
                       .lerp(positionEnd, positionFactor);
@@ -110,7 +111,7 @@ class Npc {
                     mesh.quaternion.copy(rotationStart)
                       .slerp(rotationEnd, rotationFactor);
 
-                    mesh.material.uniforms.headRotation.value.set(headRotation.x, headRotation.y, headRotation.z, headRotation.w);
+                    mesh.material.uniforms.headRotation.value.set(zeroQuaternion.x, zeroQuaternion.y, zeroQuaternion.z, zeroQuaternion.w);
                     mesh.material.uniforms.theta.value = 0;
 
                     if (positionFactor >= 1) {
@@ -138,6 +139,7 @@ class Npc {
                       mesh.quaternion.copy(rotationEnd);
                     }
 
+                    mesh.material.uniforms.headRotation.value.set(zeroQuaternion.x, zeroQuaternion.y, zeroQuaternion.z, zeroQuaternion.w);
                     mesh.material.uniforms.theta.value = 0;
 
                     if (v >= 1) {
@@ -216,7 +218,7 @@ class Npc {
               }
             } else if (type === 'npcAnimation') {
               const {id, animation} = e;
-              const {mode, positionStart, positionEnd, rotationStart, rotationEnd, duration} = animation;
+              const {mode, positionStart, positionEnd, rotationStart, rotationEnd, headRotationStart, headRotationEnd, duration} = animation;
 
               const now = Date.now();
 
@@ -227,6 +229,8 @@ class Npc {
                 positionEnd: new THREE.Vector3().fromArray(positionEnd),
                 rotationStart: new THREE.Quaternion().fromArray(rotationStart),
                 rotationEnd: new THREE.Quaternion().fromArray(rotationEnd),
+                headRotationStart: new THREE.Quaternion().fromArray(headRotationStart),
+                headRotationEnd: new THREE.Quaternion().fromArray(headRotationEnd),
                 duration: duration,
                 startTime: now,
               };
