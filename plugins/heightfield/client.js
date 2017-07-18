@@ -403,6 +403,18 @@ class Heightfield {
       .then(() => {
         const heightfieldEntity = {
           entityAddedCallback(entityElement) {
+            const min = new THREE.Vector2();
+            /// const max = new THREE.Vector2();
+            // const cellOffset = new THREE.Vector2(NUM_CELLS, NUM_CELLS);
+            const a = new THREE.Vector3();
+            const b = new THREE.Vector3();
+            const c = new THREE.Vector3();
+            const p = new THREE.Vector3();
+            const triangle = new THREE.Triangle(a, b, c);
+            const baryCoord = new THREE.Vector3();
+
+            const _getIndex = (p, min) => (p.x - min.x) + ((p.z - min.y) * (NUM_CELLS + 1));
+
             entityElement.getElevation = (x, z) => {
               const ox = Math.floor(x / NUM_CELLS);
               const oz = Math.floor(z / NUM_CELLS);
@@ -414,30 +426,27 @@ class Heightfield {
 
                 const ax = Math.floor(x);
                 const az = Math.floor(z);
-                const positions = ((x - ax) <= (1 - (z - az))) ? [ // top left triangle
-                  new THREE.Vector2(ax, az),
-                  new THREE.Vector2(ax + 1, az),
-                  new THREE.Vector2(ax, az + 1),
-                ] : [ // bottom right triangle
-                  new THREE.Vector2(ax + 1, az),
-                  new THREE.Vector2(ax, az + 1),
-                  new THREE.Vector2(ax + 1, az + 1),
-                ];
-                const min = new THREE.Vector2(ox * NUM_CELLS, oz * NUM_CELLS);
-                const max = min.clone().add(new THREE.Vector2(NUM_CELLS, NUM_CELLS));
-                const indexes = positions.map(({x, y}) => (x - min.x) + ((y - min.y) * (NUM_CELLS + 1)));
-                const elevations = indexes.map(index => heightfield[index]);
-                const baryCoord = new THREE.Triangle(
-                  new THREE.Vector3(positions[0].x, 0, positions[0].y),
-                  new THREE.Vector3(positions[1].x, 0, positions[1].y),
-                  new THREE.Vector3(positions[2].x, 0, positions[2].y)
-                ).barycoordFromPoint(
-                  new THREE.Vector3(x, 0, z)
-                );
-                const elevation = baryCoord.x * elevations[0] +
-                  baryCoord.y * elevations[1] +
-                  baryCoord.z * elevations[2];
-                return elevation;
+                if ((x - ax) <= (1 - (z - az))) { // top left triangle
+                  a.set(ax, 0, az);
+                  b.set(ax + 1, 0, az);
+                  c.set(ax, 0, az + 1);
+                } else { // bottom right triangle
+                  a.set(ax + 1, 0, az);
+                  b.set(ax, 0, az + 1);
+                  c.set(ax + 1, 0, az + 1);
+                };
+                min.set(ox * NUM_CELLS, oz * NUM_CELLS);
+                // max.copy(min).add(cellOffset);
+                const ea = heightfield[_getIndex(a, min)];
+                const eb = heightfield[_getIndex(b, min)];
+                const ec = heightfield[_getIndex(c, min)];
+
+                p.set(x, 0, z);
+                triangle.barycoordFromPoint(p, baryCoord);
+
+                return baryCoord.x * ea +
+                  baryCoord.y * eb +
+                  baryCoord.z * ec;
               } else {
                 return null;
               }
