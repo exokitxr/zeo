@@ -9,7 +9,7 @@ class Sprite {
     const {_archae: archae} = this;
     const {express, app} = archae.getCore();
 
-    const skinImgStatic = express.static(path.join(__dirname, 'img'));
+    const skinImgStatic = express.static(path.join(__dirname, 'lib', 'img'));
     function serveSkinImg(req, res, next) {
       skinImgStatic(req, res, next);
     }
