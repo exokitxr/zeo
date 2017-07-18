@@ -1,16 +1,14 @@
 const sfxr = require('sfxr');
-const skinLib = require('./lib/skin');
 
 const HEIGHTFIELD_PLUGIN = 'plugins-heightfield';
 
 class Npc {
   mount() {
-    const {three, pose, elements, input, render, utils: {network: networkUtils, random: randomUtils}} = zeo;
+    const {three, pose, elements, input, render, utils: {network: networkUtils, random: randomUtils, skin: skinUtils}} = zeo;
     const {THREE, scene} = three;
     const {AutoWs} = networkUtils;
     const {chnkr} = randomUtils;
-
-    const skin = skinLib(THREE);
+    const {skin} = skinUtils;
 
     const zeroQuaternion = new THREE.Quaternion();
 

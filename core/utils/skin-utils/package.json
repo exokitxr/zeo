@@ -1,0 +1,9 @@
+{
+  "name": "skin-utils",
+  "description": "Provides player skinning utilities for the zeo core.",
+  "version": "0.0.1",
+  "client": "client.js",
+  "dependencies": {
+    "skin-js": "0.0.2"
+  }
+}
