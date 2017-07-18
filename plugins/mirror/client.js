@@ -51,8 +51,8 @@ class Mirror {
           const color = 0x808080;
           const rendererSize = renderer.getSize();
           const rendererPixelRatio = renderer.getPixelRatio();
-          const resolutionWidth = rendererSize.width * rendererPixelRatio;
-          const resolutionHeight = rendererSize.height * rendererPixelRatio;
+          const resolutionWidth = rendererSize.width * rendererPixelRatio / 8;
+          const resolutionHeight = rendererSize.height * rendererPixelRatio / 8;
 
           const objectMesh = (() => {
             const object = new THREE.Object3D();

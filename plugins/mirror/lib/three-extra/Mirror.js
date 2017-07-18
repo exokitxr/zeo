@@ -36,8 +36,8 @@ function THREEMirror( width, height, options ) {
 	mirrorCamera.matrixAutoUpdate = false;
 
 	var parameters = {
-		minFilter: THREE.LinearFilter,
-		magFilter: THREE.LinearFilter,
+		minFilter: THREE.NearestFilter,
+		magFilter: THREE.NearestFilter,
 		format: THREE.RGBFormat,
 		stencilBuffer: false
 	};
