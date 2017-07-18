@@ -10,8 +10,8 @@ class DayNightSkybox {
     const MAP_SUN_MATERIAL = new THREE.MeshBasicMaterial({
       color: 0xFFFFFF,
       fog: false,
-      transparent: true,
-      opacity: 0.8,
+      // transparent: true,
+      // opacity: 0.8,
     });
 
     const zeroVector = new THREE.Vector3();
