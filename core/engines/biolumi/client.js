@@ -226,11 +226,11 @@ class Biolumi {
                     THREE.UVMapping,
                     THREE.ClampToEdgeWrapping,
                     THREE.ClampToEdgeWrapping,
-                    THREE.LinearFilter,
-                    THREE.LinearFilter,
+                    THREE.NearestFilter,
+                    THREE.NearestFilter,
                     THREE.RGBAFormat,
                     THREE.UnsignedByteType,
-                    16
+                    1
                   );
                   shaderUniforms.backgroundColor.value = Float32Array.from(color);
                   const shaderMaterial = new THREE.ShaderMaterial({
@@ -354,15 +354,15 @@ class Biolumi {
 
                 const {mesh: {material: {uniforms: {texture: {value: texture}}}}} = this;
                 texture.image = img;
-                if (!pixelated) {
+                /* if (!pixelated) {
                   texture.minFilter = THREE.LinearFilter;
                   texture.magFilter = THREE.LinearFilter;
                   texture.anisotropy = 16;
-                } else {
+                } else { */
                   texture.minFilter = THREE.NearestFilter;
                   texture.magFilter = THREE.NearestFilter;
                   texture.anisotropy = 1;
-                }
+                // }
                 texture.needsUpdate = true;
 
                 // This forces THREE.js to submit the texture to the GPU
