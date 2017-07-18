@@ -25,7 +25,7 @@ const SKIN_SHADER = {
   vertexShader: [
     "uniform vec4 headRotation;",
     "uniform float theta;",
-    "attribute vec3 dh;",
+    "attribute vec4 dh;",
     "attribute vec4 dy;",
     "varying vec2 vUv;",
 `
@@ -35,7 +35,7 @@ return vec + 2.0 * cross( cross( vec, quat.xyz ) + quat.w * vec, quat.xyz );
 `,
     "void main() {",
     "  float theta2 = theta * dy.w;",
-    `  vec3 headPosition = abs(dh.y) > 0.0 ? applyQuaternion(position.xyz - vec3(0.0, ${offsetY}, 0.0), headRotation) + vec3(0.0, ${offsetY}, 0.0) : position.xyz;`,
+    "  vec3 headPosition = dh.w > 0.0 ? applyQuaternion(position.xyz - dh.xyz, headRotation) + dh.xyz : position.xyz;",
     "  vec3 limbPosition = vec3(headPosition.x, headPosition.y - dy.y + (dy.y*cos(theta2) - dy.z*sin(theta2)), headPosition.z + dy.z + (dy.z*cos(theta2) + dy.y*sin(theta2)));",
     "  gl_Position = projectionMatrix * modelViewMatrix * vec4(limbPosition, 1.0);",
     "  vUv = uv;",
@@ -114,18 +114,19 @@ const headBox = (() => {
   const dhs = (() => {
     const positions = geometry.getAttribute('position').array;
     const numPositions = positions.length / 3;
-    const result = new Float32Array(numPositions * 3);
+    const result = new Float32Array(numPositions * 4);
 
     for (let i = 0; i < numPositions; i++) {
-      const baseIndex = i * 3;
-      result[baseIndex + 0] = positions[baseIndex + 0];
-      result[baseIndex + 1] = positions[baseIndex + 1];
-      result[baseIndex + 2] = positions[baseIndex + 2];
+      const baseIndex = i * 4;
+      result[baseIndex + 0] = 0;
+      result[baseIndex + 1] = offsetY;
+      result[baseIndex + 2] = 0;
+      result[baseIndex + 3] = 1;
     }
 
     return result;
   })();
-  geometry.addAttribute('dh', new THREE.BufferAttribute(dhs), 3);
+  geometry.addAttribute('dh', new THREE.BufferAttribute(dhs), 4);
   geometry.addAttribute('dy', new THREE.BufferAttribute(new Float32Array(geometry.getAttribute('position').array.length / 3 * 4), 4));
   geometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, offsetY, 0));
   return geometry;
@@ -184,7 +185,7 @@ const bodyBox = (() => {
   bodyBox.faceVertexUvs[0][11] = [bodyBack[0], bodyBack[1], bodyBack[2]];
   const geometry = new THREE.BufferGeometry().fromGeometry(bodyBox)
     .applyMatrix(new THREE.Matrix4().makeTranslation(0, -10 + offsetY, 0));
-  geometry.addAttribute('dh', new THREE.BufferAttribute(new Float32Array(geometry.getAttribute('position').array.length), 3));
+  geometry.addAttribute('dh', new THREE.BufferAttribute(new Float32Array(geometry.getAttribute('position').array.length / 3 * 4), 4));
   geometry.addAttribute('dy', new THREE.BufferAttribute(new Float32Array(geometry.getAttribute('position').array.length / 3 * 4), 4));
   return geometry;
 })();
@@ -261,7 +262,7 @@ const rightArmBox = (() => {
 
     return result;
   })();
-  geometry.addAttribute('dh', new THREE.BufferAttribute(new Float32Array(geometry.getAttribute('position').array.length), 3));
+  geometry.addAttribute('dh', new THREE.BufferAttribute(new Float32Array(geometry.getAttribute('position').array.length / 3 * 4), 4));
   geometry.addAttribute('dy', new THREE.BufferAttribute(dys, 4));
   geometry.applyMatrix(new THREE.Matrix4().makeTranslation(-6, -10 + 12/2 + offsetY, 0));
   return geometry;
@@ -338,7 +339,7 @@ const leftArmBox = (() => {
 
     return result;
   })();
-  geometry.addAttribute('dh', new THREE.BufferAttribute(new Float32Array(geometry.getAttribute('position').array.length), 3));
+  geometry.addAttribute('dh', new THREE.BufferAttribute(new Float32Array(geometry.getAttribute('position').array.length / 3 * 4), 4));
   geometry.addAttribute('dy', new THREE.BufferAttribute(dys, 4));
   geometry.applyMatrix(new THREE.Matrix4().makeTranslation(6, -10 + 12/2 + offsetY, 0));
   return geometry;
@@ -415,7 +416,7 @@ const rightLegBox = (() => {
 
     return result;
   })();
-  geometry.addAttribute('dh', new THREE.BufferAttribute(new Float32Array(geometry.getAttribute('position').array.length), 3));
+  geometry.addAttribute('dh', new THREE.BufferAttribute(new Float32Array(geometry.getAttribute('position').array.length / 3 * 4), 4));
   geometry.addAttribute('dy', new THREE.BufferAttribute(dys, 4));
   geometry.applyMatrix(new THREE.Matrix4().makeTranslation(-2, -22 + 12/2 + offsetY, 0));
   return geometry;
@@ -492,7 +493,7 @@ const leftLegBox = (() => {
 
     return result;
   })();
-  geometry.addAttribute('dh', new THREE.BufferAttribute(new Float32Array(geometry.getAttribute('position').array.length), 3));
+  geometry.addAttribute('dh', new THREE.BufferAttribute(new Float32Array(geometry.getAttribute('position').array.length / 3 * 4), 4));
   geometry.addAttribute('dy', new THREE.BufferAttribute(dys, 4));
   geometry.applyMatrix(new THREE.Matrix4().makeTranslation(2, -22 + 12/2 + offsetY, 0));
   return geometry;
@@ -553,18 +554,19 @@ const head2Box = (() => {
   const dhs = (() => {
     const positions = geometry.getAttribute('position').array;
     const numPositions = positions.length / 3;
-    const result = new Float32Array(numPositions * 3);
+    const result = new Float32Array(numPositions * 4);
 
     for (let i = 0; i < numPositions; i++) {
-      const baseIndex = i * 3;
-      result[baseIndex + 0] = positions[baseIndex + 0];
-      result[baseIndex + 1] = positions[baseIndex + 1];
-      result[baseIndex + 2] = positions[baseIndex + 2];
+      const baseIndex = i * 4;
+      result[baseIndex + 0] = 0;
+      result[baseIndex + 1] = offsetY;
+      result[baseIndex + 2] = 0;
+      result[baseIndex + 3] = 1;
     }
 
     return result;
   })();
-  geometry.addAttribute('dh', new THREE.BufferAttribute(dhs), 3);
+  geometry.addAttribute('dh', new THREE.BufferAttribute(dhs), 4);
   geometry.addAttribute('dy', new THREE.BufferAttribute(new Float32Array(geometry.getAttribute('position').array.length / 3 * 4), 4));
   geometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, offsetY, 0));
   return geometry;
@@ -623,7 +625,7 @@ const body2Box = (() => {
   body2Box.faceVertexUvs[0][11] = [body2Back[0], body2Back[1], body2Back[2]];
   const geometry = new THREE.BufferGeometry().fromGeometry(body2Box)
     .applyMatrix(new THREE.Matrix4().makeTranslation(0, -10 + offsetY, 0));
-  geometry.addAttribute('dh', new THREE.BufferAttribute(new Float32Array(geometry.getAttribute('position').array.length), 3));
+  geometry.addAttribute('dh', new THREE.BufferAttribute(new Float32Array(geometry.getAttribute('position').array.length / 3 * 4), 4));
   geometry.addAttribute('dy', new THREE.BufferAttribute(new Float32Array(geometry.getAttribute('position').array.length / 3 * 4), 4));
   return geometry;
 })();
@@ -697,7 +699,7 @@ const rightArm2Box = (() => {
 
     return result;
   })();
-  geometry.addAttribute('dh', new THREE.BufferAttribute(new Float32Array(geometry.getAttribute('position').array.length), 3));
+  geometry.addAttribute('dh', new THREE.BufferAttribute(new Float32Array(geometry.getAttribute('position').array.length / 3 * 4), 4));
   geometry.addAttribute('dy', new THREE.BufferAttribute(dys, 4));
   geometry.applyMatrix(new THREE.Matrix4().makeTranslation(-6, -10 + offsetY + 12/2, 0));
   return geometry;
@@ -772,7 +774,7 @@ const leftArm2Box = (() => {
 
     return result;
   })();
-  geometry.addAttribute('dh', new THREE.BufferAttribute(new Float32Array(geometry.getAttribute('position').array.length), 3));
+  geometry.addAttribute('dh', new THREE.BufferAttribute(new Float32Array(geometry.getAttribute('position').array.length / 3 * 4), 4));
   geometry.addAttribute('dy', new THREE.BufferAttribute(dys, 4));
   geometry.applyMatrix(new THREE.Matrix4().makeTranslation(6, -10 + offsetY + 12/2, 0));
   return geometry;
@@ -846,7 +848,7 @@ const rightLeg2Box = (() => {
 
     return result;
   })();
-  geometry.addAttribute('dh', new THREE.BufferAttribute(new Float32Array(geometry.getAttribute('position').array.length), 3));
+  geometry.addAttribute('dh', new THREE.BufferAttribute(new Float32Array(geometry.getAttribute('position').array.length / 3 * 4), 4));
   geometry.addAttribute('dy', new THREE.BufferAttribute(dys, 4));
   geometry.applyMatrix(new THREE.Matrix4().makeTranslation(-2, -22 + offsetY + 12/2, 0));
   return geometry;
@@ -920,7 +922,7 @@ const leftLeg2Box = (() => {
 
     return result;
   })();
-  geometry.addAttribute('dh', new THREE.BufferAttribute(new Float32Array(geometry.getAttribute('position').array.length), 3));
+  geometry.addAttribute('dh', new THREE.BufferAttribute(new Float32Array(geometry.getAttribute('position').array.length / 3 * 4), 4));
   geometry.addAttribute('dy', new THREE.BufferAttribute(dys, 4));
   geometry.applyMatrix(new THREE.Matrix4().makeTranslation(2, -22 + offsetY + 12/2, 0));
   return geometry;
@@ -947,7 +949,7 @@ const skinGeometry = (() => {
   const dhs = new Float32Array(geometries[0].getAttribute('dh').array.length * geometries.length);
   const dys = new Float32Array(geometries[0].getAttribute('dy').array.length * geometries.length);
   let positionIndex = 0;
-  let dyIndex = 0;
+  let dhIndex = 0;
   let uvIndex = 0;
 
   for (let i = 0; i < geometries.length; i++) {
@@ -957,19 +959,19 @@ const skinGeometry = (() => {
     const newUvs = newGeometry.getAttribute('uv').array;
     uvs.set(newUvs, uvIndex);
     const newDhs = newGeometry.getAttribute('dh').array;
-    dhs.set(newDhs, positionIndex);
+    dhs.set(newDhs, dhIndex);
     const newDys = newGeometry.getAttribute('dy').array;
-    dys.set(newDys, dyIndex);
+    dys.set(newDys, dhIndex);
 
     positionIndex += newPositions.length;
-    dyIndex += newDys.length;
+    dhIndex += newDhs.length;
     uvIndex += newUvs.length;
   }
 
   const geometry = new THREE.BufferGeometry();
   geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
   geometry.addAttribute('uv', new THREE.BufferAttribute(uvs, 2));
-  geometry.addAttribute('dh', new THREE.BufferAttribute(dhs, 3));
+  geometry.addAttribute('dh', new THREE.BufferAttribute(dhs, 4));
   geometry.addAttribute('dy', new THREE.BufferAttribute(dys, 4));
   geometry.applyMatrix(new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(0, Math.PI, 0, 'YXZ')));
   return geometry;
