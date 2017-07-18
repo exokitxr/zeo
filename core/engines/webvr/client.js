@@ -382,13 +382,6 @@ class WebVR {
                     effect.isPresenting = true;
                     effect.autoSubmitFrame = false; */
 
-                    const resize = () => {
-                      if (!renderer.vr.enabled) {
-                        renderer.setSize(window.innerWidth, window.innerHeight);
-                      }
-                    };
-                    window.addEventListener('resize', resize);
-
                     cleanups.push(() => {
                       this.display = null;
                       this.stereoscopic = false;
@@ -397,8 +390,6 @@ class WebVR {
                       renderer.vr.setDevice(null);
                       renderer.setSize(window.innerWidth, window.innerHeight);
                       renderer.setPixelRatio(window.devicePixelRatio);
-
-                      window.removeEventListener('resize', resize);
                     });
                   }
 
