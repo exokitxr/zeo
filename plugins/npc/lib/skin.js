@@ -43,12 +43,6 @@ const SKIN_SHADER = {
   ].join("\n")
 };
 
-const _copyIndices = (src, dst, startIndexIndex, startAttributeIndex) => {
-  for (let i = 0; i < src.length; i++) {
-    dst[startIndexIndex + i] = src[i] + startAttributeIndex;
-  }
-};
-
 module.exports = THREE => {
 
 const headBox = (() => {
