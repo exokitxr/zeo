@@ -20,6 +20,7 @@ class Npc {
     const upVector = new THREE.Vector3(0, 1, 0);
     const forwardVector = new THREE.Vector3(0, 0, -1);
     const backVector = new THREE.Vector3(0, 0, 1);
+    const zeroQuaternion = new THREE.Quaternion();
 
     const _readdir = p => new Promise((accept, reject) => {
       fs.readdir(p, (err, files) => {
@@ -53,12 +54,13 @@ class Npc {
         const trackedNpcs = {};
         
         class Npc extends EventEmitter {
-          constructor(id, position, rotation, health) {
+          constructor(id, position, rotation, headRotation, health) {
             super();
 
             this.id = id;
             this.position = position;
             this.rotation = rotation;
+            this.headRotation = headRotation;
             this.health = health;
 
             this.timeout = null;
@@ -75,7 +77,7 @@ class Npc {
           }
 
           walk() {
-            const {position, rotation} = this;
+            const {position, rotation, headRotation} = this;
 
             const distance = 2 + Math.random() * 10;
             const positionEnd = position.clone()
@@ -90,6 +92,12 @@ class Npc {
               forwardVector,
               positionEnd.clone().sub(position).normalize()
             );
+            const headRotationEnd = new THREE.Quaternion().setFromEuler(new THREE.Euler(
+              (-0.5 + Math.random()) * 2 * Math.PI/4,
+              (-0.5 + Math.random()) * 2 * Math.PI/2,
+              0,
+              'YXZ'
+            ));
             const speed = (0.5 + Math.random() * 1.5) / 1000;
             const duration = distance / speed;
 
@@ -99,12 +107,15 @@ class Npc {
               positionEnd: positionEnd,
               rotationStart: rotation,
               rotationEnd: rotationEnd,
+              headRotationStart: headRotation,
+              headRotationEnd: headRotationEnd,
               duration: duration,
             };
             this.emit('animation', animation);
 
             this.position = positionEnd;
             this.rotation = rotationEnd;
+            this.headRotation = headRotationEnd;
 
             this.timeout = setTimeout(() => {
               this.wait();
@@ -122,6 +133,8 @@ class Npc {
                 direction
               );
               const rotationEnd = rotation;
+              const headRotation = zeroQuaternion;
+              const headRotationEnd = zeroQuaternion;
               const duration = 500;
 
               const animation = {
@@ -130,12 +143,15 @@ class Npc {
                 positionEnd: positionEnd,
                 rotationStart: rotation,
                 rotationEnd: rotationEnd,
+                headRotationStart: headRotation,
+                headRotationEnd: headRotationEnd,
                 duration: duration,
               };
               this.emit('animation', animation);
 
               this.position = positionEnd;
               this.rotation = rotationEnd;
+              this.headRotation = headRotationEnd;
               this.health = health;
 
               this.timeout = setTimeout(() => {
@@ -152,6 +168,8 @@ class Npc {
                   backVector,
                   ((Math.random() < 0.5) ? 1 : -1) * (Math.PI / 2)
                 ));
+              const headRotation = zeroQuaternion;
+              const headRotationEnd = zeroQuaternion;
               const duration = 1000;
 
               const animation = {
@@ -160,6 +178,8 @@ class Npc {
                 positionEnd: positionEnd,
                 rotationStart: rotation,
                 rotationEnd: rotationEnd,
+                headRotationStart: headRotation,
+                headRotationEnd: headRotationEnd,
                 duration: duration,
               };
               this.emit('animation', animation);
@@ -192,8 +212,14 @@ class Npc {
                 const az = (oz * NUM_CELLS) + dz;
                 const position = new THREE.Vector3(ax, 0, az);
                 const rotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, Math.random() * Math.PI * 2, 0, 'YXZ'));
+                const headRotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(
+                  (-0.5 + Math.random()) * 2 * Math.PI/4,
+                  (-0.5 + Math.random()) * 2 * Math.PI/2,
+                  0,
+                  'YXZ'
+                ));
 
-                const npc = new Npc(id, position, rotation, 100);
+                const npc = new Npc(id, position, rotation, headRotation, 100);
                 result[i] = npc;
               }
               return result;
@@ -276,7 +302,7 @@ class Npc {
                   const  npcCleanups = Array(npcs.length);
                   for (let i = 0; i < npcs.length; i++) {
                     const npc = npcs[i];
-                    const {id, position, rotation} = npc;
+                    const {id, position, rotation, headRotation} = npc;
 
                     const e = {
                       type: 'npcStatus',
@@ -284,13 +310,14 @@ class Npc {
                       status: {
                         position: position.toArray(),
                         rotation: rotation.toArray(),
+                        headRotation: headRotation.toArray(),
                       },
                     };
                     const es = JSON.stringify(e);
                     c.send(es);
 
                     const _animation = animation => {
-                      const {mode, positionStart, positionEnd, rotationStart, rotationEnd, duration} = animation;
+                      const {mode, positionStart, positionEnd, rotationStart, rotationEnd, headRotationStart, headRotationEnd, duration} = animation;
                       const e = {
                         type: 'npcAnimation',
                         id,
@@ -300,6 +327,8 @@ class Npc {
                           positionEnd: positionEnd.toArray(),
                           rotationStart: rotationStart.toArray(),
                           rotationEnd: rotationEnd.toArray(),
+                          headRotationStart: headRotationStart.toArray(),
+                          headRotationEnd: headRotationEnd.toArray(),
                           duration,
                         },
                       };
