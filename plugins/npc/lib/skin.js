@@ -1,6 +1,5 @@
 const scale = 1 / 18;
 const offsetY = 22 + 13.5/2 - 8/2;
-const rotationOrder = 'YXZ';
 
 const SKIN_SHADER = {
   uniforms: {
@@ -883,10 +882,8 @@ const skinGeometry = (() => {
   const positions = new Float32Array(geometries[0].getAttribute('position').array.length * geometries.length);
   const uvs = new Float32Array(geometries[0].getAttribute('uv').array.length * geometries.length);
   const dys = new Float32Array(geometries[0].getAttribute('dy').array.length * geometries.length);
-  // const indices = new Uint16Array(geometries[0].index.array.length * geometries.length);
   let attributeIndex = 0;
   let uvIndex = 0;
-  // let indexIndex = 0;
 
   for (let i = 0; i < geometries.length; i++) {
     const newGeometry = geometries[i];
@@ -896,19 +893,15 @@ const skinGeometry = (() => {
     uvs.set(newUvs, uvIndex);
     const newDys = newGeometry.getAttribute('dy').array;
     dys.set(newDys, attributeIndex);
-    /* const newIndices = newGeometry.index.array;
-    _copyIndices(newIndices, indices, indexIndex, attributeIndex / 3); */
 
     attributeIndex += newPositions.length;
     uvIndex += newUvs.length;
-    // indexIndex += newIndices.length;
   }
 
   const geometry = new THREE.BufferGeometry();
   geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
   geometry.addAttribute('uv', new THREE.BufferAttribute(uvs, 2));
   geometry.addAttribute('dy', new THREE.BufferAttribute(dys, 3));
-  // geometry.setIndex(new THREE.BufferAttribute(indices, 1));
   geometry.applyMatrix(new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(0, Math.PI, 0, 'YXZ')));
   return geometry;
 })();
@@ -931,8 +924,6 @@ const skin = img => {
 
   const mesh = new THREE.Mesh(skinGeometry, material);
   mesh.scale.set(scale, scale, scale);
-  /* mesh.rotation.y = Math.PI;
-  mesh.rotation.order = rotationOrder; */
   mesh.updateMatrixWorld();
   mesh.boundingSphere = new THREE.Sphere(
     new THREE.Vector3(0, 0, 0),
