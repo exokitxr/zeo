@@ -71,6 +71,11 @@ class Npc {
                 if (animation) {
                   const {mode, positionStart, positionEnd, rotationStart, rotationEnd, duration, startTime} = animation;
 
+                  const headRotation = new THREE.Quaternion().setFromUnitVectors( // XXX
+                    new THREE.Vector3(0, 0, -1),
+                    new THREE.Vector3(-1, 0, -1).normalize()
+                  );
+
                   if (mode === 'walk') {
                     const positionFactor = Math.min((now - startTime) / duration, 1);
                     const rotationFactor = Math.pow(Math.min((now - startTime) / (duration / 4), 1), 0.5);
@@ -83,6 +88,7 @@ class Npc {
 
                     const velocity = positionStart.distanceTo(positionEnd) / duration;
                     const angleRate = 1.5 / velocity;
+                    mesh.material.uniforms.headRotation.value.set(headRotation.x, headRotation.y, headRotation.z, headRotation.w);
                     mesh.material.uniforms.theta.value =
                       Math.sin((now % angleRate) / angleRate * Math.PI * 2) * 0.75 *
                       Math.pow(Math.sin(positionFactor * Math.PI), 0.5);
@@ -104,6 +110,7 @@ class Npc {
                     mesh.quaternion.copy(rotationStart)
                       .slerp(rotationEnd, rotationFactor);
 
+                    mesh.material.uniforms.headRotation.value.set(headRotation.x, headRotation.y, headRotation.z, headRotation.w);
                     mesh.material.uniforms.theta.value = 0;
 
                     if (positionFactor >= 1) {
