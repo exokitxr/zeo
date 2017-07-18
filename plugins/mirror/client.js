@@ -19,7 +19,7 @@ class Mirror {
     };
 
     const updateEyes = [];
-    const _updateEye = camera => {
+    const _update = () => {
       for (let i = 0; i < updateEyes.length; i++) {
         const updateEye = updateEyes[i];
         updateEye(camera);
@@ -42,9 +42,6 @@ class Mirror {
         },
       },
       entityAddedCallback(entityElement) {
-        const entityApi = entityElement.getEntityApi();
-        const entityObject = entityElement.getObject();
-
         const mirrorMesh = (() => {
           const result = new THREE.Object3D();
 
@@ -134,8 +131,8 @@ class Mirror {
 
           return result;
         })();
-        entityObject.add(mirrorMesh);
-        entityApi.mirrorMesh = mirrorMesh;
+        scene.add(mirrorMesh);
+        entityElement.mirrorMesh = mirrorMesh;
 
         const updateEye = eyeCamera => {
           const {objectMesh} = mirrorMesh;
@@ -146,32 +143,29 @@ class Mirror {
         };
         updateEyes.push(updateEye);
 
-        entityApi._cleanup = () => {
-          entityObject.remove(mirrorMesh);
+        entityElement._cleanup = () => {
+          scene.remove(mirrorMesh);
 
           updateEyes.splice(updateEyes.indexOf(updateEye), 1);
         };
       },
       entityRemovedCallback(entityElement) {
-        const entityApi = entityElement.getEntityApi();
-
-        entityApi._cleanup();
+        entityElement._cleanup();
       },
       entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-        const entityApi = entityElement.getEntityApi();
-
         switch (name) {
           case 'position': {
-            const {mirrorMesh} = entityApi;
+            const {mirrorMesh} = entityElement;
 
             mirrorMesh.position.set(newValue[0], newValue[1], newValue[2]);
             mirrorMesh.quaternion.set(newValue[3], newValue[4], newValue[5], newValue[6]);
             mirrorMesh.scale.set(newValue[7], newValue[8], newValue[9]);
+            mirrorMesh.updateMatrixWorld();
 
             break;
           }
           case 'color': {
-            const {mirrorMesh} = entityApi;
+            const {mirrorMesh} = entityElement;
             const {objectMesh} = mirrorMesh;
             const {outer, back} = objectMesh;
             const materials = [outer.material, back.material];
@@ -188,12 +182,12 @@ class Mirror {
     };
     elements.registerEntity(this, mirrorEntity);
 
-    render.on('updateEye', _updateEye);
+    render.on('update', _update);
 
     this._cleanup = () => {
       elements.unregisterEntity(this, mirrorEntity);
 
-      render.removeListener('updateEye', _updateEye);
+      render.removeListener('update', _update);
     };
   }
 

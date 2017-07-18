@@ -10,9 +10,6 @@ function THREEMirror( width, height, options ) {
 
 	var scope = this;
 
-	scope.name = 'mirror_' + scope.id;
-	scope.matrixNeedsUpdate = true;
-
 	options = options || {};
 
 	var textureWidth = options.textureWidth !== undefined ? options.textureWidth : 512;
@@ -27,12 +24,16 @@ function THREEMirror( width, height, options ) {
 	var cameraWorldPosition = new THREE.Vector3();
 	var rotationMatrix = new THREE.Matrix4();
 	var lookAtPosition = new THREE.Vector3( 0, 0, - 1 );
+	var view = new THREE.Vector3();
+	var target = new THREE.Vector3();
 	var clipPlane = new THREE.Vector4();
+	var q = new THREE.Vector4();
+	var c = new THREE.Vector4();
 
 	var textureMatrix = new THREE.Matrix4();
 
 	var mirrorCamera = new THREE.PerspectiveCamera();
-	mirrorCamera.matrixAutoUpdate = true;
+	mirrorCamera.matrixAutoUpdate = false;
 
 	var parameters = {
 		minFilter: THREE.LinearFilter,
@@ -107,19 +108,10 @@ function THREEMirror( width, height, options ) {
 	scope.material = material;
 
 	function updateTextureMatrix( camera ) {
-		camera.updateMatrixWorld();
-
-		mirrorCamera.position.copy( camera.position );
-		mirrorCamera.quaternion.copy( camera.quaternion );
-		mirrorCamera.scale.copy( camera.scale );
-		mirrorCamera.matrix.copy( camera.matrix );
 		mirrorCamera.fov = camera.fov;
 		mirrorCamera.aspect = camera.aspect;
 		mirrorCamera.near = camera.near;
 		mirrorCamera.far = camera.far;
-		mirrorCamera.updateProjectionMatrix();
-
-		scope.updateMatrixWorld();
 
 		mirrorWorldPosition.setFromMatrixPosition( scope.matrixWorld );
 		cameraWorldPosition.setFromMatrixPosition( camera.matrixWorld );
@@ -129,7 +121,7 @@ function THREEMirror( width, height, options ) {
 		normal.set( 0, 0, 1 );
 		normal.applyMatrix4( rotationMatrix );
 
-		var view = mirrorWorldPosition.clone().sub( cameraWorldPosition );
+		view.copy(mirrorWorldPosition).sub( cameraWorldPosition );
 		view.reflect( normal ).negate();
 		view.add( mirrorWorldPosition );
 
@@ -139,7 +131,7 @@ function THREEMirror( width, height, options ) {
 		lookAtPosition.applyMatrix4( rotationMatrix );
 		lookAtPosition.add( cameraWorldPosition );
 
-		var target = mirrorWorldPosition.clone().sub( lookAtPosition );
+		target.copy(mirrorWorldPosition).sub( lookAtPosition );
 		target.reflect( normal ).negate();
 		target.add( mirrorWorldPosition );
 
@@ -150,6 +142,7 @@ function THREEMirror( width, height, options ) {
 		mirrorCamera.lookAt( target );
 
 		mirrorCamera.updateProjectionMatrix();
+		mirrorCamera.updateMatrix();
 		mirrorCamera.updateMatrixWorld();
 		mirrorCamera.matrixWorldInverse.getInverse( mirrorCamera.matrixWorld );
 
@@ -170,7 +163,6 @@ function THREEMirror( width, height, options ) {
 
 		clipPlane.set( mirrorPlane.normal.x, mirrorPlane.normal.y, mirrorPlane.normal.z, mirrorPlane.constant );
 
-		var q = new THREE.Vector4();
 		var projectionMatrix = mirrorCamera.projectionMatrix;
 
 		q.x = ( Math.sign( clipPlane.x ) + projectionMatrix.elements[ 8 ] ) / projectionMatrix.elements[ 0 ];
@@ -179,7 +171,6 @@ function THREEMirror( width, height, options ) {
 		q.w = ( 1.0 + projectionMatrix.elements[ 10 ] ) / projectionMatrix.elements[ 14 ];
 
 		// Calculate the scaled plane vector
-		var c = new THREE.Vector4();
 		c = clipPlane.multiplyScalar( 2.0 / clipPlane.dot( q ) );
 
 		// Replacing the third row of the projection matrix
@@ -196,7 +187,12 @@ function THREEMirror( width, height, options ) {
 
 		scope.visible = false;
 
-		renderer.render( scene, mirrorCamera, renderTarget, true );
+		const oldEnabled = renderer.vr.enabled;
+		renderer.vr.enabled = false;
+
+		renderer.render( scene, mirrorCamera, renderTarget );
+
+		renderer.vr.enabled = oldEnabled;
 
 		scope.visible = true;
 
