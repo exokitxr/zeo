@@ -591,24 +591,12 @@ class Rend {
             this.emit('update');
           }
 
-          updateEye(camera) {
-            this.emit('updateEye', camera);
-          }
-
           updateStart() {
             this.emit('updateStart');
           }
 
           updateEnd() {
             this.emit('updateEnd');
-          }
-
-          renderStart() {
-            this.emit('renderStart');
-          }
-
-          renderEnd() {
-            this.emit('renderEnd');
           }
 
           grab(options) {
