@@ -20676,12 +20676,12 @@ module.exports = (() => {
 
 			var device = vr.getDevice();
 
-			if ( device && device.isPresenting ) {
+			/* if ( device && device.isPresenting ) { // XXX
 
 				console.warn( 'THREE.WebGLRenderer: Can\'t change size while VR device is presenting.' );
 				return;
 
-			}
+			} */
 
 			_width = width;
 			_height = height;
