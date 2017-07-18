@@ -150,6 +150,7 @@ class Zeo {
             '/core/utils/random-utils',
             '/core/utils/text-utils',
             '/core/utils/menu-utils',
+            '/core/utils/skin-utils',
             '/core/utils/creature-utils',
             '/core/utils/sprite-utils',
             '/core/utils/vrid-utils',
@@ -202,6 +203,7 @@ class Zeo {
                 randomUtils,
                 textUtils,
                 menuUtils,
+                skinUtils,
                 creatureUtils,
                 spriteUtils,
                 vridUtils,
@@ -872,6 +874,7 @@ class Zeo {
                           this.random = randomUtils;
                           this.text = textUtils;
                           this.menu = menuUtils;
+                          this.skin = skinUtils;
                           this.creature = creatureUtils;
                           this.sprite = spriteUtils;
                         }
