@@ -93,6 +93,31 @@ class Npc {
                       Math.sin((now % angleRate) / angleRate * Math.PI * 2) * 0.75 *
                       Math.pow(Math.sin(positionFactor * Math.PI), 0.5);
 
+                    mesh.material.uniforms.leftArmRotation.value.fromArray(
+                      new THREE.Quaternion().setFromUnitVectors(
+                        new THREE.Vector3(0, -1, 0),
+                        new THREE.Vector3(1, 0, 1).normalize()
+                      )
+                      /* .premultiply(new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().lookAt(
+                        new THREE.Vector3(0, 0, 0),
+                        new THREE.Vector3(0, -1, 0),
+                        new THREE.Vector3(-1, 0, 0),
+                      ))) */
+                      .toArray()
+                    );
+                    mesh.material.uniforms.rightArmRotation.value.fromArray(
+                      new THREE.Quaternion().setFromUnitVectors(
+                        new THREE.Vector3(0, -1, 0),
+                        new THREE.Vector3(-1, 0, -1).normalize()
+                      )
+                      /* .premultiply(new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().lookAt(
+                        new THREE.Vector3(0, 0, 0),
+                        new THREE.Vector3(0, -1, 0),
+                        new THREE.Vector3(-1, 0, 0),
+                      ))) */
+                      .toArray()
+                    );
+
                     if (positionFactor >= 1) {
                       mesh.animation = null;
                     }

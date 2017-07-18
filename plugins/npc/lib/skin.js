@@ -48,10 +48,10 @@ return vec + 2.0 * cross( cross( vec, quat.xyz ) + quat.w * vec, quat.xyz );
     "void main() {",
     "  float theta2 = theta * dy.w;",
     "  vec3 headPosition = dh.w > 0.0 ? applyQuaternion(position.xyz - dh.xyz, headRotation) + dh.xyz : position.xyz;",
-    "  vec3 leftArmPosition = dl.w > 0.0 ? applyQuaternion(headPosition.xyz - dl.xyz, leftArmRotation) + dl.xyz : headPosition.xyz;",
+    "  vec3 limbPosition = vec3(headPosition.x, headPosition.y - dy.y + (dy.y*cos(theta2) - dy.z*sin(theta2)), headPosition.z + dy.z + (dy.z*cos(theta2) + dy.y*sin(theta2)));",
+    "  vec3 leftArmPosition = dl.w > 0.0 ? applyQuaternion(limbPosition.xyz - dl.xyz, leftArmRotation) + dl.xyz : limbPosition.xyz;",
     "  vec3 rightArmPosition = dr.w > 0.0 ? applyQuaternion(leftArmPosition.xyz - dr.xyz, rightArmRotation) + dr.xyz : leftArmPosition.xyz;",
-    "  vec3 limbPosition = vec3(rightArmPosition.x, rightArmPosition.y - dy.y + (dy.y*cos(theta2) - dy.z*sin(theta2)), rightArmPosition.z + dy.z + (dy.z*cos(theta2) + dy.y*sin(theta2)));",
-    "  gl_Position = projectionMatrix * modelViewMatrix * vec4(limbPosition, 1.0);",
+    "  gl_Position = projectionMatrix * modelViewMatrix * vec4(rightArmPosition, 1.0);",
     "  vUv = uv;",
     "}"
   ].join("\n"),
@@ -272,7 +272,7 @@ const rightArmBox = (() => {
 
     for (let i = 0; i < numPositions; i++) {
       const baseIndex = i * 4;
-      result[baseIndex + 0] = offset.x;
+      result[baseIndex + 0] = -offset.x;
       result[baseIndex + 1] = offset.y;
       result[baseIndex + 2] = offset.z;
       result[baseIndex + 3] = 1;
@@ -367,7 +367,7 @@ const leftArmBox = (() => {
 
     for (let i = 0; i < numPositions; i++) {
       const baseIndex = i * 4;
-      result[baseIndex + 0] = offset.x;
+      result[baseIndex + 0] = -offset.x;
       result[baseIndex + 1] = offset.y;
       result[baseIndex + 2] = offset.z;
       result[baseIndex + 3] = 1;
@@ -753,7 +753,7 @@ const rightArm2Box = (() => {
 
     for (let i = 0; i < numPositions; i++) {
       const baseIndex = i * 4;
-      result[baseIndex + 0] = offset.x;
+      result[baseIndex + 0] = -offset.x;
       result[baseIndex + 1] = offset.y;
       result[baseIndex + 2] = offset.z;
       result[baseIndex + 3] = 1;
@@ -846,7 +846,7 @@ const leftArm2Box = (() => {
 
     for (let i = 0; i < numPositions; i++) {
       const baseIndex = i * 4;
-      result[baseIndex + 0] = offset.x;
+      result[baseIndex + 0] = -offset.x;
       result[baseIndex + 1] = offset.y;
       result[baseIndex + 2] = offset.z;
       result[baseIndex + 3] = 1;
