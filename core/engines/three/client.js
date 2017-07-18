@@ -43,7 +43,6 @@ class Three {
           result.position.z = 0;
           result.rotation.order = CAMERA_ROTATION_ORDER;
           result.up = new THREE.Vector3(0, 1, 0);
-          result.side = 'left'; // for webvr updateEye()
 
           const target = new THREE.Vector3(0, DEFAULT_USER_HEIGHT, -1);
           result.lookAt(target);
@@ -64,16 +63,18 @@ class Three {
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(window.devicePixelRatio);
         renderer.sortObjects = false;
-        renderer.shadowMap.enabled = true;
-        renderer.shadowMap.autoUpdate = false;
+        // renderer.shadowMap.enabled = true;
+        // renderer.shadowMap.autoUpdate = false;
         // renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         window.document.body.appendChild(renderer.domElement);
 
         window.addEventListener('resize', () => {
-          camera.aspect = window.innerWidth / window.innerHeight;
-          camera.updateProjectionMatrix();
+          if (!renderer.vr.enabled) {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
 
-          renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setSize(window.innerWidth, window.innerHeight);
+          }
         });
 
         return {
