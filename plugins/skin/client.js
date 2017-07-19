@@ -50,14 +50,6 @@ class Skin {
       }
     }
 
-    const fakeMesh = new THREE.Mesh(
-      new THREE.BoxBufferGeometry(0.2, 0.2, 0.2),
-      new THREE.MeshPhongMaterial({
-        color: 0xFF0000,
-      })
-    );
-    scene.add(fakeMesh);
-
     return _requestImage('/archae/skin/img/darkvortexity.png')
     // return _requestImage('/archae/skin/img/groot.png')
     // return _requestImage('/archae/skin/img/natsuwithfire.png')
@@ -164,10 +156,6 @@ class Skin {
             mesh.head.quaternion.copy(headQuaternion);
             mesh.updateMatrixWorld();
 
-            fakeMesh.position.copy(hmdPosition);
-            fakeMesh.quaternion.copy(hmdRotation);
-            fakeMesh.updateMatrixWorld();
-
             for (let i = 0; i < SIDES.length; i++) {
               const side = SIDES[i];
               const controllerStatus = controllersStatus[side];
@@ -220,8 +208,6 @@ class Skin {
               const mesh = meshes[i];
               scene.remove(mesh);
             }
-
-            scene.remove(fakeMesh);
 
             render.removeListener('update', _update);
             render.removeListener('updateStart', _updateStart);
