@@ -219,8 +219,8 @@ class Teleport {
 
                 if (vrMode === 'hmd') {
                   const cameraPosition = camera.getWorldPosition();
-                  // const hmdOffsetY = _decomposeMatrix(webvr.getSittingToStandingTransform()).position.y + hmdLocalPosition.y;
-                  const hmdOffsetY = hmdLocalPosition.y;
+                  const hmdOffsetY = _decomposeMatrix(webvr.getSittingToStandingTransform()).position.y + hmdLocalPosition.y;
+                  // const hmdOffsetY = hmdLocalPosition.y;
                   const teleportMeshEuler = new THREE.Euler().setFromQuaternion(teleportFloorMesh.quaternion, 'XZY');
                   teleportMeshEuler.y = 0;
                   webvr.setStageMatrix(
@@ -261,8 +261,8 @@ class Teleport {
 
                 if (vrMode === 'hmd') {
                   const cameraPosition = camera.getWorldPosition();
-                  // const hmdOffsetY = _decomposeMatrix(webvr.getSittingToStandingTransform()).position.y + hmdLocalPosition.y;
-                  const hmdOffsetY = hmdLocalPosition.y;
+                  const hmdOffsetY = _decomposeMatrix(webvr.getSittingToStandingTransform()).position.y + hmdLocalPosition.y;
+                  // const hmdOffsetY = hmdLocalPosition.y;
                   const teleportMeshEuler = new THREE.Euler().setFromQuaternion(teleportAirMesh.quaternion, 'XZY');
                   teleportMeshEuler.y = 0;
                   webvr.setStageMatrix(
