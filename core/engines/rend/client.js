@@ -412,6 +412,16 @@ class Rend {
         };
         input.on('menudown', menudown);
 
+        scene.onRenderEye = camera => {
+          rendApi.updateEye(camera);
+        };
+        scene.onBeforeRenderEye = () => {
+          rendApi.updateEyeStart();
+        };
+        scene.onAfterRenderEye = () => {
+          rendApi.updateEyeEnd();
+        };
+
         cleanups.push(() => {
           scene.remove(menuMesh);
 
@@ -428,6 +438,10 @@ class Rend {
           input.removeListener('trigger', trigger);
           input.removeListener('click', click);
           input.removeListener('menudown', menudown);
+
+          scene.onRenderEye = null;
+          scene.onBeforeRenderEye = null;
+          scene.onAfterRenderEye = null;
         });
 
         let lastMenuStatusJsonString = '';
@@ -597,6 +611,18 @@ class Rend {
 
           updateEnd() {
             this.emit('updateEnd');
+          }
+
+          updateEye(camera) {
+            this.emit('updateEye', camera);
+          }
+
+          updateEyeStart() {
+            this.emit('updateEyeStart');
+          }
+
+          updateEyeEnd() {
+            this.emit('updateEyeEnd');
           }
 
           grab(options) {

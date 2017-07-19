@@ -160,7 +160,8 @@ class Cyborg {
 
           class Hmd {
             constructor() {
-              const mesh = hmdModelMesh.clone(true)
+              const mesh = hmdModelMesh.clone(true);
+              mesh.visible = false;
               mesh.worldPosition = new THREE.Vector3();
               mesh.worldRotation = new THREE.Quaternion();
               mesh.worldScale = new THREE.Vector3(1, 1, 1);
@@ -408,18 +409,15 @@ class Cyborg {
             player.snapshotStatus();
           };
           rend.on('update', _update);
-          const _updateStart = () => {
-            const {mesh: hmdMesh/*, labelMesh: hmdLabelMesh*/} = hmd;
-            hmdMesh.visible = false;
-            // hmdLabelMesh.visible = false;
+
+          const _updateEye = () => {
+            hmd.mesh.visible = true;
           };
-          rend.on('updateStart', _updateStart);
-          const _updateEnd = () => {
-            const {mesh: hmdMesh/*, labelMesh: hmdLabelMesh*/} = hmd;
-            hmdMesh.visible = true;
-            // hmdLabelMesh.visible = true;
+          rend.on('updateEye', _updateEye);
+          const _updateEyeEnd = () => {
+            hmd.mesh.visible = false;
           };
-          rend.on('updateEnd', _updateEnd);
+          rend.on('updateEyeEnd', _updateEyeEnd);
 
           const cleanups = [];
           const cleanup = () => {
@@ -446,8 +444,6 @@ class Cyborg {
             });
 
             rend.removeListener('update', _update);
-            rend.removeListener('updateStart', _updateStart);
-            rend.removeListener('updateEnd', _updateEnd);
           };
 
           return {
