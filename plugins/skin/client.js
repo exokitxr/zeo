@@ -1,4 +1,5 @@
 const mod = require('mod-loop');
+const skinLib = require('./skin');
 
 const SIDES = ['left', 'right'];
 
@@ -6,7 +7,8 @@ class Skin {
   mount() {
     const {three, pose, render, player, utils: {skin: skinUtils}} = zeo;
     const {THREE, scene, camera, renderer} = three;
-    const {skin} = skinUtils;
+    // const {skin} = skinUtils;
+    const skin = skinLib(THREE);
 
     let live = true;
     this._cleanup = () => {
@@ -47,6 +49,14 @@ class Skin {
         this.right = right;
       }
     }
+
+    const fakeMesh = new THREE.Mesh(
+      new THREE.BoxBufferGeometry(0.2, 0.2, 0.2),
+      new THREE.MeshPhongMaterial({
+        color: 0xFF0000,
+      })
+    );
+    scene.add(fakeMesh);
 
     return _requestImage('/archae/skin/img/darkvortexity.png')
     // return _requestImage('/archae/skin/img/groot.png')
@@ -141,22 +151,30 @@ class Skin {
               mesh.quaternion.setFromEuler(playerEuler);
             }
 
+            const eyeOffset = mesh.eye.getWorldPosition()
+              .sub(mesh.getWorldPosition());
             mesh.position.copy(hmdPosition)
-              .sub(mesh.getEyeOffset());
-            mesh.updateMatrixWorld();
-            const playerQuaternionInverse = mesh.quaternion.clone().inverse();
-            const headQuaternion = hmdRotation.clone().inverse()
-              .premultiply(mesh.quaternion);
-            mesh.material.uniforms.headRotation.value.set(headQuaternion.x, headQuaternion.y, headQuaternion.z, headQuaternion.w);
+              .sub(eyeOffset);
 
-            /* for (let i = 0; i < SIDES.length; i++) {
+            const playerQuaternionInverse = mesh.quaternion.clone().inverse();
+            const headQuaternion = hmdRotation.clone()
+              .premultiply(playerQuaternionInverse);
+            const headQuaternionInverse = headQuaternion.clone().inverse()
+            mesh.material.uniforms.headRotation.value.set(headQuaternionInverse.x, headQuaternionInverse.y, headQuaternionInverse.z, headQuaternionInverse.w);
+            mesh.head.quaternion.copy(headQuaternion);
+            mesh.updateMatrixWorld();
+
+            fakeMesh.position.copy(hmdPosition);
+            fakeMesh.quaternion.copy(hmdRotation);
+            fakeMesh.updateMatrixWorld();
+
+            for (let i = 0; i < SIDES.length; i++) {
               const side = SIDES[i];
               const controllerStatus = controllersStatus[side];
               const {position: controllerPosition, rotation: controllerRotation} = controllerStatus;
-              const armOffset = mesh[side === 'left' ? 'getLeftArmOffset' : 'getRightArmOffset']();
-              const upVector = new THREE.Vector3(0, side === 'left' ? -1 : 1, 0).applyQuaternion(controllerRotation);
+              const upVector = new THREE.Vector3(0, 1, 0).applyQuaternion(controllerRotation);
               const rotationMatrix = new THREE.Matrix4().lookAt(
-                mesh.position.clone().add(armOffset.applyQuaternion(mesh.quaternion)),
+                mesh.arms[side].getWorldPosition(),
                 controllerPosition,
                 upVector
               );
@@ -165,9 +183,10 @@ class Skin {
                 .setFromRotationMatrix(rotationMatrix)
                 .multiply(localArmQuaternion)
                 .premultiply(playerQuaternionInverse);
+              const armQuaternionInverse = armQuaternion.clone().inverse();
               const armRotation = mesh.material.uniforms[side === 'left' ? 'leftArmRotation' : 'rightArmRotation'];
-              armRotation.value.set(armQuaternion.x, armQuaternion.y, armQuaternion.z, armQuaternion.w);
-            } */
+              armRotation.value.set(armQuaternionInverse.x, armQuaternionInverse.y, armQuaternionInverse.z, armQuaternionInverse.w);
+            }
           };
           const _update = () => {
             for (let i = 0; i < meshes.length; i++) {
@@ -201,6 +220,8 @@ class Skin {
               const mesh = meshes[i];
               scene.remove(mesh);
             }
+
+            scene.remove(fakeMesh);
 
             render.removeListener('update', _update);
             render.removeListener('updateStart', _updateStart);
