@@ -1,5 +1,4 @@
 const mod = require('mod-loop');
-const skinLib = require('./skin');
 
 const SIDES = ['left', 'right'];
 
@@ -7,8 +6,7 @@ class Skin {
   mount() {
     const {three, pose, render, player, utils: {skin: skinUtils}} = zeo;
     const {THREE, scene, camera, renderer} = three;
-    // const {skin} = skinUtils;
-    const skin = skinLib(THREE);
+    const {skin} = skinUtils;
 
     let live = true;
     this._cleanup = () => {
@@ -56,7 +54,9 @@ class Skin {
       .then(skinImg => {
         if (live) {
           const _makeMesh = (playerId = null) => {
-            const mesh = skin(skinImg);
+            const mesh = skin(skinImg, {
+              limbs: playerId === null,
+            });
             mesh.playerId = playerId;
             return mesh;
           };
