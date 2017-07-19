@@ -13,7 +13,7 @@ const {
 const protocolUtils = require('./lib/utils/protocol-utils');
 
 const NUM_POSITIONS = 30 * 1024;
-const NUM_POSITIONS_CHUNK = 100 * 1024;
+const NUM_POSITIONS_CHUNK = 500 * 1024;
 const CAMERA_ROTATION_ORDER = 'YXZ';
 const TEXTURE_SIZE = 1024;
 const TEXTURE_CHUNK_SIZE = 512;
@@ -536,7 +536,7 @@ const _makeTreeChunkGeometry = (x, y, treeTemplates, points, heightRange) => {
   const scale = new THREE.Vector3(1, 1, 1);
   const matrix = new THREE.Matrix4();
 
-  const treeProbability = 0.025;
+  const treeProbability = 0.02;
 
   for (let dy = 0; dy < NUM_CELLS_OVERSCAN; dy++) {
     for (let dx = 0; dx < NUM_CELLS_OVERSCAN; dx++) {

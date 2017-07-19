@@ -8,7 +8,7 @@ const {
 const protocolUtils = require('./lib/utils/protocol-utils');
 
 const TEXTURE_SIZE = 1024;
-const NUM_POSITIONS_CHUNK = 200 * 1024;
+const NUM_POSITIONS_CHUNK = 500 * 1024;
 const DEFAULT_MATRIX = [
   0, 0, 0,
   0, 0, 0, 1,
@@ -284,54 +284,58 @@ class Tree {
             .then(treeChunkBuffer => protocolUtils.parseTreeGeometry(treeChunkBuffer));
 
           const _makeTreeChunkMesh = (treeChunkData, x, z) => {
-            const {position, positions, uvs, indices, heightRange, trees} = treeChunkData;
+            const mesh = (() => {
+              const {position, positions, uvs, indices, heightRange, trees} = treeChunkData;
 
-            const geometry = (() => {
-              let geometry = new THREE.BufferGeometry();
-              geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
-              geometry.addAttribute('uv', new THREE.BufferAttribute(uvs, 2));
-              geometry.setIndex(new THREE.BufferAttribute(indices, 1));
-              const [minY, maxY] = heightRange;
-              geometry.boundingSphere = new THREE.Sphere(
-                new THREE.Vector3(
-                  (x * NUM_CELLS) + (NUM_CELLS / 2),
-                  (minY + maxY) / 2,
-                  (z * NUM_CELLS) + (NUM_CELLS / 2)
-                ),
-                Math.max(Math.sqrt((NUM_CELLS / 2) * (NUM_CELLS / 2) * 3), (maxY - minY) / 2)
+              const geometry = (() => {
+                let geometry = new THREE.BufferGeometry();
+                geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+                geometry.addAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+                geometry.setIndex(new THREE.BufferAttribute(indices, 1));
+                const [minY, maxY] = heightRange;
+                geometry.boundingSphere = new THREE.Sphere(
+                  new THREE.Vector3(
+                    (x * NUM_CELLS) + (NUM_CELLS / 2),
+                    (minY + maxY) / 2,
+                    (z * NUM_CELLS) + (NUM_CELLS / 2)
+                  ),
+                  Math.max(Math.sqrt((NUM_CELLS / 2) * (NUM_CELLS / 2) * 3), (maxY - minY) / 2)
+                );
+
+                return geometry;
+              })();
+
+              const uniforms = Object.assign(
+                THREE.UniformsUtils.clone(THREE.UniformsLib.lights),
+                THREE.UniformsUtils.clone(TREE_SHADER.uniforms)
               );
+              uniforms.map.value = mapTexture;
+              uniforms.d.value = new THREE.Vector2(x * NUM_CELLS, z * NUM_CELLS);
+              const material = new THREE.ShaderMaterial({
+                uniforms: uniforms,
+                vertexShader: TREE_SHADER.vertexShader,
+                fragmentShader: TREE_SHADER.fragmentShader,
+                lights: true,
+                side: THREE.DoubleSide,
+                transparent: true,
+              });
 
-              return geometry;
+              const mesh = new THREE.Mesh(geometry, material);
+              // mesh.frustumCulled = false;
+
+              mesh.offset = new THREE.Vector2(x, z);
+              mesh.trees = trees;
+              mesh.lightmap = null;
+              mesh.shapes = null;
+              if (lightmapper) {
+                _bindLightmap(mesh);
+              }
+
+              return mesh;
             })();
 
-            const uniforms = Object.assign(
-              THREE.UniformsUtils.clone(THREE.UniformsLib.lights),
-              THREE.UniformsUtils.clone(TREE_SHADER.uniforms)
-            );
-            uniforms.map.value = mapTexture;
-            uniforms.d.value = new THREE.Vector2(x * NUM_CELLS, z * NUM_CELLS);
-            const material = new THREE.ShaderMaterial({
-              uniforms: uniforms,
-              vertexShader: TREE_SHADER.vertexShader,
-              fragmentShader: TREE_SHADER.fragmentShader,
-              lights: true,
-              side: THREE.DoubleSide,
-              transparent: true,
-            });
-
-            const mesh = new THREE.Mesh(geometry, material);
-            // mesh.frustumCulled = false;
-
-            mesh.offset = new THREE.Vector2(x, z);
-            mesh.trees = trees;
-            mesh.lightmap = null;
-            mesh.shapes = null;
-            if (lightmapper) {
-              _bindLightmap(mesh);
-            }
-
             mesh.destroy = () => {
-              geometry.dispose();
+              mesh.geometry.dispose();
 
               if (mesh.lightmap) {
                 _unbindLightmap(mesh);
@@ -446,8 +450,8 @@ class Tree {
           input.on('gripdown', _gripdown);
 
           const chunker = chnkr.makeChunker({
-            resolution: 32,
-            range: 2,
+            resolution: NUM_CELLS,
+            range: 1,
           });
           const treeChunkMeshes = [];
 

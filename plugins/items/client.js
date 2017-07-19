@@ -8,7 +8,7 @@ const {
 } = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
 
-const NUM_POSITIONS_CHUNK = 200 * 1024;
+const NUM_POSITIONS_CHUNK = 100 * 1024;
 const DEFAULT_MATRIX = [
   0, 0, 0,
   0, 0, 0, 1,
@@ -112,7 +112,7 @@ class Items {
     const worker = new Worker('archae/plugins/_plugins_items/build/worker.js');
     const queue = [];
     worker.requestGenerate = (x, y) => new Promise((accept, reject) => {
-      const buffer = new ArrayBuffer(NUM_POSITIONS_CHUNK * 3);
+      const buffer = new ArrayBuffer(NUM_POSITIONS_CHUNK);
       worker.postMessage({
         x,
         y,
@@ -175,54 +175,57 @@ class Items {
       .then(itemsChunkBuffer => protocolUtils.parseItemsChunk(itemsChunkBuffer));
 
     const _makeItemsChunkMesh = (mapChunkData, x, z) => {
-      const {positions, normals, colors, indices, heightRange} = mapChunkData;
+      const mesh = (() => {
+        const geometry = (() => {
+          const {positions, normals, colors, indices, heightRange} = mapChunkData;
+          const geometry = new THREE.BufferGeometry();
+          geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+          // geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
+          geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
+          geometry.setIndex(new THREE.BufferAttribute(indices, 1));
+          const [minY, maxY] = heightRange;
+          geometry.boundingSphere = new THREE.Sphere(
+            new THREE.Vector3(
+              (x * NUM_CELLS) + (NUM_CELLS / 2),
+              (minY + maxY) / 2,
+              (z * NUM_CELLS) + (NUM_CELLS / 2)
+            ),
+            Math.max(Math.sqrt((NUM_CELLS / 2) * (NUM_CELLS / 2) * 3), (maxY - minY) / 2)
+          );
 
-      const geometry = (() => {
-        let geometry = new THREE.BufferGeometry();
-        geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
-        // geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
-        geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
-        geometry.setIndex(new THREE.BufferAttribute(indices, 1));
-        const [minY, maxY] = heightRange;
-        geometry.boundingSphere = new THREE.Sphere(
-          new THREE.Vector3(
-            (x * NUM_CELLS) + (NUM_CELLS / 2),
-            (minY + maxY) / 2,
-            (z * NUM_CELLS) + (NUM_CELLS / 2)
-          ),
-          Math.max(Math.sqrt((NUM_CELLS / 2) * (NUM_CELLS / 2) * 3), (maxY - minY) / 2)
+          return geometry;
+        })();
+        const uniforms = Object.assign(
+          THREE.UniformsUtils.clone(THREE.UniformsLib.lights),
+          THREE.UniformsUtils.clone(ITEMS_SHADER.uniforms)
         );
+        uniforms.d.value = new THREE.Vector2(x * NUM_CELLS, z * NUM_CELLS);
+        const material = new THREE.ShaderMaterial({
+          uniforms: uniforms,
+          vertexShader: ITEMS_SHADER.vertexShader,
+          fragmentShader: ITEMS_SHADER.fragmentShader,
+          lights: true,
+          // side: THREE.DoubleSide,
+          // transparent: true,
+          /* extensions: {
+            derivatives: true,
+          }, */
+        });
 
-        return geometry;
+        const mesh = new THREE.Mesh(geometry, material);
+        // mesh.frustumCulled = false;
+
+        mesh.offset = new THREE.Vector2(x, z);
+        mesh.lightmap = null;
+        if (lightmapper) {
+          _bindLightmap(mesh);
+        }
+
+        return mesh;
       })();
-      const uniforms = Object.assign(
-        THREE.UniformsUtils.clone(THREE.UniformsLib.lights),
-        THREE.UniformsUtils.clone(ITEMS_SHADER.uniforms)
-      );
-      uniforms.d.value = new THREE.Vector2(x * NUM_CELLS, z * NUM_CELLS);
-      const material = new THREE.ShaderMaterial({
-        uniforms: uniforms,
-        vertexShader: ITEMS_SHADER.vertexShader,
-        fragmentShader: ITEMS_SHADER.fragmentShader,
-        lights: true,
-        // side: THREE.DoubleSide,
-        // transparent: true,
-        /* extensions: {
-          derivatives: true,
-        }, */
-      });
-
-      const mesh = new THREE.Mesh(geometry, material);
-      // mesh.frustumCulled = false;
-
-      mesh.offset = new THREE.Vector2(x, z);
-      mesh.lightmap = null;
-      if (lightmapper) {
-        _bindLightmap(mesh);
-      }
 
       mesh.destroy = () => {
-        geometry.dispose();
+        mesh.geometry.dispose();
 
         if (mesh.lightmap) {
           _unbindLightmap(mesh);
@@ -326,7 +329,7 @@ class Items {
     input.on('gripdown', _gripdown);
 
     const chunker = chnkr.makeChunker({
-      resolution: 32,
+      resolution: NUM_CELLS,
       range: 1,
     });
     const itemsChunkMeshes = [];

@@ -1,6 +1,9 @@
-const NUM_CELLS = 32;
-const NUM_CELLS_HEIGHT = 128;
-const HEIGHT_OFFSET = -32;
+const {
+  NUM_CELLS,
+  NUM_CELLS_HEIGHT,
+
+  HEIGHT_OFFSET,
+} = require('./lib/constants/constants');
 
 class Lightmap {
   mount() {

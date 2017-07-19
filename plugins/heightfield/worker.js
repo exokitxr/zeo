@@ -11,16 +11,6 @@ const {
 
 const workerUtils = workerUtilser({THREE});
 
-const _generate = (x, y) => {
-  const builtMapChunk = workerUtils.buildMapChunk({
-    offset: {
-      x,
-      y,
-    },
-  });
-  return workerUtils.compileMapChunk(builtMapChunk);
-};
-
 self.onmessage = e => {
   const {data} = e;
   const {method} = data;
@@ -34,8 +24,8 @@ self.onmessage = e => {
     }
     case 'generate': {
       const {args} = data;
-      const {x, y, buffer} = args;
-      const mapChunk = _generate(x, y);
+      const {x, y, resolution, buffer} = args;
+      const mapChunk = workerUtils.generateMapChunk(x, y, resolution);
       const resultBuffer = protocolUtils.stringifyMapChunk(mapChunk, buffer, 0);
 
       postMessage(resultBuffer, [resultBuffer]);
