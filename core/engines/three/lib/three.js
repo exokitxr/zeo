@@ -10155,6 +10155,10 @@ module.exports = (() => {
 		onBeforeRender: function () {},
 		onAfterRender: function () {},
 
+		onRenderEye: function () {}, // XXX
+		onBeforeRenderEye: function () {},
+		onAfterRenderEye: function () {},
+
 		applyMatrix: function ( matrix ) {
 
 			this.matrix.multiplyMatrices( matrix, this.matrix );
@@ -19896,10 +19900,12 @@ module.exports = (() => {
 		var cameraL = new PerspectiveCamera();
 		cameraL.bounds = new Vector4( 0.0, 0.0, 0.5, 1.0 );
 		cameraL.layers.enable( 1 );
+		cameraL.name = 'left'; // XXX
 
 		var cameraR = new PerspectiveCamera();
 		cameraR.bounds = new Vector4( 0.5, 0.0, 0.5, 1.0 );
 		cameraR.layers.enable( 2 );
+		cameraR.name = 'right';
 
 		var cameraVR = new ArrayCamera( [ cameraL, cameraR ] );
 		cameraVR.layers.enable( 1 );
@@ -20000,6 +20006,7 @@ module.exports = (() => {
 			cameraVR.matrixWorldInverse.copy( camera.matrixWorldInverse );
 
 			cameraL.matrixWorldInverse.fromArray( frameData.leftViewMatrix );
+
 			cameraR.matrixWorldInverse.fromArray( frameData.rightViewMatrix );
 
 			if ( this.standing && stageParameters ) {
@@ -20391,6 +20398,7 @@ module.exports = (() => {
 			_currentScissorTest = null,
 
 			_currentViewport = new Vector4(),
+			_recursing = false, // XXX
 
 			//
 
@@ -21386,7 +21394,29 @@ if (callback() !== false) { // XXX
 
 				camera = vr.getCamera( camera );
 
-			}
+        if (camera.cameras && !_recursing) { // XXX
+          _recursing = true;
+
+          scene.onBeforeRenderEye();
+          scene.onRenderEye(camera.cameras[0]);
+          scene.onRenderEye(camera.cameras[1]);
+          scene.onAfterRenderEye();
+
+          _recursing = false;
+        }
+
+      } else {
+
+        if (!_recursing) {
+          _recursing = true;
+
+          scene.onBeforeRenderEye();
+          scene.onRenderEye(camera);
+          scene.onAfterRenderEye();
+
+          _recursing = false;
+        }
+      }
 
 			_projScreenMatrix.multiplyMatrices( camera.projectionMatrix, camera.matrixWorldInverse );
 			_frustum.setFromMatrix( _projScreenMatrix );
@@ -21974,7 +22004,7 @@ if (callback() !== false) { // XXX
 
 				// Avoid unneeded uniform updates per ArrayCamera's sub-camera
 
-				if ( _currentCamera !== ( _currentArrayCamera || camera ) ) {
+				if ( _currentCamera !== ( _currentArrayCamera || camera ) || material.volatile ) { // XXX
 
 					_currentCamera = ( _currentArrayCamera || camera );
 
