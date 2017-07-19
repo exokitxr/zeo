@@ -19,12 +19,13 @@ class Mirror {
     };
 
     const updateEyes = [];
-    const _update = () => {
+    const _updateEye = camera => {
       for (let i = 0; i < updateEyes.length; i++) {
         const updateEye = updateEyes[i];
         updateEye(camera);
       }
     };
+    render.on('updateEye', _updateEye);
 
     const mirrorEntity = {
       attributes: {
@@ -42,104 +43,93 @@ class Mirror {
         },
       },
       entityAddedCallback(entityElement) {
+        const width = PORTAL_SIZE / 2;
+        const height = PORTAL_SIZE;
+        const border = PORTAL_BORDER_SIZE;
+        const color = 0x808080;
+        const rendererSize = renderer.getSize();
+        const rendererPixelRatio = renderer.getPixelRatio();
+        const resolutionWidth = rendererSize.width * rendererPixelRatio;
+        const resolutionHeight = rendererSize.height * rendererPixelRatio;
+
+        const _makeRenderTarget = () => {
+          const renderTarget = new THREE.WebGLRenderTarget(resolutionWidth, resolutionHeight, {
+            minFilter: THREE.NearestFilter,
+            magFilter: THREE.NearestFilter,
+            format: THREE.RGBFormat,
+            stencilBuffer: false,
+            // depthBuffer: false,
+          });
+          renderTarget.textureMatrix = new THREE.Matrix4();
+          return renderTarget;
+        };
+        const renderTargets = {
+          left: _makeRenderTarget(),
+          right: _makeRenderTarget(),
+        };
+
         const mirrorMesh = (() => {
-          const result = new THREE.Object3D();
+          const object = new THREE.Object3D();
 
-          const width = PORTAL_SIZE / 2;
-          const height = PORTAL_SIZE;
-          const border = PORTAL_BORDER_SIZE;
-          const color = 0x808080;
-          const rendererSize = renderer.getSize();
-          const rendererPixelRatio = renderer.getPixelRatio();
-          const resolutionWidth = rendererSize.width * rendererPixelRatio / 8;
-          const resolutionHeight = rendererSize.height * rendererPixelRatio / 8;
-
-          const objectMesh = (() => {
-            const object = new THREE.Object3D();
-
-            const inner = (() => {
-              const mirror = new THREEMirror(width, height, {
-                clipBias: 0.003,
-                textureWidth: resolutionWidth,
-                textureHeight: resolutionHeight,
-                color: 0x808080,
-              });
-              return mirror;
-            })();
-            object.add(inner);
-            object.inner = inner;
-
-            const outer = (() => {
-              if (border > 0) {
-                const geometry = (() => {
-                  const leftGeometry = new THREE.BoxBufferGeometry(border, height, border);
-                  leftGeometry.applyMatrix(new THREE.Matrix4().makeTranslation(-(width / 2) - (border / 2), 0, -(border / 2)));
-
-                  const rightGeometry = new THREE.BoxBufferGeometry(border, height, border);
-                  rightGeometry.applyMatrix(new THREE.Matrix4().makeTranslation((width / 2) + (border / 2), 0, -(border / 2)));
-
-                  const topGeometry = new THREE.BoxBufferGeometry(width + (border * 2), border, border);
-                  topGeometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, (height / 2) + (border / 2), -(border / 2)));
-
-                  const bottomGeometry = new THREE.BoxBufferGeometry(width + (border * 2), border, border);
-                  bottomGeometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, -(height / 2) - (border / 2), -(border / 2)));
-
-                  const bufferGeometry = geometryUtils.concatBufferGeometry([
-                    leftGeometry,
-                    rightGeometry,
-                    topGeometry,
-                    bottomGeometry,
-                  ]);
-                  return bufferGeometry;
-                })();
-                const material = new THREE.MeshPhongMaterial({
-                  color: color,
-                });
-
-                const mesh = new THREE.Mesh(geometry, material);
-                return mesh;
-              } else {
-                const mesh = new THREE.Object3D();
-                return mesh;
-              }
-            })();
-            object.add(outer);
-            object.outer = outer;
-
-            const back = (() => {
-              const geometry = (() => {
-                const {geometry: innerGeometry} = inner;
-                const bufferGeometry = innerGeometry.clone();
-                bufferGeometry.applyMatrix(new THREE.Matrix4().makeRotationY(Math.PI));
-                bufferGeometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -(border / 2)));
-                return bufferGeometry;
-              })();
-              const material = new THREE.MeshPhongMaterial({
-                color: color,
-                side: THREE.DoubleSide,
-              });
-              const mesh = new THREE.Mesh(geometry, material);
-              return mesh;
-            })();
-            object.add(back);
-            object.back = back;
-
-            return object;
+          const inner = (() => {
+            const mirror = new THREEMirror(width, height, {
+              clipBias: 0.003,
+              textureWidth: resolutionWidth,
+              textureHeight: resolutionHeight,
+              color: 0x808080,
+              renderTargets,
+            });
+            return mirror;
           })();
-          result.add(objectMesh);
-          result.objectMesh = objectMesh;
+          object.add(inner);
+          object.inner = inner;
 
-          return result;
+          const outer = (() => {
+            const geometry = (() => {
+              const leftGeometry = new THREE.BoxBufferGeometry(border, height, border);
+              leftGeometry.applyMatrix(new THREE.Matrix4().makeTranslation(-(width / 2) - (border / 2), 0, -(border / 2)));
+
+              const rightGeometry = new THREE.BoxBufferGeometry(border, height, border);
+              rightGeometry.applyMatrix(new THREE.Matrix4().makeTranslation((width / 2) + (border / 2), 0, -(border / 2)));
+
+              const topGeometry = new THREE.BoxBufferGeometry(width + (border * 2), border, border);
+              topGeometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, (height / 2) + (border / 2), -(border / 2)));
+
+              const bottomGeometry = new THREE.BoxBufferGeometry(width + (border * 2), border, border);
+              bottomGeometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, -(height / 2) - (border / 2), -(border / 2)));
+
+              const backGeometry = inner.geometry.clone();
+              backGeometry.applyMatrix(new THREE.Matrix4().makeRotationY(Math.PI));
+              backGeometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -(border / 2)));
+
+              return geometryUtils.concatBufferGeometry([
+                leftGeometry,
+                rightGeometry,
+                topGeometry,
+                bottomGeometry,
+                backGeometry,
+              ]);
+            })();
+            const material = new THREE.MeshBasicMaterial({
+              color: color,
+              side: THREE.DoubleSide,
+            });
+
+            const mesh = new THREE.Mesh(geometry, material);
+            return mesh;
+          })();
+          object.add(outer);
+          object.outer = outer;
+
+          return object;
         })();
         scene.add(mirrorMesh);
         entityElement.mirrorMesh = mirrorMesh;
 
-        const updateEye = eyeCamera => {
-          const {objectMesh} = mirrorMesh;
-          const {inner} = objectMesh;
-
-          inner.renderEye(renderer, scene, eyeCamera);
-          renderer.setRenderTarget(null);
+        const updateEye = camera => {
+          const {name: side} = camera;
+          const renderTarget = renderTargets[side];
+          mirrorMesh.inner.renderEye(renderer, scene, camera, renderTarget);
         };
         updateEyes.push(updateEye);
 
@@ -182,12 +172,10 @@ class Mirror {
     };
     elements.registerEntity(this, mirrorEntity);
 
-    render.on('update', _update);
-
     this._cleanup = () => {
       elements.unregisterEntity(this, mirrorEntity);
 
-      render.removeListener('update', _update);
+      render.removeListener('updateEye', _updateEye);
     };
   }
 

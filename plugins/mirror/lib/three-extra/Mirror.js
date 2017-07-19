@@ -14,9 +14,10 @@ function THREEMirror( width, height, options ) {
 
 	var textureWidth = options.textureWidth !== undefined ? options.textureWidth : 512;
 	var textureHeight = options.textureHeight !== undefined ? options.textureHeight : 512;
+	var renderTargets = options.renderTargets;
 
 	var clipBias = options.clipBias !== undefined ? options.clipBias : 0.0;
-	var mirrorColor = options.color !== undefined ? new THREE.Color( options.color ) : new THREE.Color( 0x7F7F7F );
+	// var mirrorColor = options.color !== undefined ? new THREE.Color( options.color ) : new THREE.Color( 0x7F7F7F );
 
 	var mirrorPlane = new THREE.Plane();
 	var normal = new THREE.Vector3();
@@ -42,18 +43,18 @@ function THREEMirror( width, height, options ) {
 		stencilBuffer: false
 	};
 
-	var renderTarget = new THREE.WebGLRenderTarget( textureWidth, textureHeight, parameters );
+	/* var renderTarget = new THREE.WebGLRenderTarget( textureWidth, textureHeight, parameters );
 
 	if ( ! THREE.Math.isPowerOfTwo( textureWidth ) || ! THREE.Math.isPowerOfTwo( textureHeight ) ) {
 
 		renderTarget.texture.generateMipmaps = false;
 
-	}
+	} */
 
 	var mirrorShader = {
 
 		uniforms: {
-			mirrorColor: { value: new THREE.Color( 0x7F7F7F ) },
+			// mirrorColor: { value: new THREE.Color( 0x7F7F7F ) },
 			mirrorSampler: { value: null },
 			textureMatrix: { value: new THREE.Matrix4() }
 		},
@@ -74,7 +75,8 @@ function THREEMirror( width, height, options ) {
 		].join( '\n' ),
 
 		fragmentShader: [
-			'uniform vec3 mirrorColor;',
+			// 'uniform vec3 mirrorColor;',
+			'vec3 mirrorColor = vec3(0.5, 0.5, 0.5);',
 			'uniform sampler2D mirrorSampler;',
 			'varying vec4 mirrorCoord;',
 
@@ -100,18 +102,16 @@ function THREEMirror( width, height, options ) {
 		uniforms: mirrorUniforms
 
 	} );
+	material.volatile = true;
 
-	material.uniforms.mirrorSampler.value = renderTarget.texture;
-	material.uniforms.mirrorColor.value = mirrorColor;
-	material.uniforms.textureMatrix.value = textureMatrix;
+	// material.uniforms.mirrorSampler.value = renderTarget.texture;
+	// material.uniforms.mirrorColor.value = mirrorColor;
+	// material.uniforms.textureMatrix.value = textureMatrix;
 
 	scope.material = material;
 
 	function updateTextureMatrix( camera ) {
-		mirrorCamera.fov = camera.fov;
-		mirrorCamera.aspect = camera.aspect;
-		mirrorCamera.near = camera.near;
-		mirrorCamera.far = camera.far;
+		mirrorCamera.projectionMatrix.copy(camera.projectionMatrix);
 
 		mirrorWorldPosition.setFromMatrixPosition( scope.matrixWorld );
 		cameraWorldPosition.setFromMatrixPosition( camera.matrixWorld );
@@ -141,9 +141,8 @@ function THREEMirror( width, height, options ) {
 		mirrorCamera.up.reflect( normal ).negate();
 		mirrorCamera.lookAt( target );
 
-		mirrorCamera.updateProjectionMatrix();
 		mirrorCamera.updateMatrix();
-		mirrorCamera.updateMatrixWorld();
+		mirrorCamera.matrixWorld.copy(mirrorCamera.matrix);
 		mirrorCamera.matrixWorldInverse.getInverse( mirrorCamera.matrixWorld );
 
 		// Update the texture matrix
@@ -181,21 +180,28 @@ function THREEMirror( width, height, options ) {
 
 	}
 
-	scope.renderEye = function ( renderer, scene, camera ) {
+  scope.onBeforeRender = (renderer, scene, camera) => {
+    const {name: side} = camera;
+    const renderTarget = renderTargets[side];
+    material.uniforms.mirrorSampler.value = renderTarget.texture;
+    material.uniforms.textureMatrix.value = renderTarget.textureMatrix;
+  };
 
+	scope.renderEye = function ( renderer, scene, camera, renderTarget ) {
 		updateTextureMatrix( camera );
+
+		renderTarget.textureMatrix.copy(textureMatrix);
 
 		scope.visible = false;
 
 		const oldEnabled = renderer.vr.enabled;
 		renderer.vr.enabled = false;
-
 		renderer.render( scene, mirrorCamera, renderTarget );
+		renderer.setRenderTarget(null);
 
 		renderer.vr.enabled = oldEnabled;
 
 		scope.visible = true;
-
 	};
 
 };
