@@ -248,54 +248,58 @@ class Grass {
             .then(grassChunkBuffer => protocolUtils.parseGrassGeometry(grassChunkBuffer));
 
           const _makeGrassChunkMesh = (grassChunkData, x, z) => {
-            const {positions, uvs, indices, heightRange} = grassChunkData;
+            const mesh = (() => {
+              const {positions, uvs, indices, heightRange} = grassChunkData;
 
-            const geometry = (() => {
-              const geometry = new THREE.BufferGeometry();
-              geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
-              geometry.addAttribute('uv', new THREE.BufferAttribute(uvs, 2));
-              geometry.setIndex(new THREE.BufferAttribute(indices, 1));
-              const [minY, maxY] = heightRange;
-              geometry.boundingSphere = new THREE.Sphere(
-                new THREE.Vector3(
-                  (x * NUM_CELLS) + (NUM_CELLS / 2),
-                  (minY + maxY) / 2,
-                  (z * NUM_CELLS) + (NUM_CELLS / 2)
-                ),
-                Math.max(Math.sqrt((NUM_CELLS / 2) * (NUM_CELLS / 2) * 3), (maxY - minY) / 2)
+              const geometry = (() => {
+                const geometry = new THREE.BufferGeometry();
+                geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+                geometry.addAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+                geometry.setIndex(new THREE.BufferAttribute(indices, 1));
+                const [minY, maxY] = heightRange;
+                geometry.boundingSphere = new THREE.Sphere(
+                  new THREE.Vector3(
+                    (x * NUM_CELLS) + (NUM_CELLS / 2),
+                    (minY + maxY) / 2,
+                    (z * NUM_CELLS) + (NUM_CELLS / 2)
+                  ),
+                  Math.max(Math.sqrt((NUM_CELLS / 2) * (NUM_CELLS / 2) * 3), (maxY - minY) / 2)
+                );
+
+                return geometry;
+              })();
+              const uniforms = Object.assign(
+                THREE.UniformsUtils.clone(THREE.UniformsLib.lights),
+                THREE.UniformsUtils.clone(GRASS_SHADER.uniforms)
               );
+              uniforms.map.value = mapTexture;
+              uniforms.d.value = new THREE.Vector2(x * NUM_CELLS, z * NUM_CELLS);
+              const material = new THREE.ShaderMaterial({
+                uniforms: uniforms,
+                vertexShader: GRASS_SHADER.vertexShader,
+                fragmentShader: GRASS_SHADER.fragmentShader,
+                lights: true,
+                side: THREE.DoubleSide,
+                transparent: true,
+                /* extensions: {
+                  derivatives: true,
+                }, */
+              });
 
-              return geometry;
+              const mesh = new THREE.Mesh(geometry, material);
+              // mesh.frustumCulled = false;
+
+              mesh.offset = new THREE.Vector2(x, z);
+              mesh.lightmap = null;
+              if (lightmapper) {
+                _bindLightmap(mesh);
+              }
+
+              return mesh;
             })();
-            const uniforms = Object.assign(
-              THREE.UniformsUtils.clone(THREE.UniformsLib.lights),
-              THREE.UniformsUtils.clone(GRASS_SHADER.uniforms)
-            );
-            uniforms.map.value = mapTexture;
-            uniforms.d.value = new THREE.Vector2(x * NUM_CELLS, z * NUM_CELLS);
-            const material = new THREE.ShaderMaterial({
-              uniforms: uniforms,
-              vertexShader: GRASS_SHADER.vertexShader,
-              fragmentShader: GRASS_SHADER.fragmentShader,
-              lights: true,
-              side: THREE.DoubleSide,
-              transparent: true,
-              /* extensions: {
-                derivatives: true,
-              }, */
-            });
-
-            const mesh = new THREE.Mesh(geometry, material);
-            // mesh.frustumCulled = false;
-
-            mesh.offset = new THREE.Vector2(x, z);
-            mesh.lightmap = null;
-            if (lightmapper) {
-              _bindLightmap(mesh);
-            }
 
             mesh.destroy = () => {
-              geometry.dispose();
+              mesh.geometry.dispose();
 
               if (mesh.lightmap) {
                 _unbindLightmap(mesh);
@@ -306,8 +310,8 @@ class Grass {
           };
 
           const chunker = chnkr.makeChunker({
-            resolution: 32,
-            range: 2,
+            resolution: NUM_CELLS,
+            range: 1,
           });
           const grassChunkMeshes = [];
 

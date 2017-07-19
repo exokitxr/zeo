@@ -1,7 +1,7 @@
 const UINT32_SIZE = 4;
 const INT32_SIZE = 4;
 const FLOAT32_SIZE = 4;
-const CLOUD_GEOMETRY_HEADER_ENTRIES = 2;
+const CLOUD_GEOMETRY_HEADER_ENTRIES = 3;
 const CLOUD_GEOMETRY_HEADER_SIZE = UINT32_SIZE * CLOUD_GEOMETRY_HEADER_ENTRIES;
 
 const _getCloudGeometrySizeFromMetadata = metadata => {
@@ -9,17 +9,20 @@ const _getCloudGeometrySizeFromMetadata = metadata => {
 
   return CLOUD_GEOMETRY_HEADER_SIZE + // header
     (FLOAT32_SIZE * numPositions) + // positions
+    (FLOAT32_SIZE * numNormals) + // normals
     (UINT32_SIZE * numIndices); // indices
 };
 
 const _getCloudGeometrySize = cloudGeometry => {
-  const {positions, indices} = cloudGeometry;
+  const {positions, normals, indices} = cloudGeometry;
 
   const numPositions = positions.length;
+  const numNormals = normals.length;
   const numIndices = indices.length;
 
   return _getCloudGeometrySizeFromMetadata({
     numPositions,
+    numNormals,
     numIndices,
   });
 };
@@ -27,10 +30,12 @@ const _getCloudGeometrySize = cloudGeometry => {
 const _getCloudGeometryBufferSize = (arrayBuffer, byteOffset) => {
   const headerBuffer = new Uint32Array(arrayBuffer, byteOffset, CLOUD_GEOMETRY_HEADER_ENTRIES);
   const numPositions = headerBuffer[0];
-  const numIndices = headerBuffer[1];
+  const numNormals = headerBuffer[1];
+  const numIndices = headerBuffer[2];
 
   return _getCloudGeometrySizeFromMetadata({
     numPositions,
+    numNormals,
     numIndices,
   });
 };
@@ -38,7 +43,7 @@ const _getCloudGeometryBufferSize = (arrayBuffer, byteOffset) => {
 // stringification
 
 const stringifyCloudGeometry = (cloudGeometry, arrayBuffer, byteOffset) => {
-  const {positions, indices} = cloudGeometry;
+  const {positions, normals, indices} = cloudGeometry;
 
   if (arrayBuffer === undefined || byteOffset === undefined) {
     const bufferSize = _getCloudGeometrySize(cloudGeometry);
@@ -48,13 +53,21 @@ const stringifyCloudGeometry = (cloudGeometry, arrayBuffer, byteOffset) => {
 
   const headerBuffer = new Uint32Array(arrayBuffer, byteOffset, CLOUD_GEOMETRY_HEADER_ENTRIES);
   headerBuffer[0] = positions.length;
-  headerBuffer[1] = indices.length;
+  headerBuffer[1] = normals.length;
+  headerBuffer[2] = indices.length;
+  byteOffset += CLOUD_GEOMETRY_HEADER_SIZE;
 
-  const positionsBuffer = new Float32Array(arrayBuffer, byteOffset + CLOUD_GEOMETRY_HEADER_SIZE, positions.length);
+  const positionsBuffer = new Float32Array(arrayBuffer, byteOffset, positions.length);
   positionsBuffer.set(positions);
+  byteOffset += FLOAT32_SIZE * positions.length;
 
-  const numIndices = new Uint32Array(arrayBuffer, byteOffset + CLOUD_GEOMETRY_HEADER_SIZE + (FLOAT32_SIZE * positions.length), indices.length);
+  const normalsBuffer = new Float32Array(arrayBuffer, byteOffset, normals.length);
+  normalsBuffer.set(normals);
+  byteOffset += FLOAT32_SIZE * normals.length;
+
+  const numIndices = new Uint32Array(arrayBuffer, byteOffset, indices.length);
   numIndices.set(indices);
+  byteOffset += FLOAT32_SIZE * indices.length;
 
   return arrayBuffer;
 };
@@ -95,16 +108,25 @@ const parseCloudGeometry = (arrayBuffer, byteOffset) => {
 
   const headerBuffer = new Uint32Array(arrayBuffer, byteOffset, CLOUD_GEOMETRY_HEADER_ENTRIES);
   const numPositions = headerBuffer[0];
-  const numIndices = headerBuffer[1];
+  const numNormals = headerBuffer[1];
+  const numIndices = headerBuffer[2];
+  byteOffset += CLOUD_GEOMETRY_HEADER_SIZE;
 
-  const positionsBuffer = new Float32Array(arrayBuffer, byteOffset + CLOUD_GEOMETRY_HEADER_SIZE, numPositions);
+  const positionsBuffer = new Float32Array(arrayBuffer, byteOffset, numPositions);
   const positions = positionsBuffer;
+  byteOffset += FLOAT32_SIZE * numPositions;
 
-  const indicesBuffer = new Uint32Array(arrayBuffer, byteOffset + CLOUD_GEOMETRY_HEADER_SIZE + (FLOAT32_SIZE * numPositions), numIndices);
+  const normalsBuffer = new Float32Array(arrayBuffer, byteOffset, numNormals);
+  const normals = normalsBuffer;
+  byteOffset += FLOAT32_SIZE * numNormals;
+
+  const indicesBuffer = new Uint32Array(arrayBuffer, byteOffset, numIndices);
   const indices = indicesBuffer;
+  byteOffset += FLOAT32_SIZE * numIndices;
 
   return {
     positions,
+    normals,
     indices,
   };
 };

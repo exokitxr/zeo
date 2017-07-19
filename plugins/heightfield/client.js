@@ -6,7 +6,7 @@ const {
 } = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
 
-const NUM_POSITIONS_CHUNK = 100 * 1024;
+const NUM_POSITIONS_CHUNK = 1200 * 1024;
 const LIGHTMAP_PLUGIN = 'plugins-lightmap';
 const DAY_NIGHT_SKYBOX_PLUGIN = 'plugins-day-night-skybox';
 
@@ -15,6 +15,10 @@ const HEIGHTFIELD_SHADER = {
     lightMap: {
       type: 't',
       value: null,
+    },
+    useLightMap: {
+      type: 'f',
+      value: 0,
     },
     d: {
       type: 'v2',
@@ -77,6 +81,7 @@ precision highp int;
 // uniform mat4 viewMatrix;
 uniform vec3 ambientLightColor;
 uniform sampler2D lightMap;
+uniform float useLightMap;
 uniform vec2 d;
 uniform float sunIntensity;
 
@@ -95,13 +100,18 @@ varying vec3 vViewPosition;
 void main() {
 	vec4 diffuseColor = vec4(vColor, 1.0);
 
-  float u = (
-    floor(clamp(vPosition.x - d.x, 0.0, ${(NUM_CELLS).toFixed(8)})) +
-    (floor(clamp(vPosition.z - d.y, 0.0, ${(NUM_CELLS).toFixed(8)})) * ${(NUM_CELLS + 1).toFixed(8)}) +
-    0.5
-  ) / (${(NUM_CELLS + 1).toFixed(8)} * ${(NUM_CELLS + 1).toFixed(8)});
-  float v = (floor(vPosition.y - ${HEIGHT_OFFSET.toFixed(8)}) + 0.5) / ${NUM_CELLS_HEIGHT.toFixed(8)};
-  vec4 lightColor = texture2D( lightMap, vec2(u, v) );
+  vec4 lightColor;
+  if (useLightMap > 0.0) {
+    float u = (
+      floor(clamp(vPosition.x - d.x, 0.0, ${(NUM_CELLS).toFixed(8)})) +
+      (floor(clamp(vPosition.z - d.y, 0.0, ${(NUM_CELLS).toFixed(8)})) * ${(NUM_CELLS + 1).toFixed(8)}) +
+      0.5
+    ) / (${(NUM_CELLS + 1).toFixed(8)} * ${(NUM_CELLS + 1).toFixed(8)});
+    float v = (floor(vPosition.y - ${HEIGHT_OFFSET.toFixed(8)}) + 0.5) / ${NUM_CELLS_HEIGHT.toFixed(8)};
+    lightColor = texture2D( lightMap, vec2(u, v) );
+  } else {
+    lightColor = vec4(0.5, 0.5, 0.5, 0.1);
+  }
 
 #ifdef ALPHATEST
 	if ( diffuseColor.a < ALPHATEST ) discard;
@@ -157,13 +167,14 @@ class Heightfield {
         accept(originHeight);
       });
     });
-    worker.requestGenerate = (x, y) => new Promise((accept, reject) => {
-      const buffer = new ArrayBuffer(NUM_POSITIONS_CHUNK * 3);
+    worker.requestGenerate = (x, y, resolution) => new Promise((accept, reject) => {
+      const buffer = new ArrayBuffer(NUM_POSITIONS_CHUNK);
       worker.postMessage({
         method: 'generate',
         args: {
           x,
           y,
+          resolution,
           buffer,
         },
       }, [buffer]);
@@ -205,6 +216,7 @@ class Heightfield {
       const {x, y} = offset;
       const lightmap = lightmapper.getLightmapAt(x * NUM_CELLS, y * NUM_CELLS);
       mapChunkMesh.material.uniforms.lightMap.value = lightmap.texture;
+      mapChunkMesh.material.uniforms.useLightMap.value = 1;
       mapChunkMesh.lightmap = lightmap;
     };
     const _unbindLightmap = mapChunkMesh => {
@@ -224,56 +236,60 @@ class Heightfield {
       .then(originHeight => {
         world.setSpawnMatrix(new THREE.Matrix4().makeTranslation(0, originHeight, 0));
       });
-    const _requestGenerate = (x, y) => worker.requestGenerate(x, y)
+    const _requestGenerate = (x, y, resolution) => worker.requestGenerate(x, y, resolution)
       .then(mapChunkBuffer => protocolUtils.parseMapChunk(mapChunkBuffer));
-    const _makeMapChunkMesh = (mapChunkData, x, z) => {
-      const {position, positions, normals, colors, heightfield, heightRange} = mapChunkData;
+    const _makeMapChunkMesh = (chunk, mapChunkData, x, z) => {
+      const mesh = (() => {
+        const {position, positions, normals, colors, heightfield, heightRange} = mapChunkData;
 
-      const geometry = (() => {
-        let geometry = new THREE.BufferGeometry();
-        geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
-        geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
-        geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
-        const [minY, maxY] = heightRange;
-        geometry.boundingSphere = new THREE.Sphere(
-          new THREE.Vector3(
-            (x * NUM_CELLS) + (NUM_CELLS / 2),
-            (minY + maxY) / 2,
-            (z * NUM_CELLS) + (NUM_CELLS / 2)
-          ),
-          Math.max(Math.sqrt((NUM_CELLS / 2) * (NUM_CELLS / 2) * 3), (maxY - minY) / 2)
+        const geometry = (() => {
+          let geometry = new THREE.BufferGeometry();
+          geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+          geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
+          geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
+          const [minY, maxY] = heightRange;
+          geometry.boundingSphere = new THREE.Sphere(
+            new THREE.Vector3(
+              (x * NUM_CELLS) + (NUM_CELLS / 2),
+              (minY + maxY) / 2,
+              (z * NUM_CELLS) + (NUM_CELLS / 2)
+            ),
+            Math.max(Math.sqrt((NUM_CELLS / 2) * (NUM_CELLS / 2) * 3), (maxY - minY) / 2)
+          );
+          return geometry;
+        })();
+        const uniforms = Object.assign(
+          THREE.UniformsUtils.clone(THREE.UniformsLib.lights),
+          THREE.UniformsUtils.clone(HEIGHTFIELD_SHADER.uniforms)
         );
-        return geometry;
+        uniforms.d.value = new THREE.Vector2(x * NUM_CELLS, z * NUM_CELLS);
+        const material = new THREE.ShaderMaterial({
+          uniforms: uniforms,
+          vertexShader: HEIGHTFIELD_SHADER.vertexShader,
+          fragmentShader: HEIGHTFIELD_SHADER.fragmentShader,
+          lights: true,
+          // transparent: true,
+          extensions: {
+            derivatives: true,
+          },
+        });
+
+        const mesh = new THREE.Mesh(geometry, material);
+        // mesh.frustumCulled = false;
+
+        mesh.offset = new THREE.Vector2(x, z);
+        mesh.heightfield = heightfield;
+
+        mesh.lightmap = null;
+        if (lightmapper && chunk.lod === 1) {
+          _bindLightmap(mesh);
+        }
+
+        return mesh;
       })();
-      const uniforms = Object.assign(
-        THREE.UniformsUtils.clone(THREE.UniformsLib.lights),
-        THREE.UniformsUtils.clone(HEIGHTFIELD_SHADER.uniforms)
-      );
-      uniforms.d.value = new THREE.Vector2(x * NUM_CELLS, z * NUM_CELLS);
-      const material = new THREE.ShaderMaterial({
-        uniforms: uniforms,
-        vertexShader: HEIGHTFIELD_SHADER.vertexShader,
-        fragmentShader: HEIGHTFIELD_SHADER.fragmentShader,
-        lights: true,
-        // transparent: true,
-        extensions: {
-          derivatives: true,
-        },
-      });
-
-      const mesh = new THREE.Mesh(geometry, material);
-      // mesh.frustumCulled = false;
-
-      mesh.offset = new THREE.Vector2(x, z);
-      mesh.heightfield = heightfield;
-
-      mesh.lightmap = null;
-      if (lightmapper) {
-        _bindLightmap(mesh);
-      }
 
       mesh.destroy = () => {
-        geometry.dispose();
+        mesh.geometry.dispose();
 
         if (mesh.lightmap) {
           _unbindLightmap(mesh);
@@ -284,8 +300,8 @@ class Heightfield {
     };
 
     const chunker = chnkr.makeChunker({
-      resolution: 32,
-      range: 4,
+      resolution: NUM_CELLS,
+      range: 3,
     });
     const mapChunkMeshes = {};
 
@@ -339,30 +355,47 @@ class Heightfield {
         mapChunkMesh.targeted = false;
       };
 
-      const addedPromises = added.map(chunk => {
-        const {x, z} = chunk;
+      const addedPromises = added.concat(relodded).map(chunk => {
+        const {x, z, lod} = chunk;
+        const resolution = (() => {
+          switch (lod) {
+            case 1: return NUM_CELLS;
+            case 2: return NUM_CELLS / 4;
+            case 3: return NUM_CELLS / 16;
+            // case 4: return NUM_CELLS / 32;
+          }
+        })();
 
-        return _requestGenerate(x, z)
+        return _requestGenerate(x, z, resolution)
           .then(mapChunkData => {
-            const mapChunkMesh = _makeMapChunkMesh(mapChunkData, x, z);
-            scene.add(mapChunkMesh);
-
             const index = x + ':' + z;
-            mapChunkMeshes[index] = mapChunkMesh;
+            const oldMapChunkMesh = mapChunkMeshes[index];
+            if (oldMapChunkMesh) {
+              scene.remove(oldMapChunkMesh);
+              oldMapChunkMesh.destroy();
 
-            const {lod} = chunk;
-            if (lod === 1 && !mapChunkMesh.targeted) {
-              _addTarget(mapChunkMesh, x, z);
+              if (lod !== 1 && oldMapChunkMesh.targeted) {
+                _removeTarget(oldMapChunkMesh);
+                retargeted = true;
+              }
+            }
 
+            const newMapChunkMesh = _makeMapChunkMesh(chunk, mapChunkData, x, z);
+            scene.add(newMapChunkMesh);
+            mapChunkMeshes[index] = newMapChunkMesh;
+
+            if (lod === 1 && !newMapChunkMesh.targeted) {
+              _addTarget(newMapChunkMesh, x, z);
               retargeted = true;
             }
 
-            chunk.data = mapChunkMesh;
+            chunk.data = newMapChunkMesh;
           });
       });
       return Promise.all(addedPromises)
         .then(() => {
-          removed.forEach(chunk => {
+          for (let i = 0; i < removed.length; i++) {
+            const chunk = removed[i];
             const {data: mapChunkMesh} = chunk;
             scene.remove(mapChunkMesh);
             mapChunkMesh.destroy();
@@ -374,23 +407,22 @@ class Heightfield {
             const {lod} = chunk;
             if (lod !== 1 && mapChunkMesh.targeted) {
               _removeTarget(mapChunkMesh);
-
               retargeted = true;
             }
-          });
-          relodded.forEach(chunk => {
+          }
+
+          for (let i = 0; i < relodded.length; i++) {
+            const chunk = relodded[i];
             const {x, z, lod, data: mapChunkMesh} = chunk;
 
             if (lod === 1 && !mapChunkMesh.targeted) {
               _addTarget(mapChunkMesh, x, z);
-
               retargeted = true;
             } else if (lod !== 1 && mapChunkMesh.targeted) {
               _removeTarget(mapChunkMesh);
-
               retargeted = true;
             }
-          });
+          }
         })
         .then(() => {
           if (retargeted) {

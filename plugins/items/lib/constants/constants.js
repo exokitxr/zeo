@@ -1,9 +1,9 @@
-const NUM_CELLS = 32;
+const NUM_CELLS = 64;
 const OVERSCAN = 1;
 const NUM_CELLS_OVERSCAN = NUM_CELLS + OVERSCAN;
 
-const NUM_CELLS_HEIGHT = 128;
-const HEIGHT_OFFSET = -32;
+const NUM_CELLS_HEIGHT = 60;
+const HEIGHT_OFFSET = -10;
 
 const DEFAULT_SEED = 'a';
 
