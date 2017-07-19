@@ -62,16 +62,8 @@ class Skin {
           };
 
           const localMesh = _makeMesh();
-          localMesh.onBeforeRender = () => {
-            if (renderer.getRecursing()) {
-              localMesh.material.uniforms.headVisible.value = 1;
-            }
-          };
-          localMesh.onAfterRender = () => {
-            if (renderer.getRecursing()) {
-              localMesh.material.uniforms.headVisible.value = 0;
-            }
-          };
+          localMesh.material.uniforms.headVisible.value = 0;
+          localMesh.visible = false;
           scene.add(localMesh);
           meshes.push(localMesh);
 
@@ -185,14 +177,16 @@ class Skin {
           render.on('update', _update);
           _update();
 
-          const _updateStart = () => {
-            localMesh.material.uniforms.headVisible.value = 0;
-          };
-          render.on('updateStart', _updateStart);
-          const _updateEnd = () => {
+          const _updateEyeStart = () => {
             localMesh.material.uniforms.headVisible.value = 1;
+            localMesh.visible = true;
           };
-          render.on('updateEnd', _updateEnd);
+          render.on('updateEyeStart', _updateEyeStart);
+          const _updateEyeEnd = () => {
+            localMesh.material.uniforms.headVisible.value = 0;
+            localMesh.visible = false;
+          };
+          render.on('updateEyeEnd', _updateEyeEnd);
 
           const _playerEnter = ({id}) => {
             _addMesh(id);
@@ -210,8 +204,8 @@ class Skin {
             }
 
             render.removeListener('update', _update);
-            render.removeListener('updateStart', _updateStart);
-            render.removeListener('updateEnd', _updateEnd);
+            render.removeListener('updateEyeStart', _updateEyeStart);
+            render.removeListener('updateEyeEnd', _updateEyeEnd);
 
             player.removeListener('playerEnter', _playerEnter);
             player.removeListener('playerLeave', _playerLeave);
