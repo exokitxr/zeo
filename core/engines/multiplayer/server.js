@@ -14,17 +14,26 @@ class Multiplayer {
 
     const connections = [];
     const statuses = new Map();
+    const skins = new Map();
 
     const _getAllStatuses = () => {
       const result = [];
-
       statuses.forEach((status, id) => {
         result.push({
           id,
           status,
         });
       });
-
+      return result;
+    };
+    const _getAllSkins = () => {
+      const result = [];
+      skins.forEach((status, id) => {
+        result.push({
+          id,
+          skinImgBuffer,
+        });
+      });
       return result;
     };
 
@@ -57,56 +66,95 @@ class Multiplayer {
             };
             const es = JSON.stringify(e);
             c.send(es);
+
+            skins.forEach((skinImgBuffer, id) => {
+              const e = {
+                type: 'skin',
+                id: id,
+              };
+              const es = JSON.stringify(e);
+              c.send(es);
+              c.send(skinImgBuffer);
+            });
           };
           _sendInit();
 
-          c.on('message', s => {
-            const m = JSON.parse(s);
-            if (typeof m === 'object' && m && m.type === 'status' && ('status' in m)) {
-              const {status} = m;
-              const {hmd, controllers, metadata} = status;
+          // let pendingMessage = null;
 
-              let newStatus = statuses.get(id);
-              const hadStatus = Boolean(newStatus);
-              if (hadStatus) {
-                newStatus.hmd = hmd;
-                newStatus.controllers = controllers;
-                newStatus.metadata = metadata;
+          c.on('message', o => {
+            if (typeof o === 'string') {
+              const m = JSON.parse(o);
+              const {type} = m;
+
+              if (type === 'status') {
+                const {status} = m;
+                const {hmd, controllers, metadata} = status;
+
+                let newStatus = statuses.get(id);
+                const hadStatus = Boolean(newStatus);
+                if (hadStatus) {
+                  newStatus.hmd = hmd;
+                  newStatus.controllers = controllers;
+                  newStatus.metadata = metadata;
+                } else {
+                  newStatus = new Status(username, hmd, controllers, metadata);
+                  statuses.set(id, newStatus);
+                }
+
+                const statusUpdate = {
+                  username: username,
+                  hmd: newStatus.hmd,
+                  controllers: newStatus.controllers,
+                  metadata: newStatus.metadata,
+                };
+                const e = {
+                  type: 'status',
+                  id,
+                  status: statusUpdate,
+                };
+                const es = JSON.stringify(e);
+                for (let i = 0; i < connections.length; i++) {
+                  const connection = connections[i];
+                  if (connection.readyState === ws.OPEN && connection !== c) {
+                    connection.send(es);
+                  }
+                }
+
+                if (!hadStatus) {
+                  multiplayerApi.emit('playerEnter', {
+                    id: id,
+                    address: address,
+                    status: newStatus,
+                  });
+                }
+              } else if (type === 'skin') {
+                // pendingMessage = m;
               } else {
-                newStatus = new Status(username, hmd, controllers, metadata);
-                statuses.set(id, newStatus);
+                console.warn('multiplayer unknown message type', JSON.stringify(type));
               }
+            } else {
+              const skinImgBuffer = o;
+              skins.set(id, skinImgBuffer);
 
-              const statusUpdate = {
-                username: username,
-                hmd: newStatus.hmd,
-                controllers: newStatus.controllers,
-                metadata: newStatus.metadata,
-              };
               const e = {
-                type: 'status',
+                type: 'skin',
                 id,
-                status: statusUpdate,
               };
               const es = JSON.stringify(e);
               for (let i = 0; i < connections.length; i++) {
                 const connection = connections[i];
                 if (connection.readyState === ws.OPEN && connection !== c) {
                   connection.send(es);
+                  connection.send(skinImgBuffer);
                 }
               }
 
-              if (!hadStatus) {
-                multiplayerApi.emit('playerEnter', {
-                  id: id,
-                  address: address,
-                  status: newStatus,
-                });
-              }
+              // pendingMessage = null;
             }
           });
           c.on('close', () => {
             statuses.delete(id);
+            skins.delete(id);
 
             const e = {
               type: 'status',
