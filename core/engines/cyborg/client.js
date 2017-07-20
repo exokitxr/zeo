@@ -65,6 +65,16 @@ class Cyborg {
           const RAY_COLOR = 0x44c2ff;
           const RAY_HIGHLIGHT_COLOR = new THREE.Color(RAY_COLOR).multiplyScalar(0.5).getHex();
 
+          const _getImageData = img => {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0);
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            return imageData.data;
+          };
+
           class PRS {
             constructor() {
               this.position = new THREE.Vector3();
@@ -373,6 +383,9 @@ class Cyborg {
                 local: true,
               });
               scene.add(playerSkinMesh);
+
+              const skinImgBuffer = _getImageData(skinImg);
+              multiplayer.updateSkin(skinImgBuffer);
             }
           };
           const _update = () => {

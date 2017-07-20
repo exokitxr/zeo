@@ -29,6 +29,7 @@ class Multiplayer {
       '/core/engines/rend',
       '/core/utils/js-utils',
       '/core/utils/network-utils',
+      '/core/utils/skin-utils',
     ]).then(([
       three,
       webvr,
@@ -37,6 +38,7 @@ class Multiplayer {
       rend,
       jsUtils,
       networkUtils,
+      skinUtils,
     ]) => {
       if (live) {
         const {THREE, scene, camera} = three;
@@ -51,27 +53,38 @@ class Multiplayer {
 
         let connection = null;
         const _addressChange = ({address, username}) => {
+          let pendingMessage = null;
+
           connection = new AutoWs(_relativeWsUrl('archae/multiplayerWs?id=' + encodeURIComponent(multiplayerApi.getId()) + '&address=' + encodeURIComponent(address) + '&username=' + encodeURIComponent(username)));
           connection.on('message', msg => {
-            const m = JSON.parse(msg.data);
-            const {type} = m;
+            const {data} = msg;
 
-            if (type === 'init') {
-              const {statuses} = m;
+            if (typeof data === 'string') {
+              const m = JSON.parse(data);
+              const {type} = m;
 
-              for (let i = 0; i < statuses.length; i++) {
-                const statusEntry = statuses[i];
+              if (type === 'init') {
+                const {statuses} = m;
+
+                for (let i = 0; i < statuses.length; i++) {
+                  const statusEntry = statuses[i];
+                  _handleStatusEntry(statusEntry);
+                }
+
+                rend.setStatus('users', multiplayerApi.getUsers());
+              } else if (type === 'status') {
+                const statusEntry = m;
                 _handleStatusEntry(statusEntry);
+
+                rend.setStatus('users', multiplayerApi.getUsers());
+              } else if (type === 'skin') {
+                pendingMessage = m;
+              } else {
+                console.log('unknown message type', JSON.stringify(type));
               }
-
-              rend.setStatus('users', multiplayerApi.getUsers());
-            } else if (type === 'status') {
-              const statusEntry = m;
-              _handleStatusEntry(statusEntry);
-
-              rend.setStatus('users', multiplayerApi.getUsers());
             } else {
-              console.log('unknown message type', JSON.stringify(type));
+              _handleSkinEntry(pendingMessage, new Uint8Array(data));
+              pendingMessage = null;
             }
           });
 
@@ -82,8 +95,6 @@ class Multiplayer {
             if (status) {
               if (!playerStatus) {
                 multiplayerApi.emit('playerEnter', {id, status});
-
-                multiplayerApi.setPlayerStatus(id, status);
               } else {
                 multiplayerApi.emit('playerStatusUpdate', {id, status});
 
@@ -100,23 +111,29 @@ class Multiplayer {
             } else {
               if (playerStatus) {
                 multiplayerApi.emit('playerLeave', {id});
-
-                multiplayerApi.deletePlayerStatus(id);
               } else {
                 console.warn('Ignoring duplicate player leave message', {id});
               }
             }
           };
+          const _handleSkinEntry = ({id}, skinImgBuffer) => {
+            multiplayerApi.setPlayerSkin(id, skinImgBuffer);
+          };
           const _status = status => {
-            const e = {
+            connection.send(JSON.stringify({
               type: 'status',
-              status,
-            };
-            const es = JSON.stringify(e);
-
-            connection.send(es);
+              status: status,
+            }));
           };
           multiplayerApi.on('status', _status);
+          const _skin = ({id, skinImgBuffer}) => {
+            connection.send(JSON.stringify({
+              type: 'skin',
+              id: id,
+            }));
+            connection.send(skinImgBuffer);
+          };
+          multiplayerApi.on('skin', _skin);
 
           cleanups.push(() => {
             multiplayerApi.reset();
@@ -136,6 +153,7 @@ class Multiplayer {
 
             this.playerStatuses = new Map();
             this.remotePlayerMeshes = new Map();
+            this.remotePlayerSkinMeshes = new Map();
           }
 
           getId() {
@@ -159,12 +177,49 @@ class Multiplayer {
             return this.playerStatuses.get(playerId) || null;
           }
 
-          setPlayerStatus(playerId, status) {
-            this.playerStatuses.set(playerId, status);
+
+          setPlayerSkin(playerId, skinImgBuffer) {
+            const oldSkinMesh = this.remotePlayerSkinMeshes.get(playerId);
+            if (oldSkinMesh) {
+              scene.remove(oldSkinMesh);
+              oldSkinMesh.destroy();
+              this.remotePlayerSkinMeshes.delete(oldSkinMesh);
+            }
+
+            if (skinImgBuffer) {
+              const newSkinImg = _makeImg(skinImgBuffer, 64, 64);
+              const newSkinMesh = skinUtils.makePlayerMesh(newSkinImg, {
+                local: false,
+              });
+console.log('new skin', {skinImgBuffer, newSkinImg, newSkinMesh});
+              scene.add(newSkinMesh);
+              this.remotePlayerSkinMeshes.set(playerId, newSkinMesh);
+            }
           }
 
-          deletePlayerStatus(playerId) {
+          addPlayer(playerId, status) {
+            this.playerStatuses.set(playerId, status);
+
+            const remotePlayerMesh = _makeRemotePlayerMesh();
+            remotePlayerMesh.update(status);
+            scene.add(remotePlayerMesh);
+            this.remotePlayerMeshes.set(playerId, remotePlayerMesh);
+          }
+
+          deletePlayer(playerId) {
             this.playerStatuses.delete(playerId);
+
+            const remotePlayerMesh = this.remotePlayerMeshes.get(id);
+            scene.remove(remotePlayerMesh);
+            remotePlayerMesh.destroy();
+            this.remotePlayerMeshes.delete(id);
+
+            const skinMesh = this.remotePlayerSkinMeshes.get(playerId);
+            if (skinMesh) {
+              scene.remove(skinMesh);
+              skinMesh.destroy();
+              this.remotePlayerSkinMeshes.delete(playerId);
+            }
           }
 
           getUsers() {
@@ -182,9 +237,20 @@ class Multiplayer {
             this.emit('status', status);
           }
 
+          updateSkin(skinImgBuffer) {
+            this.emit('skin', {
+              type: 'skin',
+              id: this.id,
+              skinImgBuffer: skinImgBuffer,
+            });
+          }
+
           getRemotePlayerMesh(id) {
-            const {remotePlayerMeshes} = this;
-            return remotePlayerMeshes.get(id) || null;
+            return this.remotePlayerMeshes.get(id) || null;
+          }
+
+          getRemotePlayerSkinMesh(id) {
+            return this.remotePlayerSkinMeshes.get(id) || null;
           }
 
           getRemoteControllerMeshes(id) {
@@ -196,16 +262,6 @@ class Multiplayer {
             } else {
               return null;
             }
-          }
-
-          addRemotePlayerMesh(id, mesh) {
-            const {remotePlayerMeshes} = this;
-            remotePlayerMeshes.set(id, mesh);
-          }
-
-          removeRemotePlayerMesh(id) {
-            const {remotePlayerMeshes} = this;
-            remotePlayerMeshes.delete(id);
           }
 
           reset() {
@@ -258,7 +314,7 @@ class Multiplayer {
               hmd.position.fromArray(hmdStatus.position);
               hmd.quaternion.fromArray(hmdStatus.rotation);
               hmd.scale.fromArray(hmdStatus.scale);
-              hmd.updateMatrixWorld();
+              // hmd.updateMatrixWorld();
             };
             const _updateControllers = () => {
               const {left: leftController, right: rightController} = controllers;
@@ -269,12 +325,12 @@ class Multiplayer {
               leftController.position.fromArray(leftControllerStatus.position);
               leftController.quaternion.fromArray(leftControllerStatus.rotation);
               leftController.scale.fromArray(leftControllerStatus.scale);
-              leftController.updateMatrixWorld();
+              // leftController.updateMatrixWorld();
 
               rightController.position.fromArray(rightControllerStatus.position);
               rightController.quaternion.fromArray(rightControllerStatus.rotation);
               rightController.scale.fromArray(rightControllerStatus.scale);
-              rightController.updateMatrixWorld();
+              // rightController.updateMatrixWorld();
             };
             /* const _updateLabel = () => {
               const {hmd: hmdStatus, username} = status;
@@ -292,11 +348,15 @@ class Multiplayer {
                 username,
               });
             };
+            const _updateMatrix = () => {
+              object.updateMatrixWorld();
+            };
 
             _updateHmd();
             _updateControllers();
             // _updateLabel();
             _updateMetadata();
+            _updateMatrix();
           };
           object.destroy = () => {
             // label.destroy();
@@ -309,38 +369,27 @@ class Multiplayer {
         for (let i = 0; i < playerStatuses.length; i++) {
           const playerStatus = playerStatuses[i];
           const {playerId, status} = playerStatus;
-          const remotePlayerMesh = _makeRemotePlayerMesh();
-          remotePlayerMesh.update(status);
-
-          scene.add(remotePlayerMesh);
-
-          multiplayerApi.addRemotePlayerMesh(playerId, remotePlayerMesh);
+          multiplayerApi.addPlayer(playerId, status);
         }
 
         const playerStatusUpdate = update => {
           const {id, status} = update;
-          const remotePlayerMesh = multiplayerApi.getRemotePlayerMesh(id);
 
+          const remotePlayerMesh = multiplayerApi.getRemotePlayerMesh(id);
           remotePlayerMesh.update(status);
+
+          const remotePlayerSkinMesh = multiplayerApi.getRemotePlayerSkinMesh(id);
+          if (remotePlayerSkinMesh) {
+            remotePlayerSkinMesh.updateJson(status);
+          }
         };
         const playerEnter = update => {
           const {id, status} = update;
-
-          const remotePlayerMesh = _makeRemotePlayerMesh();
-          remotePlayerMesh.update(status);
-
-          scene.add(remotePlayerMesh);
-
-          multiplayerApi.addRemotePlayerMesh(id, remotePlayerMesh);
+          multiplayerApi.addPlayer(id, status);
         };
         const playerLeave = update => {
           const {id} = update;
-          const remotePlayerMesh = multiplayerApi.getRemotePlayerMesh(id);
-
-          scene.remove(remotePlayerMesh);
-          remotePlayerMesh.destroy();
-
-          multiplayerApi.removeRemotePlayerMesh(id);
+          multiplayerApi.deletePlayer(id);
         };
         multiplayerApi.on('playerStatusUpdate', playerStatusUpdate);
         multiplayerApi.on('playerEnter', playerEnter);
@@ -489,5 +538,15 @@ const _relativeWsUrl = s => {
 };
 const _makeId = () => Math.random().toString(36).substring(7);
 const _arrayEquals = (a, b) => Array.isArray(a) && Array.isArray(b) && a.length === b.length && a.every((ae, i) => b[i] === ae);
+const _makeImg = (imgBuffer, width, height) => {
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  const imageData = ctx.getImageData(0, 0, width, height);
+  imageData.data.set(imgBuffer);
+  ctx.putImageData(imageData, 0, 0);
+  return canvas;
+};
 
 module.exports = Multiplayer;
