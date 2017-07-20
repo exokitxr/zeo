@@ -69,7 +69,7 @@ class Multiplayer {
 
             skins.forEach((skinImgBuffer, id) => {
               const e = {
-                type: 'skin',
+                type: 'setSkin',
                 id: id,
               };
               const es = JSON.stringify(e);
@@ -127,8 +127,23 @@ class Multiplayer {
                     status: newStatus,
                   });
                 }
-              } else if (type === 'skin') {
+              } else if (type === 'setSkin') {
                 // pendingMessage = m;
+              } else if (type === 'clearSkin') {
+                skins.delete(id);
+
+                const e = {
+                  type: 'clearSkin',
+                  id,
+                };
+                const es = JSON.stringify(e);
+                for (let i = 0; i < connections.length; i++) {
+                  const connection = connections[i];
+                  if (connection.readyState === ws.OPEN && connection !== c) {
+                    connection.send(es);
+                    connection.send(skinImgBuffer);
+                  }
+                }
               } else {
                 console.warn('multiplayer unknown message type', JSON.stringify(type));
               }
@@ -137,7 +152,7 @@ class Multiplayer {
               skins.set(id, skinImgBuffer);
 
               const e = {
-                type: 'skin',
+                type: 'setSkin',
                 id,
               };
               const es = JSON.stringify(e);

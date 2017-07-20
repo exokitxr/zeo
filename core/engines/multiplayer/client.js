@@ -77,13 +77,15 @@ class Multiplayer {
                 _handleStatusEntry(statusEntry);
 
                 rend.setStatus('users', multiplayerApi.getUsers());
-              } else if (type === 'skin') {
+              } else if (type === 'setSkin') {
                 pendingMessage = m;
+              } else if (type === 'clearSkin') {
+                _handleClearSkinEntry(m);
               } else {
                 console.log('unknown message type', JSON.stringify(type));
               }
             } else {
-              _handleSkinEntry(pendingMessage, new Uint8Array(data));
+              _handleSetSkinEntry(pendingMessage, new Uint8Array(data));
               pendingMessage = null;
             }
           });
@@ -116,8 +118,11 @@ class Multiplayer {
               }
             }
           };
-          const _handleSkinEntry = ({id}, skinImgBuffer) => {
+          const _handleSetSkinEntry = ({id}, skinImgBuffer) => {
             multiplayerApi.setPlayerSkin(id, skinImgBuffer);
+          };
+          const _handleClearSkinEntry = ({id}) => {
+            multiplayerApi.setPlayerSkin(id, null);
           };
           const _status = status => {
             connection.send(JSON.stringify({
@@ -127,11 +132,18 @@ class Multiplayer {
           };
           multiplayerApi.on('status', _status);
           const _skin = ({id, skinImgBuffer}) => {
-            connection.send(JSON.stringify({
-              type: 'skin',
-              id: id,
-            }));
-            connection.send(skinImgBuffer);
+            if (skinImgBuffer) {
+              connection.send(JSON.stringify({
+                type: 'setSkin',
+                id: id,
+              }));
+              connection.send(skinImgBuffer);
+            } else {
+              connection.send(JSON.stringify({
+                type: 'clearSkin',
+                id: id,
+              }));
+            }
           };
           multiplayerApi.on('skin', _skin);
 
@@ -238,7 +250,6 @@ class Multiplayer {
 
           updateSkin(skinImgBuffer) {
             this.emit('skin', {
-              type: 'skin',
               id: this.id,
               skinImgBuffer: skinImgBuffer,
             });
