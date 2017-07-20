@@ -641,21 +641,21 @@ class Zeo {
                         }
                       }
 
-                      const controllerMeshes = (() => {
+                      /* const controllerMeshes = (() => {
                         const controllers = cyborg.getControllers();
                         return {
                           left: controllers['left'].mesh,
                           right: controllers['right'].mesh,
                         };
-                      })();
+                      })(); */
                       class ZeoPlayerApi {
                         getId() {
                           return multiplayer.getId();
                         }
 
-                        getControllerMeshes() {
+                        /* getControllerMeshes() {
                           return controllerMeshes;
-                        }
+                        } */
 
                         getRemoteStatuses() {
                           return multiplayer.getPlayerStatuses();

@@ -32,6 +32,7 @@ class Cyborg {
       '/core/engines/multiplayer',
       '/core/utils/js-utils',
       '/core/utils/geometry-utils',
+      '/core/utils/skin-utils',
     ])
       .then(([
         bootstrap,
@@ -43,6 +44,7 @@ class Cyborg {
         multiplayer,
         jsUtils,
         geometryUtils,
+        skinUtils,
       ]) => {
         if (live) {
           const {THREE, camera} = three;
@@ -97,7 +99,9 @@ class Cyborg {
               this.prevStatusIndex = NUM_PREV_STATUSES;
             }
 
-            snapshotStatus() {
+            snapshotStatus(status) {
+              const {gamepads} = status;
+
               this.prevStatusIndex = mod(this.prevStatusIndex + 1, NUM_PREV_STATUSES);
 
               const prevStatus = this.prevStatuses[this.prevStatusIndex];
@@ -109,19 +113,19 @@ class Cyborg {
               prevStatus.hmd.worldRotation.copy(camera.quaternion);
               prevStatus.hmd.worldScale.copy(camera.scale); */
 
-              prevStatus.controllers.left.position.copy(controllers.left.mesh.position);
-              prevStatus.controllers.left.rotation.copy(controllers.left.mesh.quaternion);
-              prevStatus.controllers.left.scale.copy(controllers.left.mesh.scale);
-              prevStatus.controllers.left.worldPosition.copy(controllers.left.mesh.worldPosition);
-              prevStatus.controllers.left.worldRotation.copy(controllers.left.mesh.worldRotation);
-              prevStatus.controllers.left.worldScale.copy(controllers.left.mesh.worldScale);
+              prevStatus.controllers.left.position.copy(gamepads.left.position);
+              prevStatus.controllers.left.rotation.copy(gamepads.left.rotation);
+              prevStatus.controllers.left.scale.copy(gamepads.left.scale);
+              prevStatus.controllers.left.worldPosition.copy(gamepads.left.worldPosition);
+              prevStatus.controllers.left.worldRotation.copy(gamepads.left.worldRotation);
+              prevStatus.controllers.left.worldScale.copy(gamepads.left.worldScale);
 
-              prevStatus.controllers.right.position.copy(controllers.right.mesh.position);
-              prevStatus.controllers.right.rotation.copy(controllers.right.mesh.quaternion);
-              prevStatus.controllers.right.scale.copy(controllers.right.mesh.scale);
-              prevStatus.controllers.right.worldPosition.copy(controllers.right.mesh.worldPosition);
-              prevStatus.controllers.right.worldRotation.copy(controllers.right.mesh.worldRotation);
-              prevStatus.controllers.right.worldScale.copy(controllers.right.mesh.worldScale);
+              prevStatus.controllers.right.position.copy(gamepads.right.position);
+              prevStatus.controllers.right.rotation.copy(gamepads.right.rotation);
+              prevStatus.controllers.right.scale.copy(gamepads.right.scale);
+              prevStatus.controllers.right.worldPosition.copy(gamepads.right.worldPosition);
+              prevStatus.controllers.right.worldRotation.copy(gamepads.right.worldRotation);
+              prevStatus.controllers.right.worldScale.copy(gamepads.right.worldScale);
 
               prevStatus.timestamp = Date.now();
             }
@@ -157,85 +161,70 @@ class Cyborg {
               return timeDiff > 0 ? positionDiff.divideScalar(timeDiff / 1000) : zeroVector;
             }
           }
+          const player = new Player();
 
-          class Hmd {
-            constructor() {
+          const _makePlayerPlaceholderMesh = () => {
+            const object = new THREE.Object3D();
+
+            const hmdMesh = (() => {
               const mesh = hmdModelMesh.clone(true);
               mesh.visible = false;
               mesh.worldPosition = new THREE.Vector3();
               mesh.worldRotation = new THREE.Quaternion();
               mesh.worldScale = new THREE.Vector3(1, 1, 1);
-              this.mesh = mesh;
+              return mesh;
+            })();
+            object.add(hmdMesh);
+            object.hmdMesh = hmdMesh;
 
-              /* const labelMesh = resource.makePlayerLabelMesh({
-                username: rend.getStatus('username'),
-              });
-              this.labelMesh = labelMesh; */
+            const _makeControllerMesh = () => {
+              const object = new THREE.Object3D();
 
-              const hudMesh = (() => {
-                const object = new THREE.Object3D();
-                // object.visible = false;
+              object.worldPosition = new THREE.Vector3();
+              object.worldRotation = new THREE.Quaternion();
+              object.worldScale = new THREE.Vector3(1, 1, 1);
 
-                const circleMesh = (() => {
-                  const geometry = (() => {
-                    const geometry = new THREE.CylinderBufferGeometry(0.05, 0.05, 0.01, 8, 1)
-                      .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
-                      .applyMatrix(new THREE.Matrix4().makeRotationZ(Math.PI / 8));
+              const controllerMesh = controllerModelMesh.clone(true);
+              // const controllerMesh = mesh.children[0];
+              // controllerMesh.material.color.setHex(0xFFFFFF);
+              // controllerMesh.material.map = loader.load(texturePath);
+              // controllerMesh.material.specularMap = loader.load(specularMapPath);
+              object.add(controllerMesh);
 
-                    const _almostZero = v => Math.abs(v) < 0.001;
+              const rayMesh = (() => {
+                const geometry = new THREE.CylinderBufferGeometry(0.001, 0.001, 1, 32, 1)
+                  .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
+                  .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -0.5));
+                const material = new THREE.MeshBasicMaterial({
+                  // color: 0x2196F3,
+                  color: RAY_COLOR,
+                });
 
-                    const {array: positions} = geometry.getAttribute('position');
-                    const numPositions = positions.length / 3;
-                    for (let i = 0; i < numPositions; i++) {
-                      const baseIndex = i * 3;
-
-                      if (_almostZero(positions[baseIndex + 0]) && _almostZero(positions[baseIndex + 1])) {
-                        positions[baseIndex + 2] -= 0.005;
-                      }
-                    }
-
-                    geometry.computeVertexNormals();
-
-                    return geometry;
-                  })();
-                  const material = solidMaterial;
-
-                  const mesh = new THREE.Mesh(geometry, material);
-                  mesh.position.z = -0.1;
-
-                  const notchMesh = (() => {
-                    const geometry = new THREE.SphereBufferGeometry(0.005, 5, 4)
-                      .applyMatrix(new THREE.Matrix4().makeRotationY(Math.PI / 8))
-                      .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, 0.003));
-                    const material = solidMaterial;
-
-                    const mesh = new THREE.Mesh(geometry, material);
-                    return mesh;
-                  })();
-                  mesh.add(notchMesh);
-                  mesh.notchMesh = notchMesh;
-
-                  return mesh;
-                })();
-                object.add(circleMesh);
-                object.circleMesh = circleMesh;
-
-                return object;
+                const mesh = new THREE.Mesh(geometry, material);
+                return mesh;
               })();
-              this.hudMesh = hudMesh;
-            }
+              object.add(rayMesh);
+              object.rayMesh = rayMesh;
 
-            update(hmdStatus, gamepadStatus) {
-              const _updateMesh = () => {
-                const {mesh} = this;
+              return object;
+            };
+            const controllerMeshes = {
+              left: _makeControllerMesh(),
+              right: _makeControllerMesh(),
+            };
+            object.add(controllerMeshes.left);
+            object.add(controllerMeshes.right);
+            object.controllerMeshes = controllerMeshes;
 
-                mesh.position.copy(hmdStatus.position);
-                mesh.quaternion.copy(hmdStatus.rotation);
-                mesh.scale.copy(hmdStatus.scale);
+            object.update = (hmdStatus, gamepadsStatus) => {
+              const _updateHmdMesh = () => {
+                hmdMesh.position.copy(hmdStatus.position);
+                hmdMesh.quaternion.copy(hmdStatus.rotation);
+                hmdMesh.scale.copy(hmdStatus.scale);
 
-                mesh.worldPosition.copy(hmdStatus.worldPosition);
-                mesh.worldRotation.copy(hmdStatus.worldRotation);
-                mesh.worldScale.copy(hmdStatus.worldScale);
+                hmdMesh.worldPosition.copy(hmdStatus.worldPosition);
+                hmdMesh.worldRotation.copy(hmdStatus.worldRotation);
+                hmdMesh.worldScale.copy(hmdStatus.worldScale);
 
                 /* const {labelMesh} = this;
                 labelMesh.update({
@@ -251,152 +240,137 @@ class Cyborg {
                   username: rend.getStatus('username'),
                 }); */
               };
-              const _updateHmdMesh = () => {
-                const {hudMesh} = this;
+              const _updateControllerMeshes = () => {
+                _updateControllerMesh(controllerMeshes.left, gamepadsStatus.left);
+                _updateControllerMesh(controllerMeshes.right, gamepadsStatus.right);
+              };
+              const _updateControllerMesh = (controllerMesh, gamepadStatus) => {
+                controllerMesh.position.copy(gamepadStatus.position);
+                controllerMesh.quaternion.copy(gamepadStatus.rotation);
+                controllerMesh.scale.copy(gamepadStatus.scale);
 
-                const vrMode = bootstrap.getVrMode();
-                const mode = webvr.getMode()
-                const keys = webvr.getKeys();
-                if (vrMode === 'keyboard' && mode !== null && keys !== null) {
-                  const {axis} = keys;
+                controllerMesh.worldPosition.copy(gamepadStatus.worldPosition);
+                controllerMesh.worldRotation.copy(gamepadStatus.worldRotation);
+                controllerMesh.worldScale.copy(gamepadStatus.worldScale);
 
-                  if (axis) {
-                    hudMesh.position.copy(hmdStatus.position);
-                    hudMesh.quaternion.copy(hmdStatus.rotation);
-                    hudMesh.scale.copy(hmdStatus.scale);
+                const {buttons} = gamepadStatus;
+                if (!buttons.trigger.pressed && controllerMesh.rayMesh.material.color.getHex() !== RAY_COLOR) {
+                  controllerMesh.rayMesh.material.color.setHex(RAY_COLOR);
+                } else if (buttons.trigger.pressed && controllerMesh.rayMesh.material.color.getHex() !== RAY_HIGHLIGHT_COLOR) {
+                  controllerMesh.rayMesh.material.color.setHex(RAY_HIGHLIGHT_COLOR);
+                }
+              };
 
-                    const {circleMesh} = hudMesh;
-                    const {notchMesh} = circleMesh;
-                    const gamepad = gamepadStatus[mode === 'center' ? 'left' : mode];
-                    const {axes} = gamepad;
-                    notchMesh.position.set(axes[0] * 0.043, axes[1] * 0.043, (1 - new THREE.Vector2(axes[0], axes[1]).length()) * (-0.005));
+              _updateHmdMesh();
+              _updateControllerMeshes();
+            };
 
-                    if (!hudMesh.visible) {
-                      hudMesh.visible = true;
-                    }
-                  } else {
-                    if (hudMesh.visible) {
-                      hudMesh.visible = false;
-                    }
+            return object;
+          }
+          const playerPlaceholderMesh = _makePlayerPlaceholderMesh();
+          camera.parent.add(playerPlaceholderMesh);
+          rend.registerAuxObject('controllerMeshes', playerPlaceholderMesh.controllerMeshes);
+
+          const hudMesh = (() => {
+            const hudMesh = new THREE.Object3D();
+            // hudMesh.visible = false;
+
+            const circleMesh = (() => {
+              const geometry = (() => {
+                const geometry = new THREE.CylinderBufferGeometry(0.05, 0.05, 0.01, 8, 1)
+                  .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
+                  .applyMatrix(new THREE.Matrix4().makeRotationZ(Math.PI / 8));
+
+                const _almostZero = v => Math.abs(v) < 0.001;
+
+                const {array: positions} = geometry.getAttribute('position');
+                const numPositions = positions.length / 3;
+                for (let i = 0; i < numPositions; i++) {
+                  const baseIndex = i * 3;
+
+                  if (_almostZero(positions[baseIndex + 0]) && _almostZero(positions[baseIndex + 1])) {
+                    positions[baseIndex + 2] -= 0.005;
+                  }
+                }
+
+                geometry.computeVertexNormals();
+
+                return geometry;
+              })();
+              const material = solidMaterial;
+
+              const mesh = new THREE.Mesh(geometry, material);
+              mesh.position.z = -0.1;
+
+              const notchMesh = (() => {
+                const geometry = new THREE.SphereBufferGeometry(0.005, 5, 4)
+                  .applyMatrix(new THREE.Matrix4().makeRotationY(Math.PI / 8))
+                  .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, 0.003));
+                const material = solidMaterial;
+
+                const mesh = new THREE.Mesh(geometry, material);
+                return mesh;
+              })();
+              mesh.add(notchMesh);
+              mesh.notchMesh = notchMesh;
+
+              return mesh;
+            })();
+            hudMesh.add(circleMesh);
+            hudMesh.circleMesh = circleMesh;
+            hudMesh.update = () => {
+              const vrMode = bootstrap.getVrMode();
+              const mode = webvr.getMode()
+              const keys = webvr.getKeys();
+              if (vrMode === 'keyboard' && mode !== null && keys !== null) {
+                const {axis} = keys;
+
+                if (axis) {
+                  hudMesh.position.copy(hmdStatus.position);
+                  hudMesh.quaternion.copy(hmdStatus.rotation);
+                  hudMesh.scale.copy(hmdStatus.scale);
+
+                  const {notchMesh} = circleMesh;
+                  const gamepad = gamepadStatus[mode === 'center' ? 'left' : mode];
+                  const {axes} = gamepad;
+                  notchMesh.position.set(axes[0] * 0.043, axes[1] * 0.043, (1 - new THREE.Vector2(axes[0], axes[1]).length()) * (-0.005));
+
+                  if (!hudMesh.visible) {
+                    hudMesh.visible = true;
                   }
                 } else {
                   if (hudMesh.visible) {
                     hudMesh.visible = false;
                   }
                 }
-              };
-
-              _updateMesh();
-              _updateHmdMesh();
-            }
-          }
-
-
-          class Controller {
-            constructor() {
-              const mesh = (() => {
-                const object = new THREE.Object3D();
-
-                object.worldPosition = new THREE.Vector3();
-                object.worldRotation = new THREE.Quaternion();
-                object.worldScale = new THREE.Vector3(1, 1, 1);
-
-                const controllerMesh = controllerModelMesh.clone(true);
-                // const controllerMesh = mesh.children[0];
-                // controllerMesh.material.color.setHex(0xFFFFFF);
-                // controllerMesh.material.map = loader.load(texturePath);
-                // controllerMesh.material.specularMap = loader.load(specularMapPath);
-                object.add(controllerMesh);
-
-                /* const tip = (() => {
-                  const result = new THREE.Object3D();
-                  result.position.z = -1;
-                  return result;
-                })();
-                object.add(tip);
-                object.tip = tip; */
-
-                const rayMesh = (() => {
-                  const geometry = new THREE.CylinderBufferGeometry(0.001, 0.001, 1, 32, 1)
-                    .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
-                    .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -0.5));
-                  const material = new THREE.MeshBasicMaterial({
-                    // color: 0x2196F3,
-                    color: RAY_COLOR,
-                  });
-
-                  const mesh = new THREE.Mesh(geometry, material);
-                  return mesh;
-                })();
-                object.add(rayMesh);
-                object.rayMesh = rayMesh;
-
-                return object;
-              })();
-              this.mesh = mesh;
-            }
-
-            update(gamepadStatus) {
-              const {mesh} = this;
-              mesh.position.copy(gamepadStatus.position);
-              mesh.quaternion.copy(gamepadStatus.rotation);
-              mesh.scale.copy(gamepadStatus.scale);
-
-              mesh.worldPosition.copy(gamepadStatus.worldPosition);
-              mesh.worldRotation.copy(gamepadStatus.worldRotation);
-              mesh.worldScale.copy(gamepadStatus.worldScale);
-
-              const {buttons} = gamepadStatus;
-              if (!buttons.trigger.pressed && mesh.rayMesh.material.color.getHex() !== RAY_COLOR) {
-                mesh.rayMesh.material.color.setHex(RAY_COLOR);
-              } else if (buttons.trigger.pressed && mesh.rayMesh.material.color.getHex() !== RAY_HIGHLIGHT_COLOR) {
-                mesh.rayMesh.material.color.setHex(RAY_HIGHLIGHT_COLOR);
+              } else {
+                if (hudMesh.visible) {
+                  hudMesh.visible = false;
+                }
               }
-            }
-          }
+            };
 
-          const player = new Player();
+            return hudMesh;
+          })();
+          camera.parent.add(hudMesh);
 
-          const hmd = new Hmd();
-          const {mesh: hmdMesh, hudMesh: hmdHudMesh/*, labelMesh: hmdLabelMesh*/} = hmd;
-          camera.parent.add(hmdMesh);
-          camera.parent.add(hmdHudMesh);
           // camera.parent.add(hmdLabelMesh);
-
-          const controllers = {
-            left: new Controller(),
-            right: new Controller(),
-          };
-          SIDES.forEach(side => {
-            const controller = controllers[side];
-            const {mesh: controllerMesh} = controller;
-            camera.parent.add(controllerMesh);
-          });
-
-          const controllerMeshes = {
-            left: controllers.left.mesh,
-            right: controllers.right.mesh,
-          };
-          rend.registerAuxObject('controllerMeshes', controllerMeshes);
 
           const _getPlayer = () => player;
           const _getHmd = () => hmd;
-          const _getControllers = () => controllers;
+          // const _getControllers = () => controllers;
+          const _setSkin = (skinImg = null) => {
+            // XXX implement this
+          };
           const _update = () => {
-            const {hmd: hmdStatus, gamepads: gamepadsStatus} = webvr.getStatus();
+            const status = webvr.getStatus();
+            const {hmd: hmdStatus, gamepads: gamepadsStatus} = status;
 
-            // update hmd
-            hmd.update(hmdStatus, gamepadsStatus);
+            // update player placeholder mesh
+            playerPlaceholderMesh.update(hmdStatus, gamepadsStatus);
 
-            // update controllers
-            SIDES.forEach(side => {
-              const controller = controllers[side];
-              const gamepadStatus = gamepadsStatus[side];
-
-              if (gamepadStatus) {
-                controller.update(gamepadStatus);
-              }
-            });
+            // update hud mesh
+            hudMesh.update();
 
             // update camera
             camera.position.copy(hmdStatus.position);
@@ -406,50 +380,37 @@ class Cyborg {
             camera.parent.updateMatrixWorld(true);
 
             // snapshot current status
-            player.snapshotStatus();
+            player.snapshotStatus(status);
           };
           rend.on('update', _update);
 
-          const _updateEye = () => {
-            hmd.mesh.visible = true;
+          const _updateEyeStart = () => {
+            playerPlaceholderMesh.hmdMesh.visible = true;
           };
-          rend.on('updateEye', _updateEye);
+          rend.on('updateEyeStart', _updateEyeStart);
           const _updateEyeEnd = () => {
-            hmd.mesh.visible = false;
+            playerPlaceholderMesh.hmdMesh.visible = false;
           };
           rend.on('updateEyeEnd', _updateEyeEnd);
 
-          const cleanups = [];
-          const cleanup = () => {
-            for (let i = 0; i < cleanups.length; i++) {
-              const cleanup = cleanups[i];
-              cleanup();
-            }
-            cleanups.length = 0;
-          };
-
           this._cleanup = () => {
-            cleanup();
-
             solidMaterial.dispose();
 
-            const {mesh: hmdMesh, hudMesh: hmdHudMesh/*, labelMesh: hmdLabelMesh*/} = hmd;
-            camera.parent.remove(hmdMesh); // XXX need to destroy these meshes to prevent memory leaks
-            camera.parent.remove(hmdHudMesh);
+            const {mesh: hmdMesh, /*, labelMesh: hmdLabelMesh*/} = hmd;
+            camera.parent.remove(playerPlaceholderMesh);
+            camera.parent.remove(hudMesh);
             // camera.parent.remove(hmdLabelMesh);
-            SIDES.forEach(side => {
-              const controller = controllers[side];
-              const {mesh: controllerMesh} = controller;
-              camera.parent.remove(controllerMesh);
-            });
 
             rend.removeListener('update', _update);
+            rend.removeListener('updateEyeStart', _updateEyeStart);
+            rend.removeListener('updateEyeEnd', _updateEyeEnd);
           };
 
           return {
             getPlayer: _getPlayer,
             getHmd: _getHmd,
-            getControllers: _getControllers,
+            // getControllers: _getControllers,
+            setSkin: _setSkin,
             update: _update,
           };
         }
