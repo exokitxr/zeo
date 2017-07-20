@@ -1,6 +1,8 @@
 const mod = require('mod-loop');
 const skinJs = require('skin-js');
 
+const SIDES = ['left', 'right'];
+
 const skinUtils = archae => ({
   mount() {
     let live = true;
@@ -22,12 +24,13 @@ const skinUtils = archae => ({
 
         const hmdEuler = new THREE.Euler();
         const playerEuler = new THREE.Euler();
-        const eyeWorldPosition = new THREE.Vector3();
         const meshWorldPosition = new THREE.Vector3();
+        const meshEyeWorldPosition = new THREE.Vector3();
         const playerQuaternionInverse = new THREE.Quaternion();
         const headQuaternion = new THREE.Quaternion();
         const headQuaternionInverse = new THREE.Quaternion();
         const localUpVector = new THREE.Vector3();
+        const armWorldPosition = new THREE.Vector3();
         const armQuaternion = new THREE.Quaternion();
         const armQuaternionInverse = new THREE.Quaternion();
         const rotationMatrix = new THREE.Matrix4();
@@ -39,9 +42,9 @@ const skinUtils = archae => ({
           mesh.material.uniforms.headVisible.value = local ? 0 : 1;
           mesh.visible = !local;
 
-          const _updateMesh = mesh => {
-            const {hmd: hmdStatus, controllers: controllersStatus} = status;
-            const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmdStatus;
+          mesh.update = status => {
+            const {hmd, gamepads} = status;
+            const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmd;
 
             hmdEuler.setFromQuaternion(hmdRotation, camera.rotation.order);
             playerEuler.setFromQuaternion(mesh.quaternion, camera.rotation.order);
@@ -67,13 +70,14 @@ const skinUtils = archae => ({
 
             for (let i = 0; i < SIDES.length; i++) {
               const side = SIDES[i];
-              const controllerStatus = controllersStatus[side];
-              const {position: controllerPosition, rotation: controllerRotation} = controllerStatus;
+              const gamepad = gamepads[side];
+              const {worldPosition: controllerPosition, worldRotation: controllerRotation} = gamepad;
               localUpVector.copy(upVector).applyQuaternion(controllerRotation);
+              mesh.arms[side].getWorldPosition(armWorldPosition);
               rotationMatrix.lookAt(
-                mesh.arms[side].getWorldPosition(),
+                armWorldPosition,
                 controllerPosition,
-                upVector
+                localUpVector
               );
               armQuaternion
                 .setFromRotationMatrix(rotationMatrix)
@@ -85,13 +89,15 @@ const skinUtils = archae => ({
             }
           };
           mesh.updateEyeStart = () => {
-            localMesh.material.uniforms.headVisible.value = 1;
-            localMesh.visible = true;
+            mesh.material.uniforms.headVisible.value = 1;
+            mesh.visible = true;
           };
           mesh.updateEyeEnd = () => {
-            localMesh.material.uniforms.headVisible.value = 0;
-            localMesh.visible = false;
+            mesh.material.uniforms.headVisible.value = 0;
+            mesh.visible = false;
           };
+
+          return mesh;
         };
 
         return {
