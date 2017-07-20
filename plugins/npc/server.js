@@ -376,7 +376,6 @@ class Npc {
                   const index = ox + ':' + oz;
                   const trackedChunk = localTrackedChunks[index];
                   trackedChunk[localCleanupSymbol]();
-
                   delete localTrackedChunks[index];
                   trackedChunk.removeRef();
                 } else if (method === 'attackNpc') {
@@ -400,6 +399,7 @@ class Npc {
             c.on('close', () => {
               for (const index in localTrackedChunks) {
                 const trackedChunk = localTrackedChunks[index];
+                trackedChunk[localCleanupSymbol]();
                 trackedChunk.removeRef();
               }
 
