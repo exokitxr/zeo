@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 const fs = require('fs');
+// const THREE = require('/tmp/node_modules/three');
 
 const o = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
 const {geometries: geometriesJson} = o;
@@ -24,6 +25,28 @@ const geometries = geometriesJson.map(geometry => {
   for (let i = 0; i < positions.length / 3; i++) {
     positions[i * 3 + 1] += yOffset;
   } */
+  /* const g = new THREE.BufferGeometry();
+  g.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+  g.applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(
+    new THREE.Quaternion()
+      .setFromUnitVectors(
+        new THREE.Vector3(0, 0, -1),
+        new THREE.Vector3(0, 0, 1)
+      )
+  )); */
+  /* for (let i = 0; i < positions.length / 3; i++) {
+    positions[i * 3 + 2] *= -1;
+  } */
+  /* const g = new THREE.BufferGeometry();
+  g.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+  g.applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(
+    new THREE.Quaternion()
+      .setFromUnitVectors(
+        new THREE.Vector3(0, 0, 1),
+        new THREE.Vector3(0, 0, -1)
+      )
+  )); */
+
   new Float32Array(result.buffer, byteOffset, positions.length).set(positions);
   byteOffset += positions.length * 4;
 
