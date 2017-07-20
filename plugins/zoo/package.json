@@ -1,0 +1,8 @@
+{
+  "name": "zoo",
+  "version": "0.0.1",
+  "description": "A zoo of animals.",
+  "client": "client.js",
+  "server": "server.js",
+  "dependencies": {}
+}
