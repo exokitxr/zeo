@@ -1,4 +1,4 @@
-const mod = require('mod-loop');
+// const mod = require('mod-loop');
 
 const SIDES = ['left', 'right'];
 
@@ -26,7 +26,7 @@ class Skin {
       img.crossOrigin = 'Anonymous';
       img.src = url;
     });
-    const meshes = [];
+    /* const meshes = [];
 
     class FakeStatus {
       constructor(hmd, controllers) {
@@ -46,14 +46,16 @@ class Skin {
         this.left = left;
         this.right = right;
       }
-    }
+    } */
 
     return _requestImage('/archae/skin/img/darkvortexity.png')
     // return _requestImage('/archae/skin/img/groot.png')
     // return _requestImage('/archae/skin/img/natsuwithfire.png')
       .then(skinImg => {
         if (live) {
-          const _makeMesh = (playerId = null) => {
+          player.setSkin(skinImg);
+
+          /* const _makeMesh = (playerId = null) => {
             const mesh = skin(skinImg, {
               limbs: playerId === null,
             });
@@ -195,10 +197,12 @@ class Skin {
           const _playerLeave = ({id}) => {
             _removeMesh(id);
           };
-          player.on('playerLeave', _playerLeave);
+          player.on('playerLeave', _playerLeave); */
 
           this._cleanup = () => {
-            for (let i = 0; i < meshes.length; i++) {
+            player.setSkin(null);
+
+            /* for (let i = 0; i < meshes.length; i++) {
               const mesh = meshes[i];
               scene.remove(mesh);
             }
@@ -208,7 +212,7 @@ class Skin {
             render.removeListener('updateEyeEnd', _updateEyeEnd);
 
             player.removeListener('playerEnter', _playerEnter);
-            player.removeListener('playerLeave', _playerLeave);
+            player.removeListener('playerLeave', _playerLeave); */
           };
         }
       });
@@ -218,6 +222,6 @@ class Skin {
     this._cleanup();
   }
 }
-const _angleDiff = (a, b) => mod((b - a) + Math.PI, Math.PI * 2) - Math.PI;
+// const _angleDiff = (a, b) => mod((b - a) + Math.PI, Math.PI * 2) - Math.PI;
 
 module.exports = Skin;

@@ -47,7 +47,7 @@ class Cyborg {
         skinUtils,
       ]) => {
         if (live) {
-          const {THREE, camera} = three;
+          const {THREE, scene, camera} = three;
           const {models: {hmdModelMesh, controllerModelMesh}} = resource;
           const {events} = jsUtils;
           const {EventEmitter} = events;
@@ -271,6 +271,8 @@ class Cyborg {
           camera.parent.add(playerPlaceholderMesh);
           rend.registerAuxObject('controllerMeshes', playerPlaceholderMesh.controllerMeshes);
 
+          let playerSkinMesh = null;
+
           const hudMesh = (() => {
             const hudMesh = new THREE.Object3D();
             // hudMesh.visible = false;
@@ -360,7 +362,18 @@ class Cyborg {
           const _getHmd = () => hmd;
           // const _getControllers = () => controllers;
           const _setSkin = (skinImg = null) => {
-            // XXX implement this
+            if (playerSkinMesh) {
+              scene.remove(playerSkinMesh);
+              playerSkinMesh.destroy();
+              playerSkinMesh = null;
+            }
+
+            if (skinImg) {
+              playerSkinMesh = skinUtils.makePlayerMesh(skinImg, {
+                local: true,
+              });
+              scene.add(playerSkinMesh);
+            }
           };
           const _update = () => {
             const status = webvr.getStatus();
@@ -368,6 +381,11 @@ class Cyborg {
 
             // update player placeholder mesh
             playerPlaceholderMesh.update(hmdStatus, gamepadsStatus);
+
+            // update player skin mesh
+            if (playerSkinMesh) {
+              playerSkinMesh.update(status);
+            }
 
             // update hud mesh
             hudMesh.update();
@@ -386,10 +404,18 @@ class Cyborg {
 
           const _updateEyeStart = () => {
             playerPlaceholderMesh.hmdMesh.visible = true;
+
+            if (playerSkinMesh) {
+              playerSkinMesh.updateEyeStart();
+            }
           };
           rend.on('updateEyeStart', _updateEyeStart);
           const _updateEyeEnd = () => {
             playerPlaceholderMesh.hmdMesh.visible = false;
+
+            if (playerSkinMesh) {
+              playerSkinMesh.updateEyeEnd();
+            }
           };
           rend.on('updateEyeEnd', _updateEyeEnd);
 

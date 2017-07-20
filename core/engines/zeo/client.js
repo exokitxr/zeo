@@ -680,6 +680,10 @@ class Zeo {
                           return multiplayer.getRemoteControllerMeshes(userId);
                         }
 
+                        setSkin(skinImg) {
+                          return cyborg.setSkin(skinImg);
+                        }
+
                         on(event, handler) {
                           return multiplayer.on(event, handler);
                         }
