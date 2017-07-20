@@ -191,7 +191,6 @@ class Multiplayer {
               const newSkinMesh = skinUtils.makePlayerMesh(newSkinImg, {
                 local: false,
               });
-console.log('new skin', {skinImgBuffer, newSkinImg, newSkinMesh});
               scene.add(newSkinMesh);
               this.remotePlayerSkinMeshes.set(playerId, newSkinMesh);
             }
@@ -209,7 +208,7 @@ console.log('new skin', {skinImgBuffer, newSkinImg, newSkinMesh});
           deletePlayer(playerId) {
             this.playerStatuses.delete(playerId);
 
-            const remotePlayerMesh = this.remotePlayerMeshes.get(id);
+            const remotePlayerMesh = this.remotePlayerMeshes.get(playerId);
             scene.remove(remotePlayerMesh);
             remotePlayerMesh.destroy();
             this.remotePlayerMeshes.delete(id);
