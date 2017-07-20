@@ -3,5 +3,8 @@
   "description": "An ocean wave effect at the world origin.",
   "version": "0.0.1",
   "client": "client.js",
+  "builds": {
+    "worker": "worker.js"
+  },
   "dependencies": {}
 }
