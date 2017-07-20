@@ -196,6 +196,7 @@ class Zoo {
       'wasp',
       'whale',
       'witch',
+      'wolf',
       'zombie',
       'zombie_brute',
     ];
