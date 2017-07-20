@@ -179,6 +179,7 @@ class Zoo {
       'fish',
       'ghost',
       'giraffe',
+      'gull',
       'horse',
       'mammoth',
       'oerrki',
