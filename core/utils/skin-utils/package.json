@@ -4,6 +4,7 @@
   "version": "0.0.1",
   "client": "client.js",
   "dependencies": {
+    "mod-loop": "0.0.2",
     "skin-js": "0.0.8"
   }
 }
