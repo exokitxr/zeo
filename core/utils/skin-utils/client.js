@@ -16,7 +16,7 @@ const skinUtils = archae => ({
       three,
     ]) => {
       if (live) {
-        const {THREE} = three;
+        const {THREE, camera} = three;
         const skin = skinJs(THREE);
 
         const upVector = new THREE.Vector3(0, 1, 0);
@@ -37,15 +37,12 @@ const skinUtils = archae => ({
 
         const makePlayerMesh = (skinImg, {local = true} = {}) => {
           const mesh = skin(skinImg, {
-            limbs: local,
+            limbs: true,
           });
           mesh.material.uniforms.headVisible.value = local ? 0 : 1;
           mesh.visible = !local;
 
-          mesh.update = status => {
-            const {hmd, gamepads} = status;
-            const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmd;
-
+          const _updateRaw = (hmdPosition, hmdRotation, gamepadsArray) => {
             hmdEuler.setFromQuaternion(hmdRotation, camera.rotation.order);
             playerEuler.setFromQuaternion(mesh.quaternion, camera.rotation.order);
             const angleDiff = _angleDiff(hmdEuler.y, playerEuler.y);
@@ -70,8 +67,7 @@ const skinUtils = archae => ({
 
             for (let i = 0; i < SIDES.length; i++) {
               const side = SIDES[i];
-              const gamepad = gamepads[side];
-              const {worldPosition: controllerPosition, worldRotation: controllerRotation} = gamepad;
+              const [controllerPosition, controllerRotation] = gamepadsArray[i];
               localUpVector.copy(upVector).applyQuaternion(controllerRotation);
               mesh.arms[side].getWorldPosition(armWorldPosition);
               rotationMatrix.lookAt(
@@ -87,6 +83,64 @@ const skinUtils = archae => ({
               const armRotation = mesh.material.uniforms[side === 'left' ? 'leftArmRotation' : 'rightArmRotation'];
               armRotation.value.set(armQuaternionInverse.x, armQuaternionInverse.y, armQuaternionInverse.z, armQuaternionInverse.w);
             }
+          };
+          mesh.update = status => {
+            const {
+              hmd: {
+                worldPosition: hmdPosition,
+                worldRotation: hmdRotation,
+              },
+              gamepads: {
+                left: {
+                  worldPosition: controllerLeftPosition,
+                  worldRotation: controllerLeftRotation,
+                },
+                right: {
+                  worldPosition: controllerRightPosition,
+                  worldRotation: controllerRightRotation,
+                },
+              },
+            } = status;
+            _updateRaw(
+              hmdPosition,
+              hmdRotation,
+              [
+                [controllerLeftPosition, controllerLeftRotation],
+                [controllerRightPosition, controllerRightRotation]
+              ]
+            );
+          };
+          const hmdPosition = new THREE.Vector3();
+          const hmdRotation = new THREE.Quaternion();
+          const controllerLeftPosition = new THREE.Vector3();
+          const controllerLeftRotation = new THREE.Quaternion();
+          const controllerRightPosition = new THREE.Vector3();
+          const controllerRightRotation = new THREE.Quaternion();
+          mesh.updateJson = status => {
+            const {
+              hmd: {
+                position: hmdPositionArray,
+                rotation: hmdRotationArray,
+              },
+              controllers: {
+                left: {
+                  position: controllerLeftPositionArray,
+                  rotation: controllerLeftRotationArray,
+                },
+                right: {
+                  position: controllerRightPositionArray,
+                  rotation: controllerRightRotationArray,
+                },
+              },
+            } = status;
+            _updateRaw(
+              hmdPosition.fromArray(hmdPositionArray),
+              hmdRotation.fromArray(hmdRotationArray),
+              [
+                [controllerLeftPosition.fromArray(controllerLeftPositionArray), controllerLeftRotation.fromArray(controllerLeftRotationArray)],
+                [controllerRightPosition.fromArray(controllerRightPositionArray), controllerRightRotation.fromArray(controllerRightRotationArray)],
+              ]
+            );
           };
           mesh.updateEyeStart = () => {
             mesh.material.uniforms.headVisible.value = 1;
