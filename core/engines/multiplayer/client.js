@@ -223,7 +223,7 @@ class Multiplayer {
             const remotePlayerMesh = this.remotePlayerMeshes.get(playerId);
             scene.remove(remotePlayerMesh);
             remotePlayerMesh.destroy();
-            this.remotePlayerMeshes.delete(id);
+            this.remotePlayerMeshes.delete(playerId);
 
             const skinMesh = this.remotePlayerSkinMeshes.get(playerId);
             if (skinMesh) {
