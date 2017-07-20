@@ -12,7 +12,7 @@ class Npc {
 
   mount() {
     const {_archae: archae} = this;
-    const {express, app, wss} = archae.getCore();
+    const {express, app, ws, wss} = archae.getCore();
     const {three, utils: {hash: hashUtils}} = zeo;
     const {THREE} = three;
     const {murmur} = hashUtils;
@@ -344,13 +344,15 @@ class Npc {
                     let live = true;
                     const npcCleanup = () => {
                       if (live) {
-                        const e = {
-                          type: 'npcStatus',
-                          id,
-                          status: null,
-                        };
-                        const es = JSON.stringify(e);
-                        c.send(es);
+                        if (c.readyState === ws.OPEN) {
+                          const e = {
+                            type: 'npcStatus',
+                            id,
+                            status: null,
+                          };
+                          const es = JSON.stringify(e);
+                          c.send(es);
+                        }
 
                         npc.removeListener('animation', _animation);
                         npc.removeListener('die', _die);
