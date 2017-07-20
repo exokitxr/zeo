@@ -36,13 +36,13 @@ const geometries = geometriesJson.map(geometry => {
   )); */
   /* for (let i = 0; i < positions.length / 3; i++) {
     positions[i * 3 + 2] *= -1;
-  } */
-  /* const g = new THREE.BufferGeometry();
+  }
+  const g = new THREE.BufferGeometry();
   g.addAttribute('position', new THREE.BufferAttribute(positions, 3));
   g.applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(
     new THREE.Quaternion()
       .setFromUnitVectors(
-        new THREE.Vector3(0, 0, 1),
+        new THREE.Vector3(0, 1, 0),
         new THREE.Vector3(0, 0, -1)
       )
   )); */
