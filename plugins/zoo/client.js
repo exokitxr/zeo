@@ -172,6 +172,7 @@ class Zoo {
       'chick',
       'chicken',
       'cow',
+      'cubelet',
       'deer',
       'dungeon_master',
       'elephant',
