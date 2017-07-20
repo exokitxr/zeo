@@ -125,10 +125,6 @@ class Assets {
           ] = plugins;
           const {THREE, camera} = three;
 
-          const menuRenderer = menuRender.makeRenderer({
-            creatureUtils,
-          });
-
           const _requestJsonMesh = (modelJson, modelTexturePath) => new Promise((accept, reject) => {
             const loader = new THREE.ObjectLoader();
             loader.setTexturePath(modelTexturePath);
@@ -172,6 +168,9 @@ class Assets {
         if (live) {
           const {THREE, camera} = three;
           const {murmur} = hashUtils;
+          const menuRenderer = menuRender.makeRenderer({
+            creatureUtils,
+          });
 
           const _getSpriteImageData = s => {
             const spriteName = spritesheet.assetSprites[s] ||
@@ -181,7 +180,7 @@ class Assets {
             const imageData = spritesheet.canvas.getSpriteImageData(x, y);
             return imageData;
           };
-          const _makePlayerLabelMesh = ({username}) => {
+          /* const _makePlayerLabelMesh = ({username}) => {
             const labelState = {
               username: username,
             };
@@ -242,7 +241,7 @@ class Assets {
             };
 
             return mesh;
-          };
+          }; */
           const _makePlayerMenuMesh = ({username}) => {
             const menuState = {
               username: username,
@@ -312,7 +311,7 @@ class Assets {
             },
             sfx: sfx,
             getSpriteImageData: _getSpriteImageData,
-            makePlayerLabelMesh: _makePlayerLabelMesh,
+            // makePlayerLabelMesh: _makePlayerLabelMesh,
             makePlayerMenuMesh: _makePlayerMenuMesh,
           };
         }
