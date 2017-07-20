@@ -376,6 +376,8 @@ class Cyborg {
               scene.remove(playerSkinMesh);
               playerSkinMesh.destroy();
               playerSkinMesh = null;
+
+              multiplayer.updateSkin(null);
             }
 
             if (skinImg) {
