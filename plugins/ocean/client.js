@@ -1,5 +1,5 @@
 const NUM_CELLS = 256;
-const SCALE = 4;
+const SCALE = 8;
 const TEXTURE_WIDTH = 128;
 const TEXTURE_HEIGHT = 256;
 const DAY_NIGHT_SKYBOX_PLUGIN = 'plugins-day-night-skybox';
@@ -31,13 +31,17 @@ const OCEAN_SHADER = {
   },
   vertexShader: [
 		"uniform float worldTime;",
+    "attribute vec3 wave;",
     "attribute float color;",
     "varying vec2 vUv;",
     "varying float fogDepth;",
     "float speed = 1.0 / 200000.0;",
     "void main() {",
-    "  gl_Position = projectionMatrix * modelViewMatrix * vec4(position.xyz, 1.0);",
-    "  vUv = vec2(uv.x + floor(mod(worldTime * speed, 1.0) * 128.0) / 128.0, uv.y);",
+    "  float ang = wave[0];",
+    "  float amp = wave[1];",
+    "  float speed = wave[2];",
+    "  gl_Position = projectionMatrix * modelViewMatrix * vec4(position.x, position.y, ((sin(ang + (speed * worldTime))) * amp), 1.0);",
+    "  vUv = uv;",,
     "  vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );",
     "  fogDepth = -mvPosition.z;",
     "}"
@@ -65,10 +69,10 @@ const OCEAN_SHADER = {
   ].join("\n")
 };
 const DATA = {
-  amplitude: 0.5,
+  amplitude: 0.3,
   amplitudeVariance: 0.3,
-  speed: 0.5,
-  speedVariance: 0.5,
+  speed: 0.3,
+  speedVariance: 0.3,
 };
 
 class Ocean {
@@ -187,8 +191,12 @@ class Ocean {
                 range: 2,
               });
 
-              const _makeOceanMesh = (ox, oy) => {
-                const geometry = new THREE.PlaneBufferGeometry(NUM_CELLS, NUM_CELLS);
+              const _makeOceanMesh = (ox, oy, lod) => {
+                const geometry = lod === 1 ?
+                  new THREE.PlaneBufferGeometry(NUM_CELLS, NUM_CELLS, NUM_CELLS / SCALE, NUM_CELLS / SCALE)
+                :
+                  new THREE.PlaneBufferGeometry(NUM_CELLS, NUM_CELLS, 1, 1);
+
                 const uvs = geometry.getAttribute('uv').array;
                 const numUvs = uvs.length / 2;
                 for (let i = 0; i < numUvs; i++) {
@@ -196,10 +204,8 @@ class Ocean {
                   uvs[baseIndex + 0] *= 16;
                   uvs[baseIndex + 1] *= 16;
                 }
-                // geometry.applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
-                // geometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, 0));
 
-                /* const positions = geometry.getAttribute('position').array;
+                const positions = geometry.getAttribute('position').array;
                 const numPositions = positions.length / 3;
                 const waves = new Float32Array(numPositions * 3);
                 const colors = new Float32Array(numPositions);
@@ -214,7 +220,7 @@ class Ocean {
                   colors[i] = 0.7 + ((murmur(key + ':color') / 0xFFFFFFFF) * (1 - 0.7));
                 }
                 geometry.addAttribute('wave', new THREE.BufferAttribute(waves, 3));
-                geometry.addAttribute('color', new THREE.BufferAttribute(colors, 1)); */
+                geometry.addAttribute('color', new THREE.BufferAttribute(colors, 1));
 
                 const material = oceanMaterial;
 
@@ -242,12 +248,12 @@ class Ocean {
                 const _updateOceanChunks = () => {
                   const {hmd} = pose.getStatus();
                   const {worldPosition: hmdPosition} = hmd;
-                  const {added, removed} = chunker.update(hmdPosition.x, hmdPosition.z);
+                  const {added, removed, relodded} = chunker.update(hmdPosition.x, hmdPosition.z);
 
                   for (let i = 0; i < added.length; i++) {
                     const chunk = added[i];
-                    const {x, z} = chunk;
-                    const oceanChunkMesh = _makeOceanMesh(x, z);
+                    const {x, z, lod} = chunk;
+                    const oceanChunkMesh = _makeOceanMesh(x, z, lod);
                     scene.add(oceanChunkMesh);
                     meshes.push(oceanChunkMesh);
 
@@ -259,6 +265,19 @@ class Ocean {
                     scene.remove(oceanChunkMesh);
                     oceanChunkMesh.destroy();
                     meshes.splice(meshes.indexOf(oceanChunkMesh), 1);
+                  }
+                  for (let i = 0; i < relodded.length; i++) {
+                    const chunk = relodded[i];
+                    const {data: oldOceanChunkMesh} = chunk;
+                    scene.remove(oldOceanChunkMesh);
+                    oldOceanChunkMesh.destroy();
+
+                    const {x, z, lod} = chunk;
+                    const newOceanChunkMesh = _makeOceanMesh(x, z, lod);
+                    scene.add(newOceanChunkMesh);
+                    meshes.push(newOceanChunkMesh);
+
+                    chunk.data = newOceanChunkMesh;
                   }
                 };
                 const _updateMeshes = () => {
