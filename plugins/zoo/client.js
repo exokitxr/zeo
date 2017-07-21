@@ -90,6 +90,11 @@ class Zoo {
     const {three, render} = zeo;
     const {THREE, scene} = three;
 
+    let live = true;
+    this._cleanup = () => {
+      live = false;
+    };
+
     const _makeDebugBoxMesh = i => {
       const boxCenter = new THREE.Vector3(0 * (i !== undefined ? (i === 0 ? -1 : 1) : 1), 0, 0.1);
       const boxSize = new THREE.Vector3(7.5, 5, 6);
@@ -101,10 +106,13 @@ class Zoo {
       );
     };
 
-    let live = true;
-    this._cleanup = () => {
-      live = false;
-    };
+    const zooMaterial = new THREE.ShaderMaterial({
+      uniforms: THREE.UniformsUtils.clone(ZOO_SHADER.uniforms),
+      vertexShader: ZOO_SHADER.vertexShader,
+      fragmentShader: ZOO_SHADER.fragmentShader,
+      transparent: true,
+    });
+    zooMaterial.volatile = true;
 
     const _resArrayBuffer = res => {
       if (res.status >= 200 && res.status < 300) {
@@ -201,14 +209,7 @@ class Zoo {
         1
       );
       texture.needsUpdate = true;
-      const uniforms = THREE.UniformsUtils.clone(ZOO_SHADER.uniforms);
-      uniforms.map.value = texture;
-      const material = new THREE.ShaderMaterial({
-        uniforms,
-        vertexShader: ZOO_SHADER.vertexShader,
-        fragmentShader: ZOO_SHADER.fragmentShader,
-        transparent: true,
-      });
+      const material = zooMaterial;
 
       const mesh = new THREE.Mesh(geometry, material);
       const scale = 1 / 8;
@@ -220,13 +221,13 @@ class Zoo {
       mesh.add(_makeDebugBoxMesh(1)); */
 
       const angleRate = 1.5 * 1000;
-      mesh.update = now => {
-        mesh.material.uniforms.theta.value = Math.sin((now % angleRate) / angleRate * Math.PI * 2) * 0.75;
+      const startOffset = Math.floor(Math.random() * angleRate);
+      mesh.onBeforeRender = () => {
+        mesh.material.uniforms.map.value = texture;
+        mesh.material.uniforms.theta.value = Math.sin(((startOffset + now) % angleRate) / angleRate * Math.PI * 2) * 0.75;
       };
-
       mesh.destroy = () => {
         geometry.dispose();
-        material.dispose();
         texture.dispose();
       };
 
@@ -278,6 +279,12 @@ class Zoo {
       'zombie_brute', */
     ];
 
+    let now = 0;
+    const _update = () => {
+      now = Date.now();
+    };
+    render.on('update', _update);
+
     const cleanups = [];
     this._cleanup = () => {
       for (let i = 0; i < cleanups.length; i++) {
@@ -285,6 +292,12 @@ class Zoo {
         cleanup();
       }
     };
+
+    cleanups.push(() => {
+      zooMaterial.dispose();
+
+      render.removeListener('update', _update);
+    });
 
     return Promise.all(
       ANIMALS.map((animal, i) =>
@@ -306,7 +319,7 @@ class Zoo {
           })
       )
     )
-      .then(meshes => {
+      /* .then(meshes => {
         const _update = () => {
           const now = Date.now();
 
@@ -320,7 +333,7 @@ class Zoo {
         cleanups.push(() => {
           render.removeListener('update', _update);
         });
-      });
+      }); */
   }
 
   unmount() {
