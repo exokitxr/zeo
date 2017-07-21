@@ -34,7 +34,7 @@ vec3 rotateAxisAngle(vec3 v, vec3 axis, float angle) {
 }
 `,
     "void main() {",
-    "  vec3 limbPosition = dy.w > 0.0 ? (position.xyz - dy.xyz + rotateAxisAngle(dy.xyz, vec3(1.0, 0.0, 0.0), theta)) : position.xyz;",
+    "  vec3 limbPosition = dy.w > 0.0 ? (position.xyz - dy.xyz + rotateAxisAngle(dy.xyz, vec3(1.0, 0.0, 0.0), theta * (mod(dy.w, 2.0) < 1.0 ? -1.0 : 1.0) * (dy.w <= 2.0 ? -1.0 : 1.0))) : position.xyz;",
     "  gl_Position = projectionMatrix * modelViewMatrix * vec4(limbPosition, 1.0);",
     // "  gl_Position = projectionMatrix * modelViewMatrix * vec4(position.xyz, 1.0);",
     "  vUv = uv;",
