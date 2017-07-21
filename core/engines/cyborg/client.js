@@ -381,9 +381,8 @@ class Cyborg {
             }
 
             if (skinImg) {
-              playerSkinMesh = skinUtils.makePlayerMesh(skinImg, {
-                local: true,
-              });
+              playerSkinMesh = skinUtils.makePlayerMesh(skinImg);
+              playerSkinMesh.frustumCulled = false;
               scene.add(playerSkinMesh);
 
               const skinImgBuffer = _getImageData(skinImg);
@@ -421,7 +420,8 @@ class Cyborg {
             playerPlaceholderMesh.hmdMesh.visible = true;
 
             if (playerSkinMesh) {
-              playerSkinMesh.updateEyeStart();
+              playerSkinMesh.setHeadVisible(true);
+              playerSkinMesh.visible = true;
             }
           };
           rend.on('updateEyeStart', _updateEyeStart);
@@ -429,7 +429,8 @@ class Cyborg {
             playerPlaceholderMesh.hmdMesh.visible = false;
 
             if (playerSkinMesh) {
-              playerSkinMesh.updateEyeEnd();
+              playerSkinMesh.setHeadVisible(false);
+              playerSkinMesh.visible = false;
             }
           };
           rend.on('updateEyeEnd', _updateEyeEnd);
