@@ -217,7 +217,7 @@ class Zoo {
       mesh.scale.set(scale, scale, scale);
       // mesh.frustumCulled = false;
 
-      mesh.add(_makeDebugBoxMesh());
+      // mesh.add(_makeDebugBoxMesh());
       /* mesh.add(_makeDebugBoxMesh(0));
       mesh.add(_makeDebugBoxMesh(1)); */
 
@@ -243,45 +243,45 @@ class Zoo {
 
     const ANIMALS = [
       /* 'ammonite', */
-      // 'badger',
-      // 'bear',
-      // 'beetle',
+      'badger',
+      'bear',
+      'beetle',
       /* 'bigfish', */
-      // 'boar',
-      // 'bunny',
-      // 'chick',
-      // 'chicken',
-      // 'cow',
+      'boar',
+      'bunny',
+      'chick',
+      'chicken',
+      'cow',
       /* 'cubelet', */
-      // 'deer',
+      'deer',
       /* 'dungeon_master', */
-      // 'elephant',
+      'elephant',
       /* 'fish',
       'ghost', */
-      // 'giraffe',
+      'giraffe',
       /* 'gull', */
-      // 'horse',
+      'horse',
       'mammoth',
       /* 'oerrki',
       'penguin',
       'piranha',
       'pterodactyl', */
-      // 'rat',
-      // 'sheep',
-      // 'skunk',
-      // 'smallbird',
+      'rat',
+      'sheep',
+      'skunk',
+      'smallbird',
       /* 'spider',
       'swamplurker', */
-      // 'turtle',
+      'turtle',
       /* 'trilobite', */
-      // 'velociraptor',
+      'velociraptor',
       /* 'villager',
       'walker',
       'warthog',
       'wasp',
       'whale',
       'witch', */
-      // 'wolf',
+      'wolf',
       /* 'zombie',
       'zombie_brute', */
     ];
