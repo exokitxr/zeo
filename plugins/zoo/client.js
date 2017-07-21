@@ -81,7 +81,7 @@ class Zoo {
 
     const _makeDebugBoxMesh = i => {
       const boxCenter = new THREE.Vector3(0 * (i !== undefined ? (i === 0 ? -1 : 1) : 1), 0, 0);
-      const boxSize = new THREE.Vector3(3.15, 3.1, 4.65);
+      const boxSize = new THREE.Vector3(6.8, 14, 11);
       return new THREE.Mesh(
         new THREE.BoxBufferGeometry(boxSize.x, boxSize.y, boxSize.z).applyMatrix(new THREE.Matrix4().makeTranslation(
           boxCenter.x, boxCenter.y, boxCenter.z
@@ -233,9 +233,9 @@ class Zoo {
       'chick',
       'chicken',
       'cow',
-      /* 'cubelet',
+      //'cubelet',
       'deer',
-      'dungeon_master', */
+      // 'dungeon_master',
       'elephant',
       /* 'fish',
       'ghost',
@@ -281,7 +281,7 @@ class Zoo {
           .then(animalMeshData => {
             if (live) {
               const mesh = _makeAnimalMesh(animalMeshData);
-              mesh.position.set((-ANIMALS.length/2 + i) * 1.5, 31, 2);
+              mesh.position.set((-ANIMALS.length/2 + i) * 3, 31, 2);
               mesh.updateMatrixWorld();
               scene.add(mesh);
 
