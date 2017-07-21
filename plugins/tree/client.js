@@ -266,7 +266,7 @@ class Tree {
             treeChunkMesh.lightmap = null;
 
             const {shapes} = treeChunkMesh;
-            for (let i = 0; i < shapes; i++) {
+            for (let i = 0; i < shapes.length; i++) {
               const shape = shapes[i];
               lightmapper.remove(shape);
             }
