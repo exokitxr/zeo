@@ -21991,6 +21991,10 @@ if (callback() !== false) { // XXX
 
 			}
 
+			if (material.volatile) { // XXX
+				refreshMaterial = true;
+			}
+
 			if ( refreshProgram || camera !== _currentCamera ) {
 
 				p_uniforms.setValue( _gl, 'projectionMatrix', camera.projectionMatrix );
@@ -22004,7 +22008,7 @@ if (callback() !== false) { // XXX
 
 				// Avoid unneeded uniform updates per ArrayCamera's sub-camera
 
-				if ( _currentCamera !== ( _currentArrayCamera || camera ) || material.volatile ) { // XXX
+				if ( _currentCamera !== ( _currentArrayCamera || camera ) ) {
 
 					_currentCamera = ( _currentArrayCamera || camera );
 
