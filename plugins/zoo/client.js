@@ -79,9 +79,9 @@ class Zoo {
     const {three, render} = zeo;
     const {THREE, scene} = three;
 
-    const _makeDebugBoxMesh = () => {
-      const boxCenter = new THREE.Vector3(0, 1.2, 0);
-      const boxSize = new THREE.Vector3(7.5, 5, 6);
+    const _makeDebugBoxMesh = i => {
+      const boxCenter = new THREE.Vector3(0 * (i !== undefined ? (i === 0 ? -1 : 1) : 1), 0, 0);
+      const boxSize = new THREE.Vector3(2, 3.45, 3.6);
       return new THREE.Mesh(
         new THREE.BoxBufferGeometry(boxSize.x, boxSize.y, boxSize.z).applyMatrix(new THREE.Matrix4().makeTranslation(
           boxCenter.x, boxCenter.y, boxCenter.z
@@ -205,6 +205,7 @@ class Zoo {
       // mesh.frustumCulled = false;
 
       mesh.add(_makeDebugBoxMesh());
+      // mesh.add(_makeDebugBoxMesh(1));
 
       const angleRate = 1.5 * 1000;
       mesh.update = now => {
@@ -227,8 +228,8 @@ class Zoo {
       'beetle',
       'bigfish', */
       'boar',
-      /* 'bunny',
-      'chick',
+      'bunny',
+      /* 'chick',
       'chicken',
       'cow',
       'cubelet',
@@ -238,9 +239,9 @@ class Zoo {
       'fish',
       'ghost',
       'giraffe',
-      'gull',
+      'gull', */
       'horse',
-      'mammoth',
+      /* 'mammoth',
       'oerrki',
       'penguin',
       'piranha',
@@ -252,9 +253,9 @@ class Zoo {
       'spider',
       'swamplurker',
       'turtle',
-      'trilobite',
+      'trilobite', */
       'velociraptor',
-      'villager',
+      /* 'villager',
       'walker',
       'warthog',
       'wasp',
