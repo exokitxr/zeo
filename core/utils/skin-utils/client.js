@@ -35,55 +35,67 @@ const skinUtils = archae => ({
         const armQuaternionInverse = new THREE.Quaternion();
         const rotationMatrix = new THREE.Matrix4();
 
-        const makePlayerMesh = (skinImg, {local = true} = {}) => {
+        const makePlayerMesh = (skinImg) => {
           const mesh = skin(skinImg, {
             limbs: true,
           });
-          mesh.material.uniforms.headVisible.value = local ? 0 : 1;
-          mesh.visible = !local;
+          const uniforms = THREE.UniformsUtils.clone(skin.SKIN_SHADER.uniforms);
 
-          const _updateRaw = (hmdPosition, hmdRotation, gamepadsArray) => {
+          const _updateLocalTransformUniforms = (hmdPosition, hmdRotation, gamepadsArray) => {
             hmdEuler.setFromQuaternion(hmdRotation, camera.rotation.order);
-            playerEuler.setFromQuaternion(mesh.quaternion, camera.rotation.order);
-            const angleDiff = _angleDiff(hmdEuler.y, playerEuler.y);
-            const angleDiffAbs = Math.abs(angleDiff);
-            if (angleDiffAbs > Math.PI / 2) {
-              playerEuler.y += (angleDiffAbs - (Math.PI / 2)) * (angleDiff < 0 ? 1 : -1);
-              mesh.quaternion.setFromEuler(playerEuler);
-            }
+              playerEuler.setFromQuaternion(mesh.quaternion, camera.rotation.order);
+              const angleDiff = _angleDiff(hmdEuler.y, playerEuler.y);
+              const angleDiffAbs = Math.abs(angleDiff);
+              if (angleDiffAbs > Math.PI / 2) {
+                playerEuler.y += (angleDiffAbs - (Math.PI / 2)) * (angleDiff < 0 ? 1 : -1);
+                mesh.quaternion.setFromEuler(playerEuler);
+              }
 
-            mesh.getWorldPosition(meshWorldPosition);
-            mesh.eye.getWorldPosition(meshEyeWorldPosition);
-            mesh.position.copy(hmdPosition)
-              .sub(meshEyeWorldPosition)
-              .add(meshWorldPosition);
+              mesh.getWorldPosition(meshWorldPosition);
+              mesh.eye.getWorldPosition(meshEyeWorldPosition);
+              mesh.position.copy(hmdPosition)
+                .sub(meshEyeWorldPosition)
+                .add(meshWorldPosition);
 
-            playerQuaternionInverse.copy(mesh.quaternion).inverse();
-            headQuaternion.copy(playerQuaternionInverse).multiply(hmdRotation);
-            headQuaternionInverse.copy(headQuaternion).inverse();
-            mesh.material.uniforms.headRotation.value.set(headQuaternionInverse.x, headQuaternionInverse.y, headQuaternionInverse.z, headQuaternionInverse.w);
-            mesh.head.quaternion.copy(headQuaternion);
-            mesh.updateMatrixWorld();
+              playerQuaternionInverse.copy(mesh.quaternion).inverse();
+              headQuaternion.copy(playerQuaternionInverse).multiply(hmdRotation);
+              headQuaternionInverse.copy(headQuaternion).inverse();
+              uniforms.headRotation.value.set(headQuaternionInverse.x, headQuaternionInverse.y, headQuaternionInverse.z, headQuaternionInverse.w);
+              mesh.head.quaternion.copy(headQuaternion);
+              mesh.updateMatrixWorld();
 
-            for (let i = 0; i < SIDES.length; i++) {
-              const side = SIDES[i];
-              const [controllerPosition, controllerRotation] = gamepadsArray[i];
-              localUpVector.copy(upVector).applyQuaternion(controllerRotation);
-              mesh.arms[side].getWorldPosition(armWorldPosition);
-              rotationMatrix.lookAt(
-                armWorldPosition,
-                controllerPosition,
-                localUpVector
-              );
-              armQuaternion
-                .setFromRotationMatrix(rotationMatrix)
-                .multiply(armQuaternionOffset)
-                .premultiply(playerQuaternionInverse);
-              armQuaternionInverse.copy(armQuaternion).inverse();
-              const armRotation = mesh.material.uniforms[side === 'left' ? 'leftArmRotation' : 'rightArmRotation'];
-              armRotation.value.set(armQuaternionInverse.x, armQuaternionInverse.y, armQuaternionInverse.z, armQuaternionInverse.w);
-            }
+              for (let i = 0; i < SIDES.length; i++) {
+                const side = SIDES[i];
+                const [controllerPosition, controllerRotation] = gamepadsArray[i];
+                localUpVector.copy(upVector).applyQuaternion(controllerRotation);
+                mesh.arms[side].getWorldPosition(armWorldPosition);
+                rotationMatrix.lookAt(
+                  armWorldPosition,
+                  controllerPosition,
+                  localUpVector
+                );
+                armQuaternion
+                  .setFromRotationMatrix(rotationMatrix)
+                  .multiply(armQuaternionOffset)
+                  .premultiply(playerQuaternionInverse);
+                armQuaternionInverse.copy(armQuaternion).inverse();
+                const armRotation = uniforms[side === 'left' ? 'leftArmRotation' : 'rightArmRotation'];
+                armRotation.value.set(armQuaternionInverse.x, armQuaternionInverse.y, armQuaternionInverse.z, armQuaternionInverse.w);
+              }
           };
+
+          mesh.onBeforeRender = (function(onBeforeRender) {
+            return function() {
+              mesh.material.uniforms.headRotation.value.copy(uniforms.headRotation.value);
+              mesh.material.uniforms.leftArmRotation.value.copy(uniforms.leftArmRotation.value);
+              mesh.material.uniforms.rightArmRotation.value.copy(uniforms.rightArmRotation.value);
+              mesh.material.uniforms.theta.value = uniforms.theta.value;
+              mesh.material.uniforms.headVisible.value = uniforms.headVisible.value;
+              mesh.material.uniforms.hit.value = uniforms.hit.value;
+
+              onBeforeRender.apply(this, arguments);
+            };
+          })(mesh.onBeforeRender);
           mesh.update = status => {
             const {
               hmd: {
@@ -101,14 +113,7 @@ const skinUtils = archae => ({
                 },
               },
             } = status;
-            _updateRaw(
-              hmdPosition,
-              hmdRotation,
-              [
-                [controllerLeftPosition, controllerLeftRotation],
-                [controllerRightPosition, controllerRightRotation]
-              ]
-            );
+            _updateLocalTransformUniforms(hmdPosition, hmdRotation, [[controllerLeftPosition, controllerLeftRotation], [controllerRightPosition, controllerRightRotation]]);
           };
           const hmdPosition = new THREE.Vector3();
           const hmdRotation = new THREE.Quaternion();
@@ -133,22 +138,22 @@ const skinUtils = archae => ({
                 },
               },
             } = status;
-            _updateRaw(
+            _updateLocalTransformUniforms(
               hmdPosition.fromArray(hmdPositionArray),
-              hmdRotation.fromArray(hmdRotationArray),
-              [
-                [controllerLeftPosition.fromArray(controllerLeftPositionArray), controllerLeftRotation.fromArray(controllerLeftRotationArray)],
-                [controllerRightPosition.fromArray(controllerRightPositionArray), controllerRightRotation.fromArray(controllerRightRotationArray)],
+              hmdRotation.fromArray(hmdRotationArray), [
+                [
+                  controllerLeftPosition.fromArray(controllerLeftPositionArray),
+                  controllerLeftRotation.fromArray(controllerLeftRotationArray),
+                ],
+                [
+                  controllerRightPosition.fromArray(controllerRightPositionArray),
+                  controllerRightRotation.fromArray(controllerRightRotationArray),
+                ],
               ]
             );
           };
-          mesh.updateEyeStart = () => {
-            mesh.material.uniforms.headVisible.value = 1;
-            mesh.visible = true;
-          };
-          mesh.updateEyeEnd = () => {
-            mesh.material.uniforms.headVisible.value = 0;
-            mesh.visible = false;
+          mesh.setHeadVisible = headVisible => {
+            uniforms.headVisible.value = headVisible ? 1 : 0;
           };
 
           return mesh;

@@ -200,9 +200,7 @@ class Multiplayer {
 
             if (skinImgBuffer) {
               const newSkinImg = _makeImg(skinImgBuffer, 64, 64);
-              const newSkinMesh = skinUtils.makePlayerMesh(newSkinImg, {
-                local: false,
-              });
+              const newSkinMesh = skinUtils.makePlayerMesh(newSkinImg);
               scene.add(newSkinMesh);
               this.remotePlayerSkinMeshes.set(playerId, newSkinMesh);
             }
