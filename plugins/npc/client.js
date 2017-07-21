@@ -193,9 +193,9 @@ class Npc {
                 const timeDiff = now - startTime;
 
                 if (timeDiff < 300) {
-                  mesh.material.uniforms.hit.value = 1;
+                  uniforms.hit.value = 1;
                 } else {
-                  mesh.material.uniforms.hit.value = 0;
+                  uniforms.hit.value = 0;
                   mesh.hit = null;
                 }
               }
