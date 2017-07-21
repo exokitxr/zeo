@@ -223,8 +223,8 @@ class Zoo {
       const angleRate = 1.5 * 1000;
       const startOffset = Math.floor(Math.random() * angleRate);
       mesh.onBeforeRender = () => {
-        mesh.material.uniforms.map.value = texture;
-        mesh.material.uniforms.theta.value = Math.sin(((startOffset + now) % angleRate) / angleRate * Math.PI * 2) * 0.75;
+        material.uniforms.map.value = texture;
+        material.uniforms.theta.value = Math.sin(((startOffset + now) % angleRate) / angleRate * Math.PI * 2) * 0.75;
       };
       mesh.destroy = () => {
         geometry.dispose();
