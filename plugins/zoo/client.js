@@ -34,7 +34,18 @@ vec3 rotateAxisAngle(vec3 v, vec3 axis, float angle) {
 }
 `,
     "void main() {",
-    "  vec3 limbPosition = dy.w > 0.0 ? (position.xyz - dy.xyz + rotateAxisAngle(dy.xyz, vec3(1.0, 0.0, 0.0), theta * (mod(dy.w, 2.0) < 1.0 ? -1.0 : 1.0) * (dy.w <= 2.0 ? -1.0 : 1.0))) : position.xyz;",
+    "  vec3 limbPosition;",
+    "  if (dy.w > 0.0) {",
+    "    vec3 axis;",
+    "    if (dy.w < 5.0) {",
+    "      axis = vec3(1.0, 0.0, 0.0);",
+    "    } else {",
+    "      axis = vec3(0.0, 1.0, 0.0);",
+    "    }",
+    "    limbPosition = (position.xyz - dy.xyz + rotateAxisAngle(dy.xyz, axis, theta * (mod(dy.w, 2.0) < 1.0 ? -1.0 : 1.0) * (dy.w <= 2.0 ? -1.0 : 1.0)));",
+    "  } else {",
+    "    limbPosition = position.xyz;",
+    "  }",
     "  gl_Position = projectionMatrix * modelViewMatrix * vec4(limbPosition, 1.0);",
     // "  gl_Position = projectionMatrix * modelViewMatrix * vec4(position.xyz, 1.0);",
     "  vUv = uv;",
@@ -80,8 +91,8 @@ class Zoo {
     const {THREE, scene} = three;
 
     const _makeDebugBoxMesh = i => {
-      const boxCenter = new THREE.Vector3(0 * (i !== undefined ? (i === 0 ? -1 : 1) : 1), 1.1, -0.3);
-      const boxSize = new THREE.Vector3(15, 12, 11.4);
+      const boxCenter = new THREE.Vector3(0 * (i !== undefined ? (i === 0 ? -1 : 1) : 1), 0.25, 2.22);
+      const boxSize = new THREE.Vector3(1, 0.62, 5);
       return new THREE.Mesh(
         new THREE.BoxBufferGeometry(boxSize.x, boxSize.y, boxSize.z).applyMatrix(new THREE.Matrix4().makeTranslation(
           boxCenter.x, boxCenter.y, boxCenter.z
@@ -246,8 +257,8 @@ class Zoo {
       /* 'oerrki',
       'penguin',
       'piranha',
-      'pterodactyl',
-      'rat', */
+      'pterodactyl', */
+      'rat',
       'sheep',
       'skunk',
       'smallbird',
