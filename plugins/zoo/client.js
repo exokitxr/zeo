@@ -80,8 +80,8 @@ class Zoo {
     const {THREE, scene} = three;
 
     const _makeDebugBoxMesh = i => {
-      const boxCenter = new THREE.Vector3(0 * (i !== undefined ? (i === 0 ? -1 : 1) : 1), 0, 0);
-      const boxSize = new THREE.Vector3(2.1, 3, 3.1);
+      const boxCenter = new THREE.Vector3(2.5 * (i !== undefined ? (i === 0 ? -1 : 1) : 1), 0, 0);
+      const boxSize = new THREE.Vector3(2.5, 2, 10);
       return new THREE.Mesh(
         new THREE.BoxBufferGeometry(boxSize.x, boxSize.y, boxSize.z).applyMatrix(new THREE.Matrix4().makeTranslation(
           boxCenter.x, boxCenter.y, boxCenter.z
@@ -204,8 +204,8 @@ class Zoo {
       mesh.scale.set(scale, scale, scale);
       // mesh.frustumCulled = false;
 
-      mesh.add(_makeDebugBoxMesh());
-      // mesh.add(_makeDebugBoxMesh(1));
+      mesh.add(_makeDebugBoxMesh(0));
+      mesh.add(_makeDebugBoxMesh(1));
 
       const angleRate = 1.5 * 1000;
       mesh.update = now => {
@@ -224,9 +224,9 @@ class Zoo {
     const ANIMALS = [
       /* 'ammonite',
       'badger',
-      'bear',
+      'bear', */
       'beetle',
-      'bigfish', */
+      // 'bigfish',
       'boar',
       'bunny',
       'chick',
@@ -280,7 +280,7 @@ class Zoo {
           .then(animalMeshData => {
             if (live) {
               const mesh = _makeAnimalMesh(animalMeshData);
-              mesh.position.set((-ANIMALS.length/2 + i) * 1.5, 30, 2);
+              mesh.position.set((-ANIMALS.length/2 + i) * 1.5, 31, 2);
               mesh.updateMatrixWorld();
               scene.add(mesh);
 
