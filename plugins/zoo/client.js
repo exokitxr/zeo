@@ -31,26 +31,26 @@ class Zoo {
         "attribute vec4 dh;",
         "varying vec2 vUv;",
         "varying vec4 vDy;",
-    `
-    vec3 applyQuaternion(vec3 vec, vec4 quat) {
-      return vec + 2.0 * cross( cross( vec, quat.xyz ) + quat.w * vec, quat.xyz );
-    }
-    mat4 rotationMatrix(vec3 axis, float angle) {
-        axis = normalize(axis);
-        float s = sin(angle);
-        float c = cos(angle);
-        float oc = 1.0 - c;
-        
-        return mat4(oc * axis.x * axis.x + c,           oc * axis.x * axis.y - axis.z * s,  oc * axis.z * axis.x + axis.y * s,  0.0,
-                    oc * axis.x * axis.y + axis.z * s,  oc * axis.y * axis.y + c,           oc * axis.y * axis.z - axis.x * s,  0.0,
-                    oc * axis.z * axis.x - axis.y * s,  oc * axis.y * axis.z + axis.x * s,  oc * axis.z * axis.z + c,           0.0,
-                    0.0,                                0.0,                                0.0,                                1.0);
-    }
-    vec3 rotateAxisAngle(vec3 v, vec3 axis, float angle) {
-      mat4 m = rotationMatrix(axis, angle);
-      return (m * vec4(v, 1.0)).xyz;
-    }
-    `,
+      `
+      vec3 applyQuaternion(vec3 vec, vec4 quat) {
+        return vec + 2.0 * cross( cross( vec, quat.xyz ) + quat.w * vec, quat.xyz );
+      }
+      mat4 rotationMatrix(vec3 axis, float angle) {
+          axis = normalize(axis);
+          float s = sin(angle);
+          float c = cos(angle);
+          float oc = 1.0 - c;
+          
+          return mat4(oc * axis.x * axis.x + c,           oc * axis.x * axis.y - axis.z * s,  oc * axis.z * axis.x + axis.y * s,  0.0,
+                      oc * axis.x * axis.y + axis.z * s,  oc * axis.y * axis.y + c,           oc * axis.y * axis.z - axis.x * s,  0.0,
+                      oc * axis.z * axis.x - axis.y * s,  oc * axis.y * axis.z + axis.x * s,  oc * axis.z * axis.z + c,           0.0,
+                      0.0,                                0.0,                                0.0,                                1.0);
+      }
+      vec3 rotateAxisAngle(vec3 v, vec3 axis, float angle) {
+        mat4 m = rotationMatrix(axis, angle);
+        return (m * vec4(v, 1.0)).xyz;
+      }
+      `,
         "void main() {",
         "  vec3 headPosition = dh.w > 0.0 ? (applyQuaternion(position.xyz - dh.xyz, headRotation) + dh.xyz) : position.xyz;",
         "  vec3 limbPosition;",
@@ -85,8 +85,8 @@ class Zoo {
     };
 
     const _makeDebugBoxMesh = i => {
-      const boxCenter = new THREE.Vector3(0 * (i !== undefined ? (i === 0 ? -1 : 1) : 1), 1, -1.4);
-      const boxSize = new THREE.Vector3(3, 1.95, 2);
+      const boxCenter = new THREE.Vector3(0 * (i !== undefined ? (i === 0 ? -1 : 1) : 1), 5, -3.5);
+      const boxSize = new THREE.Vector3(3, 2.5, 4);
       return new THREE.Mesh(
         new THREE.BoxBufferGeometry(boxSize.x, boxSize.y, boxSize.z).applyMatrix(new THREE.Matrix4().makeTranslation(
           boxCenter.x, boxCenter.y, boxCenter.z
@@ -247,7 +247,7 @@ class Zoo {
       // 'bear',
       // 'beetle',
       /* 'bigfish', */
-      // 'boar',
+      'boar',
       // 'bunny',
       // 'chick',
       // 'chicken',
@@ -266,7 +266,7 @@ class Zoo {
       'penguin',
       'piranha',
       'pterodactyl', */
-      'rat',
+      // 'rat',
       // 'sheep',
       // 'skunk',
       // 'smallbird',
