@@ -5,7 +5,7 @@ const THREE = require('/tmp/node_modules/three');
 
 const dyCutoffBox = new THREE.Box3().setFromCenterAndSize(
   new THREE.Vector3(0, 2, 0),
-  new THREE.Vector3(4.8, 10, 11.2)
+  new THREE.Vector3(4.85, 10, 11.2)
 );
 const splitX = 0;
 const splitZ = 0;
