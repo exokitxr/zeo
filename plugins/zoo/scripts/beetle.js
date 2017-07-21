@@ -4,8 +4,8 @@ const fs = require('fs');
 const THREE = require('/tmp/node_modules/three');
 
 const _makeCutoffBox = i => new THREE.Box3().setFromCenterAndSize(
-  new THREE.Vector3(2.5 * (i === 0 ? -1 : 1), 0, 0),
-  new THREE.Vector3(2.5, 2, 10)
+  new THREE.Vector3(1.875 * (i === 0 ? -1 : 1), 0, 0),
+  new THREE.Vector3(1.875, 1.5, 7.5)
 );
 const dyCutoffBoxes = [
   _makeCutoffBox(0),
@@ -14,8 +14,8 @@ const dyCutoffBoxes = [
 const splitX = 0;
 const splitZ = 1;
 const dhCutoffBox = new THREE.Box3().setFromCenterAndSize(
-  new THREE.Vector3(0, 1, -2.25),
-  new THREE.Vector3(2, 1.6, 2.5)
+  new THREE.Vector3(0, 0.75, -1.6875),
+  new THREE.Vector3(1.5, 1.2, 1.875)
 );
 
 const o = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
@@ -71,7 +71,7 @@ const geometries = geometriesJson.map(geometry => {
         new THREE.Vector3(0, 0, -1)
       )
   )); */
-  const scale = 0.3;
+  const scale = 0.225;
   g.applyMatrix(new THREE.Matrix4().makeScale(scale, scale, scale));
   const minY = (() => {
     let result = Infinity;
