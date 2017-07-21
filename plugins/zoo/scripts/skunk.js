@@ -5,7 +5,7 @@ const THREE = require('/tmp/node_modules/three');
 
 const cutoffBox = new THREE.Box3().setFromCenterAndSize(
   new THREE.Vector3(0, 0, 0),
-  new THREE.Vector3(2.1, 3, 3.1),
+  new THREE.Vector3(3.15, 3.1, 4.65),
 );
 const cutoffPlane = new THREE.Plane(
   new THREE.Vector3(0, -1, 0),
@@ -73,7 +73,7 @@ const geometries = geometriesJson.map(geometry => {
         new THREE.Vector3(0, 0, -1)
       )
   ));
-  const scale = 0.5;
+  const scale = 0.75;
   g.applyMatrix(new THREE.Matrix4().makeScale(scale, scale, scale));
   const minY = (() => {
     let result = Infinity;
