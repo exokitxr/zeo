@@ -7,24 +7,16 @@ const _makeDebugBoxMesh = i => new THREE.Box3().setFromCenterAndSize(
   new THREE.Vector3(2.5 * (i === 0 ? -1 : 1), 0, 0),
   new THREE.Vector3(2.5, 2, 10)
 );
-const cutoffBoxes = [
+const dyCutoffBoxes = [
   _makeDebugBoxMesh(0),
   _makeDebugBoxMesh(1),
 ];
-const cutoffPlane = new THREE.Plane(
-  new THREE.Vector3(0, -1, 0),
-  -4.5
-);
-const _isInFrontOfPlane = (v, plane) => {
-  const normalA = plane.normal;
-  const A = plane.projectPoint(v);
-  const B = v;
-  const AB = B.clone().sub(A);
-  const dot = AB.clone().dot(normalA);
-  return dot > 0;
-};
 const splitX = 0;
 const splitZ = 1;
+const dhCutoffBox = new THREE.Box3().setFromCenterAndSize(
+  new THREE.Vector3(0, 1, -2.25),
+  new THREE.Vector3(2, 1.6, 2.5)
+);
 
 const o = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
 const {geometries: geometriesJson} = o;
@@ -32,10 +24,11 @@ const geometries = geometriesJson.map(geometry => {
   const {data: {attributes: {position: {array: positionsArray}, normal: {array: normalsArray}, uv: {array: uvsArray}}, index: {array: indicesArray}}} = geometry;
 
   const result = new Buffer(
-    5 * 4 +
+    6 * 4 +
     positionsArray.length * 4 +
     normalsArray.length * 4 +
     uvsArray.length * 4 +
+    positionsArray.length / 3 * 4 * 4 +
     positionsArray.length / 3 * 4 * 4 +
     indicesArray.length * 2
   );
@@ -46,9 +39,10 @@ const geometries = geometriesJson.map(geometry => {
     normalsArray.length,
     uvsArray.length,
     positionsArray.length / 3 * 4,
+    positionsArray.length / 3 * 4,
     indicesArray.length,
   ]);
-  new Uint32Array(result.buffer, byteOffset, 5).set(header);
+  new Uint32Array(result.buffer, byteOffset, 6).set(header);
   byteOffset += header.length * 4;
 
   const positions = Float32Array.from(positionsArray);
@@ -111,8 +105,7 @@ console.warn('min y', minY);
   for (let i = 0; i < positions.length / 3; i++) {
     const v = new THREE.Vector3().fromArray(positions, i * 3);
 
-    // if (_isInFrontOfPlane(v, cutoffPlane)) {
-    if (cutoffBoxes.some(cutoffBox => cutoffBox.containsPoint(v))) {
+    if (dyCutoffBoxes.some(cutoffBox => cutoffBox.containsPoint(v))) {
       const k = v.toArray().join(':');
       dyVertices[k] = true;
     }
@@ -170,7 +163,6 @@ console.warn('min y', minY);
       const count = bucketCount[bucketIndex];
       dys[baseIndex + 0] = v.x - bucket.x / count;
       dys[baseIndex + 1] = v.y - bucket.y;
-// console.warn(dys[baseIndex + 1], bucket.y);
       dys[baseIndex + 2] = v.z - bucket.z / count;
       dys[baseIndex + 3] = bucketIndex;
       numMatches++;
@@ -183,7 +175,54 @@ console.warn('min y', minY);
   }
   new Float32Array(result.buffer, byteOffset, dys.length).set(dys);
   byteOffset += dys.length * 4;
-console.warn('total', {percentMatches: numMatches / (positions.length / 3)});
+
+  const dhVertices = {};
+  for (let i = 0; i < positions.length / 3; i++) {
+    const v = new THREE.Vector3().fromArray(positions, i * 3);
+
+    if (dhCutoffBox.containsPoint(v)) {
+      const k = v.toArray().join(':');
+      dhVertices[k] = true;
+    }
+  }
+  const dhBucket = new THREE.Vector3(0, 0, -Infinity);
+  let dhBucketCount = 0;
+  for (let i = 0; i < positions.length / 3; i++) {
+    const v = new THREE.Vector3().fromArray(positions, i * 3);
+    const k = v.toArray().join(':');
+    if (dhVertices[k]) {
+      dhBucket.x += v.x;
+      dhBucket.y += v.y;
+      dhBucket.z = Math.max(v.z, dhBucket.z);
+      dhBucketCount++;
+    }
+  }
+  dhBucket.x /= dhBucketCount;
+  dhBucket.y /= dhBucketCount;
+
+  const dhs = new Float32Array(positions.length / 3 * 4);
+  let numMatches2 = 0;
+  for (let i = 0; i < positions.length / 3; i++) {
+    const v = new THREE.Vector3().fromArray(positions, i * 3);
+    const k = v.toArray().join(':');
+
+    const baseIndex = i * 4;
+    if (dhVertices[k]) {
+      dhs[baseIndex + 0] = dhBucket.x;
+      dhs[baseIndex + 1] = dhBucket.y;
+      dhs[baseIndex + 2] = dhBucket.z;
+      dhs[baseIndex + 3] = 1;
+      numMatches2++;
+    } else {
+      dhs[baseIndex + 0] = 0;
+      dhs[baseIndex + 1] = 0;
+      dhs[baseIndex + 2] = 0;
+      dhs[baseIndex + 3] = 0;
+    }
+  }
+  new Float32Array(result.buffer, byteOffset, dhs.length).set(dhs);
+  byteOffset += dhs.length * 4;
+console.warn(numMatches2 / (positions.length / 3));
 
   new Uint16Array(result.buffer, byteOffset, indices.length).set(indices);
   byteOffset += indices.length * 2;
