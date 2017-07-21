@@ -4,18 +4,18 @@ const fs = require('fs');
 const THREE = require('/tmp/node_modules/three');
 
 const _makeCutoffBox = i => new THREE.Box3().setFromCenterAndSize(
-  new THREE.Vector3(2.5 * (i === 0 ? -1 : 1), 0, 0),
-  new THREE.Vector3(2.5, 2, 10)
+  new THREE.Vector3(1.25 * (i === 0 ? -1 : 1), 0.5, 0.1),
+  new THREE.Vector3(2.2, 1, 2.4)
 );
 const dyCutoffBoxes = [
   _makeCutoffBox(0),
   _makeCutoffBox(1),
 ];
 const splitX = 0;
-const splitZ = 1;
+const splitZ = 0;
 const dhCutoffBox = new THREE.Box3().setFromCenterAndSize(
-  new THREE.Vector3(0, 1, -2.25),
-  new THREE.Vector3(2, 1.6, 2.5)
+  new THREE.Vector3(0, 0.5, -2),
+  new THREE.Vector3(2.2, 2, 1.6)
 );
 
 const o = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
@@ -59,19 +59,26 @@ const geometries = geometriesJson.map(geometry => {
         new THREE.Vector3(0, 0, 1)
       )
   )); */
-  /* for (let i = 0; i < positions.length / 3; i++) {
+  for (let i = 0; i < positions.length / 3; i++) {
     positions[i * 3 + 2] *= -1;
-  } */
+  }
   const g = new THREE.BufferGeometry();
   g.addAttribute('position', new THREE.BufferAttribute(positions, 3));
-  /* g.applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(
+  g.applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(
     new THREE.Quaternion()
       .setFromUnitVectors(
         new THREE.Vector3(0, 1, 0),
         new THREE.Vector3(0, 0, -1)
       )
-  )); */
-  const scale = 0.3;
+  ));
+  g.applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(
+    new THREE.Quaternion()
+      .setFromUnitVectors(
+        new THREE.Vector3(-1, 0, 0),
+        new THREE.Vector3(0, 0, -1)
+      )
+  ));
+  const scale = 1;
   g.applyMatrix(new THREE.Matrix4().makeScale(scale, scale, scale));
   const minY = (() => {
     let result = Infinity;
