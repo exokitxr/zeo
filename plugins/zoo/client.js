@@ -1,85 +1,3 @@
-const ZOO_SHADER = {
-  uniforms: {
-    theta: {
-      type: 'f',
-      value: 0,
-    },
-    map: {
-      type: 't',
-      value: null,
-    },
-  },
-  vertexShader: [
-    "#define PI 3.1415926535897932384626433832795",
-    "uniform float theta;",
-    "attribute vec4 dy;",
-    "varying vec2 vUv;",
-    "varying vec4 vDy;",
-`
-mat4 rotationMatrix(vec3 axis, float angle) {
-    axis = normalize(axis);
-    float s = sin(angle);
-    float c = cos(angle);
-    float oc = 1.0 - c;
-    
-    return mat4(oc * axis.x * axis.x + c,           oc * axis.x * axis.y - axis.z * s,  oc * axis.z * axis.x + axis.y * s,  0.0,
-                oc * axis.x * axis.y + axis.z * s,  oc * axis.y * axis.y + c,           oc * axis.y * axis.z - axis.x * s,  0.0,
-                oc * axis.z * axis.x - axis.y * s,  oc * axis.y * axis.z + axis.x * s,  oc * axis.z * axis.z + c,           0.0,
-                0.0,                                0.0,                                0.0,                                1.0);
-}
-
-vec3 rotateAxisAngle(vec3 v, vec3 axis, float angle) {
-	mat4 m = rotationMatrix(axis, angle);
-	return (m * vec4(v, 1.0)).xyz;
-}
-`,
-    "void main() {",
-    "  vec3 limbPosition;",
-    "  if (dy.w > 0.0) {",
-    "    vec3 axis;",
-    "    if (dy.w < 5.0) {",
-    "      axis = vec3(1.0, 0.0, 0.0);",
-    "    } else {",
-    "      axis = vec3(0.0, 1.0, 0.0);",
-    "    }",
-    "    limbPosition = (position.xyz - dy.xyz + rotateAxisAngle(dy.xyz, axis, theta * (mod(dy.w, 2.0) < 1.0 ? -1.0 : 1.0) * (dy.w <= 2.0 ? -1.0 : 1.0)));",
-    "  } else {",
-    "    limbPosition = position.xyz;",
-    "  }",
-    "  gl_Position = projectionMatrix * modelViewMatrix * vec4(limbPosition, 1.0);",
-    // "  gl_Position = projectionMatrix * modelViewMatrix * vec4(position.xyz, 1.0);",
-    "  vUv = uv;",
-    "  vDy = dy;",
-    "}"
-  ].join("\n"),
-  fragmentShader: [
-    "uniform sampler2D map;",
-    "varying vec2 vUv;",
-    "varying vec4 vDy;",
-    "void main() {",
-    "  vec4 diffuseColor = texture2D(map, vUv);",
-    "  if (vDy.w > 0.0) {;",
-    "    vec3 extraColor = vec3(0.0);",
-    "    if (vDy.w <= 1.0) {",
-    "      extraColor = vec3(1.5, 0.0, 0.0);",
-    "    } else if (vDy.w <= 2.0) {",
-    "      extraColor = vec3(0.0, 1.5, 0.0);",
-    "    } else if (vDy.w <= 3.0) {",
-    "      extraColor = vec3(0.0, 0.0, 1.5);",
-    "    } else if (vDy.w <= 4.0) {",
-    "      extraColor = vec3(1.5, 1.5, 1.5);",
-    "    }",
-    "    diffuseColor.rgb += extraColor;",
-    // "    diffuseColor.rgb += vec3(0.5, 0.0, 0.0) * vDy.w;",
-    "  };",
-    "  if (diffuseColor.a < 0.5) {",
-    "    discard;",
-    "  }",
-    "  gl_FragColor = diffuseColor;",
-    "}"
-  ].join("\n")
-};
-
 class Zoo {
   constructor(archae) {
     this._archae = archae;
@@ -90,14 +8,85 @@ class Zoo {
     const {three, render} = zeo;
     const {THREE, scene} = three;
 
-    let live = true;
-    this._cleanup = () => {
-      live = false;
+    const ZOO_SHADER = {
+      uniforms: {
+        theta: {
+          type: 'f',
+          value: 0,
+        },
+        headRotation: {
+          type: 'v4',
+          value: new THREE.Vector4(),
+        },
+        map: {
+          type: 't',
+          value: null,
+        },
+      },
+      vertexShader: [
+        "#define PI 3.1415926535897932384626433832795",
+        "uniform vec4 headRotation;",
+        "uniform float theta;",
+        "attribute vec4 dy;",
+        "attribute vec4 dh;",
+        "varying vec2 vUv;",
+        "varying vec4 vDy;",
+    `
+    vec3 applyQuaternion(vec3 vec, vec4 quat) {
+      return vec + 2.0 * cross( cross( vec, quat.xyz ) + quat.w * vec, quat.xyz );
+    }
+    mat4 rotationMatrix(vec3 axis, float angle) {
+        axis = normalize(axis);
+        float s = sin(angle);
+        float c = cos(angle);
+        float oc = 1.0 - c;
+        
+        return mat4(oc * axis.x * axis.x + c,           oc * axis.x * axis.y - axis.z * s,  oc * axis.z * axis.x + axis.y * s,  0.0,
+                    oc * axis.x * axis.y + axis.z * s,  oc * axis.y * axis.y + c,           oc * axis.y * axis.z - axis.x * s,  0.0,
+                    oc * axis.z * axis.x - axis.y * s,  oc * axis.y * axis.z + axis.x * s,  oc * axis.z * axis.z + c,           0.0,
+                    0.0,                                0.0,                                0.0,                                1.0);
+    }
+    vec3 rotateAxisAngle(vec3 v, vec3 axis, float angle) {
+      mat4 m = rotationMatrix(axis, angle);
+      return (m * vec4(v, 1.0)).xyz;
+    }
+    `,
+        "void main() {",
+        "  vec3 headPosition = dh.w > 0.0 ? (applyQuaternion(position.xyz - dh.xyz, headRotation) + dh.xyz) : position.xyz;",
+        "  vec3 limbPosition;",
+        "  if (dy.w > 0.0) {", // limb rotation applies
+        "    vec3 axis;",
+        "    if (dy.w < 5.0) {", // x rotation for regular limb
+        "      axis = vec3(1.0, 0.0, 0.0);",
+        "    } else {", // y rotation for tail
+        "      axis = vec3(0.0, 1.0, 0.0);",
+        "    }",
+        "    limbPosition = (headPosition.xyz - dy.xyz + rotateAxisAngle(dy.xyz, axis, theta * (mod(dy.w, 2.0) < 1.0 ? -1.0 : 1.0) * (dy.w <= 2.0 ? -1.0 : 1.0)));",
+        "  } else {", // limb rotation does not apply
+        "    limbPosition = headPosition.xyz;",
+        "  }",
+        "  gl_Position = projectionMatrix * modelViewMatrix * vec4(limbPosition, 1.0);",
+        "  vUv = uv;",
+        "  vDy = dy;",
+        "}"
+      ].join("\n"),
+      fragmentShader: [
+        "uniform sampler2D map;",
+        "varying vec2 vUv;",
+        "varying vec4 vDy;",
+        "void main() {",
+        "  vec4 diffuseColor = texture2D(map, vUv);",
+        "  if (diffuseColor.a < 0.5) {",
+        "    discard;",
+        "  }",
+        "  gl_FragColor = diffuseColor;",
+        "}"
+      ].join("\n")
     };
 
     const _makeDebugBoxMesh = i => {
-      const boxCenter = new THREE.Vector3(0 * (i !== undefined ? (i === 0 ? -1 : 1) : 1), 0, 0.1);
-      const boxSize = new THREE.Vector3(7.5, 5, 6);
+      const boxCenter = new THREE.Vector3(0 * (i !== undefined ? (i === 0 ? -1 : 1) : 1), 2.5, -1.5);
+      const boxSize = new THREE.Vector3(1.5, 1.5, 2);
       return new THREE.Mesh(
         new THREE.BoxBufferGeometry(boxSize.x, boxSize.y, boxSize.z).applyMatrix(new THREE.Matrix4().makeTranslation(
           boxCenter.x, boxCenter.y, boxCenter.z
@@ -106,6 +95,7 @@ class Zoo {
       );
     };
 
+    const upVector = new THREE.Vector3(0, 1, 0);
     const zooMaterial = new THREE.ShaderMaterial({
       uniforms: THREE.UniformsUtils.clone(ZOO_SHADER.uniforms),
       vertexShader: ZOO_SHADER.vertexShader,
@@ -113,6 +103,11 @@ class Zoo {
       transparent: true,
     });
     zooMaterial.volatile = true;
+
+    let live = true;
+    this._cleanup = () => {
+      live = false;
+    };
 
     const _resArrayBuffer = res => {
       if (res.status >= 200 && res.status < 300) {
@@ -143,13 +138,14 @@ class Zoo {
       .then(arrayBuffer => {
         let byteOffset = 0;
 
-        const header = new Uint32Array(arrayBuffer, 0, 5);
+        const header = new Uint32Array(arrayBuffer, 0, 6);
         const numPositions = header[0];
         const numNormals = header[1];
         const numUvs = header[2];
         const numDys = header[3];
-        const numIndices = header[4];
-        byteOffset += 5 * 4;
+        const numDhs = header[4];
+        const numIndices = header[5];
+        byteOffset += 6 * 4;
 
         const positions = new Float32Array(arrayBuffer, byteOffset, numPositions);
         byteOffset += numPositions * 4;
@@ -163,6 +159,9 @@ class Zoo {
         const dys = new Float32Array(arrayBuffer, byteOffset, numDys);
         byteOffset += numDys * 4;
 
+        const dhs = new Float32Array(arrayBuffer, byteOffset, numDhs);
+        byteOffset += numDhs * 4;
+
         const indices = new Uint16Array(arrayBuffer, byteOffset, numIndices);
         byteOffset += numIndices * 2;
 
@@ -171,6 +170,7 @@ class Zoo {
           normals,
           uvs,
           dys,
+          dhs,
           indices,
         };
       });
@@ -188,13 +188,14 @@ class Zoo {
       }));
     const _makeAnimalMesh = animalMeshData => {
       const {img, model} = animalMeshData;
-      const {positions, normals, uvs, dys, indices} = model;
+      const {positions, normals, uvs, dys, dhs, indices} = model;
 
       const geometry = new THREE.BufferGeometry();
       geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
       geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
       geometry.addAttribute('uv', new THREE.BufferAttribute(uvs, 2));
       geometry.addAttribute('dy', new THREE.BufferAttribute(dys, 4));
+      geometry.addAttribute('dh', new THREE.BufferAttribute(dhs, 4));
       geometry.setIndex(new THREE.BufferAttribute(indices, 1));
 
       const texture = new THREE.Texture(
@@ -222,8 +223,14 @@ class Zoo {
 
       const angleRate = 1.5 * 1000;
       const startOffset = Math.floor(Math.random() * angleRate);
+      const headRotation = new THREE.Quaternion();
       mesh.onBeforeRender = () => {
         material.uniforms.map.value = texture;
+        headRotation.setFromAxisAngle(
+          upVector,
+          Math.sin(((startOffset + now) % angleRate) / angleRate * Math.PI * 2) * 0.75
+        );
+        material.uniforms.headRotation.value.set(headRotation.x, headRotation.y, headRotation.z, headRotation.w);
         material.uniforms.theta.value = Math.sin(((startOffset + now) % angleRate) / angleRate * Math.PI * 2) * 0.75;
       };
       mesh.destroy = () => {
@@ -235,46 +242,46 @@ class Zoo {
     };
 
     const ANIMALS = [
-      // 'ammonite',
-      'badger',
-      'bear',
-      'beetle',
-      // 'bigfish',
-      'boar',
-      'bunny',
-      'chick',
-      'chicken',
-      'cow',
-      //'cubelet',
-      'deer',
-      // 'dungeon_master',
-      'elephant',
+      /* 'ammonite', */
+      // 'badger',
+      // 'bear',
+      // 'beetle',
+      /* 'bigfish', */
+      // 'boar',
+      // 'bunny',
+      // 'chick',
+      // 'chicken',
+      // 'cow',
+      /* 'cubelet', */
+      // 'deer',
+      /* 'dungeon_master', */
+      // 'elephant',
       /* 'fish',
       'ghost', */
-      'giraffe',
-      // 'gull',
-      'horse',
-      'mammoth',
+      // 'giraffe',
+      /* 'gull', */
+      // 'horse',
+      // 'mammoth',
       /* 'oerrki',
       'penguin',
       'piranha',
       'pterodactyl', */
-      'rat',
-      'sheep',
-      'skunk',
+      // 'rat',
+      // 'sheep',
+      // 'skunk',
       'smallbird',
       /* 'spider',
       'swamplurker', */
-      'turtle',
+      // 'turtle',
       /* 'trilobite', */
-      'velociraptor',
+      // 'velociraptor',
       /* 'villager',
       'walker',
       'warthog',
       'wasp',
       'whale',
       'witch', */
-      'wolf',
+      // 'wolf',
       /* 'zombie',
       'zombie_brute', */
     ];
