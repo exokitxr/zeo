@@ -4,8 +4,8 @@ const fs = require('fs');
 const THREE = require('/tmp/node_modules/three');
 
 const cutoffBox = new THREE.Box3().setFromCenterAndSize(
-  new THREE.Vector3(0, -5, 0),
-  new THREE.Vector3(5, 5, 10),
+  new THREE.Vector3(0, 0, -1.5),
+  new THREE.Vector3(16, 30, 25)
 );
 const cutoffPlane = new THREE.Plane(
   new THREE.Vector3(0, -1, 0),
@@ -52,27 +52,31 @@ const geometries = geometriesJson.map(geometry => {
   for (let i = 0; i < positions.length / 3; i++) {
     positions[i * 3 + 1] += yOffset;
   } */
-  /* const g = new THREE.BufferGeometry();
-  g.addAttribute('position', new THREE.BufferAttribute(positions, 3));
-  g.applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(
-    new THREE.Quaternion()
-      .setFromUnitVectors(
-        new THREE.Vector3(0, 0, -1),
-        new THREE.Vector3(0, 0, 1)
-      )
-  )); */
-  for (let i = 0; i < positions.length / 3; i++) {
+  /* for (let i = 0; i < positions.length / 3; i++) {
     positions[i * 3 + 2] *= -1;
-  }
+  } */
   const g = new THREE.BufferGeometry();
   g.addAttribute('position', new THREE.BufferAttribute(positions, 3));
-  g.applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(
+  /* g.applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(
     new THREE.Quaternion()
       .setFromUnitVectors(
         new THREE.Vector3(0, 1, 0),
         new THREE.Vector3(0, 0, -1)
       )
-  ));
+  )); */
+  const scale = 0.75;
+  g.applyMatrix(new THREE.Matrix4().makeScale(scale, scale, scale));
+  const minY = (() => {
+    let result = Infinity;
+    for (let i = 0; i < positions.length / 3; i++) {
+      result = Math.min(positions[i * 3 + 1], result);
+    }
+    return result;
+  })();
+  for (let i = 0; i < positions.length / 3; i++) {
+    positions[i * 3 + 1] -= minY;
+  }
+console.warn('min y', minY);
 
   new Float32Array(result.buffer, byteOffset, positions.length).set(positions);
   byteOffset += positions.length * 4;
@@ -86,9 +90,6 @@ const geometries = geometriesJson.map(geometry => {
   byteOffset += uvs.length * 4;
 
   const indices = Uint16Array.from(indicesArray);
-
-  /* let numBuckets = 0;
-  const buckets = {}; */
 
   const dyVertices = {};
   for (let i = 0; i < positions.length / 3; i++) {
@@ -153,7 +154,7 @@ const geometries = geometriesJson.map(geometry => {
       const count = bucketCount[bucketIndex];
       dys[baseIndex + 0] = v.x - bucket.x / count;
       dys[baseIndex + 1] = v.y - bucket.y;
-console.warn(dys[baseIndex + 1], bucket.y);
+// console.warn(dys[baseIndex + 1], bucket.y);
       dys[baseIndex + 2] = v.z - bucket.z / count;
       dys[baseIndex + 3] = bucketIndex;
       numMatches++;
