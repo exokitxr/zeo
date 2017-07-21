@@ -85,8 +85,8 @@ class Zoo {
     };
 
     const _makeDebugBoxMesh = i => {
-      const boxCenter = new THREE.Vector3(0 * (i !== undefined ? (i === 0 ? -1 : 1) : 1), 2.5, -1.5);
-      const boxSize = new THREE.Vector3(1.5, 1.5, 2);
+      const boxCenter = new THREE.Vector3(0 * (i !== undefined ? (i === 0 ? -1 : 1) : 1), 12, -6);
+      const boxSize = new THREE.Vector3(2.2, 8, 8);
       return new THREE.Mesh(
         new THREE.BoxBufferGeometry(boxSize.x, boxSize.y, boxSize.z).applyMatrix(new THREE.Matrix4().makeTranslation(
           boxCenter.x, boxCenter.y, boxCenter.z
@@ -269,12 +269,12 @@ class Zoo {
       // 'rat',
       // 'sheep',
       // 'skunk',
-      'smallbird',
+      // 'smallbird',
       /* 'spider',
       'swamplurker', */
       // 'turtle',
       /* 'trilobite', */
-      // 'velociraptor',
+      'velociraptor',
       /* 'villager',
       'walker',
       'warthog',
