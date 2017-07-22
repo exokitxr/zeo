@@ -55,41 +55,6 @@
         "exists": false
       }
     },
-    "jtbd1": {
-      "_events": {},
-      "type": "entity",
-      "id": "jtbd1",
-      "name": "skybox",
-      "displayName": "skybox",
-      "module": "/plugins/skybox",
-      "description": "Provides a basic skybox.",
-      "version": "0.0.1",
-      "readme": null,
-      "tagName": "skybox",
-      "attributes": {
-        "position": {
-          "value": [
-            -0.4944608190630829,
-            0.18671600782382514,
-            0,
-            0.05800565060459861,
-            0.7687227093111678,
-            0.5638809516529752,
-            0.29620771943041946,
-            1,
-            1,
-            1
-          ]
-        },
-        "type": {
-          "value": "dark"
-        }
-      },
-      "metadata": {
-        "isStatic": false,
-        "exists": false
-      }
-    },
     "dxlmqi": {
       "_events": {},
       "type": "entity",
@@ -102,6 +67,9 @@
       "attributes": {
         "color": {
           "value": "#ffffff"
+        },
+        "intensity": {
+          "value": 0.2
         }
       },
       "metadata": {}
@@ -113,7 +81,7 @@
       "displayName": "heightfield",
       "version": "0.0.1",
       "module": "/plugins/heightfield",
-      "tagName": "heightfield",
+      "tagName": "plugins-heightfield",
       "attributes": [],
       "metadata": {}
     },
@@ -170,6 +138,61 @@
       "module": "/plugins/items",
       "tagName": "plugins-items",
       "attributes": [],
+      "metadata": {}
+    },
+    "rq2bys": {
+      "type": "entity",
+      "id": "rq2bys",
+      "name": "/plugins/tools",
+      "displayName": "tools",
+      "version": "0.0.1",
+      "module": "/plugins/tools",
+      "tagName": "plugins-tools",
+      "attributes": [],
+      "metadata": {}
+    },
+    "kkvl7d": {
+      "type": "entity",
+      "id": "kkvl7d",
+      "name": "/plugins/day-night-skybox",
+      "displayName": "day-night-skybox",
+      "version": "0.0.1",
+      "module": "/plugins/day-night-skybox",
+      "tagName": "plugins-day-night-skybox",
+      "attributes": {},
+      "metadata": {}
+    },
+    "0u7yql": {
+      "type": "entity",
+      "id": "0u7yql",
+      "name": "/plugins/lightmap",
+      "displayName": "lightmap",
+      "version": "0.0.1",
+      "module": "/plugins/lightmap",
+      "tagName": "plugins-lightmap",
+      "attributes": {},
+      "metadata": {}
+    },
+    "yhncxo": {
+      "type": "entity",
+      "id": "yhncxo",
+      "name": "/plugins/npc",
+      "displayName": "npc",
+      "version": "0.0.1",
+      "module": "/plugins/npc",
+      "tagName": "plugins-npc",
+      "attributes": {},
+      "metadata": {}
+    },
+    "0pdq0ak": {
+      "type": "entity",
+      "id": "0pdq0ak",
+      "name": "/plugins/skin",
+      "displayName": "skin",
+      "version": "0.0.1",
+      "module": "/plugins/skin",
+      "tagName": "plugins-skin",
+      "attributes": {},
       "metadata": {}
     }
   }
