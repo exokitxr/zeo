@@ -2,6 +2,7 @@ importScripts('/archae/three/three.js');
 const {exports: THREE} = self.module;
 self.module = {};
 
+const alea = require('alea');
 const indev = require('indev');
 const {
   NUM_CELLS,
@@ -25,12 +26,17 @@ const sideQuaternion = new THREE.Quaternion().setFromUnitVectors(
   new THREE.Vector3(1, 0, 0)
 );
 
+const rng = new alea(DEFAULT_SEED);
 const generator = indev({
   seed: DEFAULT_SEED,
 });
 const elevationNoise = generator.uniform({
   frequency: 0.002,
   octaves: 8,
+});
+const treeNoise = generator.uniform({
+  frequency: 0.1,
+  octaves: 4,
 });
 
 class Box {
@@ -91,11 +97,11 @@ const treeTextureAtlas = (() => {
   for (let y = 0; y < NUM_TEXTURE_CHUNKS_WIDTH; y++) {
     for (let x = 0; x < NUM_TEXTURE_CHUNKS_WIDTH; x++) {
       if (x === 0) { // trunk
-        const numBoxes = Math.floor(50 + Math.random() * 50);
+        const numBoxes = Math.floor(50 + rng() * 50);
         const boxes = Array(numBoxes);
         for (let i = 0; i < numBoxes; i++) {
-          const min = new THREE.Vector2(Math.random(), Math.random());
-          const max = min.clone().add(new THREE.Vector2(Math.random() * 0.02, Math.random() * 0.04));
+          const min = new THREE.Vector2(rng(), rng());
+          const max = min.clone().add(new THREE.Vector2(rng() * 0.02, rng() * 0.04));
           const box = new Box(min, max);
           boxes[i] = box;
         }
@@ -122,12 +128,12 @@ const treeTextureAtlas = (() => {
           }
         }
       } else { // leaf
-        const numBlades = Math.floor(5 + (Math.random() * 5));
+        const numBlades = Math.floor(5 + (rng() * 5));
         const numTrianglesPerBlade = 5;
         const numTriangles = numBlades * numTrianglesPerBlade;
         const triangles = [];
         for (let i = 0; i < numBlades; i++) {
-          const type = Math.floor(Math.random() * (2 + 1));
+          const type = Math.floor(rng() * (2 + 1));
           const w = (() => {
             switch (type) {
               case 0: return 0.05;
@@ -142,8 +148,8 @@ const treeTextureAtlas = (() => {
               case 2: return 0.275;
             }
           })();
-          const ox = Math.random() * (1 - w);
-          const sy = (1 / h) * (0.25 + Math.random() * 0.75);
+          const ox = rng() * (1 - w);
+          const sy = (1 / h) * (0.25 + rng() * 0.75);
           const points = (() => {
             switch (type) {
               case 0: {
@@ -231,8 +237,8 @@ const treeTextureAtlas = (() => {
 const treeTemplates = (() => {
   const trunkGeometries = [
     (() => {
-      const radiusBottom = 0.3 + Math.random() * 0.3;
-      const radiusTop = radiusBottom * (0.2 + (Math.random() * 0.3));
+      const radiusBottom = 0.3 + rng() * 0.3;
+      const radiusTop = radiusBottom * (0.2 + (rng() * 0.3));
       const heightSegments = 16;
       const radialSegments = 5;
       const geometry = new THREE.CylinderBufferGeometry(radiusTop, radiusBottom, heightSegments, radialSegments, heightSegments);
@@ -248,16 +254,16 @@ const treeTemplates = (() => {
         heightOffset = heightOffset.clone()
           .multiplyScalar(0.8)
           .add(new THREE.Vector3(
-            -0.6 + (Math.random() * 0.6),
+            -0.6 + (rng() * 0.6),
             0,
-            -0.6 + (Math.random() * 0.6)
+            -0.6 + (rng() * 0.6)
           ));
         heightOffsets[i] = heightOffset;
       }
 
       const numPositions = positions.length / 3;
       const tx = 0; // 0 is trunk textures
-      const ty = Math.floor(Math.random() * NUM_TEXTURE_CHUNKS_WIDTH);
+      const ty = Math.floor(rng() * NUM_TEXTURE_CHUNKS_WIDTH);
       for (let i = 0; i < numPositions; i++) {
         const baseIndex3 = i * 3;
         const y = positions[baseIndex3 + 1];
@@ -280,8 +286,8 @@ const treeTemplates = (() => {
     })(),
   ];
   const _makeTreeBranchGeometry = heightSegments => {
-    const radiusBottom = 0.1 + Math.random() * 0.1;
-    const radiusTop = radiusBottom * (0.2 + (Math.random() * 0.3));
+    const radiusBottom = 0.1 + rng() * 0.1;
+    const radiusTop = radiusBottom * (0.2 + (rng() * 0.3));
     const radialSegments = 3;
     const geometry = new THREE.CylinderBufferGeometry(radiusTop, radiusBottom, heightSegments, radialSegments, heightSegments);
     geometry.removeAttribute('normal');
@@ -296,16 +302,16 @@ const treeTemplates = (() => {
       heightOffset = heightOffset.clone()
          .multiplyScalar(0.8)
         .add(new THREE.Vector3(
-          -0.6 + (Math.random() * 0.6),
+          -0.6 + (rng() * 0.6),
           0,
-          -0.6 + (Math.random() * 0.6)
+          -0.6 + (rng() * 0.6)
         ));
       heightOffsets[i] = heightOffset;
     }
 
     const numPositions = positions.length / 3;
     const tx = 0; // 0 is trunk textures
-    const ty = Math.floor(Math.random() * NUM_TEXTURE_CHUNKS_WIDTH);
+    const ty = Math.floor(rng() * NUM_TEXTURE_CHUNKS_WIDTH);
     for (let i = 0; i < numPositions; i++) {
       const baseIndex3 = i * 3;
       const y = positions[baseIndex3 + 1];
@@ -350,7 +356,7 @@ const treeTemplates = (() => {
     let indexIndex = 0;
 
     const _renderTrunk = () => {
-      const trunkGeometry = trunkGeometries[Math.floor(Math.random() * trunkGeometries.length)];
+      const trunkGeometry = trunkGeometries[Math.floor(rng() * trunkGeometries.length)];
       const geometry = trunkGeometry;
       const newPositions = geometry.getAttribute('position').array;
       positions.set(newPositions, attributeIndex);
@@ -378,16 +384,16 @@ const treeTemplates = (() => {
         const optimalBranchHeight = 0.7;
         const branchWeight = 1 - Math.pow(Math.abs(i - (heightSegments * optimalBranchHeight)) / (heightSegments * optimalBranchHeight), 0.25);
         for (let j = 0; j < maxNumBranchesPerNode; j++) {
-          if (Math.random() < branchWeight) {
+          if (rng() < branchWeight) {
             const branchSizeIndex = branchWeight === 1 ? (branchGeometrySizes.length - 1) : Math.floor(branchWeight * branchGeometrySizes.length);
             const branchGeometries = branchGeometrySizes[branchSizeIndex];
-            const branchGeometry = branchGeometries[Math.floor(Math.random() * branchGeometries.length)];
+            const branchGeometry = branchGeometries[Math.floor(rng() * branchGeometries.length)];
             const geometry = branchGeometry
               .clone()
               .applyMatrix(new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(
-                Math.random() * Math.PI / 6,
-                Math.random() * Math.PI * 2,
-                Math.random() * Math.PI / 6,
+                rng() * Math.PI / 6,
+                rng() * Math.PI * 2,
+                rng() * Math.PI / 6,
                 CAMERA_ROTATION_ORDER
               )))
               .applyMatrix(new THREE.Matrix4().makeTranslation(
@@ -418,16 +424,16 @@ const treeTemplates = (() => {
     const _renderLeaves = branchGeometrySpec => {
       const numLeaves = 50;
       for (let i = 0; i < numLeaves; i++) {
-        const branchGeometry = branchGeometrySpec[Math.floor(Math.random() * branchGeometrySpec.length)];
+        const branchGeometry = branchGeometrySpec[Math.floor(rng() * branchGeometrySpec.length)];
         const branchPositions = branchGeometry.getAttribute('position').array;
         // const branchNormals = branchGeometry.getAttribute('normal').array;
         const numPositions = branchPositions.length / 3;
-        // const index1 = Math.floor((1 - Math.pow(Math.random(), 0.5)) * numPositions);
-        const index1 = Math.floor(Math.random() * numPositions);
+        // const index1 = Math.floor((1 - Math.pow(rng(), 0.5)) * numPositions);
+        const index1 = Math.floor(rng() * numPositions);
         const index2 = (index1 < (numPositions - 1)) ? (index1 + 1) : (index1 - 1); // XXX bugfix this to scan to a position with a different y
         const baseIndex1 = index1 * 3;
         const baseIndex2 = index2 * 3;
-        const lerpFactor = Math.random();
+        const lerpFactor = rng();
         const inverseLerpFactor = 1 - lerpFactor;
 
         const geometry = new THREE.PlaneBufferGeometry(1, 1)
@@ -438,8 +444,8 @@ const treeTemplates = (() => {
             1
           ))
           .applyMatrix(new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(
-            Math.random() * Math.PI / 2,
-            Math.random() * (Math.PI * 2),
+            rng() * Math.PI / 2,
+            rng() * (Math.PI * 2),
             0,
             CAMERA_ROTATION_ORDER
           )))
@@ -461,8 +467,8 @@ const treeTemplates = (() => {
         positions.set(newPositions, attributeIndex);
         const newUvs = geometry.getAttribute('uv').array;
         const numNewUvs = newUvs.length / 2;
-        const tx = Math.floor(1 + (Math.random() * (NUM_TEXTURE_CHUNKS_WIDTH - 1))); // 0 is trunk textures
-        const ty = Math.floor(Math.random() * NUM_TEXTURE_CHUNKS_WIDTH);
+        const tx = Math.floor(1 + (rng() * (NUM_TEXTURE_CHUNKS_WIDTH - 1))); // 0 is trunk textures
+        const ty = Math.floor(rng() * NUM_TEXTURE_CHUNKS_WIDTH);
         for (let j = 0; j < numNewUvs; j++) {
           const baseIndex = j * 2;
           newUvs[baseIndex + 0] = ((tx + (0.02 + newUvs[baseIndex + 0] * 0.96)) / NUM_TEXTURE_CHUNKS_WIDTH);
@@ -493,13 +499,13 @@ const _generateHeightfield = (ox, oy) => {
   let minHeight = Infinity;
   let maxHeight = -Infinity;
 
-  for (let y = 0; y < NUM_CELLS_OVERSCAN; y++) {
-    for (let x = 0; x < NUM_CELLS_OVERSCAN; x++) {
-      const index = x + (y * NUM_CELLS_OVERSCAN);
+  for (let dy = 0; dy < NUM_CELLS_OVERSCAN; dy++) {
+    for (let dx = 0; dx < NUM_CELLS_OVERSCAN; dx++) {
+      const index = dx + (dy * NUM_CELLS_OVERSCAN);
 
-      const dx = (ox * NUM_CELLS) - OVERSCAN + x;
-      const dy = (oy * NUM_CELLS) - OVERSCAN + y;
-      const elevation = (-0.3 + Math.pow(elevationNoise.in2D(dx + 1000, dy + 1000), 0.5)) * 64;
+      const ax = (ox * NUM_CELLS) + dx;
+      const ay = (oy * NUM_CELLS) + dy;
+      const elevation = (-0.3 + Math.pow(elevationNoise.in2D(ax + 1000, ay + 1000), 0.5)) * 64;
 
       points[index] = elevation;
       if (elevation < minHeight) {
@@ -520,7 +526,7 @@ const _generateHeightfield = (ox, oy) => {
   };
 };
 
-const _makeTreeChunkGeometry = (x, y, treeTemplates, points, heightRange) => {
+const _makeTreeChunkGeometry = (ox, oy, treeTemplates, points, heightRange) => {
   const positions = new Float32Array(NUM_POSITIONS_CHUNK * 3);
   // const normals = new Float32Array(NUM_POSITIONS_CHUNK * 3);
   const uvs = new Float32Array(NUM_POSITIONS_CHUNK * 2);
@@ -536,19 +542,22 @@ const _makeTreeChunkGeometry = (x, y, treeTemplates, points, heightRange) => {
   const scale = new THREE.Vector3(1, 1, 1);
   const matrix = new THREE.Matrix4();
 
-  const treeProbability = 0.02;
+  const treeProbability = 0.015;
 
   for (let dy = 0; dy < NUM_CELLS_OVERSCAN; dy++) {
     for (let dx = 0; dx < NUM_CELLS_OVERSCAN; dx++) {
-      if (Math.random() < treeProbability) {
+      const ax = (ox * NUM_CELLS) + dx;
+      const ay = (oy * NUM_CELLS) + dy;
+
+      if (treeNoise.in2D(dx + 1000, dy + 1000) < treeProbability) {
         const pointIndex = dx + (dy * NUM_CELLS_OVERSCAN);
         const elevation = points[pointIndex];
         position.set(
-          (x * NUM_CELLS) + dx,
+          ax,
           elevation,
-          (y * NUM_CELLS) + dy
+          ay
         );
-        quaternion.setFromAxisAngle(upVector, Math.random() * Math.PI * 2);
+        quaternion.setFromAxisAngle(upVector, rng() * Math.PI * 2);
         matrix.compose(position, quaternion, scale);
         const geometry = treeTemplates
           .clone()
