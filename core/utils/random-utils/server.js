@@ -1,6 +1,7 @@
 const path = require('path');
 
-const alea = require('./lib/alea');
+const alea = require('alea-zeo');
+const aleaPath = require.resolve('alea-zeo');
 
 class RandomUtils {
   constructor(archae) {
@@ -11,7 +12,7 @@ class RandomUtils {
     const {_archae: archae} = this;
     const {express, app} = archae.getCore();
 
-    const randomUtilsLibStatic = express.static(path.join(__dirname, 'lib'));
+    const randomUtilsLibStatic = express.static(path.dirname(aleaPath));
     function serveRandomUtilsLib(req, res, next) {
       randomUtilsLibStatic(req, res, next);
     }
