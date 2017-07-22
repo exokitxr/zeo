@@ -1,6 +1,7 @@
 const path = require('path');
 
-const THREE = require('./lib/three');
+const THREE = require('three-zeo');
+const threePath = require.resolve('three-zeo');
 
 class Three {
   constructor(archae) {
@@ -11,7 +12,7 @@ class Three {
     const {_archae: archae} = this;
     const {express, app} = archae.getCore();
 
-    const threeLibStatic = express.static(path.join(__dirname, 'lib'));
+    const threeLibStatic = express.static(path.dirname(threePath));
     function serveThreeLib(req, res, next) {
       threeLibStatic(req, res, next);
     }
