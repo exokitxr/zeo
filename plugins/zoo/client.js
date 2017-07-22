@@ -165,6 +165,9 @@ class Zoo {
         const indices = new Uint16Array(arrayBuffer, byteOffset, numIndices);
         byteOffset += numIndices * 2;
 
+        const size = new THREE.Vector3().fromArray(new Float32Array(arrayBuffer, byteOffset, 3));
+        byteOffset += 3 * 4;
+
         return {
           positions,
           normals,
@@ -172,6 +175,7 @@ class Zoo {
           dys,
           dhs,
           indices,
+          size,
         };
       });
 
@@ -188,7 +192,9 @@ class Zoo {
       }));
     const _makeAnimalMesh = animalMeshData => {
       const {img, model} = animalMeshData;
-      const {positions, normals, uvs, dys, dhs, indices} = model;
+      const {positions, normals, uvs, dys, dhs, indices, size} = model;
+
+console.log('got size', size); // XXX
 
       const geometry = new THREE.BufferGeometry();
       geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
@@ -213,8 +219,6 @@ class Zoo {
       const material = zooMaterial;
 
       const mesh = new THREE.Mesh(geometry, material);
-      const scale = 1 / 8;
-      mesh.scale.set(scale, scale, scale);
       // mesh.frustumCulled = false;
 
       // mesh.add(_makeDebugBoxMesh());

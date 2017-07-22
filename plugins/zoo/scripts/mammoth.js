@@ -3,20 +3,21 @@
 const fs = require('fs');
 const THREE = require('/tmp/node_modules/three');
 
+const globalScale = 1/8;
 const dyCutoffBox = new THREE.Box3().setFromCenterAndSize(
-  new THREE.Vector3(0, 0, -1.5),
-  new THREE.Vector3(16, 30, 25)
+  new THREE.Vector3(0, 0, -1.5).multiplyScalar(globalScale),
+  new THREE.Vector3(16, 30, 25).multiplyScalar(globalScale)
 );
 const splitX = 0;
 const splitZ = 0;
 const dhCutoffBoxes = [
   new THREE.Box3().setFromCenterAndSize(
-    new THREE.Vector3(0, 25, -20),
-    new THREE.Vector3(20, 17, 16.5)
+    new THREE.Vector3(0, 25, -20).multiplyScalar(globalScale),
+    new THREE.Vector3(20, 17, 16.5).multiplyScalar(globalScale)
   ),
   new THREE.Box3().setFromCenterAndSize(
-    new THREE.Vector3(0, 14, -25),
-    new THREE.Vector3(14, 24, 21)
+    new THREE.Vector3(0, 14, -25).multiplyScalar(globalScale),
+    new THREE.Vector3(14, 24, 21).multiplyScalar(globalScale)
   ),
 ];
 
@@ -32,7 +33,8 @@ const geometries = geometriesJson.map(geometry => {
     uvsArray.length * 4 +
     positionsArray.length / 3 * 4 * 4 +
     positionsArray.length / 3 * 4 * 4 +
-    indicesArray.length * 2
+    indicesArray.length * 2 +
+    3 * 4
   );
   let byteOffset = 0;
 
@@ -64,19 +66,22 @@ const geometries = geometriesJson.map(geometry => {
         new THREE.Vector3(0, 0, -1)
       )
   )); */
-  const scale = 0.75;
+  const scale = 0.75 * globalScale;
   g.applyMatrix(new THREE.Matrix4().makeScale(scale, scale, scale));
-  const minY = (() => {
-    let result = Infinity;
-    for (let i = 0; i < positions.length / 3; i++) {
-      result = Math.min(positions[i * 3 + 1], result);
-    }
-    return result;
-  })();
+  const min = new THREE.Vector3(Infinity, Infinity, Infinity);
+  const max = new THREE.Vector3(-Infinity, -Infinity, -Infinity);
   for (let i = 0; i < positions.length / 3; i++) {
-    positions[i * 3 + 1] -= minY;
+    min.x = Math.min(positions[i * 3 + 0], min.x);
+    min.y = Math.min(positions[i * 3 + 1], min.y);
+    min.z = Math.min(positions[i * 3 + 2], min.z);
+    max.x = Math.max(positions[i * 3 + 0], max.x);
+    max.y = Math.max(positions[i * 3 + 1], max.y);
+    max.z = Math.max(positions[i * 3 + 2], max.z);
   }
-console.warn('min y', minY);
+  for (let i = 0; i < positions.length / 3; i++) {
+    positions[i * 3 + 1] -= min.y;
+  }
+console.warn('min y', min.y);
 
   new Float32Array(result.buffer, byteOffset, positions.length).set(positions);
   byteOffset += positions.length * 4;
@@ -216,6 +221,13 @@ console.warn(numMatches2 / (positions.length / 3));
 
   new Uint16Array(result.buffer, byteOffset, indices.length).set(indices);
   byteOffset += indices.length * 2;
+
+  new Float32Array(result.buffer, byteOffset, 3).set(Float32Array.from([
+    max.x - min.x,
+    max.y - min.y,
+    max.z - min.z,
+  ]));
+  byteOffset += 3 * 4;
 
   return result;
 });
