@@ -417,18 +417,24 @@ class Cyborg {
           rend.on('update', _update);
 
           const _updateEyeStart = () => {
-            playerPlaceholderMesh.hmdMesh.visible = true;
+            if (!playerSkinMesh) {
+              playerPlaceholderMesh.hmdMesh.visible = true;
+            } else {
+              playerPlaceholderMesh.controllerMeshes.left.visible = false;
+              playerPlaceholderMesh.controllerMeshes.right.visible = false;
 
-            if (playerSkinMesh) {
               playerSkinMesh.setHeadVisible(true);
               playerSkinMesh.visible = true;
             }
           };
           rend.on('updateEyeStart', _updateEyeStart);
           const _updateEyeEnd = () => {
-            playerPlaceholderMesh.hmdMesh.visible = false;
+            if (!playerSkinMesh) {
+              playerPlaceholderMesh.hmdMesh.visible = false;
+            } else {
+              playerPlaceholderMesh.controllerMeshes.left.visible = true;
+              playerPlaceholderMesh.controllerMeshes.right.visible = true;
 
-            if (playerSkinMesh) {
               playerSkinMesh.setHeadVisible(false);
               playerSkinMesh.visible = false;
             }
