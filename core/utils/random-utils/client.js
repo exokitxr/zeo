@@ -1,4 +1,4 @@
-const alea = require('./lib/alea');
+const alea = require('alea-zeo');
 const chnkr = require('chnkr');
 
 module.exports = {
