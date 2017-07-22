@@ -1,5 +1,4 @@
 const sfxr = require('sfxr');
-const skinLib = require('./skin');
 const animalLib = require('./animal');
 
 const HEIGHTFIELD_PLUGIN = 'plugins-heightfield';
@@ -10,8 +9,7 @@ class Mobs {
     const {THREE, scene} = three;
     const {AutoWs} = networkUtils;
     const {chnkr} = randomUtils;
-    // const {skin} = skinUtils;
-    const skin = skinLib(THREE);
+    const {skin} = skinUtils;
     const animal = animalLib(THREE);
 
     const zeroQuaternion = new THREE.Quaternion();
