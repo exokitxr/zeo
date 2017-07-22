@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "alea": "0.0.9",
-    "indev": "^3.0.10"
+    "indev": "^3.0.10",
+    "murmurhash": "0.0.2"
   }
 }

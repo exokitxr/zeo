@@ -2,6 +2,7 @@ importScripts('/archae/three/three.js');
 const {exports: THREE} = self.module;
 self.module = {};
 
+const murmur = require('murmurhash');
 const alea = require('alea');
 const indev = require('indev');
 const {
@@ -548,8 +549,9 @@ const _makeTreeChunkGeometry = (ox, oy, treeTemplates, points, heightRange) => {
     for (let dx = 0; dx < NUM_CELLS_OVERSCAN; dx++) {
       const ax = (ox * NUM_CELLS) + dx;
       const ay = (oy * NUM_CELLS) + dy;
+      const v = treeNoise.in2D(dx + 1000, dy + 1000);
 
-      if (treeNoise.in2D(dx + 1000, dy + 1000) < treeProbability) {
+      if (v < treeProbability) {
         const pointIndex = dx + (dy * NUM_CELLS_OVERSCAN);
         const elevation = points[pointIndex];
         position.set(
@@ -557,7 +559,8 @@ const _makeTreeChunkGeometry = (ox, oy, treeTemplates, points, heightRange) => {
           elevation,
           ay
         );
-        quaternion.setFromAxisAngle(upVector, rng() * Math.PI * 2);
+        const n = murmur(String(v)) / 0xFFFFFFFF;
+        quaternion.setFromAxisAngle(upVector, n * Math.PI * 2);
         matrix.compose(position, quaternion, scale);
         const geometry = treeTemplates
           .clone()

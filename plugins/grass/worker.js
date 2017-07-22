@@ -31,7 +31,7 @@ const elevationNoise = generator.uniform({
   octaves: 8,
 });
 const grassNoise = generator.uniform({
-  frequency: 0.15,
+  frequency: 0.1,
   octaves: 4,
 });
 
@@ -214,14 +214,15 @@ const _makeGrassChunkMesh = (ox, oy, grassTemplates, points, heightRange) => {
   const scale = new THREE.Vector3();
   const matrix = new THREE.Matrix4();
 
-  const grassProbability = 0.15;
+  const grassProbability = 0.2;
 
   for (let dy = 0; dy < NUM_CELLS_OVERSCAN; dy++) {
     for (let dx = 0; dx < NUM_CELLS_OVERSCAN; dx++) {
       const ax = (ox * NUM_CELLS) + dx;
       const ay = (oy * NUM_CELLS) + dy;
+      const v = grassNoise.in2D(ax + 1000, ay + 1000);
 
-      if (grassNoise.in2D(ax + 1000, ay + 1000) < grassProbability) {
+      if (v < grassProbability) {
         const pointIndex = dx + (dy * NUM_CELLS_OVERSCAN);
         const elevation = points[pointIndex];
 
@@ -230,10 +231,11 @@ const _makeGrassChunkMesh = (ox, oy, grassTemplates, points, heightRange) => {
           elevation,
           ay
         );
-        quaternion.setFromAxisAngle(upVector, rng() * Math.PI * 2);
+        const n = murmur(String(v)) / 0xFFFFFFFF;
+        quaternion.setFromAxisAngle(upVector, n * Math.PI * 2);
         matrix.compose(position, quaternion, scale);
         scale.set(1, 0.5 + rng() * 1, 1);
-        const grassGeometry = grassTemplates[Math.floor(murmur(grassNoise.in2D(ax + 1000, ay + 1000)) / 0xFFFFFFFF * grassTemplates.length)];
+        const grassGeometry = grassTemplates[Math.floor(n * grassTemplates.length)];
         const geometry = grassGeometry
           .clone()
           .applyMatrix(matrix);

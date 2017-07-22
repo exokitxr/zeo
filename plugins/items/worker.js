@@ -2,6 +2,8 @@ importScripts('/archae/three/three.js');
 const {exports: THREE} = self.module;
 self.module = {};
 
+const murmur = require('murmurhash');
+const alea = require('alea');
 const indev = require('indev');
 const isosurface = require('isosurface');
 const {
@@ -19,12 +21,20 @@ const NUM_POSITIONS_CHUNK = 500 * 1024;
 
 const upVector = new THREE.Vector3(0, 1, 0);
 
+const rng = new alea(DEFAULT_SEED);
 const generator = indev({
   seed: DEFAULT_SEED,
 });
 const elevationNoise = generator.uniform({
   frequency: 0.002,
   octaves: 8,
+});
+const generator2 = indev({
+  seed: DEFAULT_SEED + '2',
+});
+const itemsNoise = generator2.uniform({
+  frequency: 0.1,
+  octaves: 4,
 });
 
 const _marchCubes = (fn, resolution) => isosurface.marchingCubes(
@@ -253,9 +263,7 @@ const itemsGeometries = [
           if (entry !== undefined) {
             return entry;
           } else {
-            const entry = Math.random();
-            cache[k] = entry;
-            return entry;
+            return cache[k] = rng();
           }
         };
       })();
@@ -378,7 +386,7 @@ const itemsGeometries = [
   })(),
 ];
 
-const _makeItemsChunkMesh = (x, y, itemsGeometries, points, heightRange) => {
+const _makeItemsChunkMesh = (ox, oy, itemsGeometries, points, heightRange) => {
   const positions = new Float32Array(NUM_POSITIONS_CHUNK * 3);
   const normals = new Float32Array(NUM_POSITIONS_CHUNK * 3);
   const colors = new Float32Array(NUM_POSITIONS_CHUNK * 3);
@@ -393,22 +401,27 @@ const _makeItemsChunkMesh = (x, y, itemsGeometries, points, heightRange) => {
   const scale = new THREE.Vector3(1, 1, 1);
   const matrix = new THREE.Matrix4();
 
-  const itemProbability = 0.1;
+  const itemProbability = 0.05;
 
   for (let dy = 0; dy < NUM_CELLS_OVERSCAN; dy++) {
     for (let dx = 0; dx < NUM_CELLS_OVERSCAN; dx++) {
-      if (Math.random() < itemProbability) {
+      const ax = (ox * NUM_CELLS) + dx;
+      const ay = (oy * NUM_CELLS) + dy;
+      const v = itemsNoise.in2D(ax + 1000, ay + 1000);
+
+      if (v < itemProbability) {
         const pointIndex = dx + (dy * NUM_CELLS_OVERSCAN);
         const elevation = points[pointIndex];
 
         position.set(
-          (x * NUM_CELLS) + dx,
+          ax,
           elevation,
-          (y * NUM_CELLS) + dy
-        )
-        quaternion.setFromAxisAngle(upVector, Math.random() * Math.PI * 2);
+          ay
+        );
+        const n = murmur(String(v)) / 0xFFFFFFFF;
+        quaternion.setFromAxisAngle(upVector, n * Math.PI * 2);
         matrix.compose(position, quaternion, scale);
-        const typeIndex = Math.floor(Math.random() * ITEMS.length);
+        const typeIndex = Math.floor(n * ITEMS.length);
         const geometry = itemsGeometries[typeIndex]
           .clone()
           .applyMatrix(matrix);

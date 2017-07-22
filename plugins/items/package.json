@@ -7,7 +7,9 @@
     "worker": "worker.js"
   },
   "dependencies": {
+    "alea": "0.0.9",
     "indev": "^3.0.10",
-    "isosurface": "^1.0.0"
+    "isosurface": "^1.0.0",
+    "murmurhash": "0.0.2"
   }
 }
