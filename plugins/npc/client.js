@@ -42,6 +42,117 @@ class Npc {
         if (live) {
           const meshes = {};
 
+          const headRotation = new THREE.Quaternion();
+          const _updateMesh = (mesh, animation, hit, uniforms, now, heightfieldElement) => {
+            _updateAnimation(mesh, animation, uniforms, now);
+            _updateElevation(mesh, heightfieldElement);
+            _updateHit(mesh, hit, uniforms, now);
+            mesh.updateMatrixWorld()
+          };
+          const _updateAnimation = (mesh, animation, uniforms, now) => {
+            if (animation) {
+              const {mode, positionStart, positionEnd, rotationStart, rotationEnd, headRotationStart, headRotationEnd, duration, startTime} = animation;
+
+              if (mode === 'walk') {
+                const positionFactor = Math.min((now - startTime) / duration, 1);
+                const rotationFactor = Math.pow(Math.min((now - startTime) / (duration / 4), 1), 0.5);
+                const headRotationFactor = Math.pow(Math.min((now - startTime) / (duration / 8), 1), 0.5);
+
+                mesh.position.copy(positionStart)
+                  .lerp(positionEnd, positionFactor);
+                mesh.offset.set(0, 0, 0);
+                mesh.quaternion.copy(rotationStart)
+                  .slerp(rotationEnd, rotationFactor);
+
+                headRotation.copy(headRotationStart).slerp(headRotationEnd, headRotationFactor);
+                uniforms.headRotation.value.set(headRotation.x, headRotation.y, headRotation.z, headRotation.w);
+                const velocity = positionStart.distanceTo(positionEnd) / duration;
+                const angleRate = 1.5 / velocity;
+                uniforms.theta.value =
+                  Math.sin((now % angleRate) / angleRate * Math.PI * 2) * 0.75 *
+                  Math.pow(Math.sin(positionFactor * Math.PI), 0.5);
+
+                if (positionFactor >= 1) {
+                  mesh.animation = null;
+                }
+              } else if (mode === 'hit') {
+                const positionFactor = Math.min((now - startTime) / duration, 1);
+                const rotationFactor = Math.pow(Math.min((now - startTime) / (duration / 4), 1), 0.5);
+                const headRotationFactor = Math.pow(Math.min((now - startTime) / (duration / 8), 1), 0.5);
+
+                mesh.position.copy(positionStart)
+                  .lerp(positionEnd, positionFactor);
+                mesh.offset
+                  .set(0, 1, 0)
+                  .multiplyScalar(
+                    -Math.pow(((positionFactor - 0.5) * 2), 2) + 1
+                  );
+                mesh.quaternion.copy(rotationStart)
+                  .slerp(rotationEnd, rotationFactor);
+
+                uniforms.headRotation.value.set(zeroQuaternion.x, zeroQuaternion.y, zeroQuaternion.z, zeroQuaternion.w);
+                uniforms.theta.value = 0;
+
+                if (positionFactor >= 1) {
+                  mesh.animation = null;
+                }
+              } else if (mode === 'die') {
+                const v = Math.min((now - startTime) / duration, 1);
+
+                if (v < 0.5) {
+                  const positionFactor = v * 2;
+                  const rotationFactor = Math.pow(v * 2, 0.5);
+
+                  mesh.position.copy(positionStart)
+                    .lerp(positionEnd, positionFactor);
+                  mesh.offset
+                    .set(0, 1, 0)
+                    .multiplyScalar(
+                      -Math.pow(((positionFactor - 0.5) * 2), 2) + 1
+                    );
+                  mesh.quaternion.copy(rotationStart)
+                    .slerp(rotationEnd, rotationFactor);
+                } else {
+                  mesh.position.copy(positionEnd);
+                  mesh.offset.set(0, 0, 0);
+                  mesh.quaternion.copy(rotationEnd);
+                }
+
+                uniforms.headRotation.value.set(zeroQuaternion.x, zeroQuaternion.y, zeroQuaternion.z, zeroQuaternion.w);
+                uniforms.theta.value = 0;
+
+                if (v >= 1) {
+                  scene.remove(mesh);
+                  mesh.destroy();
+                  delete meshes[id];
+                }
+              }
+            }
+          };
+          const _updateElevation = (mesh, heightfieldElement) => {
+            if (heightfieldElement && heightfieldElement.getElevation) {
+              const elevation = heightfieldElement.getElevation(mesh.position.x, mesh.position.z);
+
+              if (mesh.position.y !== elevation) {
+                mesh.position.y = elevation;
+              }
+            }
+
+            mesh.position.add(mesh.offset);
+          };
+          const _updateHit = (mesh, hit, uniforms, now) => {
+            if (hit) {
+              const {startTime} = hit;
+              const timeDiff = now - startTime;
+
+              if (timeDiff < 300) {
+                uniforms.hit.value = 1;
+              } else {
+                uniforms.hit.value = 0;
+                mesh.hit = null;
+              }
+            }
+          };
           const _makeMesh = id => {
             const mesh = skin(skinImg);
 
@@ -67,147 +178,8 @@ class Npc {
             uniforms.leftArmRotation.value.set(zeroQuaternion.x, zeroQuaternion.y, zeroQuaternion.z, zeroQuaternion.w);
             uniforms.rightArmRotation.value.set(zeroQuaternion.x, zeroQuaternion.y, zeroQuaternion.z, zeroQuaternion.w);
             uniforms.headVisible.value = 1;
-            const headRotation = new THREE.Quaternion();
-            const _updateAnimation = now => {
-              const {animation} = mesh;
-
-              if (animation) {
-                const {mode, positionStart, positionEnd, rotationStart, rotationEnd, headRotationStart, headRotationEnd, duration, startTime} = animation;
-
-                if (mode === 'walk') {
-                  const positionFactor = Math.min((now - startTime) / duration, 1);
-                  const rotationFactor = Math.pow(Math.min((now - startTime) / (duration / 4), 1), 0.5);
-                  const headRotationFactor = Math.pow(Math.min((now - startTime) / (duration / 8), 1), 0.5);
-
-                  mesh.position.copy(positionStart)
-                    .lerp(positionEnd, positionFactor);
-                  mesh.offset.set(0, 0, 0);
-                  mesh.quaternion.copy(rotationStart)
-                    .slerp(rotationEnd, rotationFactor);
-
-                  headRotation.copy(headRotationStart).slerp(headRotationEnd, headRotationFactor);
-                  uniforms.headRotation.value.set(headRotation.x, headRotation.y, headRotation.z, headRotation.w);
-                  uniforms.leftArmRotation.value.set(zeroQuaternion.x, zeroQuaternion.y, zeroQuaternion.z, zeroQuaternion.w);
-                  uniforms.rightArmRotation.value.set(zeroQuaternion.x, zeroQuaternion.y, zeroQuaternion.z, zeroQuaternion.w);
-                  const velocity = positionStart.distanceTo(positionEnd) / duration;
-                  const angleRate = 1.5 / velocity;
-                  uniforms.theta.value =
-                    Math.sin((now % angleRate) / angleRate * Math.PI * 2) * 0.75 *
-                    Math.pow(Math.sin(positionFactor * Math.PI), 0.5);
-                  uniforms.headVisible.value = 1;
-
-                  /* mesh.material.uniforms.leftArmRotation.value.fromArray(
-                    new THREE.Quaternion().setFromUnitVectors(
-                      new THREE.Vector3(0, -1, 0),
-                      new THREE.Vector3(1, 0, 1).normalize()
-                    )
-                    .toArray()
-                  );
-                  mesh.material.uniforms.rightArmRotation.value.fromArray(
-                    new THREE.Quaternion().setFromUnitVectors(
-                      new THREE.Vector3(0, -1, 0),
-                      new THREE.Vector3(-1, 0, -1).normalize()
-                    )
-                    .toArray()
-                  ); */
-
-                  if (positionFactor >= 1) {
-                    mesh.animation = null;
-                  }
-                } else if (mode === 'hit') {
-                  const positionFactor = Math.min((now - startTime) / duration, 1);
-                  const rotationFactor = Math.pow(Math.min((now - startTime) / (duration / 4), 1), 0.5);
-                  const headRotationFactor = Math.pow(Math.min((now - startTime) / (duration / 8), 1), 0.5);
-
-                  mesh.position.copy(positionStart)
-                    .lerp(positionEnd, positionFactor);
-                  mesh.offset
-                    .set(0, 1, 0)
-                    .multiplyScalar(
-                      -Math.pow(((positionFactor - 0.5) * 2), 2) + 1
-                    );
-                  mesh.quaternion.copy(rotationStart)
-                    .slerp(rotationEnd, rotationFactor);
-
-                  uniforms.headRotation.value.set(zeroQuaternion.x, zeroQuaternion.y, zeroQuaternion.z, zeroQuaternion.w);
-                  uniforms.leftArmRotation.value.set(zeroQuaternion.x, zeroQuaternion.y, zeroQuaternion.z, zeroQuaternion.w);
-                  uniforms.rightArmRotation.value.set(zeroQuaternion.x, zeroQuaternion.y, zeroQuaternion.z, zeroQuaternion.w);
-                  uniforms.theta.value = 0;
-                  uniforms.headVisible.value = 1;
-
-                  if (positionFactor >= 1) {
-                    mesh.animation = null;
-                  }
-                } else if (mode === 'die') {
-                  const v = Math.min((now - startTime) / duration, 1);
-
-                  if (v < 0.5) {
-                    const positionFactor = v * 2;
-                    const rotationFactor = Math.pow(v * 2, 0.5);
-
-                    mesh.position.copy(positionStart)
-                      .lerp(positionEnd, positionFactor);
-                    mesh.offset
-                      .set(0, 1, 0)
-                      .multiplyScalar(
-                        -Math.pow(((positionFactor - 0.5) * 2), 2) + 1
-                      );
-                    mesh.quaternion.copy(rotationStart)
-                      .slerp(rotationEnd, rotationFactor);
-                  } else {
-                    mesh.position.copy(positionEnd);
-                    mesh.offset.set(0, 0, 0);
-                    mesh.quaternion.copy(rotationEnd);
-                  }
-
-                  uniforms.headRotation.value.set(zeroQuaternion.x, zeroQuaternion.y, zeroQuaternion.z, zeroQuaternion.w);
-                  uniforms.leftArmRotation.value.set(zeroQuaternion.x, zeroQuaternion.y, zeroQuaternion.z, zeroQuaternion.w);
-                  uniforms.rightArmRotation.value.set(zeroQuaternion.x, zeroQuaternion.y, zeroQuaternion.z, zeroQuaternion.w);
-                  uniforms.theta.value = 0;
-                  uniforms.headVisible.value = 1;
-
-                  if (v >= 1) {
-                    scene.remove(mesh);
-                    mesh.destroy();
-                    delete meshes[id];
-                  }
-                }
-              }
-            };
-            const _updateElevation = heightfieldElement => {
-              if (heightfieldElement && heightfieldElement.getElevation) {
-                const elevation = heightfieldElement.getElevation(mesh.position.x, mesh.position.z);
-
-                if (mesh.position.y !== elevation) {
-                  mesh.position.y = elevation;
-                }
-              }
-
-              mesh.position.add(mesh.offset);
-            };
-            const _updateHit = now => {
-              const {hit} = mesh;
-
-              if (hit) {
-                const {startTime} = hit;
-                const timeDiff = now - startTime;
-
-                if (timeDiff < 300) {
-                  uniforms.hit.value = 1;
-                } else {
-                  uniforms.hit.value = 0;
-                  mesh.hit = null;
-                }
-              }
-            };
-            const _updateMatrix = () => {
-              mesh.updateMatrixWorld();
-            };
             mesh.update = (now, heightfieldElement) => {
-              _updateAnimation(now);
-              _updateElevation(heightfieldElement);
-              _updateHit(now);
-              _updateMatrix();
+              _updateMesh(mesh, mesh.animation, mesh.hit, uniforms, now, heightfieldElement);
             };
 
             mesh.onBeforeRender = (function(onBeforeRender) {
