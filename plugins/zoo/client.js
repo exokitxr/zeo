@@ -194,8 +194,6 @@ class Zoo {
       const {img, model} = animalMeshData;
       const {positions, normals, uvs, dys, dhs, indices, size} = model;
 
-console.log('got size', size); // XXX
-
       const geometry = new THREE.BufferGeometry();
       geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
       geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
@@ -227,13 +225,14 @@ console.log('got size', size); // XXX
 
       const angleRate = 1.5 * 1000;
       const startOffset = Math.floor(Math.random() * angleRate);
-      const headRotation = new THREE.Quaternion();
+      const headRotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(
+        (-0.5 + Math.random()) * 2 * Math.PI/4,
+        (-0.5 + Math.random()) * 2 * Math.PI/2,
+        0,
+        'YXZ'
+      ));
       mesh.onBeforeRender = () => {
         material.uniforms.map.value = texture;
-        headRotation.setFromAxisAngle(
-          upVector,
-          Math.sin(((startOffset + now) % angleRate) / angleRate * Math.PI * 2) * 0.75
-        );
         material.uniforms.headRotation.value.set(headRotation.x, headRotation.y, headRotation.z, headRotation.w);
         material.uniforms.theta.value = Math.sin(((startOffset + now) % angleRate) / angleRate * Math.PI * 2) * 0.75;
       };
