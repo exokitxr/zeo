@@ -1,10 +1,12 @@
-importScripts('/archae/three/three.js');
+importScripts('/archae/assets/three.js');
 const {exports: THREE} = self.module;
+importScripts('/archae/assets/alea.js');
+const {exports: alea} = self.module;
+importScripts('/archae/assets/indev.js');
+const {exports: indev} = self.module;
 self.module = {};
 
 const murmur = require('murmurhash');
-const alea = require('alea');
-const indev = require('indev');
 const {
   NUM_CELLS,
   OVERSCAN,

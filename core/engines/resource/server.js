@@ -1,5 +1,9 @@
 const path = require('path');
 
+const threePath = require.resolve('three-zeo');
+const aleaPath = require.resolve('alea-zeo');
+const indevPath = require.resolve('indev');
+
 class Assets {
   constructor(archae) {
     this._archae = archae;
@@ -34,13 +38,34 @@ class Assets {
     }
     app.use('/archae/assets/sfx', serveAssetsSfx);
 
+    const assetsThreeStatic = express.static(path.dirname(threePath));
+    function serveAssetsThree(req, res, next) {
+      assetsThreeStatic(req, res, next);
+    }
+    app.use('/archae/assets/', serveAssetsThree);
+
+    const assetsAleaStatic = express.static(path.dirname(aleaPath));
+    function serveAssetsAlea(req, res, next) {
+      assetsAleaStatic(req, res, next);
+    }
+    app.use('/archae/assets/', serveAssetsAlea);
+
+    const assetsIndevStatic = express.static(path.dirname(indevPath));
+    function serveAssetsIndev(req, res, next) {
+      assetsIndevStatic(req, res, next);
+    }
+    app.use('/archae/assets/', serveAssetsIndev);
+
     this._cleanup = () => {
       function removeMiddlewares(route, i, routes) {
         if (
           route.handle.name === 'serveAssetsHmd' ||
           route.handle.name === 'serveAssetsController' ||
           route.handle.name === 'serveAssetsImg' ||
-          route.handle.name === 'serveAssetsSfx'
+          route.handle.name === 'serveAssetsSfx' ||
+          route.handle.name === 'serveAssetsThree' ||
+          route.handle.name === 'serveAssetsAlea' ||
+          route.handle.name === 'serveAssetsIndev'
         ) {
           routes.splice(i, 1);
         }

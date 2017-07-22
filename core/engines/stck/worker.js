@@ -1,7 +1,7 @@
 const FPS = 1000 / 90;
 const GRAVITY = -9.8 / 1000;
 
-importScripts('/archae/three/three.js');
+importScripts('/archae/assets/three.js');
 const {exports: THREE} = self.module;
 self.module = {};
 

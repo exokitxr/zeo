@@ -1,4 +1,4 @@
-importScripts('/archae/three/three.js');
+importScripts('/archae/assets/three.js');
 const {exports: THREE} = self.module;
 self.module = {};
 

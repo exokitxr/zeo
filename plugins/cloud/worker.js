@@ -1,6 +1,6 @@
-importScripts('/archae/three/three.js');
+importScripts('/archae/assets/three.js');
 const {exports: THREE} = self.module;
-importScripts('/archae/random-utils/alea.js');
+importScripts('/archae/assets/alea.js');
 const {exports: alea} = self.module;
 self.module = {};
 

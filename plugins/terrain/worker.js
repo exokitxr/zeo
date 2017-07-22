@@ -1,6 +1,4 @@
-importScripts(
-  '/archae/three/three.js'
-);
+importScripts('/archae/assets/three.js');
 
 const workerUtils = require('./lib/utils/worker-utils');
 const protocolUtils = require('./lib/utils/protocol-utils');
