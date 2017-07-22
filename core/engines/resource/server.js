@@ -1,6 +1,7 @@
 const path = require('path');
 
 const threePath = require.resolve('three-zeo');
+const murmurhashPath = require.resolve('murmurhash');
 const aleaPath = require.resolve('alea-zeo');
 const indevPath = require.resolve('indev');
 
@@ -44,6 +45,12 @@ class Assets {
     }
     app.use('/archae/assets/', serveAssetsThree);
 
+    const assetsMurmurhashStatic = express.static(path.dirname(murmurhashPath));
+    function serveAssetsMurmurhash(req, res, next) {
+      assetsMurmurhashStatic(req, res, next);
+    }
+    app.use('/archae/assets/', serveAssetsMurmurhash);
+
     const assetsAleaStatic = express.static(path.dirname(aleaPath));
     function serveAssetsAlea(req, res, next) {
       assetsAleaStatic(req, res, next);
@@ -64,6 +71,7 @@ class Assets {
           route.handle.name === 'serveAssetsImg' ||
           route.handle.name === 'serveAssetsSfx' ||
           route.handle.name === 'serveAssetsThree' ||
+          route.handle.name === 'serveAssetsMurmurhash' ||
           route.handle.name === 'serveAssetsAlea' ||
           route.handle.name === 'serveAssetsIndev'
         ) {
