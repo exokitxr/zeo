@@ -3,15 +3,16 @@
 const fs = require('fs');
 const THREE = require('/tmp/node_modules/three');
 
+const globalScale = 1/8;
 const dyCutoffBox = new THREE.Box3().setFromCenterAndSize(
-  new THREE.Vector3(0, 0, 0.1),
-  new THREE.Vector3(10, 20, 14.3)
+  new THREE.Vector3(0, 0, 0.1).multiplyScalar(globalScale),
+  new THREE.Vector3(10, 20, 14.3).multiplyScalar(globalScale)
 );
 const splitX = 0;
-const splitZ = -4;
+const splitZ = -4 * globalScale;
 const dhCutoffBox = new THREE.Box3().setFromCenterAndSize(
-  new THREE.Vector3(0, 30, -10),
-  new THREE.Vector3(5.5, 35, 20)
+  new THREE.Vector3(0, 30, -10).multiplyScalar(globalScale),
+  new THREE.Vector3(5.5, 35, 20).multiplyScalar(globalScale)
 );
 
 const o = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
@@ -26,7 +27,8 @@ const geometries = geometriesJson.map(geometry => {
     uvsArray.length * 4 +
     positionsArray.length / 3 * 4 * 4 +
     positionsArray.length / 3 * 4 * 4 +
-    indicesArray.length * 2
+    indicesArray.length * 2 +
+    3 * 4
   );
   let byteOffset = 0;
 
@@ -59,26 +61,23 @@ const geometries = geometriesJson.map(geometry => {
         new THREE.Vector3(0, 0, -1)
       )
   ));
-  const scale = 4;
+  const scale = 4 * globalScale;
   g.applyMatrix(new THREE.Matrix4().makeScale(scale, scale, scale));
-  let accX = 0;
-  let minY = Infinity;
-  let accZ = 0;
-  for (let i = 0; i < numPositions; i++) {
-    const baseIndex = i * 3;
-    accX += positions[baseIndex + 0];
-    minY = Math.min(positions[baseIndex + 1], minY);
-    accZ += positions[baseIndex + 2];
+  const min = new THREE.Vector3(Infinity, Infinity, Infinity);
+  const max = new THREE.Vector3(-Infinity, -Infinity, -Infinity);
+  for (let i = 0; i < positions.length / 3; i++) {
+    min.x = Math.min(positions[i * 3 + 0], min.x);
+    min.y = Math.min(positions[i * 3 + 1], min.y);
+    min.z = Math.min(positions[i * 3 + 2], min.z);
+    max.x = Math.max(positions[i * 3 + 0], max.x);
+    max.y = Math.max(positions[i * 3 + 1], max.y);
+    max.z = Math.max(positions[i * 3 + 2], max.z);
   }
-  const avgX = accX / numPositions;
-  const avgZ = accZ / numPositions;
-  for (let i = 0; i < numPositions; i++) {
-    const baseIndex = i * 3;
-    positions[baseIndex + 0] -= avgX;
-    positions[baseIndex + 1] -= minY;
-    // positions[baseIndex + 2] -= avgZ;
+  const centerX = (max.x + min.x) / 2;
+  for (let i = 0; i < positions.length / 3; i++) {
+    positions[i * 3 + 0] -= centerX;
+    positions[i * 3 + 1] -= min.y;
   }
-console.warn('min y', minY);
 
   new Float32Array(result.buffer, byteOffset, positions.length).set(positions);
   byteOffset += positions.length * 4;
@@ -218,6 +217,13 @@ console.warn(numMatches2 / (positions.length / 3));
 
   new Uint16Array(result.buffer, byteOffset, indices.length).set(indices);
   byteOffset += indices.length * 2;
+
+  new Float32Array(result.buffer, byteOffset, 3).set(Float32Array.from([
+    max.x - min.x,
+    max.y - min.y,
+    max.z - min.z,
+  ]));
+  byteOffset += 3 * 4;
 
   return result;
 });
