@@ -14,10 +14,6 @@ const OCEAN_SHADER = {
       type: 't',
       value: null,
     },
-     map2: {
-      type: 't',
-      value: null,
-    },
     fogColor: {
       type: '3f',
     },
@@ -35,7 +31,6 @@ const OCEAN_SHADER = {
     "attribute float color;",
     "varying vec2 vUv;",
     "varying float fogDepth;",
-    "float speed = 1.0 / 200000.0;",
     "void main() {",
     "  float ang = wave[0];",
     "  float amp = wave[1];",
@@ -52,7 +47,6 @@ const OCEAN_SHADER = {
     "#define whiteCompliment(a) ( 1.0 - saturate( a ) )",
 		"uniform float worldTime;",
 		"uniform sampler2D map;",
-		"uniform sampler2D map2;",
 		"uniform vec3 fogColor;",
     "uniform float fogDensity;",
     "uniform float sunIntensity;",
@@ -60,9 +54,12 @@ const OCEAN_SHADER = {
     "varying float fogDepth;",
     "float speed = 2.0;",
     "void main() {",
-    "  float mixFactor = 0.1 + (floor((speed - abs(mod(worldTime / 1000.0, speed*2.0) - speed)) / speed * 8.0 + 0.5) / 8.0) * 0.8;",
-    "  vec4 diffuseColor = mix(texture2D( map, vUv ), texture2D( map2, vUv ), mixFactor);",
-    "  diffuseColor = vec4((0.2 + 0.8 * sunIntensity) * diffuseColor.xyz, 0.8);",
+    "  float animationFactor = (speed - abs(mod(worldTime / 1000.0, speed*2.0) - speed)) / speed;",
+    "  float frame1 = mod(floor(animationFactor / 16.0), 1.0);",
+    "  float frame2 = mod(frame1 + 1.0/16.0, 1.0);",
+    "  float mixFactor = fract(animationFactor / 16.0) * 16.0;",
+    "  vec4 diffuseColor = mix(texture2D( map, vUv * vec2(1.0, 1.0 - frame1) ), texture2D( map, vUv * vec2(1.0, 1.0 - frame2) ), mixFactor);",
+    "  diffuseColor = vec4((0.2 + 0.8 * sunIntensity) * diffuseColor.xyz, 0.7);",
     "  float fogFactor = whiteCompliment( exp2( - fogDensity * fogDensity * fogDepth * fogDepth * LOG2 ) );",
     "  gl_FragColor = vec4(mix( diffuseColor.rgb, fogColor, fogFactor ), diffuseColor.a);",
     "}"
@@ -71,9 +68,21 @@ const OCEAN_SHADER = {
 const DATA = {
   amplitude: 0.3,
   amplitudeVariance: 0.3,
-  speed: 0.3,
-  speedVariance: 0.3,
+  speed: 1.0,
+  speedVariance: 1.0,
 };
+
+const _requestImg = src => new Promise((accept, reject) => {
+  const img = new Image();
+  img.onload = () => {
+    accept(img);
+  };
+  img.onerror = err => {
+    reject(err);
+  };
+  img.crossOrigin = 'Anonymous';
+  img.src = src;
+});
 
 class Ocean {
   mount() {
@@ -87,76 +96,32 @@ class Ocean {
       live = false;
     };
 
-    const worker = new Worker('archae/plugins/_plugins_ocean/build/worker.js');
-    const queue = [];
-    worker.requestTextureImgs = () => new Promise((accept, reject) => {
-      const buffer = new ArrayBuffer(TEXTURE_WIDTH * TEXTURE_HEIGHT * 4);
-      worker.postMessage({
-        buffer,
-      }, [buffer]);
-      queue.push(buffer => {
-        const imgs = [
-          (() => {
-            const canvas = document.createElement('canvas');
-            canvas.width = TEXTURE_WIDTH;
-            canvas.height = TEXTURE_WIDTH;
-            const ctx = canvas.getContext('2d');
-            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            imageData.data.set(new Uint8Array(buffer, 0, TEXTURE_WIDTH * TEXTURE_WIDTH * 4));
-            ctx.putImageData(imageData, 0, 0);
-            return canvas;
-          })(),
-          (() => {
-            const canvas = document.createElement('canvas');
-            canvas.width = TEXTURE_WIDTH;
-            canvas.height = TEXTURE_WIDTH;
-            const ctx = canvas.getContext('2d');
-            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            imageData.data.set(new Uint8Array(buffer, TEXTURE_WIDTH * TEXTURE_WIDTH * 4, TEXTURE_WIDTH * TEXTURE_WIDTH * 4));
-            ctx.putImageData(imageData, 0, 0);
-            return canvas;
-          })(),
-        ];
-
-        accept(imgs);
-      });
-    });
-    worker.onmessage = e => {
-      const {data: buffer} = e;
-      const cb = queue.shift();
-      cb(buffer);
-    };
-
-    return worker.requestTextureImgs()
-      .then(textureImgs => {
+    return _requestImg('/archae/ocean/img/water.png')
+      .then(waterImg => {
         if (live) {
-          const textures = textureImgs.map(textureImg => {
-            const texture = new THREE.Texture(
-              textureImg,
-              THREE.UVMapping,
-              THREE.RepeatWrapping,
-              THREE.RepeatWrapping,
-              // THREE.LinearMipMapLinearFilter,
-              // THREE.LinearMipMapLinearFilter,
-              THREE.NearestFilter,
-              THREE.NearestFilter,
-              // THREE.NearestMipMapNearestFilter,
-              // THREE.NearestMipMapNearestFilter,
-              // THREE.LinearFilter,
-              // THREE.LinearFilter,
-              // THREE.NearestFilter,
-              // THREE.NearestFilter,
-              THREE.RGBAFormat,
-              THREE.UnsignedByteType,
-              1
-            );
-            texture.needsUpdate = true;
-            return texture;
-          });
+          const texture = new THREE.Texture(
+            waterImg,
+            THREE.UVMapping,
+            THREE.RepeatWrapping,
+            THREE.RepeatWrapping,
+            // THREE.LinearMipMapLinearFilter,
+            // THREE.LinearMipMapLinearFilter,
+            THREE.NearestFilter,
+            THREE.NearestFilter,
+            // THREE.NearestMipMapNearestFilter,
+            // THREE.NearestMipMapNearestFilter,
+            // THREE.LinearFilter,
+            // THREE.LinearFilter,
+            // THREE.NearestFilter,
+            // THREE.NearestFilter,
+            THREE.RGBAFormat,
+            THREE.UnsignedByteType,
+            1
+          );
+          texture.needsUpdate = true;
 
           const uniforms = THREE.UniformsUtils.clone(OCEAN_SHADER.uniforms);
-          uniforms.map.value = textures[0];
-          uniforms.map2.value = textures[1];
+          uniforms.map.value = texture;
           uniforms.fogColor.value = scene.fog.color;
           uniforms.fogDensity.value = scene.fog.density;
           const oceanMaterial = new THREE.ShaderMaterial({
@@ -199,10 +164,11 @@ class Ocean {
 
                 const uvs = geometry.getAttribute('uv').array;
                 const numUvs = uvs.length / 2;
+                const uvScale = 32;
                 for (let i = 0; i < numUvs; i++) {
                   const baseIndex = i * 2;
-                  uvs[baseIndex + 0] *= 16;
-                  uvs[baseIndex + 1] *= 16;
+                  uvs[baseIndex + 0] *= uvScale;
+                  uvs[baseIndex + 1] *= uvScale / 16;
                 }
 
                 const positions = geometry.getAttribute('position').array;
