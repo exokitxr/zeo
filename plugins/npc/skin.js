@@ -1090,6 +1090,10 @@ const skinGeometry = (() => {
   geometry.addAttribute('dr', new THREE.BufferAttribute(drs, 4));
   geometry.addAttribute('dy', new THREE.BufferAttribute(dys, 4));
   geometry.applyMatrix(new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(0, Math.PI, 0, rotationOrder)));
+  geometry.boundingSphere = new THREE.Sphere(
+    new THREE.Vector3(0, 0, 0),
+    2 / scale
+  );
   return geometry;
 })();
 
@@ -1140,10 +1144,6 @@ const skin = (img, {limbs = false} = {}) => {
   mesh.scale.set(scale, scale, scale);
   mesh.rotation.order = rotationOrder;
   mesh.updateMatrixWorld();
-  mesh.boundingSphere = new THREE.Sphere(
-    new THREE.Vector3(0, 0, 0),
-    2
-  );
 
   if (limbs) {
     const head = new THREE.Object3D();
