@@ -5,7 +5,7 @@ const fs = require('fs');
 
 const NUM_CELLS = 32;
 
-class Npc {
+class Mobs {
   constructor(archae) {
     this._archae = archae;
   }
@@ -32,32 +32,91 @@ class Npc {
       });
     });
 
-    return _readdir(path.join(__dirname, 'lib', 'img'))
-      .then(files => {
-        const npcImgStatic = express.static(path.join(__dirname, 'lib', 'img'));
-        function serveNpcImg(req, res, next) {
+    const ANIMALS = [
+      /* 'ammonite', */
+      'badger',
+      'bear',
+      'beetle',
+      /* 'bigfish', */
+      'boar',
+      'bunny',
+      'chick',
+      'chicken',
+      'cow',
+      /* 'cubelet', */
+      'deer',
+      /* 'dungeon_master', */
+      'elephant',
+      /* 'fish',
+      'ghost', */
+      'giraffe',
+      /* 'gull', */
+      'horse',
+      'mammoth',
+      /* 'oerrki',
+      'penguin',
+      'piranha',
+      'pterodactyl', */
+      'rat',
+      'sheep',
+      'skunk',
+      'smallbird',
+      'spider',
+      /* 'swamplurker', */
+      'turtle',
+      /* 'trilobite', */
+      'velociraptor',
+      /* 'villager',
+      'walker',
+      'warthog',
+      'wasp',
+      'whale',
+      'witch', */
+      'wolf',
+      /* 'zombie',
+      'zombie_brute', */
+    ];
+
+    return _readdir(path.join(__dirname, 'lib', 'npc', 'img'))
+      .then(npcImgFiles => npcImgFiles.map(npcImgFile => npcImgFile.replace(/\.png$/, '')))
+      .then(npcs => {
+        const mobNpcImgStatic = express.static(path.join(__dirname, 'lib', 'npc', 'img'));
+        function serveMobNpcImg(req, res, next) {
           // const file = files[Math.floor((murmur(req.url) / 0xFFFFFFFF) * files.length)];
-          const file = 'ertsefwe-skin_20170713132536186718.png';
-          req.url = path.join('/', file);
+          // const file = 'ertsefwe-skin_20170713132536186718.png';
+          // req.url = path.join('/', file);
 
-          npcImgStatic(req, res, next);
+          mobNpcImgStatic(req, res, next);
         }
-        app.use('/archae/npc/img', serveNpcImg);
+        app.use('/archae/mobs/npc/img', serveMobNpcImg);
 
-        const npcSfxStatic = express.static(path.join(__dirname, 'lib', 'sfx'));
-        function serveNpcSfx(req, res, next) {
-          npcSfxStatic(req, res, next);
+        const mobAnimalImgStatic = express.static(path.join(__dirname, 'lib', 'animal', 'img'));
+        function serveMobAnimalImg(req, res, next) {
+          mobAnimalImgStatic(req, res, next);
         }
-        app.use('/archae/npc/sfx', serveNpcSfx);
+        app.use('/archae/mobs/animal/img', serveMobAnimalImg);
+        const mobAnimalModelsStatic = express.static(path.join(__dirname, 'lib', 'animal', 'models'));
+        function serveMobAnimalModels(req, res, next) {
+          mobAnimalModelsStatic(req, res, next);
+        }
+        app.use('/archae/mobs/animal/models', serveMobAnimalModels);
+
+        const mobSfxStatic = express.static(path.join(__dirname, 'lib', 'sfx'));
+        function serveMobSfx(req, res, next) {
+          mobSfxStatic(req, res, next);
+        }
+        app.use('/archae/mobs/sfx', serveMobSfx);
 
         const trackedChunks = {};
-        const trackedNpcs = {};
+        const trackedMobs = {};
         
-        class Npc extends EventEmitter {
-          constructor(id, position, rotation, headRotation, health) {
+        class Mob extends EventEmitter {
+          constructor(id, type, skinName, position, rotation, headRotation, health) {
             super();
 
             this.id = id;
+            this.type = type;
+            this.skinName = skinName;
             this.position = position;
             this.rotation = rotation;
             this.headRotation = headRotation;
@@ -199,11 +258,14 @@ class Npc {
             this.ox = ox;
             this.oz = oz;
 
-            const npcs = (() => {
+            const mobs = (() => {
               const numNpcs = Math.floor(1 + Math.random() * (2 + 1));
               const result = Array(numNpcs);
               for (let i = 0; i < numNpcs; i++) {
                 const id = _makeId();
+
+                const type = Math.floor() < 0.25 ? 'npc' : 'animal';
+                const skinName = type === 'npc' ? npcs[Math.floor(Math.random() * npcs.length)] : ANIMALS[Math.floor(Math.random() * ANIMALS.length)]
 
                 const dx = Math.random() * NUM_CELLS;
                 const dz = Math.random() * NUM_CELLS;
@@ -219,12 +281,12 @@ class Npc {
                   'YXZ'
                 ));
 
-                const npc = new Npc(id, position, rotation, headRotation, 100);
-                result[i] = npc;
+                const mob = new Mob(id, type, skinName, position, rotation, headRotation, 100);
+                result[i] = mob;
               }
               return result;
             })();
-            this.npcs = npcs;
+            this.mobs = mobs;
 
             this.refCount = 0;
           }
@@ -240,10 +302,10 @@ class Npc {
           }
 
           destroy() {
-            const {npcs} = this;
-            for (let i = 0; i < npcs.length; i++) {
-              const npc = npcs[i];
-              npc.destroy();
+            const {mobs} = this;
+            for (let i = 0; i < mobs.length; i++) {
+              const mob = mobs[i];
+              mob.destroy();
             }
 
             this.emit('destroy');
@@ -255,7 +317,7 @@ class Npc {
         const _connection = c => {
           const {url} = c.upgradeReq;
 
-          if (url === '/archae/npcWs') {
+          if (url === '/archae/mobsWs') {
             const localTrackedChunks = {};
             c.localTrackedChunks = localTrackedChunks;
 
@@ -277,37 +339,39 @@ class Npc {
                     trackedChunk.on('destroy', () => {
                       delete trackedChunks[index];
 
-                      const {npcs} = trackedChunk;
-                      for (let i = 0; i < npcs.length; i++) {
-                        const npc = npcs[i];
-                        const {id} = npc;
-                        delete trackedNpcs[id];
+                      const {mobs} = trackedChunk;
+                      for (let i = 0; i < mobs.length; i++) {
+                        const mob = mobs[i];
+                        const {id} = mob;
+                        delete trackedMobs[id];
                       }
                     });
 
-                    const {npcs} = trackedChunk;
-                    for (let i = 0; i < npcs.length; i++) {
-                      const npc = npcs[i];
-                      const {id} = npc;
-                      trackedNpcs[id] = npc;
+                    const {mobs} = trackedChunk;
+                    for (let i = 0; i < mobs.length; i++) {
+                      const mob = mobs[i];
+                      const {id} = mob;
+                      trackedMobs[id] = mob;
 
-                      npc.on('die', () => {
-                        npcs.splice(npcs.indexOf(npc), 1);
-                        delete trackedNpcs[id];
+                      mob.on('die', () => {
+                        mobs.splice(mobs.indexOf(mob), 1);
+                        delete trackedMobs[id];
                       });
                     }
                   }
 
-                  const {npcs} = trackedChunk;
-                  const  npcCleanups = Array(npcs.length);
-                  for (let i = 0; i < npcs.length; i++) {
-                    const npc = npcs[i];
-                    const {id, position, rotation, headRotation} = npc;
+                  const {mobs} = trackedChunk;
+                  const  mobCleanups = Array(mobs.length);
+                  for (let i = 0; i < mobs.length; i++) {
+                    const mob = mobs[i];
+                    const {id, type, skinName, position, rotation, headRotation} = mob;
 
                     const e = {
-                      type: 'npcStatus',
+                      type: 'mobAdd',
                       id,
-                      status: {
+                      spec: {
+                        type: type,
+                        skinName: skinName,
                         position: position.toArray(),
                         rotation: rotation.toArray(),
                         headRotation: headRotation.toArray(),
@@ -319,7 +383,7 @@ class Npc {
                     const _animation = animation => {
                       const {mode, positionStart, positionEnd, rotationStart, rotationEnd, headRotationStart, headRotationEnd, duration} = animation;
                       const e = {
-                        type: 'npcAnimation',
+                        type: 'mobAnimation',
                         id,
                         animation: {
                           mode,
@@ -335,38 +399,37 @@ class Npc {
                       const es = JSON.stringify(e);
                       c.send(es);
                     };
-                    npc.on('animation', _animation);
+                    mob.on('animation', _animation);
                     const _die = () => {
                       live = false;
                     };
-                    npc.on('die', _die);
+                    mob.on('die', _die);
 
                     let live = true;
-                    const npcCleanup = () => {
+                    const mobCleanup = () => {
                       if (live) {
                         if (c.readyState === ws.OPEN) {
                           const e = {
-                            type: 'npcStatus',
+                            type: 'mobRemove',
                             id,
-                            status: null,
                           };
                           const es = JSON.stringify(e);
                           c.send(es);
                         }
 
-                        npc.removeListener('animation', _animation);
-                        npc.removeListener('die', _die);
+                        mob.removeListener('animation', _animation);
+                        mob.removeListener('die', _die);
 
                         live = false;
                       }
                     };
-                    npcCleanups[i] = npcCleanup;
+                    mobCleanups[i] = mobCleanup;
                   }
 
                   trackedChunk[localCleanupSymbol] = () => {
-                    for (let i = 0; i < npcCleanups.length; i++) {
-                      const npcCleanup = npcCleanups[i];
-                      npcCleanup();
+                    for (let i = 0; i < mobCleanups.length; i++) {
+                      const mobCleanup = mobCleanups[i];
+                      mobCleanup();
                     }
                   };
 
@@ -380,22 +443,22 @@ class Npc {
                   trackedChunk[localCleanupSymbol]();
                   delete localTrackedChunks[index];
                   trackedChunk.removeRef();
-                } else if (method === 'attackNpc') {
+                } else if (method === 'attackMob') {
                   const [id, position, direction, damage] = args;
 
-                  const npc = trackedNpcs[id];
-                  if (npc) {
-                    npc.hit(
+                  const mob = trackedMobs[id];
+                  if (mob) {
+                    mob.hit(
                       new THREE.Vector3().fromArray(position),
                       new THREE.Vector3().fromArray(direction),
                       damage
                     );
                   }
                 } else {
-                  console.warn('npc invalid message type', {type});
+                  console.warn('mob invalid message type', {type});
                 }
               } else {
-                console.warn('npc invalid message', {msg});
+                console.warn('mob invalid message', {msg});
               }
             });
             c.on('close', () => {
@@ -415,7 +478,7 @@ class Npc {
 
         this._cleanup = () => {
           function removeMiddlewares(route, i, routes) {
-            if (route.handle.name === 'serveNpcImg' || route.handle.name === 'serveNpcSfx') {
+            if (route.handle.name === 'serveMobNpcImg' || route.handle.name === 'serveMobAnimalImg' || route.handle.name === 'serveMobSfx') {
               routes.splice(i, 1);
             }
             if (route.route) {
@@ -435,4 +498,4 @@ class Npc {
 }
 const _makeId = () => Math.random().toString(36).substring(7);
 
-module.exports = Npc;
+module.exports = Mobs;

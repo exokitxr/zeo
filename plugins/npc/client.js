@@ -1,14 +1,18 @@
 const sfxr = require('sfxr');
+const skinLib = require('./skin');
+const animalLib = require('./animal');
 
 const HEIGHTFIELD_PLUGIN = 'plugins-heightfield';
 
-class Npc {
+class Mobs {
   mount() {
     const {three, pose, elements, input, render, utils: {network: networkUtils, random: randomUtils, skin: skinUtils}} = zeo;
     const {THREE, scene} = three;
     const {AutoWs} = networkUtils;
     const {chnkr} = randomUtils;
-    const {skin} = skinUtils;
+    // const {skin} = skinUtils;
+    const skin = skinLib(THREE);
+    const animal = animalLib(THREE);
 
     const zeroQuaternion = new THREE.Quaternion();
 
@@ -17,28 +21,8 @@ class Npc {
       live = false;
     };
 
-    const _requestImage = url => new Promise((accept, reject) => {
-      const img = new Image();
-
-      img.onload = () => {
-        accept(img);
-      };
-      img.onerror = err => {
-        reject(img);
-      };
-
-      img.crossOrigin = 'Anonymous';
-      img.src = url;
-    });
-
-    return Promise.all([
-      _requestImage('/archae/npc/img/0'),
-      sfxr.requestSfx('archae/npc/sfx/hurt1.ogg'),
-    ])
-      .then(([
-        skinImg,
-        hurtSfx,
-      ]) => {
+    return sfxr.requestSfx('archae/mobs/sfx/hurt1.ogg')
+      .then(hurtSfx => {
         if (live) {
           const meshes = {};
 
@@ -47,7 +31,8 @@ class Npc {
             _updateAnimation(mesh, animation, uniforms, now);
             _updateElevation(mesh, heightfieldElement);
             _updateHit(mesh, hit, uniforms, now);
-            mesh.updateMatrixWorld()
+
+            mesh.updateMatrixWorld();
           };
           const _updateAnimation = (mesh, animation, uniforms, now) => {
             if (animation) {
@@ -153,8 +138,22 @@ class Npc {
               }
             }
           };
-          const _makeMesh = id => {
-            const mesh = skin(skinImg);
+          const _makeNpcMesh = skinName => skin(`/archae/mobs/npc/img/${skinName}.png`);
+          const _makeAnimalMesh = skinName => animal(
+            `/archae/mobs/animal/img/${skinName}.png`,
+            `/archae/mobs/animal/models/${skinName}.dat`
+          );
+          const _makeMesh = (id, type, skinName) => {
+            const mesh = (() => {
+              if (type === 'npc') {
+                return _makeNpcMesh(skinName);
+              } else if (type === 'animal') {
+                return _makeAnimalMesh(skinName);
+              } else {
+                console.warn('invalid npc type', JSON.stringify(type));
+                return null;
+              }
+            })();
 
             mesh.offset = new THREE.Vector3(0, 0, 0);
             mesh.animation = null;
@@ -162,7 +161,7 @@ class Npc {
 
             mesh.attack = direction => {
               const e = {
-                method: 'attackNpc',
+                method: 'attackMob',
                 args: [
                   id,
                   mesh.position.toArray(),
@@ -174,10 +173,21 @@ class Npc {
               connection.send(es);
             };
 
-            const uniforms = THREE.UniformsUtils.clone(skin.SKIN_SHADER.uniforms);
-            uniforms.leftArmRotation.value.set(zeroQuaternion.x, zeroQuaternion.y, zeroQuaternion.z, zeroQuaternion.w);
-            uniforms.rightArmRotation.value.set(zeroQuaternion.x, zeroQuaternion.y, zeroQuaternion.z, zeroQuaternion.w);
-            uniforms.headVisible.value = 1;
+            const uniforms = (() => {
+              if (type === 'npc') {
+                const uniforms = THREE.UniformsUtils.clone(skin.SKIN_SHADER.uniforms);
+                uniforms.leftArmRotation.value.set(zeroQuaternion.x, zeroQuaternion.y, zeroQuaternion.z, zeroQuaternion.w);
+                uniforms.rightArmRotation.value.set(zeroQuaternion.x, zeroQuaternion.y, zeroQuaternion.z, zeroQuaternion.w);
+                uniforms.headVisible.value = 1;
+                return uniforms;
+              } else if (type === 'animal') {
+                const uniforms = THREE.UniformsUtils.clone(animal.ANIMAL_SHADER.uniforms);
+                return uniforms;
+              } else {
+                console.warn('invalid npc type', JSON.stringify(type));
+                return null;
+              }
+            })();
             mesh.update = (now, heightfieldElement) => {
               _updateMesh(mesh, mesh.animation, mesh.hit, uniforms, now, heightfieldElement);
             };
@@ -185,11 +195,14 @@ class Npc {
             mesh.onBeforeRender = (function(onBeforeRender) {
               return function() {
                 mesh.material.uniforms.headRotation.value.copy(uniforms.headRotation.value);
-                mesh.material.uniforms.leftArmRotation.value.copy(uniforms.leftArmRotation.value);
-                mesh.material.uniforms.rightArmRotation.value.copy(uniforms.rightArmRotation.value);
                 mesh.material.uniforms.theta.value = uniforms.theta.value;
-                mesh.material.uniforms.headVisible.value = uniforms.headVisible.value;
                 mesh.material.uniforms.hit.value = uniforms.hit.value;
+
+                if (type === 'npc') {
+                  mesh.material.uniforms.leftArmRotation.value.copy(uniforms.leftArmRotation.value);
+                  mesh.material.uniforms.rightArmRotation.value.copy(uniforms.rightArmRotation.value);
+                  mesh.material.uniforms.headVisible.value = uniforms.headVisible.value;
+                }
 
                 onBeforeRender.apply(this, arguments);
               };
@@ -198,34 +211,33 @@ class Npc {
             return mesh;
           };
 
-          const connection = new AutoWs(_relativeWsUrl('archae/npcWs'));
+          const connection = new AutoWs(_relativeWsUrl('archae/mobsWs'));
           connection.on('message', msg => {
             const e = JSON.parse(msg.data);
             const {type} = e;
 
-            if (type === 'npcStatus') {
-              const {id, status} = e;
+            if (type === 'mobAdd') {
+              const {id, spec} = e;
+              const {type, skinName, position, rotation, health} = spec;
 
-              if (status) {
-                const {position, rotation, health} = status;
-
-                let mesh = meshes[id];
-                if (!mesh) {
-                  mesh = _makeMesh(id);
-                  scene.add(mesh);
-                  meshes[id] = mesh;
-                }
-
-                mesh.position.fromArray(position);
-                mesh.quaternion.fromArray(rotation);
-                mesh.updateMatrixWorld();
-              } else {
-                const mesh = meshes[id];
-                scene.remove(mesh);
-                mesh.destroy();
-                delete meshes[id];
+              let mesh = meshes[id];
+              if (!mesh) {
+                mesh = _makeMesh(id, type, skinName);
+                scene.add(mesh);
+                meshes[id] = mesh;
               }
-            } else if (type === 'npcAnimation') {
+
+              mesh.position.fromArray(position);
+              mesh.quaternion.fromArray(rotation);
+              mesh.updateMatrixWorld();
+            } else if (type === 'mobRemove') {
+              const {id} = e;
+
+              const mesh = meshes[id];
+              scene.remove(mesh);
+              mesh.destroy();
+              delete meshes[id];
+            } else if (type === 'mobAnimation') {
               const {id, animation} = e;
               const {mode, positionStart, positionEnd, rotationStart, rotationEnd, headRotationStart, headRotationEnd, duration} = animation;
 
@@ -251,7 +263,7 @@ class Npc {
                 hurtSfx.trigger();
               }
             } else {
-              console.warn('npc unknown message type', JSON.stringify(type));
+              console.warn('mob unknown message type', JSON.stringify(type));
             }
           });
 
@@ -302,7 +314,7 @@ class Npc {
                 mesh.update(now, heightfieldElement);
               }
             };
-            const _updateNpcChunks = () => {
+            const _updateMobChunks = () => {
               const {hmd} = pose.getStatus();
               const {worldPosition: hmdPosition} = hmd;
               const {added, removed} = chunker.update(hmdPosition.x, hmdPosition.z);
@@ -331,7 +343,7 @@ class Npc {
             };
 
             _updateMeshes();
-            _updateNpcChunks();
+            _updateMobChunks();
           };
           render.on('update', _update);
 
@@ -359,4 +371,4 @@ const _relativeWsUrl = s => {
   return ((l.protocol === 'https:') ? 'wss://' : 'ws://') + l.host + l.pathname + (!/\/$/.test(l.pathname) ? '/' : '') + s;
 };
 
-module.exports = Npc;
+module.exports = Mobs;
