@@ -253,6 +253,10 @@ const animal = (img, model) => {
   geometry.addAttribute('dy', new THREE.BufferAttribute(new Float32Array(0), 4));
   geometry.addAttribute('dh', new THREE.BufferAttribute(new Float32Array(0), 4));
   geometry.setIndex(new THREE.BufferAttribute(new Uint16Array(0), 1));
+  geometry.boundingSphere = new THREE.Sphere(
+    new THREE.Vector3(0, 0, 0),
+    1
+  );
 
   const texture = new THREE.Texture(
     null,
@@ -308,6 +312,7 @@ const animal = (img, model) => {
         geometry.addAttribute('dy', new THREE.BufferAttribute(dys, 4));
         geometry.addAttribute('dh', new THREE.BufferAttribute(dhs, 4));
         geometry.setIndex(new THREE.BufferAttribute(indices, 1));
+        geometry.boundingSphere.radius = size.length();
 
         texture.image = img;
         texture.needsUpdate = true;
