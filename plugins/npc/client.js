@@ -1,5 +1,5 @@
 const sfxr = require('sfxr');
-const animalLib = require('./animal');
+const animalLib = require('animal-js');
 
 const HEIGHTFIELD_PLUGIN = 'plugins-heightfield';
 

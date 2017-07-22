@@ -3,6 +3,8 @@ const {EventEmitter} = events;
 const path = require('path');
 const fs = require('fs');
 
+const animalLib = require('animal-js');
+
 const NUM_CELLS = 32;
 
 class Mobs {
@@ -13,9 +15,10 @@ class Mobs {
   mount() {
     const {_archae: archae} = this;
     const {express, app, ws, wss} = archae.getCore();
-    const {three, utils: {hash: hashUtils}} = zeo;
+    const {three} = zeo;
     const {THREE} = three;
-    const {murmur} = hashUtils;
+
+    const animal = animalLib(THREE);
 
     const upVector = new THREE.Vector3(0, 1, 0);
     const forwardVector = new THREE.Vector3(0, 0, -1);
@@ -32,51 +35,6 @@ class Mobs {
       });
     });
 
-    const ANIMALS = [
-      /* 'ammonite', */
-      'badger',
-      'bear',
-      'beetle',
-      /* 'bigfish', */
-      'boar',
-      'bunny',
-      'chick',
-      'chicken',
-      'cow',
-      /* 'cubelet', */
-      'deer',
-      /* 'dungeon_master', */
-      'elephant',
-      /* 'fish',
-      'ghost', */
-      'giraffe',
-      /* 'gull', */
-      'horse',
-      'mammoth',
-      /* 'oerrki',
-      'penguin',
-      'piranha',
-      'pterodactyl', */
-      'rat',
-      'sheep',
-      'skunk',
-      'smallbird',
-      'spider',
-      /* 'swamplurker', */
-      'turtle',
-      /* 'trilobite', */
-      'velociraptor',
-      /* 'villager',
-      'walker',
-      'warthog',
-      'wasp',
-      'whale',
-      'witch', */
-      'wolf',
-      /* 'zombie',
-      'zombie_brute', */
-    ];
-
     return _readdir(path.join(__dirname, 'lib', 'npc', 'img'))
       .then(npcImgFiles => npcImgFiles.map(npcImgFile => npcImgFile.replace(/\.png$/, '')))
       .then(npcs => {
@@ -90,12 +48,12 @@ class Mobs {
         }
         app.use('/archae/mobs/npc/img', serveMobNpcImg);
 
-        const mobAnimalImgStatic = express.static(path.join(__dirname, 'lib', 'animal', 'img'));
+        const mobAnimalImgStatic = express.static(path.join(animal.DATA_PATH, 'lib', 'img'));
         function serveMobAnimalImg(req, res, next) {
           mobAnimalImgStatic(req, res, next);
         }
         app.use('/archae/mobs/animal/img', serveMobAnimalImg);
-        const mobAnimalModelsStatic = express.static(path.join(__dirname, 'lib', 'animal', 'models'));
+        const mobAnimalModelsStatic = express.static(path.join(animal.DATA_PATH, 'lib', 'models'));
         function serveMobAnimalModels(req, res, next) {
           mobAnimalModelsStatic(req, res, next);
         }
@@ -265,7 +223,10 @@ class Mobs {
                 const id = _makeId();
 
                 const type = Math.random() < 0.25 ? 'npc' : 'animal';
-                const skinName = type === 'npc' ? npcs[Math.floor(Math.random() * npcs.length)] : ANIMALS[Math.floor(Math.random() * ANIMALS.length)]
+                const skinName = type === 'npc' ?
+                  npcs[Math.floor(Math.random() * npcs.length)]
+                :
+                  animal.ANIMALS[Math.floor(Math.random() * animal.ANIMALS.length)];
 
                 const dx = Math.random() * NUM_CELLS;
                 const dz = Math.random() * NUM_CELLS;
