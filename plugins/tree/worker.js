@@ -549,37 +549,40 @@ const _makeTreeChunkGeometry = (ox, oy, treeTemplates, points, heightRange) => {
 
   for (let dy = 0; dy < NUM_CELLS_OVERSCAN; dy++) {
     for (let dx = 0; dx < NUM_CELLS_OVERSCAN; dx++) {
-      const ax = (ox * NUM_CELLS) + dx;
-      const ay = (oy * NUM_CELLS) + dy;
-      const v = treeNoise.in2D(dx + 1000, dy + 1000);
+      const pointIndex = dx + (dy * NUM_CELLS_OVERSCAN);
+      const elevation = points[pointIndex];
 
-      if (v < treeProbability) {
-        const pointIndex = dx + (dy * NUM_CELLS_OVERSCAN);
-        const elevation = points[pointIndex];
-        position.set(
-          ax,
-          elevation,
-          ay
-        );
-        const n = murmur(String(v)) / 0xFFFFFFFF;
-        quaternion.setFromAxisAngle(upVector, n * Math.PI * 2);
-        matrix.compose(position, quaternion, scale);
-        const geometry = treeTemplates
-          .clone()
-          .applyMatrix(matrix);
-        const newPositions = geometry.getAttribute('position').array;
-        positions.set(newPositions, attributeIndex);
-        const newUvs = geometry.getAttribute('uv').array;
-        uvs.set(newUvs, uvIndex);
-        const newIndices = geometry.index.array;
-        _copyIndices(newIndices, indices, indexIndex, attributeIndex / 3);
-        const newTrees = Float32Array.from([indexIndex, indexIndex + newIndices.length, position.x, position.y, position.z]);
-        trees.set(newTrees, treeIndex);
+      if (elevation > 0) {
+        const ax = (ox * NUM_CELLS) + dx;
+        const ay = (oy * NUM_CELLS) + dy;
+        const v = treeNoise.in2D(dx + 1000, dy + 1000);
 
-        attributeIndex += newPositions.length;
-        uvIndex += newUvs.length;
-        indexIndex += newIndices.length;
-        treeIndex += newTrees.length;
+        if (v < treeProbability) {
+          position.set(
+            ax,
+            elevation,
+            ay
+          );
+          const n = murmur(String(v)) / 0xFFFFFFFF;
+          quaternion.setFromAxisAngle(upVector, n * Math.PI * 2);
+          matrix.compose(position, quaternion, scale);
+          const geometry = treeTemplates
+            .clone()
+            .applyMatrix(matrix);
+          const newPositions = geometry.getAttribute('position').array;
+          positions.set(newPositions, attributeIndex);
+          const newUvs = geometry.getAttribute('uv').array;
+          uvs.set(newUvs, uvIndex);
+          const newIndices = geometry.index.array;
+          _copyIndices(newIndices, indices, indexIndex, attributeIndex / 3);
+          const newTrees = Float32Array.from([indexIndex, indexIndex + newIndices.length, position.x, position.y, position.z]);
+          trees.set(newTrees, treeIndex);
+
+          attributeIndex += newPositions.length;
+          uvIndex += newUvs.length;
+          indexIndex += newIndices.length;
+          treeIndex += newTrees.length;
+        }
       }
     }
   }
