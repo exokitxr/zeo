@@ -133,6 +133,15 @@ const skyShader = {
 		"const float sunAngularDiameterCos = 0.999956676946448443553574619906976478926848692873900859324;",
 		// 66 arc seconds -> degrees, and the cosine of that
 
+		"float powClamp(float f, float e)",
+		"{",
+			"return pow(max(f, 0.0), e);",
+		"}",
+		"vec3 powClamp(vec3 f, vec3 e)",
+		"{",
+			"return pow(max(f, 0.0), e);",
+		"}",
+
 		"float rayleighPhase(float cosTheta)",
 		"{",
 			"return (3.0 / (16.0*pi)) * (1.0 + pow(cosTheta, 2.0));",
@@ -140,7 +149,7 @@ const skyShader = {
 
 		"float hgPhase(float cosTheta, float g)",
 		"{",
-			"return (1.0 / (4.0*pi)) * ((1.0 - pow(g, 2.0)) / pow(1.0 - 2.0*g*cosTheta + pow(g, 2.0), 1.5));",
+			"return (1.0 / (4.0*pi)) * ((1.0 - pow(g, 2.0)) / powClamp(1.0 - 2.0*g*cosTheta + pow(g, 2.0), 1.5));",
 		"}",
 
 		// Filmic ToneMapping http://filmicgames.com/archives/75
@@ -190,8 +199,8 @@ float noise(vec3 p){
 			// optical length
 			// cutoff angle at 90 to avoid singularity in next formula.
 			"float zenithAngle = acos(max(0.0, dot(up, normalize(vWorldPosition - cameraPos))));",
-			"float sR = rayleighZenithLength / (cos(zenithAngle) + 0.15 * pow(93.885 - ((zenithAngle * 180.0) / pi), -1.253));",
-			"float sM = mieZenithLength / (cos(zenithAngle) + 0.15 * pow(93.885 - ((zenithAngle * 180.0) / pi), -1.253));",
+			"float sR = rayleighZenithLength / (cos(zenithAngle) + 0.15 * powClamp(93.885 - ((zenithAngle * 180.0) / pi), -1.253));",
+			"float sM = mieZenithLength / (cos(zenithAngle) + 0.15 * powClamp(93.885 - ((zenithAngle * 180.0) / pi), -1.253));",
 
 			// combined extinction factor
 			"vec3 Fex = exp(-(vBetaR * sR + vBetaM * sM));",
@@ -205,7 +214,7 @@ float noise(vec3 p){
 			"float mPhase = hgPhase(cosTheta, mieDirectionalG);",
 			"vec3 betaMTheta = vBetaM * mPhase;",
 
-			"vec3 Lin = pow(vSunE * ((betaRTheta + betaMTheta) / (vBetaR + vBetaM)) * (1.0 - Fex),vec3(1.5));",
+			"vec3 Lin = powClamp(vSunE * ((betaRTheta + betaMTheta) / (vBetaR + vBetaM)) * (1.0 - Fex),vec3(1.5));",
 			"Lin *= mix(vec3(1.0),pow(vSunE * ((betaRTheta + betaMTheta) / (vBetaR + vBetaM)) * Fex,vec3(1.0/2.0)),clamp(pow(1.0-dot(up, vSunDirection),5.0),0.0,1.0));",
 
 			//nightsky
@@ -224,7 +233,7 @@ float noise(vec3 p){
 			"vec3 curr = Uncharted2Tonemap((log2(2.0/pow(luminance,4.0)))*texColor);",
 			"vec3 color = curr*whiteScale;",
 
-			"vec3 retColor = pow(color,vec3(1.0/(1.2+(1.2*vSunfade))));",
+			"vec3 retColor = powClamp(color,vec3(1.0/(1.2+(1.2*vSunfade))));",
 `
 if (noise(floor(vWorldPosition / 15.0) * 15.0) < 0.0001) {
   retColor += 0.15 * max(1.0 - (vSunE / 300.0), 0.0);
