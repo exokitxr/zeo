@@ -290,6 +290,9 @@ const animal = (img, model) => {
     material.uniforms.headRotation.value.set(headRotation.x, headRotation.y, headRotation.z, headRotation.w);
     material.uniforms.theta.value = Math.sin(((startOffset + now) % angleRate) / angleRate * Math.PI * 2) * 0.75; */
   };
+
+  mesh.size = new THREE.Vector3();
+
   mesh.destroy = () => {
     geometry.dispose();
     texture.dispose();
@@ -312,10 +315,12 @@ const animal = (img, model) => {
         geometry.addAttribute('dy', new THREE.BufferAttribute(dys, 4));
         geometry.addAttribute('dh', new THREE.BufferAttribute(dhs, 4));
         geometry.setIndex(new THREE.BufferAttribute(indices, 1));
-        geometry.boundingSphere.radius = size.length();
+        geometry.boundingSphere.radius = Math.max(size.x, size.y, size.z);
 
         texture.image = img;
         texture.needsUpdate = true;
+
+        mesh.size.copy(size);
       });
   };
   _load();
