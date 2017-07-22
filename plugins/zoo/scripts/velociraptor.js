@@ -179,20 +179,19 @@ console.warn(numMatches / (positions.length / 3));
       dhVertices[k] = true;
     }
   }
-  const dhBucket = new THREE.Vector3(0, 0, -Infinity);
+  const dhBucket = new THREE.Vector3(0, Infinity, -Infinity);
   let dhBucketCount = 0;
   for (let i = 0; i < positions.length / 3; i++) {
     const v = new THREE.Vector3().fromArray(positions, i * 3);
     const k = v.toArray().join(':');
     if (dhVertices[k]) {
       dhBucket.x += v.x;
-      dhBucket.y += v.y;
+      dhBucket.y = Math.min(v.y, dhBucket.y);
       dhBucket.z = Math.max(v.z, dhBucket.z);
       dhBucketCount++;
     }
   }
   dhBucket.x /= dhBucketCount;
-  dhBucket.y /= dhBucketCount;
 
   const dhs = new Float32Array(positions.length / 3 * 4);
   let numMatches2 = 0;
