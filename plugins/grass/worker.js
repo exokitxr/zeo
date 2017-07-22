@@ -2,6 +2,8 @@ importScripts('/archae/three/three.js');
 const {exports: THREE} = self.module;
 self.module = {};
 
+const murmur = require('murmurhash');
+const alea = require('alea');
 const indev = require('indev');
 const {
   NUM_CELLS,
@@ -20,12 +22,17 @@ const NUM_TEXTURE_CHUNKS_WIDTH = TEXTURE_SIZE / TEXTURE_CHUNK_SIZE;
 
 const upVector = new THREE.Vector3(0, 1, 0);
 
+const rng = new alea(DEFAULT_SEED);
 const generator = indev({
   seed: DEFAULT_SEED,
 });
 const elevationNoise = generator.uniform({
   frequency: 0.002,
   octaves: 8,
+});
+const grassNoise = generator.uniform({
+  frequency: 0.15,
+  octaves: 4,
 });
 
 class Triangle {
@@ -67,17 +74,17 @@ const grassTextureAtlas = (() => {
   const data = new Uint8Array(TEXTURE_SIZE * TEXTURE_SIZE * 4);
   for (let y = 0; y < NUM_TEXTURE_CHUNKS_WIDTH; y++) {
     for (let x = 0; x < NUM_TEXTURE_CHUNKS_WIDTH; x++) {
-      const numBlades = Math.floor(5 + (Math.random() * 5));
+      const numBlades = Math.floor(5 + (rng() * 5));
       const numTrianglesPerBlade = 5;
       const numTriangles = numBlades * numTrianglesPerBlade;
       const triangles = Array(numTriangles);
       for (let i = 0; i < numBlades; i++) {
-        const type = Math.random() < 0.5 ? -1 : 0;
-        const flip = Math.random() < 0.5 ? -1 : 1;
+        const type = rng() < 0.5 ? -1 : 0;
+        const flip = rng() < 0.5 ? -1 : 1;
         const w = (type === -1) ? 0.3 : 0.4;
         const h = type === -1 ? 0.6 : 0.25;
-        const ox = (Math.random() * (1 - w)) + (flip === -1 ? w : 0);
-        const sy = (1 / h) * (0.25 + Math.random() * 0.75);
+        const ox = (rng() * (1 - w)) + (flip === -1 ? w : 0);
+        const sy = (1 / h) * (0.25 + rng() * 0.75);
         const points = (type === -1 ? [
           new THREE.Vector2(0, 0),
           new THREE.Vector2(0.1, 0),
@@ -135,9 +142,8 @@ const grassTextureAtlas = (() => {
   }
   return data;
 })();
-
-const grassTemplates = (() => {
-  const numGrassesPerPatch = Math.floor(4 + Math.random() * 4);
+const _makeGrassTemplate = () => {
+  const numGrasses = Math.floor(4 + rng() * 4);
   const positions = new Float32Array(NUM_POSITIONS * 3);
   const uvs = new Float32Array(NUM_POSITIONS * 2);
   const indices = new Uint16Array(NUM_POSITIONS);
@@ -150,13 +156,13 @@ const grassTemplates = (() => {
   const scale = new THREE.Vector3(1, 1, 1);
   const matrix = new THREE.Matrix4();
 
-  for (let i = 0; i < numGrassesPerPatch; i++) {
-    position.set(-0.5 + Math.random(), 0, -0.5 + Math.random())
+  for (let i = 0; i < numGrasses; i++) {
+    position.set(-0.5 + rng(), 0, -0.5 + rng())
       .normalize()
-      .multiplyScalar(Math.random() * 1)
+      .multiplyScalar(rng() * 1)
       .add(new THREE.Vector3(0, 0.5, 0));
-    quaternion.setFromAxisAngle(upVector, Math.random() * Math.PI * 2);
-    // scale.set(5 + (Math.random() * 5), 5 + Math.random() * 10, 5 + (Math.random() * 5));
+    quaternion.setFromAxisAngle(upVector, rng() * Math.PI * 2);
+    // scale.set(5 + (rng() * 5), 5 + rng() * 10, 5 + (rng() * 5));
     matrix.compose(position, quaternion, scale);
     const geometry = new THREE.PlaneBufferGeometry(1, 1)
       .applyMatrix(matrix);
@@ -164,8 +170,8 @@ const grassTemplates = (() => {
     positions.set(newPositions, attributeIndex);
     const newUvs = geometry.getAttribute('uv').array;
     const numNewUvs = newUvs.length / 2;
-    const tx = Math.floor(Math.random() * NUM_TEXTURE_CHUNKS_WIDTH);
-    const ty = Math.floor(Math.random() * NUM_TEXTURE_CHUNKS_WIDTH);
+    const tx = Math.floor(rng() * NUM_TEXTURE_CHUNKS_WIDTH);
+    const ty = Math.floor(rng() * NUM_TEXTURE_CHUNKS_WIDTH);
     for (let j = 0; j < numNewUvs; j++) {
       const baseIndex = j * 2;
       newUvs[baseIndex + 0] = ((tx + (0.02 + newUvs[baseIndex + 0] * 0.96)) / NUM_TEXTURE_CHUNKS_WIDTH);
@@ -186,8 +192,16 @@ const grassTemplates = (() => {
   geometry.setIndex(new THREE.BufferAttribute(new Uint16Array(indices.buffer, indices.byteOffset, indexIndex), 1));
 
   return geometry;
+};
+const grassTemplates = (() => {
+  const numGrassTemplates = 8;
+  const result = Array(numGrassTemplates);
+  for (let i = 0; i < numGrassTemplates; i++) {
+    result[i] = _makeGrassTemplate();
+  }
+  return result;
 })();
-const _makeGrassChunkMesh = (x, y, grassGeometry, points, heightRange) => {
+const _makeGrassChunkMesh = (ox, oy, grassTemplates, points, heightRange) => {
   const positions = new Float32Array(NUM_POSITIONS_CHUNK * 3);
   const uvs = new Float32Array(NUM_POSITIONS_CHUNK * 2);
   const indices = new Uint16Array(NUM_POSITIONS_CHUNK);
@@ -204,18 +218,22 @@ const _makeGrassChunkMesh = (x, y, grassGeometry, points, heightRange) => {
 
   for (let dy = 0; dy < NUM_CELLS_OVERSCAN; dy++) {
     for (let dx = 0; dx < NUM_CELLS_OVERSCAN; dx++) {
-      if (Math.random() < grassProbability) {
+      const ax = (ox * NUM_CELLS) + dx;
+      const ay = (oy * NUM_CELLS) + dy;
+
+      if (grassNoise.in2D(ax + 1000, ay + 1000) < grassProbability) {
         const pointIndex = dx + (dy * NUM_CELLS_OVERSCAN);
         const elevation = points[pointIndex];
 
         position.set(
-          (x * NUM_CELLS) + dx,
+          ax,
           elevation,
-          (y * NUM_CELLS) + dy
-        )
-        quaternion.setFromAxisAngle(upVector, Math.random() * Math.PI * 2);
+          ay
+        );
+        quaternion.setFromAxisAngle(upVector, rng() * Math.PI * 2);
         matrix.compose(position, quaternion, scale);
-        scale.set(1, 0.5 + Math.random() * 1, 1);
+        scale.set(1, 0.5 + rng() * 1, 1);
+        const grassGeometry = grassTemplates[Math.floor(murmur(grassNoise.in2D(ax + 1000, ay + 1000)) / 0xFFFFFFFF * grassTemplates.length)];
         const geometry = grassGeometry
           .clone()
           .applyMatrix(matrix);
@@ -248,13 +266,13 @@ const _generateHeightfield = (ox, oy) => {
   let minHeight = Infinity;
   let maxHeight = -Infinity;
 
-  for (let y = 0; y < NUM_CELLS_OVERSCAN; y++) {
-    for (let x = 0; x < NUM_CELLS_OVERSCAN; x++) {
-      const index = x + (y * NUM_CELLS_OVERSCAN);
+  for (let dy = 0; dy < NUM_CELLS_OVERSCAN; dy++) {
+    for (let dx = 0; dx < NUM_CELLS_OVERSCAN; dx++) {
+      const index = dx + (dy * NUM_CELLS_OVERSCAN);
 
-      const dx = (ox * NUM_CELLS) + x;
-      const dy = (oy * NUM_CELLS) + y;
-      const elevation = (-0.3 + Math.pow(elevationNoise.in2D(dx + 1000, dy + 1000), 0.5)) * 64;
+      const ax = (ox * NUM_CELLS) + dx;
+      const ay = (oy * NUM_CELLS) + dy;
+      const elevation = (-0.3 + Math.pow(elevationNoise.in2D(ax + 1000, ay + 1000), 0.5)) * 64;
 
       points[index] = elevation;
       if (elevation < minHeight) {
