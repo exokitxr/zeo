@@ -5,7 +5,10 @@
   "client": "client.js",
   "server": "server.js",
   "dependencies": {
+    "alea-zeo": "0.0.1",
     "controllerjs": "0.0.3",
-    "sfxr": "0.0.1"
+    "indev": "^3.0.14",
+    "sfxr": "0.0.1",
+    "three-zeo": "0.0.2"
   }
 }
