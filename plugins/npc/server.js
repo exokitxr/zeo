@@ -264,7 +264,7 @@ class Mobs {
               for (let i = 0; i < numNpcs; i++) {
                 const id = _makeId();
 
-                const type = Math.floor() < 0.25 ? 'npc' : 'animal';
+                const type = Math.random() < 0.25 ? 'npc' : 'animal';
                 const skinName = type === 'npc' ? npcs[Math.floor(Math.random() * npcs.length)] : ANIMALS[Math.floor(Math.random() * ANIMALS.length)]
 
                 const dx = Math.random() * NUM_CELLS;
