@@ -77,6 +77,7 @@ return vec + 2.0 * cross( cross( vec, quat.xyz ) + quat.w * vec, quat.xyz );
     "}"
   ].join("\n")
 };
+const skinSize = new THREE.Vector3(1, 2, 1);
 
 const headBox = (() => {
   const headTop = [
@@ -1144,6 +1145,8 @@ const skin = (img, {limbs = false} = {}) => {
   mesh.scale.set(scale, scale, scale);
   mesh.rotation.order = rotationOrder;
   mesh.updateMatrixWorld();
+
+  mesh.size = skinSize;
 
   if (limbs) {
     const head = new THREE.Object3D();

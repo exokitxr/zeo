@@ -27,14 +27,14 @@ class Mobs {
           const meshes = {};
 
           const headRotation = new THREE.Quaternion();
-          const _updateMesh = (mesh, animation, hit, uniforms, now, heightfieldElement) => {
-            _updateAnimation(mesh, animation, uniforms, now);
+          const _updateMesh = (id, mesh, animation, hit, uniforms, now, heightfieldElement) => {
+            _updateAnimation(id, mesh, animation, uniforms, now);
             _updateElevation(mesh, heightfieldElement);
             _updateHit(mesh, hit, uniforms, now);
 
             mesh.updateMatrixWorld();
           };
-          const _updateAnimation = (mesh, animation, uniforms, now) => {
+          const _updateAnimation = (id, mesh, animation, uniforms, now) => {
             if (animation) {
               const {mode, positionStart, positionEnd, rotationStart, rotationEnd, headRotationStart, headRotationEnd, duration, startTime} = animation;
 
@@ -189,7 +189,7 @@ class Mobs {
               }
             })();
             mesh.update = (now, heightfieldElement) => {
-              _updateMesh(mesh, mesh.animation, mesh.hit, uniforms, now, heightfieldElement);
+              _updateMesh(id, mesh, mesh.animation, mesh.hit, uniforms, now, heightfieldElement);
             };
 
             mesh.onBeforeRender = (function(onBeforeRender) {
@@ -279,17 +279,21 @@ class Mobs {
             const gamepad = gamepads[side];
             const {worldPosition: controllerPosition} = gamepad;
 
+            const position = new THREE.Vector3();
+            const sphere = new THREE.Sphere();
             for (const id in meshes) {
               const mesh = meshes[id];
-              const box = new THREE.Box3().setFromCenterAndSize(
-                mesh.position.clone().add(new THREE.Vector3(0, 1, 0)),
-                new THREE.Vector3(1, 2, 1)
+              position.copy(mesh.getWorldPosition());
+              position.y += mesh.size.y / 2;
+              sphere.set(
+                position,
+                Math.max(mesh.size.x, mesh.size.z) / 2
               );
 
-              if (box.containsPoint(controllerPosition)) {
+              if (sphere.containsPoint(controllerPosition)) {
                 const {hmd} = status;
                 const {worldPosition: hmdPosition} = hmd;
-                const direction = mesh.position.clone()
+                const direction = position.copy(mesh.position)
                   .add(new THREE.Vector3(0, 1, 0))
                   .sub(hmdPosition);
                 direction.y = 0;
