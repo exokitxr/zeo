@@ -92,8 +92,8 @@ const generateMapChunk = (x, y, resolution) => {
       for (let x = 0; x < numCellsOverscan; x++) {
         const index = _getCoordOverscanIndex(x, y);
   
-        const dx = (offset.x * NUM_CELLS) - 1 + (x * resolutionFactor);
-        const dy = (offset.y * NUM_CELLS) - 1 + (y * resolutionFactor);
+        const dx = (offset.x * NUM_CELLS) + (x * resolutionFactor);
+        const dy = (offset.y * NUM_CELLS) + (y * resolutionFactor);
         const baseElevation = _random.elevationNoise.in2D(dx + 1000, dy + 1000);
         const elevation = (-0.3 + Math.pow(baseElevation, 0.5)) * 64;
         const moisture = _random.moistureNoise.in2D(dx, dy);

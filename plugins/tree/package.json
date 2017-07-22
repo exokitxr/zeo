@@ -8,6 +8,7 @@
     "worker": "worker.js"
   },
   "dependencies": {
+    "alea": "0.0.9",
     "indev": "^3.0.10",
     "sfxr": "0.0.1"
   }

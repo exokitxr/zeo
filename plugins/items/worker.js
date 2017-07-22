@@ -451,8 +451,8 @@ const _generateHeightfield = (ox, oy) => {
     for (let x = 0; x < NUM_CELLS_OVERSCAN; x++) {
       const index = x + (y * NUM_CELLS_OVERSCAN);
 
-      const dx = (ox * NUM_CELLS) - OVERSCAN + x;
-      const dy = (oy * NUM_CELLS) - OVERSCAN + y;
+      const dx = (ox * NUM_CELLS) + x;
+      const dy = (oy * NUM_CELLS) + y;
       const elevation = (-0.3 + Math.pow(elevationNoise.in2D(dx + 1000, dy + 1000), 0.5)) * 64;
 
       points[index] = elevation;
