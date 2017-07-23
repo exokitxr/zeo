@@ -129,8 +129,8 @@ class Hand {
                   _send('grab', [id, userId, side]);
                 }
 
-                const {position, rotation, scale} = grabbable;
-                _send('update', [id, position, rotation, scale]);
+                const {position, rotation, scale, localRotation} = grabbable;
+                _send('update', [id, position, rotation, scale, localRotation]);
               }
             } else if (method === 'removeGrabbable') {
               const [id] = args;
