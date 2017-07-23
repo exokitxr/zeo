@@ -8,11 +8,12 @@ class Hand {
     const {app, wss} = archae.getCore();
 
     class Grabbable {
-      constructor(id, position, rotation, scale) {
+      constructor(id, position, rotation, scale, localRotation) {
         this.id = id;
         this.position = position;
         this.rotation = rotation;
         this.scale = scale;
+        this.localRotation = localRotation;
 
         this.userId = null;
         this.side = null;
@@ -43,10 +44,11 @@ class Hand {
         }
       }
 
-      setState(position, rotation, scale) {
+      setState(position, rotation, scale, localRotation) {
         this.position = position;
         this.rotation = rotation;
         this.scale = scale;
+        this.localRotation = localRotation;
       }
     }
 
@@ -100,11 +102,11 @@ class Hand {
             const {method, args} = m;
 
             if (method === 'addGrabbable') {
-              const [id, position, rotation, scale] = args;
+              const [id, position, rotation, scale, localRotation] = args;
 
               const grabbable = grabbables[id];
               if (!grabbable) {
-                const newGrabbable = new Grabbable(id, position, rotation, scale);
+                const newGrabbable = new Grabbable(id, position, rotation, scale, localRotation);
                 grabbables[id] = newGrabbable;
               }
 
@@ -176,29 +178,14 @@ class Hand {
                   _broadcast(id, 'release', [id]);
                 }
               }
-            } else if (method === 'setState') {
-              const [id, position, rotation, scale] = args;
-
-              const grabbable = grabbables[id];
-
-              if (grabbable) {
-                const releaseSpec = grabbable.release();
-                if (releaseSpec) {
-                  const {userId, side} = releaseSpec;
-                  _broadcast(id, 'release', [id]);
-                }
-
-                grabbable.setState(position, rotation, scale);
-                _broadcast(id, 'update', [id, position, rotation, scale]);
-              }
             } else if (method === 'update') {
-              const [id, position, rotation, scale] = args;
+              const [id, position, rotation, scale, localRotation] = args;
 
               const grabbable = grabbables[id];
 
               if (grabbable) {
-                grabbable.setState(position, rotation, scale);
-                _broadcast(id, 'update', [id, position, rotation, scale]);
+                grabbable.setState(position, rotation, scale, localRotation);
+                _broadcast(id, 'update', [id, position, rotation, scale, localRotation]);
               }
             } else {
               console.warn('no such hand method:' + JSON.stringify(method));
