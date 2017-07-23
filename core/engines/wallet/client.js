@@ -125,9 +125,9 @@ class Wallet {
         const oneVector = new THREE.Vector3(1, 1, 1);
         const forwardVector = new THREE.Vector3(0, 0, -1);
         const zeroQuaternion = new THREE.Quaternion();
-        const downQuaternion = new THREE.Quaternion().setFromUnitVectors(
-          new THREE.Vector3(0, 0, -1),
-          new THREE.Vector3(0, -1, 0)
+        const forwardQuaternion = new THREE.Quaternion().setFromUnitVectors(
+          new THREE.Vector3(0, 1, 0),
+          new THREE.Vector3(0, 0, -1)
         );
         const assetsMaterial = new THREE.ShaderMaterial({
           uniforms: THREE.UniformsUtils.clone(ASSET_SHADER.uniforms),
@@ -405,13 +405,20 @@ class Wallet {
             const localQuaternion = new THREE.Quaternion();
             assetInstance.on('update', ({position, rotation, scale, localRotation}) => {
               mesh.position.fromArray(position);
-              mesh.quaternion.fromArray(rotation).premultiply(localQuaternion.fromArray(localRotation));
-              mesh.scale.fromArray(scale);
+
+              mesh.quaternion.fromArray(rotation);
               if (assetInstance.isGrabbed()) {
-                mesh.quaternion.multiply(downQuaternion);
+                mesh.quaternion.multiply(forwardQuaternion);
+              }
+              mesh.quaternion.multiply(localQuaternion.fromArray(localRotation));
+
+              mesh.scale.fromArray(scale);
+
+              if (assetInstance.isGrabbed()) {
                 mesh.position.add(new THREE.Vector3(0, 0, -0.02 / 2).applyQuaternion(mesh.quaternion));
                 // mesh.scale.multiplyScalar(0.5);
               }
+
               mesh.updateMatrixWorld();
             });
             assetInstance.on('show', () => {
