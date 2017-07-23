@@ -84,7 +84,6 @@ class Wallet {
       '/core/utils/js-utils',
       '/core/utils/network-utils',
       '/core/utils/creature-utils',
-      '/core/utils/sprite-utils',
       '/core/utils/vrid-utils',
     ]).then(([
       bootstrap,
@@ -105,7 +104,6 @@ class Wallet {
       jsUtils,
       networkUtils,
       creatureUtils,
-      spriteUtils,
       vridUtils,
     ]) => {
       if (live) {
@@ -124,6 +122,7 @@ class Wallet {
         const pixelSize = 0.015;
         const numPixels = 12;
         const assetSize = pixelSize * numPixels;
+
         const zeroVector = new THREE.Vector3();
         const oneVector = new THREE.Vector3(1, 1, 1);
         const forwardVector = new THREE.Vector3(0, 0, -1);
@@ -360,21 +359,40 @@ class Wallet {
             assetInstances.push(assetInstance);
 
             const mesh = (() => {
+              let live = true;
+
               const geometry = (() => {
                 const {attributes} = item;
                 const {asset: {value: asset}} = attributes;
                 const imageData = resource.getSpriteImageData(asset);
-                const geometry = spriteUtils.makeImageDataGeometry(imageData, pixelSize);
-                const positions = geometry.getAttribute('position').array;
-                const numPositions = positions.length / 3;
-                const dys = new Float32Array(numPositions * 2);
-                for (let i = 0; i < numPositions; i++) {
-                  dys[(i * 2) + 0] = positions[(i * 3) + 0] * scale[0];
-                  dys[(i * 2) + 1] = positions[(i * 3) + 2] * scale[2];
-                }
+
+                resource.requestSpriteGeometry(imageData, pixelSize)
+                  .then(geometrySpec => {
+                    if (live) {
+                      const {positions, normals, colors, dys} = geometrySpec;
+
+                      geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+                      geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
+                      geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
+                      const zeroDys = new Float32Array(dys.length);
+                      geometry.addAttribute('dy', new THREE.BufferAttribute(geometry.getAttribute('dy').array === geometry.dys ? dys : zeroDys, 2));
+
+                      geometry.dys = dys;
+                      geometry.zeroDys = zeroDys;
+                    }
+                  })
+                  .catch(err => {
+                    if (live) {
+                      console.warn(err);
+                    }
+                  });
+
+                const geometry = new THREE.BufferGeometry();
+                const dys = new Float32Array(0);
+                const zeroDys = new Float32Array(0);
                 geometry.addAttribute('dy', new THREE.BufferAttribute(dys, 2));
                 geometry.dys = dys;
-                geometry.zeroDys = new Float32Array(dys.length);
+                geometry.zeroDys = zeroDys;
                 geometry.boundingSphere = new THREE.Sphere(
                   zeroVector,
                   1
@@ -386,6 +404,8 @@ class Wallet {
 
               mesh.destroy = () => {
                 geometry.dispose();
+
+                live = false;
               };
 
               return mesh;
