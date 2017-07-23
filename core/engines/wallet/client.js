@@ -1321,7 +1321,7 @@ class Wallet {
           }
         };
         const _bindItemApi = itemApi => {
-          if (typeof itemApi.itemAddedCallback === 'function') {
+          if (typeof itemApi.asset === 'string' && typeof itemApi.itemAddedCallback === 'function') {
             const {asset} = itemApi;
             const boundAssetInstances = assetsMesh.getAssetInstances()
               .filter(assetInstance => assetInstance.asset === asset);
@@ -1333,7 +1333,7 @@ class Wallet {
           }
         };
         const _unbindItemApi = itemApi => {
-          if (typeof itemApi.itemRemovedCallback === 'function') {
+          if (typeof itemApi.asset === 'string' && typeof itemApi.itemRemovedCallback === 'function') {
             const {asset} = itemApi;
             const boundAssetInstances = assetsMesh.getAssetInstances()
               .filter(assetInstance => assetInstance.asset === asset);
@@ -1390,26 +1390,20 @@ class Wallet {
           }
         };
         const _bindEquipmentApi = equipmentApi => {
-          if (typeof equipmentApi.equipmentAddedCallback === 'function') {
+          if (typeof equipmentApi.asset === 'string' && typeof equipmentApi.equipmentAddedCallback === 'function') {
             const {asset} = equipmentApi;
-            const boundAssetInstances = assetsMesh.getAssetInstances()
-              .filter(assetInstance => assetInstance.asset === asset);
 
-            for (let i = 0; i < boundAssetInstances.length; i++) {
-              const assetInstance = boundAssetInstances[i];
-              equipmentApi.equipmentAddedCallback(assetInstance);
+            if (walletState.equipments.some(equipmentSpec => equipmentSpec.asset === asset)) {
+              equipmentApi.equipmentAddedCallback();
             }
           }
         };
         const _unbindEquipmentApi = equipmentApi => {
-          if (typeof equipmentApi.equipmentRemovedCallback === 'function') {
+          if (typeof equipmentApi.asset === 'string' && typeof equipmentApi.equipmentRemovedCallback === 'function') {
             const {asset} = equipmentApi;
-            const boundAssetInstances = assetsMesh.getAssetInstances()
-              .filter(assetInstance => assetInstance.asset === asset);
 
-            for (let i = 0; i < boundAssetInstances.length; i++) {
-              const assetInstance = boundAssetInstances[i];
-               equipmentApi.equipmentRemovedCallback(assetInstance);
+            if (walletState.equipments.some(equipmentSpec => equipmentSpec.asset === asset)) {
+              equipmentApi.equipmentRemovedCallback();
             }
           }
         };
