@@ -84,10 +84,10 @@ class Hand {
               });
             } else if (type === 'update') {
               const {args} = m;
-              const [id, position, rotation, scale, localRotation] = args;
+              const [id, position, rotation, scale, localPosition, localRotation, localScale] = args;
 
               const grabbable = grabbables[id];
-              grabbable.setFullStateLocal(position, rotation, scale, localRotation);
+              grabbable.setFullStateLocal(position, rotation, scale, localPosition, localRotation, localScale);
             } else if (type === 'destroy') {
               const {args} = m;
               const [id] = args;
@@ -127,7 +127,9 @@ class Hand {
               position = [0, 0, 0],
               rotation = [0, 0, 0, 1],
               scale = [1, 1, 1],
+              localPosition = [0, 0, 0],
               localRotation = [0, 0, 0, 1],
+              localScale = [1, 1, 1],
               isGrabbable = p => p.distanceTo(new THREE.Vector3().fromArray(this.position)) < GRAB_DISTANCE,
             } = {}
           ) {
@@ -137,7 +139,9 @@ class Hand {
             this.position = position;
             this.rotation = rotation;
             this.scale = scale;
+            this.localPosition = localPosition;
             this.localRotation = localRotation;
+            this.localScale = localScale;
             this.isGrabbable = isGrabbable;
 
             this.userId = null;
@@ -157,9 +161,9 @@ class Hand {
           }
 
           add() {
-            const {id, position, rotation, scale, localRotation} = this;
+            const {id, position, rotation, scale, localPosition, localRotation, localScale} = this;
 
-            _broadcast('addGrabbable', [id, position, rotation, scale, localRotation]);
+            _broadcast('addGrabbable', [id, position, rotation, scale, localPosition, localRotation, localScale]);
           }
 
           remove() {
@@ -226,9 +230,11 @@ class Hand {
             }
           }
 
-          setLocalRotation(localRotation) {
-            if (!_arrayEquals(this.localRotation, localRotation)) {
+          setLocalTransform(localPosition, localRotation, localScale) {
+            if (!_arrayEquals(this.localPosition, localPosition) || !_arrayEquals(this.localRotation, localRotation) || !_arrayEquals(this.localScale, localScale)) {
+              this.localPosition = localPosition;
               this.localRotation = localRotation;
+              this.localScale = localScale;
 
               this.emitUpdate();
               this.broadcastUpdate();
@@ -245,30 +251,34 @@ class Hand {
             }
           }
 
-          setFullStateLocal(position, rotation, scale, localRotation) {
-            if (!_arrayEquals(this.position, position) || !_arrayEquals(this.rotation, rotation) || !_arrayEquals(this.scale, scale) || !_arrayEquals(this.localRotation, localRotation)) {
+          setFullStateLocal(position, rotation, scale, localPosition, localRotation, localScale) {
+            if (!_arrayEquals(this.position, position) || !_arrayEquals(this.rotation, rotation) || !_arrayEquals(this.scale, scale) || !_arrayEquals(this.localRotation, localPosition) || !_arrayEquals(this.localRotation, localRotation) || !_arrayEquals(this.localScale, localScale)) {
               this.position = position;
               this.rotation = rotation;
               this.scale = scale;
+              this.localPosition = localPosition;
               this.localRotation = localRotation;
+              this.localScale = localScale;
 
               this.emitUpdate();
             }
           }
 
           emitUpdate() {
-            const {position, rotation, scale, localRotation} = this;
+            const {position, rotation, scale, localPosition, localRotation, localScale} = this;
 
             this.emit('update', {
               position,
               rotation,
               scale,
+              localPosition,
               localRotation,
+              localScale,
             });
           }
 
           broadcastUpdate() {
-            _broadcast('update', [this.id, this.position, this.rotation, this.scale, this.localRotation]);
+            _broadcast('update', [this.id, this.position, this.rotation, this.scale, this.localPosition, this.localRotation, this.localScale]);
           }
         }
 
