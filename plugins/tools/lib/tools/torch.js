@@ -86,21 +86,19 @@ const torch = ({archae}) => {
         };
         render.on('update', _update);
 
-        const _cleanup = () => {
-          scene.remove(dotMesh);
-          dotMesh.destroy();
-
-          input.removeListener('triggerdown', _triggerdown);
-          input.removeListener('triggerup', _triggerup);
-
-          grabbable.removeListener('grab', _grab);
-          grabbable.removeListener('release', _release);
-
-          render.removeListener('update', _update);
-        };
-
         grabbable[dataSymbol] = {
-          cleanup: _cleanup,
+          cleanup: () => {
+            scene.remove(dotMesh);
+            dotMesh.destroy();
+
+            input.removeListener('triggerdown', _triggerdown);
+            input.removeListener('triggerup', _triggerup);
+
+            grabbable.removeListener('grab', _grab);
+            grabbable.removeListener('release', _release);
+
+            render.removeListener('update', _update);
+          },
         };
       },
       itemRemovedCallback(grabbable) {
@@ -110,7 +108,6 @@ const torch = ({archae}) => {
         delete grabbable[dataSymbol];
       },
     };
-
     items.registerItem(this, torchApi);
 
     const torchRecipe = {
