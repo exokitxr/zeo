@@ -10,6 +10,7 @@ import {
   WORLD_MENU_HEIGHT,
 } from './lib/constants/menu';
 import menuRender from './lib/render/menu';
+import protocolUtils from './lib/utils/protocol-utils';
 import sfxr from 'sfxr';
 
 const hmdModelPath = 'archae/assets/models/hmd/hmd.json';
@@ -31,12 +32,35 @@ const SFX = [
   'digi_slide',
   'drop',
 ];
+const NUM_POSITIONS_CHUNK = 200 * 1024;
 
 class Assets {
   mount() {
     let live = true;
     this._cleanup = () => {
       live = false;
+    };
+
+    const worker = new Worker('archae/plugins/_core_engines_resource/build/worker.js');
+    const queue = [];
+    worker.requestSpriteGeometry = (imageData, size) => new Promise((accept, reject) => {
+      const {width, height, data: {buffer: imageDataBuffer}} = imageData;
+      const buffer = new ArrayBuffer(NUM_POSITIONS_CHUNK);
+      worker.postMessage({
+        width,
+        height,
+        size,
+        imageDataBuffer,
+        buffer,
+      }, [imageDataBuffer, buffer]);
+      queue.push(buffer => {
+        accept(protocolUtils.parseGeometry(buffer));
+      });
+    });
+    worker.onmessage = e => {
+      const {data: buffer} = e;
+      const cb = queue.shift();
+      cb(buffer);
     };
 
     const _requestJson = url => fetch(url)
@@ -180,6 +204,7 @@ class Assets {
             const imageData = spritesheet.canvas.getSpriteImageData(x, y);
             return imageData;
           };
+          const _requestSpriteGeometry = (imageData, size) => worker.requestSpriteGeometry(imageData, size);
           /* const _makePlayerLabelMesh = ({username}) => {
             const labelState = {
               username: username,
@@ -311,6 +336,7 @@ class Assets {
             },
             sfx: sfx,
             getSpriteImageData: _getSpriteImageData,
+            requestSpriteGeometry: _requestSpriteGeometry,
             // makePlayerLabelMesh: _makePlayerLabelMesh,
             makePlayerMenuMesh: _makePlayerMenuMesh,
           };
