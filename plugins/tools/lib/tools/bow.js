@@ -5,7 +5,7 @@ const bow = ({archae}) => {
   const {three, pose, input, render, elements, items, teleport} = zeo;
   const {THREE, scene} = three;
 
-  const localPositionVector = new THREE.Vector3(0, 0, 0.015/2 + 0.015*3);
+  const localPositionVector = new THREE.Vector3(0, 0, 0.015/2 + 0.015 * 3 * 3);
   const localRotationQuaterion = new THREE.Quaternion().setFromAxisAngle(
     new THREE.Vector3(0, 0, 1),
     Math.PI / 4
@@ -13,9 +13,14 @@ const bow = ({archae}) => {
     new THREE.Vector3(0, 0, -1),
     new THREE.Vector3(1, 0, 0)
   ));
+  const localScaleVector = new THREE.Vector3(3, 3, 3);
   const zeroVector = new THREE.Vector3();
   const oneVector = new THREE.Vector3(1, 1, 1);
   const zeroQuaternion = new THREE.Quaternion();
+
+  const stringMaterial = new THREE.MeshBasicMaterial({
+    color: 0x000000,
+  });
 
   let npcElement = null;
   const elementListener = elements.makeListener(NPC_PLUGIN);
@@ -30,31 +35,78 @@ const bow = ({archae}) => {
     const bowApi = {
       asset: 'ITEM.BOW',
       itemAddedCallback(grabbable) {
+        const stringMesh = (() => {
+          const geometry = new THREE.BoxBufferGeometry(0.015, 1, 0.015, 1, 2, 1)
+            .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(
+              new THREE.Vector3(0, 1, 0),
+              new THREE.Vector3(0, 0, -1)
+            )))
+            .applyMatrix(new THREE.Matrix4().makeScale(3, 3, 3 * 0.275));
+          const positions = geometry.getAttribute('position').array;
+          const numPositions = positions.length / 3;
+          const centerPositions = [];
+          for (let i = 0; i < numPositions; i++) {
+            if (positions[i * 3 + 2] === 0) {
+              centerPositions.push(i);
+            }
+          }
+          const material = stringMaterial;
+
+          const mesh = new THREE.Mesh(geometry, material);
+
+          mesh.pullPosition = zeroVector;
+          mesh.updatePull = (position = null) => {
+            /* const pullPosition = position !== null ? position.clone().applyMatrix4(new THREE.Matrix4().getInverse(mesh.matrixWorld)) : zeroVector;
+            for (let i = 1; i <= 2; i++) {
+              geometry.vertices[i] = pullPosition;
+            }
+            geometry.verticesNeedUpdate = true; */
+
+            mesh.pullPosition = pullPosition;
+          };
+
+          return mesh;
+        })();
+        scene.add(stringMesh);
+
         let grabbed = false;
+        let grabSide = null;
         const _grab = e => {
-          grabbable.setLocalTransform(localPositionVector.toArray(), localRotationQuaterion.toArray(), oneVector.toArray());
+          grabbable.setLocalTransform(localPositionVector.toArray(), localRotationQuaterion.toArray(), localScaleVector.toArray());
+          stringMesh.visible = true;
 
           grabbed = true;
+          grabSide = grabbable.getGrabberSide();
         };
         grabbable.on('grab', _grab);
         const _release = e => {
           grabbable.setLocalTransform(zeroVector.toArray(), zeroQuaternion.toArray(), oneVector.toArray());
+          stringMesh.visible = false;
 
           grabbed = false;
+          grabSide = null;
         };
         grabbable.on('release', _release);
 
         const ray = new THREE.Ray();
         const direction = new THREE.Vector3();
         const _update = () => {
-          if (grabbed && npcElement) {
-            // XXX
+          if (grabbed) {
+            const {gamepads} = pose.getStatus();
+            const gamepad = gamepads[grabSide];
+            const {worldPosition: controllerPosition, worldRotation: controllerRotation} = gamepad;
+            stringMesh.position.copy(controllerPosition)
+              .add(new THREE.Vector3(0, 0.015 * 4.6 * 3, 0).applyQuaternion(controllerRotation));
+            stringMesh.quaternion.copy(controllerRotation);
+            stringMesh.updateMatrixWorld();
           }
         };
         render.on('update', _update);
 
         grabbable[dataSymbol] = {
           cleanup: () => {
+            scene.remove(stringMesh);
+
             grabbable.removeListener('grab', _grab);
             grabbable.removeListener('release', _release);
 
@@ -84,6 +136,8 @@ const bow = ({archae}) => {
     items.registerRecipe(this, bowRecipe);
 
     return () => {
+      stringMaterial.dispose();
+
       elements.destroyListener(elementListener);
 
       items.unregisterItem(this, bowApi);
