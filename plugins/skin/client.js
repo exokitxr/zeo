@@ -2,14 +2,8 @@ const SIDES = ['left', 'right'];
 
 class Skin {
   mount() {
-    const {three, pose, render, player, utils: {skin: skinUtils}} = zeo;
-    const {THREE, scene, camera, renderer} = three;
+    const {player, items, utils: {skin: skinUtils}} = zeo;
     const {skin} = skinUtils;
-
-    let live = true;
-    this._cleanup = () => {
-      live = false;
-    };
 
     const _requestImage = url => new Promise((accept, reject) => {
       const img = new Image();
@@ -25,18 +19,37 @@ class Skin {
       img.src = url;
     });
 
-    return _requestImage('/archae/skin/img/darkvortexity.png')
-    // return _requestImage('/archae/skin/img/groot.png')
-    // return _requestImage('/archae/skin/img/natsuwithfire.png')
-      .then(skinImg => {
-        if (live) {
-          player.setSkin(skinImg);
+    let _cancel = null;
+    const skinApi = {
+      asset: 'SKIN.ANORAK',
+      equipmentAddedCallback() {
+        let live = true;
+        _requestImage('/archae/skin/img/darkvortexity.png')
+          // _requestImage('/archae/skin/img/groot.png')
+          // _requestImage('/archae/skin/img/natsuwithfire.png')
+          .then(skinImg => {
+            if (live) {
+              player.setSkin(skinImg);
 
-          this._cleanup = () => {
-            player.setSkin(null);
-          };
-        }
-      });
+              _cancel = () => {
+                player.setSkin(null);
+              };
+            }
+          });
+        _cancel = () => {
+          live = false;
+        };
+      },
+      equipmentRemovedCallback() {
+        _cancel();
+        _cancel = null;
+      },
+    };
+    items.registerEquipment(this, skinApi);
+
+    this._cleanup = () => {
+      items.unregisterEquipment(this, skinApi);
+    };
   }
 
   unmount() {
