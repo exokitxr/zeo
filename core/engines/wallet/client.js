@@ -1371,7 +1371,7 @@ class Wallet {
               const equipmentApi = equipmentEntry[i];
 
               if (typeof equipmentApi.equipmentAddedCallback === 'function') {
-                equipmentApi.equipmentAddedCallback(assetInstance);
+                equipmentApi.equipmentAddedCallback();
               }
             }
           }
@@ -1384,7 +1384,7 @@ class Wallet {
               const equipmentApi = equipmentEntry[i];
 
               if (typeof equipmentApi.equipmentRemovedCallback === 'function') {
-                equipmentApi.equipmentRemovedCallback(assetInstance);
+                equipmentApi.equipmentRemovedCallback();
               }
             }
           }
