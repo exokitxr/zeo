@@ -6,6 +6,15 @@ const sword = ({archae}) => {
   const {three, pose, input, render, elements, items, teleport} = zeo;
   const {THREE, scene} = three;
 
+  const localRotationQuaterion = new THREE.Quaternion().setFromAxisAngle(
+    new THREE.Vector3(0, 0, 1),
+    Math.PI / 4
+  ).premultiply(new THREE.Quaternion().setFromUnitVectors(
+    new THREE.Vector3(0, 0, -1),
+    new THREE.Vector3(1, 0, 0)
+  ));
+  const zeroQuaternion = new THREE.Quaternion();
+
   let npcElement = null;
   const elementListener = elements.makeListener(NPC_PLUGIN);
   elementListener.on('add', entityElement => {
@@ -21,10 +30,14 @@ const sword = ({archae}) => {
       itemAddedCallback(grabbable) {
         let grabbed = false;
         const _grab = e => {
+          grabbable.setLocalRotation(localRotationQuaterion.toArray());
+
           grabbed = true;
         };
         grabbable.on('grab', _grab);
         const _release = e => {
+          grabbable.setLocalRotation(zeroQuaternion.toArray());
+
           grabbed = false;
         };
         grabbable.on('release', _release);
