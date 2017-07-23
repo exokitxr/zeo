@@ -158,6 +158,7 @@ class Mobs {
                 })();
 
                 mesh.offset = new THREE.Vector3(0, 0, 0);
+                mesh.lastHitTime = -Infinity;
                 mesh.animation = null;
                 mesh.hit = null;
 
@@ -166,8 +167,8 @@ class Mobs {
                   const {hmd} = pose.getStatus();
                   const {worldPosition: hmdPosition} = hmd;
                   direction.copy(mesh.position)
-                    .add(mesh.size.y / 2)
-                    .sub(hmdPosition);
+                  direction.y += mesh.size.y / 2;
+                  direction.sub(hmdPosition);
                   direction.y = 0;
                   direction.normalize();
 
@@ -182,6 +183,8 @@ class Mobs {
                   };
                   const es = JSON.stringify(e);
                   connection.send(es);
+
+                  mesh.lastHitTime = Date.now();
                 };
 
                 const uniforms = (() => {
@@ -365,18 +368,25 @@ class Mobs {
               const hitCenter = new THREE.Vector3();
               const hitSphere = new THREE.Sphere();
               const hitIntersectionPoint = new THREE.Vector3();
-              entityElement.getHitNpc = ray => {
+              entityElement.getHitNpc = (ray, length) => {
+                const now = Date.now();
+
                 for (const id in meshes) {
                   const mesh = meshes[id];
-                  hitCenter.copy(mesh.position);
-                  hitCenter.y += mesh.size.y / 2;
-                  hitSphere.set(
-                    hitCenter,
-                    Math.max(mesh.size.x, mesh.size.z) / 2
-                  );
+                  const {lastHitTime} = mesh;
+                  const lastHitTimeDiff = now - lastHitTime;
 
-                  if (ray.intersectSphere(hitSphere, hitIntersectionPoint) && hitIntersectionPoint.distanceTo(ray.origin) < 1) {
-                    return mesh;
+                  if (lastHitTimeDiff > 500) {
+                    hitCenter.copy(mesh.position);
+                    hitCenter.y += mesh.size.y / 2;
+                    hitSphere.set(
+                      hitCenter,
+                      Math.max(mesh.size.x, mesh.size.z) / 2
+                    );
+
+                    if (ray.intersectSphere(hitSphere, hitIntersectionPoint) && hitIntersectionPoint.distanceTo(ray.origin) < length) {
+                      return mesh;
+                    }
                   }
                 }
                 return null;

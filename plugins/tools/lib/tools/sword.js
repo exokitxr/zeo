@@ -1,4 +1,5 @@
 const NPC_PLUGIN = 'plugins-npc';
+const SWORD_LENGTH = 0.5;
 const dataSymbol = Symbol();
 
 const sword = ({archae}) => {
@@ -38,7 +39,7 @@ const sword = ({archae}) => {
             const {worldPosition: controllerPosition, worldRotation: controllerRotation} = gamepad;
             direction.set(0, 0, -1).applyQuaternion(controllerRotation);
             ray.set(controllerPosition, direction);
-            const hitNpc = npcElement.getHitNpc(ray);
+            const hitNpc = npcElement.getHitNpc(ray, SWORD_LENGTH);
 
             if (hitNpc) {
               hitNpc.attack();
