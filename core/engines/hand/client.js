@@ -267,7 +267,7 @@ class Hand {
           emitUpdate() {
             const {position, rotation, scale, localPosition, localRotation, localScale} = this;
 
-            this.emit('update', {
+            this.emit('update', { // XXX rewrite this to use binary arrayBuffer data from the socket, THREE.Vector3 latches, and no 'update' emits
               position,
               rotation,
               scale,
