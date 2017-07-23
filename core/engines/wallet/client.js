@@ -124,6 +124,7 @@ class Wallet {
         const zeroVector = new THREE.Vector3();
         const oneVector = new THREE.Vector3(1, 1, 1);
         const forwardVector = new THREE.Vector3(0, 0, -1);
+        const assetOffsetVector = new THREE.Vector3(0, 0, -pixelSize/2);
         const zeroQuaternion = new THREE.Quaternion();
         const forwardQuaternion = new THREE.Quaternion().setFromUnitVectors(
           new THREE.Vector3(0, 1, 0),
@@ -423,7 +424,9 @@ class Wallet {
               if (assetInstance.isGrabbed()) {
                 mesh.position
                   .add(
-                    new THREE.Vector3(0, 0, -pixelSize/2).add(localVector.fromArray(localPosition)).applyQuaternion(localQuaternion)
+                    localVector.fromArray(localPosition)
+                    .add(assetOffsetVector)
+                    .applyQuaternion(localQuaternion)
                   );
                 // mesh.scale.multiplyScalar(0.5);
               }
