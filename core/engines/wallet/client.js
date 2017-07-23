@@ -121,6 +121,9 @@ class Wallet {
         const outputSymbol = craft.getOutputSymbol();
         const localUserId = multiplayer.getId();
 
+        const pixelSize = 0.015;
+        const numPixels = 12;
+        const assetSize = pixelSize * numPixels;
         const zeroVector = new THREE.Vector3();
         const oneVector = new THREE.Vector3(1, 1, 1);
         const forwardVector = new THREE.Vector3(0, 0, -1);
@@ -144,9 +147,6 @@ class Wallet {
           fontWeight: biolumi.getFontWeight(),
           fontStyle: biolumi.getFontStyle(),
         };
-        const pixelSize = 0.015;
-        const numPixels = 12;
-        const assetSize = pixelSize * numPixels;
 
         const connection = new AutoWs(_relativeWsUrl('archae/walletWs'));
 
