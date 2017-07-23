@@ -828,6 +828,14 @@ class Zeo {
                           wallet.unregisterItem(pluginInstance, itemApi);
                         }
 
+                        registerEquipment(pluginInstance, equipmentApi) {
+                          wallet.registerEquipment(pluginInstance, equipmentApi);
+                        }
+
+                        unregisterEquipment(pluginInstance, equipmentApi) {
+                          wallet.unregisterEquipment(pluginInstance, equipmentApi);
+                        }
+
                         registerRecipe(pluginInstance, recipe) {
                           craft.registerRecipe(pluginInstance, recipe);
                         }

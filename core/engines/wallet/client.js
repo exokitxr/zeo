@@ -443,7 +443,17 @@ class Wallet {
           // address: null,
           asset: null,
           assets: [],
-          equipments: [],
+          equipments: (() => {
+            const numEquipments = 4;
+            const result = _makeArray(numEquipments);
+            for (let i = 0; i < numEquipments; i++) {
+              result[i] = {
+                id: `equipment:${i}`,
+                asset: null,
+              };
+            }
+            return result;
+          })(),
           numTags: 0,
           page: 0,
         };
@@ -562,18 +572,22 @@ class Wallet {
             assets,
             equipments,
           ]) => {
+            const {equipments: oldEquipments} = walletState;
+
             walletState.page = 0;
             walletState.asset = null;
-            assets = assets.map(({asset, quantity}) => ({
+            walletState.assets = assets.map(({asset, quantity}) => ({
               id: asset,
               asset: asset,
               quantity: quantity,
             }));
-            walletState.assets = assets;
-            equipments = equipments
-              .filter(equipmentSpec => equipmentSpec.asset === null || assets.some(assetSpec => assetSpec.asset === equipmentSpec.asset));
-            walletState.equipments = equipments;
+            const newEquipments = equipments.filter(equipmentSpec =>
+              equipmentSpec.asset === null || walletState.assets.some(assetSpec => assetSpec.asset === equipmentSpec.asset)
+            );
+            walletState.equipments = newEquipments;
             walletState.numTags = assets.length;
+
+            _rebindEquipments(oldEquipments, newEquipments);
 
             _updatePages();
           })
@@ -795,29 +809,37 @@ class Wallet {
             } else if (match = onclick.match(/^asset:equip:(.+)$/)) {
               const asset = match[1];
 
-              const {equipments} = walletState;
+              const {equipments: oldEquipments} = walletState;
               const index = (() => {
-                for (let i = 0; i < equipments.length; i++) {
-                  const equipment = equipments[i];
-                  if (equipment.asset === null) {
+                for (let i = 0; i < oldEquipments.length; i++) {
+                  const oldEquipment = oldEquipments[i];
+                  if (oldEquipment.asset === null) {
                     return i;
                   }
                 }
-                return equipments.length - 1;
+                return oldEquipments.length - 1;
               })();
-              equipments[index].asset = asset;
-              _saveEquipments();
+              const newEquipments = _clone(oldEquipments);
+              newEquipments[index].asset = asset;
 
+              _rebindEquipments(oldEquipments, newEquipments);
+
+              walletState.equipments = newEquipments;
+              _saveEquipments();
               _updatePages();
 
               return true;
             } else if (match = onclick.match(/^asset:unequip:equipment:([0-9]+)$/)) {
               const index = parseInt(match[1], 10);
 
-              const {equipments} = walletState;
-              equipments[index].asset = null;
-              _saveEquipments();
+              const {equipments: oldEquipments} = walletState;
+              const newEquipments = _clone(oldEquipments);
+              newEquipments[index].asset = null;
 
+              _rebindEquipments(oldEquipments, newEquipments);
+
+              walletState.equipments = newEquipments;
+              _saveEquipments();
               _updatePages();
 
               return true;
@@ -1087,7 +1109,6 @@ class Wallet {
 
           const assetInstance = assetsMesh.getAssetInstance(id);
           assetInstance.grab(side);
-          _bindAssetInstancePhysics(assetInstance);
 
           const address = bootstrap.getAddress();
           const quantity = 1;
@@ -1266,15 +1287,16 @@ class Wallet {
         rend.on('update', _update);
 
         const itemApis = {};
-        const _bindItem = assetInstance => {
+        const equipmentApis = {};
+        const _bindAssetInstance = assetInstance => {
           const {item} = assetInstance;
           const {attributes} = item;
           const {asset: {value: asset}} = attributes;
-          const entry = itemApis[asset];
+          const itemEntry = itemApis[asset];
 
-          if (entry) {
-            for (let i = 0; i < entry.length; i++) {
-              const itemApi = entry[i];
+          if (itemEntry) {
+            for (let i = 0; i < itemEntry.length; i++) {
+              const itemApi = itemEntry[i];
 
               if (typeof itemApi.itemAddedCallback === 'function') {
                 itemApi.itemAddedCallback(assetInstance);
@@ -1282,15 +1304,15 @@ class Wallet {
             }
           }
         };
-        const _unbindItem = assetInstance => {
+        const _unbindAssetInstance = assetInstance => {
           const {item} = assetInstance;
           const {attributes} = item;
           const {asset: {value: asset}} = attributes;
-          const entry = itemApis[asset];
+          const itemEntry = itemApis[asset];
 
-          if (entry) {
-            for (let i = 0; i < entry.length; i++) {
-              const itemApi = entry[i];
+          if (itemEntry) {
+            for (let i = 0; i < itemEntry.length; i++) {
+              const itemApi = itemEntry[i];
 
               if (typeof itemApi.itemRemovedCallback === 'function') {
                 itemApi.itemRemovedCallback(assetInstance);
@@ -1319,6 +1341,75 @@ class Wallet {
             for (let i = 0; i < boundAssetInstances.length; i++) {
               const assetInstance = boundAssetInstances[i];
               itemApi.itemRemovedCallback(assetInstance);
+            }
+          }
+        };
+
+        const _rebindEquipments = (oldEquipments, newEquipments) => {
+          const removedEquipments = oldEquipments.filter(oldEquipment =>
+            oldEquipment.asset !== null && !newEquipments.some(newEquipment => newEquipment.asset === oldEquipment.asset)
+          );
+          for (let i = 0; i < removedEquipments.length; i++) {
+            const removedEquipment = removedEquipments[i];
+            const {asset} = removedEquipment;
+            _unbindEquipment(asset);
+          }
+          const addedEquipments = newEquipments.filter(newEquipment => 
+            newEquipment.asset !== null && !oldEquipments.some(oldEquipment => oldEquipment.asset === newEquipment.asset)
+          );
+          for (let i = 0; i < addedEquipments.length; i++) {
+            const addedEquipment = addedEquipments[i];
+            const {asset} = addedEquipment;
+            _bindEquipment(asset);
+          }
+        };
+        const _bindEquipment = asset => {
+          const equipmentEntry = equipmentApis[asset];
+
+          if (equipmentEntry) {
+            for (let i = 0; i < equipmentEntry.length; i++) {
+              const equipmentApi = equipmentEntry[i];
+
+              if (typeof equipmentApi.equipmentAddedCallback === 'function') {
+                equipmentApi.equipmentAddedCallback(assetInstance);
+              }
+            }
+          }
+        };
+        const _unbindEquipment = asset => {
+          const equipmentEntry = equipmentApis[asset];
+
+          if (equipmentEntry) {
+            for (let i = 0; i < equipmentEntry.length; i++) {
+              const equipmentApi = equipmentEntry[i];
+
+              if (typeof equipmentApi.equipmentRemovedCallback === 'function') {
+                equipmentApi.equipmentRemovedCallback(assetInstance);
+              }
+            }
+          }
+        };
+        const _bindEquipmentApi = equipmentApi => {
+          if (typeof equipmentApi.equipmentAddedCallback === 'function') {
+            const {asset} = equipmentApi;
+            const boundAssetInstances = assetsMesh.getAssetInstances()
+              .filter(assetInstance => assetInstance.asset === asset);
+
+            for (let i = 0; i < boundAssetInstances.length; i++) {
+              const assetInstance = boundAssetInstances[i];
+              equipmentApi.equipmentAddedCallback(assetInstance);
+            }
+          }
+        };
+        const _unbindEquipmentApi = equipmentApi => {
+          if (typeof equipmentApi.equipmentRemovedCallback === 'function') {
+            const {asset} = equipmentApi;
+            const boundAssetInstances = assetsMesh.getAssetInstances()
+              .filter(assetInstance => assetInstance.asset === asset);
+
+            for (let i = 0; i < boundAssetInstances.length; i++) {
+              const assetInstance = boundAssetInstances[i];
+               equipmentApi.equipmentRemovedCallback(assetInstance);
             }
           }
         };
@@ -1387,6 +1478,31 @@ class Wallet {
             _unbindItemApi(itemApi);
           }
 
+          registerEquipment(pluginInstance, equipmentApi) {
+            const {asset} = equipmentApi;
+
+            let entry = equipmentApis[asset];
+            if (!entry) {
+              entry = [];
+              equipmentApis[asset] = entry;
+            }
+            entry.push(equipmentApi);
+
+            _bindEquipmentApi(equipmentApi);
+          }
+
+          unregisterEquipment(pluginInstance, equipmentApi) {
+            const {asset} = equipmentApi;
+
+            const entry = equipmentApis[asset];
+            entry.splice(entry.indexOf(equipmentApi), 1);
+            if (entry.length === 0) {
+              delete equipmentApis[asset];
+            }
+
+            _unbindEquipmentApi(equipmentApi);
+          }
+
           getRecipeOutput(input) {
             return _getRecipeOutput(input);
           }
@@ -1411,15 +1527,15 @@ class Wallet {
               }
             );
 
+            _bindAssetInstance(assetInstance);
             _bindAssetInstancePhysics(assetInstance);
-            _bindItem(assetInstance);
           }
 
           removeAsset(item) {
             const {id} = item;
             const assetInstance = assetsMesh.getAssetInstance(id);
 
-            _unbindItem(assetInstance);
+            _unbindAssetInstance(assetInstance);
 
             assetsMesh.removeAssetInstance(id);
           }
@@ -1457,6 +1573,7 @@ const _relativeWsUrl = s => {
   const l = window.location;
   return ((l.protocol === 'https:') ? 'wss://' : 'ws://') + l.host + l.pathname + (!/\/$/.test(l.pathname) ? '/' : '') + s;
 };
+const _clone = o => JSON.parse(JSON.stringify(o));
 const _debounce = fn => {
   let running = false;
   let queued = false;
