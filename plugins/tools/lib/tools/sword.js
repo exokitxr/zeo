@@ -6,8 +6,7 @@ const sword = ({archae}) => {
   const {three, pose, input, render, elements, items, teleport} = zeo;
   const {THREE, scene} = three;
 
-  const zeroVector = new THREE.Vector3();
-  const oneVector = new THREE.Vector3(1, 1, 1);
+  const localPositionVector = new THREE.Vector3(0, 0.015 * 6 * 3, 0.015/2);
   const localRotationQuaterion = new THREE.Quaternion().setFromAxisAngle(
     new THREE.Vector3(0, 0, 1),
     Math.PI / 4
@@ -15,6 +14,9 @@ const sword = ({archae}) => {
     new THREE.Vector3(0, 0, -1),
     new THREE.Vector3(1, 0, 0)
   ));
+  const localScaleVector = new THREE.Vector3(3, 3, 3);
+  const zeroVector = new THREE.Vector3();
+  const oneVector = new THREE.Vector3(1, 1, 1);
   const zeroQuaternion = new THREE.Quaternion();
 
   let npcElement = null;
@@ -32,7 +34,7 @@ const sword = ({archae}) => {
       itemAddedCallback(grabbable) {
         let grabbed = false;
         const _grab = e => {
-          grabbable.setLocalTransform(zeroVector.toArray(), localRotationQuaterion.toArray(), oneVector.toArray());
+          grabbable.setLocalTransform(localPositionVector.toArray(), localRotationQuaterion.toArray(), localScaleVector.toArray());
 
           grabbed = true;
         };
