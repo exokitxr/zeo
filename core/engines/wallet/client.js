@@ -125,7 +125,7 @@ class Wallet {
         const oneVector = new THREE.Vector3(1, 1, 1);
         const forwardVector = new THREE.Vector3(0, 0, -1);
         const zeroQuaternion = new THREE.Quaternion();
-        const forwardQuaternion = new THREE.Quaternion().setFromUnitVectors(
+        const downQuaternion = new THREE.Quaternion().setFromUnitVectors(
           new THREE.Vector3(0, 0, -1),
           new THREE.Vector3(0, -1, 0)
         );
@@ -233,10 +233,11 @@ class Wallet {
                 position,
                 rotation,
                 scale,
+                localRotation,
                 item,
               }
             ) {
-              super(id, {position, rotation, scale});
+              super(id, {position, rotation, scale, localRotation});
 
               this.item = item;
             }
@@ -350,8 +351,8 @@ class Wallet {
           const assetInstances = [];
           mesh.getAssetInstances = id => assetInstances;
           mesh.getAssetInstance = id => assetInstances.find(assetInstance => assetInstance.id === id);
-          mesh.addAssetInstance = (id, {position, rotation, scale, item}) => {
-            const assetInstance = new AssetInstance(id, {position, rotation, scale, item});
+          mesh.addAssetInstance = (id, {position, rotation, scale, localRotation, item}) => {
+            const assetInstance = new AssetInstance(id, {position, rotation, scale, localRotation, item});
             hand.addGrabbable(assetInstance);
             assetInstances.push(assetInstance);
 
@@ -401,12 +402,13 @@ class Wallet {
               dyAttribute.array = geometry.dys;
               dyAttribute.needsUpdate = true;
             });
-            assetInstance.on('update', ({position, rotation, scale}) => {
+            const localQuaternion = new THREE.Quaternion();
+            assetInstance.on('update', ({position, rotation, scale, localRotation}) => {
               mesh.position.fromArray(position);
-              mesh.quaternion.fromArray(rotation);
+              mesh.quaternion.fromArray(rotation).premultiply(localQuaternion.fromArray(localRotation));
               mesh.scale.fromArray(scale);
               if (assetInstance.isGrabbed()) {
-                mesh.quaternion.multiply(forwardQuaternion);
+                mesh.quaternion.multiply(downQuaternion);
                 mesh.position.add(new THREE.Vector3(0, 0, -0.02 / 2).applyQuaternion(mesh.quaternion));
                 // mesh.scale.multiplyScalar(0.5);
               }
@@ -1517,6 +1519,7 @@ class Wallet {
                 position: position.toArray(),
                 rotation: rotation.toArray(),
                 scale: scale.toArray(),
+                localRotation: zeroQuaternion.toArray(),
                 item,
               }
             );

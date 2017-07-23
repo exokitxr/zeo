@@ -84,18 +84,10 @@ class Hand {
               });
             } else if (type === 'update') {
               const {args} = m;
-              const [id, position, rotation, scale] = args;
+              const [id, position, rotation, scale, localRotation] = args;
 
               const grabbable = grabbables[id];
-              grabbable.position = position;
-              grabbable.rotation = rotation;
-              grabbable.scale = scale;
-
-              grabbable.emit('update', {
-                position,
-                rotation,
-                scale,
-              });
+              grabbable.setFullStateLocal(position, rotation, scale, localRotation);
             } else if (type === 'destroy') {
               const {args} = m;
               const [id] = args;
@@ -135,6 +127,7 @@ class Hand {
               position = [0, 0, 0],
               rotation = [0, 0, 0, 1],
               scale = [1, 1, 1],
+              localRotation = [0, 0, 0, 1],
               isGrabbable = p => p.distanceTo(new THREE.Vector3().fromArray(this.position)) < GRAB_DISTANCE,
             } = {}
           ) {
@@ -144,6 +137,7 @@ class Hand {
             this.position = position;
             this.rotation = rotation;
             this.scale = scale;
+            this.localRotation = localRotation;
             this.isGrabbable = isGrabbable;
 
             this.userId = null;
@@ -163,9 +157,9 @@ class Hand {
           }
 
           add() {
-            const {id, position, rotation, scale} = this;
+            const {id, position, rotation, scale, localRotation} = this;
 
-            _broadcast('addGrabbable', [id, position, rotation, scale]);
+            _broadcast('addGrabbable', [id, position, rotation, scale, localRotation]);
           }
 
           remove() {
@@ -222,12 +216,22 @@ class Hand {
           }
 
           setState(position, rotation, scale) {
-            if (this.setStateLocal(position, rotation, scale)) {
-              _broadcast('setState', [this.id, position, rotation, scale]);
+            if (!_arrayEquals(this.position, position) || !_arrayEquals(this.rotation, rotation) || !_arrayEquals(this.scale, scale)) {
+              this.position = position;
+              this.rotation = rotation;
+              this.scale = scale;
 
-              return true;
-            } else {
-              return false;
+              this.emitUpdate();
+              this.broadcastUpdate();
+            }
+          }
+
+          setLocalRotation(localRotation) {
+            if (!_arrayEquals(this.localRotation, localRotation)) {
+              this.localRotation = localRotation;
+
+              this.emitUpdate();
+              this.broadcastUpdate();
             }
           }
 
@@ -237,32 +241,34 @@ class Hand {
               this.rotation = rotation;
               this.scale = scale;
 
-              this.emit('update', {
-                position,
-                rotation,
-                scale,
-              });
-
-              return true;
-            } else {
-              return false;
+              this.emitUpdate();
             }
           }
 
-          update(position, rotation, scale) {
-            if (!_arrayEquals(this.position, position) || !_arrayEquals(this.rotation, rotation) || !_arrayEquals(this.scale, scale)) {
+          setFullStateLocal(position, rotation, scale, localRotation) {
+            if (!_arrayEquals(this.position, position) || !_arrayEquals(this.rotation, rotation) || !_arrayEquals(this.scale, scale) || !_arrayEquals(this.localRotation, localRotation)) {
               this.position = position;
               this.rotation = rotation;
               this.scale = scale;
+              this.localRotation = localRotation;
 
-              this.emit('update', {
-                position,
-                rotation,
-                scale,
-              });
-
-              _broadcast('update', [this.id, position, rotation, scale]);
+              this.emitUpdate();
             }
+          }
+
+          emitUpdate() {
+            const {position, rotation, scale, localRotation} = this;
+
+            this.emit('update', {
+              position,
+              rotation,
+              scale,
+              localRotation,
+            });
+          }
+
+          broadcastUpdate() {
+            _broadcast('update', [this.id, this.position, this.rotation, this.scale, this.localRotation]);
           }
         }
 
@@ -327,7 +333,7 @@ class Hand {
 
             if (grabbedGrabbable) {
               const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale} = gamepad;
-              grabbedGrabbable.update(controllerPosition.toArray(), controllerRotation.toArray(), controllerScale.toArray());
+              grabbedGrabbable.setState(controllerPosition.toArray(), controllerRotation.toArray(), controllerScale.toArray());
             }
           });
         };
