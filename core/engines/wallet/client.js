@@ -430,26 +430,27 @@ class Wallet {
             });
             const localVector = new THREE.Vector3();
             const localQuaternion = new THREE.Quaternion();
-            const localQuaternion2 = new THREE.Quaternion();
-            assetInstance.on('update', ({position, rotation, scale, localPosition, localRotation, localScale}) => {
-              mesh.position.fromArray(position);
+            assetInstance.on('update', () => {
+              const {position, rotation, scale, localPosition, localRotation, localScale} = assetInstance;
 
-              localQuaternion.fromArray(rotation);
+              mesh.position.copy(position);
+
+              localQuaternion.copy(rotation);
               if (assetInstance.isGrabbed()) {
                 localQuaternion.multiply(forwardQuaternion);
               }
               mesh.quaternion.copy(localQuaternion)
-                .multiply(localQuaternion2.fromArray(localRotation));
+                .multiply(localRotation);
 
-              mesh.scale.fromArray(scale)
-                .multiply(localVector.fromArray(localScale));
+              mesh.scale.copy(scale)
+                .multiply(localScale);
 
               if (assetInstance.isGrabbed()) {
                 mesh.position
                   .add(
-                    localVector.fromArray(localPosition)
-                    .add(assetOffsetVector)
-                    .applyQuaternion(localQuaternion)
+                    localVector.copy(localPosition)
+                      .add(assetOffsetVector)
+                      .applyQuaternion(localQuaternion)
                   );
                 // mesh.scale.multiplyScalar(0.5);
               }
@@ -929,9 +930,9 @@ class Wallet {
           let body = null;
           const _addBody = ({velocity = [0, 0, 0]} = {}) => {
             const sizeArray = [assetSize, assetSize, assetSize];
-            body = stck.makeDynamicBoxBody(assetInstance.position, sizeArray, velocity);
+            body = stck.makeDynamicBoxBody(assetInstance.position.toArray(), sizeArray, velocity);
             body.on('update', ({position, rotation, scale}) => {
-              assetInstance.setStateLocal(position, rotation, scale);
+              assetInstance.setStateLocal(new THREE.Vector3().fromArray(position), new THREE.Quaternion().fromArray(rotation), new THREE.Vector3().fromArray(scale)); // XXX
             });
           };
           const _removeBody = () => {
@@ -1005,7 +1006,7 @@ class Wallet {
 
             worldGrabAsset.release(); // needs to happen second so physics are not enabled in the release handler
             const indexPosition = craft.getGridIndexPosition(index);
-            worldGrabAsset.setStateLocal(indexPosition.toArray(), zeroQuaternion.toArray(), oneVector.toArray());
+            worldGrabAsset.setStateLocal(indexPosition, zeroQuaternion, oneVector);
           }
         };
         craft.on('trigger', _craftTrigger);
@@ -1040,7 +1041,7 @@ class Wallet {
 
             worldGrabAsset.release(); // needs to happen second so physics are not enabled in the release handler
             const indexPosition = craft.getGridIndexPosition(index);
-            worldGrabAsset.setStateLocal(indexPosition.toArray(), zeroQuaternion.toArray(), oneVector.toArray());
+            worldGrabAsset.setStateLocal(indexPosition, zeroQuaternion, oneVector);
 
             e.stopImmediatePropagation();
           }
@@ -1069,7 +1070,7 @@ class Wallet {
 
             if (assetInstance) {
               const indexPosition = craft.getGridIndexPosition(i);
-              assetInstance.setState(indexPosition.toArray(), zeroQuaternion.toArray(), oneVector.toArray());
+              assetInstance.setState(indexPosition, zeroQuaternion, oneVector);
             }
           }
         };
@@ -1256,7 +1257,7 @@ class Wallet {
         const _checkGripup = (side, assetInstance) => {
           const {position} = assetInstance;
 
-          if (_isInBody(new THREE.Vector3().fromArray(position))) {
+          if (_isInBody(position)) {
             /* const localAddress = bootstrap.getAddress();
 
             if (owner === localAddress) {
@@ -1560,12 +1561,12 @@ class Wallet {
             const assetInstance = assetsMesh.addAssetInstance(
               id,
               n,
-              position.toArray(),
-              rotation.toArray(),
-              scale.toArray(),
-              zeroVector.toArray(),
-              zeroQuaternion.toArray(),
-              oneVector.toArray(),
+              position,
+              rotation,
+              scale,
+              zeroVector,
+              zeroQuaternion,
+              oneVector,
               item,
             );
 

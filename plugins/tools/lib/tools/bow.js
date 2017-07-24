@@ -72,7 +72,7 @@ const bow = ({archae}) => {
         let grabbed = false;
         let grabSide = null;
         const _grab = e => {
-          grabbable.setLocalTransform(localPositionVector.toArray(), localRotationQuaterion.toArray(), localScaleVector.toArray());
+          grabbable.setLocalTransform(localPositionVector, localRotationQuaterion, localScaleVector);
           stringMesh.visible = true;
 
           grabbed = true;
@@ -80,7 +80,7 @@ const bow = ({archae}) => {
         };
         grabbable.on('grab', _grab);
         const _release = e => {
-          grabbable.setLocalTransform(zeroVector.toArray(), zeroQuaternion.toArray(), oneVector.toArray());
+          grabbable.setLocalTransform(zeroVector, zeroQuaternion, oneVector);
           stringMesh.visible = false;
 
           grabbed = false;

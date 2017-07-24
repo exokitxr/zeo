@@ -98,10 +98,9 @@ class Hand {
                 console.warn('unknown hand message type:', type);
               }
             } else {
-              const {n, position, rotation, scale, localPosition, localRotation, localScale} = protocolUtils.parseUpdate(data);
-
+              const n = protocolUtils.parseUpdateN(data);
               const grabbable = grabbables[n];
-              grabbable.setFullStateLocal(position, rotation, scale, localPosition, localRotation, localScale);
+              protocolUtils.parseUpdate(grabbable.position, grabbable.rotation, grabbable.scale, grabbable.localPosition, grabbable.localRotation, grabbable.localScale, grabbable.data);
             }
           });
           return connection;
@@ -130,13 +129,13 @@ class Hand {
         class Grabbable extends EventEmitter {
           constructor(
             n,
-            position = [0, 0, 0],
-            rotation = [0, 0, 0, 1],
-            scale = [1, 1, 1],
-            localPosition = [0, 0, 0],
-            localRotation = [0, 0, 0, 1],
-            localScale = [1, 1, 1],
-            isGrabbable = p => p.distanceTo(new THREE.Vector3().fromArray(this.position)) < GRAB_DISTANCE,
+            position = new THREE.Vector3(),
+            rotation = new THREE.Quaternion(),
+            scale = new THREE.Vector3(1, 1, 1),
+            localPosition = new THREE.Vector3(),
+            localRotation = new THREE.Quaternion(),
+            localScale = new THREE.Vector3(1, 1, 1),
+            isGrabbable = p => p.distanceTo(this.position) < GRAB_DISTANCE,
           ) {
             super();
 
@@ -224,10 +223,10 @@ class Hand {
           }
 
           setState(position, rotation, scale) {
-            if (!_arrayEquals(this.position, position) || !_arrayEquals(this.rotation, rotation) || !_arrayEquals(this.scale, scale)) {
-              this.position = position;
-              this.rotation = rotation;
-              this.scale = scale;
+            if (!this.position.equals(position) || !this.rotation.equals(rotation) || !this.scale.equals(scale)) {
+              this.position.copy(position);
+              this.rotation.copy(rotation);
+              this.scale.copy(scale);
 
               this.emitUpdate();
               this.broadcastUpdate();
@@ -235,10 +234,10 @@ class Hand {
           }
 
           setLocalTransform(localPosition, localRotation, localScale) {
-            if (!_arrayEquals(this.localPosition, localPosition) || !_arrayEquals(this.localRotation, localRotation) || !_arrayEquals(this.localScale, localScale)) {
-              this.localPosition = localPosition;
-              this.localRotation = localRotation;
-              this.localScale = localScale;
+            if (!this.localPosition.equals(localPosition) || !this.localRotation.equals(localRotation) || !this.localScale.equals(localScale)) {
+              this.localPosition.copy(localPosition);
+              this.localRotation.copy(localRotation);
+              this.localScale.copy(localScale);
 
               this.emitUpdate();
               this.broadcastUpdate();
@@ -246,39 +245,30 @@ class Hand {
           }
 
           setStateLocal(position, rotation, scale) {
-            if (!_arrayEquals(this.position, position) || !_arrayEquals(this.rotation, rotation) || !_arrayEquals(this.scale, scale)) {
-              this.position = position;
-              this.rotation = rotation;
-              this.scale = scale;
+            if (!this.position.equals(position) || !this.rotation.equals(rotation) || !this.scale.equals(scale)) {
+              this.position.copy(position);
+              this.rotation.copy(rotation);
+              this.scale.copy(scale);
 
               this.emitUpdate();
             }
           }
 
           setFullStateLocal(position, rotation, scale, localPosition, localRotation, localScale) {
-            if (!_arrayEquals(this.position, position) || !_arrayEquals(this.rotation, rotation) || !_arrayEquals(this.scale, scale) || !_arrayEquals(this.localRotation, localPosition) || !_arrayEquals(this.localRotation, localRotation) || !_arrayEquals(this.localScale, localScale)) {
-              this.position = position;
-              this.rotation = rotation;
-              this.scale = scale;
-              this.localPosition = localPosition;
-              this.localRotation = localRotation;
-              this.localScale = localScale;
+            if (!this.position.equals(position) || !this.rotation.equals(rotation) || !this.scale.equals(scale) || !this.localPosition.equals(localPosition) || !this.localRotation.equals(localRotation) || !this.localScale.equals(localScale)) {
+              this.position.copy(position);
+              this.rotation.copy(rotation);
+              this.scale.copy(scale);
+              this.localPosition.copy(localPosition);
+              this.localRotation.copy(localRotation);
+              this.localScale.copy(localScale);
 
               this.emitUpdate();
             }
           }
 
           emitUpdate() {
-            const {position, rotation, scale, localPosition, localRotation, localScale} = this;
-
-            this.emit('update', { // XXX rewrite this to use binary arrayBuffer data from the socket, THREE.Vector3 latches, and no 'update' emits
-              position,
-              rotation,
-              scale,
-              localPosition,
-              localRotation,
-              localScale,
-            });
+            this.emit('update');
           }
 
           broadcastUpdate() {
@@ -340,16 +330,17 @@ class Hand {
         const _update = () => {
           const {gamepads} = webvr.getStatus();
 
-          SIDES.forEach(side => {
+          for (let i = 0; i < SIDES.length; i++) {
+            const side = SIDES[i];
             const gamepad = gamepads[side];
             const grabState = grabStates[side];
             const {grabbedGrabbable} = grabState;
 
             if (grabbedGrabbable) {
               const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale} = gamepad;
-              grabbedGrabbable.setState(controllerPosition.toArray(), controllerRotation.toArray(), controllerScale.toArray());
+              grabbedGrabbable.setState(controllerPosition, controllerRotation, controllerScale);
             }
-          });
+          }
         };
         rend.on('update', _update);
 
