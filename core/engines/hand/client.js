@@ -1,5 +1,6 @@
-const GRAB_DISTANCE = 0.2;
+const protocolUtils = require('./lib/utils/protocol-utils');
 
+const GRAB_DISTANCE = 0.2;
 const SIDES = ['left', 'right'];
 
 class Hand {
@@ -54,62 +55,68 @@ class Hand {
         const connection = (() => {
           const connection = new AutoWs(_relativeWsUrl('archae/handWs?id=' + localUserId));
           connection.on('message', msg => {
-            const m = JSON.parse(msg.data);
-            const {type} = m;
+            const {data} = msg;
 
-            if (type === 'grab') {
-              const {args} = m;
-              const [id, userId, side] = args;
+            if (typeof data === 'string') {
+              const m = JSON.parse(data);
+              const {type} = m;
 
-              const grabbable = grabbables[id];
-              grabbable.userId = userId;
-              grabbable.side = side;
+              if (type === 'grab') {
+                const {args} = m;
+                const [n, userId, side] = args;
 
-              grabbable.emit('grab', {
-                userId,
-                side,
-              });
-            } else if (type === 'release') {
-              const {args} = m;
-              const [id] = args;
+                const grabbable = grabbables[n];
+                grabbable.userId = userId;
+                grabbable.side = side;
 
-              const grabbable = grabbables[id];
-              const {userId, side} = grabbable;
-              grabbable.userId = null;
-              grabbable.side = null;
+                grabbable.emit('grab', {
+                  userId,
+                  side,
+                });
+              } else if (type === 'release') {
+                const {args} = m;
+                const [n] = args;
 
-              grabbable.emit('release', {
-                userId,
-                side,
-              });
-            } else if (type === 'update') {
-              const {args} = m;
-              const [id, position, rotation, scale, localPosition, localRotation, localScale] = args;
+                const grabbable = grabbables[n];
+                const {userId, side} = grabbable;
+                grabbable.userId = null;
+                grabbable.side = null;
 
-              const grabbable = grabbables[id];
-              grabbable.setFullStateLocal(position, rotation, scale, localPosition, localRotation, localScale);
-            } else if (type === 'destroy') {
-              const {args} = m;
-              const [id] = args;
+                grabbable.emit('release', {
+                  userId,
+                  side,
+                });
+              } else if (type === 'destroy') {
+                const {args} = m;
+                const [n] = args;
 
-              const grabbable = grabbables[id];
-              delete grabbables[id];
+                const grabbable = grabbables[n];
+                delete grabbables[n];
 
-              grabbable.emit('destroy');
+                grabbable.emit('destroy');
+              } else {
+                console.warn('unknown hand message type:', type);
+              }
             } else {
-              console.warn('unknown hand message type:', type);
+              const {n, position, rotation, scale, localPosition, localRotation, localScale} = protocolUtils.parseUpdate(data);
+
+              const grabbable = grabbables[n];
+              grabbable.setFullStateLocal(position, rotation, scale, localPosition, localRotation, localScale);
             }
           });
           return connection;
         })();
 
-        const _broadcast = (method, args) => {
+        const _broadcastObject = (method, args) => {
           const e = {
             method,
             args,
           };
           const es = JSON.stringify(e);
           connection.send(es);
+        };
+        const _broadcastBuffer = buffer => {
+          connection.send(buffer);
         };
 
         const _makeGrabState = () => ({
@@ -122,20 +129,18 @@ class Hand {
 
         class Grabbable extends EventEmitter {
           constructor(
-            id,
-            {
-              position = [0, 0, 0],
-              rotation = [0, 0, 0, 1],
-              scale = [1, 1, 1],
-              localPosition = [0, 0, 0],
-              localRotation = [0, 0, 0, 1],
-              localScale = [1, 1, 1],
-              isGrabbable = p => p.distanceTo(new THREE.Vector3().fromArray(this.position)) < GRAB_DISTANCE,
-            } = {}
+            n,
+            position = [0, 0, 0],
+            rotation = [0, 0, 0, 1],
+            scale = [1, 1, 1],
+            localPosition = [0, 0, 0],
+            localRotation = [0, 0, 0, 1],
+            localScale = [1, 1, 1],
+            isGrabbable = p => p.distanceTo(new THREE.Vector3().fromArray(this.position)) < GRAB_DISTANCE,
           ) {
             super();
 
-            this.id = id;
+            this.n = n;
             this.position = position;
             this.rotation = rotation;
             this.scale = scale;
@@ -161,21 +166,20 @@ class Hand {
           }
 
           add() {
-            const {id, position, rotation, scale, localPosition, localRotation, localScale} = this;
-
-            _broadcast('addGrabbable', [id, position, rotation, scale, localPosition, localRotation, localScale]);
+            const {n, position, rotation, scale, localPosition, localRotation, localScale} = this;
+            _broadcastObject('addGrabbable', [n, position, rotation, scale, localPosition, localRotation, localScale]);
           }
 
           remove() {
-            const {id} = this;
+            const {n} = this;
 
-            _broadcast('removeGrabbable', [id]);
+            _broadcastObject('removeGrabbable', [n]);
 
             this.emit('destroy');
           }
 
           grab(side) {
-            const {id} = this;
+            const {n} = this;
             const userId = localUserId;
 
             this.userId = userId;
@@ -184,7 +188,7 @@ class Hand {
             const grabState = grabStates[side];
             grabState.grabbedGrabbable = this;
 
-            _broadcast('grab', [id, side]);
+            _broadcastObject('grab', [n, side]);
 
             this.emit('grab', {
               userId,
@@ -196,7 +200,7 @@ class Hand {
             const {userId} = this;
 
             if (userId) {
-              const {id, side} = this;
+              const {n, side} = this;
 
               this.userId = null;
               this.side = null;
@@ -210,7 +214,7 @@ class Hand {
                 }
               });
 
-              _broadcast('release', [id]);
+              _broadcastObject('release', [n]);
 
               this.emit('release', {
                 userId,
@@ -278,7 +282,7 @@ class Hand {
           }
 
           broadcastUpdate() {
-            _broadcast('update', [this.id, this.position, this.rotation, this.scale, this.localPosition, this.localRotation, this.localScale]);
+            _broadcastBuffer(protocolUtils.stringifyUpdate(this.n, this.position, this.rotation, this.scale, this.localPosition, this.localRotation, this.localScale));
           }
         }
 
@@ -288,8 +292,8 @@ class Hand {
           const {worldPosition: controllerPosition} = gamepad;
           const grabState = grabStates[side];
 
-          for (const id in grabbables) {
-            const grabbable = grabbables[id];
+          for (const n in grabbables) {
+            const grabbable = grabbables[n];
 
             if (grabbable.isGrabbable(controllerPosition)) {
               return grabbable;
@@ -357,21 +361,22 @@ class Hand {
         });
 
         class HandApi {
-          makeGrabbable(id, options) {
-            const grabbable = new Grabbable(id, options);
+          makeGrabbable(n, position, rotation, scale, localPosition, localRotation, localScale) {
+            const grabbable = new Grabbable(n, position, rotation, scale, localPosition, localRotation, localScale);
             this.addGrabbable(grabbable);
             return grabbable;
           }
 
           addGrabbable(grabbable) {
+            const {n} = grabbable;
             grabbable.add();
-            grabbables[grabbable.id] = grabbable;
+            grabbables[n] = grabbable;
           }
 
           destroyGrabbable(grabbable) {
-            const {id} = grabbable;
+            const {n} = grabbable;
             grabbable.remove();
-            delete grabbables[id];
+            delete grabbables[n];
           }
         }
         HandApi.prototype.Grabbable = Grabbable;

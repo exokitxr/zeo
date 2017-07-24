@@ -14,6 +14,7 @@ class Chest {
   }
 
   mount() {
+    return;
     const {_archae: archae} = this;
     const {three, render, pose, input, elements, hands, items, animation, utils: {geometry: geometryUtils}} = zeo;
     const {THREE, scene} = three;

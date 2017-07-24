@@ -82,6 +82,7 @@ class Wallet {
       '/core/engines/stck',
       '/core/engines/notification',
       '/core/utils/js-utils',
+      '/core/utils/hash-utils',
       '/core/utils/network-utils',
       '/core/utils/creature-utils',
       '/core/utils/vrid-utils',
@@ -102,6 +103,7 @@ class Wallet {
       stck,
       notification,
       jsUtils,
+      hashUtils,
       networkUtils,
       creatureUtils,
       vridUtils,
@@ -110,6 +112,7 @@ class Wallet {
         const {THREE, scene, camera} = three;
         const {events} = jsUtils;
         const {EventEmitter} = events;
+        const {murmur} = hashUtils;
         const {AutoWs} = networkUtils;
         const {Grabbable} = hand;
         const {sfx} = resource;
@@ -229,18 +232,18 @@ class Wallet {
           class AssetInstance extends Grabbable {
             constructor(
               id,
-              {
-                position,
-                rotation,
-                scale,
-                localPosition,
-                localRotation,
-                localScale,
-                item,
-              }
+              n,
+              position,
+              rotation,
+              scale,
+              localPosition,
+              localRotation,
+              localScale,
+              item
             ) {
-              super(id, {position, rotation, scale, localPosition, localRotation, localScale});
+              super(n, position, rotation, scale, localPosition, localRotation, localScale);
 
+              this.id = id;
               this.item = item;
             }
 
@@ -353,8 +356,8 @@ class Wallet {
           const assetInstances = [];
           mesh.getAssetInstances = id => assetInstances;
           mesh.getAssetInstance = id => assetInstances.find(assetInstance => assetInstance.id === id);
-          mesh.addAssetInstance = (id, {position, rotation, scale, localPosition, localRotation, localScale, item}) => {
-            const assetInstance = new AssetInstance(id, {position, rotation, scale, localPosition, localRotation, localScale, item});
+          mesh.addAssetInstance = (id, n, position, rotation, scale, localPosition, localRotation, localScale, item) => {
+            const assetInstance = new AssetInstance(id, n, position, rotation, scale, localPosition, localRotation, localScale, item);
             hand.addGrabbable(assetInstance);
             assetInstances.push(assetInstance);
 
@@ -1548,21 +1551,22 @@ class Wallet {
               position: {value: matrix},
             } = attributes;
 
+            const n = murmur(id);
+
             const position = new THREE.Vector3(matrix[0], matrix[1], matrix[2]);
             const rotation = new THREE.Quaternion(matrix[3], matrix[4], matrix[5], matrix[6]);
             const scale = new THREE.Vector3(matrix[7], matrix[8], matrix[9]);
 
             const assetInstance = assetsMesh.addAssetInstance(
               id,
-              {
-                position: position.toArray(),
-                rotation: rotation.toArray(),
-                scale: scale.toArray(),
-                localPosition: zeroVector.toArray(),
-                localRotation: zeroQuaternion.toArray(),
-                localScale: oneVector.toArray(),
-                item,
-              }
+              n,
+              position.toArray(),
+              rotation.toArray(),
+              scale.toArray(),
+              zeroVector.toArray(),
+              zeroQuaternion.toArray(),
+              oneVector.toArray(),
+              item,
             );
 
             _bindAssetInstance(assetInstance);
