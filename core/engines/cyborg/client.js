@@ -89,7 +89,7 @@ class Cyborg {
           class PrevStatus {
             constructor() {
               // this.hmd = new PRS();
-              this.controllers = {
+              this.gamepads = {
                 left: new PRS(),
                 right: new PRS(),
               };
@@ -123,19 +123,19 @@ class Cyborg {
               prevStatus.hmd.worldRotation.copy(camera.quaternion);
               prevStatus.hmd.worldScale.copy(camera.scale); */
 
-              prevStatus.controllers.left.position.copy(gamepads.left.position);
-              prevStatus.controllers.left.rotation.copy(gamepads.left.rotation);
-              prevStatus.controllers.left.scale.copy(gamepads.left.scale);
-              prevStatus.controllers.left.worldPosition.copy(gamepads.left.worldPosition);
-              prevStatus.controllers.left.worldRotation.copy(gamepads.left.worldRotation);
-              prevStatus.controllers.left.worldScale.copy(gamepads.left.worldScale);
+              prevStatus.gamepads.left.position.copy(gamepads.left.position);
+              prevStatus.gamepads.left.rotation.copy(gamepads.left.rotation);
+              prevStatus.gamepads.left.scale.copy(gamepads.left.scale);
+              prevStatus.gamepads.left.worldPosition.copy(gamepads.left.worldPosition);
+              prevStatus.gamepads.left.worldRotation.copy(gamepads.left.worldRotation);
+              prevStatus.gamepads.left.worldScale.copy(gamepads.left.worldScale);
 
-              prevStatus.controllers.right.position.copy(gamepads.right.position);
-              prevStatus.controllers.right.rotation.copy(gamepads.right.rotation);
-              prevStatus.controllers.right.scale.copy(gamepads.right.scale);
-              prevStatus.controllers.right.worldPosition.copy(gamepads.right.worldPosition);
-              prevStatus.controllers.right.worldRotation.copy(gamepads.right.worldRotation);
-              prevStatus.controllers.right.worldScale.copy(gamepads.right.worldScale);
+              prevStatus.gamepads.right.position.copy(gamepads.right.position);
+              prevStatus.gamepads.right.rotation.copy(gamepads.right.rotation);
+              prevStatus.gamepads.right.scale.copy(gamepads.right.scale);
+              prevStatus.gamepads.right.worldPosition.copy(gamepads.right.worldPosition);
+              prevStatus.gamepads.right.worldRotation.copy(gamepads.right.worldRotation);
+              prevStatus.gamepads.right.worldScale.copy(gamepads.right.worldScale);
 
               prevStatus.timestamp = Date.now();
             }
@@ -146,8 +146,8 @@ class Cyborg {
               const lastStatus = prevStatuses[prevStatusIndex];
               const firstStatus = prevStatuses[mod(prevStatusIndex + 1, NUM_PREV_STATUSES)];
 
-              const positionDiff = lastStatus.controllers[side].worldPosition.clone()
-                .sub(firstStatus.controllers[side].worldPosition);
+              const positionDiff = lastStatus.gamepads[side].worldPosition.clone()
+                .sub(firstStatus.gamepads[side].worldPosition);
               const timeDiff = lastStatus.timestamp - firstStatus.timestamp;
               return timeDiff > 0 ? positionDiff.divideScalar(timeDiff / 1000) : zeroVector;
             }
@@ -158,8 +158,8 @@ class Cyborg {
               const lastStatus = prevStatuses[prevStatusIndex];
               const firstStatus = prevStatuses[mod(prevStatusIndex + 1, NUM_PREV_STATUSES)];
 
-              const quaternionDiff = lastStatus.controllers[side].worldRotation.clone()
-                .multiply(firstStatus.controllers[side].worldRotation.clone().inverse());
+              const quaternionDiff = lastStatus.gamepads[side].worldRotation.clone()
+                .multiply(firstStatus.gamepads[side].worldRotation.clone().inverse());
               const angleDiff = (() => {
                 const x = quaternionDiff.x / Math.sqrt(1 - (quaternionDiff.w * quaternionDiff.w));
                 const y = quaternionDiff.y / Math.sqrt(1 - (quaternionDiff.w * quaternionDiff.w));
@@ -370,7 +370,6 @@ class Cyborg {
 
           const _getPlayer = () => player;
           const _getHmd = () => hmd;
-          // const _getControllers = () => controllers;
           const _setSkin = (skinImg = null) => {
             if (playerSkinMesh) {
               scene.remove(playerSkinMesh);
@@ -457,7 +456,6 @@ class Cyborg {
           return {
             getPlayer: _getPlayer,
             getHmd: _getHmd,
-            // getControllers: _getControllers,
             setSkin: _setSkin,
             update: _update,
           };

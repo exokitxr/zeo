@@ -306,14 +306,14 @@ class Multiplayer {
               // hmd.updateMatrixWorld();
             };
             const _updateControllers = () => {
-              controllers.left.position.fromArray(status.gamepads.left.position);
-              controllers.left.quaternion.fromArray(status.gamepads.left.rotation);
-              controllers.left.scale.fromArray(status.gamepads.left.scale);
+              controllers.left.position.copy(status.gamepads.left.position);
+              controllers.left.quaternion.copy(status.gamepads.left.rotation);
+              controllers.left.scale.copy(status.gamepads.left.scale);
               // controllers.left.updateMatrixWorld();
 
-              controllers.right.position.fromArray(status.gamepads.right.position);
-              controllers.right.quaternion.fromArray(status.gamepads.right.rotation);
-              controllers.right.scale.fromArray(status.gamepads.right.scale);
+              controllers.right.position.copy(status.gamepads.right.position);
+              controllers.right.quaternion.copy(status.gamepads.right.rotation);
+              controllers.right.scale.copy(status.gamepads.right.scale);
               // rightController.updateMatrixWorld();
             };
             /* const _updateLabel = () => {
