@@ -30,8 +30,9 @@ const bow = ({archae, data}) => {
   const zeroVector = new THREE.Vector3();
   const oneVector = new THREE.Vector3(1, 1, 1);
   const forwardVector = new THREE.Vector3(0, 0, -1);
+  const upVector = new THREE.Vector3(0, 1, 0);
   const zeroQuaternion = new THREE.Quaternion();
-
+  const forwardQuaternion = new THREE.Quaternion().setFromUnitVectors(upVector, forwardVector);
   const stringGeometry = (() => {
     const geometry = new THREE.BoxBufferGeometry(0.015, 1, 0.015, 1, 2, 1)
       .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(
@@ -58,19 +59,6 @@ const bow = ({archae, data}) => {
     }
   }
   const arrowGeometry = (() => {
-    const {positions, normals, colors, dys} = arrowGeometrySpec;
-    const geometry = new THREE.BufferGeometry();
-    geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
-    geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
-    geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
-    geometry.addAttribute('dy', new THREE.BufferAttribute(dys, 2));
-    geometry.boundingSphere = new THREE.Sphere(
-      new THREE.Vector3(),
-      1
-    );
-    return geometry;
-  })();
-  /* const arrowGeometry = (() => {
     const coreGeometry = new THREE.BoxBufferGeometry(0.01, 0.01, 0.75);
     const tipGeometry = new THREE.CylinderBufferGeometry(0, 0.015, 0.04, 3, 1)
       .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
@@ -84,9 +72,21 @@ const bow = ({archae, data}) => {
       .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, (0.75 / 2) - (0.2 / 2) - 0.01));
     return geometryUtils.concatBufferGeometry([coreGeometry, tipGeometry, fletchingGeometry1, fletchingGeometry2])
       .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -0.75 / 2));
+  })();
+  /* const arrowGeometry = (() => { // XXX use this geometry
+    const {positions, normals, colors, dys} = arrowGeometrySpec;
+    const geometry = new THREE.BufferGeometry();
+    geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
+    geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
+    geometry.addAttribute('dy', new THREE.BufferAttribute(dys, 2));
+    geometry.boundingSphere = new THREE.Sphere(
+      new THREE.Vector3(),
+      1
+    );
+    return geometry;
   })(); */
   const stringMaterial = new THREE.MeshBasicMaterial({
-    // color: 0x000000,
     vertexColors: THREE.VertexColors,
   });
 
@@ -147,13 +147,14 @@ const bow = ({archae, data}) => {
               arrowMesh.position.copy(position);
               arrowMesh.quaternion.setFromUnitVectors(
                 forwardVector,
-                localVector2.copy(grabbable.position)
+                localVector.copy(grabbable.position)
                   .sub(position)
-                  .normalize() 
+                  .normalize()
               );
             } else {
-              stringMesh.getWorldPosition(arrowMesh.position);
-              arrowMesh.quaternion.copy(zeroQuaternion);
+              arrowMesh.position.copy(stringMesh.position);
+              arrowMesh.quaternion.copy(stringMesh.quaternion)
+                .multiply(forwardQuaternion);
             }
             arrowMesh.updateMatrixWorld();
           };
@@ -244,9 +245,9 @@ const bow = ({archae, data}) => {
               stringMesh.updateMatrixWorld();
             }
           };
-          const _updateNock = () => {
+          const _updateDrawnArrow = () => {
             if (drawnArrowMesh) {
-              const _updateDrawnArrowMeshPosition = () => {
+              const _updateTransform = () => {
                 const side = grabbable.getGrabberSide();
                 const otherSide = OTHER_SIDES[side];
                 const gamepad = gamepads[otherSide];
@@ -262,10 +263,10 @@ const bow = ({archae, data}) => {
                   nockedArrowMesh = drawnArrowMesh;
                   drawnArrowMesh = null;
                 } else {
-                  _updateDrawnArrowMeshPosition();
+                  _updateTransform();
                 }
               } else {
-                _updateDrawnArrowMeshPosition();
+                _updateTransform();
               }
             }
           };
@@ -317,7 +318,7 @@ const bow = ({archae, data}) => {
           };
 
           _updateStringPosition();
-          _updateNock();
+          _updateDrawnArrow();
           _updatePull();
           _updateArrows();
         };
