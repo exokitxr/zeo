@@ -127,7 +127,33 @@ class Multiplayer {
           const _status = status => {
             connection.send(JSON.stringify({
               type: 'status',
-              status: status,
+              status: { // XXX this should use a buffer
+                hmd: {
+                  position: status.hmd.position.toArray(),
+                  rotation: status.hmd.rotation.toArray(),
+                  scale: status.hmd.scale.toArray(),
+                },
+                controllers: {
+                  left: {
+                    position: status.gamepads.left.position.toArray(),
+                    rotation: status.gamepads.left.rotation.toArray(),
+                    scale: status.gamepads.left.scale.toArray(),
+                  },
+                  right: {
+                    position: status.gamepads.right.position.toArray(),
+                    rotation: status.gamepads.right.rotation.toArray(),
+                    scale: status.gamepads.right.scale.toArray(),
+                  },
+                },
+                metadata: {
+                  menu: {
+                    open: status.metadata.menu.open,
+                    position: status.metadata.menu.position.toArray(),
+                    rotation: status.metadata.menu.rotation.toArray(),
+                    scale: status.metadata.menu.scale.toArray(),
+                  },
+                },
+              },
             }));
           };
           multiplayerApi.on('status', _status);
@@ -207,7 +233,7 @@ class Multiplayer {
           }
 
           addPlayer(playerId, status) {
-            this.playerStatuses.set(playerId, status);
+            this.playerStatuses.set(playerId, status); // XXX this should use a persistent in-place status structure
 
             const remotePlayerMesh = _makeRemotePlayerMesh();
             remotePlayerMesh.update(status);
@@ -265,8 +291,7 @@ class Multiplayer {
             const remotePlayerMesh = this.getRemotePlayerMesh(id);
 
             if (remotePlayerMesh) {
-              const {controllers: controllerMeshes} = remotePlayerMesh;
-              return controllerMeshes;
+              return remotePlayerMesh.controllers;
             } else {
               return null;
             }
@@ -405,34 +430,31 @@ class Multiplayer {
 
         const localStatus = {
           hmd: {
-            position: zeroVector.toArray(),
-            rotation: zeroQuaternion.toArray(),
-            scale: oneVector.toArray(),
+            position: zeroVector.clone(),
+            rotation: zeroQuaternion.clone(),
+            scale: oneVector.clone(),
           },
-          controllers: {
+          gamepads: {
             left: {
-              position: zeroVector.toArray(),
-              rotation: zeroQuaternion.toArray(),
-              scale: oneVector.toArray(),
+              position: zeroVector.clone(),
+              rotation: zeroQuaternion.clone(),
+              scale: oneVector.clone(),
             },
             right: {
-              position: zeroVector.toArray(),
-              rotation: zeroQuaternion.toArray(),
-              scale: oneVector.toArray(),
+              position: zeroVector.clone(),
+              rotation: zeroQuaternion.clone(),
+              scale: oneVector.clone(),
             },
           },
           metadata: {
             menu: {
               open: false,
-              position: null,
-              rotation: null,
-              scale: null,
+              position: zeroVector.clone(),
+              rotation: zeroQuaternion.clone(),
+              scale: oneVector.clone(),
             },
           },
         };
-
-        let lastStatus = null;
-        let lastMenuState = null;
         const _update = () => {
           const status = webvr.getStatus();
           const menuState = rend.getMenuState();
@@ -442,10 +464,10 @@ class Multiplayer {
             const {hmd} = status;
             const {worldPosition: hmdPosition, worldRotation: hmdRotation, worldScale: hmdScale} = hmd;
 
-            if (!lastStatus || !lastStatus.hmd.position.equals(hmdPosition) || !lastStatus.hmd.rotation.equals(hmdRotation)) {
-              localStatus.hmd.position = hmdPosition.toArray();
-              localStatus.hmd.rotation = hmdRotation.toArray();
-              localStatus.hmd.scale = hmdScale.toArray();
+            if (!localStatus.hmd.position.equals(hmdPosition) || !localStatus.hmd.rotation.equals(hmdRotation)) {
+              localStatus.hmd.position.copy(hmdPosition);
+              localStatus.hmd.rotation.copy(hmdRotation);
+              localStatus.hmd.scale.copy(hmdScale);
 
               updated = true;
             }
@@ -453,55 +475,42 @@ class Multiplayer {
           const _updateControllers = () => {
             const {gamepads} = status;
 
-            SIDES.forEach(side => {
+            for (let i = 0; i < SIDES.length; i++) {
+              const side = SIDES[i];
               const gamepad = gamepads[side];
 
               if (gamepad) {
                 const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale} = gamepad;
 
-                const _updateGamepad = () => {
-                  localStatus.controllers[side].position = controllerPosition.toArray();
-                  localStatus.controllers[side].rotation = controllerRotation.toArray();
-                  localStatus.controllers[side].scale = controllerScale.toArray();
+                const lastGamepadStatus = localStatus.gamepads[side];
+                if (
+                  !lastGamepadStatus ||
+                  !lastGamepadStatus.position.equals(controllerPosition) ||
+                  !lastGamepadStatus.rotation.equals(controllerRotation) ||
+                  !lastGamepadStatus.scale.equals(controllerScale)
+                ) {
+                  localStatus.gamepads[side].position.copy(controllerPosition);
+                  localStatus.gamepads[side].rotation.copy(controllerRotation);
+                  localStatus.gamepads[side].scale.copy(controllerScale);
 
                   updated = true;
-                };
-
-                if (!lastStatus) {
-                  _updateGamepad();
-                } else {
-                  const lastGamepadStatus = lastStatus.gamepads[side];
-
-                  if (
-                    !lastGamepadStatus ||
-                    !lastGamepadStatus.position.equals(controllerPosition) ||
-                    !lastGamepadStatus.rotation.equals(controllerRotation) ||
-                    !lastGamepadStatus.scale.equals(controllerScale)
-                  ) {
-                    _updateGamepad();
-                  }
                 }
               }
-            });
+            }
           };
           const _updateMetadata = () => {
-            const _updateMetadata = () => {
-              localStatus.metadata.menu = menuState;
+            if (
+              menuState.open !== localStatus.metadata.menu.open ||
+              !menuState.position.equals(localStatus.metadata.menu.position) ||
+              !menuState.rotation.equals(localStatus.metadata.menu.rotation) ||
+              !menuState.scale.equals(localStatus.metadata.menu.scale)
+            ) {
+              localStatus.metadata.menu.open = menuState.open;
+              localStatus.metadata.menu.position.copy(menuState.position);
+              localStatus.metadata.menu.rotation.copy(menuState.rotation);
+              localStatus.metadata.menu.scale.copy(menuState.scale);
 
               updated = true;
-            };
-
-            if (!lastMenuState) {
-              _updateMetadata();
-            } else {
-              if (
-                menuState.open !== lastMenuState.open ||
-                !_arrayEquals(menuState.position, lastMenuState.position) ||
-                !_arrayEquals(menuState.rotation, lastMenuState.rotation) ||
-                !_arrayEquals(menuState.scale, lastMenuState.scale)
-              ) {
-                _updateMetadata();
-              }
             }
           };
           const _emitUpdate = () => {
@@ -514,9 +523,6 @@ class Multiplayer {
           _updateControllers();
           _updateMetadata();
           _emitUpdate();
-
-          lastStatus = status;
-          lastMenuState = menuState;
         };
         rend.on('update', _update);
 
