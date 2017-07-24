@@ -34,13 +34,13 @@ const sword = ({archae}) => {
       itemAddedCallback(grabbable) {
         let grabbed = false;
         const _grab = e => {
-          grabbable.setLocalTransform(localPositionVector.toArray(), localRotationQuaterion.toArray(), localScaleVector.toArray());
+          grabbable.setLocalTransform(localPositionVector, localRotationQuaterion, localScaleVector);
 
           grabbed = true;
         };
         grabbable.on('grab', _grab);
         const _release = e => {
-          grabbable.setLocalTransform(zeroVector.toArray(), zeroQuaternion.toArray(), oneVector.toArray());
+          grabbable.setLocalTransform(zeroVector, zeroQuaternion, oneVector);
 
           grabbed = false;
         };

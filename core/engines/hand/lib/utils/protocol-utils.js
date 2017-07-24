@@ -1,38 +1,26 @@
 const BUFFER_SIZE = (1 * 4) + (4 * 4 * 3) + (2 * 4 * 4);
 
-const parseUpdate = buffer => {
-  let byteOffset = 0;
+const parseUpdateN = buffer => new Uint32Array(buffer, 0, 1)[0];
+const parseUpdate = (position, rotation, scale, localPosition, localRotation, localScale, buffer) => {
+  let byteOffset = 1 * 4;
 
-  const n = new Uint32Array(buffer, byteOffset, 1)[0];
-  byteOffset += 1 * 4;
-
-  const position = Array.from(new Float32Array(buffer, byteOffset, 3));
+  position.fromArray(new Float32Array(buffer, byteOffset, 3));
   byteOffset += 3 * 4;
 
-  const rotation = Array.from(new Float32Array(buffer, byteOffset, 4));
+  rotation.fromArray(new Float32Array(buffer, byteOffset, 4));
   byteOffset += 4 * 4;
 
-  const scale = Array.from(new Float32Array(buffer, byteOffset, 3));
+  scale.fromArray(new Float32Array(buffer, byteOffset, 3));
   byteOffset += 3* 4;
 
-  const localPosition = Array.from(new Float32Array(buffer, byteOffset, 3));
+  localPosition.fromArray(new Float32Array(buffer, byteOffset, 3));
   byteOffset += 3 * 4;
 
-  const localRotation = Array.from(new Float32Array(buffer, byteOffset, 4));
+  localRotation.fromArray(new Float32Array(buffer, byteOffset, 4));
   byteOffset += 4 * 4;
 
-  const localScale = Array.from(new Float32Array(buffer, byteOffset, 3));
-  byteOffset += 3* 4;
-
-  return {
-    n,
-    position,
-    rotation,
-    scale,
-    localPosition,
-    localRotation,
-    localScale,
-  };
+  localScale.fromArray(new Float32Array(buffer, byteOffset, 3));
+  // byteOffset += 3* 4;
 };
 const stringifyUpdate = (n, position, rotation, scale, localPosition, localRotation, localScale, buffer, byteOffset) => {
   if (buffer === undefined || byteOffset === undefined) {
@@ -44,48 +32,49 @@ const stringifyUpdate = (n, position, rotation, scale, localPosition, localRotat
   byteOffset += 1 * 4;
 
   const positionBuffer = new Float32Array(buffer, byteOffset, 3);
-  positionBuffer[0] = position[0];
-  positionBuffer[1] = position[1];
-  positionBuffer[2] = position[2];
+  positionBuffer[0] = position.x;
+  positionBuffer[1] = position.y;
+  positionBuffer[2] = position.z;
   byteOffset += 3 * 4;
 
   const rotationBuffer = new Float32Array(buffer, byteOffset, 4);
-  rotationBuffer[0] = position[0];
-  rotationBuffer[1] = position[1];
-  rotationBuffer[2] = rotation[2];
-  rotationBuffer[3] = rotation[3];
+  rotationBuffer[0] = rotation.x;
+  rotationBuffer[1] = rotation.y;
+  rotationBuffer[2] = rotation.z;
+  rotationBuffer[3] = rotation.w;
   byteOffset += 4 * 4;
 
   const scaleBuffer = new Float32Array(buffer, byteOffset, 3);
-  scaleBuffer[0] = scale[0];
-  scaleBuffer[1] = scale[1];
-  scaleBuffer[2] = scale[2];
+  scaleBuffer[0] = scale.x;
+  scaleBuffer[1] = scale.y;
+  scaleBuffer[2] = scale.z;
   byteOffset += 3* 4;
 
   const localPositionBuffer = new Float32Array(buffer, byteOffset, 3);
-  localPositionBuffer[0] = localPosition[0];
-  localPositionBuffer[1] = localPosition[1];
-  localPositionBuffer[2] = localPosition[2];
+  localPositionBuffer[0] = localPosition.x;
+  localPositionBuffer[1] = localPosition.y;
+  localPositionBuffer[2] = localPosition.z;
   byteOffset += 3 * 4;
 
   const localRotationBuffer = new Float32Array(buffer, byteOffset, 4);
-  localRotationBuffer[0] = localRotation[0];
-  localRotationBuffer[1] = localRotation[1];
-  localRotationBuffer[2] = localRotation[2];
-  localRotationBuffer[3] = localRotation[3];
+  localRotationBuffer[0] = localRotation.x;
+  localRotationBuffer[1] = localRotation.y;
+  localRotationBuffer[2] = localRotation.z;
+  localRotationBuffer[3] = localRotation.w;
   byteOffset += 4 * 4;
 
   const localScaleBuffer = new Float32Array(buffer, byteOffset, 3);
-  localScaleBuffer[0] = localScale[0];
-  localScaleBuffer[1] = localScale[1];
-  localScaleBuffer[2] = localScale[2];
-  byteOffset += 3* 4;
+  localScaleBuffer[0] = localScale.x;
+  localScaleBuffer[1] = localScale.y;
+  localScaleBuffer[2] = localScale.z;
+  // byteOffset += 3* 4;
 
   return buffer;
 };
 
 module.exports = {
   BUFFER_SIZE,
+  parseUpdateN,
   parseUpdate,
   stringifyUpdate,
 };
