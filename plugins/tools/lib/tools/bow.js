@@ -1,25 +1,93 @@
 const NPC_PLUGIN = 'plugins-npc';
+const OTHER_SIDES = {
+  left: 'right',
+  right: 'left',
+};
+const ARROW_SPEED = 0.05;
+const ARROW_GRAVITY = -10 / 1000 * 0.001;
+const ARROW_TERMINAL_VELOCITY = -10;
+const ARROW_TTL = 5 * 1000;
+
 const dataSymbol = Symbol();
 
-const bow = ({archae}) => {
-  const {three, pose, input, render, elements, items, teleport} = zeo;
+const bow = ({archae, data}) => {
+  const {three, pose, input, render, elements, items, player, teleport, utils: {geometry: geometryUtils, sprite: spriteUtils}} = zeo;
   const {THREE, scene} = three;
+  const {arrowGeometrySpec} = data;
 
-  const localPositionVector = new THREE.Vector3(0, 0, 0.015/2 + 0.015 * 3 * 3);
-  const localRotationQuaterion = new THREE.Quaternion().setFromAxisAngle(
+  const localTransformPositionVector = new THREE.Vector3(0, 0, 0.015/2 + 0.015 * 3 * 3);
+  const localTransformRotationQuaterion = new THREE.Quaternion().setFromAxisAngle(
     new THREE.Vector3(0, 0, 1),
     Math.PI / 4
   ).premultiply(new THREE.Quaternion().setFromUnitVectors(
     new THREE.Vector3(0, 0, -1),
     new THREE.Vector3(1, 0, 0)
   ));
-  const localScaleVector = new THREE.Vector3(3, 3, 3);
+  const localTransformScaleVector = new THREE.Vector3(3, 3, 3);
+  const localVector = new THREE.Vector3();
+  const localVector2 = new THREE.Vector3();
+  const localMatrix = new THREE.Matrix4();
   const zeroVector = new THREE.Vector3();
   const oneVector = new THREE.Vector3(1, 1, 1);
+  const forwardVector = new THREE.Vector3(0, 0, -1);
   const zeroQuaternion = new THREE.Quaternion();
 
+  const stringGeometry = (() => {
+    const geometry = new THREE.BoxBufferGeometry(0.015, 1, 0.015, 1, 2, 1)
+      .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(
+        new THREE.Vector3(0, 1, 0),
+        new THREE.Vector3(0, 0, -1)
+      )))
+      .applyMatrix(new THREE.Matrix4().makeScale(3, 3, 3 * 0.275));
+    geometry.addAttribute('color', new THREE.BufferAttribute(new Float32Array(geometry.getAttribute('position').array.length), 3));
+    return geometry;
+  })();
+  const stringGeometryPositions = stringGeometry.getAttribute('position').array;
+  const numPositions = stringGeometryPositions.length / 3;
+  const centerPositionIndexes = [];
+  const centerPositions = [];
+  for (let i = 0; i < numPositions; i++) {
+    const baseIndex = i * 3;
+    if (Math.abs(stringGeometryPositions[baseIndex + 2]) < 0.001) {
+      centerPositionIndexes.push(baseIndex);
+      centerPositions.push(
+        stringGeometryPositions[baseIndex + 0],
+        stringGeometryPositions[baseIndex + 1],
+        stringGeometryPositions[baseIndex + 2]
+      );
+    }
+  }
+  const arrowGeometry = (() => {
+    const {positions, normals, colors, dys} = arrowGeometrySpec;
+    const geometry = new THREE.BufferGeometry();
+    geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
+    geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
+    geometry.addAttribute('dy', new THREE.BufferAttribute(dys, 2));
+    geometry.boundingSphere = new THREE.Sphere(
+      new THREE.Vector3(),
+      1
+    );
+    return geometry;
+  })();
+  /* const arrowGeometry = (() => {
+    const coreGeometry = new THREE.BoxBufferGeometry(0.01, 0.01, 0.75);
+    const tipGeometry = new THREE.CylinderBufferGeometry(0, 0.015, 0.04, 3, 1)
+      .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
+      .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -(0.75 / 2) - (0.04 / 2)));
+    const fletchingGeometry1 = new THREE.CylinderBufferGeometry(0, 0.015, 0.2, 2, 1)
+      .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
+      .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, (0.75 / 2) - (0.2 / 2) - 0.01));
+    const fletchingGeometry2 = new THREE.CylinderBufferGeometry(0, 0.015, 0.2, 2, 1)
+      .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
+      .applyMatrix(new THREE.Matrix4().makeRotationZ(Math.PI / 2))
+      .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, (0.75 / 2) - (0.2 / 2) - 0.01));
+    return geometryUtils.concatBufferGeometry([coreGeometry, tipGeometry, fletchingGeometry1, fletchingGeometry2])
+      .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -0.75 / 2));
+  })(); */
   const stringMaterial = new THREE.MeshBasicMaterial({
-    color: 0x000000,
+    // color: 0x000000,
+    vertexColors: THREE.VertexColors,
   });
 
   let npcElement = null;
@@ -35,71 +103,223 @@ const bow = ({archae}) => {
     const bowApi = {
       asset: 'ITEM.BOW',
       itemAddedCallback(grabbable) {
+        const arrows = [];
+
         const stringMesh = (() => {
-          const geometry = new THREE.BoxBufferGeometry(0.015, 1, 0.015, 1, 2, 1)
-            .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(
-              new THREE.Vector3(0, 1, 0),
-              new THREE.Vector3(0, 0, -1)
-            )))
-            .applyMatrix(new THREE.Matrix4().makeScale(3, 3, 3 * 0.275));
-          const positions = geometry.getAttribute('position').array;
-          const numPositions = positions.length / 3;
-          const centerPositions = [];
-          for (let i = 0; i < numPositions; i++) {
-            if (positions[i * 3 + 2] === 0) {
-              centerPositions.push(i);
-            }
-          }
+          const geometry = stringGeometry.clone();
           const material = stringMaterial;
 
-          const mesh = new THREE.Mesh(geometry, material);
-
-          mesh.pullPosition = zeroVector;
-          mesh.updatePull = (position = null) => {
-            /* const pullPosition = position !== null ? position.clone().applyMatrix4(new THREE.Matrix4().getInverse(mesh.matrixWorld)) : zeroVector;
-            for (let i = 1; i <= 2; i++) {
-              geometry.vertices[i] = pullPosition;
+          const stringMesh = new THREE.Mesh(geometry, material);
+          stringMesh.frustumCulled = false;
+          stringMesh.pullPosition = new THREE.Vector3();
+          stringMesh.updatePull = position => {
+            const pullPosition = position !== null ?
+              localVector.copy(position)
+                .applyMatrix4(localMatrix.getInverse(stringMesh.matrixWorld))
+            :
+              zeroVector;
+            const positionAttribute = geometry.getAttribute('position');
+            const positions = positionAttribute.array;
+            for (let i = 0; i < centerPositionIndexes.length; i++) {
+              const index = centerPositionIndexes[i];
+              positions[index + 0] = centerPositions[i * 3 + 0] + pullPosition.x;
+              positions[index + 1] = centerPositions[i * 3 + 1] + pullPosition.y;
+              positions[index + 2] = centerPositions[i * 3 + 2] + pullPosition.z;
             }
-            geometry.verticesNeedUpdate = true; */
+            positionAttribute.needsUpdate = true;
 
-            mesh.pullPosition = pullPosition;
+            stringMesh.pullPosition.copy(pullPosition);
           };
-
-          return mesh;
+          return stringMesh;
         })();
         scene.add(stringMesh);
 
-        let grabbed = false;
-        let grabSide = null;
-        const _grab = e => {
-          grabbable.setLocalTransform(localPositionVector, localRotationQuaterion, localScaleVector);
-          stringMesh.visible = true;
+        const _makeArrowMesh = () => {
+          const geometry = arrowGeometry;
+          const material = stringMaterial;
 
-          grabbed = true;
-          grabSide = grabbable.getGrabberSide();
+          const arrowMesh = new THREE.Mesh(geometry, material);
+          arrowMesh.startTime = 0;
+          arrowMesh.lastTime = 0;
+          arrowMesh.velocity = new THREE.Vector3();
+          arrowMesh.updatePull = position => {
+            if (position !== null) {
+              arrowMesh.position.copy(position);
+              arrowMesh.quaternion.setFromUnitVectors(
+                forwardVector,
+                localVector2.copy(grabbable.position)
+                  .sub(position)
+                  .normalize() 
+              );
+            } else {
+              stringMesh.getWorldPosition(arrowMesh.position);
+              arrowMesh.quaternion.copy(zeroQuaternion);
+            }
+            arrowMesh.updateMatrixWorld();
+          };
+
+          return arrowMesh;
+        };
+
+        const _grab = e => {
+          grabbable.setLocalTransform(localTransformPositionVector, localTransformRotationQuaterion, localTransformScaleVector);
+          stringMesh.visible = true;
         };
         grabbable.on('grab', _grab);
         const _release = e => {
           grabbable.setLocalTransform(zeroVector, zeroQuaternion, oneVector);
           stringMesh.visible = false;
-
-          grabbed = false;
-          grabSide = null;
         };
         grabbable.on('release', _release);
 
-        const ray = new THREE.Ray();
-        const direction = new THREE.Vector3();
-        const _update = () => {
-          if (grabbed) {
+        let pulling = false;
+        let nockedArrowMesh = null;
+        let drawnArrowMesh = null;
+        const _gripdown = e => {
+          const {side} = e;
+          const otherSide = OTHER_SIDES[side];
+
+          if (grabbable.isGrabbed() && grabbable.getGrabberSide() === otherSide) {
             const {gamepads} = pose.getStatus();
-            const gamepad = gamepads[grabSide];
-            const {worldPosition: controllerPosition, worldRotation: controllerRotation} = gamepad;
-            stringMesh.position.copy(controllerPosition)
-              .add(new THREE.Vector3(0, 0.015 * 4.6 * 3, 0).applyQuaternion(controllerRotation));
-            stringMesh.quaternion.copy(controllerRotation);
-            stringMesh.updateMatrixWorld();
+            const gamepad = gamepads[side];
+            const {worldPosition: controllerPosition} = gamepad;
+            stringMesh.getWorldPosition(localVector);
+
+            if (controllerPosition.distanceTo(localVector) < 0.1) {
+              pulling = true;
+            } else {
+              drawnArrowMesh = _makeArrowMesh();
+              scene.add(drawnArrowMesh);
+
+              // input.vibrate(side, 1, 20);
+            }
+
+            e.stopImmediatePropagation();
           }
+        };
+        input.on('gripdown', _gripdown, {
+          priority: 1,
+        });
+        const _gripup = e => {
+          const {side} = e;
+          const otherSide = OTHER_SIDES[side];
+
+          if (pulling && grabbable.getGrabberSide() === otherSide) {
+            pulling = false;
+
+            if (nockedArrowMesh) {
+              const arrow = nockedArrowMesh;
+              arrows.push(arrow);
+
+              const now = Date.now();
+              arrow.startTime = now;
+              arrow.lastTime = now;
+              arrow.velocity.set(0, 0, -ARROW_SPEED * stringMesh.pullPosition.length())
+                .applyQuaternion(arrow.quaternion);
+
+              nockedArrowMesh = null;
+            }
+          }
+          if (drawnArrowMesh) {
+            scene.remove(drawnArrowMesh);
+            drawnArrowMesh = null;
+          }
+        };
+        input.on('gripup', _gripup, {
+          priority: 1,
+        });
+
+        let lastPulling = false;
+        const _update = () => {
+          const {gamepads} = pose.getStatus();
+
+          const _updateStringPosition = () => {
+            if (grabbable.isGrabbed()) {
+              const side = grabbable.getGrabberSide();
+              const gamepad = gamepads[side];
+              const {worldPosition: controllerPosition, worldRotation: controllerRotation} = gamepad;
+              stringMesh.position.copy(controllerPosition)
+                .add(localVector.set(0, 0.015 * 4.6 * 3, 0).applyQuaternion(controllerRotation));
+              stringMesh.quaternion.copy(controllerRotation);
+              stringMesh.updateMatrixWorld();
+            }
+          };
+          const _updateNock = () => {
+            if (drawnArrowMesh) {
+              const _updateDrawnArrowMeshPosition = () => {
+                const side = grabbable.getGrabberSide();
+                const otherSide = OTHER_SIDES[side];
+                const gamepad = gamepads[otherSide];
+                const {worldPosition: controllerPosition, worldRotation: controllerRottion, worldScale: controllerScale} = gamepad;
+                drawnArrowMesh.position.copy(controllerPosition);
+                drawnArrowMesh.quaternion.copy(controllerRottion);
+                drawnArrowMesh.scale.copy(controllerScale);
+                drawnArrowMesh.updateMatrixWorld();
+              };
+
+              if (!nockedArrowMesh) {
+                if (stringMesh.getWorldPosition(localVector).distanceTo(drawnArrowMesh.getWorldPosition(localVector2)) < 0.1) {
+                  nockedArrowMesh = drawnArrowMesh;
+                  drawnArrowMesh = null;
+                } else {
+                  _updateDrawnArrowMeshPosition();
+                }
+              } else {
+                _updateDrawnArrowMeshPosition();
+              }
+            }
+          };
+          const _updatePull = () => {
+            const position = pulling ? gamepads[OTHER_SIDES[grabbable.getGrabberSide()]].worldPosition : null;
+
+            if (pulling || lastPulling) {
+              stringMesh.updatePull(position);
+            }
+            if (nockedArrowMesh) {
+              nockedArrowMesh.updatePull(position);
+            }
+
+            lastPulling = pulling;
+          };
+          const _updateArrows = () => {
+            if (arrows.length > 0) {
+              const now = Date.now();
+
+              const removedArrows = [];
+              for (let i = 0; i < arrows.length; i++) {
+                const arrow = arrows[i];
+                const timeSinceStart = now - arrow.startTime;
+
+                if (timeSinceStart < ARROW_TTL) {
+                  const timeDiff = now - arrow.lastTime;
+
+                  const {velocity} = arrow;
+                  arrow.position.add(localVector.copy(velocity).multiplyScalar(timeDiff));
+                  arrow.quaternion.setFromUnitVectors(
+                    forwardVector,
+                    localVector.copy(velocity).normalize()
+                  );
+                  arrow.updateMatrixWorld();
+
+                  velocity.y = Math.max(velocity.y + (ARROW_GRAVITY * timeDiff), ARROW_TERMINAL_VELOCITY);
+
+                  arrow.lastTime = now;
+                } else {
+                  removedArrows.push(arrow);
+                }
+              }
+              for (let i = 0; i < removedArrows.length; i++) {
+                const arrow = removedArrows[i];
+                scene.remove(arrow);
+                arrows.splice(arrows.indexOf(arrow), 1);
+              }
+            }
+          };
+
+          _updateStringPosition();
+          _updateNock();
+          _updatePull();
+          _updateArrows();
         };
         render.on('update', _update);
 
@@ -109,6 +329,9 @@ const bow = ({archae}) => {
 
             grabbable.removeListener('grab', _grab);
             grabbable.removeListener('release', _release);
+
+            input.removeListener('gripdown', _gripdown);
+            input.removeListener('gripup', _gripup);
 
             render.removeListener('update', _update);
           },

@@ -1,8 +1,31 @@
+import protocolUtils from './lib/utils/protocol-utils';
+
 const BYTES_PER_PIXEL = 4;
 const CUBE_VERTICES = 108;
+const NUM_POSITIONS_CHUNK = 200 * 1024;
 
 const spriteUtils = archae => ({
   mount() {
+    const worker = new Worker('archae/plugins/_core_utils_sprite-utils/build/worker.js');
+    const queue = [];
+    worker.requestSpriteGeometry = (imageData, size) => new Promise((accept, reject) => {
+      const {width, height, data: {buffer: imageDataBuffer}} = imageData;
+      const buffer = new ArrayBuffer(NUM_POSITIONS_CHUNK);
+      worker.postMessage({
+        width,
+        height,
+        size,
+        imageDataBuffer,
+        buffer,
+      }, [imageDataBuffer, buffer]);
+      queue.push(buffer => {
+        accept(protocolUtils.parseGeometry(buffer));
+      });
+    });
+    worker.onmessage = e => {
+      queue.shift()(e.data);
+    };
+
     let live = true;
     this._cleanup = () => {
       live = false;
@@ -134,10 +157,13 @@ const spriteUtils = archae => ({
           geometry.computeVertexNormals();
           return geometry;
         };
+        const _requestSpriteGeometry = (imageData, size) => worker.requestSpriteGeometry(imageData, size);
 
         return {
           makeImageGeometry: _makeImageGeometry,
           makeImageDataGeometry: _makeImageDataGeometry,
+          getImageData: _getImageData,
+          requestSpriteGeometry: _requestSpriteGeometry,
         };
       }
     });

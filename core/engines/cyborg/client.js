@@ -32,6 +32,7 @@ class Cyborg {
       '/core/engines/multiplayer',
       '/core/utils/js-utils',
       '/core/utils/geometry-utils',
+      '/core/utils/sprite-utils',
       '/core/utils/skin-utils',
     ])
       .then(([
@@ -44,6 +45,7 @@ class Cyborg {
         multiplayer,
         jsUtils,
         geometryUtils,
+        spriteUtils,
         skinUtils,
       ]) => {
         if (live) {
@@ -64,16 +66,6 @@ class Cyborg {
 
           const RAY_COLOR = 0x44c2ff;
           const RAY_HIGHLIGHT_COLOR = new THREE.Color(RAY_COLOR).multiplyScalar(0.5).getHex();
-
-          const _getImageData = img => {
-            const canvas = document.createElement('canvas');
-            canvas.width = img.width;
-            canvas.height = img.height;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0);
-            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            return imageData.data;
-          };
 
           class PRS {
             constructor() {
@@ -384,7 +376,7 @@ class Cyborg {
               playerSkinMesh.frustumCulled = false;
               scene.add(playerSkinMesh);
 
-              const skinImgBuffer = _getImageData(skinImg);
+              const skinImgBuffer = spriteUtils.getImageData(skinImg).data;
               multiplayer.updateSkin(skinImgBuffer);
             }
           };
