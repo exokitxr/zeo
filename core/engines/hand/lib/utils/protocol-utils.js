@@ -2,26 +2,15 @@ const BUFFER_SIZE = (1 * 4) + (4 * 4 * 3) + (2 * 4 * 4);
 
 const parseUpdateN = (buffer, byteOffset = 0) => new Uint32Array(buffer, byteOffset, 1)[0];
 const parseUpdate = (position, rotation, scale, localPosition, localRotation, localScale, buffer, byteOffset = 0) => {
-  // const n = parseUpdateN(buffer, byteOffset);
-  byteOffset += 1 * 4;
+  byteOffset += 4;
 
-  position.fromArray(new Float32Array(buffer, byteOffset, 3));
-  byteOffset += 3 * 4;
-
-  rotation.fromArray(new Float32Array(buffer, byteOffset, 4));
-  byteOffset += 4 * 4;
-
-  scale.fromArray(new Float32Array(buffer, byteOffset, 3));
-  byteOffset += 3* 4;
-
-  localPosition.fromArray(new Float32Array(buffer, byteOffset, 3));
-  byteOffset += 3 * 4;
-
-  localRotation.fromArray(new Float32Array(buffer, byteOffset, 4));
-  byteOffset += 4 * 4;
-
-  localScale.fromArray(new Float32Array(buffer, byteOffset, 3));
-  // byteOffset += 3* 4;
+  const array = new Float32Array(buffer, byteOffset, 20);
+  position.fromArray(array, 0);
+  rotation.fromArray(array, 3);
+  scale.fromArray(array, 7);
+  localPosition.fromArray(array, 10);
+  localRotation.fromArray(array, 13);
+  localScale.fromArray(array, 17);
 };
 const stringifyUpdate = (n, position, rotation, scale, localPosition, localRotation, localScale, buffer, byteOffset) => {
   if (buffer === undefined || byteOffset === undefined) {
@@ -30,45 +19,34 @@ const stringifyUpdate = (n, position, rotation, scale, localPosition, localRotat
   }
 
   new Uint32Array(buffer, byteOffset, 1)[0] = n;
-  byteOffset += 1 * 4;
+  byteOffset += 4;
 
-  const positionBuffer = new Float32Array(buffer, byteOffset, 3);
-  positionBuffer[0] = position.x;
-  positionBuffer[1] = position.y;
-  positionBuffer[2] = position.z;
-  byteOffset += 3 * 4;
+  const array = new Float32Array(buffer, byteOffset, 20);
+  array[0] = position.x;
+  array[1] = position.y;
+  array[2] = position.z;
 
-  const rotationBuffer = new Float32Array(buffer, byteOffset, 4);
-  rotationBuffer[0] = rotation.x;
-  rotationBuffer[1] = rotation.y;
-  rotationBuffer[2] = rotation.z;
-  rotationBuffer[3] = rotation.w;
-  byteOffset += 4 * 4;
+  array[3] = rotation.x;
+  array[4] = rotation.y;
+  array[5] = rotation.z;
+  array[6] = rotation.w;
 
-  const scaleBuffer = new Float32Array(buffer, byteOffset, 3);
-  scaleBuffer[0] = scale.x;
-  scaleBuffer[1] = scale.y;
-  scaleBuffer[2] = scale.z;
-  byteOffset += 3* 4;
+  array[7] = scale.x;
+  array[8] = scale.y;
+  array[9] = scale.z;
 
-  const localPositionBuffer = new Float32Array(buffer, byteOffset, 3);
-  localPositionBuffer[0] = localPosition.x;
-  localPositionBuffer[1] = localPosition.y;
-  localPositionBuffer[2] = localPosition.z;
-  byteOffset += 3 * 4;
+  array[10] = localPosition.x;
+  array[11] = localPosition.y;
+  array[12] = localPosition.z;
 
-  const localRotationBuffer = new Float32Array(buffer, byteOffset, 4);
-  localRotationBuffer[0] = localRotation.x;
-  localRotationBuffer[1] = localRotation.y;
-  localRotationBuffer[2] = localRotation.z;
-  localRotationBuffer[3] = localRotation.w;
-  byteOffset += 4 * 4;
+  array[13] = localRotation.x;
+  array[14] = localRotation.y;
+  array[15] = localRotation.z;
+  array[16] = localRotation.w;
 
-  const localScaleBuffer = new Float32Array(buffer, byteOffset, 3);
-  localScaleBuffer[0] = localScale.x;
-  localScaleBuffer[1] = localScale.y;
-  localScaleBuffer[2] = localScale.z;
-  // byteOffset += 3* 4;
+  array[17] = localScale.x;
+  array[18] = localScale.y;
+  array[19] = localScale.z;
 
   return buffer;
 };
