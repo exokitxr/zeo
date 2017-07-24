@@ -18,7 +18,9 @@ const parseUpdate = (
   buffer,
   byteOffset = 0
 ) => {
-  const array = new Float32Array(buffer, 1 * 4, (10 * 4) + 1);
+  byteOffset += 4;
+
+  const array = new Float32Array(buffer, byteOffset, (10 * 4) + 1);
   hmdPosition.fromArray(array, 0);
   hmdRotation.fromArray(array, 3);
   hmdScale.fromArray(array, 7);

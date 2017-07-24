@@ -2,20 +2,13 @@ const BUFFER_SIZE = (1 * 4) + (4 * 4 * 3) + (2 * 4 * 4);
 
 const parseUpdateN = (buffer, byteOffset = 0) => new Uint32Array(buffer, byteOffset, 1)[0];
 const parseUpdate = (position, rotation, scale, velocity, buffer, byteOffset = 0) => {
-  // const n = parseUpdateN(buffer, byteOffset);
-  byteOffset += 1 * 4;
+  byteOffset += 4;
 
-  position.fromArray(new Float32Array(buffer, byteOffset, 3));
-  byteOffset += 3 * 4;
-
-  rotation.fromArray(new Float32Array(buffer, byteOffset, 4));
-  byteOffset += 4 * 4;
-
-  scale.fromArray(new Float32Array(buffer, byteOffset, 3));
-  byteOffset += 3 * 4;
-
-  velocity.fromArray(new Float32Array(buffer, byteOffset, 3));
-  // byteOffset += 3* 4;
+  const array = new Float32Array(buffer, byteOffset, 10 + 3);
+  position.fromArray(array, 0);
+  rotation.fromArray(array, 3);
+  scale.fromArray(array, 7);
+  velocity.fromArray(array, 10);
 };
 const stringifyUpdate = (n, position, rotation, scale, velocity, buffer, byteOffset) => {
   if (buffer === undefined || byteOffset === undefined) {
@@ -24,32 +17,25 @@ const stringifyUpdate = (n, position, rotation, scale, velocity, buffer, byteOff
   }
 
   new Uint32Array(buffer, byteOffset, 1)[0] = n;
-  byteOffset += 1 * 4;
+  byteOffset += 4;
 
-  const positionBuffer = new Float32Array(buffer, byteOffset, 3);
-  positionBuffer[0] = position.x;
-  positionBuffer[1] = position.y;
-  positionBuffer[2] = position.z;
-  byteOffset += 3 * 4;
+  const array = new Float32Array(buffer, byteOffset, 10 + 3);
+  array[0] = position.x;
+  array[1] = position.y;
+  array[2] = position.z;
 
-  const rotationBuffer = new Float32Array(buffer, byteOffset, 4);
-  rotationBuffer[0] = rotation.x;
-  rotationBuffer[1] = rotation.y;
-  rotationBuffer[2] = rotation.z;
-  rotationBuffer[3] = rotation.w;
-  byteOffset += 4 * 4;
+  array[3] = rotation.x;
+  array[4] = rotation.y;
+  array[5] = rotation.z;
+  array[6] = rotation.w;
 
-  const scaleBuffer = new Float32Array(buffer, byteOffset, 3);
-  scaleBuffer[0] = scale.x;
-  scaleBuffer[1] = scale.y;
-  scaleBuffer[2] = scale.z;
-  byteOffset += 3 * 4;
+  array[7] = scale.x;
+  array[8] = scale.y;
+  array[9] = scale.z;
 
-  const velocityBuffer = new Float32Array(buffer, byteOffset, 3);
-  velocityBuffer[0] = velocity.x;
-  velocityBuffer[1] = velocity.y;
-  velocityBuffer[2] = velocity.z;
-  // byteOffset += 3 * 4;
+  array[10] = velocity.x;
+  array[11] = velocity.y;
+  array[12] = velocity.z;
 
   return buffer;
 };
