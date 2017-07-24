@@ -6,8 +6,6 @@ const crypto = require('crypto');
 
 const mkdirp = require('mkdirp');
 
-const OPEN = 1; // ws.OPEN
-
 const DEFAULT_TAGS = {
   tags: {},
 };
@@ -23,7 +21,7 @@ class World {
   mount() {
     const {_archae: archae} = this;
     const {metadata: {crds: {url: crdsUrl}}} = archae;
-    const {app, wss, dirname, dataDirectory} = archae.getCore();
+    const {app, ws, wss, dirname, dataDirectory} = archae.getCore();
 
     let live = true;
     this._cleanup = () => {
@@ -114,7 +112,10 @@ class World {
 
               for (let i = 0; i < connections.length; i++) {
                 const connection = connections[i];
-                connection.send(es);
+
+                if (connection.readyState === ws.OPEN) {
+                  connection.send(es);
+                }
               }
             }
           };
