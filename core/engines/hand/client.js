@@ -48,6 +48,8 @@ class Hand {
         const {EventEmitter} = events;
         const {AutoWs} = networkUtils;
 
+        const buffer = new ArrayBuffer(protocolUtils.BUFFER_SIZE);
+
         const localUserId = multiplayer.getId();
 
         const grabbables = {};
@@ -91,16 +93,17 @@ class Hand {
                 const [n] = args;
 
                 const grabbable = grabbables[n];
-                delete grabbables[n];
-
-                grabbable.emit('destroy');
+                if (grabbable) {
+                  delete grabbables[n];
+                }
               } else {
                 console.warn('unknown hand message type:', type);
               }
             } else {
               const n = protocolUtils.parseUpdateN(data);
               const grabbable = grabbables[n];
-              protocolUtils.parseUpdate(grabbable.position, grabbable.rotation, grabbable.scale, grabbable.localPosition, grabbable.localRotation, grabbable.localScale, grabbable.data);
+              protocolUtils.parseUpdate(grabbable.position, grabbable.rotation, grabbable.scale, grabbable.localPosition, grabbable.localRotation, grabbable.localScale, data);
+              grabbable.emitUpdate();
             }
           });
           return connection;
@@ -166,6 +169,7 @@ class Hand {
 
           add() {
             const {n, position, rotation, scale, localPosition, localRotation, localScale} = this;
+
             _broadcastObject('addGrabbable', [n, position, rotation, scale, localPosition, localRotation, localScale]);
           }
 
@@ -173,8 +177,6 @@ class Hand {
             const {n} = this;
 
             _broadcastObject('removeGrabbable', [n]);
-
-            this.emit('destroy');
           }
 
           grab(side) {
@@ -272,7 +274,7 @@ class Hand {
           }
 
           broadcastUpdate() {
-            _broadcastBuffer(protocolUtils.stringifyUpdate(this.n, this.position, this.rotation, this.scale, this.localPosition, this.localRotation, this.localScale));
+            _broadcastBuffer(protocolUtils.stringifyUpdate(this.n, this.position, this.rotation, this.scale, this.localPosition, this.localRotation, this.localScale, buffer, 0));
           }
         }
 
@@ -360,14 +362,22 @@ class Hand {
 
           addGrabbable(grabbable) {
             const {n} = grabbable;
-            grabbable.add();
-            grabbables[n] = grabbable;
+
+            if (!grabbables[n]) {
+              grabbable.add();
+
+              grabbables[n] = grabbable;
+            }
           }
 
           destroyGrabbable(grabbable) {
             const {n} = grabbable;
-            grabbable.remove();
-            delete grabbables[n];
+
+            if (grabbables[n]) {
+              grabbable.remove();
+
+              delete grabbables[n];
+            }
           }
         }
         HandApi.prototype.Grabbable = Grabbable;

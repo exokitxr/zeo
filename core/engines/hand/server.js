@@ -236,12 +236,11 @@ class Hand {
                   console.warn('invalid message', m);
                 }
               } else {
-                const {buffer} = o;
-                const n = protocolUtils.parseUpdateN(buffer);
+                const n = protocolUtils.parseUpdateN(o.buffer, o.byteOffset);
                 const grabbable = grabbables[n];
 
                 if (grabbable) {
-                  protocolUtils.parseUpdate(grabbable.position, grabbable.rotation, grabbable.scale, grabbable.localPosition, grabbable.localRotation, grabbable.localScale, buffer);
+                  protocolUtils.parseUpdate(grabbable.position, grabbable.rotation, grabbable.scale, grabbable.localPosition, grabbable.localRotation, grabbable.localScale, o.buffer, o.byteOffset);
 
                   _broadcastBuffer(n, o);
                 }
