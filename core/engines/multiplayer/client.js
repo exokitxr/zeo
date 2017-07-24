@@ -1,3 +1,5 @@
+const protocolUtils = require('./lib/utils/protocol-utils');
+
 const SIDES = ['left', 'right'];
 
 class Multiplayer {
@@ -51,11 +53,13 @@ class Multiplayer {
         const zeroQuaternion = new THREE.Quaternion();
         const oneVector = new THREE.Vector3(1, 1, 1);
 
+        const buffer = new ArrayBuffer(protocolUtils.BUFFER_SIZE);
+
         let connection = null;
         const _addressChange = ({address, username}) => {
           let pendingMessage = null;
 
-          connection = new AutoWs(_relativeWsUrl('archae/multiplayerWs?id=' + encodeURIComponent(multiplayerApi.getId()) + '&address=' + encodeURIComponent(address) + '&username=' + encodeURIComponent(username)));
+          connection = new AutoWs(_relativeWsUrl('archae/multiplayerWs?id=' + encodeURIComponent(String(multiplayerApi.getId())) + '&address=' + encodeURIComponent(address) + '&username=' + encodeURIComponent(username)));
           connection.on('message', msg => {
             const {data} = msg;
 
@@ -63,20 +67,15 @@ class Multiplayer {
               const m = JSON.parse(data);
               const {type} = m;
 
-              if (type === 'init') {
-                const {statuses} = m;
-
-                for (let i = 0; i < statuses.length; i++) {
-                  const statusEntry = statuses[i];
-                  _handleStatusEntry(statusEntry);
-                }
-
-                rend.setStatus('users', multiplayerApi.getUsers());
-              } else if (type === 'status') {
-                const statusEntry = m;
-                _handleStatusEntry(statusEntry);
-
-                rend.setStatus('users', multiplayerApi.getUsers());
+              if (type === 'playerEnter') {
+                const {n, username} = m;
+                multiplayerApi.emit('playerEnter', {
+                  id: n,
+                  username,
+                });
+              } else if (type === 'playerLeave') {
+                const {n} = m;
+                multiplayerApi.emit('playerLeave', n);
               } else if (type === 'setSkin') {
                 pendingMessage = m;
               } else if (type === 'clearSkin') {
@@ -85,117 +84,68 @@ class Multiplayer {
                 console.log('unknown message type', JSON.stringify(type));
               }
             } else {
-              _handleSetSkinEntry(pendingMessage, new Uint8Array(data));
-              pendingMessage = null;
+              if (!pendingMessage) { // update
+                _handleStatusMessage(data);
+              } else { // pending message
+                _handleSetSkinEntry(pendingMessage, new Uint8Array(data));
+                pendingMessage = null;
+              }
             }
           });
 
-          const _handleStatusEntry = statusEntry => {
-            const {id, status} = statusEntry;
+          const _handleStatusMessage = buffer => {
+            const n = protocolUtils.parseUpdateN(buffer);
 
-            const playerStatus = multiplayerApi.getPlayerStatus(id);
-            if (status) {
-              if (!playerStatus) {
-                multiplayerApi.emit('playerEnter', {id, status});
-              } else {
-                multiplayerApi.emit('playerStatusUpdate', {id, status});
+            const playerStatus = multiplayerApi.getPlayerStatus(n);
+            protocolUtils.parseUpdate(
+              playerStatus.hmd.position,
+              playerStatus.hmd.rotation,
+              playerStatus.hmd.scale,
+              playerStatus.gamepads.left.position,
+              playerStatus.gamepads.left.rotation,
+              playerStatus.gamepads.left.scale,
+              playerStatus.gamepads.right.position,
+              playerStatus.gamepads.right.rotation,
+              playerStatus.gamepads.right.scale,
+              playerStatus.metadata.menu,
+              playerStatus.metadata.menu.position,
+              playerStatus.metadata.menu.rotation,
+              playerStatus.metadata.menu.scale,
+              buffer,
+              0
+            );
 
-                if ('username' in status) {
-                  playerStatus.username = status.username;
-                }
-                if ('hmd' in status) {
-                  playerStatus.hmd = status.hmd;
-                }
-                if ('controllers' in status) {
-                  playerStatus.controllers = status.controllers;
-                }
-              }
-            } else {
-              if (playerStatus) {
-                multiplayerApi.emit('playerLeave', {id});
-              } else {
-                console.warn('Ignoring duplicate player leave message', {id});
-              }
-            }
+            multiplayerApi.emit('playerStatusUpdate', n);
           };
-          const _handleSetSkinEntry = ({id}, skinImgBuffer) => {
-            multiplayerApi.setPlayerSkin(id, skinImgBuffer);
+          const _handleSetSkinEntry = ({n}, skinImgBuffer) => {
+            multiplayerApi.setPlayerSkin(n, skinImgBuffer);
           };
-          const _handleClearSkinEntry = ({id}) => {
-            multiplayerApi.setPlayerSkin(id, null);
+          const _handleClearSkinEntry = ({n}) => {
+            multiplayerApi.setPlayerSkin(n, null);
           };
-          const _status = status => {
-            connection.send(JSON.stringify({
-              type: 'status',
-              status: { // XXX this should use a buffer
-                hmd: {
-                  position: status.hmd.position.toArray(),
-                  rotation: status.hmd.rotation.toArray(),
-                  scale: status.hmd.scale.toArray(),
-                },
-                controllers: {
-                  left: {
-                    position: status.gamepads.left.position.toArray(),
-                    rotation: status.gamepads.left.rotation.toArray(),
-                    scale: status.gamepads.left.scale.toArray(),
-                  },
-                  right: {
-                    position: status.gamepads.right.position.toArray(),
-                    rotation: status.gamepads.right.rotation.toArray(),
-                    scale: status.gamepads.right.scale.toArray(),
-                  },
-                },
-                metadata: {
-                  menu: {
-                    open: status.metadata.menu.open,
-                    position: status.metadata.menu.position.toArray(),
-                    rotation: status.metadata.menu.rotation.toArray(),
-                    scale: status.metadata.menu.scale.toArray(),
-                  },
-                },
-              },
-            }));
-          };
-          multiplayerApi.on('status', _status);
-          const _skin = ({id, skinImgBuffer}) => {
-            if (skinImgBuffer) {
-              connection.send(JSON.stringify({
-                type: 'setSkin',
-                id: id,
-              }));
-              connection.send(skinImgBuffer);
-            } else {
-              connection.send(JSON.stringify({
-                type: 'clearSkin',
-                id: id,
-              }));
-            }
-          };
-          multiplayerApi.on('skin', _skin);
 
           cleanups.push(() => {
             multiplayerApi.reset();
 
             connection.destroy();
-
-            multiplayerApi.removeListener('status', _status);
           });
         };
         rend.once('addressChange', _addressChange);
 
         class MutiplayerInterface extends EventEmitter {
-          constructor(id) {
+          constructor(n) {
             super();
 
-            this.id = id;
+            this.n = n;
 
             this.playerStatuses = new Map();
+            this.playerUsernames = new Map();
             this.remotePlayerMeshes = new Map();
             this.remotePlayerSkinMeshes = new Map();
           }
 
           getId() {
-            return this.id;
+            return this.n;
           }
 
           getPlayerStatuses() {
@@ -211,13 +161,13 @@ class Multiplayer {
             return result;
           }
 
-          getPlayerStatus(playerId) {
-            return this.playerStatuses.get(playerId) || null;
+          getPlayerStatus(n) {
+            return this.playerStatuses.get(n) || null;
           }
 
 
-          setPlayerSkin(playerId, skinImgBuffer) {
-            const oldSkinMesh = this.remotePlayerSkinMeshes.get(playerId);
+          setPlayerSkin(n, skinImgBuffer) {
+            const oldSkinMesh = this.remotePlayerSkinMeshes.get(n);
             if (oldSkinMesh) {
               scene.remove(oldSkinMesh);
               oldSkinMesh.destroy();
@@ -228,79 +178,87 @@ class Multiplayer {
               const newSkinImg = _makeImg(skinImgBuffer, 64, 64);
               const newSkinMesh = skinUtils.makePlayerMesh(newSkinImg);
               scene.add(newSkinMesh);
-              this.remotePlayerSkinMeshes.set(playerId, newSkinMesh);
+              this.remotePlayerSkinMeshes.set(n, newSkinMesh);
             }
           }
 
-          addPlayer(playerId, status) {
-            this.playerStatuses.set(playerId, status); // XXX this should use a persistent in-place status structure
+          addPlayer(n, username) {
+            const status = _makePlayerStatus();
+            this.playerStatuses.set(n, status);
 
-            const remotePlayerMesh = _makeRemotePlayerMesh();
+            this.playerUsernames.set(n, username);
+
+            const remotePlayerMesh = _makeRemotePlayerMesh(username);
             remotePlayerMesh.update(status);
             scene.add(remotePlayerMesh);
-            this.remotePlayerMeshes.set(playerId, remotePlayerMesh);
+            this.remotePlayerMeshes.set(n, remotePlayerMesh);
+
+            rend.setStatus('users', multiplayerApi.getUsers());
           }
 
-          deletePlayer(playerId) {
-            this.playerStatuses.delete(playerId);
+          removePlayer(n) {
+            this.playerStatuses.delete(n);
 
-            const remotePlayerMesh = this.remotePlayerMeshes.get(playerId);
+            this.playerUsernames.delete(n);
+
+            const remotePlayerMesh = this.remotePlayerMeshes.get(n);
             scene.remove(remotePlayerMesh);
             remotePlayerMesh.destroy();
-            this.remotePlayerMeshes.delete(playerId);
+            this.remotePlayerMeshes.delete(n);
 
-            const skinMesh = this.remotePlayerSkinMeshes.get(playerId);
+            const skinMesh = this.remotePlayerSkinMeshes.get(n);
             if (skinMesh) {
               scene.remove(skinMesh);
               skinMesh.destroy();
-              this.remotePlayerSkinMeshes.delete(playerId);
+              this.remotePlayerSkinMeshes.delete(n);
             }
+
+            rend.setStatus('users', multiplayerApi.getUsers());           
           }
 
           getUsers() {
-            const {playerStatuses} = this;
-
-            const result = Array(playerStatuses.size);
+            const {playerUsernames} = this;
+            const result = Array(playerUsernames.size);
             let i = 0;
-            playerStatuses.forEach(playerStatus => {
-              result[i++] = playerStatus.username;
+            playerUsernames.forEach(username => {
+              result[i++] = username;
             });
             return result.sort((a, b) => a.localeCompare(b));
           }
 
-          updateStatus(status) {
-            this.emit('status', status);
-          }
-
           updateSkin(skinImgBuffer) {
-            this.emit('skin', {
-              id: this.id,
-              skinImgBuffer: skinImgBuffer,
-            });
-          }
-
-          getRemotePlayerMesh(id) {
-            return this.remotePlayerMeshes.get(id) || null;
-          }
-
-          getRemotePlayerSkinMesh(id) {
-            return this.remotePlayerSkinMeshes.get(id) || null;
-          }
-
-          getRemoteControllerMeshes(id) {
-            const remotePlayerMesh = this.getRemotePlayerMesh(id);
-
-            if (remotePlayerMesh) {
-              return remotePlayerMesh.controllers;
+            if (skinImgBuffer) {
+              connection.send(JSON.stringify({
+                type: 'setSkin',
+                n: n,
+              }));
+              connection.send(skinImgBuffer);
             } else {
-              return null;
+              connection.send(JSON.stringify({
+                type: 'clearSkin',
+                n: n,
+              }));
             }
+          }
+
+          getRemotePlayerMesh(n) {
+            return this.remotePlayerMeshes.get(n) || null;
+          }
+
+          getRemotePlayerSkinMesh(n) {
+            return this.remotePlayerSkinMeshes.get(n) || null;
+          }
+
+          getRemoteControllerMeshes(n) {
+            const remotePlayerMesh = this.getRemotePlayerMesh(n);
+            return remotePlayerMesh ? remotePlayerMesh.controllers : null;
           }
 
           reset() {
             const {remotePlayerMeshes: oldRemotePlayerMeshes} = this;
 
             this.playerStatuses = new Map();
+            this.playerUsernames = new Map();
             this.remotePlayerMeshes = new Map();
 
             oldRemotePlayerMeshes.forEach(mesh => {
@@ -310,9 +268,9 @@ class Multiplayer {
             rend.setStatus('users', multiplayerApi.getUsers());
           }
         }
-        const multiplayerApi = new MutiplayerInterface(_makeId());
+        const multiplayerApi = new MutiplayerInterface(_makeN());
 
-        const _makeRemotePlayerMesh = () => {
+        const _makeRemotePlayerMesh = username => {
           const object = new THREE.Object3D();
 
           const hmd = hmdModelMesh.clone();
@@ -326,7 +284,7 @@ class Multiplayer {
           object.label = label; */
 
           const menu = resource.makePlayerMenuMesh({
-            username: status.username,
+            username,
           });
           object.add(menu);
           object.menu = menu;
@@ -342,27 +300,20 @@ class Multiplayer {
 
           object.update = status => {
             const _updateHmd = () => {
-              const {hmd: hmdStatus} = status;
-
-              hmd.position.fromArray(hmdStatus.position);
-              hmd.quaternion.fromArray(hmdStatus.rotation);
-              hmd.scale.fromArray(hmdStatus.scale);
+              hmd.position.copy(status.hmd.position);
+              hmd.quaternion.copy(status.hmd.rotation);
+              hmd.scale.copy(status.hmd.scale);
               // hmd.updateMatrixWorld();
             };
             const _updateControllers = () => {
-              const {left: leftController, right: rightController} = controllers;
+              controllers.left.position.fromArray(status.gamepads.left.position);
+              controllers.left.quaternion.fromArray(status.gamepads.left.rotation);
+              controllers.left.scale.fromArray(status.gamepads.left.scale);
+              // controllers.left.updateMatrixWorld();
 
-              const {controllers: controllersStatus} = status;
-              const {left: leftControllerStatus, right: rightControllerStatus} = controllersStatus;
-
-              leftController.position.fromArray(leftControllerStatus.position);
-              leftController.quaternion.fromArray(leftControllerStatus.rotation);
-              leftController.scale.fromArray(leftControllerStatus.scale);
-              // leftController.updateMatrixWorld();
-
-              rightController.position.fromArray(rightControllerStatus.position);
-              rightController.quaternion.fromArray(rightControllerStatus.rotation);
-              rightController.scale.fromArray(rightControllerStatus.scale);
+              controllers.right.position.fromArray(status.gamepads.right.position);
+              controllers.right.quaternion.fromArray(status.gamepads.right.rotation);
+              controllers.right.scale.fromArray(status.gamepads.right.scale);
               // rightController.updateMatrixWorld();
             };
             /* const _updateLabel = () => {
@@ -374,12 +325,7 @@ class Multiplayer {
               });
             }; */
             const _updateMetadata = () => {
-              const {metadata: {menu: menuStatus}, username} = status;
-
-              menu.update({
-                menuStatus,
-                username,
-              });
+              menu.update(status.metadata.menu);
             };
             const _updateMatrix = () => {
               object.updateMatrixWorld();
@@ -398,37 +344,28 @@ class Multiplayer {
           return object;
         };
 
-        const playerStatuses = multiplayerApi.getPlayerStatuses();
-        for (let i = 0; i < playerStatuses.length; i++) {
-          const playerStatus = playerStatuses[i];
-          const {playerId, status} = playerStatus;
-          multiplayerApi.addPlayer(playerId, status);
-        }
+        const playerStatusUpdate = n => {
+          const status = multiplayerApi.getPlayerStatus(n);
 
-        const playerStatusUpdate = update => {
-          const {id, status} = update;
-
-          const remotePlayerMesh = multiplayerApi.getRemotePlayerMesh(id);
+          const remotePlayerMesh = multiplayerApi.getRemotePlayerMesh(n);
           remotePlayerMesh.update(status);
 
-          const remotePlayerSkinMesh = multiplayerApi.getRemotePlayerSkinMesh(id);
+          const remotePlayerSkinMesh = multiplayerApi.getRemotePlayerSkinMesh(n);
           if (remotePlayerSkinMesh) {
-            remotePlayerSkinMesh.updateJson(status);
+            remotePlayerSkinMesh.update(status);
           }
         };
-        const playerEnter = update => {
-          const {id, status} = update;
-          multiplayerApi.addPlayer(id, status);
+        const playerEnter = ({id: n, username}) => {
+          multiplayerApi.addPlayer(n, username);
         };
-        const playerLeave = update => {
-          const {id} = update;
-          multiplayerApi.deletePlayer(id);
+        const playerLeave = n => {
+          multiplayerApi.removePlayer(n);
         };
         multiplayerApi.on('playerStatusUpdate', playerStatusUpdate);
         multiplayerApi.on('playerEnter', playerEnter);
         multiplayerApi.on('playerLeave', playerLeave);
 
-        const localStatus = {
+        const _makePlayerStatus = () => ({
           hmd: {
             position: zeroVector.clone(),
             rotation: zeroQuaternion.clone(),
@@ -454,7 +391,8 @@ class Multiplayer {
               scale: oneVector.clone(),
             },
           },
-        };
+        });
+        const localStatus = _makePlayerStatus();
         const _update = () => {
           const status = webvr.getStatus();
           const menuState = rend.getMenuState();
@@ -513,16 +451,17 @@ class Multiplayer {
               updated = true;
             }
           };
-          const _emitUpdate = () => {
+          const _sendUpdate = () => {
             if (updated) {
-              multiplayerApi.updateStatus(localStatus);
+              protocolUtils.stringifyUpdate(multiplayerApi.getId(), localStatus, buffer, 0);
+              connection.send(buffer);
             }
           };
 
           _updateHmd();
           _updateControllers();
           _updateMetadata();
-          _emitUpdate();
+          _sendUpdate();
         };
         rend.on('update', _update);
 
@@ -550,7 +489,7 @@ const _relativeWsUrl = s => {
   const l = window.location;
   return ((l.protocol === 'https:') ? 'wss://' : 'ws://') + l.host + l.pathname + (!/\/$/.test(l.pathname) ? '/' : '') + s;
 };
-const _makeId = () => Math.random().toString(36).substring(7);
+const _makeN = () => Math.floor(Math.random() * 0xFFFFFFFF);
 const _arrayEquals = (a, b) => Array.isArray(a) && Array.isArray(b) && a.length === b.length && a.every((ae, i) => b[i] === ae);
 const _makeImg = (imgBuffer, width, height) => {
   const canvas = document.createElement('canvas');

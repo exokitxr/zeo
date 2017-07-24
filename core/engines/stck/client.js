@@ -25,8 +25,6 @@ class Stck {
         const {events} = jsUtils;
         const {EventEmitter} = events;
 
-        const _makeN = () => Math.floor(Math.random() * 0xFFFFFFFF);
-
         const bodies = {};
 
         const worker = new Worker('archae/plugins/_core_engines_stck/build/worker.js');
@@ -140,5 +138,6 @@ class Stck {
     this._cleanup();
   }
 }
+const _makeN = () => Math.floor(Math.random() * 0xFFFFFFFF);
 
 module.exports = Stck;
