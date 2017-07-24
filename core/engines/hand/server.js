@@ -193,7 +193,12 @@ class Hand {
                       _broadcastObject(n, 'destroy', [n]);
 
                       delete grabbables[n];
-                      delete interests[n];
+
+                      const interest = interests[n];
+                      interest.splice(interest.indexOf(userId), 1);
+                      if (interest.length === 0) {
+                        delete interests[n];
+                      }
 
                       localInterests.splice(localInterests.indexOf(n), 1);
                     }
