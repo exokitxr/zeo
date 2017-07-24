@@ -16,19 +16,16 @@ class Stck {
     return archae.requestPlugins([
       '/core/engines/three',
       '/core/utils/js-utils',
-      '/core/utils/hash-utils',
     ]).then(([
       three,
       jsUtils,
-      hashUtils,
     ]) => {
       if (live) {
         const {THREE} = three;
         const {events} = jsUtils;
         const {EventEmitter} = events;
-        const {murmur} = hashUtils;
 
-        const _makeN = () => murmur(Math.random());
+        const _makeN = () => Math.floor(Math.random() * 0xFFFFFFFF);
 
         const bodies = {};
 
