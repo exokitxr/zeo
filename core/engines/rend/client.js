@@ -115,9 +115,9 @@ class Rend {
         };
         const menuState = {
           open: true,
-          position: [0, DEFAULT_USER_HEIGHT, -1.5],
-          rotation: new THREE.Quaternion().toArray(),
-          scale: new THREE.Vector3(1, 1, 1).toArray(),
+          position: new THREE.Vector3(0, DEFAULT_USER_HEIGHT, -1.5),
+          rotation: new THREE.Quaternion(),
+          scale: new THREE.Vector3(1, 1, 1),
         };
         const navbarState = {
           tab: 'status',
@@ -125,9 +125,9 @@ class Rend {
 
         const menuMesh = (() => {
           const object = new THREE.Object3D();
-          object.position.fromArray(menuState.position);
-          object.quaternion.fromArray(menuState.rotation);
-          object.scale.fromArray(menuState.scale);
+          object.position.copy(menuState.position);
+          object.quaternion.copy(menuState.rotation);
+          object.scale.copy(menuState.scale);
           object.visible = menuState.open;
 
           const statusMesh = (() => {
@@ -334,9 +334,6 @@ class Rend {
           uiTracker.updateMatrixWorld(menuMesh);
 
           menuState.open = false; // XXX need to cancel other menu states as well
-          menuState.position = null;
-          menuState.rotation = null;
-          menuState.scale = null;
 
           const {transformGizmos} = auxObjects;
           for (let i = 0; i < transformGizmos.length; i++) {
@@ -376,9 +373,9 @@ class Rend {
           uiTracker.updateMatrixWorld(menuMesh);
 
           menuState.open = true;
-          menuState.position = newMenuPosition.toArray();
-          menuState.rotation = newMenuRotation.toArray();
-          menuState.scale = newMenuScale.toArray();
+          menuState.position.copy(newMenuPosition);
+          menuState.rotation.copy(newMenuRotation);
+          menuState.scale.copy(newMenuScale);
 
           const {transformGizmos} = auxObjects;
           for (let i = 0; i < transformGizmos.length; i++) {
@@ -534,14 +531,7 @@ class Rend {
           }
 
           getMenuState() {
-            const {open, position, rotation, scale} = menuState;
-
-            return {
-              open,
-              position,
-              rotation,
-              scale,
-            };
+            return menuState;
           }
 
           getTab() {
