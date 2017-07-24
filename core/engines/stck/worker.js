@@ -51,6 +51,19 @@ let lastUpdateTime = Date.now();
 const nextPosition = new THREE.Vector3();
 const nextVelocity = new THREE.Vector3();
 const localVector = new THREE.Vector3();
+const localMin = new THREE.Vector2();
+const localMax = new THREE.Vector2();
+const localTriangle = new THREE.Triangle();
+const numPositions = 3;
+const positions = (() => {
+  const result = Array(numPositions);
+  for (let i = 0; i < numPositions; i++) {
+    result[i] = new THREE.Vector3();
+  }
+  return result;
+})();
+const elevations = Array(numPositions);
+const localBaryCoord = new THREE.Vector3();
 const interval = setInterval(() => {
   const now = Date.now();
   const timeDiff = now - lastUpdateTime;
@@ -65,35 +78,37 @@ const interval = setInterval(() => {
 
     for (let j = 0; j < staticHeightfieldBodies.length; j++) {
       const staticHeightfieldBody = staticHeightfieldBodies[j];
-      const min = new THREE.Vector2(staticHeightfieldBody.position.x, staticHeightfieldBody.position.z);
-      const max = min.clone().add(new THREE.Vector2(staticHeightfieldBody.width, staticHeightfieldBody.depth));
+      localMin.set(staticHeightfieldBody.position.x, staticHeightfieldBody.position.z);
+      localMax.copy(localMin).add(new THREE.Vector2(staticHeightfieldBody.width, staticHeightfieldBody.depth));
       const nextPosition2D = new THREE.Vector2(nextPosition.x, nextPosition.z);
 
-      if (nextPosition2D.x >= min.x && nextPosition2D.x < max.x && nextPosition2D.y >= min.y && nextPosition2D.y < max.y) { // if heightfield applies
+      if (nextPosition2D.x >= localMin.x && nextPosition2D.x < localMax.x && nextPosition2D.y >= localMin.y && nextPosition2D.y < localMax.y) { // if heightfield applies
         const ax = Math.floor(nextPosition2D.x);
         const ay = Math.floor(nextPosition2D.y);
 
-        const positions = ((nextPosition2D.x - ax) <= (1 - (nextPosition2D.y - ay))) ? [ // top left triangle
-          new THREE.Vector2(ax, ay),
-          new THREE.Vector2(ax + 1, ay),
-          new THREE.Vector2(ax, ay + 1),
-        ] : [ // bottom right triangle
-          new THREE.Vector2(ax + 1, ay),
-          new THREE.Vector2(ax, ay + 1),
-          new THREE.Vector2(ax + 1, ay + 1),
-        ];
-        const indexes = positions.map(({x, y}) => (x - min.x) + ((y - min.y) * (staticHeightfieldBody.width + 1)));
-        const elevations = indexes.map(index => staticHeightfieldBody.data[index] + staticHeightfieldBody.position.y);
-        const baryCoord = new THREE.Triangle(
-          new THREE.Vector3(positions[0].x, 0, positions[0].y),
-          new THREE.Vector3(positions[1].x, 0, positions[1].y),
-          new THREE.Vector3(positions[2].x, 0, positions[2].y)
-        ).barycoordFromPoint(
-          new THREE.Vector3(nextPosition2D.x, 0, nextPosition2D.y)
-        );
-        const elevation = baryCoord.x * elevations[0] +
-          baryCoord.y * elevations[1] +
-          baryCoord.z * elevations[2];
+        const _getIndex = ({x, z}) => (x - localMin.x) + ((z - localMin.y) * (staticHeightfieldBody.width + 1));
+        const _getElevation = index => staticHeightfieldBody.data[index] + staticHeightfieldBody.position.y;
+
+        if ((nextPosition2D.x - ax) <= (1 - (nextPosition2D.y - ay))) { // top left triangle
+          positions[0].set(ax, 0, ay);
+          positions[1].set(ax + 1, 0, ay);
+          positions[2].set(ax, 0, ay + 1);
+        } else { // bottom right triangle
+          positions[0].set(ax + 1, 0, ay);
+          positions[1].set(ax, 0, ay + 1);
+          positions[2].set(ax + 1, 0, ay + 1);
+        };
+        elevations[0] = _getElevation(_getIndex(positions[0]));
+        elevations[1] = _getElevation(_getIndex(positions[1]));
+        elevations[2] = _getElevation(_getIndex(positions[2]));
+        localTriangle.set(positions[0], positions[1], positions[2])
+          .barycoordFromPoint(
+            localVector.set(nextPosition2D.x, 0, nextPosition2D.y),
+            localBaryCoord
+          );
+        const elevation = localBaryCoord.x * elevations[0] +
+          localBaryCoord.y * elevations[1] +
+          localBaryCoord.z * elevations[2];
 
         if ((nextPosition.y - (size.y / 2)) < elevation) {
           nextPosition.y = elevation + (size.y / 2);
