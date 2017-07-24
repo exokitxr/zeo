@@ -43,7 +43,7 @@ const stringifyUpdate = (n, position, rotation, scale, velocity, buffer, byteOff
   scaleBuffer[0] = scale.x;
   scaleBuffer[1] = scale.y;
   scaleBuffer[2] = scale.z;
-  byteOffset += 3* 4;
+  byteOffset += 3 * 4;
 
   const velocityBuffer = new Float32Array(buffer, byteOffset, 3);
   velocityBuffer[0] = velocity.x;

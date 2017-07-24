@@ -128,7 +128,7 @@ export default class VoiceChat {
                 soundBodies.set(id, _makeSoundBody(id));
               };
               multiplayer.on('playerEnter', _playerEnter);
-              const _playerLeave = ({id}) => {
+              const _playerLeave = id => {
                 const soundBody = soundBodies.get(id);
                 soundBody.destroy();
 

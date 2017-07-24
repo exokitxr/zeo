@@ -298,22 +298,13 @@ class Assets {
             });
             mesh.rotation.order = camera.rotation.order;
 
-            mesh.update = ({menuStatus, username}) => {
-              const {open} = menuStatus;
-
-              if (open) {
-                const {position, rotation, scale} = menuStatus;
-
-                mesh.position.fromArray(position);
-                mesh.quaternion.fromArray(rotation);
-                mesh.scale.fromArray(scale);
-                mesh.updateMatrixWorld();
-
-                if (username !== menuState.username) {
-                  menuState.username = username;
-
-                  const {page} = mesh;
-                  page.update();
+            mesh.update = menuStatus => {
+              if (menuStatus.open) {
+                if (!menuStatus.position.equals(mesh.position) || !menuStatus.rotation.equals(mesh.rotation) || !menuStatus.scale.equals(mesh.scale)) {
+                  mesh.position.copy(menuStatus.position);
+                  mesh.quaternion.copy(menuStatus.rotation);
+                  mesh.scale.copy(menuStatus.scale);
+                  mesh.updateMatrixWorld();
                 }
 
                 if (!mesh.visible) {
