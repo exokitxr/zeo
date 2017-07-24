@@ -111,6 +111,7 @@ class Multiplayer {
                 const es = JSON.stringify({
                   type: 'playerEnter',
                   n,
+                  username,
                 });
                 for (let i = 0; i < connections.length; i++) {
                   const connection = connections[i];
@@ -122,6 +123,7 @@ class Multiplayer {
                 multiplayerApi.emit('playerEnter', {
                   id: n,
                   address,
+                  username,
                 });
               };
               _init();

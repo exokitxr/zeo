@@ -298,6 +298,9 @@ class Assets {
             });
             mesh.rotation.order = camera.rotation.order;
 
+            const {page} = mesh;
+            page.update();
+
             mesh.update = menuStatus => {
               if (menuStatus.open) {
                 if (!menuStatus.position.equals(mesh.position) || !menuStatus.rotation.equals(mesh.rotation) || !menuStatus.scale.equals(mesh.scale)) {
