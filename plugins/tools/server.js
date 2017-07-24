@@ -1,6 +1,6 @@
 const path = require('path');
 
-class Fire {
+class Tools {
   constructor(archae) {
     this._archae = archae;
   }
@@ -9,15 +9,15 @@ class Fire {
     const {_archae: archae} = this;
     const {express, app} = archae.getCore();
 
-    const fireAudioStatic = express.static(path.join(__dirname, 'lib', 'audio'));
-    function serveFireAudio(req, res, next) {
-      fireAudioStatic(req, res, next);
+    const toolsImgStatic = express.static(path.join(__dirname, 'lib', 'img'));
+    function serveToolsImg(req, res, next) {
+      toolsImgStatic(req, res, next);
     }
-    app.use('/archae/fire/audio', serveFireAudio);
+    app.use('/archae/tools/img', serveToolsImg);
 
     this._cleanup = () => {
       function removeMiddlewares(route, i, routes) {
-        if (route.handle.name === 'serveFireAudio') {
+        if (route.handle.name === 'serveToolsImg') {
           routes.splice(i, 1);
         }
         if (route.route) {
@@ -33,4 +33,4 @@ class Fire {
   }
 }
 
-module.exports = Fire;
+module.exports = Tools;

@@ -85,6 +85,7 @@ class Wallet {
       '/core/utils/hash-utils',
       '/core/utils/network-utils',
       '/core/utils/creature-utils',
+      '/core/utils/sprite-utils',
       '/core/utils/vrid-utils',
     ]).then(([
       bootstrap,
@@ -106,6 +107,7 @@ class Wallet {
       hashUtils,
       networkUtils,
       creatureUtils,
+      spriteUtils,
       vridUtils,
     ]) => {
       if (live) {
@@ -370,7 +372,7 @@ class Wallet {
                 const {asset: {value: asset}} = attributes;
                 const imageData = resource.getSpriteImageData(asset);
 
-                resource.requestSpriteGeometry(imageData, pixelSize)
+                spriteUtils.requestSpriteGeometry(imageData, pixelSize)
                   .then(geometrySpec => {
                     if (live) {
                       const {positions, normals, colors, dys} = geometrySpec;

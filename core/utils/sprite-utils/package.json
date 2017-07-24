@@ -1,7 +1,10 @@
 {
   "name": "sprite-utils",
-  "description": "Provides sprite mesh rendering for the zeo core.",
+  "description": "Provides sprite mesh utilities for the zeo core.",
   "version": "0.0.1",
   "client": "client.js",
+  "builds": {
+    "worker": "worker.js"
+  },
   "dependencies": {}
 }
