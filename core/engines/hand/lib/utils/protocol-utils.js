@@ -1,8 +1,9 @@
 const BUFFER_SIZE = (1 * 4) + (4 * 4 * 3) + (2 * 4 * 4);
 
-const parseUpdateN = buffer => new Uint32Array(buffer, 0, 1)[0];
-const parseUpdate = (position, rotation, scale, localPosition, localRotation, localScale, buffer) => {
-  let byteOffset = 1 * 4;
+const parseUpdateN = (buffer, byteOffset = 0) => new Uint32Array(buffer, byteOffset, 1)[0];
+const parseUpdate = (position, rotation, scale, localPosition, localRotation, localScale, buffer, byteOffset = 0) => {
+  // const n = parseUpdateN(buffer, byteOffset);
+  byteOffset += 1 * 4;
 
   position.fromArray(new Float32Array(buffer, byteOffset, 3));
   byteOffset += 3 * 4;
