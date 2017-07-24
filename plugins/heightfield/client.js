@@ -331,11 +331,7 @@ class Heightfield {
         mapChunkMesh.physicsBody = physicsBody; */
         const {heightfield} = mapChunkMesh;
         const stckBody = stck.makeStaticHeightfieldBody(
-          [
-            x * NUM_CELLS,
-            0,
-            z * NUM_CELLS,
-          ],
+          new THREE.Vector3(x * NUM_CELLS, 0, z * NUM_CELLS),
           NUM_CELLS,
           NUM_CELLS,
           heightfield

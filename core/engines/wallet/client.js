@@ -125,6 +125,7 @@ class Wallet {
         const pixelSize = 0.015;
         const numPixels = 12;
         const assetSize = pixelSize * numPixels;
+        const assetSizeVector = new THREE.Vector3(assetSize, assetSize, assetSize);
 
         const zeroVector = new THREE.Vector3();
         const oneVector = new THREE.Vector3(1, 1, 1);
@@ -929,11 +930,10 @@ class Wallet {
 
         const _bindAssetInstancePhysics = assetInstance => {
           let body = null;
-          const _addBody = ({velocity = [0, 0, 0]} = {}) => {
-            const sizeArray = [assetSize, assetSize, assetSize];
-            body = stck.makeDynamicBoxBody(assetInstance.position.toArray(), sizeArray, velocity);
-            body.on('update', ({position, rotation, scale}) => {
-              assetInstance.setStateLocal(new THREE.Vector3().fromArray(position), new THREE.Quaternion().fromArray(rotation), new THREE.Vector3().fromArray(scale)); // XXX
+          const _addBody = ({velocity = new THREE.Vector3()} = {}) => {
+            body = stck.makeDynamicBoxBody(assetInstance.position, assetSizeVector, velocity);
+            body.on('update', () => {
+              assetInstance.setStateLocal(body.position, body.rotation, body.scale);
             });
           };
           const _removeBody = () => {
@@ -950,7 +950,7 @@ class Wallet {
               const linearVelocity = player.getControllerLinearVelocity(side);
 
               _addBody({
-                velocity: linearVelocity.toArray(),
+                velocity: linearVelocity,
               });
 
               assetInstance.enablePhysics();

@@ -1,3 +1,5 @@
+const protocolUtils = require('./lib/utils/protocol-utils');
+
 class Stck {
   constructor(archae) {
     this._archae = archae;
@@ -12,96 +14,107 @@ class Stck {
     };
 
     return archae.requestPlugins([
+      '/core/engines/three',
       '/core/utils/js-utils',
+      '/core/utils/hash-utils',
     ]).then(([
+      three,
       jsUtils,
+      hashUtils,
     ]) => {
       if (live) {
+        const {THREE} = three;
         const {events} = jsUtils;
         const {EventEmitter} = events;
+        const {murmur} = hashUtils;
+
+        const _makeN = () => murmur(Math.random());
 
         const bodies = {};
 
         const worker = new Worker('archae/plugins/_core_engines_stck/build/worker.js');
-        worker.requestAddBody = (id, type, spec) => {
+        worker.requestAddBody = (n, type, spec) => {
           worker.postMessage({
             method: 'addBody',
-            args: [id, type, spec],
+            args: [n, type, spec],
           });
         };
-        worker.requestRemoveBody = (id) => {
+        worker.requestRemoveBody = n => {
           worker.postMessage({
             method: 'removeBody',
-            args: [id],
+            args: [n],
           });
         };
-        worker.requestSetState = (id, spec) => {
+        worker.requestSetState = (n, spec) => {
           worker.postMessage({
             method: 'setState',
-            args: [id, spec],
+            args: [n, spec],
           });
         };
         worker.onmessage = e => {
           const {data} = e;
-          const {id} = data;
-          const body = bodies[id];
+          const n = protocolUtils.parseUpdateN(data);
+          const body = bodies[n];
 
           if (body) {
-            const {position, rotation, scale, velocity} = data;
-            body.update(position, rotation, scale, velocity);
+            protocolUtils.parseUpdate(body.position, body.rotation, body.scale, body.velocity, data);
+            body.emitUpdate();
           }
         };
 
         class Body extends EventEmitter {
-          constructor(id) {
+          constructor(n, position = new THREE.Vector3(), rotation = new THREE.Quaternion(), scale = new THREE.Vector3(), velocity = new THREE.Vector3()) {
             super();
 
-            this.id = id;
+            this.n = n;
+            this.position = position;
+            this.rotation = rotation;
+            this.scale = scale;
+            this.velocity = velocity;
           }
 
           setState(position, rotation, scale, velocity) {
-            const {id} = this;
+            this.position.copy(position);
+            this.rotation.copy(rotation);
+            this.scale.copy(scale);
+            this.velocity.copy(velocity);
 
-            worker.requestSetState(id, {
-              position,
-              rotation,
-              scale,
-              velocity,
+            const {n} = this;
+            worker.requestSetState(n, {
+              position: this.position,
+              rotation: this.rotation,
+              scale: this.scale,
+              velocity: this.velocity,
             });
           }
 
-          update(position, rotation, scale, velocity) {
-            this.emit('update', {
-              position,
-              rotation,
-              scale,
-              velocity,
-            });
+          emitUpdate() {
+            this.emit('update');
           }
         }
 
         const _makeDynamicBoxBody = (position, size, velocity) => {
-          const id = _makeId();
-          const body = new Body(id);
-          bodies[id] = body;
+          const n = _makeN();
+          const body = new Body(n);
+          bodies[n] = body;
 
-          worker.requestAddBody(id, 'dynamicBox', {
-            position: position,
+          worker.requestAddBody(n, 'dynamicBox', {
+            position: position.toArray(),
             rotation: [0, 0, 0, 1],
             scale: [1, 1, 1],
-            size: size,
-            velocity: velocity,
+            size: size.toArray(),
+            velocity: velocity.toArray(),
           });
 
           return body;
         };
         const _makeStaticHeightfieldBody = (position, width, depth, data) => {
-          const id = _makeId();
-          const body = new Body(id);
-          bodies[id] = body;
+          const n = _makeN();
+          const body = new Body(n);
+          bodies[n] = body;
 
-          worker.requestAddBody(id, 'staticHeightfield', {
-            position,
+          worker.requestAddBody(n, 'staticHeightfield', {
+            position: position.toArray(),
             width,
             depth,
             data,
@@ -110,11 +123,11 @@ class Stck {
           return body;
         };
         const _destroyBody = body => {
-          const {id} = body;
+          const {n} = body;
 
-          worker.requestRemoveBody(id);
+          worker.requestRemoveBody(n);
 
-          delete bodies[id];
+          delete bodies[n];
         };
 
         return {
@@ -130,8 +143,5 @@ class Stck {
     this._cleanup();
   }
 }
-
-const _makeId = () => Math.random().toString(36).substring(7);
-const _arrayEquals = (a, b) => a[0] === b[0] && a[1] === b[1] && a[2] === b[2];
 
 module.exports = Stck;

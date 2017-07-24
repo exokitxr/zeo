@@ -1,22 +1,24 @@
-const FPS = 1000 / 90;
-const GRAVITY = -9.8 / 1000;
-
 importScripts('/archae/assets/three.js');
 const {exports: THREE} = self.module;
 self.module = {};
 
+const protocolUtils = require('./lib/utils/protocol-utils');
+
+const FPS = 1000 / 90;
+const GRAVITY = -9.8 / 1000;
+
 const zeroVector = new THREE.Vector3();
-const oneVector = new THREE.Vector3(1, 1, 1);
 const upVector = new THREE.Vector3(0, 1, 0);
-const zeroQuaternion = new THREE.Quaternion();
+
+const buffer = new ArrayBuffer(protocolUtils.BUFFER_SIZE);
 
 const dynamicBoxBodies = [];
 const staticBoxBodies = [];
 const staticHeightfieldBodies = [];
 
 class BoxBody {
-  constructor(id, {position = [0, 0, 0], rotation = [0, 0, 0, 1], scale = [1, 1, 1], size = [0.1, 0.1, 0.1], velocity = [0, 0, 0]} = {}) {
-    this.id = id;
+  constructor(n, position = new THREE.Vector3(), rotation = new THREE.Quaternion(), scale = new THREE.Vector3(1, 1, 1), size = new THREE.Vector3(0.1, 0.1, 0.1), velocity = new THREE.Vector3()) {
+    this.n = n;
     this.position = position;
     this.rotation = rotation;
     this.scale = scale;
@@ -24,31 +26,20 @@ class BoxBody {
     this.velocity = velocity;
   }
 
-  update() {
-    const {id, position, rotation, scale, velocity} = this;
-
-    postMessage({
-      id,
-      position,
-      rotation,
-      scale,
-      velocity,
-    });
-  }
-
   setState(position, rotation, scale, velocity) {
-    this.position = position;
-    this.rotation = rotation;
-    this.scale = scale;
-    this.velocity = velocity;
+    this.position.copy(position);
+    this.rotation.copy(rotation);
+    this.scale.copy(scale);
+    this.velocity.copy(velocity);
 
-    this.update();
+    protocolUtils.stringifyUpdate(this.n, this.position, this.rotation, this.scale, this.velocity, buffer, 0);
+    postMessage(buffer);
   }
 }
 
 class HeightfieldBody {
-  constructor(id, {position = [0, 0, 0], width = 0, depth = 0, data = new Float32Array(0)} = {}) {
-    this.id = id;
+  constructor(n, position = new THREE.Vector3(), width = 0, depth = 0, data = new Float32Array(0)) {
+    this.n = n;
     this.position = position;
     this.width = width;
     this.depth = depth;
@@ -57,6 +48,9 @@ class HeightfieldBody {
 }
 
 let lastUpdateTime = Date.now();
+const nextPosition = new THREE.Vector3();
+const nextVelocity = new THREE.Vector3();
+const localVector = new THREE.Vector3();
 const interval = setInterval(() => {
   const now = Date.now();
   const timeDiff = now - lastUpdateTime;
@@ -64,16 +58,14 @@ const interval = setInterval(() => {
   for (let i = 0; i < dynamicBoxBodies.length; i++) {
     const body = dynamicBoxBodies[i];
     const {position, velocity, size} = body;
-    const nextVelocity = new THREE.Vector3()
-      .fromArray(velocity)
-      .add(upVector.clone().multiplyScalar(GRAVITY * timeDiff));
-    const nextPosition = new THREE.Vector3()
-      .fromArray(position)
-      .add(nextVelocity.clone().multiplyScalar(timeDiff / 1000));
+    nextVelocity.copy(velocity)
+      .add(localVector.copy(upVector).multiplyScalar(GRAVITY * timeDiff));
+    nextPosition.copy(position)
+      .add(localVector.copy(nextVelocity).multiplyScalar(timeDiff / 1000));
 
     for (let j = 0; j < staticHeightfieldBodies.length; j++) {
       const staticHeightfieldBody = staticHeightfieldBodies[j];
-      const min = new THREE.Vector2(staticHeightfieldBody.position[0], staticHeightfieldBody.position[2]);
+      const min = new THREE.Vector2(staticHeightfieldBody.position.x, staticHeightfieldBody.position.z);
       const max = min.clone().add(new THREE.Vector2(staticHeightfieldBody.width, staticHeightfieldBody.depth));
       const nextPosition2D = new THREE.Vector2(nextPosition.x, nextPosition.z);
 
@@ -91,7 +83,7 @@ const interval = setInterval(() => {
           new THREE.Vector2(ax + 1, ay + 1),
         ];
         const indexes = positions.map(({x, y}) => (x - min.x) + ((y - min.y) * (staticHeightfieldBody.width + 1)));
-        const elevations = indexes.map(index => staticHeightfieldBody.data[index] + staticHeightfieldBody.position[1]);
+        const elevations = indexes.map(index => staticHeightfieldBody.data[index] + staticHeightfieldBody.position.y);
         const baryCoord = new THREE.Triangle(
           new THREE.Vector3(positions[0].x, 0, positions[0].y),
           new THREE.Vector3(positions[1].x, 0, positions[1].y),
@@ -103,25 +95,19 @@ const interval = setInterval(() => {
           baryCoord.y * elevations[1] +
           baryCoord.z * elevations[2];
 
-        if ((nextPosition.y - (size[1] / 2)) < elevation) {
-          nextPosition.y = elevation + (size[1] / 2);
+        if ((nextPosition.y - (size.y / 2)) < elevation) {
+          nextPosition.y = elevation + (size.y / 2);
           nextVelocity.copy(zeroVector);
         }
       }
     }
-    if ((nextPosition.y - (size[1] / 2)) < 0) {
-      nextPosition.y = size[1] / 2;
+    if ((nextPosition.y - (size.y / 2)) < 0) {
+      nextPosition.y = size.y / 2;
       nextVelocity.copy(zeroVector);
     }
 
-    const nextPositionArray = nextPosition.toArray();
-    const positionDiff = !_arrayEquals(nextPositionArray, position);
-
-    const nextVelocityArray = nextVelocity.toArray();
-    const velocityDiff = !_arrayEquals(nextVelocityArray, velocity);
-
-    if (positionDiff || velocityDiff) {
-      body.setState(nextPositionArray, body.rotation, body.scale, nextVelocityArray);
+    if (!nextPosition.equals(position) || !nextVelocity.equals(velocity)) {
+      body.setState(nextPosition, body.rotation, body.scale, nextVelocity);
     }
   }
 
@@ -139,30 +125,32 @@ self.onmessage = e => {
   switch (method) {
     case 'addBody': {
       const {args} = data;
-      const [id, type, spec] = args;
+      const [n, type, spec] = args;
 
       switch (type) {
         case 'dynamicBox': {
           const {position, rotation, scale, size, velocity} = spec;
-          const body = new BoxBody(id, {
-            position,
-            rotation,
-            scale,
-            size,
-            velocity,
-          });
+          const body = new BoxBody(
+            n,
+            new THREE.Vector3().fromArray(position),
+            new THREE.Quaternion().fromArray(rotation),
+            new THREE.Vector3().fromArray(scale),
+            new THREE.Vector3().fromArray(size),
+            new THREE.Vector3().fromArray(velocity)
+          );
           dynamicBoxBodies.push(body);
 
           break;
         }
         case 'staticHeightfield': {
           const {position, width, depth, data} = spec;
-          const body = new HeightfieldBody(id, {
-            position,
+          const body = new HeightfieldBody(
+            n,
+            new THREE.Vector3().fromArray(position),
             width,
             depth,
-            data,
-          });
+            data
+          );
           staticHeightfieldBodies.push(body);
           
           break;
@@ -178,17 +166,17 @@ self.onmessage = e => {
     }
     case 'removeBody': {
       const {args} = data;
-      const [id] = args;
+      const [n] = args;
 
-      let index = dynamicBoxBodies.findIndex(body => body.id === id);
+      let index = dynamicBoxBodies.findIndex(body => body.n === n);
       if (index !== -1) {
         dynamicBoxBodies.splice(index, 1);
       }
-      index = staticBoxBodies.findIndex(body => body.id === id);
+      index = staticBoxBodies.findIndex(body => body.n === n);
       if (index !== -1) {
         staticBoxBodies.splice(index, 1);
       }
-      index = staticHeightfieldBodies.findIndex(body => body.id === id);
+      index = staticHeightfieldBodies.findIndex(body => body.n === n);
       if (index !== -1) {
         staticHeightfieldBodies.splice(index, 1);
       }
@@ -197,7 +185,7 @@ self.onmessage = e => {
     }
     case 'setState': {
       const {args} = data;
-      const [id, spec] = args;
+      const [n, spec] = args;
 
       break;
     }
@@ -207,5 +195,3 @@ self.onmessage = e => {
     }
   }
 };
-
-const _arrayEquals = (a, b) => a[0] === b[0] && a[1] === b[1] && a[2] === b[2];
