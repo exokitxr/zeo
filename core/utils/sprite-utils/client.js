@@ -8,13 +8,14 @@ const spriteUtils = archae => ({
   mount() {
     const worker = new Worker('archae/plugins/_core_utils_sprite-utils/build/worker.js');
     const queue = [];
-    worker.requestSpriteGeometry = (imageData, size) => new Promise((accept, reject) => {
+    worker.requestSpriteGeometry = (imageData, size, matrix) => new Promise((accept, reject) => {
       const {width, height, data: {buffer: imageDataBuffer}} = imageData;
       const buffer = new ArrayBuffer(NUM_POSITIONS_CHUNK);
       worker.postMessage({
         width,
         height,
         size,
+        matrix: matrix ? matrix.toArray() : null,
         imageDataBuffer,
         buffer,
       }, [imageDataBuffer, buffer]);
@@ -134,7 +135,7 @@ const spriteUtils = archae => ({
           geometry.computeVertexNormals();
           return geometry;
         };
-        const _requestSpriteGeometry = (imageData, size) => worker.requestSpriteGeometry(imageData, size);
+        const _requestSpriteGeometry = (imageData, size, matrix) => worker.requestSpriteGeometry(imageData, size, matrix);
 
         return {
           makeImageGeometry: _makeImageGeometry,

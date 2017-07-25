@@ -28,7 +28,7 @@ const _getPixelGeometryVertices = size => {
   };
 }; */
 
-const _makeImageDataGeometry = (width, height, size, imageDataData) => {
+const _makeImageDataGeometry = (width, height, size, matrix, imageDataData) => {
   const halfSize = size / 2;
   const vertices = [
     [-halfSize, halfSize, -halfSize], // 0 left up back
@@ -140,6 +140,7 @@ const _makeImageDataGeometry = (width, height, size, imageDataData) => {
   geometry.addAttribute('position', new THREE.BufferAttribute(new Float32Array(positions.buffer, 0, attributeIndex), 3));
   geometry.addAttribute('color', new THREE.BufferAttribute(new Float32Array(colors.buffer, 0, attributeIndex), 3));
   geometry.addAttribute('dy', new THREE.BufferAttribute(dys, 2));
+  geometry.applyMatrix(matrix);
   geometry.computeVertexNormals();
 
   return {
@@ -151,8 +152,12 @@ const _makeImageDataGeometry = (width, height, size, imageDataData) => {
 };
 
 self.onmessage = e => {
-  const {data: {width, height, size, imageDataBuffer, buffer}} = e;
-  const geometrySpec = _makeImageDataGeometry(width, height, size, new Uint8Array(imageDataBuffer));
+  const {data: {width, height, size, matrix: matrixArray, imageDataBuffer, buffer}} = e;
+  const matrix = new THREE.Matrix4();
+  if (matrixArray) {
+    matrix.fromArray(matrixArray);
+  }
+  const geometrySpec = _makeImageDataGeometry(width, height, size, matrix, new Uint8Array(imageDataBuffer));
   const resultBuffer = protocolUtils.stringifyGeometry(geometrySpec, buffer, 0);
 
   postMessage(resultBuffer, [resultBuffer]);
