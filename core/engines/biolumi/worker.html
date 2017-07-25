@@ -52,11 +52,12 @@ const _render = (src, width, height) => {
       .map(a => {
         if (a.style.display !== 'none' && a.style.visibility !== 'hidden') {
           const rect = a.getBoundingClientRect();
+          const {left, right, top, bottom} = rect;
           const onclick = a.getAttribute('onclick') || null;
           const onmousedown = a.getAttribute('onmousedown') || null;
           const onmouseup = a.getAttribute('onmouseup') || null;
 
-          return {rect, onclick, onmousedown, onmouseup};
+          return {rect: {left, right, top, bottom}, onclick, onmousedown, onmouseup};
         } else {
           return null;
         }
