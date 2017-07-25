@@ -127,29 +127,6 @@ const spriteUtils = archae => ({
             }
           }
 
-          /* // cull adjacent faces
-          const culledVertices = [];
-          const culledColors = [];
-          const seenFacesIndex = {};
-          function getFaceKey(vs) {
-            let x = 0, y = 0, z = 0;
-            for (let i = 0; i < 12; i += 3) x += vs[i];
-            for (let i = 1; i < 12; i += 3) y += vs[i];
-            for (let i = 2; i < 12; i += 3) z += vs[i];
-            return x + y * 256 + z * 256 * 256;
-          }
-          for (let i = 0; i < vertices.length / 12; i++) {
-            const faceVertices = vertices.slice(i * 12, (i + 1) * 12);
-            const faceKey = getFaceKey(faceVertices);
-            if (!(faceKey in seenFacesIndex)) {
-              for (let j = 0; j < 12; j++) {
-                culledVertices.push(vertices[i * 12 + j]);
-                culledColors.push(colors[i * 12 + j]);
-              }
-              seenFacesIndex[faceKey] = true;
-            }
-          } */
-
           // construct geometry
           const geometry = new THREE.BufferGeometry();
           geometry.addAttribute('position', new THREE.BufferAttribute(new Float32Array(vertices), 3));
