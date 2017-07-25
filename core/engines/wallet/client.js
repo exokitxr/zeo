@@ -118,7 +118,6 @@ class Wallet {
         const {AutoWs} = networkUtils;
         const {Grabbable} = hand;
         const {sfx} = resource;
-        const {vridApi} = vridUtils;
 
         const walletRenderer = walletRender.makeRenderer({creatureUtils});
         const outputSymbol = craft.getOutputSymbol();
@@ -1161,7 +1160,7 @@ class Wallet {
           const address = bootstrap.getAddress();
           const quantity = 1;
           const {assets: oldAssets} = walletState;
-          vridApi.requestCreateDrop(address, asset, quantity)
+          vridUtils.requestCreateDrop(address, asset, quantity)
             .then(() => {
               const {assets: newAssets} = walletState;
 
@@ -1212,7 +1211,7 @@ class Wallet {
           const address = bootstrap.getAddress();
           const quantity = 1;
           const {assets: oldAssets} = walletState;
-          vridApi.requestCreateGet(address, asset, quantity)
+          vridUtils.requestCreateGet(address, asset, quantity)
             .then(() => {
               const {assets: newAssets} = walletState;
 
