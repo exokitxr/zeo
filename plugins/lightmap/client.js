@@ -5,6 +5,8 @@ const {
   HEIGHT_OFFSET,
 } = require('./lib/constants/constants');
 
+const FPS = 1000 / 60;
+
 class Lightmap {
   mount() {
     const {three, elements, render, utils: {js: jsUtils}} = zeo;
@@ -287,14 +289,20 @@ class Lightmap {
       }
 
       update() {
-        const {worker, _lightmaps: lightmaps, _lightmapsNeedUpdate: lightmapsNeedUpdate} = this;
+        const {_lightmapsNeedUpdate: lightmapsNeedUpdate} = this;
 
-        return Promise.all(lightmapsNeedUpdate.map(([ox, oz]) =>
-          worker.requestUpdate(lightmaps.find(lightmap => lightmap.x === ox && lightmap.z === oz))
-        ))
-          .then(() => {
-            lightmapsNeedUpdate.length = 0;
-          });
+        if (lightmapsNeedUpdate.length > 0) {
+          const {worker, _lightmaps: lightmaps} = this;
+
+          return Promise.all(lightmapsNeedUpdate.map(([ox, oz]) =>
+            worker.requestUpdate(lightmaps.find(lightmap => lightmap.x === ox && lightmap.z === oz))
+          ))
+            .then(() => {
+              lightmapsNeedUpdate.length = 0;
+            });
+        } else {
+          return Promise.resolve();
+        }
       }
     };
     Lightmapper.Ambient = Ambient;
@@ -319,26 +327,26 @@ class Lightmap {
         lightmapper.add(new Lightmapper.Sphere(0, 32, 0, 8, 2, Lightmapper.MaxBlend));
         entityElement.lightmapper = lightmapper;
 
-        let updating = false;
-        const _update = () => {
-          if (!updating) {
-            lightmapper.update()
-              .then(() => {
-                updating = false;
-              })
-              .catch(err => {
+        let live = true;
+        const _recurse = () => {
+          lightmapper.update()
+            .then(() => {
+              if (live) {
+                setTimeout(_recurse, FPS);
+              }
+            })
+            .catch(err => {
+              if (live) {
                 console.warn(err.stack);
 
-                updating = false;
-              });
-
-            updating = true;
-          }
+                setTimeout(_recurse, FPS);
+              }
+            });
         };
-        render.on('update', _update);
+        _recurse();
 
         entityElement._cleanup = () => {
-          render.removeListener('update', _update);
+          live = false;
         };
       },
       entityRemovedCallback(entityElement) {
