@@ -156,21 +156,42 @@ class Biolumi {
       d.binaryType = 'arraybuffer';
       d.onopen = e => {
         accept({
-          rasterize: (src, width, height) => new Promise((accept, reject) => {
+          rasterize: (src, width, height) => {
             d.send(JSON.stringify([width, height]) + src);
 
-            queue.push((err, data) => {
-              if (!err) {
-                createImageBitmap(new Blob([data], {type: 'image/png'}), 0, 0, width, height, {
-                  imageOrientation: 'flipY',
-                })
-                  .then(accept)
-                  .catch(reject);
-              } else {
-                reject(err);
-              }
-            });
-          }),
+            return Promise.all([
+              new Promise((accept, reject) => {
+                queue.push((err, imageArrayBuffer) => {
+                  if (!err) {
+                    createImageBitmap(new Blob([imageArrayBuffer], {type: 'image/png'}), 0, 0, width, height, {
+                      imageOrientation: 'flipY',
+                    })
+                      .then(accept)
+                      .catch(reject);
+                  } else {
+                    reject(err);
+                  }
+                });
+              }),
+              new Promise((accept, reject) => {
+                queue.push((err, anchorsJson) => {
+                  if (!err) {
+                    const anchors = JSON.parse(anchorsJson);
+                    accept(anchors);
+                  } else {
+                    reject(err);
+                  }
+                });
+              })
+            ])
+              .then(([
+                imageBitmap,
+                anchors,
+              ]) => ({
+                imageBitmap,
+                anchors,
+              }));
+          },
         });
       };
       d.onmessage = e => {
@@ -351,6 +372,7 @@ class Biolumi {
               const cache = {
                 layerSpec: null,
                 img: null,
+                anchors: null,
               };
 
               const _requestLayerSpec = () => {
@@ -366,8 +388,9 @@ class Biolumi {
                   const {width, height} = this;
                   const {src, w = width, h = height} = layerSpec;
                   rasterizer.rasterize(src, w, h)
-                    .then(imageBitmap => {
+                    .then(({imageBitmap, anchors}) => {
                       cache.img = imageBitmap;
+                      cache.anchors = anchors;
 
                       accept();
                     })
@@ -415,45 +438,10 @@ class Biolumi {
 
                 if (type === 'html') {
                   const {width, height} = this;
-                  const {src, x = 0, y = 0, w = width, h = height} = layerSpec;
+                  const {w = width, h = height} = layerSpec;
+                  const {anchors} = cache;
 
-                  const _renderTempElement = fn => {
-                    const divEl = (() => {
-                      const el = document.createElement('div');
-                      el.style.cssText = 'position: absolute; top: 0; left: 0; width: ' + w + 'px;';
-                      const {innerSrc} = cache;
-                      el.innerHTML = innerSrc;
-
-                      return el;
-                    })();
-                    document.body.appendChild(divEl);
-
-                    const result = fn(divEl);
-
-                    document.body.removeChild(divEl);
-
-                    return result;
-                  };
-                  const _makeAnchors = () => _renderTempElement(divEl =>
-                    Array.from(divEl.querySelectorAll('a'))
-                      .map(a => {
-                        if (a.style.display !== 'none' && a.style.visibility !== 'hidden') {
-                          const rect = a.getBoundingClientRect();
-                          const onclick = a.getAttribute('onclick') || null;
-                          const onmousedown = a.getAttribute('onmousedown') || null;
-                          const onmouseup = a.getAttribute('onmouseup') || null;
-
-                          return new Anchor(rect, onclick, onmousedown, onmouseup);
-                        } else {
-                          return null;
-                        }
-                      })
-                      .filter(anchor => anchor !== null)
-                  );
-
-                  const layer = new Layer(w, h);
-                  layer.anchors = null;
-                  layer.makeAnchors = _makeAnchors;
+                  const layer = new Layer(w, h, anchors);
 
                   this.layer = layer;
                 } else if (type === 'image') {
@@ -516,27 +504,10 @@ class Biolumi {
           }
 
           class Layer {
-            constructor(width, height) {
+            constructor(width, height, anchors = []) {
               this.width = width;
               this.height = height;
-
-              this.anchors = [];
-              this.makeAnchors = null;
-            }
-
-            getAnchors() {
-              let {anchors} = this;
-              if (!anchors) {
-                const {makeAnchors} = this;
-
-                if (makeAnchors) {
-                  anchors = makeAnchors();
-                  this.anchors = anchors;
-                  this.makeAnchors = null;
-                }
-              }
-
-              return anchors;
+              this.anchors = anchors;
             }
           }
           /* class BoxAnchor {
@@ -544,8 +515,7 @@ class Biolumi {
               this.boxTarget = boxTarget;
               this.anchor = anchor;
             }
-          } */
-
+          }
           class Anchor {
             constructor(rect, onclick, onmousedown, onmouseup) {
               this.rect = rect;
@@ -553,16 +523,7 @@ class Biolumi {
               this.onmousedown = onmousedown;
               this.onmouseup = onmouseup;
             }
-          }
-
-          class Rect {
-            constructor(top, bottom, left, right) {
-              this.top = top;
-              this.bottom = bottom;
-              this.left = left;
-              this.right = right;
-            }
-          }
+          } */
 
           class Ui {
             constructor(width, height, color) {
@@ -751,7 +712,7 @@ class Biolumi {
 
                           let anchor = null;
                           const {layer} = page;
-                          const anchors = layer ? layer.getAnchors() : [];
+                          const anchors = layer ? layer.anchors : [];
                           for (let i = 0; i < anchors.length; i++) {
                             const a = anchors[i];
                             const {rect} = a;
