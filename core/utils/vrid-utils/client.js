@@ -48,7 +48,7 @@ class VridUtils {
     worker.onmessage = e => {
       queue.shift()(e.data);
     };
-    worker.init();
+    worker.init(crdsUrl);
 
     return {
       requestCreateDrop: worker.requestCreateDrop,
