@@ -351,16 +351,29 @@ class Heightfield {
         mapChunkMesh.targeted = false;
       };
 
-      const addedPromises = added.concat(relodded).map(chunk => {
+      const addedPromises = Array(added.length + relodded.length);
+      let index = 0;
+      const _addChunk = chunk => {
         const {x, z, lod} = chunk;
-        const resolution = (() => {
-          switch (lod) {
-            case 1: return NUM_CELLS;
-            case 2: return NUM_CELLS / 4;
-            case 3: return NUM_CELLS / 16;
-            // case 4: return NUM_CELLS / 32;
+        let resolution;
+        switch (lod) {
+          case 1: {
+            resolution = NUM_CELLS;
+            break;
           }
-        })();
+          case 2: {
+            resolution = NUM_CELLS / 4;
+            break;
+          }
+          case 3: {
+            resolution = NUM_CELLS / 16;
+            break;
+          }
+          /* case 4: {
+            resolution = NUM_CELLS / 32;
+            break;
+          } */
+        }
 
         return _requestGenerate(x, z, resolution)
           .then(mapChunkData => {
@@ -387,7 +400,13 @@ class Heightfield {
 
             chunk.data = newMapChunkMesh;
           });
-      });
+      };
+      for (let i = 0; i < added.length; i++) {
+        addedPromises[index++] = _addChunk(added[i]);
+      }
+      for (let i = 0; i < relodded.length; i++) {
+        addedPromises[index++] = _addChunk(relodded[i]);
+      }
       return Promise.all(addedPromises)
         .then(() => {
           for (let i = 0; i < removed.length; i++) {
@@ -406,7 +425,6 @@ class Heightfield {
               retargeted = true;
             }
           }
-
           for (let i = 0; i < relodded.length; i++) {
             const chunk = relodded[i];
             const {x, z, lod, data: mapChunkMesh} = chunk;
