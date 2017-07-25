@@ -411,7 +411,7 @@ class Biolumi {
               });
               const _requestTexture = () => {
                 const {layerSpec, img} = cache;
-                const {pixelated = false} = layerSpec;
+                // const {pixelated = false} = layerSpec;
 
                 const {mesh: {material: {uniforms: {texture: {value: texture}}}}} = this;
                 texture.image = img;
