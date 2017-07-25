@@ -135,6 +135,89 @@ class Biolumi {
       return Promise.resolve(new UiTimer());
     };
 
+    const _requestRasterizer = () => new Promise((accept, reject) => {
+      const w = window.open('archae/biolumi/worker.html', '_blank', "height=100,width=200,top=10000,left=10000,location=no,menubar=no,status=no,titlebar=no,toolbar=no");
+      window.addEventListener('beforeunload', () => {
+        w.close();
+      });
+
+      const c = new RTCPeerConnection({
+        iceServers: [
+          {urls:'stun:stun.l.google.com:19302'},
+          // {urls:'stun:stun1.l.google.com:19302'},
+          // {urls:'stun:stun2.l.google.com:19302'},
+          // {urls:'stun:stun3.l.google.com:19302'},
+          // {urls:'stun:stun4.l.google.com:19302'},
+        ],
+      });
+
+      const queue = [];
+      const d = c.createDataChannel('sendDataChannel', null);
+      d.binaryType = 'arraybuffer';
+      d.onopen = e => {
+        accept({
+          rasterize: (src, width, height) => new Promise((accept, reject) => {
+            d.send(src);
+
+            queue.push((err, data) => {
+              if (!err) {
+                createImageBitmap(new Blob([data], {type: 'image/png'}), 0, 0, width, height, {
+                  imageOrientation: 'flipY',
+                })
+                  .then(accept)
+                  .catch(reject);
+              } else {
+                reject(err);
+              }
+            });
+          }),
+        });
+      };
+      d.onmessage = e => {
+        queue.shift()(null, e.data);
+      };
+      d.onerror = err => {
+        queue.shift()(err);
+      };
+
+      c.createOffer()
+        .then(description => new Promise((accept, reject) => {
+          c.setLocalDescription(description);
+
+          const iceCandidates = [];
+          c.onicecandidate = e => {
+            iceCandidates.push(e.candidate);
+          };
+          c.onicegatheringstatechange = () => {
+            if (c.iceGatheringState === 'complete') {
+              c.onicecandidate = null;
+              c.onicegatheringstatechange = null;
+
+              const jsonHeaders = new Headers();
+              jsonHeaders.append('Content-Type', 'application/json');
+              fetch('/archae/signal/1', {
+                method: 'POST',
+                headers: jsonHeaders,
+                body: JSON.stringify({
+                  description,
+                  iceCandidates,
+                }),
+              })
+                .then(res => res.json())
+                .then(accept)
+                .catch(reject);
+            }
+          };
+        }))
+        .then(({description, iceCandidates}) => {
+          c.setRemoteDescription(description);
+          for (let i = 0; i < iceCandidates.length; i++) {
+            const iceCandidate = iceCandidates[i];
+            c.addIceCandidate(iceCandidate);
+          }
+        });
+    });
+
     return Promise.all([
       archae.requestPlugins([
         '/core/engines/three',
@@ -145,6 +228,7 @@ class Biolumi {
       _requestBlackImg(),
       _requestUiWorker(),
       _requestUiTimer(),
+      _requestRasterizer(),
     ])
       .then(([
         [
@@ -156,6 +240,7 @@ class Biolumi {
         blackImg,
         uiWorker,
         uiTimer,
+        rasterizer,
       ]) => {
         if (live) {
           const {THREE, renderer} = three;
@@ -320,24 +405,23 @@ class Biolumi {
                 if (type === 'html') {
                   const {width, height} = this;
                   const {w = width, h = height} = layerSpec;
-
-                  const img = new Image();
                   const {innerSrc} = cache;
-                  img.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="' + w + '" height="' + h + '">' +
+                  const src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="' + w + '" height="' + h + '">' +
                     '<foreignObject width="100%" height="100%" x="0" y="0">' +
                       innerSrc +
                     '</foreignObject>' +
                   '</svg>';
-                  img.onload = () => {
-                    cache.img = img;
+                  rasterizer.rasterize(src, w, h)
+                    .then(imageBitmap => {
+                      cache.img = imageBitmap;
 
-                    accept();
-                  };
-                  img.onerror = err => {
-                    console.warn('biolumi image load error', {src: img.src}, err);
+                      accept();
+                    })
+                    .catch(err => {
+                      console.warn('biolumi image load error', {src}, err);
 
-                    accept();
-                  };
+                      accept();
+                    });
                 } else if (type === 'image') {
                   const {img} = layerSpec;
 

@@ -1,0 +1,97 @@
+<!doctype html>
+<html>
+<head>
+<script>
+const canvas = document.createElement('canvas');
+const ctx = canvas.getContext('2d');
+
+const _render = src => new Promise((accept, reject) => {
+  const img = new Image();
+  img.src = src;
+  img.onload = () => {
+    canvas.width = img.width;
+    canvas.height = img.height;
+    ctx.drawImage(img, 0, 0);
+    const dataUrl = canvas.toDataURL('image/png');
+    fetch(dataUrl)
+      .then(res => res.arrayBuffer())
+      .then(accept)
+      .catch(reject);
+  };
+  img.onerror = err => {
+    console.warn(err);
+  };
+
+});
+
+fetch('/archae/signal/2')
+  .then(res => res.json())
+  .then(({description, iceCandidates}) => {
+    const c = new RTCPeerConnection({
+      iceServers: [
+        {urls:'stun:stun.l.google.com:19302'},
+        // {urls:'stun:stun1.l.google.com:19302'},
+        // {urls:'stun:stun2.l.google.com:19302'},
+        // {urls:'stun:stun3.l.google.com:19302'},
+        // {urls:'stun:stun4.l.google.com:19302'},
+      ],
+    });
+    c.setRemoteDescription(description);
+    for (let i = 0; i < iceCandidates.length; i++) {
+      const iceCandidate = iceCandidates[i];
+      c.addIceCandidate(iceCandidate);
+    }
+
+    return c.createAnswer()
+      .then(description => new Promise((accept, reject) => {
+        c.setLocalDescription(description);
+        const iceCandidates = [];
+        c.onicecandidate = e => {
+          iceCandidates.push(e.candidate);
+        };
+        c.onicegatheringstatechange = () => {
+          if (c.iceGatheringState === 'complete') {
+            const jsonHeaders = new Headers();
+            jsonHeaders.append('Content-Type', 'application/json');
+            fetch('/archae/signal/3', {
+              method: 'POST',
+              headers: jsonHeaders,
+              body: JSON.stringify({
+                description,
+                iceCandidates,
+              }),
+            })
+              .then(res => res.json())
+              .then(accept)
+              .catch(reject);
+
+            c.ondatachannel = e => {
+              const d = e.channel;
+              d.onmessage = e => {
+                const {data: src} = e;
+                _render(src)
+                  .then(buffer => {
+                    d.send(buffer);
+                  })
+                  .catch(err => {
+                    console.warn(err);
+                  });
+              };
+            };
+
+            c.onicecandidate = null;
+            c.onicegatheringstatechange = null;
+          }
+        };
+      }));
+  })
+  .catch(err => {
+    console.warn(err);
+  });
+
+</script>
+</head>
+<body>
+render process -- do not close this window!
+</body>
+</html>
