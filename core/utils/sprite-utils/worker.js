@@ -89,7 +89,7 @@ const _makeImageDataGeometry = (width, height, size, imageDataData) => {
       const baseIndex = i * 3;
       result[baseIndex + 0] += xOffset;
       result[baseIndex + 1] += yOffset;
-      // result[baseIndex + 2] += size / 2;
+      result[baseIndex + 2] += size / 2;
     }
     return Float32Array.from(result);
   };
