@@ -1,7 +1,6 @@
 const protocolUtils = require('./lib/utils/protocol-utils');
 const toolsLib = require('./lib/tools/index');
 
-const pixelSize = 0.015;
 const dataSymbol = Symbol();
 
 class Tools {
@@ -11,7 +10,25 @@ class Tools {
 
   mount() {
     const {_archae: archae} = this;
-    const {utils: {sprite: spriteUtils}} = zeo;
+    const {three, utils: {sprite: spriteUtils}} = zeo;
+    const {THREE} = three;
+
+    const pixelSize = 0.015;
+    const arrowMatrix = (() => {
+      const position = new THREE.Vector3(pixelSize, 0, -pixelSize*16);
+      const rotation = new THREE.Quaternion().setFromAxisAngle(
+        new THREE.Vector3(0, 0, 1),
+        -Math.PI / 4
+      ).premultiply(new THREE.Quaternion().setFromUnitVectors(
+        new THREE.Vector3(0, 1, 0),
+        new THREE.Vector3(0, 0, -1)
+      )).premultiply(new THREE.Quaternion().setFromUnitVectors(
+        new THREE.Vector3(1, 0, 0),
+        new THREE.Vector3(0, 1, 0)
+      ));
+      const scale = new THREE.Vector3(2, 2, 2);
+      return new THREE.Matrix4().compose(position, rotation, scale);
+    })();
 
     let live = true;
     this._cleanup = () => {
@@ -35,7 +52,7 @@ class Tools {
     return _requestImage('/archae/tools/img/arrow.png')
       .then(arrowImg => {
         if (live) {
-          return spriteUtils.requestSpriteGeometry(spriteUtils.getImageData(arrowImg), pixelSize)
+          return spriteUtils.requestSpriteGeometry(spriteUtils.getImageData(arrowImg), pixelSize, arrowMatrix)
             .then(arrowGeometrySpec => {
               if (live) {
                 const data = {
