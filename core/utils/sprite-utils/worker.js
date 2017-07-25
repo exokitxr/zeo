@@ -6,7 +6,7 @@ const protocolUtils = require('./lib/utils/protocol-utils');
 
 const NUM_POSITIONS_CHUNK = 200 * 1024;
 
-const pixelGeometryVerticesCache = {};
+/* const pixelGeometryVerticesCache = {};
 const _getPixelGeometryVertices = size => {
   const entry = pixelGeometryVerticesCache[size];
 
@@ -26,27 +26,71 @@ const _getPixelGeometryVertices = size => {
     pixelGeometryVerticesCache[size] = newEntry;
     return newEntry.slice();
   };
-};
-const _getPixelVertices = (x, y, width, height, size) => {
-  const pixelVertices = _getPixelGeometryVertices(size);
-  const numVertices = pixelVertices.length / 3;
-  for (let i = 0; i < numVertices; i++) {
-    const baseIndex = i * 3;
-    pixelVertices[baseIndex + 0] += (-(width / 2) + x + 1) * size;
-    pixelVertices[baseIndex + 1] -= (-(height / 2) + y) * size;
-    pixelVertices[baseIndex + 2] += size / 2;
-  }
-  return pixelVertices;
-};
+}; */
 
 const _makeImageDataGeometry = (width, height, size, imageDataData) => {
-  const getPixel = (imageDataData, x, y, pixelData) => {
+  const vertices = [
+    [-size/2, size/2, -size/2], // 0 left up back
+    [size/2, size/2, -size/2], // 1 right up back
+    [-size/2, size/2, size/2], // 2 left up front
+    [size/2, size/2, size/2], // 3 right up front
+    [-size/2, -size/2, -size/2], // 4 left down back
+    [size/2, -size/2, -size/2], // 5 right down back
+    [-size/2, -size/2, size/2], // 6 left down front
+    [size/2, -size/2, size/2], // 7 right down front
+  ];
+  const getPixelValue = (imageDataData, x, y, pixelData) => {
     const index = (x + y * width) * 4;
     pixelData[0] = imageDataData[index + 0];
     pixelData[1] = imageDataData[index + 1];
     pixelData[2] = imageDataData[index + 2];
     pixelData[3] = imageDataData[index + 3];
   };
+  const getPixelVertices = (x, y, left, right, top, bottom) => {
+    const result = vertices[2].concat(vertices[6]).concat(vertices[3]) // front
+      .concat(vertices[6]).concat(vertices[7]).concat(vertices[3])
+      .concat(vertices[1]).concat(vertices[5]).concat(vertices[0]) // back
+      .concat(vertices[5]).concat(vertices[4]).concat(vertices[0]);
+
+    if (left) {
+      result.push.apply(
+        result,
+        vertices[0].concat(vertices[4]).concat(vertices[2])
+          .concat(vertices[4]).concat(vertices[6]).concat(vertices[2])
+      );
+    }
+    if (right) {
+      result.push.apply(
+        result,
+        vertices[3].concat(vertices[7]).concat(vertices[1])
+          .concat(vertices[7]).concat(vertices[5]).concat(vertices[1])
+      );
+    }
+    if (top) {
+      result.push.apply(
+        result,
+        vertices[0].concat(vertices[2]).concat(vertices[1])
+          .concat(vertices[2]).concat(vertices[3]).concat(vertices[1])
+      );
+    }
+    if (bottom) {
+      result.push.apply(
+        result,
+        vertices[6].concat(vertices[4]).concat(vertices[7])
+          .concat(vertices[4]).concat(vertices[5]).concat(vertices[7])
+      );
+    }
+
+    const numPositions = result.length / 3;
+    for (let i = 0; i < numPositions; i++) {
+      const baseIndex = i * 3;
+      result[baseIndex + 0] += (-(width / 2) + x) * size;
+      result[baseIndex + 1] -= (-(height / 2) + y) * size;
+      // result[baseIndex + 2] += size / 2;
+    }
+    return Float32Array.from(result);
+  };
+  const isSolidPixel = (x, y) => imageDataData[((x + y * width) * 4) + 3] >= 128;
 
   const positions = new Float32Array(NUM_POSITIONS_CHUNK);
   const colors = new Float32Array(NUM_POSITIONS_CHUNK);
@@ -54,11 +98,17 @@ const _makeImageDataGeometry = (width, height, size, imageDataData) => {
   const pixelData = Array(4);
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
-      getPixel(imageDataData, x, y, pixelData);
+      getPixelValue(imageDataData, x, y, pixelData);
 
-      const aFactor = pixelData[3] / 255;
-      if (aFactor > 0.5) {
-        const newPositions = _getPixelVertices(x, y, width, height, size);
+      if (pixelData[3] >= 128) {
+        const newPositions = getPixelVertices(
+          x,
+          y,
+          !((x - 1) >= 0 && isSolidPixel(x - 1, y)),
+          !((x + 1) < width && isSolidPixel(x + 1, y)),
+          !((y - 1) >= 0 && isSolidPixel(x, y - 1)),
+          !((y + 1) < height && isSolidPixel(x, y + 1))
+        );
         positions.set(newPositions, attributeIndex);
 
         const numNewPositions = newPositions.length / 3;
