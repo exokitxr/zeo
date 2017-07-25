@@ -25,8 +25,8 @@ class Lightmap {
         this.blend = blend;
       }
 
-      getLightmapIndexesInRange(width, depth, lightmaps) {
-        return lightmaps.map(({x, z}) => ([x, z]));
+      getLightmapsInRange(width, depth, lightmaps) {
+        return lightmaps;
       }
     }
     class Sphere {
@@ -42,7 +42,7 @@ class Lightmap {
         this.blend = blend;
       }
 
-      getLightmapIndexesInRange(width, depth, lightmaps) {
+      getLightmapsInRange(width, depth, lightmaps) {
         const {x, z, r} = this;
         const points = [
           [Math.floor((x - r) / width), Math.floor((z - r) / depth)],
@@ -56,8 +56,9 @@ class Lightmap {
           const point = points[i];
           const [ox, oz] = point;
 
-          if (lightmaps.some(lightmap => lightmap.x === ox && lightmap.z === oz)) {
-            result.push([ox, oz]);
+          const lightmap = lightmaps.find(lightmap => lightmap.x === ox && lightmap.z === oz);
+          if (lightmap) {
+            result.push(lightmap);
           }
         }
         return result;
@@ -77,7 +78,7 @@ class Lightmap {
         this.blend = blend;
       }
 
-      getLightmapIndexesInRange(width, depth, lightmaps) {
+      getLightmapsInRange(width, depth, lightmaps) {
         const {x, z, r} = this;
         const points = [
           [Math.floor((x - r) / width), Math.floor((z - r) / depth)],
@@ -91,8 +92,9 @@ class Lightmap {
           const point = points[i];
           const [ox, oz] = point;
 
-          if (lightmaps.some(lightmap => lightmap.x === ox && lightmap.z === oz)) {
-            result.push([ox, oz]);
+          const lightmap = lightmaps.find(lightmap => lightmap.x === ox && lightmap.z === oz);
+          if (lightmap) {
+            result.push(lightmap);
           }
         }
         return result;
@@ -110,16 +112,17 @@ class Lightmap {
         this.blend = blend;
       }
 
-      getLightmapIndexesInRange(width, depth, lightmaps) {
+      getLightmapsInRange(width, depth, lightmaps) {
         const {x, z} = this;
         const ox = Math.floor(x / width);
         const oz = Math.floor(z / depth);
 
-        const result = [];
-        if (lightmaps.some(lightmap => lightmap.x === ox && lightmap.z === oz)) {
-          result.push([ox, oz]);
+        const lightmap = lightmaps.find(lightmap => lightmap.x === ox && lightmap.z === oz);
+        if (lightmap) {
+          return [lightmap];
+        } else {
+          return [];
         }
-        return result;
       }
     }
 
@@ -246,9 +249,14 @@ class Lightmap {
           entry.addRef();
           entry.on('destroy', () => {
             lightmaps.splice(lightmaps.indexOf(entry), 1);
+
+            const needUpdateIndex = lightmapsNeedUpdate.indexOf(entry);
+            if (needUpdateIndex !== -1) {
+              lightmaps.splice(needUpdateIndex, 1);
+            }
           });
           lightmaps.push(entry);
-          lightmapsNeedUpdate.push([ox, oz]);
+          lightmapsNeedUpdate.push(entry);
         }
         return entry;
       }
@@ -261,12 +269,10 @@ class Lightmap {
         this.worker.addShape(shape);
 
         const {width, depth, _lightmaps: lightmaps, _lightmapsNeedUpdate: lightmapsNeedUpdate} = this;
-        const newLightmapsNeedUpdate = shape.getLightmapIndexesInRange(width, depth, lightmaps);
+        const newLightmapsNeedUpdate = shape.getLightmapsInRange(width, depth, lightmaps);
         for (let i = 0; i < newLightmapsNeedUpdate.length; i++) {
           const newLightmapNeedsUpdate = newLightmapsNeedUpdate[i];
-          if (!lightmapsNeedUpdate.some(lightmapNeedsUpdate =>
-            lightmapNeedsUpdate[0] === newLightmapNeedsUpdate[0] && lightmapNeedsUpdate[1] === newLightmapNeedsUpdate[1]
-          )) {
+          if (!lightmapsNeedUpdate.includes(newLightmapNeedsUpdate)) {
             lightmapsNeedUpdate.push(newLightmapNeedsUpdate);
           }
         }
@@ -277,12 +283,10 @@ class Lightmap {
         this.worker.removeShape(id);
 
         const {width, depth, _lightmaps: lightmaps, _lightmapsNeedUpdate: lightmapsNeedUpdate} = this;
-        const newLightmapsNeedUpdate = shape.getLightmapIndexesInRange(width, depth, lightmaps);
+        const newLightmapsNeedUpdate = shape.getLightmapsInRange(width, depth, lightmaps);
         for (let i = 0; i < newLightmapsNeedUpdate.length; i++) {
           const newLightmapNeedsUpdate = newLightmapsNeedUpdate[i];
-          if (!lightmapsNeedUpdate.some(lightmapNeedsUpdate =>
-            lightmapNeedsUpdate[0] === newLightmapNeedsUpdate[0] && lightmapNeedsUpdate[1] === newLightmapNeedsUpdate[1]
-          )) {
+          if (!lightmapsNeedUpdate.includes(newLightmapNeedsUpdate)) {
             lightmapsNeedUpdate.push(newLightmapNeedsUpdate);
           }
         }
@@ -294,9 +298,7 @@ class Lightmap {
         if (lightmapsNeedUpdate.length > 0) {
           const {worker, _lightmaps: lightmaps} = this;
 
-          return Promise.all(lightmapsNeedUpdate.map(([ox, oz]) =>
-            worker.requestUpdate(lightmaps.find(lightmap => lightmap.x === ox && lightmap.z === oz))
-          ))
+          return Promise.all(lightmapsNeedUpdate.map(lightmap => worker.requestUpdate(lightmap)))
             .then(() => {
               lightmapsNeedUpdate.length = 0;
             });
