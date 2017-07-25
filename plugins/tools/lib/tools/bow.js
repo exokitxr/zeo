@@ -26,6 +26,7 @@ const bow = ({archae, data}) => {
   const localTransformScaleVector = new THREE.Vector3(3, 3, 3);
   const localVector = new THREE.Vector3();
   const localVector2 = new THREE.Vector3();
+  const localQuaternion = new THREE.Quaternion();
   const localMatrix = new THREE.Matrix4();
   const zeroVector = new THREE.Vector3();
   const oneVector = new THREE.Vector3(1, 1, 1);
@@ -58,21 +59,6 @@ const bow = ({archae, data}) => {
       );
     }
   }
-  /* const arrowGeometry = (() => {
-    const coreGeometry = new THREE.BoxBufferGeometry(0.01, 0.01, 0.75);
-    const tipGeometry = new THREE.CylinderBufferGeometry(0, 0.015, 0.04, 3, 1)
-      .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
-      .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -(0.75 / 2) - (0.04 / 2)));
-    const fletchingGeometry1 = new THREE.CylinderBufferGeometry(0, 0.015, 0.2, 2, 1)
-      .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
-      .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, (0.75 / 2) - (0.2 / 2) - 0.01));
-    const fletchingGeometry2 = new THREE.CylinderBufferGeometry(0, 0.015, 0.2, 2, 1)
-      .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
-      .applyMatrix(new THREE.Matrix4().makeRotationZ(Math.PI / 2))
-      .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, (0.75 / 2) - (0.2 / 2) - 0.01));
-    return geometryUtils.concatBufferGeometry([coreGeometry, tipGeometry, fletchingGeometry1, fletchingGeometry2])
-      .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -0.75 / 2));
-  })(); */
   const arrowGeometry = (() => {
     const {positions, normals, colors, dys} = arrowGeometrySpec;
     const geometry = new THREE.BufferGeometry();
@@ -145,12 +131,15 @@ const bow = ({archae, data}) => {
           arrowMesh.updatePull = position => {
             if (position !== null) {
               arrowMesh.position.copy(position);
-              arrowMesh.quaternion.setFromUnitVectors(
-                forwardVector,
-                localVector.copy(grabbable.position)
-                  .sub(position)
-                  .normalize()
-              );
+              arrowMesh.quaternion.setFromRotationMatrix(localMatrix.lookAt(
+                position,
+                grabbable.position,
+                localVector.copy(upVector)
+                  .applyQuaternion(
+                    localQuaternion.copy(stringMesh.quaternion)
+                      .multiply(forwardQuaternion)
+                  )
+              ));
             } else {
               arrowMesh.position.copy(stringMesh.position);
               arrowMesh.quaternion.copy(stringMesh.quaternion)
@@ -296,10 +285,12 @@ const bow = ({archae, data}) => {
 
                   const {velocity} = arrow;
                   arrow.position.add(localVector.copy(velocity).multiplyScalar(timeDiff));
-                  arrow.quaternion.setFromUnitVectors(
-                    forwardVector,
-                    localVector.copy(velocity).normalize()
-                  );
+                  arrow.quaternion.setFromRotationMatrix(localMatrix.lookAt(
+                    arrow.position,
+                    localVector.copy(arrow.position)
+                      .add(velocity),
+                    upVector
+                  ));
                   arrow.updateMatrixWorld();
 
                   velocity.y = Math.max(velocity.y + (ARROW_GRAVITY * timeDiff), ARROW_TERMINAL_VELOCITY);
