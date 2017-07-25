@@ -57,7 +57,7 @@ const _render = (src, width, height) => {
           const onmousedown = a.getAttribute('onmousedown') || null;
           const onmouseup = a.getAttribute('onmouseup') || null;
 
-          return {rect: {left, right, top, bottom}, onclick, onmousedown, onmouseup};
+          return [left, right, top, bottom, onclick, onmousedown, onmouseup];
         } else {
           return null;
         }
