@@ -283,8 +283,6 @@ self.onmessage = e => {
 
     postMessage({
       type: 'respondUpdate',
-      ox: ox,
-      oz: oz,
       buffer: resultBuffer,
     }, [resultBuffer]);
   } else {

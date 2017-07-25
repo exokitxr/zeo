@@ -24,7 +24,7 @@ class Lightmap {
       }
 
       getLightmapIndexesInRange(width, depth, lightmaps) {
-        return Object.keys(lightmaps);
+        return lightmaps.map(({x, z}) => ([x, z]));
       }
     }
     class Sphere {
@@ -49,15 +49,13 @@ class Lightmap {
           [Math.floor((x + r) / width), Math.floor((z + r) / depth)],
         ];
 
-        const result = {};
+        const result = [];
         for (let i = 0; i < points.length; i++) {
           const point = points[i];
           const [ox, oz] = point;
-          const index = ox + ':' + oz;
-          const lightmap = lightmaps[index];
 
-          if (lightmap) {
-            result[index] = true;
+          if (lightmaps.some(lightmap => lightmap.x === ox && lightmap.z === oz)) {
+            result.push([ox, oz]);
           }
         }
         return result;
@@ -86,15 +84,13 @@ class Lightmap {
           [Math.floor((x + r) / width), Math.floor((z + r) / depth)],
         ];
 
-        const result = {};
+        const result = [];
         for (let i = 0; i < points.length; i++) {
           const point = points[i];
           const [ox, oz] = point;
-          const index = ox + ':' + oz;
-          const lightmap = lightmaps[index];
 
-          if (lightmap) {
-            result[index] = true;
+          if (lightmaps.some(lightmap => lightmap.x === ox && lightmap.z === oz)) {
+            result.push([ox, oz]);
           }
         }
         return result;
@@ -114,20 +110,23 @@ class Lightmap {
 
       getLightmapIndexesInRange(width, depth, lightmaps) {
         const {x, z} = this;
+        const ox = Math.floor(x / width);
+        const oz = Math.floor(z / depth);
 
-        const result = {};
-        const index = ox + ':' + oz;
-        const lightmap = lightmaps[index];
-        if (lightmap) {
-          result[index] = true;
+        const result = [];
+        if (lightmaps.some(lightmap => lightmap.x === ox && lightmap.z === oz)) {
+          result.push([ox, oz]);
         }
         return result;
       }
     }
 
     class Lightmap extends EventEmitter {
-      constructor(width, height, depth) {
+      constructor(x, z, width, height, depth) {
         super();
+
+        this.x = x;
+        this.z = z;
 
         const buffer = new ArrayBuffer((width + 1) * (depth + 1) * height);
         this.buffer = buffer;
@@ -176,7 +175,7 @@ class Lightmap {
         this.heightOffset = heightOffset;
 
         const worker = new Worker('archae/plugins/_plugins_lightmap/build/worker.js');
-        const queue = {};
+        const queue = [];
         worker.init = (width, height, depth, heightOffset) => {
           worker.postMessage({
             type: 'init',
@@ -204,7 +203,8 @@ class Lightmap {
             ids: ids,
           });
         };
-        worker.requestUpdate = (ox, oz, buffer) => new Promise((accept, reject) => {
+        worker.requestUpdate = lightmap => new Promise((accept, reject) => {
+          const {x: ox, z: oz, buffer} = lightmap;
           worker.postMessage({
             type: 'requestUpdate',
             ox,
@@ -212,30 +212,24 @@ class Lightmap {
             buffer,
           }, [buffer]);
 
-          const index = ox + ':' + oz;
-          queue[index] = buffer => {
-            const lightmap = lightmaps[index];
-            if (lightmap) {
-              lightmap.buffer = buffer;
-              lightmap.texture.image.data.set(new Uint8Array(buffer));
-              lightmap.texture.needsUpdate = true;
-            }
+          queue.push(buffer => {
+            lightmap.buffer = buffer;
+            lightmap.texture.image.data.set(new Uint8Array(buffer));
+            lightmap.texture.needsUpdate = true;
 
             accept();
-          };
+          });
         });
         worker.onmessage = e => {
-          const {data: {ox, oz, buffer}} = e;
-          const index = ox + ':' + oz;
-          const entry = queue[index];
-          entry(buffer);
+          const {data: {buffer}} = e;
+          queue.shift()(buffer);
         };
         worker.init(width, height, depth, heightOffset);
         this.worker = worker;
 
-        const lightmaps = {};
+        const lightmaps = [];
         this._lightmaps = lightmaps;
-        const lightmapsNeedUpdate = {};
+        const lightmapsNeedUpdate = [];
         this._lightmapsNeedUpdate = lightmapsNeedUpdate;
       }
 
@@ -243,17 +237,16 @@ class Lightmap {
         const {width, height, depth, heightOffset, _lightmaps: lightmaps, _lightmapsNeedUpdate: lightmapsNeedUpdate} = this;
         const ox = Math.floor(x / width);
         const oz = Math.floor(z / depth);
-        const index = ox + ':' + oz;
 
-        let entry = lightmaps[index];
+        let entry = lightmaps.find(lightmap => lightmap.x === ox && lightmap.z === oz);
         if (!entry) {
-          entry = new Lightmap(width, height, depth);
+          entry = new Lightmap(ox, oz, width, height, depth);
           entry.addRef();
           entry.on('destroy', () => {
-            delete lightmaps[index];
+            lightmaps.splice(lightmaps.indexOf(entry), 1);
           });
-          lightmaps[index] = entry;
-          lightmapsNeedUpdate[index] = true;
+          lightmaps.push(entry);
+          lightmapsNeedUpdate.push([ox, oz]);
         }
         return entry;
       }
@@ -266,7 +259,15 @@ class Lightmap {
         this.worker.addShape(shape);
 
         const {width, depth, _lightmaps: lightmaps, _lightmapsNeedUpdate: lightmapsNeedUpdate} = this;
-        Object.assign(lightmapsNeedUpdate, shape.getLightmapIndexesInRange(width, depth, lightmaps));
+        const newLightmapsNeedUpdate = shape.getLightmapIndexesInRange(width, depth, lightmaps);
+        for (let i = 0; i < newLightmapsNeedUpdate.length; i++) {
+          const newLightmapNeedsUpdate = newLightmapsNeedUpdate[i];
+          if (!lightmapsNeedUpdate.some(lightmapNeedsUpdate =>
+            lightmapNeedsUpdate[0] === newLightmapNeedsUpdate[0] && lightmapNeedsUpdate[1] === newLightmapNeedsUpdate[1]
+          )) {
+            lightmapsNeedUpdate.push(newLightmapNeedsUpdate);
+          }
+        }
       }
 
       remove(shape) {
@@ -274,38 +275,26 @@ class Lightmap {
         this.worker.removeShape(id);
 
         const {width, depth, _lightmaps: lightmaps, _lightmapsNeedUpdate: lightmapsNeedUpdate} = this;
-        Object.assign(lightmapsNeedUpdate, shape.getLightmapIndexesInRange(width, depth, lightmaps));
-      }
-
-      removes(shapes) {
-        this.worker.removeShapes(shapes.map(({id}) => id));
-
-        const {width, depth, _lightmaps: lightmaps, _lightmapsNeedUpdate: lightmapsNeedUpdate} = this;
-        for (let i = 0; i < shapes.length; i++) {
-          const shape = shapes[i];
-          Object.assign(lightmapsNeedUpdate, shape.getLightmapIndexesInRange(width, depth, lightmaps));
+        const newLightmapsNeedUpdate = shape.getLightmapIndexesInRange(width, depth, lightmaps);
+        for (let i = 0; i < newLightmapsNeedUpdate.length; i++) {
+          const newLightmapNeedsUpdate = newLightmapsNeedUpdate[i];
+          if (!lightmapsNeedUpdate.some(lightmapNeedsUpdate =>
+            lightmapNeedsUpdate[0] === newLightmapNeedsUpdate[0] && lightmapNeedsUpdate[1] === newLightmapNeedsUpdate[1]
+          )) {
+            lightmapsNeedUpdate.push(newLightmapNeedsUpdate);
+          }
         }
       }
 
       update() {
         const {worker, _lightmaps: lightmaps, _lightmapsNeedUpdate: lightmapsNeedUpdate} = this;
 
-        let promises = [];
-        for (const index in lightmapsNeedUpdate) {
-          const lightmap = lightmaps[index];
-
-          if (lightmap) {
-            const [ox, oz] = index.split(':').map(s => parseInt(s, 10));
-            const {buffer} = lightmap;
-            const promise = worker.requestUpdate(ox, oz, buffer)
-              .then(() => {
-                delete lightmapsNeedUpdate[index];
-              });
-            promises.push(promise);
-          }
-        }
-
-        return Promise.all(promises);
+        return Promise.all(lightmapsNeedUpdate.map(([ox, oz]) =>
+          worker.requestUpdate(lightmaps.find(lightmap => lightmap.x === ox && lightmap.z === oz))
+        ))
+          .then(() => {
+            lightmapsNeedUpdate.length = 0;
+          });
       }
     };
     Lightmapper.Ambient = Ambient;
