@@ -163,47 +163,38 @@ class Cloud {
                 cloudChunkMesh.destroy();
               });
             })
-        };
-        let updating = false;
-        let updateQueued = false;
-        const tryCloudChunkUpdate = () => {
-          if (!updating) {
-            updating = true;
+        }
 
-            const done = () => {
-              updating = false;
-
-              if (updateQueued) {
-                updateQueued = false;
-
-                tryCloudChunkUpdate();
+        let live = true;
+        const _recurse = () => {
+          _requestRefreshCloudChunks()
+            .then(() => {
+              if (live) {
+                setTimeout(_recurse, 1000);
               }
-            };
-
-            _requestRefreshCloudChunks()
-              .then(done)
-              .catch(err => {
+            })
+            .catch(err => {
+              if (live) {
                 console.warn(err);
 
-                done();
-              });
-          } else {
-            updateQueued = true;
-          }
+                setTimeout(_recurse, 1000);
+              }
+            });
         };
+        _recurse();
 
         const update = () => {
-          tryCloudChunkUpdate();
+          const dayNightSkyboxEntity = elements.getEntitiesElement().querySelector(DAY_NIGHT_SKYBOX_PLUGIN);
+          const sunIntensity = (dayNightSkyboxEntity && dayNightSkyboxEntity.getSunIntensity) ? dayNightSkyboxEntity.getSunIntensity() : 0;
 
           // cloudsMaterial.uniforms.worldTime.value = world.getWorldTime();
-          cloudsMaterial.uniforms.sunIntensity.value = (() => {
-            const dayNightSkyboxEntity = elements.getEntitiesElement().querySelector(DAY_NIGHT_SKYBOX_PLUGIN);
-            return (dayNightSkyboxEntity && dayNightSkyboxEntity.getSunIntensity) ? dayNightSkyboxEntity.getSunIntensity() : 0;
-          })();
+          cloudsMaterial.uniforms.sunIntensity.value = sunIntensity;
         };
         updates.push(update);
 
         entityElement._cleanup = () => {
+          live = false;
+
           for (let i = 0; i < cloudChunkMeshes.length; i++) {
             const cloudChunkMesh = cloudChunkMeshes[i];
             scene.remove(cloudChunkMesh);

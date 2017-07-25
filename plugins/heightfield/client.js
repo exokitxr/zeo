@@ -501,52 +501,38 @@ class Heightfield {
         };
         elements.registerEntity(this, heightfieldEntity);
 
-        let updating = false;
-        let updateQueued = false;
-        const tryMapChunkUpdate = () => {
-          if (!updating) {
-            updating = true;
-
-            const done = () => {
-              updating = false;
-
-              if (updateQueued) {
-                updateQueued = false;
-
-                tryMapChunkUpdate();
+        let live = true;
+        const _recurse = () => {
+          _requestRefreshMapChunks()
+            .then(() => {
+              if (live) {
+                setTimeout(_recurse, 1000);
               }
-            };
-
-            _requestRefreshMapChunks()
-              .then(done)
-              .catch(err => {
+            })
+            .catch(err => {
+              if (live) {
                 console.warn(err);
 
-                done();
-              });
-          } else {
-            updateQueued = true;
-          }
+                setTimeout(_recurse, 1000);
+              }
+            });
         };
-        const updateMeshes = () => {
-          const sunIntensity = (() => {
-            const dayNightSkyboxEntity = elements.getEntitiesElement().querySelector(DAY_NIGHT_SKYBOX_PLUGIN);
-            return (dayNightSkyboxEntity && dayNightSkyboxEntity.getSunIntensity) ? dayNightSkyboxEntity.getSunIntensity() : 0;
-          })();
+        _recurse();
+
+        const _update = () => {
+          const dayNightSkyboxEntity = elements.getEntitiesElement().querySelector(DAY_NIGHT_SKYBOX_PLUGIN);
+          const sunIntensity = (dayNightSkyboxEntity && dayNightSkyboxEntity.getSunIntensity) ? dayNightSkyboxEntity.getSunIntensity() : 0;
 
           for (const index in mapChunkMeshes) {
             const mapChunkMesh = mapChunkMeshes[index];
             mapChunkMesh.material.uniforms.sunIntensity.value = sunIntensity;
           }
         };
-
-        const _update = () => {
-          tryMapChunkUpdate();
-          updateMeshes();
-        };
         render.on('update', _update);
 
         this._cleanup = () => {
+          live = false;
+
           // XXX remove chunks from the scene here
 
           elements.destroyListener(elementListener);

@@ -346,52 +346,38 @@ class Grass {
               })
           };
 
-          let updating = false;
-          let updateQueued = false;
-          const tryGrassChunkUpdate = () => {
-            if (!updating) {
-              updating = true;
-
-              const done = () => {
-                updating = false;
-
-                if (updateQueued) {
-                  updateQueued = false;
-
-                  tryGrassChunkUpdate();
+          let live = true;
+          const _recurse = () => {
+            _requestRefreshGrassChunks()
+              .then(() => {
+                if (live) {
+                  setTimeout(_recurse, 1000);
                 }
-              };
-
-              _requestRefreshGrassChunks()
-                .then(done)
-                .catch(err => {
+              })
+              .catch(err => {
+                if (live) {
                   console.warn(err);
 
-                  done();
-                });
-            } else {
-              updateQueued = true;
-            }
+                  setTimeout(_recurse, 1000);
+                }
+              });
           };
-          const updateMeshes = () => {
-            const sunIntensity = (() => {
-              const dayNightSkyboxEntity = elements.getEntitiesElement().querySelector(DAY_NIGHT_SKYBOX_PLUGIN);
-              return (dayNightSkyboxEntity && dayNightSkyboxEntity.getSunIntensity) ? dayNightSkyboxEntity.getSunIntensity() : 0;
-            })();
+          _recurse();
+
+          const _update = () => {
+            const dayNightSkyboxEntity = elements.getEntitiesElement().querySelector(DAY_NIGHT_SKYBOX_PLUGIN);
+            const sunIntensity =  (dayNightSkyboxEntity && dayNightSkyboxEntity.getSunIntensity) ? dayNightSkyboxEntity.getSunIntensity() : 0;
 
             for (let i = 0; i < grassChunkMeshes.length; i++) {
               const grassChunkMesh = grassChunkMeshes[i];
               grassChunkMesh.material.uniforms.sunIntensity.value = sunIntensity;
             }
           };
-
-          const _update = () => {
-            tryGrassChunkUpdate();
-            updateMeshes();
-          };
           render.on('update', _update);
 
           this._cleanup = () => {
+            live = false;
+
             // XXX remove old grass meshes here
 
             elements.destroyListener(elementListener);
