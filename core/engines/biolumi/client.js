@@ -26,6 +26,18 @@ class Biolumi {
       }
     };
 
+    class Anchor {
+      constructor(left, right, top, bottom, onclick, onmousedown, onmouseup) {
+        this.left = left;
+        this.right = right;
+        this.top = top;
+        this.bottom = bottom;
+        this.onclick = onclick;
+        this.onmousedown = onmousedown;
+        this.onmouseup = onmouseup;
+      }
+    }
+
     const _requestImg = src => new Promise((accept, reject) => {
       const img = new Image();
       img.src = src;
@@ -134,7 +146,6 @@ class Biolumi {
 
       return Promise.resolve(new UiTimer());
     };
-
     const _requestRasterizer = () => new Promise((accept, reject) => {
       const w = window.open('archae/biolumi/worker.html', '_blank', "height=100,width=200,top=10000,left=10000,location=no,menubar=no,status=no,titlebar=no,toolbar=no");
       window.addEventListener('beforeunload', () => {
@@ -176,7 +187,9 @@ class Biolumi {
               new Promise((accept, reject) => {
                 queue.push((err, anchorsJson) => {
                   if (!err) {
-                    const anchors = JSON.parse(anchorsJson);
+                    const anchors = JSON.parse(anchorsJson).map(([left, right, top, bottom, onclick, onmousedown, onmouseup]) =>
+                      new Anchor(left, right, top, bottom, onclick, onmousedown, onmouseup)
+                    );
                     accept(anchors);
                   } else {
                     reject(err);
@@ -515,14 +528,6 @@ class Biolumi {
               this.boxTarget = boxTarget;
               this.anchor = anchor;
             }
-          }
-          class Anchor {
-            constructor(rect, onclick, onmousedown, onmouseup) {
-              this.rect = rect;
-              this.onclick = onclick;
-              this.onmousedown = onmousedown;
-              this.onmouseup = onmouseup;
-            }
           } */
 
           class Ui {
@@ -715,9 +720,7 @@ class Biolumi {
                           const anchors = layer ? layer.anchors : [];
                           for (let i = 0; i < anchors.length; i++) {
                             const a = anchors[i];
-                            const {rect} = a;
-
-                            if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
+                            if (x >= a.left && x <= a.right && y >= a.top && y <= a.bottom) {
                               anchor = a;
                               break;
                             }
@@ -725,16 +728,16 @@ class Biolumi {
 
                           if (anchor) {
                             hoverState.anchor = anchor;
-                            hoverState.value = (x - anchor.rect.left) / (anchor.rect.right - anchor.rect.left);
-                            hoverState.crossValue = (y - anchor.rect.top) / (anchor.rect.bottom - anchor.rect.top);
+                            hoverState.value = (x - anchor.left) / (anchor.right - anchor.left);
+                            hoverState.crossValue = (y - anchor.top) / (anchor.bottom - anchor.top);
 
                             const anchorMidpoint = new THREE.Vector2(
-                              ((anchor.rect.left + anchor.rect.right) / 2) / width * worldWidth,
-                              ((anchor.rect.top + anchor.rect.bottom) / 2) / height * worldHeight
+                              ((anchor.left + anchor.right) / 2) / width * worldWidth,
+                              ((anchor.top + anchor.bottom) / 2) / height * worldHeight
                             );
                             const anchorSize = new THREE.Vector2(
-                              (anchor.rect.right - anchor.rect.left) / width * worldWidth,
-                              (anchor.rect.bottom - anchor.rect.top) / height * worldHeight
+                              (anchor.right - anchor.left) / width * worldWidth,
+                              (anchor.bottom - anchor.top) / height * worldHeight
                             );
                             boxMesh.position.copy(
                               worldPosition.clone()
