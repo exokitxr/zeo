@@ -157,7 +157,7 @@ class Biolumi {
       d.onopen = e => {
         accept({
           rasterize: (src, width, height) => new Promise((accept, reject) => {
-            d.send(src);
+            d.send(JSON.stringify([width, height]) + src);
 
             queue.push((err, data) => {
               if (!err) {
@@ -350,67 +350,21 @@ class Biolumi {
             update() {
               const cache = {
                 layerSpec: null,
-                htmlSrc: null,
-                innerSrc: null,
                 img: null,
               };
 
               const _requestLayerSpec = () => {
                 const {spec, state} = this;
                 cache.layerSpec = typeof spec === 'function' ? spec(state) : spec;
-
-                return Promise.resolve();
-              };
-              const _requestHtmlSrc = () => {
-                const {layerSpec} = cache;
-                const {type = 'html'} = layerSpec;
-                if (type === 'html') {
-                  const {width, height} = this;
-                  const {src, x = 0, y = 0, w = width, h = height, pixelated = false} = layerSpec;
-
-                  cache.htmlSrc = (() => {
-                    const el = document.createElement('div');
-                    el.setAttribute('xmlns', 'http://www.w3.org/1999/xhtml');
-                    el.setAttribute('style', rootCss);
-                    el.innerHTML = src;
-
-                    const videos = el.querySelectorAll('video');
-                    for (let i = 0; i < videos.length; i++) {
-                      const video = videos[i];
-                      const a = document.createElement('a');
-                      a.style = video.style;
-                      a.setAttribute('media', 'video:' + video.src);
-                      video.parentNode.replaceChild(a, video);
-                    }
-
-                    return new XMLSerializer().serializeToString(el);
-                  })();
-                }
-
-                return Promise.resolve();
-              };
-              const _requestInnerSrc = () => {
-                const {htmlSrc} = cache;
-                if (htmlSrc !== null) {
-                  cache.innerSrc = htmlSrc
-                    .replace(/([^\x00-\x7F])/g, (all, c) => ('&#' + c.charCodeAt(0) + ';')) // convert non-ascii to HTML entities
-                    .replace(/#/g, '%23'); // firefox gets confused if we don't escape hashes in the data url
-                }
-
                 return Promise.resolve();
               };
               const _requestImage = () => new Promise((accept, reject) => {
                 const {layerSpec} = cache;
                 const {type = 'html'} = layerSpec;
+
                 if (type === 'html') {
                   const {width, height} = this;
-                  const {w = width, h = height} = layerSpec;
-                  const {innerSrc} = cache;
-                  const src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="' + w + '" height="' + h + '">' +
-                    '<foreignObject width="100%" height="100%" x="0" y="0">' +
-                      innerSrc +
-                    '</foreignObject>' +
-                  '</svg>';
+                  const {src, w = width, h = height} = layerSpec;
                   rasterizer.rasterize(src, w, h)
                     .then(imageBitmap => {
                       cache.img = imageBitmap;
@@ -524,16 +478,12 @@ class Biolumi {
               };
               /* const cancels = [
                 _requestLayerSpec,
-                _requestHtmlSrc,
-                _requestInnerSrc,
                 _requestImage,
                 _requestTexture,
                 _requestLayer,
                 _requestCallback,
               ].map(work => uiWorker.add(work)); */
               uiWorker.add(_requestLayerSpec);
-              uiWorker.add(_requestHtmlSrc);
-              uiWorker.add(_requestInnerSrc);
               uiWorker.add(_requestImage);
               uiWorker.add(_requestTexture);
               uiWorker.add(_requestLayer);
@@ -1136,7 +1086,6 @@ const fontWeight = 300;
 const fontStyle = 'normal';
 const transparentImgUrl = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
 const blackImgUrl = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1" viewBox="0 0 1 1"><path d="M0 0h1v1H0z"/></svg>';
-const rootCss = `margin: 0px; padding: 0px; height: 100%; width: 100%; font-family: ${fonts}; font-weight: ${fontWeight}; overflow: visible; user-select: none;`;
 
 const debounce = fn => {
   let running = false;
