@@ -2,7 +2,7 @@ import protocolUtils from './lib/utils/protocol-utils';
 
 const BYTES_PER_PIXEL = 4;
 const CUBE_VERTICES = 108;
-const NUM_POSITIONS_CHUNK = 300 * 1024;
+const NUM_POSITIONS_CHUNK = 100 * 1024;
 
 const spriteUtils = archae => ({
   mount() {

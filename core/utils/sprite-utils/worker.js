@@ -4,7 +4,7 @@ self.module = {};
 
 const protocolUtils = require('./lib/utils/protocol-utils');
 
-const NUM_POSITIONS_CHUNK = 200 * 1024;
+const NUM_POSITIONS_CHUNK = 100 * 1024;
 
 /* const pixelGeometryVerticesCache = {};
 const _getPixelGeometryVertices = size => {
