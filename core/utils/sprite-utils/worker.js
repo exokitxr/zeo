@@ -29,15 +29,16 @@ const _getPixelGeometryVertices = size => {
 }; */
 
 const _makeImageDataGeometry = (width, height, size, imageDataData) => {
+  const halfSize = size / 2;
   const vertices = [
-    [-size/2, size/2, -size/2], // 0 left up back
-    [size/2, size/2, -size/2], // 1 right up back
-    [-size/2, size/2, size/2], // 2 left up front
-    [size/2, size/2, size/2], // 3 right up front
-    [-size/2, -size/2, -size/2], // 4 left down back
-    [size/2, -size/2, -size/2], // 5 right down back
-    [-size/2, -size/2, size/2], // 6 left down front
-    [size/2, -size/2, size/2], // 7 right down front
+    [-halfSize, halfSize, -halfSize], // 0 left up back
+    [halfSize, halfSize, -halfSize], // 1 right up back
+    [-halfSize, halfSize, halfSize], // 2 left up front
+    [halfSize, halfSize, halfSize], // 3 right up front
+    [-halfSize, -halfSize, -halfSize], // 4 left down back
+    [halfSize, -halfSize, -halfSize], // 5 right down back
+    [-halfSize, -halfSize, halfSize], // 6 left down front
+    [halfSize, -halfSize, halfSize], // 7 right down front
   ];
   const getPixelValue = (imageDataData, x, y, pixelData) => {
     const index = (x + y * width) * 4;
@@ -82,10 +83,12 @@ const _makeImageDataGeometry = (width, height, size, imageDataData) => {
     }
 
     const numPositions = result.length / 3;
+    const xOffset = (-(width / 2) + x) * size;
+    const yOffset = ((height / 2) - y) * size;
     for (let i = 0; i < numPositions; i++) {
       const baseIndex = i * 3;
-      result[baseIndex + 0] += (-(width / 2) + x) * size;
-      result[baseIndex + 1] -= (-(height / 2) + y) * size;
+      result[baseIndex + 0] += xOffset;
+      result[baseIndex + 1] += yOffset;
       // result[baseIndex + 2] += size / 2;
     }
     return Float32Array.from(result);
