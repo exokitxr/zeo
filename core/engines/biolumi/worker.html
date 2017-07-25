@@ -5,7 +5,7 @@
 const canvas = document.createElement('canvas');
 const ctx = canvas.getContext('2d');
 
-const _render = (src, width, height) => new Promise((accept, reject) => {
+const _render = (src, width, height) => {
   const xmlSrc = (() => {
     const el = document.createElement('div');
     el.setAttribute('style', rootCss);
@@ -15,29 +15,71 @@ const _render = (src, width, height) => new Promise((accept, reject) => {
   const cleanSrc = xmlSrc
     .replace(/([^\x00-\x7F])/g, (all, c) => ('&#' + c.charCodeAt(0) + ';')) // convert non-ascii to HTML entities
     .replace(/#/g, '%23'); // firefox gets confused if we don't escape hashes in the data url
-  const wrappedSrc = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="' + width + '" height="' + height + '">' +
-    '<foreignObject width="100%" height="100%" x="0" y="0">' +
-      cleanSrc +
-    '</foreignObject>' +
-  '</svg>';
 
-  const img = new Image();
-  img.src = wrappedSrc;
-  img.onload = () => {
-    canvas.width = img.width;
-    canvas.height = img.height;
-    ctx.drawImage(img, 0, 0);
-    const dataUrl = canvas.toDataURL('image/png');
-    fetch(dataUrl)
-      .then(res => res.arrayBuffer())
-      .then(accept)
-      .catch(reject);
-  };
-  img.onerror = err => {
-    console.warn(err);
+  const _requestImageArrayBuffer = () => new Promise((accept, reject) => {
+    const wrappedSrc = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="' + width + '" height="' + height + '">' +
+      '<foreignObject width="100%" height="100%" x="0" y="0">' +
+        cleanSrc +
+      '</foreignObject>' +
+    '</svg>';
+
+    const img = new Image();
+    img.src = wrappedSrc;
+    img.onload = () => {
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx.drawImage(img, 0, 0);
+      const dataUrl = canvas.toDataURL('image/png');
+      fetch(dataUrl)
+        .then(res => res.arrayBuffer())
+        .then(accept)
+        .catch(reject);
+    };
+    img.onerror = err => {
+      reject(err);
+    };
+  });
+  const _requestAnchors = () => {
+    const divEl = (() => {
+      const el = document.createElement('div');
+      el.style.cssText = 'position: absolute; top: 0; left: 0; width: ' + width + 'px;';
+      el.innerHTML = cleanSrc;
+      return el;
+    })();
+    document.body.appendChild(divEl);
+
+    const anchors = Array.from(divEl.querySelectorAll('a'))
+      .map(a => {
+        if (a.style.display !== 'none' && a.style.visibility !== 'hidden') {
+          const rect = a.getBoundingClientRect();
+          const onclick = a.getAttribute('onclick') || null;
+          const onmousedown = a.getAttribute('onmousedown') || null;
+          const onmouseup = a.getAttribute('onmouseup') || null;
+
+          return {rect, onclick, onmousedown, onmouseup};
+        } else {
+          return null;
+        }
+      })
+      .filter(anchor => anchor !== null);
+
+    document.body.removeChild(divEl);
+
+    return Promise.resolve(anchors);
   };
 
-});
+  return Promise.all([
+    _requestImageArrayBuffer(),
+    _requestAnchors()
+  ])
+    .then(([
+      imageArrayBuffer,
+      anchors,
+    ]) => ({
+      imageArrayBuffer,
+      anchors,
+    }));
+};
 
 fetch('/archae/signal/2')
   .then(res => res.json())
@@ -89,8 +131,12 @@ fetch('/archae/signal/2')
                 const height = parseInt(match[2], 10);
                 const src = data.slice(match[0].length);
                 _render(src, width, height)
-                  .then(buffer => {
-                    d.send(buffer);
+                  .then(({
+                    imageArrayBuffer,
+                    anchors,
+                  }) => {
+                    d.send(imageArrayBuffer);
+                    d.send(JSON.stringify(anchors));
                   })
                   .catch(err => {
                     console.warn(err);
