@@ -205,14 +205,14 @@ class Heightfield {
       lightmapper = null;
     };
     const _bindLightmaps = () => {
-      for (const index in mapChunkMeshes) {
-        const mapChunkMesh = mapChunkMeshes[index];
+      for (let i = 0; i < mapChunkMeshes.length; i++) {
+        const mapChunkMesh = mapChunkMeshes[i];
         _bindLightmap(mapChunkMesh);
       }
     };
     const _unbindLightmaps = () => {
-      for (const index in mapChunkMeshes) {
-        const mapChunkMesh = mapChunkMeshes[index];
+      for (let i = 0; i < mapChunkMeshes.length; i++) {
+        const mapChunkMesh = mapChunkMeshes[i];
         _unbindLightmap(mapChunkMesh);
       }
     };
@@ -311,7 +311,7 @@ class Heightfield {
       resolution: NUM_CELLS,
       range: RANGE,
     });
-    const mapChunkMeshes = {};
+    const mapChunkMeshes = [];
 
     const _requestRefreshMapChunks = () => {
       const {hmd} = pose.getStatus();
@@ -385,11 +385,12 @@ class Heightfield {
 
         return _requestGenerate(x, z, resolution)
           .then(mapChunkData => {
-            const index = x + ':' + z;
-            const oldMapChunkMesh = mapChunkMeshes[index];
+            const oldMapChunkMesh = mapChunkMeshes.find(mapChunkMesh => mapChunkMesh.x === x && mapChunkMesh.y === y);
             if (oldMapChunkMesh) {
               scene.remove(oldMapChunkMesh);
               oldMapChunkMesh.destroy();
+
+              mapChunkMeshes.splice(mapChunkMeshes.indexOf(oldMapChunkMesh), 1);
 
               if (lod !== 1 && oldMapChunkMesh.targeted) {
                 _removeTarget(oldMapChunkMesh);
@@ -399,7 +400,7 @@ class Heightfield {
 
             const newMapChunkMesh = _makeMapChunkMesh(chunk, mapChunkData, x, z);
             scene.add(newMapChunkMesh);
-            mapChunkMeshes[index] = newMapChunkMesh;
+            mapChunkMeshes.push(newMapChunkMesh);
 
             if (lod === 1 && !newMapChunkMesh.targeted) {
               _addTarget(newMapChunkMesh, x, z);
@@ -423,9 +424,7 @@ class Heightfield {
             scene.remove(mapChunkMesh);
             mapChunkMesh.destroy();
 
-            const {offset: {x, z}} = mapChunkMesh;
-            const index = x + ':' + z;
-            delete mapChunkMeshes[index];
+            mapChunkMeshes.splice(mapChunkMeshes.indexOf(mapChunkMesh), 1);
 
             const {lod} = chunk;
             if (lod !== 1 && mapChunkMesh.targeted) {
@@ -472,8 +471,7 @@ class Heightfield {
             entityElement.getElevation = (x, z) => {
               const ox = Math.floor(x / NUM_CELLS);
               const oz = Math.floor(z / NUM_CELLS);
-              const index = ox + ':' + oz;
-              const mapChunkMesh = mapChunkMeshes[index];
+              const mapChunkMesh = mapChunkMeshes.find(mapChunkMesh => mapChunkMesh.x === ox && mapChunkMesh.z === oz);
 
               if (mapChunkMesh) {
                 const {heightfield} = mapChunkMesh;
@@ -531,8 +529,8 @@ class Heightfield {
           const dayNightSkyboxEntity = elements.getEntitiesElement().querySelector(DAY_NIGHT_SKYBOX_PLUGIN);
           const sunIntensity = (dayNightSkyboxEntity && dayNightSkyboxEntity.getSunIntensity) ? dayNightSkyboxEntity.getSunIntensity() : 0;
 
-          for (const index in mapChunkMeshes) {
-            const mapChunkMesh = mapChunkMeshes[index];
+          for (let i = 0; i < mapChunkMeshes.length; i++) {
+            const mapChunkMesh = mapChunkMeshes[i];
             mapChunkMesh.material.uniforms.sunIntensity.value = sunIntensity;
           }
         };
