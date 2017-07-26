@@ -75,7 +75,6 @@ class Input {
       }
 
       handle(e) {
-        inputEvent.reset();
         inputEvent.event = e;
         inputEvent.side = e.side || DEFAULT_EVENT_SIDE;
 
@@ -91,6 +90,8 @@ class Input {
             break;
           }
         }
+
+        inputEvent.reset();
       }
 
       add(handler, {priority}) {
