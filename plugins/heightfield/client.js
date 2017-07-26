@@ -160,7 +160,7 @@ class Heightfield {
     const {three, render, pose, world, elements, teleport, /*physics,*/ stck, utils: {random: {chnkr}}} = zeo;
     const {THREE, scene} = three;
 
-    const buffers = bffr(NUM_POSITIONS_CHUNK, RANGE * RANGE * (RANGE + 1) * 2);
+    const buffers = bffr(NUM_POSITIONS_CHUNK, (RANGE * 2) * (RANGE * 2) * 2);
 
     const worker = new Worker('archae/plugins/_plugins_heightfield/build/worker.js');
     const queue = [];
@@ -280,6 +280,8 @@ class Heightfield {
         });
 
         const mesh = new THREE.Mesh(geometry, material);
+        mesh.x = x;
+        mesh.z = z;
         // mesh.frustumCulled = false;
 
         mesh.offset = new THREE.Vector2(x, z);
@@ -385,7 +387,7 @@ class Heightfield {
 
         return _requestGenerate(x, z, resolution)
           .then(mapChunkData => {
-            const oldMapChunkMesh = mapChunkMeshes.find(mapChunkMesh => mapChunkMesh.x === x && mapChunkMesh.y === y);
+            const oldMapChunkMesh = mapChunkMeshes.find(mapChunkMesh => mapChunkMesh.x === x && mapChunkMesh.z === z);
             if (oldMapChunkMesh) {
               scene.remove(oldMapChunkMesh);
               oldMapChunkMesh.destroy();
