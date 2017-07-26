@@ -414,11 +414,11 @@ class WebVR {
                       const xFactor = -0.5 + (e.event.clientX / window.innerWidth);
                       const yFactor = -0.5 + (e.event.clientY / window.innerHeight);
 
-                      const newRotation = euler.clone();
-                      newRotation.y -= xFactor * (Math.PI * 0.1);
-                      newRotation.x -= yFactor * (Math.PI * 0.1);
+                      localEuler.copy(euler);
+                      localEuler.y -= xFactor * (Math.PI * 0.1);
+                      localEuler.x -= yFactor * (Math.PI * 0.1);
 
-                      lookMatrix.compose(position, new THREE.Quaternion().setFromEuler(newRotation), scale);
+                      lookMatrix.compose(position, localQuaternion.setFromEuler(localEuler), scale);
                     };
                     input.on('mousemove', mousemove);
 
