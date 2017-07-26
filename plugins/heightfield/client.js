@@ -3,8 +3,11 @@ const {
 
   NUM_CELLS_HEIGHT,
   HEIGHT_OFFSET,
+
+  RANGE,
 } = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
+const bffr = require('./bffr');
 
 const NUM_POSITIONS_CHUNK = 1200 * 1024;
 const LIGHTMAP_PLUGIN = 'plugins-lightmap';
@@ -157,6 +160,8 @@ class Heightfield {
     const {three, render, pose, world, elements, teleport, /*physics,*/ stck, utils: {random: {chnkr}}} = zeo;
     const {THREE, scene} = three;
 
+    const buffers = bffr(NUM_POSITIONS_CHUNK, RANGE * RANGE * (RANGE + 1) * 2);
+
     const worker = new Worker('archae/plugins/_plugins_heightfield/build/worker.js');
     const queue = [];
     worker.requestOriginHeight = () => new Promise((accept, reject) => {
@@ -168,7 +173,7 @@ class Heightfield {
       });
     });
     worker.requestGenerate = (x, y, resolution) => new Promise((accept, reject) => {
-      const buffer = new ArrayBuffer(NUM_POSITIONS_CHUNK);
+      const buffer = buffers.alloc();
       worker.postMessage({
         method: 'generate',
         args: {
@@ -291,6 +296,9 @@ class Heightfield {
       mesh.destroy = () => {
         mesh.geometry.dispose();
 
+        const {buffer} = mapChunkData;
+        buffers.free(buffer);
+
         if (mesh.lightmap) {
           _unbindLightmap(mesh);
         }
@@ -301,7 +309,7 @@ class Heightfield {
 
     const chunker = chnkr.makeChunker({
       resolution: NUM_CELLS,
-      range: 3,
+      range: RANGE,
     });
     const mapChunkMeshes = {};
 

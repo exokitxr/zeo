@@ -4,9 +4,12 @@ const {
   NUM_CELLS_HEIGHT,
   HEIGHT_OFFSET,
 
+  RANGE,
+
   ITEMS,
 } = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
+const bffr = require('./bffr');
 
 const NUM_POSITIONS_CHUNK = 100 * 1024;
 const DEFAULT_MATRIX = [
@@ -109,10 +112,12 @@ class Items {
     const {three, render, pose, input, items, elements, utils: {random: {chnkr}}} = zeo;
     const {THREE, scene} = three;
 
+    const buffers = bffr(NUM_POSITIONS_CHUNK, (RANGE + 1) * (RANGE + 1) * 2);
+
     const worker = new Worker('archae/plugins/_plugins_items/build/worker.js');
     const queue = [];
     worker.requestGenerate = (x, y) => new Promise((accept, reject) => {
-      const buffer = new ArrayBuffer(NUM_POSITIONS_CHUNK);
+      const buffer = buffers.alloc();
       worker.postMessage({
         x,
         y,
@@ -227,6 +232,9 @@ class Items {
       mesh.destroy = () => {
         mesh.geometry.dispose();
 
+        const {buffer} = mapChunkData;
+        buffers.free(buffer);
+
         if (mesh.lightmap) {
           _unbindLightmap(mesh);
         }
@@ -330,7 +338,7 @@ class Items {
 
     const chunker = chnkr.makeChunker({
       resolution: NUM_CELLS,
-      range: 1,
+      range: RANGE,
     });
     const itemsChunkMeshes = [];
 
@@ -359,7 +367,8 @@ class Items {
       });
       return Promise.all(addedPromises)
         .then(() => {
-          removed.forEach(chunk => {
+          for (let i = 0; i < removed.length; i++) {
+            const chunk = removed[i];
             const {data} = chunk;
             const {itemsChunkMesh} = data;
             scene.remove(itemsChunkMesh);
@@ -370,7 +379,7 @@ class Items {
 
             const {itemRange} = data;
             _removeTrackedItems(itemRange);
-          });
+          }
         })
     };
 

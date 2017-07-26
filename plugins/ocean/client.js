@@ -36,7 +36,7 @@ const OCEAN_SHADER = {
     "  float amp = wave[1];",
     "  float speed = wave[2];",
     "  gl_Position = projectionMatrix * modelViewMatrix * vec4(position.x, position.y, ((sin(ang + (speed * worldTime))) * amp), 1.0);",
-    "  vUv = uv;",,
+    "  vUv = uv;",
     "  vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );",
     "  fogDepth = -mvPosition.z;",
     "}"
@@ -90,6 +90,9 @@ class Ocean {
     const {THREE, scene, renderer} = three;
     const {chnkr} = randomUtils;
     const {murmur} = hashUtils;
+
+    const hiGeometry = new THREE.PlaneBufferGeometry(NUM_CELLS, NUM_CELLS, NUM_CELLS / SCALE, NUM_CELLS / SCALE);
+    const loGeometry = new THREE.PlaneBufferGeometry(NUM_CELLS, NUM_CELLS, 1, 1);
 
     let live = true;
     this._cleanup = () => {
@@ -157,10 +160,7 @@ class Ocean {
               });
 
               const _makeOceanMesh = (ox, oy, lod) => {
-                const geometry = lod === 1 ?
-                  new THREE.PlaneBufferGeometry(NUM_CELLS, NUM_CELLS, NUM_CELLS / SCALE, NUM_CELLS / SCALE)
-                :
-                  new THREE.PlaneBufferGeometry(NUM_CELLS, NUM_CELLS, 1, 1);
+                const geometry = (lod === 1 ? hiGeometry : loGeometry).clone();
 
                 const uvs = geometry.getAttribute('uv').array;
                 const numUvs = uvs.length / 2;
