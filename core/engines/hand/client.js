@@ -138,7 +138,7 @@ class Hand {
             localPosition = new THREE.Vector3(),
             localRotation = new THREE.Quaternion(),
             localScale = new THREE.Vector3(1, 1, 1),
-            isGrabbable = p => p.distanceTo(this.position) < GRAB_DISTANCE,
+            isGrabbable = p => p.distanceTo(this.position) < GRAB_DISTANCE
           ) {
             super();
 
