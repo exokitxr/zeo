@@ -487,10 +487,10 @@ class Keyboard {
         input.on('keyboarddown', _keyboarddown, {
           priority: 1,
         });
-        const _paste = _keydown;
+        /* const _paste = _keydown;
         input.on('paste', _paste, {
           priority: 1,
-        });
+        }); */
 
         const _update = () => {
           const {focusState} = keyboardState;
@@ -681,7 +681,7 @@ class Keyboard {
           input.on('triggerdown', _triggerdown);
           input.on('triggerup', _triggerup);
           input.on('trigger', _trigger);
-          input.removeListener('paste', _paste);
+          // input.removeListener('paste', _paste);
 
           rend.removeListener('update', _update);
         });

@@ -72,11 +72,14 @@ class EventSpec {
   }
 }
 class VrEvent {
-  constructor(side, axes) {
+  constructor(side) {
     this.side = side;
-    this.axes = axes;
   }
 }
+const VR_EVENTS = {
+  left: new VrEvent('left'),
+  right: new VrEvent('right'),
+};
 
 const EVENT_SPECS = [
   new EventSpec('trigger', 'trigger', 'triggerdown', 'triggerup', 'triggertouch', 'triggertouchdown', 'triggertouchup'),
@@ -408,8 +411,8 @@ class WebVR {
                     const euler = new THREE.Euler().setFromQuaternion(rotation, camera.rotation.order);
 
                     const mousemove = e => {
-                      const xFactor = -0.5 + (e.clientX / window.innerWidth);
-                      const yFactor = -0.5 + (e.clientY / window.innerHeight);
+                      const xFactor = -0.5 + (e.event.clientX / window.innerWidth);
+                      const yFactor = -0.5 + (e.event.clientY / window.innerHeight);
 
                       const newRotation = euler.clone();
                       newRotation.y -= xFactor * (Math.PI * 0.1);
@@ -599,7 +602,7 @@ class WebVR {
                         };
                         window.addEventListener('vrdisplaypresentchange', vrdisplaypresentchange);
                         const keydown = e => {
-                          if (e.keyCode === 27) { // esc
+                          if (e.event.keyCode === 27) { // esc
                             display.exitPresent();
                           }
                         };
@@ -723,19 +726,19 @@ class WebVR {
                   const oldPressed = gamepadStatus.buttons[buttonName].pressed;
                   const newPressed = buttons[buttonName].pressed;
                   if (!oldPressed && newPressed) {
-                    input.triggerEvent(downName, new VrEvent(side));
+                    input.triggerEvent(downName, VR_EVENTS[side]);
                   } else if (oldPressed && !newPressed) {
-                    input.triggerEvent(upName, new VrEvent(side));
-                    input.triggerEvent(rootName, new VrEvent(side));
+                    input.triggerEvent(upName, VR_EVENTS[side]);
+                    input.triggerEvent(rootName, VR_EVENTS[side]);
                   }
 
                   const oldTouched = gamepadStatus.buttons[buttonName].touched;
                   const newTouched = buttons[buttonName].touched;
                   if (!oldTouched && newTouched) {
-                    input.triggerEvent(touchdownName, new VrEvent(side));
+                    input.triggerEvent(touchdownName, VR_EVENTS[side]);
                   } else if (oldTouched && !newTouched) {
-                    input.triggerEvent(touchupName, new VrEvent(side));
-                    input.triggerEvent(touchName, new VrEvent(side));
+                    input.triggerEvent(touchupName, VR_EVENTS[side]);
+                    input.triggerEvent(touchName, VR_EVENTS[side]);
                   }
                 }
 
@@ -937,7 +940,7 @@ class WebVR {
               if (this.isPresenting) {
                 let needsGamepadUpdate = false;
 
-                switch (e.keyCode) {
+                switch (e.event.keyCode) {
                   case 87: // W
                     keys.up = true;
                     break;
@@ -996,7 +999,7 @@ class WebVR {
               if (this.isPresenting) {
                 let needsGamepadUpdate = false;
 
-                switch (e.keyCode) {
+                switch (e.event.keyCode) {
                   case 87: // W
                     keys.up = false;
                     break;
@@ -1055,11 +1058,11 @@ class WebVR {
             };
             const mousemove = e => {
               if (this.isPresenting) {
-                const _handleGamepad = () => this.isPresenting && (e.ctrlKey || e.altKey || keys.axis); // handled by the fake gamepad
+                const _handleGamepad = () => this.isPresenting && (e.event.ctrlKey || e.event.altKey || keys.axis); // handled by the fake gamepad
                 const _handleDisplay = () => {
                   const rotation = localEuler.setFromQuaternion(this.rotation, camera.rotation.order);
-                  rotation.x = Math.max(Math.min(rotation.x - e.movementY * ROTATION_SPEED, Math.PI / 2), -Math.PI / 2);
-                  rotation.y = mod(rotation.y - e.movementX * ROTATION_SPEED, Math.PI * 2);
+                  rotation.x = Math.max(Math.min(rotation.x - e.event.movementY * ROTATION_SPEED, Math.PI / 2), -Math.PI / 2);
+                  rotation.y = mod(rotation.y - e.event.movementX * ROTATION_SPEED, Math.PI * 2);
                   this.rotation.setFromEuler(rotation);
 
                   this.updateMatrix();
@@ -1304,12 +1307,12 @@ class WebVR {
                   return mode === 'center' && index === 1;
                 };
 
-                if (e.ctrlKey) {
-                  this.move(-e.movementX, -e.movementY, 0, _isReversed());
+                if (e.event.ctrlKey) {
+                  this.move(-e.event.movementX, -e.event.movementY, 0, _isReversed());
                 } else if (e.altKey) {
-                  this.move(-e.movementX, 0, -e.movementY, _isReversed());
+                  this.move(-e.event.movementX, 0, -e.event.movementY, _isReversed());
                 } else if (this._parent.keys.axis) {
-                  this.axis(-e.movementX, -e.movementY, _isReversed());
+                  this.axis(-e.event.movementX, -e.event.movementY, _isReversed());
                 }
               }
             };
