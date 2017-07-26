@@ -701,15 +701,6 @@ class WebVR {
               if (_isGamepadAvailable(gamepad)) {
                 const {pose, buttons: [pad, trigger, grip, menu], axes: [x, y]} = gamepad;
 
-                const _getGamepadButtonStatus = button => {
-                  if (button) {
-                    const {touched, pressed, value} = button;
-                    return new GamepadButton(touched, pressed, value);
-                  } else {
-                    return null;
-                  }
-                };
-
                 _getPropertiesFromPoseTo(
                   pose,
                   gamepadStatus.position,
@@ -717,7 +708,7 @@ class WebVR {
                   gamepadStatus.scale
                 );
                 _decomposeMatrixTo(
-                  new THREE.Matrix4().compose(gamepadStatus.position, gamepadStatus.rotation, gamepadStatus.scale).premultiply(this.stageMatrix),
+                  localMatrix.compose(gamepadStatus.position, gamepadStatus.rotation, gamepadStatus.scale).premultiply(this.stageMatrix),
                   gamepadStatus.worldPosition,
                   gamepadStatus.worldRotation,
                   gamepadStatus.worldScale
@@ -1128,13 +1119,9 @@ class WebVR {
 
           resetPose() {
             this.position.set(0, 0, 0);
-            const euler = new THREE.Euler().setFromQuaternion(this.rotation, camera.rotation.order);
-            this.rotation.setFromEuler(new THREE.Euler(
-              euler.x, // destinationRotation.x,
-              0,
-              euler.z, // destinationRotation.z,
-              camera.rotation.order
-            ));
+            localEuler.setFromQuaternion(this.rotation, camera.rotation.order);
+            localEuler.y = 0;
+            this.rotation.setFromEuler(localEuler);
 
             this.updateMatrix();
             this.updateGamepads();
