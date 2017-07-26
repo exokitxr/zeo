@@ -45,7 +45,7 @@ class Biolumi {
             inQueue.push(_proxy);
           }
         });
-      } else if (url === '/archae/biolumiWs2') {
+      } else if (url === '/archae/biolumiWsProxy') {
         proxyConnection = c;
 
         c.on('message', m => {
@@ -110,7 +110,7 @@ class Biolumi {
                   accept();
                 });
               })
-              .then(() => Page.navigate({url: 'http://127.0.0.1:7778/archae/biolumi/worker.html'})); // XXX parameterize this
+              .then(() => Page.navigate({url: `http://127.0.0.1:7778/archae/biolumi/worker.html#127.0.0.1:7778`})); // XXX parameterize this
           })
           .catch(err => {
             console.warn(err);
