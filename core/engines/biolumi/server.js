@@ -93,7 +93,7 @@ class Biolumi {
     });
 
     const _getPort = () => new Promise((accept, reject) => {
-      getport(9223, (err, port) => {
+      getport((port + 9222) % 65535, (err, port) => {
         if (!err) {
           accept(port);
         } else {
