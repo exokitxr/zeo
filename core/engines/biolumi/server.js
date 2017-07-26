@@ -1,7 +1,9 @@
 const path = require('path');
+const child_process = require('child_process');
 
 const bodyParser = require('body-parser');
 const bodyParserJson = bodyParser.json();
+const CRI = require('chrome-remote-interface');
 
 class Biolumi {
   constructor(archae) {
@@ -10,7 +12,7 @@ class Biolumi {
 
   mount() {
     const {_archae: archae} = this;
-    const {express, app} = archae.getCore();
+    const {express, app, wss} = archae.getCore();
 
     const workerStatic = express.static(path.join(__dirname));
     function serveWorker(req, res, next) {
@@ -18,73 +20,58 @@ class Biolumi {
     }
     app.use('/archae/biolumi', serveWorker);
 
-    let signalReq = null;
-    let queue1 = null;
-    let queue2 = null;
-    app.post('/archae/signal/1', bodyParserJson, (req, res, next) => {
-      if (queue1) {
-        queue1({error: 'kicked'});
-        queue1 = null;
-      }
-      queue1 = (err, signalRes) => {
-        if (!err) {
-          res.json(signalRes);
-        } else {
-          res.status(500);
-          res.json(err);
-        }
+    let proxyConnection = null;
+    const inQueue = [];
+    const outQueue = [];
+    wss.on('connection', c => {
+      const {url} = c.upgradeReq;
 
-        clearTimeout(timeout);
-      };
-      const timeout = setTimeout(() => {
-        queue1({error: 'timed out'});
-        queue1 = null;
-      }, 10 * 1000);
+      if (url === '/archae/biolumiWs') {
+        c.on('message', m => {
+          const _proxy = () => {
+            proxyConnection.send(m);
 
-      if (queue2) {
-        queue2(null, req.body);
-        queue2 = null;
-      } else {
-        signalReq = req.body;
-      }
-    });
-    app.get('/archae/signal/2', (req, res, next) => {
-      if (signalReq) {
-        res.json(signalReq);
+            outQueue.push(m => {
+              c.send(m);
+            });
+            outQueue.push(m => {
+              c.send(m);
+            });
+          };
 
-        signalReq = null;
-      } else {
-        if (queue2) {
-          queue2({error: 'kicked'});
-          queue2 = null;
-        }
-        queue2 = (err, signalReq) => {
-          if (!err) {
-            res.json(signalReq);
+          if (proxyConnection) {
+            _proxy();
           } else {
-            res.status(500);
-            res.json(err);
+            inQueue.push(_proxy);
           }
+        });
+      } else if (url === '/archae/biolumiWs2') {
+        proxyConnection = c;
 
-          clearTimeout(timeout);
-        };
-        const timeout = setTimeout(() => {
-          queue2({error: 'timed out'});
-          queue2 = null;
-        }, 10 * 1000);
+        c.on('message', m => {
+          outQueue.shift()(m);
+        });
+        c.on('close', () => {
+          proxyConnection = null;
+
+          const err = new Error('biolumi lost proxy connection');
+          for (let i = 0; i < outQueue.length; i++) {
+            outQueue[i](err);
+          }
+          outQueue.length = 0;
+        });
+
+        for (let i = 0; i < inQueue.length; i++) {
+          inQueue[i]();
+        }
+        inQueue.length = 0;
       }
     });
-    app.post('/archae/signal/3', bodyParserJson, (req, res, next) => {
-      if (queue1) {
-        queue1(null, req.body);
-        queue1 = null;
 
-        res.json({ok: true});
-      } else {
-        res.status(500);
-        res.json({error: 'no remote'});
-      }
-    });
+    const chromiumProcess = child_process.spawn('chromium', [
+      '--headless',
+      '--remote-debugging-port=9222', // XXX parameterize this
+    ]);
 
     this._cleanup = () => {
       function removeMiddlewares(route, i, routes) {
@@ -98,7 +85,43 @@ class Biolumi {
         }
       }
       app._router.stack.forEach(removeMiddlewares);
+
+      chromiumProcess.kill();
     };
+
+    const _requestRasterizer = () => new Promise((accept, reject) => {
+      const _recurse = () => {
+        CRI({
+          port: 9222, // XXX parameterize this
+        })
+          .then(client => {
+            const {Page, Console} = client;
+            Promise.all([
+              Page.enable(),
+              Console.enable(),
+            ])
+              .then(() => {
+                Console.messageAdded(({message}) => {
+                  if (message.level === 'warning' || message.level === 'error') {
+                    console.warn('chromium:' + message.url + ':' + message.line + ':' + message.column + ': ' + message.text);
+                  }
+                });
+                Page.loadEventFired(() => {
+                  accept();
+                });
+              })
+              .then(() => Page.navigate({url: 'http://127.0.0.1:7778/archae/biolumi/worker.html'})); // XXX parameterize this
+          })
+          .catch(err => {
+            console.warn(err);
+
+            setTimeout(_recurse, 100);
+          });
+      };
+      _recurse();
+    });
+
+    return _requestRasterizer();
   }
 
   unmount() {

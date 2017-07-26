@@ -59,7 +59,7 @@ class Biolumi {
           this.workTime = 0;
           this.clearingWorkTime = false;
 
-          this.work = debounce(this.work.bind(this));
+          this.work = _debounce(this.work.bind(this));
         }
 
         add(thread) {
@@ -146,135 +146,94 @@ class Biolumi {
 
       return Promise.resolve(new UiTimer());
     };
-    const _requestRasterizer = () => new Promise((accept, reject) => {
-      const w = window.open('archae/biolumi/worker.html', '_blank', "height=100,width=200,top=10000,left=10000,location=no,menubar=no,status=no,titlebar=no,toolbar=no");
-      window.addEventListener('beforeunload', () => {
-        w.close();
-      });
-
-      const c = new RTCPeerConnection({
-        iceServers: [
-          {urls:'stun:stun.l.google.com:19302'},
-          // {urls:'stun:stun1.l.google.com:19302'},
-          // {urls:'stun:stun2.l.google.com:19302'},
-          // {urls:'stun:stun3.l.google.com:19302'},
-          // {urls:'stun:stun4.l.google.com:19302'},
-        ],
-      });
-
-      const queue = [];
-      const d = c.createDataChannel('sendDataChannel', null);
-      d.binaryType = 'arraybuffer';
-      d.onopen = e => {
-        accept({
-          rasterize: (src, width, height) => {
-            d.send(JSON.stringify([width, height]) + src);
-
-            return Promise.all([
-              new Promise((accept, reject) => {
-                queue.push((err, imageArrayBuffer) => {
-                  if (!err) {
-                    createImageBitmap(new Blob([imageArrayBuffer], {type: 'image/png'}), 0, 0, width, height, {
-                      imageOrientation: 'flipY',
-                    })
-                      .then(accept)
-                      .catch(reject);
-                  } else {
-                    reject(err);
-                  }
-                });
-              }),
-              new Promise((accept, reject) => {
-                queue.push((err, anchorsJson) => {
-                  if (!err) {
-                    const anchors = JSON.parse(anchorsJson).map(([left, right, top, bottom, onclick, onmousedown, onmouseup]) =>
-                      new Anchor(left, right, top, bottom, onclick, onmousedown, onmouseup)
-                    );
-                    accept(anchors);
-                  } else {
-                    reject(err);
-                  }
-                });
-              })
-            ])
-              .then(([
-                imageBitmap,
-                anchors,
-              ]) => ({
-                imageBitmap,
-                anchors,
-              }));
-          },
-        });
-      };
-      d.onmessage = e => {
-        queue.shift()(null, e.data);
-      };
-      d.onerror = err => {
-        queue.shift()(err);
-      };
-
-      c.createOffer()
-        .then(description => new Promise((accept, reject) => {
-          c.setLocalDescription(description);
-
-          const iceCandidates = [];
-          const _done = () => {
-            c.onicecandidate = null;
-            c.onicegatheringstatechange = null;
-
-            const jsonHeaders = new Headers();
-            jsonHeaders.append('Content-Type', 'application/json');
-            fetch('/archae/signal/1', {
-              method: 'POST',
-              headers: jsonHeaders,
-              body: JSON.stringify({
-                description,
-                iceCandidates,
-              }),
-            })
-              .then(res => res.json())
-              .then(accept)
-              .catch(reject);
-          };
-          c.onicecandidate = e => {
-            if (e.candidate !== null) {
-              iceCandidates.push(e.candidate);
-            } else {
-              _done();
-            }
-          };
-          c.onicegatheringstatechange = () => {
-            if (c.iceGatheringState === 'complete') {
-              _done();
-            }
-          };
-        }))
-        .then(({description, iceCandidates}) => {
-          c.setRemoteDescription(description);
-          for (let i = 0; i < iceCandidates.length; i++) {
-            const iceCandidate = iceCandidates[i];
-            c.addIceCandidate(iceCandidate);
-          }
-        });
-    });
 
     return Promise.all([
       archae.requestPlugins([
         '/core/engines/three',
         '/core/engines/intersect',
+        '/core/utils/network-utils',
         '/core/utils/geometry-utils',
       ]),
       _requestTransparentImg(),
       _requestBlackImg(),
       _requestUiWorker(),
       _requestUiTimer(),
-      _requestRasterizer(),
     ])
       .then(([
         [
           three,
           intersect,
+          networkUtils,
+          geometryUtils,
+        ],
+        transparentImg,
+        blackImg,
+        uiWorker,
+        uiTimer,
+      ]) => {
+        if (live) {
+          const {AutoWs} = networkUtils;
+
+          const queue = [];
+          const c = new AutoWs(_relativeWsUrl('archae/biolumiWs'));
+          c.on('message', e => {
+            queue.shift()(e.data);
+          });
+
+          const rasterizer = {
+            rasterize: (src, width, height) => {
+              c.send(JSON.stringify([width, height]) + src);
+
+              return Promise.all([
+                new Promise((accept, reject) => {
+                  queue.push(imageArrayBuffer => {
+                    createImageBitmap(new Blob([imageArrayBuffer], {type: 'image/png'}), 0, 0, width, height, {
+                      imageOrientation: 'flipY',
+                    })
+                      .then(accept)
+                      .catch(reject);
+                  });
+                }),
+                new Promise((accept, reject) => {
+                  queue.push(anchorsJson => {
+                    const anchors = JSON.parse(anchorsJson)
+                      .map(([left, right, top, bottom, onclick, onmousedown, onmouseup]) =>
+                        new Anchor(left, right, top, bottom, onclick, onmousedown, onmouseup)
+                      );
+                    accept(anchors);
+                  });
+                })
+              ])
+                .then(([
+                  imageBitmap,
+                  anchors,
+                ]) => ({
+                  imageBitmap,
+                  anchors,
+                }));
+            },
+          };
+
+          return [
+            [
+              three,
+              intersect,
+              networkUtils,
+              geometryUtils,
+            ],
+            transparentImg,
+            blackImg,
+            uiWorker,
+            uiTimer,
+            rasterizer,
+          ];
+        }
+      })
+      .then(([
+        [
+          three,
+          intersect,
+          networkUtils,
           geometryUtils,
         ],
         transparentImg,
@@ -1056,7 +1015,11 @@ const fontStyle = 'normal';
 const transparentImgUrl = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
 const blackImgUrl = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1" viewBox="0 0 1 1"><path d="M0 0h1v1H0z"/></svg>';
 
-const debounce = fn => {
+const _relativeWsUrl = s => {
+  const l = window.location;
+  return ((l.protocol === 'https:') ? 'wss://' : 'ws://') + l.host + l.pathname + (!/\/$/.test(l.pathname) ? '/' : '') + s;
+};
+const _debounce = fn => {
   let running = false;
   let queued = false;
 
