@@ -2,6 +2,7 @@
 <html>
 <head>
 <script>
+try {
 const canvas = document.createElement('canvas');
 const ctx = canvas.getContext('2d');
 
@@ -82,95 +83,42 @@ const _render = (src, width, height) => {
     }));
 };
 
-fetch('/archae/signal/2')
-  .then(res => res.json())
-  .then(({description, iceCandidates}) => {
-    const c = new RTCPeerConnection({
-      iceServers: [
-        {urls:'stun:stun.l.google.com:19302'},
-        // {urls:'stun:stun1.l.google.com:19302'},
-        // {urls:'stun:stun2.l.google.com:19302'},
-        // {urls:'stun:stun3.l.google.com:19302'},
-        // {urls:'stun:stun4.l.google.com:19302'},
-      ],
+console.log('connecting...');
+let c = new WebSocket('ws://127.0.0.1:7778/archae/biolumiWs2');
+c.onopen = () => {
+  console.log('opened');
+};
+c.onerror = err => {
+  console.log('errored ' + JSON.stringify(err));
+};
+c.onmessage = e => {
+  const {data} = e;
+  const match = data.match(/^\[([0-9]+),([0-9]+)\]/);
+  const width = parseInt(match[1], 10);
+  const height = parseInt(match[2], 10);
+  const src = data.slice(match[0].length);
+  _render(src, width, height)
+    .then(({
+      imageArrayBuffer,
+      anchors,
+    }) => {
+      c.send(imageArrayBuffer);
+      c.send(JSON.stringify(anchors));
+    })
+    .catch(err => {
+      console.warn(err);
     });
-    c.setRemoteDescription(description);
-    for (let i = 0; i < iceCandidates.length; i++) {
-      const iceCandidate = iceCandidates[i];
-      c.addIceCandidate(iceCandidate);
-    }
-
-    return c.createAnswer()
-      .then(description => new Promise((accept, reject) => {
-        c.setLocalDescription(description);
-
-        const iceCandidates = [];
-        const _done = () => {
-          c.onicecandidate = null;
-          c.onicegatheringstatechange = null;
-
-          const jsonHeaders = new Headers();
-          jsonHeaders.append('Content-Type', 'application/json');
-          fetch('/archae/signal/3', {
-            method: 'POST',
-            headers: jsonHeaders,
-            body: JSON.stringify({
-              description,
-              iceCandidates,
-            }),
-          })
-            .then(res => res.json())
-            .then(accept)
-            .catch(reject);
-
-          c.ondatachannel = e => {
-            const d = e.channel;
-            d.onmessage = e => {
-              const {data} = e;
-              const match = data.match(/^\[([0-9]+),([0-9]+)\]/);
-              const width = parseInt(match[1], 10);
-              const height = parseInt(match[2], 10);
-              const src = data.slice(match[0].length);
-              _render(src, width, height)
-                .then(({
-                  imageArrayBuffer,
-                  anchors,
-                }) => {
-                  d.send(imageArrayBuffer);
-                  d.send(JSON.stringify(anchors));
-                })
-                .catch(err => {
-                  console.warn(err);
-                });
-            };
-          };
-        };
-        c.onicecandidate = e => {
-          if (e.candidate !== null) {
-            iceCandidates.push(e.candidate);
-          } else {
-            _done();
-          }
-        };
-        c.onicegatheringstatechange = () => {
-          if (c.iceGatheringState === 'complete') {
-            _done();
-          }
-        };
-      }));
-  })
-  .catch(err => {
-    console.warn(err);
-  });
+};
 
 const fonts = `-apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"`;
 const monospaceFonts = `Consolas, "Liberation Mono", Menlo, Courier, monospace`;
 const fontWeight = 300;
 const fontStyle = 'normal';
 const rootCss = `margin: 0px; padding: 0px; height: 100%; width: 100%; font-family: ${fonts}; font-weight: ${fontWeight}; overflow: visible; user-select: none;`;
+} catch(err) {
+  console.log(JSON.stringify(err));
+}
 </script>
 </head>
-<body>
-render process -- do not close this window!
-</body>
+<body></body>
 </html>
