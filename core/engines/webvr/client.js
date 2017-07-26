@@ -430,7 +430,9 @@ class WebVR {
                   }
 
                   const _renderLoop = () => {
-                    const _render = () => {
+                    const cancelAnimate = renderer.animate(() => {
+                      this.updateStatus();
+
                       updateStart(); // notify frame start
 
                       update(); // update plugins
@@ -457,27 +459,7 @@ class WebVR {
                       }
 
                       updateEnd(); // notify frame end
-                    };
-
-                    const _animate = fn => {
-                      let live = true;
-
-                      renderer.animate(() => {
-                        if (live) {
-                          this.updateStatus();
-                          _render();
-
-                          return true;
-                        } else {
-                          return false;
-                        }
-                      });
-
-                      return () => {
-                        live = false;
-                      };
-                    };
-                    const cancelAnimate = _animate();
+                    });
 
                     cleanups.push(() => {
                       cancelAnimate();
