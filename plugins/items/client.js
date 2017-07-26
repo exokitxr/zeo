@@ -1,3 +1,4 @@
+const bffr = require('bffr');
 const {
   NUM_CELLS,
 
@@ -9,7 +10,6 @@ const {
   ITEMS,
 } = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
-const bffr = require('./bffr');
 
 const NUM_POSITIONS_CHUNK = 100 * 1024;
 const DEFAULT_MATRIX = [

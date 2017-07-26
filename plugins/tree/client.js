@@ -1,5 +1,5 @@
 const sfxr = require('sfxr');
-const bffr = require('./bffr');
+const bffr = require('bffr');
 const {
   NUM_CELLS,
 

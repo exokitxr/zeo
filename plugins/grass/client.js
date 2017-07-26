@@ -1,3 +1,4 @@
+const bffr = require('bffr');
 const {
   NUM_CELLS,
 
@@ -7,7 +8,6 @@ const {
   RANGE,
 } = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
-const bffr = require('./bffr');
 
 const TEXTURE_SIZE = 1024;
 const NUM_POSITIONS_CHUNK = 200 * 1024;

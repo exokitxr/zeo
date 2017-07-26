@@ -1,10 +1,10 @@
+const bffr = require('bffr');
 const {
   NUM_CELLS,
   NUM_CELLS_HEIGHT,
 
   HEIGHT_OFFSET,
 } = require('./lib/constants/constants');
-const bffr = require('./bffr');
 
 const FPS = 1000 / 60;
 

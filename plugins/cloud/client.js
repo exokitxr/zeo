@@ -1,10 +1,10 @@
+const bffr = require('bffr');
 const {
   NUM_CELLS,
 
   RANGE,
 } = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
-const bffr = require('./bffr');
 
 const NUM_POSITIONS_CHUNK = 200 * 1024;
 const CLOUD_SPEED = 1;
