@@ -435,10 +435,10 @@ class Config {
                   _saveServerConfig();
                   configApi.updateBrowserConfig();
 
-                  _updatePages();
-
                   rend.setStatus('name', newName);
                 }
+
+                _updatePages();
               });
               keyboardFocusState.on('blur', () => {
                 configState.keyboardFocusState = null;
@@ -476,9 +476,9 @@ class Config {
 
                   _saveServerConfig();
                   configApi.updateBrowserConfig();
-
-                  _updatePages();
                 }
+
+                _updatePages();
               });
               keyboardFocusState.on('blur', () => {
                 configState.keyboardFocusState = null;
