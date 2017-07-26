@@ -323,6 +323,25 @@ class Biolumi {
             }
             return true;
           };
+          const _makeMenuShaderUniforms = () => {
+            const uniforms = THREE.UniformsUtils.clone(menuShader.uniforms);
+            const texture = new THREE.Texture(
+              transparentImg,
+              THREE.UVMapping,
+              THREE.ClampToEdgeWrapping,
+              THREE.ClampToEdgeWrapping,
+              THREE.NearestFilter,
+              THREE.NearestFilter,
+              THREE.RGBAFormat,
+              THREE.UnsignedByteType,
+              1
+            );
+            texture.onUpload = () => {
+              texture.image = null;
+            };
+            uniforms.texture.value = texture;
+            return uniforms;
+          };
 
           class Page {
             constructor(spec, type, state, color, width, height, worldWidth, worldHeight, layer) {
@@ -339,18 +358,7 @@ class Biolumi {
               const mesh = (() => {
                 const geometry = geometryUtils.unindexBufferGeometry(new THREE.PlaneBufferGeometry(worldWidth, worldHeight));
                 const material = (() => {
-                  const shaderUniforms = THREE.UniformsUtils.clone(menuShader.uniforms);
-                  shaderUniforms.texture.value = new THREE.Texture(
-                    transparentImg,
-                    THREE.UVMapping,
-                    THREE.ClampToEdgeWrapping,
-                    THREE.ClampToEdgeWrapping,
-                    THREE.NearestFilter,
-                    THREE.NearestFilter,
-                    THREE.RGBAFormat,
-                    THREE.UnsignedByteType,
-                    1
-                  );
+                  const shaderUniforms = _makeMenuShaderUniforms();
                   shaderUniforms.backgroundColor.value = Float32Array.from(color);
                   const shaderMaterial = new THREE.ShaderMaterial({
                     uniforms: shaderUniforms,
