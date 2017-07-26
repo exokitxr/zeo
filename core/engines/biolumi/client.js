@@ -219,27 +219,34 @@ class Biolumi {
           c.setLocalDescription(description);
 
           const iceCandidates = [];
+          const _done = () => {
+            c.onicecandidate = null;
+            c.onicegatheringstatechange = null;
+
+            const jsonHeaders = new Headers();
+            jsonHeaders.append('Content-Type', 'application/json');
+            fetch('/archae/signal/1', {
+              method: 'POST',
+              headers: jsonHeaders,
+              body: JSON.stringify({
+                description,
+                iceCandidates,
+              }),
+            })
+              .then(res => res.json())
+              .then(accept)
+              .catch(reject);
+          };
           c.onicecandidate = e => {
-            iceCandidates.push(e.candidate);
+            if (e.candidate !== null) {
+              iceCandidates.push(e.candidate);
+            } else {
+              _done();
+            }
           };
           c.onicegatheringstatechange = () => {
             if (c.iceGatheringState === 'complete') {
-              c.onicecandidate = null;
-              c.onicegatheringstatechange = null;
-
-              const jsonHeaders = new Headers();
-              jsonHeaders.append('Content-Type', 'application/json');
-              fetch('/archae/signal/1', {
-                method: 'POST',
-                headers: jsonHeaders,
-                body: JSON.stringify({
-                  description,
-                  iceCandidates,
-                }),
-              })
-                .then(res => res.json())
-                .then(accept)
-                .catch(reject);
+              _done();
             }
           };
         }))
