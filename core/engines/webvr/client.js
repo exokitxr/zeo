@@ -1,8 +1,6 @@
 const SynchronousPromise = require('synchronous-promise').SynchronousPromise;
 const mod = require('mod-loop');
 
-const VREffect = require('./lib/three-extra/VREffect');
-
 class VRFrameDataFake {
   constructor() {
     this.leftProjectionMatrix = new Float32Array(16);
@@ -146,8 +144,11 @@ class WebVR {
         const zeroVector = new THREE.Vector3();
         const zeroQuaternion = new THREE.Quaternion();
         const oneVector = new THREE.Vector3(1, 1, 1);
-
-        const THREEVREffect = VREffect(THREE);
+        const localVector = new THREE.Vector3();
+        const localQuaternion = new THREE.Quaternion();
+        const localEuler = new THREE.Euler();
+        const localMatrix = new THREE.Matrix4();
+        const localMatrix2 = new THREE.Matrix4();
 
         const bestDisplay = displays.sort((a, b) => {
           const diff = +_isPolyfillDisplay(a) - _isPolyfillDisplay(b);
@@ -374,24 +375,6 @@ class WebVR {
                   if (display && stereoscopic) {
                     renderer.vr.enabled = true;
                     renderer.vr.setDevice(display);
-
-                    /* const {getVRDisplays} = navigator; // HACK to prevent VREffect from initializing VR displays
-                    navigator.getVRDisplays = null;
-                    effect = new THREEVREffect(renderer);
-                    navigator.getVRDisplays = getVRDisplays;
-
-                    effect.setVRDisplay(display);
-                    effect.onEye = camera => {
-                      updateEye(camera);
-                    };
-                    effect.onRenderStart = () => {
-                      renderStart();
-                    };
-                    effect.onRenderEnd = () => {
-                      renderEnd();
-                    };
-                    effect.isPresenting = true;
-                    effect.autoSubmitFrame = false; */
 
                     cleanups.push(() => {
                       this.display = null;
@@ -678,7 +661,7 @@ class WebVR {
                 this.status.hmd.scale
               );
               _decomposeMatrixTo(
-                new THREE.Matrix4().compose(this.status.hmd.position, this.status.hmd.rotation, this.status.hmd.scale).premultiply(this.stageMatrix),
+                localMatrix.compose(this.status.hmd.position, this.status.hmd.rotation, this.status.hmd.scale).premultiply(this.stageMatrix),
                 this.status.hmd.worldPosition,
                 this.status.hmd.worldRotation,
                 this.status.hmd.worldScale
@@ -690,10 +673,9 @@ class WebVR {
               if (display) {
                 if (display.getGamepads) {
                   const gamepads = display.getGamepads();
-                  const [left, right] = gamepads;
 
-                  _setGamepadStatus('left', left);
-                  _setGamepadStatus('right', right);
+                  _setGamepadStatus('left', gamepads[0]);
+                  _setGamepadStatus('right', gamepads[1]);
                 } else {
                   const gamepads = navigator.getGamepads();
 
@@ -1075,8 +1057,7 @@ class WebVR {
             };
             const mouseup = e => {
               if (this.isPresenting) {
-                const {keys} = this;
-                keys.trigger = false;
+                this.keys.trigger = false;
 
                 this.updateGamepads();
               }
@@ -1085,12 +1066,10 @@ class WebVR {
               if (this.isPresenting) {
                 const _handleGamepad = () => this.isPresenting && (e.ctrlKey || e.altKey || keys.axis); // handled by the fake gamepad
                 const _handleDisplay = () => {
-                  const {rotation: quaternion} = this;
-
-                  const rotation = new THREE.Euler().setFromQuaternion(quaternion, camera.rotation.order);
+                  const rotation = localEuler.setFromQuaternion(this.rotation, camera.rotation.order);
                   rotation.x = Math.max(Math.min(rotation.x - e.movementY * ROTATION_SPEED, Math.PI / 2), -Math.PI / 2);
                   rotation.y = mod(rotation.y - e.movementX * ROTATION_SPEED, Math.PI * 2);
-                  quaternion.setFromEuler(rotation);
+                  this.rotation.setFromEuler(rotation);
 
                   this.updateMatrix();
                   this.updateGamepads();
@@ -1225,29 +1204,28 @@ class WebVR {
           handleInput() {
             const {position, rotation, keys} = this;
 
-            const moveVector = new THREE.Vector3();
+            localVector.set(0, 0, 0);
             const speed = keys.shift ? POSITION_SPEED_FAST : POSITION_SPEED;
             let moved = false;
             if (keys.up) {
-              moveVector.z -= speed;
+              localVector.z -= speed;
               moved = true;
             }
             if (keys.down) {
-              moveVector.z += speed;
+              localVector.z += speed;
               moved = true;
             }
             if (keys.left) {
-              moveVector.x -= speed;
+              localVector.x -= speed;
               moved = true;
             }
             if (keys.right) {
-              moveVector.x += speed;
+              localVector.x += speed;
               moved = true;
             }
 
             if (moved) {
-              moveVector.applyQuaternion(rotation);
-              position.add(moveVector);
+              position.add(localVector.applyQuaternion(rotation));
 
               this.updateMatrix();
               this.updateGamepads();
@@ -1267,17 +1245,12 @@ class WebVR {
           }
 
           updateMatrix() {
-            const {position, rotation, scale, matrix} = this;
-
-            matrix.compose(position, rotation, scale);
+            this.matrix.compose(this.position, this.rotation, this.scale);
           }
 
           updateGamepads() {
-            const {gamepads} = this;
-
-            for (let i = 0; i < gamepads.length; i++) {
-              const gamepad = gamepads[i];
-              gamepad.updateProperties();
+            for (let i = 0; i < this.gamepads.length; i++) {
+              this.gamepads[i].updateProperties();
             }
           }
 
@@ -1330,8 +1303,8 @@ class WebVR {
             this.rotationOffset = rotationOffset;
 
             this.pose = {
-              position: null,
-              orientation: null,
+              position: new Float32Array(3),
+              orientation: new Float32Array(4),
             };
 
             this.updateProperties();
@@ -1405,26 +1378,17 @@ class WebVR {
             const {_parent: parent, positionOffset, rotationOffset} = this;
 
             const {matrix: outerMatrix} = parent;
-            const innerMatrix = (() => {
-              const result = new THREE.Matrix4();
+            const worldMatrix = localMatrix.copy(outerMatrix)
+              .multiply(localMatrix2.compose(positionOffset, localQuaternion.setFromEuler(rotationOffset), oneVector));
 
-              const position = positionOffset;
-              const rotation = new THREE.Quaternion().setFromEuler(rotationOffset);
-              const scale = new THREE.Vector3(1, 1, 1);
-              result.compose(position, rotation, scale);
-
-              return result;
-            })();
-
-            const worldMatrix = outerMatrix.clone().multiply(innerMatrix);
-            const {position, rotation, scale} = _decomposeMatrix(worldMatrix);
-
-            this.position.copy(position);
-            this.rotation.copy(rotation);
-            this.scale.copy(scale);
-
-            this.pose.position = position.toArray();
-            this.pose.orientation = rotation.toArray();
+            _decomposeMatrixTo(worldMatrix, this.position, this.rotation, this.scale);
+            this.pose.position[0] = this.position.x;
+            this.pose.position[1] = this.position.y;
+            this.pose.position[2] = this.position.z;
+            this.pose.orientation[0] = this.rotation.x;
+            this.pose.orientation[1] = this.rotation.y;
+            this.pose.orientation[2] = this.rotation.z;
+            this.pose.orientation[3] = this.rotation.w;
 
             if (this.displayIsInControllerMode()) {
               const {keys} = parent;
