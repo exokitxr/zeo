@@ -3,6 +3,7 @@
 <head>
 <script>
 try {
+
 const canvas = document.createElement('canvas');
 const ctx = canvas.getContext('2d');
 
@@ -83,13 +84,9 @@ const _render = (src, width, height) => {
     }));
 };
 
-console.log('connecting...');
 let c = new WebSocket('ws://127.0.0.1:7778/archae/biolumiWs2');
-c.onopen = () => {
-  console.log('opened');
-};
-c.onerror = err => {
-  console.log('errored ' + JSON.stringify(err));
+c.onerror = err => { // XXX retry here
+  console.warn(JSON.stringify(err));
 };
 c.onmessage = e => {
   const {data} = e;
@@ -106,7 +103,10 @@ c.onmessage = e => {
       c.send(JSON.stringify(anchors));
     })
     .catch(err => {
-      console.warn(err);
+      console.warn(JSON.stringify(err));
+
+      c.send(null);
+      c.send(null);
     });
 };
 
@@ -115,8 +115,9 @@ const monospaceFonts = `Consolas, "Liberation Mono", Menlo, Courier, monospace`;
 const fontWeight = 300;
 const fontStyle = 'normal';
 const rootCss = `margin: 0px; padding: 0px; height: 100%; width: 100%; font-family: ${fonts}; font-weight: ${fontWeight}; overflow: visible; user-select: none;`;
+
 } catch(err) {
-  console.log(JSON.stringify(err));
+  console.warn(JSON.stringify(err));
 }
 </script>
 </head>
