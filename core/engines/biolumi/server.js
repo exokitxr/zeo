@@ -3,6 +3,7 @@ const child_process = require('child_process');
 
 const bodyParser = require('body-parser');
 const bodyParserJson = bodyParser.json();
+const getport = require('getport');
 const CRI = require('chrome-remote-interface');
 
 class Biolumi {
@@ -12,7 +13,16 @@ class Biolumi {
 
   mount() {
     const {_archae: archae} = this;
+    const {port} = archae;
     const {express, app, wss} = archae.getCore();
+
+    const cleanups = [];
+    this._cleanup = () => {
+      for (let i = 0; i < cleanups.length; i++) {
+        const cleanup = cleanups[i];
+        cleanup();
+      }
+    };
 
     const workerStatic = express.static(path.join(__dirname));
     function serveWorker(req, res, next) {
@@ -66,14 +76,9 @@ class Biolumi {
         }
         inQueue.length = 0;
       }
-    });
+    });    
 
-    const chromiumProcess = child_process.spawn('chromium', [
-      '--headless',
-      '--remote-debugging-port=9222', // XXX parameterize this
-    ]);
-
-    this._cleanup = () => {
+    cleanups.push(() => {
       function removeMiddlewares(route, i, routes) {
         if (
           route.handle.name === 'serveWorker'
@@ -85,14 +90,31 @@ class Biolumi {
         }
       }
       app._router.stack.forEach(removeMiddlewares);
+    });
 
-      chromiumProcess.kill();
-    };
+    const _getPort = () => new Promise((accept, reject) => {
+      getport(9223, (err, port) => {
+        if (!err) {
+          accept(port);
+        } else {
+          reject(err);
+        }
+      });
+    });
+    const _requestRasterizer = rasterizerPort => new Promise((accept, reject) => {
+      const chromiumProcess = child_process.spawn('chromium', [
+        '--headless',
+        `--remote-debugging-port=${rasterizerPort}`,
+      ]);
 
-    const _requestRasterizer = () => new Promise((accept, reject) => {
+      cleanups.push(() => {
+        chromiumProcess.kill();
+      });
+
+      const startTime = Date.now();
       const _recurse = () => {
         CRI({
-          port: 9222, // XXX parameterize this
+          port: rasterizerPort,
         })
           .then(client => {
             const {Page, Console} = client;
@@ -110,18 +132,25 @@ class Biolumi {
                   accept();
                 });
               })
-              .then(() => Page.navigate({url: `http://127.0.0.1:7778/archae/biolumi/worker.html#127.0.0.1:7778`})); // XXX parameterize this
+              .then(() => Page.navigate({url: `http://127.0.0.1:${port}/archae/biolumi/worker.html#127.0.0.1:${port}`}));
           })
           .catch(err => {
-            console.warn(err);
+            const now = Date.now();
 
-            setTimeout(_recurse, 100);
+            if (now - startTime > 2000) {
+              console.warn(err);
+
+              setTimeout(_recurse, 2000);
+            } else {
+              setTimeout(_recurse, 50);
+            }
           });
       };
       _recurse();
     });
 
-    return _requestRasterizer();
+    return _getPort()
+      .then(rasterizerPort => _requestRasterizer(rasterizerPort));
   }
 
   unmount() {
