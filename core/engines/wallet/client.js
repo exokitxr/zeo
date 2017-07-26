@@ -1569,7 +1569,7 @@ class Wallet {
               zeroVector,
               zeroQuaternion,
               oneVector,
-              item,
+              item
             );
 
             _bindAssetInstance(assetInstance);
