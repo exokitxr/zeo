@@ -103,50 +103,58 @@ fetch('/archae/signal/2')
     return c.createAnswer()
       .then(description => new Promise((accept, reject) => {
         c.setLocalDescription(description);
+
         const iceCandidates = [];
+        const _done = () => {
+          c.onicecandidate = null;
+          c.onicegatheringstatechange = null;
+
+          const jsonHeaders = new Headers();
+          jsonHeaders.append('Content-Type', 'application/json');
+          fetch('/archae/signal/3', {
+            method: 'POST',
+            headers: jsonHeaders,
+            body: JSON.stringify({
+              description,
+              iceCandidates,
+            }),
+          })
+            .then(res => res.json())
+            .then(accept)
+            .catch(reject);
+
+          c.ondatachannel = e => {
+            const d = e.channel;
+            d.onmessage = e => {
+              const {data} = e;
+              const match = data.match(/^\[([0-9]+),([0-9]+)\]/);
+              const width = parseInt(match[1], 10);
+              const height = parseInt(match[2], 10);
+              const src = data.slice(match[0].length);
+              _render(src, width, height)
+                .then(({
+                  imageArrayBuffer,
+                  anchors,
+                }) => {
+                  d.send(imageArrayBuffer);
+                  d.send(JSON.stringify(anchors));
+                })
+                .catch(err => {
+                  console.warn(err);
+                });
+            };
+          };
+        };
         c.onicecandidate = e => {
-          iceCandidates.push(e.candidate);
+          if (e.candidate !== null) {
+            iceCandidates.push(e.candidate);
+          } else {
+            _done();
+          }
         };
         c.onicegatheringstatechange = () => {
           if (c.iceGatheringState === 'complete') {
-            const jsonHeaders = new Headers();
-            jsonHeaders.append('Content-Type', 'application/json');
-            fetch('/archae/signal/3', {
-              method: 'POST',
-              headers: jsonHeaders,
-              body: JSON.stringify({
-                description,
-                iceCandidates,
-              }),
-            })
-              .then(res => res.json())
-              .then(accept)
-              .catch(reject);
-
-            c.ondatachannel = e => {
-              const d = e.channel;
-              d.onmessage = e => {
-                const {data} = e;
-                const match = data.match(/^\[([0-9]+),([0-9]+)\]/);
-                const width = parseInt(match[1], 10);
-                const height = parseInt(match[2], 10);
-                const src = data.slice(match[0].length);
-                _render(src, width, height)
-                  .then(({
-                    imageArrayBuffer,
-                    anchors,
-                  }) => {
-                    d.send(imageArrayBuffer);
-                    d.send(JSON.stringify(anchors));
-                  })
-                  .catch(err => {
-                    console.warn(err);
-                  });
-              };
-            };
-
-            c.onicecandidate = null;
-            c.onicegatheringstatechange = null;
+            _done();
           }
         };
       }));
