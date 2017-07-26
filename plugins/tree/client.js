@@ -1,9 +1,12 @@
 const sfxr = require('sfxr');
+const bffr = require('./bffr');
 const {
   NUM_CELLS,
 
   NUM_CELLS_HEIGHT,
   HEIGHT_OFFSET,
+
+  RANGE,
 } = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
 
@@ -144,6 +147,8 @@ class Tree {
       new THREE.Vector3(1, 0, 0)
     );
 
+    const buffers = bffr(NUM_POSITIONS_CHUNK * 3, (RANGE + 1) * (RANGE + 1) * 2);
+
     let live = true;
     this._cleanup = () => {
       live = false;
@@ -152,7 +157,7 @@ class Tree {
     const worker = new Worker('archae/plugins/_plugins_tree/build/worker.js');
     const queue = [];
     worker.requestGenerate = (x, y) => new Promise((accept, reject) => {
-      const buffer = new ArrayBuffer(NUM_POSITIONS_CHUNK * 3);
+      const buffer = buffers.alloc();
       worker.postMessage({
         type: 'chunk',
         x,
@@ -176,7 +181,7 @@ class Tree {
         const ctx = canvas.getContext('2d');
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         imageData.data.set(new Uint8Array(buffer));
-        ctx.putImageData(imageData, 0, 0);
+        ctx.putImageData(imageData, 0, 0); // XXX can be made into imageBitmap
 
         accept(canvas);
       });
@@ -288,7 +293,7 @@ class Tree {
 
           const _makeTreeChunkMesh = (treeChunkData, x, z) => {
             const mesh = (() => {
-              const {position, positions, uvs, indices, heightRange, trees} = treeChunkData;
+              const {positions, uvs, indices, heightRange, trees} = treeChunkData;
 
               const geometry = (() => {
                 let geometry = new THREE.BufferGeometry();
@@ -339,6 +344,9 @@ class Tree {
 
             mesh.destroy = () => {
               mesh.geometry.dispose();
+
+              const {buffer} = treeChunkData;
+              buffers.free(buffer);
 
               if (mesh.lightmap) {
                 _unbindLightmap(mesh);
@@ -454,7 +462,7 @@ class Tree {
 
           const chunker = chnkr.makeChunker({
             resolution: NUM_CELLS,
-            range: 1,
+            range: RANGE,
           });
           const treeChunkMeshes = [];
 
@@ -482,7 +490,8 @@ class Tree {
             });
             return Promise.all(addedPromises)
               .then(() => {
-                removed.forEach(chunk => {
+                for (let i = 0; i < removed.length; i++) {
+                  const chunk = removed[i];
                   const {data} = chunk;
                   const {treeChunkMesh} = data;
                   scene.remove(treeChunkMesh);
@@ -492,8 +501,8 @@ class Tree {
 
                   const {itemRange} = data;
                   _removeTrackedTrees(itemRange);
-                });
-              })
+                }
+              });
           };
 
           let live = true;

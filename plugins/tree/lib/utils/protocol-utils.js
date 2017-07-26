@@ -117,35 +117,35 @@ const stringifyTreeGeometries = treeGeometrys => {
 
 // parsing
 
-const parseTreeGeometry = (arrayBuffer, byteOffset) => {
+const parseTreeGeometry = (buffer, byteOffset) => {
   if (byteOffset === undefined) {
     byteOffset = 0;
   }
 
-  const headerBuffer = new Uint32Array(arrayBuffer, byteOffset, TREE_GEOMETRY_HEADER_ENTRIES);
+  const headerBuffer = new Uint32Array(buffer, byteOffset, TREE_GEOMETRY_HEADER_ENTRIES);
   const numPositions = headerBuffer[0];
   const numUvs = headerBuffer[1];
   const numIndices = headerBuffer[2];
   const numTrees = headerBuffer[3];
   byteOffset += TREE_GEOMETRY_HEADER_SIZE;
 
-  const positionsBuffer = new Float32Array(arrayBuffer, byteOffset, numPositions);
+  const positionsBuffer = new Float32Array(buffer, byteOffset, numPositions);
   const positions = positionsBuffer;
   byteOffset += FLOAT32_SIZE * numPositions;
 
-  const uvsBuffer = new Float32Array(arrayBuffer, byteOffset, numUvs);
+  const uvsBuffer = new Float32Array(buffer, byteOffset, numUvs);
   const uvs = uvsBuffer;
   byteOffset += FLOAT32_SIZE * numUvs;
 
-  const indicesBuffer = new Uint32Array(arrayBuffer, byteOffset, numIndices);
+  const indicesBuffer = new Uint32Array(buffer, byteOffset, numIndices);
   const indices = indicesBuffer;
   byteOffset += UINT32_SIZE * numIndices;
 
-  const treesBuffer = new Float32Array(arrayBuffer, byteOffset, numTrees);
+  const treesBuffer = new Float32Array(buffer, byteOffset, numTrees);
   const trees = treesBuffer;
   byteOffset += FLOAT32_SIZE * numTrees;
 
-  const heightRangeBuffer = new Float32Array(arrayBuffer, byteOffset, 2);
+  const heightRangeBuffer = new Float32Array(buffer, byteOffset, 2);
   const heightRange = [
     heightRangeBuffer[0],
     heightRangeBuffer[1],
@@ -153,6 +153,7 @@ const parseTreeGeometry = (arrayBuffer, byteOffset) => {
   byteOffset += UINT32_SIZE * 2;
 
   return {
+    buffer,
     positions,
     uvs,
     indices,

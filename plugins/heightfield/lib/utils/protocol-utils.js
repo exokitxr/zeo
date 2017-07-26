@@ -148,12 +148,12 @@ const stringifyMapChunks = mapChunks => {
 
 // parsing
 
-const parseMapChunk = (arrayBuffer, byteOffset) => {
+const parseMapChunk = (buffer, byteOffset) => {
   if (byteOffset === undefined) {
     byteOffset = 0;
   }
 
-  const headerBuffer = new Uint32Array(arrayBuffer, byteOffset, MAP_CHUNK_HEADER_ENTRIES);
+  const headerBuffer = new Uint32Array(buffer, byteOffset, MAP_CHUNK_HEADER_ENTRIES);
   const numPoints = headerBuffer[0];
   const numPositions = headerBuffer[1];
   const numNormals = headerBuffer[2];
@@ -161,14 +161,14 @@ const parseMapChunk = (arrayBuffer, byteOffset) => {
   const numHeightfield = headerBuffer[4];
   byteOffset += MAP_CHUNK_HEADER_SIZE;
 
-  const offsetBuffer = new Int32Array(arrayBuffer, byteOffset, 2);
+  const offsetBuffer = new Int32Array(buffer, byteOffset, 2);
   const offset = {
     x: offsetBuffer[0],
     y: offsetBuffer[1],
   };
   byteOffset += INT32_SIZE * 2;
 
-  const pointsBuffer = new Float32Array(arrayBuffer, byteOffset, numPoints * 7);
+  const pointsBuffer = new Float32Array(buffer, byteOffset, numPoints * 7);
   const points = Array(numPoints);
   for (let i = 0; i < numPoints; i++) {
     const index = i * 7;
@@ -193,23 +193,23 @@ const parseMapChunk = (arrayBuffer, byteOffset) => {
   }
   byteOffset += POINT_SIZE * numPoints;
 
-  const positionsBuffer = new Float32Array(arrayBuffer, byteOffset, numPositions);
+  const positionsBuffer = new Float32Array(buffer, byteOffset, numPositions);
   const positions = positionsBuffer;
   byteOffset += FLOAT32_SIZE * numPositions;
 
-  const normalsBuffer = new Float32Array(arrayBuffer, byteOffset, numNormals);
+  const normalsBuffer = new Float32Array(buffer, byteOffset, numNormals);
   const normals = normalsBuffer;
   byteOffset += FLOAT32_SIZE * numNormals;
 
-  const colorsBuffer = new Float32Array(arrayBuffer, byteOffset, numColors);
+  const colorsBuffer = new Float32Array(buffer, byteOffset, numColors);
   const colors = colorsBuffer;
   byteOffset += FLOAT32_SIZE * numColors;
 
-  const heightfieldBuffer = new Float32Array(arrayBuffer, byteOffset, numHeightfield);
+  const heightfieldBuffer = new Float32Array(buffer, byteOffset, numHeightfield);
   const heightfield = heightfieldBuffer;
   byteOffset += FLOAT32_SIZE * numHeightfield;
 
-  const heightRangeBuffer = new Float32Array(arrayBuffer, byteOffset, 2);
+  const heightRangeBuffer = new Float32Array(buffer, byteOffset, 2);
   const heightRange = [
     heightRangeBuffer[0],
     heightRangeBuffer[1],
@@ -217,6 +217,7 @@ const parseMapChunk = (arrayBuffer, byteOffset) => {
   byteOffset += FLOAT32_SIZE * 2;
 
   return {
+    buffer,
     offset,
     points,
     positions,

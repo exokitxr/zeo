@@ -3,8 +3,11 @@ const {
 
   NUM_CELLS_HEIGHT,
   HEIGHT_OFFSET,
+
+  RANGE,
 } = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
+const bffr = require('./bffr');
 
 const TEXTURE_SIZE = 1024;
 const NUM_POSITIONS_CHUNK = 200 * 1024;
@@ -134,6 +137,8 @@ class Grass {
 
     const upVector = new THREE.Vector3(0, 1, 0);
 
+    const buffers = bffr(NUM_POSITIONS_CHUNK * 3, (RANGE + 1) * (RANGE + 1) * 2);
+
     let live = true;
     this._cleanup = () => {
       live = false;
@@ -142,7 +147,7 @@ class Grass {
     const worker = new Worker('archae/plugins/_plugins_grass/build/worker.js');
     const queue = [];
     worker.requestGenerate = (x, y) => new Promise((accept, reject) => {
-      const buffer = new ArrayBuffer(NUM_POSITIONS_CHUNK * 3);
+      const buffer = buffers.alloc();
       worker.postMessage({
         type: 'chunk',
         x,
@@ -301,6 +306,9 @@ class Grass {
             mesh.destroy = () => {
               mesh.geometry.dispose();
 
+              const {buffer} = grassChunkData;
+              buffers.free(buffer);
+
               if (mesh.lightmap) {
                 _unbindLightmap(mesh);
               }
@@ -311,7 +319,7 @@ class Grass {
 
           const chunker = chnkr.makeChunker({
             resolution: NUM_CELLS,
-            range: 1,
+            range: RANGE,
           });
           const grassChunkMeshes = [];
 
@@ -335,14 +343,15 @@ class Grass {
             });
             return Promise.all(addedPromises)
               .then(() => {
-                removed.forEach(chunk => {
+                for (let i = 0; i < removed.length; i++) {
+                  const chunk = removed[i];
                   const {data: grassChunkMesh} = chunk;
                   scene.remove(grassChunkMesh);
 
                   grassChunkMeshes.splice(grassChunkMeshes.indexOf(grassChunkMesh), 1);
 
                   grassChunkMesh.destroy();
-                });
+                }
               })
           };
 

@@ -4,6 +4,7 @@ const {
 
   HEIGHT_OFFSET,
 } = require('./lib/constants/constants');
+const bffr = require('./bffr');
 
 const FPS = 1000 / 60;
 
@@ -127,13 +128,14 @@ class Lightmap {
     }
 
     class Lightmap extends EventEmitter {
-      constructor(x, z, width, height, depth) {
+      constructor(x, z, width, height, depth, buffers) {
         super();
 
         this.x = x;
         this.z = z;
+        this.buffers = buffers;
 
-        const buffer = new ArrayBuffer((width + 1) * (depth + 1) * height);
+        const buffer = buffers.alloc();
         this.buffer = buffer;
         const texture = new THREE.DataTexture(
           new Uint8Array(buffer.byteLength),
@@ -163,10 +165,9 @@ class Lightmap {
       }
 
       destroy() {
-        // this.buffer = null;
-
         this.texture.dispose();
-        // this.texture = null;
+
+        this.buffers.free(this.buffer);
 
         this.emit('destroy');
       }
@@ -236,23 +237,24 @@ class Lightmap {
         this._lightmaps = lightmaps;
         const lightmapsNeedUpdate = [];
         this._lightmapsNeedUpdate = lightmapsNeedUpdate;
+        this._buffers = bffr((width + 1) * (depth + 1) * height, (1 + 1) * (1 + 1) * 2);
       }
 
       getLightmapAt(x, z) {
-        const {width, height, depth, heightOffset, _lightmaps: lightmaps, _lightmapsNeedUpdate: lightmapsNeedUpdate} = this;
+        const {width, height, depth, heightOffset, _lightmaps: lightmaps, _lightmapsNeedUpdate: lightmapsNeedUpdate, _buffers: buffers} = this;
         const ox = Math.floor(x / width);
         const oz = Math.floor(z / depth);
 
         let entry = lightmaps.find(lightmap => lightmap.x === ox && lightmap.z === oz);
         if (!entry) {
-          entry = new Lightmap(ox, oz, width, height, depth);
+          entry = new Lightmap(ox, oz, width, height, depth, buffers);
           entry.addRef();
           entry.on('destroy', () => {
             lightmaps.splice(lightmaps.indexOf(entry), 1);
 
             const needUpdateIndex = lightmapsNeedUpdate.indexOf(entry);
             if (needUpdateIndex !== -1) {
-              lightmaps.splice(needUpdateIndex, 1);
+              lightmapsNeedUpdate.splice(needUpdateIndex, 1);
             }
           });
           lightmaps.push(entry);
@@ -298,10 +300,9 @@ class Lightmap {
         if (lightmapsNeedUpdate.length > 0) {
           const {worker, _lightmaps: lightmaps} = this;
 
-          return Promise.all(lightmapsNeedUpdate.map(lightmap => worker.requestUpdate(lightmap)))
-            .then(() => {
-              lightmapsNeedUpdate.length = 0;
-            });
+          const result = Promise.all(lightmapsNeedUpdate.map(lightmap => worker.requestUpdate(lightmap)));
+          lightmapsNeedUpdate.length = 0;
+          return result;
         } else {
           return Promise.resolve();
         }

@@ -1,7 +1,10 @@
 const {
   NUM_CELLS,
+
+  RANGE,
 } = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
+const bffr = require('./bffr');
 
 const NUM_POSITIONS_CHUNK = 200 * 1024;
 const CLOUD_SPEED = 1;
@@ -45,17 +48,6 @@ class Cloud {
     const {three, elements, render, pose, world, utils: {geometry: geometryUtils, random: {alea, chnkr}}} = zeo;
     const {THREE, scene, camera} = three;
 
-    const _resArrayBuffer = res => {
-      if (res.status >= 200 && res.status < 300) {
-        return res.arrayBuffer();
-      } else {
-        const err = new Error('invalid status code: ' + res.status);
-        return Promise.reject(err);
-      }
-    };
-    const _requestCloudGenerate = (x, y) => worker.requestGenerate(x, y)
-      .then(cloudChunkBuffer => protocolUtils.parseCloudGeometry(cloudChunkBuffer));
-
     const cloudsMaterial = new THREE.ShaderMaterial({
       uniforms: THREE.UniformsUtils.clone(CLOUD_SHADER.uniforms),
       vertexShader: CLOUD_SHADER.vertexShader,
@@ -67,10 +59,12 @@ class Cloud {
       color: 0xFFFFFF,
     }); */
 
+    const buffers = bffr(NUM_POSITIONS_CHUNK * 3, (RANGE + 1) * (RANGE + 1) * 2);
+
     const worker = new Worker('archae/plugins/_plugins_cloud/build/worker.js');
     const queue = [];
     worker.requestGenerate = (x, y) => new Promise((accept, reject) => {
-      const buffer = new ArrayBuffer(NUM_POSITIONS_CHUNK * 3);
+      const buffer = buffers.alloc();
       worker.postMessage({
         x,
         y,
@@ -86,9 +80,12 @@ class Cloud {
       cb(buffer);
     };
 
+    const _requestCloudGenerate = (x, y) => worker.requestGenerate(x, y)
+      .then(cloudChunkBuffer => protocolUtils.parseCloudGeometry(cloudChunkBuffer));
+
     const updates = [];
 
-    const cloudEntity = {
+    const cloudEntity = { // XXX make this a non-entity
       attributes: {
         position: {
           type: 'matrix',
@@ -102,7 +99,7 @@ class Cloud {
       entityAddedCallback(entityElement) {
         const chunker = chnkr.makeChunker({
           resolution: NUM_CELLS,
-          range: 1,
+          range: RANGE,
         });
 
         const cloudChunkMeshes = [];
@@ -135,6 +132,9 @@ class Cloud {
 
           mesh.destroy = () => {
             mesh.geometry.dispose();
+
+            const {buffer} = cloudChunkData;
+            buffers.free(buffer);
           };
 
           return mesh;

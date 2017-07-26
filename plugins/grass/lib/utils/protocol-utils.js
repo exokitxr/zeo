@@ -108,30 +108,30 @@ const stringifyGrassGeometries = grassGeometrys => {
 
 // parsing
 
-const parseGrassGeometry = (arrayBuffer, byteOffset) => {
+const parseGrassGeometry = (buffer, byteOffset) => {
   if (byteOffset === undefined) {
     byteOffset = 0;
   }
 
-  const headerBuffer = new Uint32Array(arrayBuffer, byteOffset, GRASS_GEOMETRY_HEADER_ENTRIES);
+  const headerBuffer = new Uint32Array(buffer, byteOffset, GRASS_GEOMETRY_HEADER_ENTRIES);
   const numPositions = headerBuffer[0];
   const numUvs = headerBuffer[1];
   const numIndices = headerBuffer[2];
   byteOffset += GRASS_GEOMETRY_HEADER_SIZE;
 
-  const positionsBuffer = new Float32Array(arrayBuffer, byteOffset, numPositions);
+  const positionsBuffer = new Float32Array(buffer, byteOffset, numPositions);
   const positions = positionsBuffer;
   byteOffset += FLOAT32_SIZE * numPositions;
 
-  const uvBuffer = new Float32Array(arrayBuffer, byteOffset, numUvs);
+  const uvBuffer = new Float32Array(buffer, byteOffset, numUvs);
   const uvs = uvBuffer;
   byteOffset += FLOAT32_SIZE * numUvs;
 
-  const indicesBuffer = new Uint16Array(arrayBuffer, byteOffset, numIndices);
+  const indicesBuffer = new Uint16Array(buffer, byteOffset, numIndices);
   const indices = indicesBuffer;
   byteOffset += UINT16_SIZE * numIndices;
 
-  const heightRangeBuffer = new Float32Array(arrayBuffer, byteOffset, 2);
+  const heightRangeBuffer = new Float32Array(buffer, byteOffset, 2);
   const heightRange = [
     heightRangeBuffer[0],
     heightRangeBuffer[1],
@@ -139,6 +139,7 @@ const parseGrassGeometry = (arrayBuffer, byteOffset) => {
   byteOffset += FLOAT32_SIZE * 2;
 
   return {
+    buffer,
     positions,
     uvs,
     indices,
