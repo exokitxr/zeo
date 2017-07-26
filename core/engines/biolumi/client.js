@@ -920,51 +920,41 @@ class Biolumi {
             let change = false;
             let commit = false;
 
-            if ('keyCode' in e) {
-              if (_isPrintableKeycode(e.keyCode)) {
-                if (!(e.ctrlKey && e.keyCode === 86)) { // ctrl-v
-                  state.inputText = inputText.slice(0, inputIndex) + _getKeyCode(e.keyCode) + inputText.slice(inputIndex);
-                  state.inputIndex++;
-                  state.inputValue = _getTextPropertiesFromIndex(state.inputText, fontSpec, state.inputIndex).px;
-
-                  change = true;
-                }
-              } else if (e.keyCode === 13) { // enter
-                commit = true;
-              } else if (e.keyCode === 8) { // backspace
-                if (inputIndex > 0) {
-                  state.inputText = inputText.slice(0, inputIndex - 1) + inputText.slice(inputIndex);
-                  state.inputIndex--;
-                  state.inputValue = _getTextPropertiesFromIndex(state.inputText, fontSpec, state.inputIndex).px;
-
-                  change = true;
-                }
-              } else if (e.keyCode === 37) { // left
-                state.inputIndex = Math.max(state.inputIndex - 1, 0);
-                state.inputValue = _getTextPropertiesFromIndex(state.inputText, fontSpec, state.inputIndex).px;
-
-                change = true;
-              } else if (e.keyCode === 39) { // right
-                state.inputIndex = Math.min(state.inputIndex + 1, inputText.length);
-                state.inputValue = _getTextPropertiesFromIndex(state.inputText, fontSpec, state.inputIndex).px;
-
-                change = true;
-              } else if (e.keyCode === 38) { // up
-                state.inputIndex = 0;
-                state.inputValue = _getTextPropertiesFromIndex(state.inputText, fontSpec, state.inputIndex).px;
-
-                change = true;
-              } else if (e.keyCode === 40) { // down
-                state.inputIndex = inputText.length;
+            if (_isPrintableKeycode(e.event.keyCode)) {
+              if (!(e.event.ctrlKey && e.event.keyCode === 86)) { // ctrl-v
+                state.inputText = inputText.slice(0, inputIndex) + _getKeyCode(e.event.keyCode) + inputText.slice(inputIndex);
+                state.inputIndex++;
                 state.inputValue = _getTextPropertiesFromIndex(state.inputText, fontSpec, state.inputIndex).px;
 
                 change = true;
               }
-            } else if ('clipboardData' in e) {
-              const text = e.clipboardData.getData('text');
+            } else if (e.event.keyCode === 13) { // enter
+              commit = true;
+            } else if (e.event.keyCode === 8) { // backspace
+              if (inputIndex > 0) {
+                state.inputText = inputText.slice(0, inputIndex - 1) + inputText.slice(inputIndex);
+                state.inputIndex--;
+                state.inputValue = _getTextPropertiesFromIndex(state.inputText, fontSpec, state.inputIndex).px;
 
-              state.inputText = inputText.slice(0, inputIndex) + text + inputText.slice(inputIndex);
-              state.inputIndex += text.length;
+                change = true;
+              }
+            } else if (e.event.keyCode === 37) { // left
+              state.inputIndex = Math.max(state.inputIndex - 1, 0);
+              state.inputValue = _getTextPropertiesFromIndex(state.inputText, fontSpec, state.inputIndex).px;
+
+              change = true;
+            } else if (e.event.keyCode === 39) { // right
+              state.inputIndex = Math.min(state.inputIndex + 1, inputText.length);
+              state.inputValue = _getTextPropertiesFromIndex(state.inputText, fontSpec, state.inputIndex).px;
+
+              change = true;
+            } else if (e.event.keyCode === 38) { // up
+              state.inputIndex = 0;
+              state.inputValue = _getTextPropertiesFromIndex(state.inputText, fontSpec, state.inputIndex).px;
+
+              change = true;
+            } else if (e.event.keyCode === 40) { // down
+              state.inputIndex = inputText.length;
               state.inputValue = _getTextPropertiesFromIndex(state.inputText, fontSpec, state.inputIndex).px;
 
               change = true;

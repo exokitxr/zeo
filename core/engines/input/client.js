@@ -42,8 +42,30 @@ class Input {
       constructor(handler, priority) {
         this.handler = handler;
         this.priority = priority;
+        this.live = true;
       }
     }
+
+    class InputEvent {
+      constructor() {
+        this.event = null;
+        this.side = DEFAULT_EVENT_SIDE;
+        this.live = true;
+
+        this.reset();
+      }
+      preventDefault() {}
+      stopPropagation() {}
+      stopImmediatePropagation() {
+        this.live = false;
+      }
+      reset() {
+        this.event = null;
+        this.side = DEFAULT_EVENT_SIDE;
+        this.live = true;
+      }
+    }
+    const inputEvent = new InputEvent();
 
     class EventRouter {
       constructor() {
@@ -53,55 +75,43 @@ class Input {
       }
 
       handle(e) {
-        const {listeners} = this;
+        inputEvent.reset();
+        inputEvent.event = e;
+        inputEvent.side = e.side || DEFAULT_EVENT_SIDE;
 
-        let live = true;
-        e.preventDefault = nop;
-        e.stopPropagation = nop;
-        e.stopImmediatePropagation = (stopImmediatePropagation => () => {
-          live = false;
+        // e.stopPropagation();
 
-          if (stopImmediatePropagation) {
-            stopImmediatePropagation.call(e);
+        for (let i = 0; i < this.listeners.length; i++) {
+          const listener = this.listeners[i];
+          if (listener.live) {
+            listener.handler(inputEvent);
           }
-        })(e.stopImmediatePropagation);
-        if (e.side === undefined) {
-          e.side = DEFAULT_EVENT_SIDE;
-        }
 
-        const oldListeners = listeners.slice();
-        for (let i = 0; i < oldListeners.length; i++) {
-          const listener = oldListeners[i];
-          const {handler} = listener;
-
-          handler(e);
-
-          if (!live) {
+          if (!inputEvent.live) {
             break;
           }
         }
       }
 
       add(handler, {priority}) {
-        const {listeners} = this;
-
         const listener = new Listener(handler, priority);
-        listeners.push(listener);
-        listeners.sort((a, b) => b.priority - a.priority);
+        this.listeners.push(listener);
+        this.listeners.sort((a, b) => b.priority - a.priority);
       }
 
       remove(handler) {
-        const {listeners} = this;
+        const listener = this.listeners.find(listener => listener.handler === handler);
+        if (listener) {
+          listener.live = false;
 
-        const index = listeners.findIndex(listener => listener.handler === handler);
-        if (index !== -1) {
-          listeners.splice(index, 1);
+          setTimeout(() => {
+            this.listeners.splice(this.listeners.indexOf(listener), 1);
+          });
         }
       }
 
       removeAll() {
-        const {listeners} = this;
-        listeners.length = 0;
+        this.listeners.length = 0;
       }
     }
 
