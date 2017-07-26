@@ -8,6 +8,7 @@
     "worker": "worker.js"
   },
   "dependencies": {
+    "bffr": "0.0.3",
     "sfxr": "0.0.1"
   }
 }

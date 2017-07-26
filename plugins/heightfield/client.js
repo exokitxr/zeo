@@ -1,3 +1,4 @@
+const bffr = require('bffr');
 const {
   NUM_CELLS,
 
@@ -7,7 +8,6 @@ const {
   RANGE,
 } = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
-const bffr = require('./bffr');
 
 const NUM_POSITIONS_CHUNK = 1200 * 1024;
 const LIGHTMAP_PLUGIN = 'plugins-lightmap';

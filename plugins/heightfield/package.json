@@ -7,6 +7,7 @@
     "worker": "worker.js"
   },
   "dependencies": {
+    "bffr": "0.0.3",
     "indev": "^3.0.10"
   }
 }
