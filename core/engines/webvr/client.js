@@ -9,13 +9,24 @@ class VRFrameDataFake {
     this.leftViewMatrix = new Float32Array(16);
     this.rightProjectionMatrix = new Float32Array(16);
     this.rightViewMatrix = new Float32Array(16);
-    this.pose = null;
+    this.pose = new VRPoseFake();
   }
 }
 class VRPoseFake {
-  constructor(position, orientation) {
+  constructor(position = new Float32Array(3), orientation = new Float32Array(4)) {
     this.position = position;
     this.orientation = orientation;
+  }
+
+  set(position, orientation) {
+    this.position[0] = position.x;
+    this.position[1] = position.y;
+    this.position[2] = position.z;
+
+    this.orientation[0] = orientation.x;
+    this.orientation[1] = orientation.y;
+    this.orientation[2] = orientation.z;
+    this.orientation[3] = orientation.w;
   }
 }
 
@@ -1159,7 +1170,7 @@ class WebVR {
           } */
 
           getFrameData(frameData) {
-            const eyeCamera = new THREE.PerspectiveCamera(camera.fov, camera.aspect, camera.near, camera.far);
+            /* const eyeCamera = new THREE.PerspectiveCamera(camera.fov, camera.aspect, camera.near, camera.far);
             eyeCamera.fov = DEFAULT_USER_FOV;
             eyeCamera.aspect = DEFAULT_ASPECT_RATIO;
             eyeCamera.updateProjectionMatrix();
@@ -1177,10 +1188,10 @@ class WebVR {
               camera.quaternion,
               camera.scale
             ).toArray());
-            frameData.rightProjectionMatrix.set(eyeCameraProjectionMatrixArray);
+            frameData.rightProjectionMatrix.set(eyeCameraProjectionMatrixArray); */
 
-            const {position, rotation} = this;
-            frameData.pose = new VRPoseFake(position.toArray(), rotation.toArray());
+            // const {position, rotation} = this;
+            frameData.pose.set(this.position, this.rotation);
           }
 
           getEyeParameters(side) {
