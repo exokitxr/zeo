@@ -1,4 +1,3 @@
-const bffr = require('bffr');
 const {
   NUM_CELLS,
 
@@ -157,7 +156,7 @@ class Heightfield {
 
   mount() {
     const {_archae: archae} = this;
-    const {three, render, pose, world, elements, teleport, /*physics,*/ stck, stage, utils: {random: {chnkr}}} = zeo;
+    const {three, render, pose, world, elements, teleport, /*physics,*/ stck, stage, utils: {js: {bffr}, random: {chnkr}}} = zeo;
     const {THREE} = three;
 
     const buffers = bffr(NUM_POSITIONS_CHUNK, (RANGE * 2) * (RANGE * 2) * 2);
