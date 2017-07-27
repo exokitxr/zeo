@@ -7,15 +7,9 @@ class DayNightSkybox {
 
     const THREESky = SkyShader(THREE);
 
-    const MAP_SUN_MATERIAL = new THREE.MeshBasicMaterial({
-      color: 0xFFFFFF,
-      fog: false,
-      // transparent: true,
-      // opacity: 0.8,
-    });
-
     const zeroVector = new THREE.Vector3();
     const upVector = new THREE.Vector3(0, 1, 0);
+    const localVector = new THREE.Vector3();
 
     const updates = [];
 
@@ -52,84 +46,45 @@ class DayNightSkybox {
           object.add(sky.mesh);
           object.sky = sky;
 
-          const sunSphere = (() => {
-            const geometry = new THREE.SphereBufferGeometry(200, 5, 3);
-            const material = MAP_SUN_MATERIAL;
-            const sunSphere = new THREE.Mesh(geometry, material);
-            sunSphere.rotation.order = 'ZXY';
-            sunSphere.distance = 5000;
-            return sunSphere;
-          })();
-          object.add(sunSphere);
-          object.sunSphere = sunSphere;
-
-          const moonSphere = (() => {
-            const geometry = new THREE.SphereBufferGeometry(100, 5, 3);
-            const material = MAP_SUN_MATERIAL;
-            const moonSphere = new THREE.Mesh(geometry, material);
-            moonSphere.rotation.order = 'ZXY';
-            return moonSphere;
-          })();
-          object.add(moonSphere);
-          object.moonSphere = moonSphere;
-
           return object;
         })();
         scene.add(mesh);
         entityElement.mesh = mesh;
 
+        let sunIntensity = 0;
+        const sunDistance = 5000;
+        const cutoffAngle = Math.PI/1.95;
+        const steepness = 1.5;
+        const computeSunIntensity = zenithAngleCos => {
+          zenithAngleCos = Math.min(Math.max(zenithAngleCos, -1), 1);
+          return Math.max(0, 1 - Math.pow(Math.E, -((cutoffAngle - Math.acos(zenithAngleCos))/steepness)));
+        };
+        const maxSunIntensity = computeSunIntensity(1);
         const update = () => {
-          const {sky, sunSphere/* , sunLight*/, starsMesh, moonSphere} = mesh;
+          const {sky} = mesh;
 
-          const worldTime = world.getWorldTime();
+          const worldTime = world.getWorldTime() + 10;
 
           const speed = 20;
           sky.azimuth = (0.05 + ((worldTime / 1000) * speed) / (60 * 10)) % 1;
           const theta = Math.PI * (sky.inclination - 0.5);
           const phi = 2 * Math.PI * (sky.azimuth - 0.5);
 
-          const x = sunSphere.distance * Math.cos(phi);
-          const y = sunSphere.distance * Math.sin(phi) * Math.sin(theta);
-          const z = sunSphere.distance * Math.sin(phi) * Math.cos(theta);
+          const x = sunDistance * Math.cos(phi);
+          const y = sunDistance * Math.sin(phi) * Math.sin(theta);
+          const z = sunDistance * Math.sin(phi) * Math.cos(theta);
 
-          sky.uniforms.sunPosition.value.x = x;
-          sky.uniforms.sunPosition.value.y = y;
-          sky.uniforms.sunPosition.value.z = z;
+          sky.uniforms.sunPosition.value.set(x, y, z);
 
-          sunSphere.position.set(x, y, z);
-          sunSphere.rotation.z = -phi;
-          sunSphere.updateMatrixWorld();
-
-          moonSphere.position.x = -x;
-          moonSphere.position.y = -y;
-          moonSphere.position.z = -z;
-          moonSphere.rotation.z = -phi;
-          moonSphere.updateMatrixWorld();
-
-          sunIntensityCache = null;
+          sunIntensity = computeSunIntensity(
+            localVector.copy(sky.uniforms.sunPosition.value)
+              .normalize()
+              .dot(upVector)
+          ) / maxSunIntensity;
         };
         updates.push(update);
 
-        const sunIntensity = zenithAngleCos => {
-          zenithAngleCos = Math.min(Math.max(zenithAngleCos, -1), 1);
-          return Math.max(0, 1 - Math.pow(Math.E, -((cutoffAngle - Math.acos(zenithAngleCos))/steepness)));
-        };
-        const cutoffAngle = Math.PI/1.95;
-        const steepness = 1.5;
-        const maxSunIntensity = sunIntensity(1);
-
-        let sunIntensityCache = null;
-        entityElement.getSunIntensity = () => {
-          if (sunIntensityCache === null) {
-            sunIntensityCache = sunIntensity(
-              mesh.sunSphere.position.clone()
-                .normalize()
-                .dot(upVector)
-            ) / maxSunIntensity;
-          }
-
-          return sunIntensityCache;
-        };
+        entityElement.getSunIntensity = () => sunIntensity;
 
         entityElement._cleanup = () => {
           scene.remove(mesh);
