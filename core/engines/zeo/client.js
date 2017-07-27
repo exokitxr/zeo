@@ -134,7 +134,6 @@ class Zeo {
             '/core/engines/servers',
             '/core/engines/wallet',
             '/core/engines/notification',
-            '/core/engines/payment',
             '/core/engines/config',
             '/core/engines/multiplayer',
             '/core/engines/voicechat',
@@ -187,7 +186,6 @@ class Zeo {
                 servers,
                 wallet,
                 notification,
-                payment,
                 config,
                 multiplayer,
                 voicechat,
@@ -857,20 +855,6 @@ class Zeo {
                         }
                       }
 
-                      class ZeoPaymentApi {
-                        getAddress() {
-                          return payment.getAddress();
-                        }
-
-                        requestBalances(options) {
-                          return payment.requestBalances(options);
-                        }
-
-                        requestCharge(chargeSpec) {
-                          return payment.requestCharge(chargeSpec);
-                        }
-                      }
-
                       class ZeoJsApi {
                         constructor() {
                           this.events = events;
@@ -913,7 +897,6 @@ class Zeo {
                           this.transform = new ZeoTransformApi();
                           this.animation = new ZeoAnimationApi();
                           this.items = new ZeoItemsApi();
-                          this.payment = new ZeoPaymentApi();
                           this.utils = new ZeoUtilsApi();
                         }
                       }

@@ -1,6 +1,6 @@
 class Test {
   mount() {
-    const {three, elements, input, pose, render, physics, payment} = zeo;
+    const {three, elements, input, pose, render} = zeo;
     const {THREE, scene} = three;
 
     console.log('mount');
@@ -59,27 +59,8 @@ class Test {
     };
     elements.registerEntity(this, testEntity);
 
-    const _keypress = e => {
-      if (e.key === 'p') {
-        payment.requestCharge({
-          dstAddress: 'G4ExZ6nYBPnu7Sr1c8kMgbzz3VS9DbGi6cNeghEirbHj',
-          srcAsset: 'ZEOCOIN',
-          srcQuantity: 10,
-        })
-          .then(result => {
-            console.warn('charge result', result);
-          })
-          .catch(err => {
-            console.warn('charge error', err);
-          });
-      }
-    };
-    input.on('keypress', _keypress);
-
     this._cleanup = () => {
       elements.unregisterEntity(this, testEntity);
-
-      input.removeListener('keypress', _keypress);
     };
   }
 
