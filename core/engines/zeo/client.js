@@ -137,6 +137,7 @@ class Zeo {
             '/core/engines/config',
             '/core/engines/multiplayer',
             '/core/engines/voicechat',
+            '/core/engines/stage',
             '/core/engines/fs',
             '/core/engines/somnifer',
             '/core/engines/stck',
@@ -189,6 +190,7 @@ class Zeo {
                 config,
                 multiplayer,
                 voicechat,
+                stage,
                 fs,
                 somnifer,
                 stck,
@@ -737,6 +739,24 @@ class Zeo {
                         }
                       }
 
+                      class ZeoStageApi {
+                        getStage() {
+                          return stage.getStage();
+                        }
+
+                        setStage(stage) {
+                          stage.setStage(stage);
+                        }
+
+                        add(stage, object) {
+                          stage.add(stage, object);
+                        }
+
+                        remove(stage, object) {
+                          stage.remove(stage, object);
+                        }
+                      }
+
                       class ZeoStckApi {
                         makeDynamicBoxBody() {
                           return stck.makeDynamicBoxBody.apply(stck, arguments);
@@ -890,6 +910,7 @@ class Zeo {
                           this.broadcast = new ZeoBroadcastApi();
                           this.ui = new ZeoUiApi();
                           this.sound = new ZeoSoundApi();
+                          this.stage = new ZeoStageApi();
                           this.stck = new ZeoStckApi();
                           this.intersect = new ZeoIntersectApi();
                           this.teleport = new ZeoTeleportApi();
