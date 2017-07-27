@@ -5,7 +5,7 @@ const murmurhashPath = require.resolve('murmurhash');
 const aleaPath = require.resolve('alea-zeo');
 const indevPath = require.resolve('indev');
 
-class Assets {
+class Resource {
   constructor(archae) {
     this._archae = archae;
   }
@@ -90,4 +90,4 @@ class Assets {
   }
 }
 
-module.exports = Assets;
+module.exports = Resource;
