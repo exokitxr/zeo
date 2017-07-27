@@ -1,4 +1,3 @@
-const bffr = require('bffr');
 const {
   NUM_CELLS,
 
@@ -109,7 +108,7 @@ class Items {
 
   mount() {
     const {_archae: archae} = this;
-    const {three, render, pose, input, items, elements, stage, utils: {random: {chnkr}}} = zeo;
+    const {three, render, pose, input, items, elements, stage, utils: {js: {bffr}, random: {chnkr}}} = zeo;
     const {THREE} = three;
 
     const buffers = bffr(NUM_POSITIONS_CHUNK, (RANGE + 1) * (RANGE + 1) * 2);

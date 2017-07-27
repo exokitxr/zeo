@@ -1,5 +1,4 @@
 const sfxr = require('sfxr');
-const bffr = require('bffr');
 const {
   NUM_CELLS,
 
@@ -138,7 +137,7 @@ class Tree {
 
   mount() {
     const {_archae: archae} = this;
-    const {three, render, pose, input, elements, items, stage, utils: {random: {chnkr}}} = zeo;
+    const {three, render, pose, input, elements, items, stage, utils: {js: {bffr}, random: {chnkr}}} = zeo;
     const {THREE} = three;
 
     const upVector = new THREE.Vector3(0, 1, 0);

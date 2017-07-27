@@ -1,4 +1,3 @@
-const bffr = require('bffr');
 const {
   NUM_CELLS,
   NUM_CELLS_HEIGHT,
@@ -12,7 +11,7 @@ class Lightmap {
   mount() {
     const {three, elements, render, utils: {js: jsUtils}} = zeo;
     const {THREE} = three;
-    const {events} = jsUtils;
+    const {events, bffr} = jsUtils;
     const {EventEmitter} = events;
 
     let idCount = 0;

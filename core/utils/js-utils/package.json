@@ -4,6 +4,7 @@
   "version": "0.0.1",
   "client": "client.js",
   "dependencies": {
+    "bffr": "0.0.3",
     "events": "^1.1.1"
   }
 }

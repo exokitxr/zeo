@@ -1,4 +1,3 @@
-const bffr = require('bffr');
 const {
   NUM_CELLS,
 
@@ -45,7 +44,7 @@ void main() {
 
 class Cloud {
   mount() {
-    const {three, elements, render, pose, stage, utils: {geometry: geometryUtils, random: {alea, chnkr}}} = zeo;
+    const {three, elements, render, pose, stage, utils: {js: {bffr}, geometry: geometryUtils, random: {alea, chnkr}}} = zeo;
     const {THREE, camera} = three;
 
     const cloudsMaterial = new THREE.ShaderMaterial({
