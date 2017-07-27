@@ -47,8 +47,6 @@ class DayNightSkybox {
             sky.inclination = 0;
             sky.azimuth = 0;
 
-            sky.mesh.material.depthWrite = false;
-
             return sky;
           })();
           object.add(sky.mesh);
