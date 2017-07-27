@@ -4,29 +4,7 @@ self.module = {};
 
 const protocolUtils = require('./lib/utils/protocol-utils');
 
-const NUM_POSITIONS_CHUNK = 100 * 1024;
-
-/* const pixelGeometryVerticesCache = {};
-const _getPixelGeometryVertices = size => {
-  const entry = pixelGeometryVerticesCache[size];
-
-  if (entry) {
-    return entry.slice();
-  } else {
-    const newEntry = (() => {
-      const cubeGeometry = new THREE.CubeGeometry(size, size, size);
-      for (let i = 0; i < cubeGeometry.vertices.length; i++) {
-        cubeGeometry.vertices[i].x -= size / 2;
-        cubeGeometry.vertices[i].y -= size / 2;
-        cubeGeometry.vertices[i].z -= size / 2;
-      }
-      const bufferGeometry = new THREE.BufferGeometry().fromGeometry(cubeGeometry);
-      return bufferGeometry.getAttribute('position').array;
-    })();
-    pixelGeometryVerticesCache[size] = newEntry;
-    return newEntry.slice();
-  };
-}; */
+const NUM_POSITIONS_CHUNK = 150 * 1024;
 
 const _makeImageDataGeometry = (width, height, size, matrix, imageDataData) => {
   const halfSize = size / 2;
@@ -140,6 +118,7 @@ const _makeImageDataGeometry = (width, height, size, matrix, imageDataData) => {
   geometry.addAttribute('position', new THREE.BufferAttribute(new Float32Array(positions.buffer, 0, attributeIndex), 3));
   geometry.addAttribute('color', new THREE.BufferAttribute(new Float32Array(colors.buffer, 0, attributeIndex), 3));
   geometry.addAttribute('dy', new THREE.BufferAttribute(dys, 2));
+  geometry.addAttribute('zeroDy', new THREE.BufferAttribute(new Float32Array(dys.length), 2));
   geometry.applyMatrix(matrix);
   geometry.computeVertexNormals();
 
@@ -148,6 +127,7 @@ const _makeImageDataGeometry = (width, height, size, matrix, imageDataData) => {
     normals: geometry.getAttribute('normal').array,
     colors: geometry.getAttribute('color').array,
     dys: geometry.getAttribute('dy').array,
+    zeroDys: geometry.getAttribute('zeroDy').array,
   };
 };
 
