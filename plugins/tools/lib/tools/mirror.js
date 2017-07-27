@@ -109,7 +109,7 @@ const mirror = ({archae}) => {
   };
   render.on('updateEye', _updateEye);
 
-  renderer.compile(scene, camera);
+  renderer.compile(mirrorMesh, camera);
 
   return () => {
     const mirrorApi = {
