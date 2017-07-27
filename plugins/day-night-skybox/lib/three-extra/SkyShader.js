@@ -130,8 +130,10 @@ const skyShader = {
 		"const float mieZenithLength = 1.25E3;",
 		"const vec3 up = vec3(0.0, 1.0, 0.0);",
 
-		"const float sunAngularDiameterCos = 0.999956676946448443553574619906976478926848692873900859324;",
+		// "const float sunAngularDiameterCos = 0.999956676946448443553574619906976478926848692873900859324;",
 		// 66 arc seconds -> degrees, and the cosine of that
+		"const float sunAngularDiameterCos = cos(0.0277778);",
+		// 100 arc seconds -> degrees, and the cosine of that
 
 		"float powClamp(float f, float e)",
 		"{",
@@ -228,17 +230,20 @@ float noise(vec3 p){
 			"float sundisk = smoothstep(sunAngularDiameterCos,sunAngularDiameterCos+0.00002,cosTheta);",
 			"L0 += (vSunE * 19000.0 * Fex)*sundisk;",
 
-			"vec3 texColor = (Lin) * 0.04 + (vec3(0.0, 0.0003, 0.00075) * 10.0);",
+			"float cosTheta2 = dot(normalize(vWorldPosition - cameraPos), vec3(-vSunDirection.x, -vSunDirection.y, vSunDirection.z));",
+			"float moonDisk = smoothstep(sunAngularDiameterCos,sunAngularDiameterCos+0.00002,cosTheta2);",
+			"L0 += vec3(50.0)*moonDisk;",
+
+			"vec3 starsColor = vec3(0.0);",
+`if (noise(floor(vWorldPosition / 15.0) * 15.0) < 0.0001) {
+  starsColor += (0.15 / 0.04) * max(1.0 - (vSunE / 300.0), 0.0);
+}`,
+			"vec3 texColor = (Lin + L0 + starsColor) * 0.04 + (vec3(0.0, 0.0003, 0.00075) * 10.0);",
 
 			"vec3 curr = Uncharted2Tonemap((log2(2.0/pow(luminance,4.0)))*texColor);",
 			"vec3 color = curr*whiteScale;",
 
 			"vec3 retColor = powClamp(color,vec3(1.0/(1.2+(1.2*vSunfade))));",
-`
-if (noise(floor(vWorldPosition / 15.0) * 15.0) < 0.0001) {
-  retColor += 0.15 * max(1.0 - (vSunE / 300.0), 0.0);
-}
-`,
 
 			"gl_FragColor.rgb = retColor;",
 
