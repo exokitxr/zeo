@@ -581,7 +581,7 @@ class WebVR {
                         };
                         window.addEventListener('vrdisplaypresentchange', vrdisplaypresentchange);
                         const keydown = e => {
-                          if (e.event.keyCode === 27) { // esc
+                          if (e.keyCode === 27) { // esc
                             display.exitPresent();
                           }
                         };
