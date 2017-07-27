@@ -128,6 +128,8 @@ class Wallet {
         const assetSize = pixelSize * numPixels;
         const assetSizeVector = new THREE.Vector3(assetSize, assetSize, assetSize);
 
+        const zeroArray = new Float32Array(0);
+        const zeroArray2 = new Float32Array(0);
         const zeroVector = new THREE.Vector3();
         const oneVector = new THREE.Vector3(1, 1, 1);
         const forwardVector = new THREE.Vector3(0, 0, -1);
@@ -374,16 +376,20 @@ class Wallet {
                 spriteUtils.requestSpriteGeometry(imageData, pixelSize)
                   .then(geometrySpec => {
                     if (live) {
-                      const {positions, normals, colors, dys} = geometrySpec;
+                      const {positions, normals, colors, dys, zeroDys} = geometrySpec;
 
                       geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
                       geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
                       geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
-                      const zeroDys = new Float32Array(dys.length);
                       geometry.addAttribute('dy', new THREE.BufferAttribute(geometry.getAttribute('dy').array === geometry.dys ? dys : zeroDys, 2));
 
                       geometry.dys = dys;
                       geometry.zeroDys = zeroDys;
+
+                      geometry.destroy = function() {
+                        this.dispose();
+                        spriteUtils.releaseSpriteGeometry(geometrySpec);
+                      };
                     }
                   })
                   .catch(err => {
@@ -393,8 +399,8 @@ class Wallet {
                   });
 
                 const geometry = new THREE.BufferGeometry();
-                const dys = new Float32Array(0);
-                const zeroDys = new Float32Array(0);
+                const dys = zeroArray; // two of these so we can tell which is active
+                const zeroDys = zeroArray2;
                 geometry.addAttribute('dy', new THREE.BufferAttribute(dys, 2));
                 geometry.dys = dys;
                 geometry.zeroDys = zeroDys;
@@ -402,13 +408,16 @@ class Wallet {
                   zeroVector,
                   1
                 );
+                geometry.destroy = function() {
+                  this.dispose();
+                };
                 return geometry;
               })();
               const material = assetsMaterial;
               const mesh = new THREE.Mesh(geometry, material);
 
               mesh.destroy = () => {
-                geometry.dispose();
+                geometry.destroy();
 
                 live = false;
               };
