@@ -20,24 +20,41 @@ const mirror = ({archae}) => {
     const mirrorApi = {
       asset: 'ITEM.MIRROR',
       itemAddedCallback(grabbable) {
+        const width = PORTAL_SIZE / 2;
+        const height = PORTAL_SIZE;
+        const border = PORTAL_BORDER_SIZE;
+        const color = 0x808080;
+        const rendererSize = renderer.getSize();
+        const rendererPixelRatio = renderer.getPixelRatio();
+        const resolutionWidth = rendererSize.width * rendererPixelRatio;
+        const resolutionHeight = rendererSize.height * rendererPixelRatio;
+
+        const _makeRenderTarget = () => {
+          const renderTarget = new THREE.WebGLRenderTarget(resolutionWidth, resolutionHeight, {
+            minFilter: THREE.NearestFilter,
+            magFilter: THREE.NearestFilter,
+            format: THREE.RGBFormat,
+            stencilBuffer: false,
+            // depthBuffer: false,
+          });
+          renderTarget.textureMatrix = new THREE.Matrix4();
+          return renderTarget;
+        };
+        const renderTargets = {
+          left: _makeRenderTarget(),
+          right: _makeRenderTarget(),
+        };
+
         const mirrorMesh = (() => {
           const object = new THREE.Object3D();
-
-          const width = PORTAL_SIZE / 2;
-          const height = PORTAL_SIZE;
-          const border = PORTAL_BORDER_SIZE;
-          const color = 0x808080;
-          const rendererSize = renderer.getSize();
-          const rendererPixelRatio = renderer.getPixelRatio();
-          const resolutionWidth = rendererSize.width * rendererPixelRatio;
-          const resolutionHeight = rendererSize.height * rendererPixelRatio;
 
           const inner = new THREEMirror(width, height, {
             clipBias: 0.003,
             textureWidth: resolutionWidth,
             textureHeight: resolutionHeight,
             color: 0x808080,
-          }, renderer, scene);
+            renderTargets,
+          });
           object.add(inner);
           object.inner = inner;
 
@@ -98,20 +115,6 @@ const mirror = ({archae}) => {
           }
         };
         grabbable.on('grab', _grab);
-        /* const _release = () => {
-          grabbable.show();
-          mirrorMesh.visible = false;
-        };
-        grabbable.on('release', _release);
-        const _update = ({position, rotation, scale}) => {
-          if (grabbable.isGrabbed()) {
-            mirrorMesh.position.fromArray(position);
-            mirrorMesh.quaternion.fromArray(rotation);
-            mirrorMesh.scale.fromArray(scale);
-            mirrorMesh.updateMatrixWorld();
-          }
-        };
-        grabbable.on('update', _update); */
 
         stage.on('stage', stage => {
           if (stage !== 'blank' && !grabbable.isVisible()) {
@@ -140,16 +143,24 @@ const mirror = ({archae}) => {
         };
         input.on('triggerdown', _triggerdown);
 
+        const _updateEye = camera => {
+          const {name: side} = camera;
+          const renderTarget = renderTargets[side];
+          mirrorMesh.inner.renderEye(renderer, scene, camera, renderTarget);
+        };
+        render.on('updateEye', _updateEye);
+
         grabbable[dataSymbol] = {
           cleanup: () => {
             stage.remove('blank', mirrorMesh);
             mirrorMesh.destroy();
 
-            grabbable.removeListener('grab', _grab);
-            /* grabbable.removeListener('release', _release);
-            grabbable.removeListener('update', _update); */
+            renderTargets.left.dispose();
+            renderTargets.right.dispose();
 
+            grabbable.removeListener('grab', _grab);
             input.removeListener('triggerdown', _triggerdown);
+            render.removeListener('updateEye', _updateEye);
           },
         };
       },
