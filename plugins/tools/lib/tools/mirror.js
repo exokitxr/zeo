@@ -6,13 +6,12 @@ const PORTAL_BORDER_SIZE = PORTAL_SIZE * 0.01;
 const dataSymbol = Symbol();
 
 const mirror = ({archae}) => {
-  const {three, elements, pose, input, render, teleport, items, utils: {geometry: geometryUtils}} = zeo;
+  const {three, elements, pose, input, render, stage, items, utils: {geometry: geometryUtils}} = zeo;
   const {THREE, scene, camera, renderer} = three;
 
   const THREEMirror = THREEMirrorLib(THREE);
 
   return () => {
-
     const borderMaterial = new THREE.MeshPhongMaterial({
       color: 0x795548,
       side: THREE.DoubleSide,
@@ -89,41 +88,58 @@ const mirror = ({archae}) => {
 
           return object;
         })();
-        scene.add(mirrorMesh);
+        stage.add('blank', mirrorMesh);
 
-        let grabbed = false;
         const _grab = () => {
-          grabbed = true;
-
-          grabbable.hide();
-          mirrorMesh.visible = true;
+          if (stage.getStage() === 'blank') {
+            stage.set('main');
+          }
         };
         grabbable.on('grab', _grab);
-        const _release = () => {
-          grabbed = false;
-
+        /* const _release = () => {
           grabbable.show();
           mirrorMesh.visible = false;
         };
         grabbable.on('release', _release);
         const _update = ({position, rotation, scale}) => {
-          if (grabbed) {
+          if (grabbable.isGrabbed()) {
             mirrorMesh.position.fromArray(position);
             mirrorMesh.quaternion.fromArray(rotation);
             mirrorMesh.scale.fromArray(scale);
             mirrorMesh.updateMatrixWorld();
           }
         };
-        grabbable.on('update', _update);
+        grabbable.on('update', _update); */
+
+        stage.on('stage', stage => {
+          if (stage !== 'blank' && !grabbable.isVisible()) {
+            grabbable.show();
+          } else if (stage === 'blank' && grabbable.isVisible()) {
+            grabbable.hide();
+          }
+        });
+
+        const _trigger = () => {
+          const {position, rotation, scale} = position;
+          mirrorMesh.position.fromArray(position);
+          mirrorMesh.quaternion.fromArray(rotation);
+          mirrorMesh.scale.fromArray(scale);
+          mirrorMesh.updateMatrixWorld();
+
+          stage.setStage('blank');
+        };
+        input.on('trigger', _trigger);
 
         grabbable[dataSymbol] = {
           cleanup: () => {
-            scene.remove(mirrorMesh);
+            stage.remove('blank', mirrorMesh);
             mirrorMesh.destroy();
 
             grabbable.removeListener('grab', _grab);
-            grabbable.removeListener('release', _release);
-            grabbable.removeListener('update', _update);
+            /* grabbable.removeListener('release', _release);
+            grabbable.removeListener('update', _update); */
+
+            input.removeListener('trigger', _trigger);
           },
         };
       },
