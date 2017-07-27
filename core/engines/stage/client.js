@@ -76,8 +76,6 @@ class Stage {
           });
 
           const mesh = new THREE.Mesh(geometry, material);
-          mesh.position.y = 28;
-          mesh.updateMatrixWorld();
           return mesh;
         })();
         renderer.compile(floorGridMesh, camera);
@@ -155,6 +153,7 @@ class Stage {
               floorGridMesh.scale
             );
             floorGridMesh.matrix.copy(stageMatrix);
+            floorGridMesh.matrixWorld.multiplyMatrices(floorGridMesh.parent.matrixWorld, stageMatrix);
           }
         });
 
