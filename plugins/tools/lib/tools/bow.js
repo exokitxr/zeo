@@ -285,9 +285,9 @@ const bow = ({archae, data}) => {
                 if (timeSinceStart < ARROW_TTL) {
                   const _hitNpc = () => {
                     if (npcElement) {
-                      localVector.copy(velocity).normalize();
-                      localRay.set(arrow.position, velocity);
-                      const hitNpc = npcElement.getHitNpc(ray, ARROW_LENGTH);
+                      localVector.copy(arrow.velocity).normalize();
+                      localRay.set(arrow.position, arrow.velocity);
+                      const hitNpc = npcElement.getHitNpc(localRay, ARROW_LENGTH);
 
                       if (hitNpc) {
                         hitNpc.attack();
