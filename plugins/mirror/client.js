@@ -72,16 +72,13 @@ class Mirror {
         const mirrorMesh = (() => {
           const object = new THREE.Object3D();
 
-          const inner = (() => {
-            const mirror = new THREEMirror(width, height, {
-              clipBias: 0.003,
-              textureWidth: resolutionWidth,
-              textureHeight: resolutionHeight,
-              color: 0x808080,
-              renderTargets,
-            });
-            return mirror;
-          })();
+          const inner = new THREEMirror(width, height, {
+            clipBias: 0.003,
+            textureWidth: resolutionWidth,
+            textureHeight: resolutionHeight,
+            color: 0x808080,
+            renderTargets,
+          });
           object.add(inner);
           object.inner = inner;
 
