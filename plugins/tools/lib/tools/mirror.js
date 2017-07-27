@@ -22,7 +22,6 @@ const mirror = ({archae}) => {
       itemAddedCallback(grabbable) {
         const mirrorMesh = (() => {
           const object = new THREE.Object3D();
-          object.visible = false;
 
           const width = PORTAL_SIZE / 2;
           const height = PORTAL_SIZE;
@@ -92,7 +91,10 @@ const mirror = ({archae}) => {
 
         const _grab = () => {
           if (stage.getStage() === 'blank') {
-            stage.set('main');
+            stage.setStage('main');
+
+            grabbable.show();
+            grabbable.enablePhysics();
           }
         };
         grabbable.on('grab', _grab);
@@ -119,16 +121,24 @@ const mirror = ({archae}) => {
           }
         });
 
-        const _trigger = () => {
-          const {position, rotation, scale} = position;
-          mirrorMesh.position.fromArray(position);
-          mirrorMesh.quaternion.fromArray(rotation);
-          mirrorMesh.scale.fromArray(scale);
-          mirrorMesh.updateMatrixWorld();
+        const _triggerdown = e => {
+          if (grabbable.isGrabbed()) {
+            const {position, rotation, scale} = grabbable;
+            mirrorMesh.position.copy(position);
+            mirrorMesh.quaternion.copy(rotation);
+            mirrorMesh.scale.copy(scale);
+            mirrorMesh.updateMatrixWorld();
 
-          stage.setStage('blank');
+            stage.setStage('blank');
+
+            grabbable.release();
+            grabbable.hide();
+            grabbable.disablePhysics();
+
+            e.stopImmediatePropagation();
+          }
         };
-        input.on('trigger', _trigger);
+        input.on('triggerdown', _triggerdown);
 
         grabbable[dataSymbol] = {
           cleanup: () => {
@@ -139,7 +149,7 @@ const mirror = ({archae}) => {
             /* grabbable.removeListener('release', _release);
             grabbable.removeListener('update', _update); */
 
-            input.removeListener('trigger', _trigger);
+            input.removeListener('triggerdown', _triggerdown);
           },
         };
       },

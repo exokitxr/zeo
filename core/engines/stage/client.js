@@ -40,36 +40,49 @@ class Stage {
         const {events} = jsUtils;
         const {EventEmitter} = events;
 
-        const gridFloor = (() => {
+        const floorGridMesh = (() => {
           const geometry = new THREE.PlaneBufferGeometry(10, 10)
             .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(
               new THREE.Vector3(0, 0, -1),
               new THREE.Vector3(0, 1, 0)
             )));
+          const uvs = geometry.getAttribute('uv').array;
+          const numUvs = uvs.length / 2;
+          for (let i = 0; i < numUvs; i++) {
+            uvs[i * 2 + 0] *= 20;
+            uvs[i * 2 + 1] *= 20;
+          }
 
           const texture = new THREE.Texture(
             gridImg,
             THREE.UVMapping,
-            THREE.ClampToEdgeWrapping,
-            THREE.ClampToEdgeWrapping,
+            THREE.RepeatWrapping,
+            THREE.RepeatWrapping,
             THREE.NearestFilter,
             THREE.NearestFilter,
             THREE.RGBAFormat,
             THREE.UnsignedByteType,
             1
           );
+          texture.needsUpdate = true;
           const material = new THREE.MeshBasicMaterial({
+            // color: 0x0000FF,
             map: texture,
+            side: THREE.DoubleSide,
             transparent: true,
-            alphaText: 0.5,
+            alphaTest: 0.5,
           });
 
-          const mesh = new THREE.Mesh();
+          const mesh = new THREE.Mesh(geometry, material);
+          mesh.position.y = 28;
+          mesh.updateMatrixWorld();
           return mesh;
         })();
 
-        class StageApi {
+        class StageApi extends EventEmitter {
           constructor() {
+            super();
+
             this.stage = 'main';
             this.stages = {};
           }
@@ -79,71 +92,57 @@ class Stage {
           }
 
           setStage(stage) {
+            const oldStage = this.stages[this.stage];
+            if (oldStage) {
+              scene.remove(oldStage);
+            }
+
+            const newStage = this.stages[stage];
+            if (newStage) {
+              scene.add(newStage);
+            }
+
             this.stage = stage;
 
-            const {stage: oldStage} = this;
-
-            const oldEntries = this.stages[oldStage];
-            if (oldEntries) {
-              for (let i = 0; i < oldEntries.length; i++) {
-                const oldEntry = oldEntries[i];
-                scene.remove(oldEntry);
-              }
-            }
-
-            const newEntries = this.stages[stage];
-            if (newEntries) {
-              for (let i = 0; i < newEntry.length; i++) {
-                const newEntry = newEntries[i];
-                scene.add(newEntry);
-              }
-            }
+            this.emit('stage', stage);
           }
 
           add(stage, object) {
-            let entries = this.stages[stage];
-            if (!entries) {
-              entries = [];
-              this.stages[stage] = entries;
-            }
-            entries.push(object);
+            let stageObject = this.stages[stage];
+            if (!stageObject) {
+              stageObject = new THREE.Object3D();
+              this.stages[stage] = stageObject;
 
-            if (this.stage === stage) {
-              scene.add(object);
+              if (stage === this.stage) {
+                scene.add(stageObject);
+              }
             }
+            stageObject.add(object);
           }
 
           remove(stage, object) {
-            const entries = this.stages[stage];
-            if (entries) {
-              const index = entries.indexOf(stage);
-
-              if (index !== -1) {
-                entries.splice(index, 1);
-              }
-              if (entries.length === 0) {
-                delete this.stages[stage];
-              }
+            const stageObject = this.stages[stage];
+            if (stageObject) {
+              stageObject.remove(object);
             }
+            if (stageObject.children.length === 0) {
+              delete this.stages[stage];
 
-            if (this.stage === stage) {
-              scene.remove(object);
+              if (stage === this.stage) {
+                scene.remove(stageObject);
+              }
             }
           }
 
           destroy() {
-            const entries = this.stages[this.stage];
-
-            if (entries) {
-              for (let i = 0; i < v.length; i++) {
-                const entry = entries[i];
-                scene.remove(entry);
-              }
+            for (const stage in this.stageObjects) {
+              const stageObject = this.stageObjects[stage];
+              scene.remove(stageObject);
             }
           }
         }
         const stageApi = new StageApi();
-        stageApi.add('blank', floorGrid);
+        stageApi.add('blank', floorGridMesh);
 
         this._cleanup = () => {
           stageApi.destroy();
