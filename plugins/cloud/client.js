@@ -45,8 +45,8 @@ void main() {
 
 class Cloud {
   mount() {
-    const {three, elements, render, pose, world, utils: {geometry: geometryUtils, random: {alea, chnkr}}} = zeo;
-    const {THREE, scene, camera} = three;
+    const {three, elements, render, pose, stage, utils: {geometry: geometryUtils, random: {alea, chnkr}}} = zeo;
+    const {THREE, camera} = three;
 
     const cloudsMaterial = new THREE.ShaderMaterial({
       uniforms: THREE.UniformsUtils.clone(CLOUD_SHADER.uniforms),
@@ -149,7 +149,7 @@ class Cloud {
             _requestCloudGenerate(chunk.x, chunk.z)
               .then(cloudChunkData => {
                 const cloudChunkMesh = _makeCloudChunkMesh(cloudChunkData, chunk.x, chunk.z);
-                scene.add(cloudChunkMesh);
+                stage.add('main', cloudChunkMesh);
                 cloudChunkMeshes.push(cloudChunkMesh);
                 chunk.data = cloudChunkMesh;
               })
@@ -158,7 +158,7 @@ class Cloud {
             .then(() => {
               removed.forEach(chunk => {
                 const {data: cloudChunkMesh} = chunk;
-                scene.remove(cloudChunkMesh);
+                stage.remove('main', cloudChunkMesh);
                 cloudChunkMeshes.splice(cloudChunkMeshes.indexOf(cloudChunkMesh), 1);
                 cloudChunkMesh.destroy();
               });
@@ -197,7 +197,7 @@ class Cloud {
 
           for (let i = 0; i < cloudChunkMeshes.length; i++) {
             const cloudChunkMesh = cloudChunkMeshes[i];
-            scene.remove(cloudChunkMesh);
+            stage.remove('main', cloudChunkMesh);
           }
 
           updates.splice(updates.indexOf(update), 1);

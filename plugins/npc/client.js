@@ -6,8 +6,8 @@ const dataSymbol = Symbol();
 
 class Mobs {
   mount() {
-    const {three, pose, elements, input, render, utils: {network: networkUtils, random: randomUtils, skin: skinUtils}} = zeo;
-    const {THREE, scene} = three;
+    const {three, pose, elements, input, render, stage, utils: {network: networkUtils, random: randomUtils, skin: skinUtils}} = zeo;
+    const {THREE} = three;
     const {AutoWs} = networkUtils;
     const {chnkr} = randomUtils;
     const {skin} = skinUtils;
@@ -109,7 +109,7 @@ class Mobs {
                     uniforms.theta.value = 0;
 
                     if (v >= 1) {
-                      scene.remove(mesh);
+                      stage.remove('main', mesh);
                       mesh.destroy();
                       delete meshes[id];
                     }
@@ -237,7 +237,7 @@ class Mobs {
                   let mesh = meshes[id];
                   if (!mesh) {
                     mesh = _makeMesh(id, type, skinName);
-                    scene.add(mesh);
+                    stage.add('main', mesh);
                     meshes[id] = mesh;
                   }
 
@@ -248,7 +248,7 @@ class Mobs {
                   const {id} = e;
 
                   const mesh = meshes[id];
-                  scene.remove(mesh);
+                  stage.remove('main', mesh);
                   mesh.destroy();
                   delete meshes[id];
                 } else if (type === 'mobAnimation') {
@@ -396,7 +396,7 @@ class Mobs {
                 _cleanup: () => {
                   for (const id in meshes) {
                     const mesh = meshes[id];
-                    scene.remove(mesh);
+                    stage.remove('main', mesh);
                     mesh.destroy();
                   }
 

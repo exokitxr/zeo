@@ -86,8 +86,8 @@ const _requestImg = src => new Promise((accept, reject) => {
 
 class Ocean {
   mount() {
-    const {three, render, elements, pose, world, utils: {random: randomUtils, hash: hashUtils}} = zeo;
-    const {THREE, scene, renderer} = three;
+    const {three, render, elements, pose, world, stage, utils: {random: randomUtils, hash: hashUtils}} = zeo;
+    const {THREE, scene} = three;
     const {chnkr} = randomUtils;
     const {murmur} = hashUtils;
 
@@ -220,7 +220,7 @@ class Ocean {
                     const chunk = added[i];
                     const {x, z, lod} = chunk;
                     const oceanChunkMesh = _makeOceanMesh(x, z, lod);
-                    scene.add(oceanChunkMesh);
+                    stage.add('main', oceanChunkMesh);
                     meshes.push(oceanChunkMesh);
 
                     chunk.data = oceanChunkMesh;
@@ -228,19 +228,19 @@ class Ocean {
                   for (let i = 0; i < removed.length; i++) {
                     const chunk = removed[i];
                     const {data: oceanChunkMesh} = chunk;
-                    scene.remove(oceanChunkMesh);
+                    stage.remove('main', oceanChunkMesh);
                     oceanChunkMesh.destroy();
                     meshes.splice(meshes.indexOf(oceanChunkMesh), 1);
                   }
                   for (let i = 0; i < relodded.length; i++) {
                     const chunk = relodded[i];
                     const {data: oldOceanChunkMesh} = chunk;
-                    scene.remove(oldOceanChunkMesh);
+                    stage.remove('main', oldOceanChunkMesh);
                     oldOceanChunkMesh.destroy();
 
                     const {x, z, lod} = chunk;
                     const newOceanChunkMesh = _makeOceanMesh(x, z, lod);
-                    scene.add(newOceanChunkMesh);
+                    stage.add('main', newOceanChunkMesh);
                     meshes.push(newOceanChunkMesh);
 
                     chunk.data = newOceanChunkMesh;
@@ -268,7 +268,7 @@ class Ocean {
               entityElement._cleanup = () => {
                 for (let i = 0; i < meshes.length; i++) {
                   const mesh = meshes[i];
-                  scene.remove(mesh);
+                  stage.remove('main', mesh);
                 }
 
                 updates.splice(updates.indexOf(update), 1);
