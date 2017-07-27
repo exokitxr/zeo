@@ -7,6 +7,7 @@ const ARROW_SPEED = 0.05;
 const ARROW_GRAVITY = -10 / 1000 * 0.001;
 const ARROW_TERMINAL_VELOCITY = -10;
 const ARROW_TTL = 5 * 1000;
+const ARROW_LENGTH = 0.5;
 
 const dataSymbol = Symbol();
 
@@ -28,6 +29,7 @@ const bow = ({archae, data}) => {
   const localVector2 = new THREE.Vector3();
   const localQuaternion = new THREE.Quaternion();
   const localMatrix = new THREE.Matrix4();
+  const localRay = new THREE.Ray();
   const zeroVector = new THREE.Vector3();
   const oneVector = new THREE.Vector3(1, 1, 1);
   const forwardVector = new THREE.Vector3(0, 0, -1);
@@ -281,21 +283,45 @@ const bow = ({archae, data}) => {
                 const timeSinceStart = now - arrow.startTime;
 
                 if (timeSinceStart < ARROW_TTL) {
-                  const timeDiff = now - arrow.lastTime;
+                  const _hitNpc = () => {
+                    if (npcElement) {
+                      localVector.copy(velocity).normalize();
+                      localRay.set(arrow.position, velocity);
+                      const hitNpc = npcElement.getHitNpc(ray, ARROW_LENGTH);
 
-                  const {velocity} = arrow;
-                  arrow.position.add(localVector.copy(velocity).multiplyScalar(timeDiff));
-                  arrow.quaternion.setFromRotationMatrix(localMatrix.lookAt(
-                    arrow.position,
-                    localVector.copy(arrow.position)
-                      .add(velocity),
-                    upVector
-                  ));
-                  arrow.updateMatrixWorld();
+                      if (hitNpc) {
+                        hitNpc.attack();
 
-                  velocity.y = Math.max(velocity.y + (ARROW_GRAVITY * timeDiff), ARROW_TERMINAL_VELOCITY);
+                        removedArrows.push(arrow);
 
-                  arrow.lastTime = now;
+                        return true;
+                      } else {
+                        return false;
+                      }
+                    } else {
+                      return false;
+                    }
+                  };
+                  const _advanceArrow = () => {
+                    const {velocity} = arrow;
+                    const timeDiff = now - arrow.lastTime;
+                    arrow.position.add(localVector.copy(velocity).multiplyScalar(timeDiff));
+                    arrow.quaternion.setFromRotationMatrix(localMatrix.lookAt(
+                      arrow.position,
+                      localVector.copy(arrow.position)
+                        .add(velocity),
+                      upVector
+                    ));
+                    arrow.updateMatrixWorld();
+
+                    velocity.y = Math.max(velocity.y + (ARROW_GRAVITY * timeDiff), ARROW_TERMINAL_VELOCITY);
+
+                    arrow.lastTime = now;
+
+                    return true;
+                  };
+
+                  _hitNpc() || _advanceArrow();
                 } else {
                   removedArrows.push(arrow);
                 }

@@ -60,7 +60,7 @@ const sword = ({archae}) => {
 
             if (hitNpc) {
               hitNpc.attack();
-              // console.log('hit npc');
+
             }
           }
         };
