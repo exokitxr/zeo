@@ -25,18 +25,20 @@ class Stage {
     return Promise.all([
       archae.requestPlugins([
         '/core/engines/three',
+        '/core/engines/webvr',
         '/core/utils/js-utils',
       ]),
       _requestImage('/archae/stage/img/grid.png'),
     ]).then(([
       [
         three,
+        webvr,
         jsUtils,
       ],
       gridImg,
     ]) => {
       if (live) {
-        const {THREE, scene, camera} = three;
+        const {THREE, scene, camera, renderer} = three;
         const {events} = jsUtils;
         const {EventEmitter} = events;
 
@@ -78,6 +80,7 @@ class Stage {
           mesh.updateMatrixWorld();
           return mesh;
         })();
+        renderer.compile(floorGridMesh, camera);
 
         class StageApi extends EventEmitter {
           constructor() {
@@ -143,6 +146,18 @@ class Stage {
         }
         const stageApi = new StageApi();
         stageApi.add('blank', floorGridMesh);
+        stageApi.on('stage', stage => {
+          if (stage === 'blank') {
+            const stageMatrix = webvr.getStageMatrix();
+            stageMatrix.decompose(
+              floorGridMesh.position,
+              floorGridMesh.rotation,
+              floorGridMesh.scale
+            );
+            floorGridMesh.matrix.copy(stageMatrix);
+          }
+        });
+
 
         this._cleanup = () => {
           stageApi.destroy();
