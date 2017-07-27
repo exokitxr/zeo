@@ -744,16 +744,28 @@ class Zeo {
                           return stage.getStage();
                         }
 
-                        setStage(stage) {
-                          stage.setStage(stage);
+                        setStage(st) {
+                          stage.setStage(st);
                         }
 
-                        add(stage, object) {
-                          stage.add(stage, object);
+                        add(st, object) {
+                          stage.add(st, object);
                         }
 
-                        remove(stage, object) {
-                          stage.remove(stage, object);
+                        remove(st, object) {
+                          stage.remove(st, object);
+                        }
+
+                       on() {
+                          return stage.on.apply(wallet, arguments);
+                        }
+
+                        removeListener() {
+                          return stage.removeListener.apply(wallet, arguments);
+                        }
+
+                        removeAllListeners() {
+                          return stage.removeAllListeners.apply(wallet, arguments);
                         }
                       }
 
