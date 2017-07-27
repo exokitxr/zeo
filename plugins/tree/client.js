@@ -138,8 +138,8 @@ class Tree {
 
   mount() {
     const {_archae: archae} = this;
-    const {three, render, pose, input, elements, items, utils: {random: {chnkr}}} = zeo;
-    const {THREE, scene, camera} = three;
+    const {three, render, pose, input, elements, items, stage, utils: {random: {chnkr}}} = zeo;
+    const {THREE} = three;
 
     const upVector = new THREE.Vector3(0, 1, 0);
     const sideQuaternion = new THREE.Quaternion().setFromUnitVectors(
@@ -477,7 +477,7 @@ class Tree {
               return _requestTreeGenerate(x, z)
                 .then(treeChunkData => {
                   const treeChunkMesh = _makeTreeChunkMesh(treeChunkData, x, z);
-                  scene.add(treeChunkMesh);
+                  stage.add('main', treeChunkMesh);
                   treeChunkMeshes.push(treeChunkMesh);
 
                   const itemRange = _addTrackedTrees(treeChunkMesh, treeChunkData);
@@ -494,7 +494,7 @@ class Tree {
                   const chunk = removed[i];
                   const {data} = chunk;
                   const {treeChunkMesh} = data;
-                  scene.remove(treeChunkMesh);
+                  stage.remove('main', treeChunkMesh);
                   treeChunkMeshes.splice(treeChunkMeshes.indexOf(treeChunkMesh), 1);
 
                   treeChunkMesh.destroy();

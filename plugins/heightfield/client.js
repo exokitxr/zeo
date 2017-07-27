@@ -157,8 +157,8 @@ class Heightfield {
 
   mount() {
     const {_archae: archae} = this;
-    const {three, render, pose, world, elements, teleport, /*physics,*/ stck, utils: {random: {chnkr}}} = zeo;
-    const {THREE, scene} = three;
+    const {three, render, pose, world, elements, teleport, /*physics,*/ stck, stage, utils: {random: {chnkr}}} = zeo;
+    const {THREE} = three;
 
     const buffers = bffr(NUM_POSITIONS_CHUNK, (RANGE * 2) * (RANGE * 2) * 2);
 
@@ -389,7 +389,7 @@ class Heightfield {
           .then(mapChunkData => {
             const oldMapChunkMesh = mapChunkMeshes.find(mapChunkMesh => mapChunkMesh.x === x && mapChunkMesh.z === z);
             if (oldMapChunkMesh) {
-              scene.remove(oldMapChunkMesh);
+              stage.remove('main', oldMapChunkMesh);
               oldMapChunkMesh.destroy();
 
               mapChunkMeshes.splice(mapChunkMeshes.indexOf(oldMapChunkMesh), 1);
@@ -401,7 +401,7 @@ class Heightfield {
             }
 
             const newMapChunkMesh = _makeMapChunkMesh(chunk, mapChunkData, x, z);
-            scene.add(newMapChunkMesh);
+            stage.add('main', newMapChunkMesh);
             mapChunkMeshes.push(newMapChunkMesh);
 
             if (lod === 1 && !newMapChunkMesh.targeted) {
@@ -423,7 +423,7 @@ class Heightfield {
           for (let i = 0; i < removed.length; i++) {
             const chunk = removed[i];
             const {data: mapChunkMesh} = chunk;
-            scene.remove(mapChunkMesh);
+            stage.remove('main', mapChunkMesh);
             mapChunkMesh.destroy();
 
             mapChunkMeshes.splice(mapChunkMeshes.indexOf(mapChunkMesh), 1);

@@ -132,8 +132,8 @@ class Grass {
 
   mount() {
     const {_archae: archae} = this;
-    const {three, render, pose, elements, utils: {random: {chnkr}}} = zeo;
-    const {THREE, scene} = three;
+    const {three, render, pose, elements, stage, utils: {random: {chnkr}}} = zeo;
+    const {THREE} = three;
 
     const upVector = new THREE.Vector3(0, 1, 0);
 
@@ -334,7 +334,7 @@ class Grass {
               return _requestGrassGenerate(x, z)
                 .then(grassChunkData => {
                   const grassChunkMesh = _makeGrassChunkMesh(grassChunkData, x, z);
-                  scene.add(grassChunkMesh);
+                  stage.add('main', grassChunkMesh);
 
                   grassChunkMeshes.push(grassChunkMesh);
 
@@ -346,7 +346,7 @@ class Grass {
                 for (let i = 0; i < removed.length; i++) {
                   const chunk = removed[i];
                   const {data: grassChunkMesh} = chunk;
-                  scene.remove(grassChunkMesh);
+                  stage.remove('main', grassChunkMesh);
 
                   grassChunkMeshes.splice(grassChunkMeshes.indexOf(grassChunkMesh), 1);
 

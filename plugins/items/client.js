@@ -109,8 +109,8 @@ class Items {
 
   mount() {
     const {_archae: archae} = this;
-    const {three, render, pose, input, items, elements, utils: {random: {chnkr}}} = zeo;
-    const {THREE, scene} = three;
+    const {three, render, pose, input, items, elements, stage, utils: {random: {chnkr}}} = zeo;
+    const {THREE} = three;
 
     const buffers = bffr(NUM_POSITIONS_CHUNK, (RANGE + 1) * (RANGE + 1) * 2);
 
@@ -353,7 +353,7 @@ class Items {
         return _requestItemsGenerate(x, z)
           .then(itemsChunkData => {
             const itemsChunkMesh = _makeItemsChunkMesh(itemsChunkData, x, z);
-            scene.add(itemsChunkMesh);
+            stage.add('main', itemsChunkMesh);
 
             itemsChunkMeshes.push(itemsChunkMesh);
 
@@ -371,7 +371,7 @@ class Items {
             const chunk = removed[i];
             const {data} = chunk;
             const {itemsChunkMesh} = data;
-            scene.remove(itemsChunkMesh);
+            stage.remove('main', itemsChunkMesh);
 
             itemsChunkMeshes.splice(itemsChunkMeshes.indexOf(itemsChunkMesh), 1);
 
