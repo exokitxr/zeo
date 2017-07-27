@@ -140,9 +140,6 @@ class WebVR {
           matrix.decompose(position, rotation, scale);
           return {position, rotation, scale};
         };
-        const _decomposeMatrixTo = (matrix, position, rotation, scale) => {
-          matrix.decompose(position, rotation, scale);
-        };
         const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
 
         const zeroVector = new THREE.Vector3();
@@ -647,12 +644,13 @@ class WebVR {
                 this.status.hmd.rotation,
                 this.status.hmd.scale
               );
-              _decomposeMatrixTo(
-                localMatrix.compose(this.status.hmd.position, this.status.hmd.rotation, this.status.hmd.scale).premultiply(this.stageMatrix),
-                this.status.hmd.worldPosition,
-                this.status.hmd.worldRotation,
-                this.status.hmd.worldScale
-              );
+              localMatrix.compose(this.status.hmd.position, this.status.hmd.rotation, this.status.hmd.scale)
+                .premultiply(this.stageMatrix)
+                .decompose(
+                  this.status.hmd.worldPosition,
+                  this.status.hmd.worldRotation,
+                  this.status.hmd.worldScale
+                );
             };
             const _setGamepadsStatus = () => {
               if (this.display) {
@@ -695,12 +693,13 @@ class WebVR {
                 gamepadStatus.rotation,
                 gamepadStatus.scale
               );
-              _decomposeMatrixTo(
-                localMatrix.compose(gamepadStatus.position, gamepadStatus.rotation, gamepadStatus.scale).premultiply(this.stageMatrix),
-                gamepadStatus.worldPosition,
-                gamepadStatus.worldRotation,
-                gamepadStatus.worldScale
-              );
+              localMatrix.compose(gamepadStatus.position, gamepadStatus.rotation, gamepadStatus.scale)
+                .premultiply(this.stageMatrix)
+                .decompose(
+                  gamepadStatus.worldPosition,
+                  gamepadStatus.worldRotation,
+                  gamepadStatus.worldScale
+                );
 
               const buttons = {pad, trigger, grip, menu};
               const axes = [x, y];
@@ -1325,7 +1324,7 @@ class WebVR {
               localMatrix.compose(this.positionOffset, localQuaternion.setFromEuler(this.rotationOffset), oneVector)
                 .premultiply(this._parent.matrix);
 
-              _decomposeMatrixTo(localMatrix, this.position, this.rotation, this.scale);
+              localMatrix.decompose(this.position, this.rotation, this.scale);
               this.pose.position[0] = this.position.x;
               this.pose.position[1] = this.position.y;
               this.pose.position[2] = this.position.z;
