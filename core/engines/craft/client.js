@@ -32,7 +32,6 @@ class Craft {
       '/core/engines/input',
       '/core/engines/rend',
       '/core/engines/teleport',
-      '/core/engines/multiplayer',
       '/core/utils/js-utils',
     ]).then(([
       three,
@@ -40,15 +39,12 @@ class Craft {
       input,
       rend,
       teleport,
-      multiplayer,
       jsUtils,
     ]) => {
       if (live) {
         const {THREE, scene, camera} = three;
         const {events} = jsUtils;
         const {EventEmitter} = events;
-
-        const localUserId = multiplayer.getId();
 
         const oneVector = new THREE.Vector3(1, 1, 1);
         const upVector = new THREE.Vector3(0, 1, 0);
