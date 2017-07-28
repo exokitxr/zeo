@@ -11,7 +11,7 @@ const ARROW_LENGTH = 0.5;
 
 const dataSymbol = Symbol();
 
-const bow = ({archae, data}) => {
+const bow = ({recipes, data}) => {
   const {three, pose, input, render, elements, items, player, teleport, utils: {geometry: geometryUtils, sprite: spriteUtils}} = zeo;
   const {THREE, scene} = three;
   const {arrowGeometrySpec} = data;
@@ -374,7 +374,7 @@ const bow = ({archae, data}) => {
         null, 'ITEM.WOOD',
       ],
     };
-    items.registerRecipe(this, bowRecipe);
+    recipes.register(this, bowRecipe);
 
     return () => {
       stringMaterial.dispose();
@@ -382,7 +382,7 @@ const bow = ({archae, data}) => {
       elements.destroyListener(elementListener);
 
       items.unregisterItem(this, bowApi);
-      items.unregisterRecipe(this, bowRecipe);
+      recipes.unregister(this, bowRecipe);
     };
   };
 };

@@ -141,7 +141,6 @@ class Zeo {
             '/core/engines/fs',
             '/core/engines/somnifer',
             '/core/engines/stck',
-            '/core/engines/craft',
             '/core/utils/js-utils',
             '/core/utils/type-utils',
             '/core/utils/network-utils',
@@ -194,7 +193,6 @@ class Zeo {
                 fs,
                 somnifer,
                 stck,
-                craft,
                 jsUtils,
                 typeUtils,
                 networkUtils,
@@ -757,15 +755,15 @@ class Zeo {
                         }
 
                        on() {
-                          return stage.on.apply(wallet, arguments);
+                          return stage.on.apply(stage, arguments);
                         }
 
                         removeListener() {
-                          return stage.removeListener.apply(wallet, arguments);
+                          return stage.removeListener.apply(stage, arguments);
                         }
 
                         removeAllListeners() {
-                          return stage.removeAllListeners.apply(wallet, arguments);
+                          return stage.removeAllListeners.apply(stage, arguments);
                         }
                       }
 
@@ -818,6 +816,18 @@ class Zeo {
 
                         destroyGrabbable(grabbable) {
                           hand.destroyGrabbable(grabbable);
+                        }
+
+                        on() {
+                          return hand.on.apply(hand, arguments);
+                        }
+
+                        removeListener() {
+                          return hand.removeListener.apply(hand, arguments);
+                        }
+
+                        removeAllListeners() {
+                          return hand.removeAllListeners.apply(hand, arguments);
                         }
                       }
 

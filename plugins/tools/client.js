@@ -1,14 +1,11 @@
 const protocolUtils = require('./lib/utils/protocol-utils');
 const toolsLib = require('./lib/tools/index');
 
-class Tools {
-  constructor(archae) {
-    this._archae = archae;
-  }
+const CRAFT_PLUGIN = 'plugins-craft';
 
+class Tools {
   mount() {
-    const {_archae: archae} = this;
-    const {three, utils: {sprite: spriteUtils}} = zeo;
+    const {three, elements, utils: {sprite: spriteUtils}} = zeo;
     const {THREE} = three;
 
     const pixelSize = 0.015;
@@ -53,10 +50,48 @@ class Tools {
           return spriteUtils.requestSpriteGeometry(spriteUtils.getImageData(arrowImg), pixelSize, arrowMatrix)
             .then(arrowGeometrySpec => {
               if (live) {
+                let craftElement = null;
+                const elementListener = elements.makeListener(CRAFT_PLUGIN);
+                elementListener.on('add', entityElement => {
+                  craftElement = entityElement;
+
+                  if (recipeQueue.length > 0) {
+                    for (let i = 0; i < recipeQueue.length; i++) {
+                      const recipe = recipeQueue[i];
+                      craftElement.registerRecipe(recipe);
+                    }
+                    recipeQueue.length = 0;
+                  }
+                });
+                elementListener.on('remove', () => {
+                  craftElement = null;
+                });
+                const recipeQueue = [];
+
+                const recipes = {
+                  register(recipe) {
+                    if (craftElement) {
+                      craftElement.registerRecipe(recipe);
+                    } else {
+                      recipeQueue.push(recipe);
+                    }
+                  },
+                  unregister(recipe) {
+                    if (craftElement) {
+                      craftElement.registerRecipe(recipe);
+                    } else {
+                      const index = recipeQueue.indexOf(recipe);
+
+                      if (index !== -1) {
+                        recipeQueue.splice(index);
+                      }
+                    }
+                  },
+                };
                 const data = {
                   arrowGeometrySpec,
                 };
-                const tools = toolsLib({archae, data});
+                const tools = toolsLib({recipes, data});
                 const cleanups = tools.map(makeItem => makeItem());
 
                 this._cleanup = () => {

@@ -71,10 +71,13 @@ class Hand {
                 grabbable.userId = userId;
                 grabbable.side = side;
 
-                grabbable.emit('grab', {
+                const e = {
                   userId,
                   side,
-                });
+                  grabbable,
+                };
+                grabbable.emit('grab', e);
+                handApi.emit('grab', e);
               } else if (type === 'release') {
                 const {args} = m;
                 const [n] = args;
@@ -84,10 +87,13 @@ class Hand {
                 grabbable.userId = null;
                 grabbable.side = null;
 
-                grabbable.emit('release', {
+                const e = {
                   userId,
                   side,
-                });
+                  grabbable,
+                };
+                grabbable.emit('release', e);
+                handApi.emit('release', e);
               } else if (type === 'destroy') {
                 const {args} = m;
                 const [n] = args;
@@ -351,7 +357,7 @@ class Hand {
           rend.removeListener('update', _update);
         });
 
-        class HandApi {
+        class HandApi extends EventEmitter {
           makeGrabbable(n, position, rotation, scale, localPosition, localRotation, localScale) {
             const grabbable = new Grabbable(n, position, rotation, scale, localPosition, localRotation, localScale);
             this.addGrabbable(grabbable);

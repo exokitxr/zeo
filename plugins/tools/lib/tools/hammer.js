@@ -21,7 +21,7 @@ const DIRECTIONS = (() => {
 })();
 const dataSymbol = Symbol();
 
-const hammer = ({archae}) => {
+const hammer = ({recipes}) => {
   const {three, pose, input, render, teleport, items} = zeo;
   const {THREE, scene, camera} = three;
 
@@ -334,11 +334,11 @@ const hammer = ({archae}) => {
         null, 'ITEM.WOOD',
       ],
     };
-    items.registerRecipe(this, hammerRecipe);
+    recipes.register(this, hammerRecipe);
 
     return () => {
       items.unregisterItem(this, hammerApi);
-      items.unregisterRecipe(this, hammerRecipe);
+      recipes.unregister(this, hammerRecipe);
 
       if (worker !== null) {
         worker.terminate();
