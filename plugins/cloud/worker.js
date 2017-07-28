@@ -158,6 +158,5 @@ self.onmessage = e => {
   const {data: {x, y, buffer}} = e;
   const cloudChunkGeometry = _makeCloudChunkMesh(x, y, cloudPatchGeometries);
   const resultBuffer = protocolUtils.stringifyCloudGeometry(cloudChunkGeometry, buffer, 0);
-
   postMessage(resultBuffer, [resultBuffer]);
 };
