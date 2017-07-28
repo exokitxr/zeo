@@ -1,8 +1,6 @@
 const protocolUtils = require('./lib/utils/protocol-utils');
 const toolsLib = require('./lib/tools/index');
 
-const dataSymbol = Symbol();
-
 class Tools {
   constructor(archae) {
     this._archae = archae;
