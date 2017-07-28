@@ -1,0 +1,13 @@
+{
+  "name": "objects",
+  "version": "0.0.1",
+  "description": "Chunk objects management.",
+  "client": "client.js",
+  "server": "server.js",
+  "builds": {
+    "worker": "worker.js"
+  },
+  "dependencies": {
+    "txtr": "0.0.1"
+  }
+}
