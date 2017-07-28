@@ -55,9 +55,11 @@ const _makeGeometry = (x, z) => {
   const positions = new Float32Array(NUM_POSITIONS_CHUNK);
   const uvs = new Float32Array(NUM_POSITIONS_CHUNK);
   const indices = new Uint16Array(NUM_POSITIONS_CHUNK);
+  const objectsArray = new Float32Array(NUM_POSITIONS_CHUNK);
   let attributeIndex = 0;
   let uvIndex = 0;
   let indexIndex = 0;
+  let objectIndex = 0;
 
   const chunk = chunks.find(chunk => chunk.x === x && chunk.z === z);
   if (chunk) {
@@ -88,10 +90,13 @@ const _makeGeometry = (x, z) => {
         }
         const newIndices = geometry.index.array;
         _copyIndices(newIndices, indices, indexIndex, attributeIndex / 3);
+        const newObjects = Float32Array.from([n, indexIndex, indexIndex + newIndices.length, position.x, position.y, position.z]);
+        objectsArray.set(newObjects, objectIndex);
 
         attributeIndex += newPositions.length;
         uvIndex += newUvs.length;
         indexIndex += newIndices.length;
+        objectIndex += newObjects.length;
       }
     }
   }
@@ -100,6 +105,7 @@ const _makeGeometry = (x, z) => {
     positions: new Float32Array(positions.buffer, positions.byteOffset, attributeIndex),
     uvs: new Float32Array(uvs.buffer, uvs.byteOffset, uvIndex),
     indices: new Uint16Array(indices.buffer, indices.byteOffset, indexIndex),
+    objects: new Float32Array(objectsArray.buffer, objectsArray.byteOffset, objectIndex),
   };
 };
 
