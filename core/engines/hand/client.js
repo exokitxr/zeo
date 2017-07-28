@@ -174,9 +174,7 @@ class Hand {
           }
 
           remove() {
-            const {n} = this;
-
-            _broadcastObject('removeGrabbable', [n]);
+            _broadcastObject('removeGrabbable', [this.n]);
           }
 
           grab(side) {
@@ -374,6 +372,10 @@ class Hand {
             const {n} = grabbable;
 
             if (grabbables[n]) {
+              if (grabbable.isGrabbed()) {
+                grabbable.release();
+              }
+
               grabbable.remove();
 
               delete grabbables[n];
