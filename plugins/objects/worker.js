@@ -110,7 +110,7 @@ self.onmessage = e => {
     const object = new ObjectInstance(n, position);
     objects.push(object);
   } else if (type === 'generate') {
-    const {buffer} = data;
+    const {x, y, buffer} = data;
     const geometry = _makeGeometry(geometries, objects);
     const resultBuffer = protocolUtils.stringifyGeometry(geometry, buffer, 0);
     postMessage(resultBuffer, [resultBuffer]);
