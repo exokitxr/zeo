@@ -43,6 +43,8 @@ const craftingTable = objectApi => {
             if (grabbable.getGrabberSide() === side) {
               objectApi.addObject('craftingTable', grabbable.position);
 
+              items.destroyItem(grabbable);
+
               e.stopImmediatePropagation();
             }
           };
