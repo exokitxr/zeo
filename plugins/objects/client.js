@@ -377,8 +377,6 @@ console.log('got tracked object', trackedObject); // XXX
           }))
     )
       .then(() => {
-        objectApi.addObject('craftingTable', new THREE.Vector3(0, 31, -2));
-
         let live = true;
         const _recurse = () => {
           _requestRefreshObjectsChunks()
