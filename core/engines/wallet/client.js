@@ -1599,7 +1599,9 @@ class Wallet {
               const {id} = item;
               const assetInstance = assetsMesh.getAssetInstance(id);
 
-              assetInstance.emit('physics', attributeValue);
+              if (assetInstance) {
+                assetInstance.emit('physics', attributeValue);
+              }
             }
           }
         }
