@@ -287,7 +287,16 @@ console.log('got tracked object', trackedObject); // XXX
       }
 
       addObject(name, position) {
-        return worker.requestAddObject('craftingTable', position);
+        worker.requestAddObject('craftingTable', position)
+          .then(() => {
+            const x = Math.floor(position.x / NUM_CELLS);
+            const z = Math.floor(position.z / NUM_CELLS);
+            const chunk = chunker.chunks.find(chunk => chunk.x === x && chunk.z === z);
+
+            if (chunk) {
+              chunk.lod = -1; // force chunk refresh
+            }
+          });
       }
     }
     const objectApi = new ObjectApi();
@@ -301,13 +310,27 @@ console.log('got tracked object', trackedObject); // XXX
     const _requestRefreshObjectsChunks = () => {
       const {hmd} = pose.getStatus();
       const {worldPosition: hmdPosition} = hmd;
-      const {added, removed} = chunker.update(hmdPosition.x, hmdPosition.z);
+      const {added, removed, relodded} = chunker.update(hmdPosition.x, hmdPosition.z);
 
-      const addedPromises = added.map(chunk => {
+      const promises = [];
+      const _addChunk = chunk => {
         const {x, z} = chunk;
 
-        return _requestObjectsGenerate(x, z)
+        const promise = _requestObjectsGenerate(x, z)
           .then(objectsChunkData => {
+            const {data: oldData} = chunk;
+            if (oldData) {
+              const {objectsChunkMesh} = oldData;
+              scene.remove(objectsChunkMesh);
+
+              objectsChunkMeshes.splice(objectsChunkMeshes.indexOf(objectsChunkMesh), 1);
+
+              objectsChunkMesh.destroy();
+
+              const {objectRange} = oldData;
+              _removeTrackedObjects(objectRange);
+            }
+
             const objectsChunkMesh = _makeObjectsChunkMesh(objectsChunkData, x, z);
             scene.add(objectsChunkMesh);
 
@@ -320,8 +343,15 @@ console.log('got tracked object', trackedObject); // XXX
               objectRange,
             };
           });
-      });
-      return Promise.all(addedPromises)
+        promises.push(promise);
+      };
+      for (let i = 0; i < added.length; i++) {
+        _addChunk(added[i]);
+      }
+      for (let i = 0; i < relodded.length; i++) {
+        _addChunk(relodded[i]);
+      }
+      return Promise.all(promises)
         .then(() => {
           for (let i = 0; i < removed.length; i++) {
             const chunk = removed[i];
