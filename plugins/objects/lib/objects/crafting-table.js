@@ -1,4 +1,6 @@
-const craftingTable = registerApi => {
+const dataSymbol = Symbol();
+
+const craftingTable = objectApi => {
   const {three, elements, pose, input, render, stage, items} = zeo;
   const {THREE, scene, camera, renderer} = three;
 
@@ -14,8 +16,8 @@ const craftingTable = registerApi => {
   });
 
   return () => _requestImage('/archae/objects/img/crafting-table.png')
-    .then(craftingTableImg => registerApi.registerTexture('craftingTable', craftingTableImg))
-    .then(craftingTableImg => registerApi.registerGeometry('craftingTable', (args) => {
+    .then(craftingTableImg => objectApi.registerTexture('craftingTable', craftingTableImg))
+    .then(craftingTableImg => objectApi.registerGeometry('craftingTable', (args) => {
       const {THREE, getUv} = args;
       const craftingTableUvs = getUv('craftingTable');
       const uvWidth = craftingTableUvs[2] - craftingTableUvs[0];
@@ -32,7 +34,35 @@ const craftingTable = registerApi => {
       return geometry;
     }))
     .then(() => {
+      const craftingTableApi = {
+        asset: 'ITEM.CRAFTINGTABLE',
+        itemAddedCallback(grabbable) {
+          const _triggerdown = e => {
+            const {side} = e;
+
+            if (grabbable.getGrabberSide() === side) {
+              objectApi.addObject('craftingTable', grabbable.position);
+
+              e.stopImmediatePropagation();
+            }
+          };
+          input.on('triggerdown', _triggerdown);
+
+          grabbable[dataSymbol] = {
+            cleanup: () => {
+              input.removeListener('triggerdown', _triggerdown);
+            },
+          };
+        },
+        itemRemovedCallback(grabbable) {
+          const {[dataSymbol]: {cleanup}} = grabbable;
+          cleanup();
+        },
+      };
+      items.registerItem(this, craftingTableApi);
+
       return () => {
+        items.unregisterItem(this, craftingTableApi);
         // XXX unregister texture/geometry
       };
     });
