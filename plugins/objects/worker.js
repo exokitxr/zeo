@@ -4,6 +4,9 @@ importScripts('/archae/assets/murmurhash.js');
 const {exports: murmur} = self.module;
 self.module = {};
 
+const {
+  NUM_CELLS,
+} = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
 
 const TEXTURE_ATLAS_SIZE = 512;
@@ -11,8 +14,24 @@ const NUM_POSITIONS_CHUNK = 100 * 1024;
 
 const geometries = {};
 const textures = {};
-const objects = [];
+const chunks = [];
 
+class Chunk {
+  constructor(x, z) {
+    this.x = x;
+    this.z = z;
+
+    this.objects = [];
+  }
+
+  add(object) {
+    this.objects.push(object);
+  }
+
+  remove(object) {
+    this.objects.splice(this.objects.indexOf(object), 1);
+  }
+}
 class ObjectInstance {
   constructor(n, position) {
     this.n = n;
@@ -32,7 +51,7 @@ const _copyIndices = (src, dst, startIndexIndex, startAttributeIndex) => {
   }
 };
 
-const _makeGeometry = (geometries, objects) => {
+const _makeGeometry = (x, z) => {
   const positions = new Float32Array(NUM_POSITIONS_CHUNK);
   const uvs = new Float32Array(NUM_POSITIONS_CHUNK);
   const indices = new Uint16Array(NUM_POSITIONS_CHUNK);
@@ -40,34 +59,40 @@ const _makeGeometry = (geometries, objects) => {
   let uvIndex = 0;
   let indexIndex = 0;
 
-  for (let i = 0; i < objects.length; i++) {
-    const object = objects[i];
-    const {n, position} = object;
-    const geometryEntries = geometries[n];
+  const chunk = chunks.find(chunk => chunk.x === x && chunk.z === z);
+  if (chunk) {
+    const {objects} = chunk;
 
-    for (let j = 0; j < geometryEntries.length; j++) {
-      const geometry = geometryEntries[j];
-      const newPositions = geometry.getAttribute('position').array;
-      const numNewPositions = newPositions.length / 3;
-      for (let i = 0; i < numNewPositions; i++) {
-        const baseIndex = i * 3;
-        positions[attributeIndex + baseIndex + 0] = newPositions[baseIndex + 0] + position.x;
-        positions[attributeIndex + baseIndex + 1] = newPositions[baseIndex + 1] + position.y;
-        positions[attributeIndex + baseIndex + 2] = newPositions[baseIndex + 2] + position.z;
-      }
-      const newUvs = geometry.getAttribute('uv').array;
-      const numNewUvs = newUvs.length / 2;
-      for (let k = 0; k < numNewUvs; k++) {
-        const baseIndex = k * 2;
-        uvs[uvIndex + baseIndex + 0] = newUvs[baseIndex + 0];
-        uvs[uvIndex + baseIndex + 1] = 1 - newUvs[baseIndex + 1];
-      }
-      const newIndices = geometry.index.array;
-      _copyIndices(newIndices, indices, indexIndex, attributeIndex / 3);
+    for (let i = 0; i < objects.length; i++) {
+      const object = objects[i];
+      const {n, position} = object;
+      const geometryEntries = geometries[n];
 
-      attributeIndex += newPositions.length;
-      uvIndex += newUvs.length;
-      indexIndex += newIndices.length;
+      for (let j = 0; j < geometryEntries.length; j++) {
+        const geometry = geometryEntries[j];
+        const newPositions = geometry.getAttribute('position').array;
+        const numNewPositions = newPositions.length / 3;
+
+        for (let k = 0; k < numNewPositions; k++) {
+          const baseIndex = k * 3;
+          positions[attributeIndex + baseIndex + 0] = newPositions[baseIndex + 0] + position.x;
+          positions[attributeIndex + baseIndex + 1] = newPositions[baseIndex + 1] + position.y;
+          positions[attributeIndex + baseIndex + 2] = newPositions[baseIndex + 2] + position.z;
+        }
+        const newUvs = geometry.getAttribute('uv').array;
+        const numNewUvs = newUvs.length / 2;
+        for (let k = 0; k < numNewUvs; k++) {
+          const baseIndex = k * 2;
+          uvs[uvIndex + baseIndex + 0] = newUvs[baseIndex + 0];
+          uvs[uvIndex + baseIndex + 1] = 1 - newUvs[baseIndex + 1];
+        }
+        const newIndices = geometry.index.array;
+        _copyIndices(newIndices, indices, indexIndex, attributeIndex / 3);
+
+        attributeIndex += newPositions.length;
+        uvIndex += newUvs.length;
+        indexIndex += newIndices.length;
+      }
     }
   }
 
@@ -108,10 +133,17 @@ self.onmessage = e => {
     const n = murmur(name);
     const position = new THREE.Vector3().fromArray(positionArray);
     const object = new ObjectInstance(n, position);
-    objects.push(object);
+    const x = Math.floor(position.x / NUM_CELLS);
+    const z = Math.floor(position.z / NUM_CELLS);
+    let chunk = chunks.find(chunk => chunk.x === x && chunk.z === z);
+    if (!chunk) {
+      chunk = new Chunk(x, z);
+      chunks.push(chunk);
+    }
+    chunk.add(object);
   } else if (type === 'generate') {
-    const {x, y, buffer} = data;
-    const geometry = _makeGeometry(geometries, objects);
+    const {x, z, buffer} = data;
+    const geometry = _makeGeometry(x, z, geometries, chunks);
     const resultBuffer = protocolUtils.stringifyGeometry(geometry, buffer, 0);
     postMessage(resultBuffer, [resultBuffer]);
   } else {

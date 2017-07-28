@@ -121,12 +121,12 @@ class Objects {
       });
       return Promise.resolve();
     };
-    worker.requestGenerate = (x, y) => new Promise((accept, reject) => {
+    worker.requestGenerate = (x, z) => new Promise((accept, reject) => {
       const buffer = buffers.alloc();
       worker.postMessage({
         type: 'generate',
         x,
-        y,
+        z,
         buffer,
       });
       queue.push(buffer => {
@@ -139,7 +139,7 @@ class Objects {
       cb(buffer);
     };
 
-    const _requestObjectsGenerate = (x, y) => worker.requestGenerate(x, y)
+    const _requestObjectsGenerate = (x, z) => worker.requestGenerate(x, z)
       .then(objectsChunkBuffer => protocolUtils.parseGeometry(objectsChunkBuffer));
     const _makeObjectsChunkMesh = objectsChunkData => {
       const mesh = (() => {

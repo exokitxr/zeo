@@ -30,7 +30,12 @@ const craftingTable = registerApi => {
       }
 
       return geometry;
-    }));
+    }))
+    .then(() => {
+      return () => {
+        // XXX unregister texture/geometry
+      };
+    });
 }
 
 module.exports = craftingTable;
