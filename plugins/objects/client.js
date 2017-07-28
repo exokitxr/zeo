@@ -72,8 +72,16 @@ void main() {
 
 class Objects {
   mount() {
-    const {three, pose, utils: {js: {bffr}, random: {chnkr}}} = zeo;
+    const {three, pose, input, utils: {js: {bffr}, random: {chnkr}}} = zeo;
     const {THREE, scene} = three;
+
+    const cleanups = [];
+    this._cleanup = () => {
+      for (let i = 0; i < cleanups.length; i++) {
+        const cleanup = cleanups[i];
+        cleanup();
+      }
+    };
 
     const buffers = bffr(NUM_POSITIONS_CHUNK, (RANGE + 1) * (RANGE + 1) * 2);
     const textures = txtr(TEXTURE_SIZE, TEXTURE_SIZE);
@@ -180,6 +188,82 @@ class Objects {
       return mesh;
     };
 
+    class TrackedObject {
+      constructor(mesh, n, startIndex, endIndex, position) {
+        this.mesh = mesh;
+        this.n = n;
+        this.startIndex = startIndex;
+        this.endIndex = endIndex;
+        this.position = position;
+      }
+
+      erase() {
+        const {mesh, startIndex, endIndex} = this;
+        const {geometry} = mesh;
+        const indexAttribute = geometry.index;
+        const indices = indexAttribute.array;
+        for (let i = startIndex; i < endIndex; i++) {
+          indices[i] = 0;
+        }
+        indexAttribute.needsUpdate = true;
+      }
+    }
+
+    const trackedObjects = [];
+    const _addTrackedObjects = (mesh, data) => {
+      const {objects: objectsData} = data;
+      const numObjects = objectsData.length / 4;
+      let startObject = null;
+      for (let i = 0; i < numObjects; i++) {
+        const baseIndex = i * 6;
+        const n = objectsData[baseIndex + 0];
+        const startIndex = objectsData[baseIndex + 1];
+        const endIndex = objectsData[baseIndex + 2];
+        const position = new THREE.Vector3().fromArray(objectsData, baseIndex + 3);
+        const trackedObject = new TrackedObject(mesh, n, startIndex, endIndex, position);
+        trackedObjects.push(trackedObject);
+
+        if (startObject === null) {
+          startObject = trackedObject;
+        }
+      }
+
+      return [startObject, numObjects];
+    };
+    const _removeTrackedObjects = objectRange => {
+      const [startObject, numObjects] = objectRange;
+      trackedObjects.splice(trackedObjects.indexOf(startObject), numObjects);
+    };
+    const _getHoveredTrackedObject = side => {
+      const {gamepads} = pose.getStatus();
+      const gamepad = gamepads[side];
+      const {worldPosition: controllerPosition} = gamepad;
+
+      for (let i = 0; i < trackedObjects.length; i++) {
+        const trackedItem = trackedObjects[i];
+        if (controllerPosition.distanceTo(trackedItem.position) < 0.2) {
+          return trackedItem;
+        }
+      }
+      return null;
+    };
+
+    const _triggerdown = e => {
+      const {side} = e;
+      const trackedObject = _getHoveredTrackedObject(side);
+
+console.log('got tracked object', trackedObject); // XXX
+
+      if (trackedObject) {
+        trackedObject.erase();
+        trackedObjects.splice(trackedObjects.indexOf(trackedObject), 1);
+      }
+    };
+    input.on('triggerdown', _triggerdown);
+    cleanups.push(() => {
+      input.removeListener('triggerdown', _triggerdown);
+    });
+
     class RegisterApi {
       registerGeometry(name, fn) {
         worker.requestRegisterGeometry(name, fn);
@@ -227,8 +311,11 @@ class Objects {
 
             objectsChunkMeshes.push(objectsChunkMesh);
 
+            const objectRange = _addTrackedObjects(objectsChunkMesh, objectsChunkData);
+
             chunk.data = {
               objectsChunkMesh,
+              objectRange,
             };
           });
       });
@@ -243,16 +330,11 @@ class Objects {
             objectsChunkMeshes.splice(objectsChunkMeshes.indexOf(objectsChunkMesh), 1);
 
             objectsChunkMesh.destroy();
+
+            const {objectRange} = data;
+            _removeTrackedObjects(objectRange);
           }
         })
-    };
-
-    const cleanups = [];
-    this._cleanup = () => {
-      for (let i = 0; i < cleanups.length; i++) {
-        const cleanup = cleanups[i];
-        cleanup();
-      }
     };
 
     return Promise.all(
