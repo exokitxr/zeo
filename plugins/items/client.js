@@ -10,7 +10,7 @@ const {
 } = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
 
-const NUM_POSITIONS_CHUNK = 100 * 1024;
+const NUM_POSITIONS_CHUNK = 4 * 1024 * 1024;
 const DEFAULT_MATRIX = [
   0, 0, 0,
   0, 0, 0, 1,
