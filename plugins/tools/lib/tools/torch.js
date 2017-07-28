@@ -1,6 +1,6 @@
 const dataSymbol = Symbol();
 
-const torch = ({archae}) => {
+const torch = ({recipes}) => {
   const {three, pose, input, render, teleport, items} = zeo;
   const {THREE, scene} = three;
 
@@ -120,11 +120,11 @@ const torch = ({archae}) => {
         'ITEM.WOOD',
       ],
     };
-    items.registerRecipe(this, torchRecipe);
+    recipes.register(this, torchRecipe);
 
     return () => {
       items.unregisterItem(this, torchApi);
-      items.unregisterRecipe(this, torchRecipe);
+      recipes.unregister(this, torchRecipe);
     };
   };
 };

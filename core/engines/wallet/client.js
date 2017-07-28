@@ -77,7 +77,6 @@ class Wallet {
       '/core/engines/hand',
       '/core/engines/rend',
       '/core/engines/tags',
-      '/core/engines/craft',
       '/core/engines/multiplayer',
       '/core/engines/stck',
       '/core/engines/notification',
@@ -99,7 +98,6 @@ class Wallet {
       hand,
       rend,
       tags,
-      craft,
       multiplayer,
       stck,
       notification,
@@ -120,7 +118,6 @@ class Wallet {
         const {sfx} = resource;
 
         const walletRenderer = walletRender.makeRenderer({creatureUtils});
-        const outputSymbol = craft.getOutputSymbol();
         const localUserId = multiplayer.getId();
 
         const pixelSize = 0.015;
@@ -954,7 +951,7 @@ class Wallet {
           assetInstance.on('release', e => {
             const {userId} = e;
 
-            if (userId === localUserId && !grid.includes(assetInstance)) {
+            if (userId === localUserId) {
               const {side} = e;
               const player = cyborg.getPlayer();
               const linearVelocity = player.getControllerLinearVelocity(side);
@@ -992,157 +989,6 @@ class Wallet {
             _addBody();
           }
         };
-
-        const gridWidth = 3;
-        const grid = Array(gridWidth * gridWidth);
-        const _resetGrid = () => {
-          for (let i = 0; i < (gridWidth * gridWidth); i++) {
-            grid[i] = null;
-          }
-
-          grid[outputSymbol] = null;
-        };
-        _resetGrid();
-
-        const _craftTrigger = e => {
-          const {side, index} = e;
-          const hoverState = hoverStates[side];
-          const {worldGrabAsset} = hoverState;
-          const gridItem = grid[index];
-
-          if (worldGrabAsset && !gridItem) {
-            grid[index] = worldGrabAsset;
-            const {asset} = worldGrabAsset;
-            craft.setGridIndex(index, asset);
-
-            worldGrabAsset.release(); // needs to happen second so physics are not enabled in the release handler
-            const indexPosition = craft.getGridIndexPosition(index);
-            worldGrabAsset.setStateLocal(indexPosition, zeroQuaternion, oneVector);
-          }
-        };
-        craft.on('trigger', _craftTrigger);
-
-        const _craftGripdown = e => {
-          const {side, index} = e;
-          const hoverState = hoverStates[side];
-          const {worldGrabAsset} = hoverState;
-          const gridItem = grid[index];
-
-          if (!worldGrabAsset && gridItem) {
-            gridItem.grab(side);
-
-            grid[index] = null;
-            craft.setGridIndex(index, null);
-
-            e.stopImmediatePropagation();
-          }
-        };
-        craft.on('gripdown', _craftGripdown);
-
-        const _craftGripup = e => {
-          const {side, index} = e;
-          const hoverState = hoverStates[side];
-          const {worldGrabAsset} = hoverState;
-          const gridItem = grid[index];
-
-          if (worldGrabAsset && !gridItem) {
-            grid[index] = worldGrabAsset;
-            const {asset} = worldGrabAsset;
-            craft.setGridIndex(index, asset);
-
-            worldGrabAsset.release(); // needs to happen second so physics are not enabled in the release handler
-            const indexPosition = craft.getGridIndexPosition(index);
-            worldGrabAsset.setStateLocal(indexPosition, zeroQuaternion, oneVector);
-
-            e.stopImmediatePropagation();
-          }
-        };
-        craft.on('gripup', _craftGripup);
-        const _craftClose = () => {
-          for (let i = 0; i < grid.length; i++) {
-            const item = grid[i];
-
-            if (item) {
-              item.enablePhysics();
-            }
-          }
-
-          const outputItem = grid[outputSymbol];
-          if (outputItem) {
-            walletApi.destroyItem(outputItem);
-          }
-
-          _resetGrid();
-        };
-        craft.on('close', _craftClose);
-        const _craftTeleport = () => {
-          for (let i = 0; i < grid.length; i++) {
-            const assetInstance = grid[i];
-
-            if (assetInstance) {
-              const indexPosition = craft.getGridIndexPosition(i);
-              assetInstance.setState(indexPosition, zeroQuaternion, oneVector);
-            }
-          }
-        };
-        craft.on('teleport', _craftTeleport);
-        const _craftOutput = asset => {
-          const outputItem = grid[outputSymbol];
-          if (outputItem) {
-            walletApi.destroyItem(outputItem);
-          }
-
-          const id = _makeId();
-          const indexPosition = craft.getGridIndexPosition(outputSymbol);
-          const localAddress = bootstrap.getAddress();
-          const assetInstance = walletApi.makeItem({
-            type: 'asset',
-            id: id,
-            name: asset,
-            displayName: asset,
-            attributes: {
-              position: {value: indexPosition.toArray().concat(zeroQuaternion.toArray()).concat(oneVector.toArray())},
-              asset: {value: asset},
-              quantity: {value: 1},
-              owner: {value: null},
-              bindOwner: {value: localAddress},
-              physics: {value: false},
-            },
-          });
-          assetInstance.mesh.position.copy(indexPosition);
-          assetInstance.mesh.quaternion.copy(zeroQuaternion);
-          assetInstance.mesh.scale.copy(oneVector);
-          assetInstance.mesh.updateMatrixWorld();
-
-          assetInstance.on('grab', () => {
-            walletApi.emit('setTagAttributes', id, [
-              {
-                name: 'owner',
-                value: localAddress,
-              },
-              {
-                name: 'bindOwner',
-                value: null,
-              },
-            ]);
-
-            for (let i = 0; i < grid.length; i++) {
-              const inputAssetInstance = grid[i];
-
-              if (inputAssetInstance !== null) {
-                walletApi.destroyItem(inputAssetInstance);
-              }
-            }
-            _resetGrid();
-
-            craft.close();
-
-            assetInstance.enablePhysics();
-          });
-
-          grid[outputSymbol] = assetInstance;
-        };
-        craft.on('output', _craftOutput);
 
         const _pullItem = (asset, side) => {
           const id = _makeId();
@@ -1467,13 +1313,6 @@ class Wallet {
         cleanups.push(() => {
           input.removeListener('trigger', _trigger);
           input.removeListener('gripdown', _gripdown);
-
-          craft.removeListener('trigger', _craftTtrigger);
-          craft.removeListener('gripdown', _craftGripdown);
-          craft.removeListener('gripup', _craftGripup);
-          craft.removeListener('close', _craftClose);
-          craft.removeListener('teleport', _craftTeleport);
-          craft.removeListener('output', _craftOutput);
 
           rend.removeListener('tabchange', _tabchange);
           rend.removeListener('update', _update);

@@ -2,7 +2,7 @@ const NPC_PLUGIN = 'plugins-npc';
 const SWORD_LENGTH = 0.5;
 const dataSymbol = Symbol();
 
-const sword = ({archae}) => {
+const sword = ({recipes}) => {
   const {three, pose, input, render, elements, items, teleport} = zeo;
   const {THREE, scene} = three;
 
@@ -94,13 +94,13 @@ const sword = ({archae}) => {
         'ITEM.WOOD',
       ],
     };
-    items.registerRecipe(this, swordRecipe);
+    recipes.register(this, swordRecipe);
 
     return () => {
       elements.destroyListener(elementListener);
 
       items.unregisterItem(this, swordApi);
-      items.unregisterRecipe(this, swordRecipe);
+      recipes.unregister(this, swordRecipe);
     };
   };
 };
