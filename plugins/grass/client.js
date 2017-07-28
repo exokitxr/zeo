@@ -35,7 +35,6 @@ const GRASS_SHADER = {
   vertexShader: `\
 precision highp float;
 precision highp int;
-#define USE_COLOR
 /*uniform mat4 modelMatrix;
 uniform mat4 modelViewMatrix;
 uniform mat4 projectionMatrix;
@@ -44,40 +43,23 @@ uniform mat3 normalMatrix;
 attribute vec3 position;
 attribute vec3 normal;
 attribute vec2 uv; */
-#ifdef USE_COLOR
-	attribute vec3 color;
-#endif
 
 varying vec3 vPosition;
-varying vec3 vViewPosition;
 varying vec2 vUv;
-varying vec3 vNormal;
-#define saturate(a) clamp( a, 0.0, 1.0 )
-
-#ifdef USE_COLOR
-	varying vec3 vColor;
-#endif
 
 void main() {
-#ifdef USE_COLOR
-	vColor.xyz = color.xyz;
-#endif
-
   vUv = uv;
-	vNormal = normal;
 
   vec4 mvPosition = modelViewMatrix * vec4( position.xyz, 1.0 );
   gl_Position = projectionMatrix * mvPosition;
 
 	vPosition = position.xyz;
-	vViewPosition = - mvPosition.xyz;
 }
 `,
   fragmentShader: `\
 precision highp float;
 precision highp int;
 #define ALPHATEST 0.7
-#define DOUBLE_SIDED
 // uniform mat4 viewMatrix;
 uniform vec3 ambientLightColor;
 uniform sampler2D map;
@@ -85,12 +67,8 @@ uniform sampler2D lightMap;
 uniform vec2 d;
 uniform float sunIntensity;
 
-#define saturate(a) clamp( a, 0.0, 1.0 )
-
 varying vec3 vPosition;
-varying vec3 vViewPosition;
 varying vec2 vUv;
-varying vec3 vNormal;
 
 void main() {
   vec4 diffuseColor = texture2D( map, vUv );
@@ -105,12 +83,6 @@ void main() {
 
 #ifdef ALPHATEST
 	if ( diffuseColor.a < ALPHATEST ) discard;
-#endif
-
-#ifdef DOUBLE_SIDED
-	float flipNormal = ( float( gl_FrontFacing ) * 2.0 - 1.0 );
-#else
-	float flipNormal = 1.0;
 #endif
 
   vec3 outgoingLight = (ambientLightColor * 0.2 + diffuseColor.rgb) * (0.1 + sunIntensity * 0.9) +
