@@ -125,7 +125,7 @@ class Objects {
       worker.postMessage({
         type: 'addObject',
         name,
-        position,
+        position: position.toArray(),
       });
       return Promise.resolve();
     };
@@ -264,11 +264,9 @@ console.log('got tracked object', trackedObject); // XXX
       input.removeListener('triggerdown', _triggerdown);
     });
 
-    class RegisterApi {
+    class ObjectApi {
       registerGeometry(name, fn) {
-        worker.requestRegisterGeometry(name, fn);
-
-        return Promise.resolve();
+        return worker.requestRegisterGeometry(name, fn);
       }
 
       registerTexture(name, img) {
@@ -287,8 +285,12 @@ console.log('got tracked object', trackedObject); // XXX
             textureAtlas.needsUpdate = true;
           });
       }
+
+      addObject(name, position) {
+        return worker.requestAddObject('craftingTable', position);
+      }
     }
-    const registerApi = new RegisterApi();
+    const objectApi = new ObjectApi();
 
     const chunker = chnkr.makeChunker({
       resolution: NUM_CELLS,
@@ -338,14 +340,14 @@ console.log('got tracked object', trackedObject); // XXX
     };
 
     return Promise.all(
-      objectsLib(registerApi)
+      objectsLib(objectApi)
         .map(makeObject => makeObject()
           .then(cleanup => {
             cleanups.push(cleanup);
           }))
     )
       .then(() => {
-        worker.requestAddObject('craftingTable', [0, 31, -2]);
+        objectApi.addObject('craftingTable', new THREE.Vector3(0, 31, -2));
 
         let live = true;
         const _recurse = () => {
