@@ -1,5 +1,10 @@
 const txtr = require('txtr');
 
+const {
+  NUM_CELLS,
+
+  RANGE,
+} = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
 const objectsLib = require('./lib/objects/index');
 
@@ -66,16 +71,11 @@ void main() {
 };
 
 class Objects {
-  /* constructor(archae) {
-    this._archae = archae;
-  } */
-
   mount() {
-    // const {_archae: archae} = this;
-    const {three, utils: {js: {bffr}}} = zeo;
+    const {three, pose, utils: {js: {bffr}, random: {chnkr}}} = zeo;
     const {THREE, scene} = three;
 
-    const buffers = bffr(NUM_POSITIONS_CHUNK, 8);
+    const buffers = bffr(NUM_POSITIONS_CHUNK, (RANGE + 1) * (RANGE + 1) * 2);
     const textures = txtr(TEXTURE_SIZE, TEXTURE_SIZE);
     const canvas = document.createElement('canvas');
     canvas.width = TEXTURE_SIZE;
@@ -121,14 +121,16 @@ class Objects {
       });
       return Promise.resolve();
     };
-    worker.requestGeometry = () => new Promise((accept, reject) => {
+    worker.requestGenerate = (x, y) => new Promise((accept, reject) => {
       const buffer = buffers.alloc();
       worker.postMessage({
         type: 'generate',
+        x,
+        y,
         buffer,
       });
       queue.push(buffer => {
-        accept(protocolUtils.parseGeometry(buffer));
+        accept(buffer);
       });
     });
     worker.onmessage = e => {
@@ -137,32 +139,8 @@ class Objects {
       cb(buffer);
     };
 
-    class RegisterApi {
-      registerGeometry(name, fn) {
-        worker.requestRegisterGeometry(name, fn);
-
-        return Promise.resolve();
-      }
-
-      registerTexture(name, img) {
-        const rect = textures.pack(img.width, img.height);
-        const uv = textures.uv(rect);
-        worker.requestRegisterTexture(name, uv)
-          .catch(err => {
-            console.warn(err);
-          });
-
-        return createImageBitmap(img, 0, 0, img.width, img.height, {
-          imageOrientation: 'flipY',
-        })
-          .then(imageBitmap => {
-            ctx.drawImage(imageBitmap, rect.x, rect.y);
-            textureAtlas.needsUpdate = true;
-          });
-      }
-    }
-    const registerApi = new RegisterApi();
-
+    const _requestObjectsGenerate = (x, y) => worker.requestGenerate(x, y)
+      .then(objectsChunkBuffer => protocolUtils.parseGeometry(objectsChunkBuffer));
     const _makeObjectsChunkMesh = objectsChunkData => {
       const mesh = (() => {
         const geometry = (() => {
@@ -195,14 +173,87 @@ class Objects {
       mesh.destroy = () => {
         mesh.geometry.dispose();
 
-        const {buffer} = mapChunkData;
+        const {buffer} = objectsChunkData;
         buffers.free(buffer);
       };
 
       return mesh;
     };
 
+    class RegisterApi {
+      registerGeometry(name, fn) {
+        worker.requestRegisterGeometry(name, fn);
+
+        return Promise.resolve();
+      }
+
+      registerTexture(name, img) {
+        const rect = textures.pack(img.width, img.height);
+        const uv = textures.uv(rect);
+        worker.requestRegisterTexture(name, uv)
+          .catch(err => {
+            console.warn(err);
+          });
+
+        return createImageBitmap(img, 0, 0, img.width, img.height, {
+          imageOrientation: 'flipY',
+        })
+          .then(imageBitmap => {
+            ctx.drawImage(imageBitmap, rect.x, rect.y);
+            textureAtlas.needsUpdate = true;
+          });
+      }
+    }
+    const registerApi = new RegisterApi();
+
+    const chunker = chnkr.makeChunker({
+      resolution: NUM_CELLS,
+      range: RANGE,
+    });
+    const objectsChunkMeshes = [];
+
+    const _requestRefreshObjectsChunks = () => {
+      const {hmd} = pose.getStatus();
+      const {worldPosition: hmdPosition} = hmd;
+      const {added, removed} = chunker.update(hmdPosition.x, hmdPosition.z);
+
+      const addedPromises = added.map(chunk => {
+        const {x, z} = chunk;
+
+        return _requestObjectsGenerate(x, z)
+          .then(objectsChunkData => {
+            const objectsChunkMesh = _makeObjectsChunkMesh(objectsChunkData, x, z);
+            scene.add(objectsChunkMesh);
+
+            objectsChunkMeshes.push(objectsChunkMesh);
+
+            chunk.data = {
+              objectsChunkMesh,
+            };
+          });
+      });
+      return Promise.all(addedPromises)
+        .then(() => {
+          for (let i = 0; i < removed.length; i++) {
+            const chunk = removed[i];
+            const {data} = chunk;
+            const {objectsChunkMesh} = data;
+            scene.remove(objectsChunkMesh);
+
+            objectsChunkMeshes.splice(objectsChunkMeshes.indexOf(objectsChunkMesh), 1);
+
+            objectsChunkMesh.destroy();
+          }
+        })
+    };
+
     const cleanups = [];
+    this._cleanup = () => {
+      for (let i = 0; i < cleanups.length; i++) {
+        const cleanup = cleanups[i];
+        cleanup();
+      }
+    };
 
     return Promise.all(
       objectsLib(registerApi)
@@ -213,19 +264,28 @@ class Objects {
     )
       .then(() => {
         worker.requestAddObject('craftingTable', [0, 31, -2]);
-        worker.requestGeometry()
-          .then(objectsChunkData => {
-            const mesh = _makeObjectsChunkMesh(objectsChunkData);
-            scene.add(mesh);
-          });
-      });
 
-    this._cleanup = () => {
-      for (let i = 0; i < cleanups.length; i++) {
-        const cleanup = cleanups[i];
-        cleanup();
-      }
-    };
+        let live = true;
+        const _recurse = () => {
+          _requestRefreshObjectsChunks()
+            .then(() => {
+              if (live) {
+                setTimeout(_recurse, 1000);
+              }
+            })
+            .catch(err => {
+              if (live) {
+                console.warn(err);
+
+                setTimeout(_recurse, 1000);
+              }
+            });
+        };
+        _recurse();
+        cleanups.push(() => {
+          live = false;
+        });
+      });
   }
 
   unmount() {
@@ -233,7 +293,7 @@ class Objects {
   }
 }
 const _parseFunction = fn => {
-  const match = fn.toString().match(/[^\(]*\(([^\)]*)\)[^\{]*\{([\s\S]*)\}\s*$/);
+  const match = fn.toString().match(/[^\(]*\(([^\)]*)\)[^\{]*\{([\s\S]*)\}\s*$/); // XXX support bracketless arrow functions
   const args = match[1].split(',').map(arg => arg.trim());
   const src = match[2];
   return {args, src};
