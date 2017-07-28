@@ -495,7 +495,6 @@ self.onmessage = e => {
   const mapChunk = _generateHeightfield(x, y);
   const {points, heightRange} = mapChunk;
   const itemsChunkGeometry = _makeItemsChunkMesh(x, y, itemsGeometries, points, heightRange);
-  const resultBuffer = protocolUtils.stringifyItemsChunk(itemsChunkGeometry);
-
+  const resultBuffer = protocolUtils.stringifyItemsChunk(itemsChunkGeometry, buffer, 0);
   postMessage(resultBuffer, [resultBuffer]);
 };

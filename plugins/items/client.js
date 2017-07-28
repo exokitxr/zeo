@@ -178,10 +178,10 @@ class Items {
     const _requestItemsGenerate = (x, y) => worker.requestGenerate(x, y)
       .then(itemsChunkBuffer => protocolUtils.parseItemsChunk(itemsChunkBuffer));
 
-    const _makeItemsChunkMesh = (mapChunkData, x, z) => {
+    const _makeItemsChunkMesh = (itemsChunkData, x, z) => {
       const mesh = (() => {
         const geometry = (() => {
-          const {positions, normals, colors, indices, heightRange} = mapChunkData;
+          const {positions, normals, colors, indices, heightRange} = itemsChunkData;
           const geometry = new THREE.BufferGeometry();
           geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
           // geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
@@ -231,7 +231,7 @@ class Items {
       mesh.destroy = () => {
         mesh.geometry.dispose();
 
-        const {buffer} = mapChunkData;
+        const {buffer} = itemsChunkData;
         buffers.free(buffer);
 
         if (mesh.lightmap) {
