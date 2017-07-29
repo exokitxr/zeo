@@ -195,10 +195,13 @@ class Hand {
 
             _broadcastObject('grab', [n, side]);
 
-            this.emit('grab', {
+            const e = {
               userId,
               side,
-            });
+              grabbable: this,
+            };
+            this.emit('grab', e);
+            handApi.emit('grab', e);
           }
 
           release() {
@@ -221,10 +224,13 @@ class Hand {
 
               _broadcastObject('release', [n]);
 
-              this.emit('release', {
+              const e = {
                 userId,
                 side,
-              });
+                grabbable: this,
+              };
+              this.emit('release', e);
+              handApi.emit('release', e);
             }
           }
 

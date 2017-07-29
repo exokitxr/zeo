@@ -15,7 +15,7 @@ const outputSymbol = Symbol();
 
 class Craft {
   mount() {
-    const {three, input, pose, render, elements, utils: {js: jsUtils}} = zeo;
+    const {three, input, pose, render, elements, hands, utils: {js: jsUtils}} = zeo;
     const {THREE, scene, camera} = three;
     const {events} = jsUtils;
     const {EventEmitter} = events;
@@ -23,6 +23,7 @@ class Craft {
     const oneVector = new THREE.Vector3(1, 1, 1);
     const upVector = new THREE.Vector3(0, 1, 0);
     const forwardVector = new THREE.Vector3(0, 0, -1);
+    const zeroQuaternion = new THREE.Quaternion();
 
     const gridSize = 0.125;
     const gridSpacing = gridSize / 2;
@@ -35,6 +36,14 @@ class Craft {
           type: 'v2',
           value: new THREE.Vector2(-1, -1),
         },
+        gfull: {
+          type: 'm3',
+          value: new THREE.Matrix3(),
+        },
+        goutput: {
+          type: 'f',
+          value: 0,
+        },
       },
       vertexShader: [
         "attribute float selected;",
@@ -46,10 +55,28 @@ class Craft {
       ].join("\n"),
       fragmentShader: [
         "uniform vec2 gselected;",
+        "uniform mat3 gfull;",
+        "uniform float goutput;",
         "varying float vselected;",
         "void main() {",
         "  if (abs(gselected.x - vselected) < 0.1 || abs(gselected.y - vselected) < 0.1) {",
-        "    gl_FragColor = vec4(0.12941176470588237, 0.5882352941176471, 0.9529411764705882, 1.0);",
+        "    gl_FragColor = vec4(0.12941176470588237, 0.5882352941176471, 0.9529411764705882, 1.0);", // blue
+        "  } else if (",
+        "    abs(vselected - 0.0) < 0.1 && gfull[0][0] > 0.5 ||",
+        "    abs(vselected - 1.0) < 0.1 && gfull[1][0] > 0.5 ||",
+        "    abs(vselected - 2.0) < 0.1 && gfull[2][0] > 0.5 ||",
+        "    abs(vselected - 3.0) < 0.1 && gfull[0][1] > 0.5 ||",
+        "    abs(vselected - 4.0) < 0.1 && gfull[1][1] > 0.5 ||",
+        "    abs(vselected - 5.0) < 0.1 && gfull[2][1] > 0.5 ||",
+        "    abs(vselected - 6.0) < 0.1 && gfull[0][2] > 0.5 ||",
+        "    abs(vselected - 7.0) < 0.1 && gfull[1][2] > 0.5 ||",
+        "    abs(vselected - 8.0) < 0.1 && gfull[2][2] > 0.5",
+        "  ) {",
+        "    if (goutput < 0.5) {",
+        "      gl_FragColor = vec4(0.403921568627451, 0.22745098039215686, 0.7176470588235294, 1.0);", // purple
+        "    } else {",
+        "      gl_FragColor = vec4(0.2980392156862745, 0.6862745098039216, 0.3137254901960784, 1.0);", // green
+        "    }",
         "  } else {",
         "    gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);",
         "  }",
@@ -78,67 +105,6 @@ class Craft {
     const _sq = n => Math.sqrt(n*n*2);
 
     const gridGeometry = (() => {
-      /* const cylinderGeometry = new THREE.CylinderBufferGeometry(0.002, 0.002, gridSize, 3, 1);
-      const boxGeometry = (() => {
-        const positions = new Float32Array(cylinderGeometry.getAttribute('position').array.length * 4 * 3);
-        const indices = new Uint16Array(cylinderGeometry.index.array.length * 4 * 3);
-        let attributeIndex = 0;
-        let indexIndex = 0;
-
-        for (let i = 0; i < directions.length; i++) {
-          const direction1 = directions[i];
-
-          for (let j = 0; j < directions.length; j++) {
-            const direction2 = directions[j];
-            const diff = direction2.clone().sub(direction1);
-            diff.x = Math.abs(diff.x);
-            diff.y = Math.abs(diff.y);
-            diff.z = Math.abs(diff.z);
-
-            const position = direction1.clone()
-              .add(direction2)
-              .divideScalar(2);
-            const newPositions = (() => {
-              if (diff.x === gridSize && diff.y === 0 && diff.z === 0 && direction1.x < 0 && direction2.x > 0) {
-                return cylinderGeometry.clone()
-                  .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(
-                    new THREE.Vector3(0, 1, 0),
-                    new THREE.Vector3(1, 0, 0)
-                  )))
-                  .applyMatrix(new THREE.Matrix4().makeTranslation(position.x, position.y, position.z))
-                  .getAttribute('position').array;
-              } else if (diff.x === 0 && diff.y === gridSize && diff.z === 0 && direction1.y < 0 && direction2.y > 0) {
-                return cylinderGeometry.clone()
-                  .applyMatrix(new THREE.Matrix4().makeTranslation(position.x, position.y, position.z))
-                  .getAttribute('position').array;
-              } else if (diff.x === 0 && diff.y === 0 && diff.z === gridSize && direction1.z < 0 && direction2.z > 0) {
-                return cylinderGeometry.clone()
-                  .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(
-                    new THREE.Vector3(0, 1, 0),
-                    new THREE.Vector3(0, 0, 1)
-                  )))
-                  .applyMatrix(new THREE.Matrix4().makeTranslation(position.x, position.y, position.z))
-                  .getAttribute('position').array;
-              } else {
-                return null;
-              }
-            })();
-            if (newPositions !== null) {
-              positions.set(newPositions, attributeIndex);
-              const newIndices = cylinderGeometry.index.array;
-              _copyIndices(newIndices, indices, indexIndex, attributeIndex / 3);
-
-              attributeIndex += newPositions.length;
-              indexIndex += newIndices.length;
-            }
-          }
-        }
-
-        const geometry = new THREE.BufferGeometry();
-        geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
-        geometry.setIndex(new THREE.BufferAttribute(indices, 1));
-        return geometry;
-      })(); */
       const planeGeometry = new THREE.PlaneBufferGeometry(gridSize, gridSize)
         .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(
           new THREE.Vector3(0, 0, 1),
@@ -183,7 +149,6 @@ class Craft {
             _addBox(x, y);
           }
         }
-        _addBox(gridWidth, 1);
 
         const geometry = new THREE.BufferGeometry();
         geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
@@ -204,7 +169,7 @@ class Craft {
         for (let i = 0; i < (gridWidth * gridWidth); i++) {
           result[i] = new THREE.Vector3();
         }
-        result[outputSymbol] = new THREE.Vector3();
+        // result[outputSymbol] = new THREE.Vector3();
         return result;
       })();
       mesh.positions = positions;
@@ -225,14 +190,14 @@ class Craft {
           .multiply(scale)
           .applyQuaternion(quaternion)
           .add(position);
-        positions[outputSymbol].copy(p);
+        // positions[outputSymbol].copy(p);
       };
 
       return mesh;
     })();
     scene.add(gridMesh);
 
-    const _triggerdown = e => {
+    /* const _triggerdown = e => {
       const {side} = e;
       const status = pose.getStatus();
       const {gamepads} = status;
@@ -259,7 +224,7 @@ class Craft {
     input.on('triggerdown', _triggerdown, {
       priority: -1,
     });
-    /* const _gripdown = e => {
+    const _gripdown = e => {
       const {side} = e;
       const {gamepads} = pose.getStatus();
       const gamepad = gamepads[side];
@@ -284,7 +249,24 @@ class Craft {
     input.on('gripdown', _gripdown, {
       priority: -1,
     }); */
-    const _gripup = e => {
+    const _release = ({grabbable, side}) => {
+      const {gamepads} = pose.getStatus();
+      const gamepad = gamepads[side];
+      const {worldPosition: controllerPosition} = gamepad;
+      const index = _getHoveredIndex(controllerPosition);
+
+      if (index !== -1) {
+        const {item} = grabbable;
+        const {attributes} = item;
+        const {asset: {value: asset}} = attributes;
+        _setGridIndex(index, asset);
+
+        grabbable.setState(gridMesh.positions[index], zeroQuaternion, oneVector);
+        grabbable.disablePhysics();
+      }
+    };
+    hands.on('release', _release);
+    /* const _gripup = e => {
       const {side} = e;
       const {gamepads} = pose.getStatus();
       const gamepad = gamepads[side];
@@ -292,14 +274,12 @@ class Craft {
       const index = _getHoveredIndex(controllerPosition);
 
       if (index !== -1) {
-        craftApi.gripup(side, index, () => {
-          e.stopImmediatePropagation();
-        });
+        // _setGridIndex(index, );
       }
     };
     input.on('gripup', _gripup, {
       priority: -1,
-    });
+    }); */
 
     /* const _teleport = () => {
       if (gridMesh.visible) {
@@ -358,11 +338,10 @@ class Craft {
       for (let i = 0; i < grid.length; i++) {
         grid[i] = null;
       }
-      grid[outputSymbol] = null;
     };
     _resetGrid();
 
-    let outputAssetInstance = null;
+    let outputAsset = null;
 
     const recipes = {};
     const _makeNullInput = (width, height) => {
@@ -441,6 +420,18 @@ class Craft {
           const index = _getHoveredIndex(controllerPosition);
           gridMesh.material.uniforms.gselected.value[side === 'left' ? 'x' : 'y'] = index;
         }
+        gridMesh.material.uniforms.gfull.value.set(
+          grid[0] ? 1 : 0,
+          grid[1] ? 1 : 0,
+          grid[2] ? 1 : 0,
+          grid[3] ? 1 : 0,
+          grid[4] ? 1 : 0,
+          grid[5] ? 1 : 0,
+          grid[6] ? 1 : 0,
+          grid[7] ? 1 : 0,
+          grid[8] ? 1 : 0
+        );
+        gridMesh.material.uniforms.goutput.value = grid[outputSymbol] !== null ? 1 : 0;
       }
     };
     render.on('update', _update);
@@ -455,16 +446,10 @@ class Craft {
     const _getGridIndex = index => grid[index];
     const _setGridIndex = (index, asset) => {
       grid[index] = asset;
-
-      const output = _getRecipeOutput(grid);
-      if (grid[outputSymbol] !== output) {
-        if (outputAssetInstance) {
-          items.destroyItem(outputAssetInstance);
-        }
-
+      grid[outputSymbol] = _getRecipeOutput(grid);
+      /* if (grid[outputSymbol] !== output) {
         const id = _makeId();
         const indexPosition = this.getGridIndexPosition(outputSymbol);
-        // const localAddress = bootstrap.getAddress();
         const assetInstance = items.makeItem({
           type: 'asset',
           id: id,
@@ -476,7 +461,6 @@ class Craft {
             quantity: {value: 1},
             owner: {value: null},
             bindOwner: {value: null},
-            // bindOwner: {value: localAddress},
             physics: {value: false},
           },
         });
@@ -486,17 +470,6 @@ class Craft {
         assetInstance.mesh.updateMatrixWorld();
 
         assetInstance.on('grab', () => {
-          /* items.emit('setTagAttributes', id, [
-            {
-              name: 'owner',
-              value: localAddress,
-            },
-            {
-              name: 'bindOwner',
-              value: null,
-            },
-          ]); */
-
           for (let i = 0; i < grid.length; i++) {
             const inputAssetInstance = grid[i];
 
@@ -512,8 +485,7 @@ class Craft {
         });
 
         grid[outputSymbol] = output;
-        outputAssetInstance = assetInstance;
-      }
+      } */
     };
 
     const craftEntity = {
@@ -553,9 +525,6 @@ class Craft {
               item.enablePhysics();
             }
           }
-          if (outputAssetInstance) {
-            items.destroyItem(outputAssetInstance);
-          }
           _resetGrid();
 
           gridMesh.visible = false;
@@ -585,8 +554,10 @@ class Craft {
       gridGeometry.dispose();
       gridMaterial.dispose();
 
-      input.removeListener('triggerdown', _triggerdown);
-      input.removeListener('gripup', _gripup);
+      // input.removeListener('triggerdown', _triggerdown);
+      // input.removeListener('gripup', _gripup);
+
+      hands.removeListener('release', _release);
 
       // teleport.removeListener('teleport', _teleport);
 
