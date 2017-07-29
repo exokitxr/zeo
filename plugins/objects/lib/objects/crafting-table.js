@@ -98,10 +98,10 @@ const craftingTable = objectApi => {
 
       const craftingTableObjectApi = {
         object: 'craftingTable',
+        offset: [0, 0.5, 0],
+        size: _sq(1),
         objectAddedCallback(object) {
-console.log('object added', object); // XXX
           object.on('trigger', () => {
-console.log('crafting table triggered');
             const craftElement = elements.getEntitiesElement().querySelector(CRAFT_PLUGIN);
             if (craftElement) {
               craftElement.open(localVector.copy(object.position).add(craftOffsetVector), zeroQuaternion, oneVector);
@@ -109,7 +109,7 @@ console.log('crafting table triggered');
           });
         },
         objectRemovedCallback(object) {
-console.log('object removed', object); // XXX
+          // XXX
         },
       };
       objectApi.registerObject(craftingTableObjectApi);
@@ -122,5 +122,6 @@ console.log('object removed', object); // XXX
       };
     });
 }
+const _sq = n => Math.sqrt(n*n*3);
 
 module.exports = craftingTable;

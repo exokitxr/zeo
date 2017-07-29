@@ -12,6 +12,7 @@ const objectsLib = require('./lib/objects/index');
 
 const NUM_POSITIONS_CHUNK = 100 * 1024;
 const TEXTURE_SIZE = 512;
+const DEFAULT_SIZE = 0.1;
 
 const OBJECTS_SHADER = {
   uniforms: {
@@ -85,6 +86,9 @@ class Objects {
         cleanup();
       }
     };
+
+    const zeroVector = new THREE.Vector3();
+    const localVector = new THREE.Vector3();
 
     const buffers = bffr(NUM_POSITIONS_CHUNK, (RANGE + 1) * (RANGE + 1) * 2);
     const textures = txtr(TEXTURE_SIZE, TEXTURE_SIZE);
@@ -201,7 +205,7 @@ class Objects {
     };
 
     class TrackedObject extends EventEmitter {
-      constructor(mesh, n, objectIndex, startIndex, endIndex, position) {
+      constructor(mesh, n, objectIndex, startIndex, endIndex, position, offset = new THREE.Vector3(), size = DEFAULT_SIZE) {
         super();
 
         this.mesh = mesh;
@@ -210,6 +214,8 @@ class Objects {
         this.startIndex = startIndex;
         this.endIndex = endIndex;
         this.position = position;
+        this.offset = offset;
+        this.size = size;
       }
 
       trigger() {
@@ -244,7 +250,10 @@ class Objects {
         const trackedObject = new TrackedObject(mesh, n, objectIndex, startIndex, endIndex, position);
         trackedObjects.push(trackedObject);
 
-        _bindTrackedObject(trackedObject);
+        const objectApi = objectApis[n];
+        if (objectApi) {
+          _bindTrackedObject(trackedObject, objectApi);
+        }
         
         if (startObject === null) {
           startObject = trackedObject;
@@ -259,7 +268,11 @@ class Objects {
 
       for (let i = 0; i < removedTrackedObjects.length; i++) {
         const trackedObject = removedTrackedObjects[i];
-        _unbindTrackedObject(trackedObject);
+        const {n} = trackedObject;
+        const objectApi = objectApis[n];
+        if (objectApi) {
+          _unbindTrackedObject(trackedObject);
+        }
       }
     };
     const _getHoveredTrackedObject = side => {
@@ -268,26 +281,28 @@ class Objects {
       const {worldPosition: controllerPosition} = gamepad;
 
       for (let i = 0; i < trackedObjects.length; i++) {
-        const trackedItem = trackedObjects[i];
-        if (controllerPosition.distanceTo(trackedItem.position) < 0.2) {
-          return trackedItem;
+        const trackedObject = trackedObjects[i];
+        if (controllerPosition.distanceTo(localVector.copy(trackedObject.position).add(trackedObject.offset)) < trackedObject.size/2) {
+          return trackedObject;
         }
       }
       return null;
     };
-    const _bindTrackedObject = trackedObject => {
-      const {n} = trackedObject;
-      const objectApi = objectApis[n];
-      if (objectApi) {
-        objectApi.objectAddedCallback(trackedObject);
+    const _bindTrackedObject = (trackedObject, objectApi) => {
+      objectApi.objectAddedCallback(trackedObject);
+
+      if (objectApi.offset) {
+        trackedObject.offset.fromArray(objectApi.offset);
+      } else {
+        trackedObject.offset.copy(zeroVector);
       }
+      trackedObject.size = objectApi.size !== undefined ? objectApi.size : DEFAULT_SIZE;
     };
-    const _unbindTrackedObject = trackedObject => {
-      const {n} = trackedObject;
-      const objectApi = objectApis[n];
-      if (objectApi) {
-        objectApi.objectRemovedCallback(trackedObject);
-      }
+    const _unbindTrackedObject = (trackedObject, objectApi) => {
+      objectApi.objectRemovedCallback(trackedObject);
+
+      trackedObject.offset.copy(zeroVector);
+      trackedObject.size = DEFAULT_SIZE;
     };
 
     const _triggerdown = e => {
@@ -376,7 +391,7 @@ class Objects {
         for (let i = 0; i < trackedObjects.length; i++) {
           const trackedObject = trackedObjects[i];
           if (trackedObject.n === n) {
-            objectApi.objectAddedCallback(trackedObject);
+            _bindTrackedObject(trackedObject, objectApi);
           }
         }
       }
@@ -389,7 +404,7 @@ class Objects {
         for (let i = 0; i < trackedObjects.length; i++) {
           const trackedObject = trackedObjects[i];
           if (trackedObject.n === n) {
-            objectApi.objectRemovedCallback(trackedObject);
+            _unbindTrackedObject(trackedObject, objectApi);
           }
         }
       }
