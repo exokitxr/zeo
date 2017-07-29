@@ -103,7 +103,7 @@ const craftingTable = objectApi => {
 
       const craftingTableObjectApi = {
         object: 'craftingTable',
-        offset: [0, 0.5, 0],
+        offset: [0, 1/2, 0],
         size: _sq(1),
         objectAddedCallback(object) {
           object.on('trigger', () => {
