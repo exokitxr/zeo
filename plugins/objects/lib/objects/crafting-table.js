@@ -1,3 +1,4 @@
+const HEIGHTFIELD_PLUGIN = 'plugins-heightfield';
 const CRAFT_PLUGIN = 'plugins-craft';
 const DEFAULT_MATRIX = [
   0, 0, 0,
