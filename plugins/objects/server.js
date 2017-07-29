@@ -14,15 +14,16 @@ class Objects {
     const {express, ws, app, wss} = archae.getCore();
 
     const zeodeDataPath = path.join(dirname, dataDirectory, 'zeode.dat');
+    const zeroBuffer = new Uint32Array(0);
 
     const _getZeode = () => new Promise((accept, reject) => {
       fs.readFile(zeodeDataPath, (err, b) => {
         if (!err || err.code === 'ENOENT') {
-          const z = zeode();
+          const zde = zeode();
           if (b) {
-            z.load(b);
+            zde.load(b);
           }
-          accept(z);
+          accept(zde);
         } else {
           reject(err);
         }
@@ -30,7 +31,7 @@ class Objects {
     });
 
     return _getZeode()
-      .then(z => {
+      .then(zde => {
         const _writeFileData = (data, byteOffset) => new Promise((accept, reject) => {
           const ws = fs.createWriteStream(zeodeDataPath, {
             flags: 'a',
@@ -46,12 +47,8 @@ class Objects {
         });
         const _saveChunks = _debounce(next => {
           const promises = [];
-          z.save(byteOffset, datas => {
-            for (let i = 0; i < datas.length; i++) {
-              const data = datas[i];
-              promises.push(_writeFileData(data, byteOffset));
-              byteOffset += data.length * 4;
-            }
+          zde.save((byteOffset, data) => {
+            promises.push(_writeFileData(new Buffer(data.buffer, data.byteOffset, data.byteLength), byteOffset));
           });
           Promise.all(promises)
             .then(() => {
@@ -76,7 +73,7 @@ class Objects {
 
           if (url === '/archae/objectsWs') {
             const _broadcast = m => {
-              for (let i = 0; i < connections.length) {
+              for (let i = 0; i < connections.length; i++) {
                 const connection = connections[i];
                 if (connection.readyState === ws.OPEN && connection !== c) {
                   connection.send(m);
@@ -89,44 +86,42 @@ class Objects {
               const {method} = m;
 
               if (method === 'getChunk') {
-                const {args: {x, y}} = m;
+                const {args: {x, z}} = m;
 
-                const chunk = z.getChunk(x, y);
+                const chunk = zde.getChunk(x, z);
                 c.send(JSON.stringify({
                   type: 'response',
                 }));
-                c.send(chunk ? chunk.getBuffer() : null);
+                c.send(chunk ? chunk.getBuffer() : zeroBuffer);
               } else if (method === 'addObject') {
-                const {args: {x, y, n, position}} = m;
+                const {args: {x, z, n, position}} = m;
 
-                const chunk = z.getChunk(x, y);
-                if (chunk) {
-                  chunk.addObject(n, position);
-                }
+                const chunk = zde.getChunk(x, z) || zde.makeChunk(x, z);
+                chunk.addObject(n, position);
 
                 _saveChunks();
 
                 _broadcast({
                   type: 'addObject',
                   x,
-                  y,
+                  z,
                   n,
                   position,
                 });
               } else if (method === 'removeObject') {
                 const {args: {index}} = m;
 
-                const chunk = z.getChunk(x, y);
+                const chunk = zde.getChunk(x, z);
                 if (chunk) {
                   chunk.removeObject(index);
+
+                  _saveChunks();
+
+                  _broadcast({
+                    type: 'removeObject',
+                    index,
+                  });
                 }
-
-                _saveChunks();
-
-                _broadcast({
-                  type: 'removeObject',
-                  index,
-                });
               } else {
                 console.warn('objects server got unknown method:', JSON.stringify(method));
               }

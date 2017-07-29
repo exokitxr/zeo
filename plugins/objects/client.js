@@ -131,6 +131,15 @@ class Objects {
       });
       return Promise.resolve();
     };
+    worker.requestRemoveObject = (x, z, index) => {
+      worker.postMessage({
+        type: 'addRemove',
+        x,
+        z,
+        index,
+      });
+      return Promise.resolve();
+    };
     worker.requestGenerate = (x, z) => new Promise((accept, reject) => {
       const buffer = buffers.alloc();
       worker.postMessage({
@@ -191,8 +200,9 @@ class Objects {
     };
 
     class TrackedObject {
-      constructor(mesh, n, startIndex, endIndex, position) {
+      constructor(mesh, objectIndex, n, startIndex, endIndex, position) {
         this.mesh = mesh;
+        this.objectIndex = objectIndex;
         this.n = n;
         this.startIndex = startIndex;
         this.endIndex = endIndex;
@@ -219,10 +229,11 @@ class Objects {
       for (let i = 0; i < numObjects; i++) {
         const baseIndex = i * 6;
         const n = objectsData[baseIndex + 0];
-        const startIndex = objectsData[baseIndex + 1];
-        const endIndex = objectsData[baseIndex + 2];
-        const position = new THREE.Vector3().fromArray(objectsData, baseIndex + 3);
-        const trackedObject = new TrackedObject(mesh, n, startIndex, endIndex, position);
+        const objectIndex = objectsData[baseIndex + 1];
+        const startIndex = objectsData[baseIndex + 2];
+        const endIndex = objectsData[baseIndex + 3];
+        const position = new THREE.Vector3().fromArray(objectsData, baseIndex + 4);
+        const trackedObject = new TrackedObject(mesh, objectIndex, n, startIndex, endIndex, position);
         trackedObjects.push(trackedObject);
 
         if (startObject === null) {
@@ -254,11 +265,14 @@ class Objects {
       const {side} = e;
       const trackedObject = _getHoveredTrackedObject(side);
 
-// console.log('got tracked object', trackedObject); // XXX
-
       if (trackedObject) {
         trackedObject.erase();
         trackedObjects.splice(trackedObjects.indexOf(trackedObject), 1);
+
+        const {objectIndex, position} = trackedObject;
+        const x = Math.floor(position.x / NUM_CELLS);
+        const z = Math.floor(position.z / NUM_CELLS);
+        worker.requestRemoveObject(x, z, objectIndex);
       }
     };
     input.on('triggerdown', _triggerdown);
