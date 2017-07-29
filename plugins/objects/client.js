@@ -218,8 +218,12 @@ class Objects {
         this.size = size;
       }
 
-      trigger() {
-        this.emit('trigger');
+      trigger(side) {
+        this.emit('trigger', side);
+      }
+
+      grip(side) {
+        this.emit('grip', side);
       }
 
       erase() {
@@ -310,7 +314,7 @@ class Objects {
       const trackedObject = _getHoveredTrackedObject(side);
 
       if (trackedObject) {
-        trackedObject.trigger();
+        trackedObject.trigger(side);
 
         /* trackedObject.erase();
         trackedObjects.splice(trackedObjects.indexOf(trackedObject), 1);
@@ -324,8 +328,18 @@ class Objects {
       }
     };
     input.on('triggerdown', _triggerdown);
+    const _gripdown = e => {
+      const {side} = e;
+      const trackedObject = _getHoveredTrackedObject(side);
+
+      if (trackedObject) {
+        trackedObject.grip(side);
+      }
+    };
+    input.on('gripdown', _gripdown);
     cleanups.push(() => {
       input.removeListener('triggerdown', _triggerdown);
+      input.removeListener('gripdown', _gripdown);
     });
 
     const objectApis = {};

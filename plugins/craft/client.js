@@ -638,5 +638,6 @@ class Craft {
     this._cleanup();
   }
 }
+const _makeId = () => Math.random().toString(36).substring(7);
 
 module.exports = Craft;

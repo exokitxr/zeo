@@ -1,4 +1,9 @@
 const HEIGHTFIELD_PLUGIN = 'plugins-heightfield';
+const DEFAULT_MATRIX = [
+  0, 0, 0,
+  0, 0, 0, 1,
+  1, 1, 1,
+];
 
 const dataSymbol = Symbol();
 
@@ -92,10 +97,28 @@ const torch = objectApi => {
       const torchObjectApi = {
         object: 'torch',
         objectAddedCallback(object) {
-console.log('object added', object); // XXX
+          object.on('grip', side => {
+            const id = _makeId();
+            const asset = 'ITEM.TORCH';
+            const assetInstance = items.makeItem({
+              type: 'asset',
+              id: id,
+              name: asset,
+              displayName: asset,
+              attributes: {
+                position: {value: DEFAULT_MATRIX},
+                asset: {value: asset},
+                quantity: {value: 1},
+                owner: {value: null},
+                bindOwner: {value: null},
+                physics: {value: false},
+              },
+            });
+            assetInstance.grab(side);
+          });
         },
         objectRemovedCallback(object) {
-console.log('object removed', object); // XXX
+          // XXX
         },
       };
       objectApi.registerObject(torchObjectApi);

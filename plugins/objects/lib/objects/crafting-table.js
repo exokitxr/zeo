@@ -1,9 +1,14 @@
 const CRAFT_PLUGIN = 'plugins-craft';
+const DEFAULT_MATRIX = [
+  0, 0, 0,
+  0, 0, 0, 1,
+  1, 1, 1,
+];
 
 const dataSymbol = Symbol();
 
 const craftingTable = objectApi => {
-  const {three, elements, pose, input, render, stage, items} = zeo;
+  const {three, elements, pose, input, render, items} = zeo;
   const {THREE, scene, camera, renderer} = three;
 
   const zeroQuaternion = new THREE.Quaternion();
@@ -107,6 +112,25 @@ const craftingTable = objectApi => {
               craftElement.open(localVector.copy(object.position).add(craftOffsetVector), zeroQuaternion, oneVector);
             }
           });
+          object.on('grip', side => {
+            const id = _makeId();
+            const asset = 'ITEM.CRAFTINGTABLE';
+            const assetInstance = items.makeItem({
+              type: 'asset',
+              id: id,
+              name: asset,
+              displayName: asset,
+              attributes: {
+                position: {value: DEFAULT_MATRIX},
+                asset: {value: asset},
+                quantity: {value: 1},
+                owner: {value: null},
+                bindOwner: {value: null},
+                physics: {value: false},
+              },
+            });
+            assetInstance.grab(side);
+          });
         },
         objectRemovedCallback(object) {
           // XXX
@@ -122,6 +146,7 @@ const craftingTable = objectApi => {
       };
     });
 }
+const _makeId = () => Math.random().toString(36).substring(7);
 const _sq = n => Math.sqrt(n*n*3);
 
 module.exports = craftingTable;
