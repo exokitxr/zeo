@@ -24,7 +24,7 @@ class Craft {
     const upVector = new THREE.Vector3(0, 1, 0);
     const forwardVector = new THREE.Vector3(0, 0, -1);
 
-    const gridSize = 0.15;
+    const gridSize = 0.125;
     const gridSpacing = gridSize / 2;
     const gridWidth = 3;
 
@@ -60,6 +60,7 @@ class Craft {
       uniforms: THREE.UniformsUtils.clone(craftShader.uniforms),
       vertexShader: craftShader.vertexShader,
       fragmentShader: craftShader.fragmentShader,
+      side: THREE.DoubleSide,
       // transparent: true,
       // depthWrite: false,
     });
@@ -71,13 +72,13 @@ class Craft {
     };
     const _getGridPosition = (x, y) => new THREE.Vector3(
       -(((gridWidth * gridSize) + ((gridWidth - 1) * gridSpacing)) / 2) + (gridSize / 2) + (x * (gridSize + gridSpacing)),
-      (((gridWidth * gridSize) + ((gridWidth - 1) * gridSpacing)) / 2) - (gridSize / 2) - (y * (gridSize + gridSpacing)),
-      0
+      0,
+      (((gridWidth * gridSize) + ((gridWidth - 1) * gridSpacing)) / 2) - (gridSize / 2) - (y * (gridSize + gridSpacing))
     );
     const _sq = n => Math.sqrt(n*n*2);
 
     const gridGeometry = (() => {
-      const cylinderGeometry = new THREE.CylinderBufferGeometry(0.002, 0.002, gridSize, 3, 1);
+      /* const cylinderGeometry = new THREE.CylinderBufferGeometry(0.002, 0.002, gridSize, 3, 1);
       const boxGeometry = (() => {
         const positions = new Float32Array(cylinderGeometry.getAttribute('position').array.length * 4 * 3);
         const indices = new Uint16Array(cylinderGeometry.index.array.length * 4 * 3);
@@ -137,11 +138,17 @@ class Craft {
         geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
         geometry.setIndex(new THREE.BufferAttribute(indices, 1));
         return geometry;
-      })();
+      })(); */
+      const planeGeometry = new THREE.PlaneBufferGeometry(gridSize, gridSize)
+        .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(
+          new THREE.Vector3(0, 0, 1),
+          new THREE.Vector3(0, 1, 0)
+        )))
+        .applyMatrix(new THREE.Matrix4().makeTranslation(0, -gridSize/2, 0));
       const gridGeometry = (() => {
-        const positions = new Float32Array(boxGeometry.getAttribute('position').array.length * ((gridWidth * gridWidth) + 1));
-        const selecteds = new Float32Array((boxGeometry.getAttribute('position').array.length / 3) * ((gridWidth * gridWidth) + 1));
-        const indices = new Uint16Array(boxGeometry.index.array.length * ((gridWidth * gridWidth) + 1));
+        const positions = new Float32Array(planeGeometry.getAttribute('position').array.length * ((gridWidth * gridWidth) + 1));
+        const selecteds = new Float32Array((planeGeometry.getAttribute('position').array.length / 3) * ((gridWidth * gridWidth) + 1));
+        const indices = new Uint16Array(planeGeometry.index.array.length * ((gridWidth * gridWidth) + 1));
         let attributeIndex = 0;
         let selectedIndex = 0;
         let indexIndex = 0;
@@ -150,7 +157,7 @@ class Craft {
           const position = _getGridPosition(x, y);
           const selected = x + (y * gridWidth);
 
-          const newPositions = boxGeometry.clone()
+          const newPositions = planeGeometry.clone()
             .applyMatrix(new THREE.Matrix4().makeTranslation(position.x, position.y, position.z))
             .getAttribute('position').array;
           positions.set(newPositions, attributeIndex);
@@ -163,7 +170,7 @@ class Craft {
             return result;
           })();
           selecteds.set(newSelecteds, selectedIndex);
-          const newIndices = boxGeometry.index.array;
+          const newIndices = planeGeometry.index.array;
           _copyIndices(newIndices, indices, indexIndex, attributeIndex / 3);
 
           attributeIndex += newPositions.length;
@@ -579,13 +586,13 @@ class Craft {
       gridMaterial.dispose();
 
       input.removeListener('triggerdown', _triggerdown);
-      input.removeListener('gripdown', _gripdown);
+      input.removeListener('gripup', _gripup);
 
       // teleport.removeListener('teleport', _teleport);
 
       render.removeListener('update', _update);
 
-      elements.unregisterEntity('craft', craftEntity);
+      elements.unregisterEntity(this, craftEntity);
     };
 
     /* const _craftTrigger = e => {
