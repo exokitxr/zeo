@@ -90,7 +90,6 @@ class Objects {
     const canvas = document.createElement('canvas');
     canvas.width = TEXTURE_SIZE;
     canvas.height = TEXTURE_SIZE;
-document.body.appendChild(canvas);
     const ctx = canvas.getContext('2d');
     const textureAtlas = new THREE.Texture(
       canvas,
