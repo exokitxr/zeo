@@ -152,7 +152,7 @@ class Rend {
               worldWidth: WORLD_WIDTH,
               worldHeight: WORLD_HEIGHT,
             });
-            mesh.receiveShadow = true;
+            // mesh.receiveShadow = true;
 
             const {page} = mesh;
             uiTracker.addPage(page);
@@ -304,7 +304,9 @@ class Rend {
             e.stopImmediatePropagation();
           }
         };
-        input.on('trigger', trigger);
+        input.on('trigger', trigger, {
+          priority: -1,
+        });
         // this needs to be a native click event rather than a soft trigger click event due for clipboard copy security reasons
         const click = () => {
           const mode = webvr.getMode();

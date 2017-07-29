@@ -516,64 +516,56 @@ class Wallet {
         };
 
         const menuMesh = (() => {
-          const object = new THREE.Object3D();
-          object.visible = false;
+          const worldUi = biolumi.makeUi({
+            width: WIDTH,
+            height: HEIGHT,
+          });
+          const mesh = worldUi.makePage(({
+            wallet: {
+              loading,
+              error,
+              inputText,
+              asset,
+              assets,
+              equipments,
+              numTags,
+              page,
+            },
+            focus: {
+              keyboardFocusState,
+            },
+          }) => {
+            const {type = '', inputValue = 0} = keyboardFocusState || {};
+            const focus = type === 'wallet';
 
-          const planeMesh = (() => {
-            const worldUi = biolumi.makeUi({
-              width: WIDTH,
-              height: HEIGHT,
-            });
-            const mesh = worldUi.makePage(({
-              wallet: {
-                loading,
-                error,
-                inputText,
-                asset,
-                assets,
-                equipments,
-                numTags,
-                page,
-              },
-              focus: {
-                keyboardFocusState,
-              },
-            }) => {
-              const {type = '', inputValue = 0} = keyboardFocusState || {};
-              const focus = type === 'wallet';
+            return {
+              type: 'html',
+              src: walletRenderer.getWalletPageSrc({loading, error, inputText, inputValue, asset, assets, equipments, numTags, page, focus}),
+              x: 0,
+              y: 0,
+              w: WIDTH,
+              h: HEIGHT,
+            };
+          }, {
+            type: 'wallet',
+            state: {
+              wallet: walletState,
+              focus: focusState,
+            },
+            worldWidth: WORLD_WIDTH,
+            worldHeight: WORLD_HEIGHT,
+            isEnabled: () => rend.isOpen(),
+          });
+          mesh.visible = false;
 
-              return {
-                type: 'html',
-                src: walletRenderer.getWalletPageSrc({loading, error, inputText, inputValue, asset, assets, equipments, numTags, page, focus}),
-                x: 0,
-                y: 0,
-                w: WIDTH,
-                h: HEIGHT,
-              };
-            }, {
-              type: 'wallet',
-              state: {
-                wallet: walletState,
-                focus: focusState,
-              },
-              worldWidth: WORLD_WIDTH,
-              worldHeight: WORLD_HEIGHT,
-              isEnabled: () => rend.isOpen(),
-            });
+          const {page} = mesh;
+          rend.addPage(page);
 
-            const {page} = mesh;
-            rend.addPage(page);
+          cleanups.push(() => {
+            rend.removePage(page);
+          });
 
-            cleanups.push(() => {
-              rend.removePage(page);
-            });
-
-            return mesh;
-          })();
-          object.add(planeMesh);
-          object.planeMesh = planeMesh;
-
-          return object;
+          return mesh;
         })();
         rend.registerMenuMesh('walletMesh', menuMesh);
         menuMesh.updateMatrixWorld();
@@ -582,8 +574,7 @@ class Wallet {
         rend.updateMatrixWorld(menuMesh);
 
         const _updatePages = () => {
-          const {planeMesh} = menuMesh;
-          const {page} = planeMesh;
+          const {page} = menuMesh;
           page.update();
         };
         _updatePages();

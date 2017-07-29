@@ -163,16 +163,51 @@ class Config {
         const statsDom = stats.dom.childNodes[0];
 
         const configMesh = (() => {
-          const object = new THREE.Object3D();
-          object.visible = false;
+          const configUi = biolumi.makeUi({
+            width: WIDTH,
+            height: HEIGHT,
+          });
+          const mesh = configUi.makePage(({
+            config: {
+              resolutionValue,
+              voiceChatCheckboxValue,
+              statsCheckboxValue,
+              visibilityValue,
+              nameValue,
+              passwordValue,
+              maxPlayersValue,
+              keyboardFocusState,
+              flags,
+            },
+          }) => {
+            const focusSpec = (() => {
+              if (keyboardFocusState) {
+                const {type} = keyboardFocusState;
 
-          const planeMesh = (() => {
-            const configUi = biolumi.makeUi({
-              width: WIDTH,
-              height: HEIGHT,
-            });
-            const mesh = configUi.makePage(({
-              config: {
+                if (type === 'config:name') {
+                  return {
+                    type: 'name',
+                  };
+                } else if (type === 'config:password') {
+                  return {
+                    type: 'password',
+                  };
+                } else if (type === 'config:visibility') {
+                  return {
+                    type: 'visibility',
+                  };
+                } else {
+                  return null;
+                }
+              } else {
+                return null;
+              }
+            })();
+            const inputValue = keyboardFocusState ? keyboardFocusState.inputValue : 0;
+
+            return {
+              type: 'html',
+              src: configRenderer.getConfigPageSrc({
                 resolutionValue,
                 voiceChatCheckboxValue,
                 statsCheckboxValue,
@@ -180,79 +215,36 @@ class Config {
                 nameValue,
                 passwordValue,
                 maxPlayersValue,
-                keyboardFocusState,
+                inputValue,
+                focusSpec,
                 flags,
-              },
-            }) => {
-              const focusSpec = (() => {
-                if (keyboardFocusState) {
-                  const {type} = keyboardFocusState;
+              }),
+              x: 0,
+              y: 0,
+              w: WIDTH,
+              h: HEIGHT,
+            };
+          }, {
+            type: 'config',
+            state: {
+              config: configState,
+            },
+            worldWidth: WORLD_WIDTH,
+            worldHeight: WORLD_HEIGHT,
+            isEnabled: () => rend.isOpen(),
+          });
+          mesh.visible = false;
+          // mesh.receiveShadow = true;
 
-                  if (type === 'config:name') {
-                    return {
-                      type: 'name',
-                    };
-                  } else if (type === 'config:password') {
-                    return {
-                      type: 'password',
-                    };
-                  } else if (type === 'config:visibility') {
-                    return {
-                      type: 'visibility',
-                    };
-                  } else {
-                    return null;
-                  }
-                } else {
-                  return null;
-                }
-              })();
-              const inputValue = keyboardFocusState ? keyboardFocusState.inputValue : 0;
+          const {page} = mesh;
+          rend.addPage(page);
+          page.initialUpdate();
 
-              return {
-                type: 'html',
-                src: configRenderer.getConfigPageSrc({
-                  resolutionValue,
-                  voiceChatCheckboxValue,
-                  statsCheckboxValue,
-                  visibilityValue,
-                  nameValue,
-                  passwordValue,
-                  maxPlayersValue,
-                  inputValue,
-                  focusSpec,
-                  flags,
-                }),
-                x: 0,
-                y: 0,
-                w: WIDTH,
-                h: HEIGHT,
-              };
-            }, {
-              type: 'config',
-              state: {
-                config: configState,
-              },
-              worldWidth: WORLD_WIDTH,
-              worldHeight: WORLD_HEIGHT,
-              isEnabled: () => rend.isOpen(),
-            });
-            mesh.receiveShadow = true;
+          cleanups.push(() => {
+            rend.removePage(page);
+          });
 
-            const {page} = mesh;
-            rend.addPage(page);
-            page.initialUpdate();
-
-            cleanups.push(() => {
-              rend.removePage(page);
-            });
-
-            return mesh;
-          })();
-          object.add(planeMesh);
-          object.planeMesh = planeMesh;
-
-          return object;
+          return mesh;
         })();
         rend.registerMenuMesh('configMesh', configMesh);
         configMesh.updateMatrixWorld();
@@ -295,14 +287,14 @@ class Config {
               isEnabled: () => rend.isOpen(),
             });
             mesh.position.z = 0.002;
-            mesh.receiveShadow = true;
+            // mesh.receiveShadow = true;
 
-            const {page} = mesh;
+            /* const {page} = mesh;
             rend.addPage(page);
 
             cleanups.push(() => {
               rend.removePage(page);
-            });
+            }); */
 
             return mesh;
           })();
@@ -331,8 +323,7 @@ class Config {
         };
 
         const _updatePages = () => {
-          const {planeMesh} = configMesh;
-          const {page} = planeMesh;
+          const {page} = configMesh;
           page.update();
         };
 
