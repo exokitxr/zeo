@@ -4,6 +4,7 @@ const threePath = require.resolve('three-zeo');
 const murmurhashPath = require.resolve('murmurhash');
 const aleaPath = require.resolve('alea-zeo');
 const indevPath = require.resolve('indev');
+const autowsPath = require.resolve('autows');
 
 class Resource {
   constructor(archae) {
@@ -63,6 +64,12 @@ class Resource {
     }
     app.use('/archae/assets/', serveAssetsIndev);
 
+    const assetsAutowsStatic = express.static(path.dirname(autowsPath));
+    function serveAssetsAutows(req, res, next) {
+      assetsAutowsStatic(req, res, next);
+    }
+    app.use('/archae/assets/', serveAssetsAutows);
+
     this._cleanup = () => {
       function removeMiddlewares(route, i, routes) {
         if (
@@ -73,7 +80,8 @@ class Resource {
           route.handle.name === 'serveAssetsThree' ||
           route.handle.name === 'serveAssetsMurmurhash' ||
           route.handle.name === 'serveAssetsAlea' ||
-          route.handle.name === 'serveAssetsIndev'
+          route.handle.name === 'serveAssetsIndev' ||
+          route.handle.name === 'serveAssetsAutows'
         ) {
           routes.splice(i, 1);
         }
