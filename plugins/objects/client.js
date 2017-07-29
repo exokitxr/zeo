@@ -74,8 +74,9 @@ void main() {
 
 class Objects {
   mount() {
-    const {three, pose, input, elements, utils: {js: {bffr}, hash: {murmur}, random: {chnkr}}} = zeo;
+    const {three, pose, input, elements, utils: {js: {events, bffr}, hash: {murmur}, random: {chnkr}}} = zeo;
     const {THREE, scene} = three;
+    const {EventEmitter} = events;
 
     const cleanups = [];
     this._cleanup = () => {
@@ -199,14 +200,20 @@ class Objects {
       return mesh;
     };
 
-    class TrackedObject {
+    class TrackedObject extends EventEmitter {
       constructor(mesh, n, objectIndex, startIndex, endIndex, position) {
+        super();
+
         this.mesh = mesh;
         this.n = n;
         this.objectIndex = objectIndex;
         this.startIndex = startIndex;
         this.endIndex = endIndex;
         this.position = position;
+      }
+
+      trigger() {
+        this.emit('trigger');
       }
 
       erase() {
@@ -288,7 +295,9 @@ class Objects {
       const trackedObject = _getHoveredTrackedObject(side);
 
       if (trackedObject) {
-        trackedObject.erase();
+        trackedObject.trigger();
+
+        /* trackedObject.erase();
         trackedObjects.splice(trackedObjects.indexOf(trackedObject), 1);
 
         _unbindTrackedObject(trackedObject);
@@ -296,7 +305,7 @@ class Objects {
         const {objectIndex, position} = trackedObject;
         const x = Math.floor(position.x / NUM_CELLS);
         const z = Math.floor(position.z / NUM_CELLS);
-        worker.requestRemoveObject(x, z, objectIndex);
+        worker.requestRemoveObject(x, z, objectIndex); */
       }
     };
     input.on('triggerdown', _triggerdown);

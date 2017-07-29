@@ -1,8 +1,15 @@
+const CRAFT_PLUGIN = 'plugins-craft';
+
 const dataSymbol = Symbol();
 
 const craftingTable = objectApi => {
   const {three, elements, pose, input, render, stage, items} = zeo;
   const {THREE, scene, camera, renderer} = three;
+
+  const zeroQuaternion = new THREE.Quaternion();
+  const oneVector = new THREE.Vector3(1, 1, 1);
+  const localVector = new THREE.Vector3();
+  const craftOffsetVector = new THREE.Vector3(0, 1.1, 0);
 
   const _requestImage = src => new Promise((accept, reject) => {
     const img = new Image();
@@ -23,7 +30,8 @@ const craftingTable = objectApi => {
       const uvWidth = craftingTableUvs[2] - craftingTableUvs[0];
       const uvHeight = craftingTableUvs[3] - craftingTableUvs[1];
 
-      const geometry = new THREE.BoxBufferGeometry(1, 1, 1);
+      const geometry = new THREE.BoxBufferGeometry(1, 1, 1)
+        .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.5, 0));
       const uvs = geometry.getAttribute('uv').array;
       const numUvs = uvs.length / 2;
       for (let i = 0; i < numUvs; i++) {
@@ -67,6 +75,13 @@ const craftingTable = objectApi => {
         object: 'craftingTable',
         objectAddedCallback(object) {
 console.log('object added', object); // XXX
+          object.on('trigger', () => {
+console.log('crafting table triggered');
+            const craftElement = elements.getEntitiesElement().querySelector(CRAFT_PLUGIN);
+            if (craftElement) {
+              craftElement.open(localVector.copy(object.position).add(craftOffsetVector), zeroQuaternion, oneVector);
+            }
+          });
         },
         objectRemovedCallback(object) {
 console.log('object removed', object); // XXX
