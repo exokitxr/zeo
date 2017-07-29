@@ -4,6 +4,6 @@
   "version": "0.0.1",
   "client": "client.js",
   "dependencies": {
-    "autows": "0.0.5"
+    "autows": "0.0.6"
   }
 }
