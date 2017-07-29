@@ -34,7 +34,7 @@ const craftingTable = objectApi => {
       return geometry;
     }))
     .then(() => {
-      const craftingTableApi = {
+      const craftingTableItemApi = {
         asset: 'ITEM.CRAFTINGTABLE',
         itemAddedCallback(grabbable) {
           const _triggerdown = e => {
@@ -61,10 +61,23 @@ const craftingTable = objectApi => {
           cleanup();
         },
       };
-      items.registerItem(this, craftingTableApi);
+      items.registerItem(this, craftingTableItemApi);
+
+      const craftingTableObjectApi = {
+        object: 'craftingTable',
+        objectAddedCallback(object) {
+console.log('object added', object); // XXX
+        },
+        objectRemovedCallback(object) {
+console.log('object removed', object); // XXX
+        },
+      };
+      objectApi.registerObject(craftingTableObjectApi);
 
       return () => {
-        items.unregisterItem(this, craftingTableApi);
+        items.unregisterItem(this, craftingTableItemApi);
+        objectApi.unregisterObject(craftingTableObjectApi);
+
         // XXX unregister texture/geometry
       };
     });

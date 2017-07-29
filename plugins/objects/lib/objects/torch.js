@@ -52,7 +52,7 @@ const torch = objectApi => {
       return geometry;
     }))
     .then(() => {
-      const torchApi = {
+      const torchItemApi = {
         asset: 'ITEM.TORCH',
         itemAddedCallback(grabbable) {
           const _triggerdown = e => {
@@ -87,7 +87,18 @@ const torch = objectApi => {
           delete grabbable[dataSymbol];
         },
       };
-      items.registerItem(this, torchApi);
+      items.registerItem(this, torchItemApi);
+
+      const torchObjectApi = {
+        object: 'torch',
+        objectAddedCallback(object) {
+console.log('object added', object); // XXX
+        },
+        objectRemovedCallback(object) {
+console.log('object removed', object); // XXX
+        },
+      };
+      objectApi.registerObject(torchObjectApi);
 
       const torchRecipe = {
         output: 'ITEM.TORCH',
@@ -99,10 +110,11 @@ const torch = objectApi => {
           'ITEM.WOOD',
         ],
       };
-      objectApi.registerRecipe(this, torchRecipe)
+      objectApi.registerRecipe(this, torchRecipe);
 
       return () => {
-        items.unregisterItem(this, torchApi);
+        items.unregisterItem(this, torchItemApi);
+        objectApi.unregisterObject(torchObjectApi);
 
         objectApi.unregisterRecipe(this, torchRecipe);
       };

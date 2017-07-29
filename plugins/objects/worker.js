@@ -79,7 +79,8 @@ function _makeChunkGeometry(chunk) {
   const positions = new Float32Array(NUM_POSITIONS_CHUNK);
   const uvs = new Float32Array(NUM_POSITIONS_CHUNK);
   const indices = new Uint16Array(NUM_POSITIONS_CHUNK);
-  const objectsArray = new Float32Array(NUM_POSITIONS_CHUNK);
+  const objectsUint32Array = new Uint32Array(NUM_POSITIONS_CHUNK);
+  const objectsFloat32Array = new Float32Array(objectsUint32Array.buffer, objectsUint32Array.byteOffset, objectsUint32Array.length);
   let attributeIndex = 0;
   let uvIndex = 0;
   let indexIndex = 0;
@@ -109,13 +110,15 @@ function _makeChunkGeometry(chunk) {
         }
         const newIndices = geometry.index.array;
         _copyIndices(newIndices, indices, indexIndex, attributeIndex / 3);
-        const newObjects = Float32Array.from([n, index, indexIndex, indexIndex + newIndices.length, position[0], position[1], position[2]]);
-        objectsArray.set(newObjects, objectIndex);
+        const newObjectsHeader = Uint32Array.from([n, index, indexIndex, indexIndex + newIndices.length]);
+        objectsUint32Array.set(newObjectsHeader, objectIndex);
+        const newObjectsBody = Float32Array.from([position[0], position[1], position[2]]);
+        objectsFloat32Array.set(newObjectsBody, objectIndex + newObjectsHeader.length);
 
         attributeIndex += newPositions.length;
         uvIndex += newUvs.length;
         indexIndex += newIndices.length;
-        objectIndex += newObjects.length;
+        objectIndex += newObjectsHeader.length + newObjectsBody.length;
       }
     }
   });
@@ -124,7 +127,7 @@ function _makeChunkGeometry(chunk) {
     positions: new Float32Array(positions.buffer, positions.byteOffset, attributeIndex),
     uvs: new Float32Array(uvs.buffer, uvs.byteOffset, uvIndex),
     indices: new Uint16Array(indices.buffer, indices.byteOffset, indexIndex),
-    objects: new Float32Array(objectsArray.buffer, objectsArray.byteOffset, objectIndex),
+    objects: new Uint32Array(objectsUint32Array.buffer, objectsUint32Array.byteOffset, objectIndex),
   };
 };
 function _wsUrl(s) {

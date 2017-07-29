@@ -74,7 +74,7 @@ void main() {
 
 class Objects {
   mount() {
-    const {three, pose, input, elements, utils: {js: {bffr}, random: {chnkr}}} = zeo;
+    const {three, pose, input, elements, utils: {js: {bffr}, hash: {murmur}, random: {chnkr}}} = zeo;
     const {THREE, scene} = three;
 
     const cleanups = [];
@@ -200,10 +200,10 @@ class Objects {
     };
 
     class TrackedObject {
-      constructor(mesh, objectIndex, n, startIndex, endIndex, position) {
+      constructor(mesh, n, objectIndex, startIndex, endIndex, position) {
         this.mesh = mesh;
-        this.objectIndex = objectIndex;
         this.n = n;
+        this.objectIndex = objectIndex;
         this.startIndex = startIndex;
         this.endIndex = endIndex;
         this.position = position;
@@ -223,19 +223,22 @@ class Objects {
 
     const trackedObjects = [];
     const _addTrackedObjects = (mesh, data) => {
-      const {objects: objectsData} = data;
-      const numObjects = objectsData.length / 4;
+      const {objects: objectsUint32Data} = data;
+      const objectsFloat32Data = new Float32Array(objectsUint32Data.buffer, objectsUint32Data.byteOffset, objectsUint32Data.length);
+      const numObjects = objectsUint32Data.length / 7;
       let startObject = null;
       for (let i = 0; i < numObjects; i++) {
-        const baseIndex = i * 6;
-        const n = objectsData[baseIndex + 0];
-        const objectIndex = objectsData[baseIndex + 1];
-        const startIndex = objectsData[baseIndex + 2];
-        const endIndex = objectsData[baseIndex + 3];
-        const position = new THREE.Vector3().fromArray(objectsData, baseIndex + 4);
-        const trackedObject = new TrackedObject(mesh, objectIndex, n, startIndex, endIndex, position);
+        const baseIndex = i * 7;
+        const n = objectsUint32Data[baseIndex + 0];
+        const objectIndex = objectsUint32Data[baseIndex + 1];
+        const startIndex = objectsUint32Data[baseIndex + 2];
+        const endIndex = objectsUint32Data[baseIndex + 3];
+        const position = new THREE.Vector3().fromArray(objectsFloat32Data, baseIndex + 4);
+        const trackedObject = new TrackedObject(mesh, n, objectIndex, startIndex, endIndex, position);
         trackedObjects.push(trackedObject);
 
+        _bindTrackedObject(trackedObject);
+        
         if (startObject === null) {
           startObject = trackedObject;
         }
@@ -245,7 +248,12 @@ class Objects {
     };
     const _removeTrackedObjects = objectRange => {
       const [startObject, numObjects] = objectRange;
-      trackedObjects.splice(trackedObjects.indexOf(startObject), numObjects);
+      const removedTrackedObjects = trackedObjects.splice(trackedObjects.indexOf(startObject), numObjects);
+
+      for (let i = 0; i < removedTrackedObjects.length; i++) {
+        const trackedObject = removedTrackedObjects[i];
+        _unbindTrackedObject(trackedObject);
+      }
     };
     const _getHoveredTrackedObject = side => {
       const {gamepads} = pose.getStatus();
@@ -260,6 +268,20 @@ class Objects {
       }
       return null;
     };
+    const _bindTrackedObject = trackedObject => {
+      const {n} = trackedObject;
+      const objectApi = objectApis[n];
+      if (objectApi) {
+        objectApi.objectAddedCallback(trackedObject);
+      }
+    };
+    const _unbindTrackedObject = trackedObject => {
+      const {n} = trackedObject;
+      const objectApi = objectApis[n];
+      if (objectApi) {
+        objectApi.objectRemovedCallback(trackedObject);
+      }
+    };
 
     const _triggerdown = e => {
       const {side} = e;
@@ -268,6 +290,8 @@ class Objects {
       if (trackedObject) {
         trackedObject.erase();
         trackedObjects.splice(trackedObjects.indexOf(trackedObject), 1);
+
+        _unbindTrackedObject(trackedObject);
 
         const {objectIndex, position} = trackedObject;
         const x = Math.floor(position.x / NUM_CELLS);
@@ -279,6 +303,8 @@ class Objects {
     cleanups.push(() => {
       input.removeListener('triggerdown', _triggerdown);
     });
+
+    const objectApis = {};
 
     let craftElement = null;
     const elementListener = elements.makeListener(CRAFT_PLUGIN);
@@ -331,6 +357,32 @@ class Objects {
               chunk.lod = -1; // force chunk refresh
             }
           });
+      }
+
+      registerObject(objectApi) {
+        const {object} = objectApi;
+        const n = murmur(object);
+        objectApis[n] = objectApi;
+
+        for (let i = 0; i < trackedObjects.length; i++) {
+          const trackedObject = trackedObjects[i];
+          if (trackedObject.n === n) {
+            objectApi.objectAddedCallback(trackedObject);
+          }
+        }
+      }
+
+      unregisterObject(objectApi) {
+        const {object} = objectApi;
+        const n = murmur(object);
+        delete objectApis[n];
+
+        for (let i = 0; i < trackedObjects.length; i++) {
+          const trackedObject = trackedObjects[i];
+          if (trackedObject.n === n) {
+            objectApi.objectRemovedCallback(trackedObject);
+          }
+        }
       }
 
       registerRecipe(recipe) {
