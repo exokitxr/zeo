@@ -15,22 +15,22 @@ const zeode = require('zeode');
 const TEXTURE_ATLAS_SIZE = 512;
 const NUM_POSITIONS_CHUNK = 100 * 1024;
 
-const z = zeode();
+const zde = zeode();
 const geometries = {};
 const textures = {};
 
 const queue = [];
 let pendingMessage = null;
-const connection = new AutoWs(_relativeWsUrl('archae/objectsWs'));
-connection.on('message', msg => {
-  const {data} = msg;
+const connection = new AutoWs(_wsUrl('/archae/objectsWs'));
+connection.on('message', e => {
+  const {data} = e;
 
   if (!pendingMessage) {
-    const o = JSON.parse(data);
-    const {type} = e;
+    const m = JSON.parse(data);
+    const {type} = m;
 
     if (type === 'response') {
-      pendingMessage = o;
+      pendingMessage = m;
     } else if (type === 'addObject') {
       // XXX
     } else if (type === 'removeObject') {
@@ -43,8 +43,8 @@ connection.on('message', msg => {
     pendingMessage = null;
   }
 });
-const _requestChunk = (x, y) => new Promise((accept, reject) => {
-  const chunk = z.getChunk(x, y);
+const _requestChunk = (x, z) => new Promise((accept, reject) => {
+  const chunk = zde.getChunk(x, z);
 
   if (chunk) {
     accept(chunk);
@@ -53,11 +53,11 @@ const _requestChunk = (x, y) => new Promise((accept, reject) => {
       method: 'getChunk',
       args: {
         x,
-        y,
+        z,
       },
     }));
     queue.push(buffer => {
-      accept(buffer ? z.addChunk(x, y, buffer) : z.makeChunk(x, y));
+      accept((buffer && buffer.byteLength > 0) ? zde.addChunk(x, z, new Uint32Array(buffer)) : zde.makeChunk(x, z));
     });
   }
 });
@@ -85,36 +85,38 @@ function _makeChunkGeometry(chunk) {
   let indexIndex = 0;
   let objectIndex = 0;
 
-  chunk.forEachObject((n, position) => {
+  chunk.forEachObject((n, position, index) => {
     const geometryEntries = geometries[n];
 
-    for (let j = 0; j < geometryEntries.length; j++) {
-      const geometry = geometryEntries[j];
-      const newPositions = geometry.getAttribute('position').array;
-      const numNewPositions = newPositions.length / 3;
+    if (geometryEntries) {
+      for (let j = 0; j < geometryEntries.length; j++) {
+        const geometry = geometryEntries[j];
+        const newPositions = geometry.getAttribute('position').array;
+        const numNewPositions = newPositions.length / 3;
 
-      for (let k = 0; k < numNewPositions; k++) {
-        const baseIndex = k * 3;
-        positions[attributeIndex + baseIndex + 0] = newPositions[baseIndex + 0] + position[0];
-        positions[attributeIndex + baseIndex + 1] = newPositions[baseIndex + 1] + position[1];
-        positions[attributeIndex + baseIndex + 2] = newPositions[baseIndex + 2] + position[2];
-      }
-      const newUvs = geometry.getAttribute('uv').array;
-      const numNewUvs = newUvs.length / 2;
-      for (let k = 0; k < numNewUvs; k++) {
-        const baseIndex = k * 2;
-        uvs[uvIndex + baseIndex + 0] = newUvs[baseIndex + 0];
-        uvs[uvIndex + baseIndex + 1] = 1 - newUvs[baseIndex + 1];
-      }
-      const newIndices = geometry.index.array;
-      _copyIndices(newIndices, indices, indexIndex, attributeIndex / 3);
-      const newObjects = Float32Array.from([n, indexIndex, indexIndex + newIndices.length, position[0], position[1], position[2]]);
-      objectsArray.set(newObjects, objectIndex);
+        for (let k = 0; k < numNewPositions; k++) {
+          const baseIndex = k * 3;
+          positions[attributeIndex + baseIndex + 0] = newPositions[baseIndex + 0] + position[0];
+          positions[attributeIndex + baseIndex + 1] = newPositions[baseIndex + 1] + position[1];
+          positions[attributeIndex + baseIndex + 2] = newPositions[baseIndex + 2] + position[2];
+        }
+        const newUvs = geometry.getAttribute('uv').array;
+        const numNewUvs = newUvs.length / 2;
+        for (let k = 0; k < numNewUvs; k++) {
+          const baseIndex = k * 2;
+          uvs[uvIndex + baseIndex + 0] = newUvs[baseIndex + 0];
+          uvs[uvIndex + baseIndex + 1] = 1 - newUvs[baseIndex + 1];
+        }
+        const newIndices = geometry.index.array;
+        _copyIndices(newIndices, indices, indexIndex, attributeIndex / 3);
+        const newObjects = Float32Array.from([n, index, indexIndex, indexIndex + newIndices.length, position[0], position[1], position[2]]);
+        objectsArray.set(newObjects, objectIndex);
 
-      attributeIndex += newPositions.length;
-      uvIndex += newUvs.length;
-      indexIndex += newIndices.length;
-      objectIndex += newObjects.length;
+        attributeIndex += newPositions.length;
+        uvIndex += newUvs.length;
+        indexIndex += newIndices.length;
+        objectIndex += newObjects.length;
+      }
     }
   });
 
@@ -125,9 +127,9 @@ function _makeChunkGeometry(chunk) {
     objects: new Float32Array(objectsArray.buffer, objectsArray.byteOffset, objectIndex),
   };
 };
-function _relativeWsUrl(s) {
-  const l = window.location;
-  return ((l.protocol === 'https:') ? 'wss://' : 'ws://') + l.host + l.pathname + (!/\/$/.test(l.pathname) ? '/' : '') + s;
+function _wsUrl(s) {
+  const l = self.location;
+  return ((l.protocol === 'https:') ? 'wss://' : 'ws://') + l.host + s;
 }
 
 self.onmessage = e => {
@@ -163,14 +165,16 @@ self.onmessage = e => {
     _requestChunk(x, z)
       .then(chunk => {
         const n = murmur(name);
-        z.addObject(n, position);
+        chunk.addObject(n, position);
 
         connection.send(JSON.stringify({
           method: 'addObject',
-          x,
-          y,
-          n,.
-          position,
+          args: {
+            x,
+            z,
+            n,
+            position,
+          },
         }));
       })
       .catch(err => {
@@ -179,15 +183,15 @@ self.onmessage = e => {
   } else if (type === 'removeObject') {
     const {x, z, index} = data;
 
-    const x = Math.floor(position[0] / NUM_CELLS);
-    const z = Math.floor(position[2] / NUM_CELLS);
     _requestChunk(x, z)
       .then(chunk => {
-        z.removeObject(index);
+        chunk.removeObject(index);
 
         connection.send(JSON.stringify({
           method: 'removeObject',
-          index,
+          args: {
+            index,
+          },
         }));
       })
       .catch(err => {
