@@ -1,5 +1,7 @@
 const txtr = require('txtr');
 
+const CRAFT_PLUGIN = 'plugins-craft';
+
 const {
   NUM_CELLS,
 
@@ -72,7 +74,7 @@ void main() {
 
 class Objects {
   mount() {
-    const {three, pose, input, utils: {js: {bffr}, random: {chnkr}}} = zeo;
+    const {three, pose, input, elements, utils: {js: {bffr}, random: {chnkr}}} = zeo;
     const {THREE, scene} = three;
 
     const cleanups = [];
@@ -88,6 +90,7 @@ class Objects {
     const canvas = document.createElement('canvas');
     canvas.width = TEXTURE_SIZE;
     canvas.height = TEXTURE_SIZE;
+document.body.appendChild(canvas);
     const ctx = canvas.getContext('2d');
     const textureAtlas = new THREE.Texture(
       canvas,
@@ -252,7 +255,7 @@ class Objects {
       const {side} = e;
       const trackedObject = _getHoveredTrackedObject(side);
 
-console.log('got tracked object', trackedObject); // XXX
+// console.log('got tracked object', trackedObject); // XXX
 
       if (trackedObject) {
         trackedObject.erase();
@@ -263,6 +266,24 @@ console.log('got tracked object', trackedObject); // XXX
     cleanups.push(() => {
       input.removeListener('triggerdown', _triggerdown);
     });
+
+    let craftElement = null;
+    const elementListener = elements.makeListener(CRAFT_PLUGIN);
+    elementListener.on('add', entityElement => {
+      craftElement = entityElement;
+
+      if (recipeQueue.length > 0) {
+        for (let i = 0; i < recipeQueue.length; i++) {
+          const recipe = recipeQueue[i];
+          craftElement.registerRecipe(recipe);
+        }
+        recipeQueue.length = 0;
+      }
+    });
+    elementListener.on('remove', () => {
+      craftElement = null;
+    });
+    const recipeQueue = [];
 
     class ObjectApi {
       registerGeometry(name, fn) {
@@ -287,7 +308,7 @@ console.log('got tracked object', trackedObject); // XXX
       }
 
       addObject(name, position) {
-        worker.requestAddObject('craftingTable', position)
+        worker.requestAddObject(name, position)
           .then(() => {
             const x = Math.floor(position.x / NUM_CELLS);
             const z = Math.floor(position.z / NUM_CELLS);
@@ -297,6 +318,26 @@ console.log('got tracked object', trackedObject); // XXX
               chunk.lod = -1; // force chunk refresh
             }
           });
+      }
+
+      registerRecipe(recipe) {
+        if (craftElement) {
+          craftElement.registerRecipe(recipe);
+        } else {
+          recipeQueue.push(recipe);
+        }
+      }
+
+      unregisterRecipe(recipe) {
+        if (craftElement) {
+          craftElement.registerRecipe(recipe);
+        } else {
+          const index = recipeQueue.indexOf(recipe);
+
+          if (index !== -1) {
+            recipeQueue.splice(index, 1);
+          }
+        }
       }
     }
     const objectApi = new ObjectApi();
