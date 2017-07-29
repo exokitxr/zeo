@@ -11,7 +11,7 @@ const craftingTable = objectApi => {
   const localVector = new THREE.Vector3();
   const craftOffsetVector = new THREE.Vector3(0, 1.1, 0);
 
-  const _requestImage = src => new Promise((accept, reject) => {
+  const _requestImage = (src, name) => new Promise((accept, reject) => {
     const img = new Image();
     img.onload = () => {
       accept(img);
@@ -20,21 +20,46 @@ const craftingTable = objectApi => {
       reject(img);
     };
     img.src = src;
+    img.name = name;
   });
 
-  return () => _requestImage('/archae/objects/img/crafting-table.png')
-    .then(craftingTableImg => objectApi.registerTexture('craftingTable', craftingTableImg))
-    .then(craftingTableImg => objectApi.registerGeometry('craftingTable', (args) => {
+  return () => Promise.all([
+    _requestImage('/archae/objects/img/crafting-table-top.png', 'craftingTableTop'),
+    _requestImage('/archae/objects/img/crafting-table-front.png', 'craftingTableFront'),
+    _requestImage('/archae/objects/img/crafting-table-side.png', 'craftingTableSide'),
+  ])
+    .then(craftingTableImgs => craftingTableImgs.map(craftingTableImg => objectApi.registerTexture(craftingTableImg.name, craftingTableImg)))
+    .then(() => objectApi.registerGeometry('craftingTable', (args) => {
       const {THREE, getUv} = args;
-      const craftingTableUvs = getUv('craftingTable');
-      const uvWidth = craftingTableUvs[2] - craftingTableUvs[0];
-      const uvHeight = craftingTableUvs[3] - craftingTableUvs[1];
 
       const geometry = new THREE.BoxBufferGeometry(1, 1, 1)
         .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.5, 0));
       const uvs = geometry.getAttribute('uv').array;
       const numUvs = uvs.length / 2;
       for (let i = 0; i < numUvs; i++) {
+        let textureName;
+        if (
+          i === 16 || i === 17 || i === 18 || i === 19 // front
+        ) {
+          textureName = 'craftingTableFront';
+        } else if (
+          i === 0 || i === 1 || i === 2 || i === 3 || // right
+          i === 4 || i === 5 || i === 6 || i === 7 || // left
+          i === 20 || i === 21 || i === 22 || i === 23 // back
+        ) {
+          textureName = 'craftingTableSide';
+        } else if (
+          i === 8 || i === 9 || i === 10 || i === 11 || // top
+          i === 12 || i === 13 || i === 14 || i === 15 // bottom
+        ) {
+          textureName = 'craftingTableTop';
+        } else {
+          textureName = 'craftingTableFront';
+        }
+
+        const craftingTableUvs = getUv(textureName);
+        const uvWidth = craftingTableUvs[2] - craftingTableUvs[0];
+        const uvHeight = craftingTableUvs[3] - craftingTableUvs[1];
         uvs[i * 2 + 0] = craftingTableUvs[0] + (uvs[i * 2 + 0] * uvWidth);
         uvs[i * 2 + 1] = craftingTableUvs[1] + (uvs[i * 2 + 1] * uvHeight);
       }
