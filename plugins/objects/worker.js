@@ -2,42 +2,66 @@ importScripts('/archae/assets/three.js');
 const {exports: THREE} = self.module;
 importScripts('/archae/assets/murmurhash.js');
 const {exports: murmur} = self.module;
+importScripts('/archae/assets/autows.js');
+const {exports: Autows} = self.module;
 self.module = {};
 
 const {
   NUM_CELLS,
 } = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
+const zeode = require('zeode');
 
 const TEXTURE_ATLAS_SIZE = 512;
 const NUM_POSITIONS_CHUNK = 100 * 1024;
 
+const z = zeode();
 const geometries = {};
 const textures = {};
-const chunks = [];
 
-class Chunk {
-  constructor(x, z) {
-    this.x = x;
-    this.z = z;
+const queue = [];
+let pendingMessage = null;
+const connection = new AutoWs(_relativeWsUrl('archae/objectsWs'));
+connection.on('message', msg => {
+  const {data} = msg;
 
-    this.objects = [];
-  }
+  if (!pendingMessage) {
+    const o = JSON.parse(data);
+    const {type} = e;
 
-  add(object) {
-    this.objects.push(object);
+    if (type === 'response') {
+      pendingMessage = o;
+    } else if (type === 'addObject') {
+      // XXX
+    } else if (type === 'removeObject') {
+      // XXX
+    } else {
+      console.warn('objects worker got invalid message type:', JSON.stringify(type));
+    }
+  } else {
+    queue.shift()(data);
+    pendingMessage = null;
   }
+});
+const _requestChunk = (x, y) => new Promise((accept, reject) => {
+  const chunk = z.getChunk(x, y);
 
-  remove(object) {
-    this.objects.splice(this.objects.indexOf(object), 1);
+  if (chunk) {
+    accept(chunk);
+  } else {
+    connection.send(JSON.stringify({
+      method: 'getChunk',
+      args: {
+        x,
+        y,
+      },
+    }));
+    queue.push(buffer => {
+      accept(buffer ? z.addChunk(x, y, buffer) : z.makeChunk(x, y));
+    });
   }
-}
-class ObjectInstance {
-  constructor(n, position) {
-    this.n = n;
-    this.position = position;
-  }
-}
+});
+
 const registerApi = {
   THREE,
   getUv(name) {
@@ -51,7 +75,7 @@ const _copyIndices = (src, dst, startIndexIndex, startAttributeIndex) => {
   }
 };
 
-const _makeGeometry = (x, z) => {
+function _makeChunkGeometry(chunk) {
   const positions = new Float32Array(NUM_POSITIONS_CHUNK);
   const uvs = new Float32Array(NUM_POSITIONS_CHUNK);
   const indices = new Uint16Array(NUM_POSITIONS_CHUNK);
@@ -61,45 +85,38 @@ const _makeGeometry = (x, z) => {
   let indexIndex = 0;
   let objectIndex = 0;
 
-  const chunk = chunks.find(chunk => chunk.x === x && chunk.z === z);
-  if (chunk) {
-    const {objects} = chunk;
+  chunk.forEachObject((n, position) => {
+    const geometryEntries = geometries[n];
 
-    for (let i = 0; i < objects.length; i++) {
-      const object = objects[i];
-      const {n, position} = object;
-      const geometryEntries = geometries[n];
+    for (let j = 0; j < geometryEntries.length; j++) {
+      const geometry = geometryEntries[j];
+      const newPositions = geometry.getAttribute('position').array;
+      const numNewPositions = newPositions.length / 3;
 
-      for (let j = 0; j < geometryEntries.length; j++) {
-        const geometry = geometryEntries[j];
-        const newPositions = geometry.getAttribute('position').array;
-        const numNewPositions = newPositions.length / 3;
-
-        for (let k = 0; k < numNewPositions; k++) {
-          const baseIndex = k * 3;
-          positions[attributeIndex + baseIndex + 0] = newPositions[baseIndex + 0] + position.x;
-          positions[attributeIndex + baseIndex + 1] = newPositions[baseIndex + 1] + position.y;
-          positions[attributeIndex + baseIndex + 2] = newPositions[baseIndex + 2] + position.z;
-        }
-        const newUvs = geometry.getAttribute('uv').array;
-        const numNewUvs = newUvs.length / 2;
-        for (let k = 0; k < numNewUvs; k++) {
-          const baseIndex = k * 2;
-          uvs[uvIndex + baseIndex + 0] = newUvs[baseIndex + 0];
-          uvs[uvIndex + baseIndex + 1] = 1 - newUvs[baseIndex + 1];
-        }
-        const newIndices = geometry.index.array;
-        _copyIndices(newIndices, indices, indexIndex, attributeIndex / 3);
-        const newObjects = Float32Array.from([n, indexIndex, indexIndex + newIndices.length, position.x, position.y, position.z]);
-        objectsArray.set(newObjects, objectIndex);
-
-        attributeIndex += newPositions.length;
-        uvIndex += newUvs.length;
-        indexIndex += newIndices.length;
-        objectIndex += newObjects.length;
+      for (let k = 0; k < numNewPositions; k++) {
+        const baseIndex = k * 3;
+        positions[attributeIndex + baseIndex + 0] = newPositions[baseIndex + 0] + position[0];
+        positions[attributeIndex + baseIndex + 1] = newPositions[baseIndex + 1] + position[1];
+        positions[attributeIndex + baseIndex + 2] = newPositions[baseIndex + 2] + position[2];
       }
+      const newUvs = geometry.getAttribute('uv').array;
+      const numNewUvs = newUvs.length / 2;
+      for (let k = 0; k < numNewUvs; k++) {
+        const baseIndex = k * 2;
+        uvs[uvIndex + baseIndex + 0] = newUvs[baseIndex + 0];
+        uvs[uvIndex + baseIndex + 1] = 1 - newUvs[baseIndex + 1];
+      }
+      const newIndices = geometry.index.array;
+      _copyIndices(newIndices, indices, indexIndex, attributeIndex / 3);
+      const newObjects = Float32Array.from([n, indexIndex, indexIndex + newIndices.length, position[0], position[1], position[2]]);
+      objectsArray.set(newObjects, objectIndex);
+
+      attributeIndex += newPositions.length;
+      uvIndex += newUvs.length;
+      indexIndex += newIndices.length;
+      objectIndex += newObjects.length;
     }
-  }
+  });
 
   return {
     positions: new Float32Array(positions.buffer, positions.byteOffset, attributeIndex),
@@ -108,6 +125,10 @@ const _makeGeometry = (x, z) => {
     objects: new Float32Array(objectsArray.buffer, objectsArray.byteOffset, objectIndex),
   };
 };
+function _relativeWsUrl(s) {
+  const l = window.location;
+  return ((l.protocol === 'https:') ? 'wss://' : 'ws://') + l.host + l.pathname + (!/\/$/.test(l.pathname) ? '/' : '') + s;
+}
 
 self.onmessage = e => {
   const {data} = e;
@@ -135,23 +156,55 @@ self.onmessage = e => {
     const n = murmur(name);
     textures[n] = uv;
   } else if (type === 'addObject') {
-    const {name, position: positionArray} = data;
-    const n = murmur(name);
-    const position = new THREE.Vector3().fromArray(positionArray);
-    const object = new ObjectInstance(n, position);
-    const x = Math.floor(position.x / NUM_CELLS);
-    const z = Math.floor(position.z / NUM_CELLS);
-    let chunk = chunks.find(chunk => chunk.x === x && chunk.z === z);
-    if (!chunk) {
-      chunk = new Chunk(x, z);
-      chunks.push(chunk);
-    }
-    chunk.add(object);
+    const {name, position} = data;
+
+    const x = Math.floor(position[0] / NUM_CELLS);
+    const z = Math.floor(position[2] / NUM_CELLS);
+    _requestChunk(x, z)
+      .then(chunk => {
+        const n = murmur(name);
+        z.addObject(n, position);
+
+        connection.send(JSON.stringify({
+          method: 'addObject',
+          x,
+          y,
+          n,.
+          position,
+        }));
+      })
+      .catch(err => {
+        console.warn(err);
+      });
+  } else if (type === 'removeObject') {
+    const {x, z, index} = data;
+
+    const x = Math.floor(position[0] / NUM_CELLS);
+    const z = Math.floor(position[2] / NUM_CELLS);
+    _requestChunk(x, z)
+      .then(chunk => {
+        z.removeObject(index);
+
+        connection.send(JSON.stringify({
+          method: 'removeObject',
+          index,
+        }));
+      })
+      .catch(err => {
+        console.warn(err);
+      });
   } else if (type === 'generate') {
-    const {x, z, buffer} = data;
-    const geometry = _makeGeometry(x, z, geometries, chunks);
-    const resultBuffer = protocolUtils.stringifyGeometry(geometry, buffer, 0);
-    postMessage(resultBuffer, [resultBuffer]);
+    const {x, z} = data;
+    let {buffer: resultBuffer} = data;
+    _requestChunk(x, z)
+      .then(chunk => {
+        const geometry = _makeChunkGeometry(chunk);
+        resultBuffer = protocolUtils.stringifyGeometry(geometry, resultBuffer, 0);
+        postMessage(resultBuffer, [resultBuffer]);
+      })
+      .catch(err => {
+        console.warn(err);
+      });
   } else {
     console.warn('objects worker got invalid method', JSON.stringify(''));
   }

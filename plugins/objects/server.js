@@ -11,7 +11,7 @@ class Objects {
   mount() {
     const {_archae: archae} = this;
     const {dirname, dataDirectory} = archae;
-    const {express, app, wss} = archae.getCore();
+    const {express, ws, app, wss} = archae.getCore();
 
     const zeodeDataPath = path.join(dirname, dataDirectory, 'zeode.dat');
 
@@ -70,14 +70,19 @@ class Objects {
         }
         app.use('/archae/objects/img', serveObjectsImg);
 
+        const connections = [];
         const _connection = c => {
           const {url} = c.upgradeReq;
 
           if (url === '/archae/objectsWs') {
-            const localTrackedChunks = {};
-            c.localTrackedChunks = localTrackedChunks;
-
-            const localCleanupSymbol = Symbol();
+            const _broadcast = m => {
+              for (let i = 0; i < connections.length) {
+                const connection = connections[i];
+                if (connection.readyState === ws.OPEN && connection !== c) {
+                  connection.send(m);
+                }
+              }
+            };
 
             c.on('message', msg => {
               const m = JSON.parse(msg);
@@ -87,6 +92,9 @@ class Objects {
                 const {args: {x, y}} = m;
 
                 const chunk = z.getChunk(x, y);
+                c.send(JSON.stringify({
+                  type: 'response',
+                }));
                 c.send(chunk ? chunk.getBuffer() : null);
               } else if (method === 'addObject') {
                 const {args: {x, y, n, position}} = m;
@@ -97,10 +105,37 @@ class Objects {
                 }
 
                 _saveChunks();
+
+                _broadcast({
+                  type: 'addObject',
+                  x,
+                  y,
+                  n,
+                  position,
+                });
+              } else if (method === 'removeObject') {
+                const {args: {index}} = m;
+
+                const chunk = z.getChunk(x, y);
+                if (chunk) {
+                  chunk.removeObject(index);
+                }
+
+                _saveChunks();
+
+                _broadcast({
+                  type: 'removeObject',
+                  index,
+                });
               } else {
                 console.warn('objects server got unknown method:', JSON.stringify(method));
               }
             });
+            c.on('close', () => {
+              connections.splice(connections.indexOf(c), 1);
+            });
+
+            connections.push(c);
           }
         };
         wss.on('connection', _connection);
@@ -116,7 +151,11 @@ class Objects {
           }
           app._router.stack.forEach(removeMiddlewares);
 
-          wss.removeListner('connection', _connection);
+          for (let i = 0; i < connections.length; i++) {
+            const c = connections[i];
+            c.close();
+          }
+          wss.removeListener('connection', _connection);
         };
       });
   }
