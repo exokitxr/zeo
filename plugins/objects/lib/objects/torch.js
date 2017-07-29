@@ -96,6 +96,8 @@ const torch = objectApi => {
 
       const torchObjectApi = {
         object: 'torch',
+        offset: [0, 0.3/2, 0],
+        size: 0.3,
         objectAddedCallback(object) {
           object.on('grip', side => {
             const id = _makeId();
