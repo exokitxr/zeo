@@ -103,9 +103,11 @@ const mirror = ({archae}) => {
   stage.add('blank', mirrorMesh);
 
   const _updateEye = camera => {
-    const {name: side} = camera;
-    const renderTarget = renderTargets[side];
-    mirrorMesh.inner.renderEye(renderer, scene, camera, renderTarget);
+    if (mirrorMesh.visible) {
+      const {name: side} = camera;
+      const renderTarget = renderTargets[side];
+      mirrorMesh.inner.renderEye(renderer, scene, camera, renderTarget);
+    }
   };
   render.on('updateEye', _updateEye);
 
