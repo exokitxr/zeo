@@ -130,6 +130,8 @@ const craftingTable = objectApi => {
               },
             });
             assetInstance.grab(side);
+
+            object.remove();
           });
         },
         objectRemovedCallback(object) {
@@ -145,7 +147,7 @@ const craftingTable = objectApi => {
         // XXX unregister texture/geometry
       };
     });
-}
+};
 const _makeId = () => Math.random().toString(36).substring(7);
 const _sq = n => Math.sqrt(n*n*3);
 

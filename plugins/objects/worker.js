@@ -138,6 +138,7 @@ function _wsUrl(s) {
 self.onmessage = e => {
   const {data} = e;
   const {type} = data;
+
   if (type === 'registerGeometry') {
     const {name, args, src} = data;
     const fn = Reflect.construct(Function, args.concat(src));
@@ -193,6 +194,8 @@ self.onmessage = e => {
         connection.send(JSON.stringify({
           method: 'removeObject',
           args: {
+            x,
+            z,
             index,
           },
         }));
@@ -213,6 +216,6 @@ self.onmessage = e => {
         console.warn(err);
       });
   } else {
-    console.warn('objects worker got invalid method', JSON.stringify(''));
+    console.warn('objects worker got invalid method', JSON.stringify(type));
   }
 };

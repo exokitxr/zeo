@@ -138,7 +138,7 @@ class Objects {
     };
     worker.requestRemoveObject = (x, z, index) => {
       worker.postMessage({
-        type: 'addRemove',
+        type: 'removeObject',
         x,
         z,
         index,
@@ -226,7 +226,7 @@ class Objects {
         this.emit('grip', side);
       }
 
-      erase() {
+      remove() {
         const {mesh, startIndex, endIndex} = this;
         const {geometry} = mesh;
         const indexAttribute = geometry.index;
@@ -235,6 +235,19 @@ class Objects {
           indices[i] = 0;
         }
         indexAttribute.needsUpdate = true;
+
+        trackedObjects.splice(trackedObjects.indexOf(this), 1);
+
+        const {n} = this;
+        const objectApi = objectApis[n];
+        if (objectApi) {
+          _unbindTrackedObject(this, objectApi);
+        }
+
+        const {objectIndex, position} = this;
+        const x = Math.floor(position.x / NUM_CELLS);
+        const z = Math.floor(position.z / NUM_CELLS);
+        worker.requestRemoveObject(x, z, objectIndex);
       }
     }
 
@@ -275,7 +288,7 @@ class Objects {
         const {n} = trackedObject;
         const objectApi = objectApis[n];
         if (objectApi) {
-          _unbindTrackedObject(trackedObject);
+          _unbindTrackedObject(trackedObject, objectApi);
         }
       }
     };
@@ -315,16 +328,6 @@ class Objects {
 
       if (trackedObject) {
         trackedObject.trigger(side);
-
-        /* trackedObject.erase();
-        trackedObjects.splice(trackedObjects.indexOf(trackedObject), 1);
-
-        _unbindTrackedObject(trackedObject);
-
-        const {objectIndex, position} = trackedObject;
-        const x = Math.floor(position.x / NUM_CELLS);
-        const z = Math.floor(position.z / NUM_CELLS);
-        worker.requestRemoveObject(x, z, objectIndex); */
       }
     };
     input.on('triggerdown', _triggerdown);
