@@ -83,7 +83,7 @@ class Tools {
                       const index = recipeQueue.indexOf(recipe);
 
                       if (index !== -1) {
-                        recipeQueue.splice(index);
+                        recipeQueue.splice(index, 1);
                       }
                     }
                   },
