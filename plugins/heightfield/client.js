@@ -157,7 +157,9 @@ class Heightfield {
   mount() {
     const {_archae: archae} = this;
     const {three, render, pose, world, elements, teleport, /*physics,*/ stck, stage, utils: {js: {bffr}, random: {chnkr}}} = zeo;
-    const {THREE} = three;
+    const {THREE, camera} = three;
+
+    const forwardVector = new THREE.Vector3(0, 0, -1);
 
     const buffers = bffr(NUM_POSITIONS_CHUNK, (RANGE * 2) * (RANGE * 2) * 2);
 
@@ -321,10 +323,6 @@ class Heightfield {
       let retargeted = false;
 
       const _addTarget = (mapChunkMesh, x, z) => {
-        teleport.addTarget(mapChunkMesh, {
-          flat: true,
-        });
-
         /* const physicsBody = physics.makeBody(mapChunkMesh, 'heightfield:' + x + ':' + z, {
           mass: 0,
           position: [
@@ -350,8 +348,6 @@ class Heightfield {
         mapChunkMesh.targeted = true;
       };
       const _removeTarget = mapChunkMesh => {
-        teleport.removeTarget(mapChunkMesh);
-
         /* const {physicsBody} = mapChunkMesh;
         physics.destroyBody(physicsBody); */
         const {stckBody} = mapChunkMesh;
@@ -468,8 +464,7 @@ class Heightfield {
             const baryCoord = new THREE.Vector3();
 
             const _getIndex = (p, min) => (p.x - min.x) + ((p.z - min.y) * (NUM_CELLS + 1));
-
-            entityElement.getElevation = (x, z) => {
+            const _getElevation = (x, z) => {
               const ox = Math.floor(x / NUM_CELLS);
               const oz = Math.floor(z / NUM_CELLS);
               const mapChunkMesh = mapChunkMeshes.find(mapChunkMesh => mapChunkMesh.x === ox && mapChunkMesh.z === oz);
@@ -503,6 +498,30 @@ class Heightfield {
               } else {
                 return null;
               }
+            };
+
+            const localVector = new THREE.Vector3();
+            const localVector2 = new THREE.Vector3();
+            const localEuler = new THREE.Euler();
+            const _teleportTarget = (position, rotation, scale) => {
+              localEuler.setFromQuaternion(rotation, camera.rotation.order);
+              const angleFactor = Math.min(Math.pow(Math.max(localEuler.x + Math.PI * 0.45, 0) / (Math.PI * 0.8), 2), 1);
+              localEuler.x = 0;
+              localEuler.z = 0;
+              const targetPosition = localVector.set(position.x, 0, position.z)
+                .add(
+                  localVector2.copy(forwardVector)
+                    .applyEuler(localEuler)
+                    .multiplyScalar(15 * angleFactor)
+                );
+              targetPosition.y = _getElevation(targetPosition.x, targetPosition.z);
+              return targetPosition;
+            };
+            teleport.addTarget(_teleportTarget);
+
+            entityElement.getElevation = _getElevation;
+            entityElement._cleanup = () => {
+              teleport.removeTarget(_teleportTarget);
             };
           },
         };

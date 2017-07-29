@@ -120,7 +120,6 @@ class Zeo {
             '/core/engines/biolumi',
             '/core/engines/rend',
             '/core/engines/keyboard',
-            '/core/engines/intersect',
             '/core/engines/teleport',
             '/core/engines/scale',
             '/core/engines/hand',
@@ -172,7 +171,6 @@ class Zeo {
                 biolumi,
                 rend,
                 keyboard,
-                intersect,
                 teleport,
                 scale,
                 hand,
@@ -934,7 +932,6 @@ class Zeo {
                           this.sound = new ZeoSoundApi();
                           this.stage = new ZeoStageApi();
                           this.stck = new ZeoStckApi();
-                          this.intersect = new ZeoIntersectApi();
                           this.teleport = new ZeoTeleportApi();
                           this.hands = new ZeoHandsApi();
                           this.transform = new ZeoTransformApi();

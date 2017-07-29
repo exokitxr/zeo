@@ -185,111 +185,103 @@ class Entity {
         };
 
         const entityMesh = (() => {
-          const object = new THREE.Object3D();
-          object.visible = false;
+          const worldUi = biolumi.makeUi({
+            width: WIDTH,
+            height: HEIGHT,
+          });
+          const mesh = worldUi.makePage(({
+            npm: {
+              loading,
+              inputText: npmInputText,
+              inputValue: npmInputValue,
+              entity,
+              tagSpecs,
+              numTags,
+              page,
+            },
+            focus: {
+              keyboardFocusState,
+            },
+          }) => {
+            const {type = '', inputText: attributeInputText = '', inputValue: attributeInputValue = 0} = keyboardFocusState || {};
+            const focusSpec = (() => {
+              let match;
+              if (type === 'entity') {
+                return {
+                  type: 'entity',
+                };
+              } else if (match = type.match(/^entityAttribute:(.+?):(.+?)$/)) {
+                const tagId = match[1];
+                const attributeName = match[2];
 
-          const planeMesh = (() => {
-            const worldUi = biolumi.makeUi({
-              width: WIDTH,
-              height: HEIGHT,
-            });
-            const mesh = worldUi.makePage(({
-              npm: {
+                return {
+                  type: 'entityAttribute',
+                  tagId: tagId,
+                  attributeName: attributeName,
+                };
+              } else if (match = type.match(/^entityAttributeMatrix:(.+?):(.+?)$/)) {
+                const tagId = match[1];
+                const attributeName = match[2];
+
+                return {
+                  type: 'entityAttributeMatrix',
+                  tagId: tagId,
+                  attributeName: attributeName,
+                };
+              } else if (match = type.match(/^entityAttributeColor:(.+?):(.+?)$/)) {
+                const tagId = match[1];
+                const attributeName = match[2];
+
+                return {
+                  type: 'entityAttributeColor',
+                  tagId: tagId,
+                  attributeName: attributeName,
+                };
+              } else {
+                return null;
+              }
+            })();
+
+            return {
+              type: 'html',
+              src: entityRenderer.getEntityPageSrc({
                 loading,
-                inputText: npmInputText,
-                inputValue: npmInputValue,
-                entity,
+                npmInputText,
+                npmInputValue,
+                attributeInputText,
+                attributeInputValue,
+                entity: entity && _decorateEntity(entity),
                 tagSpecs,
                 numTags,
                 page,
-              },
-              focus: {
-                keyboardFocusState,
-              },
-            }) => {
-              const {type = '', inputText: attributeInputText = '', inputValue: attributeInputValue = 0} = keyboardFocusState || {};
-              const focusSpec = (() => {
-                let match;
-                if (type === 'entity') {
-                  return {
-                    type: 'entity',
-                  };
-                } else if (match = type.match(/^entityAttribute:(.+?):(.+?)$/)) {
-                  const tagId = match[1];
-                  const attributeName = match[2];
+                focusSpec,
+              }),
+              x: 0,
+              y: 0,
+              w: WIDTH,
+              h: HEIGHT,
+            };
+          }, {
+            type: 'entity',
+            state: {
+              npm: npmState,
+              focus: focusState,
+            },
+            worldWidth: WORLD_WIDTH,
+            worldHeight: WORLD_HEIGHT,
+            isEnabled: () => rend.isOpen(),
+          });
+          mesh.visible = false;
+          // mesh.receiveShadow = true;
 
-                  return {
-                    type: 'entityAttribute',
-                    tagId: tagId,
-                    attributeName: attributeName,
-                  };
-                } else if (match = type.match(/^entityAttributeMatrix:(.+?):(.+?)$/)) {
-                  const tagId = match[1];
-                  const attributeName = match[2];
+          const {page} = mesh;
+          rend.addPage(page);
 
-                  return {
-                    type: 'entityAttributeMatrix',
-                    tagId: tagId,
-                    attributeName: attributeName,
-                  };
-                } else if (match = type.match(/^entityAttributeColor:(.+?):(.+?)$/)) {
-                  const tagId = match[1];
-                  const attributeName = match[2];
+          cleanups.push(() => {
+            rend.removePage(page);
+          });
 
-                  return {
-                    type: 'entityAttributeColor',
-                    tagId: tagId,
-                    attributeName: attributeName,
-                  };
-                } else {
-                  return null;
-                }
-              })();
-
-              return {
-                type: 'html',
-                src: entityRenderer.getEntityPageSrc({
-                  loading,
-                  npmInputText,
-                  npmInputValue,
-                  attributeInputText,
-                  attributeInputValue,
-                  entity: entity && _decorateEntity(entity),
-                  tagSpecs,
-                  numTags,
-                  page,
-                  focusSpec,
-                }),
-                x: 0,
-                y: 0,
-                w: WIDTH,
-                h: HEIGHT,
-              };
-            }, {
-              type: 'entity',
-              state: {
-                npm: npmState,
-                focus: focusState,
-              },
-              worldWidth: WORLD_WIDTH,
-              worldHeight: WORLD_HEIGHT,
-              isEnabled: () => rend.isOpen(),
-            });
-            mesh.receiveShadow = true;
-
-            const {page} = mesh;
-            rend.addPage(page);
-
-            cleanups.push(() => {
-              rend.removePage(page);
-            });
-
-            return mesh;
-          })();
-          object.add(planeMesh);
-          object.planeMesh = planeMesh;
-
-          return object;
+          return mesh;
         })();
         rend.registerMenuMesh('entityMesh', entityMesh);
         entityMesh.updateMatrixWorld();
@@ -298,8 +290,7 @@ class Entity {
         rend.updateMatrixWorld(entityMesh);
 
         const _updatePages = () => {
-          const {planeMesh} = entityMesh;
-          const {page} = planeMesh;
+          const {page} = entityMesh;
           page.update();
         };
         _updatePages();
