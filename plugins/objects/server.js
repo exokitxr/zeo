@@ -34,7 +34,7 @@ class Objects {
       .then(zde => {
         const _writeFileData = (data, byteOffset) => new Promise((accept, reject) => {
           const ws = fs.createWriteStream(zeodeDataPath, {
-            flags: 'a',
+            flags: 'r+',
             start: byteOffset,
           });
           ws.end(data);
@@ -109,7 +109,7 @@ class Objects {
                   position,
                 });
               } else if (method === 'removeObject') {
-                const {args: {index}} = m;
+                const {args: {x, z, index}} = m;
 
                 const chunk = zde.getChunk(x, z);
                 if (chunk) {

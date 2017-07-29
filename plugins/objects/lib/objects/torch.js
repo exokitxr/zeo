@@ -117,6 +117,8 @@ const torch = objectApi => {
               },
             });
             assetInstance.grab(side);
+
+            object.remove();
           });
         },
         objectRemovedCallback(object) {
@@ -145,5 +147,6 @@ const torch = objectApi => {
       };
     });
 };
+const _makeId = () => Math.random().toString(36).substring(7);
 
 module.exports = torch;
