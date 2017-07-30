@@ -1,13 +1,9 @@
-<!doctype html>
-<html>
-<head>
-<script>
-try {
+(() => {
 
 const canvas = document.createElement('canvas');
 const ctx = canvas.getContext('2d');
 
-const _render = (src, width, height) => {
+const render = (src, width, height) => {
   const xmlSrc = (() => {
     const el = document.createElement('div');
     el.setAttribute('style', rootCss);
@@ -84,57 +80,12 @@ const _render = (src, width, height) => {
     }));
 };
 
-const _recurse = () => {
-  const _retry = () => {
-    setTimeout(_recurse, 1000);
-  };
-
-  const host = window.location.hash.slice(1);
-  const c = new WebSocket(`ws://${host}/archae/biolumiWsProxy`);
-  c.onerror = err => {
-    console.warn(JSON.stringify(err.stack));
-
-    _retry();
-  };
-  c.onmessage = e => {
-    const {data} = e;
-    const match = data.match(/^\[([0-9]+),([0-9]+)\]/);
-    const width = parseInt(match[1], 10);
-    const height = parseInt(match[2], 10);
-    const src = data.slice(match[0].length);
-    _render(src, width, height)
-      .then(({
-        imageArrayBuffer,
-        anchors,
-      }) => {
-        c.send(imageArrayBuffer);
-        c.send(JSON.stringify(anchors));
-      })
-      .catch(err => {
-        console.warn(JSON.stringify(err.stack));
-
-        c.send(null);
-        c.send(null);
-      });
-  };
-  c.onclose = e => {
-    console.warn('remote connection closed');
-
-    _retry();
-  };
-};
-_recurse();
-
 const fonts = `-apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"`;
 const monospaceFonts = `Consolas, "Liberation Mono", Menlo, Courier, monospace`;
 const fontWeight = 300;
 const fontStyle = 'normal';
 const rootCss = `margin: 0px; padding: 0px; height: 100%; width: 100%; font-family: ${fonts}; font-weight: ${fontWeight}; overflow: visible; user-select: none;`;
 
-} catch(err) {
-  console.warn(JSON.stringify(err.stack));
-}
-</script>
-</head>
-<body></body>
-</html>
+module.exports = render;
+
+})();
