@@ -164,59 +164,6 @@ class Craft {
 
       return gridGeometry;
     })();
-
-    /* const _triggerdown = e => {
-      const {side} = e;
-      const status = pose.getStatus();
-      const {gamepads} = status;
-      const gamepad = gamepads[side];
-
-      if (gamepad.buttons.grip.pressed) {
-        const {worldPosition: controllerPosition} = gamepad;
-
-        if (!gridMesh.visible) {
-          
-        } else {
-          const index = _getHoveredIndex(controllerPosition);
-
-          if (index !== -1) {
-            craftApi.trigger(side, index);
-          } else {
-            craftApi.close();
-          }
-        }
-
-        e.stopImmediatePropagation();
-      }
-    };
-    input.on('triggerdown', _triggerdown, {
-      priority: -1,
-    });
-    const _gripdown = e => {
-      const {side} = e;
-      const {gamepads} = pose.getStatus();
-      const gamepad = gamepads[side];
-      const {worldPosition: controllerPosition} = gamepad;
-      const index = _getHoveredIndex(controllerPosition);
-
-      if (index !== -1) {
-        const hoverState = hoverStates[side];
-        const {worldGrabAsset} = hoverState;
-        const gridItem = grid[index];
-
-        if (!worldGrabAsset && gridItem) {
-          gridItem.grab(side);
-
-          grid[index] = null;
-          craft.setGridIndex(index, null);
-
-          e.stopImmediatePropagation();
-        }
-      }
-    };
-    input.on('gripdown', _gripdown, {
-      priority: -1,
-    }); */
     const _release = ({grabbable, side}) => {
       const {gamepads} = pose.getStatus();
       const gamepad = gamepads[side];
@@ -235,56 +182,8 @@ class Craft {
       }
     };
     hands.on('release', _release);
-    /* const _gripup = e => {
-      const {side} = e;
-      const {gamepads} = pose.getStatus();
-      const gamepad = gamepads[side];
-      const {worldPosition: controllerPosition} = gamepad;
-      const index = _getHoveredIndex(controllerPosition);
-
-      if (index !== -1) {
-        // _setGridIndex(index, );
-      }
-    };
-    input.on('gripup', _gripup, {
-      priority: -1,
-    }); */
-
-    /* const _teleport = () => {
-      if (gridMesh.visible) {
-        const {hmd} = pose.getStatus();
-        const {worldPosition: hmdPosition} = hmd;
-        const hmdEuler = new THREE.Euler().setFromQuaternion(
-          new THREE.Quaternion().setFromRotationMatrix(
-            new THREE.Matrix4().lookAt(
-              hmdPosition,
-              gridMesh.position,
-              upVector
-            )
-          ),
-          camera.rotation.order
-        );
-        hmdEuler.x = 0;
-        hmdEuler.z = 0;
-        const hmdQuaternion = new THREE.Quaternion().setFromEuler(hmdEuler);
-
-        gridMesh.position.copy(
-          hmdPosition.clone()
-            .add(forwardVector.clone().multiplyScalar(0.6).applyQuaternion(hmdQuaternion))
-        );
-        gridMesh.quaternion.copy(hmdQuaternion);
-        gridMesh.scale.copy(oneVector);
-        gridMesh.updateMatrixWorld();
-
-        gridMesh.updatePositions();
-
-        craftApi.emit('teleport');
-      }
-    };
-    teleport.on('teleport', _teleport); */
 
     const recipes = {};
-window.recipes = recipes;
     const _makeNullInput = (width, height) => {
       const result = Array(width * height);
       for (let i = 0; i < (width * height); i++) {
@@ -376,13 +275,6 @@ window.recipes = recipes;
       }
     };
     render.on('update', _update);
-
-    /* const _getHoveredGridIndex = side => {
-      const {gamepads} = pose.getStatus();
-      const gamepad = gamepads[side];
-      const {worldPosition: controllerPosition} = gamepad;
-      return _getHoveredIndex(controllerPosition);
-    }; */
 
     const crafters = [];
 
@@ -538,55 +430,11 @@ window.recipes = recipes;
       gridGeometry.dispose();
       gridMaterial.dispose();
 
-      // input.removeListener('triggerdown', _triggerdown);
-      // input.removeListener('gripup', _gripup);
-
       hands.removeListener('release', _release);
-
-      // teleport.removeListener('teleport', _teleport);
-
       render.removeListener('update', _update);
 
       elements.unregisterEntity(this, craftEntity);
     };
-
-    /* const _craftTrigger = e => {sss
-      const {side, index} = e;
-      const hoverState = hoverStates[side];
-      const {worldGrabAsset} = hoverState;
-      const gridItem = grid[index];
-
-      if (worldGrabAsset && !gridItem) {
-        grid[index] = worldGrabAsset;
-        const {asset} = worldGrabAsset;
-        craft.setGridIndex(index, asset);
-
-        worldGrabAsset.release(); // needs to happen second so physics are not enabled in the release handler
-        const indexPosition = craft.getGridIndexPosition(index);
-        worldGrabAsset.setStateLocal(indexPosition, zeroQuaternion, oneVector);
-      }
-    };
-    craft.on('trigger', _craftTrigger);
-
-    const _craftGripup = e => {
-      const {side, index} = e;
-      const hoverState = hoverStates[side];
-      const {worldGrabAsset} = hoverState;
-      const gridItem = grid[index];
-
-      if (worldGrabAsset && !gridItem) {
-        grid[index] = worldGrabAsset;
-        const {asset} = worldGrabAsset;
-        craft.setGridIndex(index, asset);
-
-        worldGrabAsset.release(); // needs to happen second so physics are not enabled in the release handler
-        const indexPosition = craft.getGridIndexPosition(index);
-        worldGrabAsset.setStateLocal(indexPosition, zeroQuaternion, oneVector);
-
-        e.stopImmediatePropagation();
-      }
-    };
-    craft.on('gripup', _craftGripup); */
   }
 
   unmount() {
