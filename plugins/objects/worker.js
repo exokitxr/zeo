@@ -111,6 +111,9 @@ const generateApi = {
     const az = (oz * NUM_CELLS) + z;
     return itemsNoise.in2D(ax + 1000, az + 1000);
   },
+  getHash(s) {
+    return murmur(s);
+  },
   addObject(chunk, name, position) {
     const n = murmur(name);
     chunk.addObject(n, position);
