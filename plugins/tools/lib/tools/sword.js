@@ -85,7 +85,7 @@ const sword = ({recipes}) => {
     items.registerItem(this, swordApi);
 
     const swordRecipe = {
-      output: 'ITEM.STONE',
+      output: 'ITEM.SWORD',
       width: 1,
       height: 3,
       input: [

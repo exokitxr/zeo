@@ -1,3 +1,4 @@
+const SIDES = ['left', 'right'];
 const DIRECTIONS = [
   [-1, -1, -1],
   [-1, -1, 1],
@@ -9,13 +10,17 @@ const DIRECTIONS = [
   [1, 1, -1],
   [1, 1, 1],
 ];
-const SIDES = ['left', 'right'];
+const DEFAULT_MATRIX = [
+  0, 0, 0,
+  0, 0, 0, 1,
+  1, 1, 1,
+];
 
 const outputSymbol = Symbol();
 
 class Craft {
   mount() {
-    const {three, input, pose, render, elements, hands, utils: {js: jsUtils}} = zeo;
+    const {three, input, pose, render, hands, elements, items, utils: {js: jsUtils}} = zeo;
     const {THREE, scene, camera} = three;
     const {events} = jsUtils;
     const {EventEmitter} = events;
@@ -449,6 +454,46 @@ window.recipes = recipes;
         return -1;
       }
 
+      clearGrid() {
+        for (let i = 0; i < this.grid.length; i++) {
+          const assetInstance = this.grid[i];
+
+          if (assetInstance) {
+            items.destroyItem(assetInstance);
+            this.grid[i] = null;
+          }
+        }
+      }
+
+      craft() {
+        const outputAsset = this.grid[outputSymbol];
+
+        if (outputAsset !== null) {
+          this.clearGrid();
+
+          const id = _makeId();
+          const index = 4;
+          const assetInstance = items.makeItem({
+            type: 'asset',
+            id: id,
+            name: outputAsset,
+            displayName: outputAsset,
+            attributes: {
+              position: {value: DEFAULT_MATRIX},
+              asset: {value: outputAsset},
+              quantity: {value: 1},
+              owner: {value: null},
+              bindOwner: {value: null},
+              physics: {value: false},
+            },
+          });
+          const position = this.positions[index];
+          assetInstance.setState(position, zeroQuaternion, oneVector);
+
+          this.setGridIndex(index, assetInstance);
+        }
+      }
+
       destroy() {
         for (let i = 0; i < this.grid.length; i++) {
           const grabbable = this.grid[i];
@@ -465,7 +510,6 @@ window.recipes = recipes;
 
     const craftEntity = {
       entityAddedCallback(entityElement) {
-        entityElement.isOpen = () => gridMesh.visible;
         entityElement.open = (position, rotation, scale) => {
           const crafter = new Crafter(position, rotation, scale);
           crafters.push(crafter);
@@ -481,15 +525,9 @@ window.recipes = recipes;
         entityElement.unregisterRecipe = recipe => {
           _removeRecipe(recipe);
         };
-
-        entityElement._cleanup = () => {
-          if (entityElement.isOpen()) {
-            entityElement.close();
-          }
-        };
       },
       entityRemovedCallback(entityElement) {
-        entityElement._cleanup();
+        // XXX
       },
     };
     elements.registerEntity(this, craftEntity);
@@ -515,7 +553,7 @@ window.recipes = recipes;
       elements.unregisterEntity(this, craftEntity);
     };
 
-    /* const _craftTrigger = e => {
+    /* const _craftTrigger = e => {sss
       const {side, index} = e;
       const hoverState = hoverStates[side];
       const {worldGrabAsset} = hoverState;
