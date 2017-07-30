@@ -315,7 +315,6 @@ class Items {
         const asset = ITEMS[type];
         const {gamepads} = pose.getStatus();
         const gamepad = gamepads[side];
-        const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale} = gamepad;
         const assetInstance = items.makeItem({ // XXX clean up this API
           type: 'asset',
           id: id,

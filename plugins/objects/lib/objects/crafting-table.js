@@ -142,6 +142,11 @@ const craftingTable = objectApi => {
           if (craftElement) {
             _bindCrafter(object, craftElement);
           }
+          object.on('trigger', side => {
+            if (object.crafter) {
+              object.crafter.craft();
+            }
+          });
           object.on('grip', side => {
             const id = _makeId();
             const asset = 'ITEM.CRAFTINGTABLE';
