@@ -7,7 +7,7 @@ const DEFAULT_MATRIX = [
 
 const dataSymbol = Symbol();
 
-const torch = objectApi => {
+const stone = objectApi => {
   const {three, pose, input, render, elements, items} = zeo;
   const {THREE, scene} = three;
 
@@ -24,41 +24,28 @@ const torch = objectApi => {
     img.src = src;
   });
 
-  return () => _requestImage('/archae/objects/img/torch.png')
-    .then(torchImg => objectApi.registerTexture('torch', torchImg))
-    .then(() => objectApi.registerGeometry('torch', (args) => {
+  return () => _requestImage('/archae/objects/img/stone.png')
+    .then(stoneImg => objectApi.registerTexture('stone', stoneImg))
+    .then(() => objectApi.registerGeometry('stone', (args) => {
       const {THREE, getUv} = args;
-      const torchUvs = getUv('torch');
-      const subUvs = [6/16, 0/16, 10/16, 16/16];
-      const torchSubUvs = _getSubUvs(torchUvs, subUvs);
-      const uvWidth = torchSubUvs[2] - torchSubUvs[0];
-      const uvHeight = torchSubUvs[3] - torchSubUvs[1];
+      const stoneUvs = getUv('stone');
+      const uvWidth = stoneUvs[2] - stoneUvs[0];
+      const uvHeight = stoneUvs[3] - stoneUvs[1];
 
-      const geometry = new THREE.BoxBufferGeometry(0.05, 0.3, 0.05)
+      const geometry = new THREE.BoxBufferGeometry(0.3, 0.2, 0.2)
         .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.1, 0));
       const uvs = geometry.getAttribute('uv').array;
       const numUvs = uvs.length / 2;
       for (let i = 0; i < numUvs; i++) {
-        uvs[i * 2 + 0] = torchSubUvs[0] + (uvs[i * 2 + 0] * uvWidth);
-        uvs[i * 2 + 1] = torchSubUvs[1] + (uvs[i * 2 + 1] * uvHeight);
-      }
-
-      function _getSubUvs(a, b) {
-        const uvWidthA = a[2] - a[0];
-        const uvHeightA = a[3] - a[1];
-        return [
-          a[0] + (b[0] * uvWidthA),
-          a[1] + (b[1] * uvHeightA),
-          a[0] + (b[2] * uvWidthA),
-          a[1] + (b[3] * uvHeightA),
-        ];
+        uvs[i * 2 + 0] = stoneUvs[0] + (uvs[i * 2 + 0] * uvWidth * 0.25);
+        uvs[i * 2 + 1] = stoneUvs[1] + (uvs[i * 2 + 1] * uvHeight * 0.25);
       }
 
       return geometry;
     }))
     .then(() => {
-      const torchItemApi = {
-        asset: 'ITEM.TORCH',
+      const stoneItemApi = {
+        asset: 'ITEM.STONE',
         itemAddedCallback(grabbable) {
           const _triggerdown = e => {
             const {side} = e;
@@ -70,7 +57,7 @@ const torch = objectApi => {
                 heightfieldElement ? heightfieldElement.getElevation(grabbable.position.x, grabbable.position.z) : 0,
                 grabbable.position.z
               );
-              objectApi.addObject('torch', localVector);
+              objectApi.addObject('stone', localVector);
 
               items.destroyItem(grabbable);
 
@@ -92,16 +79,16 @@ const torch = objectApi => {
           delete grabbable[dataSymbol];
         },
       };
-      items.registerItem(this, torchItemApi);
+      items.registerItem(this, stoneItemApi);
 
-      const torchObjectApi = {
-        object: 'torch',
-        offset: [0, 0.3/2, 0],
+      const stoneObjectApi = {
+        object: 'stone',
+        offset: [0, 0.2/2, 0],
         size: 0.3,
         objectAddedCallback(object) {
           object.on('grip', side => {
             const id = _makeId();
-            const asset = 'ITEM.TORCH';
+            const asset = 'ITEM.STONE';
             const assetInstance = items.makeItem({
               type: 'asset',
               id: id,
@@ -125,28 +112,14 @@ const torch = objectApi => {
           // XXX
         },
       };
-      objectApi.registerObject(torchObjectApi);
-
-      const torchRecipe = {
-        output: 'ITEM.TORCH',
-        width: 1,
-        height: 3,
-        input: [
-          'ITEM.COAL',
-          'ITEM.WOOD',
-          'ITEM.WOOD',
-        ],
-      };
-      objectApi.registerRecipe(this, torchRecipe);
+      objectApi.registerObject(stoneObjectApi);
 
       return () => {
-        items.unregisterItem(this, torchItemApi);
-        objectApi.unregisterObject(torchObjectApi);
-
-        objectApi.unregisterRecipe(this, torchRecipe);
+        items.unregisterItem(this, stoneItemApi);
+        objectApi.unregisterObject(stoneObjectApi);
       };
     });
 };
 const _makeId = () => Math.random().toString(36).substring(7);
 
-module.exports = torch;
+module.exports = stone;
