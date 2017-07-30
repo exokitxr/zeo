@@ -233,19 +233,21 @@ class Wallet {
           class AssetInstance extends Grabbable {
             constructor(
               id,
+              asset,
               n,
+              physics,
               position,
               rotation,
               scale,
               localPosition,
               localRotation,
-              localScale,
-              item
+              localScale
             ) {
               super(n, position, rotation, scale, localPosition, localRotation, localScale);
 
               this.id = id;
-              this.item = item;
+              this.asset = asset;
+              this.physics = physics;
             }
 
             emit(t, e) {
@@ -276,11 +278,6 @@ class Wallet {
                   const {userId, side} = e;
                   const hoverState = hoverStates[side];
                   const {id} = this;
-                  /* const {item} = this;
-                  const {attributes} = item;
-                  const {
-                    owner: {value: owner},
-                  } = attributes; */
 
                   hoverState.worldGrabAsset = null;
 
@@ -321,17 +318,13 @@ class Wallet {
             }
 
             enablePhysics() {
-              walletApi.emit('setTagAttribute', this.id, {
-                name: 'physics',
-                value: true,
-              });
+              this.physics = true;
+              this.emit('physics', true);
             }
 
             disablePhysics() {
-              walletApi.emit('setTagAttribute', this.id, {
-                name: 'physics',
-                value: false,
-              });
+              this.physics = false;
+              this.emit('physics', false);
             }
 
             requestChangeOwner(dstAddress) {
@@ -357,8 +350,8 @@ class Wallet {
           const assetInstances = [];
           mesh.getAssetInstances = id => assetInstances;
           mesh.getAssetInstance = id => assetInstances.find(assetInstance => assetInstance.id === id);
-          mesh.addAssetInstance = (id, n, position, rotation, scale, localPosition, localRotation, localScale, item) => {
-            const assetInstance = new AssetInstance(id, n, position, rotation, scale, localPosition, localRotation, localScale, item);
+          mesh.addAssetInstance = (id, asset, n, physics, position, rotation, scale, localPosition, localRotation, localScale) => {
+            const assetInstance = new AssetInstance(id, asset, n, physics, position, rotation, scale, localPosition, localRotation, localScale);
             hand.addGrabbable(assetInstance);
             assetInstances.push(assetInstance);
 
@@ -366,8 +359,6 @@ class Wallet {
               let live = true;
 
               const geometry = (() => {
-                const {attributes} = item;
-                const {asset: {value: asset}} = attributes;
                 const imageData = resource.getSpriteImageData(asset);
 
                 spriteUtils.requestSpriteGeometry(imageData, pixelSize)
@@ -894,10 +885,7 @@ class Wallet {
             }
           });
 
-          const {item} = assetInstance;
-          const {attributes} = item;
-          const {physics: {value: physics}} = attributes;
-          if (physics) {
+          if (assetInstance.physics) {
             _addBody();
           }
         };
@@ -919,9 +907,7 @@ class Wallet {
             },
             metadata: {},
           };
-          walletApi.emit('addTag', itemSpec);
-
-          const assetInstance = assetsMesh.getAssetInstance(id);
+          const assetInstance = walletApi.makeItem(itemSpec);
           assetInstance.grab(side);
 
           const address = bootstrap.getAddress();
@@ -966,15 +952,9 @@ class Wallet {
           }, 3000);
         };
         const _storeItem = assetInstance => {
-          const {id} = assetInstance;
-          walletApi.emit('removeTag', id);
+          walletApi.destroyItem(assetInstance);
 
-          const {item} = assetInstance;
-          const {attributes} = item;
-          const {
-            asset: {value: asset},
-          } = attributes;
-
+          const {asset} = assetInstance;
           const address = bootstrap.getAddress();
           const quantity = 1;
           const {assets: oldAssets} = walletState;
@@ -1027,24 +1007,6 @@ class Wallet {
           const {position} = assetInstance;
 
           if (_isInBody(position)) {
-            /* const localAddress = bootstrap.getAddress();
-
-            if (owner === localAddress) {
-              walletApi.emit('removeTag', id);
-            } else {
-              this.hide(); // for better UX
-
-              this.requestChangeOwner(localAddress)
-                .then(() => {
-                  walletApi.emit('removeTag', this.id);
-                })
-                .catch(err => {
-                  console.warn(err);
-
-                  this.show();
-                });
-            } */
-
             _storeItem(assetInstance);
           }
         };
@@ -1103,9 +1065,7 @@ class Wallet {
         const itemApis = {};
         const equipmentApis = {};
         const _bindAssetInstance = assetInstance => {
-          const {item} = assetInstance;
-          const {attributes} = item;
-          const {asset: {value: asset}} = attributes;
+          const {asset} = assetInstance;
           const itemEntry = itemApis[asset];
 
           if (itemEntry) {
@@ -1119,9 +1079,7 @@ class Wallet {
           }
         };
         const _unbindAssetInstance = assetInstance => {
-          const {item} = assetInstance;
-          const {attributes} = item;
-          const {asset: {value: asset}} = attributes;
+          const {asset} = assetInstance;
           const itemEntry = itemApis[asset];
 
           if (itemEntry) {
@@ -1241,17 +1199,38 @@ class Wallet {
           }
 
           makeItem(itemSpec) {
-            const {id} = itemSpec;
+            const {id, attributes: {asset: {value: asset}, position: {value: matrix}, physics: {value: physics}}} = itemSpec;
+            const n = murmur(id);
+            const position = new THREE.Vector3(matrix[0], matrix[1], matrix[2]);
+            const rotation = new THREE.Quaternion(matrix[3], matrix[4], matrix[5], matrix[6]);
+            const scale = new THREE.Vector3(matrix[7], matrix[8], matrix[9]);
 
-            walletApi.emit('addTag', itemSpec);
+            const assetInstance = assetsMesh.addAssetInstance(
+              id,
+              asset,
+              n,
+              physics,
+              position,
+              rotation,
+              scale,
+              zeroVector,
+              zeroQuaternion,
+              oneVector
+            );
 
-            const assetInstance = assetsMesh.getAssetInstance(id);
+            _bindAssetInstance(assetInstance);
+            _bindAssetInstancePhysics(assetInstance);
+
             return assetInstance;
           }
 
           destroyItem(itemSpec) {
             const {id} = itemSpec;
-            walletApi.emit('removeTag', id);
+            const assetInstance = assetsMesh.getAssetInstance(id);
+
+            _unbindAssetInstance(assetInstance);
+
+            assetsMesh.removeAssetInstance(id);
           }
 
           registerItem(pluginInstance, itemApi) {
@@ -1302,58 +1281,6 @@ class Wallet {
             }
 
             _unbindEquipmentApi(equipmentApi);
-          }
-
-          getRecipeOutput(input) {
-            return _getRecipeOutput(input);
-          }
-
-          addAsset(item) {
-            const {id, attributes} = item;
-            const {
-              position: {value: matrix},
-            } = attributes;
-
-            const n = murmur(id);
-
-            const position = new THREE.Vector3(matrix[0], matrix[1], matrix[2]);
-            const rotation = new THREE.Quaternion(matrix[3], matrix[4], matrix[5], matrix[6]);
-            const scale = new THREE.Vector3(matrix[7], matrix[8], matrix[9]);
-
-            const assetInstance = assetsMesh.addAssetInstance(
-              id,
-              n,
-              position,
-              rotation,
-              scale,
-              zeroVector,
-              zeroQuaternion,
-              oneVector,
-              item
-            );
-
-            _bindAssetInstance(assetInstance);
-            _bindAssetInstancePhysics(assetInstance);
-          }
-
-          removeAsset(item) {
-            const {id} = item;
-            const assetInstance = assetsMesh.getAssetInstance(id);
-
-            _unbindAssetInstance(assetInstance);
-
-            assetsMesh.removeAssetInstance(id);
-          }
-
-          setAssetAttribute(item, attributeName, attributeValue) {
-            if (attributeName === 'physics') {
-              const {id} = item;
-              const assetInstance = assetsMesh.getAssetInstance(id);
-
-              if (assetInstance) {
-                assetInstance.emit('physics', attributeValue);
-              }
-            }
           }
         }
         const walletApi = new WalletApi();

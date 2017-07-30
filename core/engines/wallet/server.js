@@ -61,19 +61,19 @@ constructor(archae) {
             const {method, args} = m;
 
             if (method === 'kickAsset') {
-              const [id] = args;
+              /* const [id] = args;
               const trackedTag = trackedTags[id];
 
               if (trackedTag) {
                 trackedTag.kick();
-              }
+              } */
             } else if (method === 'unkickAsset') {
-              const [id] = args;
+              /* const [id] = args;
               const trackedTag = trackedTags[id];
 
               if (trackedTag) {
                 trackedTag.unkick();
-              }
+              } */
             } else {
               console.warn('no such method:' + JSON.stringify(method));
             }

@@ -227,9 +227,6 @@ class Craft {
         const index = crafter.getHoveredIndex(controllerPosition);
 
         if (index !== -1) {
-          /* const {item} = grabbable;
-          const {attributes} = item;
-          const {asset: {value: asset}} = attributes; */
           crafter.setGridIndex(index, grabbable);
 
           grabbable.setState(crafter.positions[index], zeroQuaternion, oneVector);
@@ -425,7 +422,7 @@ window.recipes = recipes;
 
       setGridIndex(index, assetInstance) {
         this.grid[index] = assetInstance;
-        this.grid[outputSymbol] = _getRecipeOutput(this.grid.map(grabbable => grabbable ? grabbable.item.attributes.asset.value : null));
+        this.grid[outputSymbol] = _getRecipeOutput(this.grid.map(grabbable => grabbable ? grabbable.asset : null));
 
         if (assetInstance) {
           const _cleanup = () => {
