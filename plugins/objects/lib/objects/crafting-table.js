@@ -15,7 +15,7 @@ const craftingTable = objectApi => {
   const zeroQuaternion = new THREE.Quaternion();
   const oneVector = new THREE.Vector3(1, 1, 1);
   const localVector = new THREE.Vector3();
-  const craftOffsetVector = new THREE.Vector3(0, 1.1, 0);
+  const craftOffsetVector = new THREE.Vector3(0, 1, 0);
 
   const _requestImage = (src, name) => new Promise((accept, reject) => {
     const img = new Image();
@@ -27,6 +27,29 @@ const craftingTable = objectApi => {
     };
     img.src = src;
     img.name = name;
+  });
+
+  const craftingTables = [];
+  const _bindCrafter = (craftingTable, craftElement) => {
+    craftingTable.crafter = craftElement.open(localVector.copy(craftingTable.position).add(craftOffsetVector), zeroQuaternion, oneVector);
+  };
+  const _unbindCrafter = (craftingTable, craftElement) => {
+    craftElement.close(craftingTable.crafter);
+    craftingTable.crafter = null;
+  };
+
+  const elementListener = elements.makeListener(CRAFT_PLUGIN);
+  elementListener.on('add', entityElement => {
+    for (let i = 0; i < craftingTables.length; i++) {
+      const craftingTable = craftingTables[i];
+     _bindCrafter(craftingTable, entityElement);
+    }
+  });
+  elementListener.on('remove', () => {
+    for (let i = 0; i < craftingTables.length; i++) {
+      const craftingTable = craftingTables[i];
+      _unbindCrafter(craftingTable, entityElement);
+    }
   });
 
   return () => Promise.all([
@@ -113,12 +136,12 @@ const craftingTable = objectApi => {
         offset: [0, 1/2, 0],
         size: _sq(1),
         objectAddedCallback(object) {
-          object.on('trigger', () => {
-            const craftElement = elements.getEntitiesElement().querySelector(CRAFT_PLUGIN);
-            if (craftElement) {
-              craftElement.open(localVector.copy(object.position).add(craftOffsetVector), zeroQuaternion, oneVector);
-            }
-          });
+          object.crafter = null;
+
+          const craftElement = elements.getEntitiesElement().querySelector(CRAFT_PLUGIN);
+          if (craftElement) {
+            _bindCrafter(object, craftElement);
+          }
           object.on('grip', side => {
             const id = _makeId();
             const asset = 'ITEM.CRAFTINGTABLE';
@@ -142,7 +165,10 @@ const craftingTable = objectApi => {
           });
         },
         objectRemovedCallback(object) {
-          // XXX
+          const craftElement = elements.getEntitiesElement().querySelector(CRAFT_PLUGIN);
+          if (craftElement) {
+            _unbindCrafter(object, craftElement);
+          }
         },
       };
       objectApi.registerObject(craftingTableObjectApi);
