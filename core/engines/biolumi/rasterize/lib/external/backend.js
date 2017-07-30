@@ -12,7 +12,7 @@ const rasterize = ({
 }) => {
   const cleanups = [];
 
-  const workerStatic = express.static(path.join(__dirname, 'worker'));
+  const workerStatic = express.static(path.join(__dirname, '..', 'worker'));
   function serveWorker(req, res, next) {
     workerStatic(req, res, next);
   }

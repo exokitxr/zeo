@@ -5,6 +5,7 @@
   "client": "client.js",
   "server": "server.js",
   "dependencies": {
+    "autows": "0.0.7",
     "body-parser": "^1.17.2",
     "chrome-remote-interface": "^0.24.2",
     "getport": "^0.1.0",
