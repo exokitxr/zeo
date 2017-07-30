@@ -28,6 +28,7 @@ class Craft {
     const gridSize = 0.125;
     const gridSpacing = gridSize / 2;
     const gridWidth = 3;
+    const hoverDistance = _sq((gridSize + gridSpacing) / 2);
 
     const directions = DIRECTIONS.map(direction => new THREE.Vector3().fromArray(direction).multiplyScalar(gridSize / 2));
     const craftShader = {
@@ -102,7 +103,6 @@ class Craft {
       (gridSize / 2) + 0.001,
       (((gridWidth * gridSize) + ((gridWidth - 1) * gridSpacing)) / 2) - (gridSize / 2) - (y * (gridSize + gridSpacing))
     );
-    const _sq = n => Math.sqrt(n*n*2);
 
     const gridGeometry = (() => {
       const planeGeometry = new THREE.PlaneBufferGeometry(gridSize, gridSize)
@@ -160,43 +160,6 @@ class Craft {
       return gridGeometry;
     })();
 
-    const gridMesh = (() => {
-      const mesh = new THREE.Mesh(gridGeometry, gridMaterial);
-      mesh.visible = false;
-
-      const positions = (() => {
-        const result = Array(gridWidth * gridWidth);
-        for (let i = 0; i < (gridWidth * gridWidth); i++) {
-          result[i] = new THREE.Vector3();
-        }
-        // result[outputSymbol] = new THREE.Vector3();
-        return result;
-      })();
-      mesh.positions = positions;
-      mesh.updatePositions = () => {
-        const {position, quaternion, scale} = mesh;
-
-        for (let y = 0; y < gridWidth; y++) {
-          for (let x = 0; x < gridWidth; x++) {
-            const index = x + (y * gridWidth);
-            const p = _getGridPosition(x, y)
-              .multiply(scale)
-              .applyQuaternion(quaternion)
-              .add(position);
-            positions[index].copy(p);
-          }
-        }
-        const p = _getGridPosition(gridWidth, 1)
-          .multiply(scale)
-          .applyQuaternion(quaternion)
-          .add(position);
-        // positions[outputSymbol].copy(p);
-      };
-
-      return mesh;
-    })();
-    scene.add(gridMesh);
-
     /* const _triggerdown = e => {
       const {side} = e;
       const status = pose.getStatus();
@@ -253,16 +216,20 @@ class Craft {
       const {gamepads} = pose.getStatus();
       const gamepad = gamepads[side];
       const {worldPosition: controllerPosition} = gamepad;
-      const index = _getHoveredIndex(controllerPosition);
 
-      if (index !== -1) {
-        const {item} = grabbable;
-        const {attributes} = item;
-        const {asset: {value: asset}} = attributes;
-        _setGridIndex(index, asset);
+      for (let i = 0; i < crafters.length; i++) {
+        const crafter = crafters[i];
+        const index = crafter.getHoveredIndex(controllerPosition);
 
-        grabbable.setState(gridMesh.positions[index], zeroQuaternion, oneVector);
-        grabbable.disablePhysics();
+        if (index !== -1) {
+          /* const {item} = grabbable;
+          const {attributes} = item;
+          const {asset: {value: asset}} = attributes; */
+          crafter.setGridIndex(index, grabbable);
+
+          grabbable.setState(crafter.positions[index], zeroQuaternion, oneVector);
+          grabbable.disablePhysics();
+        }
       }
     };
     hands.on('release', _release);
@@ -313,35 +280,6 @@ class Craft {
       }
     };
     teleport.on('teleport', _teleport); */
-
-    const hoverDistance = _sq((gridSize + gridSpacing) / 2);
-    const _getHoveredIndex = p => {
-      if (gridMesh.visible) {
-        const {positions} = gridMesh;
-
-        for (let j = 0; j < positions.length; j++) {
-          const position = positions[j];
-          const distance = p.distanceTo(position);
-
-          if (distance < hoverDistance) {
-            return j;
-          }
-        }
-        return -1;
-      } else {
-        return -1;
-      }
-    };
-
-    const grid = Array(gridWidth * gridWidth);
-    const _resetGrid = () => {
-      for (let i = 0; i < grid.length; i++) {
-        grid[i] = null;
-      }
-    };
-    _resetGrid();
-
-    let outputAsset = null;
 
     const recipes = {};
     const _makeNullInput = (width, height) => {
@@ -410,15 +348,15 @@ class Craft {
     };
 
     const _update = () => {
-      if (gridMesh.visible) {
-        const {gamepads} = pose.getStatus();
+      const {gamepads} = pose.getStatus();
 
-        for (let i = 0; i < SIDES.length; i++) {
-          const side = SIDES[i];
-          const gamepad = gamepads[side];
-          const {worldPosition: controllerPosition} = gamepad;
-          const index = _getHoveredIndex(controllerPosition);
-          gridMesh.material.uniforms.gselected.value[side === 'left' ? 'x' : 'y'] = index;
+      for (let i = 0; i < crafters.length; i++) {
+        const crafter = crafters[i];
+        const {gridMesh, grid} = crafter;
+
+        for (let j = 0; j < SIDES.length; j++) {
+          const side = SIDES[j];
+          gridMesh.material.uniforms.gselected.value[side === 'left' ? 'x' : 'y'] = crafter.getHoveredIndex(gamepads[side].worldPosition);
         }
         gridMesh.material.uniforms.gfull.value.set(
           grid[0] ? 1 : 0,
@@ -442,92 +380,81 @@ class Craft {
       const {worldPosition: controllerPosition} = gamepad;
       return _getHoveredIndex(controllerPosition);
     }; */
-    const _getGridIndexPosition = index => gridMesh.positions[index];
-    const _getGridIndex = index => grid[index];
-    const _setGridIndex = (index, asset) => {
-      grid[index] = asset;
-      grid[outputSymbol] = _getRecipeOutput(grid);
-      /* if (grid[outputSymbol] !== output) {
-        const id = _makeId();
-        const indexPosition = this.getGridIndexPosition(outputSymbol);
-        const assetInstance = items.makeItem({
-          type: 'asset',
-          id: id,
-          name: asset,
-          displayName: asset,
-          attributes: {
-            position: {value: indexPosition.toArray().concat(zeroQuaternion.toArray()).concat(oneVector.toArray())},
-            asset: {value: asset},
-            quantity: {value: 1},
-            owner: {value: null},
-            bindOwner: {value: null},
-            physics: {value: false},
-          },
-        });
-        assetInstance.mesh.position.copy(indexPosition);
-        assetInstance.mesh.quaternion.copy(zeroQuaternion);
-        assetInstance.mesh.scale.copy(oneVector);
-        assetInstance.mesh.updateMatrixWorld();
 
-        assetInstance.on('grab', () => {
-          for (let i = 0; i < grid.length; i++) {
-            const inputAssetInstance = grid[i];
+    const crafters = [];
 
-            if (inputAssetInstance !== null) {
-              items.destroyItem(inputAssetInstance);
-            }
+    class Crafter {
+      constructor(position, rotation, scale) {
+        const gridMesh = new THREE.Mesh(gridGeometry, gridMaterial)
+        gridMesh.position.copy(position);
+        gridMesh.rotation.copy(rotation);
+        gridMesh.scale.copy(scale);
+        gridMesh.updateMatrixWorld();
+        scene.add(gridMesh);
+        this.gridMesh = gridMesh;
+
+        const positions = Array(gridWidth * gridWidth);
+        for (let y = 0; y < gridWidth; y++) {
+          for (let x = 0; x < gridWidth; x++) {
+            positions[x + (y * gridWidth)] = _getGridPosition(x, y)
+              .multiply(scale)
+              .applyQuaternion(rotation)
+              .add(position);
           }
-          _resetGrid();
+        }
+        this.positions = positions;
 
-          craft.close();
+        const grid = Array(gridWidth * gridWidth);
+        for (let i = 0; i < grid.length; i++) {
+          grid[i] = null;
+        }
+        this.grid = grid;
+      }
 
-          assetInstance.enablePhysics();
-        });
+      getGridIndex(index) {
+        return this.grid[index];
+      }
 
-        grid[outputSymbol] = output;
-      } */
-    };
+      setGridIndex(index, asset) {
+        this.grid[index] = asset;
+        this.grid[outputSymbol] = _getRecipeOutput(this.grid.map(grabbable => grabbable ? grabbable.item.attributes.asset.value : null));
+      }
+
+      getHoveredIndex(p) {
+        for (let j = 0; j < this.positions.length; j++) {
+          const position = this.positions[j];
+          const distance = p.distanceTo(position);
+
+          if (distance < hoverDistance) {
+            return j;
+          }
+        }
+        return -1;
+      }
+
+      destroy() {
+        for (let i = 0; i < this.grid.length; i++) {
+          const grabbable = this.grid[i];
+          if (grabbable) {
+            grabbable.enablePhysics();
+          }
+        }
+
+        scene.remove(this.gridMesh);
+      }
+    }
 
     const craftEntity = {
       entityAddedCallback(entityElement) {
         entityElement.isOpen = () => gridMesh.visible;
         entityElement.open = (position, rotation, scale) => {
-          if (entityElement.isOpen()) {
-            entityElement.close();
-          }
-
-          /* const {hmd} = status;
-          const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmd;
-          const hmdEuler = new THREE.Euler().setFromQuaternion(hmdRotation, camera.rotation.order);
-          hmdEuler.x = 0;
-          hmdEuler.z = 0;
-          const hmdQuaternion = new THREE.Quaternion().setFromEuler(hmdEuler);
-
-          gridMesh.position.copy(
-            hmdPosition.clone()
-              .add(forwardVector.clone().multiplyScalar(0.6).applyQuaternion(hmdQuaternion))
-          );
-          gridMesh.quaternion.copy(hmdQuaternion);
-          gridMesh.scale.copy(oneVector); */
-          gridMesh.position.copy(position);
-          gridMesh.rotation.copy(rotation);
-          gridMesh.scale.copy(scale);
-          gridMesh.updateMatrixWorld();
-          gridMesh.visible = true;
-
-          gridMesh.updatePositions();
+          const crafter = new Crafter(position, rotation, scale);
+          crafters.push(crafter);
+          return crafter;
         };
-        entityElement.close = () => {
-          for (let i = 0; i < grid.length; i++) {
-            const item = grid[i];
-
-            if (item) {
-              item.enablePhysics();
-            }
-          }
-          _resetGrid();
-
-          gridMesh.visible = false;
+        entityElement.close = crafter => {
+          crafter.destroy();
+          crafters.splice(crafters.indexOf(crafter), 1);
         };
         entityElement.registerRecipe = recipe => {
           _addRecipe(recipe);
@@ -610,5 +537,6 @@ class Craft {
   }
 }
 const _makeId = () => Math.random().toString(36).substring(7);
+const _sq = n => Math.sqrt(n*n*2);
 
 module.exports = Craft;
