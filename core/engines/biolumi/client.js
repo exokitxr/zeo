@@ -2,6 +2,7 @@ import keycode from 'keycode';
 
 import menuShader from './lib/shaders/menu';
 import transparentShader from './lib/shaders/transparent';
+import rasterize from './rasterize/lib/frontend';
 
 const DEFAULT_FRAME_TIME = 1000 / (60 * 2)
 
@@ -26,23 +27,13 @@ class Biolumi {
       }
     };
 
-    class Anchor {
-      constructor(left, right, top, bottom, onclick, onmousedown, onmouseup) {
-        this.left = left;
-        this.right = right;
-        this.top = top;
-        this.bottom = bottom;
-        this.onclick = onclick;
-        this.onmousedown = onmousedown;
-        this.onmouseup = onmouseup;
-      }
-    }
-
     const _requestImg = src => new Promise((accept, reject) => {
       const img = new Image();
       img.src = src;
       img.onload = () => {
-        accept(img);
+        createImageBitmap(img, 0, 0, img.width, img.height)
+          .then(accept)
+          .catch(reject);
       };
       img.onerror = err => {
         reject(err);
@@ -146,90 +137,22 @@ class Biolumi {
 
       return Promise.resolve(new UiTimer());
     };
+    const _requestRasterizer = () => Promise.resolve(rasterize());
 
     return Promise.all([
       archae.requestPlugins([
         '/core/engines/three',
-        '/core/utils/network-utils',
         '/core/utils/geometry-utils',
       ]),
       _requestTransparentImg(),
       _requestBlackImg(),
       _requestUiWorker(),
       _requestUiTimer(),
+      _requestRasterizer(),
     ])
       .then(([
         [
           three,
-          networkUtils,
-          geometryUtils,
-        ],
-        transparentImg,
-        blackImg,
-        uiWorker,
-        uiTimer,
-      ]) => {
-        if (live) {
-          const {AutoWs} = networkUtils;
-
-          const queue = [];
-          const c = new AutoWs(_relativeWsUrl('archae/biolumiWs'));
-          c.on('message', e => {
-            queue.shift()(e.data);
-          });
-
-          const rasterizer = {
-            rasterize: (src, width, height) => {
-              c.send(JSON.stringify([width, height]) + src);
-
-              return Promise.all([
-                new Promise((accept, reject) => {
-                  queue.push(imageArrayBuffer => {
-                    createImageBitmap(new Blob([imageArrayBuffer], {type: 'image/png'}), 0, 0, width, height, {
-                      imageOrientation: 'flipY',
-                    })
-                      .then(accept)
-                      .catch(reject);
-                  });
-                }),
-                new Promise((accept, reject) => {
-                  queue.push(anchorsJson => {
-                    const anchors = JSON.parse(anchorsJson)
-                      .map(([left, right, top, bottom, onclick, onmousedown, onmouseup]) =>
-                        new Anchor(left, right, top, bottom, onclick, onmousedown, onmouseup)
-                      );
-                    accept(anchors);
-                  });
-                })
-              ])
-                .then(([
-                  imageBitmap,
-                  anchors,
-                ]) => ({
-                  imageBitmap,
-                  anchors,
-                }));
-            },
-          };
-
-          return [
-            [
-              three,
-              networkUtils,
-              geometryUtils,
-            ],
-            transparentImg,
-            blackImg,
-            uiWorker,
-            uiTimer,
-            rasterizer,
-          ];
-        }
-      })
-      .then(([
-        [
-          three,
-          networkUtils,
           geometryUtils,
         ],
         transparentImg,
@@ -243,22 +166,6 @@ class Biolumi {
 
           const zeroQuaternion = new THREE.Quaternion();
           const defaultRayMeshScale = new THREE.Vector3(1, 1, 15);
-
-          /* class MatrixProperties {
-            constructor(position, rotation, scale) {
-              this.position = position;
-              this.rotation = rotation;
-              this.scale = scale;
-            }
-          }
-
-          const _decomposeObjectMatrixWorld = object => {
-            const position = new THREE.Vector3();
-            const rotation = new THREE.Quaternion();
-            const scale = new THREE.Vector3();
-            object.matrixWorld.decompose(position, rotation, scale);
-            return new MatrixProperties(position, rotation, scale);
-          }; */
 
           const forwardVector = new THREE.Vector3(0, 0, -1);
           const backwardVector = new THREE.Vector3(0, 0, 1);
