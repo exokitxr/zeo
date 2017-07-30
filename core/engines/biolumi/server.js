@@ -3,7 +3,7 @@ const child_process = require('child_process');
 
 const bodyParser = require('body-parser');
 const bodyParserJson = bodyParser.json();
-const rasterize = require('./rasterize/lib/backend');
+const rasterize = require('./rasterize/backend');
 
 class Biolumi {
   constructor(archae) {
@@ -20,7 +20,7 @@ class Biolumi {
       live = false;
     };
 
-    return rasterize({
+    return rasterize.external({
       express,
       app,
       wss,

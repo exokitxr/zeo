@@ -2,7 +2,7 @@ import keycode from 'keycode';
 
 import menuShader from './lib/shaders/menu';
 import transparentShader from './lib/shaders/transparent';
-import rasterize from './rasterize/lib/frontend';
+import rasterize from './rasterize/frontend';
 
 const DEFAULT_FRAME_TIME = 1000 / (60 * 2)
 
@@ -137,7 +137,7 @@ class Biolumi {
 
       return Promise.resolve(new UiTimer());
     };
-    const _requestRasterizer = () => Promise.resolve(rasterize());
+    const _requestRasterizer = () => Promise.resolve(rasterize.external());
 
     return Promise.all([
       archae.requestPlugins([
