@@ -17,7 +17,7 @@ const _recurse = () => {
   };
 
   const host = window.location.hash.slice(1);
-  const c = new WebSocket(`ws://${host}/archae/biolumiWsProxy`);
+  const c = new WebSocket(`ws://${host}/rasterizeWsProxy`);
   c.onerror = err => {
     console.warn(JSON.stringify(err.stack));
 
