@@ -4,20 +4,43 @@ importScripts('/archae/assets/murmurhash.js');
 const {exports: murmur} = self.module;
 importScripts('/archae/assets/autows.js');
 const {exports: Autows} = self.module;
+importScripts('/archae/assets/alea.js');
+const {exports: alea} = self.module;
+importScripts('/archae/assets/indev.js');
+const {exports: indev} = self.module;
 self.module = {};
 
 const {
   NUM_CELLS,
+  NUM_CELLS_OVERSCAN,
+
+  DEFAULT_SEED,
 } = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
 const zeode = require('zeode');
 
-const TEXTURE_ATLAS_SIZE = 512;
-const NUM_POSITIONS_CHUNK = 100 * 1024;
+const NUM_POSITIONS_CHUNK = 500 * 1024;
+
+const rng = new alea(DEFAULT_SEED);
+const generator = indev({
+  seed: DEFAULT_SEED,
+});
+const elevationNoise = generator.uniform({
+  frequency: 0.002,
+  octaves: 8,
+});
+const generator2 = indev({
+  seed: DEFAULT_SEED + '2',
+});
+const itemsNoise = generator2.uniform({
+  frequency: 0.1,
+  octaves: 4,
+});
 
 const zde = zeode();
 const geometries = {};
 const textures = {};
+const generators = [];
 
 const queue = [];
 let pendingMessage = null;
@@ -60,13 +83,37 @@ const _requestChunk = (x, z) => new Promise((accept, reject) => {
       accept((buffer && buffer.byteLength > 0) ? zde.addChunk(x, z, new Uint32Array(buffer)) : zde.makeChunk(x, z));
     });
   }
-});
+})
+  .then(chunk => {
+    for (let i = 0; i < generators.length; i++) {
+      generators[i][1](chunk, generateApi);
+    }
+    return chunk;
+  });
 
 const registerApi = {
   THREE,
   getUv(name) {
     const n = murmur(name);
     return textures[n];
+  },
+};
+const generateApi = {
+  NUM_CELLS,
+  NUM_CELLS_OVERSCAN,
+  getElevation(ox, oz, x, z) {
+    const ax = (ox * NUM_CELLS) + x;
+    const az = (oz * NUM_CELLS) + z;
+    return (-0.3 + Math.pow(elevationNoise.in2D(ax + 1000, az + 1000), 0.5)) * 64;
+  },
+  getItemsNoise(ox, oz, x, z) {
+    const ax = (ox * NUM_CELLS) + x;
+    const az = (oz * NUM_CELLS) + z;
+    return itemsNoise.in2D(ax + 1000, az + 1000);
+  },
+  addObject(chunk, name, position) {
+    const n = murmur(name);
+    chunk.addObject(n, position);
   },
 };
 const _copyIndices = (src, dst, startIndexIndex, startAttributeIndex) => {
@@ -161,6 +208,16 @@ self.onmessage = e => {
     const {name, uv} = data;
     const n = murmur(name);
     textures[n] = uv;
+  } else if (type === 'registerGenerator') {
+    const {name, args, src} = data;
+    const fn = Reflect.construct(Function, args.concat(src));
+
+    const n = murmur(name);
+    generators.push([n, fn]);
+
+    for (let i = 0; i < zde.chunks.length; i++) {
+      fn(zde.chunks[i], generateApi);
+    }
   } else if (type === 'addObject') {
     const {name, position} = data;
 

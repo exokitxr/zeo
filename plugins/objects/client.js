@@ -10,7 +10,7 @@ const {
 const protocolUtils = require('./lib/utils/protocol-utils');
 const objectsLib = require('./lib/objects/index');
 
-const NUM_POSITIONS_CHUNK = 100 * 1024;
+const NUM_POSITIONS_CHUNK = 500 * 1024;
 const TEXTURE_SIZE = 512;
 const DEFAULT_SIZE = 0.1;
 
@@ -114,6 +114,16 @@ class Objects {
       const {args, src} = _parseFunction(fn);
       worker.postMessage({
         type: 'registerGeometry',
+        name,
+        args,
+        src,
+      });
+      return Promise.resolve();
+    };
+    worker.requestRegisterGenerator = (name, fn) => {
+      const {args, src} = _parseFunction(fn);
+      worker.postMessage({
+        type: 'registerGenerator',
         name,
         args,
         src,
@@ -446,6 +456,10 @@ class Objects {
             recipeQueue.splice(index, 1);
           }
         }
+      }
+
+      registerGenerator(name, fn) {
+        return worker.requestRegisterGenerator(name, fn);
       }
     }
     const objectApi = new ObjectApi();
