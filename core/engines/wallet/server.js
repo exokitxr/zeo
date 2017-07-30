@@ -10,7 +10,7 @@ constructor(archae) {
 
   mount() {
     const {_archae: archae} = this;
-    const {wss} = archae.getCore();
+    const {ws, wss} = archae.getCore();
 
     const trackedTags = {};
 
@@ -49,36 +49,65 @@ constructor(archae) {
       }
     }
 
+    class AssetInstance {
+      constructor(id, asset, n, physics, matrix) {
+        this.id = id;
+        this.asset = asset;
+        this.n = n;
+        this.physics = physics;
+        this.matrix = matrix;
+      }
+    }
+
+    const assetInstances = [];
+
     const connections = [];
     wss.on('connection', c => {
       const {url} = c.upgradeReq;
 
       if (url === '/archae/walletWs') {
+        const _init = () => {
+          c.send(JSON.stringify({
+            type: 'init',
+            args: {
+              assets: assetInstances,
+            }
+          }));
+        };
+        _init();
+
+        const _broadcast = m => {
+          for (let i = 0; i < connections.length; i++) {
+            const connection = connections[i];
+            if (connection.readyState === ws.OPEN && connection !== c) {
+              connection.send(m);
+            }
+          };
+        };
+
         c.on('message', s => {
           const m = _jsonParse(s);
+          const {method, args} = m;
 
-          if (typeof m === 'object' && m !== null && typeof m.method === 'string' && Array.isArray(m.args)) {
-            const {method, args} = m;
+          if (method === 'addAsset') {
+            const {id, asset, n, physics, matrix} = args;
+            const assetInstance = new AssetInstance(id, asset, n, physics, matrix);
+            assetInstances.push(assetInstance);
 
-            if (method === 'kickAsset') {
-              /* const [id] = args;
-              const trackedTag = trackedTags[id];
+            _broadcast(JSON.stringify({type: 'addAsset', args: {id, asset, n, physics, matrix}}));
+          } else if (method === 'removeAsset') {
+            const {id} = args;
+            assetInstances.splice(assetInstances.findIndex(assetInstance => assetInstance.id === id), 1);
 
-              if (trackedTag) {
-                trackedTag.kick();
-              } */
-            } else if (method === 'unkickAsset') {
-              /* const [id] = args;
-              const trackedTag = trackedTags[id];
+            _broadcast(JSON.stringify({type: 'removeAsset', args: {id}}));
+          } else if (method === 'setPhysics') {
+            const {id, physics} = args;
+            const assetInstance = assetInstances.find(assetInstance => assetInstance.id === id);
+            assetInstance.physics = physics;
 
-              if (trackedTag) {
-                trackedTag.unkick();
-              } */
-            } else {
-              console.warn('no such method:' + JSON.stringify(method));
-            }
+            _broadcast(JSON.stringify({type: 'setPhysics', args: {id, physics}}));
           } else {
-            console.warn('invalid message', m);
+            console.warn('no such method:' + JSON.stringify(method));
           }
         });
         c.on('close', () => {

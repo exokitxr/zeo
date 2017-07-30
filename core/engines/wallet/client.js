@@ -151,15 +151,67 @@ class Wallet {
           fontStyle: biolumi.getFontStyle(),
         };
 
-        const connection = new AutoWs(_relativeWsUrl('archae/walletWs'));
+        const _addAsset = (id, asset, n, physics, matrix) => {
+          const position = new THREE.Vector3(matrix[0], matrix[1], matrix[2]);
+          const rotation = new THREE.Quaternion(matrix[3], matrix[4], matrix[5], matrix[6]);
+          const scale = new THREE.Vector3(matrix[7], matrix[8], matrix[9]);
 
-        /* const sphere = new THREE.Mesh(
-          new THREE.SphereBufferGeometry(0.35),
-          new THREE.MeshPhongMaterial({
-            color: 0xFF0000,
-          })
-        );
-        scene.add(sphere); */
+          const assetInstance = assetsMesh.addAssetInstance(
+            id,
+            asset,
+            n,
+            physics,
+            position,
+            rotation,
+            scale,
+            zeroVector,
+            zeroQuaternion,
+            oneVector
+          );
+          _bindAssetInstance(assetInstance);
+          _bindAssetInstancePhysics(assetInstance);
+        };
+
+        const connection = new AutoWs(_relativeWsUrl('archae/walletWs'));
+        connection.on('message', e => {
+          const {data} = e;
+          const m = JSON.parse(data);
+          const {type, args} = m;
+
+          if (type === 'init') {
+            const {assets} = args;
+            for (let i = 0; i < assets.length; i++) {
+              const assetSpec = assets[i];
+              const {
+                id,
+                asset,
+                n,
+                physics,
+                matrix,
+              } = assetSpec;
+              _addAsset(id, asset, n, physics, matrix);
+            }
+          } else if (type === 'addAsset') {
+            const {
+              id,
+              asset,
+              n,
+              physics,
+              matrix,
+            } = args;
+            _addAsset(id, asset, n, physics, matrix);
+          } else if (type === 'removeAsset') {
+            const {
+              id,
+            } = args;
+
+            const assetInstance = assetInstances.splice(assetInstances.findIndex(assetInstance => assetInstance.id === id), 1)[0];
+            hand.destroyGrabbable(assetInstance);
+            assetInstance.emit('destroy');
+          } else {
+            console.warn('wallet got unknown message type:', JSON.stringify(type));
+          }
+        });
 
         const _isInBody = p => {
           const vrMode = bootstrap.getVrMode();
@@ -266,12 +318,6 @@ class Wallet {
 
                   assetsMesh.geometryNeedsUpdate = true;
 
-                  const {id} = this;
-                  connection.send(JSON.stringify({
-                    method: 'kickAsset',
-                    args: [id],
-                  }));
-
                   break;
                 }
                 case 'release': {
@@ -286,11 +332,6 @@ class Wallet {
                     side,
                     item: this,
                   });
-
-                  connection.send(JSON.stringify({
-                    method: 'unkickAsset',
-                    args: [id],
-                  }));
 
                   _checkGripup(side, this);
 
@@ -320,11 +361,27 @@ class Wallet {
             enablePhysics() {
               this.physics = true;
               this.emit('physics', true);
+
+              connection.send(JSON.stringify({
+                method: 'setPhysics',
+                args: {
+                  id: this.id,
+                  physics: true,
+                },
+              }));
             }
 
             disablePhysics() {
               this.physics = false;
               this.emit('physics', false);
+
+              connection.send(JSON.stringify({
+                method: 'setPhysics',
+                args: {
+                  id: this.id,
+                  physics: false,
+                },
+              }));
             }
 
             requestChangeOwner(dstAddress) {
@@ -1029,36 +1086,6 @@ class Wallet {
 
         const _update = () => {
           assetsMaterial.uniforms.theta.value = (Date.now() * ROTATE_SPEED * (Math.PI * 2) % (Math.PI * 2));
-
-          /* const vrMode = bootstrap.getVrMode();
-          if (vrMode === 'hmd') {
-            const {hmd: {worldPosition, worldRotation}} = webvr.getStatus();
-            const hmdEuler = new THREE.Euler().setFromQuaternion(worldRotation, camera.rotation.order);
-            hmdEuler.z = 0;
-            const hmdQuaternion = new THREE.Quaternion().setFromEuler(hmdEuler);
-            sphere.position.copy(
-              worldPosition.clone()
-                .add(
-                  new THREE.Vector3(0, -0.5, 0)
-                    .applyQuaternion(hmdQuaternion)
-                )
-            );
-            sphere.updateMatrixWorld();
-          } else if (vrMode === 'keyboard') {
-            const {hmd: {worldPosition, worldRotation}} = webvr.getStatus();
-            const hmdEuler = new THREE.Euler().setFromQuaternion(worldRotation, camera.rotation.order);
-            hmdEuler.x = 0;
-            hmdEuler.z = 0;
-            const hmdQuaternion = new THREE.Quaternion().setFromEuler(hmdEuler);
-            sphere.position.copy(
-              worldPosition.clone()
-                .add(
-                  new THREE.Vector3(0, -0.4, 0.2)
-                    .applyQuaternion(hmdQuaternion)
-                )
-            );
-            sphere.updateMatrixWorld();
-          } */
         };
         rend.on('update', _update);
 
@@ -1217,9 +1244,19 @@ class Wallet {
               zeroQuaternion,
               oneVector
             );
-
             _bindAssetInstance(assetInstance);
             _bindAssetInstancePhysics(assetInstance);
+
+            connection.send(JSON.stringify({
+              method: 'addAsset',
+              args: {
+                id,
+                asset,
+                n,
+                physics,
+                matrix,
+              },
+            }));
 
             return assetInstance;
           }
@@ -1227,8 +1264,14 @@ class Wallet {
           destroyItem(itemSpec) {
             const {id} = itemSpec;
             const assetInstance = assetsMesh.getAssetInstance(id);
-
             _unbindAssetInstance(assetInstance);
+
+            connection.send(JSON.stringify({
+              method: 'removeAsset',
+              args: {
+                id,
+              },
+            }));
 
             assetsMesh.removeAssetInstance(id);
           }

@@ -220,23 +220,20 @@ class World {
               };
               const _setTagAttribute = (userId, id, {name, value}) => {
                 const itemSpec = tagsJson.tags[id];
+                const {attributes} = itemSpec;
+                const oldValue = attributes[name] ? attributes[name].value : undefined;
 
-                if (itemSpec) {
-                  const {attributes} = itemSpec;
-                  const oldValue = attributes[name] ? attributes[name].value : undefined;
-
-                  if (value !== undefined) {
-                    attributes[name] = {
-                      value,
-                    };
-                  } else {
-                    delete attributes[name];
-                  }
-
-                  _saveTags();
-
-                  _broadcastLocal('setTagAttribute', [userId, id, {name, value}]);
+                if (value !== undefined) {
+                  attributes[name] = {
+                    value,
+                  };
+                } else {
+                  delete attributes[name];
                 }
+
+                _saveTags();
+
+                _broadcastLocal('setTagAttribute', [userId, id, {name, value}]);
               };
               const _setTagAttributes = (userId, id, newAttributes) => {
                 const itemSpec = tagsJson.tags[id];
