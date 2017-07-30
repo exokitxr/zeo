@@ -339,7 +339,9 @@ class Objects {
         trackedObject.grip(side);
       }
     };
-    input.on('gripdown', _gripdown);
+    input.on('gripdown', _gripdown, {
+      priority: -4,
+    });
     cleanups.push(() => {
       input.removeListener('triggerdown', _triggerdown);
       input.removeListener('gripdown', _gripdown);

@@ -383,8 +383,10 @@ class Craft {
 
     const crafters = [];
 
-    class Crafter {
+    class Crafter extends EventEmitter {
       constructor(position, rotation, scale) {
+        super();
+
         const gridMesh = new THREE.Mesh(gridGeometry, gridMaterial)
         gridMesh.position.copy(position);
         gridMesh.rotation.copy(rotation);
@@ -415,9 +417,23 @@ class Craft {
         return this.grid[index];
       }
 
-      setGridIndex(index, asset) {
-        this.grid[index] = asset;
+      setGridIndex(index, assetInstance) {
+        this.grid[index] = assetInstance;
         this.grid[outputSymbol] = _getRecipeOutput(this.grid.map(grabbable => grabbable ? grabbable.item.attributes.asset.value : null));
+
+        if (assetInstance) {
+          const _cleanup = () => {
+            assetInstance.removeListener('release', _release);
+            this.removeListener('destroy', _cleanup);
+          };
+
+          const _grab = () => {
+            this.setGridIndex(index, null);
+            _cleanup();
+          };
+          assetInstance.on('grab', _grab);
+          this.on('destroy', _cleanup);
+        }
       }
 
       getHoveredIndex(p) {
@@ -441,6 +457,8 @@ class Craft {
         }
 
         scene.remove(this.gridMesh);
+
+        this.emit('destroy');
       }
     }
 
@@ -476,7 +494,10 @@ class Craft {
     elements.registerEntity(this, craftEntity);
 
     this._cleanup = () => {
-      scene.remove(gridMesh);
+      for (let i = 0; i < crafters.length; i++) {
+        const crafter = crafters[i];
+        crafter.destroy();
+      }
 
       gridGeometry.dispose();
       gridMaterial.dispose();
