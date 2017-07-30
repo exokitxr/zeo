@@ -194,6 +194,28 @@
       "tagName": "plugins-skin",
       "attributes": {},
       "metadata": {}
+    },
+    "0pdq0al": {
+      "type": "entity",
+      "id": "0pdq0al",
+      "name": "/plugins/objects",
+      "displayName": "objects",
+      "version": "0.0.1",
+      "module": "/plugins/objects",
+      "tagName": "plugins-objects",
+      "attributes": {},
+      "metadata": {}
+    },
+    "0pdq0am": {
+      "type": "entity",
+      "id": "0pdq0am",
+      "name": "/plugins/craft",
+      "displayName": "craft",
+      "version": "0.0.1",
+      "module": "/plugins/craft",
+      "tagName": "plugins-craft",
+      "attributes": {},
+      "metadata": {}
     }
   }
 }
