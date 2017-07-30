@@ -114,6 +114,45 @@ const stone = objectApi => {
       };
       objectApi.registerObject(stoneObjectApi);
 
+      objectApi.registerGenerator('stone', (chunk, generateApi) => {
+        const itemProbability = 0.05;
+
+        for (let dz = 0; dz < generateApi.NUM_CELLS_OVERSCAN; dz++) {
+          for (let dx = 0; dx < generateApi.NUM_CELLS_OVERSCAN; dx++) {
+            const v = generateApi.getItemsNoise(chunk.x, chunk.z, dx, dz);
+
+            if (v < itemProbability) {
+              const elevation = generateApi.getElevation(chunk.x, chunk.z, dx, dz);
+
+              const ax = (chunk.x * generateApi.NUM_CELLS) + dx;
+              const az = (chunk.z * generateApi.NUM_CELLS) + dz;
+              generateApi.addObject(chunk, 'stone', [ax, elevation, az]);
+              /* const n = murmur(String(v)) / 0xFFFFFFFF;
+              quaternion.setFromAxisAngle(upVector, n * Math.PI * 2);
+              matrix.compose(position, quaternion, scale);
+              const typeIndex = Math.floor(n * ITEMS.length);
+              const geometry = itemsGeometries[typeIndex]
+                .clone()
+                .applyMatrix(matrix);
+              const newPositions = geometry.getAttribute('position').array;
+              positions.set(newPositions, attributeIndex);
+              const newNormals = geometry.getAttribute('normal').array;
+              normals.set(newNormals, attributeIndex);
+              const newColors = geometry.getAttribute('color').array;
+              colors.set(newColors, attributeIndex);
+              const newIndices = geometry.index.array;
+              _copyIndices(newIndices, indices, indexIndex, attributeIndex / 3);
+              const newItems = Float32Array.from([typeIndex, indexIndex, indexIndex + newIndices.length, position.x, position.y, position.z]);
+              items.set(newItems, itemIndex);
+
+              attributeIndex += newPositions.length;
+              indexIndex += newIndices.length;
+              itemIndex += newItems.length; */
+            }
+          }
+        }
+      });
+
       return () => {
         items.unregisterItem(this, stoneItemApi);
         objectApi.unregisterObject(stoneObjectApi);
