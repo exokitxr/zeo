@@ -31,9 +31,7 @@ class Biolumi {
       const img = new Image();
       img.src = src;
       img.onload = () => {
-        createImageBitmap(img, 0, 0, img.width, img.height)
-          .then(accept)
-          .catch(reject);
+        accept(img);
       };
       img.onerror = err => {
         reject(err);
