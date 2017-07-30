@@ -99,7 +99,7 @@ class Craft {
     };
     const _getGridPosition = (x, y) => new THREE.Vector3(
       -(((gridWidth * gridSize) + ((gridWidth - 1) * gridSpacing)) / 2) + (gridSize / 2) + (x * (gridSize + gridSpacing)),
-      0,
+      (gridSize / 2) + 0.001,
       (((gridWidth * gridSize) + ((gridWidth - 1) * gridSpacing)) / 2) - (gridSize / 2) - (y * (gridSize + gridSpacing))
     );
     const _sq = n => Math.sqrt(n*n*2);
