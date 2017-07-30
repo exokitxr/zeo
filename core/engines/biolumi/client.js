@@ -2,7 +2,7 @@ import keycode from 'keycode';
 
 import menuShader from './lib/shaders/menu';
 import transparentShader from './lib/shaders/transparent';
-import rasterize from './rasterize/frontend';
+import rasterize from 'rasterize/frontend';
 
 const DEFAULT_FRAME_TIME = 1000 / (60 * 2)
 
