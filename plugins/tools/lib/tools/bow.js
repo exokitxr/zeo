@@ -374,7 +374,7 @@ const bow = ({recipes, data}) => {
         null, 'ITEM.WOOD',
       ],
     };
-    recipes.register(this, bowRecipe);
+    recipes.register(bowRecipe);
 
     return () => {
       stringMaterial.dispose();
@@ -382,7 +382,7 @@ const bow = ({recipes, data}) => {
       elements.destroyListener(elementListener);
 
       items.unregisterItem(this, bowApi);
-      recipes.unregister(this, bowRecipe);
+      recipes.unregister(bowRecipe);
     };
   };
 };
