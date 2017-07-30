@@ -7,7 +7,7 @@ const DEFAULT_MATRIX = [
 
 const dataSymbol = Symbol();
 
-const stone = objectApi => {
+const wood = objectApi => {
   const {three, pose, input, render, elements, items} = zeo;
   const {THREE, scene} = three;
 
@@ -24,28 +24,37 @@ const stone = objectApi => {
     img.src = src;
   });
 
-  return () => _requestImage('/archae/objects/img/stone.png')
-    .then(stoneImg => objectApi.registerTexture('stone', stoneImg))
-    .then(() => objectApi.registerGeometry('stone', (args) => {
+  return () => _requestImage('/archae/objects/img/wood.png')
+    .then(woodImg => objectApi.registerTexture('wood', woodImg))
+    .then(() => objectApi.registerGeometry('wood', (args) => {
       const {THREE, getUv} = args;
-      const stoneUvs = getUv('stone');
-      const uvWidth = stoneUvs[2] - stoneUvs[0];
-      const uvHeight = stoneUvs[3] - stoneUvs[1];
+      const woodUvs = getUv('wood');
+      const uvWidth = woodUvs[2] - woodUvs[0];
+      const uvHeight = woodUvs[3] - woodUvs[1];
 
-      const geometry = new THREE.BoxBufferGeometry(0.3, 0.2, 0.2)
-        .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.2/2, 0));
+      const width = 0.5;
+      const geometry = new THREE.BoxBufferGeometry(width, 0.05, 0.05, 4, 1, 1)
+        .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.05/2, 0));
+      const positions = geometry.getAttribute('position').array;
+      const numPositions = positions.length / 3;
+      for (let i = 0; i < numPositions; i++) {
+        const x = positions[i * 3 + 0];
+        if (x === 0) {
+          positions[i * 3 + 2] += 0.05;
+        }
+      }
       const uvs = geometry.getAttribute('uv').array;
       const numUvs = uvs.length / 2;
       for (let i = 0; i < numUvs; i++) {
-        uvs[i * 2 + 0] = stoneUvs[0] + (uvs[i * 2 + 0] * uvWidth * 0.25);
-        uvs[i * 2 + 1] = stoneUvs[1] + (uvs[i * 2 + 1] * uvHeight * 0.25);
+        uvs[i * 2 + 0] = woodUvs[0] + (uvs[i * 2 + 0] * uvWidth);
+        uvs[i * 2 + 1] = woodUvs[1] + (uvs[i * 2 + 1] * uvHeight);
       }
 
       return geometry;
     }))
     .then(() => {
-      const stoneItemApi = {
-        asset: 'ITEM.STONE',
+      const woodItemApi = {
+        asset: 'ITEM.WOOD',
         itemAddedCallback(grabbable) {
           const _triggerdown = e => {
             const {side} = e;
@@ -57,7 +66,7 @@ const stone = objectApi => {
                 heightfieldElement ? heightfieldElement.getElevation(grabbable.position.x, grabbable.position.z) : 0,
                 grabbable.position.z
               );
-              objectApi.addObject('stone', localVector);
+              objectApi.addObject('wood', localVector);
 
               items.destroyItem(grabbable);
 
@@ -79,16 +88,16 @@ const stone = objectApi => {
           delete grabbable[dataSymbol];
         },
       };
-      items.registerItem(this, stoneItemApi);
+      items.registerItem(this, woodItemApi);
 
-      const stoneObjectApi = {
-        object: 'stone',
+      const woodObjectApi = {
+        object: 'wood',
         offset: [0, 0.2/2, 0],
         size: 0.3,
         objectAddedCallback(object) {
           object.on('grip', side => {
             const id = _makeId();
-            const asset = 'ITEM.STONE';
+            const asset = 'ITEM.WOOD';
             const assetInstance = items.makeItem({
               type: 'asset',
               id: id,
@@ -112,32 +121,32 @@ const stone = objectApi => {
           // XXX
         },
       };
-      objectApi.registerObject(stoneObjectApi);
+      objectApi.registerObject(woodObjectApi);
 
-      objectApi.registerGenerator('stone', (chunk, generateApi) => {
+      objectApi.registerGenerator('wood', (chunk, generateApi) => {
         const itemProbability = 0.05;
 
         for (let dz = 0; dz < generateApi.NUM_CELLS_OVERSCAN; dz++) {
           for (let dx = 0; dx < generateApi.NUM_CELLS_OVERSCAN; dx++) {
             const v = generateApi.getItemsNoise(chunk.x, chunk.z, dx, dz);
 
-            if (v < itemProbability && (generateApi.getHash(String(v)) % 2) === 0) {
+            if (v < itemProbability && (generateApi.getHash(String(v)) % 2) === 1) {
               const elevation = generateApi.getElevation(chunk.x, chunk.z, dx, dz);
 
               const ax = (chunk.x * generateApi.NUM_CELLS) + dx;
               const az = (chunk.z * generateApi.NUM_CELLS) + dz;
-              generateApi.addObject(chunk, 'stone', [ax, elevation, az]);
+              generateApi.addObject(chunk, 'wood', [ax, elevation, az]);
             }
           }
         }
       });
 
       return () => {
-        items.unregisterItem(this, stoneItemApi);
-        objectApi.unregisterObject(stoneObjectApi);
+        items.unregisterItem(this, woodItemApi);
+        objectApi.unregisterObject(woodObjectApi);
       };
     });
 };
 const _makeId = () => Math.random().toString(36).substring(7);
 
-module.exports = stone;
+module.exports = wood;
