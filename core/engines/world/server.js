@@ -62,7 +62,6 @@ class World {
     return Promise.all([
       archae.requestPlugins([
         '/core/engines/multiplayer',
-        '/core/engines/wallet',
         '/core/utils/vrid-utils',
       ]),
       _requestTagsJson(),
@@ -72,7 +71,6 @@ class World {
       .then(([
         [
           multiplayer,
-          wallet,
           vridUtils,
         ],
         tagsJson,
@@ -209,11 +207,6 @@ class World {
                 const itemSpec = tagsJson.tags[id];
                 delete tagsJson.tags[id];
 
-                const {type} = itemSpec;
-                if (type === 'asset') {
-                  wallet.removeAsset(itemSpec);
-                }
-
                 _saveTags();
 
                 _broadcastLocal('removeTag', [userId, id]);
@@ -251,10 +244,6 @@ class World {
                   } else {
                     delete attributes[name];
                   }
-
-                  if (type === 'asset') {
-                    wallet.setAssetAttribute(itemSpec, name, value, oldValue);
-                  }
                 }
 
                 _saveTags();
@@ -274,11 +263,6 @@ class World {
                     const {id} = itemSpec;
                     tagsJson.tags[id] = itemSpec;
 
-                    const {type} = itemSpec;
-                    if (type === 'asset') {
-                      wallet.addAsset(itemSpec);
-                    }
-
                     _saveTags();
 
                     _broadcastLocal('addTag', [userId, itemSpec]);
@@ -289,11 +273,6 @@ class World {
                       const itemSpec = itemSpecs[i];
                       const {id} = itemSpec;
                       tagsJson.tags[id] = itemSpec;
-
-                      const {type} = itemSpec;
-                      if (type === 'asset') {
-                        wallet.addAsset(itemSpec);
-                      }
                     }
 
                     _saveTags();
@@ -309,12 +288,6 @@ class World {
                     for (let i = 0; i < ids.length; i++) {
                       const id = ids[i];
                       delete tagsJson.tags[id];
-
-                      const itemSpec = tagsJson.tags[id];
-                      const {type} = itemSpec;
-                      if (type === 'asset') {
-                        wallet.removeAsset(itemSpec);
-                      }
                     }
 
                     _saveTags();
@@ -417,23 +390,6 @@ class World {
           };
           multiplayer.on('playerLeave', _playerLeave);
 
-          const _walletRemoveTag = id => {
-            _removeTag(null, id); // XXX no user id
-          };
-          wallet.on('removeTag', _walletRemoveTag);
-
-          const _initWallet = () => {
-            for (const id in tagsJson.tags) {
-              const itemSpec = tagsJson.tags[id];
-              const {type} = itemSpec;
-
-              if (type === 'asset') {
-                wallet.addAsset(itemSpec);
-              }
-            }
-          };
-          _initWallet();
-
           this._cleanup = () => {
             for (let i = 0; i < connections.length; i++) {
               const connection = connections[i];
@@ -441,7 +397,6 @@ class World {
             }
 
             multiplayer.removeListener('playerLeave', _playerLeave);
-            wallet.removeListener('removeTag', _walletRemoveTag);
           };
 
           class WorldApi extends EventEmitter {

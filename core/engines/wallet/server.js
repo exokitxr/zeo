@@ -1,8 +1,6 @@
 const events = require('events');
 const {EventEmitter} = events;
 
-const TIMEOUT = 30 * 1000;
-
 class Wallet {
 constructor(archae) {
     this._archae = archae;
@@ -11,43 +9,6 @@ constructor(archae) {
   mount() {
     const {_archae: archae} = this;
     const {ws, wss} = archae.getCore();
-
-    const trackedTags = {};
-
-    class TrackedTag extends EventEmitter {
-      constructor() {
-        super();
-
-        this._timeout = null;
-
-        this.listen();
-      }
-
-      listen() {
-        this._timeout = setTimeout(() => {
-          this.emit('timeout');
-        }, TIMEOUT);
-      }
-
-      kick() {
-        if (this._timeout) {
-          clearTimeout(this._timeout);
-          this._timeout = null;
-        }
-      }
-
-      unkick() {
-        if (!this.timeout) {
-          this.listen();
-        }
-      }
-
-      destroy() {
-        if (this._timeout) {
-          clearTimeout(this._timeout);
-        }
-      }
-    }
 
     class AssetInstance {
       constructor(id, asset, n, physics, matrix) {
@@ -103,9 +64,12 @@ constructor(archae) {
           } else if (method === 'setPhysics') {
             const {id, physics} = args;
             const assetInstance = assetInstances.find(assetInstance => assetInstance.id === id);
-            assetInstance.physics = physics;
 
-            _broadcast(JSON.stringify({type: 'setPhysics', args: {id, physics}}));
+            if (assetInstance) {
+              assetInstance.physics = physics;
+
+              _broadcast(JSON.stringify({type: 'setPhysics', args: {id, physics}}));
+            }
           } else {
             console.warn('no such method:' + JSON.stringify(method));
           }
@@ -117,43 +81,6 @@ constructor(archae) {
         connections.push(c);
       }
     });
-
-    const _bindTag = tag => { 
-      const {id} = tag;
-      const timestamp = Date.now();
-      const trackedTag = new TrackedTag();
-      trackedTag.on('timeout', () => {
-        walletApi.emit('removeTag', id);
-      });
-      trackedTags[id] = trackedTag;
-    };
-    const _unbindTag = tagSpec => {
-      const {id} = tagSpec;
-      const trackedTag = trackedTags[id];
-      trackedTag.destroy();
-      delete trackedTags[id];
-    };
-
-    this._cleanup = () => {
-      for (let i = 0; i < connections.length; i++) {
-        const connection = connections[i];
-        connection.close();
-      }
-    };
-
-    class WalletApi extends EventEmitter {
-      addAsset(tagSpec) {
-        _bindTag(tagSpec);
-      }
-
-      removeAsset(tagSpec) {
-        _unbindTag(tagSpec);
-      }
-
-    }
-    const walletApi = new WalletApi();
-
-    return walletApi;
   }
 
   unmount() {
