@@ -24,7 +24,7 @@ class Biolumi {
       }
     };
 
-    const workerStatic = express.static(path.join(__dirname));
+    const workerStatic = express.static(path.join(__dirname, 'lib', 'worker'));
     function serveWorker(req, res, next) {
       workerStatic(req, res, next);
     }
