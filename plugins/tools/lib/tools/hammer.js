@@ -334,11 +334,11 @@ const hammer = ({recipes}) => {
         null, 'ITEM.WOOD',
       ],
     };
-    recipes.register(this, hammerRecipe);
+    recipes.register(hammerRecipe);
 
     return () => {
       items.unregisterItem(this, hammerApi);
-      recipes.unregister(this, hammerRecipe);
+      recipes.unregister(hammerRecipe);
 
       if (worker !== null) {
         worker.terminate();

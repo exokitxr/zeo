@@ -101,7 +101,7 @@ class Craft {
     const _getGridPosition = (x, y) => new THREE.Vector3(
       -(((gridWidth * gridSize) + ((gridWidth - 1) * gridSpacing)) / 2) + (gridSize / 2) + (x * (gridSize + gridSpacing)),
       (gridSize / 2) + 0.001,
-      (((gridWidth * gridSize) + ((gridWidth - 1) * gridSpacing)) / 2) - (gridSize / 2) - (y * (gridSize + gridSpacing))
+      -(((gridWidth * gridSize) + ((gridWidth - 1) * gridSpacing)) / 2) + (gridSize / 2) + (y * (gridSize + gridSpacing))
     );
 
     const gridGeometry = (() => {
@@ -282,6 +282,7 @@ class Craft {
     teleport.on('teleport', _teleport); */
 
     const recipes = {};
+window.recipes = recipes;
     const _makeNullInput = (width, height) => {
       const result = Array(width * height);
       for (let i = 0; i < (width * height); i++) {

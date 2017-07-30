@@ -94,13 +94,13 @@ const sword = ({recipes}) => {
         'ITEM.WOOD',
       ],
     };
-    recipes.register(this, swordRecipe);
+    recipes.register(swordRecipe);
 
     return () => {
       elements.destroyListener(elementListener);
 
       items.unregisterItem(this, swordApi);
-      recipes.unregister(this, swordRecipe);
+      recipes.unregister(swordRecipe);
     };
   };
 };
