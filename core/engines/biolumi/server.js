@@ -105,6 +105,8 @@ class Biolumi {
       const chromiumProcess = child_process.spawn('chromium', [
         '--headless',
         `--remote-debugging-port=${rasterizerPort}`,
+        '--no-sandbox',
+        '--no-zygote',
       ]);
 
       cleanups.push(() => {
