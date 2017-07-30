@@ -228,9 +228,6 @@ class World {
           if (item.type === 'entity' && !item.instance) {
             result = tags.mutateAddEntity(tagMesh);
           }
-          if (item.type === 'asset') {
-            wallet.addAsset(item);
-          }
 
           elementManager.add(tagMesh);
 
@@ -250,9 +247,6 @@ class World {
           if (item.type === 'entity' && item.instance) {
             result = tags.mutateRemoveEntity(tagMesh);
           }
-          if (item.type === 'asset') {
-            wallet.removeAsset(item);
-          }
 
           tags.destroyTag(tagMesh);
 
@@ -270,11 +264,6 @@ class World {
           const tagMesh = elementManager.getTagMesh(id);
           tagMesh.setAttribute(name, value);
 
-          const {item} = tagMesh;
-          if (item.type === 'asset') {
-            wallet.setAssetAttribute(item, name, value);
-          }
-
           return tagMesh;
         };
         const _handleSetTagAttributes = (userId, id, newAttributes) => {
@@ -282,14 +271,7 @@ class World {
 
           return newAttributes.map(newAttribute => {
             const {name, value} = newAttribute;
-            const tagMesh = _handleSetTagAttribute(userId, id, {name, value});
-
-            const {item} = tagMesh;
-            if (item.type === 'asset') {
-              wallet.setAssetAttribute(item, name, value);
-            }
-
-            return tagMesh;
+            return _handleSetTagAttribute(userId, id, {name, value});
           });
         };
         const _handleTagOpen = (userId, id) => {
@@ -747,23 +729,6 @@ class World {
         };
         tags.on('loadTags', _loadTags);
 
-        const _walletAddTag = itemSpec => {
-          _addTag(itemSpec);
-        };
-        wallet.on('addTag', _walletAddTag);
-        const _walletRemoveTag = id => {
-          _removeTag(id);
-        };
-        wallet.on('removeTag', _walletRemoveTag);
-        const _walletSetTagAttribute = (id, {name, value}) => {
-          _setTagAttribute(id, {name, value});
-        };
-        wallet.on('setTagAttribute', _walletSetTagAttribute);
-        const _walletSetTagAttributes = (id, newAttributes) => {
-          _setTagAttributes(id, newAttributes);
-        };
-        wallet.on('setTagAttributes', _walletSetTagAttributes);
-
         const _download = ({id}) => {
           const a = document.createElement('a');
           a.href = fs.getFileUrl(id);
@@ -1045,11 +1010,6 @@ class World {
           tags.removeListener('seek', _tagsSeek);
           tags.removeListener('seekUpdate', _tagsSeekUpdate);
           tags.removeListener('loadTags', _loadTags);
-
-          wallet.removeListener('addAsset', _walletAddAsset);
-          wallet.removeListener('removeTag', _walletRemoveTag);
-          wallet.removeListener('setTagAttribute', _walletSetTagAttribute);
-          wallet.removeListener('setTagAttributes', _walletSetTagAttributes);
 
           fs.removeListener('upload', _upload);
 
