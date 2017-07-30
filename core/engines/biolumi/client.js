@@ -138,6 +138,7 @@ class Biolumi {
       return Promise.resolve(new UiTimer());
     };
     const _requestRasterizer = () => Promise.resolve(rasterize.external());
+    // const _requestRasterizer = () => Promise.resolve(rasterize.internal());
 
     return Promise.all([
       archae.requestPlugins([
