@@ -26,6 +26,7 @@ class Biolumi {
       wss,
       port,
     })
+    // return rasterize.internal()
       .then(cleanup => {
         if (live) {
           this._cleanup = cleanup;
