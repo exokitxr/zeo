@@ -171,11 +171,11 @@ class Objects {
       });
       return Promise.resolve();
     };
-    worker.requestAddObject = (name, position) => {
+    worker.requestAddObject = (name, matrix) => {
       worker.postMessage({
         type: 'addObject',
         name,
-        position: position.toArray(),
+        matrix,
       });
       return Promise.resolve();
     };
@@ -488,8 +488,10 @@ class Objects {
           });
       }
 
-      addObject(name, position) {
-        worker.requestAddObject(name, position)
+      addObject(name, position, rotation, scale) {
+        const matrix = position.toArray().concat(rotation.toArray()).concat(scale.toArray());
+
+        worker.requestAddObject(name, matrix)
           .then(() => {
             const x = Math.floor(position.x / NUM_CELLS);
             const z = Math.floor(position.z / NUM_CELLS);

@@ -12,6 +12,8 @@ const stone = objectApi => {
   const {THREE, scene} = three;
 
   const localVector = new THREE.Vector3();
+  const zeroQuaternion = new THREE.Quaternion();
+  const oneVector = new THREE.Vector3(1, 1, 1);
 
   const _requestImage = src => new Promise((accept, reject) => {
     const img = new Image();
@@ -57,7 +59,7 @@ const stone = objectApi => {
                 heightfieldElement ? heightfieldElement.getElevation(grabbable.position.x, grabbable.position.z) : 0,
                 grabbable.position.z
               );
-              objectApi.addObject('stone', localVector);
+              objectApi.addObject('stone', localVector, zeroQuaternion, oneVector);
 
               items.destroyItem(grabbable);
 
@@ -115,6 +117,10 @@ const stone = objectApi => {
       objectApi.registerObject(stoneObjectApi);
 
       objectApi.registerGenerator('stone', (chunk, generateApi) => {
+        const localVector = new generateApi.THREE.Vector3();
+        const zeroQuaternion = new generateApi.THREE.Quaternion();
+        const oneVector = new generateApi.THREE.Vector3(1, 1, 1);
+
         const itemProbability = 0.05;
 
         for (let dz = 0; dz < generateApi.NUM_CELLS_OVERSCAN; dz++) {
@@ -126,7 +132,8 @@ const stone = objectApi => {
 
               const ax = (chunk.x * generateApi.NUM_CELLS) + dx;
               const az = (chunk.z * generateApi.NUM_CELLS) + dz;
-              generateApi.addObject(chunk, 'stone', [ax, elevation, az]);
+              localVector.set(ax, elevation, az);
+              generateApi.addObject(chunk, 'stone', localVector, zeroQuaternion, oneVector);
             }
           }
         }

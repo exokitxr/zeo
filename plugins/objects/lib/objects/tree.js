@@ -377,6 +377,10 @@ const tree = objectApi => {
       objectApi.registerObject(treeObjectApi); */
 
       objectApi.registerGenerator('tree', (chunk, generateApi) => {
+        const localVector = new generateApi.THREE.Vector3();
+        const zeroQuaternion = new generateApi.THREE.Quaternion();
+        const oneVector = new generateApi.THREE.Vector3(1, 1, 1);
+
         const treeProbability = 0.015;
 
         for (let dz = 0; dz < generateApi.NUM_CELLS_OVERSCAN; dz++) {
@@ -389,7 +393,8 @@ const tree = objectApi => {
               if (v < treeProbability) {
                 const ax = (chunk.x * generateApi.NUM_CELLS) + dx;
                 const az = (chunk.z * generateApi.NUM_CELLS) + dz;
-                generateApi.addObject(chunk, 'tree', [ax, elevation, az]);
+                localVector.set(ax, elevation, az);
+                generateApi.addObject(chunk, 'tree', localVector, zeroQuaternion, oneVector);
               }
             }
           }

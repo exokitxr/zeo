@@ -12,6 +12,8 @@ const torch = objectApi => {
   const {THREE, scene} = three;
 
   const localVector = new THREE.Vector3();
+  const zeroQuaternion = new THREE.Quaternion();
+  const oneVector = new THREE.Vector3(1, 1, 1);
 
   const _requestImage = src => new Promise((accept, reject) => {
     const img = new Image();
@@ -70,7 +72,7 @@ const torch = objectApi => {
                 heightfieldElement ? heightfieldElement.getElevation(grabbable.position.x, grabbable.position.z) : 0,
                 grabbable.position.z
               );
-              objectApi.addObject('torch', localVector);
+              objectApi.addObject('torch', localVector, zeroQuaternion, oneVector);
 
               items.destroyItem(grabbable);
 
