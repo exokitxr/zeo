@@ -13,7 +13,7 @@ const {
   RANGE,
 } = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
-const objectsLib = require('./lib/objects/index');
+const objectsLib = require('./lib/objects/client/index');
 
 const NUM_POSITIONS_CHUNK = 5 * 1024 * 1024;
 const TEXTURE_SIZE = 512;
