@@ -73,24 +73,29 @@ connection.on('message', e => {
     pendingMessage = null;
   }
 });
-const _requestChunk = (x, z) => new Promise((accept, reject) => {
+const _resArrayBuffer = res => {
+  if (res.status >= 200 && res.status < 300) {
+    return res.arrayBuffer();
+  } else {
+    return Promise.reject({
+      status: res.status,
+      stack: 'API returned invalid status code: ' + res.status,
+    });
+  }
+};
+const _requestChunk = (x, z) => {
   const chunk = zde.getChunk(x, z);
 
   if (chunk) {
-    accept(chunk);
+    return Promise.resolve(chunk);
   } else {
-    connection.send(JSON.stringify({
-      method: 'getChunk',
-      args: {
-        x,
-        z,
-      },
-    }));
-    queue.push(buffer => {
-      accept((buffer && buffer.byteLength > 0) ? zde.addChunk(x, z, new Uint32Array(buffer)) : zde.makeChunk(x, z));
-    });
+    return fetch(`/archae/objects/chunks?x=${x}&z=${z}`)
+      .then(_resArrayBuffer)
+      .then(buffer => {
+        return zde.addChunk(x, z, new Uint32Array(buffer));
+      });
   }
-});
+};
 
 const registerApi = {
   THREE,
@@ -102,7 +107,7 @@ const registerApi = {
     return rng();
   },
 };
-const generateApi = {
+/* const generateApi = {
   THREE,
   NUM_CELLS,
   NUM_CELLS_OVERSCAN,
@@ -134,7 +139,7 @@ const generateApi = {
     const matrix = position.toArray().concat(rotation.toArray()).concat(scale.toArray());
     chunk.addObject(n, matrix);
   },
-};
+}; */
 const _copyIndices = (src, dst, startIndexIndex, startAttributeIndex) => {
   for (let i = 0; i < src.length; i++) {
     dst[startIndexIndex + i] = src[i] + startAttributeIndex;
@@ -270,12 +275,13 @@ self.onmessage = e => {
         console.warn(err);
       });
   } else if (type === 'generate') {
-    const {x, z} = data;
+    const {id, x, z} = data;
     let {buffer: resultBuffer} = data;
     _requestChunk(x, z)
       .then(chunk => {
         const geometry = _makeChunkGeometry(chunk);
         resultBuffer = protocolUtils.stringifyGeometry(geometry, resultBuffer, 0);
+        postMessage(id);
         postMessage(resultBuffer, [resultBuffer]);
       })
       .catch(err => {
