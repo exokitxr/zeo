@@ -2,7 +2,8 @@ const wood = objectApi => {
   return () => new Promise((accept, reject) => {
     objectApi.registerGenerator('wood', (chunk, generateApi) => {
       const localVector = new generateApi.THREE.Vector3();
-      const zeroQuaternion = new generateApi.THREE.Quaternion();
+      const localQuaternion = new generateApi.THREE.Quaternion();
+      const localEuler = new generateApi.THREE.Euler();
       const oneVector = new generateApi.THREE.Vector3(1, 1, 1);
 
       const itemProbability = 0.05;
@@ -17,7 +18,13 @@ const wood = objectApi => {
             const ax = (chunk.x * generateApi.NUM_CELLS) + dx;
             const az = (chunk.z * generateApi.NUM_CELLS) + dz;
             localVector.set(ax, elevation, az);
-            generateApi.addObject(chunk, 'wood', localVector, zeroQuaternion, oneVector);
+            localQuaternion.setFromEuler(localEuler.set(
+              0,
+              generateApi.getHash(String(v)) / 0xFFFFFFFF * Math.PI * 2,
+              0,
+              'YXZ'
+            ));
+            generateApi.addObject(chunk, 'wood', localVector, localQuaternion, oneVector);
           }
         }
       }
