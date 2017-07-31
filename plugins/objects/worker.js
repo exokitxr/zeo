@@ -19,7 +19,7 @@ const {
 const protocolUtils = require('./lib/utils/protocol-utils');
 const zeode = require('zeode');
 
-const NUM_POSITIONS_CHUNK = 4 * 1024 * 1024;
+const NUM_POSITIONS_CHUNK = 5 * 1024 * 1024;
 
 const rng = new alea(DEFAULT_SEED);
 const generator = indev({
@@ -28,6 +28,10 @@ const generator = indev({
 const elevationNoise = generator.uniform({
   frequency: 0.002,
   octaves: 8,
+});
+const grassNoise = generator.uniform({
+  frequency: 0.1,
+  octaves: 4,
 });
 const treeNoise = generator.uniform({
   frequency: 0.1,
@@ -117,6 +121,11 @@ const generateApi = {
     const ax = (ox * NUM_CELLS) + x;
     const az = (oz * NUM_CELLS) + z;
     return itemsNoise.in2D(ax + 1000, az + 1000);
+  },
+  getGrassNoise(ox, oz, x, z) {
+    const ax = (ox * NUM_CELLS) + x;
+    const az = (oz * NUM_CELLS) + z;
+    return grassNoise.in2D(ax + 1000, az + 1000);
   },
   getTreeNoise(ox, oz, x, z) {
     const ax = (ox * NUM_CELLS) + x;

@@ -7,7 +7,7 @@ const DEFAULT_MATRIX = [
 
 const dataSymbol = Symbol();
 
-const wood = objectApi => {
+const tree = objectApi => {
   const {three, pose, input, render, elements, items} = zeo;
   const {THREE, scene} = three;
 
@@ -282,7 +282,6 @@ const wood = objectApi => {
             const numNewUvs = newUvs.length / 2;
             for (let j = 0; j < numNewUvs; j++) {
               const baseIndex = j * 2;
-
               newUvs[baseIndex + 0] = leafUvs[0] + (newUvs[baseIndex + 0] * leafUvWidth);
               newUvs[baseIndex + 1] = leafUvs[1] + (newUvs[baseIndex + 1] * leafUvHeight);
             }
@@ -307,7 +306,7 @@ const wood = objectApi => {
       return treeGeometry;
     }))
     .then(() => {
-      /* const woodItemApi = {
+      /* const treeItemApi = {
         asset: 'ITEM.WOOD',
         itemAddedCallback(grabbable) {
           const _triggerdown = e => {
@@ -320,7 +319,7 @@ const wood = objectApi => {
                 heightfieldElement ? heightfieldElement.getElevation(grabbable.position.x, grabbable.position.z) : 0,
                 grabbable.position.z
               );
-              objectApi.addObject('wood', localVector);
+              objectApi.addObject('tree', localVector);
 
               items.destroyItem(grabbable);
 
@@ -342,10 +341,10 @@ const wood = objectApi => {
           delete grabbable[dataSymbol];
         },
       };
-      items.registerItem(this, woodItemApi);
+      items.registerItem(this, treeItemApi);
 
-      const woodObjectApi = {
-        object: 'wood',
+      const treeObjectApi = {
+        object: 'tree',
         offset: [0, 0.2/2, 0],
         size: 0.3,
         objectAddedCallback(object) {
@@ -375,7 +374,7 @@ const wood = objectApi => {
           // XXX
         },
       };
-      objectApi.registerObject(woodObjectApi); */
+      objectApi.registerObject(treeObjectApi); */
 
       objectApi.registerGenerator('tree', (chunk, generateApi) => {
         const treeProbability = 0.015;
@@ -398,11 +397,11 @@ const wood = objectApi => {
       });
 
       return () => {
-        // items.unregisterItem(this, woodItemApi);
-        // objectApi.unregisterObject(woodObjectApi);
+        // items.unregisterItem(this, treeItemApi);
+        // objectApi.unregisterObject(treeObjectApi);
       };
     });
 };
 const _makeId = () => Math.random().toString(36).substring(7);
 
-module.exports = wood;
+module.exports = tree;

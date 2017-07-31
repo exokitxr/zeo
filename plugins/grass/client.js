@@ -102,6 +102,7 @@ class Grass {
   }
 
   mount() {
+    return;
     const {_archae: archae} = this;
     const {three, render, pose, elements, stage, utils: {js: {bffr}, random: {chnkr}}} = zeo;
     const {THREE} = three;
