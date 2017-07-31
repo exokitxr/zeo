@@ -102,14 +102,18 @@ function _makeChunkGeometry(chunk) {
   let indexIndex = 0;
   let objectIndex = 0;
 
+  const localQuaternion = new THREE.Quaternion();
+  const localMatrix = new THREE.Matrix4();
+
   chunk.forEachObject((n, matrix, index) => {
     const geometryEntries = geometries[n];
 
     if (geometryEntries) {
       for (let j = 0; j < geometryEntries.length; j++) {
         const geometry = geometryEntries[j].clone()
-          .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion(matrix[3], matrix[4], matrix[5], matrix[6])))
-          .applyMatrix(new THREE.Matrix4().makeTranslation(matrix[0], matrix[1], matrix[2]));
+          .applyMatrix(localMatrix.makeRotationFromQuaternion(localQuaternion.set(matrix[3], matrix[4], matrix[5], matrix[6])))
+          .applyMatrix(localMatrix.makeTranslation(matrix[0], matrix[1], matrix[2]))
+          .applyMatrix(localMatrix.makeScale(matrix[7], matrix[8], matrix[9]));
         const newPositions = geometry.getAttribute('position').array;
         positions.set(newPositions, attributeIndex);
         const newUvs = geometry.getAttribute('uv').array;
