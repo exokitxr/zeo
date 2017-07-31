@@ -141,6 +141,18 @@ void main() {
       // 16
     );
 
+    const objectsMaterial = new THREE.ShaderMaterial({
+      uniforms: (() => {
+        const uniforms = THREE.UniformsUtils.clone(OBJECTS_SHADER.uniforms);
+        uniforms.map.value = textureAtlas;
+        return uniforms;
+      })(),
+      vertexShader: OBJECTS_SHADER.vertexShader,
+      fragmentShader: OBJECTS_SHADER.fragmentShader,
+      side: THREE.DoubleSide,
+    });
+    objectsMaterial.volatile = true;
+
     const worker = new Worker('archae/plugins/_plugins_objects/build/worker.js');
     const queue = [];
     worker.requestRegisterGeometry = (name, fn) => {
@@ -219,17 +231,20 @@ void main() {
 
           return geometry;
         })();
-        const uniforms = THREE.UniformsUtils.clone(OBJECTS_SHADER.uniforms);
-        uniforms.map.value = textureAtlas;
-        uniforms.d.value.set(x * NUM_CELLS, z * NUM_CELLS);
-        const material = new THREE.ShaderMaterial({
-          uniforms: uniforms,
-          vertexShader: OBJECTS_SHADER.vertexShader,
-          fragmentShader: OBJECTS_SHADER.fragmentShader,
-          side: THREE.DoubleSide,
-        });
+        const material = objectsMaterial;
 
         const mesh = new THREE.Mesh(geometry, material);
+        const uniforms = THREE.UniformsUtils.clone(OBJECTS_SHADER.uniforms);
+        uniforms.d.value.set(x * NUM_CELLS, z * NUM_CELLS);
+        mesh.uniforms = uniforms;
+        mesh.onBeforeRender = (function(onBeforeRender) {
+          return function() {
+            mesh.material.uniforms.d.value.copy(uniforms.d.value);
+            mesh.material.uniforms.lightMap.value = uniforms.lightMap.value;
+
+            onBeforeRender.apply(this, arguments);
+          };
+        })(mesh.onBeforeRender);
         mesh.offset = new THREE.Vector2(x, z);
         mesh.lightmap = null;
 
@@ -422,12 +437,13 @@ void main() {
       const {offset} = objectChunkMesh;
       const {x, y} = offset;
       const lightmap = lightmapper.getLightmapAt(x * NUM_CELLS, y * NUM_CELLS);
-      objectChunkMesh.material.uniforms.lightMap.value = lightmap.texture;
+      objectChunkMesh.uniforms.lightMap.value = lightmap.texture;
       objectChunkMesh.lightmap = lightmap;
     };
     const _unbindLightmap = objectChunkMesh => {
       const {lightmap} = objectChunkMesh;
       lightmapper.releaseLightmap(lightmap);
+      objectChunkMesh.uniforms.lightMap.value = null;
       objectChunkMesh.lightmap = null;
     };
     const lightmapElementListener = elements.makeListener(LIGHTMAP_PLUGIN); // XXX destroy these
@@ -613,10 +629,7 @@ void main() {
       const dayNightSkyboxEntity = elements.getEntitiesElement().querySelector(DAY_NIGHT_SKYBOX_PLUGIN);
       const sunIntensity = (dayNightSkyboxEntity && dayNightSkyboxEntity.getSunIntensity) ? dayNightSkyboxEntity.getSunIntensity() : 0;
 
-      for (let i = 0; i < objectsChunkMeshes.length; i++) {
-        const objectChunkMesh = objectsChunkMeshes[i];
-        objectChunkMesh.material.uniforms.sunIntensity.value = sunIntensity;
-      }
+      objectsMaterial.uniforms.sunIntensity.value = sunIntensity;
     };
     render.on('update', _update);
 
