@@ -177,6 +177,27 @@ class Objects {
         }
         app.use('/archae/objects/img', serveObjectsImg);
 
+        app.get('/archae/objects/chunks', (req, res, next) => {
+          const {query: {x: xs, z: zs}} = req;
+          const x = parseInt(xs, 10);
+          const z = parseInt(zs, 10);
+
+          if (!isNaN(x) && !isNaN(z)) {
+            let chunk = zde.getChunk(x, z);
+            if (!chunk) {
+              chunk = zde.makeChunk(x, z);
+              _generateChunk(chunk);
+            }
+            const uint32Buffer = chunk.getBuffer();
+            const buffer = new Buffer(uint32Buffer.buffer, uint32Buffer.byteOffset, uint32Buffer.byteLength);
+            res.type('application/octet-stream');
+            res.send(buffer);
+          } else {
+            res.status(400);
+            res.send();
+          }
+        });
+
         const connections = [];
         const _connection = c => {
           const {url} = c.upgradeReq;
@@ -195,7 +216,7 @@ class Objects {
               const m = JSON.parse(msg);
               const {method} = m;
 
-              if (method === 'getChunk') {
+              /*if (method === 'getChunk') {
                 const {args: {x, z}} = m;
 
                 let chunk = zde.getChunk(x, z);
@@ -207,7 +228,7 @@ class Objects {
                   type: 'response',
                 }));
                 c.send(chunk.getBuffer());
-              } else if (method === 'addObject') {
+              } else */if (method === 'addObject') {
                 const {args: {x, z, n, matrix}} = m;
 
                 let chunk = zde.getChunk(x, z);

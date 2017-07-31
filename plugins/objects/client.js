@@ -154,7 +154,7 @@ void main() {
     objectsMaterial.volatile = true;
 
     const worker = new Worker('archae/plugins/_plugins_objects/build/worker.js');
-    const queue = [];
+    const queues = {};
     worker.requestRegisterGeometry = (name, fn) => {
       const {args, src} = _parseFunction(fn);
       worker.postMessage({
@@ -191,21 +191,27 @@ void main() {
       return Promise.resolve();
     };
     worker.requestGenerate = (x, z) => new Promise((accept, reject) => {
+      const id = _makeId();
       const buffer = buffers.alloc();
       worker.postMessage({
         type: 'generate',
+        id,
         x,
         z,
         buffer,
       });
-      queue.push(buffer => {
-        accept(buffer);
-      });
+      queues[id] = accept;
     });
+    let pendingMessage = null;
     worker.onmessage = e => {
-      const {data: buffer} = e;
-      const cb = queue.shift();
-      cb(buffer);
+      const {data} = e;
+      if (typeof data === 'string') {
+        pendingMessage = data;
+      } else {
+        queues[pendingMessage](data);
+        delete queues[pendingMessage];
+        pendingMessage = null;
+      }
     };
 
     const _requestObjectsGenerate = (x, z) => worker.requestGenerate(x, z)
@@ -218,8 +224,8 @@ void main() {
           geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
           geometry.addAttribute('uv', new THREE.BufferAttribute(uvs, 2));
           geometry.setIndex(new THREE.BufferAttribute(indices, 1));
-          const maxY = 64;
-          const minY = -16;
+          const maxY = 100;
+          const minY = -100;
           geometry.boundingSphere = new THREE.Sphere(
             new THREE.Vector3(
               (x * NUM_CELLS) + (NUM_CELLS / 2),
@@ -239,8 +245,8 @@ void main() {
         mesh.uniforms = uniforms;
         mesh.onBeforeRender = (function(onBeforeRender) {
           return function() {
-            mesh.material.uniforms.d.value.copy(uniforms.d.value);
-            mesh.material.uniforms.lightMap.value = uniforms.lightMap.value;
+            mesh.material.uniforms.d.value.copy(mesh.uniforms.d.value);
+            mesh.material.uniforms.lightMap.value = mesh.uniforms.lightMap.value;
 
             onBeforeRender.apply(this, arguments);
           };
@@ -675,6 +681,7 @@ void main() {
     this._cleanup();
   }
 }
+const _makeId = () => Math.random().toString(36).substring(7);
 const _parseFunction = fn => {
   const match = fn.toString().match(/[^\(]*\(([^\)]*)\)[^\{]*\{([\s\S]*)\}\s*$/); // XXX support bracketless arrow functions
   const args = match[1].split(',').map(arg => arg.trim());
