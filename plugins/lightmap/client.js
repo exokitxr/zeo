@@ -247,7 +247,6 @@ class Lightmap {
         let entry = lightmaps.find(lightmap => lightmap.x === ox && lightmap.z === oz);
         if (!entry) {
           entry = new Lightmap(ox, oz, width, height, depth, buffers);
-          entry.addRef();
           entry.on('destroy', () => {
             lightmaps.splice(lightmaps.indexOf(entry), 1);
 
@@ -259,6 +258,7 @@ class Lightmap {
           lightmaps.push(entry);
           lightmapsNeedUpdate.push(entry);
         }
+        entry.addRef();
         return entry;
       }
 
