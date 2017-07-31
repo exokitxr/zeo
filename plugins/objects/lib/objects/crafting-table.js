@@ -90,7 +90,7 @@ const craftingTable = objectApi => {
         const uvWidth = craftingTableUvs[2] - craftingTableUvs[0];
         const uvHeight = craftingTableUvs[3] - craftingTableUvs[1];
         uvs[i * 2 + 0] = craftingTableUvs[0] + (uvs[i * 2 + 0] * uvWidth);
-        uvs[i * 2 + 1] = craftingTableUvs[1] + (uvs[i * 2 + 1] * uvHeight);
+        uvs[i * 2 + 1] = (craftingTableUvs[1] + uvHeight) - (uvs[i * 2 + 1] * uvHeight);
       }
 
       return geometry;

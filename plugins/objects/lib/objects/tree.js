@@ -86,7 +86,7 @@ const tree = objectApi => {
 
             const baseIndex2 = i * 2;
             uvs[baseIndex2 + 0] = treeUvs[0] + (uvs[baseIndex2 + 0] * treeUvWidth);
-            uvs[baseIndex2 + 1] = treeUvs[1] + (uvs[baseIndex2 + 1] * treeUvHeight);
+            uvs[baseIndex2 + 1] = (treeUvs[1] + treeUvHeight) - (uvs[baseIndex2 + 1] * treeUvHeight);
           }
 
           geometry.heightSegments = heightSegments;
