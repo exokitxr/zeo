@@ -49,54 +49,60 @@ const tree = objectApi => {
         }
       };
 
-      const trunkGeometries = [
-        (() => {
-          const radiusBottom = 0.3 + rng() * 0.3;
-          const radiusTop = radiusBottom * (0.2 + (rng() * 0.3));
-          const heightSegments = 16;
-          const radialSegments = 5;
-          const geometry = new THREE.CylinderBufferGeometry(radiusTop, radiusBottom, heightSegments, radialSegments, heightSegments);
-          geometry.removeAttribute('normal');
-          geometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, heightSegments / 2, 0));
-          const positions = geometry.getAttribute('position').array;
-          const uvs = geometry.getAttribute('uv').array;
+      const _makeTrunkGeometry = () => {
+        const radiusBottom = 0.3 + rng() * 0.3;
+        const radiusTop = radiusBottom * (0.2 + (rng() * 0.3));
+        const heightSegments = 16;
+        const radialSegments = 5;
+        const geometry = new THREE.CylinderBufferGeometry(radiusTop, radiusBottom, heightSegments, radialSegments, heightSegments);
+        geometry.removeAttribute('normal');
+        geometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, heightSegments / 2, 0));
+        const positions = geometry.getAttribute('position').array;
+        const uvs = geometry.getAttribute('uv').array;
 
-          const heightOffsets = {};
-          let heightOffset = new THREE.Vector3();
-          heightOffsets[0] = heightOffset;
-          for (let i = 1; i <= heightSegments; i++) {
-            heightOffset = heightOffset.clone()
-              .multiplyScalar(0.8)
-              .add(new THREE.Vector3(
-                -0.6 + (rng() * 0.6),
-                0,
-                -0.6 + (rng() * 0.6)
-              ));
-            heightOffsets[i] = heightOffset;
-          }
+        const heightOffsets = {};
+        let heightOffset = new THREE.Vector3();
+        heightOffsets[0] = heightOffset;
+        for (let i = 1; i <= heightSegments; i++) {
+          heightOffset = heightOffset.clone()
+            .multiplyScalar(0.8)
+            .add(new THREE.Vector3(
+              -0.6 + (rng() * 0.6),
+              0,
+              -0.6 + (rng() * 0.6)
+            ));
+          heightOffsets[i] = heightOffset;
+        }
 
-          const numPositions = positions.length / 3;
-          for (let i = 0; i < numPositions; i++) {
-            const baseIndex3 = i * 3;
-            const y = positions[baseIndex3 + 1];
-            const heightOffset = heightOffsets[y];
+        const numPositions = positions.length / 3;
+        for (let i = 0; i < numPositions; i++) {
+          const baseIndex3 = i * 3;
+          const y = positions[baseIndex3 + 1];
+          const heightOffset = heightOffsets[y];
 
-            positions[baseIndex3 + 0] += heightOffset.x;
-            // positions[baseIndex + 1] += heightOffset.y;
-            positions[baseIndex3 + 2] += heightOffset.z;
+          positions[baseIndex3 + 0] += heightOffset.x;
+          // positions[baseIndex + 1] += heightOffset.y;
+          positions[baseIndex3 + 2] += heightOffset.z;
 
-            const baseIndex2 = i * 2;
-            uvs[baseIndex2 + 0] = treeUvs[0] + (uvs[baseIndex2 + 0] * treeUvWidth);
-            uvs[baseIndex2 + 1] = (treeUvs[1] + treeUvHeight) - (uvs[baseIndex2 + 1] * treeUvHeight);
-          }
+          const baseIndex2 = i * 2;
+          uvs[baseIndex2 + 0] = treeUvs[0] + (uvs[baseIndex2 + 0] * treeUvWidth);
+          uvs[baseIndex2 + 1] = (treeUvs[1] + treeUvHeight) - (uvs[baseIndex2 + 1] * treeUvHeight);
+        }
 
-          geometry.heightSegments = heightSegments;
-          geometry.radialSegments = radialSegments;
-          geometry.heightOffsets = heightOffsets;
+        geometry.heightSegments = heightSegments;
+        geometry.radialSegments = radialSegments;
+        geometry.heightOffsets = heightOffsets;
 
-          return geometry;
-        })(),
-      ];
+        return geometry;
+      };
+      const trunkGeometries = (() => {
+        const numTrunkGeometries = 8;
+        const result = Array(numTrunkGeometries);
+        for (let i = 0; i < numTrunkGeometries; i++) {
+          result[i] = _makeTrunkGeometry();
+        }
+        return result;
+      })();
       const _makeTreeBranchGeometry = heightSegments => {
         const radiusBottom = 0.1 + rng() * 0.1;
         const radiusTop = radiusBottom * (0.2 + (rng() * 0.3));

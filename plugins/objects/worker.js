@@ -157,21 +157,16 @@ function _makeChunkGeometry(chunk) {
   let indexIndex = 0;
   let objectIndex = 0;
 
-  chunk.forEachObject((n, position, index) => {
+  chunk.forEachObject((n, matrix, index) => {
     const geometryEntries = geometries[n];
 
     if (geometryEntries) {
       for (let j = 0; j < geometryEntries.length; j++) {
-        const geometry = geometryEntries[j];
+        const geometry = geometryEntries[j].clone()
+          .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion(matrix[3], matrix[4], matrix[5], matrix[6])))
+          .applyMatrix(new THREE.Matrix4().makeTranslation(matrix[0], matrix[1], matrix[2]));
         const newPositions = geometry.getAttribute('position').array;
-        const numNewPositions = newPositions.length / 3;
-
-        for (let k = 0; k < numNewPositions; k++) {
-          const baseIndex = k * 3;
-          positions[attributeIndex + baseIndex + 0] = newPositions[baseIndex + 0] + position[0];
-          positions[attributeIndex + baseIndex + 1] = newPositions[baseIndex + 1] + position[1];
-          positions[attributeIndex + baseIndex + 2] = newPositions[baseIndex + 2] + position[2];
-        }
+        positions.set(newPositions, attributeIndex);
         const newUvs = geometry.getAttribute('uv').array;
         const numNewUvs = newUvs.length / 2;
         for (let k = 0; k < numNewUvs; k++) {
@@ -183,7 +178,7 @@ function _makeChunkGeometry(chunk) {
         _copyIndices(newIndices, indices, indexIndex, attributeIndex / 3);
         const newObjectsHeader = Uint32Array.from([n, index, indexIndex, indexIndex + newIndices.length]);
         objectsUint32Array.set(newObjectsHeader, objectIndex);
-        const newObjectsBody = Float32Array.from([position[0], position[1], position[2]]);
+        const newObjectsBody = Float32Array.from([matrix[0], matrix[1], matrix[2]]);
         objectsFloat32Array.set(newObjectsBody, objectIndex + newObjectsHeader.length);
 
         attributeIndex += newPositions.length;
