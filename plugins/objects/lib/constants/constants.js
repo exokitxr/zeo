@@ -2,6 +2,9 @@ const NUM_CELLS = 64;
 const OVERSCAN = 1;
 const NUM_CELLS_OVERSCAN = NUM_CELLS + OVERSCAN;
 
+const NUM_CELLS_HEIGHT = 60;
+const HEIGHT_OFFSET = -10;
+
 const RANGE = 1;
 
 const DEFAULT_SEED = 'a';
@@ -10,6 +13,9 @@ module.exports = {
   NUM_CELLS,
   OVERSCAN,
   NUM_CELLS_OVERSCAN,
+
+  NUM_CELLS_HEIGHT,
+  HEIGHT_OFFSET,
 
   RANGE,
 

@@ -1,9 +1,14 @@
 const txtr = require('txtr');
 
+const LIGHTMAP_PLUGIN = 'plugins-lightmap';
+const DAY_NIGHT_SKYBOX_PLUGIN = 'plugins-day-night-skybox';
 const CRAFT_PLUGIN = 'plugins-craft';
 
 const {
   NUM_CELLS,
+
+  NUM_CELLS_HEIGHT,
+  HEIGHT_OFFSET,
 
   RANGE,
 } = require('./lib/constants/constants');
@@ -14,69 +19,98 @@ const NUM_POSITIONS_CHUNK = 4 * 1024 * 1024;
 const TEXTURE_SIZE = 512;
 const DEFAULT_SIZE = 0.1;
 
-const OBJECTS_SHADER = {
-  uniforms: {
-    map: {
-      type: 't',
-      value: null,
-    },
-  },
-  vertexShader: `\
-precision highp float;
-precision highp int;
-/*uniform mat4 modelMatrix;
-uniform mat4 modelViewMatrix;
-uniform mat4 projectionMatrix;
-uniform mat4 viewMatrix;
-uniform mat3 normalMatrix;
-attribute vec3 position;
-attribute vec3 normal;
-attribute vec2 uv; */
-
-varying vec3 vPosition;
-varying vec2 vUv;
-
-void main() {
-  vec4 mvPosition = modelViewMatrix * vec4( position.xyz, 1.0 );
-  gl_Position = projectionMatrix * mvPosition;
-
-  vUv = uv;
-
-	vPosition = position.xyz;
-}
-`,
-  fragmentShader: `\
-precision highp float;
-precision highp int;
-#define ALPHATEST 0.7
-#define DOUBLE_SIDED
-// uniform mat4 viewMatrix;
-uniform vec3 ambientLightColor;
-uniform sampler2D map;
-uniform sampler2D lightMap;
-uniform vec2 d;
-uniform float sunIntensity;
-
-varying vec3 vPosition;
-varying vec2 vUv;
-
-void main() {
-  vec4 diffuseColor = texture2D( map, vUv );
-
-#ifdef ALPHATEST
-	if ( diffuseColor.a < ALPHATEST ) discard;
-#endif
-
-	gl_FragColor = diffuseColor;
-}
-`
-};
-
 class Objects {
   mount() {
-    const {three, pose, input, elements, utils: {js: {events, bffr}, hash: {murmur}, random: {chnkr}}} = zeo;
+    const {three, pose, input, elements, render, utils: {js: {events, bffr}, hash: {murmur}, random: {chnkr}}} = zeo;
     const {THREE, scene} = three;
     const {EventEmitter} = events;
+
+    const OBJECTS_SHADER = {
+      uniforms: {
+        map: {
+          type: 't',
+          value: null,
+        },
+        lightMap: {
+          type: 't',
+          value: null,
+        },
+        d: {
+          type: 'v2',
+          value: new THREE.Vector2(),
+        },
+        sunIntensity: {
+          type: 'f',
+          value: 0,
+        },
+      },
+      vertexShader: `\
+        precision highp float;
+        precision highp int;
+        /*uniform mat4 modelMatrix;
+        uniform mat4 modelViewMatrix;
+        uniform mat4 projectionMatrix;
+        uniform mat4 viewMatrix;
+        uniform mat3 normalMatrix;
+        attribute vec3 position;
+        attribute vec3 normal;
+        attribute vec2 uv; */
+
+        varying vec3 vPosition;
+        varying vec2 vUv;
+
+        void main() {
+          vec4 mvPosition = modelViewMatrix * vec4( position.xyz, 1.0 );
+          gl_Position = projectionMatrix * mvPosition;
+
+          vUv = uv;
+
+          vPosition = position.xyz;
+        }
+      `,
+      fragmentShader: `\
+        precision highp float;
+        precision highp int;
+        #define ALPHATEST 0.7
+        #define DOUBLE_SIDED
+        // uniform mat4 viewMatrix;
+        uniform vec3 ambientLightColor;
+        uniform sampler2D map;
+        uniform sampler2D lightMap;
+        uniform vec2 d;
+        uniform float sunIntensity;
+
+        varying vec3 vPosition;
+        varying vec2 vUv;
+
+        void main() {
+          vec4 diffuseColor = texture2D( map, vUv );
+
+          float u = (
+            floor(clamp(vPosition.x - d.x, 0.0, ${(NUM_CELLS).toFixed(8)})) +
+            (floor(clamp(vPosition.z - d.y, 0.0, ${(NUM_CELLS).toFixed(8)})) * ${(NUM_CELLS + 1).toFixed(8)}) +
+            0.5
+          ) / (${(NUM_CELLS + 1).toFixed(8)} * ${(NUM_CELLS + 1).toFixed(8)});
+          float v = (floor(vPosition.y - ${HEIGHT_OFFSET.toFixed(8)}) + 0.5) / ${NUM_CELLS_HEIGHT.toFixed(8)};
+          vec3 lightColor = texture2D( lightMap, vec2(u, v) ).rgb * 1.0;
+
+        #ifdef ALPHATEST
+          if ( diffuseColor.a < ALPHATEST ) discard;
+        #endif
+
+          vec3 outgoingLight = (ambientLightColor * 0.2 + diffuseColor.rgb) * (0.1 + sunIntensity * 0.9) +
+            diffuseColor.rgb * (
+              min((lightColor.rgb - 0.5) * 2.0, 0.0) * sunIntensity +
+              max((lightColor.rgb - 0.5) * 2.0, 0.0) * (1.0 - sunIntensity)
+            );
+
+          gl_FragColor = vec4( outgoingLight, diffuseColor.a );
+        }
+      `
+    };
+
+    const zeroVector = new THREE.Vector3();
+    const localVector = new THREE.Vector3();
 
     const cleanups = [];
     this._cleanup = () => {
@@ -85,9 +119,6 @@ class Objects {
         cleanup();
       }
     };
-
-    const zeroVector = new THREE.Vector3();
-    const localVector = new THREE.Vector3();
 
     const buffers = bffr(NUM_POSITIONS_CHUNK, (RANGE + 1) * (RANGE + 1) * 2);
     const textures = txtr(TEXTURE_SIZE, TEXTURE_SIZE);
@@ -197,6 +228,7 @@ class Objects {
         })();
         const uniforms = THREE.UniformsUtils.clone(OBJECTS_SHADER.uniforms);
         uniforms.map.value = textureAtlas;
+        uniforms.d.value.set(x * NUM_CELLS, z * NUM_CELLS);
         const material = new THREE.ShaderMaterial({
           uniforms: uniforms,
           vertexShader: OBJECTS_SHADER.vertexShader,
@@ -205,7 +237,12 @@ class Objects {
         });
 
         const mesh = new THREE.Mesh(geometry, material);
-        // mesh.frustumCulled = false;
+        mesh.offset = new THREE.Vector2(x, z);
+        mesh.lightmap = null;
+
+        if (lightmapper) {
+          _bindLightmap(mesh);
+        }
 
         return mesh;
       })();
@@ -215,6 +252,10 @@ class Objects {
 
         const {buffer} = objectsChunkData;
         buffers.free(buffer);
+
+        if (mesh.lightmap) {
+          _unbindLightmap(mesh);
+        }
       };
 
       return mesh;
@@ -358,16 +399,55 @@ class Objects {
     input.on('gripdown', _gripdown, {
       priority: -4,
     });
-    cleanups.push(() => {
-      input.removeListener('triggerdown', _triggerdown);
-      input.removeListener('gripdown', _gripdown);
-    });
 
     const objectApis = {};
 
+    let lightmapper = null;
+    const _bindLightmapper = lightmapElement => {
+      lightmapper = lightmapElement.lightmapper;
+
+      _bindLightmaps();
+    };
+    const _unbindLightmapper = () => {
+      _unbindLightmaps();
+
+      lightmapper = null;
+    };
+    const _bindLightmaps = () => {
+      for (let i = 0; i < objectsChunkMeshes.length; i++) {
+        const objectChunkMesh = objectsChunkMeshes[i];
+        _bindLightmap(objectChunkMesh);
+      }
+    };
+    const _unbindLightmaps = () => {
+      for (let i = 0; i < objectsChunkMeshes.length; i++) {
+        const objectChunkMesh = objectsChunkMeshes[i];
+        _unbindLightmap(objectChunkMesh);
+      }
+    };
+    const _bindLightmap = objectChunkMesh => {
+      const {offset} = objectChunkMesh;
+      const {x, y} = offset;
+      const lightmap = lightmapper.getLightmapAt(x * NUM_CELLS, y * NUM_CELLS);
+      objectChunkMesh.material.uniforms.lightMap.value = lightmap.texture;
+      objectChunkMesh.lightmap = lightmap;
+    };
+    const _unbindLightmap = objectChunkMesh => {
+      const {lightmap} = objectChunkMesh;
+      lightmapper.releaseLightmap(lightmap);
+      objectChunkMesh.lightmap = null;
+    };
+    const lightmapElementListener = elements.makeListener(LIGHTMAP_PLUGIN); // XXX destroy these
+    lightmapElementListener.on('add', entityElement => {
+      _bindLightmapper(entityElement);
+    });
+    lightmapElementListener.on('remove', () => {
+      _unbindLightmapper();
+    });
+
     let craftElement = null;
-    const elementListener = elements.makeListener(CRAFT_PLUGIN);
-    elementListener.on('add', entityElement => {
+    const craftElementListener = elements.makeListener(CRAFT_PLUGIN);
+    craftElementListener.on('add', entityElement => {
       craftElement = entityElement;
 
       if (recipeQueue.length > 0) {
@@ -378,7 +458,7 @@ class Objects {
         recipeQueue.length = 0;
       }
     });
-    elementListener.on('remove', () => {
+    craftElementListener.on('remove', () => {
       craftElement = null;
     });
     const recipeQueue = [];
@@ -537,6 +617,24 @@ class Objects {
           }
         })
     };
+
+    const _update = () => {
+      const dayNightSkyboxEntity = elements.getEntitiesElement().querySelector(DAY_NIGHT_SKYBOX_PLUGIN);
+      const sunIntensity = (dayNightSkyboxEntity && dayNightSkyboxEntity.getSunIntensity) ? dayNightSkyboxEntity.getSunIntensity() : 0;
+
+      for (let i = 0; i < objectsChunkMeshes.length; i++) {
+        const objectChunkMesh = objectsChunkMeshes[i];
+        objectChunkMesh.material.uniforms.sunIntensity.value = sunIntensity;
+      }
+    };
+    render.on('update', _update);
+
+    cleanups.push(() => {
+      input.removeListener('triggerdown', _triggerdown);
+      input.removeListener('gripdown', _gripdown);
+
+      render.removeListener('update', _update);
+    });
 
     return Promise.all(
       objectsLib(objectApi)
