@@ -346,7 +346,7 @@ class Grass {
 
           const _update = () => {
             const dayNightSkyboxEntity = elements.getEntitiesElement().querySelector(DAY_NIGHT_SKYBOX_PLUGIN);
-            const sunIntensity =  (dayNightSkyboxEntity && dayNightSkyboxEntity.getSunIntensity) ? dayNightSkyboxEntity.getSunIntensity() : 0;
+            const sunIntensity = (dayNightSkyboxEntity && dayNightSkyboxEntity.getSunIntensity) ? dayNightSkyboxEntity.getSunIntensity() : 0;
 
             for (let i = 0; i < grassChunkMeshes.length; i++) {
               const grassChunkMesh = grassChunkMeshes[i];
