@@ -1,4 +1,5 @@
 const HEIGHTFIELD_PLUGIN = 'plugins-heightfield';
+const LIGHTMAP_PLUGIN = 'plugins-lightmap';
 const DEFAULT_MATRIX = [
   0, 0, 0,
   0, 0, 0, 1,
@@ -341,12 +342,42 @@ const tree = objectApi => {
           delete grabbable[dataSymbol];
         },
       };
-      items.registerItem(this, treeItemApi);
+      items.registerItem(this, treeItemApi); */
+
+      const trees = [];
+      let Lightmapper = null;
+      let lightmapper = null;
+      const _bindLightmap = tree => {
+        const shape = new Lightmapper.Cylinder(tree.position.x, tree.position.y, tree.position.z, 12, 8, 0.1, Lightmapper.SubBlend);
+        lightmapper.add(shape);
+        tree.shape = shape;
+      };
+      const _unbindLightmap = tree => {
+        lightmapper.remove(tree.shape);
+        tree.shape = null;
+      };
+      const lightmapElementListener = elements.makeListener(LIGHTMAP_PLUGIN); // XXX destroy this
+      lightmapElementListener.on('add', entityElement => {
+        Lightmapper = entityElement.Lightmapper;
+        lightmapper = entityElement.lightmapper;
+
+        for (let i = 0; i < trees.length; i++) {
+          _bindLightmap(trees[i]);
+        }
+      });
+      lightmapElementListener.on('remove', () => {
+        Lightmapper = null;
+        lightmapper = null;
+
+        for (let i = 0; i < trees.length; i++) {
+          trees[i].shape = null;
+        }
+      });
 
       const treeObjectApi = {
         object: 'tree',
-        offset: [0, 0.2/2, 0],
-        size: 0.3,
+        // offset: [0, 0.2/2, 0],
+        // size: 0.3,
         objectAddedCallback(object) {
           object.on('grip', side => {
             const id = _makeId();
@@ -369,12 +400,23 @@ const tree = objectApi => {
 
             object.remove();
           });
+
+          object.shape = null;
+          if (lightmapper) {
+            _bindLightmap(object);
+          }
+
+          trees.push(object);
         },
         objectRemovedCallback(object) {
-          // XXX
+          if (lightmapper) {
+            _unbindLightmap(object);
+          }
+
+          trees.splice(trees.indexOf(object), 1);
         },
       };
-      objectApi.registerObject(treeObjectApi); */
+      objectApi.registerObject(treeObjectApi);
 
       return () => {
         // items.unregisterItem(this, treeItemApi);
