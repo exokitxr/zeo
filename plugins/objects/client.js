@@ -15,7 +15,7 @@ const {
 const protocolUtils = require('./lib/utils/protocol-utils');
 const objectsLib = require('./lib/objects/index');
 
-const NUM_POSITIONS_CHUNK = 4 * 1024 * 1024;
+const NUM_POSITIONS_CHUNK = 5 * 1024 * 1024;
 const TEXTURE_SIZE = 512;
 const DEFAULT_SIZE = 0.1;
 
@@ -133,9 +133,12 @@ class Objects {
       THREE.ClampToEdgeWrapping,
       THREE.NearestFilter,
       THREE.NearestFilter,
+      // THREE.LinearMipMapLinearFilter,
+      // THREE.LinearMipMapLinearFilter,
       THREE.RGBAFormat,
       THREE.UnsignedByteType,
       1
+      // 16
     );
 
     const worker = new Worker('archae/plugins/_plugins_objects/build/worker.js');
