@@ -6,8 +6,8 @@ importScripts('/archae/assets/autows.js');
 const {exports: Autows} = self.module;
 importScripts('/archae/assets/alea.js');
 const {exports: alea} = self.module;
-importScripts('/archae/assets/indev.js');
-const {exports: indev} = self.module;
+// importScripts('/archae/assets/indev.js');
+// const {exports: indev} = self.module;
 self.module = {};
 
 const {
@@ -19,10 +19,10 @@ const {
 const protocolUtils = require('./lib/utils/protocol-utils');
 const zeode = require('zeode');
 
-const NUM_POSITIONS_CHUNK = 5 * 1024 * 1024;
+const NUM_POSITIONS_CHUNK = 3 * 1024 * 1024;
 
 const rng = new alea(DEFAULT_SEED);
-const generator = indev({
+/* const generator = indev({
   seed: DEFAULT_SEED,
 });
 const elevationNoise = generator.uniform({
@@ -43,12 +43,11 @@ const generator2 = indev({
 const itemsNoise = generator2.uniform({
   frequency: 0.1,
   octaves: 4,
-});
+}); */
 
 const zde = zeode();
 const geometries = {};
 const textures = {};
-const generators = [];
 
 const queue = [];
 let pendingMessage = null;
@@ -91,13 +90,7 @@ const _requestChunk = (x, z) => new Promise((accept, reject) => {
       accept((buffer && buffer.byteLength > 0) ? zde.addChunk(x, z, new Uint32Array(buffer)) : zde.makeChunk(x, z));
     });
   }
-})
-  .then(chunk => {
-    for (let i = 0; i < generators.length; i++) {
-      generators[i][1](chunk, generateApi);
-    }
-    return chunk;
-  });
+});
 
 const registerApi = {
   THREE,
@@ -234,16 +227,6 @@ self.onmessage = e => {
     const {name, uv} = data;
     const n = murmur(name);
     textures[n] = uv;
-  } else if (type === 'registerGenerator') {
-    const {name, args, src} = data;
-    const fn = Reflect.construct(Function, args.concat(src));
-
-    const n = murmur(name);
-    generators.push([n, fn]);
-
-    for (let i = 0; i < zde.chunks.length; i++) {
-      fn(zde.chunks[i], generateApi);
-    }
   } else if (type === 'addObject') {
     const {name, matrix} = data;
 

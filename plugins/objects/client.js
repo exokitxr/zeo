@@ -15,7 +15,7 @@ const {
 const protocolUtils = require('./lib/utils/protocol-utils');
 const objectsLib = require('./lib/objects/client/index');
 
-const NUM_POSITIONS_CHUNK = 5 * 1024 * 1024;
+const NUM_POSITIONS_CHUNK = 3 * 1024 * 1024;
 const TEXTURE_SIZE = 512;
 const DEFAULT_SIZE = 0.1;
 
@@ -45,67 +45,67 @@ class Objects {
         },
       },
       vertexShader: `\
-        precision highp float;
-        precision highp int;
-        /*uniform mat4 modelMatrix;
-        uniform mat4 modelViewMatrix;
-        uniform mat4 projectionMatrix;
-        uniform mat4 viewMatrix;
-        uniform mat3 normalMatrix;
-        attribute vec3 position;
-        attribute vec3 normal;
-        attribute vec2 uv; */
+precision highp float;
+precision highp int;
+/*uniform mat4 modelMatrix;
+uniform mat4 modelViewMatrix;
+uniform mat4 projectionMatrix;
+uniform mat4 viewMatrix;
+uniform mat3 normalMatrix;
+attribute vec3 position;
+attribute vec3 normal;
+attribute vec2 uv; */
 
-        varying vec3 vPosition;
-        varying vec2 vUv;
+varying vec3 vPosition;
+varying vec2 vUv;
 
-        void main() {
-          vec4 mvPosition = modelViewMatrix * vec4( position.xyz, 1.0 );
-          gl_Position = projectionMatrix * mvPosition;
+void main() {
+  vec4 mvPosition = modelViewMatrix * vec4( position.xyz, 1.0 );
+  gl_Position = projectionMatrix * mvPosition;
 
-          vUv = uv;
+  vUv = uv;
 
-          vPosition = position.xyz;
-        }
+  vPosition = position.xyz;
+}
       `,
       fragmentShader: `\
-        precision highp float;
-        precision highp int;
-        #define ALPHATEST 0.7
-        #define DOUBLE_SIDED
-        // uniform mat4 viewMatrix;
-        uniform vec3 ambientLightColor;
-        uniform sampler2D map;
-        uniform sampler2D lightMap;
-        uniform vec2 d;
-        uniform float sunIntensity;
+precision highp float;
+precision highp int;
+#define ALPHATEST 0.7
+#define DOUBLE_SIDED
+// uniform mat4 viewMatrix;
+uniform vec3 ambientLightColor;
+uniform sampler2D map;
+uniform sampler2D lightMap;
+uniform vec2 d;
+uniform float sunIntensity;
 
-        varying vec3 vPosition;
-        varying vec2 vUv;
+varying vec3 vPosition;
+varying vec2 vUv;
 
-        void main() {
-          vec4 diffuseColor = texture2D( map, vUv );
+void main() {
+  vec4 diffuseColor = texture2D( map, vUv );
 
-          float u = (
-            floor(clamp(vPosition.x - d.x, 0.0, ${(NUM_CELLS).toFixed(8)})) +
-            (floor(clamp(vPosition.z - d.y, 0.0, ${(NUM_CELLS).toFixed(8)})) * ${(NUM_CELLS + 1).toFixed(8)}) +
-            0.5
-          ) / (${(NUM_CELLS + 1).toFixed(8)} * ${(NUM_CELLS + 1).toFixed(8)});
-          float v = (floor(vPosition.y - ${HEIGHT_OFFSET.toFixed(8)}) + 0.5) / ${NUM_CELLS_HEIGHT.toFixed(8)};
-          vec3 lightColor = texture2D( lightMap, vec2(u, v) ).rgb * 1.0;
+  float u = (
+    floor(clamp(vPosition.x - d.x, 0.0, ${(NUM_CELLS).toFixed(8)})) +
+    (floor(clamp(vPosition.z - d.y, 0.0, ${(NUM_CELLS).toFixed(8)})) * ${(NUM_CELLS + 1).toFixed(8)}) +
+    0.5
+  ) / (${(NUM_CELLS + 1).toFixed(8)} * ${(NUM_CELLS + 1).toFixed(8)});
+  float v = (floor(vPosition.y - ${HEIGHT_OFFSET.toFixed(8)}) + 0.5) / ${NUM_CELLS_HEIGHT.toFixed(8)};
+  vec3 lightColor = texture2D( lightMap, vec2(u, v) ).rgb * 1.0;
 
-        #ifdef ALPHATEST
-          if ( diffuseColor.a < ALPHATEST ) discard;
-        #endif
+#ifdef ALPHATEST
+  if ( diffuseColor.a < ALPHATEST ) discard;
+#endif
 
-          vec3 outgoingLight = (ambientLightColor * 0.2 + diffuseColor.rgb) * (0.1 + sunIntensity * 0.9) +
-            diffuseColor.rgb * (
-              min((lightColor.rgb - 0.5) * 2.0, 0.0) * sunIntensity +
-              max((lightColor.rgb - 0.5) * 2.0, 0.0) * (1.0 - sunIntensity)
-            );
+  vec3 outgoingLight = (ambientLightColor * 0.2 + diffuseColor.rgb) * (0.1 + sunIntensity * 0.9) +
+    diffuseColor.rgb * (
+      min((lightColor.rgb - 0.5) * 2.0, 0.0) * sunIntensity +
+      max((lightColor.rgb - 0.5) * 2.0, 0.0) * (1.0 - sunIntensity)
+    );
 
-          gl_FragColor = vec4( outgoingLight, diffuseColor.a );
-        }
+  gl_FragColor = vec4( outgoingLight, diffuseColor.a );
+}
       `
     };
 
@@ -147,16 +147,6 @@ class Objects {
       const {args, src} = _parseFunction(fn);
       worker.postMessage({
         type: 'registerGeometry',
-        name,
-        args,
-        src,
-      });
-      return Promise.resolve();
-    };
-    worker.requestRegisterGenerator = (name, fn) => {
-      const {args, src} = _parseFunction(fn);
-      worker.postMessage({
-        type: 'registerGenerator',
         name,
         args,
         src,
@@ -547,10 +537,6 @@ class Objects {
             recipeQueue.splice(index, 1);
           }
         }
-      }
-
-      registerGenerator(name, fn) {
-        return worker.requestRegisterGenerator(name, fn);
       }
     }
     const objectApi = new ObjectApi();
