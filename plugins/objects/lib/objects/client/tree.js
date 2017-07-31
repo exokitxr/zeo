@@ -202,7 +202,7 @@ const tree = objectApi => {
 
             const maxNumBranchesPerNode = 2;
             const optimalBranchHeight = 0.7;
-            const branchWeight = 1 - Math.pow(Math.abs(i - (heightSegments * optimalBranchHeight)) / (heightSegments * optimalBranchHeight), 0.25);
+            const branchWeight = 1 - Math.pow(Math.abs(i - (heightSegments * optimalBranchHeight)) / (heightSegments * optimalBranchHeight), 0.3);
             for (let j = 0; j < maxNumBranchesPerNode; j++) {
               if (rng() < branchWeight) {
                 const branchSizeIndex = branchWeight === 1 ? (branchGeometrySizes.length - 1) : Math.floor(branchWeight * branchGeometrySizes.length);
