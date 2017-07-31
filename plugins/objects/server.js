@@ -1,6 +1,7 @@
 const path = require('path');
 const fs = require('fs');
 
+const touch = require('touch');
 const zeode = require('zeode');
 const {
   NUM_CELLS,
@@ -72,12 +73,18 @@ class Objects {
 
     const _getZeode = () => new Promise((accept, reject) => {
       fs.readFile(zeodeDataPath, (err, b) => {
-        if (!err || err.code === 'ENOENT') {
+        if (!err) {
           const zde = zeode();
-          if (b) {
-            zde.load(b);
-          }
+          zde.load(b);
           accept(zde);
+        } else if (err.code === 'ENOENT') {
+          touch(zeodeDataPath, err => {
+            if (!err) {
+              accept(zeode());
+            } else {
+              reject(err);
+            }
+          });
         } else {
           reject(err);
         }
