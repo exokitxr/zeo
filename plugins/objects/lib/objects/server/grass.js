@@ -7,14 +7,16 @@ const grass = objectApi => {
       const localEuler = new generateApi.THREE.Euler();
       const oneVector = new generateApi.THREE.Vector3(1, 1, 1);
 
+      const _getElevation = (ox, oz, x, z) => (-0.3 + Math.pow(generateApi.getNoise('elevation', ox, oz, x, z), 0.5)) * 64;
+
       const grassProbability = 0.3;
 
       for (let dz = 0; dz < generateApi.NUM_CELLS_OVERSCAN; dz++) {
         for (let dx = 0; dx < generateApi.NUM_CELLS_OVERSCAN; dx++) {
-          const v = generateApi.getGrassNoise(chunk.x, chunk.z, dx, dz);
+          const v = generateApi.getNoise('grass', chunk.x, chunk.z, dx, dz);
 
           if (v < grassProbability) {
-            const elevation = generateApi.getElevation(chunk.x, chunk.z, dx, dz);
+            const elevation = _getElevation(chunk.x, chunk.z, dx, dz);
 
             const ax = (chunk.x * generateApi.NUM_CELLS) + dx;
             const az = (chunk.z * generateApi.NUM_CELLS) + dz;

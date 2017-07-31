@@ -28,56 +28,28 @@ class Objects {
     const zeroBuffer = new Uint32Array(0);
 
     const rng = new alea(DEFAULT_SEED);
-    const generator = indev({
-      seed: DEFAULT_SEED,
-    });
-    const elevationNoise = generator.uniform({
-      frequency: 0.002,
-      octaves: 8,
-    });
-    const grassNoise = generator.uniform({
-      frequency: 0.1,
-      octaves: 4,
-    });
-    const treeNoise = generator.uniform({
-      frequency: 0.1,
-      octaves: 4,
-    });
-    const generator2 = indev({
-      seed: DEFAULT_SEED + '2',
-    });
-    const itemsNoise = generator2.uniform({
-      frequency: 0.1,
-      octaves: 4,
-    });
+    const noises = {};
 
     const generators = [];
     const generateApi = {
       THREE,
       NUM_CELLS,
       NUM_CELLS_OVERSCAN,
-      getElevation(ox, oz, x, z) {
-        const ax = (ox * NUM_CELLS) + x;
-        const az = (oz * NUM_CELLS) + z;
-        return (-0.3 + Math.pow(elevationNoise.in2D(ax + 1000, az + 1000), 0.5)) * 64;
-      },
-      getItemsNoise(ox, oz, x, z) {
-        const ax = (ox * NUM_CELLS) + x;
-        const az = (oz * NUM_CELLS) + z;
-        return itemsNoise.in2D(ax + 1000, az + 1000);
-      },
-      getGrassNoise(ox, oz, x, z) {
-        const ax = (ox * NUM_CELLS) + x;
-        const az = (oz * NUM_CELLS) + z;
-        return grassNoise.in2D(ax + 1000, az + 1000);
-      },
-      getTreeNoise(ox, oz, x, z) {
-        const ax = (ox * NUM_CELLS) + x;
-        const az = (oz * NUM_CELLS) + z;
-        return treeNoise.in2D(ax + 1000, az + 1000);
-      },
       getHash(s) {
         return murmur(s);
+      },
+      registerNoise(name, spec) {
+        noises[name] = indev({
+          seed: spec.seed,
+        }).uniform({
+          frequency: spec.frequency,
+          octaves: spec.octaves,
+        });
+      },
+      getNoise(name, ox, oz, x, z) {
+        const ax = (ox * NUM_CELLS) + x;
+        const az = (oz * NUM_CELLS) + z;
+        return noises[name].in2D(ax + 1000, az + 1000);
       },
       addObject(chunk, name, position, rotation, scale) {
         const n = murmur(name);
@@ -112,6 +84,27 @@ class Objects {
       });
     });
     const _getObjects = zde => {
+      generateApi.registerNoise('elevation', { // XXX move these into the objects lib
+        seed: DEFAULT_SEED,
+        frequency: 0.002,
+        octaves: 8,
+      });
+      generateApi.registerNoise('grass', {
+        seed: DEFAULT_SEED,
+        frequency: 0.1,
+        octaves: 4,
+      });
+      generateApi.registerNoise('tree', {
+        seed: DEFAULT_SEED,
+        frequency: 0.1,
+        octaves: 4,
+      });
+      generateApi.registerNoise('items', {
+        seed: DEFAULT_SEED + '2',
+        frequency: 0.1,
+        octaves: 4,
+      });
+
       const objectApi = {
         THREE,
         registerGenerator(name, fn) {
