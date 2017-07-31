@@ -22,28 +22,6 @@ const zeode = require('zeode');
 const NUM_POSITIONS_CHUNK = 3 * 1024 * 1024;
 
 const rng = new alea(DEFAULT_SEED);
-/* const generator = indev({
-  seed: DEFAULT_SEED,
-});
-const elevationNoise = generator.uniform({
-  frequency: 0.002,
-  octaves: 8,
-});
-const grassNoise = generator.uniform({
-  frequency: 0.1,
-  octaves: 4,
-});
-const treeNoise = generator.uniform({
-  frequency: 0.1,
-  octaves: 4,
-});
-const generator2 = indev({
-  seed: DEFAULT_SEED + '2',
-});
-const itemsNoise = generator2.uniform({
-  frequency: 0.1,
-  octaves: 4,
-}); */
 
 const zde = zeode();
 const geometries = {};
@@ -107,39 +85,6 @@ const registerApi = {
     return rng();
   },
 };
-/* const generateApi = {
-  THREE,
-  NUM_CELLS,
-  NUM_CELLS_OVERSCAN,
-  getElevation(ox, oz, x, z) {
-    const ax = (ox * NUM_CELLS) + x;
-    const az = (oz * NUM_CELLS) + z;
-    return (-0.3 + Math.pow(elevationNoise.in2D(ax + 1000, az + 1000), 0.5)) * 64;
-  },
-  getItemsNoise(ox, oz, x, z) {
-    const ax = (ox * NUM_CELLS) + x;
-    const az = (oz * NUM_CELLS) + z;
-    return itemsNoise.in2D(ax + 1000, az + 1000);
-  },
-  getGrassNoise(ox, oz, x, z) {
-    const ax = (ox * NUM_CELLS) + x;
-    const az = (oz * NUM_CELLS) + z;
-    return grassNoise.in2D(ax + 1000, az + 1000);
-  },
-  getTreeNoise(ox, oz, x, z) {
-    const ax = (ox * NUM_CELLS) + x;
-    const az = (oz * NUM_CELLS) + z;
-    return treeNoise.in2D(ax + 1000, az + 1000);
-  },
-  getHash(s) {
-    return murmur(s);
-  },
-  addObject(chunk, name, position, rotation, scale) {
-    const n = murmur(name);
-    const matrix = position.toArray().concat(rotation.toArray()).concat(scale.toArray());
-    chunk.addObject(n, matrix);
-  },
-}; */
 const _copyIndices = (src, dst, startIndexIndex, startAttributeIndex) => {
   for (let i = 0; i < src.length; i++) {
     dst[startIndexIndex + i] = src[i] + startAttributeIndex;
