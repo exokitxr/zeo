@@ -94,10 +94,10 @@ class Objects {
                 }));
                 c.send(chunk ? chunk.getBuffer() : zeroBuffer);
               } else if (method === 'addObject') {
-                const {args: {x, z, n, position}} = m;
+                const {args: {x, z, n, matrix}} = m;
 
                 const chunk = zde.getChunk(x, z) || zde.makeChunk(x, z);
-                chunk.addObject(n, position);
+                chunk.addObject(n, matrix);
 
                 _saveChunks();
 
@@ -106,7 +106,7 @@ class Objects {
                   x,
                   z,
                   n,
-                  position,
+                  matrix,
                 });
               } else if (method === 'removeObject') {
                 const {args: {x, z, index}} = m;

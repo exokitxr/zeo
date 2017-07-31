@@ -110,6 +110,7 @@ const registerApi = {
   },
 };
 const generateApi = {
+  THREE,
   NUM_CELLS,
   NUM_CELLS_OVERSCAN,
   getElevation(ox, oz, x, z) {
@@ -135,9 +136,10 @@ const generateApi = {
   getHash(s) {
     return murmur(s);
   },
-  addObject(chunk, name, position) {
+  addObject(chunk, name, position, rotation, scale) {
     const n = murmur(name);
-    chunk.addObject(n, position);
+    const matrix = position.toArray().concat(rotation.toArray()).concat(scale.toArray());
+    chunk.addObject(n, matrix);
   },
 };
 const _copyIndices = (src, dst, startIndexIndex, startAttributeIndex) => {
@@ -243,14 +245,14 @@ self.onmessage = e => {
       fn(zde.chunks[i], generateApi);
     }
   } else if (type === 'addObject') {
-    const {name, position} = data;
+    const {name, matrix} = data;
 
-    const x = Math.floor(position[0] / NUM_CELLS);
-    const z = Math.floor(position[2] / NUM_CELLS);
+    const x = Math.floor(matrix[0] / NUM_CELLS);
+    const z = Math.floor(matrix[2] / NUM_CELLS);
     _requestChunk(x, z)
       .then(chunk => {
         const n = murmur(name);
-        chunk.addObject(n, position);
+        chunk.addObject(n, matrix);
 
         connection.send(JSON.stringify({
           method: 'addObject',
@@ -258,7 +260,7 @@ self.onmessage = e => {
             x,
             z,
             n,
-            position,
+            matrix,
           },
         }));
       })

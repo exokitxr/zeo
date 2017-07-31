@@ -109,7 +109,7 @@ const craftingTable = objectApi => {
                 heightfieldElement ? heightfieldElement.getElevation(grabbable.position.x, grabbable.position.z) : 0,
                 grabbable.position.z
               );
-              objectApi.addObject('craftingTable', localVector);
+              objectApi.addObject('craftingTable', localVector, zeroQuaternion, oneVector);
 
               items.destroyItem(grabbable);
 

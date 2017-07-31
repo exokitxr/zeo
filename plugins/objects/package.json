@@ -9,6 +9,6 @@
   },
   "dependencies": {
     "txtr": "0.0.1",
-    "zeode": "0.0.10"
+    "zeode": "0.0.12"
   }
 }
