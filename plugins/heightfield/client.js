@@ -214,7 +214,9 @@ class Heightfield {
     const _unbindLightmaps = () => {
       for (let i = 0; i < mapChunkMeshes.length; i++) {
         const mapChunkMesh = mapChunkMeshes[i];
-        _unbindLightmap(mapChunkMesh);
+        if (mapChunkMesh.lightmap) {
+          _unbindLightmap(mapChunkMesh);
+        }
       }
     };
     const _bindLightmap = mapChunkMesh => {
