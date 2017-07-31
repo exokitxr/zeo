@@ -29,16 +29,16 @@ const stone = objectApi => {
     .then(() => objectApi.registerGeometry('stone', (args) => {
       const {THREE, getUv} = args;
       const stoneUvs = getUv('stone');
-      const uvWidth = stoneUvs[2] - stoneUvs[0];
-      const uvHeight = stoneUvs[3] - stoneUvs[1];
+      const uvWidth = (stoneUvs[2] - stoneUvs[0]) * 0.25;
+      const uvHeight = (stoneUvs[3] - stoneUvs[1]) * 0.25;
 
       const geometry = new THREE.BoxBufferGeometry(0.3, 0.2, 0.2)
         .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.2/2, 0));
       const uvs = geometry.getAttribute('uv').array;
       const numUvs = uvs.length / 2;
       for (let i = 0; i < numUvs; i++) {
-        uvs[i * 2 + 0] = stoneUvs[0] + (uvs[i * 2 + 0] * uvWidth * 0.25);
-        uvs[i * 2 + 1] = stoneUvs[1] + (uvs[i * 2 + 1] * uvHeight * 0.25);
+        uvs[i * 2 + 0] = stoneUvs[0] + (uvs[i * 2 + 0] * uvWidth);
+        uvs[i * 2 + 1] = (stoneUvs[1] + uvHeight) - (uvs[i * 2 + 1] * uvHeight);
       }
 
       return geometry;

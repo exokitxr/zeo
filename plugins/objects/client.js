@@ -480,7 +480,7 @@ class Objects {
           });
 
         return createImageBitmap(img, 0, 0, img.width, img.height, {
-          imageOrientation: 'flipY',
+          // imageOrientation: 'flipY',
         })
           .then(imageBitmap => {
             ctx.drawImage(imageBitmap, rect.x, rect.y);

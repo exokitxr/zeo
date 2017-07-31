@@ -72,7 +72,7 @@ const grass = objectApi => {
         for (let j = 0; j < numNewUvs; j++) {
           const baseIndex = j * 2;
           newUvs[baseIndex + 0] = grassUvs[0] + (newUvs[baseIndex + 0] * uvWidth);
-          newUvs[baseIndex + 1] = grassUvs[1] + (newUvs[baseIndex + 1] * uvHeight);
+          newUvs[baseIndex + 1] = (grassUvs[1] + uvHeight) - (newUvs[baseIndex + 1] * uvHeight);
         }
         uvs.set(newUvs, uvIndex);
         const newIndices = geometry.index.array;

@@ -47,7 +47,7 @@ const wood = objectApi => {
       const numUvs = uvs.length / 2;
       for (let i = 0; i < numUvs; i++) {
         uvs[i * 2 + 0] = woodUvs[0] + (uvs[i * 2 + 0] * uvWidth);
-        uvs[i * 2 + 1] = woodUvs[1] + (uvs[i * 2 + 1] * uvHeight);
+        uvs[i * 2 + 1] = (woodUvs[1] + uvHeight) - (uvs[i * 2 + 1] * uvHeight);
       }
 
       return geometry;
