@@ -1,4 +1,5 @@
 const HEIGHTFIELD_PLUGIN = 'plugins-heightfield';
+const LIGHTMAP_PLUGIN = 'plugins-lightmap';
 const DEFAULT_MATRIX = [
   0, 0, 0,
   0, 0, 0, 1,
@@ -96,6 +97,36 @@ const torch = objectApi => {
       };
       items.registerItem(this, torchItemApi);
 
+      const torches = [];
+      let Lightmapper = null;
+      let lightmapper = null;
+      const _bindLightmap = torch => {
+        const shape = new Lightmapper.Sphere(torch.position.x, torch.position.y, torch.position.z, 8, 2, Lightmapper.MaxBlend);
+        lightmapper.add(shape);
+        torch.shape = shape;
+      };
+      const _unbindLightmap = torch => {
+        lightmapper.remove(torch.shape);
+        torch.shape = null;
+      };
+      const lightmapElementListener = elements.makeListener(LIGHTMAP_PLUGIN); // XXX destroy this
+      lightmapElementListener.on('add', entityElement => {
+        Lightmapper = entityElement.Lightmapper;
+        lightmapper = entityElement.lightmapper;
+
+        for (let i = 0; i < torches.length; i++) {
+          _bindLightmap(torches[i]);
+        }
+      });
+      lightmapElementListener.on('remove', () => {
+        Lightmapper = null;
+        lightmapper = null;
+
+        for (let i = 0; i < torches.length; i++) {
+          torches[i].shape = null;
+        }
+      });
+
       const torchObjectApi = {
         object: 'torch',
         offset: [0, 0.3/2, 0],
@@ -122,9 +153,20 @@ const torch = objectApi => {
 
             object.remove();
           });
+
+          object.shape = null;
+          if (lightmapper) {
+            _bindLightmap(object);
+          }
+
+          torches.push(object);
         },
         objectRemovedCallback(object) {
-          // XXX
+          if (lightmapper) {
+            _unbindLightmap(object);
+          }
+
+          torches.splice(torches.indexOf(object), 1);
         },
       };
       objectApi.registerObject(torchObjectApi);
