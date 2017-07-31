@@ -19,7 +19,7 @@ const {
 const protocolUtils = require('./lib/utils/protocol-utils');
 const zeode = require('zeode');
 
-const NUM_POSITIONS_CHUNK = 500 * 1024;
+const NUM_POSITIONS_CHUNK = 4 * 1024 * 1024;
 
 const rng = new alea(DEFAULT_SEED);
 const generator = indev({
@@ -28,6 +28,10 @@ const generator = indev({
 const elevationNoise = generator.uniform({
   frequency: 0.002,
   octaves: 8,
+});
+const treeNoise = generator.uniform({
+  frequency: 0.1,
+  octaves: 4,
 });
 const generator2 = indev({
   seed: DEFAULT_SEED + '2',
@@ -97,6 +101,9 @@ const registerApi = {
     const n = murmur(name);
     return textures[n];
   },
+  rng() {
+    return rng();
+  },
 };
 const generateApi = {
   NUM_CELLS,
@@ -110,6 +117,11 @@ const generateApi = {
     const ax = (ox * NUM_CELLS) + x;
     const az = (oz * NUM_CELLS) + z;
     return itemsNoise.in2D(ax + 1000, az + 1000);
+  },
+  getTreeNoise(ox, oz, x, z) {
+    const ax = (ox * NUM_CELLS) + x;
+    const az = (oz * NUM_CELLS) + z;
+    return treeNoise.in2D(ax + 1000, az + 1000);
   },
   getHash(s) {
     return murmur(s);
@@ -128,7 +140,7 @@ const _copyIndices = (src, dst, startIndexIndex, startAttributeIndex) => {
 function _makeChunkGeometry(chunk) {
   const positions = new Float32Array(NUM_POSITIONS_CHUNK);
   const uvs = new Float32Array(NUM_POSITIONS_CHUNK);
-  const indices = new Uint16Array(NUM_POSITIONS_CHUNK);
+  const indices = new Uint32Array(NUM_POSITIONS_CHUNK);
   const objectsUint32Array = new Uint32Array(NUM_POSITIONS_CHUNK);
   const objectsFloat32Array = new Float32Array(objectsUint32Array.buffer, objectsUint32Array.byteOffset, objectsUint32Array.length);
   let attributeIndex = 0;
@@ -176,7 +188,7 @@ function _makeChunkGeometry(chunk) {
   return {
     positions: new Float32Array(positions.buffer, positions.byteOffset, attributeIndex),
     uvs: new Float32Array(uvs.buffer, uvs.byteOffset, uvIndex),
-    indices: new Uint16Array(indices.buffer, indices.byteOffset, indexIndex),
+    indices: new Uint32Array(indices.buffer, indices.byteOffset, indexIndex),
     objects: new Uint32Array(objectsUint32Array.buffer, objectsUint32Array.byteOffset, objectIndex),
   };
 };

@@ -10,7 +10,7 @@ const {
 const protocolUtils = require('./lib/utils/protocol-utils');
 const objectsLib = require('./lib/objects/index');
 
-const NUM_POSITIONS_CHUNK = 500 * 1024;
+const NUM_POSITIONS_CHUNK = 4 * 1024 * 1024;
 const TEXTURE_SIZE = 512;
 const DEFAULT_SIZE = 0.1;
 
@@ -62,7 +62,6 @@ varying vec2 vUv;
 
 void main() {
   vec4 diffuseColor = texture2D( map, vUv );
-  diffuseColor.a = 0.8;
 
 #ifdef ALPHATEST
 	if ( diffuseColor.a < ALPHATEST ) discard;
@@ -175,7 +174,7 @@ class Objects {
 
     const _requestObjectsGenerate = (x, z) => worker.requestGenerate(x, z)
       .then(objectsChunkBuffer => protocolUtils.parseGeometry(objectsChunkBuffer));
-    const _makeObjectsChunkMesh = objectsChunkData => {
+    const _makeObjectsChunkMesh = (objectsChunkData, x, z) => {
       const mesh = (() => {
         const geometry = (() => {
           const {positions, uvs, indices} = objectsChunkData;
@@ -183,9 +182,15 @@ class Objects {
           geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
           geometry.addAttribute('uv', new THREE.BufferAttribute(uvs, 2));
           geometry.setIndex(new THREE.BufferAttribute(indices, 1));
-          geometry.boundingSphere = new THREE.Sphere( // XXX really compute this
-            new THREE.Vector3(),
-            100
+          const maxY = 64;
+          const minY = -16;
+          geometry.boundingSphere = new THREE.Sphere(
+            new THREE.Vector3(
+              (x * NUM_CELLS) + (NUM_CELLS / 2),
+              (minY + maxY) / 2,
+              (z * NUM_CELLS) + (NUM_CELLS / 2)
+            ),
+            Math.max(Math.sqrt((NUM_CELLS / 2) * (NUM_CELLS / 2) * 3), (maxY - minY) / 2) // XXX really compute this
           );
 
           return geometry;
@@ -196,6 +201,7 @@ class Objects {
           uniforms: uniforms,
           vertexShader: OBJECTS_SHADER.vertexShader,
           fragmentShader: OBJECTS_SHADER.fragmentShader,
+          side: THREE.DoubleSide,
         });
 
         const mesh = new THREE.Mesh(geometry, material);

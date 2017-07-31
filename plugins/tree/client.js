@@ -136,6 +136,7 @@ class Tree {
   }
 
   mount() {
+    return;
     const {_archae: archae} = this;
     const {three, render, pose, input, elements, items, stage, utils: {js: {bffr}, random: {chnkr}}} = zeo;
     const {THREE} = three;
