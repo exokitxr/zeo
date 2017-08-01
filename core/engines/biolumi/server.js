@@ -18,15 +18,21 @@ class Biolumi {
       live = false;
     };
 
-    return rasterize.external({
+    return rasterize({
       express,
       app,
       wss,
       port,
     })
-    // return rasterize.internal()
-      .then(cleanup => {
+      .then(({
+        type,
+        cleanup,
+      })=> {
         if (live) {
+          if (type === 'internal') {
+            console.warn('warning: Could not start Chrome. Using *slow* local rendering; VR clients will experience hitching. To fix this, install Chrome.');
+          }
+
           this._cleanup = cleanup;
         } else {
           cleanup();
