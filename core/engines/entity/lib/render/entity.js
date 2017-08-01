@@ -46,7 +46,7 @@ const makeRenderer = ({typeUtils, creatureUtils}) => {
         ${(focusSpec && focusSpec.type === 'entity') ?
           `<div style="position: absolute; width: 2px; top: 2px; bottom: 2px; left: ${npmInputValue}px; background-color: #000;"></div>`
         : ''}
-        <div>${npmInputText}</div>
+        <div measure="entity:search">${npmInputText}</div>
         ${!npmInputText ? `<div>Search entities</div>` : ''}
       </a>
       <div style="display: flex; height: 44px; margin: 0 20px; font-size: 24px; font-weight: 400; align-items: center;">(${numSelected})</div>
@@ -263,7 +263,7 @@ const makeRenderer = ({typeUtils, creatureUtils}) => {
         return `\
           <a style="display: flex; position: relative; margin: 20px; border: 2px solid #333; font-size: 24px; text-decoration: none; align-items: center; overflow: hidden; box-sizing: border-box;" onclick="entityAttribute:${id}:${name}:focus">
             ${focusType === 'input' ? `<div style="position: absolute; width: 2px; top: 0; bottom: 0; left: ${inputValue}px; background-color: #333;"></div>` : ''}
-            <div>${focusValue}</div>
+            <div measure="entityAttribute:${id}:${name}">${focusValue}</div>
           </a>
         `;
       }
@@ -287,7 +287,7 @@ const makeRenderer = ({typeUtils, creatureUtils}) => {
             </a>
             <a style="display: flex; position: relative; width: 100px; height: 40px; margin: 5px 20px; border: 2px solid; font-size: 24px; font-weight: 400; text-decoration: none; overflow: hidden; box-sizing: border-box;" onclick="entityAttribute:${id}:${name}:focus">
               ${focusType === 'input' ? `<div style="position: absolute; width: 2px; top: 0; bottom: 0; left: ${inputValue}px; background-color: #333;"></div>` : ''}
-              <div>${string}</div>
+              <div measure="entityAttribute:${id}:${name}">${string}</div>
             </a>
           </div>
         `;
@@ -347,7 +347,7 @@ const makeRenderer = ({typeUtils, creatureUtils}) => {
             <a style="display: block; width: 40px; height: 40px; margin-right: 10px; background-color: ${color};" onclick="entityAttribute:${id}:${name}:pick"></a>
             <a style="display: flex; position: relative; height: 40px; border: 2px solid #333; font-size: 24px; text-decoration: none; flex-grow: 1; align-items: center; overflow: hidden; box-sizing: border-box;" onclick="entityAttribute:${id}:${name}:focus">
               ${focusType === 'input' ? `<div style="position: absolute; width: 2px; top: 2px; bottom: 2px; left: ${inputValue}px; background-color: #333;"></div>` : ''}
-              <div>${string}</div>
+              <div measure="entityAttribute:${id}:${name}">${string}</div>
             </a>
           </div>
         `;
