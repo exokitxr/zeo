@@ -135,8 +135,6 @@ class Biolumi {
 
       return Promise.resolve(new UiTimer());
     };
-    const _requestRasterizer = () => Promise.resolve(rasterize.external());
-    // const _requestRasterizer = () => Promise.resolve(rasterize.internal());
 
     return Promise.all([
       archae.requestPlugins([
@@ -147,7 +145,7 @@ class Biolumi {
       _requestBlackImg(),
       _requestUiWorker(),
       _requestUiTimer(),
-      _requestRasterizer(),
+      rasterize(),
     ])
       .then(([
         [
@@ -162,6 +160,10 @@ class Biolumi {
       ]) => {
         if (live) {
           const {THREE, renderer} = three;
+
+          if (rasterizer.type === 'internal') {
+            console.warn('warning: Server is using *slow* local rendering; VR clients will experience hitching. To fix this, contact the server admin.');
+          }
 
           const zeroQuaternion = new THREE.Quaternion();
           const defaultRayMeshScale = new THREE.Vector3(1, 1, 15);
