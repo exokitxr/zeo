@@ -493,9 +493,9 @@ class World {
             let match;
             if (onclick === 'npm:focus') {
               const {inputText} = npmState;
-              const {value} = hoverState;
+              const {value, target: {layer: {measures}}} = hoverState;
               const valuePx = value * (WIDTH - (250 + (30 * 2)));
-              const {index, px} = biolumi.getTextPropertiesFromCoord(inputText, mainFontSpec, valuePx); // XXX this can be folded into the keyboard engine
+              const {index, px} = biolumi.getTextPropertiesFromCoord(measures['npm:search'], valuePx);
               const {hmd: hmdStatus} = webvr.getStatus();
               const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmdStatus;
               const keyboardFocusState = keyboard.focus({

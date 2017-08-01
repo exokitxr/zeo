@@ -401,9 +401,9 @@ class Config {
               return true;
             } else if (onclick === 'config:name') {
               const {nameValue: inputText} = configState;
-              const {value} = hoverState;
+              const {value, target: {layer: {measures}}} = hoverState;
               const valuePx = value * (640 - (150 + (30 * 2) + 30));
-              const {index, px} = biolumi.getTextPropertiesFromCoord(inputText, mainFontSpec, valuePx);
+              const {index, px} = biolumi.getTextPropertiesFromCoord(measures['config:name'], valuePx);
               const {hmd: hmdStatus} = webvr.getStatus();
               const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmdStatus;
               const keyboardFocusState = keyboard.focus({
@@ -444,9 +444,9 @@ class Config {
               return true;
             } else if (onclick === 'config:password') {
               const {passwordValue: inputText} = configState;
-              const {value} = hoverState;
+              const {value, target: {layer: {measures}}} = hoverState;
               const valuePx = value * (640 - (150 + (30 * 2) + 30));
-              const {index, px} = biolumi.getTextPropertiesFromCoord(inputText, mainFontSpec, valuePx);
+              const {index, px} = biolumi.getTextPropertiesFromCoord(measures['config:password'], valuePx);
               const {hmd: hmdStatus} = webvr.getStatus();
               const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmdStatus;
               const keyboardFocusState = keyboard.focus({
