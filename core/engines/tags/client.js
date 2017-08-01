@@ -23,7 +23,6 @@ import {
   WORLD_MENU_HEIGHT,
 } from './lib/constants/tags';
 import menuUtils from './lib/utils/menu';
-import tagsRender from './lib/render/tags';
 
 const SIDES = ['left', 'right'];
 const AXES = ['x', 'y', 'z'];
@@ -117,8 +116,6 @@ class Tags {
           });
 
           const transparentImg = biolumi.getTransparentImg();
-
-          const tagsRenderer = tagsRender.makeRenderer({typeUtils, creatureUtils});
 
           const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
           const _decomposeMatrix = matrix => {
