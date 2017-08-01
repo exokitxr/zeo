@@ -27,7 +27,7 @@ const getInputSrc = (label, inputText, inputPlaceholder, inputValue, focus, oncl
     <h1 style="width: 150px; margin: 0; margin-right: 30px; font-size: 30px; font-weight: 300;">${label}</h1>
     <a style='display: block; position: relative; background-color: #EEE; flex-grow: 1; text-decoration: none;' onclick="${onclick}">
       ${focus ? `<div style="position: absolute; width: 2px; top: 0; bottom: 0; left: ${inputValue}px; background-color: #333;"></div>` : ''}
-      <div measure="config:name">${inputText}</div>
+      <div measure="${onclick}">${inputText}</div>
       ${!inputText ? `<div style="color: #CCC;">${inputPlaceholder}</div>` : ''}
     </a>
   </div>

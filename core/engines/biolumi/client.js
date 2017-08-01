@@ -407,12 +407,6 @@ class Biolumi {
               this.measures = measures;
             }
           }
-          /* class BoxAnchor {
-            constructor(boxTarget, anchor) {
-              this.boxTarget = boxTarget;
-              this.anchor = anchor;
-            }
-          } */
 
           class Ui {
             constructor(width, height, color) {
@@ -708,7 +702,6 @@ class Biolumi {
           const _makeUi = ({width, height, color = [1, 1, 1, 1]}) => new Ui(width, height, color);
           const _makePage = (spec, {type = null, state = null, color = [1, 1, 1, 1], width, height, worldWidth, worldHeight, layer = null}) =>
             new Page(spec, type, state, color, width, height, worldWidth, worldHeight, layer);
-          // const _makeBoxAnchor = ({boxTarget, anchor}) => new BoxAnchor(boxTarget, anchor);
 
           const _updateUiTimer = () => {
             uiTimer.update();
@@ -758,16 +751,7 @@ class Biolumi {
 
             return (text, fontSpec) => _getMeasureContext(fontSpec).measureText(text).width;
           })();
-          const _getTextPropertiesFromCoord = (text, fontSpec, coordPx) => {
-            const slices = (() => {
-              const result = [];
-              for (let i = 0; i <= text.length; i++) {
-                const slice = text.slice(0, i);
-                result.push(slice);
-              }
-              return result;
-            })();
-            const widths = slices.map(slice => _measureText(slice, fontSpec));
+          const _getTextPropertiesFromCoord = (widths, coordPx) => {
             const distances = widths.map(width => Math.abs(coordPx - width));
             const sortedDistances = distances
               .map((distance, index) => ([distance, index]))
@@ -793,7 +777,7 @@ class Biolumi {
             (keyCode > 95 && keyCode < 112) || // numpad keys
             (keyCode > 185 && keyCode < 193) || // ;=,-./` (in order)
             (keyCode > 218 && keyCode < 223); // [\]' (in order)\
-          const _applyStateKeyEvent = (state, e) => {
+          const _applyStateKeyEvent = (state, e) => { // XXX make this consume layer measures
             const {inputText, inputIndex, fontSpec} = state;
 
             let change = false;
@@ -889,7 +873,6 @@ class Biolumi {
           return {
             makeUi: _makeUi,
             makePage: _makePage,
-            // makeBoxAnchor: _makeBoxAnchor,
 
             updateUiTimer: _updateUiTimer,
             getUiTime: _getUiTime,

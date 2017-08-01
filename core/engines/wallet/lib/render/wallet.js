@@ -34,7 +34,6 @@ const getAssetsPageSrc = ({loading, inputText, inputValue, asset, assets, equipm
           <div measure="wallet:search">${inputText}</div>
           ${!inputText ? `<div>Search my assets</div>` : ''}
         </a>
-        <a style="padding: 10px 15px; border: 2px solid; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="wallet:manage">Manage account</a>
       </div>
       ${loading ?
         `<div style="display: flex; margin-bottom: 100px; font-size: 30px; font-weight: 400; flex-grow: 1; align-items: center; justify-content: center;">Loading...</div>`

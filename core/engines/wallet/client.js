@@ -775,9 +775,9 @@ class Wallet {
             let match;
             if (onclick === 'wallet:focus') {
               const {inputText} = walletState;
-              const {value} = hoverState;
-              const valuePx = value * (WIDTH - (250 + (30 * 2)));
-              const {index, px} = biolumi.getTextPropertiesFromCoord(inputText, mainFontSpec, valuePx);
+              const {value, target: {layer: {measures}}} = hoverState;
+              const valuePx = value * (WIDTH - 250);
+              const {index, px} = biolumi.getTextPropertiesFromCoord(measures['wallet:search'], valuePx);
               const {hmd: hmdStatus} = webvr.getStatus();
               const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmdStatus;
               const keyboardFocusState = keyboard.focus({
@@ -855,10 +855,6 @@ class Wallet {
               walletState.equipments = newEquipments;
               _saveEquipments();
               _updatePages();
-
-              return true;
-            } else if (onclick === 'wallet:manage') {
-              console.log('manage account'); // XXX make this link to the vrid page
 
               return true;
             } else if (onclick === 'wallet:refresh') {

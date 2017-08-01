@@ -374,9 +374,9 @@ class Entity {
             let match;
             if (onclick === 'entity:focus') {
               const {inputText} = npmState;
-              const {value} = hoverState;
+              const {value, target: {layer: {measures}}} = hoverState;
               const valuePx = value * (WIDTH - (250 + (30 * 2)));
-              const {index, px} = biolumi.getTextPropertiesFromCoord(inputText, mainFontSpec, valuePx); // XXX this can be folded into the keyboard engine
+              const {index, px} = biolumi.getTextPropertiesFromCoord(measures['entity:search'], valuePx);
               const {hmd: hmdStatus} = webvr.getStatus();
               const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmdStatus;
               const keyboardFocusState = keyboard.focus({
@@ -497,19 +497,19 @@ class Entity {
               const {value: attributeValue} = attribute;
 
               if (action === 'focus') {
-                const {value: hoverValue} = hoverState;
+                const {value: hoverValue, target: {layer: {measures}}} = hoverState;
                 const {type} = tags.getAttributeSpec(module, attributeName);
 
                 const textProperties = (() => {
                   if (type === 'text') {
                     const hoverValuePx = hoverValue * 400;
-                    return biolumi.getTextPropertiesFromCoord(typeUtils.castValueValueToString(attributeValue, type), subcontentFontSpec, hoverValuePx);
+                    return biolumi.getTextPropertiesFromCoord(measures[`entityAttribute:${tagId}:${attributeName}`], hoverValuePx);
                   } else if (type === 'number') {
                     const hoverValuePx = hoverValue * 100;
-                    return biolumi.getTextPropertiesFromCoord(typeUtils.castValueValueToString(attributeValue, type), subcontentFontSpec, hoverValuePx);
+                    return biolumi.getTextPropertiesFromCoord(measures[`entityAttribute:${tagId}:${attributeName}`], hoverValuePx);
                   } else if (type === 'color') {
                     const hoverValuePx = hoverValue * (400 - (40 + 4));
-                    return biolumi.getTextPropertiesFromCoord(typeUtils.castValueValueToString(attributeValue, type), subcontentFontSpec, hoverValuePx);
+                    return biolumi.getTextPropertiesFromCoord(measures[`entityAttribute:${tagId}:${attributeName}`], hoverValuePx);
                   } else {
                     return null;
                   }
