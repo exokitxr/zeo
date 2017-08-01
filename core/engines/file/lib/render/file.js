@@ -42,7 +42,7 @@ const makeRenderer = ({creatureUtils}) => {
           ${focus ?
             `<div style="position: absolute; width: 2px; top: 2px; bottom: 2px; left: ${inputValue}px; background-color: #000;"></div>`
           : ''}
-          <div>${inputText}</div>
+          <div measure="file:search">${inputText}</div>
           ${!inputText ? `<div>Search files</div>` : ''}
         </a>
         ${tagSpecs

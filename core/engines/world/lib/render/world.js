@@ -27,7 +27,7 @@ const makeRenderer = ({creatureUtils}) => {
           ${focusType === 'world' ?
             `<div style="position: absolute; width: 2px; top: 2px; bottom: 2px; left: ${inputValue}px; background-color: #000;"></div>`
           : ''}
-          <div>${inputText}</div>
+          <div measure="npm:search">${inputText}</div>
           ${!inputText ? `<div>Search mods</div>` : ''}
         </a>
         ${tagSpecs

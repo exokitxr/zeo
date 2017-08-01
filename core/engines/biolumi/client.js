@@ -267,6 +267,7 @@ class Biolumi {
                 layerSpec: null,
                 img: null,
                 anchors: null,
+                measures: null,
               };
 
               const _requestLayerSpec = () => {
@@ -282,9 +283,10 @@ class Biolumi {
                   const {width, height} = this;
                   const {src, w = width, h = height} = layerSpec;
                   rasterizer.rasterize(src, w, h)
-                    .then(({imageBitmap, anchors}) => {
+                    .then(({imageBitmap, anchors, measures}) => {
                       cache.img = imageBitmap;
                       cache.anchors = anchors;
+                      cache.measures = measures;
 
                       accept();
                     })
@@ -333,9 +335,9 @@ class Biolumi {
                 if (type === 'html') {
                   const {width, height} = this;
                   const {w = width, h = height} = layerSpec;
-                  const {anchors} = cache;
+                  const {anchors, measures} = cache;
 
-                  const layer = new Layer(w, h, anchors);
+                  const layer = new Layer(w, h, anchors, measures);
 
                   this.layer = layer;
                 } else if (type === 'image') {
@@ -398,10 +400,11 @@ class Biolumi {
           }
 
           class Layer {
-            constructor(width, height, anchors = []) {
+            constructor(width, height, anchors = [], measures = {}) {
               this.width = width;
               this.height = height;
               this.anchors = anchors;
+              this.measures = measures;
             }
           }
           /* class BoxAnchor {
