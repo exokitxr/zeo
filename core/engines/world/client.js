@@ -493,19 +493,20 @@ class World {
             let match;
             if (onclick === 'npm:focus') {
               const {inputText} = npmState;
-              const {value, target: {layer: {measures}}} = hoverState;
+              const {value, target: page} = hoverState;
+              const {layer: {measures}} = page;
               const valuePx = value * (WIDTH - (250 + (30 * 2)));
               const {index, px} = biolumi.getTextPropertiesFromCoord(measures['npm:search'], valuePx);
               const {hmd: hmdStatus} = webvr.getStatus();
               const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmdStatus;
               const keyboardFocusState = keyboard.focus({
-                type: 'world',
+                type: 'npm:search',
                 position: hmdPosition,
                 rotation: hmdRotation,
                 inputText: inputText,
                 inputIndex: index,
                 inputValue: px,
-                fontSpec: mainFontSpec,
+                page: page,
               });
               focusState.keyboardFocusState = keyboardFocusState;
 

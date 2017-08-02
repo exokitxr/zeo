@@ -687,17 +687,19 @@ class Keyboard {
         });
 
         class KeyboardFocusState extends EventEmitter {
-          constructor({type, inputText, inputIndex, inputValue, fontSpec}) {
+          constructor({type, inputText, inputIndex, inputValue, page}) {
             super();
 
             this.type = type;
             this.inputText = inputText;
             this.inputIndex = inputIndex;
             this.inputValue = inputValue;
-            this.fontSpec = fontSpec;
+            this.page = page;
+            this.measure = this.page.layer.measures[this.type];
           }
 
           handleEvent(e) {
+            this.measure = this.page.layer.measures[this.type]; // could have changed due to page render
             const applySpec = biolumi.applyStateKeyEvent(this, e);
 
             if (applySpec) {
@@ -748,13 +750,13 @@ class Keyboard {
             return keyboardState.focusState;
           }
 
-          focus({type, position, rotation, inputText, inputIndex, inputValue, fontSpec}) {
+          focus({type, position, rotation, inputText, inputIndex, inputValue, page}) {
             const {focusState: oldFocusState} = keyboardState;
             if (oldFocusState) {
               oldFocusState.blur();
             }
 
-            const newFocusState = new KeyboardFocusState({type, inputText, inputIndex, inputValue, fontSpec});
+            const newFocusState = new KeyboardFocusState({type, inputText, inputIndex, inputValue, page});
 
             keyboardState.focusState = newFocusState;
 
