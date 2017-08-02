@@ -126,7 +126,6 @@ class Zeo {
             '/core/engines/transform',
             '/core/engines/loader',
             '/core/engines/tags',
-            '/core/engines/broadcast',
             '/core/engines/world',
             '/core/engines/entity',
             '/core/engines/file',
@@ -177,7 +176,6 @@ class Zeo {
                 transform,
                 loader,
                 tags,
-                broadcast,
                 world,
                 entity,
                 file,
@@ -693,20 +691,6 @@ class Zeo {
                         }
                       }
 
-                      class ZeoBroadcastApi {
-                        on() {
-                          return broadcast.on.apply(broadcast, arguments);
-                        }
-
-                        removeListener() {
-                          return broadcast.removeListener.apply(broadcast, arguments);
-                        }
-
-                        removeAllListeners() {
-                          return broadcast.removeAllListeners.apply(broadcast, arguments);
-                        }
-                      }
-
                       class ZeoUiApi {
                         makeUi(options) {
                           return biolumi.makeUi(options);
@@ -923,7 +907,6 @@ class Zeo {
                           this.elements = new ZeoElementsApi();
                           this.world = new ZeoWorldApi();
                           this.player = new ZeoPlayerApi();
-                          this.broadcast = new ZeoBroadcastApi();
                           this.ui = new ZeoUiApi();
                           this.sound = new ZeoSoundApi();
                           this.stage = new ZeoStageApi();
