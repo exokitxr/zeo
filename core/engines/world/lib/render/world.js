@@ -24,10 +24,10 @@ const makeRenderer = ({creatureUtils}) => {
     const leftSrc = `\
       <div style="display: flex; padding: 30px; font-size: 36px; line-height: 1.4; flex-grow: 1; flex-direction: column;">
         <a style="position: relative; display: block; margin-bottom: 20px; border-bottom: 2px solid; text-decoration: none;" onclick="npm:focus">
-          ${focusType === 'world:search' ?
+          ${focusType === 'npm:search' ?
             `<div style="position: absolute; width: 2px; top: 2px; bottom: 2px; left: ${inputValue}px; background-color: #000;"></div>`
           : ''}
-          <div measure="npm:search">${inputText}</div>
+          <div style="font-family: 'Lucida Console', Monaco, monospace; font-size: 30px; line-height: ${36 * 1.4}px;" measure="npm:search">${inputText}</div>
           ${!inputText ? `<div>Search mods</div>` : ''}
         </a>
         ${tagSpecs

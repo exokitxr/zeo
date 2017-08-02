@@ -25,7 +25,7 @@ const getConfigPageSrc = ({resolutionValue, voiceChatCheckboxValue, statsCheckbo
 const getInputSrc = (label, inputText, inputPlaceholder, inputValue, focus, onclick) => `\
   <div style='display: flex; margin-bottom: 5px; font-size: 30px; line-height: 1.4; justify-content: center; align-items: center;'>
     <h1 style="width: 150px; margin: 0; margin-right: 30px; font-size: 30px; font-weight: 300;">${label}</h1>
-    <a style='display: block; position: relative; background-color: #EEE; flex-grow: 1; text-decoration: none;' onclick="${onclick}">
+    <a style="display: block; position: relative; background-color: #EEE; font-family: 'Lucida Console', Monaco, monospace; font-size: 22px; line-height: 42px; flex-grow: 1; text-decoration: none;" onclick="${onclick}">
       ${focus ? `<div style="position: absolute; width: 2px; top: 0; bottom: 0; left: ${inputValue}px; background-color: #333;"></div>` : ''}
       <div measure="${onclick}">${inputText}</div>
       ${!inputText ? `<div style="color: #CCC;">${inputPlaceholder}</div>` : ''}

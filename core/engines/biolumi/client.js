@@ -723,15 +723,9 @@ class Biolumi {
           });
           const _getTransparentMaterial = () => transparentMaterial;
 
-          const _getTextPropertiesFromCoord = (widths, coordPx) => {
-            const distances = widths.map(width => Math.abs(coordPx - width));
-            const sortedDistances = distances
-              .map((distance, index) => ([distance, index]))
-              .sort(([aDistance], [bDistance]) => (aDistance - bDistance));
-
-            const index = sortedDistances[0][1];
-            const px = widths[index];
-
+          const _getTextPropertiesFromCoord = (width, inputText, coordPx) => {
+            const index = Math.min(Math.floor(coordPx / width), inputText.length);
+            const px = index * width;
             return {index, px};
           };
 
@@ -744,7 +738,7 @@ class Biolumi {
             (keyCode > 185 && keyCode < 193) || // ;=,-./` (in order)
             (keyCode > 218 && keyCode < 223); // [\]' (in order)\
           const _applyStateKeyEvent = (state, e) => {
-            const {inputText, inputIndex, measure} = state;
+            const {inputText, inputIndex, width} = state;
 
             let change = false;
             let commit = false;
@@ -753,7 +747,7 @@ class Biolumi {
               // if (!(e.event.ctrlKey && e.event.keyCode === 86)) { // ctrl-v
                 state.inputText = inputText.slice(0, inputIndex) + _getKeyCode(e.event.keyCode) + inputText.slice(inputIndex);
                 state.inputIndex++;
-                state.inputValue = measure[state.inputIndex];
+                state.inputValue = width * state.inputIndex;
 
                 change = true;
               // }
@@ -763,28 +757,28 @@ class Biolumi {
               if (inputIndex > 0) {
                 state.inputText = inputText.slice(0, inputIndex - 1) + inputText.slice(inputIndex);
                 state.inputIndex--;
-                state.inputValue = measure[state.inputIndex];
+                state.inputValue = width * state.inputIndex;
 
                 change = true;
               }
             } else if (e.event.keyCode === 37) { // left
               state.inputIndex = Math.max(state.inputIndex - 1, 0);
-              state.inputValue = measure[state.inputIndex];
+              state.inputValue = width * state.inputIndex;
 
               change = true;
             } else if (e.event.keyCode === 39) { // right
               state.inputIndex = Math.min(state.inputIndex + 1, inputText.length);
-              state.inputValue = measure[state.inputIndex];
+              state.inputValue = width * state.inputIndex;
 
               change = true;
             } else if (e.event.keyCode === 38) { // up
               state.inputIndex = 0;
-              state.inputValue = measure[state.inputIndex];
+              state.inputValue = width * state.inputIndex;
 
               change = true;
             } else if (e.event.keyCode === 40) { // down
               state.inputIndex = inputText.length;
-              state.inputValue = measure[state.inputIndex];
+              state.inputValue = width * state.inputIndex;
 
               change = true;
             }
