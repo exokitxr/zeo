@@ -53,6 +53,10 @@ class Bootstrap {
       credentials: 'include',
     })
       .then(_resJson)
+      .catch(err => {
+        console.warn(err);
+        return Promise.resolve();
+      })
       .then(servers => {
         if (!Array.isArray(servers)) {
           servers = [];
