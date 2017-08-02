@@ -618,9 +618,6 @@ class Wallet {
         rend.registerMenuMesh('walletMesh', menuMesh);
         menuMesh.updateMatrixWorld();
 
-        rend.reindex();
-        rend.updateMatrixWorld(menuMesh);
-
         const _updatePages = () => {
           const {page} = menuMesh;
           page.update();

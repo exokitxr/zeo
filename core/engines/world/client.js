@@ -440,9 +440,6 @@ class World {
         rend.registerMenuMesh('worldMesh', worldMesh);
         worldMesh.updateMatrixWorld();
 
-        rend.reindex();
-        rend.updateMatrixWorld(worldMesh);
-
         const _updatePages = () => {
           const {planeMesh} = worldMesh;
           const {page} = planeMesh;

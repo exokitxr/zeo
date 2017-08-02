@@ -322,7 +322,6 @@ class Heightfield {
       const {hmd} = pose.getStatus();
       const {worldPosition: hmdPosition} = hmd;
       const {added, removed, relodded} = chunker.update(hmdPosition.x, hmdPosition.z);
-      let retargeted = false;
 
       const _addTarget = (mapChunkMesh, x, z) => {
         /* const physicsBody = physics.makeBody(mapChunkMesh, 'heightfield:' + x + ':' + z, {
@@ -393,7 +392,6 @@ class Heightfield {
 
               if (lod !== 1 && oldMapChunkMesh.targeted) {
                 _removeTarget(oldMapChunkMesh);
-                retargeted = true;
               }
             }
 
@@ -403,7 +401,6 @@ class Heightfield {
 
             if (lod === 1 && !newMapChunkMesh.targeted) {
               _addTarget(newMapChunkMesh, x, z);
-              retargeted = true;
             }
 
             chunk.data = newMapChunkMesh;
@@ -428,7 +425,6 @@ class Heightfield {
             const {lod} = chunk;
             if (lod !== 1 && mapChunkMesh.targeted) {
               _removeTarget(mapChunkMesh);
-              retargeted = true;
             }
           }
           for (let i = 0; i < relodded.length; i++) {
@@ -437,16 +433,9 @@ class Heightfield {
 
             if (lod === 1 && !mapChunkMesh.targeted) {
               _addTarget(mapChunkMesh, x, z);
-              retargeted = true;
             } else if (lod !== 1 && mapChunkMesh.targeted) {
               _removeTarget(mapChunkMesh);
-              retargeted = true;
             }
-          }
-        })
-        .then(() => {
-          if (retargeted) {
-            teleport.reindex();
           }
         });
     };

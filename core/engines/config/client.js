@@ -306,9 +306,6 @@ class Config {
         rend.registerMenuMesh('statsMesh', statsMesh);
         statsMesh.updateMatrixWorld();
 
-        rend.reindex();
-        rend.updateMatrixWorld(configMesh);
-
         stats.render = () => {
           const {frame: oldFrame} = statsState;
           const newFrame = Math.floor(Date.now() / STATS_REFRESH_RATE);
@@ -363,8 +360,6 @@ class Config {
               const newStatsCheckboxValue = !oldStatsCheckboxValue;
               configState.statsCheckboxValue = newStatsCheckboxValue;
               statsMesh.visible = newStatsCheckboxValue;
-
-              rend.updateMatrixWorld(statsMesh);
 
               _saveBrowserConfig();
               configApi.updateBrowserConfig();

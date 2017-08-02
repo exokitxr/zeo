@@ -154,9 +154,6 @@ class Servers {
         rend.registerMenuMesh('serversMesh', serversMesh);
         serversMesh.updateMatrixWorld();
 
-        rend.reindex();
-        rend.updateMatrixWorld(serversMesh);
-
         const _connectServer = serverUrl => {
           window.parent.location = serverUrl;
         };

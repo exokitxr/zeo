@@ -487,14 +487,6 @@ class Biolumi {
               this.meshes.splice(this.meshes.indexOf(page.mesh), 1);
             }
 
-            /* addMesh(mesh) {
-              this.meshes.push(mesh);
-            }
-
-            removeMesh(mesh) {
-              this.meshes.splice(this.meshes.indexOf(mesh), 1);
-            } */
-
             reindex() {
               // XXX delete this
             }
