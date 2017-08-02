@@ -723,34 +723,6 @@ class Biolumi {
           });
           const _getTransparentMaterial = () => transparentMaterial;
 
-          const _measureText = (() => {
-            const measureContexts = {};
-
-            const _makeMeasureContext = fontSpec => {
-              const {fonts, fontSize, lineHeight, fontWeight, fontStyle} = fontSpec;
-
-              const canvas = document.createElement('canvas');
-              const ctx = canvas.getContext('2d');
-              ctx.font = `${fontStyle} ${fontWeight} ${fontSize}px/${lineHeight} ${fonts}`;
-
-              return ctx;
-            };
-            const _getFontSpecKey = fontSpec => {
-              const {fonts, fontSize, lineHeight, fontWeight, fontStyle} = fontSpec;
-              return [fonts, fontSize, lineHeight, fontWeight, fontStyle].join(':');
-            };
-            const _getMeasureContext = fontSpec => {
-              const key = _getFontSpecKey(fontSpec);
-              let entry = measureContexts[key];
-              if (!entry) {
-                entry = _makeMeasureContext(fontSpec);
-                measureContexts[key] = entry;
-              }
-              return entry;
-            };
-
-            return (text, fontSpec) => _getMeasureContext(fontSpec).measureText(text).width;
-          })();
           const _getTextPropertiesFromCoord = (widths, coordPx) => {
             const distances = widths.map(width => Math.abs(coordPx - width));
             const sortedDistances = distances
@@ -759,12 +731,6 @@ class Biolumi {
 
             const index = sortedDistances[0][1];
             const px = widths[index];
-
-            return {index, px};
-          };
-          const _getTextPropertiesFromIndex = (text, fontSpec, index) => {
-            const slice = text.slice(0, index);
-            const px = _measureText(slice, fontSpec);
 
             return {index, px};
           };
@@ -777,48 +743,48 @@ class Biolumi {
             (keyCode > 95 && keyCode < 112) || // numpad keys
             (keyCode > 185 && keyCode < 193) || // ;=,-./` (in order)
             (keyCode > 218 && keyCode < 223); // [\]' (in order)\
-          const _applyStateKeyEvent = (state, e) => { // XXX make this consume layer measures
-            const {inputText, inputIndex, fontSpec} = state;
+          const _applyStateKeyEvent = (state, e) => {
+            const {inputText, inputIndex, measure} = state;
 
             let change = false;
             let commit = false;
 
             if (_isPrintableKeycode(e.event.keyCode)) {
-              if (!(e.event.ctrlKey && e.event.keyCode === 86)) { // ctrl-v
+              // if (!(e.event.ctrlKey && e.event.keyCode === 86)) { // ctrl-v
                 state.inputText = inputText.slice(0, inputIndex) + _getKeyCode(e.event.keyCode) + inputText.slice(inputIndex);
                 state.inputIndex++;
-                state.inputValue = _getTextPropertiesFromIndex(state.inputText, fontSpec, state.inputIndex).px;
+                state.inputValue = measure[state.inputIndex];
 
                 change = true;
-              }
+              // }
             } else if (e.event.keyCode === 13) { // enter
               commit = true;
             } else if (e.event.keyCode === 8) { // backspace
               if (inputIndex > 0) {
                 state.inputText = inputText.slice(0, inputIndex - 1) + inputText.slice(inputIndex);
                 state.inputIndex--;
-                state.inputValue = _getTextPropertiesFromIndex(state.inputText, fontSpec, state.inputIndex).px;
+                state.inputValue = measure[state.inputIndex];
 
                 change = true;
               }
             } else if (e.event.keyCode === 37) { // left
               state.inputIndex = Math.max(state.inputIndex - 1, 0);
-              state.inputValue = _getTextPropertiesFromIndex(state.inputText, fontSpec, state.inputIndex).px;
+              state.inputValue = measure[state.inputIndex];
 
               change = true;
             } else if (e.event.keyCode === 39) { // right
               state.inputIndex = Math.min(state.inputIndex + 1, inputText.length);
-              state.inputValue = _getTextPropertiesFromIndex(state.inputText, fontSpec, state.inputIndex).px;
+              state.inputValue = measure[state.inputIndex];
 
               change = true;
             } else if (e.event.keyCode === 38) { // up
               state.inputIndex = 0;
-              state.inputValue = _getTextPropertiesFromIndex(state.inputText, fontSpec, state.inputIndex).px;
+              state.inputValue = measure[state.inputIndex];
 
               change = true;
             } else if (e.event.keyCode === 40) { // down
               state.inputIndex = inputText.length;
-              state.inputValue = _getTextPropertiesFromIndex(state.inputText, fontSpec, state.inputIndex).px;
+              state.inputValue = measure[state.inputIndex];
 
               change = true;
             }
@@ -887,7 +853,6 @@ class Biolumi {
             getTransparentMaterial: _getTransparentMaterial,
 
             getTextPropertiesFromCoord: _getTextPropertiesFromCoord,
-            getTextPropertiesFromIndex: _getTextPropertiesFromIndex,
             getKeyCode: _getKeyCode,
             applyStateKeyEvent: _applyStateKeyEvent,
 

@@ -206,7 +206,7 @@ class Entity {
             const {type = '', inputText: attributeInputText = '', inputValue: attributeInputValue = 0} = keyboardFocusState || {};
             const focusSpec = (() => {
               let match;
-              if (type === 'entity') {
+              if (type === 'entity:search') {
                 return {
                   type: 'entity',
                 };
@@ -374,19 +374,20 @@ class Entity {
             let match;
             if (onclick === 'entity:focus') {
               const {inputText} = npmState;
-              const {value, target: {layer: {measures}}} = hoverState;
+              const {value, target: page} = hoverState;
+              const {layer: {measures}} = page;
               const valuePx = value * (WIDTH - (250 + (30 * 2)));
               const {index, px} = biolumi.getTextPropertiesFromCoord(measures['entity:search'], valuePx);
               const {hmd: hmdStatus} = webvr.getStatus();
               const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmdStatus;
               const keyboardFocusState = keyboard.focus({
-                type: 'entity',
+                type: 'entity:search',
                 position: hmdPosition,
                 rotation: hmdRotation,
                 inputText: inputText,
                 inputIndex: index,
                 inputValue: px,
-                fontSpec: mainFontSpec,
+                page: page,
               });
               focusState.keyboardFocusState = keyboardFocusState;
 
@@ -497,7 +498,8 @@ class Entity {
               const {value: attributeValue} = attribute;
 
               if (action === 'focus') {
-                const {value: hoverValue, target: {layer: {measures}}} = hoverState;
+                const {value: hoverValue, target: page} = hoverState;
+                const {layer: {measures}} = page;
                 const {type} = tags.getAttributeSpec(module, attributeName);
 
                 const textProperties = (() => {
@@ -527,7 +529,7 @@ class Entity {
                       inputText: inputText,
                       inputIndex: index,
                       inputValue: px,
-                      fontSpec: subcontentFontSpec,
+                      page: page,
                     });
                   } else {
                     return keyboard.fakeFocus({

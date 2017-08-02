@@ -323,8 +323,7 @@ class Config {
         };
 
         const _updatePages = () => {
-          const {page} = configMesh;
-          page.update();
+          configMesh.page.update();
         };
 
         const _trigger = e => {
@@ -401,7 +400,8 @@ class Config {
               return true;
             } else if (onclick === 'config:name') {
               const {nameValue: inputText} = configState;
-              const {value, target: {layer: {measures}}} = hoverState;
+              const {value, target: page} = hoverState;
+              const {layer: {measures}} = page;
               const valuePx = value * (640 - (150 + (30 * 2) + 30));
               const {index, px} = biolumi.getTextPropertiesFromCoord(measures['config:name'], valuePx);
               const {hmd: hmdStatus} = webvr.getStatus();
@@ -413,7 +413,7 @@ class Config {
                 inputText: inputText,
                 inputIndex: index,
                 inputValue: px,
-                fontSpec: mainFontSpec,
+                page: page,
               });
               keyboardFocusState.on('update', () => {
                 const {inputText: keyboardInputText} = keyboardFocusState;
@@ -436,7 +436,7 @@ class Config {
 
                 _updatePages();
               });
-
+ 
               configState.keyboardFocusState = keyboardFocusState;
 
               _updatePages();
@@ -444,7 +444,8 @@ class Config {
               return true;
             } else if (onclick === 'config:password') {
               const {passwordValue: inputText} = configState;
-              const {value, target: {layer: {measures}}} = hoverState;
+              const {value, target: page} = hoverState;
+              const {layer: {measures}} = page;
               const valuePx = value * (640 - (150 + (30 * 2) + 30));
               const {index, px} = biolumi.getTextPropertiesFromCoord(measures['config:password'], valuePx);
               const {hmd: hmdStatus} = webvr.getStatus();
@@ -456,7 +457,7 @@ class Config {
                 inputText: inputText,
                 inputIndex: index,
                 inputValue: px,
-                fontSpec: mainFontSpec,
+                page: page,
               });
               keyboardFocusState.on('update', () => {
                 const {inputText: keyboardInputText} = keyboardFocusState;

@@ -24,7 +24,7 @@ const makeRenderer = ({creatureUtils}) => {
     const leftSrc = `\
       <div style="display: flex; padding: 30px; font-size: 36px; line-height: 1.4; flex-grow: 1; flex-direction: column;">
         <a style="position: relative; display: block; margin-bottom: 20px; border-bottom: 2px solid; text-decoration: none;" onclick="npm:focus">
-          ${focusType === 'world' ?
+          ${focusType === 'world:search' ?
             `<div style="position: absolute; width: 2px; top: 2px; bottom: 2px; left: ${inputValue}px; background-color: #000;"></div>`
           : ''}
           <div measure="npm:search">${inputText}</div>

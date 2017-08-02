@@ -318,7 +318,7 @@ class FileEngine {
               },
             }) => {
               const {type = '', inputValue = 0} = keyboardFocusState || {};
-              const focus = type === 'file';
+              const focus = type === 'file:search';
 
               return {
                 type: 'html',
@@ -479,19 +479,20 @@ class FileEngine {
             let match;
             if (onclick === 'file:focus') {
               const {inputText} = npmState;
-              const {value, target: {layer: {measures}}} = hoverState;
+              const {value, target: page} = hoverState;
+              const {layer: {measures}} = page;
               const valuePx = value * (WIDTH - (250 + (30 * 2)));
               const {index, px} = biolumi.getTextPropertiesFromCoord(measures['file:search'], valuePx);
               const {hmd: hmdStatus} = webvr.getStatus();
               const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmdStatus;
               const keyboardFocusState = keyboard.focus({
-                type: 'file',
+                type: 'file:search',
                 position: hmdPosition,
                 rotation: hmdRotation,
                 inputText: inputText,
                 inputIndex: index,
                 inputValue: px,
-                fontSpec: mainFontSpec,
+                page: page,
               });
               focusState.keyboardFocusState = keyboardFocusState;
 

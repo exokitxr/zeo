@@ -584,7 +584,7 @@ class Wallet {
             },
           }) => {
             const {type = '', inputValue = 0} = keyboardFocusState || {};
-            const focus = type === 'wallet';
+            const focus = type === 'wallet:search';
 
             return {
               type: 'html',
@@ -775,19 +775,20 @@ class Wallet {
             let match;
             if (onclick === 'wallet:focus') {
               const {inputText} = walletState;
-              const {value, target: {layer: {measures}}} = hoverState;
+              const {value, target: page} = hoverState;
+              const {layer: {measures}} = page;
               const valuePx = value * (WIDTH - 250);
               const {index, px} = biolumi.getTextPropertiesFromCoord(measures['wallet:search'], valuePx);
               const {hmd: hmdStatus} = webvr.getStatus();
               const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmdStatus;
               const keyboardFocusState = keyboard.focus({
-                type: 'wallet',
+                type: 'wallet:search',
                 position: hmdPosition,
                 rotation: hmdRotation,
                 inputText: inputText,
                 inputIndex: index,
                 inputValue: px,
-                fontSpec: mainFontSpec,
+                page: page,
               });
               focusState.keyboardFocusState = keyboardFocusState;
 
