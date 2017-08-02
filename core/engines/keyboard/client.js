@@ -695,11 +695,10 @@ class Keyboard {
             this.inputIndex = inputIndex;
             this.inputValue = inputValue;
             this.page = page;
-            this.measure = this.page.layer.measures[this.type];
+            this.width = this.page.layer.measures[this.type];
           }
 
           handleEvent(e) {
-            this.measure = this.page.layer.measures[this.type]; // could have changed due to page render
             const applySpec = biolumi.applyStateKeyEvent(this, e);
 
             if (applySpec) {

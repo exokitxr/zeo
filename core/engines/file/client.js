@@ -482,7 +482,7 @@ class FileEngine {
               const {value, target: page} = hoverState;
               const {layer: {measures}} = page;
               const valuePx = value * (WIDTH - (250 + (30 * 2)));
-              const {index, px} = biolumi.getTextPropertiesFromCoord(measures['file:search'], valuePx);
+              const {index, px} = biolumi.getTextPropertiesFromCoord(measures['file:search'], inputText, valuePx);
               const {hmd: hmdStatus} = webvr.getStatus();
               const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmdStatus;
               const keyboardFocusState = keyboard.focus({

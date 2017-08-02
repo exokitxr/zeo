@@ -31,7 +31,7 @@ const getAssetsPageSrc = ({loading, inputText, inputValue, asset, assets, equipm
       <div style="display: flex; font-size: 36px; line-height: 1.4; align-items: center;">
         <a style="position: relative; display: block; margin-right: 20px; margin-bottom: 20px; border-bottom: 2px solid; flex-grow: 1; text-decoration: none;" onclick="wallet:focus">
           ${focus ? `<div style="position: absolute; width: 2px; top: 2px; bottom: 2px; left: ${inputValue}px; background-color: #000;"></div>` : ''}
-          <div measure="wallet:search">${inputText}</div>
+          <div style="font-family: 'Lucida Console', Monaco, monospace; font-size: 30px; line-height: ${36 * 1.4}px;" measure="wallet:search">${inputText}</div>
           ${!inputText ? `<div>Search my assets</div>` : ''}
         </a>
       </div>

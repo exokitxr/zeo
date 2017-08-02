@@ -403,7 +403,7 @@ class Config {
               const {value, target: page} = hoverState;
               const {layer: {measures}} = page;
               const valuePx = value * (640 - (150 + (30 * 2) + 30));
-              const {index, px} = biolumi.getTextPropertiesFromCoord(measures['config:name'], valuePx);
+              const {index, px} = biolumi.getTextPropertiesFromCoord(measures['config:name'], inputText, valuePx);
               const {hmd: hmdStatus} = webvr.getStatus();
               const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmdStatus;
               const keyboardFocusState = keyboard.focus({
@@ -447,7 +447,7 @@ class Config {
               const {value, target: page} = hoverState;
               const {layer: {measures}} = page;
               const valuePx = value * (640 - (150 + (30 * 2) + 30));
-              const {index, px} = biolumi.getTextPropertiesFromCoord(measures['config:password'], valuePx);
+              const {index, px} = biolumi.getTextPropertiesFromCoord(measures['config:password'], inputText, valuePx);
               const {hmd: hmdStatus} = webvr.getStatus();
               const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmdStatus;
               const keyboardFocusState = keyboard.focus({

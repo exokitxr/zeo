@@ -377,7 +377,7 @@ class Entity {
               const {value, target: page} = hoverState;
               const {layer: {measures}} = page;
               const valuePx = value * (WIDTH - (250 + (30 * 2)));
-              const {index, px} = biolumi.getTextPropertiesFromCoord(measures['entity:search'], valuePx);
+              const {index, px} = biolumi.getTextPropertiesFromCoord(measures['entity:search'], inputText, valuePx);
               const {hmd: hmdStatus} = webvr.getStatus();
               const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmdStatus;
               const keyboardFocusState = keyboard.focus({
@@ -502,16 +502,17 @@ class Entity {
                 const {layer: {measures}} = page;
                 const {type} = tags.getAttributeSpec(module, attributeName);
 
+                const inputText = typeUtils.castValueValueToString(attributeValue, type);
                 const textProperties = (() => {
                   if (type === 'text') {
                     const hoverValuePx = hoverValue * 400;
-                    return biolumi.getTextPropertiesFromCoord(measures[`entityAttribute:${tagId}:${attributeName}`], hoverValuePx);
+                    return biolumi.getTextPropertiesFromCoord(measures[`entityAttribute:${tagId}:${attributeName}`], inputText, hoverValuePx);
                   } else if (type === 'number') {
                     const hoverValuePx = hoverValue * 100;
-                    return biolumi.getTextPropertiesFromCoord(measures[`entityAttribute:${tagId}:${attributeName}`], hoverValuePx);
+                    return biolumi.getTextPropertiesFromCoord(measures[`entityAttribute:${tagId}:${attributeName}`], inputText, hoverValuePx);
                   } else if (type === 'color') {
-                    const hoverValuePx = hoverValue * (400 - (40 + 4));
-                    return biolumi.getTextPropertiesFromCoord(measures[`entityAttribute:${tagId}:${attributeName}`], hoverValuePx);
+                    const hoverValuePx = hoverValue * 300;
+                    return biolumi.getTextPropertiesFromCoord(measures[`entityAttribute:${tagId}:${attributeName}`], inputText, hoverValuePx);
                   } else {
                     return null;
                   }
@@ -520,7 +521,6 @@ class Entity {
                   if (textProperties) {
                     const {hmd: hmdStatus} = webvr.getStatus();
                     const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmdStatus;
-                    const inputText = typeUtils.castValueValueToString(attributeValue, type);
                     const {index, px} = textProperties;
                     return keyboard.focus({
                       type: 'entityAttribute:' + tagId + ':' + attributeName,
