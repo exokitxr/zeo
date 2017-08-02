@@ -286,16 +286,6 @@ class Teleport {
           removeTarget(target) {
             targets.splice(targets.indexOf(target), 1);
           }
-
-          reindex() {
-            // XXX remove this
-          }
-
-          getHoverState(side) {
-            // XXX remove this
-            /* intersecter.update(side);
-            return intersecter.getHoverState(side); */
-          }
         }
         const teleportApi = new TeleportApi();
 

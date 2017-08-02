@@ -264,14 +264,12 @@ class Transform {
                 onmousedown: `transform:${transformId}:scale`,
               }
             );
-            rend.reindex();
 
             const _updateBoxTargets = () => {
               for (let i = 0; i < boxAnchors.length; i++) {
                 const boxAnchor = boxAnchors[i];
                 boxAnchor.onupdate();
               }
-              rend.updateMatrixWorld(transformGizmo);
             };
             transformGizmo.updateBoxTargets = _updateBoxTargets;
             const _showBoxTargets = () => {
@@ -279,7 +277,6 @@ class Transform {
                 const boxAnchor = boxAnchors[i];
                 boxAnchor.visible = true;
               }
-              rend.updateMatrixWorld(transformGizmo);
             };
             transformGizmo.showBoxTargets = _showBoxTargets;
             const _hideBoxTargets = () => {
@@ -287,7 +284,6 @@ class Transform {
                 const boxAnchor = boxAnchors[i];
                 boxAnchor.visible = false;
               }
-              rend.updateMatrixWorld(transformGizmo);
             };
             transformGizmo.hideBoxTargets = _hideBoxTargets;
             const _removeBoxTargets = () => {
@@ -295,7 +291,6 @@ class Transform {
                 const boxAnchor = boxAnchors[i];
                 rend.removeMesh(boxAnchor);
               }
-              rend.reindex();
             };
             transformGizmo.removeBoxTargets = _removeBoxTargets;
 

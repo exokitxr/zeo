@@ -286,9 +286,6 @@ class Entity {
         rend.registerMenuMesh('entityMesh', entityMesh);
         entityMesh.updateMatrixWorld();
 
-        rend.reindex();
-        rend.updateMatrixWorld(entityMesh);
-
         const _updatePages = () => {
           const {page} = entityMesh;
           page.update();
@@ -701,7 +698,6 @@ class Entity {
                   });
                   scene.add(transformGizmo);
                   transformGizmo.updateMatrixWorld();
-                  rend.updateMatrixWorld(transformGizmo);
 
                   keyboardFocusState.on('blur', () => {
                     focusState.keyboardFocusState = null;

@@ -218,9 +218,6 @@ class Rend {
         scene.add(menuMesh);
         menuMesh.updateMatrixWorld();
 
-        uiTracker.reindex();
-        uiTracker.updateMatrixWorld(menuMesh);
-
         const _setConnectionState = connectionState => {
           const {state, protocol, address, port} = connectionState;
           const url = protocol + '://' + address + ':' + port;
@@ -635,22 +632,6 @@ class Rend {
 
           removePage(page) {
             uiTracker.removePage(page);
-          }
-
-          addMesh(mesh) {
-            uiTracker.addMesh(mesh);
-          }
-
-          removeMesh(mesh) {
-            uiTracker.removeMesh(mesh);
-          }
-
-          reindex() {
-            uiTracker.reindex();
-          }
-
-          updateMatrixWorld(object) {
-            uiTracker.updateMatrixWorld(object);
           }
 
           loadEntities(itemSpecs) {

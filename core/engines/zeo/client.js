@@ -798,10 +798,6 @@ class Zeo {
                           teleport.removeTarget(object);
                         }
 
-                        reindex() {
-                          teleport.reindex();
-                        }
-
                         getHoverState(side) {
                           return teleport.getHoverState(side);
                         }

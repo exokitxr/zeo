@@ -125,10 +125,9 @@ const hammer = ({recipes}) => {
                       };
                       return mesh;
                     })();
-                    teleport.addTarget(teleportMesh, {
+                    teleport.addTarget(teleportMesh, { // XXX re-add support for this
                       flat: true,
                     });
-                    teleport.reindex();
 
                     if (queued) {
                       queued = false;

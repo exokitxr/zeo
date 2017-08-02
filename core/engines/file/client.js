@@ -443,9 +443,6 @@ class FileEngine {
         rend.registerMenuMesh('fileMesh', fileMesh);
         fileMesh.updateMatrixWorld();
 
-        rend.reindex();
-        rend.updateMatrixWorld(fileMesh);
-
         const _updatePages = () => {
           const {planeMesh} = fileMesh;
           const {page} = planeMesh;
@@ -689,8 +686,6 @@ class FileEngine {
                   detailsMesh.visible = false;
                   detailsPage.mesh.visible = false;
                 }
-
-                rend.updateMatrixWorld(fileMesh);
               });
           } else {
             const {file: oldFile} = npmState;
@@ -705,7 +700,6 @@ class FileEngine {
 
                   const {detailsPage} = fileMesh;
                   detailsPage.mesh.visible = false;
-                  rend.updateMatrixWorld(fileMesh);
 
                   const {media} = oldFile;
                   if (media && (media.tagName === 'AUDIO' || media.tagName === 'VIDEO') && !media.paused) {
