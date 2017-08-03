@@ -8,6 +8,7 @@ pushd "$DIR"/..;
 rm -Rf node_modules installed data/mod-hashes.json 'Zeo VR.lnk' node "node-v$VERSION-win-x64" windows-release.zip
 npm install
 node index.js install
+rm package-lock.json
 curl "https://nodejs.org/dist/v$VERSION/node-v$VERSION-win-x64.zip" >node.zip
 unzip node.zip
 rm node.zip
