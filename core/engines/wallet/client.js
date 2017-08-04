@@ -242,33 +242,6 @@ class Wallet {
             return p.distanceTo(bodyPosition) < 0.35;
           }
         };
-        const _snapDotPosition = p => new THREE.Vector2(
-          Math.min(Math.floor(((p.x + 1) / 2) * slotsWidth), slotsWidth - 1),
-          Math.min(Math.floor(((-p.y + 1) / 2) * slotsWidth), slotsWidth - 1)
-        );
-        const _copyIndices = (src, dst, startIndexIndex, startAttributeIndex) => {
-          for (let i = 0; i < src.length; i++) {
-            dst[startIndexIndex + i] = src[i] + startAttributeIndex;
-          }
-        };
-        const _requestCreateCharge = ({srcAddress, dstAddress, srcAsset, srcQuantity}) => fetch(`${siteUrl}/id/api/charge`, {
-          method: 'POST',
-          headers: (() => {
-            const headers = new Headers();
-            headers.append('Content-Type', 'application/json');
-            return headers;
-          })(),
-          body: JSON.stringify({
-            srcAddress: srcAddress,
-            dstAddress: dstAddress,
-            srcAsset: srcAsset,
-            srcQuantity: srcQuantity,
-            dstAsset: null,
-            dstQuantity: 0,
-          }),
-          credentials: 'include',
-        })
-          .then(_resJson);
 
         const _makeHoverState = () => ({
           worldAsset: null,
@@ -382,25 +355,6 @@ class Wallet {
                   physics: false,
                 },
               }));
-            }
-
-            requestChangeOwner(dstAddress) {
-              const {asset: srcAsset, quantity: srcQuantity, owner: srcAddress} = this;
-
-              return _requestCreateCharge({
-                srcAddress: srcAddress,
-                dstAddress: dstAddress,
-                srcAsset: srcAsset,
-                srcQuantity: srcQuantity,
-              })
-                .then(() => {})
-                .catch(err => {
-                  if (err.status === 402) { // insufficient funds, succeed anyway since there's no way it's valid
-                    return Promise.resolve();
-                  } else {
-                    return Promise.reject(err);
-                  }
-                });
             }
           }
 
