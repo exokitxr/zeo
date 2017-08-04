@@ -67,7 +67,9 @@ const _requestChunk = (x, z) => {
   if (chunk) {
     return Promise.resolve(chunk);
   } else {
-    return fetch(`/archae/objects/chunks?x=${x}&z=${z}`)
+    return fetch(`/archae/objects/chunks?x=${x}&z=${z}`, {
+      credentials: 'include',
+    })
       .then(_resArrayBuffer)
       .then(buffer => {
         return zde.addChunk(x, z, new Uint32Array(buffer));

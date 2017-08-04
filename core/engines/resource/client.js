@@ -39,7 +39,9 @@ class Assets {
       live = false;
     };
 
-    const _requestJson = url => fetch(url)
+    const _requestJson = url => fetch(url, {
+      credentials: 'include',
+    })
       .then(res => res.json());
     const _requestImage = url => new Promise((accept, reject) => {
       const img = new Image();

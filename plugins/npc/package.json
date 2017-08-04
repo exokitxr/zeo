@@ -6,7 +6,7 @@
   "client": "client.js",
   "server": "server.js",
   "dependencies": {
-    "animal-js": "0.0.5",
+    "animal-js": "0.0.6",
     "sfxr": "0.0.1"
   }
 }
