@@ -74,6 +74,28 @@ const cryptoDirectory = flags.cryptoDirectory || 'crypto';
 const installDirectory = flags.installDirectory || 'installed';
 const dataDirectorySrc = flags.dataDirectorySrc || 'defaults/data';
 const cryptoDirectorySrc = flags.cryptoDirectorySrc || 'defaults/crypto';
+const password = (() => {
+  try {
+    const worldConfigJsonPath = path.join(__dirname, dataDirectory, 'world', 'config.json');
+    const s = fs.readFileSync(worldConfigJsonPath, 'utf8');
+    const j = JSON.parse(s);
+
+    if (j && (j.password === null || typeof j.password === 'string')) {
+      return j.password;
+    } else {
+      return null;
+    }
+  } catch (err) {
+    if (err.code === 'ENOENT') {
+      return null;
+    } else {
+      throw err;
+    }
+  }
+})();
+if (password !== null) {
+  console.log(`Reminder: server password is ${JSON.stringify(password)}`);
+}
 const protocolString = !secure ? 'http' : 'https';
 const siteUrl = flags.siteUrl || (protocolString + '://' + hostname + ':' + port);
 const vridUrl = flags.vridUrl || (protocolString + '://' + hostname + ':' + port);
@@ -89,6 +111,7 @@ const config = {
   dataDirectory: dataDirectory,
   cryptoDirectory: cryptoDirectory,
   installDirectory: installDirectory,
+  password: password,
   cors: true,
   corsOrigin: fullUrl,
   staticSite: false,

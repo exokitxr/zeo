@@ -61,7 +61,9 @@ class Config {
 
       accept();
     });
-    const _requestGetServerConfig = () => fetch('archae/config/config.json')
+    const _requestGetServerConfig = () => fetch('archae/config/config.json', {
+      credentials: 'include',
+    })
       .then(res => res.json());
     const _requestSetServerConfig = config => fetch('archae/config/config.json', {
       method: 'PUT',
@@ -69,6 +71,7 @@ class Config {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(config),
+      credentials: 'include',
     })
       .then(res => res.blob())
       .then(() => {})
