@@ -722,6 +722,16 @@ class Biolumi {
           };
 
           const _getKeyCode = s => keycode(s);
+          const _getKeyEventCharacter = e => {
+            let s = keycode(e.keyCode);
+            if (s === 'space') {
+              s = ' ';
+            }
+            if (e.shiftKey) {
+              s = s.toUpperCase();
+            }
+            return s;
+          };
           const _isPrintableKeycode = keyCode =>
             (keyCode > 47 && keyCode < 58) || // number keys
             (keyCode == 32) || // spacebar & return key(s) (if you want to allow carriage returns)
@@ -737,7 +747,7 @@ class Biolumi {
 
             if (_isPrintableKeycode(e.event.keyCode)) {
               // if (!(e.event.ctrlKey && e.event.keyCode === 86)) { // ctrl-v
-                state.inputText = inputText.slice(0, inputIndex) + _getKeyCode(e.event.keyCode) + inputText.slice(inputIndex);
+                state.inputText = inputText.slice(0, inputIndex) + _getKeyEventCharacter(e.event) + inputText.slice(inputIndex);
                 state.inputIndex++;
                 state.inputValue = width * state.inputIndex;
 
