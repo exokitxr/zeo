@@ -320,7 +320,9 @@ class World {
           tags.message(detail);
         };
 
-        const _searchNpm = (q = '') => fetch(`archae/rend/search?q=${encodeURIComponent(q)}`)
+        const _searchNpm = (q = '') => fetch(`archae/rend/search?q=${encodeURIComponent(q)}`, {
+          credentials: 'include',
+        })
           .then(res => res.json());
         const _updateNpm = menuUtils.debounce(next => {
           const {inputText} = npmState;

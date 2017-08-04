@@ -211,6 +211,7 @@ class Fs {
 
                 return fetch(url, {
                   mode: 'cors',
+                  credentials: 'include',
                 })
                   .then(_validateResponse)
                   .then(res => {
@@ -292,6 +293,7 @@ class Fs {
               case 'json': {
                 return fetch(url, {
                   mode: 'cors',
+                  credentials: 'include',
                 })
                   .then(_validateResponse)
                   .then(res => res.json()
@@ -301,6 +303,7 @@ class Fs {
               case 'arrayBuffer': {
                 return fetch(url, {
                   mode: 'cors',
+                  credentials: 'include',
                 })
                   .then(_validateResponse)
                   .then(res => res.arrayBuffer());
@@ -308,6 +311,7 @@ class Fs {
               default: {
                 return fetch(url, {
                   mode: 'cors',
+                  credentials: 'include',
                 })
                   .then(_validateResponse)
                   .then(res => res.blob());
@@ -375,6 +379,7 @@ class Fs {
             return fetch(fileUrl, {
               method: 'PUT',
               body: file,
+              credentials: 'include',
             }).then(res => res.blob()
               .then(() => {})
             );
@@ -396,6 +401,7 @@ class Fs {
                     method: 'PUT',
                     headers: headers,
                     body: slice,
+                    credentials: 'include',
                   }).then(res => {
                     _recurse(end);
                   })
