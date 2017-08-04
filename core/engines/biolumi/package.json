@@ -6,6 +6,6 @@
   "server": "server.js",
   "dependencies": {
     "keycode": "^2.1.8",
-    "rasterize": "0.0.8"
+    "rasterize": "0.0.11"
   }
 }
