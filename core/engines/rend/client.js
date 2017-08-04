@@ -114,7 +114,7 @@ class Rend {
           users: [],
         };
         const menuState = {
-          open: true,
+          open: false,
           position: new THREE.Vector3(0, DEFAULT_USER_HEIGHT, -1.5),
           rotation: new THREE.Quaternion(),
           scale: new THREE.Vector3(1, 1, 1),
