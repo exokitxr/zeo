@@ -40,23 +40,35 @@ base.href = document.location.protocol + '//' + document.location.hostname + (do
     .loader-wrap {
       display: flex;
       width: 400px;
+      padding: 10px 20px;
+      font-family: var(--fonts);
       justify-content: center;
       align-items: center;
       flex-direction: column;
     }
-    .loader-wrap > h1, .loader-wrap > p {
+    .loader-wrap h1, .loader-wrap h2, .loader-wrap p {
       margin: 0;
-      font-family: var(--fonts);
       font-weight: 400;
     }
-    .loader-wrap > h1 {
+    .loader-wrap h1 {
       margin-bottom: 10px;
       font-size: 40px;
       color: #000;
     }
-    .loader-wrap > p {
+    .loader-wrap h2 {
+      text-align: center;
+      margin-bottom: 10px;
+      font-size: 30px;
+    }
+    .loader-wrap p {
       font-size: 14px;
       font-weight: 600;
+    }
+    .error:not(:empty) {
+      margin-top: 10px;
+      padding: 10px 20px;
+      background-color: #F44336;
+      color: #FFF;
     }
     @keyframes spin {
       from {
@@ -73,6 +85,7 @@ base.href = document.location.protocol + '//' + document.location.hostname + (do
       <svg class="loader" xmlns="http://www.w3.org/2000/svg" width="50" height="50" viewBox="0 0 50 50"><path d="M28,3.21v2.04C37.606,6.705,45,14.994,45,25c0,11.028-8.972,20-20,20S5,36.028,5,25C5,14.994,12.394,6.705,22,5.25V3.21 C11.284,4.678,3,13.887,3,25c0,12.131,9.869,22,22,22s22-9.869,22-22C47,13.887,38.716,4.678,28,3.21z"></path></svg>
       <h1>Loading world</h1>
       <p id=loader-plugin>Initializing...</p>
+      <div class=error id=loader-error></div>
     </div>
     <canvas id=canvas style="display: none;"></canvas>
   </div>
