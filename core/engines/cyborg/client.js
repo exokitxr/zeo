@@ -203,6 +203,7 @@ class Cyborg {
                 });
 
                 const mesh = new THREE.Mesh(geometry, material);
+                mesh.visible = false;
                 return mesh;
               })();
               object.add(rayMesh);
