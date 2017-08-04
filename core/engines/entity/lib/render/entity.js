@@ -46,7 +46,7 @@ const makeRenderer = ({typeUtils, creatureUtils}) => {
         ${(focusSpec && focusSpec.type === 'entity') ?
           `<div style="position: absolute; width: 2px; top: 2px; bottom: 2px; left: ${npmInputValue}px; background-color: #000;"></div>`
         : ''}
-        <div style="font-family: 'Lucida Console', Monaco, monospace; font-size: 30px; line-height: ${36 * 1.4}px;" measure="entity:search">${npmInputText}</div>
+        <div style="font-family: 'Lucida Console', Monaco, monospace; font-size: 30px; line-height: ${36 * 1.4}px;" measure="entity:search">${npmInputText.replace(/ /g, '&nbsp;')}</div>
         ${!npmInputText ? `<div>Search entities</div>` : ''}
       </a>
       <div style="display: flex; height: 44px; margin: 0 20px; font-size: 24px; font-weight: 400; align-items: center;">(${numSelected})</div>

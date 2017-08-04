@@ -42,7 +42,7 @@ const makeRenderer = ({creatureUtils}) => {
           ${focus ?
             `<div style="position: absolute; width: 2px; top: 2px; bottom: 2px; left: ${inputValue}px; background-color: #000;"></div>`
           : ''}
-          <div style="font-family: 'Lucida Console', Monaco, monospace; font-size: 30px; line-height: ${36 * 1.4}px;" measure="file:search">${inputText}</div>
+          <div style="font-family: 'Lucida Console', Monaco, monospace; font-size: 30px; line-height: ${36 * 1.4}px;" measure="file:search">${inputText.replace(/ /g, '&nbsp;')}</div>
           ${!inputText ? `<div>Search files</div>` : ''}
         </a>
         ${tagSpecs

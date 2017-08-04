@@ -27,7 +27,7 @@ const makeRenderer = ({creatureUtils}) => {
           ${focusType === 'npm:search' ?
             `<div style="position: absolute; width: 2px; top: 2px; bottom: 2px; left: ${inputValue}px; background-color: #000;"></div>`
           : ''}
-          <div style="font-family: 'Lucida Console', Monaco, monospace; font-size: 30px; line-height: ${36 * 1.4}px;" measure="npm:search">${inputText}</div>
+          <div style="font-family: 'Lucida Console', Monaco, monospace; font-size: 30px; line-height: ${36 * 1.4}px;" measure="npm:search">${inputText.replace(/ /g, '&nbsp;')}</div>
           ${!inputText ? `<div>Search mods</div>` : ''}
         </a>
         ${tagSpecs
