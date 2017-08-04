@@ -27,23 +27,47 @@ class Zeo {
     const _requestBlocker = () => new Promise((accept, reject) => {
       const loaderOverlay = $('#loader-overlay')[0];
       const loaderPlugin = $('#loader-plugin')[0];
+      const loaderError = $('#loader-error')[0];
 
       let loggedIn = false;
-      const pendingPlugins = [];
-      const pluginloadstart = plugin => {
-        if (!pendingPlugins.includes(plugin)) {
-          pendingPlugins.push(plugin);
+      const pendingPlugins = {};
+      let loadTimeout = null;
+      const _kickLoadTimeout = () => {
+        if (loadTimeout !== null) {
+          clearTimeout(loadTimeout);
+        }
 
+        loadTimeout = setTimeout(() => {
+          loaderError.innerHTML = `\
+            <h2>:/</h2>
+            <div>This is taking way too long. These plugins are hung:</div>
+            <ul>${Object.keys(pendingPlugins).map(plugin => `<li>${plugin}</li>`).join('\n')}</ul>
+          `;
+        }, 10 * 1000);
+      };
+      _kickLoadTimeout();
+
+      const pluginloadstart = plugin => {
+        if (pendingPlugins[plugin] === undefined) {
+          pendingPlugins[plugin] = 0;
+        }
+
+        pendingPlugins[plugin]++;
+
+        if (pendingPlugins[plugin] === 1) {
           _updateText();
         }
       };
       archae.on('pluginloadstart', pluginloadstart);
-      const pluginload = plugin => {
-        pendingPlugins.splice(pendingPlugins.indexOf(plugin), 1);
+      const pluginmount = plugin => {
+        pendingPlugins[plugin]--;
+        if (pendingPlugins[plugin] === 0) {
+          delete pendingPlugins[plugin];
 
-        _updateText();
+          _updateText();
+        }
       }
-      archae.on('pluginload', pluginload);
+      archae.on('pluginmount', pluginmount);
 
       const _updateText = () => {
         loaderPlugin.innerText = (() => {
@@ -63,7 +87,7 @@ class Zeo {
         loaderOverlay.style.display = 'none';
 
         archae.removeListener('pluginloadstart', pluginloadstart);
-        archae.removeListener('pluginload', pluginload);
+        archae.removeListener('pluginmount', pluginmount);
       };
       cleanups.push(cleanup);
 
