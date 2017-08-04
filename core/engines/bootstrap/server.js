@@ -141,17 +141,11 @@ class Bootstrap {
                     accept();
                   } else if (statusCode === 502) {
                     connectionState.state = 'firewalled';
-                    connectionState.protocol = '';
-                    connectionState.address = '';
-                    connectionState.port = 0;
                     _broadcastUpdate();
 
                     accept();
                   } else {
                     connectionState.state = 'disconnected';
-                    connectionState.protocol = '';
-                    connectionState.address = '';
-                    connectionState.port = 0;
                     _broadcastUpdate();
 
                     const err = new Error('server announce returned error status code: ' + statusCode);
