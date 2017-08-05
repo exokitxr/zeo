@@ -23,6 +23,7 @@ const DEFAULT_BROWSER_CONFIG = {
   voiceChat: false,
   stats: false,
 };
+const NUM_SERVERS = 5;
 
 const STATS_REFRESH_RATE = 1000;
 
@@ -35,6 +36,16 @@ class Config {
 
   mount() {
     const {_archae: archae} = this;
+    const {
+      metadata: {
+        server: {
+          url: serverUrl,
+        },
+        vrid: {
+          url: vridUrl,
+        },
+      },
+    } = archae;
 
     const cleanups = [];
     this._cleanup = () => {
@@ -142,7 +153,74 @@ class Config {
           frame: 0,
         };
 
-        rend.setStatus('name', serverConfigSpec.name);
+        const _resJson = res => {
+          if (res.status >= 200 && res.status < 300) {
+            return res.json();
+          } else {
+            return Promise.reject({
+              status: res.status,
+              stack: 'API returned invalid status code: ' + res.status,
+            });
+          }
+        };
+        const _resBlob = res => {
+          if (res.status >= 200 && res.status < 300) {
+            return res.blob();
+          } else {
+            return Promise.reject({
+              status: res.status,
+              stack: 'API returned invalid status code: ' + res.status,
+            });
+          }
+        };
+        const _requestRegisterRecentServer = name => fetch(`${vridUrl}/id/api/cookie/servers`, {
+          credentials: 'include',
+        })
+          .then(_resJson)
+          .catch(err => {
+            console.warn(err);
+
+            return Promise.resolve();
+          })
+          .then(servers => {
+            if (!Array.isArray(servers)) {
+              servers = [];
+            }
+            let server = servers.find(server => server.url === serverUrl);
+            if (!server) {
+              server = {
+                url: serverUrl,
+                name: null,
+                timestamp: 0,
+              };
+              servers.push(server);
+            }
+            server.name = name;
+            server.timestamp = Date.now();
+            servers.sort((a, b) => b.timestamp - a.timestamp);
+            servers.length = Math.min(servers.length, NUM_SERVERS);
+
+            return fetch(`${vridUrl}/id/api/cookie/servers`, {
+              method: 'POST',
+              headers: (() => {
+                const headers = new Headers();
+                headers.append('Content-Type', 'application/json');
+                return headers;
+              })(),
+              body: JSON.stringify(servers),
+              credentials: 'include',
+            })
+              .then(_resBlob);
+          });
+        const _applyName = name => {
+          rend.setStatus('name', name);
+
+          _requestRegisterRecentServer(name)
+            .catch(err => {
+              console.warn(err);
+            });
+        };
+        _applyName(serverConfigSpec.name);
 
         const _saveBrowserConfig = () => {
           const config = configApi.getBrowserConfig();
@@ -424,7 +502,7 @@ class Config {
                   _saveServerConfig();
                   configApi.updateBrowserConfig();
 
-                  rend.setStatus('name', newName);
+                  _applyName(newName);
                 }
 
                 _updatePages();
