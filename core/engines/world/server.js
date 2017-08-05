@@ -5,6 +5,8 @@ const fs = require('fs');
 const crypto = require('crypto');
 
 const mkdirp = require('mkdirp');
+const bodyParser = require('body-parser');
+const bodyParserJson = bodyParser.json();
 
 const DEFAULT_TAGS = {
   tags: {},
@@ -160,6 +162,20 @@ class World {
 
             _broadcastGlobal('setTagAttributes', [userId, id, newAttributes]);
           };
+
+          function worldAddTag(req, res, next) {
+            bodyParserJson(req, res, () => {
+              const itemSpec = req.body;
+
+              const {id} = itemSpec;
+              tagsJson.tags[id] = itemSpec;
+
+              _saveTags();
+
+              _broadcastLocal('addTags', [null, itemSpec]);
+            });
+          }
+          app.post('/archae/world/addTag', worldAddTag);
 
           const connections = [];
           wss.on('connection', c => {
@@ -395,6 +411,16 @@ class World {
               const connection = connections[i];
               connection.close();
             }
+
+            function removeMiddlewares(route, i, routes) {
+              if (route.handle.name === 'worldAddTag') {
+                routes.splice(i, 1);
+              }
+              if (route.route) {
+                route.route.stack.forEach(removeMiddlewares);
+              }
+            }
+            app._router.stack.forEach(removeMiddlewares);
 
             multiplayer.removeListener('playerLeave', _playerLeave);
           };
