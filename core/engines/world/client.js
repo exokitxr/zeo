@@ -720,14 +720,6 @@ class World {
             });
         };
         tags.on('reinstallModule', _reinstallModule);
-        const _loadTags = ({itemSpecs}) => {
-          for (let i = 0; i < itemSpecs.length; i++) {
-            const itemSpec = itemSpecs[i];
-
-            _handleAddTag(localUserId, itemSpec);
-          }
-        };
-        tags.on('loadTags', _loadTags);
 
         const _download = ({id}) => {
           const a = document.createElement('a');
@@ -878,6 +870,11 @@ class World {
           result.reject = _reject;
           return result;
         })();
+        const _loadTags = itemSpecs => {
+          for (let i = 0; i < itemSpecs.length; i++) {
+            _handleAddTag(localUserId, itemSpecs[i]);
+          }
+        };
 
         const connection = new AutoWs(_relativeWsUrl('archae/worldWs?id=' + localUserId));
         let connectionInitialized = false;
@@ -891,7 +888,7 @@ class World {
                 .then(() => {
                   const {args: [itemSpecs]} = m;
 
-                  tags.loadTags(itemSpecs);
+                  _loadTags(itemSpecs);
 
                   connectionInitialized = true;
                 });
@@ -1009,7 +1006,6 @@ class World {
           tags.removeListener('pause', _tagsPause);
           tags.removeListener('seek', _tagsSeek);
           tags.removeListener('seekUpdate', _tagsSeekUpdate);
-          tags.removeListener('loadTags', _loadTags);
 
           fs.removeListener('upload', _upload);
 
