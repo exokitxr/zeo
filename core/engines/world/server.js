@@ -381,30 +381,6 @@ class World {
                       const privateKeyString = privateKey.toString('base64');
 
                       _removeTag(owner, id);
-
-                      /* vridApi.requestCreatePack(srcAddress, dstAddress, asset, quantity, privateKeyString)
-                        .then(() => {
-                          _setTagAttributes(
-                            owner,
-                            id,
-                            [
-                              {
-                                name: 'owner',
-                                value: dstAddress,
-                              },
-                              {
-                                name: 'privateKey',
-                                value: privateKeyString,
-                              }
-                            ]
-                          );
-                        })
-                        .catch(err => {
-                          console.warn(err);
-
-                          // remove the tag since we failed to inherit it
-                          _removeTag(owner, id);
-                        }); */
                     } else {
                       // remove the tag since it's corrupted
                       _removeTag(owner, id);
