@@ -89,11 +89,9 @@ class Servers {
           loading: true,
         };
 
-        const _requestRemoteServers = () => fetch(siteUrl + '/prsnt/servers.json')
+        const _requestRemoteServers = () => fetch(siteUrl + '/servers/servers.json')
           .then(res => res.json()
-            .then(j => {
-              const {servers} = j;
-
+            .then(servers => {
               for (let i = 0; i < servers.length; i++) {
                 const server = servers[i];
                 server.local = false;
