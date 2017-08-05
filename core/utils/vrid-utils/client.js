@@ -5,54 +5,59 @@ class VridUtils {
 
   mount() {
     const {_archae: archae} = this;
-    const {metadata: {crds: {url: crdsUrl}}} = archae;
+    const {
+      metadata: {
+        vrid: {
+          url: vridUrl,
+        },
+      },
+    } = archae;
 
-    const worker = new Worker('archae/plugins/_core_utils_vrid-utils/build/worker.js');
-    const queue = [];
-    worker.init = crdsUrl => {
-      worker.postMessage({
-        method: 'init',
-        crdsUrl,
-      });
+    const _resJson = res => {
+      if (res.status >= 200 && res.status < 300) {
+        return res.json();
+      } else {
+        return Promise.reject({
+          status: res.status,
+          stack: 'API returned invalid status code: ' + res.status,
+        });
+      }
     };
-    worker.requestCreateDrop = (address, asset, quantity) => new Promise((accept, reject) => {
-      worker.postMessage({
-        method: 'createDrop',
+
+    const _requestCreateGet = (address, asset, quantity) => fetch(`${vridUrl}/id/api/get`, {
+      method: 'POST',
+      headers: (() => {
+        const headers = new Headers();
+        headers.append('Content-Type', 'application/json');
+        return headers;
+      })(),
+      body: JSON.stringify({
         address,
         asset,
         quantity,
-      });
-      queue.push(err => {
-        if (!err) {
-          accept();
-        } else {
-          reject(err);
-        }
-      });
-    });
-    worker.requestCreateGet = (address, asset, quantity) => new Promise((accept, reject) => {
-      worker.postMessage({
-        method: 'createGet',
+      }),
+      credentials: 'include',
+    })
+      .then(_resJson);
+    const _requestCreateDrop = (address, asset, quantity) => fetch(`${vridUrl}/id/api/drop`, {
+      method: 'POST',
+      headers: (() => {
+        const headers = new Headers();
+        headers.append('Content-Type', 'application/json');
+        return headers;
+      })(),
+      body: JSON.stringify({
         address,
         asset,
         quantity,
-      });
-      queue.push(err => {
-        if (!err) {
-          accept();
-        } else {
-          reject(err);
-        }
-      });
-    });
-    worker.onmessage = e => {
-      queue.shift()(e.data);
-    };
-    worker.init(crdsUrl);
+      }),
+      credentials: 'include',
+    })
+      .then(_resJson);
 
     return {
-      requestCreateDrop: worker.requestCreateDrop,
-      requestCreateGet: worker.requestCreateGet,
+      requestCreateGet: _requestCreateGet,
+      requestCreateDrop: _requestCreateDrop,
     };
   }
 }
