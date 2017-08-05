@@ -22,7 +22,6 @@ class World {
 
   mount() {
     const {_archae: archae} = this;
-    const {metadata: {crds: {url: crdsUrl}}} = archae;
     const {app, ws, wss, dirname, dataDirectory} = archae.getCore();
 
     let live = true;
