@@ -3,8 +3,5 @@
   "description": "Provides vrid interface utilities for the zeo core.",
   "version": "0.0.1",
   "client": "client.js",
-  "server": "server.js",
-  "dependencies": {
-    "vrid": "0.0.41"
-  }
+  "dependencies": {}
 }
