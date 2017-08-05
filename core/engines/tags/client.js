@@ -1551,12 +1551,6 @@ class Tags {
               listener.destroy();
             }
 
-            loadTags(itemSpecs) {
-              this.emit('loadTags', {
-                itemSpecs,
-              });
-            }
-
             getWorldElement() {
               return rootWorldElement;
             }
