@@ -4,10 +4,7 @@
   "version": "0.0.1",
   "client": "client.js",
   "server": "server.js",
-  "builds": {
-    "worker": "worker.js"
-  },
   "dependencies": {
-    "vrid": "0.0.35"
+    "vrid": "0.0.41"
   }
 }
