@@ -113,7 +113,6 @@ const config = {
   installDirectory: installDirectory,
   password: password,
   cors: true,
-  corsOrigin: fullUrl,
   staticSite: false,
   metadata: {
     config: {
