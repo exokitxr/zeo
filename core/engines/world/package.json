@@ -7,6 +7,7 @@
   "server": "server.js",
   "dependencies": {
     "body-parser": "^1.17.2",
+    "eccrypto-sync": "0.0.4",
     "html-tag-names": "^1.1.1",
     "mkdirp": "^0.5.1"
   }

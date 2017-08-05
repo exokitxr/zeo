@@ -7,6 +7,7 @@ const crypto = require('crypto');
 const mkdirp = require('mkdirp');
 const bodyParser = require('body-parser');
 const bodyParserJson = bodyParser.json();
+const secp256k1 = require('eccrypto-sync/secp256k1');
 
 const DEFAULT_TAGS = {
   tags: {},
@@ -63,7 +64,6 @@ class World {
     return Promise.all([
       archae.requestPlugins([
         '/core/engines/multiplayer',
-        '/core/utils/vrid-utils',
       ]),
       _requestTagsJson(),
       _requestFilesJson(),
@@ -72,15 +72,12 @@ class World {
       .then(([
         [
           multiplayer,
-          vridUtils,
         ],
         tagsJson,
         filesJson,
         ensureWorldPathResult,
       ]) => {
         if (live) {
-          const {vridApi} = vridUtils;
-
           const _initTags = () => {
             const plugins = [];
             for (const id in tagsJson.tags) {
@@ -377,7 +374,7 @@ class World {
                       const {value: asset} = assetAttribute;
                       const {value: quantity} = quantityAttribute;
                       const privateKey = crypto.randomBytes(32);
-                      const dstAddress = vridApi.getAddress(privateKey);
+                      const dstAddress = _getAddress(privateKey);
                       const privateKeyString = privateKey.toString('base64');
 
                       _removeTag(owner, id);
@@ -469,5 +466,6 @@ const _debounce = fn => {
   };
   return _go;
 };
+const _getAddress = privateKey => Uint8Array.from(secp256k1.keyFromPrivate(privateKey).getPublic('arr'));
 
 module.exports = World;
