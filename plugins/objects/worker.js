@@ -36,9 +36,10 @@ const localMatrix = new THREE.Matrix4();
 const localBox = new THREE.Box3();
 
 class TrackedObject {
-  constructor(n, position) {
+  constructor(n, position, rotation) {
     this.n = n;
     this.position = position;
+    this.rotationInverse = rotation.inverse();
   }
 }
 
@@ -53,12 +54,17 @@ const _getHoveredTrackedObject = position => {
       const entry = geometries[trackedObject.n];
       const geometry = entry.length > 0 ? entry[0] : null;
 
+      localVector2.copy(localVector)
+        .sub(trackedObject.position)
+        .applyQuaternion(trackedObject.rotationInverse)
+        .add(trackedObject.position);
+
       localBox.set(
-        geometry ? localVector2.copy(geometry.boundingBox.min).add(trackedObject.position) : trackedObject.position,
-        geometry ? localVector3.copy(geometry.boundingBox.max).add(trackedObject.position) : localVector3.set(0, 0, 0)
+        geometry ? localVector3.copy(geometry.boundingBox.min).add(trackedObject.position) : trackedObject.position,
+        geometry ? localVector4.copy(geometry.boundingBox.max).add(trackedObject.position) : localVector4.set(0, 0, 0)
       );
 
-      if (localBox.containsPoint(localVector)) {
+      if (localBox.containsPoint(localVector2)) {
         return [chunk.x, chunk.z, parseInt(k, 10)];
       }
     }
@@ -119,8 +125,9 @@ const _requestChunk = (x, z) => {
 
         chunk.trackedObjects = {};
         chunk.forEachObject((n, matrix, i) => {
-          const position = new THREE.Vector3().fromArray(matrix);
-          chunk.trackedObjects[i] = new TrackedObject(n, position);
+          const position = new THREE.Vector3().fromArray(matrix, 0);
+          const rotation = new THREE.Quaternion().fromArray(matrix, 3);
+          chunk.trackedObjects[i] = new TrackedObject(n, position, rotation);
         });
 
         return chunk;
@@ -252,8 +259,9 @@ self.onmessage = e => {
       .then(chunk => {
         const n = murmur(name);
         const objectIndex = chunk.addObject(n, matrix);
-        const position = new THREE.Vector3().fromArray(matrix);
-        chunk.trackedObjects[objectIndex] = new TrackedObject(n, position);
+        const position = new THREE.Vector3().fromArray(matrix, 0);
+        const rotation = new THREE.Quaternion().fromArray(matrix, 3);
+        chunk.trackedObjects[objectIndex] = new TrackedObject(n, position, rotation);
 
         connection.send(JSON.stringify({
           method: 'addObject',
