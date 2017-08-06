@@ -7,6 +7,6 @@
   "server": "server.js",
   "dependencies": {
     "animal-js": "0.0.6",
-    "sfxr": "0.0.1"
+    "sfxr": "0.0.2"
   }
 }
