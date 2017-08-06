@@ -28,12 +28,17 @@ const geometries = {};
 const textures = {};
 
 const localVector = new THREE.Vector3();
+const localVector2 = new THREE.Vector3();
+const localVector3 = new THREE.Vector3();
+const localVector4 = new THREE.Vector3();
 const localQuaternion = new THREE.Quaternion();
 const localMatrix = new THREE.Matrix4();
+const localBox = new THREE.Box3();
 
 class TrackedObject {
-  constructor(box) {
-    this.box = box; // XXX update this box according to geometry bounding box
+  constructor(n, position) {
+    this.n = n;
+    this.position = position;
   }
 }
 
@@ -45,8 +50,15 @@ const _getHoveredTrackedObject = position => {
 
     for (const k in chunk.trackedObjects) {
       const trackedObject = chunk.trackedObjects[k];
+      const entry = geometries[trackedObject.n];
+      const geometry = entry.length > 0 ? entry[0] : null;
 
-      if (trackedObject.box.containsPoint(localVector)) {
+      localBox.set(
+        geometry ? localVector2.copy(geometry.boundingBox.min).add(trackedObject.position) : trackedObject.position,
+        geometry ? localVector3.copy(geometry.boundingBox.max).add(trackedObject.position) : localVector3.set(0, 0, 0)
+      );
+
+      if (localBox.containsPoint(localVector)) {
         return [chunk.x, chunk.z, parseInt(k, 10)];
       }
     }
@@ -107,11 +119,8 @@ const _requestChunk = (x, z) => {
 
         chunk.trackedObjects = {};
         chunk.forEachObject((n, matrix, i) => {
-          const box = new THREE.Box3().setFromCenterAndSize(
-            new THREE.Vector3().fromArray(matrix),
-            new THREE.Vector3(0.2, 0.2, 0.2)
-          );
-          chunk.trackedObjects[i] = new TrackedObject(box);
+          const position = new THREE.Vector3().fromArray(matrix);
+          chunk.trackedObjects[i] = new TrackedObject(n, position);
         });
 
         return chunk;
@@ -216,6 +225,13 @@ self.onmessage = e => {
       console.warn(err);
     }
 
+    if (!geometry.boundingBox) {
+      geometry.computeBoundingBox();
+    }
+    if (!geometry.boundingBox) {
+      console.warn('fail');
+    }
+
     const n = murmur(name);
     let entry = geometries[n];
     if (!entry) {
@@ -236,11 +252,8 @@ self.onmessage = e => {
       .then(chunk => {
         const n = murmur(name);
         const objectIndex = chunk.addObject(n, matrix);
-        const box = new THREE.Box3().setFromCenterAndSize(
-          new THREE.Vector3().fromArray(matrix),
-          new THREE.Vector3(0.2, 0.2, 0.2)
-        );
-        chunk.trackedObjects[objectIndex] = new TrackedObject(box);
+        const position = new THREE.Vector3().fromArray(matrix);
+        chunk.trackedObjects[objectIndex] = new TrackedObject(n, position);
 
         connection.send(JSON.stringify({
           method: 'addObject',
