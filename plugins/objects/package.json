@@ -10,6 +10,6 @@
   "dependencies": {
     "touch": "^3.1.0",
     "txtr": "0.0.1",
-    "zeode": "0.0.13"
+    "zeode": "0.0.14"
   }
 }

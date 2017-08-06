@@ -1,30 +1,33 @@
 const UINT32_SIZE = 4;
 const INT32_SIZE = 4;
 const FLOAT32_SIZE = 4;
-const MAP_CHUNK_HEADER_ENTRIES = 4;
+const MAP_CHUNK_HEADER_ENTRIES = 5;
 const MAP_CHUNK_HEADER_SIZE = UINT32_SIZE * MAP_CHUNK_HEADER_ENTRIES;
 
 const _getObjectsChunkSizeFromMetadata = metadata => {
-  const {numPositions, numUvs, numIndices, numObjects} = metadata;
+  const {numPositions, numUvs, numObjectIndices, numIndices, numObjects} = metadata;
 
   return MAP_CHUNK_HEADER_SIZE + // header
     (FLOAT32_SIZE * numPositions) + // positions
     (FLOAT32_SIZE * numUvs) +  // uvs
+    (FLOAT32_SIZE * numObjectIndices) +  // object indices
     (UINT32_SIZE * numIndices) + // indices
     (UINT32_SIZE * numObjects); // objects
 };
 
 const _getObjectsChunkSize = objectsChunk => {
-  const {positions, uvs, indices, objects} = objectsChunk;
+  const {positions, uvs, objectIndices, indices, objects} = objectsChunk;
 
   const numPositions = positions.length;
-  const numUvsa = uvs.length;
+  const numUvs = uvs.length;
+  const numObjectIndices = objectIndices.length;
   const numIndices = indices.length;
   const numObjects = objects.length;
 
   return _getObjectsChunkSizeFromMetadata({
     numPositions,
-    numUvsa,
+    numUvs,
+    numObjectIndices,
     numIndices,
     numObjects,
   });
@@ -33,7 +36,7 @@ const _getObjectsChunkSize = objectsChunk => {
 // stringification
 
 const stringifyGeometry = (objectsChunk, arrayBuffer, byteOffset) => {
-  const {positions, uvs, indices, objects} = objectsChunk;
+  const {positions, uvs, objectIndices, indices, objects} = objectsChunk;
 
   if (arrayBuffer === undefined || byteOffset === undefined) {
     const bufferSize = _getObjectsChunkSize(objectsChunk);
@@ -44,8 +47,9 @@ const stringifyGeometry = (objectsChunk, arrayBuffer, byteOffset) => {
   const headerBuffer = new Uint32Array(arrayBuffer, byteOffset, MAP_CHUNK_HEADER_ENTRIES);
   headerBuffer[0] = positions.length;
   headerBuffer[1] = uvs.length;
-  headerBuffer[2] = indices.length;
-  headerBuffer[3] = objects.length;
+  headerBuffer[2] = objectIndices.length;
+  headerBuffer[3] = indices.length;
+  headerBuffer[4] = objects.length;
   byteOffset += MAP_CHUNK_HEADER_SIZE;
 
   const positionsBuffer = new Float32Array(arrayBuffer, byteOffset, positions.length);
@@ -55,6 +59,10 @@ const stringifyGeometry = (objectsChunk, arrayBuffer, byteOffset) => {
   const uvsBuffer = new Float32Array(arrayBuffer, byteOffset, uvs.length);
   uvsBuffer.set(uvs);
   byteOffset += FLOAT32_SIZE * uvs.length;
+
+  const objectIndexBuffer = new Float32Array(arrayBuffer, byteOffset, objectIndices.length);
+  objectIndexBuffer.set(objectIndices);
+  byteOffset += FLOAT32_SIZE * objectIndices.length;
 
   const indicesBuffer = new Uint32Array(arrayBuffer, byteOffset, indices.length);
   indicesBuffer.set(indices);
@@ -77,8 +85,9 @@ const parseGeometry = (buffer, byteOffset) => {
   const headerBuffer = new Uint32Array(buffer, byteOffset, MAP_CHUNK_HEADER_ENTRIES);
   const numPositions = headerBuffer[0];
   const numUvs = headerBuffer[1];
-  const numIndices = headerBuffer[2];
-  const numObjects = headerBuffer[3];
+  const numObjectIndices = headerBuffer[2];
+  const numIndices = headerBuffer[3];
+  const numObjects = headerBuffer[4];
   byteOffset += MAP_CHUNK_HEADER_SIZE;
 
   const positionsBuffer = new Float32Array(buffer, byteOffset, numPositions);
@@ -88,6 +97,10 @@ const parseGeometry = (buffer, byteOffset) => {
   const uvsBuffer = new Float32Array(buffer, byteOffset, numUvs);
   const uvs = uvsBuffer;
   byteOffset += FLOAT32_SIZE * numUvs;
+
+  const objectIndexBuffer = new Float32Array(buffer, byteOffset, numObjectIndices);
+  const objectIndices = objectIndexBuffer;
+  byteOffset += FLOAT32_SIZE * numObjectIndices;
 
   const indicesBuffer = new Uint32Array(buffer, byteOffset, numIndices);
   const indices = indicesBuffer;
@@ -101,6 +114,7 @@ const parseGeometry = (buffer, byteOffset) => {
     buffer,
     positions,
     uvs,
+    objectIndices,
     indices,
     objects,
   };
