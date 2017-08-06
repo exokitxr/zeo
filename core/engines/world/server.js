@@ -86,7 +86,9 @@ class World {
                 plugins.push(tagSpec.module);
               }
             }
-            archae.requestPlugins(plugins)
+            archae.requestPlugins(plugins, {
+              hotload: true,
+            })
               .catch(err => {
                 console.warn(err);
               });
