@@ -89,6 +89,8 @@ const tree = objectApi => {
           uvs[baseIndex2 + 1] = (treeUvs[1] + treeUvHeight) - (uvs[baseIndex2 + 1] * treeUvHeight);
         }
 
+        geometry.computeBoundingBox();
+
         geometry.heightSegments = heightSegments;
         geometry.radialSegments = radialSegments;
         geometry.heightOffsets = heightOffsets;
@@ -307,6 +309,7 @@ const tree = objectApi => {
         geometry.addAttribute('position', new THREE.BufferAttribute(new Float32Array(positions.buffer, positions.byteOffset, attributeIndex), 3));
         geometry.addAttribute('uv', new THREE.BufferAttribute(new Float32Array(uvs.buffer, uvs.byteOffset, uvIndex), 2));
         geometry.setIndex(new THREE.BufferAttribute(new Uint32Array(indices.buffer, indices.byteOffset, indexIndex), 1));
+        geometry.boundingBox = trunkGeometrySpec.boundingBox;
         return geometry;
       })();
 
