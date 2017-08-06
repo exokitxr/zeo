@@ -19,13 +19,40 @@ const {
 const protocolUtils = require('./lib/utils/protocol-utils');
 const zeode = require('zeode');
 
-const NUM_POSITIONS_CHUNK = 3 * 1024 * 1024;
+const NUM_POSITIONS_CHUNK = 4 * 1024 * 1024;
 
 const rng = new alea(DEFAULT_SEED);
 
 const zde = zeode();
 const geometries = {};
 const textures = {};
+
+const localVector = new THREE.Vector3();
+const localQuaternion = new THREE.Quaternion();
+const localMatrix = new THREE.Matrix4();
+
+class TrackedObject {
+  constructor(box) {
+    this.box = box; // XXX update this box according to geometry bounding box
+  }
+}
+
+const _getHoveredTrackedObject = position => {
+  localVector.fromArray(position);
+
+  for (let i = 0; i < zde.chunks.length; i++) {
+    const chunk = zde.chunks[i];
+
+    for (const k in chunk.trackedObjects) {
+      const trackedObject = chunk.trackedObjects[k];
+
+      if (trackedObject.box.containsPoint(localVector)) {
+        return [chunk.x, chunk.z, parseInt(k, 10)];
+      }
+    }
+  }
+  return null;
+};
 
 const queue = [];
 let pendingMessage = null;
@@ -40,9 +67,9 @@ connection.on('message', e => {
     if (type === 'response') {
       pendingMessage = m;
     } else if (type === 'addObject') {
-      // XXX
+      // XXX implement this
     } else if (type === 'removeObject') {
-      // XXX
+      // XXX implement this
     } else {
       console.warn('objects worker got invalid message type:', JSON.stringify(type));
     }
@@ -72,7 +99,18 @@ const _requestChunk = (x, z) => {
     })
       .then(_resArrayBuffer)
       .then(buffer => {
-        return zde.addChunk(x, z, new Uint32Array(buffer));
+        const chunk = zde.addChunk(x, z, new Uint32Array(buffer));
+
+        chunk.trackedObjects = {};
+        chunk.forEachObject((n, matrix, i) => {
+          const box = new THREE.Box3().setFromCenterAndSize(
+            new THREE.Vector3().fromArray(matrix),
+            new THREE.Vector3(0.2, 0.2, 0.2)
+          );
+          chunk.trackedObjects[i] = new TrackedObject(box);
+        });
+
+        return chunk;
       });
   }
 };
@@ -96,16 +134,15 @@ const _copyIndices = (src, dst, startIndexIndex, startAttributeIndex) => {
 function _makeChunkGeometry(chunk) {
   const positions = new Float32Array(NUM_POSITIONS_CHUNK);
   const uvs = new Float32Array(NUM_POSITIONS_CHUNK);
+  const objectIndices = new Float32Array(NUM_POSITIONS_CHUNK);
   const indices = new Uint32Array(NUM_POSITIONS_CHUNK);
   const objectsUint32Array = new Uint32Array(NUM_POSITIONS_CHUNK);
   const objectsFloat32Array = new Float32Array(objectsUint32Array.buffer, objectsUint32Array.byteOffset, objectsUint32Array.length);
   let attributeIndex = 0;
   let uvIndex = 0;
+  let objectIndexIndex = 0;
   let indexIndex = 0;
   let objectIndex = 0;
-
-  const localQuaternion = new THREE.Quaternion();
-  const localMatrix = new THREE.Matrix4();
 
   chunk.forEachObject((n, matrix, index) => {
     const geometryEntries = geometries[n];
@@ -125,6 +162,12 @@ function _makeChunkGeometry(chunk) {
           uvs[uvIndex + baseIndex + 0] = newUvs[baseIndex + 0];
           uvs[uvIndex + baseIndex + 1] = 1 - newUvs[baseIndex + 1];
         }
+        const numNewPositions = newPositions.length / 3;
+        const newObjectIndices = new Float32Array(numNewPositions);
+        for (let k = 0; k < numNewPositions; k++) {
+          newObjectIndices[k] = index;
+        }
+        objectIndices.set(newObjectIndices, objectIndexIndex);
         const newIndices = geometry.index.array;
         _copyIndices(newIndices, indices, indexIndex, attributeIndex / 3);
         const newObjectsHeader = Uint32Array.from([n, index, indexIndex, indexIndex + newIndices.length]);
@@ -134,6 +177,7 @@ function _makeChunkGeometry(chunk) {
 
         attributeIndex += newPositions.length;
         uvIndex += newUvs.length;
+        objectIndexIndex += newObjectIndices.length;
         indexIndex += newIndices.length;
         objectIndex += newObjectsHeader.length + newObjectsBody.length;
       }
@@ -143,6 +187,7 @@ function _makeChunkGeometry(chunk) {
   return {
     positions: new Float32Array(positions.buffer, positions.byteOffset, attributeIndex),
     uvs: new Float32Array(uvs.buffer, uvs.byteOffset, uvIndex),
+    objectIndices: new Float32Array(objectIndices.buffer, objectIndices.byteOffset, objectIndexIndex),
     indices: new Uint32Array(indices.buffer, indices.byteOffset, indexIndex),
     objects: new Uint32Array(objectsUint32Array.buffer, objectsUint32Array.byteOffset, objectIndex),
   };
@@ -186,7 +231,12 @@ self.onmessage = e => {
     _requestChunk(x, z)
       .then(chunk => {
         const n = murmur(name);
-        chunk.addObject(n, matrix);
+        const objectIndex = chunk.addObject(n, matrix);
+        const box = new THREE.Box3().setFromCenterAndSize(
+          new THREE.Vector3().fromArray(matrix),
+          new THREE.Vector3(0.2, 0.2, 0.2)
+        );
+        chunk.trackedObjects[objectIndex] = new TrackedObject(box);
 
         connection.send(JSON.stringify({
           method: 'addObject',
@@ -207,6 +257,8 @@ self.onmessage = e => {
     _requestChunk(x, z)
       .then(chunk => {
         chunk.removeObject(index);
+
+        delete chunk.trackedObjects[index];
 
         connection.send(JSON.stringify({
           method: 'removeObject',
@@ -233,6 +285,11 @@ self.onmessage = e => {
       .catch(err => {
         console.warn(err);
       });
+  } else if (type === 'getHoveredObjects') {
+    const {id, args} = data;
+    const result = args.map(position => _getHoveredTrackedObject(position));
+    postMessage(id);
+    postMessage(result);
   } else {
     console.warn('objects worker got invalid method', JSON.stringify(type));
   }

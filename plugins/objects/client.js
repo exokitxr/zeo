@@ -15,9 +15,10 @@ const {
 const protocolUtils = require('./lib/utils/protocol-utils');
 const objectsLib = require('./lib/objects/client/index');
 
-const NUM_POSITIONS_CHUNK = 3 * 1024 * 1024;
+const NUM_POSITIONS_CHUNK = 4 * 1024 * 1024;
 const TEXTURE_SIZE = 512;
 const DEFAULT_SIZE = 0.1;
+const SIDES = ['left', 'right'];
 
 class Objects {
   mount() {
@@ -39,6 +40,10 @@ class Objects {
           type: 'v2',
           value: new THREE.Vector2(),
         },
+        selectedObject: {
+          type: 'f',
+          value: -1,
+        },
         sunIntensity: {
           type: 'f',
           value: 0,
@@ -56,16 +61,19 @@ attribute vec3 position;
 attribute vec3 normal;
 attribute vec2 uv; */
 
+attribute float objectIndex;
+
 varying vec3 vPosition;
 varying vec2 vUv;
+varying float vObjectIndex;
 
 void main() {
   vec4 mvPosition = modelViewMatrix * vec4( position.xyz, 1.0 );
   gl_Position = projectionMatrix * mvPosition;
 
-  vUv = uv;
-
   vPosition = position.xyz;
+  vUv = uv;
+  vObjectIndex = objectIndex;
 }
       `,
       fragmentShader: `\
@@ -78,13 +86,21 @@ uniform vec3 ambientLightColor;
 uniform sampler2D map;
 uniform sampler2D lightMap;
 uniform vec2 d;
+uniform float selectedObject;
 uniform float sunIntensity;
 
 varying vec3 vPosition;
 varying vec2 vUv;
+varying float vObjectIndex;
+
+vec3 blueColor = vec3(0.12941176470588237, 0.5882352941176471, 0.9529411764705882);
 
 void main() {
   vec4 diffuseColor = texture2D( map, vUv );
+
+  if (abs(selectedObject - vObjectIndex) < 0.5) {
+    diffuseColor.rgb = mix(diffuseColor.rgb, blueColor, 0.5);
+  }
 
   float u = (
     floor(clamp(vPosition.x - d.x, 0.0, ${(NUM_CELLS).toFixed(8)})) +
@@ -104,7 +120,7 @@ void main() {
       max((lightColor.rgb - 0.5) * 2.0, 0.0) * (1.0 - sunIntensity)
     );
 
-  gl_FragColor = vec4( outgoingLight, diffuseColor.a );
+  gl_FragColor = vec4(outgoingLight, diffuseColor.a);
 }
       `
     };
@@ -202,6 +218,17 @@ void main() {
       });
       queues[id] = accept;
     });
+    worker.getHoveredObjects = () => new Promise((accept, reject) => {
+      const id = _makeId();
+      const {gamepads} = pose.getStatus();
+      const positions = SIDES.map(side => gamepads[side].worldPosition.toArray());
+      worker.postMessage({
+        type: 'getHoveredObjects',
+        id,
+        args: positions,
+      });
+      queues[id] = accept;
+    });
     let pendingMessage = null;
     worker.onmessage = e => {
       const {data} = e;
@@ -219,10 +246,11 @@ void main() {
     const _makeObjectsChunkMesh = (objectsChunkData, x, z) => {
       const mesh = (() => {
         const geometry = (() => {
-          const {positions, uvs, indices} = objectsChunkData;
+          const {positions, uvs, objectIndices, indices} = objectsChunkData;
           const geometry = new THREE.BufferGeometry();
           geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
           geometry.addAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+          geometry.addAttribute('objectIndex', new THREE.BufferAttribute(objectIndices, 1));
           geometry.setIndex(new THREE.BufferAttribute(indices, 1));
           const maxY = 100;
           const minY = -100;
@@ -247,6 +275,7 @@ void main() {
           return function() {
             mesh.material.uniforms.d.value.copy(mesh.uniforms.d.value);
             mesh.material.uniforms.lightMap.value = mesh.uniforms.lightMap.value;
+            mesh.material.uniforms.selectedObject.value = mesh.uniforms.selectedObject.value;
 
             onBeforeRender.apply(this, arguments);
           };
@@ -323,6 +352,10 @@ void main() {
     }
 
     const trackedObjects = [];
+    const hoveredTrackedObjects = {
+      left: null,
+      right: null,
+    };
     const _addTrackedObjects = (mesh, data) => {
       const {objects: objectsUint32Data} = data;
       const objectsFloat32Data = new Float32Array(objectsUint32Data.buffer, objectsUint32Data.byteOffset, objectsUint32Data.length);
@@ -363,19 +396,6 @@ void main() {
         }
       }
     };
-    const _getHoveredTrackedObject = side => {
-      const {gamepads} = pose.getStatus();
-      const gamepad = gamepads[side];
-      const {worldPosition: controllerPosition} = gamepad;
-
-      for (let i = 0; i < trackedObjects.length; i++) {
-        const trackedObject = trackedObjects[i];
-        if (controllerPosition.distanceTo(localVector.copy(trackedObject.position).add(trackedObject.offset)) < trackedObject.size/2) {
-          return trackedObject;
-        }
-      }
-      return null;
-    };
     const _bindTrackedObject = (trackedObject, objectApi) => {
       objectApi.objectAddedCallback(trackedObject);
 
@@ -395,7 +415,7 @@ void main() {
 
     const _triggerdown = e => {
       const {side} = e;
-      const trackedObject = _getHoveredTrackedObject(side);
+      const trackedObject = hoveredTrackedObjects[side];
 
       if (trackedObject) {
         trackedObject.trigger(side);
@@ -404,7 +424,7 @@ void main() {
     input.on('triggerdown', _triggerdown);
     const _gripdown = e => {
       const {side} = e;
-      const trackedObject = _getHoveredTrackedObject(side);
+      const trackedObject = hoveredTrackedObjects[side];
 
       if (trackedObject) {
         trackedObject.grip(side);
@@ -632,10 +652,59 @@ void main() {
     };
 
     const _update = () => {
-      const dayNightSkyboxEntity = elements.getEntitiesElement().querySelector(DAY_NIGHT_SKYBOX_PLUGIN);
-      const sunIntensity = (dayNightSkyboxEntity && dayNightSkyboxEntity.getSunIntensity) ? dayNightSkyboxEntity.getSunIntensity() : 0;
+      let updating = false;
+      let lastUpdateTime = 0;
+      const _updateHoveredTrackedObjects = () => {
+        if (!updating) {
+          const now = Date.now();
+          const timeDiff = now - lastUpdateTime;
 
-      objectsMaterial.uniforms.sunIntensity.value = sunIntensity;
+          if (timeDiff > 1000 / 30) {
+            worker.getHoveredObjects()
+              .then(hoveredTrackedObjectSpecs => {
+                for (let i = 0; i < objectsChunkMeshes.length; i++) {
+                  const objectsChunkMesh = objectsChunkMeshes[i];
+                  objectsChunkMesh.uniforms.selectedObject.value = -1;
+                }
+
+                for (let i = 0; i < SIDES.length; i++) {
+                  const hoveredTrackedObjectSpec = hoveredTrackedObjectSpecs[i];
+
+                  if (hoveredTrackedObjectSpec !== null) {
+                    const [x, z, objectIndex] = hoveredTrackedObjectSpec;
+                    const trackedObject = trackedObjects.find(trackedObject =>
+                      trackedObject.mesh.offset.x === x && trackedObject.mesh.offset.y === z && trackedObject.objectIndex === objectIndex
+                    );
+                    hoveredTrackedObjects[SIDES[i]] = trackedObject;
+
+                    const objectsChunkMesh = objectsChunkMeshes.find(objectsChunkMesh => objectsChunkMesh.offset.x === x && objectsChunkMesh.offset.y === z);
+                    objectsChunkMesh.uniforms.selectedObject.value = objectIndex;
+                  }
+                }
+
+                updating = false;
+                lastUpdateTime = Date.now();
+              })
+              .catch(err => {
+                 console.warn(err);
+
+                 updating = false;
+                 lastUpdateTime = Date.now();
+              });
+
+            updating = true;
+          }
+        }
+        // XXX
+      };
+      const _updateMaterial = () => {
+        const dayNightSkyboxEntity = elements.getEntitiesElement().querySelector(DAY_NIGHT_SKYBOX_PLUGIN);
+        const sunIntensity = (dayNightSkyboxEntity && dayNightSkyboxEntity.getSunIntensity) ? dayNightSkyboxEntity.getSunIntensity() : 0;
+        objectsMaterial.uniforms.sunIntensity.value = sunIntensity;
+      };
+
+      _updateHoveredTrackedObjects();
+      _updateMaterial();
     };
     render.on('update', _update);
 
