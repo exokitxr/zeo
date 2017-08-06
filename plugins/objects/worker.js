@@ -67,9 +67,13 @@ connection.on('message', e => {
     if (type === 'response') {
       pendingMessage = m;
     } else if (type === 'addObject') {
-      // XXX implement this
+      const {args: {x, z, n, matrix}} = m;
+      const chunk = zde.getChunk(x, z);
+      chunk.addObject(n, matrix);
     } else if (type === 'removeObject') {
-      // XXX implement this
+      const {args: {x, z, index}} = m;
+      const chunk = zde.getChunk(x, z);
+      chunk.removeObject(index);
     } else {
       console.warn('objects worker got invalid message type:', JSON.stringify(type));
     }
