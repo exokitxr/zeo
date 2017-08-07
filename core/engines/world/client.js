@@ -277,14 +277,16 @@ class World {
           const tagMesh = elementManager.getTagMesh(id);
           tagMesh.seek(value);
         };
-        const _handleLoadModule = (userId, plugin) => {
+        const _handleLoadModule = (userId, module, version) => {
+          const plugin = _getPlugin(module, version);
           loader.requestPlugin(plugin)
             .catch(err => {
               console.warn(err);
             });
         };
-        const _handleUnloadModule = (userId, pluginName) => {
-          loader.releasePlugin(pluginName)
+        const _handleUnloadModule = (userId, module, version) => {
+          const plugin = _getPlugin(module, version);
+          loader.releasePlugin(plugin)
             .catch(err => {
               console.warn(err);
             });
@@ -675,24 +677,24 @@ class World {
           _request('tagSeekUpdate', [localUserId, id, value]);
         };
         tags.on('seekUpdate', _tagsSeekUpdate);
-        const _reinstallModule = ({id}) => {
+        /* const _reinstallModule = ({id}) => {
           const tagMesh = elementManager.getTagMesh(id);
           const {item} = tagMesh;
-          const {name, displayName} = item;
+          const {module, version} = item;
 
-          _request('unloadModule', [localUserId, displayName]);
-          _handleUnloadModule(localUserId, displayName);
+          _request('unloadModule', [localUserId, module, version]);
+          _handleUnloadModule(localUserId, module, version);
 
           loader.removePlugin(name)
             .then(() => {
-              _request('loadModule', [localUserId, name]);
-              _handleLoadModule(localUserId, name);
+              _request('loadModule', [localUserId, module, version]);
+              _handleLoadModule(localUserId, module, version);
             })
             .catch(err => {
               console.warn(err);
             });
         };
-        tags.on('reinstallModule', _reinstallModule);
+        tags.on('reinstallModule', _reinstallModule); */
 
         const _download = ({id}) => {
           const a = document.createElement('a');
@@ -1080,5 +1082,6 @@ const _makeTagName = s => {
   }
   return s;
 };
+const _getPlugin = (module, version) => /^\//.test(module) ? module : `${module}@${version}`;
 
 module.exports = World;
