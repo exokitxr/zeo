@@ -104,7 +104,8 @@ const makeRenderer = ({typeUtils, creatureUtils}) => {
     `;
   };
   const getEntitySrc = item => {
-    const {id, name, displayName, attributes, instancing, selected} = item;
+    const {id, name, version, attributes, instancing, selected} = item;
+    const plugin = _getPlugin(name, version);
 
     return `\
       <div style="display: flex; height: 80px;">
@@ -123,7 +124,7 @@ const makeRenderer = ({typeUtils, creatureUtils}) => {
                   viewBox: '0 0 12 12',
                   style: 'width: 50px; height: 50px; margin: 10px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;',
                 })}
-                <h1 style="display: flex; flex-grow: 1; font-size: 24px; font-weight: 400; line-height: 1.4; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">${displayName}</h1>
+                <h1 style="display: flex; flex-grow: 1; font-size: 24px; font-weight: 400; line-height: 1.4; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">${plugin}</h1>
               </div>
             </div>
           </div>
@@ -132,7 +133,8 @@ const makeRenderer = ({typeUtils, creatureUtils}) => {
     `;
   };
   const getEntityDetailsSrc = ({entity, inputText, inputValue, page, focusSpec}) => {
-    const {id, name, displayName, attributes, instancing} = entity;
+    const {id, name, version, attributes, instancing} = entity;
+    const plugin = _getPlugin(name, version);
 
     const leftSrc = `\
       <div style="position: relative; width: 600px; top: ${-page * (HEIGHT - 100)}px; margin-right: auto; padding: 30px; box-sizing: border-box;">
@@ -144,7 +146,7 @@ const makeRenderer = ({typeUtils, creatureUtils}) => {
             viewBox: '0 0 12 12',
             style: 'width: 80px; height: 80px; margin-right: 20px; image-rendering: -moz-crisp-edges; image-rendering: pixelated;',
           })}
-          <div style="margin-right: auto; font-size: 36px; line-height: 1.4; font-weight: 400;">${name}</div>
+          <div style="margin-right: auto; font-size: 36px; line-height: 1.4; font-weight: 400;">${plugin}</div>
           <a style="display: flex; padding: 15px; text-decoration: none; justify-content: center; align-items: center;" onclick="entity:remove:${id}">
             ${closeOutline}
           </a>
@@ -386,7 +388,7 @@ const makeRenderer = ({typeUtils, creatureUtils}) => {
       }
     }
   };
-
+  const _getPlugin = (module, version) => /^\//.test(module) ? module : `${module}@${version}`;
 
   return {
     getEntityPageSrc,
