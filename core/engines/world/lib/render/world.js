@@ -89,7 +89,7 @@ const makeRenderer = ({creatureUtils}) => {
     return `\
       <${tagName} style="display: block; text-decoration: none;" onclick="module:main:${id}">
         <div style="position: relative; display: flex; text-decoration: none; overflow: hidden; box-sizing: border-box; ${(instancing || staticExists) ? 'filter: brightness(75%);' : ''}">
-          <${linkTagName} style="display: flex; padding: 10px 0; border-bottom: 1px solid #EEE; flex-grow: 1; text-decoration: none; box-sizing: border-box;" onclick="module:main:${id}" onmousedown="module:main:${id}">
+          <${linkTagName} style="display: flex; padding: 10px 0; border-bottom: 1px solid #EEE; flex-grow: 1; text-decoration: none; box-sizing: border-box;" onclick="module:main:${id}">
             ${creatureUtils.makeSvgCreature('module:' + name, {
               width: 12,
               height: 12,
@@ -176,7 +176,7 @@ const makeRenderer = ({creatureUtils}) => {
     `;
     const bodySrc = (() => {
       const leftSrc = `\
-        <div style="position: relative; width: ${WIDTH - 250}px; top: ${-page * (HEIGHT - 100)}px; padding: 30px; box-sizing: border-box;">
+        <div style="position: relative; width: ${WIDTH - 250 - (30 * 2)}px; top: ${-page * (HEIGHT - 100)}px; padding: 0 30px; box-sizing: border-box;">
           ${readme ?
             readme
           :
@@ -190,10 +190,10 @@ const makeRenderer = ({creatureUtils}) => {
 
         return `\
           <div style="display: flex; width: 250px; padding-top: 20px; flex-direction: column; box-sizing: border-box;">
-            <a style="position: relative; display: flex; margin: 0 30px; margin-bottom: auto; border: 1px solid; border-radius: 5px; text-decoration: none; justify-content: center; align-items: center; ${showUp ? '' : 'visibility: hidden;'}" onclick="module:up:${id}">
+            <a style="position: relative; display: flex; margin: 0 30px; margin-bottom: auto; border: 1px solid; border-radius: 5px; text-decoration: none; justify-content: center; align-items: center; ${showUp ? '' : 'visibility: hidden;'}" onclick="module:up">
               ${upImg}
             </a>
-            <a style="position: relative; display: flex; margin: 0 30px; margin-bottom: 20px; border: 1px solid; border-radius: 5px; text-decoration: none; justify-content: center; align-items: center; ${showDown ? '' : 'visibility: hidden;'}" onclick="module:down:${id}">
+            <a style="position: relative; display: flex; margin: 0 30px; margin-bottom: 20px; border: 1px solid; border-radius: 5px; text-decoration: none; justify-content: center; align-items: center; ${showDown ? '' : 'visibility: hidden;'}" onclick="module:down">
               ${downImg}
             </a>
           </div>

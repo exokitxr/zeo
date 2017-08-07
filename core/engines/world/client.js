@@ -531,7 +531,7 @@ class World {
               _updatePages();
 
               return true;
-            } else if (match = onclick.match(/^npm:(up|down)$/)) {
+            } else if (match = onclick.match(/^(?:npm|module):(up|down)$/)) {
               const direction = match[1];
 
               npmState.page += (direction === 'up' ? -1 : 1);
