@@ -4,6 +4,7 @@ const grass = require('./grass');
 const tree = require('./tree');
 const craftingTable = require('./crafting-table');
 const torch = require('./torch');
+const fire = require('./fire');
 
 const objectsLib = options => [
   wood,
@@ -12,6 +13,7 @@ const objectsLib = options => [
   tree,
   craftingTable,
   torch,
+  fire,
 ].map(objectLib => objectLib(options));
 
 module.exports = objectsLib;

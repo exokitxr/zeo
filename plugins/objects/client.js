@@ -60,11 +60,12 @@ uniform mat3 normalMatrix;
 attribute vec3 position;
 attribute vec3 normal;
 attribute vec2 uv; */
-
+attribute float frame;
 attribute float objectIndex;
 
 varying vec3 vPosition;
 varying vec2 vUv;
+varying float vFrame;
 varying float vObjectIndex;
 
 void main() {
@@ -73,6 +74,7 @@ void main() {
 
   vPosition = position.xyz;
   vUv = uv;
+  vFrame = frame;
   vObjectIndex = objectIndex;
 }
       `,
@@ -91,6 +93,7 @@ uniform float sunIntensity;
 
 varying vec3 vPosition;
 varying vec2 vUv;
+varying float vFrame;
 varying float vObjectIndex;
 
 vec3 blueColor = vec3(0.12941176470588237, 0.5882352941176471, 0.9529411764705882);
@@ -246,10 +249,11 @@ void main() {
     const _makeObjectsChunkMesh = (objectsChunkData, x, z) => {
       const mesh = (() => {
         const geometry = (() => {
-          const {positions, uvs, objectIndices, indices} = objectsChunkData;
+          const {positions, uvs, frames, objectIndices, indices} = objectsChunkData;
           const geometry = new THREE.BufferGeometry();
           geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
           geometry.addAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+          geometry.addAttribute('frame', new THREE.BufferAttribute(frames, 1));
           geometry.addAttribute('objectIndex', new THREE.BufferAttribute(objectIndices, 1));
           geometry.setIndex(new THREE.BufferAttribute(indices, 1));
           const maxY = 100;
@@ -385,16 +389,18 @@ void main() {
     };
     const _removeTrackedObjects = objectRange => {
       const [startObject, numObjects] = objectRange;
-      const removedTrackedObjects = trackedObjects.splice(trackedObjects.indexOf(startObject), numObjects);
 
-      for (let i = 0; i < removedTrackedObjects.length; i++) {
-        const trackedObject = removedTrackedObjects[i];
+      const baseIndex = trackedObjects.indexOf(startObject);
+      for (let i = 0; i < numObjects; i++) {
+        const trackedObject = trackedObjects[baseIndex + i];
         const {n} = trackedObject;
         const objectApi = objectApis[n];
         if (objectApi) {
           _unbindTrackedObject(trackedObject, objectApi);
         }
       }
+
+      trackedObjects.splice(baseIndex, numObjects);
     };
     const _bindTrackedObject = (trackedObject, objectApi) => {
       objectApi.objectAddedCallback(trackedObject);
