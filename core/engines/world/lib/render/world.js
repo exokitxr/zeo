@@ -70,7 +70,7 @@ const makeRenderer = ({creatureUtils}) => {
     `;
   };
   const getModuleSrc = item => {
-    const {id, name, displayName, description, instancing, metadata: {isStatic, exists}} = item;
+    const {id, name, description, instancing, metadata: {isStatic, exists}} = item;
     const tagName = isStatic ? 'a' : 'div';
     const linkTagName = isStatic ? 'div' : 'a';
     const staticExists = isStatic && exists;
@@ -98,7 +98,7 @@ const makeRenderer = ({creatureUtils}) => {
             })}
             <div style="margin-right: 10px; flex-grow: 1;">
               <div style="display: flex; flex-direction: column;">
-                <h1 style="margin: 0; font-size: 24px; font-weight: 400; line-height: 1.4;">${displayName}</h1>
+                <h1 style="margin: 0; font-size: 24px; font-weight: 400; line-height: 1.4;">${name}</h1>
                 <p style="margin: 0; font-size: 16px; line-height: 1.4; flex-grow: 1;">${description}</p>
               </div>
             </div>
@@ -114,7 +114,7 @@ const makeRenderer = ({creatureUtils}) => {
   };
 
   const getModuleDetailsSrc = (item, page, focus) => {
-    const {id, name, displayName, version, versions, description, readme, metadata: {exists}} = item;
+    const {id, name, version, versions, description, readme, metadata: {exists}} = item;
     const imgSrc = (() => {
       if (exists) {
         return vectorPolygonImgSrc;
@@ -134,39 +134,42 @@ const makeRenderer = ({creatureUtils}) => {
         })}
         <div style="display: flex; margin-left: 10px; margin-right: auto; flex-direction: column; justify-content: center;">
           <div style="display: flex; margin-bottom: 10px; align-items: flex-end;">
-            <div style="margin-right: 15px; font-size: 28px; font-weight: 400;">${displayName}</div>
-            ${!focus ?
-              `<div style="position: relative; width: 120px; height: 34px; margin-right: auto; z-index: 1;">
-                 <div style="display: flex; flex-direction: column; background-color: #FFF;">
-                   <a style="display: flex; height: 34px; padding: 0 10px; border: 2px solid #333; font-size: 20px; font-weight: 400; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="module:focusVersion">
-                    <div style="text-overflow: ellipsis; margin-right: auto; overflow: hidden;">${version}</div>
-                    <div style="display: flex; font-size: 16px; justify-content: center;">▼</div>
-                   </a>
-                 </div>
-               </div>`
-            :
-              `<div style="position: relative; width: 120px; height: 34px; margin-right: auto; z-index: 1;">
-                <div style="display: flex; flex-direction: column; background-color: #FFF;">
-                  ${versions.map((versionOption, i, a) => {
-                    const style = (() => {
-                      let result = '';
-                      if (i !== 0) {
-                        result += 'padding-top: 2px; border-top: 0;';
-                      }
-                      if (i !== (a.length - 1)) {
-                        result += 'padding-bottom: 2px; border-bottom: 0;';
-                      }
-                      /* if (versionOption === version) {
-                        result += 'background-color: #EEE;';
-                      } */
-                      return result;
-                    })();
-                    return `<a style="display: flex; height: 34px; padding: 0 10px; border: 2px solid #333; ${style}; font-size: 20px; font-weight: 400; text-decoration: none; align-items: center; text-overflow: ellipsis; overflow: hidden; box-sizing: border-box;" onclick="module:setVersion:${id}:${versionOption}">
-                      ${versionOption}
-                    </a>`;
-                  }).join('\n')}
-                </div>
-              </div>`
+            <div style="margin-right: 15px; font-size: 28px; font-weight: 400;">${name}</div>
+            ${!_isAbsolute(name) ?
+              (!focus ?
+                `<div style="position: relative; width: 120px; height: 34px; margin-right: auto; z-index: 1;">
+                   <div style="display: flex; flex-direction: column; background-color: #FFF;">
+                     <a style="display: flex; height: 34px; padding: 0 10px; border: 2px solid #333; font-size: 20px; font-weight: 400; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="module:focusVersion">
+                      <div style="text-overflow: ellipsis; margin-right: auto; overflow: hidden;">${version}</div>
+                      <div style="display: flex; font-size: 16px; justify-content: center;">▼</div>
+                     </a>
+                   </div>
+                 </div>`
+              :
+                `<div style="position: relative; width: 120px; height: 34px; margin-right: auto; z-index: 1;">
+                  <div style="display: flex; flex-direction: column; background-color: #FFF;">
+                    ${versions.map((versionOption, i, a) => {
+                      const style = (() => {
+                        let result = '';
+                        if (i !== 0) {
+                          result += 'padding-top: 2px; border-top: 0;';
+                        }
+                        if (i !== (a.length - 1)) {
+                          result += 'padding-bottom: 2px; border-bottom: 0;';
+                        }
+                        if (versionOption !== version) {
+                          result += 'background-color: #EEE;';
+                        }
+                        return result;
+                      })();
+                      return `<a style="display: flex; height: 34px; padding: 0 10px; border: 2px solid #333; ${style}; font-size: 20px; font-weight: 400; text-decoration: none; align-items: center; text-overflow: ellipsis; overflow: hidden; box-sizing: border-box;" onclick="module:setVersion:${id}:${versionOption}">
+                        ${versionOption}
+                      </a>`;
+                    }).join('\n')}
+                  </div>
+                </div>`)
+              :
+                ''
             }
           </div>
           <div style="width: 600px; font-size: 16px; font-weight: 400; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">${description}</div>
@@ -215,6 +218,7 @@ const makeRenderer = ({creatureUtils}) => {
       </div>
     `;
   };
+  const _isAbsolute = name => /^\//.test(name);
 
   return {
     getWorldPageSrc,
