@@ -83,7 +83,7 @@ class World {
             for (const id in tagsJson.tags) {
               const tagSpec = tagsJson.tags[id];
               if (tagSpec.type === 'entity') {
-                plugins.push(tagSpec.module);
+                plugins.push(path.isAbsolute(tagSpec.module) ? tagSpec.module : `${tagSpec.module}@${tagSpec.version}`);
               }
             }
             archae.requestPlugins(plugins, {

@@ -1471,10 +1471,11 @@ class Tags {
 
             mutateAddEntity(tagMesh) {
               const {item} = tagMesh;
-              const {tagName: entityTagName, module: entityModule, attributes: entityAttributes} = item;
+              const {tagName: entityTagName, module: entityModule, version: entityVersion, attributes: entityAttributes} = item;
               const entityElement = document.createElement(entityTagName);
 
-              entityElement.setAttribute('module', entityModule);
+              const plugin = _getPlugin(entityModule, entityVersion);
+              entityElement.setAttribute('module', plugin);
 
               for (const attributeName in entityAttributes) {
                 const attribute = entityAttributes[attributeName];
@@ -1612,6 +1613,6 @@ const _shallowClone = o => {
 };
 const _makeId = () => Math.random().toString(36).substring(7);
 const _clone = o => JSON.parse(JSON.stringify(o));
-const _roundToDecimals = (value, decimals) => Number(Math.round(value+'e'+decimals)+'e-'+decimals);
+const _getPlugin = (module, version) => /^\//.test(module) ? module : `${module}@${version}`;
 
 module.exports = Tags;
