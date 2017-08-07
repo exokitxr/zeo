@@ -154,13 +154,14 @@ const _copyIndices = (src, dst, startIndexIndex, startAttributeIndex) => {
 function _makeChunkGeometry(chunk) {
   const positions = new Float32Array(NUM_POSITIONS_CHUNK);
   const uvs = new Float32Array(NUM_POSITIONS_CHUNK);
+  const frames = new Float32Array(NUM_POSITIONS_CHUNK);
   const objectIndices = new Float32Array(NUM_POSITIONS_CHUNK);
   const indices = new Uint32Array(NUM_POSITIONS_CHUNK);
   const objectsUint32Array = new Uint32Array(NUM_POSITIONS_CHUNK);
   const objectsFloat32Array = new Float32Array(objectsUint32Array.buffer, objectsUint32Array.byteOffset, objectsUint32Array.length);
   let attributeIndex = 0;
   let uvIndex = 0;
-  let objectIndexIndex = 0;
+  let frameIndex = 0;
   let indexIndex = 0;
   let objectIndex = 0;
 
@@ -183,11 +184,13 @@ function _makeChunkGeometry(chunk) {
           uvs[uvIndex + baseIndex + 1] = 1 - newUvs[baseIndex + 1];
         }
         const numNewPositions = newPositions.length / 3;
+        const newFrames = geometry.getAttribute('frame').array;
+        frames.set(newFrames, frameIndex);
         const newObjectIndices = new Float32Array(numNewPositions);
         for (let k = 0; k < numNewPositions; k++) {
           newObjectIndices[k] = index;
         }
-        objectIndices.set(newObjectIndices, objectIndexIndex);
+        objectIndices.set(newObjectIndices, frameIndex);
         const newIndices = geometry.index.array;
         _copyIndices(newIndices, indices, indexIndex, attributeIndex / 3);
         const newObjectsHeader = Uint32Array.from([n, index, indexIndex, indexIndex + newIndices.length]);
@@ -197,7 +200,7 @@ function _makeChunkGeometry(chunk) {
 
         attributeIndex += newPositions.length;
         uvIndex += newUvs.length;
-        objectIndexIndex += newObjectIndices.length;
+        frameIndex += newFrames.length;
         indexIndex += newIndices.length;
         objectIndex += newObjectsHeader.length + newObjectsBody.length;
       }
@@ -207,7 +210,8 @@ function _makeChunkGeometry(chunk) {
   return {
     positions: new Float32Array(positions.buffer, positions.byteOffset, attributeIndex),
     uvs: new Float32Array(uvs.buffer, uvs.byteOffset, uvIndex),
-    objectIndices: new Float32Array(objectIndices.buffer, objectIndices.byteOffset, objectIndexIndex),
+    frames: new Float32Array(frames.buffer, frames.byteOffset, frameIndex),
+    objectIndices: new Float32Array(objectIndices.buffer, objectIndices.byteOffset, frameIndex),
     indices: new Uint32Array(indices.buffer, indices.byteOffset, indexIndex),
     objects: new Uint32Array(objectsUint32Array.buffer, objectsUint32Array.byteOffset, objectIndex),
   };
@@ -230,6 +234,14 @@ self.onmessage = e => {
       geometry = fn(registerApi);
     } catch (err) {
       console.warn(err);
+    }
+
+    const frameAttribute = geometry.getAttribute('frame');
+    if (!frameAttribute) {
+      const numPositions = geometry.getAttribute('position').array.length / 3;
+      const frames = new Float32Array(numPositions);
+      frames.fill(1);
+      geometry.addAttribute('frame', new THREE.BufferAttribute(frames, 1));
     }
 
     if (!geometry.boundingBox) {
