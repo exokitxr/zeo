@@ -87,13 +87,6 @@ class World {
 
         const worldRenderer = worldRender.makeRenderer({creatureUtils});
 
-        const assetMaterial = new THREE.MeshBasicMaterial({
-          color: 0xFFFFFF,
-          shading: THREE.FlatShading,
-          vertexColors: THREE.VertexColors,
-        });
-        const transparentMaterial = biolumi.getTransparentMaterial();
-
         const mainFontSpec = {
           fonts: biolumi.getFonts(),
           fontSize: 36,
@@ -101,10 +94,6 @@ class World {
           fontWeight: biolumi.getFontWeight(),
           fontStyle: biolumi.getFontStyle(),
         };
-
-        const oneVector = new THREE.Vector3(1, 1, 1);
-        const forwardVector = new THREE.Vector3(0, 0, -1);
-        const matrixAttributeSizeVector = oneVector.clone().multiplyScalar(2 * 1.1);
 
         /* const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
         const _decomposeMatrix = matrix => {
@@ -116,22 +105,6 @@ class World {
         }; */
 
         const localUserId = multiplayer.getId();
-
-        const boundingBoxGeometry = new THREE.BoxBufferGeometry(1, 1, 1);
-        const boundingBoxMaterial = new THREE.MeshPhongMaterial({
-          color: 0xFFFF00,
-          shading: THREE.FlatShading,
-          transparent: true,
-          opacity: 0.5,
-        });
-
-        const _makeTriggerState = () => ({
-          triggered: false,
-        });
-        const triggerStates = {
-          left: _makeTriggerState(),
-          right: _makeTriggerState(),
-        };
 
         class ElementManager {
           constructor() {
