@@ -5,6 +5,6 @@
   "client": "client.js",
   "server": "server.js",
   "dependencies": {
-    "modulequery": "0.0.5"
+    "modulequery": "0.0.9"
   }
 }
