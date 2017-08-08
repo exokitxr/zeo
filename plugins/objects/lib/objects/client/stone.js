@@ -28,23 +28,54 @@ const stone = objectApi => {
 
   return () => _requestImage('/archae/objects/img/stone.png')
     .then(stoneImg => objectApi.registerTexture('stone', stoneImg))
-    .then(() => objectApi.registerGeometry('stone', (args) => {
-      const {THREE, getUv} = args;
-      const stoneUvs = getUv('stone');
-      const uvWidth = (stoneUvs[2] - stoneUvs[0]) * 0.25;
-      const uvHeight = (stoneUvs[3] - stoneUvs[1]) * 0.25;
+    .then(() =>
+      Promise.all([
+        objectApi.registerGeometry('stone', (args) => {
+          const {THREE, getUv} = args;
+          const stoneUvs = getUv('stone');
+          const uvWidth = (stoneUvs[2] - stoneUvs[0]) * 0.25;
+          const uvHeight = (stoneUvs[3] - stoneUvs[1]) * 0.25;
 
-      const geometry = new THREE.BoxBufferGeometry(0.3, 0.2, 0.2)
-        .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.2/2, 0));
-      const uvs = geometry.getAttribute('uv').array;
-      const numUvs = uvs.length / 2;
-      for (let i = 0; i < numUvs; i++) {
-        uvs[i * 2 + 0] = stoneUvs[0] + (uvs[i * 2 + 0] * uvWidth);
-        uvs[i * 2 + 1] = (stoneUvs[1] + uvHeight) - (uvs[i * 2 + 1] * uvHeight);
-      }
+          const geometry = new THREE.BoxBufferGeometry(0.3, 0.2, 0.2)
+            .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.2/2, 0));
+          const uvs = geometry.getAttribute('uv').array;
+          const numUvs = uvs.length / 2;
+          for (let i = 0; i < numUvs; i++) {
+            uvs[i * 2 + 0] = stoneUvs[0] + (uvs[i * 2 + 0] * uvWidth);
+            uvs[i * 2 + 1] = (stoneUvs[1] + uvHeight) - (uvs[i * 2 + 1] * uvHeight);
+          }
 
-      return geometry;
-    }))
+          return geometry;
+        }),
+        objectApi.registerGeometry('stone-wall', (args) => {
+          const {THREE, getUv} = args;
+          const stoneUvs = getUv('stone');
+          const uvWidth = stoneUvs[2] - stoneUvs[0];
+          const uvHeight = stoneUvs[3] - stoneUvs[1];
+
+          const geometry = new THREE.BoxBufferGeometry(2, 1, 1);
+
+          const positions = geometry.getAttribute('position').array;
+          const numPositions = positions.length / 3;
+          for (let i = 0; i < numPositions; i++) {
+            if (positions[i * 3 + 1] > 0) {
+              positions[i * 3 + 0] *= 0.75;
+              positions[i * 3 + 2] *= 0.75;
+            }
+          }
+          geometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, 1/2, 0));
+
+          const uvs = geometry.getAttribute('uv').array;
+          const numUvs = uvs.length / 2;
+          for (let i = 0; i < numUvs; i++) {
+            uvs[i * 2 + 0] = stoneUvs[0] + (uvs[i * 2 + 0] * uvWidth);
+            uvs[i * 2 + 1] = (stoneUvs[1] + uvHeight) - (uvs[i * 2 + 1] * uvHeight);
+          }
+
+          return geometry;
+        }),
+      ])
+    )
     .then(() => {
       const stoneItemApi = {
         asset: 'ITEM.STONE',
@@ -59,7 +90,7 @@ const stone = objectApi => {
                 heightfieldElement ? heightfieldElement.getElevation(grabbable.position.x, grabbable.position.z) : 0,
                 grabbable.position.z
               );
-              objectApi.addObject('stone', localVector, zeroQuaternion, oneVector);
+              objectApi.addObject('stone-wall', localVector, zeroQuaternion, oneVector);
 
               items.destroyItem(grabbable);
 
@@ -85,8 +116,6 @@ const stone = objectApi => {
 
       const stoneObjectApi = {
         object: 'stone',
-        offset: [0, 0.2/2, 0],
-        size: 0.3,
         objectAddedCallback(object) {
           object.on('grip', side => {
             const id = _makeId();
@@ -116,9 +145,41 @@ const stone = objectApi => {
       };
       objectApi.registerObject(stoneObjectApi);
 
+      const stoneWallObjectApi = {
+        object: 'stone-wall',
+        objectAddedCallback(object) {
+          object.on('grip', side => {
+            const id = _makeId();
+            const asset = 'ITEM.STONE';
+            const assetInstance = items.makeItem({
+              type: 'asset',
+              id: id,
+              name: asset,
+              displayName: asset,
+              attributes: {
+                position: {value: DEFAULT_MATRIX},
+                asset: {value: asset},
+                quantity: {value: 1},
+                owner: {value: null},
+                bindOwner: {value: null},
+                physics: {value: false},
+              },
+            });
+            assetInstance.grab(side);
+
+            object.remove();
+          });
+        },
+        objectRemovedCallback(object) {
+          // XXX
+        },
+      };
+      objectApi.registerObject(stoneWallObjectApi);
+
       return () => {
         items.unregisterItem(this, stoneItemApi);
         objectApi.unregisterObject(stoneObjectApi);
+        objectApi.unregisterObject(stoneWallObjectApi);
       };
     });
 };
