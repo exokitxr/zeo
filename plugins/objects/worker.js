@@ -162,6 +162,7 @@ function _makeChunkGeometry(chunk) {
   let attributeIndex = 0;
   let uvIndex = 0;
   let frameIndex = 0;
+  let objectIndexIndex = 0;
   let indexIndex = 0;
   let objectIndex = 0;
 
@@ -190,7 +191,7 @@ function _makeChunkGeometry(chunk) {
         for (let k = 0; k < numNewPositions; k++) {
           newObjectIndices[k] = index;
         }
-        objectIndices.set(newObjectIndices, frameIndex);
+        objectIndices.set(newObjectIndices, objectIndexIndex);
         const newIndices = geometry.index.array;
         _copyIndices(newIndices, indices, indexIndex, attributeIndex / 3);
         const newObjectsHeader = Uint32Array.from([n, index, indexIndex, indexIndex + newIndices.length]);
@@ -201,6 +202,7 @@ function _makeChunkGeometry(chunk) {
         attributeIndex += newPositions.length;
         uvIndex += newUvs.length;
         frameIndex += newFrames.length;
+        objectIndexIndex += newObjectIndices.length;
         indexIndex += newIndices.length;
         objectIndex += newObjectsHeader.length + newObjectsBody.length;
       }
@@ -211,7 +213,7 @@ function _makeChunkGeometry(chunk) {
     positions: new Float32Array(positions.buffer, positions.byteOffset, attributeIndex),
     uvs: new Float32Array(uvs.buffer, uvs.byteOffset, uvIndex),
     frames: new Float32Array(frames.buffer, frames.byteOffset, frameIndex),
-    objectIndices: new Float32Array(objectIndices.buffer, objectIndices.byteOffset, frameIndex),
+    objectIndices: new Float32Array(objectIndices.buffer, objectIndices.byteOffset, objectIndexIndex),
     indices: new Uint32Array(indices.buffer, indices.byteOffset, indexIndex),
     objects: new Uint32Array(objectsUint32Array.buffer, objectsUint32Array.byteOffset, objectIndex),
   };
