@@ -32,21 +32,29 @@ const fire = objectApi => {
     .then(() => objectApi.registerGeometry('fire', (args) => {
       const {THREE, getUv} = args;
       const fireUvs = getUv('fire');
-      const uvWidth = fireUvs[2] - fireUvs[0];
-      const uvHeight = fireUvs[3] - fireUvs[1];
+      const fireUvWidth = fireUvs[2] - fireUvs[0];
+      const fireUvHeight = fireUvs[3] - fireUvs[1];
 
-      const geometry = new THREE.BoxBufferGeometry(0.05, 0.3, 0.05)
-        .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.1, 0));
+      const geometry = new THREE.BoxBufferGeometry(1, 1, 1)
+        .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.5, 0));
       const positions = geometry.getAttribute('position').array;
       const uvs = geometry.getAttribute('uv').array;
+
       const numUvs = uvs.length / 2;
       for (let i = 0; i < numUvs; i++) {
-        uvs[i * 2 + 0] = fireUvs[0] + (uvs[i * 2 + 0] * uvWidth);
-        uvs[i * 2 + 1] = (fireUvs[1] + uvHeight) - (uvs[i * 2 + 1] * uvHeight);
+        uvs[i * 2 + 0] = fireUvs[0] + (uvs[i * 2 + 0] * fireUvWidth);
+        uvs[i * 2 + 1] = (fireUvs[1] + fireUvHeight) - (uvs[i * 2 + 1] * fireUvHeight);
       }
-      const numPositions = positions.length / 3;
+
+      const numPositions = positions.length;
       const frames = new Float32Array(numPositions);
-      geometry.addAttribute('frame', new THREE.BufferAttribute(frames, 1));
+      for (let i = 0; i < numPositions; i++) {
+        const baseIndex = i * 3;
+        frames[baseIndex + 0] = fireUvs[1];
+        frames[baseIndex + 1] = fireUvHeight / 8;
+        frames[baseIndex + 2] = 8;
+      }
+      geometry.addAttribute('frame', new THREE.BufferAttribute(frames, 3));
 
       return geometry;
     }))
@@ -88,6 +96,50 @@ const fire = objectApi => {
       };
       items.registerItem(this, fireItemApi);
 
+      const fireObjectApi = {
+        object: 'fire',
+        offset: [0, 1/2, 0],
+        size: 0.5,
+        objectAddedCallback(object) {
+          object.on('grip', side => {
+            const id = _makeId();
+            const asset = 'ITEM.FIRE';
+            const assetInstance = items.makeItem({
+              type: 'asset',
+              id: id,
+              name: asset,
+              displayName: asset,
+              attributes: {
+                position: {value: DEFAULT_MATRIX},
+                asset: {value: asset},
+                quantity: {value: 1},
+                owner: {value: null},
+                bindOwner: {value: null},
+                physics: {value: false},
+              },
+            });
+            assetInstance.grab(side);
+
+            object.remove();
+          });
+
+          object.shape = null;
+          if (lightmapper) {
+            _bindLightmap(object);
+          }
+
+          fires.push(object);
+        },
+        objectRemovedCallback(object) {
+          if (lightmapper) {
+            _unbindLightmap(object);
+          }
+
+          fires.splice(fires.indexOf(object), 1);
+        },
+      };
+      objectApi.registerObject(fireObjectApi);
+
       const fires = [];
       let Lightmapper = null;
       let lightmapper = null;
@@ -120,6 +172,7 @@ const fire = objectApi => {
 
       return () => {
         items.unregisterItem(this, fireItemApi);
+        objectApi.unregisterObject(fireObjectApi);
       };
     });
 };

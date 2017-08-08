@@ -15,14 +15,14 @@ const {
 const protocolUtils = require('./lib/utils/protocol-utils');
 const objectsLib = require('./lib/objects/client/index');
 
-const NUM_POSITIONS_CHUNK = 4 * 1024 * 1024;
+const NUM_POSITIONS_CHUNK = 5 * 1024 * 1024;
 const TEXTURE_SIZE = 512;
 const DEFAULT_SIZE = 0.1;
 const SIDES = ['left', 'right'];
 
 class Objects {
   mount() {
-    const {three, pose, input, elements, render, utils: {js: {events, bffr}, hash: {murmur}, random: {chnkr}}} = zeo;
+    const {three, pose, input, elements, render, world, utils: {js: {events, bffr}, hash: {murmur}, random: {chnkr}}} = zeo;
     const {THREE, scene} = three;
     const {EventEmitter} = events;
 
@@ -48,6 +48,10 @@ class Objects {
           type: 'f',
           value: 0,
         },
+        worldTime: {
+          type: 'f',
+          value: 0,
+        },
       },
       vertexShader: `\
 precision highp float;
@@ -60,12 +64,12 @@ uniform mat3 normalMatrix;
 attribute vec3 position;
 attribute vec3 normal;
 attribute vec2 uv; */
-attribute float frame;
+attribute vec3 frame;
 attribute float objectIndex;
 
 varying vec3 vPosition;
 varying vec2 vUv;
-varying float vFrame;
+varying vec3 vFrame;
 varying float vObjectIndex;
 
 void main() {
@@ -90,16 +94,25 @@ uniform sampler2D lightMap;
 uniform vec2 d;
 uniform float selectedObject;
 uniform float sunIntensity;
+uniform float worldTime;
 
 varying vec3 vPosition;
 varying vec2 vUv;
-varying float vFrame;
+varying vec3 vFrame;
 varying float vObjectIndex;
 
+float speed = 1.0;
 vec3 blueColor = vec3(0.12941176470588237, 0.5882352941176471, 0.9529411764705882);
 
 void main() {
-  vec4 diffuseColor = texture2D( map, vUv );
+  vec2 uv2 = vUv;
+  if (vFrame.z > 0.0) {
+    //// float animationFactor = mod(worldTime, 1000.0) / 1000.0;
+    float animationFactor = (speed - abs(mod(worldTime / 1000.0, speed*2.0) - speed)) / speed;
+    float frameIndex = floor(animationFactor * vFrame.z);
+    uv2.y = 1.0 - (((1.0 - uv2.y) - vFrame.x) / vFrame.z + vFrame.x + frameIndex * vFrame.y);
+  }
+  vec4 diffuseColor = texture2D( map, uv2 );
 
   if (abs(selectedObject - vObjectIndex) < 0.5) {
     diffuseColor.rgb = mix(diffuseColor.rgb, blueColor, 0.5);
@@ -159,6 +172,8 @@ void main() {
       1
       // 16
     );
+// canvas.style.cssText = `position: absolute; top: 0; left: 0; background-color: white; image-rendering: pixelated;`;
+// document.body.appendChild(canvas);
 
     const objectsMaterial = new THREE.ShaderMaterial({
       uniforms: (() => {
@@ -253,7 +268,7 @@ void main() {
           const geometry = new THREE.BufferGeometry();
           geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
           geometry.addAttribute('uv', new THREE.BufferAttribute(uvs, 2));
-          geometry.addAttribute('frame', new THREE.BufferAttribute(frames, 1));
+          geometry.addAttribute('frame', new THREE.BufferAttribute(frames, 3));
           geometry.addAttribute('objectIndex', new THREE.BufferAttribute(objectIndices, 1));
           geometry.setIndex(new THREE.BufferAttribute(indices, 1));
           const maxY = 100;
@@ -704,6 +719,9 @@ void main() {
         // XXX
       };
       const _updateMaterial = () => {
+        const worldTime = world.getWorldTime();
+        objectsMaterial.uniforms.worldTime.value = worldTime;
+
         const dayNightSkyboxEntity = elements.getEntitiesElement().querySelector(DAY_NIGHT_SKYBOX_PLUGIN);
         const sunIntensity = (dayNightSkyboxEntity && dayNightSkyboxEntity.getSunIntensity) ? dayNightSkyboxEntity.getSunIntensity() : 0;
         objectsMaterial.uniforms.sunIntensity.value = sunIntensity;
