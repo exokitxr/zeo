@@ -19,7 +19,7 @@ const {
 const protocolUtils = require('./lib/utils/protocol-utils');
 const zeode = require('zeode');
 
-const NUM_POSITIONS_CHUNK = 4 * 1024 * 1024;
+const NUM_POSITIONS_CHUNK = 5 * 1024 * 1024;
 
 const rng = new alea(DEFAULT_SEED);
 
@@ -183,9 +183,9 @@ function _makeChunkGeometry(chunk) {
           uvs[uvIndex + baseIndex + 0] = newUvs[baseIndex + 0];
           uvs[uvIndex + baseIndex + 1] = 1 - newUvs[baseIndex + 1];
         }
-        const numNewPositions = newPositions.length / 3;
         const newFrames = geometry.getAttribute('frame').array;
         frames.set(newFrames, frameIndex);
+        const numNewPositions = newPositions.length / 3;
         const newObjectIndices = new Float32Array(numNewPositions);
         for (let k = 0; k < numNewPositions; k++) {
           newObjectIndices[k] = index;
@@ -238,10 +238,8 @@ self.onmessage = e => {
 
     const frameAttribute = geometry.getAttribute('frame');
     if (!frameAttribute) {
-      const numPositions = geometry.getAttribute('position').array.length / 3;
-      const frames = new Float32Array(numPositions);
-      frames.fill(1);
-      geometry.addAttribute('frame', new THREE.BufferAttribute(frames, 1));
+      const frames = new Float32Array(geometry.getAttribute('position').array.length);
+      geometry.addAttribute('frame', new THREE.BufferAttribute(frames, 3));
     }
 
     if (!geometry.boundingBox) {
