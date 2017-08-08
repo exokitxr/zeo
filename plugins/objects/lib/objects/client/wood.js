@@ -28,7 +28,7 @@ const wood = objectApi => {
 
   return () => _requestImage('/archae/objects/img/wood.png')
     .then(woodImg => objectApi.registerTexture('wood', woodImg))
-    .then(() => objectApi.registerGeometry('wood', (args) => {
+    .then(() => objectApi.registerGeometry('wood-wall', (args) => {
       const {THREE, getUv} = args;
       const woodUvs = getUv('wood');
       const uvWidth = woodUvs[2] - woodUvs[0];
@@ -69,7 +69,7 @@ const wood = objectApi => {
                 heightfieldElement ? heightfieldElement.getElevation(grabbable.position.x, grabbable.position.z) : 0,
                 grabbable.position.z
               );
-              objectApi.addObject('wood', localVector, zeroQuaternion, oneVector);
+              objectApi.addObject('wood-wall', localVector, zeroQuaternion, oneVector);
 
               items.destroyItem(grabbable);
 
@@ -93,8 +93,8 @@ const wood = objectApi => {
       };
       items.registerItem(this, woodItemApi);
 
-      const woodObjectApi = {
-        object: 'wood',
+      const woodWallObjectApi = {
+        object: 'wood-wall',
         objectAddedCallback(object) {
           object.on('grip', side => {
             const id = _makeId();
@@ -122,11 +122,11 @@ const wood = objectApi => {
           // XXX
         },
       };
-      objectApi.registerObject(woodObjectApi);
+      objectApi.registerObject(woodWallObjectApi);
 
       return () => {
         items.unregisterItem(this, woodItemApi);
-        objectApi.unregisterObject(woodObjectApi);
+        objectApi.unregisterObject(woodWallObjectApi);
       };
     });
 };
