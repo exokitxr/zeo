@@ -22,7 +22,7 @@ const SIDES = ['left', 'right'];
 class Objects {
   mount() {
     const {three, pose, input, elements, render, world, teleport, utils: {js: {events, bffr}, hash: {murmur}, random: {chnkr}}} = zeo;
-    const {THREE, scene} = three;
+    const {THREE, scene, camera} = three;
     const {EventEmitter} = events;
 
     const OBJECTS_SHADER = {
@@ -141,10 +141,10 @@ void main() {
     };
 
     const zeroVector = new THREE.Vector3();
+    const forwardVector = new THREE.Vector3(0, 0, -1);
     const zeroQuaternion = new THREE.Quaternion();
     const localVector = new THREE.Vector3();
     const localVector2 = new THREE.Vector3();
-    const localQuaternion = new THREE.Quaternion();
     const localEuler = new THREE.Euler();
     const localRay = new THREE.Ray();
 
@@ -551,14 +551,14 @@ void main() {
       const angleFactor = Math.min(Math.pow(Math.max(localEuler.x + Math.PI * 0.45, 0) / (Math.PI * 0.8), 2), 1);
       localEuler.x = 0;
       localEuler.z = 0;
-      localRay.start.set(position.x, 1000, position.z)
+      localRay.origin.set(position.x, 1000, position.z)
         .add(
           localVector.copy(forwardVector)
             .applyEuler(localEuler)
             .multiplyScalar(15 * angleFactor)
         )
         .sub(teleportPosition)
-        .applyQuaternion(localQuaternion.fromArray(teleportRotationInverse))
+        .applyQuaternion(teleportRotationInverse)
         .add(teleportPosition);
       localRay.direction.set(0, -1, 0);
 
@@ -566,7 +566,7 @@ void main() {
       if (targetPosition) {
         return targetPosition
           .sub(teleportPosition)
-          .applyQuaternion(localQuaternion.fromArray(teleportRotation))
+          .applyQuaternion(teleportRotation)
           .add(teleportPosition);
       } else {
         return null;
