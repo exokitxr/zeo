@@ -316,42 +316,6 @@ const tree = objectApi => {
       return treeGeometry;
     }))
     .then(() => {
-      /* const treeItemApi = {
-        asset: 'ITEM.WOOD',
-        itemAddedCallback(grabbable) {
-          const _triggerdown = e => {
-            const {side} = e;
-
-            if (grabbable.getGrabberSide() === side) {
-              const heightfieldElement = elements.getEntitiesElement().querySelector(HEIGHTFIELD_PLUGIN);
-              localVector.set(
-                grabbable.position.x,
-                heightfieldElement ? heightfieldElement.getElevation(grabbable.position.x, grabbable.position.z) : 0,
-                grabbable.position.z
-              );
-              objectApi.addObject('tree', localVector);
-
-              items.destroyItem(grabbable);
-
-              e.stopImmediatePropagation();
-            }
-          };
-          input.on('triggerdown', _triggerdown);
-
-          grabbable[dataSymbol] = {
-            cleanup: () => {
-              input.removeListener('triggerdown', _triggerdown);
-            },
-          };
-        },
-        itemRemovedCallback(grabbable) {
-          const {[dataSymbol]: {cleanup}} = grabbable;
-          cleanup();
-
-          delete grabbable[dataSymbol];
-        },
-      };
-      items.registerItem(this, treeItemApi); */
 
       const trees = [];
       let Lightmapper = null;
@@ -428,8 +392,7 @@ const tree = objectApi => {
       objectApi.registerObject(treeObjectApi);
 
       return () => {
-        // items.unregisterItem(this, treeItemApi);
-        // objectApi.unregisterObject(treeObjectApi);
+        objectApi.unregisterObject(treeObjectApi);
       };
     });
 };
