@@ -31,6 +31,8 @@ const localVector = new THREE.Vector3();
 const localVector2 = new THREE.Vector3();
 const localVector3 = new THREE.Vector3();
 const localVector4 = new THREE.Vector3();
+const localRay = new THREE.Ray();
+const localRay2 = new THREE.Ray();
 const localQuaternion = new THREE.Quaternion();
 const localMatrix = new THREE.Matrix4();
 const localBox = new THREE.Box3();
@@ -39,7 +41,8 @@ class TrackedObject {
   constructor(n, position, rotation) {
     this.n = n;
     this.position = position;
-    this.rotationInverse = rotation.inverse();
+    this.rotation = rotation;
+    this.rotationInverse = rotation.clone().inverse();
   }
 }
 
@@ -66,6 +69,38 @@ const _getHoveredTrackedObject = position => {
 
       if (localBox.containsPoint(localVector2)) {
         return [chunk.x, chunk.z, parseInt(k, 10)];
+      }
+    }
+  }
+  return null;
+};
+const _getTeleportObject = position => {
+  localRay.origin.set(position[0], 1000, position[2]);
+  localRay.direction.set(0, -1, 0);
+
+  for (let i = 0; i < zde.chunks.length; i++) {
+    const chunk = zde.chunks[i];
+
+    for (const k in chunk.trackedObjects) {
+      const trackedObject = chunk.trackedObjects[k];
+      const entry = geometries[trackedObject.n];
+      const geometry = entry.length > 0 ? entry[0] : null;
+
+      localRay2.origin.copy(localRay.origin)
+        .sub(trackedObject.position)
+        .applyQuaternion(trackedObject.rotationInverse)
+        .add(trackedObject.position);
+
+      localBox.set(
+        geometry ? localVector3.copy(geometry.boundingBox.min).add(trackedObject.position) : trackedObject.position,
+        geometry ? localVector4.copy(geometry.boundingBox.max).add(trackedObject.position) : localVector4.set(0, 0, 0)
+      );
+
+      if (localRay.intersectsBox(localBox)) {
+        return localBox.min.toArray().concat(localBox.max.toArray())
+          .concat(trackedObject.position.toArray())
+          .concat(trackedObject.rotation.toArray())
+          .concat(trackedObject.rotationInverse.toArray());
       }
     }
   }
@@ -323,8 +358,13 @@ self.onmessage = e => {
         console.warn(err);
       });
   } else if (type === 'getHoveredObjects') {
-    const {id, args} = data;
-    const result = args.map(position => _getHoveredTrackedObject(position));
+    const {id, args: positions} = data;
+    const result = positions.map(position => _getHoveredTrackedObject(position));
+    postMessage(id);
+    postMessage(result);
+  } else if (type === 'getTeleportObject') {
+    const {id, args: position} = data;
+    const result = _getTeleportObject(position);
     postMessage(id);
     postMessage(result);
   } else {

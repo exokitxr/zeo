@@ -809,6 +809,18 @@ class Zeo {
                         getHoverState(side) {
                           return teleport.getHoverState(side);
                         }
+
+                        on(event, handler, options) {
+                          return teleport.on(event, handler, options);
+                        }
+
+                        removeListener(event, handler) {
+                          return teleport.removeListener(event, handler);
+                        }
+
+                        removeAllListeners(event) {
+                          return teleport.removeAllListeners(event);
+                        }
                       }
 
                       class ZeoHandsApi {
