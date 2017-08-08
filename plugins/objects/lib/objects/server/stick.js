@@ -1,6 +1,6 @@
-const wood = objectApi => {
+const stick = objectApi => {
   return () => new Promise((accept, reject) => {
-    objectApi.registerGenerator('wood', (chunk, generateApi) => {
+    objectApi.registerGenerator('stick', (chunk, generateApi) => {
       const localVector = new generateApi.THREE.Vector3();
       const localQuaternion = new generateApi.THREE.Quaternion();
       const localEuler = new generateApi.THREE.Euler();
@@ -26,7 +26,7 @@ const wood = objectApi => {
               0,
               'YXZ'
             ));
-            generateApi.addObject(chunk, 'wood', localVector, localQuaternion, oneVector);
+            generateApi.addObject(chunk, 'stick', localVector, localQuaternion, oneVector);
           }
         }
       }
@@ -38,4 +38,4 @@ const wood = objectApi => {
   });
 };
 
-module.exports = wood;
+module.exports = stick;
