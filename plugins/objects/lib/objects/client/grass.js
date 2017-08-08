@@ -91,79 +91,8 @@ const grass = objectApi => {
       return geometry;
     }))
     .then(() => {
-      /* const grassItemApi = {
-        asset: 'ITEM.WOOD',
-        itemAddedCallback(grabbable) {
-          const _triggerdown = e => {
-            const {side} = e;
-
-            if (grabbable.getGrabberSide() === side) {
-              const heightfieldElement = elements.getEntitiesElement().querySelector(HEIGHTFIELD_PLUGIN);
-              localVector.set(
-                grabbable.position.x,
-                heightfieldElement ? heightfieldElement.getElevation(grabbable.position.x, grabbable.position.z) : 0,
-                grabbable.position.z
-              );
-              objectApi.addObject('grass', localVector);
-
-              items.destroyItem(grabbable);
-
-              e.stopImmediatePropagation();
-            }
-          };
-          input.on('triggerdown', _triggerdown);
-
-          grabbable[dataSymbol] = {
-            cleanup: () => {
-              input.removeListener('triggerdown', _triggerdown);
-            },
-          };
-        },
-        itemRemovedCallback(grabbable) {
-          const {[dataSymbol]: {cleanup}} = grabbable;
-          cleanup();
-
-          delete grabbable[dataSymbol];
-        },
-      };
-      items.registerItem(this, grassItemApi);
-
-      const grassObjectApi = {
-        object: 'grass',
-        offset: [0, 0.2/2, 0],
-        size: 0.3,
-        objectAddedCallback(object) {
-          object.on('grip', side => {
-            const id = _makeId();
-            const asset = 'ITEM.WOOD';
-            const assetInstance = items.makeItem({
-              type: 'asset',
-              id: id,
-              name: asset,
-              displayName: asset,
-              attributes: {
-                position: {value: DEFAULT_MATRIX},
-                asset: {value: asset},
-                quantity: {value: 1},
-                owner: {value: null},
-                bindOwner: {value: null},
-                physics: {value: false},
-              },
-            });
-            assetInstance.grab(side);
-
-            object.remove();
-          });
-        },
-        objectRemovedCallback(object) {
-          // XXX
-        },
-      };
-      objectApi.registerObject(grassObjectApi); */
-
       return () => {
-        // items.unregisterItem(this, grassItemApi);
-        // objectApi.unregisterObject(grassObjectApi);
+        // XXX
       };
     });
 };
