@@ -332,7 +332,7 @@ void main() {
     };
 
     class TrackedObject extends EventEmitter {
-      constructor(mesh, n, objectIndex, startIndex, endIndex, position, offset = new THREE.Vector3(), size = DEFAULT_SIZE) {
+      constructor(mesh, n, objectIndex, startIndex, endIndex, position) {
         super();
 
         this.mesh = mesh;
@@ -341,8 +341,6 @@ void main() {
         this.startIndex = startIndex;
         this.endIndex = endIndex;
         this.position = position;
-        this.offset = offset;
-        this.size = size;
       }
 
       trigger(side) {
