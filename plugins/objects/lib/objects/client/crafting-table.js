@@ -15,6 +15,8 @@ const craftingTable = objectApi => {
   const zeroQuaternion = new THREE.Quaternion();
   const oneVector = new THREE.Vector3(1, 1, 1);
   const localVector = new THREE.Vector3();
+  const localQuaternion = new THREE.Quaternion();
+  const localEuler = new THREE.Euler();
   const craftOffsetVector = new THREE.Vector3(0, 1, 0);
 
   const _requestImage = (src, name) => new Promise((accept, reject) => {
@@ -109,7 +111,11 @@ const craftingTable = objectApi => {
                 heightfieldElement ? heightfieldElement.getElevation(grabbable.position.x, grabbable.position.z) : 0,
                 grabbable.position.z
               );
-              objectApi.addObject('craftingTable', localVector, zeroQuaternion, oneVector);
+              localEuler.setFromQuaternion(grabbable.rotation, camera.rotation.order);
+              localEuler.x = 0;
+              localEuler.z = 0;
+              localQuaternion.setFromEuler(localEuler);
+              objectApi.addObject('craftingTable', localVector, localQuaternion, oneVector);
 
               items.destroyItem(grabbable);
 
