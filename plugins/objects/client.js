@@ -107,8 +107,8 @@ vec3 blueColor = vec3(0.12941176470588237, 0.5882352941176471, 0.952941176470588
 void main() {
   vec2 uv2 = vUv;
   if (vFrame.z > 0.0) {
-    //// float animationFactor = mod(worldTime, 1000.0) / 1000.0;
-    float animationFactor = (speed - abs(mod(worldTime / 1000.0, speed*2.0) - speed)) / speed;
+    float animationFactor = mod(worldTime, 1000.0) / 1000.0;
+    // float animationFactor = (speed - abs(mod(worldTime / 1000.0, speed*2.0) - speed)) / speed;
     float frameIndex = floor(animationFactor * vFrame.z);
     uv2.y = 1.0 - (((1.0 - uv2.y) - vFrame.x) / vFrame.z + vFrame.x + frameIndex * vFrame.y);
   }
