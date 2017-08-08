@@ -7,7 +7,7 @@ const DEFAULT_MATRIX = [
 
 const dataSymbol = Symbol();
 
-const wood = objectApi => {
+const stick = objectApi => {
   const {three, pose, input, render, elements, items} = zeo;
   const {THREE, scene} = three;
 
@@ -27,12 +27,12 @@ const wood = objectApi => {
   });
 
   return () => _requestImage('/archae/objects/img/wood.png')
-    .then(woodImg => objectApi.registerTexture('wood', woodImg))
-    .then(() => objectApi.registerGeometry('wood', (args) => {
+    .then(stickImg => objectApi.registerTexture('stick', stickImg))
+    .then(() => objectApi.registerGeometry('stick', (args) => {
       const {THREE, getUv} = args;
-      const woodUvs = getUv('wood');
-      const uvWidth = woodUvs[2] - woodUvs[0];
-      const uvHeight = woodUvs[3] - woodUvs[1];
+      const stickUvs = getUv('stick');
+      const uvWidth = stickUvs[2] - stickUvs[0];
+      const uvHeight = stickUvs[3] - stickUvs[1];
 
       const width = 0.5;
       const geometry = new THREE.BoxBufferGeometry(width, 0.05, 0.05, 4, 1, 1)
@@ -48,15 +48,15 @@ const wood = objectApi => {
       const uvs = geometry.getAttribute('uv').array;
       const numUvs = uvs.length / 2;
       for (let i = 0; i < numUvs; i++) {
-        uvs[i * 2 + 0] = woodUvs[0] + (uvs[i * 2 + 0] * uvWidth);
-        uvs[i * 2 + 1] = (woodUvs[1] + uvHeight) - (uvs[i * 2 + 1] * uvHeight);
+        uvs[i * 2 + 0] = stickUvs[0] + (uvs[i * 2 + 0] * uvWidth);
+        uvs[i * 2 + 1] = (stickUvs[1] + uvHeight) - (uvs[i * 2 + 1] * uvHeight);
       }
 
       return geometry;
     }))
     .then(() => {
-      const woodItemApi = {
-        asset: 'ITEM.WOOD',
+      const stickItemApi = {
+        asset: 'ITEM.STICK',
         itemAddedCallback(grabbable) {
           const _triggerdown = e => {
             const {side} = e;
@@ -68,7 +68,7 @@ const wood = objectApi => {
                 heightfieldElement ? heightfieldElement.getElevation(grabbable.position.x, grabbable.position.z) : 0,
                 grabbable.position.z
               );
-              objectApi.addObject('wood', localVector, zeroQuaternion, oneVector);
+              objectApi.addObject('stick', localVector, zeroQuaternion, oneVector);
 
               items.destroyItem(grabbable);
 
@@ -90,16 +90,16 @@ const wood = objectApi => {
           delete grabbable[dataSymbol];
         },
       };
-      items.registerItem(this, woodItemApi);
+      items.registerItem(this, stickItemApi);
 
-      const woodObjectApi = {
-        object: 'wood',
+      const stickObjectApi = {
+        object: 'stick',
         offset: [0, 0.2/2, 0],
         size: 0.3,
         objectAddedCallback(object) {
           object.on('grip', side => {
             const id = _makeId();
-            const asset = 'ITEM.WOOD';
+            const asset = 'ITEM.STICK';
             const assetInstance = items.makeItem({
               type: 'asset',
               id: id,
@@ -123,14 +123,14 @@ const wood = objectApi => {
           // XXX
         },
       };
-      objectApi.registerObject(woodObjectApi);
+      objectApi.registerObject(stickObjectApi);
 
       return () => {
-        items.unregisterItem(this, woodItemApi);
-        objectApi.unregisterObject(woodObjectApi);
+        items.unregisterItem(this, stickItemApi);
+        objectApi.unregisterObject(stickObjectApi);
       };
     });
 };
 const _makeId = () => Math.random().toString(36).substring(7);
 
-module.exports = wood;
+module.exports = stick;
