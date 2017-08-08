@@ -9,11 +9,13 @@ const dataSymbol = Symbol();
 
 const stick = objectApi => {
   const {three, pose, input, render, elements, items} = zeo;
-  const {THREE, scene} = three;
+  const {THREE, scene, camera} = three;
 
-  const localVector = new THREE.Vector3();
   const zeroQuaternion = new THREE.Quaternion();
   const oneVector = new THREE.Vector3(1, 1, 1);
+  const localVector = new THREE.Vector3();
+  const localQuaternion = new THREE.Quaternion();
+  const localEuler = new THREE.Euler();
 
   const _requestImage = src => new Promise((accept, reject) => {
     const img = new Image();
@@ -68,7 +70,11 @@ const stick = objectApi => {
                 heightfieldElement ? heightfieldElement.getElevation(grabbable.position.x, grabbable.position.z) : 0,
                 grabbable.position.z
               );
-              objectApi.addObject('stick', localVector, zeroQuaternion, oneVector);
+              localEuler.setFromQuaternion(grabbable.rotation, camera.rotation.order);
+              localEuler.x = 0;
+              localEuler.z = 0;
+              localQuaternion.setFromEuler(localEuler);
+              objectApi.addObject('stick', localVector, localQuaternion, oneVector);
 
               items.destroyItem(grabbable);
 
