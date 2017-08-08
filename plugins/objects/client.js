@@ -17,12 +17,11 @@ const objectsLib = require('./lib/objects/client/index');
 
 const NUM_POSITIONS_CHUNK = 5 * 1024 * 1024;
 const TEXTURE_SIZE = 512;
-const DEFAULT_SIZE = 0.1;
 const SIDES = ['left', 'right'];
 
 class Objects {
   mount() {
-    const {three, pose, input, elements, render, world, utils: {js: {events, bffr}, hash: {murmur}, random: {chnkr}}} = zeo;
+    const {three, pose, input, elements, render, world, teleport, utils: {js: {events, bffr}, hash: {murmur}, random: {chnkr}}} = zeo;
     const {THREE, scene} = three;
     const {EventEmitter} = events;
 
@@ -142,7 +141,12 @@ void main() {
     };
 
     const zeroVector = new THREE.Vector3();
+    const zeroQuaternion = new THREE.Quaternion();
     const localVector = new THREE.Vector3();
+    const localVector2 = new THREE.Vector3();
+    const localQuaternion = new THREE.Quaternion();
+    const localEuler = new THREE.Euler();
+    const localRay = new THREE.Ray();
 
     const cleanups = [];
     this._cleanup = () => {
@@ -165,15 +169,10 @@ void main() {
       THREE.ClampToEdgeWrapping,
       THREE.NearestFilter,
       THREE.NearestFilter,
-      // THREE.LinearMipMapLinearFilter,
-      // THREE.LinearMipMapLinearFilter,
       THREE.RGBAFormat,
       THREE.UnsignedByteType,
       1
-      // 16
     );
-// canvas.style.cssText = `position: absolute; top: 0; left: 0; background-color: white; image-rendering: pixelated;`;
-// document.body.appendChild(canvas);
 
     const objectsMaterial = new THREE.ShaderMaterial({
       uniforms: (() => {
@@ -244,6 +243,15 @@ void main() {
         type: 'getHoveredObjects',
         id,
         args: positions,
+      });
+      queues[id] = accept;
+    });
+    worker.getTeleportObject = coord => new Promise((accept, reject) => {
+      const id = _makeId();
+      worker.postMessage({
+        type: 'getTeleportObject',
+        id,
+        args: coord.toArray(),
       });
       queues[id] = accept;
     });
@@ -346,7 +354,7 @@ void main() {
       }
 
       remove() {
-        const {mesh, startIndex, endIndex} = this;
+        const {mesh, startIndex, endIndex, objectIndex} = this;
         const {geometry} = mesh;
         const indexAttribute = geometry.index;
         const indices = indexAttribute.array;
@@ -363,10 +371,7 @@ void main() {
           _unbindTrackedObject(this, objectApi);
         }
 
-        const {objectIndex, position} = this;
-        const x = Math.floor(position.x / NUM_CELLS);
-        const z = Math.floor(position.z / NUM_CELLS);
-        worker.requestRemoveObject(x, z, objectIndex);
+        worker.requestRemoveObject(mesh.offset.x, mesh.offset.y, objectIndex);
       }
     }
 
@@ -419,19 +424,9 @@ void main() {
     };
     const _bindTrackedObject = (trackedObject, objectApi) => {
       objectApi.objectAddedCallback(trackedObject);
-
-      if (objectApi.offset) {
-        trackedObject.offset.fromArray(objectApi.offset);
-      } else {
-        trackedObject.offset.copy(zeroVector);
-      }
-      trackedObject.size = objectApi.size !== undefined ? objectApi.size : DEFAULT_SIZE;
     };
     const _unbindTrackedObject = (trackedObject, objectApi) => {
       objectApi.objectRemovedCallback(trackedObject);
-
-      trackedObject.offset.copy(zeroVector);
-      trackedObject.size = DEFAULT_SIZE;
     };
 
     const _triggerdown = e => {
@@ -493,7 +488,7 @@ void main() {
       objectChunkMesh.uniforms.lightMap.value = null;
       objectChunkMesh.lightmap = null;
     };
-    const lightmapElementListener = elements.makeListener(LIGHTMAP_PLUGIN); // XXX destroy these
+    const lightmapElementListener = elements.makeListener(LIGHTMAP_PLUGIN);
     lightmapElementListener.on('add', entityElement => {
       _bindLightmapper(entityElement);
     });
@@ -502,6 +497,7 @@ void main() {
     });
 
     let craftElement = null;
+    const recipeQueue = [];
     const craftElementListener = elements.makeListener(CRAFT_PLUGIN);
     craftElementListener.on('add', entityElement => {
       craftElement = entityElement;
@@ -517,7 +513,68 @@ void main() {
     craftElementListener.on('remove', () => {
       craftElement = null;
     });
-    const recipeQueue = [];
+
+    const teleportPositions = {
+      left: null,
+      right: null,
+    };
+    const _makeTeleportSpec = () => ({
+      box: new THREE.Box3(),
+      position: new THREE.Vector3(),
+      rotation: new THREE.Quaternion(),
+      rotationInverse: new THREE.Quaternion(),
+    });
+    const teleportSpecs = {
+      left: _makeTeleportSpec(),
+      right: _makeTeleportSpec(),
+    };
+    const _teleportStart = e => {
+      const {side} = e;
+      teleportPositions[side] = new THREE.Vector3();
+    }
+    teleport.on('start', _teleportStart);
+    const _teleportEnd = e => {
+      const {side} = e;
+      teleportPositions[side] = new THREE.Vector3();
+    }
+    teleport.on('end', _teleportEnd);
+    const _teleportTarget = (position, rotation, scale, side) => {
+      teleportPositions[side].copy(position);
+
+      const teleportSpec = teleportSpecs[side];
+      const {
+        box: teleportBox,
+        position: teleportPosition,
+        rotation: teleportRotation,
+        rotationInverse: teleportRotationInverse,
+      } = teleportSpec;
+
+      localEuler.setFromQuaternion(rotation, camera.rotation.order);
+      const angleFactor = Math.min(Math.pow(Math.max(localEuler.x + Math.PI * 0.45, 0) / (Math.PI * 0.8), 2), 1);
+      localEuler.x = 0;
+      localEuler.z = 0;
+      localRay.start.set(position.x, 1000, position.z)
+        .add(
+          localVector.copy(forwardVector)
+            .applyEuler(localEuler)
+            .multiplyScalar(15 * angleFactor)
+        )
+        .sub(teleportPosition)
+        .applyQuaternion(localQuaternion.fromArray(teleportRotationInverse))
+        .add(teleportPosition);
+      localRay.direction.set(0, -1, 0);
+
+      const targetPosition = localRay.intersectBox(teleportBox, localVector2);
+      if (targetPosition) {
+        return targetPosition
+          .sub(teleportPosition)
+          .applyQuaternion(localQuaternion.fromArray(teleportRotation))
+          .add(teleportPosition);
+      } else {
+        return null;
+      }
+    };
+    teleport.addTarget(_teleportTarget);
 
     class ObjectApi {
       registerGeometry(name, fn) {
@@ -673,12 +730,12 @@ void main() {
     };
 
     const _update = () => {
-      let updating = false;
-      let lastUpdateTime = 0;
+      let updatingHover = false;
+      let lastHoverUpdateTime = 0;
       const _updateHoveredTrackedObjects = () => {
-        if (!updating) {
+        if (!updatingHover) {
           const now = Date.now();
-          const timeDiff = now - lastUpdateTime;
+          const timeDiff = now - lastHoverUpdateTime;
 
           if (timeDiff > 1000 / 30) {
             worker.getHoveredObjects()
@@ -703,20 +760,83 @@ void main() {
                   }
                 }
 
-                updating = false;
-                lastUpdateTime = Date.now();
+                updatingHover = false;
+                lastHoverUpdateTime = Date.now();
               })
               .catch(err => {
                  console.warn(err);
 
-                 updating = false;
-                 lastUpdateTime = Date.now();
+                 updatingHover = false;
+                 lastHoverUpdateTime = Date.now();
               });
 
-            updating = true;
+            updatingHover = true;
           }
         }
-        // XXX
+      };
+      let updatingTeleport = false;
+      let lastTeleportUpdateTime = 0;
+      const _updateTeleport = () => {
+        for (let i = 0; i < SIDES.length; i++) {
+          const side = SIDES[i];
+          const teleportPosition = teleportPositions[side];
+          const teleportSpec = teleportSpecs[side];
+
+          if (teleportPosition) {
+            if (!updatingTeleport) {
+              const now = Date.now();
+              const timeDiff = now - lastTeleportUpdateTime;
+
+              if (timeDiff > 1000 / 30) {
+                worker.getTeleportObject(teleportPosition)
+                  .then(teleportObjectSpec => {
+                    const teleportPosition = teleportPositions[side];
+
+                    if (teleportPosition && teleportObjectSpec) {
+                      let offset = 0;
+                      teleportSpec.box.min.fromArray(teleportObjectSpec, offset);
+                      offset += 3;
+                      teleportSpec.box.max.fromArray(teleportObjectSpec, offset);
+                      offset += 3;
+                      teleportSpec.position.fromArray(teleportObjectSpec, offset);
+                      offset += 3;
+                      teleportSpec.rotation.fromArray(teleportObjectSpec, offset);
+                      offset += 4;
+                      teleportSpec.rotationInverse.fromArray(teleportObjectSpec, offset);
+                      offset += 4;
+                    } else {
+                      teleportSpec.box.min.set(0, 0, 0);
+                      teleportSpec.box.max.set(0, 0, 0);
+                    }
+
+                    updatingTeleport = false;
+                    lastTeleportUpdateTime = Date.now();
+                  })
+                  .catch(err => {
+                     console.warn(err);
+
+                     updatingTeleport = false;
+                     lastTeleportUpdateTime = Date.now();
+                  });
+
+                updatingTeleport = true;
+              }
+            }
+          } else {
+            if (!teleportSpec.box.min.equals(zeroVector)) {
+              teleportSpec.box.min.copy(zeroVector);
+            }
+            if (!teleportSpec.box.max.equals(zeroVector)) {
+              teleportSpec.box.max.copy(zeroVector);
+            }
+            if (!teleportSpec.position.equals(zeroVector)) {
+              teleportSpec.position.copy(zeroVector);
+            }
+            if (!teleportSpec.rotationInverse.equals(zeroQuaternion)) {
+              teleportSpec.rotationInverse.copy(zeroQuaternion);
+            }
+          }
+        }
       };
       const _updateMaterial = () => {
         const worldTime = world.getWorldTime();
@@ -728,11 +848,19 @@ void main() {
       };
 
       _updateHoveredTrackedObjects();
+      _updateTeleport();
       _updateMaterial();
     };
     render.on('update', _update);
 
     cleanups.push(() => {
+      elements.destroyListener(lightmapElementListener);
+      elements.destroyListener(craftElementListener);
+
+      teleport.removeListener('start', _teleportStart);
+      teleport.removeListener('end', _teleportEnd);
+      teleport.removeTarget(_teleportTarget);
+
       input.removeListener('triggerdown', _triggerdown);
       input.removeListener('gripdown', _gripdown);
 

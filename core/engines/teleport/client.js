@@ -106,6 +106,8 @@ class Teleport {
 
           const teleportState = teleportStates[side];
           teleportState.teleporting = true;
+
+          teleportApi.emit('start');
         };
         input.on('paddown', _paddown);
         const _padup = e => {
@@ -113,6 +115,8 @@ class Teleport {
 
           const teleportState = teleportStates[side];
           teleportState.teleporting = false;
+
+          teleportApi.emit('end');
         };
         input.on('padup', _padup);
 
@@ -136,7 +140,7 @@ class Teleport {
               let targetPosition = null;
               for (let i = 0; i < targets.length; i++) {
                 const target = targets[i];
-                const tp = target(controllerPosition, controllerRotation, controllerScale);
+                const tp = target(controllerPosition, controllerRotation, controllerScale, side);
                 if (tp) {
                   targetPosition = tp;
                   break;
