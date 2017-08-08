@@ -42,8 +42,16 @@ const fire = objectApi => {
 
       const numUvs = uvs.length / 2;
       for (let i = 0; i < numUvs; i++) {
-        uvs[i * 2 + 0] = fireUvs[0] + (uvs[i * 2 + 0] * fireUvWidth);
-        uvs[i * 2 + 1] = (fireUvs[1] + fireUvHeight) - (uvs[i * 2 + 1] * fireUvHeight);
+        if (
+          i === 8 || i === 9 || i === 10 || i === 11 || // top
+          i === 12 || i === 13 || i === 14 || i === 15 // bottom
+        ) {
+          uvs[i * 2 + 0] = 1;
+          uvs[i * 2 + 1] = 0;
+        } else {
+          uvs[i * 2 + 0] = fireUvs[0] + (uvs[i * 2 + 0] * fireUvWidth);
+          uvs[i * 2 + 1] = (fireUvs[1] + fireUvHeight) - (uvs[i * 2 + 1] * fireUvHeight);
+        }
       }
 
       const numPositions = positions.length;
