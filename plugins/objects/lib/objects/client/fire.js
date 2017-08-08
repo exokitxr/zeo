@@ -36,7 +36,7 @@ const fire = objectApi => {
       const fireUvHeight = fireUvs[3] - fireUvs[1];
 
       const geometry = new THREE.BoxBufferGeometry(1, 1, 1)
-        .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.5, 0));
+        .applyMatrix(new THREE.Matrix4().makeTranslation(0, 1/2, 0));
       const positions = geometry.getAttribute('position').array;
       const uvs = geometry.getAttribute('uv').array;
 
