@@ -537,8 +537,6 @@ void main() {
     }
     teleport.on('end', _teleportEnd);
     const _teleportTarget = (position, rotation, scale, side) => {
-      teleportPositions[side].copy(position);
-
       const teleportSpec = teleportSpecs[side];
       const {
         box: teleportBox,
@@ -556,8 +554,11 @@ void main() {
           localVector.copy(forwardVector)
             .applyEuler(localEuler)
             .multiplyScalar(15 * angleFactor)
-        )
-        .sub(teleportPosition)
+        );
+
+      teleportPositions[side].copy(localRay.origin);
+
+      localRay.origin.sub(teleportPosition)
         .applyQuaternion(teleportRotationInverse)
         .add(teleportPosition);
       localRay.direction.set(0, -1, 0);
