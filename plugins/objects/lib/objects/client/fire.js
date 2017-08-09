@@ -132,7 +132,11 @@ const fire = objectApi => {
             object.remove();
           });
           object.on('collide', () => {
-            console.log('collide with fire'); // XXX
+            const healthElement = elements.getEntitiesElement().querySelector(HEALTH_PLUGIN);
+
+            if (healthElement) {
+              healthElement.hit(10);
+            }
           });
 
           object.shape = null;
