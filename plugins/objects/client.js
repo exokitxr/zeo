@@ -679,6 +679,17 @@ void main() {
       getHoveredObject(side) {
         return hoveredTrackedObjects[side];
       }
+
+      getObjectAt(position, rotation) {
+        for (let i = 0; i < trackedObjects.length; i++) {
+          const trackedObject = trackedObjects[i];
+
+          if (trackedObject !== null && trackedObject.position.equals(position) && trackedObject.rotation.equals(rotation)) {
+            return trackedObject;
+          }
+        }
+        return null;
+      }
     }
     const objectApi = new ObjectApi();
 
