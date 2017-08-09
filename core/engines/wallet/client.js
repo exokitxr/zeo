@@ -189,6 +189,7 @@ class Wallet {
                 physics,
                 matrix,
               } = assetSpec;
+
               _addAsset(id, asset, n, physics, matrix);
             }
           } else if (type === 'addAsset') {
@@ -199,15 +200,14 @@ class Wallet {
               physics,
               matrix,
             } = args;
+
             _addAsset(id, asset, n, physics, matrix);
           } else if (type === 'removeAsset') {
             const {
               id,
             } = args;
 
-            const assetInstance = assetInstances.splice(assetInstances.findIndex(assetInstance => assetInstance.id === id), 1)[0];
-            hand.destroyGrabbable(assetInstance);
-            assetInstance.emit('destroy');
+            assetsMesh.removeAssetInstance(id);
           } else {
             console.warn('wallet got unknown message type:', JSON.stringify(type));
           }
@@ -279,9 +279,8 @@ class Wallet {
               switch (t) {
                 case 'grab': {
                   const {userId, side} = e;
-                  const hoverState = hoverStates[side];
 
-                  hoverState.worldGrabAsset = this;
+                  hoverStates[side].worldGrabAsset = this;
 
                   super.emit(t, {
                     userId,
@@ -295,10 +294,8 @@ class Wallet {
                 }
                 case 'release': {
                   const {userId, side} = e;
-                  const hoverState = hoverStates[side];
-                  const {id} = this;
 
-                  hoverState.worldGrabAsset = null;
+                  hoverStates[side].worldGrabAsset = null;
 
                   super.emit(t, {
                     userId,
@@ -312,6 +309,20 @@ class Wallet {
                 }
                 case 'update': {
                   super.emit(t, e);
+
+                  break;
+                }
+                case 'destroy': {
+                  const {userId, side} = e;
+                  if (userId) {
+                    hoverStates[side].worldGrabAsset = null;
+                  }
+
+                  super.emit(t, {
+                    userId,
+                    side,
+                    item: this,
+                  });
 
                   break;
                 }
@@ -479,7 +490,6 @@ class Wallet {
           mesh.removeAssetInstance = id => {
             const assetInstance = assetInstances.splice(assetInstances.findIndex(assetInstance => assetInstance.id === id), 1)[0];
             hand.destroyGrabbable(assetInstance);
-            assetInstance.emit('destroy');
 
             const {mesh} = assetInstance;
             scene.remove(mesh);
