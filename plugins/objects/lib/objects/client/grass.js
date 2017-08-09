@@ -33,6 +33,7 @@ const grass = objectApi => {
       const uvHeight = grassUvs[3] - grassUvs[1];
 
       const NUM_POSITIONS = 20 * 1024;
+      const zeroVector = new THREE.Vector3();
       const upVector = new THREE.Vector3(0, 1, 0);
 
       const position = new THREE.Vector3();
@@ -87,6 +88,7 @@ const grass = objectApi => {
       geometry.addAttribute('position', new THREE.BufferAttribute(new Float32Array(positions.buffer, positions.byteOffset, attributeIndex), 3));
       geometry.addAttribute('uv', new THREE.BufferAttribute(new Float32Array(uvs.buffer, uvs.byteOffset, uvIndex), 2));
       geometry.setIndex(new THREE.BufferAttribute(new Uint32Array(indices.buffer, indices.byteOffset, indexIndex), 1));
+      geometry.boundingBox = new THREE.Box3(zeroVector, zeroVector);
 
       return geometry;
     }))

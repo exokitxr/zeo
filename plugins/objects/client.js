@@ -781,6 +781,21 @@ void main() {
           const teleportPosition = teleportPositions[side];
           const teleportSpec = teleportSpecs[side];
 
+          const _clear = () => {
+            if (!teleportSpec.box.min.equals(zeroVector)) {
+              teleportSpec.box.min.copy(zeroVector);
+            }
+            if (!teleportSpec.box.max.equals(zeroVector)) {
+              teleportSpec.box.max.copy(zeroVector);
+            }
+            if (!teleportSpec.position.equals(zeroVector)) {
+              teleportSpec.position.copy(zeroVector);
+            }
+            if (!teleportSpec.rotationInverse.equals(zeroQuaternion)) {
+              teleportSpec.rotationInverse.copy(zeroQuaternion);
+            }
+          };
+
           if (teleportPosition) {
             if (!updatingTeleport) {
               const now = Date.now();
@@ -804,8 +819,7 @@ void main() {
                       teleportSpec.rotationInverse.fromArray(teleportObjectSpec, offset);
                       offset += 4;
                     } else {
-                      teleportSpec.box.min.set(0, 0, 0);
-                      teleportSpec.box.max.set(0, 0, 0);
+                      _clear();
                     }
 
                     updatingTeleport = false;
@@ -822,18 +836,7 @@ void main() {
               }
             }
           } else {
-            if (!teleportSpec.box.min.equals(zeroVector)) {
-              teleportSpec.box.min.copy(zeroVector);
-            }
-            if (!teleportSpec.box.max.equals(zeroVector)) {
-              teleportSpec.box.max.copy(zeroVector);
-            }
-            if (!teleportSpec.position.equals(zeroVector)) {
-              teleportSpec.position.copy(zeroVector);
-            }
-            if (!teleportSpec.rotationInverse.equals(zeroQuaternion)) {
-              teleportSpec.rotationInverse.copy(zeroQuaternion);
-            }
+            _clear();
           }
         }
       };
