@@ -235,6 +235,28 @@ class Hand {
             }
           }
 
+          destroy() {
+            const {userId, side} = this;
+
+            for (let i = 0; i < SIDES.length; i++) {
+              const side = SIDES[i];
+              const grabState = grabStates[side];
+              const {grabbedGrabbable} = grabState;
+
+              if (grabbedGrabbable === this) {
+                grabState.grabbedGrabbable = null;
+              }
+            }
+
+            const e = {
+              userId,
+              side,
+              grabbable: this,
+            };
+            this.emit('destroy', e);
+            handApi.emit('destroy', e);
+          }
+
           setState(position, rotation, scale) {
             if (!this.position.equals(position) || !this.rotation.equals(rotation) || !this.scale.equals(scale)) {
               this.position.copy(position);
@@ -385,10 +407,7 @@ class Hand {
             const {n} = grabbable;
 
             if (grabbables[n]) {
-              if (grabbable.isGrabbed()) {
-                grabbable.release();
-              }
-
+              grabbable.destroy();
               grabbable.remove();
 
               delete grabbables[n];
