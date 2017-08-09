@@ -232,7 +232,10 @@ function _makeChunkGeometry(chunk) {
         _copyIndices(newIndices, indices, indexIndex, attributeIndex / 3);
         const newObjectsHeader = Uint32Array.from([n, index, indexIndex, indexIndex + newIndices.length]);
         objectsUint32Array.set(newObjectsHeader, objectIndex);
-        const newObjectsBody = Float32Array.from([matrix[0], matrix[1], matrix[2]]);
+        const newObjectsBody = Float32Array.from([
+          matrix[0], matrix[1], matrix[2],
+          matrix[3], matrix[4], matrix[5], matrix[6],
+        ]);
         objectsFloat32Array.set(newObjectsBody, objectIndex + newObjectsHeader.length);
 
         attributeIndex += newPositions.length;
