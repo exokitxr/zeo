@@ -36,6 +36,7 @@ const localRay2 = new THREE.Ray();
 const localQuaternion = new THREE.Quaternion();
 const localMatrix = new THREE.Matrix4();
 const localBox = new THREE.Box3();
+const localBox2 = new THREE.Box3();
 
 class TrackedObject {
   constructor(n, position, rotation) {
@@ -78,6 +79,10 @@ const _getTeleportObject = position => {
   localRay.origin.set(position[0], 1000, position[2]);
   localRay.direction.set(0, -1, 0);
 
+  let topY = -Infinity;
+  let topTrackedObject = null;
+  let topBox = null;
+
   for (let i = 0; i < zde.chunks.length; i++) {
     const chunk = zde.chunks[i];
 
@@ -93,19 +98,27 @@ const _getTeleportObject = position => {
       localRay2.direction.copy(localRay.direction);
 
       localBox.set(
-        geometry ? localVector3.copy(geometry.boundingBox.min).add(trackedObject.position) : trackedObject.position,
-        geometry ? localVector4.copy(geometry.boundingBox.max).add(trackedObject.position) : localVector4.set(0, 0, 0)
+        geometry ? localVector2.copy(geometry.boundingBox.min).add(trackedObject.position) : trackedObject.position,
+        geometry ? localVector3.copy(geometry.boundingBox.max).add(trackedObject.position) : localVector3.set(0, 0, 0)
       );
 
-      if (localRay2.intersectsBox(localBox)) {
-        return localBox.min.toArray().concat(localBox.max.toArray())
-          .concat(trackedObject.position.toArray())
-          .concat(trackedObject.rotation.toArray())
-          .concat(trackedObject.rotationInverse.toArray());
+      const intersectionPoint = localRay2.intersectBox(localBox, localVector4);
+      if (intersectionPoint && (topTrackedObject === null || intersectionPoint.y > topY)) {
+        topY = intersectionPoint.y;
+        topTrackedObject = trackedObject;
+        topBox = localBox2.copy(localBox);
       }
     }
   }
-  return null;
+
+  if (topTrackedObject !== null) {
+    return topBox.min.toArray().concat(topBox.max.toArray())
+      .concat(topTrackedObject.position.toArray())
+      .concat(topTrackedObject.rotation.toArray())
+      .concat(topTrackedObject.rotationInverse.toArray());
+  } else {
+    return null;
+  }
 };
 
 const queue = [];
