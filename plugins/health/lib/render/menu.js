@@ -9,7 +9,7 @@ const getHudSrc = ({hp, totalHp}) => {
       <div style="margin-right: auto;">HP</div>
       <div>${hp}/${totalHp}</div>
     </div>
-    <div style="position: relative; display: flex; height: 30px; width: 100%; background-color: #FFF;">
+    <div style="position: relative; display: flex; height: 30px; width: 100%; background-color: #FFF; border: 5px solid #000; box-sizing: border-box;">
       <div style="position: absolute; left: 0; height: 100%; width: ${(hp / totalHp) * 100}%; background-color: #4CAF50;"></div>
     </div>
   </div>`;

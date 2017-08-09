@@ -135,7 +135,7 @@ const fire = objectApi => {
             const healthElement = elements.getEntitiesElement().querySelector(HEALTH_PLUGIN);
 
             if (healthElement) {
-              healthElement.hit(10);
+              healthElement.hurt(10);
             }
           });
 

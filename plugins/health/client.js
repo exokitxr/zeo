@@ -27,6 +27,10 @@ const HEALTH_SHADER = {
       type: 'f',
       value: 0,
     },
+    heal: {
+      type: 'f',
+      value: 0,
+    },
   },
   vertexShader: [
 		"uniform float worldTime;",
@@ -52,14 +56,19 @@ float noise(float x) {
     "uniform sampler2D texture;",
     "uniform vec4 backgroundColor;",
 		"uniform float hit;",
+		"uniform float heal;",
     "varying vec2 vUv;",
     "vec3 redColor = vec3(0.9568627450980393, 0.2627450980392157, 0.21176470588235294);",
+    "vec3 whiteColor = vec3(1.0);",
     "void main() {",
     "  vec4 sample = texture2D(texture, vUv);",
     "  if (sample.a > 0.0) {",
     "    vec3 diffuse = (sample.rgb * sample.a) + (backgroundColor.rgb * (1.0 - sample.a));",
     "    if (hit > 0.0) {",
     "      diffuse = mix(diffuse, redColor, 0.7);",
+    "    }",
+    "    if (heal > 0.0) {",
+    "      diffuse = mix(diffuse, whiteColor, 0.5);",
     "    }",
     "    gl_FragColor = vec4(diffuse, (backgroundColor.a >= 0.5) ? 1.0 : sample.a);",
     "  } else {",
@@ -207,12 +216,12 @@ class Health {
           hudMesh.updateMatrixWorld();
 
           let lastHitTime = 0;
-          const _hit = hp => {
+          const _hurt = hp => {
             const now = Date.now();
             const timeDiff = now - lastHitTime;
 
-            if (timeDiff > 1000) {
-              healthState.hp -= hp;
+            if (timeDiff > 1000 && healthState.hp > 0) {
+              healthState.hp = Math.max(healthState.hp - hp, 0);
               hudMesh.page.update();
 
               lastHitTime = now;
@@ -224,10 +233,24 @@ class Health {
               return false;
             }
           };
+          let lastHealTime = 0;
+          const _heal = hp => {
+            if (healthState.hp < healthState.totalHp) {
+              healthState.hp = Math.min(healthState.hp + hp, healthState.totalHp);
+              hudMesh.page.update();
+
+              lastHealTime = Date.now();
+
+              return true;
+            } else {
+              return false;
+            }
+          };
 
           const healthEntity = {
             entityAddedCallback(entityElement) {
-              entityElement.hit = _hit;
+              entityElement.hurt = _hurt;
+              entityElement.heal = _heal;
             },
             entityRemovedCallback(entityElement) {
               // XXX
@@ -242,7 +265,7 @@ class Health {
             const {worldPosition: controllerPosition} = gamepad;
 
             if (_isInBody(controllerPosition)) {
-              if (_hit(1)) {
+              if (_hurt(1)) {
                 e.stopImmediatePropagation();
               }
             }
@@ -254,8 +277,7 @@ class Health {
             const now = Date.now();
 
             const _updateHudMeshVisibility = () => {
-              const timeDiff = now - lastHitTime;
-              hudMesh.visible = timeDiff < 3000;
+              hudMesh.visible = ((now - lastHitTime) < 3000) || ((now - lastHealTime) < 3000);
             };
             const _updateHudMeshAlignment = () => {
               const {position: cameraPosition, rotation: cameraRotation, scale: cameraScale} = _decomposeObjectMatrixWorld(camera);
@@ -266,8 +288,11 @@ class Health {
             const _updateHudMeshUniforms = () => {
               hudMesh.material.uniforms.worldTime.value = world.getWorldTime();
 
-              const timeDiff = now - lastHitTime;
-              hudMesh.material.uniforms.hit.value = (timeDiff < 150) ? ((150 - timeDiff) / 150) : 0;
+              const hitTimeDiff = now - lastHitTime;
+              hudMesh.material.uniforms.hit.value = (hitTimeDiff < 150) ? ((150 - hitTimeDiff) / 150) : 0;
+
+              const healTimeDiff = now - lastHealTime;
+              hudMesh.material.uniforms.heal.value = (healTimeDiff < 150) ? ((150 - healTimeDiff) / 150) : 0;
             };
 
             _updateHudMeshVisibility();
