@@ -10,7 +10,7 @@ const menuRenderer = require('./lib/render/menu');
 
 class Health {
   mount() {
-    const {three: {THREE, scene, camera}, pose, render, ui, utils: {geometry: geometryUtils}} = zeo;
+    const {three: {THREE, scene, camera}, pose, render, input, ui, utils: {geometry: geometryUtils}} = zeo;
 
     let live = true;
     this.cleanup = () => {
@@ -24,6 +24,36 @@ class Health {
       const scale = new THREE.Vector3();
       matrix.decompose(position, rotation, scale);
       return {position, rotation, scale};
+    };
+
+    const _isInBody = p => {
+      const vrMode = pose.getVrMode();
+
+      if (vrMode === 'hmd') {
+        const {hmd} = pose.getStatus();
+        const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmd;
+        const hmdEuler = new THREE.Euler().setFromQuaternion(hmdRotation, camera.rotation.order);
+        hmdEuler.z = 0;
+        const hmdQuaternion = new THREE.Quaternion().setFromEuler(hmdEuler);
+        const bodyPosition = hmdPosition.clone()
+          .add(
+            new THREE.Vector3(0, -0.5, 0)
+              .applyQuaternion(hmdQuaternion)
+          );
+        return p.distanceTo(bodyPosition) < 0.35;
+      } else if (vrMode === 'keyboard') {
+        const {hmd: {worldPosition, worldRotation}} = pose.getStatus();
+        const hmdEuler = new THREE.Euler().setFromQuaternion(worldRotation, camera.rotation.order);
+        hmdEuler.x = 0;
+        hmdEuler.z = 0;
+        const hmdQuaternion = new THREE.Quaternion().setFromEuler(hmdEuler);
+        const bodyPosition = worldPosition.clone()
+          .add(
+            new THREE.Vector3(0, -0.4, 0.2)
+              .applyQuaternion(hmdQuaternion)
+          );
+        return p.distanceTo(bodyPosition) < 0.35;
+      }
     };
 
     const _requestAudio = src => new Promise((accept, reject) => {
@@ -86,7 +116,7 @@ class Health {
               worldWidth: WORLD_WIDTH,
               worldHeight: WORLD_HEIGHT,
             });
-            // mesh.visible = false;
+            mesh.visible = false;
 
             const _align = (position, rotation, scale, lerpFactor) => {
               const targetPosition = position.clone().add(
@@ -127,19 +157,44 @@ class Health {
           scene.add(hudMesh);
           hudMesh.updateMatrixWorld();
 
-          const _renderHudMesh = () => {
+          /* const _renderHudMesh = () => {
             liveState.live = true;
             liveState.health = 100;
             hudMesh.page.update();
+          }; */
+
+          let lastOpenTime = 0;
+          const _triggerdown = e => {
+            const {side} = e;
+            const {gamepads} = pose.getStatus();
+            const gamepad = gamepads[side];
+            const {worldPosition: controllerPosition} = gamepad;
+
+            if (_isInBody(controllerPosition)) {
+              lastOpenTime = Date.now();
+
+              e.stopImmediatePropagation();
+            }
           };
+          input.on('triggerdown', _triggerdown);
 
           let lastUpdateTime = 0;
           const _update = () => {
-            const {position: cameraPosition, rotation: cameraRotation, scale: cameraScale} = _decomposeObjectMatrixWorld(camera);
             const now = Date.now();
-            const timeDiff = now - lastUpdateTime;
-            const lerpFactor = timeDiff * 0.02;
-            hudMesh.align(cameraPosition, cameraRotation, cameraScale, lerpFactor);
+
+            const _updateHudMeshVisibility = () => {
+              const timeDiff = now - lastOpenTime;
+              hudMesh.visible = timeDiff < 3000;
+            };
+            const _updateHudMeshAlignment = () => {
+              const {position: cameraPosition, rotation: cameraRotation, scale: cameraScale} = _decomposeObjectMatrixWorld(camera);
+              const timeDiff = now - lastUpdateTime;
+              const lerpFactor = timeDiff * 0.02;
+              hudMesh.align(cameraPosition, cameraRotation, cameraScale, lerpFactor);
+            };
+
+            _updateHudMeshVisibility();
+            _updateHudMeshAlignment();
 
             lastUpdateTime = now;
           };
@@ -150,6 +205,7 @@ class Health {
             hudMesh.destroy();
             ui.removePage(hudMesh.page);
 
+            input.removeListener('triggerdown', _triggerdown);
             render.removeListener('update', _update);
           };
         }
