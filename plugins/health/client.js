@@ -1,3 +1,4 @@
+const sfxr = require('sfxr');
 const {
   WIDTH,
   HEIGHT,
@@ -56,33 +57,7 @@ class Health {
       }
     };
 
-    const _requestAudio = src => new Promise((accept, reject) => {
-      const audio = document.createElement('audio');
-
-      const _cleanup = () => {
-        audio.oncanplay = null;
-        audio.onerror = null;
-
-        document.body.removeChild(audio);
-      };
-
-      audio.oncanplay = () => {
-        _cleanup();
-
-        accept(audio);
-      };
-      audio.onerror = () => {
-        _cleanup();
-
-        reject(audio);
-      };
-      audio.src = src;
-
-      audio.style.cssText = 'position: absolute; visibility: hidden';
-      document.body.appendChild(audio);
-    });
-
-    return _requestAudio('archae/health/sfx/hit.ogg')
+    return sfxr.requestSfx('archae/health/sfx/hit.ogg')
       .then(hitSfx => {
         if (live) {
           const healthState = {
@@ -172,6 +147,8 @@ class Health {
 
             if (_isInBody(controllerPosition)) {
               lastOpenTime = Date.now();
+
+              hitSfx.trigger();
 
               e.stopImmediatePropagation();
             }
