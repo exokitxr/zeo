@@ -37,6 +37,7 @@ const localQuaternion = new THREE.Quaternion();
 const localMatrix = new THREE.Matrix4();
 const localBox = new THREE.Box3();
 const localBox2 = new THREE.Box3();
+const bodyOffsetVector = new THREE.Vector3(0, -1.6 / 2, 0);
 
 class TrackedObject {
   constructor(n, position, rotation) {
@@ -116,6 +117,48 @@ const _getTeleportObject = position => {
       .concat(topTrackedObject.position.toArray())
       .concat(topTrackedObject.rotation.toArray())
       .concat(topTrackedObject.rotationInverse.toArray());
+  } else {
+    return null;
+  }
+};
+const _getBodyObject = position => {
+  const bodyCenterPoint = localVector.fromArray(position).add(bodyOffsetVector);
+
+  let topDistance = Infinity;
+  let topChunkX = null;
+  let topChunkZ = null;
+  let topN = null;
+
+  for (let i = 0; i < zde.chunks.length; i++) {
+    const chunk = zde.chunks[i];
+
+    for (const k in chunk.trackedObjects) {
+      const trackedObject = chunk.trackedObjects[k];
+      const entry = geometries[trackedObject.n];
+      const geometry = entry.length > 0 ? entry[0] : null;
+
+      localVector2.copy(bodyCenterPoint)
+        .sub(trackedObject.position)
+        .applyQuaternion(trackedObject.rotationInverse)
+        .add(trackedObject.position);
+
+      localBox.set(
+        geometry ? localVector3.copy(geometry.boundingBox.min).add(trackedObject.position) : trackedObject.position,
+        geometry ? localVector4.copy(geometry.boundingBox.max).add(trackedObject.position) : localVector4.set(0, 0, 0)
+      );
+
+      const distance = localBox.distanceToPoint(localVector2);
+      if (distance < 0.3 && (distance < topDistance)) {
+        topDistance = distance;
+        topChunkX = chunk.x;
+        topChunkZ = chunk.z;
+        topN = parseInt(k, 10);
+      }
+    }
+  }
+
+  if (topN !== null) {
+    return [topChunkX, topChunkZ, topN];
   } else {
     return null;
   }
@@ -382,6 +425,11 @@ self.onmessage = e => {
   } else if (type === 'getTeleportObject') {
     const {id, args: position} = data;
     const result = _getTeleportObject(position);
+    postMessage(id);
+    postMessage(result);
+  } else if (type === 'getBodyObject') {
+    const {id, args: position} = data;
+    const result = _getBodyObject(position);
     postMessage(id);
     postMessage(result);
   } else {

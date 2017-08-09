@@ -1,5 +1,6 @@
 const HEIGHTFIELD_PLUGIN = 'plugins-heightfield';
 const LIGHTMAP_PLUGIN = 'plugins-lightmap';
+const HEALTH_PLUGIN = 'plugins-health';
 const DEFAULT_MATRIX = [
   0, 0, 0,
   0, 0, 0, 1,
@@ -129,6 +130,9 @@ const fire = objectApi => {
             assetInstance.grab(side);
 
             object.remove();
+          });
+          object.on('collide', () => {
+            console.log('collide with fire'); // XXX
           });
 
           object.shape = null;
