@@ -213,14 +213,15 @@ class Hand {
               this.userId = null;
               this.side = null;
 
-              SIDES.forEach(side => {
+              for (let i = 0; i < SIDES.length; i++) {
+                const side = SIDES[i];
                 const grabState = grabStates[side];
                 const {grabbedGrabbable} = grabState;
 
                 if (grabbedGrabbable === this) {
                   grabState.grabbedGrabbable = null;
                 }
-              });
+              }
 
               _broadcastObject('release', [n]);
 
