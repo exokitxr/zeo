@@ -174,6 +174,12 @@ class Objects {
             }
             app.use('/archae/objects/img', serveObjectsImg);
 
+            const objectsSfxStatic = express.static(path.join(__dirname, 'lib', 'sfx'));
+            function serveObjectsSfx(req, res, next) {
+              objectsSfxStatic(req, res, next);
+            }
+            app.use('/archae/objects/sfx', serveObjectsSfx);
+
             app.get('/archae/objects/chunks', (req, res, next) => {
               const {query: {x: xs, z: zs}} = req;
               const x = parseInt(xs, 10);
@@ -267,7 +273,7 @@ class Objects {
               }
 
               function removeMiddlewares(route, i, routes) {
-                if (route.handle.name === 'serveObjectsImg') {
+                if (route.handle.name === 'serveObjectsImg' || route.handle.name === 'serveObjectsSfx') {
                   routes.splice(i, 1);
                 }
                 if (route.route) {
