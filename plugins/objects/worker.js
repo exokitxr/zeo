@@ -90,13 +90,14 @@ const _getTeleportObject = position => {
         .sub(trackedObject.position)
         .applyQuaternion(trackedObject.rotationInverse)
         .add(trackedObject.position);
+      localRay2.direction.copy(localRay.direction);
 
       localBox.set(
         geometry ? localVector3.copy(geometry.boundingBox.min).add(trackedObject.position) : trackedObject.position,
         geometry ? localVector4.copy(geometry.boundingBox.max).add(trackedObject.position) : localVector4.set(0, 0, 0)
       );
 
-      if (localRay.intersectsBox(localBox)) {
+      if (localRay2.intersectsBox(localBox)) {
         return localBox.min.toArray().concat(localBox.max.toArray())
           .concat(trackedObject.position.toArray())
           .concat(trackedObject.rotation.toArray())
