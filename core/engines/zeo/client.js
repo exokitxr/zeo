@@ -541,6 +541,10 @@ class Zeo {
                           const player = cyborg.getPlayer();
                           return player.getControllerAngularVelocity(side);
                         }
+
+                        getVrMode() {
+                          return bootstrap.getVrMode();
+                        }
                       }
 
                       class ZeoInputApi {
