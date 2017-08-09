@@ -425,8 +425,7 @@ class Biolumi {
                 const page = new Page(spec, type, state, color, width, height, worldWidth, worldHeight, layer);
                 this.page = page;
 
-                const {mesh} = page;
-                return mesh;
+                return page.mesh;
               } else {
                 return null;
               }

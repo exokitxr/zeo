@@ -4,7 +4,7 @@ const {
 } = require('../constants/constants');
 
 const getHudSrc = ({hp, totalHp}) => {
-  return `<div style="display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; color: #FFF; flex-direction: column;">
+  return `<div style="display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; padding: 0 30px; color: #FFF; flex-direction: column; box-sizing: border-box;">
     <div style="display: flex; font-family: Consolas, 'Liberation Mono', Menlo, Courier, monospace; font-size: 60px; line-height: 1.4; font-weight: 600;">
       <div style="margin-right: auto;">HP</div>
       <div>${hp}/${totalHp}</div>

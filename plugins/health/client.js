@@ -9,9 +9,73 @@ const {
 } = require('./lib/constants/constants');
 const menuRenderer = require('./lib/render/menu');
 
+const HEALTH_SHADER = {
+  uniforms: {
+    texture: {
+      type: 't',
+      value: null,
+    },
+    backgroundColor: {
+      type: '4f',
+      value: null,
+    },
+    worldTime: {
+      type: 'f',
+      value: 0,
+    },
+    hit: {
+      type: 'f',
+      value: 0,
+    },
+  },
+  vertexShader: [
+		"uniform float worldTime;",
+		"uniform float hit;",
+		"varying vec2 vUv;",
+`float hash(float n) { return fract(sin(n) * 1e4); }
+float noise(float x) {
+	float i = floor(x);
+	float f = fract(x);
+	float u = f * f * (3.0 - 2.0 * f);
+	return mix(hash(i), hash(i + 1.0), u);
+}`,
+    "void main() {",
+    "  gl_Position = projectionMatrix * modelViewMatrix * vec4(position.xyz, 1.0);",
+    "  vUv = uv;",
+    "  if (hit > 0.0) {",
+    "    float frame = mod(worldTime, 60000.0);",
+    "    vUv += vec2(-1.0 + noise(frame) * 2.0, -1.0 + noise(frame + 1000.0) * 2.0) * 0.15 * hit;",
+    "  }",
+    "}"
+  ].join("\n"),
+  fragmentShader: [
+    "uniform sampler2D texture;",
+    "uniform vec4 backgroundColor;",
+		"uniform float hit;",
+    "varying vec2 vUv;",
+    "vec3 redColor = vec3(0.9568627450980393, 0.2627450980392157, 0.21176470588235294);",
+    "void main() {",
+    "  vec4 sample = texture2D(texture, vUv);",
+    "  if (sample.a > 0.0) {",
+    "    vec3 diffuse = (sample.rgb * sample.a) + (backgroundColor.rgb * (1.0 - sample.a));",
+    "    if (hit > 0.0) {",
+    "      diffuse = mix(diffuse, redColor, 0.7);",
+    "    }",
+    "    gl_FragColor = vec4(diffuse, (backgroundColor.a >= 0.5) ? 1.0 : sample.a);",
+    "  } else {",
+    "    if (backgroundColor.a >= 0.5) {",
+    "      gl_FragColor = backgroundColor;",
+    "    } else {",
+    "      discard;",
+    "    }",
+    "  }",
+    "}",
+  ].join("\n")
+};
+
 class Health {
   mount() {
-    const {three: {THREE, scene, camera}, pose, render, input, ui, utils: {geometry: geometryUtils}} = zeo;
+    const {three: {THREE, scene, camera}, pose, render, input, world, ui, utils: {geometry: geometryUtils}} = zeo;
 
     let live = true;
     this.cleanup = () => {
@@ -91,6 +155,16 @@ class Health {
               worldWidth: WORLD_WIDTH,
               worldHeight: WORLD_HEIGHT,
             });
+            const uniforms = THREE.UniformsUtils.clone(HEALTH_SHADER.uniforms);
+            uniforms.texture.value = mesh.material.uniforms.texture.value;
+            uniforms.backgroundColor.value = mesh.material.uniforms.backgroundColor.value;
+            const healthMaterial = new THREE.ShaderMaterial({
+              uniforms: uniforms,
+              vertexShader: HEALTH_SHADER.vertexShader,
+              fragmentShader: HEALTH_SHADER.fragmentShader,
+              transparent: true,
+            });
+            mesh.material = healthMaterial;
             mesh.visible = false;
 
             const _align = (position, rotation, scale, lerpFactor) => {
@@ -169,9 +243,16 @@ class Health {
               const lerpFactor = timeDiff * 0.02;
               hudMesh.align(cameraPosition, cameraRotation, cameraScale, lerpFactor);
             };
+            const _updateHudMeshUniforms = () => {
+              hudMesh.material.uniforms.worldTime.value = world.getWorldTime();
+
+              const timeDiff = now - lastOpenTime;
+              hudMesh.material.uniforms.hit.value = (timeDiff < 150) ? ((150 - timeDiff) / 150) : 0;
+            };
 
             _updateHudMeshVisibility();
             _updateHudMeshAlignment();
+            _updateHudMeshUniforms();
 
             lastUpdateTime = now;
           };
