@@ -75,7 +75,7 @@ float noise(float x) {
 
 class Health {
   mount() {
-    const {three: {THREE, scene, camera}, pose, render, input, world, ui, utils: {geometry: geometryUtils}} = zeo;
+    const {three: {THREE, scene, camera}, pose, render, input, elements, world, ui, utils: {geometry: geometryUtils}} = zeo;
 
     let live = true;
     this.cleanup = () => {
@@ -206,13 +206,35 @@ class Health {
           scene.add(hudMesh);
           hudMesh.updateMatrixWorld();
 
-          /* const _renderHudMesh = () => {
-            liveState.live = true;
-            liveState.health = 100;
-            hudMesh.page.update();
-          }; */
+          let lastHitTime = 0;
+          const _hit = hp => {
+            const now = Date.now();
+            const timeDiff = now - lastHitTime;
 
-          let lastOpenTime = 0;
+            if (timeDiff > 1000) {
+              healthState.hp -= hp;
+              hudMesh.page.update();
+
+              lastHitTime = now;
+
+              hitSfx.trigger();
+
+              return true;
+            } else {
+              return false;
+            }
+          };
+
+          const healthEntity = {
+            entityAddedCallback(entityElement) {
+              entityElement.hit = _hit;
+            },
+            entityRemovedCallback(entityElement) {
+              // XXX
+            },
+          };
+          elements.registerEntity(this, healthEntity);
+
           const _triggerdown = e => {
             const {side} = e;
             const {gamepads} = pose.getStatus();
@@ -220,11 +242,9 @@ class Health {
             const {worldPosition: controllerPosition} = gamepad;
 
             if (_isInBody(controllerPosition)) {
-              lastOpenTime = Date.now();
-
-              hitSfx.trigger();
-
-              e.stopImmediatePropagation();
+              if (_hit(1)) {
+                e.stopImmediatePropagation();
+              }
             }
           };
           input.on('triggerdown', _triggerdown);
@@ -234,7 +254,7 @@ class Health {
             const now = Date.now();
 
             const _updateHudMeshVisibility = () => {
-              const timeDiff = now - lastOpenTime;
+              const timeDiff = now - lastHitTime;
               hudMesh.visible = timeDiff < 3000;
             };
             const _updateHudMeshAlignment = () => {
@@ -246,7 +266,7 @@ class Health {
             const _updateHudMeshUniforms = () => {
               hudMesh.material.uniforms.worldTime.value = world.getWorldTime();
 
-              const timeDiff = now - lastOpenTime;
+              const timeDiff = now - lastHitTime;
               hudMesh.material.uniforms.hit.value = (timeDiff < 150) ? ((150 - timeDiff) / 150) : 0;
             };
 
