@@ -89,10 +89,16 @@ const wood = objectApi => {
               const hoveredObject = objectApi.getHoveredObject(side);
 
               if (hoveredObject && (hoveredObject.is('wood-wall') || hoveredObject.is('wood-wall-2'))) {
-                hoveredObject.remove();
+                localVector.copy(hoveredObject.position).add(upVector);
 
-                objectApi.addObject('wood-wall-2', hoveredObject.position, hoveredObject.rotation, oneVector);
-                objectApi.addObject('wood-wall-2', localVector.copy(hoveredObject.position).add(upVector), hoveredObject.rotation, oneVector);
+                if (!objectApi.getObjectAt(localVector, hoveredObject.rotation)) {
+                  hoveredObject.remove();
+                  objectApi.addObject('wood-wall-2', hoveredObject.position, hoveredObject.rotation, oneVector);
+
+                  objectApi.addObject('wood-wall-2', localVector, hoveredObject.rotation, oneVector);
+
+                  items.destroyItem(grabbable);
+                }
               } else {
                 const heightfieldElement = elements.getEntitiesElement().querySelector(HEIGHTFIELD_PLUGIN);
                 localVector.set(
@@ -105,9 +111,9 @@ const wood = objectApi => {
                 localEuler.z = 0;
                 localQuaternion.setFromEuler(localEuler);
                 objectApi.addObject('wood-wall', localVector, localQuaternion, oneVector);
-              }
 
-              items.destroyItem(grabbable);
+                items.destroyItem(grabbable);
+              }
 
               e.stopImmediatePropagation();
             }
