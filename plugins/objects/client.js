@@ -246,12 +246,21 @@ void main() {
       });
       queues[id] = accept;
     });
-    worker.getTeleportObject = coord => new Promise((accept, reject) => {
+    worker.getTeleportObject = position => new Promise((accept, reject) => {
       const id = _makeId();
       worker.postMessage({
         type: 'getTeleportObject',
         id,
-        args: coord.toArray(),
+        args: position.toArray(),
+      });
+      queues[id] = accept;
+    });
+    worker.getBodyObject = position => new Promise((accept, reject) => {
+      const id = _makeId();
+      worker.postMessage({
+        type: 'getBodyObject',
+        id,
+        args: position.toArray(),
       });
       queues[id] = accept;
     });
@@ -355,6 +364,10 @@ void main() {
 
       grip(side) {
         this.emit('grip', side);
+      }
+
+      collide() {
+        this.emit('collide');
       }
 
       remove() {
@@ -761,6 +774,8 @@ void main() {
         })
     };
 
+    let bodyObject = null;
+
     const _update = () => {
       let updatingHover = false;
       let lastHoverUpdateTime = 0;
@@ -876,6 +891,40 @@ void main() {
           }
         }
       };
+      let updatingBody = false;
+      let lastBodyUpdateTime = 0;
+      const _updateBody = () => {
+        if (!updatingBody) {
+          const now = Date.now();
+          const timeDiff = now - lastBodyUpdateTime;
+
+          if (timeDiff > 1000 / 30) {
+            const {hmd} = pose.getStatus();
+            const {worldPosition: hmdPosition} = hmd;
+            worker.getBodyObject(hmdPosition)
+              .then(bodyObjectSpec => {
+                if (bodyObjectSpec) {
+                  const [x, z, objectIndex] = bodyObjectSpec;
+                  const trackedObject = trackedObjects.find(trackedObject =>
+                    trackedObject && trackedObject.mesh.offset.x === x && trackedObject.mesh.offset.y === z && trackedObject.objectIndex === objectIndex
+                  );
+                  trackedObject.collide();
+                }
+
+                updatingBody = false;
+                lastBodyUpdateTime = Date.now();
+              })
+              .catch(err => {
+                 console.warn(err);
+
+                 updatingBody = false;
+                 lastBodyUpdateTime = Date.now();
+              });
+
+            updatingBody = true;
+          }
+        }
+      };
       const _updateMaterial = () => {
         const worldTime = world.getWorldTime();
         objectsMaterial.uniforms.worldTime.value = worldTime;
@@ -887,6 +936,7 @@ void main() {
 
       _updateHoveredTrackedObjects();
       _updateTeleport();
+      _updateBody();
       _updateMaterial();
     };
     render.on('update', _update);
