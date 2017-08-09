@@ -18,16 +18,18 @@ const grass = objectApi => {
           if (v < grassProbability) {
             const elevation = _getElevation(chunk.x, chunk.z, dx, dz);
 
-            const ax = (chunk.x * generateApi.NUM_CELLS) + dx;
-            const az = (chunk.z * generateApi.NUM_CELLS) + dz;
-            localVector.set(ax, elevation, az);
-            localQuaternion.setFromEuler(localEuler.set(
-              0,
-              generateApi.getHash(String(v)) / 0xFFFFFFFF * Math.PI * 2,
-              0,
-              'YXZ'
-            ));
-            generateApi.addObject(chunk, 'grass', localVector, localQuaternion, oneVector);
+            if (elevation > 0) {
+              const ax = (chunk.x * generateApi.NUM_CELLS) + dx;
+              const az = (chunk.z * generateApi.NUM_CELLS) + dz;
+              localVector.set(ax, elevation, az);
+              localQuaternion.setFromEuler(localEuler.set(
+                0,
+                generateApi.getHash(String(v)) / 0xFFFFFFFF * Math.PI * 2,
+                0,
+                'YXZ'
+              ));
+              generateApi.addObject(chunk, 'grass', localVector, localQuaternion, oneVector);
+            }
           }
         }
       }
