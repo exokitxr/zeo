@@ -11,6 +11,10 @@ const flintSteel = objectApi => {
   const {three, pose, input, render, elements, items, utils: {sprite: spriteUtils}} = zeo;
   const {THREE, scene, camera} = three;
 
+  const oneVector = new THREE.Vector3(1, 1, 1);
+  const zeroQuaternion = new THREE.Quaternion();
+  const localVector = new THREE.Vector3();
+
   const _requestImage = src => new Promise((accept, reject) => {
     const img = new Image();
     img.onload = () => {
@@ -108,6 +112,19 @@ const flintSteel = objectApi => {
                 sparkMesh.destroy();
                 sparkMeshes.splice(sparkMeshes.indexOf(sparkMesh), 1);
               }
+            }
+          });
+          grabbable.on('collide', () => {
+            if (sparkMesh) {
+              const heightfieldElement = elements.getEntitiesElement().querySelector(HEIGHTFIELD_PLUGIN);
+              localVector.set(
+                grabbable.position.x,
+                heightfieldElement ? heightfieldElement.getElevation(grabbable.position.x, grabbable.position.z) : 0,
+                grabbable.position.z
+              );
+              objectApi.addObject('fire', localVector, zeroQuaternion, oneVector);
+
+              items.destroyItem(grabbable);
             }
           });
           grabbable.on('destroy', () => {
