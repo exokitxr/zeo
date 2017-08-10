@@ -1221,8 +1221,8 @@ class Tags {
                     }
                   }
                 }
-              }
-            } */
+              } */
+            }
           }
 
           const tagMeshes = [];
