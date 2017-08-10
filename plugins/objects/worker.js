@@ -180,10 +180,20 @@ connection.on('message', e => {
       const {args: {x, z, n, matrix}} = m;
       const chunk = zde.getChunk(x, z);
       chunk.addObject(n, matrix);
+
+      postMessage(JSON.stringify({
+        type: 'chunkUpdate',
+        args: [x, z],
+      }));
     } else if (type === 'removeObject') {
       const {args: {x, z, index}} = m;
       const chunk = zde.getChunk(x, z);
       chunk.removeObject(index);
+
+      postMessage(JSON.stringify({
+        type: 'chunkUpdate',
+        args: [x, z],
+      }));
     } else {
       console.warn('objects worker got invalid message type:', JSON.stringify(type));
     }
@@ -411,7 +421,10 @@ self.onmessage = e => {
       .then(chunk => {
         const geometry = _makeChunkGeometry(chunk);
         resultBuffer = protocolUtils.stringifyGeometry(geometry, resultBuffer, 0);
-        postMessage(id);
+        postMessage(JSON.stringify({
+          type: 'response',
+          args: [id],
+        }));
         postMessage(resultBuffer, [resultBuffer]);
       })
       .catch(err => {
@@ -420,17 +433,26 @@ self.onmessage = e => {
   } else if (type === 'getHoveredObjects') {
     const {id, args: positions} = data;
     const result = positions.map(position => _getHoveredTrackedObject(position));
-    postMessage(id);
+    postMessage(JSON.stringify({
+      type: 'response',
+      args: [id],
+    }));
     postMessage(result);
   } else if (type === 'getTeleportObject') {
     const {id, args: position} = data;
     const result = _getTeleportObject(position);
-    postMessage(id);
+    postMessage(JSON.stringify({
+      type: 'response',
+      args: [id],
+    }));
     postMessage(result);
   } else if (type === 'getBodyObject') {
     const {id, args: position} = data;
     const result = _getBodyObject(position);
-    postMessage(id);
+    postMessage(JSON.stringify({
+      type: 'response',
+      args: [id],
+    }));
     postMessage(result);
   } else {
     console.warn('objects worker got invalid method', JSON.stringify(type));

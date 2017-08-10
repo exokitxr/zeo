@@ -264,15 +264,30 @@ void main() {
       });
       queues[id] = accept;
     });
-    let pendingMessage = null;
+    let pendingResponseId = null;
     worker.onmessage = e => {
       const {data} = e;
       if (typeof data === 'string') {
-        pendingMessage = data;
+        const m = JSON.parse(data);
+        const {type, args} = m;
+
+        if (type === 'response') {
+          const [id] = args;
+          pendingResponseId = id;
+        } else if (type === 'chunkUpdate') {
+          const [x, z] = args;
+          const chunk = chunker.chunks.find(chunk => chunk.x === x && chunk.z === z);
+
+          if (chunk) {
+            chunk.lod = -1; // force chunk refresh
+          }
+        } else {
+          console.warn('objects got unknown worker message type:', JSON.stringify(type));
+        }
       } else {
-        queues[pendingMessage](data);
-        delete queues[pendingMessage];
-        pendingMessage = null;
+        queues[pendingResponseId](data);
+        delete queues[pendingResponseId];
+        pendingResponseId = null;
       }
     };
 
