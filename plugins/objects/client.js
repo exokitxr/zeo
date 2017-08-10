@@ -908,7 +908,9 @@ void main() {
                   const trackedObject = trackedObjects.find(trackedObject =>
                     trackedObject && trackedObject.mesh.offset.x === x && trackedObject.mesh.offset.y === z && trackedObject.objectIndex === objectIndex
                   );
-                  trackedObject.collide();
+                  if (trackedObject) {
+                    trackedObject.collide();
+                  }
                 }
 
                 updatingBody = false;
