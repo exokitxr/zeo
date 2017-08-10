@@ -139,8 +139,6 @@ const craftingTable = objectApi => {
 
       const craftingTableObjectApi = {
         object: 'craftingTable',
-        offset: [0, 1/2, 0],
-        size: _sq(1),
         objectAddedCallback(object) {
           object.crafter = null;
 
@@ -193,6 +191,5 @@ const craftingTable = objectApi => {
     });
 };
 const _makeId = () => Math.random().toString(36).substring(7);
-const _sq = n => Math.sqrt(n*n*3);
 
 module.exports = craftingTable;

@@ -6,6 +6,7 @@ const wood = require('./wood');
 const flintSteel = require('./flint-steel');
 const apple = require('./apple');
 const craftingTable = require('./crafting-table');
+const mirror = require('./mirror');
 const torch = require('./torch');
 const fire = require('./fire');
 
@@ -18,6 +19,7 @@ const objectsLib = options => [
   flintSteel,
   apple,
   craftingTable,
+  mirror,
   torch,
   fire,
 ].map(objectLib => objectLib(options));
