@@ -179,7 +179,11 @@ connection.on('message', e => {
     } else if (type === 'addObject') {
       const {args: {x, z, n, matrix}} = m;
       const chunk = zde.getChunk(x, z);
-      chunk.addObject(n, matrix);
+      const objectIndex = chunk.addObject(n, matrix);
+
+      const position = new THREE.Vector3().fromArray(matrix, 0);
+      const rotation = new THREE.Quaternion().fromArray(matrix, 3);
+      chunk.trackedObjects[objectIndex] = new TrackedObject(n, position, rotation);
 
       postMessage(JSON.stringify({
         type: 'chunkUpdate',
@@ -189,6 +193,8 @@ connection.on('message', e => {
       const {args: {x, z, index}} = m;
       const chunk = zde.getChunk(x, z);
       chunk.removeObject(index);
+
+      delete chunk.trackedObjects[index];
 
       postMessage(JSON.stringify({
         type: 'chunkUpdate',
