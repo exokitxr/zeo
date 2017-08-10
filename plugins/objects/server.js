@@ -207,11 +207,13 @@ class Objects {
               const {url} = c.upgradeReq;
 
               if (url === '/archae/objectsWs') {
-                const _broadcast = m => {
+                const _broadcast = e => {
+                  const es = JSON.stringify(e);
+
                   for (let i = 0; i < connections.length; i++) {
                     const connection = connections[i];
                     if (connection.readyState === ws.OPEN && connection !== c) {
-                      connection.send(m);
+                      connection.send(es);
                     }
                   }
                 };
@@ -221,7 +223,8 @@ class Objects {
                   const {method} = m;
 
                   if (method === 'addObject') {
-                    const {args: {x, z, n, matrix}} = m;
+                    const {args} = m;
+                    const {x, z, n, matrix} = args;
 
                     let chunk = zde.getChunk(x, z);
                     if (!chunk) {
@@ -234,13 +237,11 @@ class Objects {
 
                     _broadcast({
                       type: 'addObject',
-                      x,
-                      z,
-                      n,
-                      matrix,
+                      args,
                     });
                   } else if (method === 'removeObject') {
-                    const {args: {x, z, index}} = m;
+                    const {args} = m;
+                    const {x, z, index} = args;
 
                     const chunk = zde.getChunk(x, z);
                     if (chunk) {
@@ -250,7 +251,7 @@ class Objects {
 
                       _broadcast({
                         type: 'removeObject',
-                        index,
+                        args,
                       });
                     }
                   } else {
