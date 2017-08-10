@@ -140,7 +140,7 @@ const a = archae(config);
 
 const _install = () => {
   if (flags.install) {
-    return _getAllPlugins()
+    return _getPlugins({core: true, def: true})
       .then(plugins => a.installPlugins(plugins, {force: true}));
   } else {
     return Promise.resolve();
@@ -164,7 +164,7 @@ const _preload = () => {
   }
 };
 
-const _getAllPlugins = () => {
+const _getPlugins = ({core = false, def = false} = {}) => {
   const _flatten = a => {
     const result = [];
     for (let i = 0; i < a.length; i++) {
@@ -223,11 +223,15 @@ const _getAllPlugins = () => {
 
   // NOTE: this cannot be path.join() because Windows
   return Promise.all(
-    [
-      config.dirname + '/core/engines',
-      config.dirname + '/core/utils',
-    ].map(_readdir).concat(
-      _readTagsJsonModules(config.dirname + '/defaults/data/world/tags.json')
+    (core ?
+      [
+        config.dirname + '/core/engines',
+        config.dirname + '/core/utils',
+      ].map(_readdir)
+    :
+      []
+    ).concat(
+      def ? _readTagsJsonModules(config.dirname + '/defaults/data/world/tags.json') : []
     )
   )
     .then(files => _filterDirectories(_flatten(files)))
@@ -277,7 +281,7 @@ const _boot = () => {
 
   if (flags.server) {
     bootPromises.push(
-      _getAllPlugins()
+      _getPlugins({core: true})
         .then(plugins => a.requestPlugins(plugins))
     );
   }
