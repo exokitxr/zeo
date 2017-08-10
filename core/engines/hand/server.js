@@ -7,7 +7,7 @@ class Hand {
 
   mount() {
     const {_archae: archae} = this;
-    const {app, wss} = archae.getCore();
+    const {ws, app, wss} = archae.getCore();
 
     let live = true;
     this._cleanup = () => {
@@ -45,21 +45,8 @@ class Hand {
           }
 
           release() {
-            const {userId} = this;
-
-            if (userId !== null) {
-              const {n, side} = this;
-
-              this.userId = null;
-              this.side = null;
-
-              return {
-                userId,
-                side,
-              };
-            } else {
-              return null;
-            }
+            this.userId = null;
+            this.side = null;
           }
 
           setData(key, value) {
@@ -105,18 +92,21 @@ class Hand {
             };
             const _broadcastObject = (interestId, type, args) => {
               if (connections.some(connection => connection !== c)) {
-                const e = {
+                const es = JSON.stringify({
                   type,
                   args,
-                };
-                const es = JSON.stringify(e);
+                });
 
                 const interest = interests[interestId];
                 for (let i = 0; i < connections.length; i++) {
                   const connection = connections[i];
-                  const {userId} = connection;
-                  if (interest.includes(userId) && connection !== c) {
-                    connection.send(es);
+
+                  if (connection.readyState === ws.OPEN && connection !== c) {
+                    const {userId} = connection;
+
+                    if (interest.includes(userId)) {
+                      connection.send(es);
+                    }
                   }
                 }
               }
@@ -193,14 +183,6 @@ class Hand {
                     const grabbable = grabbables[n];
 
                     if (grabbable) {
-                      const releaseSpec = grabbable.release();
-                      if (releaseSpec) {
-                        const {userId, side} = releaseSpec;
-                        _broadcastObject(n, 'release', [n]);
-                      }
-
-                      _broadcastObject(n, 'destroy', [n]);
-
                       delete grabbables[n];
 
                       const interest = interests[n];
@@ -217,13 +199,6 @@ class Hand {
                     const grabbable = grabbables[n];
 
                     if (grabbable) {
-                      const releaseSpec = grabbable.release();
-
-                      if (releaseSpec) {
-                        const {userId, side} = releaseSpec;
-                        _broadcastObject(n, 'release', [n]);
-                      }
-
                       grabbable.grab(userId, side);
                       _broadcastObject(n, 'grab', [n, userId, side]);
                     }
@@ -233,12 +208,8 @@ class Hand {
                     const grabbable = grabbables[n];
 
                     if (grabbable) {
-                      const releaseSpec = grabbable.release();
-
-                      if (releaseSpec) {
-                        const {userId, side} = releaseSpec;
-                        _broadcastObject(n, 'release', [n]);
-                      }
+                      grabbable.release();
+                      _broadcastObject(n, 'release', [n]);
                     }
                   } else if (method === 'data') {
                     const [n, key, value] = args;
