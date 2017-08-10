@@ -44,7 +44,7 @@ class FileEngine {
       '/core/engines/resource',
       '/core/engines/rend',
       '/core/engines/tags',
-      '/core/engines/fs',
+      // '/core/engines/fs',
       '/core/engines/world',
       '/core/engines/keyboard',
       '/core/utils/creature-utils',
@@ -56,7 +56,7 @@ class FileEngine {
       resource,
       rend,
       tags,
-      fs,
+      // fs,
       world,
       keyboard,
       creatureUtils,
@@ -71,34 +71,7 @@ class FileEngine {
         const blackImg = biolumi.getBlackImg();
         const transparentMaterial = biolumi.getTransparentMaterial();
 
-        const mainFontSpec = {
-          fonts: biolumi.getFonts(),
-          fontSize: 36,
-          lineHeight: 1.4,
-          fontWeight: biolumi.getFontWeight(),
-          fontStyle: biolumi.getFontStyle(),
-        };
-        const subcontentFontSpec = {
-          fonts: biolumi.getFonts(),
-          fontSize: 24,
-          lineHeight: 1.4,
-          fontWeight: biolumi.getFontWeight(),
-          fontStyle: biolumi.getFontStyle(),
-        };
-
-        const zeroQuaternion = new THREE.Quaternion();
-        const forwardVector = new THREE.Vector3(0, 0, -1);
-
-        /* const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
-        const _decomposeMatrix = matrix => {
-          const position = new THREE.Vector3();
-          const rotation = new THREE.Quaternion();
-          const scale = new THREE.Vector3();
-          matrix.decompose(position, rotation, scale);
-          return {position, rotation, scale};
-        }; */
-
-        const _decorateFile = item => {
+        /* const _decorateFile = item => {
           const {id, name, mimeType, instancing, paused, value} = item;
           const mode = fs.getFileMode(mimeType);
           const media = null;
@@ -226,7 +199,7 @@ class FileEngine {
           } else {
             return Promise.resolve();
           }
-        };
+        }; */
 
         const updatePromises = [];
         const _cancelNpm = () => {
@@ -241,7 +214,7 @@ class FileEngine {
         const _updateNpm = () => {
           _cancelNpm();
 
-          const {inputText} = npmState;
+          /* const {inputText} = npmState;
 
           const files = tags.getTagMeshes()
             .filter(({item}) =>
@@ -268,7 +241,7 @@ class FileEngine {
                 updatePromises.length = 0;
                 _updatePages();
               });
-          }
+          } */
 
           npmState.loading = false;
           npmState.page = 0;
@@ -573,7 +546,7 @@ class FileEngine {
               _setFile(null);
 
               return true;
-            } else if (match = onclick.match(/^file:loadEntities:(.+)$/)) {
+            /* } else if (match = onclick.match(/^file:loadEntities:(.+)$/)) {
               const id = match[1];
 
               const file = npmState.tagSpecs.find(tagSpec => tagSpec.id === id);
@@ -617,7 +590,7 @@ class FileEngine {
                   console.warn(err);
                 });
 
-              return true;
+              return true; */
             } else {
               return false;
             }
@@ -650,7 +623,7 @@ class FileEngine {
           input.removeListener('trigger', _trigger);
         });
 
-        const _setFile = itemSpec => {
+        /* const _setFile = itemSpec => {
           if (itemSpec) {
             npmState.file = itemSpec;
 
@@ -722,10 +695,10 @@ class FileEngine {
             });
           npmState.tagSpecs.push(fileItem);
           _setFile(fileItem);
-        };
+        }; */
 
         return {
-          addFile: _addFile,
+          // addFile: _addFile,
         };
       }
     });

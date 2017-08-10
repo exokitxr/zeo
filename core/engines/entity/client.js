@@ -319,7 +319,7 @@ class Entity {
         rend.on('entitychange', _entitychange);
 
         const _saveEntities = entitySpecs => {
-          const id = _makeId();
+          /* const id = _makeId();
           const date = new Date();
           const fileSpec = {
             type: 'file',
@@ -349,7 +349,7 @@ class Entity {
             })
             .catch(err => {
               console.warn(err);
-            });
+            }); */
         };
 
         const _saveAllEntities = () => {

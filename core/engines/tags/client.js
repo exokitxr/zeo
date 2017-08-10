@@ -67,7 +67,7 @@ class Tags {
       '/core/engines/biolumi',
       '/core/engines/keyboard',
       '/core/engines/loader',
-      '/core/engines/fs',
+      // '/core/engines/fs',
       '/core/engines/somnifer',
       '/core/engines/rend',
       '/core/utils/js-utils',
@@ -85,7 +85,7 @@ class Tags {
         biolumi,
         keyboard,
         loader,
-        fs,
+        // fs,
         somnifer,
         rend,
         jsUtils,
@@ -565,7 +565,7 @@ class Tags {
 
           const localUpdates = [];
 
-          const _getItemPreviewMode = item => fs.getFileMode(item.mimeType);
+          /* const _getItemPreviewMode = item => fs.getFileMode(item.mimeType);
           const _requestFileItemImageMesh = item => new Promise((accept, reject) => {
             const geometry = new THREE.PlaneBufferGeometry(0.2, 0.2);
             const material = (() => {
@@ -740,7 +740,7 @@ class Tags {
             };
           });
           const _requestFileItemModelMesh = item => fs.makeFile('fs/' + item.id + item.name)
-            .read({type: 'model'});
+            .read({type: 'model'}); */
 
           const _trigger = e => {
             const {side} = e;
@@ -800,7 +800,7 @@ class Tags {
                   e.stopImmediatePropagation();
 
                   return true;
-                } else if (match = onclick.match(/^tag:download:(.+)$/)) {
+                /* } else if (match = onclick.match(/^tag:download:(.+)$/)) {
                   const id = match[1];
 
                   const downloadEvent = {
@@ -808,7 +808,7 @@ class Tags {
                   };
                   tagsApi.emit('download', downloadEvent);
 
-                  return true;
+                  return true; */
                 } else if (match = onclick.match(/^attribute:remove:(.+?):(.+?)$/)) {
                   const id = match[1];
                   const name = match[2];
@@ -1015,7 +1015,7 @@ class Tags {
               }
             }
 
-            getMedia() {
+            /* getMedia() {
               if (!this[itemMediaPromiseSymbol]) {
                 this[itemMediaPromiseSymbol] = new Promise((accept, reject) => {
                   const previewMesh = new THREE.Object3D();
@@ -1187,10 +1187,10 @@ class Tags {
                 });
 
               this.emit('update');
-            }
+            } */
 
             destroy() {
-              this.destroyMedia();
+              /* this.destroyMedia();
 
               const {type, temp} = this;
               if (type === 'file' && !temp) {
@@ -1222,7 +1222,7 @@ class Tags {
                   }
                 }
               }
-            }
+            } */
           }
 
           const tagMeshes = [];
