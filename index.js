@@ -200,12 +200,36 @@ const _getAllPlugins = () => {
       });
     }))).then(() => acc);
   };
+  const _readTagsJsonModules = p => new Promise((accept, reject) => {
+    fs.readFile(p, 'utf8', (err, s) => {
+      if (!err) {
+        const j = JSON.parse(s);
+        const {tags} = j;
+
+        const modules = [];
+        for (const id in tags) {
+          const tagSpec = tags[id];
+
+          if (tagSpec.type === 'entity') {
+            modules.push(config.dirname + tagSpec.module);
+          }
+        }
+        accept(modules);
+      } else {
+        reject(err);
+      }
+    });
+  });
 
   // NOTE: this cannot be path.join() because Windows
-  return Promise.all([
-    config.dirname + '/core/engines',
-    config.dirname + '/core/utils',
-  ].map(_readdir))
+  return Promise.all(
+    [
+      config.dirname + '/core/engines',
+      config.dirname + '/core/utils',
+    ].map(_readdir).concat(
+      _readTagsJsonModules(config.dirname + '/defaults/data/world/tags.json')
+    )
+  )
     .then(files => _filterDirectories(_flatten(files)))
     .then(directories => directories.map(directory => directory.slice(config.dirname.length)));
 };
