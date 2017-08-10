@@ -208,6 +208,14 @@ class Wallet {
             } = args;
 
             assetsMesh.removeAssetInstance(id);
+          } else if (type === 'setPhysics') {
+            const {
+              id,
+              physics,
+            } = args;
+
+            const assetInstance = assetsMesh.getAssetInstance(id);
+            assetInstance.updatePhysics(physics);
           } else {
             console.warn('wallet got unknown message type:', JSON.stringify(type));
           }
@@ -366,6 +374,11 @@ class Wallet {
                   physics: false,
                 },
               }));
+            }
+
+            updatePhysics(physics) {
+              this.physics = physics;
+              this.emit('physics', physics);
             }
 
             collide() {
