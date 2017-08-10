@@ -124,12 +124,10 @@ class Hand {
         })();
 
         const _broadcastObject = (method, args) => {
-          const e = {
+          connection.send(JSON.stringify({
             method,
             args,
-          };
-          const es = JSON.stringify(e);
-          connection.send(es);
+          }));
         };
         const _broadcastBuffer = buffer => {
           connection.send(buffer);
