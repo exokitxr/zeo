@@ -23,20 +23,57 @@ const flintSteel = objectApi => {
   });
 
   return () => _requestImage('/archae/objects/img/spark.png')
-    .then(sparkImg => spriteUtils.requestSpriteGeometry(spriteUtils.getImageData(sparkImg), 0.015))
+    .then(sparkImg => spriteUtils.requestSpriteGeometry(
+      spriteUtils.getImageData(sparkImg),
+      0.015,
+      new THREE.Matrix4().makeTranslation(
+        (0.015 * 5 / 2) - (0.015 * 16 / 2),
+        -(0.015 * 5 / 2) + (0.015 * 16 / 2),
+        0
+      )
+    ))
     .then(sparkGeometrySpec => {
       const geometry = new THREE.BufferGeometry();
       geometry.addAttribute('position', new THREE.BufferAttribute(sparkGeometrySpec.positions, 3));
-      // geometry.addAttribute('position', new THREE.BufferAttribute(sparkGeometrySpec.normals, 3));
       geometry.addAttribute('color', new THREE.BufferAttribute(sparkGeometrySpec.colors, 3));
       geometry.addAttribute('dy', new THREE.BufferAttribute(sparkGeometrySpec.zeroDys, 2));
+      geometry.dys = sparkGeometrySpec.dys;
+      geometry.zeroDys = sparkGeometrySpec.zeroDys;
       return geometry;
     })
     .then(sparkGeometry => {
-      const _makeSparkMesh = () => {
-        const geometry = sparkGeometry;
+      const sparkMeshes = [];
+      const _makeSparkGeometry = () => {
+        const geometry = new THREE.BufferGeometry();
+        geometry.addAttribute('position', sparkGeometry.getAttribute('position'));
+        geometry.addAttribute('color', sparkGeometry.getAttribute('color'));
+        const {dys, zeroDys} = sparkGeometry;
+        geometry.addAttribute('dy', new THREE.BufferAttribute(zeroDys, 2));
+        geometry.dys = dys;
+        geometry.zeroDys = zeroDys;
+        return geometry;
+      };
+      const _makeSparkMesh = grabbableMesh => {
+        const geometry = _makeSparkGeometry();
         const material = items.getAssetsMaterial();
         const mesh = new THREE.Mesh(geometry, material);
+        mesh.update = () => {
+          mesh.position.copy(grabbableMesh.position);
+          mesh.rotation.copy(grabbableMesh.rotation);
+          mesh.scale.copy(grabbableMesh.scale);
+          mesh.matrix.copy(grabbableMesh.matrix);
+          mesh.matrixWorld.copy(grabbableMesh.matrixWorld);
+        };
+        mesh.grab = () => {
+          const dyAttribute = geometry.getAttribute('dy');
+          dyAttribute.array = geometry.zeroDys;
+          dyAttribute.needsUpdate = true;
+        };
+        mesh.release = () => {
+          const dyAttribute = geometry.getAttribute('dy');
+          dyAttribute.array = geometry.dys;
+          dyAttribute.needsUpdate = true;
+        };
         mesh.destroy = () => {
           // XXX
         };
@@ -58,34 +95,36 @@ const flintSteel = objectApi => {
           input.on('triggerdown', _triggerdown);
 
           let sparkMesh = null;
+          grabbable.on('grab', () => {
+            if (sparkMesh) {
+              sparkMesh.grab();
+            }
+          });
+          grabbable.on('release', () => {
+           if (sparkMesh) {
+              sparkMesh.release();
+            }
+          });
           grabbable.on('data', e => {
             const {key, value} = e;
 
-            console.log('got data', {key, value});
-
             if (key === 'ignited') {
               if (value) {
-                sparkMesh = _makeSparkMesh();
+                sparkMesh = _makeSparkMesh(grabbable.mesh);
                 scene.add(sparkMesh);
+                sparkMeshes.push(sparkMesh);
               } else {
                 scene.remove(sparkMesh);
                 sparkMesh.destroy();
+                sparkMeshes.splice(sparkMeshes.indexOf(sparkMesh), 1);
               }
-            }
-          });
-          grabbable.on('update', () => {
-            if (sparkMesh) {
-              sparkMesh.position.copy(grabbable.mesh.position);
-              sparkMesh.rotation.copy(grabbable.mesh.rotation);
-              sparkMesh.scale.copy(grabbable.mesh.scale);
-              sparkMesh.matrix.copy(grabbable.mesh.matrix);
-              sparkMesh.matrixWorld.copy(grabbable.mesh.matrixWorld);
             }
           });
           grabbable.on('destroy', () => {
             if (sparkMesh) {
               scene.remove(sparkMesh);
               sparkMesh.destroy();
+              sparkMeshes.splice(sparkMeshes.indexOf(sparkMesh), 1);
             }
           });
 
@@ -104,8 +143,16 @@ const flintSteel = objectApi => {
       };
       items.registerItem(this, stickItemApi);
 
+      const _update = () => {
+        for (let i = 0; i < sparkMeshes.length; i++) {
+          sparkMeshes[i].update();
+        }
+      };
+      render.on('update', _update);
+
       return () => {
         items.unregisterItem(this, stickItemApi);
+        render.removeListener('update', _update);
       };
     });
 };
