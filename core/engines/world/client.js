@@ -55,7 +55,7 @@ class World {
       '/core/engines/hand',
       '/core/engines/loader',
       '/core/engines/tags',
-      '/core/engines/fs',
+      // '/core/engines/fs',
       '/core/utils/network-utils',
       '/core/utils/geometry-utils',
       '/core/utils/creature-utils',
@@ -75,7 +75,7 @@ class World {
       hand,
       loader,
       tags,
-      fs,
+      // fs,
       networkUtils,
       geometryUtils,
       creatureUtils,
@@ -94,15 +94,6 @@ class World {
           fontWeight: biolumi.getFontWeight(),
           fontStyle: biolumi.getFontStyle(),
         };
-
-        /* const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
-        const _decomposeMatrix = matrix => {
-          const position = new THREE.Vector3();
-          const rotation = new THREE.Quaternion();
-          const scale = new THREE.Vector3();
-          matrix.decompose(position, rotation, scale);
-          return {position, rotation, scale};
-        }; */
 
         const localUserId = multiplayer.getId();
 
@@ -696,7 +687,7 @@ class World {
         };
         tags.on('reinstallModule', _reinstallModule); */
 
-        const _download = ({id}) => {
+        /* const _download = ({id}) => {
           const a = document.createElement('a');
           a.href = fs.getFileUrl(id);
           a.style.display = 'none';
@@ -704,9 +695,9 @@ class World {
           a.click();
           document.body.removeChild(a);
         };
-        tags.on('download', _download);
+        tags.on('download', _download); */
 
-        const _makeFileTagFromSpec = fileSpec => {
+        /* const _makeFileTagFromSpec = fileSpec => {
           const {
             id,
             name,
@@ -832,7 +823,7 @@ class World {
               console.warn(err);
             });
         };
-        fs.on('upload', _upload);
+        fs.on('upload', _upload); */
 
         const initPromise = (() => {
           let _accept = null;
@@ -970,7 +961,7 @@ class World {
 
           input.removeListener('trigger', _trigger);
 
-          tags.removeListener('download', _download);
+          // tags.removeListener('download', _download);
           tags.removeListener('mutateAddEntity', _mutateAddEntity);
           tags.removeListener('mutateRemoveEntity', _mutateRemoveEntity);
           tags.removeListener('mutateSetAttribute', _mutateSetAttribute);
@@ -982,7 +973,7 @@ class World {
           tags.removeListener('seek', _tagsSeek);
           tags.removeListener('seekUpdate', _tagsSeekUpdate);
 
-          fs.removeListener('upload', _upload);
+          // fs.removeListener('upload', _upload);
 
           connection.destroy();
         });
