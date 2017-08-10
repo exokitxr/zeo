@@ -94,14 +94,22 @@ class Hand {
                 };
                 grabbable.emit('release', e);
                 handApi.emit('release', e);
-              } else if (type === 'destroy') {
+              } else if (type === 'data') {
                 const {args} = m;
-                const [n] = args;
+                const [n, key, value] = args;
 
                 const grabbable = grabbables[n];
                 if (grabbable) {
-                  delete grabbables[n];
+                  grabbable.setData(key, value);
                 }
+
+                const e = {
+                  key,
+                  value,
+                  grabbable,
+                };
+                grabbable.emit('data', e);
+                handApi.emit('data', e);
               } else {
                 console.warn('unknown hand message type:', type);
               }
@@ -233,6 +241,20 @@ class Hand {
               this.emit('release', e);
               handApi.emit('release', e);
             }
+          }
+
+          setData(key, value) {
+            const {n} = this;
+
+            _broadcastObject('data', [n, key, value]);
+
+            const e = {
+              key,
+              value,
+              grabbable: this,
+            };
+            this.emit('data', e);
+            handApi.emit('data', e);
           }
 
           destroy() {

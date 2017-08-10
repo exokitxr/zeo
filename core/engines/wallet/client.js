@@ -389,7 +389,7 @@ class Wallet {
                       const {positions, normals, colors, dys, zeroDys} = geometrySpec;
 
                       geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
-                      geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
+                      // geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
                       geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
                       geometry.addAttribute('dy', new THREE.BufferAttribute(geometry.getAttribute('dy').array === geometry.dys ? dys : zeroDys, 2));
 
@@ -1177,6 +1177,10 @@ class Wallet {
           requestAssets() {
             return _ensureLoaded()
               .then(() => walletState.assets);
+          }
+
+          getAssetsMaterial() {
+            return assetsMaterial;
           }
 
           getAsset(id) {

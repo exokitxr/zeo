@@ -34,6 +34,7 @@ class Hand {
 
             this.userId = null;
             this.side = null;
+            this.data = {};
           }
 
           grab(userId, side) {
@@ -59,6 +60,10 @@ class Hand {
             } else {
               return null;
             }
+          }
+
+          setData(key, value) {
+            this.data[key] = value;
           }
 
           setState(position, rotation, scale, localPosition, localRotation, localScale) {
@@ -170,9 +175,13 @@ class Hand {
                     }
 
                     if (grabbable) {
-                      const {userId, side} = grabbable;
+                      const {userId, side, data} = grabbable;
                       if (userId) {
                         _sendObject('grab', [n, userId, side]);
+                      }
+                      for (const key in data) {
+                        const value = data[key];
+                        _sendObject('data', [n, key, value]);
                       }
 
                       const {position, rotation, scale, localPosition, localRotation, localScale} = grabbable;
@@ -209,6 +218,7 @@ class Hand {
 
                     if (grabbable) {
                       const releaseSpec = grabbable.release();
+
                       if (releaseSpec) {
                         const {userId, side} = releaseSpec;
                         _broadcastObject(n, 'release', [n]);
@@ -224,10 +234,21 @@ class Hand {
 
                     if (grabbable) {
                       const releaseSpec = grabbable.release();
+
                       if (releaseSpec) {
                         const {userId, side} = releaseSpec;
                         _broadcastObject(n, 'release', [n]);
                       }
+                    }
+                  } else if (method === 'data') {
+                    const [n, key, value] = args;
+
+                    const grabbable = grabbables[n];
+
+                    if (grabbable) {
+                      grabbable.setData(key, value);
+
+                      _broadcastObject(n, 'data', [n, key, value]);
                     }
                   } else {
                     console.warn('no such hand method:' + JSON.stringify(method));
