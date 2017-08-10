@@ -242,6 +242,7 @@ class FileEngine {
                 _updatePages();
               });
           } */
+          const files = [];
 
           npmState.loading = false;
           npmState.page = 0;
