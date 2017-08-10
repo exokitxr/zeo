@@ -10,15 +10,6 @@ class Mirror {
 
     const THREEMirror = ThreeExtraMirror(THREE);
 
-    const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
-    const _decomposeMatrix = matrix => {
-      const position = new THREE.Vector3();
-      const quaternion = new THREE.Quaternion();
-      const scale = new THREE.Vector3();
-      matrix.decompose(position, quaternion, scale);
-      return {position, quaternion, scale};
-    };
-
     const updateEyes = [];
     const _updateEye = camera => {
       for (let i = 0; i < updateEyes.length; i++) {
