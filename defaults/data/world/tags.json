@@ -183,6 +183,17 @@
       "tagName": "plugins-craft",
       "attributes": {},
       "metadata": {}
+    },
+    "x76y1": {
+      "type": "entity",
+      "id": "x76y1",
+      "name": "/plugins/health",
+      "displayName": "health",
+      "version": "0.0.1",
+      "module": "/plugins/health",
+      "tagName": "plugins-health",
+      "attributes": {},
+      "metadata": {}
     }
   }
 }
