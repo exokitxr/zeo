@@ -48,12 +48,18 @@ class Stck {
         };
         worker.onmessage = e => {
           const {data} = e;
-          const n = protocolUtils.parseUpdateN(data);
+          const n = protocolUtils.parseN(data);
           const body = bodies[n];
 
           if (body) {
-            protocolUtils.parseUpdate(body.position, body.rotation, body.scale, body.velocity, data);
-            body.emitUpdate();
+            const type = protocolUtils.parseType(data);
+
+            if (type === protocolUtils.TYPE_UPDATE) {
+              protocolUtils.parseUpdate(body.position, body.rotation, body.scale, body.velocity, data);
+              body.emit('update');
+            } else if (type === protocolUtils.TYPE_COLLIDE) {
+              body.emit('collide');
+            }
           }
         };
 
@@ -81,10 +87,6 @@ class Stck {
               scale: this.scale,
               velocity: this.velocity,
             });
-          }
-
-          emitUpdate() {
-            this.emit('update');
           }
         }
 

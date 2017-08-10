@@ -1,8 +1,12 @@
 const BUFFER_SIZE = (1 * 4) + (4 * 4 * 3) + (2 * 4 * 4);
+let type = 0;
+const TYPE_UPDATE = type++;
+const TYPE_COLLIDE = type++;
 
-const parseUpdateN = (buffer, byteOffset = 0) => new Uint32Array(buffer, byteOffset, 1)[0];
+const parseN = (buffer, byteOffset = 0) => new Uint32Array(buffer, byteOffset, 1)[0];
+const parseType = (buffer, byteOffset = 0) => new Uint32Array(buffer, byteOffset + 4, 1)[0];
 const parseUpdate = (position, rotation, scale, velocity, buffer, byteOffset = 0) => {
-  byteOffset += 4;
+  byteOffset += 4 * 2;
 
   const array = new Float32Array(buffer, byteOffset, 10 + 3);
   position.fromArray(array, 0);
@@ -16,8 +20,10 @@ const stringifyUpdate = (n, position, rotation, scale, velocity, buffer, byteOff
     byteOffset = 0;
   }
 
-  new Uint32Array(buffer, byteOffset, 1)[0] = n;
-  byteOffset += 4;
+  const headerArray = new Uint32Array(buffer, byteOffset, 2);
+  headerArray[0] = n;
+  headerArray[1] = TYPE_UPDATE;
+  byteOffset += 4 * 2;
 
   const array = new Float32Array(buffer, byteOffset, 10 + 3);
   array[0] = position.x;
@@ -40,9 +46,27 @@ const stringifyUpdate = (n, position, rotation, scale, velocity, buffer, byteOff
   return buffer;
 };
 
+const stringifyCollide = (n, buffer, byteOffset) => {
+  if (buffer === undefined || byteOffset === undefined) {
+    buffer = new ArrayBuffer(BUFFER_SIZE);
+    byteOffset = 0;
+  }
+
+  const headerArray = new Uint32Array(buffer, byteOffset, 2);
+  headerArray[0] = n;
+  headerArray[1] = TYPE_COLLIDE;
+  byteOffset += 4 * 2;
+
+  return buffer;
+};
+
 module.exports = {
   BUFFER_SIZE,
-  parseUpdateN,
+  TYPE_UPDATE,
+  TYPE_COLLIDE,
+  parseN,
+  parseType,
   parseUpdate,
   stringifyUpdate,
+  stringifyCollide,
 };
