@@ -742,6 +742,10 @@ class Zeo {
                       }
 
                       class ZeoSoundApi {
+                        requestSfx(url) {
+                          return somnifer.requestSfx(url);
+                        }
+
                         makeBody() {
                           return somnifer.makeBody();
                         }

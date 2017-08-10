@@ -1,5 +1,3 @@
-const sfxr = require('sfxr');
-
 const HEIGHTFIELD_PLUGIN = 'plugins-heightfield';
 const HEALTH_PLUGIN = 'plugins-health';
 const DEFAULT_MATRIX = [
@@ -11,7 +9,7 @@ const DEFAULT_MATRIX = [
 const dataSymbol = Symbol();
 
 const apple = objectApi => {
-  const {three, pose, input, render, elements, items} = zeo;
+  const {three, pose, input, render, elements, items, sound} = zeo;
   const {THREE, scene, camera} = three;
 
   const zeroQuaternion = new THREE.Quaternion();
@@ -38,7 +36,7 @@ const apple = objectApi => {
 
   return () => Promise.all([
     _requestImage('/archae/objects/img/apple.png'),
-    sfxr.requestSfx('archae/objects/sfx/eat.ogg'),
+    sound.requestSfx('archae/objects/sfx/eat.ogg'),
   ])
     .then(([
       appleImg,

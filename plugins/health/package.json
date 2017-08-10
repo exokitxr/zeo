@@ -5,7 +5,5 @@
   "keywords": [],
   "client": "client.js",
   "server": "server.js",
-  "dependencies": {
-    "sfxr": "0.0.2"
-  }
+  "dependencies": {}
 }

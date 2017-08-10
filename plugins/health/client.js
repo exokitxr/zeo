@@ -1,4 +1,3 @@
-const sfxr = require('sfxr');
 const {
   WIDTH,
   HEIGHT,
@@ -84,7 +83,7 @@ float noise(float x) {
 
 class Health {
   mount() {
-    const {three: {THREE, scene, camera}, pose, render, input, elements, world, ui, utils: {geometry: geometryUtils}} = zeo;
+    const {three: {THREE, scene, camera}, pose, render, input, elements, world, ui, sound, utils: {geometry: geometryUtils}} = zeo;
 
     let live = true;
     this.cleanup = () => {
@@ -130,7 +129,7 @@ class Health {
       }
     };
 
-    return sfxr.requestSfx('archae/health/sfx/hit.ogg')
+    return sound.requestSfx('archae/health/sfx/hit.ogg')
       .then(hitSfx => {
         if (live) {
           const healthState = {

@@ -1,4 +1,3 @@
-const sfxr = require('sfxr');
 const animalLib = require('animal-js');
 
 const HEIGHTFIELD_PLUGIN = 'plugins-heightfield';
@@ -6,7 +5,7 @@ const dataSymbol = Symbol();
 
 class Mobs {
   mount() {
-    const {three, pose, elements, input, render, stage, utils: {network: networkUtils, random: randomUtils, skin: skinUtils}} = zeo;
+    const {three, pose, elements, input, render, stage, sound, utils: {network: networkUtils, random: randomUtils, skin: skinUtils}} = zeo;
     const {THREE} = three;
     const {AutoWs} = networkUtils;
     const {chnkr} = randomUtils;
@@ -21,7 +20,7 @@ class Mobs {
       live = false;
     };
 
-    return sfxr.requestSfx('archae/mobs/sfx/hurt1.ogg')
+    return sound.requestSfx('archae/mobs/sfx/hurt1.ogg')
       .then(hurtSfx => {
         if (live) {
           const npcEntity = {
