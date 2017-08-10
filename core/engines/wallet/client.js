@@ -207,6 +207,9 @@ class Wallet {
               id,
             } = args;
 
+            const assetInstance = assetsMesh.getAssetInstance(id);
+            _unbindAssetInstance(assetInstance);
+
             assetsMesh.removeAssetInstance(id);
           } else if (type === 'setPhysics') {
             const {
@@ -1248,14 +1251,14 @@ class Wallet {
             const assetInstance = assetsMesh.getAssetInstance(id);
             _unbindAssetInstance(assetInstance);
 
+            assetsMesh.removeAssetInstance(id);
+
             connection.send(JSON.stringify({
               method: 'removeAsset',
               args: {
                 id,
               },
             }));
-
-            assetsMesh.removeAssetInstance(id);
           }
 
           registerItem(pluginInstance, itemApi) {
