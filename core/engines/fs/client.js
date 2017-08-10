@@ -15,27 +15,17 @@ class Fs {
 
     return archae.requestPlugins([
       '/core/engines/three',
-      '/core/engines/input',
-      '/core/engines/webvr',
-      '/core/engines/biolumi',
-      '/core/engines/rend',
       '/core/utils/js-utils',
-      '/core/utils/creature-utils',
     ]).then(([
       three,
-      input,
-      webvr,
-      biolumi,
-      rend,
       jsUtils,
-      creatureUtils,
     ]) => {
       if (live) {
         const {THREE} = three;
         const {events} = jsUtils;
         const {EventEmitter} = events;
 
-        const libRequestPromises = {};
+        /* const libRequestPromises = {};
         const _requestLib = libPath => {
           let entry = libRequestPromises[libPath];
           if (!entry) {
@@ -88,7 +78,7 @@ class Fs {
             FBXLoader,
           ]) => FBXLoader(THREE, THREENURBSCurve, Zlib));
         const _requestGLTFLoader = () => _requestLib('three-extra/GLTFLoader.js')
-          .then(GLTFLoader => GLTFLoader(THREE));
+          .then(GLTFLoader => GLTFLoader(THREE)); */
 
         const dragover = e => {
           e.preventDefault();
@@ -143,7 +133,7 @@ class Fs {
           document.removeEventListener('drop', drop);
         };
 
-        class FsFile {
+        /* class FsFile {
           constructor(url) {
             this.url = url;
           }
@@ -333,10 +323,51 @@ class Fs {
               reject(err);
             }
           }
+        } */
+
+        const _resBlob = res => {
+          if (res.status >= 200 && res.status < 300) {
+            return res.blob();
+          } else if (res.status === 404) {
+            return Promise.resolve(null);
+          } else {
+            return Promise.reject({
+              status: res.status,
+              stack: 'API returned invalid status code: ' + res.status,
+            });
+          }
+        };
+
+        class RemoteFile {
+          constructor(id) {
+            this.id = id;
+          }
+
+          read() {
+            return fetch(`/archae/fs/raw/${id}`, {
+              credentials: 'include',
+            })
+              .then(_resBlob)
+              .catch(reject);
+          }
+
+          write(d) {
+            return fetch(`/archae/fs/raw/${id}`, {
+              method: 'PUT',
+              body: d,
+              credentials: 'include',
+            })
+              .then(_resBlob)
+              .catch(reject);
+          }
         }
 
         class FsApi extends EventEmitter {
-          makeFile(url) {
+          makeRemoteFile() {
+            return new RemoteFile(_makeId());
+          }
+
+          /* makeFile(url) {
             return new FsFile(url);
           }
 
@@ -412,7 +443,7 @@ class Fs {
               };
               _recurse(0);
             });
-          }
+          } */
 
           dragover(e) {
             dragover(e);
@@ -429,8 +460,8 @@ class Fs {
     this._cleanup();
   }
 }
-
-const _padNumber = (n, width) => {
+const _makeId = () => Math.random().toString(36).substring(7);
+/* const _padNumber = (n, width) => {
   n = n + '';
   return n.length >= width ? n : new Array(width - n.length + 1).join('0') + n;
 };
@@ -440,6 +471,6 @@ const _makeId = () => {
   return array.reduce((acc, i) => {
     return acc + _padNumber(i.toString(16), 2);
   }, '');
-};
+}; */
 
 module.exports = Fs;
