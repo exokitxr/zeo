@@ -33,24 +33,14 @@ const flintSteel = objectApi => {
       )
     ))
     .then(sparkGeometrySpec => {
-      const geometry = new THREE.BufferGeometry();
-      geometry.addAttribute('position', new THREE.BufferAttribute(sparkGeometrySpec.positions, 3));
-      geometry.addAttribute('color', new THREE.BufferAttribute(sparkGeometrySpec.colors, 3));
-      geometry.addAttribute('dy', new THREE.BufferAttribute(sparkGeometrySpec.zeroDys, 2));
-      geometry.dys = sparkGeometrySpec.dys;
-      geometry.zeroDys = sparkGeometrySpec.zeroDys;
-      return geometry;
-    })
-    .then(sparkGeometry => {
       const sparkMeshes = [];
       const _makeSparkGeometry = () => {
         const geometry = new THREE.BufferGeometry();
-        geometry.addAttribute('position', sparkGeometry.getAttribute('position'));
-        geometry.addAttribute('color', sparkGeometry.getAttribute('color'));
-        const {dys, zeroDys} = sparkGeometry;
-        geometry.addAttribute('dy', new THREE.BufferAttribute(zeroDys, 2));
-        geometry.dys = dys;
-        geometry.zeroDys = zeroDys;
+        geometry.addAttribute('position', new THREE.BufferAttribute(sparkGeometrySpec.positions, 3));
+        geometry.addAttribute('color', new THREE.BufferAttribute(sparkGeometrySpec.colors, 3));
+        geometry.addAttribute('dy', new THREE.BufferAttribute(sparkGeometrySpec.zeroDys, 2));
+        geometry.dys = sparkGeometrySpec.dys;
+        geometry.zeroDys = sparkGeometrySpec.zeroDys;
         return geometry;
       };
       const _makeSparkMesh = grabbableMesh => {
@@ -151,6 +141,8 @@ const flintSteel = objectApi => {
       render.on('update', _update);
 
       return () => {
+        spriteUtils.releaseSpriteGeometry(sparkGeometrySpec);
+
         items.unregisterItem(this, stickItemApi);
         render.removeListener('update', _update);
       };
