@@ -78,23 +78,6 @@ class World {
         ensureWorldPathResult,
       ]) => {
         if (live) {
-          const _initTags = () => {
-            const plugins = [];
-            for (const id in tagsJson.tags) {
-              const tagSpec = tagsJson.tags[id];
-              if (tagSpec.type === 'entity') {
-                plugins.push(path.isAbsolute(tagSpec.module) ? tagSpec.module : `${tagSpec.module}@${tagSpec.version}`);
-              }
-            }
-            archae.requestPlugins(plugins, {
-              hotload: true,
-            })
-              .catch(err => {
-                console.warn(err);
-              });
-          };
-          _initTags();
-
           const _saveFile = (p, j) => new Promise((accept, reject) => {
             fs.writeFile(p, JSON.stringify(j, null, 2), 'utf8', err => {
               if (!err) {
@@ -416,6 +399,19 @@ class World {
           class WorldApi extends EventEmitter {
             getTags() {
               return tagsJson.tags;
+            }
+
+            initTags() {
+              const plugins = [];
+              for (const id in tagsJson.tags) {
+                const tagSpec = tagsJson.tags[id];
+                if (tagSpec.type === 'entity') {
+                  plugins.push(path.isAbsolute(tagSpec.module) ? tagSpec.module : `${tagSpec.module}@${tagSpec.version}`);
+                }
+              }
+              return archae.requestPlugins(plugins, {
+                hotload: true,
+              });
             }
           }
           const worldApi = new WorldApi();

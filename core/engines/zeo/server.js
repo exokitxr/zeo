@@ -87,6 +87,11 @@ class Zeo {
           const zeoApi = new ZeoApi();
           global.zeo = zeoApi;
 
+          world.initTags()
+            .catch(err => {
+              console.warn(err);
+            });
+
           this._cleanup = () => {};
 
           return zeoApi;
