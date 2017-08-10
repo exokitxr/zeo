@@ -26,13 +26,18 @@ class BoxBody {
     this.velocity = velocity;
   }
 
-  setState(position, rotation, scale, velocity) {
+  update(position, rotation, scale, velocity) {
     this.position.copy(position);
     this.rotation.copy(rotation);
     this.scale.copy(scale);
     this.velocity.copy(velocity);
 
     protocolUtils.stringifyUpdate(this.n, this.position, this.rotation, this.scale, this.velocity, buffer, 0);
+    postMessage(buffer);
+  }
+
+  collide() {
+    protocolUtils.stringifyCollide(this.n, buffer, 0);
     postMessage(buffer);
   }
 }
@@ -76,6 +81,8 @@ const interval = setInterval(() => {
     nextPosition.copy(position)
       .add(localVector.copy(nextVelocity).multiplyScalar(timeDiff / 1000));
 
+    let collided = false;
+
     for (let j = 0; j < staticHeightfieldBodies.length; j++) {
       const staticHeightfieldBody = staticHeightfieldBodies[j];
       localMin.set(staticHeightfieldBody.position.x, staticHeightfieldBody.position.z);
@@ -113,16 +120,23 @@ const interval = setInterval(() => {
         if ((nextPosition.y - (size.y / 2)) < elevation) {
           nextPosition.y = elevation + (size.y / 2);
           nextVelocity.copy(zeroVector);
+
+          collided = collided || !velocity.equals(zeroVector);
         }
       }
     }
     if ((nextPosition.y - (size.y / 2)) < 0) {
       nextPosition.y = size.y / 2;
       nextVelocity.copy(zeroVector);
+
+      collided = collided || !velocity.equals(zeroVector);
     }
 
     if (!nextPosition.equals(position) || !nextVelocity.equals(velocity)) {
-      body.setState(nextPosition, body.rotation, body.scale, nextVelocity);
+      body.update(nextPosition, body.rotation, body.scale, nextVelocity);
+    }
+    if (collided) {
+      body.collide();
     }
   }
 
@@ -201,6 +215,8 @@ self.onmessage = e => {
     case 'setState': {
       const {args} = data;
       const [n, spec] = args;
+
+      // XXX
 
       break;
     }

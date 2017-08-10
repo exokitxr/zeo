@@ -367,6 +367,10 @@ class Wallet {
                 },
               }));
             }
+
+            collide() {
+              this.emit('collide');
+            }
           }
 
           const assetInstances = [];
@@ -859,6 +863,9 @@ class Wallet {
             body = stck.makeDynamicBoxBody(assetInstance.position, assetSizeVector, velocity);
             body.on('update', () => {
               assetInstance.setStateLocal(body.position, body.rotation, body.scale);
+            });
+            body.on('collide', () => {
+              assetInstance.collide();
             });
           };
           const _removeBody = () => {
