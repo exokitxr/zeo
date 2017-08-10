@@ -7,7 +7,5 @@
   "builds": {
     "worker": "worker.js"
   },
-  "dependencies": {
-    "sfxr": "0.0.2"
-  }
+  "dependencies": {}
 }
