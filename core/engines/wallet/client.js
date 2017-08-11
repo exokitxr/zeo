@@ -755,6 +755,16 @@ class Wallet {
         const _trigger = e => {
           const {side} = e;
 
+          const _downloadFile = () => {
+            const grabbedGrabbable = hand.getGrabbedGrabbable(side);
+
+            if (grabbedGrabbable && grabbedGrabbable.type === 'file') {
+              fs.makeRemoteFileFromId(grabbedGrabbable.value).download();
+              return  true;
+            } else {
+              return false;
+            }
+          };
           const _clickMenu = () => {
             const hoverState = rend.getHoverState(side);
             const {anchor} = hoverState;
@@ -866,14 +876,18 @@ class Wallet {
             }
           };
 
-          if (_clickMenu()) {
-            sfx.digi_select.trigger();
+          if (_downloadFile()) {
+            // nothing
+          } else {
+            if (_clickMenu()) {
+              sfx.digi_select.trigger();
 
-            e.stopImmediatePropagation();
-          } else if (_clickMenuBackground()) {
-            sfx.digi_plink.trigger();
+              e.stopImmediatePropagation();
+            } else if (_clickMenuBackground()) {
+              sfx.digi_plink.trigger();
 
-            e.stopImmediatePropagation();
+              e.stopImmediatePropagation();
+            }
           }
         };
         input.on('trigger', _trigger, {
