@@ -8,6 +8,8 @@ const cameraWidth = 0.2;
 const cameraHeight = 0.15;
 const cameraAspectRatio = cameraWidth / cameraHeight;
 const cameraDepth = 0.1;
+const width = 1024;
+const height = Math.round(width / cameraAspectRatio);
 
 const dataSymbol = Symbol();
 
@@ -30,7 +32,7 @@ const camera = objectApi => {
     img.src = src;
   });
   const _requestImageBitmap = src => _requestImage(src)
-    .then(img => createImageBitmap(img));
+    .then(img => createImageBitmap(img, 0, 0, img.width, img.height));
 
   return () => _requestImageBitmap('/archae/objects/img/camera.png')
     .then(cameraImg => {
@@ -66,6 +68,7 @@ const camera = objectApi => {
         });
         return material;
       })();
+      const cameraBuffer = new Uint8Array(width * height * 4);
 
       const cameras = [];
 
@@ -76,30 +79,36 @@ const camera = objectApi => {
             const {side} = e;
 
             if (grabbable.getGrabberSide() === side) {
-              console.log('capture'); // XXX
+              renderer.readRenderTargetPixels(renderTarget, 0, 0, width, height, cameraBuffer);
+
+const canvas = document.createElement('canvas'); // XXX
+canvas.width = width;
+canvas.height = height;
+const ctx = canvas.getContext('2d');
+const imageData = ctx.createImageData(canvas.width, canvas.height);
+for (let y = 0; y < height; y++) {
+  new Uint8Array(imageData.data.buffer, imageData.data.byteOffset + y * width * 4, width * 4)
+    .set(new Uint8Array(cameraBuffer.buffer, cameraBuffer.byteOffset + (height - 1 - y) * width * 4, width * 4));
+}
+ctx.putImageData(imageData, 0, 0);
+document.body.appendChild(canvas);
 
               e.stopImmediatePropagation();
             }
           };
           input.on('triggerdown', _triggerdown);
 
+          const renderTarget = new THREE.WebGLRenderTarget(width, height, {
+            minFilter: THREE.NearestFilter,
+            magFilter: THREE.NearestFilter,
+            format: THREE.RGBAFormat,
+          });
           const cameraMesh = (() => {
             const geometry = cameraGeometry;
 
             const material = cameraMaterial;
             const mesh = new THREE.Mesh(geometry, material);
             mesh.visible = false;
-
-            const renderTarget = (() => {
-              const width = 1024;
-              const height = width / cameraAspectRatio;
-              const renderTarget = new THREE.WebGLRenderTarget(width, height, {
-                minFilter: THREE.NearestFilter,
-                magFilter: THREE.NearestFilter,
-                format: THREE.RGBAFormat,
-              });
-              return renderTarget;
-            })();
 
             const screenMesh = (() => {
               const screenWidth = cameraWidth * 0.9;
