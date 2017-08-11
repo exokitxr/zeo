@@ -8,6 +8,7 @@ const apple = require('./apple');
 const craftingTable = require('./crafting-table');
 const mirror = require('./mirror');
 const paper = require('./paper');
+const monitor = require('./monitor');
 const camera = require('./camera');
 const videoCamera = require('./video-camera');
 const torch = require('./torch');
@@ -24,6 +25,7 @@ const objectsLib = options => [
   craftingTable,
   mirror,
   paper,
+  monitor,
   camera,
   videoCamera,
   torch,
