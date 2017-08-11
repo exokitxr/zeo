@@ -15,15 +15,22 @@ class Fs {
 
     return archae.requestPlugins([
       '/core/engines/three',
+      '/core/engines/webvr',
       '/core/utils/js-utils',
     ]).then(([
       three,
+      webvr,
       jsUtils,
     ]) => {
       if (live) {
         const {THREE} = three;
         const {events} = jsUtils;
         const {EventEmitter} = events;
+
+        const forwardVector = new THREE.Vector3(0, 0, -1);
+        const localVector = new THREE.Vector3();
+        const localVector2 = new THREE.Vector3();
+        const localVector3 = new THREE.Vector3();
 
         /* const libRequestPromises = {};
         const _requestLib = libPath => {
@@ -89,16 +96,19 @@ class Fs {
 
           const {dataTransfer: {items}} = e;
           if (items.length > 0) {
-            const _getFiles = entries => {
-              const result = [];
+            const _getFiles = items => {
+              const entries = Array.from(items)
+                .map(item => item.webkitGetAsEntry())
+                .filter(entry => entry !== null);
 
+              const files = [];
               const _recurseEntries = entries => Promise.all(entries.map(_recurseEntry));
               const _recurseEntry = entry => new Promise((accept, reject) => {
                 if (entry.isFile) {
                   entry.file(file => {
                     file.path = entry.fullPath;
 
-                    result.push(file);
+                    files.push(file);
 
                     accept();
                   });
@@ -115,15 +125,40 @@ class Fs {
                 }
               });
               return _recurseEntries(entries)
-                .then(() => result);
+                .then(() => files);
             };
-            const entries = Array.from(items)
-              .map(item => item.webkitGetAsEntry())
-              .filter(entry => entry !== null);
-            _getFiles(entries)
-              .then(files => {
-                fsApi.emit('upload', files);
-              });
+
+            _getFiles(items)
+              .then(files => Promise.all(files.map((file, i) => {
+                const {type} = file;
+                const match = file.path.match(/\.(.+?)$/);
+                const ext = match && match[1];
+                const remoteFile = fsApi.makeRemoteFileFromType({
+                  type,
+                  ext,
+                });
+                const dropMatrix = (() => {
+                  const {hmd} = webvr.getStatus();
+                  const {worldPosition: hmdPosition, worldRotation: hmdRotation, worldScale: hmdScale} = hmd;
+                  const width = 0.2;
+                  const fullWidth = (files.length - 1) * width;
+                  localVector.copy(hmdPosition)
+                    .add(
+                      localVector2.copy(forwardVector)
+                        .add(localVector3.set(-fullWidth/2 + i*width, 0, 0))
+                        .applyQuaternion(hmdRotation)
+                    );
+                  return localVector.toArray().concat(hmdRotation.toArray()).concat(hmdScale.toArray());
+                })();
+
+                return remoteFile.write(file)
+                  .then(() => {
+                    fsApi.emit('upload', {
+                      file: remoteFile,
+                      dropMatrix,
+                    });
+                  });
+              })));
           }
         };
         document.addEventListener('drop', drop);
@@ -343,28 +378,30 @@ class Fs {
             this.id = id;
           }
 
+          getFileName() {
+            return this.id.match(/([^\[\.]*)/)[1];
+          }
+
           read() {
             return fetch(`/archae/fs/raw/${id}`, {
               credentials: 'include',
             })
-              .then(_resBlob)
-              .catch(reject);
+              .then(_resBlob);
           }
 
           write(d) {
-            return fetch(`/archae/fs/raw/${id}`, {
+            return fetch(`/archae/fs/raw/${this.id}`, {
               method: 'PUT',
               body: d,
               credentials: 'include',
             })
-              .then(_resBlob)
-              .catch(reject);
+              .then(_resBlob);
           }
         }
 
         class FsApi extends EventEmitter {
-          makeRemoteFile() {
-            return new RemoteFile(_makeId());
+          makeRemoteFileFromType({type = '', ext = ''} = {}) {
+            return new RemoteFile(_makeId() + (type ? '[' + type.replace(/\//g, '_') + ']' : '') + (ext ? '.' + ext : ''));
           }
 
           /* makeFile(url) {

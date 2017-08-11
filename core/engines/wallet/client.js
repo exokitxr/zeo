@@ -69,6 +69,7 @@ class Wallet {
       '/core/engines/bootstrap',
       '/core/engines/three',
       '/core/engines/input',
+      '/core/engines/fs',
       '/core/engines/webvr',
       '/core/engines/biolumi',
       '/core/engines/resource',
@@ -90,6 +91,7 @@ class Wallet {
       bootstrap,
       three,
       input,
+      fs,
       webvr,
       biolumi,
       resource,
@@ -406,7 +408,8 @@ class Wallet {
               let live = true;
 
               const geometry = (() => {
-                const imageData = resource.getSpriteImageData(value);
+                const spriteName = type === 'asset' ? value : 'FIL';
+                const imageData = resource.getSpriteImageData(spriteName);
 
                 spriteUtils.requestSpriteGeometry(imageData, pixelSize)
                   .then(geometrySpec => {
@@ -935,7 +938,7 @@ class Wallet {
 
         const _pullItem = (asset, side) => {
           const id = _makeId();
-          const owner = bootstrap.getAddress();
+          // const owner = bootstrap.getAddress();
           const itemSpec = {
             type: 'asset',
             id: id,
@@ -945,7 +948,8 @@ class Wallet {
               type: {value: 'asset'},
               value: {value: asset},
               position: {value: DEFAULT_MATRIX},
-              owner: {value: owner},
+              // owner: {value: owner},
+              owner: {value: null},
               bindOwner: {value: null},
               physics: {value: false},
             },
@@ -998,38 +1002,41 @@ class Wallet {
         const _storeItem = assetInstance => {
           walletApi.destroyItem(assetInstance);
 
-          const {value} = assetInstance;
-          const address = bootstrap.getAddress();
-          const quantity = 1;
-          const {assets: oldAssets} = walletState;
-          vridUtils.requestCreateGet(address, value, quantity)
-            .then(() => {
-              const {assets: newAssets} = walletState;
+          const {type} = assetInstance;
+          if (type === 'asset') {
+            const {value} = assetInstance;
+            const address = bootstrap.getAddress();
+            const quantity = 1;
+            const {assets: oldAssets} = walletState;
+            vridUtils.requestCreateGet(address, value, quantity)
+              .then(() => {
+                const {assets: newAssets} = walletState;
 
-              if (oldAssets === newAssets) {
-                let newAsset = newAssets.find(assetSpec => assetSpec.value === value);
-                if (!newAsset) {
-                  newAsset = {
-                    id: value,
-                    asset: value,
-                    quantity: 0,
-                  };
-                  newAssets.push(newAsset);
+                if (oldAssets === newAssets) {
+                  let newAsset = newAssets.find(assetSpec => assetSpec.value === value);
+                  if (!newAsset) {
+                    newAsset = {
+                      id: value,
+                      asset: value,
+                      quantity: 0,
+                    };
+                    newAssets.push(newAsset);
+                  }
+                  newAsset.quantity++;
+
+                  _updatePages();
                 }
-                newAsset.quantity++;
+              })
+              .catch(err => {
+                console.warn(err);
+              });
 
-                _updatePages();
-              }
-            })
-            .catch(err => {
-              console.warn(err);
-            });
-
-          sfx.drop.trigger();
-          const newNotification = notification.addNotification(`Stored ${value}.`);
-          setTimeout(() => {
-            notification.removeNotification(newNotification);
-          }, 3000);
+            sfx.drop.trigger();
+            const newNotification = notification.addNotification(`Stored ${value}.`);
+            setTimeout(() => {
+              notification.removeNotification(newNotification);
+            }, 3000);
+          }
         };
         const _checkGripdown = side => {
           const hoverState = hoverStates[side];
@@ -1063,6 +1070,28 @@ class Wallet {
         input.on('gripdown', _gripdown, {
           priority: -2,
         });
+
+        const _upload = ({file, dropMatrix}) => {
+          const id = _makeId();
+          const fileName = file.getFileName();
+          const itemSpec = {
+            type: 'file',
+            id: file.id,
+            name: fileName,
+            displayName: fileName,
+            attributes: {
+              type: {value: 'file'},
+              value: {value: file.id},
+              position: {value: dropMatrix},
+              owner: {value: null},
+              bindOwner: {value: null},
+              physics: {value: true},
+            },
+            metadata: {},
+          };
+          walletApi.makeItem(itemSpec);
+        };
+        fs.on('upload', _upload);
 
         const _tabchange = tab => {
           if (tab === 'wallet') {
@@ -1197,6 +1226,8 @@ class Wallet {
         cleanups.push(() => {
           input.removeListener('trigger', _trigger);
           input.removeListener('gripdown', _gripdown);
+
+          fs.removeListener('upload', _upload);
 
           rend.removeListener('tabchange', _tabchange);
           rend.removeListener('update', _update);
