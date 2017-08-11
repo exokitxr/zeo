@@ -151,14 +151,15 @@ class Wallet {
           fontStyle: biolumi.getFontStyle(),
         };
 
-        const _addAsset = (id, asset, n, physics, matrix) => {
+        const _addAsset = (id, type, value, n, physics, matrix) => {
           const position = new THREE.Vector3(matrix[0], matrix[1], matrix[2]);
           const rotation = new THREE.Quaternion(matrix[3], matrix[4], matrix[5], matrix[6]);
           const scale = new THREE.Vector3(matrix[7], matrix[8], matrix[9]);
 
           const assetInstance = assetsMesh.addAssetInstance(
             id,
-            asset,
+            type,
+            value,
             n,
             physics,
             position,
@@ -184,24 +185,26 @@ class Wallet {
               const assetSpec = assets[i];
               const {
                 id,
-                asset,
+                type,
+                value,
                 n,
                 physics,
                 matrix,
               } = assetSpec;
 
-              _addAsset(id, asset, n, physics, matrix);
+              _addAsset(id, type, value, n, physics, matrix);
             }
           } else if (type === 'addAsset') {
             const {
               id,
-              asset,
+              type,
+              value,
               n,
               physics,
               matrix,
             } = args;
 
-            _addAsset(id, asset, n, physics, matrix);
+            _addAsset(id, type, value, n, physics, matrix);
           } else if (type === 'removeAsset') {
             const {
               id,
@@ -269,7 +272,8 @@ class Wallet {
           class AssetInstance extends Grabbable {
             constructor(
               id,
-              asset,
+              type,
+              value,
               n,
               physics,
               position,
@@ -282,7 +286,8 @@ class Wallet {
               super(n, position, rotation, scale, localPosition, localRotation, localScale);
 
               this.id = id;
-              this.asset = asset;
+              this.type = type;
+              this.value = value;
               this.physics = physics;
             }
 
@@ -392,8 +397,8 @@ class Wallet {
           const assetInstances = [];
           mesh.getAssetInstances = id => assetInstances;
           mesh.getAssetInstance = id => assetInstances.find(assetInstance => assetInstance.id === id);
-          mesh.addAssetInstance = (id, asset, n, physics, position, rotation, scale, localPosition, localRotation, localScale) => {
-            const assetInstance = new AssetInstance(id, asset, n, physics, position, rotation, scale, localPosition, localRotation, localScale);
+          mesh.addAssetInstance = (id, type, value, n, physics, position, rotation, scale, localPosition, localRotation, localScale) => {
+            const assetInstance = new AssetInstance(id, type, value, n, physics, position, rotation, scale, localPosition, localRotation, localScale);
             hand.addGrabbable(assetInstance);
             assetInstances.push(assetInstance);
 
@@ -401,7 +406,7 @@ class Wallet {
               let live = true;
 
               const geometry = (() => {
-                const imageData = resource.getSpriteImageData(asset);
+                const imageData = resource.getSpriteImageData(value);
 
                 spriteUtils.requestSpriteGeometry(imageData, pixelSize)
                   .then(geometrySpec => {
@@ -937,8 +942,9 @@ class Wallet {
             name: asset,
             displayName: asset,
             attributes: {
+              type: {value: 'asset'},
+              value: {value: asset},
               position: {value: DEFAULT_MATRIX},
-              asset: {value: asset},
               owner: {value: owner},
               bindOwner: {value: null},
               physics: {value: false},
@@ -992,20 +998,20 @@ class Wallet {
         const _storeItem = assetInstance => {
           walletApi.destroyItem(assetInstance);
 
-          const {asset} = assetInstance;
+          const {value} = assetInstance;
           const address = bootstrap.getAddress();
           const quantity = 1;
           const {assets: oldAssets} = walletState;
-          vridUtils.requestCreateGet(address, asset, quantity)
+          vridUtils.requestCreateGet(address, value, quantity)
             .then(() => {
               const {assets: newAssets} = walletState;
 
               if (oldAssets === newAssets) {
-                let newAsset = newAssets.find(assetSpec => assetSpec.asset === asset);
+                let newAsset = newAssets.find(assetSpec => assetSpec.value === value);
                 if (!newAsset) {
                   newAsset = {
-                    id: asset,
-                    asset: asset,
+                    id: value,
+                    asset: value,
                     quantity: 0,
                   };
                   newAssets.push(newAsset);
@@ -1020,7 +1026,7 @@ class Wallet {
             });
 
           sfx.drop.trigger();
-          const newNotification = notification.addNotification(`Stored ${asset}.`);
+          const newNotification = notification.addNotification(`Stored ${value}.`);
           setTimeout(() => {
             notification.removeNotification(newNotification);
           }, 3000);
@@ -1073,8 +1079,8 @@ class Wallet {
         const itemApis = {};
         const equipmentApis = {};
         const _bindAssetInstance = assetInstance => {
-          const {asset} = assetInstance;
-          const itemEntry = itemApis[asset];
+          const {value} = assetInstance;
+          const itemEntry = itemApis[value];
 
           if (itemEntry) {
             for (let i = 0; i < itemEntry.length; i++) {
@@ -1087,8 +1093,8 @@ class Wallet {
           }
         };
         const _unbindAssetInstance = assetInstance => {
-          const {asset} = assetInstance;
-          const itemEntry = itemApis[asset];
+          const {value} = assetInstance;
+          const itemEntry = itemApis[value];
 
           if (itemEntry) {
             for (let i = 0; i < itemEntry.length; i++) {
@@ -1104,7 +1110,7 @@ class Wallet {
           if (typeof itemApi.asset === 'string' && typeof itemApi.itemAddedCallback === 'function') {
             const {asset} = itemApi;
             const boundAssetInstances = assetsMesh.getAssetInstances()
-              .filter(assetInstance => assetInstance.asset === asset);
+              .filter(assetInstance => assetInstance.value === asset);
 
             for (let i = 0; i < boundAssetInstances.length; i++) {
               const assetInstance = boundAssetInstances[i];
@@ -1116,7 +1122,7 @@ class Wallet {
           if (typeof itemApi.asset === 'string' && typeof itemApi.itemRemovedCallback === 'function') {
             const {asset} = itemApi;
             const boundAssetInstances = assetsMesh.getAssetInstances()
-              .filter(assetInstance => assetInstance.asset === asset);
+              .filter(assetInstance => assetInstance.value === asset);
 
             for (let i = 0; i < boundAssetInstances.length; i++) {
               const assetInstance = boundAssetInstances[i];
@@ -1211,7 +1217,15 @@ class Wallet {
           }
 
           makeItem(itemSpec) {
-            const {id, attributes: {asset: {value: asset}, position: {value: matrix}, physics: {value: physics}}} = itemSpec;
+            const {
+              id,
+              attributes: {
+                type: {value: type},
+                value: {value: value},
+                position: {value: matrix},
+                physics: {value: physics},
+              },
+            } = itemSpec;
             const n = murmur(id);
             const position = new THREE.Vector3(matrix[0], matrix[1], matrix[2]);
             const rotation = new THREE.Quaternion(matrix[3], matrix[4], matrix[5], matrix[6]);
@@ -1219,7 +1233,8 @@ class Wallet {
 
             const assetInstance = assetsMesh.addAssetInstance(
               id,
-              asset,
+              type,
+              value,
               n,
               physics,
               position,
@@ -1236,7 +1251,8 @@ class Wallet {
               method: 'addAsset',
               args: {
                 id,
-                asset,
+                type,
+                value,
                 n,
                 physics,
                 matrix,

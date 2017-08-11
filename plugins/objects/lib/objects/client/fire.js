@@ -119,8 +119,9 @@ const fire = objectApi => {
               name: asset,
               displayName: asset,
               attributes: {
+                type: {value: 'asset'},
+                value: {value: asset},
                 position: {value: DEFAULT_MATRIX},
-                asset: {value: asset},
                 quantity: {value: 1},
                 owner: {value: null},
                 bindOwner: {value: null},
