@@ -17,6 +17,7 @@ const camera = objectApi => {
 
   const localVector = new THREE.Vector3();
   const sourceCamera = new THREE.PerspectiveCamera(45, cameraWidth / cameraHeight, camera.near, camera.far);
+  sourceCamera.name = camera.name;
 
   const _requestImage = src => new Promise((accept, reject) => {
     const img = new Image();
@@ -123,6 +124,7 @@ const camera = objectApi => {
                 mesh.quaternion.copy(grabbable.rotation);
                 // mesh.scale.copy(grabbable.scale);
                 mesh.updateMatrixWorld();
+                mesh.visible = true;
 
                 sourceCamera.position.copy(mesh.position)
                   .add(
@@ -131,10 +133,8 @@ const camera = objectApi => {
                   );
                 sourceCamera.quaternion.copy(mesh.quaternion);
 
-                mesh.visible = false;
                 renderer.render(scene, sourceCamera, renderTarget);
                 renderer.setRenderTarget(null);
-                mesh.visible = true;
               } else {
                 mesh.visible = false;
               }
