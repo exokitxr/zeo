@@ -1,3 +1,6 @@
+const mod = require('mod-loop');
+
+const PENCIL_SIZE = 0.2;
 const HEIGHTFIELD_PLUGIN = 'plugins-heightfield';
 const DEFAULT_MATRIX = [
   0, 0, 0,
@@ -13,9 +16,14 @@ const paper = objectApi => {
   const {THREE, scene, camera, renderer} = three;
 
   const oneVector = new THREE.Vector3(1, 1, 1);
+  const backVector = new THREE.Vector3(0, 0, -1);
+  const pencilVector = new THREE.Vector3(0, 0, -PENCIL_SIZE);
   const localVector = new THREE.Vector3();
+  const localVector2 = new THREE.Vector3();
+  const localCoords = new THREE.Vector2();
   const localQuaternion = new THREE.Quaternion();
   const localEuler = new THREE.Euler();
+  const localLine = new THREE.Line3();
 
   const _requestImage = src => new Promise((accept, reject) => {
     const img = new Image();
@@ -27,16 +35,20 @@ const paper = objectApi => {
     };
     img.src = src;
   });
+  const _requestImageBitmap = src => _requestImage(src)
+    .then(img => createImageBitmap(img));
   const _requestTexture = (src, name) => _requestImage(src)
     .then(img => objectApi.registerTexture(name, img));
 
   return () => Promise.all([
     _requestTexture('/archae/objects/img/wood.png', 'paper'),
-    _requestImage('/archae/objects/img/pencil.png'),
+    _requestImageBitmap('/archae/objects/img/pencil.png'),
+    _requestImageBitmap('/archae/objects/img/brush.png'),
   ])
     .then(([
       paperTexture,
       pencilImg,
+      brushImg,
     ]) =>
       objectApi.registerGeometry('paper', (args) => {
         const {THREE, getUv} = args;
@@ -113,14 +125,13 @@ const paper = objectApi => {
         const PAPER_SIZE = 1;
         const STAND_SIZE = PAPER_SIZE * 2;
         const PAPER_BORDER_SIZE = PAPER_SIZE * 0.1;
+        const RESOLUTION = 500;
         const width = PAPER_SIZE;
         const height = STAND_SIZE;
         const rendererSize = renderer.getSize();
         const rendererPixelRatio = renderer.getPixelRatio();
         const resolutionWidth = rendererSize.width * rendererPixelRatio;
         const resolutionHeight = rendererSize.height * rendererPixelRatio;
-
-        const offsetVector = new THREE.Vector3(0, height/2 + PAPER_SIZE/2, 0);
 
         const pencilMaterial = (() => {
           const texture = new THREE.Texture(
@@ -141,7 +152,8 @@ const paper = objectApi => {
           return material;
         })();
         const _makePencilMesh = () => {
-          const geometry = new THREE.BoxBufferGeometry(0.02, 0.02, 0.2);
+          const geometry = new THREE.BoxBufferGeometry(0.02, 0.02, PENCIL_SIZE)
+            .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -PENCIL_SIZE / 2));
           const material = pencilMaterial;
           const mesh = new THREE.Mesh(geometry, material);
           mesh.visible = false;
@@ -221,36 +233,104 @@ const paper = objectApi => {
               object.remove();
             });
 
-            const geometry = new THREE.PlaneBufferGeometry(1, 1, 3, 0);
-            const positions = geometry.getAttribute('position').array;
-            const numPositions = positions.length / 3;
-            for (let i = 0; i < numPositions; i++) {
-              const baseIndex = i * 3;
-              const x = positions[baseIndex + 0];
-              positions[baseIndex + 2] += 0.05 *
-                (Math.abs(x) === 1 ? 0 : 1) *
-                (x > 0 ? -1 : 0);
-            }
-            geometry
-              .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(
-                new THREE.Quaternion().setFromAxisAngle(
+            const paperMesh = (() => {
+              const geometry = new THREE.PlaneBufferGeometry(1, 1, 3, 0);
+              /* const positions = geometry.getAttribute('position').array;
+              const numPositions = positions.length / 3;
+              for (let i = 0; i < numPositions; i++) {
+                const baseIndex = i * 3;
+                const x = positions[baseIndex + 0];
+                positions[baseIndex + 2] += 0.05 *
+                  (Math.abs(x) === 1 ? 0 : 1) *
+                  (x > 0 ? -1 : 0);
+              } */
+              /* geometry
+                .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(
+                  new THREE.Quaternion().setFromAxisAngle(
+                    new THREE.Vector3(1, 0, 0),
+                    -0.05 * Math.PI * 2
+                  )
+                ))
+                .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, PAPER_BORDER_SIZE)); */
+              const canvas = document.createElement('canvas');
+              canvas.width = RESOLUTION;
+              canvas.height = RESOLUTION;
+              const ctx = canvas.getContext('2d');
+              ctx.fillStyle = '#FFF';
+              ctx.fillRect(0, 0, canvas.width, canvas.height);
+              canvas.ctx = ctx;
+              const texture = new THREE.Texture(
+                canvas,
+                THREE.UVMapping,
+                THREE.ClampToEdgeWrapping,
+                THREE.ClampToEdgeWrapping,
+                THREE.NearestFilter,
+                THREE.NearestFilter,
+                THREE.RGBAFormat,
+                THREE.UnsignedByteType,
+                1
+              );
+              texture.needsUpdate = true;
+              const material = new THREE.MeshPhongMaterial({
+                color: 0xFFFFFF,
+                shininess: 0,
+                map: texture,
+                shading: THREE.FlatShading,
+                side: THREE.DoubleSide,
+              });
+
+              const mesh = new THREE.Mesh(geometry, material);
+              mesh.position.copy(object.position)
+                .add(new THREE.Vector3(0, height/2 + PAPER_SIZE/2, PAPER_BORDER_SIZE).applyQuaternion(object.rotation));
+              mesh.quaternion.copy(object.rotation)
+                .multiply(new THREE.Quaternion().setFromAxisAngle(
                   new THREE.Vector3(1, 0, 0),
                   -0.05 * Math.PI * 2
-                )
-              ))
-              .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, PAPER_BORDER_SIZE));
-            const material = new THREE.MeshPhongMaterial({
-              color: 0xFFFFFF,
-              shininess: 0,
-              shading: THREE.FlatShading,
-              side: THREE.DoubleSide,
-            });
-            const paperMesh = new THREE.Mesh(geometry, material);
-            scene.add(paperMesh);
-            paperMesh.position.copy(object.position)
-              .add(offsetVector);
-            paperMesh.quaternion.copy(object.rotation);
-            // paperMesh.scale.copy(object.scale);
+                ));
+              // mesh.scale.copy(object.scale);
+              mesh.canvas = canvas;
+              mesh.texture = texture;
+
+              const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(
+                localVector.copy(backVector).applyQuaternion(mesh.quaternion),
+                mesh.position
+              );
+              const xAxis = new THREE.Line3(
+                mesh.position.clone().add(new THREE.Vector3(-PAPER_SIZE/2, PAPER_SIZE/2, 0).applyQuaternion(mesh.quaternion)),
+                mesh.position.clone().add(new THREE.Vector3(PAPER_SIZE/2, PAPER_SIZE/2, 0).applyQuaternion(mesh.quaternion))
+              );
+              const yAxis = new THREE.Line3(
+                mesh.position.clone().add(new THREE.Vector3(-PAPER_SIZE/2, PAPER_SIZE/2, 0).applyQuaternion(mesh.quaternion)),
+                mesh.position.clone().add(new THREE.Vector3(-PAPER_SIZE/2, -PAPER_SIZE/2, 0).applyQuaternion(mesh.quaternion))
+              );
+              mesh.getCoords = (line, resultCoords) => {
+                const planePoint = plane.intersectLine(line, localVector);
+
+                if (planePoint) {
+                  const x = Math.floor(xAxis.closestPointToPoint(planePoint, true, localVector2).distanceTo(xAxis.start) / PAPER_SIZE * RESOLUTION);
+                  const y = Math.floor(yAxis.closestPointToPoint(planePoint, true, localVector2).distanceTo(yAxis.start) / PAPER_SIZE * RESOLUTION);
+
+                  if (x > 0 && x < RESOLUTION && y > 0 && y < RESOLUTION) {
+                    return resultCoords.set(x, y);
+                  } else {
+                    return null;
+                  }
+                } else {
+                  return null;
+                }
+              };
+
+              const _makeDrawState = () => ({
+                lastPoint: new THREE.Vector2(),
+                lastPointActive: false,
+              });
+              mesh.drawStates = {
+                left: _makeDrawState(),
+                right: _makeDrawState(),
+              };
+
+              return mesh;
+            })();
             scene.add(paperMesh);
             paperMesh.updateMatrixWorld();
             object.paperMesh = paperMesh;
@@ -272,41 +352,142 @@ const paper = objectApi => {
         };
         objectApi.registerObject(paperObjectApi);
 
+        const _makeDrawState = () => ({
+          drawing: false,
+        });
+        const drawStates = {
+          left: _makeDrawState(),
+          right: _makeDrawState(),
+        };
+
+        const _triggerdown = e => {
+          drawStates[e.side].drawing = true;
+        };
+        input.on('triggerdown', _triggerdown);
+        const _triggerup = e => {
+          drawStates[e.side].drawing = false;
+        };
+        input.on('triggerup', _triggerup);
+
         const _update = () => {
-          if (papers.length > 0) {
-            const {gamepads} = pose.getStatus();
+          const _updatePencilMeshes = () => {
+            if (papers.length > 0) {
+              const {gamepads} = pose.getStatus();
 
-            for (let i = 0; i < SIDES.length; i++) {
-              const side = SIDES[i];
-              const gamepad = gamepads[side];
-              const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale} = gamepad;
+              for (let i = 0; i < SIDES.length; i++) {
+                const side = SIDES[i];
+                const gamepad = gamepads[side];
+                const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale} = gamepad;
 
-              let found = false;
-              for (let j = 0; j < papers.length; j++) {
-                if (controllerPosition.distanceTo(papers[j].paperMesh.position) < 1) {
-                  found = true;
-                  break;
+                let found = false;
+                for (let j = 0; j < papers.length; j++) {
+                  if (controllerPosition.distanceTo(papers[j].paperMesh.position) < 1) {
+                    found = true;
+                    break;
+                  }
+                }
+
+                const pencilMesh = pencilMeshes[side];
+                if (found) {
+                  pencilMesh.position.copy(controllerPosition);
+                  pencilMesh.quaternion.copy(controllerRotation);
+                  pencilMesh.scale.copy(controllerScale);
+                  pencilMesh.updateMatrixWorld();
+                  pencilMesh.visible = true;
+                } else {
+                  pencilMesh.visible = false;
                 }
               }
+            }
+          };
+          const _updateDraw = () => {
+            if (papers.length > 0) {
+              const {gamepads} = pose.getStatus();
 
-              const pencilMesh = pencilMeshes[side];
-              if (found) {
-                pencilMesh.position.copy(controllerPosition);
-                pencilMesh.quaternion.copy(controllerRotation);
-                pencilMesh.scale.copy(controllerScale);
-                pencilMesh.updateMatrixWorld();
-                pencilMesh.visible = true;
-              } else {
-                pencilMesh.visible = false;
+              for (let i = 0; i < papers.length; i++) {
+                const paper = papers[i];
+                const {paperMesh} = paper;
+                const {drawStates: paperMeshDrawStates} = paperMesh;
+
+                for (let j = 0; j < SIDES.length; j++) {
+                  const side = SIDES[j];
+                  const drawState = drawStates[side];
+                  const paperMeshDrawState = paperMeshDrawStates[side];
+
+                  if (drawState.drawing) {
+                    const gamepad = gamepads[side];
+                    const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale} = gamepad;
+
+                    const pencilLine = localLine;
+                    pencilLine.start.copy(controllerPosition);
+                    pencilLine.end.copy(controllerPosition)
+                      .add(
+                        localVector.copy(pencilVector)
+                          .applyQuaternion(controllerRotation)
+                      );
+                    const planeCoords = paperMesh.getCoords(pencilLine, localCoords);
+
+                    if (planeCoords) {
+                      const currentPoint = planeCoords;
+                      const {lastPoint, lastPointActive} = paperMeshDrawState;
+                      if (!lastPointActive) {
+                        lastPoint.copy(currentPoint);
+                        lastPoint.y -= 10;
+                      }
+
+                      const distance = lastPoint.distanceTo(currentPoint);
+                      if (distance > 0) {
+                        const halfBrushW = brushImg.width / 2;
+                        const halfBrushH = brushImg.height / 2;
+                        const dy = currentPoint.y - lastPoint.y;
+                        const dx = currentPoint.x - lastPoint.x;
+                        const angle = mod(Math.atan2(dy, dx), Math.PI * 2);
+
+                        let minX = Infinity;
+                        let maxX = -Infinity;
+                        let minY = Infinity;
+                        let maxY = -Infinity;
+                        for (let z = 0; z <= distance || z === 0; z++) {
+                          const x = lastPoint.x + (Math.cos(angle) * z) - halfBrushW;
+                          const y = lastPoint.y + (Math.sin(angle) * z) - halfBrushH;
+                          paperMesh.canvas.ctx.drawImage(brushImg, x, y);
+
+                          const localMinX = Math.floor(x);
+                          const localMaxX = Math.min(localMinX + brushImg.width, paperMesh.canvas.width);
+                          const localMinY = Math.floor(y);
+                          const localMaxY = Math.min(localMinY + brushImg.height, paperMesh.canvas.height);
+                          minX = Math.min(minX, localMinX);
+                          maxX = Math.max(maxX, localMaxX);
+                          minY = Math.min(minY, localMinY);
+                          maxY = Math.max(maxY, localMaxY);
+                        }
+
+                        paperMesh.texture.needsUpdate = true;
+                      }
+
+                      lastPoint.copy(currentPoint);
+                      paperMeshDrawState.lastPointActive = true;
+                    } else {
+                      paperMeshDrawState.lastPointActive = false;
+                    }
+                  } else {
+                    paperMeshDrawState.lastPointActive = false;
+                  }
+                }
               }
             }
-          }
+          };
+
+          _updatePencilMeshes();
+          _updateDraw();
         };
         render.on('update', _update);
 
         return () => {
           objectApi.unregisterObject(paperObjectApi);
 
+          input.removeListener('triggerdown', _triggerdown);
+          input.removeListener('triggerup', _triggerup);
           render.removeListener('update', _update);
 
           scene.removeListener(pencilMeshes.left);
