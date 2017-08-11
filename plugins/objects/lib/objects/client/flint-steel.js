@@ -1,9 +1,4 @@
 const HEIGHTFIELD_PLUGIN = 'plugins-heightfield';
-const DEFAULT_MATRIX = [
-  0, 0, 0,
-  0, 0, 0, 1,
-  1, 1, 1,
-];
 
 const dataSymbol = Symbol();
 
