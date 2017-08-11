@@ -1,12 +1,6 @@
 {
   "CRD": "Misc_82",
-  "ITEM.STONE": "Misc_42",
-  "ITEM.WOOD": "Crafting_85",
-  "ITEM.STICK": "Crafting_88",
-  "ITEM.APPLE": "Food_01",
-  "ITEM.COAL": "Crafting_55",
-  "ITEM.IRON": "Crafting_51",
-  "ITEM.SAND": "CraftingDust_06",
+  "FIL": "Misc_62",
   "ITEM.SWORD": "Weapon_06",
   "ITEM.HAMMER": "Weapon_46",
   "ITEM.PICKAXE": "Pickaxe",

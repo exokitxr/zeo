@@ -814,6 +814,10 @@ class World {
               mimeType,
               files,
             });
+
+            for (let i = 0;  i < files.length; i++) {
+              const file
+            }
           };
           _makeFileTagFromFiles(files)
             .then(tagMesh => {

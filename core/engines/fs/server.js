@@ -44,7 +44,7 @@ class Fs {
             // res.set('Content-Disposition', 'attachment; filename="' + path.basename(filePath) + '"');
             fsStatic(req, res, next);
           }
-          app.get(/^\/fs\/([^\/]+)$/, serveFsDownload);
+          app.get(/^\/archae\/fs\/raw\/([^\/]+)$/, serveFsDownload);
 
           function serveFsUpload(req, res, next) {
             const ws = fs.createWriteStream(path.join(fsPath, req.params[0]));
@@ -59,7 +59,7 @@ class Fs {
               });
             });
           }
-          app.put(/^\/fs\/([^\/]+)$/, serveFsUpload);
+          app.put(/^\/archae\/fs\/raw\/([^\/]+)$/, serveFsUpload);
 
           cleanups.push(() => {
             function removeMiddlewares(route, i, routes) {
