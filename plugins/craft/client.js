@@ -368,8 +368,9 @@ class Craft {
             name: outputAsset,
             displayName: outputAsset,
             attributes: {
+              type: {value: 'asset'},
+              value: {value: outputAsset},
               position: {value: DEFAULT_MATRIX},
-              asset: {value: outputAsset},
               quantity: {value: 1},
               owner: {value: null},
               bindOwner: {value: null},
