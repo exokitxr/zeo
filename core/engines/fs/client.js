@@ -144,7 +144,7 @@ class Fs {
                   const fullWidth = (files.length - 1) * width;
                   localVector.copy(hmdPosition)
                     .add(
-                      localVector2.copy(forwardVector)
+                      localVector2.copy(forwardVector).multiplyScalar(0.5)
                         .add(localVector3.set(-fullWidth/2 + i*width, 0, 0))
                         .applyQuaternion(hmdRotation)
                     );

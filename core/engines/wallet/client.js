@@ -131,7 +131,6 @@ class Wallet {
         const zeroArray2 = new Float32Array(0);
         const zeroVector = new THREE.Vector3();
         const oneVector = new THREE.Vector3(1, 1, 1);
-        const forwardVector = new THREE.Vector3(0, 0, -1);
         const assetOffsetVector = new THREE.Vector3(0, 0, -pixelSize/2);
         const zeroQuaternion = new THREE.Quaternion();
         const forwardQuaternion = new THREE.Quaternion().setFromUnitVectors(
@@ -1306,6 +1305,35 @@ class Wallet {
                 id,
               },
             }));
+          }
+
+          makeFile(fileSpec) {
+            const {type, ext, data, matrix} = fileSpec;
+            const file = fs.makeRemoteFileFromType({
+              type,
+              ext,
+            });
+            return file.write(data)
+              .then(() => {
+                const id = _makeId();
+                const fileName = file.getFileName();
+                const itemSpec = {
+                  type: 'file',
+                  id: file.id,
+                  name: fileName,
+                  displayName: fileName,
+                  attributes: {
+                    type: {value: 'file'},
+                    value: {value: file.id},
+                    position: {value: matrix},
+                    owner: {value: null},
+                    bindOwner: {value: null},
+                    physics: {value: true},
+                  },
+                  metadata: {},
+                };
+                return walletApi.makeItem(itemSpec);
+              });
           }
 
           registerItem(pluginInstance, itemApi) {

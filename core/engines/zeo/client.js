@@ -618,10 +618,6 @@ class Zeo {
                           return tags.getEntitiesElement();
                         }
 
-                        makeFile(options) {
-                          return world.makeFile(options);
-                        }
-
                         makeListener(selector) {
                           return tags.makeListener(selector);
                         }
@@ -878,6 +874,10 @@ class Zeo {
 
                         destroyItem(item) {
                           wallet.destroyItem(item);
+                        }
+
+                        makeFile(options) {
+                          return wallet.makeFile(options);
                         }
 
                         registerItem(pluginInstance, itemApi) {
