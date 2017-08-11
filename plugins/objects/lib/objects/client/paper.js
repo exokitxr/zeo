@@ -492,8 +492,8 @@ const paper = objectApi => {
           input.removeListener('triggerup', _triggerup);
           render.removeListener('update', _update);
 
-          scene.removeListener(pencilMeshes.left);
-          scene.removeListener(pencilMeshes.right);
+          scene.remove(pencilMeshes.left);
+          scene.remove(pencilMeshes.right);
         };
       })
   );
