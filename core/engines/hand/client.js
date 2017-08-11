@@ -413,6 +413,10 @@ class Hand {
             return grabbable;
           }
 
+          getGrabbedGrabbable(side) {
+            return grabStates[side].grabbedGrabbable;
+          }
+
           addGrabbable(grabbable) {
             const {n} = grabbable;
 

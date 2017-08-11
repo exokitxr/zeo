@@ -382,24 +382,41 @@ class Fs {
             return this.id.match(/([^\[\.]*)/)[1];
           }
 
+          getUrl() {
+            return `/archae/fs/raw/${this.id}`;
+          }
+
           read() {
-            return fetch(`/archae/fs/raw/${id}`, {
+            return fetch(this.getUrl(), {
               credentials: 'include',
             })
               .then(_resBlob);
           }
 
           write(d) {
-            return fetch(`/archae/fs/raw/${this.id}`, {
+            return fetch(this.getUrl(), {
               method: 'PUT',
               body: d,
               credentials: 'include',
             })
               .then(_resBlob);
           }
+
+          download() {
+            const a = document.createElement('a');
+            a.href = this.getUrl();
+            a.download = this.getFileName();
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+          }
         }
 
         class FsApi extends EventEmitter {
+          makeRemoteFileFromId(id) {
+            return new RemoteFile(id);
+          }
+
           makeRemoteFileFromType({type = '', ext = ''} = {}) {
             return new RemoteFile(_makeId() + (type ? '[' + type.replace(/\//g, '_') + ']' : '') + (ext ? '.' + ext : ''));
           }
