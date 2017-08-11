@@ -155,7 +155,7 @@ document.body.appendChild(canvas); */
             const offScene = new THREE.Scene();
             const offCamera = new THREE.PerspectiveCamera();
             offScene.add(offCamera);
-            const offPlane = (() => {
+            const offPlane = (() => { // XXX needs to handle resize
               var cameraZ = offCamera.position.z;
               var planeZ = -5;
               var distance = cameraZ - planeZ;

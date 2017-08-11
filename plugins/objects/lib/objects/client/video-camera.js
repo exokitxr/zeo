@@ -16,7 +16,11 @@ const videoCamera = objectApi => {
   const {three, pose, input, render, items, utils: {sprite: spriteUtils}} = zeo;
   const {THREE, scene, camera, renderer} = three;
 
+  const forwardVector = new THREE.Vector3(0, 0, -1);
   const localVector = new THREE.Vector3();
+  const localVector2 = new THREE.Vector3();
+  const localVector3 = new THREE.Vector3();
+
   const sourceCamera = new THREE.PerspectiveCamera(45, cameraWidth / cameraHeight, camera.near, camera.far);
   sourceCamera.name = camera.name;
 
@@ -135,25 +139,44 @@ const videoCamera = objectApi => {
           const imageData = ctx.createImageData(canvas.width, canvas.height);
           const mediaStream = canvas.captureStream(24);
           const mediaRecorder = new MediaRecorder(mediaStream, {
+            mimeType: 'video/webm',
             bitsPerSecond: 4000 * 1024,
           });
-          const data = [];
+          const blobs = [];
           mediaRecorder.ondataavailable = e => {
-            data.push(e.data);
+            blobs.push(e.data);
           };
           mediaRecorder.onstop = () => {
-            const b = new Blob(data);
-            const url = URL.createObjectURL(b);
-            data.length = 0;
+            if (blobs.length > 0) {
+              const blob = new Blob(blobs);
+              blobs.length = 0;
 
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'video.webm';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
+              const dropMatrix = (() => {
+              const {hmd} = pose.getStatus();
+              const {worldPosition: hmdPosition, worldRotation: hmdRotation, worldScale: hmdScale} = hmd;
+              localVector.copy(hmdPosition)
+                .add(
+                  localVector2.copy(forwardVector).multiplyScalar(0.5)
+                    .applyQuaternion(hmdRotation)
+                );
+              return localVector.toArray().concat(hmdRotation.toArray()).concat(hmdScale.toArray());
+            })();
+            items.makeFile({
+              type: 'video/webm',
+              ext: 'webm',
+              data: blob,
+              matrix: dropMatrix,
+            });
 
-            URL.revokeObjectURL(url);
+/* const url = URL.createObjectURL(b);
+const a = document.createElement('a');
+a.href = url;
+a.download = 'video.webm';
+document.body.appendChild(a);
+a.click();
+document.body.removeChild(a);
+URL.revokeObjectURL(url); */
+            }
           };
 
           const cameraMesh = (() => {
@@ -189,7 +212,7 @@ const videoCamera = objectApi => {
             const offScene = new THREE.Scene();
             const offCamera = new THREE.PerspectiveCamera();
             offScene.add(offCamera);
-            const offPlane = (() => {
+            const offPlane = (() => { // XXX needs to handle resize
               var cameraZ = offCamera.position.z;
               var planeZ = -5;
               var distance = cameraZ - planeZ;
