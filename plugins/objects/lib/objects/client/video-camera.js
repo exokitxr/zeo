@@ -34,7 +34,7 @@ const videoCamera = objectApi => {
     img.src = src;
   });
   const _requestImageBitmap = src => _requestImage(src)
-    .then(img => createImageBitmap(img));
+    .then(img => createImageBitmap(img, 0, 0, img.width, img.height));
 
   return () => _requestImageBitmap('/archae/objects/img/camera.png')
     .then(cameraImg => {
