@@ -12,6 +12,8 @@ const sideWidth = 0.2 * 0.9;
 const sideHeight = 0.15 * 0.9;
 const sideAspectRatio = sideWidth / sideHeight;
 const sideDepth = 0.02;
+const width = 1024;
+const height = Math.round(width / sideAspectRatio);
 
 const dataSymbol = Symbol();
 
@@ -57,7 +59,7 @@ const videoCamera = objectApi => {
         })();
         const sideGeometry = (() => {
           const geometry = new THREE.BoxBufferGeometry(sideWidth, sideHeight, sideDepth)
-            .applyMatrix(new THREE.Matrix4().makeTranslation(cameraWidth/2 + sideWidth/2, 0, -cameraDepth/2));
+            .applyMatrix(new THREE.Matrix4().makeTranslation(-cameraWidth/2 - sideWidth/2, 0, -cameraDepth/2));
           const uvs = geometry.getAttribute('uv').array;
           const numUvs = uvs.length / 2;
           for (let i = 0; i < numUvs; i++) {
@@ -130,16 +132,35 @@ const videoCamera = objectApi => {
       const cameraItemApi = {
         asset: 'ITEM.VIDEOCAMERA',
         itemAddedCallback(grabbable) {
-          const _triggerdown = e => {
-            const {side} = e;
-
-            if (grabbable.getGrabberSide() === side) {
-              console.log('capture'); // XXX
-
-              e.stopImmediatePropagation();
-            }
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.imageSmoothingEnabled = false;
+          const imageData = ctx.createImageData(canvas.width, canvas.height);
+          const imageDataArray = new Uint8Array(imageData.data.buffer, imageData.data.byteOffset, imageData.data.length);
+          const mediaStream = canvas.captureStream(24);
+          const mediaRecorder = new MediaRecorder(mediaStream, {
+            bitsPerSecond: 4000 * 1024,
+          });
+          const data = [];
+          mediaRecorder.ondataavailable = e => {
+            data.push(e.data);
           };
-          input.on('triggerdown', _triggerdown);
+          mediaRecorder.onstop = () => {
+            const b = new Blob(data);
+            const url = URL.createObjectURL(b);
+            data.length = 0;
+
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'video.webm';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+
+            URL.revokeObjectURL(url);
+          };
 
           const cameraMesh = (() => {
             const geometry = cameraGeometry;
@@ -148,22 +169,17 @@ const videoCamera = objectApi => {
             const mesh = new THREE.Mesh(geometry, material);
             mesh.visible = false;
 
-            const renderTarget = (() => {
-              const width = 1024;
-              const height = width / sideAspectRatio;
-              const renderTarget = new THREE.WebGLRenderTarget(width, height, {
-                minFilter: THREE.NearestFilter,
-                magFilter: THREE.NearestFilter,
-                format: THREE.RGBAFormat,
-              });
-              return renderTarget;
-            })();
+            const renderTarget = new THREE.WebGLRenderTarget(width, height, {
+              minFilter: THREE.NearestFilter,
+              magFilter: THREE.NearestFilter,
+              format: THREE.RGBAFormat,
+            });
 
             const screenMesh = (() => {
               const screenWidth = sideWidth * 0.9;
               const screenHeight = sideHeight * 0.9;
               const geometry = new THREE.PlaneBufferGeometry(screenWidth, screenHeight)
-                .applyMatrix(new THREE.Matrix4().makeTranslation(cameraWidth/2 + sideWidth/2, 0, -cameraDepth/2 + sideDepth/2));
+                .applyMatrix(new THREE.Matrix4().makeTranslation(-cameraWidth/2 - sideWidth/2, 0, -cameraDepth/2 + sideDepth/2));
               const material = new THREE.MeshBasicMaterial({
                 map: renderTarget.texture,
               });
@@ -175,6 +191,31 @@ const videoCamera = objectApi => {
               return mesh;
             })();
             mesh.add(screenMesh);
+
+            const offScene = new THREE.Scene();
+            const offCamera = new THREE.PerspectiveCamera();
+            offScene.add(offCamera);
+            const offPlane = (() => {
+              var cameraZ = offCamera.position.z;
+              var planeZ = -5;
+              var distance = cameraZ - planeZ;
+              // var aspect = viewWidth / viewHeight;
+              var aspect = offCamera.aspect;
+              var vFov = offCamera.fov * Math.PI / 180;
+              var planeHeightAtDistance = 2 * Math.tan(vFov / 2) * distance;
+              var planeWidthAtDistance = planeHeightAtDistance * aspect;
+              const mesh = new THREE.Mesh(
+                new THREE.PlaneBufferGeometry(planeWidthAtDistance, planeHeightAtDistance),
+                new THREE.MeshBasicMaterial({
+                  map: renderTarget.texture,
+                })
+              );
+              mesh.position.z = planeZ;
+              mesh.updateMatrixWorld();
+              return mesh;
+            })();
+            offScene.add(offPlane);
+            renderer.compile(offScene, offCamera);
 
             mesh.update = () => {
               if (grabbable.isGrabbed()) {
@@ -191,7 +232,11 @@ const videoCamera = objectApi => {
                   );
                 sourceCamera.quaternion.copy(mesh.quaternion);
 
-                renderer.render(scene, sourceCamera, renderTarget);
+                if (recording) {
+                  renderer.render(scene, sourceCamera, renderTarget);
+                  renderer.render(offScene, offCamera);
+                  ctx.drawImage(renderer.domElement, 0, 0, canvas.width, canvas.height);
+                }
                 renderer.setRenderTarget(null);
               } else {
                 mesh.visible = false;
@@ -209,14 +254,45 @@ const videoCamera = objectApi => {
           scene.add(cameraMesh);
           grabbable.cameraMesh = cameraMesh;
 
+          let recording = false;
+          let recordInterval = null;
+          const _triggerdown = e => {
+            const {side} = e;
+
+            if (grabbable.getGrabberSide() === side) {
+              recording = true;
+              mediaRecorder.start();
+              recordInterval = setInterval(() => {
+                mediaRecorder.requestData();
+              }, 1000);
+
+              e.stopImmediatePropagation();
+            }
+          };
+          input.on('triggerdown', _triggerdown);
+          const _triggerup = e => {
+            const {side} = e;
+
+            if (grabbable.getGrabberSide() === side) {
+              recording = false;
+              mediaRecorder.stop();
+              clearInterval(recordInterval);
+              recordInterval = null;
+
+              e.stopImmediatePropagation();
+            }
+          };
+          input.on('triggerup', _triggerup);
+
           cameras.push(grabbable);
 
           grabbable[dataSymbol] = {
             cleanup: () => {
-              input.removeListener('triggerdown', _triggerdown);
-
               scene.remove(cameraMesh);
               cameraMesh.destroy();
+
+              input.removeListener('triggerdown', _triggerdown);
+              input.removeListener('triggerup', _triggerup);
 
               cameras.splice(cameras.indexOf(grabbable), 1);
             },
