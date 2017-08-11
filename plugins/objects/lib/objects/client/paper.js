@@ -234,7 +234,8 @@ const paper = objectApi => {
             });
 
             const paperMesh = (() => {
-              const geometry = new THREE.PlaneBufferGeometry(1, 1, 3, 0);
+              // const geometry = new THREE.PlaneBufferGeometry(1, 1, 3, 0);
+              const geometry = new THREE.PlaneBufferGeometry(1, 1);
               /* const positions = geometry.getAttribute('position').array;
               const numPositions = positions.length / 3;
               for (let i = 0; i < numPositions; i++) {
