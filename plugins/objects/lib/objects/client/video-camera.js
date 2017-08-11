@@ -1,9 +1,4 @@
 const HEIGHTFIELD_PLUGIN = 'plugins-heightfield';
-const DEFAULT_MATRIX = [
-  0, 0, 0,
-  0, 0, 0, 1,
-  1, 1, 1,
-];
 const NUM_POSITIONS = 10 * 1024;
 const cameraWidth = 0.15;
 const cameraHeight = 0.15;
@@ -138,7 +133,6 @@ const videoCamera = objectApi => {
           const ctx = canvas.getContext('2d');
           ctx.imageSmoothingEnabled = false;
           const imageData = ctx.createImageData(canvas.width, canvas.height);
-          const imageDataArray = new Uint8Array(imageData.data.buffer, imageData.data.byteOffset, imageData.data.length);
           const mediaStream = canvas.captureStream(24);
           const mediaRecorder = new MediaRecorder(mediaStream, {
             bitsPerSecond: 4000 * 1024,
