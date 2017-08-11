@@ -34,6 +34,20 @@ const camera = objectApi => {
 
   return () => _requestImageBitmap('/archae/objects/img/camera.png')
     .then(cameraImg => {
+      const cameraGeometry = (() => {
+        const geometry = new THREE.BoxBufferGeometry(cameraWidth, cameraHeight, cameraDepth);
+        const uvs = geometry.getAttribute('uv').array;
+        const numUvs = uvs.length / 2;
+        for (let i = 0; i < numUvs; i++) {
+          const index = i * 2 + 1;
+          if (i >= 20 && i < (20 + 4)) {
+            uvs[index] *= 0.5;
+          } else {
+            uvs[index] = 0.5 + uvs[index] / 2;
+          }
+        }
+        return geometry;
+      })();
       const cameraMaterial = (() => {
         const texture = new THREE.Texture(
           cameraImg,
@@ -70,21 +84,7 @@ const camera = objectApi => {
           input.on('triggerdown', _triggerdown);
 
           const cameraMesh = (() => {
-            const geometry = new THREE.BoxBufferGeometry(cameraWidth, cameraHeight, cameraDepth)
-              /* .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromAxisAngle(
-                new THREE.Vector3(0, 1, 0),
-                Math.PI / 2
-              ))); */
-            const uvs = geometry.getAttribute('uv').array;
-            const numUvs = uvs.length / 2;
-            for (let i = 0; i < numUvs; i++) {
-              const index = i * 2 + 1;
-              if (i >= 20 && i < (20 + 4)) {
-                uvs[index] *= 0.5;
-              } else {
-                uvs[index] = 0.5 + uvs[index] / 2;
-              }
-            }
+            const geometry = cameraGeometry;
 
             const material = cameraMaterial;
             const mesh = new THREE.Mesh(geometry, material);
