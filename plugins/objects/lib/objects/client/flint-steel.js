@@ -74,7 +74,7 @@ const flintSteel = objectApi => {
         return mesh;
       };
 
-      const stickItemApi = {
+      const flintSteelItemApi = {
         asset: 'ITEM.FLINTSTEEL',
         itemAddedCallback(grabbable) {
           const _triggerdown = e => {
@@ -127,17 +127,16 @@ const flintSteel = objectApi => {
               items.destroyItem(grabbable);
             }
           });
-          grabbable.on('destroy', () => {
-            if (sparkMesh) {
-              scene.remove(sparkMesh);
-              sparkMesh.destroy();
-              sparkMeshes.splice(sparkMeshes.indexOf(sparkMesh), 1);
-            }
-          });
 
           grabbable[dataSymbol] = {
             cleanup: () => {
               input.removeListener('triggerdown', _triggerdown);
+
+              if (sparkMesh) {
+                scene.remove(sparkMesh);
+                sparkMesh.destroy();
+                sparkMeshes.splice(sparkMeshes.indexOf(sparkMesh), 1);
+              }
             },
           };
         },
@@ -148,7 +147,7 @@ const flintSteel = objectApi => {
           delete grabbable[dataSymbol];
         },
       };
-      items.registerItem(this, stickItemApi);
+      items.registerItem(this, flintSteelItemApi);
 
       const _update = () => {
         for (let i = 0; i < sparkMeshes.length; i++) {
@@ -160,7 +159,7 @@ const flintSteel = objectApi => {
       return () => {
         spriteUtils.releaseSpriteGeometry(sparkGeometrySpec);
 
-        items.unregisterItem(this, stickItemApi);
+        items.unregisterItem(this, flintSteelItemApi);
         render.removeListener('update', _update);
       };
     });
