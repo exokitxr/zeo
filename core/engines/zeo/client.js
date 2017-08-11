@@ -240,37 +240,35 @@ class Zeo {
                 bootstrap.setAddress(address);
                 const supportsWebVR = webvr.supportsWebVR();
 
-                const updates = [];
-                const updateEyes = [];
                 const _update = () => {
                   rend.update();
                 };
-                const _updateEye = camera => {
+                /* const _updateEye = camera => {
                   rend.updateEye(camera);
-                };
+                }; */
                 const _updateStart = () => {
                   rend.updateStart();
                 };
                 const _updateEnd = () => {
                   rend.updateEnd();
                 };
-                const _renderStart = () => {
+                /* const _renderStart = () => {
                   rend.renderStart();
                 };
                 const _renderEnd = () => {
                   rend.renderEnd();
-                };
+                }; */
 
                 const _enterNormal = () => {
                   _stopRenderLoop();
 
                   renderLoop = webvr.requestRenderLoop({
                     update: _update,
-                    updateEye: _updateEye,
+                    // updateEye: _updateEye,
                     updateStart: _updateStart,
                     updateEnd: _updateEnd,
-                    renderStart: _renderStart,
-                    renderEnd: _renderEnd,
+                    /* renderStart: _renderStart,
+                    renderEnd: _renderEnd, */
                   });
 
                   return renderLoop;
@@ -287,11 +285,11 @@ class Zeo {
                   renderLoop = webvr.requestEnterVR({
                     stereoscopic,
                     update: _update,
-                    updateEye: _updateEye,
+                    // updateEye: _updateEye,
                     updateStart: _updateStart,
                     updateEnd: _updateEnd,
-                    renderStart: _renderStart,
-                    renderEnd: _renderEnd,
+                    /* renderStart: _renderStart,
+                    renderEnd: _renderEnd, */
                     onExit: _onExit,
                   });
 
