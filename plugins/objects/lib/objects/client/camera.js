@@ -1,9 +1,4 @@
 const HEIGHTFIELD_PLUGIN = 'plugins-heightfield';
-const DEFAULT_MATRIX = [
-  0, 0, 0,
-  0, 0, 0, 1,
-  1, 1, 1,
-];
 const cameraWidth = 0.2;
 const cameraHeight = 0.15;
 const cameraAspectRatio = cameraWidth / cameraHeight;
@@ -17,7 +12,11 @@ const camera = objectApi => {
   const {three, pose, input, render, items, utils: {sprite: spriteUtils}} = zeo;
   const {THREE, scene, camera, renderer} = three;
 
+  const forwardVector = new THREE.Vector3(0, 0, -1);
   const localVector = new THREE.Vector3();
+  const localVector2 = new THREE.Vector3();
+  const localVector3 = new THREE.Vector3();
+
   const sourceCamera = new THREE.PerspectiveCamera(45, cameraWidth / cameraHeight, camera.near, camera.far);
   sourceCamera.name = camera.name;
 
@@ -75,13 +74,39 @@ const camera = objectApi => {
       const cameraItemApi = {
         asset: 'ITEM.CAMERA',
         itemAddedCallback(grabbable) {
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.imageSmoothingEnabled = false;
+          const imageData = ctx.createImageData(canvas.width, canvas.height);
+
           const _triggerdown = e => {
             const {side} = e;
 
             if (grabbable.getGrabberSide() === side) {
-              renderer.readRenderTargetPixels(renderTarget, 0, 0, width, height, cameraBuffer);
+              canvas.toBlob(blob => {
+                const dropMatrix = (() => {
+                  const {hmd} = pose.getStatus();
+                  const {worldPosition: hmdPosition, worldRotation: hmdRotation, worldScale: hmdScale} = hmd;
+                  localVector.copy(hmdPosition)
+                    .add(
+                      localVector2.copy(forwardVector).multiplyScalar(0.5)
+                        .applyQuaternion(hmdRotation)
+                    );
+                  return localVector.toArray().concat(hmdRotation.toArray()).concat(hmdScale.toArray());
+                })();
+                items.makeFile({
+                  type: 'image/png',
+                  ext: 'png',
+                  data: blob,
+                  matrix: dropMatrix,
+                });
+              }, {
+                mimeType: 'image/png',
+              });
 
-const canvas = document.createElement('canvas'); // XXX
+/* const canvas = document.createElement('canvas');
 canvas.width = width;
 canvas.height = height;
 const ctx = canvas.getContext('2d');
@@ -91,7 +116,7 @@ for (let y = 0; y < height; y++) {
     .set(new Uint8Array(cameraBuffer.buffer, cameraBuffer.byteOffset + (height - 1 - y) * width * 4, width * 4));
 }
 ctx.putImageData(imageData, 0, 0);
-document.body.appendChild(canvas);
+document.body.appendChild(canvas); */
 
               e.stopImmediatePropagation();
             }
@@ -127,6 +152,31 @@ document.body.appendChild(canvas);
             })();
             mesh.add(screenMesh);
 
+            const offScene = new THREE.Scene();
+            const offCamera = new THREE.PerspectiveCamera();
+            offScene.add(offCamera);
+            const offPlane = (() => {
+              var cameraZ = offCamera.position.z;
+              var planeZ = -5;
+              var distance = cameraZ - planeZ;
+              // var aspect = viewWidth / viewHeight;
+              var aspect = offCamera.aspect;
+              var vFov = offCamera.fov * Math.PI / 180;
+              var planeHeightAtDistance = 2 * Math.tan(vFov / 2) * distance;
+              var planeWidthAtDistance = planeHeightAtDistance * aspect;
+              const mesh = new THREE.Mesh(
+                new THREE.PlaneBufferGeometry(planeWidthAtDistance, planeHeightAtDistance),
+                new THREE.MeshBasicMaterial({
+                  map: renderTarget.texture,
+                })
+              );
+              mesh.position.z = planeZ;
+              mesh.updateMatrixWorld();
+              return mesh;
+            })();
+            offScene.add(offPlane);
+            renderer.compile(offScene, offCamera);
+
             mesh.update = () => {
               if (grabbable.isGrabbed()) {
                 mesh.position.copy(grabbable.position);
@@ -143,6 +193,8 @@ document.body.appendChild(canvas);
                 sourceCamera.quaternion.copy(mesh.quaternion);
 
                 renderer.render(scene, sourceCamera, renderTarget);
+                renderer.render(offScene, offCamera);
+                ctx.drawImage(renderer.domElement, 0, 0, canvas.width, canvas.height);
                 renderer.setRenderTarget(null);
               } else {
                 mesh.visible = false;
