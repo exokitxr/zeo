@@ -140,7 +140,7 @@ const videoCamera = objectApi => {
           const mediaStream = canvas.captureStream(24);
           const mediaRecorder = new MediaRecorder(mediaStream, {
             mimeType: 'video/webm',
-            bitsPerSecond: 4000 * 1024,
+            bitsPerSecond: 8000 * 1024,
           });
           const blobs = [];
           mediaRecorder.ondataavailable = e => {
