@@ -1026,7 +1026,7 @@ class Wallet {
                 const {assets: newAssets} = walletState;
 
                 if (oldAssets === newAssets) {
-                  let newAsset = newAssets.find(assetSpec => assetSpec.value === value);
+                  let newAsset = newAssets.find(assetSpec => assetSpec.asset === value);
                   if (!newAsset) {
                     newAsset = {
                       id: value,
