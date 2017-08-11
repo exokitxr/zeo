@@ -36,7 +36,7 @@ const paper = objectApi => {
     img.src = src;
   });
   const _requestImageBitmap = src => _requestImage(src)
-    .then(img => createImageBitmap(img));
+    .then(img => createImageBitmap(img, 0, 0, img.width, img.height));
   const _requestTexture = (src, name) => _requestImage(src)
     .then(img => objectApi.registerTexture(name, img));
 
