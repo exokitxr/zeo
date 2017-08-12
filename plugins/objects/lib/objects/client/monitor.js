@@ -9,7 +9,7 @@ const SIDES = ['left', 'right'];
 const dataSymbol = Symbol();
 
 const monitor = objectApi => {
-  const {three, elements, render, input, pose, fs, hands, items, utils: {geometry: geometryUtils}} = zeo;
+  const {three, elements, render, input, pose, fs, hands, items} = zeo;
   const {THREE, scene, camera, renderer} = three;
 
   const oneVector = new THREE.Vector3(1, 1, 1);
