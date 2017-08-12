@@ -187,8 +187,15 @@ void main() {
     });
     objectsMaterial.volatile = true;
 
+    class QueueEntry {
+      constructor(id, cb) {
+        this.id = id;
+        this.cb = cb;
+      }
+    }
+
     const worker = new Worker('archae/plugins/_plugins_objects/build/worker.js');
-    const queues = {};
+    const queues = [];
     worker.requestRegisterGeometry = (name, fn) => {
       const {args, src} = _parseFunction(fn);
       worker.postMessage({
@@ -244,7 +251,7 @@ void main() {
         z,
         buffer,
       });
-      queues[id] = accept;
+      queues.push(new QueueEntry(id, accept));
     });
     worker.getHoveredObjects = () => new Promise((accept, reject) => {
       const id = _makeId();
@@ -255,7 +262,7 @@ void main() {
         id,
         args: positions,
       });
-      queues[id] = accept;
+      queues.push(new QueueEntry(id, accept));
     });
     worker.getTeleportObject = position => new Promise((accept, reject) => {
       const id = _makeId();
@@ -264,7 +271,7 @@ void main() {
         id,
         args: position.toArray(),
       });
-      queues[id] = accept;
+      queues.push(new QueueEntry(id, accept));
     });
     worker.getBodyObject = position => new Promise((accept, reject) => {
       const id = _makeId();
@@ -273,7 +280,7 @@ void main() {
         id,
         args: position.toArray(),
       });
-      queues[id] = accept;
+      queues.push(new QueueEntry(id, accept));
     });
     let pendingResponseId = null;
     worker.onmessage = e => {
@@ -296,8 +303,10 @@ void main() {
           console.warn('objects got unknown worker message type:', JSON.stringify(type));
         }
       } else {
-        queues[pendingResponseId](data);
-        delete queues[pendingResponseId]; // XXX do not use delete
+        const queueEntryIndex = queues.findIndex(queueEntry => queueEntry.id === pendingResponseId);
+        const queueEntry = queues[queueEntryIndex];
+        queueEntry.cb(data);
+        queues.splice(queueEntryIndex, 1);
         pendingResponseId = null;
       }
     };
