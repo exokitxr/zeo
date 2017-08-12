@@ -1,5 +1,3 @@
-const mod = require('mod-loop');
-
 const HEIGHTFIELD_PLUGIN = 'plugins-heightfield';
 const DEFAULT_MATRIX = [
   0, 0, 0,
