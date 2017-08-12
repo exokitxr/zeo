@@ -5,7 +5,7 @@ const HEIGHTFIELD_PLUGIN = 'plugins-heightfield';
 const dataSymbol = Symbol();
 
 const mirror = objectApi => {
-  const {three, elements, render, input, pose, items, utils: {geometry: geometryUtils}} = zeo;
+  const {three, elements, render, input, pose, items} = zeo;
   const {THREE, scene, camera, renderer} = three;
 
   const oneVector = new THREE.Vector3(1, 1, 1);
