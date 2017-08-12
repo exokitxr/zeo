@@ -9,7 +9,7 @@ const height = Math.round(width / cameraAspectRatio);
 const dataSymbol = Symbol();
 
 const camera = objectApi => {
-  const {three, pose, input, render, items, utils: {sprite: spriteUtils}} = zeo;
+  const {three, pose, input, render, items} = zeo;
   const {THREE, scene, camera, renderer} = three;
 
   const forwardVector = new THREE.Vector3(0, 0, -1);
@@ -242,8 +242,6 @@ document.body.appendChild(canvas); */
       render.on('update', _update);
 
       return () => {
-        spriteUtils.releaseSpriteGeometry(sparkGeometrySpec);
-
         items.unregisterItem(this, cameraItemApi);
         render.removeListener('update', _update);
       };
