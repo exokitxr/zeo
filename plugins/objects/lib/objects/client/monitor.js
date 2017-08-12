@@ -266,12 +266,8 @@ const monitor = objectApi => {
               1
             );
             texture.needsUpdate = true;
-            const material = new THREE.MeshPhongMaterial({
-              color: 0xFFFFFF,
-              shininess: 0,
+            const material = new THREE.MeshBasicMaterial({
               map: texture,
-              shading: THREE.FlatShading,
-              // side: THREE.DoubleSide,
             });
 
             const mesh = new THREE.Mesh(geometry, material);

@@ -148,7 +148,7 @@ const paper = objectApi => {
             1
           );
           texture.needsUpdate = true;
-          const material = new THREE.MeshPhongMaterial({
+          const material = new THREE.MeshBasicMaterial({
             map: texture,
           });
           return material;
