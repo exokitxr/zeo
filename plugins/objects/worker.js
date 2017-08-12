@@ -232,7 +232,7 @@ const _requestChunk = (x, z) => {
         const chunk = zde.addChunk(x, z, new Uint32Array(buffer));
 
         chunk.trackedObjects = {};
-        chunk.forEachObject((n, matrix, i) => {
+        chunk.forEachObject((n, matrix, value, i) => {
           const position = new THREE.Vector3().fromArray(matrix, 0);
           const rotation = new THREE.Quaternion().fromArray(matrix, 3);
           chunk.trackedObjects[i] = new TrackedObject(n, position, rotation);
@@ -274,7 +274,7 @@ function _makeChunkGeometry(chunk) {
   let indexIndex = 0;
   let objectIndex = 0;
 
-  chunk.forEachObject((n, matrix, index) => {
+  chunk.forEachObject((n, matrix, value, index) => {
     const geometryEntries = geometries[n];
 
     if (geometryEntries) {
