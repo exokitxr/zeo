@@ -98,8 +98,6 @@ const camera = objectApi => {
                   return localVector.toArray().concat(hmdRotation.toArray()).concat(hmdScale.toArray());
                 })();
                 items.makeFile({
-                  type: 'image/png',
-                  ext: 'png',
                   data: blob,
                   matrix: dropMatrix,
                 });

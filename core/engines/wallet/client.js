@@ -760,7 +760,7 @@ class Wallet {
             const grabbedGrabbable = hand.getGrabbedGrabbable(side);
 
             if (grabbedGrabbable && grabbedGrabbable.type === 'file') {
-              fs.makeRemoteFileFromId(grabbedGrabbable.value).download();
+              fs.makeRemoteFile(grabbedGrabbable.value).download();
               return  true;
             } else {
               return false;
@@ -1086,16 +1086,15 @@ class Wallet {
         });
 
         const _upload = ({file, dropMatrix}) => {
-          const id = _makeId();
-          const fileName = file.getFileName();
+          const id = String(file.n);
           const itemSpec = {
             type: 'file',
-            id: file.id,
-            name: fileName,
-            displayName: fileName,
+            id: id,
+            name: id,
+            displayName: id,
             attributes: {
               type: {value: 'file'},
-              value: {value: file.id},
+              value: {value: id},
               position: {value: dropMatrix},
               owner: {value: null},
               bindOwner: {value: null},
@@ -1323,23 +1322,20 @@ class Wallet {
           }
 
           makeFile(fileSpec) {
-            const {type, ext, data, matrix} = fileSpec;
-            const file = fs.makeRemoteFileFromType({
-              type,
-              ext,
-            });
+            const {data, matrix} = fileSpec;
+            const file = fs.makeRemoteFile();
             return file.write(data)
               .then(() => {
-                const id = _makeId();
-                const fileName = file.getFileName();
+                const {n} = file;
+                const id = String(n);
                 const itemSpec = {
                   type: 'file',
-                  id: file.id,
-                  name: fileName,
-                  displayName: fileName,
+                  id: id,
+                  name: id,
+                  displayName: id,
                   attributes: {
                     type: {value: 'file'},
-                    value: {value: file.id},
+                    value: {value: n},
                     position: {value: matrix},
                     owner: {value: null},
                     bindOwner: {value: null},

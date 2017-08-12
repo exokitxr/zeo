@@ -1,4 +1,6 @@
-const CHUNK_SIZE = 32 * 1024;
+const murmur = require('murmurhash');
+
+// const CHUNK_SIZE = 32 * 1024;
 
 class Fs {
   constructor(archae) {
@@ -131,12 +133,7 @@ class Fs {
             _getFiles(items)
               .then(files => Promise.all(files.map((file, i) => {
                 const {type} = file;
-                const match = file.path.match(/\.(.+?)$/);
-                const ext = match && match[1];
-                const remoteFile = fsApi.makeRemoteFileFromType({
-                  type,
-                  ext,
-                });
+                const remoteFile = fsApi.makeRemoteFile();
                 const dropMatrix = (() => {
                   const {hmd} = webvr.getStatus();
                   const {worldPosition: hmdPosition, worldRotation: hmdRotation, worldScale: hmdScale} = hmd;
@@ -375,15 +372,15 @@ class Fs {
 
         class RemoteFile {
           constructor(id) {
-            this.id = id;
+            this.n = id !== undefined ? (typeof id === 'number' ? id : murmur(id)) : _makeN();
           }
 
-          getFileName() {
+          /* getFileName() {
             return this.id.match(/([^\[\.]*)/)[1];
-          }
+          } */
 
           getUrl() {
-            return `/archae/fs/raw/${this.id}`;
+            return `/archae/fs/hash/${this.n}`;
           }
 
           read() {
@@ -403,6 +400,8 @@ class Fs {
           }
 
           download() {
+            throw new Error('not implemented: need to track mime type'); // XXX
+
             const a = document.createElement('a');
             a.href = this.getUrl();
             a.download = this.getFileName();
@@ -413,12 +412,8 @@ class Fs {
         }
 
         class FsApi extends EventEmitter {
-          makeRemoteFileFromId(id) {
+          makeRemoteFile(id) {
             return new RemoteFile(id);
-          }
-
-          makeRemoteFileFromType({type = '', ext = ''} = {}) {
-            return new RemoteFile(_makeId() + (type ? '[' + type.replace(/\//g, '_') + ']' : '') + (ext ? '.' + ext : ''));
           }
 
           /* makeFile(url) {
@@ -514,8 +509,15 @@ class Fs {
     this._cleanup();
   }
 }
-const _makeId = () => Math.random().toString(36).substring(7);
-/* const _padNumber = (n, width) => {
+const _makeN = (() => {
+  const array = new Uint32Array(1);
+  return () => {
+    crypto.getRandomValues(array);
+    return array[0];
+  };
+})();
+/* const _makeId = () => Math.random().toString(36).substring(7);
+const _padNumber = (n, width) => {
   n = n + '';
   return n.length >= width ? n : new Array(width - n.length + 1).join('0') + n;
 };

@@ -885,7 +885,7 @@ class Zeo {
                         }
 
                         getFile(id) {
-                          return fs.makeRemoteFileFromId(id);
+                          return fs.makeRemoteFile(id);
                         }
 
                         registerItem(pluginInstance, itemApi) {

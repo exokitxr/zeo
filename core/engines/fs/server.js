@@ -2,6 +2,7 @@ const path = require('path');
 const fs = require('fs');
 
 const mkdirp = require('mkdirp');
+const murmur = require('murmurhash');
 
 class Fs {
   constructor(archae) {
@@ -40,14 +41,15 @@ class Fs {
         if (live) {
           const fsStatic = express.static(fsPath);
           function serveFsDownload(req, res, next) {
-            req.url = '/' + req.params[0];
-            // res.set('Content-Disposition', 'attachment; filename="' + path.basename(filePath) + '"');
+            const fileName = req.params[0] === 'name' ? String(murmur(req.params[1])) : req.params[1];
+            req.url = '/' + fileName;
             fsStatic(req, res, next);
           }
-          app.get(/^\/archae\/fs\/raw\/([^\/]+)$/, serveFsDownload);
+          app.get(/^\/archae\/fs\/(name|hash)\/([^\/]+)$/, serveFsDownload);
 
           function serveFsUpload(req, res, next) {
-            const ws = fs.createWriteStream(path.join(fsPath, req.params[0]));
+            const fileName = req.params[0] === 'name' ? String(murmur(req.params[1])) : req.params[1];
+            const ws = fs.createWriteStream(path.join(fsPath, fileName));
             req.pipe(ws);
             ws.on('finish', err => {
               res.send();
@@ -59,7 +61,7 @@ class Fs {
               });
             });
           }
-          app.put(/^\/archae\/fs\/raw\/([^\/]+)$/, serveFsUpload);
+          app.put(/^\/archae\/fs\/(name|hash)\/([^\/]+)$/, serveFsUpload);
 
           cleanups.push(() => {
             function removeMiddlewares(route, i, routes) {

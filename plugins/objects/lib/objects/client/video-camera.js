@@ -163,8 +163,6 @@ const videoCamera = objectApi => {
               return localVector.toArray().concat(hmdRotation.toArray()).concat(hmdScale.toArray());
             })();
             items.makeFile({
-              type: 'video/webm',
-              ext: 'webm',
               data: blob,
               matrix: dropMatrix,
             });
