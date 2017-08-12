@@ -13,7 +13,7 @@ const height = Math.round(width / sideAspectRatio);
 const dataSymbol = Symbol();
 
 const videoCamera = objectApi => {
-  const {three, pose, input, render, items, utils: {sprite: spriteUtils}} = zeo;
+  const {three, pose, input, render, items} = zeo;
   const {THREE, scene, camera, renderer} = three;
 
   const forwardVector = new THREE.Vector3(0, 0, -1);
@@ -332,8 +332,6 @@ URL.revokeObjectURL(url); */
       render.on('update', _update);
 
       return () => {
-        spriteUtils.releaseSpriteGeometry(sparkGeometrySpec);
-
         items.unregisterItem(this, cameraItemApi);
         render.removeListener('update', _update);
       };
