@@ -756,6 +756,7 @@ class Wallet {
           const {side} = e;
 
           const _downloadFile = () => {
+            return false;
             const grabbedGrabbable = hand.getGrabbedGrabbable(side);
 
             if (grabbedGrabbable && grabbedGrabbable.type === 'file') {

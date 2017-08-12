@@ -834,6 +834,10 @@ class Zeo {
                           hand.destroyGrabbable(grabbable);
                         }
 
+                        getGrabbedGrabbable(side) {
+                          return hand.getGrabbedGrabbable(side);
+                        }
+
                         on() {
                           return hand.on.apply(hand, arguments);
                         }
@@ -878,6 +882,10 @@ class Zeo {
 
                         makeFile(options) {
                           return wallet.makeFile(options);
+                        }
+
+                        getFile(id) {
+                          return fs.makeRemoteFileFromId(id);
                         }
 
                         registerItem(pluginInstance, itemApi) {

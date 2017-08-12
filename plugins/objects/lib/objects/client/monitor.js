@@ -11,7 +11,7 @@ const SIDES = ['left', 'right'];
 const dataSymbol = Symbol();
 
 const monitor = objectApi => {
-  const {three, elements, render, input, pose, items, utils: {geometry: geometryUtils}} = zeo;
+  const {three, elements, render, input, pose, fs, hands, items, utils: {geometry: geometryUtils}} = zeo;
   const {THREE, scene, camera, renderer} = three;
 
   const oneVector = new THREE.Vector3(1, 1, 1);
@@ -33,6 +33,8 @@ const monitor = objectApi => {
     };
     img.src = src;
   });
+  const _requestImageBitmap = src => _requestImage(src)
+    .then(img => createImageBitmap(img, 0, 0, img.width, img.height));
 
   return () => _requestImage('/archae/objects/img/plastic.png')
     .then(monitorImg => objectApi.registerTexture('monitor', monitorImg))
@@ -187,6 +189,32 @@ const monitor = objectApi => {
             object.remove();
           });
 
+          const _triggerdown = e => {
+            const {side} = e;
+
+            if (objectApi.getHoveredObject(side) === object) {
+              const grabbedGrabbable = hands.getGrabbedGrabbable(side);
+
+              if (grabbedGrabbable && grabbedGrabbable.type === 'file') {
+                _requestImageBitmap(items.getFile(grabbedGrabbable.value).getUrl())
+                  .then(img => {
+                    const texture = monitorMesh.material.map;
+                    texture.image.ctx.clear();
+                    texture.image.ctx.drawImage(
+                      img,
+                      0, 0, img.width, img.height,
+                      0, 0, canvas.width, canvas.height
+                    );
+                    texture.needsUpdate = true;
+                  })
+                  .catch(err => {
+                    console.warn(err);
+                  });
+              }
+            }
+          };
+          input.on('triggerdown', _triggerdown);
+
           const monitorMesh = (() => {
             const geometry = new THREE.PlaneBufferGeometry(width * 0.9, height * 0.9);
             /* const positions = geometry.getAttribute('position').array;
@@ -210,8 +238,10 @@ const monitor = objectApi => {
             canvas.width = RESOLUTION_X;
             canvas.height = RESOLUTION_Y;
             const ctx = canvas.getContext('2d');
-            ctx.fillStyle = '#FFF';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.clear = () => {
+              canvas.ctx.fillStyle = '#FFF';
+              canvas.ctx.fillRect(0, 0, canvas.width, canvas.height);
+            };
             canvas.ctx = ctx;
             const texture = new THREE.Texture(
               canvas,
@@ -238,8 +268,6 @@ const monitor = objectApi => {
               .add(new THREE.Vector3(0, STAND_SIZE - height/2 + border, border/2 + border + 0.01).applyQuaternion(object.rotation));
             mesh.quaternion.copy(object.rotation);
             // mesh.scale.copy(object.scale);
-            mesh.canvas = canvas;
-            mesh.texture = texture;
 
             const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(
               localVector.copy(backVector).applyQuaternion(mesh.quaternion),
@@ -290,6 +318,8 @@ const monitor = objectApi => {
           object[dataSymbol] = {
             cleanup() {
               scene.remove(monitorMesh);
+
+              input.removeListener('triggerdown', _triggerdown);
 
               monitors.splice(monitors.indexOf(object), 1);
             },
