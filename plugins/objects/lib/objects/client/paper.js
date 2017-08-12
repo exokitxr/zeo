@@ -264,6 +264,7 @@ const paper = objectApi => {
                   });
 
                   object.setData(0);
+                  _loadFileN(0);
                 }
 
                 e.stopImmediatePropagation();
@@ -510,6 +511,7 @@ const paper = objectApi => {
                 const {paperMesh} = paper;
                 const {drawStates: paperMeshDrawStates} = paperMesh;
 
+                let updated = false;
                 for (let j = 0; j < SIDES.length; j++) {
                   const side = SIDES[j];
                   const drawState = drawStates[side];
@@ -563,9 +565,8 @@ const paper = objectApi => {
                           maxY = Math.max(maxY, localMaxY);
                         }
 
-                        paperMesh.saveFile();
-
                         paperMesh.material.map.needsUpdate = true;
+                        updated = true;
                       }
 
                       lastPoint.copy(currentPoint);
@@ -576,6 +577,10 @@ const paper = objectApi => {
                   } else {
                     paperMeshDrawState.lastPointActive = false;
                   }
+                }
+
+                if (updated) {
+                  paperMesh.saveFile();
                 }
               }
             }
