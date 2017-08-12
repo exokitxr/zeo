@@ -6,7 +6,7 @@ const sword = ({recipes}) => {
   const {three, pose, input, render, elements, items, teleport} = zeo;
   const {THREE, scene} = three;
 
-  const localPositionVector = new THREE.Vector3(0, 0.015 * 6 * 3, 0.015/2);
+  const localPositionVector = new THREE.Vector3(0.015/2 * 3, 0.015 * 6 * 3, 0.015 * 3);
   const localRotationQuaterion = new THREE.Quaternion().setFromAxisAngle(
     new THREE.Vector3(0, 0, 1),
     Math.PI / 4
