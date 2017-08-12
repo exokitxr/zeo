@@ -90,18 +90,13 @@ class Health {
       live = false;
     };
 
-    const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
-    const _decomposeMatrix = matrix => {
-      const position = new THREE.Vector3();
-      const rotation = new THREE.Quaternion();
-      const scale = new THREE.Vector3();
-      matrix.decompose(position, rotation, scale);
-      return {position, rotation, scale};
-    };
-
     return sound.requestSfx('archae/health/sfx/hit.ogg')
       .then(hitSfx => {
         if (live) {
+          const localVector = new THREE.Vector3();
+          const localVector2= new THREE.Vector3();
+          const localQuaternion = new THREE.Quaternion();
+
           const healthState = {
             hp: 80,
             totalHp: 112,
@@ -172,8 +167,8 @@ class Health {
             };
             mesh.align = _align;
 
-            const {position: cameraPosition, rotation: cameraRotation, scale: cameraScale} = _decomposeObjectMatrixWorld(camera);
-            mesh.align(cameraPosition, cameraRotation, cameraScale, 1);
+            camera.matrixWorld.decompose(localVector, localQuaternion, localVector2);
+            mesh.align(localVector, localQuaternion, localVector2, 1);
 
             const {page} = mesh;
             ui.addPage(page);
@@ -235,19 +230,21 @@ class Health {
               hudMesh.visible = ((now - lastHitTime) < 3000) || ((now - lastHealTime) < 3000);
             };
             const _updateHudMeshAlignment = () => {
-              const {position: cameraPosition, rotation: cameraRotation, scale: cameraScale} = _decomposeObjectMatrixWorld(camera);
-              const timeDiff = now - lastUpdateTime;
-              const lerpFactor = timeDiff * 0.02;
-              hudMesh.align(cameraPosition, cameraRotation, cameraScale, lerpFactor);
+              if (hudMesh.visible) {
+                camera.matrixWorld.decompose(localVector, localQuaternion, localVector2);
+                hudMesh.align(localVector, localQuaternion, localVector2, (now - lastUpdateTime) * 0.02);
+              }
             };
             const _updateHudMeshUniforms = () => {
-              hudMesh.material.uniforms.worldTime.value = world.getWorldTime();
+              if (hudMesh.visible) {
+                hudMesh.material.uniforms.worldTime.value = world.getWorldTime();
 
-              const hitTimeDiff = now - lastHitTime;
-              hudMesh.material.uniforms.hit.value = (hitTimeDiff < 150) ? ((150 - hitTimeDiff) / 150) : 0;
+                const hitTimeDiff = now - lastHitTime;
+                hudMesh.material.uniforms.hit.value = (hitTimeDiff < 150) ? ((150 - hitTimeDiff) / 150) : 0;
 
-              const healTimeDiff = now - lastHealTime;
-              hudMesh.material.uniforms.heal.value = (healTimeDiff < 150) ? ((150 - healTimeDiff) / 150) : 0;
+                const healTimeDiff = now - lastHealTime;
+                hudMesh.material.uniforms.heal.value = (healTimeDiff < 150) ? ((150 - healTimeDiff) / 150) : 0;
+              }
             };
 
             _updateHudMeshVisibility();
