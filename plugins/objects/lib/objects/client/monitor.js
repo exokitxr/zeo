@@ -199,6 +199,7 @@ const monitor = objectApi => {
 
               if (grabbedGrabbable && grabbedGrabbable.type === 'file') {
                 object.setData(grabbedGrabbable.value);
+                _loadFileN(grabbedGrabbable.value);
                 
                 /* _requestImageBitmap(items.getFile(grabbedGrabbable.value).getUrl())
                   .then(img => {
@@ -221,6 +222,7 @@ const monitor = objectApi => {
                   }); */
               } else {
                 object.setData(0);
+                _loadFileN(0);
               }
 
               e.stopImmediatePropagation();

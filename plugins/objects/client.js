@@ -432,16 +432,9 @@ void main() {
       }
 
       setData(value) {
-        const {mesh, objectIndex} = this;
+        this.value = value;
 
-        worker.requestSetObjectData(mesh.offset.x, mesh.offset.y, objectIndex, value)
-          .then(() => {
-            const chunk = chunker.chunks.find(chunk => chunk.x === mesh.offset.x && chunk.z === mesh.offset.y);
-
-            if (chunk) {
-              chunk.lod = -1; // force chunk refresh
-            }
-          });
+        worker.requestSetObjectData(this.mesh.offset.x, this.mesh.offset.y, this.objectIndex, value);
       }
 
       remove() {
