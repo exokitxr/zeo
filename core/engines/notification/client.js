@@ -57,14 +57,9 @@ class Notification {
       if (live) {
         const {THREE, scene, camera} = three;
 
-        const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
-        const _decomposeMatrix = matrix => {
-          const position = new THREE.Vector3();
-          const rotation = new THREE.Quaternion();
-          const scale = new THREE.Vector3();
-          matrix.decompose(position, rotation, scale);
-          return {position, rotation, scale};
-        };
+        const localVector = new THREE.Vector3();
+        const localVector2 = new THREE.Vector3();
+        const localQuaternion = new THREE.Quaternion();
 
         const notifications = [];
 
@@ -132,8 +127,8 @@ class Notification {
             mesh.updateMatrixWorld();
           };
 
-          const {position: cameraPosition, rotation: cameraRotation, scale: cameraScale} = _decomposeObjectMatrixWorld(camera);
-          mesh.align(cameraPosition, cameraRotation, cameraScale, 1);
+          camera.matrixWorld.decompose(localVector, localQuaternion, localVector2);
+          mesh.align(localVector, localQuaternion, localVector2, 1);
 
           return mesh;
         })();
@@ -150,10 +145,8 @@ class Notification {
           };
           const _alignHudMesh = () => {
             if (hudMesh.visible) {
-              const {position: cameraPosition, rotation: cameraRotation, scale: cameraScale} = _decomposeObjectMatrixWorld(camera);
-              const timeDiff = now - lastUpdateTime;
-              const lerpFactor = timeDiff * 0.02;
-              hudMesh.align(cameraPosition, cameraRotation, cameraScale, lerpFactor);
+              camera.matrixWorld.decompose(localVector, localQuaternion, localVector2);
+              hudMesh.align(localVector, localQuaternion, localVector2, (now - lastUpdateTime) * 0.02);
             }
           };
 
@@ -181,8 +174,8 @@ class Notification {
           notifications.push(notification);
 
           if (notifications.length === 1) {
-            const {position: cameraPosition, rotation: cameraRotation, scale: cameraScale} = _decomposeObjectMatrixWorld(camera);
-            hudMesh.align(cameraPosition, cameraRotation, cameraScale, 1);
+            camera.matrixWorld.decompose(localVector, localQuaternion, localVector2);
+            hudMesh.align(localVector, localQuaternion, localVector2, 1);
             hudMesh.visible = true;
           }
 
