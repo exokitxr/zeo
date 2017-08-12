@@ -194,12 +194,13 @@ function THREEMirror( width, height, options ) {
 
 		scope.visible = false;
 
-		const oldEnabled = renderer.vr.enabled;
+		const oldVrEnabled = renderer.vr.enabled;
 		renderer.vr.enabled = false;
+
 		renderer.render( scene, mirrorCamera, renderTarget );
 		renderer.setRenderTarget(null);
 
-		renderer.vr.enabled = oldEnabled;
+		renderer.vr.enabled = oldVrEnabled;
 
 		scope.visible = true;
 	};

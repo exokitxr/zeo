@@ -249,11 +249,17 @@ URL.revokeObjectURL(url); */
                 sourceCamera.quaternion.copy(mesh.quaternion);
 
                 if (recording) {
+                  const oldVrEnabled = renderer.vr.enabled;
+                  renderer.vr.enabled = false;
+
                   renderer.render(scene, sourceCamera, renderTarget);
                   renderer.render(offScene, offCamera);
                   ctx.drawImage(renderer.domElement, 0, 0, canvas.width, canvas.height);
+
+                  renderer.vr.enabled = oldVrEnabled;
+
+                  renderer.setRenderTarget(null);
                 }
-                renderer.setRenderTarget(null);
               } else {
                 mesh.visible = false;
               }
