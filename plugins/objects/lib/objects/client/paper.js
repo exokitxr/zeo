@@ -16,10 +16,12 @@ const paper = objectApi => {
   const {THREE, scene, camera, renderer} = three;
 
   const oneVector = new THREE.Vector3(1, 1, 1);
-  const backVector = new THREE.Vector3(0, 0, -1);
+  const forwardVector = new THREE.Vector3(0, 0, -1);
+  const backVector = new THREE.Vector3(0, 0, 1);
   const pencilVector = new THREE.Vector3(0, 0, -PENCIL_SIZE);
   const localVector = new THREE.Vector3();
   const localVector2 = new THREE.Vector3();
+  const localVector3 = new THREE.Vector3();
   const localCoords = new THREE.Vector2();
   const localQuaternion = new THREE.Quaternion();
   const localEuler = new THREE.Euler();
@@ -234,6 +236,44 @@ const paper = objectApi => {
               object.remove();
             });
 
+           const _triggerdown = e => {
+              const {side} = e;
+
+              if (objectApi.getHoveredObject(side) === object) {
+                const texture = paperMesh.material.map;
+                const canvas = texture.image;
+                canvas.toBlob(blob => {
+                  const dropMatrix = (() => {
+                    const {hmd} = pose.getStatus();
+                    const {worldPosition: hmdPosition, worldRotation: hmdRotation, worldScale: hmdScale} = hmd;
+                    localVector.copy(object.position)
+                      .add(
+                        localVector2.copy(backVector).multiplyScalar(0.5)
+                          .add(localVector3.set(0, STAND_SIZE/2, 0))
+                          .applyQuaternion(object.rotation)
+                      );
+                    return localVector.toArray().concat(object.rotation.toArray()).concat(oneVector.toArray());
+                  })();
+
+                  items.makeFile({
+                    type: 'image/png',
+                    ext: 'png',
+                    data: blob,
+                    matrix: dropMatrix,
+                  });
+                }, {
+                  mimeType: 'image/png',
+                });
+                canvas.ctx.clear();
+                texture.needsUpdate = true;
+
+                e.stopImmediatePropagation();
+              }
+            };
+            input.on('triggerdown', _triggerdown, {
+              priority: -1,
+            });
+
             const paperMesh = (() => {
               // const geometry = new THREE.PlaneBufferGeometry(1, 1, 3, 0);
               const geometry = new THREE.PlaneBufferGeometry(1, 1);
@@ -258,8 +298,11 @@ const paper = objectApi => {
               canvas.width = RESOLUTION;
               canvas.height = RESOLUTION;
               const ctx = canvas.getContext('2d');
-              ctx.fillStyle = '#FFF';
-              ctx.fillRect(0, 0, canvas.width, canvas.height);
+              ctx.clear = () => {
+                ctx.fillStyle = '#FFF';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+              };
+              ctx.clear();
               canvas.ctx = ctx;
               const texture = new THREE.Texture(
                 canvas,
@@ -290,11 +333,9 @@ const paper = objectApi => {
                   -0.05 * Math.PI * 2
                 ));
               // mesh.scale.copy(object.scale);
-              mesh.canvas = canvas;
-              mesh.texture = texture;
 
               const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(
-                localVector.copy(backVector).applyQuaternion(mesh.quaternion),
+                localVector.copy(forwardVector).applyQuaternion(mesh.quaternion),
                 mesh.position
               );
               const xAxis = new THREE.Line3(
@@ -363,7 +404,25 @@ const paper = objectApi => {
         };
 
         const _triggerdown = e => {
-          drawStates[e.side].drawing = true;
+          const gamepad = pose.getStatus().gamepads[e.side];
+
+          if (papers.some(paper => {
+            const {paperMesh} = paper;
+            const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale} = gamepad;
+
+            const pencilLine = localLine;
+            pencilLine.start.copy(controllerPosition);
+            pencilLine.end.copy(controllerPosition)
+              .add(
+                localVector.copy(pencilVector)
+                  .applyQuaternion(controllerRotation)
+              );
+            return paperMesh.getCoords(pencilLine, localCoords) !== null;
+          })) {
+            drawStates[e.side].drawing = true;
+
+            e.stopImmediatePropagation();
+          }
         };
         input.on('triggerdown', _triggerdown);
         const _triggerup = e => {
@@ -452,19 +511,19 @@ const paper = objectApi => {
                         for (let z = 0; z <= distance || z === 0; z++) {
                           const x = lastPoint.x + (Math.cos(angle) * z) - halfBrushW;
                           const y = lastPoint.y + (Math.sin(angle) * z) - halfBrushH;
-                          paperMesh.canvas.ctx.drawImage(brushImg, x, y);
+                          paperMesh.material.map.image.ctx.drawImage(brushImg, x, y);
 
                           const localMinX = Math.floor(x);
-                          const localMaxX = Math.min(localMinX + brushImg.width, paperMesh.canvas.width);
+                          const localMaxX = Math.min(localMinX + brushImg.width, paperMesh.material.map.image.width);
                           const localMinY = Math.floor(y);
-                          const localMaxY = Math.min(localMinY + brushImg.height, paperMesh.canvas.height);
+                          const localMaxY = Math.min(localMinY + brushImg.height, paperMesh.material.map.image.height);
                           minX = Math.min(minX, localMinX);
                           maxX = Math.max(maxX, localMaxX);
                           minY = Math.min(minY, localMinY);
                           maxY = Math.max(maxY, localMaxY);
                         }
 
-                        paperMesh.texture.needsUpdate = true;
+                        paperMesh.material.map.needsUpdate = true;
                       }
 
                       lastPoint.copy(currentPoint);
