@@ -484,7 +484,7 @@ void main() {
         const value = objectsUint32Data[offset];
         offset++;
 
-        const key = (objectIndex + n) % 0xFFFFFFFF;
+        const key = (objectIndex + n) | 0;
         let trackedObjectIndex = oldTrackedObjectIndices[key];
         let trackedObject;
         if (trackedObjectIndex !== undefined) {

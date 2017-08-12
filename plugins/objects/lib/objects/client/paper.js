@@ -12,7 +12,7 @@ const SIDES = ['left', 'right'];
 const dataSymbol = Symbol();
 
 const paper = objectApi => {
-  const {three, elements, render, input, pose, items, utils: {geometry: geometryUtils}} = zeo;
+  const {three, elements, render, input, pose, items} = zeo;
   const {THREE, scene, camera, renderer} = three;
 
   const oneVector = new THREE.Vector3(1, 1, 1);
@@ -236,13 +236,16 @@ const paper = objectApi => {
               object.remove();
             });
 
-           const _triggerdown = e => {
+            object.on('update', () => {
+              _loadFileN(object.value);
+            });
+
+            const _triggerdown = e => {
               const {side} = e;
 
               if (objectApi.getHoveredObject(side) === object) {
-                const texture = paperMesh.material.map;
-                const canvas = texture.image;
-                canvas.toBlob(blob => {
+                if (object.value !== 0) {
+                  const file = items.getFile(object.value);
                   const dropMatrix = (() => {
                     const {hmd} = pose.getStatus();
                     const {worldPosition: hmdPosition, worldRotation: hmdRotation, worldScale: hmdScale} = hmd;
@@ -255,15 +258,13 @@ const paper = objectApi => {
                     return localVector.toArray().concat(object.rotation.toArray()).concat(oneVector.toArray());
                   })();
 
-                  items.makeFile({
-                    data: blob,
+                  items.reifyFile({
+                    file,
                     matrix: dropMatrix,
                   });
-                }, {
-                  mimeType: 'image/png',
-                });
-                canvas.ctx.clear();
-                texture.needsUpdate = true;
+
+                  object.setData(0);
+                }
 
                 e.stopImmediatePropagation();
               }
@@ -361,6 +362,27 @@ const paper = objectApi => {
                 }
               };
 
+              mesh.saveFile = _debounce(next => {
+                texture.image.toBlob(blob => {
+                  const file = object.value !== 0 ? items.getFile(object.value) : items.getFile();
+                  file.write(blob)
+                    .then(() => {
+                      if (object.value === 0) {
+                        object.setData(file.n);
+                      }
+
+                      next();
+                    })
+                    .catch(err => {
+                      console.warn(err);
+
+                      next();
+                    });
+                }, {
+                  mimeType: 'image/png',
+                });
+              });
+
               const _makeDrawState = () => ({
                 lastPoint: new THREE.Vector2(),
                 lastPointActive: false,
@@ -375,6 +397,26 @@ const paper = objectApi => {
             scene.add(paperMesh);
             paperMesh.updateMatrixWorld();
             object.paperMesh = paperMesh;
+
+            const _loadFileN = n => {
+              const texture = paperMesh.material.map;
+
+              if (n !== 0) {
+                _requestImageBitmap(items.getFile(n).getUrl())
+                  .then(img => {
+                    texture.image.ctx.clear();
+                    texture.image.ctx.drawImage(img, 0, 0);
+                    texture.needsUpdate = true;
+                  })
+                  .catch(err => {
+                    console.warn(err);
+                  });
+              } else {
+                texture.image.ctx.clear();
+                texture.needsUpdate = true;
+              }
+            };
+            _loadFileN(object.value);
 
             papers.push(object);
 
@@ -521,6 +563,8 @@ const paper = objectApi => {
                           maxY = Math.max(maxY, localMaxY);
                         }
 
+                        paperMesh.saveFile();
+
                         paperMesh.material.map.needsUpdate = true;
                       }
 
@@ -556,5 +600,28 @@ const paper = objectApi => {
   );
 };
 const _makeId = () => Math.random().toString(36).substring(7);
+const _debounce = fn => {
+  let running = false;
+  let queued = false;
+
+  const _go = () => {
+    if (!running) {
+      running = true;
+
+      fn(() => {
+        running = false;
+
+        if (queued) {
+          queued = false;
+
+          _go();
+        }
+      });
+    } else {
+      queued = true;
+    }
+  };
+  return _go;
+};
 
 module.exports = paper;
