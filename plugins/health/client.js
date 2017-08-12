@@ -99,36 +99,6 @@ class Health {
       return {position, rotation, scale};
     };
 
-    const _isInBody = p => {
-      const vrMode = pose.getVrMode();
-
-      if (vrMode === 'hmd') {
-        const {hmd} = pose.getStatus();
-        const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmd;
-        const hmdEuler = new THREE.Euler().setFromQuaternion(hmdRotation, camera.rotation.order);
-        hmdEuler.z = 0;
-        const hmdQuaternion = new THREE.Quaternion().setFromEuler(hmdEuler);
-        const bodyPosition = hmdPosition.clone()
-          .add(
-            new THREE.Vector3(0, -0.5, 0)
-              .applyQuaternion(hmdQuaternion)
-          );
-        return p.distanceTo(bodyPosition) < 0.35;
-      } else if (vrMode === 'keyboard') {
-        const {hmd: {worldPosition, worldRotation}} = pose.getStatus();
-        const hmdEuler = new THREE.Euler().setFromQuaternion(worldRotation, camera.rotation.order);
-        hmdEuler.x = 0;
-        hmdEuler.z = 0;
-        const hmdQuaternion = new THREE.Quaternion().setFromEuler(hmdEuler);
-        const bodyPosition = worldPosition.clone()
-          .add(
-            new THREE.Vector3(0, -0.4, 0.2)
-              .applyQuaternion(hmdQuaternion)
-          );
-        return p.distanceTo(bodyPosition) < 0.35;
-      }
-    };
-
     return sound.requestSfx('archae/health/sfx/hit.ogg')
       .then(hitSfx => {
         if (live) {
@@ -257,20 +227,6 @@ class Health {
           };
           elements.registerEntity(this, healthEntity);
 
-          const _triggerdown = e => {
-            const {side} = e;
-            const {gamepads} = pose.getStatus();
-            const gamepad = gamepads[side];
-            const {worldPosition: controllerPosition} = gamepad;
-
-            if (_isInBody(controllerPosition)) {
-              if (_hurt(1)) {
-                e.stopImmediatePropagation();
-              }
-            }
-          };
-          input.on('triggerdown', _triggerdown);
-
           let lastUpdateTime = 0;
           const _update = () => {
             const now = Date.now();
@@ -307,7 +263,6 @@ class Health {
             hudMesh.destroy();
             ui.removePage(hudMesh.page);
 
-            input.removeListener('triggerdown', _triggerdown);
             render.removeListener('update', _update);
           };
         }
