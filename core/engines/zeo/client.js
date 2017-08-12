@@ -884,6 +884,10 @@ class Zeo {
                           return wallet.makeFile(options);
                         }
 
+                        reifyFile(options) {
+                          return wallet.reifyFile(options);
+                        }
+
                         getFile(id) {
                           return fs.makeRemoteFile(id);
                         }

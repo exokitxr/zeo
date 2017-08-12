@@ -1326,25 +1326,30 @@ class Wallet {
             const file = fs.makeRemoteFile();
             return file.write(data)
               .then(() => {
-                const {n} = file;
-                const id = String(n);
-                const itemSpec = {
-                  type: 'file',
-                  id: id,
-                  name: id,
-                  displayName: id,
-                  attributes: {
-                    type: {value: 'file'},
-                    value: {value: n},
-                    position: {value: matrix},
-                    owner: {value: null},
-                    bindOwner: {value: null},
-                    physics: {value: true},
-                  },
-                  metadata: {},
-                };
-                return walletApi.makeItem(itemSpec);
+                return this.reifyFile({file, matrix});
               });
+          }
+
+          reifyFile(fileSpec) {
+            const {file, matrix} = fileSpec;
+            const {n} = file;
+            const id = String(n);
+            const itemSpec = {
+              type: 'file',
+              id: id,
+              name: id,
+              displayName: id,
+              attributes: {
+                type: {value: 'file'},
+                value: {value: n},
+                position: {value: matrix},
+                owner: {value: null},
+                bindOwner: {value: null},
+                physics: {value: true},
+              },
+              metadata: {},
+            };
+            return walletApi.makeItem(itemSpec);
           }
 
           registerItem(pluginInstance, itemApi) {
