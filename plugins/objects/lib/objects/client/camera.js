@@ -79,6 +79,7 @@ const camera = objectApi => {
           canvas.height = height;
           const ctx = canvas.getContext('2d');
           ctx.imageSmoothingEnabled = false;
+          ctx.mozImageSmoothingEnabled = false;
           const imageData = ctx.createImageData(canvas.width, canvas.height);
 
           const _triggerdown = e => {

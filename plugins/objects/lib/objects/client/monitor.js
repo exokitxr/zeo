@@ -243,6 +243,8 @@ const monitor = objectApi => {
             canvas.width = RESOLUTION_X;
             canvas.height = RESOLUTION_Y;
             const ctx = canvas.getContext('2d');
+            ctx.imageSmoothingEnabled = false;
+            ctx.mozImageSmoothingEnabled = false;
             ctx.clear = () => {
               canvas.ctx.fillStyle = '#000';
               canvas.ctx.fillRect(0, 0, canvas.width, canvas.height);

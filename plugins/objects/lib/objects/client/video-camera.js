@@ -136,6 +136,7 @@ const videoCamera = objectApi => {
           canvas.height = height;
           const ctx = canvas.getContext('2d');
           ctx.imageSmoothingEnabled = false;
+          ctx.mozImageSmoothingEnabled = false;
           const imageData = ctx.createImageData(canvas.width, canvas.height);
           const mediaStream = canvas.captureStream(24);
           const mediaRecorder = new MediaRecorder(mediaStream, {
