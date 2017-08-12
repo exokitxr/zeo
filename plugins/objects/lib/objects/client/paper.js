@@ -256,8 +256,6 @@ const paper = objectApi => {
                   })();
 
                   items.makeFile({
-                    type: 'image/png',
-                    ext: 'png',
                     data: blob,
                     matrix: dropMatrix,
                   });
