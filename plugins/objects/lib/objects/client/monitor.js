@@ -200,16 +200,23 @@ const monitor = objectApi => {
                   .then(img => {
                     const texture = monitorMesh.material.map;
                     texture.image.ctx.clear();
-                    texture.image.ctx.drawImage(
-                      img,
-                      0, 0, img.width, img.height,
-                      0, 0, canvas.width, canvas.height
-                    );
+                    const aspectRatio = img.width / img.height;
+                    let width = texture.image.width;
+                    let height = Math.floor(width / aspectRatio);
+                    if (height > texture.image.height) {
+                      height = texture.image.height;
+                      width = Math.floor(height * aspectRatio);
+                    }
+                    const x = Math.max((texture.image.width - width) / 2, 0);
+                    const y = Math.max((texture.image.height - height) / 2, 0);
+                    texture.image.ctx.drawImage(img, x, y, width, height);
                     texture.needsUpdate = true;
                   })
                   .catch(err => {
                     console.warn(err);
                   });
+
+                e.stopImmediatePropagation();
               }
             }
           };
@@ -239,7 +246,7 @@ const monitor = objectApi => {
             canvas.height = RESOLUTION_Y;
             const ctx = canvas.getContext('2d');
             ctx.clear = () => {
-              canvas.ctx.fillStyle = '#FFF';
+              canvas.ctx.fillStyle = '#000';
               canvas.ctx.fillRect(0, 0, canvas.width, canvas.height);
             };
             canvas.ctx = ctx;
