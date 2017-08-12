@@ -254,6 +254,21 @@ class Objects {
                         args,
                       });
                     }
+                  } else if (method === 'setObjectData') {
+                    const {args} = m;
+                    const {x, z, index, value} = args;
+
+                    const chunk = zde.getChunk(x, z);
+                    if (chunk) {
+                      chunk.setObjectData(index, value);
+
+                      _saveChunks();
+
+                      _broadcast({
+                        type: 'setObjectData',
+                        args,
+                      });
+                    }
                   } else {
                     console.warn('objects server got unknown method:', JSON.stringify(method));
                   }
