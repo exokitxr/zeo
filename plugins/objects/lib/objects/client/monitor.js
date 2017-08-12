@@ -187,6 +187,10 @@ const monitor = objectApi => {
             object.remove();
           });
 
+          object.on('update', () => {
+            _loadFileN(object.value);
+          });
+
           const _triggerdown = e => {
             const {side} = e;
 
@@ -194,7 +198,9 @@ const monitor = objectApi => {
               const grabbedGrabbable = hands.getGrabbedGrabbable(side);
 
               if (grabbedGrabbable && grabbedGrabbable.type === 'file') {
-                _requestImageBitmap(items.getFile(grabbedGrabbable.value).getUrl())
+                object.setData(grabbedGrabbable.value);
+                
+                /* _requestImageBitmap(items.getFile(grabbedGrabbable.value).getUrl())
                   .then(img => {
                     const texture = monitorMesh.material.map;
                     texture.image.ctx.clear();
@@ -212,11 +218,9 @@ const monitor = objectApi => {
                   })
                   .catch(err => {
                     console.warn(err);
-                  });
+                  }); */
               } else {
-                const texture = monitorMesh.material.map;
-                texture.image.ctx.clear();
-                texture.needsUpdate = true;
+                object.setData(0);
               }
 
               e.stopImmediatePropagation();
@@ -319,6 +323,35 @@ const monitor = objectApi => {
           scene.add(monitorMesh);
           monitorMesh.updateMatrixWorld();
           object.monitorMesh = monitorMesh;
+
+          const _loadFileN = n => {
+            const texture = monitorMesh.material.map;
+
+            if (n !== 0) {
+              _requestImageBitmap(items.getFile(n).getUrl())
+                .then(img => {
+                  texture.image.ctx.clear();
+                  const aspectRatio = img.width / img.height;
+                  let width = texture.image.width;
+                  let height = Math.floor(width / aspectRatio);
+                  if (height > texture.image.height) {
+                    height = texture.image.height;
+                    width = Math.floor(height * aspectRatio);
+                  }
+                  const x = Math.max((texture.image.width - width) / 2, 0);
+                  const y = Math.max((texture.image.height - height) / 2, 0);
+                  texture.image.ctx.drawImage(img, x, y, width, height);
+                  texture.needsUpdate = true;
+                })
+                .catch(err => {
+                  console.warn(err);
+                });
+            } else {
+              texture.image.ctx.clear();
+              texture.needsUpdate = true;
+            }
+          };
+          _loadFileN(object.value);
 
           monitors.push(object);
 

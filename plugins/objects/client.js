@@ -145,6 +145,7 @@ void main() {
     const zeroQuaternion = new THREE.Quaternion();
     const localVector = new THREE.Vector3();
     const localVector2 = new THREE.Vector3();
+    const localRotation = new THREE.Quaternion();
     const localEuler = new THREE.Euler();
     const localRay = new THREE.Ray();
 
@@ -380,16 +381,29 @@ void main() {
         this.value = value;
       }
 
-      set(mesh, n, objectIndex, trackedObjectIndex, startIndex, endIndex, position, rotation, value) {
+      set(mesh, trackedObjectIndex, startIndex, endIndex, position, rotation, value) {
         this.mesh = mesh;
-        this.n = n;
-        this.objectIndex = objectIndex;
         this.trackedObjectIndex = trackedObjectIndex;
         this.startIndex = startIndex;
         this.endIndex = endIndex;
-        this.position = position;
-        this.rotation = rotation;
-        this.value = value;
+
+        let updated = false;
+        if (!this.position.equals(position)) {
+          this.position.copy(position);
+          updated = true;
+        }
+        if (!this.rotation.equals(rotation)) {
+          this.rotation.copy(rotation);
+          updated = true;
+        }
+        if (this.value !== value) {
+          this.value = value;
+          updated = true;
+        }
+
+        if (updated) {
+          this.emit('update');
+        }
       }
 
       is(name) {
@@ -409,8 +423,16 @@ void main() {
       }
 
       setData(value) {
-        this.value = value;
-        worker.requestSetObjectData(mesh.offset.x, mesh.offset.y, objectIndex, value);
+        const {mesh, objectIndex} = this;
+
+        worker.requestSetObjectData(mesh.offset.x, mesh.offset.y, objectIndex, value)
+          .then(() => {
+            const chunk = chunker.chunks.find(chunk => chunk.x === mesh.offset.x && chunk.z === mesh.offset.y);
+
+            if (chunk) {
+              chunk.lod = -1; // force chunk refresh
+            }
+          });
       }
 
       remove() {
@@ -444,7 +466,7 @@ void main() {
       const objectsFloat32Data = new Float32Array(objectsUint32Data.buffer, objectsUint32Data.byteOffset, objectsUint32Data.length);
       const objectSize = 1 + 10 + 1;
       const numObjects = objectsUint32Data.length / objectSize;
-      const newTrackedObjectIndices = Array(numObjects);
+      const newTrackedObjectIndices = {};
       for (let i = 0; i < numObjects; i++) {
         let offset = i * objectSize;
         const n = objectsUint32Data[offset];
@@ -455,31 +477,27 @@ void main() {
         offset++;
         const endIndex = objectsUint32Data[offset];
         offset++;
-        const position = new THREE.Vector3().fromArray(objectsFloat32Data, offset);
+        const position = localVector.fromArray(objectsFloat32Data, offset);
         offset += 3;
-        const rotation = new THREE.Quaternion().fromArray(objectsFloat32Data, offset);
+        const rotation = localRotation.fromArray(objectsFloat32Data, offset);
         offset += 4;
         const value = objectsUint32Data[offset];
         offset++;
 
-        let trackedObject = null;
-        let trackedObjectIndex = -1;
-        for (let j = 0; j < oldTrackedObjectIndices.length; j++) {
-          const oldTrackedObjectIndex = oldTrackedObjectIndices[j];
-          const oldTrackedObject = trackedObjects[oldTrackedObjectIndex];
-          if (oldTrackedObject && oldTrackedObject.objectIndex === objectIndex && oldTrackedObject.n === n) {
-            trackedObject = oldTrackedObject;
-            trackedObjectIndex = oldTrackedObjectIndex;
-            break;
-          }
+        const key = (objectIndex + n) % 0xFFFFFFFF;
+        let trackedObjectIndex = oldTrackedObjectIndices[key];
+        let trackedObject;
+        if (trackedObjectIndex !== undefined) {
+          trackedObject = trackedObjects[trackedObjectIndex];
+        } else {
+          trackedObjectIndex = -1;
+          trackedObject = null;
         }
         if (trackedObject !== null) {
-          trackedObject.set(mesh, n, objectIndex, trackedObjectIndex, startIndex, endIndex, position, rotation, value);
-
-          // XXX emit update
+          trackedObject.set(mesh, trackedObjectIndex, startIndex, endIndex, position, rotation, value);
         } else {
           trackedObjectIndex = trackedObjects.length;
-          trackedObject = new TrackedObject(mesh, n, objectIndex, trackedObjectIndex, startIndex, endIndex, position, rotation, value);
+          trackedObject = new TrackedObject(mesh, n, objectIndex, trackedObjectIndex, startIndex, endIndex, position.clone(), rotation.clone(), value);
           trackedObjects.push(trackedObject);
 
           const objectApi = objectApis[n];
@@ -488,13 +506,13 @@ void main() {
           }
         
         }
-        newTrackedObjectIndices[i] = trackedObjectIndex;
+        newTrackedObjectIndices[key] = trackedObjectIndex;
       }
       return newTrackedObjectIndices;
     };
     const _removeTrackedObjects = trackedObjectIndices => {
-      for (let i = 0; i < trackedObjectIndices.length; i++) {
-        const trackedObjectIndex = trackedObjectIndices[i];
+      for (const key in trackedObjectIndices) {
+        const trackedObjectIndex = trackedObjectIndices[key];
         const trackedObject = trackedObjects[trackedObjectIndex];
         const {n} = trackedObject;
         const objectApi = objectApis[n];
@@ -704,7 +722,7 @@ void main() {
 
         for (let i = 0; i < trackedObjects.length; i++) {
           const trackedObject = trackedObjects[i];
-          if (trackedObject.n === n) {
+          if (trackedObject && trackedObject.n === n) {
             _bindTrackedObject(trackedObject, objectApi);
           }
         }
@@ -717,7 +735,7 @@ void main() {
 
         for (let i = 0; i < trackedObjects.length; i++) {
           const trackedObject = trackedObjects[i];
-          if (trackedObject.n === n) {
+          if (trackedObject && trackedObject.n === n) {
             _unbindTrackedObject(trackedObject, objectApi);
           }
         }
@@ -792,7 +810,7 @@ void main() {
 
             objectsChunkMeshes.push(objectsChunkMesh);
 
-            const oldTrackedObjectIndices = oldData ? oldData.trackedObjectIndices : [];
+            const oldTrackedObjectIndices = oldData ? oldData.trackedObjectIndices : {};
             const trackedObjectIndices = _refreshTrackedObjects(objectsChunkMesh, objectsChunkData, oldTrackedObjectIndices);
 
             chunk.data = {
