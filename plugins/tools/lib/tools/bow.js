@@ -16,7 +16,7 @@ const bow = ({recipes, data}) => {
   const {THREE, scene} = three;
   const {arrowGeometrySpec} = data;
 
-  const localTransformPositionVector = new THREE.Vector3(0.015 * 1.5, 0, 0.015/2 + 0.015 * 3 * 3);
+  const localTransformPositionVector = new THREE.Vector3(0.015/2 * 3, 0, 0.015 * 4 * 3);
   const localTransformRotationQuaterion = new THREE.Quaternion().setFromAxisAngle(
     new THREE.Vector3(0, 0, 1),
     Math.PI / 4
