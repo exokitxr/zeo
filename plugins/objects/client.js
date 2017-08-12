@@ -223,6 +223,16 @@ void main() {
       });
       return Promise.resolve();
     };
+    worker.requestSetObjectData = (x, z, index, value) => {
+      worker.postMessage({
+        type: 'setObjectData',
+        x,
+        z,
+        index,
+        value,
+      });
+      return Promise.resolve();
+    };
     worker.requestGenerate = (x, z) => new Promise((accept, reject) => {
       const id = _makeId();
       const buffer = buffers.alloc();
@@ -286,7 +296,7 @@ void main() {
         }
       } else {
         queues[pendingResponseId](data);
-        delete queues[pendingResponseId];
+        delete queues[pendingResponseId]; // XXX do not use delete
         pendingResponseId = null;
       }
     };
@@ -356,7 +366,7 @@ void main() {
     };
 
     class TrackedObject extends EventEmitter {
-      constructor(mesh, n, objectIndex, trackedObjectIndex, startIndex, endIndex, position, rotation) {
+      constructor(mesh, n, objectIndex, trackedObjectIndex, startIndex, endIndex, position, rotation, value) {
         super();
 
         this.mesh = mesh;
@@ -367,6 +377,19 @@ void main() {
         this.endIndex = endIndex;
         this.position = position;
         this.rotation = rotation;
+        this.value = value;
+      }
+
+      set(mesh, n, objectIndex, trackedObjectIndex, startIndex, endIndex, position, rotation, value) {
+        this.mesh = mesh;
+        this.n = n;
+        this.objectIndex = objectIndex;
+        this.trackedObjectIndex = trackedObjectIndex;
+        this.startIndex = startIndex;
+        this.endIndex = endIndex;
+        this.position = position;
+        this.rotation = rotation;
+        this.value = value;
       }
 
       is(name) {
@@ -383,6 +406,11 @@ void main() {
 
       collide() {
         this.emit('collide');
+      }
+
+      setData(value) {
+        this.value = value;
+        worker.requestSetObjectData(mesh.offset.x, mesh.offset.y, objectIndex, value);
       }
 
       remove() {
@@ -411,13 +439,14 @@ void main() {
       left: null,
       right: null,
     };
-    const _addTrackedObjects = (mesh, data) => {
+    const _refreshTrackedObjects = (mesh, data, oldTrackedObjectIndices) => {
       const {objects: objectsUint32Data} = data;
       const objectsFloat32Data = new Float32Array(objectsUint32Data.buffer, objectsUint32Data.byteOffset, objectsUint32Data.length);
-      const numObjects = objectsUint32Data.length / 11;
-      let startObject = null;
+      const objectSize = 1 + 10 + 1;
+      const numObjects = objectsUint32Data.length / objectSize;
+      const newTrackedObjectIndices = Array(numObjects);
       for (let i = 0; i < numObjects; i++) {
-        let offset = i * 11;
+        let offset = i * objectSize;
         const n = objectsUint32Data[offset];
         offset++;
         const objectIndex = objectsUint32Data[offset];
@@ -430,40 +459,50 @@ void main() {
         offset += 3;
         const rotation = new THREE.Quaternion().fromArray(objectsFloat32Data, offset);
         offset += 4;
-        const trackedObject = new TrackedObject(mesh, n, objectIndex, trackedObjects.length, startIndex, endIndex, position, rotation);
-        trackedObjects.push(trackedObject);
+        const value = objectsUint32Data[offset];
+        offset++;
 
-        const objectApi = objectApis[n];
-        if (objectApi) {
-          _bindTrackedObject(trackedObject, objectApi);
-        }
-        
-        if (startObject === null) {
-          startObject = trackedObject;
-        }
-      }
-
-      return [startObject, numObjects];
-    };
-    const _removeTrackedObjects = objectRange => {
-      const [startObject, numObjects] = objectRange;
-
-      const baseIndex = trackedObjects.indexOf(startObject);
-      if (baseIndex !== -1) {
-        for (let i = 0; i < numObjects; i++) {
-          const fullIndex = baseIndex + i;
-          const trackedObject = trackedObjects[fullIndex];
-
-          if (trackedObject !== null) {
-            const {n} = trackedObject;
-            const objectApi = objectApis[n];
-            if (objectApi) {
-              _unbindTrackedObject(trackedObject, objectApi);
-            }
-
-            trackedObjects[fullIndex] = null;
+        let trackedObject = null;
+        let trackedObjectIndex = -1;
+        for (let j = 0; j < oldTrackedObjectIndices.length; j++) {
+          const oldTrackedObjectIndex = oldTrackedObjectIndices[j];
+          const oldTrackedObject = trackedObjects[oldTrackedObjectIndex];
+          if (oldTrackedObject && oldTrackedObject.objectIndex === objectIndex && oldTrackedObject.n === n) {
+            trackedObject = oldTrackedObject;
+            trackedObjectIndex = oldTrackedObjectIndex;
+            break;
           }
         }
+        if (trackedObject !== null) {
+          trackedObject.set(mesh, n, objectIndex, trackedObjectIndex, startIndex, endIndex, position, rotation, value);
+
+          // XXX emit update
+        } else {
+          trackedObjectIndex = trackedObjects.length;
+          trackedObject = new TrackedObject(mesh, n, objectIndex, trackedObjectIndex, startIndex, endIndex, position, rotation, value);
+          trackedObjects.push(trackedObject);
+
+          const objectApi = objectApis[n];
+          if (objectApi) {
+            _bindTrackedObject(trackedObject, objectApi);
+          }
+        
+        }
+        newTrackedObjectIndices[i] = trackedObjectIndex;
+      }
+      return newTrackedObjectIndices;
+    };
+    const _removeTrackedObjects = trackedObjectIndices => {
+      for (let i = 0; i < trackedObjectIndices.length; i++) {
+        const trackedObjectIndex = trackedObjectIndices[i];
+        const trackedObject = trackedObjects[trackedObjectIndex];
+        const {n} = trackedObject;
+        const objectApi = objectApis[n];
+        if (objectApi) {
+          _unbindTrackedObject(trackedObject, objectApi);
+        }
+
+        trackedObjects[trackedObjectIndex] = null;
       }
     };
     const _bindTrackedObject = (trackedObject, objectApi) => {
@@ -674,7 +713,7 @@ void main() {
       unregisterObject(objectApi) {
         const {object} = objectApi;
         const n = murmur(object);
-        delete objectApis[n];
+        objectApis[n] = null;
 
         for (let i = 0; i < trackedObjects.length; i++) {
           const trackedObject = trackedObjects[i];
@@ -746,9 +785,6 @@ void main() {
               objectsChunkMeshes.splice(objectsChunkMeshes.indexOf(objectsChunkMesh), 1);
 
               objectsChunkMesh.destroy();
-
-              const {objectRange} = oldData;
-              _removeTrackedObjects(objectRange);
             }
 
             const objectsChunkMesh = _makeObjectsChunkMesh(objectsChunkData, x, z);
@@ -756,11 +792,12 @@ void main() {
 
             objectsChunkMeshes.push(objectsChunkMesh);
 
-            const objectRange = _addTrackedObjects(objectsChunkMesh, objectsChunkData);
+            const oldTrackedObjectIndices = oldData ? oldData.trackedObjectIndices : [];
+            const trackedObjectIndices = _refreshTrackedObjects(objectsChunkMesh, objectsChunkData, oldTrackedObjectIndices);
 
             chunk.data = {
               objectsChunkMesh,
-              objectRange,
+              trackedObjectIndices,
             };
           });
         promises.push(promise);
@@ -783,8 +820,8 @@ void main() {
 
             objectsChunkMesh.destroy();
 
-            const {objectRange} = data;
-            _removeTrackedObjects(objectRange);
+            const {trackedObjectIndices} = data;
+            _removeTrackedObjects(trackedObjectIndices);
           }
         })
     };

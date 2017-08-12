@@ -56,21 +56,24 @@ const _getHoveredTrackedObject = position => {
 
     for (const k in chunk.trackedObjects) {
       const trackedObject = chunk.trackedObjects[k];
-      const entry = geometries[trackedObject.n];
-      const geometry = entry.length > 0 ? entry[0] : null;
 
-      localVector2.copy(localVector)
-        .sub(trackedObject.position)
-        .applyQuaternion(trackedObject.rotationInverse)
-        .add(trackedObject.position);
+      if (trackedObject) {
+        const entry = geometries[trackedObject.n];
+        const geometry = entry.length > 0 ? entry[0] : null;
 
-      localBox.set(
-        geometry ? localVector3.copy(geometry.boundingBox.min).add(trackedObject.position) : trackedObject.position,
-        geometry ? localVector4.copy(geometry.boundingBox.max).add(trackedObject.position) : localVector4.set(0, 0, 0)
-      );
+        localVector2.copy(localVector)
+          .sub(trackedObject.position)
+          .applyQuaternion(trackedObject.rotationInverse)
+          .add(trackedObject.position);
 
-      if (localBox.containsPoint(localVector2)) {
-        return [chunk.x, chunk.z, parseInt(k, 10)];
+        localBox.set(
+          geometry ? localVector3.copy(geometry.boundingBox.min).add(trackedObject.position) : trackedObject.position,
+          geometry ? localVector4.copy(geometry.boundingBox.max).add(trackedObject.position) : localVector4.set(0, 0, 0)
+        );
+
+        if (localBox.containsPoint(localVector2)) {
+          return [chunk.x, chunk.z, parseInt(k, 10)];
+        }
       }
     }
   }
@@ -89,25 +92,28 @@ const _getTeleportObject = position => {
 
     for (const k in chunk.trackedObjects) {
       const trackedObject = chunk.trackedObjects[k];
-      const entry = geometries[trackedObject.n];
-      const geometry = entry.length > 0 ? entry[0] : null;
 
-      localRay2.origin.copy(localRay.origin)
-        .sub(trackedObject.position)
-        .applyQuaternion(trackedObject.rotationInverse)
-        .add(trackedObject.position);
-      localRay2.direction.copy(localRay.direction);
+      if (trackedObject) {
+        const entry = geometries[trackedObject.n];
+        const geometry = entry.length > 0 ? entry[0] : null;
 
-      localBox.set(
-        geometry ? localVector2.copy(geometry.boundingBox.min).add(trackedObject.position) : trackedObject.position,
-        geometry ? localVector3.copy(geometry.boundingBox.max).add(trackedObject.position) : localVector3.set(0, 0, 0)
-      );
+        localRay2.origin.copy(localRay.origin)
+          .sub(trackedObject.position)
+          .applyQuaternion(trackedObject.rotationInverse)
+          .add(trackedObject.position);
+        localRay2.direction.copy(localRay.direction);
 
-      const intersectionPoint = localRay2.intersectBox(localBox, localVector4);
-      if (intersectionPoint && (topTrackedObject === null || intersectionPoint.y > topY)) {
-        topY = intersectionPoint.y;
-        topTrackedObject = trackedObject;
-        topBox = localBox2.copy(localBox);
+        localBox.set(
+          geometry ? localVector2.copy(geometry.boundingBox.min).add(trackedObject.position) : trackedObject.position,
+          geometry ? localVector3.copy(geometry.boundingBox.max).add(trackedObject.position) : localVector3.set(0, 0, 0)
+        );
+
+        const intersectionPoint = localRay2.intersectBox(localBox, localVector4);
+        if (intersectionPoint && (topTrackedObject === null || intersectionPoint.y > topY)) {
+          topY = intersectionPoint.y;
+          topTrackedObject = trackedObject;
+          topBox = localBox2.copy(localBox);
+        }
       }
     }
   }
@@ -134,25 +140,28 @@ const _getBodyObject = position => {
 
     for (const k in chunk.trackedObjects) {
       const trackedObject = chunk.trackedObjects[k];
-      const entry = geometries[trackedObject.n];
-      const geometry = entry.length > 0 ? entry[0] : null;
 
-      localVector2.copy(bodyCenterPoint)
-        .sub(trackedObject.position)
-        .applyQuaternion(trackedObject.rotationInverse)
-        .add(trackedObject.position);
+      if (trackedObject) {
+        const entry = geometries[trackedObject.n];
+        const geometry = entry.length > 0 ? entry[0] : null;
 
-      localBox.set(
-        geometry ? localVector3.copy(geometry.boundingBox.min).add(trackedObject.position) : trackedObject.position,
-        geometry ? localVector4.copy(geometry.boundingBox.max).add(trackedObject.position) : localVector4.set(0, 0, 0)
-      );
+        localVector2.copy(bodyCenterPoint)
+          .sub(trackedObject.position)
+          .applyQuaternion(trackedObject.rotationInverse)
+          .add(trackedObject.position);
 
-      const distance = localBox.distanceToPoint(localVector2);
-      if (distance < 0.3 && (distance < topDistance)) {
-        topDistance = distance;
-        topChunkX = chunk.x;
-        topChunkZ = chunk.z;
-        topN = parseInt(k, 10);
+        localBox.set(
+          geometry ? localVector3.copy(geometry.boundingBox.min).add(trackedObject.position) : trackedObject.position,
+          geometry ? localVector4.copy(geometry.boundingBox.max).add(trackedObject.position) : localVector4.set(0, 0, 0)
+        );
+
+        const distance = localBox.distanceToPoint(localVector2);
+        if (distance < 0.3 && (distance < topDistance)) {
+          topDistance = distance;
+          topChunkX = chunk.x;
+          topChunkZ = chunk.z;
+          topN = parseInt(k, 10);
+        }
       }
     }
   }
@@ -194,7 +203,16 @@ connection.on('message', e => {
       const chunk = zde.getChunk(x, z);
       chunk.removeObject(index);
 
-      delete chunk.trackedObjects[index];
+      chunk.trackedObjects[index] = null;
+
+      postMessage(JSON.stringify({
+        type: 'chunkUpdate',
+        args: [x, z],
+      }));
+    } else if (type === 'setObjectData') {
+      const {args: {x, z, index, value}} = m;
+      const chunk = zde.getChunk(x, z);
+      chunk.setObjectData(index, value);
 
       postMessage(JSON.stringify({
         type: 'chunkUpdate',
@@ -304,18 +322,21 @@ function _makeChunkGeometry(chunk) {
         _copyIndices(newIndices, indices, indexIndex, attributeIndex / 3);
         const newObjectsHeader = Uint32Array.from([n, index, indexIndex, indexIndex + newIndices.length]);
         objectsUint32Array.set(newObjectsHeader, objectIndex);
-        const newObjectsBody = Float32Array.from([
+        const newObjectsMatrix = Float32Array.from([
           matrix[0], matrix[1], matrix[2],
           matrix[3], matrix[4], matrix[5], matrix[6],
         ]);
-        objectsFloat32Array.set(newObjectsBody, objectIndex + newObjectsHeader.length);
+        objectsFloat32Array.set(newObjectsMatrix, objectIndex + newObjectsHeader.length);
+        const newObjectsValue = new Uint32Array(1);
+        newObjectsValue[0] = value;
+        objectsUint32Array.set(newObjectsValue, objectIndex + newObjectsHeader.length + newObjectsMatrix.length);
 
         attributeIndex += newPositions.length;
         uvIndex += newUvs.length;
         frameIndex += newFrames.length;
         objectIndexIndex += newObjectIndices.length;
         indexIndex += newIndices.length;
-        objectIndex += newObjectsHeader.length + newObjectsBody.length;
+        objectIndex += newObjectsHeader.length + newObjectsMatrix.length + newObjectsValue.length;
       }
     }
   });
@@ -406,7 +427,7 @@ self.onmessage = e => {
       .then(chunk => {
         chunk.removeObject(index);
 
-        delete chunk.trackedObjects[index];
+        chunk.trackedObjects[index] = null;
 
         connection.send(JSON.stringify({
           method: 'removeObject',
@@ -414,6 +435,26 @@ self.onmessage = e => {
             x,
             z,
             index,
+          },
+        }));
+      })
+      .catch(err => {
+        console.warn(err);
+      });
+  } else if (type === 'setObjectData') {
+    const {x, z, index, value} = data;
+
+    _requestChunk(x, z)
+      .then(chunk => {
+        chunk.setObjectData(index, value);
+
+        connection.send(JSON.stringify({
+          method: 'setObjectData',
+          args: {
+            x,
+            z,
+            index,
+            value,
           },
         }));
       })
