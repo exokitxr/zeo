@@ -213,9 +213,13 @@ const monitor = objectApi => {
                   .catch(err => {
                     console.warn(err);
                   });
-
-                e.stopImmediatePropagation();
+              } else {
+                const texture = monitorMesh.material.map;
+                texture.image.ctx.clear();
+                texture.needsUpdate = true;
               }
+
+              e.stopImmediatePropagation();
             }
           };
           input.on('triggerdown', _triggerdown);
