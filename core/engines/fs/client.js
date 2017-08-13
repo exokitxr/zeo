@@ -400,11 +400,9 @@ class Fs {
           }
 
           download() {
-            throw new Error('not implemented: need to track mime type'); // XXX
-
             const a = document.createElement('a');
             a.href = this.getUrl();
-            a.download = this.getFileName();
+            a.download = 'file';
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
