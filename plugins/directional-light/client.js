@@ -65,7 +65,7 @@ class DirectionalLight {
 
           return new THREE.Mesh(geometry, material);
         })();
-        scene.add(mesh);
+        // scene.add(mesh);
         entityElement.mesh = mesh;
 
         const light = (() => {
@@ -79,7 +79,7 @@ class DirectionalLight {
         entityElement.light = light;
 
         entityElement._cleanup = () => {
-          scene.remove(mesh);
+          // scene.remove(mesh);
           scene.remove(light);
         };
       },
