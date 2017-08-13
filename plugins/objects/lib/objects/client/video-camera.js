@@ -7,8 +7,9 @@ const sideWidth = 0.2 * 0.9;
 const sideHeight = 0.15 * 0.9;
 const sideAspectRatio = sideWidth / sideHeight;
 const sideDepth = 0.02;
-const width = 1024;
-const height = Math.round(width / sideAspectRatio);
+const width = 640;
+const height = 480;
+// const height = Math.round(width / sideAspectRatio);
 
 const dataSymbol = Symbol();
 
@@ -23,6 +24,7 @@ const videoCamera = objectApi => {
 
   const sourceCamera = new THREE.PerspectiveCamera(45, cameraWidth / cameraHeight, camera.near, camera.far);
   sourceCamera.name = camera.name;
+  scene.add(sourceCamera);
 
   const _requestImage = src => new Promise((accept, reject) => {
     const img = new Image();
@@ -137,12 +139,12 @@ const videoCamera = objectApi => {
           const ctx = canvas.getContext('2d');
           ctx.imageSmoothingEnabled = false;
           ctx.mozImageSmoothingEnabled = false;
-          const imageData = ctx.createImageData(canvas.width, canvas.height);
-          const mediaStream = canvas.captureStream(24);
+          const mediaStream = renderer.domElement.captureStream(Number.MIN_VALUE);
           const mediaRecorder = new MediaRecorder(mediaStream, {
             mimeType: 'video/webm',
             bitsPerSecond: 8000 * 1024,
           });
+          const rendererSize = renderer.getSize();
           const blobs = [];
           mediaRecorder.ondataavailable = e => {
             blobs.push(e.data);
@@ -195,7 +197,7 @@ URL.revokeObjectURL(url); */
               const screenWidth = sideWidth * 0.9;
               const screenHeight = sideHeight * 0.9;
               const geometry = new THREE.PlaneBufferGeometry(screenWidth, screenHeight)
-                .applyMatrix(new THREE.Matrix4().makeTranslation(-cameraWidth/2 - sideWidth/2, 0, -cameraDepth/2 + sideDepth/2));
+                .applyMatrix(new THREE.Matrix4().makeTranslation(-cameraWidth/2 - sideWidth/2, 0, -cameraDepth/2 + sideDepth/2 + 0.005));
               const material = new THREE.MeshBasicMaterial({
                 map: renderTarget.texture,
               });
@@ -233,6 +235,8 @@ URL.revokeObjectURL(url); */
             offScene.add(offPlane);
             renderer.compile(offScene, offCamera);
 
+            let lastUpdateTime = 0;
+
             mesh.update = () => {
               if (grabbable.isGrabbed()) {
                 mesh.position.copy(grabbable.position);
@@ -241,23 +245,24 @@ URL.revokeObjectURL(url); */
                 mesh.updateMatrixWorld();
                 mesh.visible = true;
 
-                sourceCamera.position.copy(mesh.position)
-                  .add(
-                    localVector.set(0, 0, -cameraDepth / 2)
-                      .applyQuaternion(mesh.quaternion)
-                  );
-                sourceCamera.quaternion.copy(mesh.quaternion);
-
                 if (recording) {
+                  sourceCamera.position.copy(mesh.position);
+                  sourceCamera.quaternion.copy(mesh.quaternion);
+                  // sourceCamera.scale.copy(grabbable.scale);
+                  sourceCamera.updateMatrixWorld();
+
                   const oldVrEnabled = renderer.vr.enabled;
                   renderer.vr.enabled = false;
 
                   renderer.render(scene, sourceCamera, renderTarget);
+                  renderer.setViewport(0, 0, width, height);
                   renderer.render(offScene, offCamera);
-                  ctx.drawImage(renderer.domElement, 0, 0, canvas.width, canvas.height);
+
+                  ctx.drawImage(canvas, 0, 0, width, height, 0, 0, width, height);
 
                   renderer.vr.enabled = oldVrEnabled;
 
+                  renderer.setViewport(0, 0, rendererSize.width, rendererSize.height);
                   renderer.setRenderTarget(null);
                 }
               } else {
