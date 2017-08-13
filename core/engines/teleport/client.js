@@ -37,14 +37,6 @@ class Teleport {
         const {events} = jsUtils;
         const {EventEmitter} = events;
 
-        /* const _decomposeMatrix = matrix => {
-          const position = new THREE.Vector3();
-          const rotation = new THREE.Quaternion();
-          const scale = new THREE.Vector3();
-          matrix.decompose(position, rotation, scale);
-          return {position, rotation, scale};
-        }; */
-
         const forwardVector = new THREE.Vector3(0, 0, -1);
         const localVector = new THREE.Vector3();
         const localVector2 = new THREE.Vector3();

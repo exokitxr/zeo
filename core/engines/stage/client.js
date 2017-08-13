@@ -78,7 +78,6 @@ class Stage {
           const mesh = new THREE.Mesh(geometry, material);
           return mesh;
         })();
-        renderer.compile(floorGridMesh, camera);
 
         class StageApi extends EventEmitter {
           constructor() {
