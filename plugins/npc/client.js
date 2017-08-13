@@ -20,8 +20,17 @@ class Mobs {
       live = false;
     };
 
-    return sound.requestSfx('archae/mobs/sfx/hurt1.ogg')
-      .then(hurtSfx => {
+    return Promise.all([
+      animal.requestModelSpecs({
+        imgUrlPrefix: '/archae/mobs/animal/img/',
+        modelUrlPrefix: '/archae/mobs/animal/models/',
+      }),
+      sound.requestSfx('archae/mobs/sfx/hurt1.ogg'),
+    ])
+      .then(([
+        animalModelSpecs,
+        hurtSfx,
+      ]) => {
         if (live) {
           const npcEntity = {
             entityAddedCallback(entityElement) {
@@ -140,10 +149,7 @@ class Mobs {
                 }
               };
               const _makeNpcMesh = skinName => skin(`/archae/mobs/npc/img/${skinName}.png`);
-              const _makeAnimalMesh = skinName => animal(
-                `/archae/mobs/animal/img/${skinName}.png`,
-                `/archae/mobs/animal/models/${skinName}.dat`
-              );
+              const _makeAnimalMesh = skinName => animal(animalModelSpecs[skinName]);
               const _makeMesh = (id, type, skinName) => {
                 const mesh = (() => {
                   if (type === 'npc') {
@@ -249,7 +255,7 @@ class Mobs {
                   const mesh = meshes[id];
                   stage.remove('main', mesh);
                   mesh.destroy();
-                  delete meshes[id];
+                  delete meshes[id]; // XXX optimize out deletes
                 } else if (type === 'mobAnimation') {
                   const {id, animation} = e;
                   const {mode, positionStart, positionEnd, rotationStart, rotationEnd, headRotationStart, headRotationEnd, duration} = animation;
