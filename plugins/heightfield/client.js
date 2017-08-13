@@ -284,6 +284,7 @@ class Heightfield {
 
         mesh.offset = new THREE.Vector2(x, z);
         mesh.heightfield = heightfield;
+        mesh.lod = chunk.lod;
 
         mesh.lightmap = null;
         if (lightmapper && chunk.lod === 1) {
@@ -455,9 +456,7 @@ class Heightfield {
               const oz = Math.floor(z / NUM_CELLS);
               const mapChunkMesh = mapChunkMeshes.find(mapChunkMesh => mapChunkMesh.x === ox && mapChunkMesh.z === oz);
 
-              if (mapChunkMesh) {
-                const {heightfield} = mapChunkMesh;
-
+              if (mapChunkMesh && mapChunkMesh.lod === 1) {
                 const ax = Math.floor(x);
                 const az = Math.floor(z);
                 if ((x - ax) <= (1 - (z - az))) { // top left triangle
@@ -471,9 +470,9 @@ class Heightfield {
                 };
                 min.set(ox * NUM_CELLS, oz * NUM_CELLS);
                 // max.copy(min).add(cellOffset);
-                const ea = heightfield[_getIndex(a, min)];
-                const eb = heightfield[_getIndex(b, min)];
-                const ec = heightfield[_getIndex(c, min)];
+                const ea = mapChunkMesh.heightfield[_getIndex(a, min)];
+                const eb = mapChunkMesh.heightfield[_getIndex(b, min)];
+                const ec = mapChunkMesh.heightfield[_getIndex(c, min)];
 
                 p.set(x, 0, z);
                 triangle.barycoordFromPoint(p, baryCoord);
