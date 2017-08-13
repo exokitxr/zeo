@@ -19,6 +19,7 @@ const camera = objectApi => {
 
   const sourceCamera = new THREE.PerspectiveCamera(45, cameraWidth / cameraHeight, camera.near, camera.far);
   sourceCamera.name = camera.name;
+  scene.add(sourceCamera);
 
   const _requestImage = src => new Promise((accept, reject) => {
     const img = new Image();
@@ -80,7 +81,7 @@ const camera = objectApi => {
           const ctx = canvas.getContext('2d');
           ctx.imageSmoothingEnabled = false;
           ctx.mozImageSmoothingEnabled = false;
-          const imageData = ctx.createImageData(canvas.width, canvas.height);
+          const rendererSize = renderer.getSize();
 
           const _triggerdown = e => {
             const {side} = e;
@@ -105,18 +106,6 @@ const camera = objectApi => {
                 mimeType: 'image/png',
               });
 
-/* const canvas = document.createElement('canvas');
-canvas.width = width;
-canvas.height = height;
-const ctx = canvas.getContext('2d');
-const imageData = ctx.createImageData(canvas.width, canvas.height);
-for (let y = 0; y < height; y++) {
-  new Uint8Array(imageData.data.buffer, imageData.data.byteOffset + y * width * 4, width * 4)
-    .set(new Uint8Array(cameraBuffer.buffer, cameraBuffer.byteOffset + (height - 1 - y) * width * 4, width * 4));
-}
-ctx.putImageData(imageData, 0, 0);
-document.body.appendChild(canvas); */
-
               e.stopImmediatePropagation();
             }
           };
@@ -138,7 +127,7 @@ document.body.appendChild(canvas); */
               const screenWidth = cameraWidth * 0.9;
               const screenHeight = cameraHeight * 0.9;
               const geometry = new THREE.PlaneBufferGeometry(screenWidth, screenHeight)
-                .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, cameraDepth / 2));
+                .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, cameraDepth/2 + 0.005));
               const material = new THREE.MeshBasicMaterial({
                 map: renderTarget.texture,
               });
@@ -185,21 +174,21 @@ document.body.appendChild(canvas); */
                 mesh.visible = true;
 
                 sourceCamera.position.copy(mesh.position)
-                  .add(
-                    localVector.set(0, 0, -cameraDepth / 2)
-                      .applyQuaternion(mesh.quaternion)
-                  );
-                sourceCamera.quaternion.copy(mesh.quaternion);
+                sourceCamera.quaternion.copy(grabbable.rotation);
+                // sourceCamera.scale.copy(grabbable.scale);
+                sourceCamera.updateMatrixWorld();
 
                 const oldVrEnabled = renderer.vr.enabled;
                 renderer.vr.enabled = false;
 
                 renderer.render(scene, sourceCamera, renderTarget);
                 renderer.render(offScene, offCamera);
-                ctx.drawImage(renderer.domElement, 0, 0, canvas.width, canvas.height);
+
+                ctx.drawImage(canvas, 0, 0, width, height, 0, 0, width, height);
 
                 renderer.vr.enabled = oldVrEnabled;
 
+                renderer.setViewport(0, 0, rendererSize.width, rendererSize.height);
                 renderer.setRenderTarget(null);
               } else {
                 mesh.visible = false;
