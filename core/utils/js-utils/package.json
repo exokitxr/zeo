@@ -5,6 +5,7 @@
   "client": "client.js",
   "dependencies": {
     "bffr": "0.0.4",
-    "events": "^1.1.1"
+    "events": "^1.1.1",
+    "mod-loop": "0.0.2"
   }
 }

@@ -1,5 +1,3 @@
-const mod = require('mod-loop');
-
 const {
   NUM_CELLS,
 
@@ -46,8 +44,10 @@ void main() {
 
 class Cloud {
   mount() {
-    const {three, elements, render, pose, stage, utils: {js: {bffr}, geometry: geometryUtils, random: {alea, chnkr}}} = zeo;
+    const {three, elements, render, pose, stage, utils: {js: {mod, bffr}, geometry: geometryUtils, random: {alea, chnkr}}} = zeo;
     const {THREE, camera} = three;
+
+    const _getChunkIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
 
     const cloudsMaterial = new THREE.ShaderMaterial({
       uniforms: THREE.UniformsUtils.clone(CLOUD_SHADER.uniforms),
@@ -249,6 +249,5 @@ class Cloud {
     this._cleanup();
   }
 }
-const _getChunkIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
 
 module.exports = Cloud;

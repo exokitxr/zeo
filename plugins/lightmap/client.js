@@ -1,5 +1,3 @@
-const mod = require('mod-loop');
-
 const {
   NUM_CELLS,
   NUM_CELLS_HEIGHT,
@@ -13,8 +11,10 @@ class Lightmap {
   mount() {
     const {three, elements, render, utils: {js: jsUtils}} = zeo;
     const {THREE} = three;
-    const {events, bffr} = jsUtils;
+    const {events, mod, bffr} = jsUtils;
     const {EventEmitter} = events;
+
+    const _getLightmapIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
 
     let idCount = 0;
 
@@ -349,6 +349,5 @@ class Lightmap {
     this._cleanup();
   }
 }
-const _getLightmapIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
 
 module.exports = Lightmap;

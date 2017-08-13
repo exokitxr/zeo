@@ -1,4 +1,3 @@
-const mod = require('mod-loop');
 const txtr = require('txtr');
 
 const LIGHTMAP_PLUGIN = 'plugins-lightmap';
@@ -22,9 +21,12 @@ const SIDES = ['left', 'right'];
 
 class Objects {
   mount() {
-    const {three, pose, input, elements, render, world, teleport, utils: {js: {events, bffr}, hash: {murmur}, random: {chnkr}}} = zeo;
+    const {three, pose, input, elements, render, world, teleport, utils: {js: {events, mod, bffr}, hash: {murmur}, random: {chnkr}}} = zeo;
     const {THREE, scene, camera} = three;
     const {EventEmitter} = events;
+
+    const _getChunkIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
+    const _getTrackedObjectIndex = (x, z, i) => (mod(x, 0xFF) << 24) | (mod(z, 0xFF) << 16) | (i & 0xFFFF);
 
     const OBJECTS_SHADER = {
       uniforms: {
@@ -1121,8 +1123,6 @@ const _makeId = () => {
   _id = (_id + 1) | 0;
   return result;
 };
-const _getChunkIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
-const _getTrackedObjectIndex = (x, z, i) => (mod(x, 0xFF) << 24) | (mod(z, 0xFF) << 16) | (i & 0xFFFF);
 const _parseFunction = fn => {
   const match = fn.toString().match(/[^\(]*\(([^\)]*)\)[^\{]*\{([\s\S]*)\}\s*$/); // XXX support bracketless arrow functions
   const args = match[1].split(',').map(arg => arg.trim());

@@ -1,5 +1,3 @@
-const mod = require('mod-loop');
-
 const WIDTH = 512;
 const ASPECT_RATIO = 1;
 const HEIGHT = Math.round(WIDTH / ASPECT_RATIO);
@@ -26,7 +24,8 @@ const SIDES = ['left', 'right'];
 
 class ZDraw {
   mount() {
-    const {three: {THREE, scene}, input, elements, render, pose, player, ui, utils: {network: networkUtils, geometry: geometryUtils, menu: menuUtils}} = zeo;
+    const {three: {THREE, scene}, input, elements, render, pose, player, ui, utils: {js: jsUtils, network: networkUtils, geometry: geometryUtils, menu: menuUtils}} = zeo;
+    const {mod} = jsUtils;
     const {AutoWs} = networkUtils;
 
     const colorWheelImg = menuUtils.getColorWheelImg();

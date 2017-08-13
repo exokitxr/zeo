@@ -8,7 +8,6 @@ const {
 } = require('./lib/constants/constants');
 const menuRenderer = require('./lib/render/menu');
 
-const mod = require('mod-loop');
 const functionutils = require('functionutils');
 
 const MAX_NUM_POINTS = 4 * 1024;
@@ -25,7 +24,8 @@ const SIDES = ['left', 'right'];
 
 class ZAnimate {
   mount() {
-    const {three: {THREE, scene, camera}, input, elements, render, pose, world, ui, utils: {geometry: geometryUtils}} = zeo;
+    const {three: {THREE, scene, camera}, input, elements, render, pose, world, ui, utils: {js: jsUtils, geometry: geometryUtils}} = zeo;
+    const {mod} = jsUtils;
 
     const worldElement = elements.getWorldElement();
 
