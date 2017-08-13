@@ -134,6 +134,8 @@ const videoCamera = objectApi => {
       const cameraItemApi = {
         asset: 'ITEM.VIDEOCAMERA',
         itemAddedCallback(grabbable) {
+          grabbable.hide();
+
           const canvas = document.createElement('canvas');
           canvas.width = width;
           canvas.height = height;
@@ -156,28 +158,19 @@ const videoCamera = objectApi => {
               blobs.length = 0;
 
               const dropMatrix = (() => {
-              const {hmd} = pose.getStatus();
-              const {worldPosition: hmdPosition, worldRotation: hmdRotation, worldScale: hmdScale} = hmd;
-              localVector.copy(hmdPosition)
-                .add(
-                  localVector2.copy(forwardVector).multiplyScalar(0.5)
-                    .applyQuaternion(hmdRotation)
-                );
-              return localVector.toArray().concat(hmdRotation.toArray()).concat(hmdScale.toArray());
-            })();
-            items.makeFile({
-              data: blob,
-              matrix: dropMatrix,
-            });
-
-/* const url = URL.createObjectURL(b);
-const a = document.createElement('a');
-a.href = url;
-a.download = 'video.webm';
-document.body.appendChild(a);
-a.click();
-document.body.removeChild(a);
-URL.revokeObjectURL(url); */
+                const {hmd} = pose.getStatus();
+                const {worldPosition: hmdPosition, worldRotation: hmdRotation, worldScale: hmdScale} = hmd;
+                localVector.copy(hmdPosition)
+                  .add(
+                    localVector2.copy(forwardVector).multiplyScalar(0.5)
+                      .applyQuaternion(hmdRotation)
+                  );
+                return localVector.toArray().concat(hmdRotation.toArray()).concat(hmdScale.toArray());
+              })();
+              items.makeFile({
+                data: blob,
+                matrix: dropMatrix,
+              });
             }
           };
 
@@ -323,6 +316,8 @@ URL.revokeObjectURL(url); */
 
           grabbable[dataSymbol] = {
             cleanup: () => {
+              grabbable.show();
+
               scene.remove(cameraMesh);
               cameraMesh.destroy();
 
