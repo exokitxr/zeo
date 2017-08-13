@@ -1,4 +1,3 @@
-const HEIGHTFIELD_PLUGIN = 'plugins-heightfield';
 const NUM_POSITIONS = 10 * 1024;
 const cameraWidth = 0.15;
 const cameraHeight = 0.15;
@@ -129,202 +128,212 @@ const videoCamera = objectApi => {
         return material;
       })();
 
-      const cameras = [];
+      const _makeCameraMesh = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = false;
+        const mediaStream = renderer.domElement.captureStream(Number.MIN_VALUE);
+        const mediaRecorder = new MediaRecorder(mediaStream, {
+          mimeType: 'video/webm',
+          bitsPerSecond: 8000 * 1024,
+        });
+        const rendererSize = renderer.getSize();
+
+        const blobs = [];
+        mediaRecorder.ondataavailable = e => {
+          blobs.push(e.data);
+        };
+        mediaRecorder.onstop = () => {
+          if (blobs.length > 0) {
+            const blob = new Blob(blobs);
+            blobs.length = 0;
+
+            const dropMatrix = (() => {
+              const {hmd} = pose.getStatus();
+              const {worldPosition: hmdPosition, worldRotation: hmdRotation, worldScale: hmdScale} = hmd;
+              localVector.copy(hmdPosition)
+                .add(
+                  localVector2.copy(forwardVector).multiplyScalar(0.5)
+                    .applyQuaternion(hmdRotation)
+                );
+              return localVector.toArray().concat(hmdRotation.toArray()).concat(hmdScale.toArray());
+            })();
+            items.makeFile({
+              data: blob,
+              matrix: dropMatrix,
+            });
+          }
+        };
+
+        const geometry = cameraGeometry;
+
+        const material = videoCameraMaterial;
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.visible = false;
+
+        const renderTarget = new THREE.WebGLRenderTarget(width, height, {
+          minFilter: THREE.NearestFilter,
+          magFilter: THREE.NearestFilter,
+          format: THREE.RGBAFormat,
+        });
+
+        const screenMesh = (() => {
+          const screenWidth = sideWidth * 0.9;
+          const screenHeight = sideHeight * 0.9;
+          const geometry = new THREE.PlaneBufferGeometry(screenWidth, screenHeight)
+            .applyMatrix(new THREE.Matrix4().makeTranslation(-cameraWidth/2 - sideWidth/2, 0, -cameraDepth/2 + sideDepth/2 + 0.005));
+          const material = new THREE.MeshBasicMaterial({
+            map: renderTarget.texture,
+          });
+          const mesh = new THREE.Mesh(geometry, material);
+          mesh.destroy = () => {
+            geometry.dispose();
+            material.dispose();
+          };
+          return mesh;
+        })();
+        mesh.add(screenMesh);
+
+        const offScene = new THREE.Scene();
+        const offCamera = new THREE.PerspectiveCamera();
+        offScene.add(offCamera);
+        const offPlane = (() => { // XXX needs to handle resize
+          var cameraZ = offCamera.position.z;
+          var planeZ = -5;
+          var distance = cameraZ - planeZ;
+          // var aspect = viewWidth / viewHeight;
+          var aspect = offCamera.aspect;
+          var vFov = offCamera.fov * Math.PI / 180;
+          var planeHeightAtDistance = 2 * Math.tan(vFov / 2) * distance;
+          var planeWidthAtDistance = planeHeightAtDistance * aspect;
+          const mesh = new THREE.Mesh(
+            new THREE.PlaneBufferGeometry(planeWidthAtDistance, planeHeightAtDistance),
+            new THREE.MeshBasicMaterial({
+              map: renderTarget.texture,
+            })
+          );
+          mesh.position.z = planeZ;
+          mesh.updateMatrixWorld();
+          return mesh;
+        })();
+        offScene.add(offPlane);
+        renderer.compile(offScene, offCamera);
+
+        let recording = false;
+        let recordInterval = null;
+        mesh.startRecording = () => {
+          recording = true;
+          mediaRecorder.start();
+          recordInterval = setInterval(() => {
+            mediaRecorder.requestData();
+          }, 1000);
+        };
+        mesh.stopRecording = () => {
+          recording = false;
+          mediaRecorder.stop();
+          clearInterval(recordInterval);
+          recordInterval = null;
+        };
+
+        let grabbable = null;
+        mesh.setGrabbable = newGrabbable => {
+          grabbable = newGrabbable;
+        };
+
+        mesh.update = () => {
+          if (grabbable) {
+            mesh.position.copy(grabbable.position);
+            mesh.quaternion.copy(grabbable.rotation);
+            // mesh.scale.copy(grabbable.scale);
+            mesh.updateMatrixWorld();
+            mesh.visible = true;
+
+            if (recording) {
+              sourceCamera.position.copy(mesh.position);
+              sourceCamera.quaternion.setFromRotationMatrix(
+                localMatrix.lookAt(
+                  grabbable.position,
+                  localVector.copy(grabbable.position)
+                    .add(localVector2.copy(forwardVector).applyQuaternion(grabbable.rotation)),
+                  localVector2.copy(upVector).applyQuaternion(grabbable.rotation)
+                )
+              );
+              // sourceCamera.scale.copy(grabbable.scale);
+              sourceCamera.updateMatrixWorld();
+
+              const oldVrEnabled = renderer.vr.enabled;
+              renderer.vr.enabled = false;
+
+              mesh.visible = false;
+              renderer.render(scene, sourceCamera, renderTarget);
+              mesh.visible = true;
+
+              renderer.setViewport(0, 0, width, height);
+              renderer.render(offScene, offCamera);
+
+              ctx.drawImage(renderer.domElement, 0, 0, width, height, 0, 0, width, height);
+
+              renderer.vr.enabled = oldVrEnabled;
+
+              renderer.setViewport(0, 0, rendererSize.width, rendererSize.height);
+              renderer.setRenderTarget(null);
+            }
+          } else {
+            mesh.visible = false;
+          }
+        };
+
+        mesh.destroy = () => {
+          renderTarget.dispose();
+          screenMesh.destroy();
+        };
+
+        return mesh;
+      };
+      const cameraMeshes = {
+        left: _makeCameraMesh(),
+        right: _makeCameraMesh(),
+      };
+      scene.add(cameraMeshes.left);
+      scene.add(cameraMeshes.right);
 
       const cameraItemApi = {
         asset: 'ITEM.VIDEOCAMERA',
         itemAddedCallback(grabbable) {
           grabbable.hide();
 
-          const canvas = document.createElement('canvas');
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          ctx.imageSmoothingEnabled = false;
-          ctx.mozImageSmoothingEnabled = false;
-          const mediaStream = renderer.domElement.captureStream(Number.MIN_VALUE);
-          const mediaRecorder = new MediaRecorder(mediaStream, {
-            mimeType: 'video/webm',
-            bitsPerSecond: 8000 * 1024,
-          });
-          const rendererSize = renderer.getSize();
-          const blobs = [];
-          mediaRecorder.ondataavailable = e => {
-            blobs.push(e.data);
-          };
-          mediaRecorder.onstop = () => {
-            if (blobs.length > 0) {
-              const blob = new Blob(blobs);
-              blobs.length = 0;
-
-              const dropMatrix = (() => {
-                const {hmd} = pose.getStatus();
-                const {worldPosition: hmdPosition, worldRotation: hmdRotation, worldScale: hmdScale} = hmd;
-                localVector.copy(hmdPosition)
-                  .add(
-                    localVector2.copy(forwardVector).multiplyScalar(0.5)
-                      .applyQuaternion(hmdRotation)
-                  );
-                return localVector.toArray().concat(hmdRotation.toArray()).concat(hmdScale.toArray());
-              })();
-              items.makeFile({
-                data: blob,
-                matrix: dropMatrix,
-              });
-            }
-          };
-
-          const cameraMesh = (() => {
-            const geometry = cameraGeometry;
-
-            const material = videoCameraMaterial;
-            const mesh = new THREE.Mesh(geometry, material);
-            mesh.visible = false;
-
-            const renderTarget = new THREE.WebGLRenderTarget(width, height, {
-              minFilter: THREE.NearestFilter,
-              magFilter: THREE.NearestFilter,
-              format: THREE.RGBAFormat,
-            });
-
-            const screenMesh = (() => {
-              const screenWidth = sideWidth * 0.9;
-              const screenHeight = sideHeight * 0.9;
-              const geometry = new THREE.PlaneBufferGeometry(screenWidth, screenHeight)
-                .applyMatrix(new THREE.Matrix4().makeTranslation(-cameraWidth/2 - sideWidth/2, 0, -cameraDepth/2 + sideDepth/2 + 0.005));
-              const material = new THREE.MeshBasicMaterial({
-                map: renderTarget.texture,
-              });
-              const mesh = new THREE.Mesh(geometry, material);
-              mesh.destroy = () => {
-                geometry.dispose();
-                material.dispose();
-              };
-              return mesh;
-            })();
-            mesh.add(screenMesh);
-
-            const offScene = new THREE.Scene();
-            const offCamera = new THREE.PerspectiveCamera();
-            offScene.add(offCamera);
-            const offPlane = (() => { // XXX needs to handle resize
-              var cameraZ = offCamera.position.z;
-              var planeZ = -5;
-              var distance = cameraZ - planeZ;
-              // var aspect = viewWidth / viewHeight;
-              var aspect = offCamera.aspect;
-              var vFov = offCamera.fov * Math.PI / 180;
-              var planeHeightAtDistance = 2 * Math.tan(vFov / 2) * distance;
-              var planeWidthAtDistance = planeHeightAtDistance * aspect;
-              const mesh = new THREE.Mesh(
-                new THREE.PlaneBufferGeometry(planeWidthAtDistance, planeHeightAtDistance),
-                new THREE.MeshBasicMaterial({
-                  map: renderTarget.texture,
-                })
-              );
-              mesh.position.z = planeZ;
-              mesh.updateMatrixWorld();
-              return mesh;
-            })();
-            offScene.add(offPlane);
-            renderer.compile(offScene, offCamera);
-
-            let lastUpdateTime = 0;
-
-            mesh.update = () => {
-              if (grabbable.isGrabbed()) {
-                mesh.position.copy(grabbable.position);
-                mesh.quaternion.copy(grabbable.rotation);
-                // mesh.scale.copy(grabbable.scale);
-                mesh.updateMatrixWorld();
-                mesh.visible = true;
-
-                if (recording) {
-                  sourceCamera.position.copy(mesh.position);
-                  sourceCamera.quaternion.setFromRotationMatrix(
-                    localMatrix.lookAt(
-                      grabbable.position,
-                      localVector.copy(grabbable.position)
-                        .add(localVector2.copy(forwardVector).applyQuaternion(grabbable.rotation)),
-                      localVector2.copy(upVector).applyQuaternion(grabbable.rotation)
-                    )
-                  );
-                  // sourceCamera.scale.copy(grabbable.scale);
-                  sourceCamera.updateMatrixWorld();
-
-                  const oldVrEnabled = renderer.vr.enabled;
-                  renderer.vr.enabled = false;
-
-                  renderer.render(scene, sourceCamera, renderTarget);
-                  renderer.setViewport(0, 0, width, height);
-                  renderer.render(offScene, offCamera);
-
-                  ctx.drawImage(canvas, 0, 0, width, height, 0, 0, width, height);
-
-                  renderer.vr.enabled = oldVrEnabled;
-
-                  renderer.setViewport(0, 0, rendererSize.width, rendererSize.height);
-                  renderer.setRenderTarget(null);
-                }
-              } else {
-                mesh.visible = false;
-              }
-            };
-            mesh.destroy = () => {
-              geometry.dispose();
-              screenMesh.destroy();
-
-              renderTarget.dispose();
-            };
-
-            return mesh;
-          })();
-          scene.add(cameraMesh);
-          grabbable.cameraMesh = cameraMesh;
-
-          let recording = false;
-          let recordInterval = null;
           const _triggerdown = e => {
-            const {side} = e;
-
-            if (grabbable.getGrabberSide() === side) {
-              recording = true;
-              mediaRecorder.start();
-              recordInterval = setInterval(() => {
-                mediaRecorder.requestData();
-              }, 1000);
+            if (grabbable.getGrabberSide() === e.side) {
+              cameraMeshes[e.side].startRecording();
 
               e.stopImmediatePropagation();
             }
           };
           input.on('triggerdown', _triggerdown);
           const _triggerup = e => {
-            const {side} = e;
-
-            if (grabbable.getGrabberSide() === side) {
-              recording = false;
-              mediaRecorder.stop();
-              clearInterval(recordInterval);
-              recordInterval = null;
+            if (grabbable.getGrabberSide() === e.side) {
+              cameraMeshes[e.side].stopRecording();
 
               e.stopImmediatePropagation();
             }
           };
           input.on('triggerup', _triggerup);
 
-          cameras.push(grabbable);
+          grabbable.on('grab', e => {
+            cameraMeshes[e.side].setGrabbable(grabbable);
+          });
+          grabbable.on('release', e => {
+            cameraMeshes[e.side].setGrabbable(null);
+          });
 
           grabbable[dataSymbol] = {
             cleanup: () => {
               grabbable.show();
 
-              scene.remove(cameraMesh);
-              cameraMesh.destroy();
-
               input.removeListener('triggerdown', _triggerdown);
               input.removeListener('triggerup', _triggerup);
-
-              cameras.splice(cameras.indexOf(grabbable), 1);
             },
           };
         },
@@ -338,13 +347,17 @@ const videoCamera = objectApi => {
       items.registerItem(this, cameraItemApi);
 
       const _update = () => {
-        for (let i = 0; i < cameras.length; i++) {
-          cameras[i].cameraMesh.update();
-        }
+        cameraMeshes.left.update();
+        cameraMeshes.right.update();
       };
       render.on('update', _update);
 
       return () => {
+        scene.remove(cameraMeshes.left);
+        cameraMeshes.left.destroy();
+        scene.remove(cameraMeshes.right);
+        cameraMeshes.right.destroy();
+
         items.unregisterItem(this, cameraItemApi);
         render.removeListener('update', _update);
       };
