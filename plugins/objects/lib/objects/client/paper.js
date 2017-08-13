@@ -1,6 +1,6 @@
 const mod = require('mod-loop');
 
-const PENCIL_SIZE = 0.2;
+const PENCIL_SIZE = 0.4;
 const HEIGHTFIELD_PLUGIN = 'plugins-heightfield';
 const DEFAULT_MATRIX = [
   0, 0, 0,
@@ -148,8 +148,12 @@ const paper = objectApi => {
             1
           );
           texture.needsUpdate = true;
-          const material = new THREE.MeshBasicMaterial({
+          const material = new THREE.MeshPhongMaterial({
             map: texture,
+            color: 0xFFFFFF,
+            shininess: 0,
+            map: texture,
+            shading: THREE.FlatShading,
           });
           return material;
         })();
@@ -316,11 +320,8 @@ const paper = objectApi => {
                 1
               );
               texture.needsUpdate = true;
-              const material = new THREE.MeshPhongMaterial({
-                color: 0xFFFFFF,
-                shininess: 0,
+              const material = new THREE.MeshBasicMaterial({
                 map: texture,
-                shading: THREE.FlatShading,
                 side: THREE.DoubleSide,
               });
 
@@ -445,8 +446,11 @@ const paper = objectApi => {
         };
 
         const _triggerdown = e => {
-          const gamepad = pose.getStatus().gamepads[e.side];
+          const {side} = e;
 
+          drawStates[side].drawing = true;
+
+          const gamepad = pose.getStatus().gamepads[side];
           if (papers.some(paper => {
             const {paperMesh} = paper;
             const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale} = gamepad;
@@ -460,8 +464,6 @@ const paper = objectApi => {
               );
             return paperMesh.getCoords(pencilLine, localCoords) !== null;
           })) {
-            drawStates[e.side].drawing = true;
-
             e.stopImmediatePropagation();
           }
         };
@@ -500,6 +502,9 @@ const paper = objectApi => {
                   pencilMesh.visible = false;
                 }
               }
+            } else {
+              pencilMeshes.left.visible = false;
+              pencilMeshes.right.visible = false;
             }
           };
           const _updateDraw = () => {
