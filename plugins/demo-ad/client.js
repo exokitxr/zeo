@@ -1,5 +1,3 @@
-const mod = require('mod-loop');
-
 const PIXEL_SIZE = 0.008;
 const TRANSITION_DURATION = 1000;
 
@@ -30,6 +28,8 @@ const SIDES = ['left', 'right'];
 
 module.exports = archae => ({
   mount() {
+    const {utils: js: {mod}} = zeo;
+
     let live = true;
     this._cleanup = () => {
       live = false;

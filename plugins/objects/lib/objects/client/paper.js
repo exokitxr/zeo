@@ -1,5 +1,3 @@
-const mod = require('mod-loop');
-
 const PENCIL_SIZE = 0.4;
 const HEIGHTFIELD_PLUGIN = 'plugins-heightfield';
 const DEFAULT_MATRIX = [
@@ -12,7 +10,7 @@ const SIDES = ['left', 'right'];
 const dataSymbol = Symbol();
 
 const paper = objectApi => {
-  const {three, elements, render, input, pose, items} = zeo;
+  const {three, elements, render, input, pose, items, utils: {js: {mod}}} = zeo;
   const {THREE, scene, camera, renderer} = three;
 
   const oneVector = new THREE.Vector3(1, 1, 1);

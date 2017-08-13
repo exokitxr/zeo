@@ -1,4 +1,3 @@
-const mod = require('mod-loop');
 const protocolUtils = require('./lib/utils/protocol-utils');
 
 const NUM_CELLS = 256;
@@ -71,8 +70,10 @@ class Ocean {
   mount() {
     const {three, render, elements, pose, world, stage, utils: {js: jsUtils, random: randomUtils, hash: hashUtils}} = zeo;
     const {THREE, scene} = three;
-    const {bffr} = jsUtils;
+    const {bffr, mod} = jsUtils;
     const {chnkr} = randomUtils;
+
+    const _getChunkIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
 
     let live = true;
     this._cleanup = () => {
@@ -346,6 +347,5 @@ class Ocean {
     this._cleanup();
   }
 }
-const _getChunkIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
 
 module.exports = Ocean;

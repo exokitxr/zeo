@@ -1,5 +1,3 @@
-const mod = require('mod-loop');
-
 const {
   NUM_CELLS,
 
@@ -158,8 +156,10 @@ class Heightfield {
 
   mount() {
     const {_archae: archae} = this;
-    const {three, render, pose, world, elements, teleport, /*physics,*/ stck, stage, utils: {js: {bffr}, random: {chnkr}}} = zeo;
+    const {three, render, pose, world, elements, teleport, /*physics,*/ stck, stage, utils: {js: {mod, bffr}, random: {chnkr}}} = zeo;
     const {THREE, camera} = three;
+
+    const _getChunkIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
 
     const forwardVector = new THREE.Vector3(0, 0, -1);
 
@@ -573,6 +573,5 @@ class Heightfield {
     this._cleanup();
   }
 }
-const _getChunkIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
 
 module.exports = Heightfield;

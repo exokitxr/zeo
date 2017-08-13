@@ -8,7 +8,6 @@ const {
 } = require('./lib/constants/constants');
 const menuRenderer = require('./lib/render/menu');
 
-const mod = require('mod-loop');
 const ConvexGeometry = require('./lib/three-extra/ConvexGeometry');
 
 const AUDIO_FILES = [
@@ -21,6 +20,18 @@ const SIDES = ['left', 'right'];
 
 class Raptor {
   mount() {
+    const {utils: {js: {mod}}} =  zeo;
+
+    const _clampHalfSphereAngle = v => {
+      v = mod(v, Math.PI * 2);
+      if (v > (Math.PI / 2) && v <= Math.PI) {
+        v = Math.PI / 2;
+      } else if (v > Math.PI && v < (Math.PI * 3 / 2)) {
+        v = Math.PI * 3 / 2;
+      }
+      return v;
+    };
+
     let live = true;
     this._cleanup = () => {
       live = false;
@@ -646,16 +657,6 @@ class Raptor {
     this._cleanup();
   }
 }
-
-const _clampHalfSphereAngle = v => {
-  v = mod(v, Math.PI * 2);
-  if (v > (Math.PI / 2) && v <= Math.PI) {
-    v = Math.PI / 2;
-  } else if (v > Math.PI && v < (Math.PI * 3 / 2)) {
-    v = Math.PI * 3 / 2;
-  }
-  return v;
-};
 const _sliceHtml = (html, characterIndex) => {
   html = html.replace(/(\s)\s+/g, '$1');
 
