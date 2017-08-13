@@ -76,6 +76,8 @@ const camera = objectApi => {
       const cameraItemApi = {
         asset: 'ITEM.CAMERA',
         itemAddedCallback(grabbable) {
+          grabbable.hide();
+
           const canvas = document.createElement('canvas');
           canvas.width = width;
           canvas.height = height;
@@ -218,6 +220,8 @@ const camera = objectApi => {
 
           grabbable[dataSymbol] = {
             cleanup: () => {
+              grabbable.show();
+
               input.removeListener('triggerdown', _triggerdown);
 
               scene.remove(cameraMesh);
