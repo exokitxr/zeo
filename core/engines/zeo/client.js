@@ -5,7 +5,7 @@ class Zeo {
 
   mount() {
     const {_archae: archae} = this;
-    const {metadata: {site: {url: siteUrl}, server: {enabled: serverEnabled}}} = archae;
+    const {metadata: {site: {url: siteUrl}}} = archae;
 
     let cleanups = [];
     const _cleanup = () => {
@@ -236,7 +236,7 @@ class Zeo {
                 const {events} = jsUtils;
                 const {EventEmitter} = events;
 
-                address = address || _makeId(); // if we failed to get the user's address, make one up
+                address = address || '127.0.0.1';
                 bootstrap.setAddress(address);
                 const supportsWebVR = webvr.supportsWebVR();
 
@@ -980,6 +980,8 @@ class Zeo {
                       const zeoApi = new ZeoApi();
                       window.zeo = zeoApi;
 
+                      renderer.compile(scene, camera);
+
                       world.init();
 
                       return zeoApi;
@@ -996,7 +998,6 @@ class Zeo {
   }
 }
 
-const _makeId = () => Math.random().toString(36).substring(7);
 const _getQueryVariable = (url, variable) => {
   const match = url.match(/\?(.+)$/);
   const query = match ? match[1] : '';
