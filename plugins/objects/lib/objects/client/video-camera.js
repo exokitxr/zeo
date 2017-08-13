@@ -17,10 +17,11 @@ const videoCamera = objectApi => {
   const {three, pose, input, render, items} = zeo;
   const {THREE, scene, camera, renderer} = three;
 
+  const upVector = new THREE.Vector3(0, 1, 0);
   const forwardVector = new THREE.Vector3(0, 0, -1);
   const localVector = new THREE.Vector3();
   const localVector2 = new THREE.Vector3();
-  const localVector3 = new THREE.Vector3();
+  const localMatrix = new THREE.Matrix4();
 
   const sourceCamera = new THREE.PerspectiveCamera(45, cameraWidth / cameraHeight, camera.near, camera.far);
   sourceCamera.name = camera.name;
@@ -247,7 +248,14 @@ URL.revokeObjectURL(url); */
 
                 if (recording) {
                   sourceCamera.position.copy(mesh.position);
-                  sourceCamera.quaternion.copy(mesh.quaternion);
+                  sourceCamera.quaternion.setFromRotationMatrix(
+                    localMatrix.lookAt(
+                      grabbable.position,
+                      localVector.copy(grabbable.position)
+                        .add(localVector2.copy(forwardVector).applyQuaternion(grabbable.rotation)),
+                      localVector2.copy(upVector).applyQuaternion(grabbable.rotation)
+                    )
+                  );
                   // sourceCamera.scale.copy(grabbable.scale);
                   sourceCamera.updateMatrixWorld();
 
