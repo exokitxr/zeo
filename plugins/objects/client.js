@@ -145,9 +145,26 @@ void main() {
     const zeroQuaternion = new THREE.Quaternion();
     const localVector = new THREE.Vector3();
     const localVector2 = new THREE.Vector3();
-    const localRotation = new THREE.Quaternion();
+    const localQuaternion = new THREE.Quaternion();
     const localEuler = new THREE.Euler();
     const localRay = new THREE.Ray();
+    const localArray2 = Array(2);
+    const localArray3 = Array(3);
+    const localArray32 = Array(3);
+    const localMessage = {
+      type: '',
+      id: 0,
+      args: null,
+    };
+    const localGenerateMessageArgs = {
+      x: 0,
+      z: 0,
+      buffer: null,
+    };
+    const localUngenerateMessageArgs = {
+      x: 0,
+      z: 0,
+    };
 
     const cleanups = [];
     this._cleanup = () => {
@@ -242,52 +259,57 @@ void main() {
       return Promise.resolve();
     };
     worker.requestGenerate = (x, z) => new Promise((accept, reject) => {
+      localMessage.type = 'generate';
       const id = _makeId();
+      localMessage.id = id;
       const buffer = buffers.alloc();
-      worker.postMessage({
-        type: 'generate',
-        id,
-        x,
-        z,
-        buffer,
-      });
+      localGenerateMessageArgs.x = x;
+      localGenerateMessageArgs.z = z;
+      localGenerateMessageArgs.buffer = buffer;
+      localMessage.args = localGenerateMessageArgs;
+
+      worker.postMessage(localMessage, [buffer]);
       queues.push(new QueueEntry(id, accept));
     });
     worker.requestUngenerate = (x, z) => {
-      worker.postMessage({
-        type: 'ungenerate',
-        x,
-        z,
-      });
+      localMessage.type = 'ungenerate';
+      const id = _makeId();
+      localMessage.id = id;
+      localUngenerateMessageArgs.x = x;
+      localUngenerateMessageArgs.z = z;
+      localMessage.args = localUngenerateMessageArgs;
+
+      worker.postMessage(localMessage);
       return Promise.resolve();
     };
     worker.getHoveredObjects = () => new Promise((accept, reject) => {
+      localMessage.type = 'getHoveredObjects';
       const id = _makeId();
+      localMessage.id = id;
       const {gamepads} = pose.getStatus();
-      const positions = SIDES.map(side => gamepads[side].worldPosition.toArray());
-      worker.postMessage({
-        type: 'getHoveredObjects',
-        id,
-        args: positions,
-      });
+      localArray2[0] = gamepads.left.worldPosition.toArray(localArray3);
+      localArray2[1] = gamepads.right.worldPosition.toArray(localArray32);
+      localMessage.args = localArray2;
+
+      worker.postMessage(localMessage);
       queues.push(new QueueEntry(id, accept));
     });
     worker.getTeleportObject = position => new Promise((accept, reject) => {
+      localMessage.type = 'getTeleportObject';
       const id = _makeId();
-      worker.postMessage({
-        type: 'getTeleportObject',
-        id,
-        args: position.toArray(),
-      });
+      localMessage.id = id;
+      localMessage.args = position.toArray(localArray3);
+
+      worker.postMessage(localMessage);
       queues.push(new QueueEntry(id, accept));
     });
     worker.getBodyObject = position => new Promise((accept, reject) => {
+      localMessage.type = 'getBodyObject';
       const id = _makeId();
-      worker.postMessage({
-        type: 'getBodyObject',
-        id,
-        args: position.toArray(),
-      });
+      localMessage.id = id;
+      localMessage.args = position.toArray(localArray3);
+
+      worker.postMessage(localMessage);
       queues.push(new QueueEntry(id, accept));
     });
     let pendingResponseId = null;
@@ -384,7 +406,7 @@ void main() {
     };
 
     class TrackedObject extends EventEmitter {
-      constructor(mesh, n, objectIndex, trackedObjectIndex, startIndex, endIndex, position, rotation, value) {
+      constructor(mesh, n, objectIndex, trackedObjectIndex, startIndex, endIndex, positionX, positionY, positionZ, rotationX, rotationY, rotationZ, rotationW, value) {
         super();
 
         this.mesh = mesh;
@@ -393,24 +415,29 @@ void main() {
         this.trackedObjectIndex = trackedObjectIndex;
         this.startIndex = startIndex;
         this.endIndex = endIndex;
-        this.position = position;
-        this.rotation = rotation;
+        this.positionX = positionX;
+        this.positionY = positionY;
+        this.positionZ = positionZ;
+        this.rotationX = rotationX;
+        this.rotationY = rotationY;
+        this.rotationZ = rotationZ;
+        this.rotationW = rotationW;
         this.value = value;
       }
 
-      set(mesh, trackedObjectIndex, startIndex, endIndex, position, rotation, value) {
+      set(mesh, trackedObjectIndex, startIndex, endIndex, positionX, positionY, positionZ, rotationX, rotationY, rotationZ, rotationW, value) {
         this.mesh = mesh;
         this.trackedObjectIndex = trackedObjectIndex;
         this.startIndex = startIndex;
         this.endIndex = endIndex;
 
         let updated = false;
-        if (!this.position.equals(position)) {
-          this.position.copy(position);
+        if (this.position.x !== positionX || this.position.y !== positionY || this.position.z !== positionZ) {
+          this.position.set(positionX, positionY, positionZ);
           updated = true;
         }
-        if (!this.rotation.equals(rotation)) {
-          this.rotation.copy(rotation);
+        if (this.rotation.x !== rotationX || this.rotation.y !== rotationY || this.rotation.z !== rotationZ || this.rotation.w !== rotationW) {
+          this.rotation.set(rotationX, rotationY, rotationZ, rotationW);
           updated = true;
         }
         if (this.value !== value) {
@@ -421,6 +448,14 @@ void main() {
         if (updated) {
           this.emit('update');
         }
+      }
+
+      get position() {
+        return localVector.set(this.positionX, this.positionY, this.positionZ);
+      }
+
+      get rotation() {
+        return localQuaternion.set(this.rotationX, this.rotationY, this.rotationZ, this.rotationW);
       }
 
       is(name) {
@@ -474,25 +509,22 @@ void main() {
     const _refreshTrackedObjects = (mesh, data, oldTrackedObjectIndices) => {
       const {objects: objectsUint32Data} = data;
       const objectsFloat32Data = new Float32Array(objectsUint32Data.buffer, objectsUint32Data.byteOffset, objectsUint32Data.length);
-      const objectSize = 1 + 10 + 1;
-      const numObjects = objectsUint32Data.length / objectSize;
+      const numObjects = objectsUint32Data.length / (1 + 10 + 1);
+      let offset = 0;
       const newTrackedObjectIndices = {};
       for (let i = 0; i < numObjects; i++) {
-        let offset = i * objectSize;
-        const n = objectsUint32Data[offset];
-        offset++;
-        const objectIndex = objectsUint32Data[offset];
-        offset++;
-        const startIndex = objectsUint32Data[offset];
-        offset++;
-        const endIndex = objectsUint32Data[offset];
-        offset++;
-        const position = localVector.fromArray(objectsFloat32Data, offset);
-        offset += 3;
-        const rotation = localRotation.fromArray(objectsFloat32Data, offset);
-        offset += 4;
-        const value = objectsUint32Data[offset];
-        offset++;
+        const n = objectsUint32Data[offset++];
+        const objectIndex = objectsUint32Data[offset++];
+        const startIndex = objectsUint32Data[offset++];
+        const endIndex = objectsUint32Data[offset++];
+        const positionX = objectsFloat32Data[offset++];
+        const positionY = objectsFloat32Data[offset++];
+        const positionZ = objectsFloat32Data[offset++];
+        const rotationX = objectsFloat32Data[offset++];
+        const rotationY = objectsFloat32Data[offset++];
+        const rotationZ = objectsFloat32Data[offset++];
+        const rotationW = objectsFloat32Data[offset++];
+        const value = objectsUint32Data[offset++];
 
         const key = (objectIndex + n) | 0;
         let trackedObjectIndex = oldTrackedObjectIndices[key];
@@ -504,10 +536,10 @@ void main() {
           trackedObject = null;
         }
         if (trackedObject !== null) {
-          trackedObject.set(mesh, trackedObjectIndex, startIndex, endIndex, position, rotation, value);
+          trackedObject.set(mesh, trackedObjectIndex, startIndex, endIndex, positionX, positionY, positionZ, rotationX, rotationY, rotationZ, rotationW, value);
         } else {
           trackedObjectIndex = trackedObjects.length;
-          trackedObject = new TrackedObject(mesh, n, objectIndex, trackedObjectIndex, startIndex, endIndex, position.clone(), rotation.clone(), value);
+          trackedObject = new TrackedObject(mesh, n, objectIndex, trackedObjectIndex, startIndex, endIndex, positionX, positionY, positionZ, rotationX, rotationY, rotationZ, rotationW, value);
           trackedObjects.push(trackedObject);
 
           const objectApi = objectApis[n];
@@ -1075,7 +1107,12 @@ void main() {
     this._cleanup();
   }
 }
-const _makeId = () => Math.random().toString(36).substring(7);
+let _id = 0;
+const _makeId = () => {
+  const result = _id;
+  _id = (_id + 1) | 0;
+  return result;
+};
 const _parseFunction = fn => {
   const match = fn.toString().match(/[^\(]*\(([^\)]*)\)[^\{]*\{([\s\S]*)\}\s*$/); // XXX support bracketless arrow functions
   const args = match[1].split(',').map(arg => arg.trim());

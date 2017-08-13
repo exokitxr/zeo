@@ -462,8 +462,9 @@ self.onmessage = e => {
         console.warn(err);
       });
   } else if (type === 'generate') {
-    const {id, x, z} = data;
-    let {buffer: resultBuffer} = data;
+    const {id, args} = data;
+    const {x, z} = args;
+    let {buffer: resultBuffer} = args;
     _requestChunk(x, z)
       .then(chunk => {
         const geometry = _makeChunkGeometry(chunk);
@@ -478,11 +479,15 @@ self.onmessage = e => {
         console.warn(err);
       });
   } else if (type === 'ungenerate') {
-    const {x, z} = data;
+    const {args} = data;
+    const {x, z} = args;
     zde.removeChunk(x, z);
   } else if (type === 'getHoveredObjects') {
     const {id, args: positions} = data;
-    const result = positions.map(position => _getHoveredTrackedObject(position));
+    const result = [
+      _getHoveredTrackedObject(positions[0]),
+      _getHoveredTrackedObject(positions[1]),
+    ];
     postMessage(JSON.stringify({
       type: 'response',
       args: [id],
