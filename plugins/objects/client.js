@@ -1,3 +1,4 @@
+const mod = require('mod-loop');
 const txtr = require('txtr');
 
 const LIGHTMAP_PLUGIN = 'plugins-lightmap';
@@ -406,13 +407,12 @@ void main() {
     };
 
     class TrackedObject extends EventEmitter {
-      constructor(mesh, n, objectIndex, trackedObjectIndex, startIndex, endIndex, positionX, positionY, positionZ, rotationX, rotationY, rotationZ, rotationW, value) {
+      constructor(mesh, n, objectIndex, startIndex, endIndex, positionX, positionY, positionZ, rotationX, rotationY, rotationZ, rotationW, value) {
         super();
 
         this.mesh = mesh;
         this.n = n;
         this.objectIndex = objectIndex;
-        this.trackedObjectIndex = trackedObjectIndex;
         this.startIndex = startIndex;
         this.endIndex = endIndex;
         this.positionX = positionX;
@@ -425,9 +425,8 @@ void main() {
         this.value = value;
       }
 
-      set(mesh, trackedObjectIndex, startIndex, endIndex, positionX, positionY, positionZ, rotationX, rotationY, rotationZ, rotationW, value) {
+      set(mesh, startIndex, endIndex, positionX, positionY, positionZ, rotationX, rotationY, rotationZ, rotationW, value) {
         this.mesh = mesh;
-        this.trackedObjectIndex = trackedObjectIndex;
         this.startIndex = startIndex;
         this.endIndex = endIndex;
 
@@ -481,7 +480,7 @@ void main() {
       }
 
       remove() {
-        const {mesh, n, objectIndex, trackedObjectIndex, startIndex, endIndex} = this;
+        const {mesh, n, objectIndex, startIndex, endIndex} = this;
         const {geometry} = mesh;
         const indexAttribute = geometry.index;
         const indices = indexAttribute.array;
@@ -490,7 +489,7 @@ void main() {
         }
         indexAttribute.needsUpdate = true;
 
-        trackedObjects[trackedObjectIndex] = null;
+        trackedObjects[_getTrackedObjectIndex(mesh.offset.x, mesh.offset.y, objectIndex)] = null;
 
         const objectApi = objectApis[n];
         if (objectApi) {
@@ -501,7 +500,7 @@ void main() {
       }
     }
 
-    const trackedObjects = [];
+    const trackedObjects = {};
     const hoveredTrackedObjects = {
       left: null,
       right: null,
@@ -526,43 +525,48 @@ void main() {
         const rotationW = objectsFloat32Data[offset++];
         const value = objectsUint32Data[offset++];
 
-        const key = (objectIndex + n) | 0;
-        let trackedObjectIndex = oldTrackedObjectIndices[key];
-        let trackedObject;
-        if (trackedObjectIndex !== undefined) {
-          trackedObject = trackedObjects[trackedObjectIndex];
+        const trackedObjectIndex = _getTrackedObjectIndex(mesh.offset.x, mesh.offset.y, objectIndex);
+        let trackedObject = trackedObjects[trackedObjectIndex];
+        if (trackedObject) {
+          trackedObject.set(mesh, startIndex, endIndex, positionX, positionY, positionZ, rotationX, rotationY, rotationZ, rotationW, value);
         } else {
-          trackedObjectIndex = -1;
-          trackedObject = null;
-        }
-        if (trackedObject !== null) {
-          trackedObject.set(mesh, trackedObjectIndex, startIndex, endIndex, positionX, positionY, positionZ, rotationX, rotationY, rotationZ, rotationW, value);
-        } else {
-          trackedObjectIndex = trackedObjects.length;
-          trackedObject = new TrackedObject(mesh, n, objectIndex, trackedObjectIndex, startIndex, endIndex, positionX, positionY, positionZ, rotationX, rotationY, rotationZ, rotationW, value);
-          trackedObjects.push(trackedObject);
+          trackedObject = new TrackedObject(mesh, n, objectIndex, startIndex, endIndex, positionX, positionY, positionZ, rotationX, rotationY, rotationZ, rotationW, value);
+          trackedObjects[trackedObjectIndex] = trackedObject;
 
           const objectApi = objectApis[n];
           if (objectApi) {
             _bindTrackedObject(trackedObject, objectApi);
           }
-        
         }
-        newTrackedObjectIndices[key] = trackedObjectIndex;
+        newTrackedObjectIndices[trackedObjectIndex] = true;
+      }
+      for (const trackedObjectIndex in oldTrackedObjectIndices) {
+        if (!newTrackedObjectIndices[trackedObjectIndex]) {
+          const trackedObject = trackedObjects[trackedObjectIndex];
+          const {n} = trackedObject;
+          const objectApi = objectApis[n];
+          if (objectApi) {
+            _unbindTrackedObject(trackedObject, objectApi);
+          }
+
+          trackedObjects[trackedObjectIndex] = null;
+        }
       }
       return newTrackedObjectIndices;
     };
     const _removeTrackedObjects = trackedObjectIndices => {
-      for (const key in trackedObjectIndices) {
-        const trackedObjectIndex = trackedObjectIndices[key];
+      for (const trackedObjectIndex in trackedObjectIndices) {
         const trackedObject = trackedObjects[trackedObjectIndex];
-        const {n} = trackedObject;
-        const objectApi = objectApis[n];
-        if (objectApi) {
-          _unbindTrackedObject(trackedObject, objectApi);
-        }
 
-        trackedObjects[trackedObjectIndex] = null;
+        if (trackedObject) {
+          const {n} = trackedObject;
+          const objectApi = objectApis[n];
+          if (objectApi) {
+            _unbindTrackedObject(trackedObject, objectApi);
+          }
+
+          trackedObjects[trackedObjectIndex] = null;
+        }
       }
     };
     const _bindTrackedObject = (trackedObject, objectApi) => {
@@ -762,8 +766,8 @@ void main() {
         const n = murmur(object);
         objectApis[n] = objectApi;
 
-        for (let i = 0; i < trackedObjects.length; i++) {
-          const trackedObject = trackedObjects[i];
+        for (const trackedObjectIndex in trackedObjects) {
+          const trackedObject = trackedObjects[trackedObjectIndex];
           if (trackedObject && trackedObject.n === n) {
             _bindTrackedObject(trackedObject, objectApi);
           }
@@ -775,10 +779,10 @@ void main() {
         const n = murmur(object);
         objectApis[n] = null;
 
-        for (let i = 0; i < trackedObjects.length; i++) {
-          const trackedObject = trackedObjects[i];
+        for (const trackedObjectIndex in trackedObjects) {
+          const trackedObject = trackedObjects[trackedObjectIndex];
           if (trackedObject && trackedObject.n === n) {
-            _unbindTrackedObject(trackedObject, objectApi);
+            _bindTrackedObject(trackedObject, objectApi);
           }
         }
       }
@@ -808,10 +812,13 @@ void main() {
       }
 
       getObjectAt(position, rotation) {
-        for (let i = 0; i < trackedObjects.length; i++) {
-          const trackedObject = trackedObjects[i];
+        for (const trackedObjectIndex in trackedObjects) {
+          const trackedObject = trackedObjects[trackedObjectIndex];
 
-          if (trackedObject !== null && trackedObject.position.equals(position) && trackedObject.rotation.equals(rotation)) {
+          if (trackedObject &&
+            trackedObject.positionX === position.x && trackedObject.positionY === position.y && trackedObject.positionZ === position.z &&
+            trackedObject.rotationX === rotation.x && trackedObject.rotationY === rotation.y && trackedObject.rotationZ === rotation.z && trackedObject.rotationW === rotation.w
+          ) {
             return trackedObject;
           }
         }
@@ -913,10 +920,7 @@ void main() {
 
                   if (hoveredTrackedObjectSpec !== null) {
                     const [x, z, objectIndex] = hoveredTrackedObjectSpec;
-                    const trackedObject = trackedObjects.find(trackedObject =>
-                      trackedObject && trackedObject.mesh.offset.x === x && trackedObject.mesh.offset.y === z && trackedObject.objectIndex === objectIndex
-                    );
-                    hoveredTrackedObjects[side] = trackedObject;
+                    hoveredTrackedObjects[side] = trackedObjects[_getTrackedObjectIndex(x, z, objectIndex)];
 
                     const objectsChunkMesh = objectsChunkMeshes.find(objectsChunkMesh => objectsChunkMesh.offset.x === x && objectsChunkMesh.offset.y === z);
                     objectsChunkMesh.uniforms.selectedObject.value = objectIndex;
@@ -1020,9 +1024,7 @@ void main() {
               .then(bodyObjectSpec => {
                 if (bodyObjectSpec) {
                   const [x, z, objectIndex] = bodyObjectSpec;
-                  const trackedObject = trackedObjects.find(trackedObject =>
-                    trackedObject && trackedObject.mesh.offset.x === x && trackedObject.mesh.offset.y === z && trackedObject.objectIndex === objectIndex
-                  );
+                  const trackedObject = trackedObjects[_getTrackedObjectIndex(x, z, objectIndex)];
                   if (trackedObject) {
                     trackedObject.collide();
                   }
@@ -1113,6 +1115,7 @@ const _makeId = () => {
   _id = (_id + 1) | 0;
   return result;
 };
+const _getTrackedObjectIndex = (x, z, i) => (mod(x, 0xFF) << 24) | (mod(z, 0xFF) << 16) | (i & 0xFFFF);
 const _parseFunction = fn => {
   const match = fn.toString().match(/[^\(]*\(([^\)]*)\)[^\{]*\{([\s\S]*)\}\s*$/); // XXX support bracketless arrow functions
   const args = match[1].split(',').map(arg => arg.trim());
