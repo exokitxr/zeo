@@ -7,5 +7,7 @@
   "builds": {
     "worker": "worker.js"
   },
-  "dependencies": {}
+  "dependencies": {
+    "mod-loop": "0.0.2"
+  }
 }

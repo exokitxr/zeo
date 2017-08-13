@@ -610,15 +610,19 @@ void main() {
       lightmapper = null;
     };
     const _bindLightmaps = () => {
-      for (let i = 0; i < objectsChunkMeshes.length; i++) {
-        const objectChunkMesh = objectsChunkMeshes[i];
-        _bindLightmap(objectChunkMesh);
+      for (const index in objectsChunkMeshes) {
+        const objectChunkMesh = objectsChunkMeshes[index];
+        if (objectChunkMesh) {
+          _bindLightmap(objectChunkMesh);
+        }
       }
     };
     const _unbindLightmaps = () => {
-      for (let i = 0; i < objectsChunkMeshes.length; i++) {
-        const objectChunkMesh = objectsChunkMeshes[i];
-        _unbindLightmap(objectChunkMesh);
+      for (const index in objectsChunkMeshes) {
+        const objectChunkMesh = objectsChunkMeshes[index];
+        if (objectChunkMesh) {
+          _unbindLightmap(objectChunkMesh);
+        }
       }
     };
     const _bindLightmap = objectChunkMesh => {
@@ -830,7 +834,7 @@ void main() {
       resolution: NUM_CELLS,
       range: RANGE,
     });
-    const objectsChunkMeshes = [];
+    const objectsChunkMeshes = {};
 
     const _requestRefreshObjectsChunks = () => {
       const {hmd} = pose.getStatus();
@@ -843,12 +847,14 @@ void main() {
 
         const promise = _requestObjectsGenerate(x, z)
           .then(objectsChunkData => {
+            const index = _getChunkIndex(x, z);
+
             const {data: oldData} = chunk;
             if (oldData) {
               const {objectsChunkMesh} = oldData;
               scene.remove(objectsChunkMesh);
 
-              objectsChunkMeshes.splice(objectsChunkMeshes.indexOf(objectsChunkMesh), 1);
+              objectsChunkMeshes[index] = null;
 
               objectsChunkMesh.destroy();
             }
@@ -856,7 +862,7 @@ void main() {
             const objectsChunkMesh = _makeObjectsChunkMesh(objectsChunkData, x, z);
             scene.add(objectsChunkMesh);
 
-            objectsChunkMeshes.push(objectsChunkMesh);
+            objectsChunkMeshes[index] = objectsChunkMesh;
 
             const oldTrackedObjectIndices = oldData ? oldData.trackedObjectIndices : {};
             const trackedObjectIndices = _refreshTrackedObjects(objectsChunkMesh, objectsChunkData, oldTrackedObjectIndices);
@@ -885,7 +891,7 @@ void main() {
             const {objectsChunkMesh} = data;
             scene.remove(objectsChunkMesh);
 
-            objectsChunkMeshes.splice(objectsChunkMeshes.indexOf(objectsChunkMesh), 1);
+            objectsChunkMeshes[_getChunkIndex(x, z)] = null;
 
             objectsChunkMesh.destroy();
 
@@ -908,9 +914,11 @@ void main() {
           if (timeDiff > 1000 / 30) {
             worker.getHoveredObjects()
               .then(hoveredTrackedObjectSpecs => {
-                for (let i = 0; i < objectsChunkMeshes.length; i++) {
-                  const objectsChunkMesh = objectsChunkMeshes[i];
-                  objectsChunkMesh.uniforms.selectedObject.value = -1;
+                for (const index in objectsChunkMeshes) {
+                  const objectsChunkMesh = objectsChunkMeshes[index];
+                  if (objectsChunkMesh) {
+                    objectsChunkMesh.uniforms.selectedObject.value = -1;
+                  }
                 }
 
                 for (let i = 0; i < SIDES.length; i++) {
@@ -921,8 +929,7 @@ void main() {
                     const [x, z, objectIndex] = hoveredTrackedObjectSpec;
                     hoveredTrackedObjects[side] = trackedObjects[_getTrackedObjectIndex(x, z, objectIndex)];
 
-                    const objectsChunkMesh = objectsChunkMeshes.find(objectsChunkMesh => objectsChunkMesh.offset.x === x && objectsChunkMesh.offset.y === z);
-                    objectsChunkMesh.uniforms.selectedObject.value = objectIndex;
+                    objectsChunkMeshes[_getChunkIndex(x, z)].uniforms.selectedObject.value = objectIndex;
                   } else {
                     hoveredTrackedObjects[side] = null;
                   }
@@ -1114,6 +1121,7 @@ const _makeId = () => {
   _id = (_id + 1) | 0;
   return result;
 };
+const _getChunkIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
 const _getTrackedObjectIndex = (x, z, i) => (mod(x, 0xFF) << 24) | (mod(z, 0xFF) << 16) | (i & 0xFFFF);
 const _parseFunction = fn => {
   const match = fn.toString().match(/[^\(]*\(([^\)]*)\)[^\{]*\{([\s\S]*)\}\s*$/); // XXX support bracketless arrow functions

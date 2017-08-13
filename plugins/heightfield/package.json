@@ -7,6 +7,7 @@
     "worker": "worker.js"
   },
   "dependencies": {
-    "indev": "^3.0.10"
+    "indev": "^3.0.10",
+    "mod-loop": "0.0.2"
   }
 }

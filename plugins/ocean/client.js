@@ -1,3 +1,4 @@
+const mod = require('mod-loop');
 const protocolUtils = require('./lib/utils/protocol-utils');
 
 const NUM_CELLS = 256;
@@ -168,13 +169,15 @@ class Ocean {
                 resolution: NUM_CELLS,
                 range: RANGE,
               });
-              const meshes = [];
+              const oceanMeshes = {};
 
               const update = () => {
                 const _updateMeshes = () => {
-                  for (let i = 0; i < meshes.length; i++) {
-                    const mesh = meshes[i];
-                    mesh.update();
+                  for (const index in oceanMeshes) {
+                    const oceanMesh = oceanMeshes[index];
+                    if (oceanMesh) {
+                      oceanMesh.update();
+                    }
                   }
                 };
                 const _updateMaterial = () => {
@@ -231,18 +234,23 @@ class Ocean {
                 const _addChunk = chunk => {
                   const {x, z, lod, data: oldData} = chunk;
 
+                  const index = _getChunkIndex(x, z);
+
                   if (oldData) {
                     const {oceanChunkMesh} = oldData;
                     scene.remove(oceanChunkMesh);
+
+                    oceanMeshes[index] = null;
+
                     oceanChunkMesh.destroy();
-                    meshes.splice(meshes.indexOf(oceanChunkMesh), 1);
                   }
 
                   const promise = _requestOceanGenerate(x, z, lod)
                     .then(oceanChunkData => {
                       const oceanChunkMesh = _makeOceanChunkMesh(x, z, oceanChunkData);
                       scene.add(oceanChunkMesh);
-                      meshes.push(oceanChunkMesh);
+
+                      oceanMeshes[index] = oceanChunkMesh;
 
                       chunk.data = {
                         oceanChunkMesh,
@@ -263,8 +271,10 @@ class Ocean {
                       const {data} = chunk;
                       const {oceanChunkMesh} = data;
                       scene.remove(oceanChunkMesh);
+
+                      oceanMeshes[_getChunkIndex(chunk.x, chunk.z)] = null;
+
                       oceanChunkMesh.destroy();
-                      meshes.splice(meshes.indexOf(oceanChunkMesh), 1);
                     }
                   });
               };
@@ -290,9 +300,11 @@ class Ocean {
               entityElement._cleanup = () => {
                 live = false;
 
-                for (let i = 0; i < meshes.length; i++) {
-                  const mesh = meshes[i];
-                  stage.remove('main', mesh);
+                for (const index in oceanMeshes) {
+                  const oceanMesh = oceanMeshes[index];
+                  if (oceanMesh) {
+                    stage.remove('main', oceanMesh);
+                  }
                 }
 
                 updates.splice(updates.indexOf(update), 1);
@@ -334,5 +346,6 @@ class Ocean {
     this._cleanup();
   }
 }
+const _getChunkIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
 
 module.exports = Ocean;
