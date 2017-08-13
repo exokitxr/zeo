@@ -253,6 +253,14 @@ void main() {
       });
       queues.push(new QueueEntry(id, accept));
     });
+    worker.requestUngenerate = (x, z) => {
+      worker.postMessage({
+        type: 'ungenerate',
+        x,
+        z,
+      });
+      return Promise.resolve();
+    };
     worker.getHoveredObjects = () => new Promise((accept, reject) => {
       const id = _makeId();
       const {gamepads} = pose.getStatus();
@@ -832,6 +840,9 @@ void main() {
         .then(() => {
           for (let i = 0; i < removed.length; i++) {
             const chunk = removed[i];
+            const {x, z} = chunk;
+            worker.requestUngenerate(x, z);
+
             const {data} = chunk;
             const {objectsChunkMesh} = data;
             scene.remove(objectsChunkMesh);
@@ -843,7 +854,7 @@ void main() {
             const {trackedObjectIndices} = data;
             _removeTrackedObjects(trackedObjectIndices);
           }
-        })
+        });
     };
 
     let bodyObject = null;

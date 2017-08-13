@@ -477,6 +477,9 @@ self.onmessage = e => {
       .catch(err => {
         console.warn(err);
       });
+  } else if (type === 'ungenerate') {
+    const {x, z} = data;
+    zde.removeChunk(x, z);
   } else if (type === 'getHoveredObjects') {
     const {id, args: positions} = data;
     const result = positions.map(position => _getHoveredTrackedObject(position));
