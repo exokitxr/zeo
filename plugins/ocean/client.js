@@ -1,7 +1,6 @@
+const protocolUtils = require('./lib/utils/protocol-utils');
+
 const NUM_CELLS = 256;
-const SCALE = 8;
-const TEXTURE_WIDTH = 128;
-const TEXTURE_HEIGHT = 256;
 const DAY_NIGHT_SKYBOX_PLUGIN = 'plugins-day-night-skybox';
 
 const OCEAN_SHADER = {
@@ -28,14 +27,13 @@ const OCEAN_SHADER = {
   vertexShader: [
 		"uniform float worldTime;",
     "attribute vec3 wave;",
-    "attribute float color;",
     "varying vec2 vUv;",
     "varying float fogDepth;",
     "void main() {",
     "  float ang = wave[0];",
     "  float amp = wave[1];",
     "  float speed = wave[2];",
-    "  gl_Position = projectionMatrix * modelViewMatrix * vec4(position.x, position.y, ((sin(ang + (speed * worldTime))) * amp), 1.0);",
+    "  gl_Position = projectionMatrix * modelViewMatrix * vec4(position.x, ((sin(ang + (speed * worldTime))) * amp), position.z, 1.0);",
     "  vUv = uv;",
     "  vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );",
     "  fogDepth = -mvPosition.z;",
@@ -65,39 +63,46 @@ const OCEAN_SHADER = {
     "}"
   ].join("\n")
 };
-const DATA = {
-  amplitude: 0.3,
-  amplitudeVariance: 0.3,
-  speed: 1.0,
-  speedVariance: 1.0,
-};
-
-const _requestImg = src => new Promise((accept, reject) => {
-  const img = new Image();
-  img.onload = () => {
-    accept(img);
-  };
-  img.onerror = err => {
-    reject(err);
-  };
-  img.crossOrigin = 'Anonymous';
-  img.src = src;
-});
 
 class Ocean {
   mount() {
-    const {three, render, elements, pose, world, stage, utils: {random: randomUtils, hash: hashUtils}} = zeo;
+    const {three, render, elements, pose, world, stage, utils: {js: jsUtils, random: randomUtils, hash: hashUtils}} = zeo;
     const {THREE, scene} = three;
+    const {bffr} = jsUtils;
     const {chnkr} = randomUtils;
-    const {murmur} = hashUtils;
-
-    const hiGeometry = new THREE.PlaneBufferGeometry(NUM_CELLS, NUM_CELLS, NUM_CELLS / SCALE, NUM_CELLS / SCALE);
-    const loGeometry = new THREE.PlaneBufferGeometry(NUM_CELLS, NUM_CELLS, 1, 1);
 
     let live = true;
     this._cleanup = () => {
       live = false;
     };
+
+    const worker = new Worker('archae/plugins/_plugins_ocean/build/worker.js');
+    const queues = [];
+    worker.requestGenerate = (x, z, lod) => new Promise((accept, reject) => {
+      worker.postMessage({
+        x,
+        z,
+        lod,
+      });
+      queues.push(accept);
+    });
+    worker.onmessage = e => {
+      queues.shift()(e.data)
+    };
+    const _requestOceanGenerate = (x, z, lod) => worker.requestGenerate(x, z, lod)
+      .then(oceanBuffer => protocolUtils.parseGeometry(oceanBuffer));
+
+    const _requestImg = src => new Promise((accept, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        accept(img);
+      };
+      img.onerror = err => {
+        reject(err);
+      };
+      // img.crossOrigin = 'Anonymous';
+      img.src = src;
+    });
 
     return _requestImg('/archae/ocean/img/water.png')
       .then(waterImg => {
@@ -158,94 +163,9 @@ class Ocean {
                 resolution: NUM_CELLS,
                 range: 2,
               });
-
-              const _makeOceanMesh = (ox, oy, lod) => {
-                const geometry = (lod === 1 ? hiGeometry : loGeometry).clone();
-
-                const uvs = geometry.getAttribute('uv').array;
-                const numUvs = uvs.length / 2;
-                const uvScale = 32;
-                for (let i = 0; i < numUvs; i++) {
-                  const baseIndex = i * 2;
-                  uvs[baseIndex + 0] *= uvScale;
-                  uvs[baseIndex + 1] *= uvScale / 16;
-                }
-
-                const positions = geometry.getAttribute('position').array;
-                const numPositions = positions.length / 3;
-                const waves = new Float32Array(numPositions * 3);
-                const colors = new Float32Array(numPositions);
-                for (let i = 0; i < numPositions; i++) {
-                  const baseIndex = i * 3;
-                  const x = positions[baseIndex + 0];
-                  const y = positions[baseIndex + 1];
-                  const key = `${x + (ox * NUM_CELLS)}:${-y + (oy * NUM_CELLS)}`;
-                  waves[baseIndex + 0] = (murmur(key + ':ang') / 0xFFFFFFFF) * Math.PI * 2; // ang
-                  waves[baseIndex + 1] = DATA.amplitude + (murmur(key + ':amp') / 0xFFFFFFFF) * DATA.amplitudeVariance; // amp
-                  waves[baseIndex + 2] = (DATA.speed + (murmur(key + ':speed') / 0xFFFFFFFF) * DATA.speedVariance) / 1000; // speed
-                  colors[i] = 0.7 + ((murmur(key + ':color') / 0xFFFFFFFF) * (1 - 0.7));
-                }
-                geometry.addAttribute('wave', new THREE.BufferAttribute(waves, 3));
-                geometry.addAttribute('color', new THREE.BufferAttribute(colors, 1));
-
-                const material = oceanMaterial;
-
-                const mesh = new THREE.Mesh(geometry, material);
-                mesh.position.set(ox * NUM_CELLS, 0, oy * NUM_CELLS);
-                mesh.quaternion.set(-0.7071067811865475, 0, 0, 0.7071067811865475);
-                mesh.updateMatrixWorld();
-                mesh.renderOrder = -100;
-
-                mesh.update = () => {
-                  const worldTime = world.getWorldTime();
-                  uniforms.worldTime.value = worldTime;
-                  uniforms.fogColor.value = scene.fog.color;
-                  uniforms.fogDensity.value = scene.fog.density;
-                };
-                mesh.destroy = () => {
-                  geometry.dispose();
-                };
-
-                return mesh;
-              };
               const meshes = [];
 
               const update = () => {
-                const _updateOceanChunks = () => {
-                  const {hmd} = pose.getStatus();
-                  const {worldPosition: hmdPosition} = hmd;
-                  const {added, removed, relodded} = chunker.update(hmdPosition.x, hmdPosition.z);
-
-                  for (let i = 0; i < added.length; i++) {
-                    const chunk = added[i];
-                    const {x, z, lod} = chunk;
-                    const oceanChunkMesh = _makeOceanMesh(x, z, lod);
-                    stage.add('main', oceanChunkMesh);
-                    meshes.push(oceanChunkMesh);
-
-                    chunk.data = oceanChunkMesh;
-                  }
-                  for (let i = 0; i < removed.length; i++) {
-                    const chunk = removed[i];
-                    const {data: oceanChunkMesh} = chunk;
-                    stage.remove('main', oceanChunkMesh);
-                    oceanChunkMesh.destroy();
-                    meshes.splice(meshes.indexOf(oceanChunkMesh), 1);
-                  }
-                  for (let i = 0; i < relodded.length; i++) {
-                    const chunk = relodded[i];
-                    const {data: oldOceanChunkMesh} = chunk;
-                    stage.remove('main', oldOceanChunkMesh);
-                    oldOceanChunkMesh.destroy();
-
-                    const {x, z, lod} = chunk;
-                    const newOceanChunkMesh = _makeOceanMesh(x, z, lod);
-                    stage.add('main', newOceanChunkMesh);
-                    meshes.push(newOceanChunkMesh);
-
-                    chunk.data = newOceanChunkMesh;
-                  }
-                };
                 const _updateMeshes = () => {
                   for (let i = 0; i < meshes.length; i++) {
                     const mesh = meshes[i];
@@ -259,13 +179,110 @@ class Ocean {
                   })();
                 };
 
-                _updateOceanChunks();
                 _updateMeshes();
                 _updateMaterial();
               };
               updates.push(update);
+
+              const _makeOceanChunkMesh = (x, z, oceanChunkData) => {
+                const {positions, uvs, waves, indices} = oceanChunkData;
+                const geometry = new THREE.BufferGeometry();
+                geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+                geometry.addAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+                geometry.addAttribute('wave', new THREE.BufferAttribute(waves, 3));
+                geometry.setIndex(new THREE.BufferAttribute(indices, 1));
+                const maxY = 100;
+                const minY = -100;
+                geometry.boundingSphere = new THREE.Sphere(
+                  new THREE.Vector3(
+                    (x * NUM_CELLS) + (NUM_CELLS / 2),
+                    (minY + maxY) / 2,
+                    (z * NUM_CELLS) + (NUM_CELLS / 2)
+                  ),
+                  Math.max(Math.sqrt((NUM_CELLS / 2) * (NUM_CELLS / 2) * 3), (maxY - minY) / 2) // XXX really compute this
+                );
+                const material = oceanMaterial;
+
+                const mesh = new THREE.Mesh(geometry, material);
+                mesh.update = () => {
+                  uniforms.worldTime.value = world.getWorldTime();
+                  uniforms.fogColor.value = scene.fog.color;
+                  uniforms.fogDensity.value = scene.fog.density;
+                };
+                mesh.destroy = () => {
+                  geometry.dispose();
+                };
+                return mesh;
+              };
+
+              const _requestRefreshOceanChunks = () => {
+                const {hmd} = pose.getStatus();
+                const {worldPosition: hmdPosition} = hmd;
+                const {added, removed, relodded} = chunker.update(hmdPosition.x, hmdPosition.z);
+
+                const promises = [];
+                const _addChunk = chunk => {
+                  const {x, z, lod, data: oldData} = chunk;
+
+                  if (oldData) {
+                    const {oceanChunkMesh} = oldData;
+                    scene.remove(oceanChunkMesh);
+                    oceanChunkMesh.destroy();
+                    meshes.splice(meshes.indexOf(oceanChunkMesh), 1);
+                  }
+
+                  const promise = _requestOceanGenerate(x, z, lod)
+                    .then(oceanChunkData => {
+                      const oceanChunkMesh = _makeOceanChunkMesh(x, z, oceanChunkData);
+                      scene.add(oceanChunkMesh);
+                      meshes.push(oceanChunkMesh);
+
+                      chunk.data = {
+                        oceanChunkMesh,
+                      };
+                    });
+                  promises.push(promise);
+                };
+                for (let i = 0; i < added.length; i++) {
+                  _addChunk(added[i]);
+                }
+                for (let i = 0; i < relodded.length; i++) {
+                  _addChunk(relodded[i]);
+                }
+                return Promise.all(promises)
+                  .then(() => {
+                    for (let i = 0; i < removed.length; i++) {
+                      const chunk = removed[i];
+                      const {data} = chunk;
+                      const {oceanChunkMesh} = data;
+                      scene.remove(oceanChunkMesh);
+                      oceanChunkMesh.destroy();
+                      meshes.splice(meshes.indexOf(oceanChunkMesh), 1);
+                    }
+                  });
+              };
+
+              let live = true;
+              const _recurse = () => {
+                _requestRefreshOceanChunks()
+                  .then(() => {
+                    if (live) {
+                      setTimeout(_recurse, 1000);
+                    }
+                  })
+                  .catch(err => {
+                    if (live) {
+                      console.warn(err);
+
+                      setTimeout(_recurse, 1000);
+                    }
+                  });
+              };
+              _recurse();
             
               entityElement._cleanup = () => {
+                live = false;
+
                 for (let i = 0; i < meshes.length; i++) {
                   const mesh = meshes[i];
                   stage.remove('main', mesh);
@@ -296,6 +313,8 @@ class Ocean {
           render.on('update', _update);
 
           this._cleanup = () => {
+            worker.terminate();
+
             elements.unregisterEntity(this, oceanEntity);
 
             render.removeListener('update', _update);
