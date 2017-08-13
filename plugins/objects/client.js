@@ -395,8 +395,7 @@ void main() {
       mesh.destroy = () => {
         mesh.geometry.dispose();
 
-        const {buffer} = objectsChunkData;
-        buffers.free(buffer);
+        buffers.free(objectsChunkData.buffer);
 
         if (mesh.lightmap) {
           _unbindLightmap(mesh);

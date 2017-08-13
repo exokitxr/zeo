@@ -162,7 +162,6 @@ class Heightfield {
     const forwardVector = new THREE.Vector3(0, 0, -1);
 
     const buffers = bffr(NUM_POSITIONS_CHUNK, (RANGE * 2) * (RANGE * 2) * 2);
-
     const worker = new Worker('archae/plugins/_plugins_heightfield/build/worker.js');
     const queue = [];
     worker.requestOriginHeight = () => new Promise((accept, reject) => {
@@ -184,14 +183,10 @@ class Heightfield {
           buffer,
         },
       }, [buffer]);
-      queue.push(buffer => {
-        accept(buffer);
-      });
+      queue.push(accept);
     });
     worker.onmessage = e => {
-      const {data: buffer} = e;
-      const cb = queue.shift();
-      cb(buffer);
+      queue.shift()(e.data);
     };
 
     let lightmapper = null;

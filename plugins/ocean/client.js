@@ -1,6 +1,8 @@
 const protocolUtils = require('./lib/utils/protocol-utils');
 
 const NUM_CELLS = 256;
+const RANGE = 2;
+const NUM_POSITIONS_CHUNK = 200 * 1024;
 const DAY_NIGHT_SKYBOX_PLUGIN = 'plugins-day-night-skybox';
 
 const OCEAN_SHADER = {
@@ -76,14 +78,17 @@ class Ocean {
       live = false;
     };
 
+    const buffers = bffr(NUM_POSITIONS_CHUNK, (RANGE * 2) * (RANGE * 2) * 2);
     const worker = new Worker('archae/plugins/_plugins_ocean/build/worker.js');
     const queues = [];
     worker.requestGenerate = (x, z, lod) => new Promise((accept, reject) => {
+      const buffer = buffers.alloc();
       worker.postMessage({
         x,
         z,
         lod,
-      });
+        buffer,
+      }, [buffer]);
       queues.push(accept);
     });
     worker.onmessage = e => {
@@ -161,7 +166,7 @@ class Ocean {
             entityAddedCallback(entityElement) {
               const chunker = chnkr.makeChunker({
                 resolution: NUM_CELLS,
-                range: 2,
+                range: RANGE,
               });
               const meshes = [];
 
@@ -211,6 +216,8 @@ class Ocean {
                 };
                 mesh.destroy = () => {
                   geometry.dispose();
+
+                  buffers.free(oceanChunkData.buffer);
                 };
                 return mesh;
               };
