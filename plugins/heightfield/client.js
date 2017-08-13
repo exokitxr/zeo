@@ -1,3 +1,5 @@
+const mod = require('mod-loop');
+
 const {
   NUM_CELLS,
 
@@ -201,15 +203,17 @@ class Heightfield {
       lightmapper = null;
     };
     const _bindLightmaps = () => {
-      for (let i = 0; i < mapChunkMeshes.length; i++) {
-        const mapChunkMesh = mapChunkMeshes[i];
-        _bindLightmap(mapChunkMesh);
+      for (const index in mapChunkMeshes) {
+        const mapChunkMesh = mapChunkMeshes[index];
+        if (mapChunkMesh) {
+          _bindLightmap(mapChunkMesh);
+        }
       }
     };
     const _unbindLightmaps = () => {
-      for (let i = 0; i < mapChunkMeshes.length; i++) {
-        const mapChunkMesh = mapChunkMeshes[i];
-        if (mapChunkMesh.lightmap) {
+      for (const index in mapChunkMeshes) {
+        const mapChunkMesh = mapChunkMeshes[index];
+        if (mapChunkMesh && mapChunkMesh.lightmap) {
           _unbindLightmap(mapChunkMesh);
         }
       }
@@ -312,7 +316,7 @@ class Heightfield {
       resolution: NUM_CELLS,
       range: RANGE,
     });
-    const mapChunkMeshes = [];
+    let mapChunkMeshes = {};
 
     const _requestRefreshMapChunks = () => {
       const {hmd} = pose.getStatus();
@@ -379,12 +383,13 @@ class Heightfield {
 
         return _requestGenerate(x, z, resolution)
           .then(mapChunkData => {
-            const oldMapChunkMesh = mapChunkMeshes.find(mapChunkMesh => mapChunkMesh.x === x && mapChunkMesh.z === z);
+            const index = _getChunkIndex(x, z);
+            const oldMapChunkMesh = mapChunkMeshes[index];
             if (oldMapChunkMesh) {
               stage.remove('main', oldMapChunkMesh);
               oldMapChunkMesh.destroy();
 
-              mapChunkMeshes.splice(mapChunkMeshes.indexOf(oldMapChunkMesh), 1);
+              mapChunkMeshes[index] = null;
 
               if (lod !== 1 && oldMapChunkMesh.targeted) {
                 _removeTarget(oldMapChunkMesh);
@@ -393,7 +398,7 @@ class Heightfield {
 
             const newMapChunkMesh = _makeMapChunkMesh(chunk, mapChunkData, x, z);
             stage.add('main', newMapChunkMesh);
-            mapChunkMeshes.push(newMapChunkMesh);
+            mapChunkMeshes[index] = newMapChunkMesh;
 
             if (lod === 1 && !newMapChunkMesh.targeted) {
               _addTarget(newMapChunkMesh, x, z);
@@ -412,11 +417,12 @@ class Heightfield {
         .then(() => {
           for (let i = 0; i < removed.length; i++) {
             const chunk = removed[i];
-            const {data: mapChunkMesh} = chunk;
+            const {x, z, data: mapChunkMesh} = chunk;
             stage.remove('main', mapChunkMesh);
             mapChunkMesh.destroy();
 
-            mapChunkMeshes.splice(mapChunkMeshes.indexOf(mapChunkMesh), 1);
+            const index = _getChunkIndex(x, z);
+            mapChunkMeshes[index] = null;
 
             const {lod} = chunk;
             if (lod !== 1 && mapChunkMesh.targeted) {
@@ -433,6 +439,15 @@ class Heightfield {
               _removeTarget(mapChunkMesh);
             }
           }
+
+          const newMapChunkMeshes = {};
+          for (const index in mapChunkMeshes) {
+            const mapChunkMesh = mapChunkMeshes[index];
+            if (mapChunkMesh) {
+              newMapChunkMeshes[index] = mapChunkMesh;
+            }
+          }
+          mapChunkMeshes = newMapChunkMeshes;
         });
     };
 
@@ -454,7 +469,7 @@ class Heightfield {
             const _getElevation = (x, z) => {
               const ox = Math.floor(x / NUM_CELLS);
               const oz = Math.floor(z / NUM_CELLS);
-              const mapChunkMesh = mapChunkMeshes.find(mapChunkMesh => mapChunkMesh.x === ox && mapChunkMesh.z === oz);
+              const mapChunkMesh = mapChunkMeshes[_getChunkIndex(ox, oz)];
 
               if (mapChunkMesh && mapChunkMesh.lod === 1) {
                 const ax = Math.floor(x);
@@ -534,9 +549,8 @@ class Heightfield {
           const dayNightSkyboxEntity = elements.getEntitiesElement().querySelector(DAY_NIGHT_SKYBOX_PLUGIN);
           const sunIntensity = (dayNightSkyboxEntity && dayNightSkyboxEntity.getSunIntensity) ? dayNightSkyboxEntity.getSunIntensity() : 0;
 
-          for (let i = 0; i < mapChunkMeshes.length; i++) {
-            const mapChunkMesh = mapChunkMeshes[i];
-            mapChunkMesh.material.uniforms.sunIntensity.value = sunIntensity;
+          for (const index in mapChunkMeshes) {
+            mapChunkMeshes[index].material.uniforms.sunIntensity.value = sunIntensity;
           }
         };
         render.on('update', _update);
@@ -559,5 +573,6 @@ class Heightfield {
     this._cleanup();
   }
 }
+const _getChunkIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
 
 module.exports = Heightfield;

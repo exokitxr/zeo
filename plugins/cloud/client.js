@@ -1,3 +1,5 @@
+const mod = require('mod-loop');
+
 const {
   NUM_CELLS,
 
@@ -101,7 +103,7 @@ class Cloud {
           range: RANGE,
         });
 
-        const cloudChunkMeshes = [];
+        const cloudChunkMeshes = {};
         const _makeCloudChunkMesh = (cloudChunkData, x, z) => {
           const mesh = (() => {
             const {positions, normals, indices} = cloudChunkData;
@@ -144,21 +146,26 @@ class Cloud {
           // const dx = (world.getWorldTime() / 1000) * CLOUD_SPEED;
           const {added, removed} = chunker.update(hmdPosition.x/* + dx*/, hmdPosition.z);
 
-          const addedPromises = added.map(chunk =>
-            _requestCloudGenerate(chunk.x, chunk.z)
+          const addedPromises = added.map(chunk => {
+            const {x, z} = chunk;
+            return _requestCloudGenerate(x, z)
               .then(cloudChunkData => {
-                const cloudChunkMesh = _makeCloudChunkMesh(cloudChunkData, chunk.x, chunk.z);
+                const cloudChunkMesh = _makeCloudChunkMesh(cloudChunkData, x, z);
                 stage.add('main', cloudChunkMesh);
-                cloudChunkMeshes.push(cloudChunkMesh);
+
+                cloudChunkMeshes[_getChunkIndex(x, z)] = cloudChunkMesh;
+
                 chunk.data = cloudChunkMesh;
               })
-          );
+          });
           return Promise.all(addedPromises)
             .then(() => {
               removed.forEach(chunk => {
                 const {data: cloudChunkMesh} = chunk;
                 stage.remove('main', cloudChunkMesh);
-                cloudChunkMeshes.splice(cloudChunkMeshes.indexOf(cloudChunkMesh), 1);
+
+                cloudChunkMeshes[_getChunkIndex(chunk.x, chunk.z)] = null;
+
                 cloudChunkMesh.destroy();
               });
             })
@@ -194,9 +201,11 @@ class Cloud {
         entityElement._cleanup = () => {
           live = false;
 
-          for (let i = 0; i < cloudChunkMeshes.length; i++) {
-            const cloudChunkMesh = cloudChunkMeshes[i];
-            stage.remove('main', cloudChunkMesh);
+          for (const index in cloudChunkMeshes) {
+            const cloudChunkMesh = cloudChunkMeshes[index];
+            if (cloudChunkMesh) {
+              stage.remove('main', cloudChunkMesh);
+            }
           }
 
           updates.splice(updates.indexOf(update), 1);
@@ -240,5 +249,6 @@ class Cloud {
     this._cleanup();
   }
 }
+const _getChunkIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
 
 module.exports = Cloud;

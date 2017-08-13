@@ -1,3 +1,5 @@
+const mod = require('mod-loop');
+
 const {
   NUM_CELLS,
   NUM_CELLS_HEIGHT,
@@ -44,23 +46,18 @@ class Lightmap {
 
       getLightmapsInRange(width, depth, lightmaps) {
         const {x, z, r} = this;
-        const points = [
-          [Math.floor((x - r) / width), Math.floor((z - r) / depth)],
-          [Math.floor((x + r) / width), Math.floor((z - r) / depth)],
-          [Math.floor((x - r) / width), Math.floor((z + r) / depth)],
-          [Math.floor((x + r) / width), Math.floor((z + r) / depth)],
-        ];
 
         const result = [];
-        for (let i = 0; i < points.length; i++) {
-          const point = points[i];
-          const [ox, oz] = point;
-
-          const lightmap = lightmaps.find(lightmap => lightmap.x === ox && lightmap.z === oz);
+        const _tryPoint = (ox, oz) => {
+          const lightmap = lightmaps[_getLightmapIndex(ox, oz)];
           if (lightmap) {
             result.push(lightmap);
           }
-        }
+        };
+        _tryPoint(Math.floor((x - r) / width), Math.floor((z - r) / depth));
+        _tryPoint(Math.floor((x + r) / width), Math.floor((z - r) / depth));
+        _tryPoint(Math.floor((x - r) / width), Math.floor((z + r) / depth));
+        _tryPoint(Math.floor((x + r) / width), Math.floor((z + r) / depth));
         return result;
       }
     }
@@ -80,23 +77,18 @@ class Lightmap {
 
       getLightmapsInRange(width, depth, lightmaps) {
         const {x, z, r} = this;
-        const points = [
-          [Math.floor((x - r) / width), Math.floor((z - r) / depth)],
-          [Math.floor((x + r) / width), Math.floor((z - r) / depth)],
-          [Math.floor((x - r) / width), Math.floor((z + r) / depth)],
-          [Math.floor((x + r) / width), Math.floor((z + r) / depth)],
-        ];
 
         const result = [];
-        for (let i = 0; i < points.length; i++) {
-          const point = points[i];
-          const [ox, oz] = point;
-
-          const lightmap = lightmaps.find(lightmap => lightmap.x === ox && lightmap.z === oz);
+        const _tryPoint = (ox, oz) => {
+          const lightmap = lightmaps[_getLightmapIndex(ox, oz)];
           if (lightmap) {
             result.push(lightmap);
           }
-        }
+        };
+        _tryPoint(Math.floor((x - r) / width), Math.floor((z - r) / depth));
+        _tryPoint(Math.floor((x + r) / width), Math.floor((z - r) / depth));
+        _tryPoint(Math.floor((x - r) / width), Math.floor((z + r) / depth));
+        _tryPoint(Math.floor((x + r) / width), Math.floor((z + r) / depth));
         return result;
       }
     }
@@ -132,6 +124,7 @@ class Lightmap {
 
         this.x = x;
         this.z = z;
+        this.index = _getLightmapIndex(x, z);
         this.buffers = buffers;
 
         const buffer = buffers.alloc();
@@ -232,10 +225,8 @@ class Lightmap {
         worker.init(width, height, depth, heightOffset);
         this.worker = worker;
 
-        const lightmaps = [];
-        this._lightmaps = lightmaps;
-        const lightmapsNeedUpdate = [];
-        this._lightmapsNeedUpdate = lightmapsNeedUpdate;
+        this._lightmaps = {};
+        this._lightmapsNeedUpdate = {};
         this._buffers = bffr((width + 1) * (depth + 1) * height, (1 + 1) * (1 + 1) * 2);
       }
 
@@ -244,19 +235,17 @@ class Lightmap {
         const ox = Math.floor(x / width);
         const oz = Math.floor(z / depth);
 
-        let entry = lightmaps.find(lightmap => lightmap.x === ox && lightmap.z === oz);
+        const index = _getLightmapIndex(ox, oz);
+        let entry = lightmaps[index];
         if (!entry) {
           entry = new Lightmap(ox, oz, width, height, depth, buffers);
           entry.on('destroy', () => {
-            lightmaps.splice(lightmaps.indexOf(entry), 1);
-
-            const needUpdateIndex = lightmapsNeedUpdate.indexOf(entry);
-            if (needUpdateIndex !== -1) {
-              lightmapsNeedUpdate.splice(needUpdateIndex, 1);
-            }
+            lightmaps[index] = null;
+            lightmapsNeedUpdate[index] = false;
+            // XXX gc after too many destroys
           });
-          lightmaps.push(entry);
-          lightmapsNeedUpdate.push(entry);
+          lightmaps[index] = entry;
+          lightmapsNeedUpdate[index] = true;
         }
         entry.addRef();
         return entry;
@@ -272,10 +261,7 @@ class Lightmap {
         const {width, depth, _lightmaps: lightmaps, _lightmapsNeedUpdate: lightmapsNeedUpdate} = this;
         const newLightmapsNeedUpdate = shape.getLightmapsInRange(width, depth, lightmaps);
         for (let i = 0; i < newLightmapsNeedUpdate.length; i++) {
-          const newLightmapNeedsUpdate = newLightmapsNeedUpdate[i];
-          if (!lightmapsNeedUpdate.includes(newLightmapNeedsUpdate)) {
-            lightmapsNeedUpdate.push(newLightmapNeedsUpdate);
-          }
+          lightmapsNeedUpdate[newLightmapsNeedUpdate[i].index] = true;
         }
       }
 
@@ -286,25 +272,22 @@ class Lightmap {
         const {width, depth, _lightmaps: lightmaps, _lightmapsNeedUpdate: lightmapsNeedUpdate} = this;
         const newLightmapsNeedUpdate = shape.getLightmapsInRange(width, depth, lightmaps);
         for (let i = 0; i < newLightmapsNeedUpdate.length; i++) {
-          const newLightmapNeedsUpdate = newLightmapsNeedUpdate[i];
-          if (!lightmapsNeedUpdate.includes(newLightmapNeedsUpdate)) {
-            lightmapsNeedUpdate.push(newLightmapNeedsUpdate);
-          }
+          lightmapsNeedUpdate[newLightmapsNeedUpdate[i].index] = true;
         }
       }
 
       update() {
-        const {_lightmapsNeedUpdate: lightmapsNeedUpdate} = this;
-
-        if (lightmapsNeedUpdate.length > 0) {
-          const {worker, _lightmaps: lightmaps} = this;
-
-          const result = Promise.all(lightmapsNeedUpdate.map(lightmap => worker.requestUpdate(lightmap)));
-          lightmapsNeedUpdate.length = 0;
-          return result;
-        } else {
-          return Promise.resolve();
+        const promises = [];
+        for (const index in this._lightmapsNeedUpdate) {
+          if (this._lightmapsNeedUpdate[index]) {
+            const lightmap = this._lightmaps[index];
+            if (lightmap) {
+              promises.push(this.worker.requestUpdate(lightmap));
+            }
+          }
         }
+        this._lightmapsNeedUpdate = {};
+        return Promise.all(promises);
       }
     };
     Lightmapper.Ambient = Ambient;
@@ -366,5 +349,6 @@ class Lightmap {
     this._cleanup();
   }
 }
+const _getLightmapIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
 
 module.exports = Lightmap;
