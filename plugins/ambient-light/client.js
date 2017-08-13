@@ -78,7 +78,7 @@ class AmbientLight {
 
           return new THREE.Mesh(geometry, material);
         })();
-        scene.add(mesh);
+        // scene.add(mesh);
         entityElement.mesh = mesh;
 
         const light = new THREE.AmbientLight(0xFFFFFF, 0.2);
@@ -86,7 +86,7 @@ class AmbientLight {
         entityElement.light = light;
 
         entityElement._cleanup = () => {
-          scene.remove(mesh);
+          // scene.remove(mesh);
           scene.remove(light);
         };
       },
