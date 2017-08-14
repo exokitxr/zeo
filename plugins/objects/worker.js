@@ -19,7 +19,7 @@ const {
 const protocolUtils = require('./lib/utils/protocol-utils');
 const zeode = require('zeode');
 
-const NUM_POSITIONS_CHUNK = 5 * 1024 * 1024;
+const NUM_POSITIONS_CHUNK = 2 * 1024 * 1024;
 
 const rng = new alea(DEFAULT_SEED);
 
@@ -37,14 +37,22 @@ const localQuaternion = new THREE.Quaternion();
 const localMatrix = new THREE.Matrix4();
 const localBox = new THREE.Box3();
 const localBox2 = new THREE.Box3();
+const oneVector = new THREE.Vector3(1, 1, 1);
 const bodyOffsetVector = new THREE.Vector3(0, -1.6 / 2, 0);
 
+const objectApis = {};
+
 class TrackedObject {
-  constructor(n, position, rotation) {
+  constructor(n, position, rotation, value, startIndex, endIndex) {
     this.n = n;
     this.position = position;
     this.rotation = rotation;
+    this.value = value;
+    this.startIndex = startIndex;
+    this.endIndex = endIndex;
+
     this.rotationInverse = rotation.clone().inverse();
+    this.calledBack = false;
   }
 }
 
@@ -72,7 +80,7 @@ const _getHoveredTrackedObject = position => {
         );
 
         if (localBox.containsPoint(localVector2)) {
-          return [chunk.x, chunk.z, parseInt(k, 10)];
+          return [trackedObject.n, chunk.x, chunk.z, parseInt(k, 10), trackedObject.position.toArray()];
         }
       }
     }
@@ -131,9 +139,10 @@ const _getBodyObject = position => {
   const bodyCenterPoint = localVector.fromArray(position).add(bodyOffsetVector);
 
   let topDistance = Infinity;
-  let topChunkX = null;
-  let topChunkZ = null;
-  let topN = null;
+  let topN = -1;
+  let topChunkX = -1;
+  let topChunkZ = -1;
+  let topObjectIndex = -1;
 
   for (let i = 0; i < zde.chunks.length; i++) {
     const chunk = zde.chunks[i];
@@ -158,16 +167,17 @@ const _getBodyObject = position => {
         const distance = localBox.distanceToPoint(localVector2);
         if (distance < 0.3 && (distance < topDistance)) {
           topDistance = distance;
+          topN = trackedObject.n;
           topChunkX = chunk.x;
           topChunkZ = chunk.z;
-          topN = parseInt(k, 10);
+          topObjectIndex = parseInt(k, 10);
         }
       }
     }
   }
 
   if (topN !== null) {
-    return [topChunkX, topChunkZ, topN];
+    return [topN, topChunkX, topChunkZ, topObjectIndex];
   } else {
     return null;
   }
@@ -186,13 +196,23 @@ connection.on('message', e => {
     if (type === 'response') {
       pendingMessage = m;
     } else if (type === 'addObject') {
-      const {args: {x, z, n, matrix}} = m;
+      const {args: {x, z, n, matrix, value}} = m;
       const chunk = zde.getChunk(x, z);
-      const objectIndex = chunk.addObject(n, matrix);
+      const index = chunk.addObject(n, matrix);
 
-      const position = new THREE.Vector3().fromArray(matrix, 0);
-      const rotation = new THREE.Quaternion().fromArray(matrix, 3);
-      chunk.trackedObjects[objectIndex] = new TrackedObject(n, position, rotation);
+      const positionArray = matrix.slice(0, 3);
+      const position = new THREE.Vector3().fromArray(positionArray);
+      const rotationArray = matrix.slice(3, 7);
+      const rotation = new THREE.Quaternion().fromArray(rotationArray);
+      chunk.trackedObjects[index] = new TrackedObject(n, position, rotation, value, -1, -1);
+
+      const objectApi = objectApis[n];
+      if (objectApi && objectApi.added) {
+        postMessage(JSON.stringify({
+          type: 'objectAdded',
+          args: [n, x, z, index, positionArray, rotationArray, value],
+        }));
+      }
 
       postMessage(JSON.stringify({
         type: 'chunkUpdate',
@@ -202,6 +222,15 @@ connection.on('message', e => {
       const {args: {x, z, index}} = m;
       const chunk = zde.getChunk(x, z);
       chunk.removeObject(index);
+
+      const trackedObject = trackedObjects[index];
+      const objectApi = objectApis[trackedObject.n];
+      if (objectApi && objectApi.removed) {
+        postMessage(JSON.stringify({
+          type: 'objectRemoved',
+          args: [trackedObject.n, x, z, index, trackedObject.startIndex, trackedObject.endIndex],
+        }));
+      }
 
       chunk.trackedObjects[index] = null;
 
@@ -213,6 +242,17 @@ connection.on('message', e => {
       const {args: {x, z, index, value}} = m;
       const chunk = zde.getChunk(x, z);
       chunk.setObjectData(index, value);
+
+      const trackedObject = chunk.trackedObjects[index];
+      const objectApi = objectApis[trackedObject.n];
+      if (objectApi && objectApi.updated) {
+        trackedObject.value = value;
+
+        postMessage(JSON.stringify({
+          type: 'objectUpdated',
+          args: [trackedObject.n, x, z, index, trackedObject.position.toArray(), trackedObject.rotation.toArray(), trackedObject.value],
+        }));
+      }
 
       postMessage(JSON.stringify({
         type: 'chunkUpdate',
@@ -253,7 +293,7 @@ const _requestChunk = (x, z) => {
         chunk.forEachObject((n, matrix, value, i) => {
           const position = new THREE.Vector3().fromArray(matrix, 0);
           const rotation = new THREE.Quaternion().fromArray(matrix, 3);
-          chunk.trackedObjects[i] = new TrackedObject(n, position, rotation);
+          chunk.trackedObjects[i] = new TrackedObject(n, position, rotation, value, -1, -1);
         });
 
         return chunk;
@@ -283,8 +323,7 @@ function _makeChunkGeometry(chunk) {
   const frames = new Float32Array(NUM_POSITIONS_CHUNK);
   const objectIndices = new Float32Array(NUM_POSITIONS_CHUNK);
   const indices = new Uint32Array(NUM_POSITIONS_CHUNK);
-  const objectsUint32Array = new Uint32Array(NUM_POSITIONS_CHUNK);
-  const objectsFloat32Array = new Float32Array(objectsUint32Array.buffer, objectsUint32Array.byteOffset, objectsUint32Array.length);
+  const objects = new Uint32Array(NUM_POSITIONS_CHUNK);
   let attributeIndex = 0;
   let uvIndex = 0;
   let frameIndex = 0;
@@ -301,8 +340,10 @@ function _makeChunkGeometry(chunk) {
           .applyMatrix(localMatrix.makeRotationFromQuaternion(localQuaternion.set(matrix[3], matrix[4], matrix[5], matrix[6])))
           .applyMatrix(localMatrix.makeTranslation(matrix[0], matrix[1], matrix[2]))
           .applyMatrix(localMatrix.makeScale(matrix[7], matrix[8], matrix[9]));
+
         const newPositions = geometry.getAttribute('position').array;
         positions.set(newPositions, attributeIndex);
+
         const newUvs = geometry.getAttribute('uv').array;
         const numNewUvs = newUvs.length / 2;
         for (let k = 0; k < numNewUvs; k++) {
@@ -310,33 +351,29 @@ function _makeChunkGeometry(chunk) {
           uvs[uvIndex + baseIndex + 0] = newUvs[baseIndex + 0];
           uvs[uvIndex + baseIndex + 1] = 1 - newUvs[baseIndex + 1];
         }
+
         const newFrames = geometry.getAttribute('frame').array;
         frames.set(newFrames, frameIndex);
+
         const numNewPositions = newPositions.length / 3;
         const newObjectIndices = new Float32Array(numNewPositions);
         for (let k = 0; k < numNewPositions; k++) {
           newObjectIndices[k] = index;
         }
         objectIndices.set(newObjectIndices, objectIndexIndex);
+
         const newIndices = geometry.index.array;
         _copyIndices(newIndices, indices, indexIndex, attributeIndex / 3);
-        const newObjectsHeader = Uint32Array.from([n, index, indexIndex, indexIndex + newIndices.length]);
-        objectsUint32Array.set(newObjectsHeader, objectIndex);
-        const newObjectsMatrix = Float32Array.from([
-          matrix[0], matrix[1], matrix[2],
-          matrix[3], matrix[4], matrix[5], matrix[6],
-        ]);
-        objectsFloat32Array.set(newObjectsMatrix, objectIndex + newObjectsHeader.length);
-        const newObjectsValue = new Uint32Array(1);
-        newObjectsValue[0] = value;
-        objectsUint32Array.set(newObjectsValue, objectIndex + newObjectsHeader.length + newObjectsMatrix.length);
+
+        const newObjects = Uint32Array.from([index, indexIndex, indexIndex + newIndices.length]);
+        objects.set(newObjects, objectIndex);
 
         attributeIndex += newPositions.length;
         uvIndex += newUvs.length;
         frameIndex += newFrames.length;
         objectIndexIndex += newObjectIndices.length;
         indexIndex += newIndices.length;
-        objectIndex += newObjectsHeader.length + newObjectsMatrix.length + newObjectsValue.length;
+        objectIndex += newObjects.length;
       }
     }
   });
@@ -347,7 +384,7 @@ function _makeChunkGeometry(chunk) {
     frames: new Float32Array(frames.buffer, frames.byteOffset, frameIndex),
     objectIndices: new Float32Array(objectIndices.buffer, objectIndices.byteOffset, objectIndexIndex),
     indices: new Uint32Array(indices.buffer, indices.byteOffset, indexIndex),
-    objects: new Uint32Array(objectsUint32Array.buffer, objectsUint32Array.byteOffset, objectIndex),
+    objects: new Uint32Array(objects.buffer, objects.byteOffset, objectIndex),
   };
 };
 function _wsUrl(s) {
@@ -379,9 +416,6 @@ self.onmessage = e => {
     if (!geometry.boundingBox) {
       geometry.computeBoundingBox();
     }
-    if (!geometry.boundingBox) {
-      console.warn('fail');
-    }
 
     const n = murmur(name);
     let entry = geometries[n];
@@ -390,22 +424,92 @@ self.onmessage = e => {
       geometries[n] = entry;
     }
     entry.push(geometry);
+  } else if (type === 'registerObject') {
+    const {n, added, removed, updated} = data;
+    let entry = objectApis[n];
+    if (!entry) {
+      entry = {
+        added: 0,
+        removed: 0,
+        updated: 0,
+      };
+      objectApis[n] = entry;
+    }
+    if (added) {
+      entry.added++;
+
+      if (entry.added === 1) {
+        for (let i = 0; i < zde.chunks.length; i++) {
+          const chunk = zde.chunks[i];
+
+          for (const k in chunk.trackedObjects) {
+            const trackedObject = chunk.trackedObjects[k];
+
+            if (trackedObject && trackedObject.n === n) {
+              postMessage(JSON.stringify({
+                type: 'objectAdded',
+                args: [trackedObject.n, chunk.x, chunk.z, parseInt(k, 10), trackedObject.position, trackedObject.rotation, trackedObject.value],
+              }));
+            }
+          }
+        }
+      }
+    }
+    if (removed) {
+      entry.removed++;
+    }
+    if (updated) {
+      entry.updated++;
+    }
+  } else if (type === 'unregisterObject') {
+    const {n, added, removed, updated} = data;
+    const entry = objectApis[n];
+    if (added) {
+      entry.added--;
+    }
+    if (removed) {
+      entry.removed--;
+
+      /* if (entry.removed === 0) { // XXX figure out how to call this, since the callbacks will be removed in the client by the time this fires
+        for (let i = 0; i < zde.chunks.length; i++) {
+          const chunk = zde.chunks[i];
+
+          for (const k in chunk.trackedObjects) {
+            const trackedObject = chunk.trackedObjects[k];
+
+            if (trackedObject.n === n) {
+              postMessage(JSON.stringify({
+                type: 'objectRemoved',
+                args: [trackedObject.n, chunk.x, chunk.z, parseInt(k, 10), trackedObject.position, trackedObject.rotation, trackedObject.value],
+              }));
+            }
+          }
+        }
+      } */
+    }
+    if (updated) {
+      entry.updated--;
+    }
+    if (entry.added === 0 && entry.removed === 0 && entry.updated === 0) {
+      objectApis[n] = null;
+    }
   } else if (type === 'registerTexture') {
     const {name, uv} = data;
     const n = murmur(name);
     textures[n] = uv;
   } else if (type === 'addObject') {
-    const {name, matrix} = data;
+    const {name, position: positionArray, rotation: rotationArray, value} = data;
 
-    const x = Math.floor(matrix[0] / NUM_CELLS);
-    const z = Math.floor(matrix[2] / NUM_CELLS);
+    const x = Math.floor(positionArray[0] / NUM_CELLS);
+    const z = Math.floor(positionArray[2] / NUM_CELLS);
     _requestChunk(x, z)
       .then(chunk => {
         const n = murmur(name);
-        const objectIndex = chunk.addObject(n, matrix);
-        const position = new THREE.Vector3().fromArray(matrix, 0);
-        const rotation = new THREE.Quaternion().fromArray(matrix, 3);
-        chunk.trackedObjects[objectIndex] = new TrackedObject(n, position, rotation);
+        const matrix = positionArray.concat(rotationArray).concat(oneVector.toArray());
+        const index = chunk.addObject(n, matrix);
+        const position = new THREE.Vector3().fromArray(positionArray);
+        const rotation = new THREE.Quaternion().fromArray(rotationArray);
+        chunk.trackedObjects[index] = new TrackedObject(n, position, rotation, value, -1, -1);
 
         connection.send(JSON.stringify({
           method: 'addObject',
@@ -414,6 +518,7 @@ self.onmessage = e => {
             z,
             n,
             matrix,
+            value,
           },
         }));
       })
@@ -423,30 +528,47 @@ self.onmessage = e => {
   } else if (type === 'removeObject') {
     const {x, z, index} = data;
 
-    _requestChunk(x, z)
-      .then(chunk => {
-        chunk.removeObject(index);
+    const chunk = zde.getChunk(x, z);
+    if (chunk) {
+      chunk.removeObject(index);
 
-        chunk.trackedObjects[index] = null;
-
-        connection.send(JSON.stringify({
-          method: 'removeObject',
-          args: {
-            x,
-            z,
-            index,
-          },
+      const trackedObject = chunk.trackedObjects[index];
+      const objectApi = objectApis[trackedObject.n];
+      if (objectApi && objectApi.removed) {
+        postMessage(JSON.stringify({
+          type: 'objectRemoved',
+          args: [trackedObject.n, x, z, index, trackedObject.startIndex, trackedObject.endIndex],
         }));
-      })
-      .catch(err => {
-        console.warn(err);
-      });
+      }
+
+      chunk.trackedObjects[index] = null;
+    }
+
+    connection.send(JSON.stringify({
+      method: 'removeObject',
+      args: {
+        x,
+        z,
+        index,
+      },
+    }));
   } else if (type === 'setObjectData') {
     const {x, z, index, value} = data;
 
     _requestChunk(x, z)
       .then(chunk => {
         chunk.setObjectData(index, value);
+
+        const trackedObject = chunk.trackedObjects[index];
+        const objectApi = objectApis[trackedObject.n];
+        if (objectApi && objectApi.updated) {
+          trackedObject.value = value;
+
+          postMessage(JSON.stringify({
+            type: 'objectUpdated',
+            args: [trackedObject.n, x, z, index, trackedObject.position.toArray(), trackedObject.rotation.toArray(), trackedObject.value],
+          }));
+        }
 
         connection.send(JSON.stringify({
           method: 'setObjectData',
@@ -465,15 +587,41 @@ self.onmessage = e => {
     const {id, args} = data;
     const {x, z} = args;
     let {buffer: resultBuffer} = args;
+
     _requestChunk(x, z)
       .then(chunk => {
         const geometry = _makeChunkGeometry(chunk);
+
         resultBuffer = protocolUtils.stringifyGeometry(geometry, resultBuffer, 0);
         postMessage(JSON.stringify({
           type: 'response',
           args: [id],
         }));
         postMessage(resultBuffer, [resultBuffer]);
+
+        const {objects} = geometry
+        const numObjects = objects.length / 3;
+        for (let i = 0; i < numObjects; i++) {
+          const baseIndex = i * 3;
+          const index = objects[baseIndex + 0];
+          const startIndex = objects[baseIndex + 1];
+          const endIndex = objects[baseIndex + 2];
+
+          const trackedObject = chunk.trackedObjects[index];
+          trackedObject.startIndex = startIndex;
+          trackedObject.endIndex = endIndex;
+
+          if (!trackedObject.calledBack) {
+            const objectApi = objectApis[trackedObject.n];
+            if (objectApi && objectApi.added) {
+              postMessage(JSON.stringify({
+                type: 'objectAdded',
+                args: [trackedObject.n, x, z, index, trackedObject.position.toArray(), trackedObject.rotation.toArray(), trackedObject.value],
+              }));
+            }
+            trackedObject.calledBack = true;
+          }
+        }
       })
       .catch(err => {
         console.warn(err);
@@ -481,7 +629,25 @@ self.onmessage = e => {
   } else if (type === 'ungenerate') {
     const {args} = data;
     const {x, z} = args;
+
+    const chunk = zde.getChunk(x, z);
+
     zde.removeChunk(x, z);
+
+    for (const k in chunk.trackedObjects) {
+      const trackedObject = chunk.trackedObjects[k];
+
+      if (trackedObject) {
+        const objectApi = objectApis[trackedObject.n];
+
+        if (objectApi && objectApi.removed) {
+          postMessage(JSON.stringify({
+            type: 'objectRemoved',
+            args: [trackedObject.n, chunk.x, chunk.z, parseInt(k, 10), trackedObject.position, trackedObject.rotation, trackedObject.value],
+          }));
+        }
+      }
+    }
   } else if (type === 'getHoveredObjects') {
     const {id, args: positions} = data;
     const result = [

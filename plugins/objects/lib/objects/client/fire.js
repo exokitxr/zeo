@@ -81,7 +81,7 @@ const fire = objectApi => {
                 heightfieldElement ? heightfieldElement.getElevation(grabbable.position.x, grabbable.position.z) : 0,
                 grabbable.position.z
               );
-              objectApi.addObject('fire', localVector, zeroQuaternion, oneVector);
+              objectApi.addObject('fire', localVector, zeroQuaternion);
 
               items.destroyItem(grabbable);
 
@@ -105,59 +105,7 @@ const fire = objectApi => {
       };
       items.registerItem(this, fireItemApi);
 
-      const fireObjectApi = {
-        object: 'fire',
-        offset: [0, 1/2, 0],
-        size: 0.5,
-        objectAddedCallback(object) {
-          object.on('grip', side => {
-            const id = _makeId();
-            const asset = 'ITEM.FIRE';
-            const assetInstance = items.makeItem({
-              type: 'asset',
-              id: id,
-              name: asset,
-              displayName: asset,
-              attributes: {
-                type: {value: 'asset'},
-                value: {value: asset},
-                position: {value: DEFAULT_MATRIX},
-                quantity: {value: 1},
-                owner: {value: null},
-                bindOwner: {value: null},
-                physics: {value: false},
-              },
-            });
-            assetInstance.grab(side);
-
-            object.remove();
-          });
-          object.on('collide', () => {
-            const healthElement = elements.getEntitiesElement().querySelector(HEALTH_PLUGIN);
-
-            if (healthElement) {
-              healthElement.hurt(10);
-            }
-          });
-
-          object.shape = null;
-          if (lightmapper) {
-            _bindLightmap(object);
-          }
-
-          fires.push(object);
-        },
-        objectRemovedCallback(object) {
-          if (lightmapper) {
-            _unbindLightmap(object);
-          }
-
-          fires.splice(fires.indexOf(object), 1);
-        },
-      };
-      objectApi.registerObject(fireObjectApi);
-
-      const fires = [];
+      const fires = {};
       let Lightmapper = null;
       let lightmapper = null;
       const _bindLightmap = fire => {
@@ -169,7 +117,7 @@ const fire = objectApi => {
         lightmapper.remove(fire.shape);
         fire.shape = null;
       };
-      const lightmapElementListener = elements.makeListener(LIGHTMAP_PLUGIN); // XXX destroy this
+      const lightmapElementListener = elements.makeListener(LIGHTMAP_PLUGIN);
       lightmapElementListener.on('add', entityElement => {
         Lightmapper = entityElement.Lightmapper;
         lightmapper = entityElement.lightmapper;
@@ -182,12 +130,68 @@ const fire = objectApi => {
         Lightmapper = null;
         lightmapper = null;
 
-        for (let i = 0; i < fires.length; i++) {
-          fires[i].shape = null;
+        for (const id in fires) {
+          fires[id].shape = null;
         }
       });
 
+      const fireObjectApi = {
+        object: 'fire',
+        addedCallback(id, position) {
+          const fire = {
+            position: position.clone(),
+            shape: null,
+          };
+
+          if (lightmapper) {
+            _bindLightmap(fire);
+          }
+
+          fires[id] = fire;
+        },
+        removedCallback(id) {
+          const fire = fires[id];
+
+          if (lightmapper) {
+            _unbindLightmap(fire);
+          }
+
+          fires[id] = null;
+        },
+        gripCallback(id, side, x, z, objectIndex) {
+          const itemId = _makeId();
+          const asset = 'ITEM.FIRE';
+          const assetInstance = items.makeItem({
+            type: 'asset',
+            id: itemId,
+            name: asset,
+            displayName: asset,
+            attributes: {
+              type: {value: 'asset'},
+              value: {value: asset},
+              position: {value: DEFAULT_MATRIX},
+              quantity: {value: 1},
+              owner: {value: null},
+              bindOwner: {value: null},
+              physics: {value: false},
+            },
+          });
+          assetInstance.grab(side);
+
+          objectApi.removeObject(x, z, objectIndex);
+        },
+        collideCallback() {
+          const healthElement = elements.getEntitiesElement().querySelector(HEALTH_PLUGIN);
+          if (healthElement) {
+            healthElement.hurt(10);
+          }
+        },
+      };
+      objectApi.registerObject(fireObjectApi);
+
       return () => {
+        elements.destroyListener(lightmapElementListener);
+
         items.unregisterItem(this, fireItemApi);
         objectApi.unregisterObject(fireObjectApi);
       };

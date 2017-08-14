@@ -1,10 +1,10 @@
-const HEIGHTFIELD_PLUGIN = 'plugins-heightfield';
 const cameraWidth = 0.2;
 const cameraHeight = 0.15;
 const cameraAspectRatio = cameraWidth / cameraHeight;
 const cameraDepth = 0.1;
-const width = 1024;
-const height = Math.round(width / cameraAspectRatio);
+const width = 640;
+const height = 480;
+// const height = Math.round(width / cameraAspectRatio);
 
 const dataSymbol = Symbol();
 

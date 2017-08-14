@@ -80,7 +80,7 @@ const apple = objectApi => {
                 localEuler.x = 0;
                 localEuler.z = 0;
                 localQuaternion.setFromEuler(localEuler);
-                objectApi.addObject('apple', localVector, localQuaternion, oneVector);
+                objectApi.addObject('apple', localVector, localQuaternion);
 
                 items.destroyItem(grabbable);
 
@@ -110,32 +110,27 @@ const apple = objectApi => {
 
         const appleObjectApi = {
           object: 'apple',
-          objectAddedCallback(object) {
-            object.on('grip', side => {
-              const id = _makeId();
-              const asset = 'ITEM.APPLE';
-              const assetInstance = items.makeItem({
-                type: 'asset',
-                id: id,
-                name: asset,
-                displayName: asset,
-                attributes: {
-                  type: {value: 'asset'},
-                  value: {value: asset},
-                  position: {value: DEFAULT_MATRIX},
-                  quantity: {value: 1},
-                  owner: {value: null},
-                  bindOwner: {value: null},
-                  physics: {value: false},
-                },
-              });
-              assetInstance.grab(side);
-
-              object.remove();
+          gripCallback(id, side, x, z, objectIndex) {
+            const itemId = _makeId();
+            const asset = 'ITEM.APPLE';
+            const assetInstance = items.makeItem({
+              type: 'asset',
+              id: itemId,
+              name: asset,
+              displayName: asset,
+              attributes: {
+                type: {value: 'asset'},
+                value: {value: asset},
+                position: {value: DEFAULT_MATRIX},
+                quantity: {value: 1},
+                owner: {value: null},
+                bindOwner: {value: null},
+                physics: {value: false},
+              },
             });
-          },
-          objectRemovedCallback(object) {
-            // XXX
+            assetInstance.grab(side);
+
+            objectApi.removeObject(x, z, objectIndex);
           },
         };
         objectApi.registerObject(appleObjectApi);

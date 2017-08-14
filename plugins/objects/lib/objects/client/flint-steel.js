@@ -117,7 +117,7 @@ const flintSteel = objectApi => {
                 heightfieldElement ? heightfieldElement.getElevation(grabbable.position.x, grabbable.position.z) : 0,
                 grabbable.position.z
               );
-              objectApi.addObject('fire', localVector, zeroQuaternion, oneVector);
+              objectApi.addObject('fire', localVector, zeroQuaternion);
 
               items.destroyItem(grabbable);
             }
