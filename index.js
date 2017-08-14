@@ -62,10 +62,6 @@ if (!hasSomeFlag) {
   flags.server = true;
 }
 
-const _capitalize = s => {
-  return s.slice(0, 1).toUpperCase() + s.slice(1);
-};
-
 const hostname = flags.host || 'zeovr.io';
 const port = flags.port || 8000;
 const secure = (typeof flags.secure === 'boolean') ? flags.secure : false;
