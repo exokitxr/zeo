@@ -6,8 +6,6 @@ importScripts('/archae/assets/autows.js');
 const {exports: Autows} = self.module;
 importScripts('/archae/assets/alea.js');
 const {exports: alea} = self.module;
-// importScripts('/archae/assets/indev.js');
-// const {exports: indev} = self.module;
 self.module = {};
 
 const {

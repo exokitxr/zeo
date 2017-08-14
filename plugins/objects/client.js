@@ -26,7 +26,6 @@ class Objects {
     const {EventEmitter} = events;
 
     const _getChunkIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
-    // const _getTrackedObjectIndex = (x, z, i) => (mod(x, 0xFF) << 24) | (mod(z, 0xFF) << 16) | (i & 0xFFFF);
     const _getObjectIndex = (x, z, i) => (mod(x, 0xFF) << 24) | (mod(z, 0xFF) << 16) | (i & 0xFFFF);
 
     const OBJECTS_SHADER = {
@@ -59,14 +58,6 @@ class Objects {
       vertexShader: `\
 precision highp float;
 precision highp int;
-/*uniform mat4 modelMatrix;
-uniform mat4 modelViewMatrix;
-uniform mat4 projectionMatrix;
-uniform mat4 viewMatrix;
-uniform mat3 normalMatrix;
-attribute vec3 position;
-attribute vec3 normal;
-attribute vec2 uv; */
 attribute vec3 frame;
 attribute float objectIndex;
 
@@ -90,7 +81,6 @@ precision highp float;
 precision highp int;
 #define ALPHATEST 0.7
 #define DOUBLE_SIDED
-// uniform mat4 viewMatrix;
 uniform vec3 ambientLightColor;
 uniform sampler2D map;
 uniform sampler2D lightMap;
@@ -473,101 +463,6 @@ void main() {
       return mesh;
     };
 
-    /* class TrackedObject extends EventEmitter {
-      constructor(mesh, n, objectIndex, startIndex, endIndex, positionX, positionY, positionZ, rotationX, rotationY, rotationZ, rotationW, value) {
-        super();
-
-        this.mesh = mesh;
-        this.n = n;
-        this.objectIndex = objectIndex;
-        this.startIndex = startIndex;
-        this.endIndex = endIndex;
-        this.positionX = positionX;
-        this.positionY = positionY;
-        this.positionZ = positionZ;
-        this.rotationX = rotationX;
-        this.rotationY = rotationY;
-        this.rotationZ = rotationZ;
-        this.rotationW = rotationW;
-        this.value = value;
-      }
-
-      set(mesh, startIndex, endIndex, positionX, positionY, positionZ, rotationX, rotationY, rotationZ, rotationW, value) {
-        this.mesh = mesh;
-        this.startIndex = startIndex;
-        this.endIndex = endIndex;
-
-        let updated = false;
-        if (this.position.x !== positionX || this.position.y !== positionY || this.position.z !== positionZ) {
-          this.position.set(positionX, positionY, positionZ);
-          updated = true;
-        }
-        if (this.rotation.x !== rotationX || this.rotation.y !== rotationY || this.rotation.z !== rotationZ || this.rotation.w !== rotationW) {
-          this.rotation.set(rotationX, rotationY, rotationZ, rotationW);
-          updated = true;
-        }
-        if (this.value !== value) {
-          this.value = value;
-          updated = true;
-        }
-
-        if (updated) {
-          this.emit('update');
-        }
-      }
-
-      get position() {
-        return localVector.set(this.positionX, this.positionY, this.positionZ);
-      }
-
-      get rotation() {
-        return localQuaternion.set(this.rotationX, this.rotationY, this.rotationZ, this.rotationW);
-      }
-
-      is(name) {
-        return murmur(name) === this.n;
-      }
-
-      trigger(side) {
-        this.emit('trigger', side);
-      }
-
-      grip(side) {
-        this.emit('grip', side);
-      }
-
-      collide() {
-        this.emit('collide');
-      }
-
-      setData(value) {
-        this.value = value;
-
-        worker.requestSetObjectData(this.mesh.offset.x, this.mesh.offset.y, this.objectIndex, value);
-      }
-
-      remove() {
-        const {mesh, n, objectIndex, startIndex, endIndex} = this;
-        const {geometry} = mesh;
-        const indexAttribute = geometry.index;
-        const indices = indexAttribute.array;
-        for (let i = startIndex; i < endIndex; i++) {
-          indices[i] = 0;
-        }
-        indexAttribute.needsUpdate = true;
-
-        trackedObjects[_getTrackedObjectIndex(mesh.offset.x, mesh.offset.y, objectIndex)] = null;
-
-        const objectApi = objectApis[n];
-        if (objectApi) {
-          _unbindTrackedObject(this, objectApi);
-        }
-
-        worker.requestRemoveObject(mesh.offset.x, mesh.offset.y, objectIndex);
-      }
-    } */
-
-    // const trackedObjects = {};
     class HoveredTrackedObject {
       constructor() {
         this.n = 0;
@@ -605,76 +500,6 @@ void main() {
       left: new HoveredTrackedObject(),
       right: new HoveredTrackedObject(),
     };
-    /* const _refreshTrackedObjects = (mesh, data, oldTrackedObjectIndices) => {
-      const {objects: objectsUint32Data} = data;
-      const objectsFloat32Data = new Float32Array(objectsUint32Data.buffer, objectsUint32Data.byteOffset, objectsUint32Data.length);
-      const numObjects = objectsUint32Data.length / (1 + 10 + 1);
-      let offset = 0;
-      const newTrackedObjectIndices = {};
-      for (let i = 0; i < numObjects; i++) {
-        const n = objectsUint32Data[offset++];
-        const objectIndex = objectsUint32Data[offset++];
-        const startIndex = objectsUint32Data[offset++];
-        const endIndex = objectsUint32Data[offset++];
-        const positionX = objectsFloat32Data[offset++];
-        const positionY = objectsFloat32Data[offset++];
-        const positionZ = objectsFloat32Data[offset++];
-        const rotationX = objectsFloat32Data[offset++];
-        const rotationY = objectsFloat32Data[offset++];
-        const rotationZ = objectsFloat32Data[offset++];
-        const rotationW = objectsFloat32Data[offset++];
-        const value = objectsUint32Data[offset++];
-
-        const trackedObjectIndex = _getTrackedObjectIndex(mesh.offset.x, mesh.offset.y, objectIndex);
-        let trackedObject = trackedObjects[trackedObjectIndex];
-        if (trackedObject) {
-          trackedObject.set(mesh, startIndex, endIndex, positionX, positionY, positionZ, rotationX, rotationY, rotationZ, rotationW, value);
-        } else {
-          trackedObject = new TrackedObject(mesh, n, objectIndex, startIndex, endIndex, positionX, positionY, positionZ, rotationX, rotationY, rotationZ, rotationW, value);
-          trackedObjects[trackedObjectIndex] = trackedObject;
-
-          const objectApi = objectApis[n];
-          if (objectApi) {
-            _bindTrackedObject(trackedObject, objectApi);
-          }
-        }
-        newTrackedObjectIndices[trackedObjectIndex] = true;
-      }
-      for (const trackedObjectIndex in oldTrackedObjectIndices) {
-        if (!newTrackedObjectIndices[trackedObjectIndex]) {
-          const trackedObject = trackedObjects[trackedObjectIndex];
-          const {n} = trackedObject;
-          const objectApi = objectApis[n];
-          if (objectApi) {
-            _unbindTrackedObject(trackedObject, objectApi);
-          }
-
-          trackedObjects[trackedObjectIndex] = null;
-        }
-      }
-      return newTrackedObjectIndices;
-    };
-    const _removeTrackedObjects = trackedObjectIndices => {
-      for (const trackedObjectIndex in trackedObjectIndices) {
-        const trackedObject = trackedObjects[trackedObjectIndex];
-
-        if (trackedObject) {
-          const {n} = trackedObject;
-          const objectApi = objectApis[n];
-          if (objectApi) {
-            _unbindTrackedObject(trackedObject, objectApi);
-          }
-
-          trackedObjects[trackedObjectIndex] = null;
-        }
-      }
-    };
-    const _bindTrackedObject = (trackedObject, objectApi) => {
-      objectApi.objectAddedCallback(trackedObject);
-    };
-    const _unbindTrackedObject = (trackedObject, objectApi) => {
-      objectApi.objectRemovedCallback(trackedObject);
-    }; */
 
     const _triggerdown = e => {
       const {side} = e;
@@ -979,12 +804,8 @@ void main() {
 
             objectsChunkMeshes[index] = objectsChunkMesh;
 
-            /* const oldTrackedObjectIndices = oldData ? oldData.trackedObjectIndices : {};
-            const trackedObjectIndices = _refreshTrackedObjects(objectsChunkMesh, objectsChunkData, oldTrackedObjectIndices); */
-
             chunk.data = {
               objectsChunkMesh,
-              // trackedObjectIndices,
             };
           });
         promises.push(promise);
@@ -1009,9 +830,6 @@ void main() {
             objectsChunkMeshes[_getChunkIndex(x, z)] = null;
 
             objectsChunkMesh.destroy();
-
-            /* const {trackedObjectIndices} = data;
-            _removeTrackedObjects(trackedObjectIndices); */
           }
         });
     };
