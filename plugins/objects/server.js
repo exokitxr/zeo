@@ -52,10 +52,10 @@ class Objects {
         const az = (oz * NUM_CELLS) + z;
         return noises[name].in2D(ax + 1000, az + 1000);
       },
-      addObject(chunk, name, position, rotation, scale) {
+      addObject(chunk, name, position, rotation, value) {
         const n = murmur(name);
-        const matrix = position.toArray().concat(rotation.toArray()).concat(scale.toArray());
-        chunk.addObject(n, matrix);
+        const matrix = position.toArray().concat(rotation.toArray());
+        chunk.addObject(n, matrix, value);
       },
     };
     const _generateChunk = chunk => {
@@ -224,14 +224,14 @@ class Objects {
 
                   if (method === 'addObject') {
                     const {args} = m;
-                    const {x, z, n, matrix} = args;
+                    const {x, z, n, matrix, value} = args;
 
                     let chunk = zde.getChunk(x, z);
                     if (!chunk) {
                       chunk = zde.makeChunk(x, z);
                       _generateChunk(chunk);
                     }
-                    chunk.addObject(n, matrix);
+                    chunk.addObject(n, matrix, value);
 
                     _saveChunks();
 

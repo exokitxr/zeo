@@ -136,7 +136,7 @@ const monitor = objectApi => {
               localEuler.x = 0;
               localEuler.z = 0;
               localQuaternion.setFromEuler(localEuler);
-              objectApi.addObject('monitor', localVector, localQuaternion, oneVector);
+              objectApi.addObject('monitor', localVector, localQuaternion);
 
               items.destroyItem(grabbable);
 
@@ -160,95 +160,13 @@ const monitor = objectApi => {
       };
       items.registerItem(this, monitorItemApi);
 
-      const monitors = [];
+      const monitors = {};
       const monitorObjectApi = {
         object: 'monitor',
-        objectAddedCallback(object) {
-          object.on('grip', side => {
-            const id = _makeId();
-            const asset = 'ITEM.MONITOR';
-            const assetInstance = items.makeItem({
-              type: 'asset',
-              id: id,
-              name: asset,
-              displayName: asset,
-              attributes: {
-                type: {value: 'asset'},
-                value: {value: asset},
-                position: {value: DEFAULT_MATRIX},
-                quantity: {value: 1},
-                owner: {value: null},
-                bindOwner: {value: null},
-                physics: {value: false},
-              },
-            });
-            assetInstance.grab(side);
-
-            object.remove();
-          });
-
-          object.on('update', () => {
-            _loadFileN(object.value);
-          });
-
-          const _triggerdown = e => {
-            const {side} = e;
-
-            if (objectApi.getHoveredObject(side) === object) {
-              const grabbedGrabbable = hands.getGrabbedGrabbable(side);
-
-              if (grabbedGrabbable && grabbedGrabbable.type === 'file') {
-                object.setData(grabbedGrabbable.value);
-                _loadFileN(grabbedGrabbable.value);
-                
-                /* _requestImageBitmap(items.getFile(grabbedGrabbable.value).getUrl())
-                  .then(img => {
-                    const texture = monitorMesh.material.map;
-                    texture.image.ctx.clear();
-                    const aspectRatio = img.width / img.height;
-                    let width = texture.image.width;
-                    let height = Math.floor(width / aspectRatio);
-                    if (height > texture.image.height) {
-                      height = texture.image.height;
-                      width = Math.floor(height * aspectRatio);
-                    }
-                    const x = Math.max((texture.image.width - width) / 2, 0);
-                    const y = Math.max((texture.image.height - height) / 2, 0);
-                    texture.image.ctx.drawImage(img, x, y, width, height);
-                    texture.needsUpdate = true;
-                  })
-                  .catch(err => {
-                    console.warn(err);
-                  }); */
-              } else {
-                object.setData(0);
-                _loadFileN(0);
-              }
-
-              e.stopImmediatePropagation();
-            }
-          };
-          input.on('triggerdown', _triggerdown);
-
+        addedCallback(id, position, rotation, value) {
           const monitorMesh = (() => {
             const geometry = new THREE.PlaneBufferGeometry(width * 0.9, height * 0.9);
-            /* const positions = geometry.getAttribute('position').array;
-            const numPositions = positions.length / 3;
-            for (let i = 0; i < numPositions; i++) {
-              const baseIndex = i * 3;
-              const x = positions[baseIndex + 0];
-              positions[baseIndex + 2] += 0.05 *
-                (Math.abs(x) === 1 ? 0 : 1) *
-                (x > 0 ? -1 : 0);
-            } */
-            /* geometry
-              .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(
-                new THREE.Quaternion().setFromAxisAngle(
-                  new THREE.Vector3(1, 0, 0),
-                  -0.05 * Math.PI * 2
-                )
-              ))
-              .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, PAPER_BORDER_SIZE)); */
+
             const canvas = document.createElement('canvas');
             canvas.width = RESOLUTION_X;
             canvas.height = RESOLUTION_Y;
@@ -277,10 +195,10 @@ const monitor = objectApi => {
             });
 
             const mesh = new THREE.Mesh(geometry, material);
-            mesh.position.copy(object.position)
-              .add(new THREE.Vector3(0, STAND_SIZE - height/2 + border, border/2 + border + 0.01).applyQuaternion(object.rotation));
-            mesh.quaternion.copy(object.rotation);
-            // mesh.scale.copy(object.scale);
+            mesh.position.copy(position)
+              .add(new THREE.Vector3(0, STAND_SIZE - height/2 + border, border/2 + border + 0.01).applyQuaternion(rotation));
+            mesh.quaternion.copy(rotation);
+            // mesh.scale.copy(scale);
 
             const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(
               localVector.copy(backVector).applyQuaternion(mesh.quaternion),
@@ -324,52 +242,82 @@ const monitor = objectApi => {
           })();
           scene.add(monitorMesh);
           monitorMesh.updateMatrixWorld();
-          object.monitorMesh = monitorMesh;
 
-          const _loadFileN = n => {
-            const texture = monitorMesh.material.map;
+          const monitor = {
+            loadFileN(n) {
+              const texture = monitorMesh.material.map;
 
-            if (n !== 0) {
-              _requestImageBitmap(items.getFile(n).getUrl())
-                .then(img => {
-                  texture.image.ctx.clear();
-                  const aspectRatio = img.width / img.height;
-                  let width = texture.image.width;
-                  let height = Math.floor(width / aspectRatio);
-                  if (height > texture.image.height) {
-                    height = texture.image.height;
-                    width = Math.floor(height * aspectRatio);
-                  }
-                  const x = Math.max((texture.image.width - width) / 2, 0);
-                  const y = Math.max((texture.image.height - height) / 2, 0);
-                  texture.image.ctx.drawImage(img, x, y, width, height);
-                  texture.needsUpdate = true;
-                })
-                .catch(err => {
-                  console.warn(err);
-                });
-            } else {
-              texture.image.ctx.clear();
-              texture.needsUpdate = true;
-            }
-          };
-          _loadFileN(object.value);
-
-          monitors.push(object);
-
-          object[dataSymbol] = {
+              if (n !== 0) {
+                _requestImageBitmap(items.getFile(n).getUrl())
+                  .then(img => {
+                    texture.image.ctx.clear();
+                    const aspectRatio = img.width / img.height;
+                    let width = texture.image.width;
+                    let height = Math.floor(width / aspectRatio);
+                    if (height > texture.image.height) {
+                      height = texture.image.height;
+                      width = Math.floor(height * aspectRatio);
+                    }
+                    const x = Math.max((texture.image.width - width) / 2, 0);
+                    const y = Math.max((texture.image.height - height) / 2, 0);
+                    texture.image.ctx.drawImage(img, x, y, width, height);
+                    texture.needsUpdate = true;
+                  })
+                  .catch(err => {
+                    console.warn(err);
+                  });
+              } else {
+                texture.image.ctx.clear();
+                texture.needsUpdate = true;
+              }
+            },
             cleanup() {
               scene.remove(monitorMesh);
 
-              input.removeListener('triggerdown', _triggerdown);
-
-              monitors.splice(monitors.indexOf(object), 1);
+              monitors[id] = null;
             },
           };
+          monitor.loadFileN(value);
+
+          monitors[id] = monitor;
         },
-        objectRemovedCallback(object) {
-          const {[dataSymbol]: {cleanup}} = object;
-          cleanup();
+        removedCallback(id) {
+          monitors[id].cleanup();
+        },
+        triggerCallback(id, side, x, z, objectIndex) {
+          const monitor = monitors[id];
+          const grabbedGrabbable = hands.getGrabbedGrabbable(side);
+
+          if (grabbedGrabbable && grabbedGrabbable.type === 'file') {
+            objectApi.setData(x, z, objectIndex, grabbedGrabbable.value);
+          } else {
+            objectApi.setData(x, z, objectIndex, 0);
+          }
+        },
+        gripCallback(id, side, x, z, objectIndex) {
+          const itemId = _makeId();
+          const asset = 'ITEM.MONITOR';
+          const assetInstance = items.makeItem({
+            type: 'asset',
+            id: itemId,
+            name: asset,
+            displayName: asset,
+            attributes: {
+              type: {value: 'asset'},
+              value: {value: asset},
+              position: {value: DEFAULT_MATRIX},
+              quantity: {value: 1},
+              owner: {value: null},
+              bindOwner: {value: null},
+              physics: {value: false},
+            },
+          });
+          assetInstance.grab(side);
+
+          objectApi.removeObject(x, z, objectIndex);
+        },
+        updateCallback(id, position, rotation, value) {
+          monitors[id].loadFileN(value);
         },
       };
       objectApi.registerObject(monitorObjectApi);

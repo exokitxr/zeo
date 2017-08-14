@@ -79,7 +79,7 @@ const torch = objectApi => {
               localEuler.x = 0;
               localEuler.z = 0;
               localQuaternion.setFromEuler(localEuler);
-              objectApi.addObject('torch', localVector, localQuaternion, oneVector);
+              objectApi.addObject('torch', localVector, localQuaternion);
 
               items.destroyItem(grabbable);
 
@@ -103,7 +103,7 @@ const torch = objectApi => {
       };
       items.registerItem(this, torchItemApi);
 
-      const torches = [];
+      const torches = {};
       let Lightmapper = null;
       let lightmapper = null;
       const _bindLightmap = torch => {
@@ -115,65 +115,67 @@ const torch = objectApi => {
         lightmapper.remove(torch.shape);
         torch.shape = null;
       };
-      const lightmapElementListener = elements.makeListener(LIGHTMAP_PLUGIN); // XXX destroy this
+      const lightmapElementListener = elements.makeListener(LIGHTMAP_PLUGIN);
       lightmapElementListener.on('add', entityElement => {
         Lightmapper = entityElement.Lightmapper;
         lightmapper = entityElement.lightmapper;
 
-        for (let i = 0; i < torches.length; i++) {
-          _bindLightmap(torches[i]);
+        for (const id in torches) {
+          _bindLightmap(torches[id]);
         }
       });
       lightmapElementListener.on('remove', () => {
         Lightmapper = null;
         lightmapper = null;
 
-        for (let i = 0; i < torches.length; i++) {
-          torches[i].shape = null;
+        for (const id in torches) {
+          torches[id].shape = null;
         }
       });
 
       const torchObjectApi = {
         object: 'torch',
-        offset: [0, 0.3/2, 0],
-        size: 0.3,
-        objectAddedCallback(object) {
-          object.on('grip', side => {
-            const id = _makeId();
-            const asset = 'ITEM.TORCH';
-            const assetInstance = items.makeItem({
-              type: 'asset',
-              id: id,
-              name: asset,
-              displayName: asset,
-              attributes: {
-                type: {value: 'asset'},
-                value: {value: asset},
-                position: {value: DEFAULT_MATRIX},
-                quantity: {value: 1},
-                owner: {value: null},
-                bindOwner: {value: null},
-                physics: {value: false},
-              },
-            });
-            assetInstance.grab(side);
+        addedCallback(id) {
+          const torch = {
+            shape: null,
+          };
 
-            object.remove();
-          });
-
-          object.shape = null;
           if (lightmapper) {
-            _bindLightmap(object);
+            _bindLightmap(torch);
           }
 
-          torches.push(object);
+          torches[id] = torch;
         },
-        objectRemovedCallback(object) {
+        removedCallback(id) {
+          const torch = toches[id];
+
           if (lightmapper) {
-            _unbindLightmap(object);
+            _unbindLightmap(torch);
           }
 
-          torches.splice(torches.indexOf(object), 1);
+          torches[id] = torch;
+        },
+        gripCallback(id, side, x, z, objectIndex) {
+          const itemId = _makeId();
+          const asset = 'ITEM.TORCH';
+          const assetInstance = items.makeItem({
+            type: 'asset',
+            id: itemId,
+            name: asset,
+            displayName: asset,
+            attributes: {
+              type: {value: 'asset'},
+              value: {value: asset},
+              position: {value: DEFAULT_MATRIX},
+              quantity: {value: 1},
+              owner: {value: null},
+              bindOwner: {value: null},
+              physics: {value: false},
+            },
+          });
+          assetInstance.grab(side);
+
+          objectApi.removeObject(x, z, objectIndex);
         },
       };
       objectApi.registerObject(torchObjectApi);
@@ -191,6 +193,8 @@ const torch = objectApi => {
       objectApi.registerRecipe(this, torchRecipe);
 
       return () => {
+        elements.destroyListener(lightmapElementListener);
+
         items.unregisterItem(this, torchItemApi);
         objectApi.unregisterObject(torchObjectApi);
 

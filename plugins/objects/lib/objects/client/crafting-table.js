@@ -115,7 +115,7 @@ const craftingTable = objectApi => {
               localEuler.x = 0;
               localEuler.z = 0;
               localQuaternion.setFromEuler(localEuler);
-              objectApi.addObject('craftingTable', localVector, localQuaternion, oneVector);
+              objectApi.addObject('craftingTable', localVector, localQuaternion);
 
               items.destroyItem(grabbable);
 
@@ -139,46 +139,57 @@ const craftingTable = objectApi => {
 
       const craftingTableObjectApi = {
         object: 'craftingTable',
-        objectAddedCallback(object) {
-          object.crafter = null;
+        addedCallback(id, position) {
+          const craftingTable = {
+            id,
+            position: position.clone(),
+            crafter: null,
+          };
 
           const craftElement = elements.getEntitiesElement().querySelector(CRAFT_PLUGIN);
           if (craftElement) {
-            _bindCrafter(object, craftElement);
+            _bindCrafter(craftingTable, craftElement);
           }
-          object.on('trigger', side => {
-            if (object.crafter) {
-              object.crafter.craft();
-            }
-          });
-          object.on('grip', side => {
-            const id = _makeId();
-            const asset = 'ITEM.CRAFTINGTABLE';
-            const assetInstance = items.makeItem({
-              type: 'asset',
-              id: id,
-              name: asset,
-              displayName: asset,
-              attributes: {
-                type: {value: 'asset'},
-                value: {value: asset},
-                position: {value: DEFAULT_MATRIX},
-                quantity: {value: 1},
-                owner: {value: null},
-                bindOwner: {value: null},
-                physics: {value: false},
-              },
-            });
-            assetInstance.grab(side);
 
-            object.remove();
-          });
+          craftingTables[id] = craftingTable;
         },
-        objectRemovedCallback(object) {
+        removedCallback(id) {
+          const craftingTable = craftingTable;
+
           const craftElement = elements.getEntitiesElement().querySelector(CRAFT_PLUGIN);
           if (craftElement) {
-            _unbindCrafter(object, craftElement);
+            _unbindCrafter(craftingTable, craftElement);
           }
+
+          craftingTables[id] = null;
+        },
+        triggerCallback(id, side) {
+          const craftingTable = craftingTables[id];
+          if (craftingTable.crafter) {
+            craftingTable.crafter.craft();
+          }
+        },
+        gripCallback(id, side) {
+          const itemId = _makeId();
+          const asset = 'ITEM.CRAFTINGTABLE';
+          const assetInstance = items.makeItem({
+            type: 'asset',
+            id: itemId,
+            name: asset,
+            displayName: asset,
+            attributes: {
+              type: {value: 'asset'},
+              value: {value: asset},
+              position: {value: DEFAULT_MATRIX},
+              quantity: {value: 1},
+              owner: {value: null},
+              bindOwner: {value: null},
+              physics: {value: false},
+            },
+          });
+          assetInstance.grab(side);
+
+          objectApi.removeObject(x, z, objectIndex);
         },
       };
       objectApi.registerObject(craftingTableObjectApi);

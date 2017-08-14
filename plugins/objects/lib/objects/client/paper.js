@@ -187,7 +187,7 @@ const paper = objectApi => {
                 localEuler.x = 0;
                 localEuler.z = 0;
                 localQuaternion.setFromEuler(localEuler);
-                objectApi.addObject('paper', localVector, localQuaternion, oneVector);
+                objectApi.addObject('paper', localVector, localQuaternion);
 
                 items.destroyItem(grabbable);
 
@@ -211,91 +211,13 @@ const paper = objectApi => {
         };
         items.registerItem(this, paperItemApi);
 
-        const papers = [];
+        const papers = {};
         const paperObjectApi = {
           object: 'paper',
-          objectAddedCallback(object) {
-            object.on('grip', side => {
-              const id = _makeId();
-              const asset = 'ITEM.PAPER';
-              const assetInstance = items.makeItem({
-                type: 'asset',
-                id: id,
-                name: asset,
-                displayName: asset,
-                attributes: {
-                  type: {value: 'asset'},
-                  value: {value: asset},
-                  position: {value: DEFAULT_MATRIX},
-                  quantity: {value: 1},
-                  owner: {value: null},
-                  bindOwner: {value: null},
-                  physics: {value: false},
-                },
-              });
-              assetInstance.grab(side);
-
-              object.remove();
-            });
-
-            object.on('update', () => {
-              _loadFileN(object.value);
-            });
-
-            const _triggerdown = e => {
-              const {side} = e;
-
-              if (objectApi.getHoveredObject(side) === object) {
-                if (object.value !== 0) {
-                  const file = items.getFile(object.value);
-                  const dropMatrix = (() => {
-                    const {hmd} = pose.getStatus();
-                    const {worldPosition: hmdPosition, worldRotation: hmdRotation, worldScale: hmdScale} = hmd;
-                    localVector.copy(object.position)
-                      .add(
-                        localVector2.copy(backVector).multiplyScalar(0.5)
-                          .add(localVector3.set(0, STAND_SIZE/2, 0))
-                          .applyQuaternion(object.rotation)
-                      );
-                    return localVector.toArray().concat(object.rotation.toArray()).concat(oneVector.toArray());
-                  })();
-
-                  items.reifyFile({
-                    file,
-                    matrix: dropMatrix,
-                  });
-
-                  object.setData(0);
-                  _loadFileN(0);
-                }
-
-                e.stopImmediatePropagation();
-              }
-            };
-            input.on('triggerdown', _triggerdown, {
-              priority: -1,
-            });
-
+          addedCallback(id, position, rotation, value, x, z, objectIndex) {
             const paperMesh = (() => {
-              // const geometry = new THREE.PlaneBufferGeometry(1, 1, 3, 0);
               const geometry = new THREE.PlaneBufferGeometry(1, 1);
-              /* const positions = geometry.getAttribute('position').array;
-              const numPositions = positions.length / 3;
-              for (let i = 0; i < numPositions; i++) {
-                const baseIndex = i * 3;
-                const x = positions[baseIndex + 0];
-                positions[baseIndex + 2] += 0.05 *
-                  (Math.abs(x) === 1 ? 0 : 1) *
-                  (x > 0 ? -1 : 0);
-              } */
-              /* geometry
-                .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(
-                  new THREE.Quaternion().setFromAxisAngle(
-                    new THREE.Vector3(1, 0, 0),
-                    -0.05 * Math.PI * 2
-                  )
-                ))
-                .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, PAPER_BORDER_SIZE)); */
+
               const canvas = document.createElement('canvas');
               canvas.width = RESOLUTION;
               canvas.height = RESOLUTION;
@@ -324,14 +246,14 @@ const paper = objectApi => {
               });
 
               const mesh = new THREE.Mesh(geometry, material);
-              mesh.position.copy(object.position)
-                .add(new THREE.Vector3(0, height/2 + PAPER_SIZE/2, PAPER_BORDER_SIZE).applyQuaternion(object.rotation));
-              mesh.quaternion.copy(object.rotation)
+              mesh.position.copy(position)
+                .add(new THREE.Vector3(0, height/2 + PAPER_SIZE/2, PAPER_BORDER_SIZE).applyQuaternion(rotation));
+              mesh.quaternion.copy(rotation)
                 .multiply(new THREE.Quaternion().setFromAxisAngle(
                   new THREE.Vector3(1, 0, 0),
                   -0.05 * Math.PI * 2
                 ));
-              // mesh.scale.copy(object.scale);
+              // mesh.scale.copy(scale);
 
               const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(
                 localVector.copy(forwardVector).applyQuaternion(mesh.quaternion),
@@ -364,11 +286,12 @@ const paper = objectApi => {
 
               mesh.saveFile = _debounce(next => {
                 texture.image.toBlob(blob => {
-                  const file = object.value !== 0 ? items.getFile(object.value) : items.getFile();
+                  const file = paper.value !== 0 ? items.getFile(paper.value) : items.getFile();
                   file.write(blob)
                     .then(() => {
-                      if (object.value === 0) {
-                        object.setData(file.n);
+                      if (paper.value === 0) {
+                        objectApi.setData(x, z, objectIndex, file.n);
+                        paper.value = file.n;
                       }
 
                       next();
@@ -396,41 +319,97 @@ const paper = objectApi => {
             })();
             scene.add(paperMesh);
             paperMesh.updateMatrixWorld();
-            object.paperMesh = paperMesh;
 
-            const _loadFileN = n => {
-              const texture = paperMesh.material.map;
+            const paper = {
+              position: position.clone(),
+              rotation: rotation.clone(),
+              value,
+              paperMesh,
+              loadFileN(n) {
+                const texture = paperMesh.material.map;
 
-              if (n !== 0) {
-                _requestImageBitmap(items.getFile(n).getUrl())
-                  .then(img => {
-                    texture.image.ctx.clear();
-                    texture.image.ctx.drawImage(img, 0, 0);
-                    texture.needsUpdate = true;
-                  })
-                  .catch(err => {
-                    console.warn(err);
-                  });
-              } else {
-                texture.image.ctx.clear();
-                texture.needsUpdate = true;
-              }
-            };
-            _loadFileN(object.value);
+                if (n !== 0) {
+                  _requestImageBitmap(items.getFile(n).getUrl())
+                    .then(img => {
+                      texture.image.ctx.clear();
+                      texture.image.ctx.drawImage(img, 0, 0);
+                      texture.needsUpdate = true;
+                    })
+                    .catch(err => {
+                      console.warn(err);
+                    });
+                } else {
+                  texture.image.ctx.clear();
+                  texture.needsUpdate = true;
+                }
 
-            papers.push(object);
-
-            object[dataSymbol] = {
+                this.value = n;
+              },
               cleanup() {
                 scene.remove(paperMesh);
 
-                papers.splice(papers.indexOf(object), 1);
+                papers[id] = null;
               },
             };
+            paper.loadFileN(value);
+
+            papers[id] = paper;
           },
-          objectRemovedCallback(object) {
-            const {[dataSymbol]: {cleanup}} = object;
-            cleanup();
+          removedCallback(id) {
+            papers[id].cleanup();
+          },
+          triggerCallback(id, side, x, z, objectIndex) {
+            const paper = papers[id];
+
+            if (paper && paper.value !== 0) {
+              const file = items.getFile(paper.value);
+              const dropMatrix = (() => {
+                const {hmd} = pose.getStatus();
+                const {worldPosition: hmdPosition, worldRotation: hmdRotation, worldScale: hmdScale} = hmd;
+                localVector.copy(paper.position)
+                  .add(
+                    localVector2.copy(backVector).multiplyScalar(0.5)
+                      .add(localVector3.set(0, STAND_SIZE/2, 0))
+                      .applyQuaternion(paper.rotation)
+                  );
+                return localVector.toArray().concat(paper.rotation.toArray()).concat(oneVector.toArray());
+              })();
+
+              items.reifyFile({
+                file,
+                matrix: dropMatrix,
+              });
+
+              objectApi.setData(x, z, objectIndex, 0);
+            }
+          },
+          gripCallback(id, side, x, z, objectIndex) {
+            const itemId = _makeId();
+            const asset = 'ITEM.PAPER';
+            const assetInstance = items.makeItem({
+              type: 'asset',
+              id: itemId,
+              name: asset,
+              displayName: asset,
+              attributes: {
+                type: {value: 'asset'},
+                value: {value: asset},
+                position: {value: DEFAULT_MATRIX},
+                quantity: {value: 1},
+                owner: {value: null},
+                bindOwner: {value: null},
+                physics: {value: false},
+              },
+            });
+            assetInstance.grab(side);
+
+            objectApi.removeObject(x, z, objectIndex);
+          },
+          updateCallback(id, position, rotation, value) {
+            const paper = papers[id];
+            if (paper.value !== value) {
+              paper.loadFileN(value);
+            }
           },
         };
         objectApi.registerObject(paperObjectApi);
@@ -449,20 +428,24 @@ const paper = objectApi => {
           drawStates[side].drawing = true;
 
           const gamepad = pose.getStatus().gamepads[side];
-          if (papers.some(paper => {
-            const {paperMesh} = paper;
-            const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale} = gamepad;
+          const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale} = gamepad;
+          for (const id in papers) {
+            const paper = papers[id];
 
-            const pencilLine = localLine;
-            pencilLine.start.copy(controllerPosition);
-            pencilLine.end.copy(controllerPosition)
-              .add(
-                localVector.copy(pencilVector)
-                  .applyQuaternion(controllerRotation)
-              );
-            return paperMesh.getCoords(pencilLine, localCoords) !== null;
-          })) {
-            e.stopImmediatePropagation();
+            if (paper) {
+              const pencilLine = localLine;
+              pencilLine.start.copy(controllerPosition);
+              pencilLine.end.copy(controllerPosition)
+                .add(
+                  localVector.copy(pencilVector)
+                    .applyQuaternion(controllerRotation)
+                );
+              if (paper.paperMesh.getCoords(pencilLine, localCoords) !== null) {
+                e.stopImmediatePropagation();
+
+                break;
+              }
+            }
           }
         };
         input.on('triggerdown', _triggerdown);
@@ -473,44 +456,41 @@ const paper = objectApi => {
 
         const _update = () => {
           const _updatePencilMeshes = () => {
-            if (papers.length > 0) {
-              const {gamepads} = pose.getStatus();
+            for (let i = 0; i < SIDES.length; i++) {
+              const side = SIDES[i];
+              const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale} = pose.getStatus().gamepads[side];
 
-              for (let i = 0; i < SIDES.length; i++) {
-                const side = SIDES[i];
-                const gamepad = gamepads[side];
-                const {worldPosition: controllerPosition, worldRotation: controllerRotation, worldScale: controllerScale} = gamepad;
+              let found = false;
+              for (const id in papers) {
+                const paper = papers[id];
 
-                let found = false;
-                for (let j = 0; j < papers.length; j++) {
-                  if (controllerPosition.distanceTo(papers[j].paperMesh.position) < 1) {
+                if (paper) {
+                  if (controllerPosition.distanceTo(paper.paperMesh.position) < 1) {
                     found = true;
                     break;
                   }
                 }
-
-                const pencilMesh = pencilMeshes[side];
-                if (found) {
-                  pencilMesh.position.copy(controllerPosition);
-                  pencilMesh.quaternion.copy(controllerRotation);
-                  pencilMesh.scale.copy(controllerScale);
-                  pencilMesh.updateMatrixWorld();
-                  pencilMesh.visible = true;
-                } else {
-                  pencilMesh.visible = false;
-                }
               }
-            } else {
-              pencilMeshes.left.visible = false;
-              pencilMeshes.right.visible = false;
+
+              const pencilMesh = pencilMeshes[side];
+              if (found) {
+                pencilMesh.position.copy(controllerPosition);
+                pencilMesh.quaternion.copy(controllerRotation);
+                pencilMesh.scale.copy(controllerScale);
+                pencilMesh.updateMatrixWorld();
+                pencilMesh.visible = true;
+              } else {
+                pencilMesh.visible = false;
+              }
             }
           };
           const _updateDraw = () => {
-            if (papers.length > 0) {
-              const {gamepads} = pose.getStatus();
+            const {gamepads} = pose.getStatus();
 
-              for (let i = 0; i < papers.length; i++) {
-                const paper = papers[i];
+            for (const id in papers) {
+              const paper = papers[id];
+
+              if (paper) {
                 const {paperMesh} = paper;
                 const {drawStates: paperMeshDrawStates} = paperMesh;
 

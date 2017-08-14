@@ -153,7 +153,7 @@ const mirror = objectApi => {
               localEuler.x = 0;
               localEuler.z = 0;
               localQuaternion.setFromEuler(localEuler);
-              objectApi.addObject('mirror', localVector, localQuaternion, oneVector);
+              objectApi.addObject('mirror', localVector, localQuaternion);
 
               items.destroyItem(grabbable);
 
@@ -177,9 +177,10 @@ const mirror = objectApi => {
       };
       items.registerItem(this, mirrorItemApi);
 
+      const mirrors = {};
       const mirrorObjectApi = {
         object: 'mirror',
-        objectAddedCallback(object) {
+        addedCallback(id, position, rotation) {
           const renderTargets = {
             left: _makeRenderTarget(),
             right: _makeRenderTarget(),
@@ -191,44 +192,19 @@ const mirror = objectApi => {
             color: 0x808080,
             renderTargets,
           });
-          mirrorMesh.position.copy(object.position)
+          mirrorMesh.position.copy(position)
             .add(offsetVector);
-          mirrorMesh.quaternion.copy(object.rotation);
-          // mirrorMesh.scale.copy(object.scale);
+          mirrorMesh.quaternion.copy(rotation);
+          // mirrorMesh.scale.copy(scale);
           scene.add(mirrorMesh);
           mirrorMesh.updateMatrixWorld();
 
           const updateEye = camera => {
-            const {name: side} = camera;
-            const renderTarget = renderTargets[side];
-            mirrorMesh.renderEye(renderer, scene, camera, renderTarget);
+            mirrorMesh.renderEye(renderer, scene, camera, renderTargets[camera.name]);
           };
           updateEyes.push(updateEye);
 
-          object.on('grip', side => {
-            const id = _makeId();
-            const asset = 'ITEM.MIRROR';
-            const assetInstance = items.makeItem({
-              type: 'asset',
-              id: id,
-              name: asset,
-              displayName: asset,
-              attributes: {
-                type: {value: 'asset'},
-                value: {value: asset},
-                position: {value: DEFAULT_MATRIX},
-                quantity: {value: 1},
-                owner: {value: null},
-                bindOwner: {value: null},
-                physics: {value: false},
-              },
-            });
-            assetInstance.grab(side);
-
-            object.remove();
-          });
-
-          object[dataSymbol] = {
+          const mirror = {
             cleanup() {
               scene.remove(mirrorMesh);
               renderTargets.left.dispose();
@@ -237,10 +213,32 @@ const mirror = objectApi => {
               updateEyes.splice(updateEyes.indexOf(updateEye), 1);
             },
           };
+          mirrors[id] = mirror;
         },
-        objectRemovedCallback(object) {
-          const {[dataSymbol]: {cleanup}} = object;
-          cleanup();
+        removedCallback(id) {
+          mirrors[id].cleanup();
+        },
+        gripCallback(id, side, x, z, objectIndex) {
+          const itemId = _makeId();
+          const asset = 'ITEM.MIRROR';
+          const assetInstance = items.makeItem({
+            type: 'asset',
+            id: itemId,
+            name: asset,
+            displayName: asset,
+            attributes: {
+              type: {value: 'asset'},
+              value: {value: asset},
+              position: {value: DEFAULT_MATRIX},
+              quantity: {value: 1},
+              owner: {value: null},
+              bindOwner: {value: null},
+              physics: {value: false},
+            },
+          });
+          assetInstance.grab(side);
+
+          objectApi.removeObject(x, z, objectIndex);
         },
       };
       objectApi.registerObject(mirrorObjectApi);
@@ -248,8 +246,7 @@ const mirror = objectApi => {
       const updateEyes = [];
       const _updateEye = camera => {
         for (let i = 0; i < updateEyes.length; i++) {
-          const updateEye = updateEyes[i];
-          updateEye(camera);
+          updateEyes[i](camera);
         }
       };
       render.on('updateEye', _updateEye);

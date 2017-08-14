@@ -316,8 +316,7 @@ const tree = objectApi => {
       return treeGeometry;
     }))
     .then(() => {
-
-      const trees = [];
+      const trees = {};
       let Lightmapper = null;
       let lightmapper = null;
       const _bindLightmap = tree => {
@@ -329,7 +328,7 @@ const tree = objectApi => {
         lightmapper.remove(tree.shape);
         tree.shape = null;
       };
-      const lightmapElementListener = elements.makeListener(LIGHTMAP_PLUGIN); // XXX destroy this
+      const lightmapElementListener = elements.makeListener(LIGHTMAP_PLUGIN);
       lightmapElementListener.on('add', entityElement => {
         Lightmapper = entityElement.Lightmapper;
         lightmapper = entityElement.lightmapper;
@@ -342,57 +341,62 @@ const tree = objectApi => {
         Lightmapper = null;
         lightmapper = null;
 
-        for (let i = 0; i < trees.length; i++) {
-          trees[i].shape = null;
+        for (const index in trees) {
+          trees[id].shape = null;
         }
       });
 
       const treeObjectApi = {
         object: 'tree',
-        // offset: [0, 0.2/2, 0],
-        // size: 0.3,
-        objectAddedCallback(object) {
-          object.on('grip', side => {
-            const id = _makeId();
-            const asset = 'ITEM.WOOD';
-            const assetInstance = items.makeItem({
-              type: 'asset',
-              id: id,
-              name: asset,
-              displayName: asset,
-              attributes: {
-                type: {value: 'asset'},
-                value: {value: asset},
-                position: {value: DEFAULT_MATRIX},
-                quantity: {value: 1},
-                owner: {value: null},
-                bindOwner: {value: null},
-                physics: {value: false},
-              },
-            });
-            assetInstance.grab(side);
+        addedCallback(id, position) {
+          const tree = {
+            position: position.clone(),
+            shape: null,
+          };
 
-            object.remove();
-          });
-
-          object.shape = null;
           if (lightmapper) {
-            _bindLightmap(object);
+            _bindLightmap(tree);
           }
 
-          trees.push(object);
+          trees[id] = tree;
         },
-        objectRemovedCallback(object) {
+        removedCallback(id) {
+          const tree = trees[id];
+
           if (lightmapper) {
-            _unbindLightmap(object);
+            _unbindLightmap(tree);
           }
 
-          trees.splice(trees.indexOf(object), 1);
+          trees[id] = null;
+        },
+        gripCallback(id, side, x, z, objectIndex) {
+          const itemId = _makeId();
+          const asset = 'ITEM.WOOD';
+          const assetInstance = items.makeItem({
+            type: 'asset',
+            id: itemId,
+            name: asset,
+            displayName: asset,
+            attributes: {
+              type: {value: 'asset'},
+              value: {value: asset},
+              position: {value: DEFAULT_MATRIX},
+              quantity: {value: 1},
+              owner: {value: null},
+              bindOwner: {value: null},
+              physics: {value: false},
+            },
+          });
+          assetInstance.grab(side);
+
+          objectApi.removeObject(x, z, objectIndex);
         },
       };
       objectApi.registerObject(treeObjectApi);
 
       return () => {
+        elements.destroyListener(lightmapElementListener);
+
         objectApi.unregisterObject(treeObjectApi);
       };
     });

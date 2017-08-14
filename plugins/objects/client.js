@@ -26,7 +26,8 @@ class Objects {
     const {EventEmitter} = events;
 
     const _getChunkIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
-    const _getTrackedObjectIndex = (x, z, i) => (mod(x, 0xFF) << 24) | (mod(z, 0xFF) << 16) | (i & 0xFFFF);
+    // const _getTrackedObjectIndex = (x, z, i) => (mod(x, 0xFF) << 24) | (mod(z, 0xFF) << 16) | (i & 0xFFFF);
+    const _getObjectIndex = (x, z, i) => (mod(x, 0xFF) << 24) | (mod(z, 0xFF) << 16) | (i & 0xFFFF);
 
     const OBJECTS_SHADER = {
       uniforms: {
@@ -234,11 +235,33 @@ void main() {
       });
       return Promise.resolve();
     };
-    worker.requestAddObject = (name, matrix) => {
+    worker.requestRegisterObject = (n, added, removed, updated) => {
+      worker.postMessage({
+        type: 'registerObject',
+        n,
+        added,
+        removed,
+        updated,
+      });
+      return Promise.resolve();
+    };
+    worker.requestUnregisterObject = (n, added, removed, updated) => {
+      worker.postMessage({
+        type: 'unregisterObject',
+        n,
+        added,
+        removed,
+        updated,
+      });
+      return Promise.resolve();
+    };
+    worker.requestAddObject = (name, position, rotation, value) => {
       worker.postMessage({
         type: 'addObject',
         name,
-        matrix,
+        position,
+        rotation,
+        value,
       });
       return Promise.resolve();
     };
@@ -283,6 +306,7 @@ void main() {
       localMessage.args = localUngenerateMessageArgs;
 
       worker.postMessage(localMessage);
+
       return Promise.resolve();
     };
     worker.getHoveredObjects = () => new Promise((accept, reject) => {
@@ -331,6 +355,48 @@ void main() {
 
           if (chunk) {
             chunk.lod = -1; // force chunk refresh
+          }
+        } else if (type === 'objectAdded') {
+          const [n, x, z, objectIndex, position, rotation, value] = args;
+
+          const objectApi = objectApis[n];
+          if (objectApi) {
+            objectApi.addedCallback(
+              _getObjectIndex(x, z, objectIndex),
+              localVector.fromArray(position),
+              localQuaternion.fromArray(rotation),
+              value,
+              x,
+              z,
+              objectIndex
+            );
+          }
+        } else if (type === 'objectRemoved') {
+          const [n, x, z, objectIndex, startIndex, endIndex] = args;
+
+          if (startIndex !== -1) {
+            const objectChunkMesh = objectsChunkMeshes[_getChunkIndex(x, z)];
+
+            if (objectChunkMesh) {
+              const indexAttribute = objectChunkMesh.geometry.index;
+              const indices = indexAttribute.array;
+              for (let i = startIndex; i < endIndex; i++) {
+                indices[i] = 0;
+              }
+              indexAttribute.needsUpdate = true;
+            }
+          }
+
+          const objectApi = objectApis[n];
+          if (objectApi) {
+            objectApi.removedCallback(_getObjectIndex(x, z, objectIndex), x, z, objectIndex);
+          }
+        } else if (type === 'objectUpdated') {
+          const [n, x, z, objectIndex, position, rotation, value] = args;
+
+          const objectApi = objectApis[n];
+          if (objectApi) {
+            objectApi.updateCallback(_getObjectIndex(x, z, objectIndex), localVector.fromArray(position), localQuaternion.fromArray(rotation), value);
           }
         } else {
           console.warn('objects got unknown worker message type:', JSON.stringify(type));
@@ -407,7 +473,7 @@ void main() {
       return mesh;
     };
 
-    class TrackedObject extends EventEmitter {
+    /* class TrackedObject extends EventEmitter {
       constructor(mesh, n, objectIndex, startIndex, endIndex, positionX, positionY, positionZ, rotationX, rotationY, rotationZ, rotationW, value) {
         super();
 
@@ -499,14 +565,47 @@ void main() {
 
         worker.requestRemoveObject(mesh.offset.x, mesh.offset.y, objectIndex);
       }
-    }
+    } */
 
-    const trackedObjects = {};
+    // const trackedObjects = {};
+    class HoveredTrackedObject {
+      constructor() {
+        this.n = 0;
+        this.x = -1;
+        this.z = -1;
+        this.objectIndex = -1;
+        this.position = new THREE.Vector3();
+
+        this._isSet = false;
+      }
+
+      set(n, x, z, objectIndex, positionArray) {
+        this.n = n;
+        this.x = x;
+        this.z = z;
+        this.objectIndex = objectIndex;
+        this.position.fromArray(positionArray);
+
+        this._isSet = true;
+      }
+
+      clear() {
+        this._isSet = false;
+      }
+
+      isSet() {
+        return this._isSet;
+      }
+
+      is(name) {
+        return murmur(name) === this.n;
+      }
+    }
     const hoveredTrackedObjects = {
-      left: null,
-      right: null,
+      left: new HoveredTrackedObject(),
+      right: new HoveredTrackedObject(),
     };
-    const _refreshTrackedObjects = (mesh, data, oldTrackedObjectIndices) => {
+    /* const _refreshTrackedObjects = (mesh, data, oldTrackedObjectIndices) => {
       const {objects: objectsUint32Data} = data;
       const objectsFloat32Data = new Float32Array(objectsUint32Data.buffer, objectsUint32Data.byteOffset, objectsUint32Data.length);
       const numObjects = objectsUint32Data.length / (1 + 10 + 1);
@@ -575,23 +674,35 @@ void main() {
     };
     const _unbindTrackedObject = (trackedObject, objectApi) => {
       objectApi.objectRemovedCallback(trackedObject);
-    };
+    }; */
 
     const _triggerdown = e => {
       const {side} = e;
-      const trackedObject = hoveredTrackedObjects[side];
+      const hoveredTrackedObjectSpec = hoveredTrackedObjects[side];
 
-      if (trackedObject) {
-        trackedObject.trigger(side);
+      if (hoveredTrackedObjectSpec && hoveredTrackedObjectSpec.isSet()) {
+        const {n} = hoveredTrackedObjectSpec;
+        const objectApi = objectApis[n];
+
+        if (objectApi && objectApi.triggerCallback) {
+          const {x, z, objectIndex} = hoveredTrackedObjectSpec;
+          objectApi.triggerCallback(_getObjectIndex(x, z, objectIndex), side, x, z, objectIndex);
+        }
       }
     };
     input.on('triggerdown', _triggerdown);
     const _gripdown = e => {
       const {side} = e;
-      const trackedObject = hoveredTrackedObjects[side];
+      const hoveredTrackedObjectSpec = hoveredTrackedObjects[side];
 
-      if (trackedObject) {
-        trackedObject.grip(side);
+      if (hoveredTrackedObjectSpec && hoveredTrackedObjectSpec.isSet()) {
+        const {n} = hoveredTrackedObjectSpec;
+        const objectApi = objectApis[n];
+
+        if (objectApi && objectApi.gripCallback) {
+          const {x, z, objectIndex} = hoveredTrackedObjectSpec;
+          objectApi.gripCallback(_getObjectIndex(x, z, objectIndex), side, x, z, objectIndex);
+        }
       }
     };
     input.on('gripdown', _gripdown, {
@@ -681,13 +792,11 @@ void main() {
       right: _makeTeleportSpec(),
     };
     const _teleportStart = e => {
-      const {side} = e;
-      teleportPositions[side] = new THREE.Vector3();
+      teleportPositions[e.side] = new THREE.Vector3();
     }
     teleport.on('start', _teleportStart);
     const _teleportEnd = e => {
-      const {side} = e;
-      teleportPositions[side] = new THREE.Vector3();
+      teleportPositions[e.side] = new THREE.Vector3();
     }
     teleport.on('end', _teleportEnd);
     const _teleportTarget = (position, rotation, scale, side) => {
@@ -751,13 +860,22 @@ void main() {
           });
       }
 
-      addObject(name, position, rotation, scale) {
-        const matrix = position.toArray().concat(rotation.toArray()).concat(scale.toArray());
-
-        worker.requestAddObject(name, matrix)
+      addObject(name, position = zeroVector, rotation = zeroQuaternion, value = 0) {
+        worker.requestAddObject(name, position.toArray(), rotation.toArray(), value)
           .then(() => {
             const x = Math.floor(position.x / NUM_CELLS);
             const z = Math.floor(position.z / NUM_CELLS);
+            const chunk = chunker.chunks.find(chunk => chunk.x === x && chunk.z === z); // XXX rewrite chunker to be index-based
+
+            if (chunk) {
+              chunk.lod = -1; // force chunk refresh
+            }
+          });
+      }
+
+      removeObject(x, z, objectIndex) {
+        worker.requestRemoveObject(x, z, objectIndex)
+          .then(() => {
             const chunk = chunker.chunks.find(chunk => chunk.x === x && chunk.z === z);
 
             if (chunk) {
@@ -766,17 +884,16 @@ void main() {
           });
       }
 
+      setData(x, z, objectIndex, value) {
+        worker.requestSetObjectData(x, z, objectIndex, value);
+      }
+
       registerObject(objectApi) {
         const {object} = objectApi;
         const n = murmur(object);
         objectApis[n] = objectApi;
 
-        for (const trackedObjectIndex in trackedObjects) {
-          const trackedObject = trackedObjects[trackedObjectIndex];
-          if (trackedObject && trackedObject.n === n) {
-            _bindTrackedObject(trackedObject, objectApi);
-          }
-        }
+        worker.requestRegisterObject(n, Boolean(objectApi.addedCallback), Boolean(objectApi.removedCallback), Boolean(objectApi.updateCallback));
       }
 
       unregisterObject(objectApi) {
@@ -784,12 +901,7 @@ void main() {
         const n = murmur(object);
         objectApis[n] = null;
 
-        for (const trackedObjectIndex in trackedObjects) {
-          const trackedObject = trackedObjects[trackedObjectIndex];
-          if (trackedObject && trackedObject.n === n) {
-            _bindTrackedObject(trackedObject, objectApi);
-          }
-        }
+        worker.requestUnregisterObject(n, Boolean(objectApi.addedCallback), Boolean(objectApi.removedCallback), Boolean(objectApi.updateCallback));
       }
 
       registerRecipe(recipe) {
@@ -813,10 +925,11 @@ void main() {
       }
 
       getHoveredObject(side) {
-        return hoveredTrackedObjects[side];
+        const hoveredTrackedObjectSpec = hoveredTrackedObjects[side];
+        return hoveredTrackedObjectSpec.isSet() ? hoveredTrackedObjectSpec : null;
       }
 
-      getObjectAt(position, rotation) {
+      /* getObjectAt(position, rotation) {
         for (const trackedObjectIndex in trackedObjects) {
           const trackedObject = trackedObjects[trackedObjectIndex];
 
@@ -828,7 +941,7 @@ void main() {
           }
         }
         return null;
-      }
+      } */
     }
     const objectApi = new ObjectApi();
 
@@ -866,12 +979,12 @@ void main() {
 
             objectsChunkMeshes[index] = objectsChunkMesh;
 
-            const oldTrackedObjectIndices = oldData ? oldData.trackedObjectIndices : {};
-            const trackedObjectIndices = _refreshTrackedObjects(objectsChunkMesh, objectsChunkData, oldTrackedObjectIndices);
+            /* const oldTrackedObjectIndices = oldData ? oldData.trackedObjectIndices : {};
+            const trackedObjectIndices = _refreshTrackedObjects(objectsChunkMesh, objectsChunkData, oldTrackedObjectIndices); */
 
             chunk.data = {
               objectsChunkMesh,
-              trackedObjectIndices,
+              // trackedObjectIndices,
             };
           });
         promises.push(promise);
@@ -897,8 +1010,8 @@ void main() {
 
             objectsChunkMesh.destroy();
 
-            const {trackedObjectIndices} = data;
-            _removeTrackedObjects(trackedObjectIndices);
+            /* const {trackedObjectIndices} = data;
+            _removeTrackedObjects(trackedObjectIndices); */
           }
         });
     };
@@ -928,12 +1041,12 @@ void main() {
                   const hoveredTrackedObjectSpec = hoveredTrackedObjectSpecs[i];
 
                   if (hoveredTrackedObjectSpec !== null) {
-                    const [x, z, objectIndex] = hoveredTrackedObjectSpec;
-                    hoveredTrackedObjects[side] = trackedObjects[_getTrackedObjectIndex(x, z, objectIndex)];
+                    const [n, x, z, objectIndex, position] = hoveredTrackedObjectSpec;
+                    hoveredTrackedObjects[side].set(n, x, z, objectIndex, position);
 
                     objectsChunkMeshes[_getChunkIndex(x, z)].uniforms.selectedObject.value = objectIndex;
                   } else {
-                    hoveredTrackedObjects[side] = null;
+                    hoveredTrackedObjects[side].clear();
                   }
                 }
 
@@ -1031,10 +1144,11 @@ void main() {
             worker.getBodyObject(hmdPosition)
               .then(bodyObjectSpec => {
                 if (bodyObjectSpec) {
-                  const [x, z, objectIndex] = bodyObjectSpec;
-                  const trackedObject = trackedObjects[_getTrackedObjectIndex(x, z, objectIndex)];
-                  if (trackedObject) {
-                    trackedObject.collide();
+                  const [n, x, z, objectIndex] = bodyObjectSpec;
+
+                  const objectApi = objectApis[n];
+                  if (objectApi && objectApi.collideCallback) {
+                    objectApi.collideCallback(_getObjectIndex(x, z, objectIndex), x, z, objectIndex);
                   }
                 }
 
