@@ -529,7 +529,6 @@ class Wallet {
         scene.add(assetsMesh);
 
         const walletState = {
-          loaded: false,
           loading: true,
           error: false,
           inputText: '',
@@ -698,36 +697,18 @@ class Wallet {
           const {numTags} = walletState;
           walletState.loading = numTags === 0;
         });
-        const _ensureLoaded = () => {
-          const {loaded} = walletState;
-
-          if (!loaded) {
-            return _refreshAssets()
-              .then(() => {
-                walletState.loaded = true;
-              });
-          } else {
-            return Promise.resolve();
-          }
-        };
         const _ensureInitialLoaded = () => {
-          const {loaded} = walletState;
+          walletState.loading = true;
+          _updatePages();
 
-          if (!loaded) {
-            walletState.loading = true;
-            _updatePages();
+          return _refreshAssets()
+            .then(() => {
+              walletState.loading = false;
 
-            return _refreshAssets()
-              .then(() => {
-                walletState.loaded = true;
-                walletState.loading = false;
-
-                _updatePages();
-              });
-          } else {
-            return Promise.resolve();
-          }
+              _updatePages();
+            });
         };
+        _ensureInitialLoaded();
 
         const _saveEquipments = _debounce(next => {
           const equipments = walletState.equipments.map(({asset}) => asset);
@@ -1106,13 +1087,6 @@ class Wallet {
         };
         fs.on('upload', _upload);
 
-        const _tabchange = tab => {
-          if (tab === 'wallet') {
-            _ensureInitialLoaded();
-          }
-        };
-        rend.on('tabchange', _tabchange);
-
         const _update = () => {
           assetsMaterial.uniforms.theta.value = (Date.now() * ROTATE_SPEED * (Math.PI * 2) % (Math.PI * 2));
         };
@@ -1242,16 +1216,10 @@ class Wallet {
 
           fs.removeListener('upload', _upload);
 
-          rend.removeListener('tabchange', _tabchange);
           rend.removeListener('update', _update);
         });
 
         class WalletApi extends EventEmitter {
-          requestAssets() {
-            return _ensureLoaded()
-              .then(() => walletState.assets);
-          }
-
           getAssetsMaterial() {
             return assetsMaterial;
           }
