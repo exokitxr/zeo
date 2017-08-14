@@ -9,8 +9,8 @@ const _getObjectsChunkSizeFromMetadata = metadata => {
 
   return MAP_CHUNK_HEADER_SIZE + // header
     (FLOAT32_SIZE * numPositions) + // positions
-    (FLOAT32_SIZE * numUvs) +  // uvs
-    (FLOAT32_SIZE * numFrames) +  // frames
+    (FLOAT32_SIZE * numUvs) + // uvs
+    (FLOAT32_SIZE * numFrames) + // frames
     (FLOAT32_SIZE * numObjectIndices) +  // object indices
     (UINT32_SIZE * numIndices); // indices
 };
