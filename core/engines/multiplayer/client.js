@@ -230,13 +230,13 @@ class Multiplayer {
             if (skinImgBuffer) {
               connection.send(JSON.stringify({
                 type: 'setSkin',
-                n: n,
+                n: this.n,
               }));
               connection.send(skinImgBuffer);
             } else {
               connection.send(JSON.stringify({
                 type: 'clearSkin',
-                n: n,
+                n: this.n,
               }));
             }
           }
