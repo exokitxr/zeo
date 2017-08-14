@@ -302,8 +302,6 @@ const videoCamera = objectApi => {
       const cameraItemApi = {
         asset: 'ITEM.VIDEOCAMERA',
         itemAddedCallback(grabbable) {
-          grabbable.hide();
-
           const _triggerdown = e => {
             if (grabbable.getGrabberSide() === e.side) {
               cameraMeshes[e.side].startRecording();
@@ -323,15 +321,17 @@ const videoCamera = objectApi => {
 
           grabbable.on('grab', e => {
             cameraMeshes[e.side].setGrabbable(grabbable);
+
+            grabbable.hide();
           });
           grabbable.on('release', e => {
             cameraMeshes[e.side].setGrabbable(null);
+
+            grabbable.show();
           });
 
           grabbable[dataSymbol] = {
             cleanup: () => {
-              grabbable.show();
-
               input.removeListener('triggerdown', _triggerdown);
               input.removeListener('triggerup', _triggerup);
             },
