@@ -6,7 +6,7 @@
   "server": "server.js",
   "dependencies": {
     "alea-zeo": "0.0.1",
-    "chnkr": "0.0.13",
+    "chnkr": "0.0.15",
     "indev": "^3.0.14"
   }
 }

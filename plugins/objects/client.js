@@ -341,8 +341,7 @@ void main() {
           pendingResponseId = id;
         } else if (type === 'chunkUpdate') {
           const [x, z] = args;
-          const chunk = chunker.chunks.find(chunk => chunk.x === x && chunk.z === z);
-
+          const chunk = chunker.getChunk(x, z);
           if (chunk) {
             chunk.lod = -1; // force chunk refresh
           }
@@ -690,8 +689,7 @@ void main() {
           .then(() => {
             const x = Math.floor(position.x / NUM_CELLS);
             const z = Math.floor(position.z / NUM_CELLS);
-            const chunk = chunker.chunks.find(chunk => chunk.x === x && chunk.z === z); // XXX rewrite chunker to be index-based
-
+            const chunk = chunker.getChunk(x, z);
             if (chunk) {
               chunk.lod = -1; // force chunk refresh
             }
@@ -701,8 +699,7 @@ void main() {
       removeObject(x, z, objectIndex) {
         worker.requestRemoveObject(x, z, objectIndex)
           .then(() => {
-            const chunk = chunker.chunks.find(chunk => chunk.x === x && chunk.z === z);
-
+            const chunk = chunker.getChunk(x, z);
             if (chunk) {
               chunk.lod = -1; // force chunk refresh
             }
