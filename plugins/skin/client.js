@@ -1,5 +1,3 @@
-const SIDES = ['left', 'right'];
-
 class Skin {
   mount() {
     const {player, items, utils: {skin: skinUtils}} = zeo;
@@ -7,21 +5,18 @@ class Skin {
 
     const _requestImage = url => new Promise((accept, reject) => {
       const img = new Image();
-
       img.onload = () => {
         accept(img);
       };
       img.onerror = err => {
         reject(img);
       };
-
-      img.crossOrigin = 'Anonymous';
       img.src = url;
     });
 
     let _cancel = null;
     const skinApi = {
-      asset: 'SKIN.ANORAK',
+      asset: 'ITEM.SKIN',
       equipmentAddedCallback() {
         let live = true;
         _requestImage('/archae/skin/img/darkvortexity.png')
