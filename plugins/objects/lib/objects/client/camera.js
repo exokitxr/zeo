@@ -193,8 +193,6 @@ const camera = objectApi => {
       const cameraItemApi = {
         asset: 'ITEM.CAMERA',
         itemAddedCallback(grabbable) {
-          grabbable.hide();
-
           const _triggerdown = e => {
             const {side} = e;
 
@@ -225,15 +223,17 @@ const camera = objectApi => {
 
           grabbable.on('grab', e => {
             cameraMeshes[e.side].setGrabbable(grabbable);
+
+            grabbable.hide();
           });
           grabbable.on('release', e => {
             cameraMeshes[e.side].setGrabbable(null);
+
+            grabbable.show();
           });
 
           grabbable[dataSymbol] = {
             cleanup: () => {
-              grabbable.show();
-
               input.removeListener('triggerdown', _triggerdown);
             },
           };
