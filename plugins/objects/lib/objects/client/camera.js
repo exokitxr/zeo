@@ -195,19 +195,11 @@ const camera = objectApi => {
         itemAddedCallback(grabbable) {
           grabbable.hide();
 
-          const canvas = document.createElement('canvas');
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          ctx.imageSmoothingEnabled = false;
-          ctx.mozImageSmoothingEnabled = false;
-          const rendererSize = renderer.getSize();
-
           const _triggerdown = e => {
             const {side} = e;
 
             if (grabbable.getGrabberSide() === side) {
-              canvas.toBlob(blob => {
+              cameraMeshes[side].canvas.toBlob(blob => {
                 const dropMatrix = (() => {
                   const {hmd} = pose.getStatus();
                   const {worldPosition: hmdPosition, worldRotation: hmdRotation, worldScale: hmdScale} = hmd;
