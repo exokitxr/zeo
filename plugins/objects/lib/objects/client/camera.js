@@ -33,20 +33,23 @@ const camera = objectApi => {
     img.src = src;
   });
   const _requestImageBitmap = src => _requestImage(src)
-    .then(img => createImageBitmap(img, 0, 0, img.width, img.height));
+    .then(img => createImageBitmap(img, 0, 0, img.width, img.height, {
+      imageOrientation: 'flipY',
+    }));
 
   return () => _requestImageBitmap('/archae/objects/img/camera.png')
     .then(cameraImg => {
       const cameraGeometry = (() => {
-        const geometry = new THREE.BoxBufferGeometry(cameraWidth, cameraHeight, cameraDepth);
+        const geometry = new THREE.BoxBufferGeometry(cameraWidth, cameraHeight, cameraDepth)
+          .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -cameraDepth/2));
         const uvs = geometry.getAttribute('uv').array;
         const numUvs = uvs.length / 2;
         for (let i = 0; i < numUvs; i++) {
           const index = i * 2 + 1;
           if (i >= 20 && i < (20 + 4)) {
-            uvs[index] *= 0.5;
+            uvs[index] = 1 - (0.5 * (1 - uvs[index]));
           } else {
-            uvs[index] = 0.5 + uvs[index] / 2;
+            uvs[index] = 1 - (0.5 + (1 - uvs[index]) / 2);
           }
         }
         return geometry;
@@ -75,7 +78,8 @@ const camera = objectApi => {
         canvas.height = height;
         const ctx = canvas.getContext('2d');
         ctx.imageSmoothingEnabled = false;
-        const rendererSize = renderer.getSize();
+        const imageData = ctx.getImageData(0, 0, width, height);
+        const buffer = new Uint8Array(imageData.data.buffer, imageData.data.buffer.byteOffset, width * height * 4);
 
         const renderTarget = new THREE.WebGLRenderTarget(width, height, {
           minFilter: THREE.NearestFilter,
@@ -93,7 +97,7 @@ const camera = objectApi => {
           const screenWidth = cameraWidth * 0.9;
           const screenHeight = cameraHeight * 0.9;
           const geometry = new THREE.PlaneBufferGeometry(screenWidth, screenHeight)
-            .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, cameraDepth/2 + 0.005));
+            .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, 0.005));
           const material = new THREE.MeshBasicMaterial({
             map: renderTarget.texture,
           });
@@ -106,81 +110,60 @@ const camera = objectApi => {
         })();
         mesh.add(screenMesh);
 
-        const offScene = new THREE.Scene();
-        const offCamera = new THREE.PerspectiveCamera();
-        offScene.add(offCamera);
-        const offPlane = (() => { // XXX needs to handle resize
-          var cameraZ = offCamera.position.z;
-          var planeZ = -5;
-          var distance = cameraZ - planeZ;
-          // var aspect = viewWidth / viewHeight;
-          var aspect = offCamera.aspect;
-          var vFov = offCamera.fov * Math.PI / 180;
-          var planeHeightAtDistance = 2 * Math.tan(vFov / 2) * distance;
-          var planeWidthAtDistance = planeHeightAtDistance * aspect;
-          const mesh = new THREE.Mesh(
-            new THREE.PlaneBufferGeometry(planeWidthAtDistance, planeHeightAtDistance),
-            new THREE.MeshBasicMaterial({
-              map: renderTarget.texture,
-            })
-          );
-          mesh.position.z = planeZ;
-          mesh.updateMatrixWorld();
-          return mesh;
-        })();
-        offScene.add(offPlane);
-        renderer.compile(offScene, offCamera);
-
         mesh.canvas = canvas;
 
         let grabbable = null;
         mesh.setGrabbable = newGrabbable => {
           grabbable = newGrabbable;
         };
+
+        let frame = 0;
         mesh.update = () => {
           if (grabbable) {
             mesh.position.copy(grabbable.position);
             mesh.quaternion.copy(grabbable.rotation);
             // mesh.scale.copy(grabbable.scale);
             mesh.updateMatrixWorld();
-            mesh.visible = true;
 
-            sourceCamera.position.copy(grabbable.position)
-            sourceCamera.quaternion.setFromRotationMatrix(
-              localMatrix.lookAt(
-                grabbable.position,
-                localVector.copy(grabbable.position)
-                  .add(localVector2.copy(forwardVector).applyQuaternion(grabbable.rotation)),
-                localVector2.copy(upVector).applyQuaternion(grabbable.rotation)
-              )
-            );
-            // sourceCamera.scale.copy(grabbable.scale);
-            sourceCamera.updateMatrixWorld();
+            if (frame === 0) {
+              sourceCamera.position.copy(mesh.position);
+              sourceCamera.quaternion.setFromRotationMatrix(
+                localMatrix.lookAt(
+                  grabbable.position,
+                  localVector.copy(grabbable.position)
+                    .add(localVector2.copy(forwardVector).applyQuaternion(grabbable.rotation)),
+                  localVector2.copy(upVector).applyQuaternion(grabbable.rotation)
+                )
+              );
+              // sourceCamera.scale.copy(grabbable.scale);
+              sourceCamera.updateMatrixWorld();
 
-            const oldVrEnabled = renderer.vr.enabled;
-            renderer.vr.enabled = false;
+              const oldVrEnabled = renderer.vr.enabled;
+              renderer.vr.enabled = false;
 
-            mesh.visible = false;
-            renderer.render(scene, sourceCamera, renderTarget);
-            mesh.visible = true;
+              mesh.visible = false;
+              renderer.render(scene, sourceCamera, renderTarget);
+              renderer.setRenderTarget(null);
+              mesh.visible = true;
 
-            renderer.setViewport(0, 0, width, height);
-            renderer.render(offScene, offCamera);
+              renderer.vr.enabled = oldVrEnabled;
+            } else if (frame === 1) {
+              renderer.readRenderTargetPixels(renderTarget, 0, 0, width, height, buffer);
+            } else if (frame === 2) {
+              ctx.putImageData(imageData, 0, 0);
+            }
 
-            ctx.drawImage(renderer.domElement, 0, 0, width, height, 0, 0, width, height);
-
-            renderer.vr.enabled = oldVrEnabled;
-
-            renderer.setViewport(0, 0, rendererSize.width, rendererSize.height);
-            renderer.setRenderTarget(null);
+            frame = (frame + 1) % 3;
           } else {
             mesh.visible = false;
           }
         };
+
         mesh.destroy = () => {
           renderTarget.dispose();
           screenMesh.destroy();
         };
+
         return mesh;
       };
       const cameraMeshes = {
