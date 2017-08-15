@@ -432,13 +432,13 @@ class Heightfield {
             const triangle = new THREE.Triangle(a, b, c);
             const baryCoord = new THREE.Vector3();
 
-            const _getIndex = (p, min) => (p.x - min.x) + ((p.z - min.y) * (NUM_CELLS + 1));
+            const _getHeightfieldIndex = (p, min) => ((p.x - min.x) + ((p.z - min.y) * (NUM_CELLS + 1))) * 4;
             const _getElevation = (x, z) => {
               const ox = Math.floor(x / NUM_CELLS);
               const oz = Math.floor(z / NUM_CELLS);
               const mapChunkMesh = mapChunkMeshes[_getChunkIndex(ox, oz)];
 
-              if (mapChunkMesh && mapChunkMesh.lod === 1) {
+              if (mapChunkMesh) {
                 const ax = Math.floor(x);
                 const az = Math.floor(z);
                 if ((x - ax) <= (1 - (z - az))) { // top left triangle
@@ -452,9 +452,9 @@ class Heightfield {
                 };
                 min.set(ox * NUM_CELLS, oz * NUM_CELLS);
                 // max.copy(min).add(cellOffset);
-                const ea = mapChunkMesh.heightfield[_getIndex(a, min)];
-                const eb = mapChunkMesh.heightfield[_getIndex(b, min)];
-                const ec = mapChunkMesh.heightfield[_getIndex(c, min)];
+                const ea = mapChunkMesh.heightfield[_getHeightfieldIndex(a, min)];
+                const eb = mapChunkMesh.heightfield[_getHeightfieldIndex(b, min)];
+                const ec = mapChunkMesh.heightfield[_getHeightfieldIndex(c, min)];
 
                 p.set(x, 0, z);
                 triangle.barycoordFromPoint(p, baryCoord);
