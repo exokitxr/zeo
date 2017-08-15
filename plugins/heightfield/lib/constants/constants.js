@@ -5,7 +5,7 @@ const NUM_CELLS_OVERSCAN = NUM_CELLS + OVERSCAN;
 const NUM_CELLS_HEIGHT = 60;
 const HEIGHT_OFFSET = -10;
 
-const RANGE = 3;
+const RANGE = 2;
 
 const DEFAULT_SEED = 'a';
 

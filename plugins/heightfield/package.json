@@ -3,10 +3,12 @@
   "version": "0.0.1",
   "description": "Procedurally genetarated heightfield map.",
   "client": "client.js",
+  "server": "server.js",
   "builds": {
     "worker": "worker.js"
   },
   "dependencies": {
-    "indev": "^3.0.10"
+    "indev": "^3.0.10",
+    "isosurface": "^1.0.0"
   }
 }
