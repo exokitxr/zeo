@@ -1,4 +1,4 @@
-const NUM_CELLS = 64;
+const NUM_CELLS = 32;
 const NUM_CELLS_HEIGHT = 60;
 const HEIGHT_OFFSET = -10;
 

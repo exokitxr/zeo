@@ -27,6 +27,13 @@ const grass = objectApi => {
   return () => _requestImage('/archae/objects/img/grass.png')
     .then(grassImg => objectApi.registerTexture('grass', grassImg))
     .then(() => objectApi.registerGeometry('grass', (args) => {
+      /* const {THREE} = args;
+      const geometry = new THREE.BufferGeometry();
+      geometry.addAttribute('position', new THREE.BufferAttribute(new Float32Array(0), 3));
+      geometry.addAttribute('uv', new THREE.BufferAttribute(new Float32Array(0), 2));
+      geometry.setIndex(new THREE.BufferAttribute(new Float32Array(0), 1));
+      return geometry; */
+
       const {THREE, getUv, rng} = args;
       const grassUvs = getUv('grass');
       const uvWidth = grassUvs[2] - grassUvs[0];

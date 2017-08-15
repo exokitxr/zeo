@@ -15,7 +15,7 @@ const {
 const protocolUtils = require('./lib/utils/protocol-utils');
 const objectsLib = require('./lib/objects/client/index');
 
-const NUM_POSITIONS_CHUNK = 5 * 1024 * 1024;
+const NUM_POSITIONS_CHUNK = 1 * 1024 * 1024;
 const TEXTURE_SIZE = 512;
 const SIDES = ['left', 'right'];
 
@@ -168,7 +168,7 @@ void main() {
       }
     };
 
-    const buffers = bffr(NUM_POSITIONS_CHUNK, (RANGE + 1) * (RANGE + 1) * 2);
+    const buffers = bffr(NUM_POSITIONS_CHUNK, RANGE * RANGE * 9);
     const textures = txtr(TEXTURE_SIZE, TEXTURE_SIZE);
     const canvas = document.createElement('canvas');
     canvas.width = TEXTURE_SIZE;

@@ -8,7 +8,7 @@ const {
 } = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
 
-const NUM_POSITIONS_CHUNK = 2 * 1024 * 1024;
+const NUM_POSITIONS_CHUNK = 0.5 * 1024 * 1024;
 const LIGHTMAP_PLUGIN = 'plugins-lightmap';
 const DAY_NIGHT_SKYBOX_PLUGIN = 'plugins-day-night-skybox';
 
@@ -157,7 +157,7 @@ class Heightfield {
     const _requestImageBitmap = src => _requestImage(src)
       .then(img => createImageBitmap(img, 0, 0, img.width, img.height));
 
-    const buffers = bffr(NUM_POSITIONS_CHUNK, (RANGE * 2) * (RANGE * 2) * 2);
+    const buffers = bffr(NUM_POSITIONS_CHUNK, RANGE * RANGE * 4);
     const worker = new Worker('archae/plugins/_plugins_heightfield/build/worker.js');
     const queue = [];
     worker.requestOriginHeight = () => new Promise((accept, reject) => {

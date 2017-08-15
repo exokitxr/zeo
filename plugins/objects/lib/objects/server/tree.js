@@ -4,7 +4,6 @@ const tree = objectApi => {
       const localVector = new generateApi.THREE.Vector3();
       const localQuaternion = new generateApi.THREE.Quaternion();
       const localEuler = new generateApi.THREE.Euler();
-      const oneVector = new generateApi.THREE.Vector3(1, 1, 1);
 
       const _getElevation = (ox, oz, x, z) => (-0.3 + Math.pow(generateApi.getNoise('elevation', ox, oz, x, z), 0.5)) * 64;
 
@@ -27,7 +26,7 @@ const tree = objectApi => {
                 0,
                 'YXZ'
               ));
-              generateApi.addObject(chunk, 'tree', localVector, localQuaternion, oneVector);
+              generateApi.addObject(chunk, 'tree', localVector, localQuaternion, 0);
             }
           }
         }
