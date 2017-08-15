@@ -330,19 +330,17 @@ class Rend {
         input.on('click', click);
         const _closeMenu = () => {
           menuMesh.visible = false;
-          uiTracker.updateMatrixWorld(menuMesh);
 
           menuState.open = false; // XXX need to cancel other menu states as well
 
-          const {transformGizmos} = auxObjects;
+          /* const {transformGizmos} = auxObjects;
           for (let i = 0; i < transformGizmos.length; i++) {
             const transformGizmo = transformGizmos[i];
             transformGizmo.visible = false;
-            uiTracker.updateMatrixWorld(transformGizmo);
           }
 
           const {tagsLinesMesh} = auxObjects;
-          tagsLinesMesh.visible = false;
+          tagsLinesMesh.visible = false; */
 
           uiTracker.setOpen(false);
           _updateUiTracker();
@@ -369,14 +367,13 @@ class Rend {
           menuMesh.scale.copy(newMenuScale);
           menuMesh.visible = true;
           menuMesh.updateMatrixWorld();
-          uiTracker.updateMatrixWorld(menuMesh);
 
           menuState.open = true;
           menuState.position.copy(newMenuPosition);
           menuState.rotation.copy(newMenuRotation);
           menuState.scale.copy(newMenuScale);
 
-          const {transformGizmos} = auxObjects;
+          /* const {transformGizmos} = auxObjects;
           for (let i = 0; i < transformGizmos.length; i++) {
             const transformGizmo = transformGizmos[i];
             transformGizmo.visible = true;
@@ -384,7 +381,7 @@ class Rend {
           }
 
           const {tagsLinesMesh} = auxObjects;
-          tagsLinesMesh.visible = true;
+          tagsLinesMesh.visible = true; */
 
           uiTracker.setOpen(true);
           _updateUiTracker();
@@ -421,12 +418,11 @@ class Rend {
         cleanups.push(() => {
           scene.remove(menuMesh);
 
-          SIDES.forEach(side => {
-            const {dotMeshes, boxMeshes} = uiTracker;
-
-            scene.remove(dotMeshes[side]);
-            scene.remove(boxMeshes[side]);
-          });
+          for (let i = 0; i < SIDES.length; i++) {
+            const side = SIDES[i];
+            scene.remove(uiTracker.dotMeshes[side]);
+            scene.remove(uiTracker.boxMeshes[side]);
+          }
 
           broadcast.removeListener('connectionStateChange', _connectionStateChange);
           bootstrap.removeListener('addressChange', _addressChange);
@@ -492,10 +488,7 @@ class Rend {
         localUpdates.push(() => {
           const _updateMenu = () => {
             if (menuState.open) {
-              const {hmd} = webvr.getStatus();
-              const {worldPosition: hmdPosition} = hmd;
-
-              if (menuMesh.position.distanceTo(hmdPosition) > MENU_RANGE) {
+              if (menuMesh.position.distanceTo(webvr.getStatus().hmd.worldPosition) > MENU_RANGE) {
                 _closeMenu();
               }
             }
@@ -561,8 +554,6 @@ class Rend {
             navbarState.tab = newTab;
 
             _updateNavbarPage();
-
-            uiTracker.updateMatrixWorld(menuMesh);
 
             this.emit('tabchange', newTab);
           }

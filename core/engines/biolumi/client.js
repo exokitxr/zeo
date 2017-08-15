@@ -486,13 +486,6 @@ class Biolumi {
               this.meshes.splice(this.meshes.indexOf(page.mesh), 1);
             }
 
-            reindex() {
-              // XXX delete this
-            }
-            updateMatrixWorld() {
-              // XXX delete this
-            }
-
             getHoverState(side) {
               return this.hoverStates[side];
             }
