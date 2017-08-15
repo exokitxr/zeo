@@ -157,7 +157,7 @@ class Heightfield {
     const _requestImageBitmap = src => _requestImage(src)
       .then(img => createImageBitmap(img, 0, 0, img.width, img.height));
 
-    const buffers = bffr(NUM_POSITIONS_CHUNK, RANGE * RANGE * 4);
+    const buffers = bffr(NUM_POSITIONS_CHUNK, RANGE * RANGE * 9);
     const worker = new Worker('archae/plugins/_plugins_heightfield/build/worker.js');
     const queue = [];
     worker.requestOriginHeight = () => new Promise((accept, reject) => {
