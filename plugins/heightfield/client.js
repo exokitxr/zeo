@@ -22,10 +22,6 @@ const HEIGHTFIELD_SHADER = {
       type: 'f',
       value: 0,
     },
-    /* texture: {
-      type: 't',
-      value: null,
-    }, */
     d: {
       type: 'v2',
       value: null,
@@ -79,7 +75,6 @@ precision highp int;
 // uniform mat4 viewMatrix;
 uniform vec3 ambientLightColor;
 uniform sampler2D lightMap;
-// uniform sampler2D texture;
 uniform float useLightMap;
 uniform vec2 d;
 uniform float sunIntensity;
@@ -109,8 +104,6 @@ void main() {
     lightColor = vec4(0.5, 0.5, 0.5, 0.1);
   }
 
-  // vec3 textureColor = texture2D(texture, vec2(fract(vPosition.x), fract(vPosition.z))).xyz;
-
   vec3 fdx = vec3( dFdx( vViewPosition.x ), dFdx( vViewPosition.y ), dFdx( vViewPosition.z ) );
   vec3 fdy = vec3( dFdy( vViewPosition.x ), dFdy( vViewPosition.y ), dFdy( vViewPosition.z ) );
   vec3 normal = normalize( cross( fdx, fdy ) );
@@ -123,7 +116,7 @@ void main() {
         min((lightColor.rgb - 0.5) * 2.0, 0.0) * sunIntensity +
         max((lightColor.rgb - 0.5) * 2.0, 0.0) * (1.0 - sunIntensity)
       )
-    )/* * textureColor*/;
+    );
 
 	gl_FragColor = vec4( outgoingLight, 1.0 );
 }
@@ -184,380 +177,362 @@ class Heightfield {
       queue.shift()(e.data);
     };
 
-    // return _requestImageBitmap('archae/heightfield/img/texture.png')
-    return _requestImageBitmap('archae/heightfield/img/grass3.png')
-      .then(textureImg => {
-        /* const texture = new THREE.Texture(
-          textureImg,
-          THREE.UVMapping,
-          THREE.RepeatWrapping,
-          THREE.RepeatWrapping,
-          THREE.NearestFilter,
-          THREE.NearestFilter,
-          THREE.RGBFormat,
-          THREE.UnsignedByteType,
-          1
+    let lightmapper = null;
+    const _bindLightmapper = lightmapElement => {
+      lightmapper = lightmapElement.lightmapper;
+
+      _bindLightmaps();
+    };
+    const _unbindLightmapper = () => {
+      _unbindLightmaps();
+
+      lightmapper = null;
+    };
+    const _bindLightmaps = () => {
+      for (const index in mapChunkMeshes) {
+        const mapChunkMesh = mapChunkMeshes[index];
+        if (mapChunkMesh) {
+          _bindLightmap(mapChunkMesh);
+        }
+      }
+    };
+    const _unbindLightmaps = () => {
+      for (const index in mapChunkMeshes) {
+        const mapChunkMesh = mapChunkMeshes[index];
+        if (mapChunkMesh && mapChunkMesh.lightmap) {
+          _unbindLightmap(mapChunkMesh);
+        }
+      }
+    };
+    const _bindLightmap = mapChunkMesh => {
+      const {offset} = mapChunkMesh;
+      const {x, y} = offset;
+      const lightmap = lightmapper.getLightmapAt(x * NUM_CELLS, y * NUM_CELLS);
+      mapChunkMesh.material.uniforms.lightMap.value = lightmap.texture;
+      mapChunkMesh.material.uniforms.useLightMap.value = 1;
+      mapChunkMesh.lightmap = lightmap;
+    };
+    const _unbindLightmap = mapChunkMesh => {
+      const {lightmap} = mapChunkMesh;
+      lightmapper.releaseLightmap(lightmap);
+      mapChunkMesh.lightmap = null;
+    };
+    const elementListener = elements.makeListener(LIGHTMAP_PLUGIN);
+    elementListener.on('add', entityElement => {
+      _bindLightmapper(entityElement);
+    });
+    elementListener.on('remove', () => {
+      _unbindLightmapper();
+    });
+
+    const _bootstrap = () => worker.requestOriginHeight()
+      .then(originHeight => {
+        world.setSpawnMatrix(new THREE.Matrix4().makeTranslation(0, originHeight, 0));
+      });
+    const _makeMapChunkMesh = (chunk, mapChunkData, x, z) => {
+      const mesh = (() => {
+        const {position, positions, /*normals, */colors, indices, heightfield, heightRange} = mapChunkData;
+
+        const geometry = (() => {
+          let geometry = new THREE.BufferGeometry();
+          geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+          // geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
+          geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
+          geometry.setIndex(new THREE.BufferAttribute(indices, 1));
+          const [minY, maxY] = heightRange;
+          geometry.boundingSphere = new THREE.Sphere(
+            new THREE.Vector3(
+              (x * NUM_CELLS) + (NUM_CELLS / 2),
+              (minY + maxY) / 2,
+              (z * NUM_CELLS) + (NUM_CELLS / 2)
+            ),
+            Math.max(Math.sqrt((NUM_CELLS / 2) * (NUM_CELLS / 2) * 3), (maxY - minY) / 2)
+          );
+          return geometry;
+        })();
+        const uniforms = Object.assign(
+          THREE.UniformsUtils.clone(THREE.UniformsLib.lights),
+          THREE.UniformsUtils.clone(HEIGHTFIELD_SHADER.uniforms)
         );
-        texture.needsUpdate = true; */
+        uniforms.d.value = new THREE.Vector2(x * NUM_CELLS, z * NUM_CELLS);
+        const material = new THREE.ShaderMaterial({
+          uniforms: uniforms,
+          vertexShader: HEIGHTFIELD_SHADER.vertexShader,
+          fragmentShader: HEIGHTFIELD_SHADER.fragmentShader,
+          lights: true,
+          // transparent: true,
+          extensions: {
+            derivatives: true,
+          },
+        });
 
-        let lightmapper = null;
-        const _bindLightmapper = lightmapElement => {
-          lightmapper = lightmapElement.lightmapper;
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.x = x;
+        mesh.z = z;
+        // mesh.frustumCulled = false;
 
-          _bindLightmaps();
-        };
-        const _unbindLightmapper = () => {
-          _unbindLightmaps();
+        mesh.offset = new THREE.Vector2(x, z);
+        mesh.heightfield = heightfield;
+        mesh.lod = chunk.lod;
 
-          lightmapper = null;
-        };
-        const _bindLightmaps = () => {
+        mesh.lightmap = null;
+        if (lightmapper && chunk.lod === 1) {
+          _bindLightmap(mesh);
+        }
+
+        return mesh;
+      })();
+
+      mesh.destroy = () => {
+        mesh.geometry.dispose();
+
+        const {buffer} = mapChunkData;
+        buffers.free(buffer);
+
+        if (mesh.lightmap) {
+          _unbindLightmap(mesh);
+        }
+      };
+
+      return mesh;
+    };
+
+    const chunker = chnkr.makeChunker({
+      resolution: NUM_CELLS,
+      range: RANGE,
+    });
+    let mapChunkMeshes = {};
+
+    const _requestRefreshMapChunks = () => {
+      const {hmd} = pose.getStatus();
+      const {worldPosition: hmdPosition} = hmd;
+      const {added, removed, relodded} = chunker.update(hmdPosition.x, hmdPosition.z);
+
+      const _addTarget = (mapChunkMesh, x, z) => {
+        /* const physicsBody = physics.makeBody(mapChunkMesh, 'heightfield:' + x + ':' + z, {
+          mass: 0,
+          position: [
+            (NUM_CELLS / 2) + (x * NUM_CELLS),
+            0,
+            (NUM_CELLS / 2) + (z * NUM_CELLS)
+          ],
+          linearFactor: [0, 0, 0],
+          angularFactor: [0, 0, 0],
+          bindObject: false,
+          bindConnection: false,
+        });
+        mapChunkMesh.physicsBody = physicsBody; */
+        const {heightfield} = mapChunkMesh;
+        const stckBody = stck.makeStaticHeightfieldBody(
+          new THREE.Vector3(x * NUM_CELLS, 0, z * NUM_CELLS),
+          NUM_CELLS,
+          NUM_CELLS,
+          heightfield
+        );
+        mapChunkMesh.stckBody = stckBody;
+
+        mapChunkMesh.targeted = true;
+      };
+      const _removeTarget = mapChunkMesh => {
+        /* const {physicsBody} = mapChunkMesh;
+        physics.destroyBody(physicsBody); */
+        const {stckBody} = mapChunkMesh;
+        stck.destroyBody(stckBody);
+
+        mapChunkMesh.targeted = false;
+      };
+
+      const addedPromises = Array(added.length + relodded.length);
+      let index = 0;
+      const _addChunk = chunk => {
+        const {x, z, lod} = chunk;
+
+        return worker.requestGenerate(x, z)
+          .then(mapChunkBuffer => protocolUtils.parseMapChunk(mapChunkBuffer))
+          .then(mapChunkData => {
+            const index = _getChunkIndex(x, z);
+            const oldMapChunkMesh = mapChunkMeshes[index];
+            if (oldMapChunkMesh) {
+              stage.remove('main', oldMapChunkMesh);
+              oldMapChunkMesh.destroy();
+
+              mapChunkMeshes[index] = null;
+
+              if (lod !== 1 && oldMapChunkMesh.targeted) {
+                _removeTarget(oldMapChunkMesh);
+              }
+            }
+
+            const newMapChunkMesh = _makeMapChunkMesh(chunk, mapChunkData, x, z);
+            stage.add('main', newMapChunkMesh);
+            mapChunkMeshes[index] = newMapChunkMesh;
+
+            if (lod === 1 && !newMapChunkMesh.targeted) {
+              _addTarget(newMapChunkMesh, x, z);
+            }
+
+            chunk.data = newMapChunkMesh;
+          });
+      };
+      for (let i = 0; i < added.length; i++) {
+        addedPromises[index++] = _addChunk(added[i]);
+      }
+      for (let i = 0; i < relodded.length; i++) {
+        addedPromises[index++] = _addChunk(relodded[i]);
+      }
+      return Promise.all(addedPromises)
+        .then(() => {
+          for (let i = 0; i < removed.length; i++) {
+            const chunk = removed[i];
+            const {x, z, data: mapChunkMesh} = chunk;
+            stage.remove('main', mapChunkMesh);
+            mapChunkMesh.destroy();
+
+            const index = _getChunkIndex(x, z);
+            mapChunkMeshes[index] = null;
+
+            const {lod} = chunk;
+            if (lod !== 1 && mapChunkMesh.targeted) {
+              _removeTarget(mapChunkMesh);
+            }
+          }
+          for (let i = 0; i < relodded.length; i++) {
+            const chunk = relodded[i];
+            const {x, z, lod, data: mapChunkMesh} = chunk;
+
+            if (lod === 1 && !mapChunkMesh.targeted) {
+              _addTarget(mapChunkMesh, x, z);
+            } else if (lod !== 1 && mapChunkMesh.targeted) {
+              _removeTarget(mapChunkMesh);
+            }
+          }
+
+          const newMapChunkMeshes = {};
           for (const index in mapChunkMeshes) {
             const mapChunkMesh = mapChunkMeshes[index];
             if (mapChunkMesh) {
-              _bindLightmap(mapChunkMesh);
+              newMapChunkMeshes[index] = mapChunkMesh;
             }
           }
-        };
-        const _unbindLightmaps = () => {
-          for (const index in mapChunkMeshes) {
-            const mapChunkMesh = mapChunkMeshes[index];
-            if (mapChunkMesh && mapChunkMesh.lightmap) {
-              _unbindLightmap(mapChunkMesh);
-            }
-          }
-        };
-        const _bindLightmap = mapChunkMesh => {
-          const {offset} = mapChunkMesh;
-          const {x, y} = offset;
-          const lightmap = lightmapper.getLightmapAt(x * NUM_CELLS, y * NUM_CELLS);
-          mapChunkMesh.material.uniforms.lightMap.value = lightmap.texture;
-          mapChunkMesh.material.uniforms.useLightMap.value = 1;
-          mapChunkMesh.lightmap = lightmap;
-        };
-        const _unbindLightmap = mapChunkMesh => {
-          const {lightmap} = mapChunkMesh;
-          lightmapper.releaseLightmap(lightmap);
-          mapChunkMesh.lightmap = null;
-        };
-        const elementListener = elements.makeListener(LIGHTMAP_PLUGIN);
-        elementListener.on('add', entityElement => {
-          _bindLightmapper(entityElement);
+          mapChunkMeshes = newMapChunkMeshes;
         });
-        elementListener.on('remove', () => {
-          _unbindLightmapper();
-        });
+    };
 
-        const _bootstrap = () => worker.requestOriginHeight()
-          .then(originHeight => {
-            world.setSpawnMatrix(new THREE.Matrix4().makeTranslation(0, originHeight, 0));
-          });
-        const _makeMapChunkMesh = (chunk, mapChunkData, x, z) => {
-          const mesh = (() => {
-            const {position, positions, /*normals, */colors, indices, heightfield, heightRange} = mapChunkData;
+    return _bootstrap()
+      .then(() => {
+        const heightfieldEntity = {
+          entityAddedCallback(entityElement) {
+            const min = new THREE.Vector2();
+            /// const max = new THREE.Vector2();
+            // const cellOffset = new THREE.Vector2(NUM_CELLS, NUM_CELLS);
+            const a = new THREE.Vector3();
+            const b = new THREE.Vector3();
+            const c = new THREE.Vector3();
+            const p = new THREE.Vector3();
+            const triangle = new THREE.Triangle(a, b, c);
+            const baryCoord = new THREE.Vector3();
 
-            const geometry = (() => {
-              let geometry = new THREE.BufferGeometry();
-              geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
-              // geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
-              geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
-              geometry.setIndex(new THREE.BufferAttribute(indices, 1));
-              const [minY, maxY] = heightRange;
-              geometry.boundingSphere = new THREE.Sphere(
-                new THREE.Vector3(
-                  (x * NUM_CELLS) + (NUM_CELLS / 2),
-                  (minY + maxY) / 2,
-                  (z * NUM_CELLS) + (NUM_CELLS / 2)
-                ),
-                Math.max(Math.sqrt((NUM_CELLS / 2) * (NUM_CELLS / 2) * 3), (maxY - minY) / 2)
-              );
-              return geometry;
-            })();
-            const uniforms = Object.assign(
-              THREE.UniformsUtils.clone(THREE.UniformsLib.lights),
-              THREE.UniformsUtils.clone(HEIGHTFIELD_SHADER.uniforms)
-            );
-            uniforms.d.value = new THREE.Vector2(x * NUM_CELLS, z * NUM_CELLS);
-            // uniforms.texture.value = texture;
-            const material = new THREE.ShaderMaterial({
-              uniforms: uniforms,
-              vertexShader: HEIGHTFIELD_SHADER.vertexShader,
-              fragmentShader: HEIGHTFIELD_SHADER.fragmentShader,
-              lights: true,
-              // transparent: true,
-              extensions: {
-                derivatives: true,
-              },
-            });
+            const _getIndex = (p, min) => (p.x - min.x) + ((p.z - min.y) * (NUM_CELLS + 1));
+            const _getElevation = (x, z) => {
+              const ox = Math.floor(x / NUM_CELLS);
+              const oz = Math.floor(z / NUM_CELLS);
+              const mapChunkMesh = mapChunkMeshes[_getChunkIndex(ox, oz)];
 
-            const mesh = new THREE.Mesh(geometry, material);
-            mesh.x = x;
-            mesh.z = z;
-            // mesh.frustumCulled = false;
+              if (mapChunkMesh && mapChunkMesh.lod === 1) {
+                const ax = Math.floor(x);
+                const az = Math.floor(z);
+                if ((x - ax) <= (1 - (z - az))) { // top left triangle
+                  a.set(ax, 0, az);
+                  b.set(ax + 1, 0, az);
+                  c.set(ax, 0, az + 1);
+                } else { // bottom right triangle
+                  a.set(ax + 1, 0, az);
+                  b.set(ax, 0, az + 1);
+                  c.set(ax + 1, 0, az + 1);
+                };
+                min.set(ox * NUM_CELLS, oz * NUM_CELLS);
+                // max.copy(min).add(cellOffset);
+                const ea = mapChunkMesh.heightfield[_getIndex(a, min)];
+                const eb = mapChunkMesh.heightfield[_getIndex(b, min)];
+                const ec = mapChunkMesh.heightfield[_getIndex(c, min)];
 
-            mesh.offset = new THREE.Vector2(x, z);
-            mesh.heightfield = heightfield;
-            mesh.lod = chunk.lod;
+                p.set(x, 0, z);
+                triangle.barycoordFromPoint(p, baryCoord);
 
-            mesh.lightmap = null;
-            if (lightmapper && chunk.lod === 1) {
-              _bindLightmap(mesh);
-            }
+                return baryCoord.x * ea +
+                  baryCoord.y * eb +
+                  baryCoord.z * ec;
+              } else {
+                return null;
+              }
+            };
 
-            return mesh;
-          })();
+            const localVector = new THREE.Vector3();
+            const localVector2 = new THREE.Vector3();
+            const localEuler = new THREE.Euler();
+            const _teleportTarget = (position, rotation, scale) => {
+              localEuler.setFromQuaternion(rotation, camera.rotation.order);
+              const angleFactor = Math.min(Math.pow(Math.max(localEuler.x + Math.PI * 0.45, 0) / (Math.PI * 0.8), 2), 1);
+              localEuler.x = 0;
+              localEuler.z = 0;
+              const targetPosition = localVector.set(position.x, 0, position.z)
+                .add(
+                  localVector2.copy(forwardVector)
+                    .applyEuler(localEuler)
+                    .multiplyScalar(15 * angleFactor)
+                );
+              targetPosition.y = _getElevation(targetPosition.x, targetPosition.z);
+              return targetPosition;
+            };
+            teleport.addTarget(_teleportTarget);
 
-          mesh.destroy = () => {
-            mesh.geometry.dispose();
-
-            const {buffer} = mapChunkData;
-            buffers.free(buffer);
-
-            if (mesh.lightmap) {
-              _unbindLightmap(mesh);
-            }
-          };
-
-          return mesh;
+            entityElement.getElevation = _getElevation;
+            entityElement._cleanup = () => {
+              teleport.removeTarget(_teleportTarget);
+            };
+          },
         };
+        elements.registerEntity(this, heightfieldEntity);
 
-        const chunker = chnkr.makeChunker({
-          resolution: NUM_CELLS,
-          range: RANGE,
-        });
-        let mapChunkMeshes = {};
-
-        const _requestRefreshMapChunks = () => {
-          const {hmd} = pose.getStatus();
-          const {worldPosition: hmdPosition} = hmd;
-          const {added, removed, relodded} = chunker.update(hmdPosition.x, hmdPosition.z);
-
-          const _addTarget = (mapChunkMesh, x, z) => {
-            /* const physicsBody = physics.makeBody(mapChunkMesh, 'heightfield:' + x + ':' + z, {
-              mass: 0,
-              position: [
-                (NUM_CELLS / 2) + (x * NUM_CELLS),
-                0,
-                (NUM_CELLS / 2) + (z * NUM_CELLS)
-              ],
-              linearFactor: [0, 0, 0],
-              angularFactor: [0, 0, 0],
-              bindObject: false,
-              bindConnection: false,
-            });
-            mapChunkMesh.physicsBody = physicsBody; */
-            const {heightfield} = mapChunkMesh;
-            const stckBody = stck.makeStaticHeightfieldBody(
-              new THREE.Vector3(x * NUM_CELLS, 0, z * NUM_CELLS),
-              NUM_CELLS,
-              NUM_CELLS,
-              heightfield
-            );
-            mapChunkMesh.stckBody = stckBody;
-
-            mapChunkMesh.targeted = true;
-          };
-          const _removeTarget = mapChunkMesh => {
-            /* const {physicsBody} = mapChunkMesh;
-            physics.destroyBody(physicsBody); */
-            const {stckBody} = mapChunkMesh;
-            stck.destroyBody(stckBody);
-
-            mapChunkMesh.targeted = false;
-          };
-
-          const addedPromises = Array(added.length + relodded.length);
-          let index = 0;
-          const _addChunk = chunk => {
-            const {x, z, lod} = chunk;
-
-            return worker.requestGenerate(x, z)
-              .then(mapChunkBuffer => protocolUtils.parseMapChunk(mapChunkBuffer))
-              .then(mapChunkData => {
-                const index = _getChunkIndex(x, z);
-                const oldMapChunkMesh = mapChunkMeshes[index];
-                if (oldMapChunkMesh) {
-                  stage.remove('main', oldMapChunkMesh);
-                  oldMapChunkMesh.destroy();
-
-                  mapChunkMeshes[index] = null;
-
-                  if (lod !== 1 && oldMapChunkMesh.targeted) {
-                    _removeTarget(oldMapChunkMesh);
-                  }
-                }
-
-                const newMapChunkMesh = _makeMapChunkMesh(chunk, mapChunkData, x, z);
-                stage.add('main', newMapChunkMesh);
-                mapChunkMeshes[index] = newMapChunkMesh;
-
-                if (lod === 1 && !newMapChunkMesh.targeted) {
-                  _addTarget(newMapChunkMesh, x, z);
-                }
-
-                chunk.data = newMapChunkMesh;
-              });
-          };
-          for (let i = 0; i < added.length; i++) {
-            addedPromises[index++] = _addChunk(added[i]);
-          }
-          for (let i = 0; i < relodded.length; i++) {
-            addedPromises[index++] = _addChunk(relodded[i]);
-          }
-          return Promise.all(addedPromises)
+        let live = true;
+        const _recurse = () => {
+          _requestRefreshMapChunks()
             .then(() => {
-              for (let i = 0; i < removed.length; i++) {
-                const chunk = removed[i];
-                const {x, z, data: mapChunkMesh} = chunk;
-                stage.remove('main', mapChunkMesh);
-                mapChunkMesh.destroy();
-
-                const index = _getChunkIndex(x, z);
-                mapChunkMeshes[index] = null;
-
-                const {lod} = chunk;
-                if (lod !== 1 && mapChunkMesh.targeted) {
-                  _removeTarget(mapChunkMesh);
-                }
+              if (live) {
+                setTimeout(_recurse, 1000);
               }
-              for (let i = 0; i < relodded.length; i++) {
-                const chunk = relodded[i];
-                const {x, z, lod, data: mapChunkMesh} = chunk;
+            })
+            .catch(err => {
+              if (live) {
+                console.warn(err);
 
-                if (lod === 1 && !mapChunkMesh.targeted) {
-                  _addTarget(mapChunkMesh, x, z);
-                } else if (lod !== 1 && mapChunkMesh.targeted) {
-                  _removeTarget(mapChunkMesh);
-                }
+                setTimeout(_recurse, 1000);
               }
-
-              const newMapChunkMeshes = {};
-              for (const index in mapChunkMeshes) {
-                const mapChunkMesh = mapChunkMeshes[index];
-                if (mapChunkMesh) {
-                  newMapChunkMeshes[index] = mapChunkMesh;
-                }
-              }
-              mapChunkMeshes = newMapChunkMeshes;
             });
         };
+        _recurse();
 
-        return _bootstrap()
-          .then(() => {
-            const heightfieldEntity = {
-              entityAddedCallback(entityElement) {
-                const min = new THREE.Vector2();
-                /// const max = new THREE.Vector2();
-                // const cellOffset = new THREE.Vector2(NUM_CELLS, NUM_CELLS);
-                const a = new THREE.Vector3();
-                const b = new THREE.Vector3();
-                const c = new THREE.Vector3();
-                const p = new THREE.Vector3();
-                const triangle = new THREE.Triangle(a, b, c);
-                const baryCoord = new THREE.Vector3();
+        const _update = () => {
+          const dayNightSkyboxEntity = elements.getEntitiesElement().querySelector(DAY_NIGHT_SKYBOX_PLUGIN);
+          const sunIntensity = (dayNightSkyboxEntity && dayNightSkyboxEntity.getSunIntensity) ? dayNightSkyboxEntity.getSunIntensity() : 0;
 
-                const _getIndex = (p, min) => (p.x - min.x) + ((p.z - min.y) * (NUM_CELLS + 1));
-                const _getElevation = (x, z) => {
-                  const ox = Math.floor(x / NUM_CELLS);
-                  const oz = Math.floor(z / NUM_CELLS);
-                  const mapChunkMesh = mapChunkMeshes[_getChunkIndex(ox, oz)];
+          for (const index in mapChunkMeshes) {
+            mapChunkMeshes[index].material.uniforms.sunIntensity.value = sunIntensity;
+          }
+        };
+        render.on('update', _update);
 
-                  if (mapChunkMesh && mapChunkMesh.lod === 1) {
-                    const ax = Math.floor(x);
-                    const az = Math.floor(z);
-                    if ((x - ax) <= (1 - (z - az))) { // top left triangle
-                      a.set(ax, 0, az);
-                      b.set(ax + 1, 0, az);
-                      c.set(ax, 0, az + 1);
-                    } else { // bottom right triangle
-                      a.set(ax + 1, 0, az);
-                      b.set(ax, 0, az + 1);
-                      c.set(ax + 1, 0, az + 1);
-                    };
-                    min.set(ox * NUM_CELLS, oz * NUM_CELLS);
-                    // max.copy(min).add(cellOffset);
-                    const ea = mapChunkMesh.heightfield[_getIndex(a, min)];
-                    const eb = mapChunkMesh.heightfield[_getIndex(b, min)];
-                    const ec = mapChunkMesh.heightfield[_getIndex(c, min)];
+        this._cleanup = () => {
+          live = false;
 
-                    p.set(x, 0, z);
-                    triangle.barycoordFromPoint(p, baryCoord);
+          // XXX remove chunks from the scene here
 
-                    return baryCoord.x * ea +
-                      baryCoord.y * eb +
-                      baryCoord.z * ec;
-                  } else {
-                    return null;
-                  }
-                };
+          elements.destroyListener(elementListener);
 
-                const localVector = new THREE.Vector3();
-                const localVector2 = new THREE.Vector3();
-                const localEuler = new THREE.Euler();
-                const _teleportTarget = (position, rotation, scale) => {
-                  localEuler.setFromQuaternion(rotation, camera.rotation.order);
-                  const angleFactor = Math.min(Math.pow(Math.max(localEuler.x + Math.PI * 0.45, 0) / (Math.PI * 0.8), 2), 1);
-                  localEuler.x = 0;
-                  localEuler.z = 0;
-                  const targetPosition = localVector.set(position.x, 0, position.z)
-                    .add(
-                      localVector2.copy(forwardVector)
-                        .applyEuler(localEuler)
-                        .multiplyScalar(15 * angleFactor)
-                    );
-                  targetPosition.y = _getElevation(targetPosition.x, targetPosition.z);
-                  return targetPosition;
-                };
-                teleport.addTarget(_teleportTarget);
+          elements.unregisterEntity(this, heightfieldEntity);
 
-                entityElement.getElevation = _getElevation;
-                entityElement._cleanup = () => {
-                  teleport.removeTarget(_teleportTarget);
-                };
-              },
-            };
-            elements.registerEntity(this, heightfieldEntity);
-
-            let live = true;
-            const _recurse = () => {
-              _requestRefreshMapChunks()
-                .then(() => {
-                  if (live) {
-                    setTimeout(_recurse, 1000);
-                  }
-                })
-                .catch(err => {
-                  if (live) {
-                    console.warn(err);
-
-                    setTimeout(_recurse, 1000);
-                  }
-                });
-            };
-            _recurse();
-
-            const _update = () => {
-              const dayNightSkyboxEntity = elements.getEntitiesElement().querySelector(DAY_NIGHT_SKYBOX_PLUGIN);
-              const sunIntensity = (dayNightSkyboxEntity && dayNightSkyboxEntity.getSunIntensity) ? dayNightSkyboxEntity.getSunIntensity() : 0;
-
-              for (const index in mapChunkMeshes) {
-                mapChunkMeshes[index].material.uniforms.sunIntensity.value = sunIntensity;
-              }
-            };
-            render.on('update', _update);
-
-            this._cleanup = () => {
-              live = false;
-
-              // XXX remove chunks from the scene here
-
-              elements.destroyListener(elementListener);
-
-              elements.unregisterEntity(this, heightfieldEntity);
-
-              render.removeListener('update', _update);
-            };
-          });
+          render.removeListener('update', _update);
+        };
       });
   }
 
