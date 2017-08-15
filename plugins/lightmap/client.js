@@ -225,7 +225,7 @@ class Lightmap {
 
         this._lightmaps = {};
         this._lightmapsNeedUpdate = {};
-        this._buffers = bffr((width + 1) * (depth + 1) * height, 3 * 3 * 4);
+        this._buffers = bffr((width + 1) * (depth + 1) * height, 3 * 3 * 6);
       }
 
       getLightmapAt(x, z) {
