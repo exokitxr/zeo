@@ -26,7 +26,6 @@ class Objects {
     const {alea, indev} = randomUtils;
 
     const zeodeDataPath = path.join(dirname, dataDirectory, 'zeode.dat');
-    const zeroBuffer = new Uint32Array(0);
 
     const rng = new alea(DEFAULT_SEED);
     const noises = {};

@@ -1,6 +1,6 @@
 const stick = require('./stick');
 const stone = require('./stone');
-const grass = require('./grass');
+// const grass = require('./grass');
 const tree = require('./tree');
 const wood = require('./wood');
 const flintSteel = require('./flint-steel');
@@ -17,7 +17,7 @@ const fire = require('./fire');
 const objectsLib = options => [
   stick,
   stone,
-  grass,
+  // grass,
   tree,
   wood,
   flintSteel,

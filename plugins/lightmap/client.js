@@ -5,8 +5,6 @@ const {
   HEIGHT_OFFSET,
 } = require('./lib/constants/constants');
 
-const FPS = 1000 / 60;
-
 class Lightmap {
   mount() {
     const {three, elements, render, utils: {js: jsUtils}} = zeo;
@@ -227,7 +225,7 @@ class Lightmap {
 
         this._lightmaps = {};
         this._lightmapsNeedUpdate = {};
-        this._buffers = bffr((width + 1) * (depth + 1) * height, (1 + 1) * (1 + 1) * 2);
+        this._buffers = bffr((width + 1) * (depth + 1) * height, 3 * 3 * 4);
       }
 
       getLightmapAt(x, z) {
@@ -317,14 +315,14 @@ class Lightmap {
           lightmapper.update()
             .then(() => {
               if (live) {
-                setTimeout(_recurse, FPS);
+                setTimeout(_recurse, 1000);
               }
             })
             .catch(err => {
               if (live) {
                 console.warn(err.stack);
 
-                setTimeout(_recurse, FPS);
+                setTimeout(_recurse, 1000);
               }
             });
         };

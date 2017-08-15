@@ -52,7 +52,7 @@ const _copyIndices = (src, dst, startIndexIndex, startAttributeIndex) => {
   }
 };
 
-const baseColor = new THREE.Color(0x8db360);
+const baseColor = new THREE.Color(0x8BC34A);
 const _isPointInTriangle = (p, tri) => {
   const {a: p0, b: p1, c: p2} = tri;
   const A = 1/2 * (-p1.y * p2.x + p0.y * (-p1.x + p2.x) + p0.x * (p1.y - p2.y) + p1.x * p2.y);
@@ -229,29 +229,31 @@ const _makeGrassChunkMesh = (ox, oy, grassTemplates, points, heightRange) => {
         const pointIndex = dx + (dy * NUM_CELLS_OVERSCAN);
         const elevation = points[pointIndex];
 
-        position.set(
-          ax,
-          elevation,
-          ay
-        );
-        const n = murmur(String(v)) / 0xFFFFFFFF;
-        quaternion.setFromAxisAngle(upVector, n * Math.PI * 2);
-        matrix.compose(position, quaternion, scale);
-        scale.set(1, 0.5 + rng() * 1, 1);
-        const grassGeometry = grassTemplates[Math.floor(n * grassTemplates.length)];
-        const geometry = grassGeometry
-          .clone()
-          .applyMatrix(matrix);
-        const newPositions = geometry.getAttribute('position').array;
-        positions.set(newPositions, attributeIndex);
-        const newUvs = geometry.getAttribute('uv').array;
-        uvs.set(newUvs, uvIndex);
-        const newIndices = geometry.index.array;
-        _copyIndices(newIndices, indices, indexIndex, attributeIndex / 3);
+        if (elevation > 0) {
+          position.set(
+            ax,
+            elevation,
+            ay
+          );
+          const n = murmur(String(v)) / 0xFFFFFFFF;
+          quaternion.setFromAxisAngle(upVector, n * Math.PI * 2);
+          matrix.compose(position, quaternion, scale);
+          scale.set(1, 0.5 + rng() * 1, 1);
+          const grassGeometry = grassTemplates[Math.floor(n * grassTemplates.length)];
+          const geometry = grassGeometry
+            .clone()
+            .applyMatrix(matrix);
+          const newPositions = geometry.getAttribute('position').array;
+          positions.set(newPositions, attributeIndex);
+          const newUvs = geometry.getAttribute('uv').array;
+          uvs.set(newUvs, uvIndex);
+          const newIndices = geometry.index.array;
+          _copyIndices(newIndices, indices, indexIndex, attributeIndex / 3);
 
-        attributeIndex += newPositions.length;
-        uvIndex += newUvs.length;
-        indexIndex += newIndices.length;
+          attributeIndex += newPositions.length;
+          uvIndex += newUvs.length;
+          indexIndex += newIndices.length;
+        }
       }
     }
   }

@@ -107,17 +107,6 @@
       "attributes": [],
       "metadata": {}
     },
-    "rq2bys": {
-      "type": "entity",
-      "id": "rq2bys",
-      "name": "/plugins/tools",
-      "displayName": "tools",
-      "version": "0.0.1",
-      "module": "/plugins/tools",
-      "tagName": "plugins-tools",
-      "attributes": [],
-      "metadata": {}
-    },
     "kkvl7d": {
       "type": "entity",
       "id": "kkvl7d",
@@ -184,6 +173,17 @@
       "attributes": {},
       "metadata": {}
     },
+    "ac3t83": {
+      "type": "entity",
+      "id": "ac3t84",
+      "name": "zeo-test",
+      "displayName": "zeo-test",
+      "version": "0.0.2",
+      "module": "zeo-test",
+      "tagName": "zeo-test",
+      "attributes": {},
+      "metadata": {}
+    },
     "x76y1": {
       "type": "entity",
       "id": "x76y1",
@@ -192,6 +192,17 @@
       "version": "0.0.1",
       "module": "/plugins/health",
       "tagName": "plugins-health",
+      "attributes": {},
+      "metadata": {}
+    },
+    "u3xua": {
+      "type": "entity",
+      "id": "u3xua",
+      "name": "/plugins/grass",
+      "displayName": "grass",
+      "version": "0.0.1",
+      "module": "/plugins/grass",
+      "tagName": "plugins-grass",
       "attributes": {},
       "metadata": {}
     }

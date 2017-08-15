@@ -102,14 +102,13 @@ class Grass {
   }
 
   mount() {
-    return;
     const {_archae: archae} = this;
     const {three, render, pose, elements, stage, utils: {js: {bffr}, random: {chnkr}}} = zeo;
     const {THREE} = three;
 
     const upVector = new THREE.Vector3(0, 1, 0);
 
-    const buffers = bffr(NUM_POSITIONS_CHUNK * 3, (RANGE + 1) * (RANGE + 1) * 2);
+    const buffers = bffr(NUM_POSITIONS_CHUNK, RANGE * RANGE * 9);
 
     let live = true;
     this._cleanup = () => {

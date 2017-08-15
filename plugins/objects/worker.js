@@ -336,8 +336,8 @@ function _makeChunkGeometry(chunk) {
       for (let j = 0; j < geometryEntries.length; j++) {
         const geometry = geometryEntries[j].clone()
           .applyMatrix(localMatrix.makeRotationFromQuaternion(localQuaternion.set(matrix[3], matrix[4], matrix[5], matrix[6])))
-          .applyMatrix(localMatrix.makeTranslation(matrix[0], matrix[1], matrix[2]))
-          .applyMatrix(localMatrix.makeScale(matrix[7], matrix[8], matrix[9]));
+          .applyMatrix(localMatrix.makeTranslation(matrix[0], matrix[1], matrix[2]));
+          // .applyMatrix(localMatrix.makeScale(matrix[7], matrix[8], matrix[9]));
 
         const newPositions = geometry.getAttribute('position').array;
         positions.set(newPositions, attributeIndex);

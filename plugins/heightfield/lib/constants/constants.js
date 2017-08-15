@@ -1,4 +1,4 @@
-const NUM_CELLS = 64;
+const NUM_CELLS = 32;
 const OVERSCAN = 1;
 const NUM_CELLS_OVERSCAN = NUM_CELLS + OVERSCAN;
 

@@ -1,11 +1,9 @@
 const grass = objectApi => {
   return () => new Promise((accept, reject) => {
-
     objectApi.registerGenerator('grass', (chunk, generateApi) => {
       const localVector = new generateApi.THREE.Vector3();
       const localQuaternion = new generateApi.THREE.Quaternion();
       const localEuler = new generateApi.THREE.Euler();
-      const oneVector = new generateApi.THREE.Vector3(1, 1, 1);
 
       const _getElevation = (ox, oz, x, z) => (-0.3 + Math.pow(generateApi.getNoise('elevation', ox, oz, x, z), 0.5)) * 64;
 
@@ -28,7 +26,7 @@ const grass = objectApi => {
                 0,
                 'YXZ'
               ));
-              generateApi.addObject(chunk, 'grass', localVector, localQuaternion, oneVector);
+              generateApi.addObject(chunk, 'grass', localVector, localQuaternion, 0);
             }
           }
         }
