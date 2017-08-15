@@ -1291,6 +1291,12 @@ class Tags {
           };
 
           class TagsApi extends EventEmitter {
+            constructor() {
+              super();
+
+              this.setMaxListeners(100);
+            }
+
             registerEntity(pluginInstance, componentApi) {
               const normalizedComponentApi = menuUtils.normalizeComponentApi(componentApi);
               componentApi[normalizedSymbol] = normalizedComponentApi;
