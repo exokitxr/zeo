@@ -11,6 +11,8 @@ const {
   NUM_CELLS,
   NUM_CELLS_OVERSCAN,
 
+  HEIGHTFIELD_DEPTH,
+
   DEFAULT_SEED,
 } = require('./lib/constants/constants');
 
@@ -217,7 +219,7 @@ const _generateMapChunk = (ox, oy) => {
   const positions = geometry.getAttribute('position').array;
   const indices = geometry.index.array;
 
-  const heightfield = new Float32Array(NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN * 4);
+  const heightfield = new Float32Array(NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN * HEIGHTFIELD_DEPTH);
   heightfield.fill(-Infinity);
   let minY = Infinity;
   let maxY = -Infinity;
@@ -235,8 +237,8 @@ const _generateMapChunk = (ox, oy) => {
         const y = point.y;
         const z = Math.floor(point.z);
 
-        for (let layer = 0; layer < 4; layer++) {
-          const heightfieldXYBaseIndex = (x + (z * NUM_CELLS_OVERSCAN)) * 4;
+        for (let layer = 0; layer < 8; layer++) {
+          const heightfieldXYBaseIndex = _getHeightfieldIndex(x, z);
           const oldY = heightfield[heightfieldXYBaseIndex + layer];
           if (y > oldY) {
             for (let k = 4 - 1; k > layer; k--) {
@@ -382,7 +384,7 @@ const _generateMapChunk = (ox, oy) => {
 
     const lx = Math.floor(positions[baseIndex + 0]);
     const ly = Math.floor(positions[baseIndex + 2]);
-    const elevation = heightfield[(lx + (ly * NUM_CELLS_OVERSCAN)) * 4];
+    const elevation = heightfield[_getHeightfieldIndex(lx, ly)];
     const dx = (ox * NUM_CELLS) + lx;
     const dy = (oy * NUM_CELLS) + ly;
     const moisture = _random.moistureNoise.in2D(dx, dy);
@@ -483,6 +485,7 @@ const _colorIntToArray = n => ([
   ((n >> (8 * 1)) & 0xFF) / 0xFF,
   ((n >> (8 * 0)) & 0xFF) / 0xFF,
 ]);
+const _getHeightfieldIndex = (x, z) => (x + (z * NUM_CELLS_OVERSCAN)) * HEIGHTFIELD_DEPTH;
 
 self.onmessage = e => {
   const {data} = e;
