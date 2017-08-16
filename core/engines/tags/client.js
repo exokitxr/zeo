@@ -1558,7 +1558,7 @@ class Tags {
               listener.destroy();
             }
 
-            requestElement(selector) {
+            requestElement(selector, {timeout = 30 * 1000} = {}) {
               return new Promise((accept, reject) => {
                 const element = rootEntitiesElement.querySelector(selector);
                 if (element) {
@@ -1579,7 +1579,7 @@ class Tags {
                     const err = new Error('timeout out');
                     err.code = 'ETIMEOUT';
                     reject(err);
-                  }, 10 * 1000);
+                  }, timeout);
                 }
               });
             }
