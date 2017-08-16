@@ -286,21 +286,29 @@ self.onmessage = e => {
   const {type} = data;
 
   if (type === 'chunk') {
-    const {x, y, buffer} = data;
+    const {id, x, y, buffer} = data;
     _requestHeightfield(x, y)
       .then(({heightfield, heightRange}) => {
         const grassChunkGeometry = _makeGrassChunkMesh(x, y, grassTemplates, heightfield, heightRange);
         const resultBuffer = protocolUtils.stringifyGrassGeometry(grassChunkGeometry);
 
+        postMessage(JSON.stringify({
+          type: 'response',
+          args: [id],
+        }));
         postMessage(resultBuffer, [resultBuffer]);
       })
       .catch(err => {
         console.warn(err);
       });
   } else if (type === 'texture') {
-    const {buffer} = data;
+    const {id, buffer} = data;
     new Uint8Array(buffer).set(grassTextureAtlas);
 
+    postMessage(JSON.stringify({
+      type: 'response',
+      args: [id],
+    }));
     postMessage(buffer, [buffer]);
   }
 };

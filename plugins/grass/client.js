@@ -118,28 +118,37 @@ class Grass {
     const _ensureHeightfieldElement = () => elements.requestElement(HEIGHTFIELD_PLUGIN)
       .then(() => {});
 
+    class QueueEntry {
+      constructor(id, cb) {
+        this.id = id;
+        this.cb = cb;
+      }
+    }
+
     const worker = new Worker('archae/plugins/_plugins_grass/build/worker.js');
-    const queue = [];
+    const queues = [];
     worker.requestGenerate = (x, y) => _ensureHeightfieldElement()
       .then(() => new Promise((accept, reject) => {
+        const id = _makeId();
         const buffer = buffers.alloc();
         worker.postMessage({
           type: 'chunk',
+          id,
           x,
           y,
           buffer,
         }, [buffer]);
-        queue.push(buffer => {
-          accept(buffer);
-        });
+        queues.push(new QueueEntry(id, accept));
       }));
     worker.requestTexture = () => new Promise((accept, reject) => {
+        const id = _makeId();
       const buffer = new ArrayBuffer(TEXTURE_SIZE * TEXTURE_SIZE  * 4);
       worker.postMessage({
         type: 'texture',
+        id,
         buffer,
       }, [buffer]);
-      queue.push(buffer => {
+      queues.push(new QueueEntry(id, buffer => {
         const canvas = document.createElement('canvas');
         canvas.width = TEXTURE_SIZE;
         canvas.height = TEXTURE_SIZE;
@@ -149,12 +158,28 @@ class Grass {
         ctx.putImageData(imageData, 0, 0);
 
         accept(canvas);
-      });
+      }));
     });
+    let pendingResponseId = null;
     worker.onmessage = e => {
-      const {data: buffer} = e;
-      const cb = queue.shift();
-      cb(buffer);
+      const {data} = e;
+      if (typeof data === 'string') {
+        const m = JSON.parse(data);
+        const {type, args} = m;
+
+        if (type === 'response') {
+          const [id] = args;
+          pendingResponseId = id;
+        } else {
+          console.warn('heightfield got unknown worker message type:', JSON.stringify(type));
+        }
+      } else {
+        const queueEntryIndex = queues.findIndex(queueEntry => queueEntry.id === pendingResponseId);
+        const queueEntry = queues[queueEntryIndex];
+        queueEntry.cb(data);
+        queues.splice(queueEntryIndex, 1);
+        pendingResponseId = null;
+      }
     };
 
     worker.requestTexture()
@@ -194,20 +219,16 @@ class Grass {
           };
           const _bindLightmaps = () => {
             for (let i = 0; i < grassChunkMeshes.length; i++) {
-              const grassChunkMesh = grassChunkMeshes[i];
-              _bindLightmap(grassChunkMesh);
+              _bindLightmap(grassChunkMeshes[i]);
             }
           };
           const _unbindLightmaps = () => {
             for (let i = 0; i < grassChunkMeshes.length; i++) {
-              const grassChunkMesh = grassChunkMeshes[i];
-              _unbindLightmap(grassChunkMesh);
+              _unbindLightmap(grassChunkMeshes[i]);
             }
           };
           const _bindLightmap = grassChunkMesh => {
-            const {offset} = grassChunkMesh;
-            const {x, y} = offset;
-            const lightmap = lightmapper.getLightmapAt(x * NUM_CELLS, y * NUM_CELLS);
+            const lightmap = lightmapper.getLightmapAt(grassChunkMesh.offset.x * NUM_CELLS, grassChunkMesh.offset.y * NUM_CELLS);
             grassChunkMesh.material.uniforms.lightMap.value = lightmap.texture;
             grassChunkMesh.lightmap = lightmap;
           };
@@ -260,7 +281,6 @@ class Grass {
               });
 
               const mesh = new THREE.Mesh(geometry, material);
-              // mesh.frustumCulled = false;
 
               mesh.offset = new THREE.Vector2(x, z);
               mesh.lightmap = null;
@@ -369,5 +389,11 @@ class Grass {
     this._cleanup();
   }
 }
+let _id = 0;
+const _makeId = () => {
+  const result = _id;
+  _id = (_id + 1) | 0;
+  return result;
+};
 
 module.exports = Grass;
