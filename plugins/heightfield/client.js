@@ -152,31 +152,58 @@ class Heightfield {
     const _requestImageBitmap = src => _requestImage(src)
       .then(img => createImageBitmap(img, 0, 0, img.width, img.height));
 
+    class QueueEntry {
+      constructor(id, cb) {
+        this.id = id;
+        this.cb = cb;
+      }
+    }
+
     const buffers = bffr(NUM_POSITIONS_CHUNK, RANGE * RANGE * 9);
     const worker = new Worker('archae/plugins/_plugins_heightfield/build/worker.js');
-    const queue = [];
+    const queues = [];
     worker.requestOriginHeight = () => new Promise((accept, reject) => {
+      const id = _makeId();
       worker.postMessage({
         method: 'getOriginHeight',
+        id,
       });
-      queue.push(originHeight => {
-        accept(originHeight);
-      });
+      queues.push(new QueueEntry(id, accept));
     });
     worker.requestGenerate = (x, y) => new Promise((accept, reject) => {
+      const id = _makeId();
       const buffer = buffers.alloc();
       worker.postMessage({
         method: 'generate',
+        id,
         args: {
           x,
           y,
           buffer,
         },
       }, [buffer]);
-      queue.push(accept);
+      queues.push(new QueueEntry(id, accept));
     });
+    let pendingResponseId = null;
     worker.onmessage = e => {
-      queue.shift()(e.data);
+      const {data} = e;
+      if (typeof data === 'string') {
+        const m = JSON.parse(data);
+        const {type, args} = m;
+
+        if (type === 'response') {
+          const [id] = args;
+          pendingResponseId = id;
+        } else {
+          console.warn('heightfield got unknown worker message type:', JSON.stringify(type));
+        }
+      } else {
+        const queueEntryIndex = queues.findIndex(queueEntry => queueEntry.id === pendingResponseId);
+        const queueEntry = queues[queueEntryIndex];
+        queueEntry.cb(data);
+        queues.splice(queueEntryIndex, 1);
+        pendingResponseId = null;
+      }
     };
 
     let lightmapper = null;
@@ -587,5 +614,11 @@ class Heightfield {
     this._cleanup();
   }
 }
+let _id = 0;
+const _makeId = () => {
+  const result = _id;
+  _id = (_id + 1) | 0;
+  return result;
+};
 
 module.exports = Heightfield;
