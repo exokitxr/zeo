@@ -162,7 +162,6 @@ const _makeGrassTemplate = () => {
       .multiplyScalar(rng() * 1)
       .add(new THREE.Vector3(0, 0.5, 0));
     quaternion.setFromAxisAngle(upVector, rng() * Math.PI * 2);
-    // scale.set(5 + (rng() * 5), 5 + rng() * 10, 5 + (rng() * 5));
     matrix.compose(position, quaternion, scale);
     const geometry = new THREE.PlaneBufferGeometry(1, 1)
       .applyMatrix(matrix);
@@ -219,7 +218,7 @@ const _requestHeightfield = (x, y) => {
     .then(_resArrayBuffer)
     .then(arrayBuffer => protocolUtils.parseHeightfield(arrayBuffer, 0));
 };
-const _makeGrassChunkMesh = (ox, oy, grassTemplates, heightfield, heightRange) => {
+const _makeGrassChunkMesh = (ox, oy, grassTemplates, heightfield) => {
   const positions = new Float32Array(NUM_POSITIONS_CHUNK * 3);
   const uvs = new Float32Array(NUM_POSITIONS_CHUNK * 2);
   const indices = new Uint16Array(NUM_POSITIONS_CHUNK);
@@ -270,14 +269,16 @@ const _makeGrassChunkMesh = (ox, oy, grassTemplates, heightfield, heightRange) =
     }
   }
 
+  const geometry = new THREE.BufferGeometry();
+  geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+  geometry.computeBoundingSphere();
+  const {boundingSphere} = geometry;
+
   return {
     positions: new Float32Array(positions.buffer, positions.byteOffset, attributeIndex),
     uvs: new Float32Array(uvs.buffer, uvs.byteOffset, uvIndex),
     indices: new Uint16Array(indices.buffer, indices.byteOffset, indexIndex),
-    heightRange: [
-      heightRange[0],
-      heightRange[1] + 1, // account for grass height
-    ],
+    boundingSphere: boundingSphere,
   };
 };
 
@@ -288,8 +289,8 @@ self.onmessage = e => {
   if (type === 'chunk') {
     const {id, x, y, buffer} = data;
     _requestHeightfield(x, y)
-      .then(({heightfield, heightRange}) => {
-        const grassChunkGeometry = _makeGrassChunkMesh(x, y, grassTemplates, heightfield, heightRange);
+      .then(heightfield => {
+        const grassChunkGeometry = _makeGrassChunkMesh(x, y, grassTemplates, heightfield);
         const resultBuffer = protocolUtils.stringifyGrassGeometry(grassChunkGeometry);
 
         postMessage(JSON.stringify({
