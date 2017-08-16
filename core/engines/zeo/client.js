@@ -626,6 +626,10 @@ class Zeo {
                           tags.destroyListener(listener);
                         }
 
+                        requestElement(selector) {
+                          return tags.requestElement(selector);
+                        }
+
                         /* on(event, handler) {
                           return tags.on(event, handler);
                         }

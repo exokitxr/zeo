@@ -22,16 +22,13 @@ const NUM_POSITIONS_CHUNK = 100 * 1024;
 const TEXTURE_SIZE = 1024;
 const TEXTURE_CHUNK_SIZE = 512;
 const NUM_TEXTURE_CHUNKS_WIDTH = TEXTURE_SIZE / TEXTURE_CHUNK_SIZE;
+const HEIGHTFIELD_DEPTH = 8;
 
 const upVector = new THREE.Vector3(0, 1, 0);
 
 const rng = new alea(DEFAULT_SEED);
 const generator = indev({
   seed: DEFAULT_SEED,
-});
-const elevationNoise = generator.uniform({
-  frequency: 0.002,
-  octaves: 8,
 });
 const grassNoise = generator.uniform({
   frequency: 0.1,
@@ -204,7 +201,25 @@ const grassTemplates = (() => {
   }
   return result;
 })();
-const _makeGrassChunkMesh = (ox, oy, grassTemplates, points, heightRange) => {
+
+const _resArrayBuffer = res => {
+  if (res.status >= 200 && res.status < 300) {
+    return res.arrayBuffer();
+  } else {
+    return Promise.reject({
+      status: res.status,
+      stack: 'API returned invalid status code: ' + res.status,
+    });
+  }
+};
+const _requestHeightfield = (x, y) => {
+  return fetch(`/archae/heightfield/heightfield?x=${x}&z=${y}`, {
+    credentials: 'include',
+  })
+    .then(_resArrayBuffer)
+    .then(arrayBuffer => protocolUtils.parseHeightfield(arrayBuffer, 0));
+};
+const _makeGrassChunkMesh = (ox, oy, grassTemplates, heightfield, heightRange) => {
   const positions = new Float32Array(NUM_POSITIONS_CHUNK * 3);
   const uvs = new Float32Array(NUM_POSITIONS_CHUNK * 2);
   const indices = new Uint16Array(NUM_POSITIONS_CHUNK);
@@ -226,22 +241,19 @@ const _makeGrassChunkMesh = (ox, oy, grassTemplates, points, heightRange) => {
       const v = grassNoise.in2D(ax + 1000, ay + 1000);
 
       if (v < grassProbability) {
-        const pointIndex = dx + (dy * NUM_CELLS_OVERSCAN);
-        const elevation = points[pointIndex];
+        const elevation = heightfield[(dx + (dy * NUM_CELLS_OVERSCAN)) * HEIGHTFIELD_DEPTH];
 
-        if (elevation > 0) {
+        if (elevation > -Infinity) {
           position.set(
             ax,
             elevation,
             ay
           );
-          const n = murmur(String(v)) / 0xFFFFFFFF;
-          quaternion.setFromAxisAngle(upVector, n * Math.PI * 2);
+          quaternion.setFromAxisAngle(upVector, murmur(v + ':angle') / 0xFFFFFFFF * Math.PI * 2);
           matrix.compose(position, quaternion, scale);
-          scale.set(1, 0.5 + rng() * 1, 1);
-          const grassGeometry = grassTemplates[Math.floor(n * grassTemplates.length)];
-          const geometry = grassGeometry
-            .clone()
+          scale.set(1, 0.5 + murmur(v + ':scale') / 0xFFFFFFFF, 1);
+          const grassGeometry = grassTemplates[Math.floor(murmur(v + ':template') / 0xFFFFFFFF * grassTemplates.length)];
+          const geometry = grassGeometry.clone()
             .applyMatrix(matrix);
           const newPositions = geometry.getAttribute('position').array;
           positions.set(newPositions, attributeIndex);
@@ -268,37 +280,6 @@ const _makeGrassChunkMesh = (ox, oy, grassTemplates, points, heightRange) => {
     ],
   };
 };
-const _generateHeightfield = (ox, oy) => {
-  const points = Array(NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN);
-  let minHeight = Infinity;
-  let maxHeight = -Infinity;
-
-  for (let dy = 0; dy < NUM_CELLS_OVERSCAN; dy++) {
-    for (let dx = 0; dx < NUM_CELLS_OVERSCAN; dx++) {
-      const index = dx + (dy * NUM_CELLS_OVERSCAN);
-
-      const ax = (ox * NUM_CELLS) + dx;
-      const ay = (oy * NUM_CELLS) + dy;
-      const elevation = (-0.3 + Math.pow(elevationNoise.in2D(ax + 1000, ay + 1000), 0.5)) * 64;
-
-      points[index] = elevation;
-      if (elevation < minHeight) {
-        minHeight = elevation;
-      }
-      if (elevation > maxHeight) {
-        maxHeight = elevation;
-      }
-    }
-  }
-
-  return {
-    points,
-    heightRange: [
-      minHeight,
-      maxHeight,
-    ],
-  };
-};
 
 self.onmessage = e => {
   const {data} = e;
@@ -306,12 +287,16 @@ self.onmessage = e => {
 
   if (type === 'chunk') {
     const {x, y, buffer} = data;
-    const mapChunk = _generateHeightfield(x, y);
-    const {points, heightRange} = mapChunk;
-    const grassChunkGeometry = _makeGrassChunkMesh(x, y, grassTemplates, points, heightRange);
-    const resultBuffer = protocolUtils.stringifyGrassGeometry(grassChunkGeometry);
+    _requestHeightfield(x, y)
+      .then(({heightfield, heightRange}) => {
+        const grassChunkGeometry = _makeGrassChunkMesh(x, y, grassTemplates, heightfield, heightRange);
+        const resultBuffer = protocolUtils.stringifyGrassGeometry(grassChunkGeometry);
 
-    postMessage(resultBuffer, [resultBuffer]);
+        postMessage(resultBuffer, [resultBuffer]);
+      })
+      .catch(err => {
+        console.warn(err);
+      });
   } else if (type === 'texture') {
     const {buffer} = data;
     new Uint8Array(buffer).set(grassTextureAtlas);

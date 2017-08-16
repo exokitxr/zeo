@@ -54,6 +54,9 @@ self.onmessage = e => {
             args: [id],
           }));
           postMessage(buffer, [buffer]);
+        })
+        .catch(err => {
+          console.warn(err);
         });
       break;
     }
