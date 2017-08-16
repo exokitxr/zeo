@@ -859,7 +859,10 @@ void main() {
                     const [n, x, z, objectIndex, position] = hoveredTrackedObjectSpec;
                     hoveredTrackedObjects[side].set(n, x, z, objectIndex, position);
 
-                    objectsChunkMeshes[_getChunkIndex(x, z)].uniforms.selectedObject.value = objectIndex;
+                    const objectsChunkMesh = objectsChunkMeshes[_getChunkIndex(x, z)];
+                    if (objectsChunkMesh) {
+                      objectsChunkMesh.uniforms.selectedObject.value = objectIndex;
+                    }
                   } else {
                     hoveredTrackedObjects[side].clear();
                   }
