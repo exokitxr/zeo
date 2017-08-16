@@ -1,5 +1,3 @@
-const protocolUtils = require('./lib/utils/protocol-utils');
-
 const CHUNK_HEADER_SIZE = 2 * 4;
 const CHUNK_BUFFER_SIZE = 0.5 * 1024 * 1024;
 const CHUNK_SIZE = CHUNK_HEADER_SIZE + CHUNK_BUFFER_SIZE;
@@ -18,7 +16,7 @@ class Chunk {
   }
 
   generate(generator) {
-    protocolUtils.stringifyMapChunk(generator(this.x, this.z), this.uint32Buffer.buffer, this.uint32Buffer.byteOffset);
+    generator(this.x, this.z, this.uint32Buffer.buffer, this.uint32Buffer.byteOffset);
     this.dirty = true;
   }
 }
