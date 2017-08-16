@@ -57,7 +57,6 @@ class Tags {
         while (queue.length > 0) {
           const e = queue.pop();
           const {tagName} = e;
-
           if (tagName === selector) {
             return e;
           } else {
@@ -77,10 +76,7 @@ class Tags {
         this.children.splice(this.children.indexOf(child));
       }
     }
-
     const worldElement = new Element('world', 'zeo');
-
-    const entityApiElements = new Map(); // entityApi -> entityElement
 
     const _getWorldElement = () => worldElement;
     const _requestElement = (selector, {timeout = 30 * 1000} = {}) => {
@@ -136,27 +132,21 @@ class Tags {
       }
     };
     const _registerEntity = (pluginInstance, entityApi) => {
-      const name = archae.getPath(pluginInstance);
-      const tagName = _makeTagName(name);
-      const entityElement = new Element(tagName, name);
-      worldElement.appendChild(entityElement);
-
-      entityApiElements.set(entityApi, entityElement);
+      entityApi.tagName = _makeTagName(archae.getPath(pluginInstance));
+      worldElement.appendChild(entityApi);
 
       const {entityAddedCallback = nop} = entityApi;
-      entityAddedCallback(entityElement);
+      entityAddedCallback(entityApi);
 
-      worldElement.emit('elementAdded', entityElement);
+      worldElement.emit('elementAdded', entityApi);
     };
     const _unregisterEntity = (pluginInstance, entityApi) => {
-      const entityElement = entityApiElements.get(entityApi);
-      entityApiElements.delete(entityApi);
-      worldElement.removeChild(entityElement);
+      worldElement.removeChild(entityApi);
 
       const {entityRemovedCallback = nop} = entityApi;
-      entityRemovedCallback(entityElement);
+      entityRemovedCallback(entityApi);
 
-      worldElement.emit('elementRemoved', entityElement);
+      worldElement.emit('elementRemoved', entityApi);
     };
 
     return {
@@ -174,8 +164,8 @@ class Tags {
 
 const nop = () => {};
 const _makeTagName = s => s
-  .toLowerCase()
-  .replace(/[^a-z0-9-]/g, '-')
+  .toUpperCase()
+  .replace(/[^A-Z0-9-]/g, '-')
   .replace(/--+/g, '-')
   .replace(/(?:^-|-$)/g, '');
 
