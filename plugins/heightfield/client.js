@@ -130,7 +130,7 @@ class Heightfield {
 
   mount() {
     const {_archae: archae} = this;
-    const {three, render, pose, world, elements, teleport, /*physics,*/ stck, stage, utils: {js: {mod, bffr}, random: {chnkr}}} = zeo;
+    const {three, render, pose, world, elements, teleport, stck, stage, utils: {js: {mod, bffr}, random: {chnkr}}} = zeo;
     const {THREE, camera} = three;
 
     const _getChunkIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
@@ -309,19 +309,6 @@ class Heightfield {
       const {added, removed, relodded} = chunker.update(hmdPosition.x, hmdPosition.z);
 
       const _addTarget = (mapChunkMesh, x, z) => {
-        /* const physicsBody = physics.makeBody(mapChunkMesh, 'heightfield:' + x + ':' + z, {
-          mass: 0,
-          position: [
-            (NUM_CELLS / 2) + (x * NUM_CELLS),
-            0,
-            (NUM_CELLS / 2) + (z * NUM_CELLS)
-          ],
-          linearFactor: [0, 0, 0],
-          angularFactor: [0, 0, 0],
-          bindObject: false,
-          bindConnection: false,
-        });
-        mapChunkMesh.physicsBody = physicsBody; */
         const {heightfield} = mapChunkMesh;
         const stckBody = stck.makeStaticHeightfieldBody(
           new THREE.Vector3(x * NUM_CELLS, 0, z * NUM_CELLS),
@@ -334,8 +321,6 @@ class Heightfield {
         mapChunkMesh.targeted = true;
       };
       const _removeTarget = mapChunkMesh => {
-        /* const {physicsBody} = mapChunkMesh;
-        physics.destroyBody(physicsBody); */
         const {stckBody} = mapChunkMesh;
         stck.destroyBody(stckBody);
 
@@ -423,8 +408,6 @@ class Heightfield {
         const heightfieldEntity = {
           entityAddedCallback(entityElement) {
             const min = new THREE.Vector2();
-            /// const max = new THREE.Vector2();
-            // const cellOffset = new THREE.Vector2(NUM_CELLS, NUM_CELLS);
             const a = new THREE.Vector3();
             const b = new THREE.Vector3();
             const c = new THREE.Vector3();
@@ -432,39 +415,40 @@ class Heightfield {
             const triangle = new THREE.Triangle(a, b, c);
             const baryCoord = new THREE.Vector3();
 
-            const _getHeightfieldIndex = (p, min) => ((p.x - min.x) + ((p.z - min.y) * (NUM_CELLS + 1))) * 4;
+            const _getHeightfieldIndex = (x, z) => (x + (z * (NUM_CELLS + 1))) * 4;
             const _getElevation = (x, z) => {
               const ox = Math.floor(x / NUM_CELLS);
               const oz = Math.floor(z / NUM_CELLS);
               const mapChunkMesh = mapChunkMeshes[_getChunkIndex(ox, oz)];
 
               if (mapChunkMesh) {
-                const ax = Math.floor(x);
-                const az = Math.floor(z);
-                if ((x - ax) <= (1 - (z - az))) { // top left triangle
-                  a.set(ax, 0, az);
-                  b.set(ax + 1, 0, az);
-                  c.set(ax, 0, az + 1);
-                } else { // bottom right triangle
-                  a.set(ax + 1, 0, az);
-                  b.set(ax, 0, az + 1);
-                  c.set(ax + 1, 0, az + 1);
-                };
-                min.set(ox * NUM_CELLS, oz * NUM_CELLS);
-                // max.copy(min).add(cellOffset);
-                const ea = mapChunkMesh.heightfield[_getHeightfieldIndex(a, min)];
-                const eb = mapChunkMesh.heightfield[_getHeightfieldIndex(b, min)];
-                const ec = mapChunkMesh.heightfield[_getHeightfieldIndex(c, min)];
-
-                p.set(x, 0, z);
-                triangle.barycoordFromPoint(p, baryCoord);
-
-                return baryCoord.x * ea +
-                  baryCoord.y * eb +
-                  baryCoord.z * ec;
+                return _getHeightfieldElevation(mapChunkMesh.heightfield, x, z, 0);
               } else {
-                return null;
+                return 0;
               }
+            };
+            const _getHeightfieldElevation = (heightfield, x, z, layer) => {
+              const ax = Math.floor(x);
+              const az = Math.floor(z);
+              if ((x - ax) <= (1 - (z - az))) { // top left triangle
+                a.set(ax, 0, az);
+                b.set(ax + 1, 0, az);
+                c.set(ax, 0, az + 1);
+              } else { // bottom right triangle
+                a.set(ax + 1, 0, az);
+                b.set(ax, 0, az + 1);
+                c.set(ax + 1, 0, az + 1);
+              };
+              const ea = heightfield[_getHeightfieldIndex(a.x, a.z) + layer];
+              const eb = heightfield[_getHeightfieldIndex(b.x, b.z) + layer];
+              const ec = heightfield[_getHeightfieldIndex(c.x, c.z) + layer];
+
+              p.set(x, 0, z);
+              triangle.barycoordFromPoint(p, baryCoord);
+
+              return baryCoord.x * ea +
+                baryCoord.y * eb +
+                baryCoord.z * ec;
             };
 
             const localVector = new THREE.Vector3();
@@ -481,8 +465,49 @@ class Heightfield {
                     .applyEuler(localEuler)
                     .multiplyScalar(15 * angleFactor)
                 );
-              targetPosition.y = _getElevation(targetPosition.x, targetPosition.z);
-              return targetPosition;
+              const ox = Math.floor(targetPosition.x / NUM_CELLS);
+              const oz = Math.floor(targetPosition.z / NUM_CELLS);
+              const mapChunkMesh = mapChunkMeshes[_getChunkIndex(ox, oz)];
+
+              if (mapChunkMesh) {
+                const lx = targetPosition.x - (ox * NUM_CELLS);
+                const lz = targetPosition.z - (oz * NUM_CELLS);
+
+                const controllerY = position.y;
+                let bestY = null;
+                let bestYDistance = Infinity;
+
+                /* const candidates = Array(4); // XXX
+                for (let i = 0; i < 4; i++) {
+                  candidates[i] = _getHeightfieldElevation(mapChunkMesh.heightfield, lx, lz, i);
+                }
+                console.log('candidates', candidates.join(',')); */
+
+                for (let i = 0; i < 4; i++) {
+                  const localY = _getHeightfieldElevation(mapChunkMesh.heightfield, lx, lz, i);
+
+                  if (localY !== -Infinity) {
+                    const distance = Math.abs(controllerY - localY);
+
+                    if (distance < bestYDistance) {
+                      bestY = localY;
+                      bestYDistance = distance;
+                    } else {
+                      continue;
+                    }
+                  } else {
+                    break;
+                  }
+                }
+                if (bestY !== null) {
+                  targetPosition.y = bestY;
+                  return targetPosition;
+                } else {
+                  return null;
+                }
+              } else {
+                return null;
+              }
             };
             teleport.addTarget(_teleportTarget);
 
