@@ -115,7 +115,7 @@ class Stck {
             width,
             depth,
             data,
-          });
+          }, [data.buffer]);
 
           return body;
         };

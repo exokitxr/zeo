@@ -260,12 +260,11 @@ class Heightfield {
       });
     const _makeMapChunkMesh = (chunk, mapChunkData, x, z) => {
       const mesh = (() => {
-        const {position, positions, /*normals, */colors, indices, heightfield, heightRange} = mapChunkData;
+        const {position, positions, colors, indices, heightfield, staticHeightfield, heightRange} = mapChunkData;
 
         const geometry = (() => {
           let geometry = new THREE.BufferGeometry();
           geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
-          // geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
           geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
           geometry.setIndex(new THREE.BufferAttribute(indices, 1));
           const [minY, maxY] = heightRange;
@@ -302,6 +301,7 @@ class Heightfield {
 
         mesh.offset = new THREE.Vector2(x, z);
         mesh.heightfield = heightfield;
+        mesh.staticHeightfield = staticHeightfield;
         mesh.lod = chunk.lod;
 
         mesh.lightmap = null;
@@ -338,20 +338,18 @@ class Heightfield {
       const {added, removed, relodded} = chunker.update(hmdPosition.x, hmdPosition.z);
 
       const _addTarget = (mapChunkMesh, x, z) => {
-        const {heightfield} = mapChunkMesh;
         const stckBody = stck.makeStaticHeightfieldBody(
           new THREE.Vector3(x * NUM_CELLS, 0, z * NUM_CELLS),
           NUM_CELLS,
           NUM_CELLS,
-          heightfield
+          mapChunkMesh.staticHeightfield
         );
         mapChunkMesh.stckBody = stckBody;
 
         mapChunkMesh.targeted = true;
       };
       const _removeTarget = mapChunkMesh => {
-        const {stckBody} = mapChunkMesh;
-        stck.destroyBody(stckBody);
+        stck.destroyBody(mapChunkMesh.stckBody);
 
         mapChunkMesh.targeted = false;
       };

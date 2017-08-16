@@ -217,6 +217,8 @@ const _generateMapChunk = (ox, oy) => {
 
   const heightfield = new Float32Array(NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN * HEIGHTFIELD_DEPTH);
   heightfield.fill(-Infinity);
+  const staticHeightfield = new Float32Array(NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN);
+  staticHeightfield.fill(-1024);
   let minY = Infinity;
   let maxY = -Infinity;
 
@@ -247,6 +249,11 @@ const _generateMapChunk = (ox, oy) => {
           } else if (y === oldY) {
             break;
           }
+        }
+
+        const staticheightfieldIndex = _getStaticHeightfieldIndex(x, z);
+        if (y > staticHeightfield[staticheightfieldIndex]) {
+          staticHeightfield[staticheightfieldIndex] = y;
         }
       }
     }
@@ -418,6 +425,7 @@ const _generateMapChunk = (ox, oy) => {
     colors: geometry.getAttribute('color').array,
     indices: geometry.index.array,
     heightfield: heightfield,
+    staticHeightfield,
     heightRange: [minY, maxY],
   };
 };
@@ -484,6 +492,7 @@ const _colorIntToArray = n => ([
   ((n >> (8 * 0)) & 0xFF) / 0xFF,
 ]);
 const _getHeightfieldIndex = (x, z) => (x + (z * NUM_CELLS_OVERSCAN)) * HEIGHTFIELD_DEPTH;
+const _getStaticHeightfieldIndex = (x, z) => x + (z * NUM_CELLS_OVERSCAN);
 
 const generator = (x, y, buffer, byteOffset) => {
   protocolUtils.stringifyMapChunk(_generateMapChunk(x, y), buffer, byteOffset);
