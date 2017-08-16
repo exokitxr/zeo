@@ -5,8 +5,6 @@ const grass = objectApi => {
       const localQuaternion = new generateApi.THREE.Quaternion();
       const localEuler = new generateApi.THREE.Euler();
 
-      const _getElevation = (ox, oz, x, z) => (-0.3 + Math.pow(generateApi.getNoise('elevation', ox, oz, x, z), 0.5)) * 64;
-
       const grassProbability = 0.3;
 
       for (let dz = 0; dz < generateApi.NUM_CELLS_OVERSCAN; dz++) {
@@ -14,7 +12,7 @@ const grass = objectApi => {
           const v = generateApi.getNoise('grass', chunk.x, chunk.z, dx, dz);
 
           if (v < grassProbability) {
-            const elevation = _getElevation(chunk.x, chunk.z, dx, dz);
+            const elevation = chunk.heightfield[(dx + (dz * generateApi.NUM_CELLS_OVERSCAN)) * 8];
 
             if (elevation > 0) {
               const ax = (chunk.x * generateApi.NUM_CELLS) + dx;

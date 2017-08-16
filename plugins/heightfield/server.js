@@ -19,6 +19,7 @@ class Heightfield {
     const {_archae: archae} = this;
     const {dirname, dataDirectory} = archae;
     const {express, app} = archae.getCore();
+    const {elements} = zeo;
 
     const trraDataPath = path.join(dirname, dataDirectory, 'trra.dat');
 
@@ -130,6 +131,21 @@ class Heightfield {
         }
         app.get('/archae/heightfield/heightfield', serveHeightfieldHeightfield);
 
+        const heightfieldElement = {
+          requestHeightfield(x, z) {
+            let chunk = tra.getChunk(x, z);
+            if (!chunk) {
+              chunk = tra.makeChunk(x, z);
+              chunk.generate(generator);
+              _saveChunks();
+            }
+            const uint32Buffer = chunk.getBuffer();
+            const {heightfield} = protocolUtils.parseMapChunk(uint32Buffer.buffer, uint32Buffer.byteOffset);
+            return Promise.resolve(heightfield);
+          },
+        };
+        elements.registerEntity(this, heightfieldElement);
+
         this._cleanup = () => {
           function removeMiddlewares(route, i, routes) {
             if (route.handle.name === 'serveHeightfieldImg' || route.handle.name === 'serveHeightfieldChunks' || route.handle.name === 'serveHeightfieldHeightfield') {
@@ -140,6 +156,8 @@ class Heightfield {
             }
           }
           app._router.stack.forEach(removeMiddlewares);
+
+          elements.unregisterEntity(this, heightfieldElement);
         };
       });
   }

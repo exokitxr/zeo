@@ -5,13 +5,11 @@ const tree = objectApi => {
       const localQuaternion = new generateApi.THREE.Quaternion();
       const localEuler = new generateApi.THREE.Euler();
 
-      const _getElevation = (ox, oz, x, z) => (-0.3 + Math.pow(generateApi.getNoise('elevation', ox, oz, x, z), 0.5)) * 64;
-
       const treeProbability = 0.015;
 
       for (let dz = 0; dz < generateApi.NUM_CELLS_OVERSCAN; dz++) {
         for (let dx = 0; dx < generateApi.NUM_CELLS_OVERSCAN; dx++) {
-          const elevation = _getElevation(chunk.x, chunk.z, dx, dz);
+          const elevation = chunk.heightfield[(dx + (dz * generateApi.NUM_CELLS_OVERSCAN)) * 8];
 
           if (elevation > 0) {
             const v = generateApi.getNoise('tree', chunk.x, chunk.z, dx, dz);

@@ -10,6 +10,7 @@ const {
   DEFAULT_SEED,
 } = require('./lib/constants/constants');
 const objectsLib = require('./lib/objects/server/index');
+const HEIGHTFIELD_PLUGIN = 'plugins-heightfield';
 
 class Objects {
   constructor(archae) {
@@ -20,7 +21,7 @@ class Objects {
     const {_archae: archae} = this;
     const {dirname, dataDirectory} = archae;
     const {express, ws, app, wss} = archae.getCore();
-    const {three, utils: {hash: hashUtils, random: randomUtils}} = zeo;
+    const {three, elements, utils: {hash: hashUtils, random: randomUtils}} = zeo;
     const {THREE} = three;
     const {murmur} = hashUtils;
     const {alea, indev} = randomUtils;
@@ -92,6 +93,28 @@ class Objects {
 
     return _getZeode()
       .then(zde => {
+        const _decorateChunkHeightfield = chunk => elements.requestElement(HEIGHTFIELD_PLUGIN)
+          .then(heightfieldElement => heightfieldElement.requestHeightfield(chunk.x, chunk.z))
+          .then(heightfield => {
+            chunk.heightfield = heightfield;
+            return chunk;
+          });
+        const _requestChunk = (x, z) => {
+          const chunk = zde.getChunk(x, z);
+          if (chunk) {
+            return Promise.resolve(chunk);
+          } else {
+            const chunk = zde.makeChunk(x, z);
+            return _decorateChunkHeightfield(chunk)
+              .then(chunk => {
+                _generateChunk(chunk);
+                _saveChunks();
+
+                return chunk;
+              });
+          }
+        };
+
         const _writeFileData = (data, byteOffset) => new Promise((accept, reject) => {
           const ws = fs.createWriteStream(zeodeDataPath, {
             flags: 'r+',
@@ -185,16 +208,19 @@ class Objects {
               const z = parseInt(zs, 10);
 
               if (!isNaN(x) && !isNaN(z)) {
-                let chunk = zde.getChunk(x, z);
-                if (!chunk) {
-                  chunk = zde.makeChunk(x, z);
-                  _generateChunk(chunk);
-                  _saveChunks();
-                }
-                const uint32Buffer = chunk.getBuffer();
-                const buffer = new Buffer(uint32Buffer.buffer, uint32Buffer.byteOffset, uint32Buffer.byteLength);
-                res.type('application/octet-stream');
-                res.send(buffer);
+                _requestChunk(x, z)
+                  .then(chunk => {
+                    const uint32Buffer = chunk.getBuffer();
+                    const buffer = new Buffer(uint32Buffer.buffer, uint32Buffer.byteOffset, uint32Buffer.byteLength);
+                    res.type('application/octet-stream');
+                    res.send(buffer);
+                  })
+                  .catch(err => {
+                    res.status(500);
+                    res.json({
+                      error: err.stack,
+                    });
+                  });
               } else {
                 res.status(400);
                 res.send();
@@ -226,19 +252,23 @@ class Objects {
                     const {args} = m;
                     const {x, z, n, matrix, value} = args;
 
-                    let chunk = zde.getChunk(x, z);
-                    if (!chunk) {
-                      chunk = zde.makeChunk(x, z);
-                      _generateChunk(chunk);
-                    }
-                    chunk.addObject(n, matrix, value);
+                    _requestChunk(x, z)
+                      .then(chunk => {
+                        chunk.addObject(n, matrix, value);
 
-                    _saveChunks();
+                        _saveChunks();
 
-                    _broadcast({
-                      type: 'addObject',
-                      args,
-                    });
+                        _broadcast({
+                          type: 'addObject',
+                          args,
+                        });
+                      })
+                      .catch(err => {
+                        res.status(500);
+                        res.json({
+                          error: err.stack,
+                        });
+                      });
                   } else if (method === 'removeObject') {
                     const {args} = m;
                     const {x, z, index} = args;
