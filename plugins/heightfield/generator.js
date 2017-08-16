@@ -216,7 +216,7 @@ const _generateMapChunk = (ox, oy) => {
   const indices = geometry.index.array;
 
   const heightfield = new Float32Array(NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN * HEIGHTFIELD_DEPTH);
-  heightfield.fill(-Infinity);
+  heightfield.fill(-1024);
   const staticHeightfield = new Float32Array(NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN);
   staticHeightfield.fill(-1024);
   let minY = Infinity;
