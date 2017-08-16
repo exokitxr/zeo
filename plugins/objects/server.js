@@ -179,7 +179,7 @@ class Objects {
             }
             app.use('/archae/objects/sfx', serveObjectsSfx);
 
-            app.get('/archae/objects/chunks', (req, res, next) => {
+            function serveObjectsChunks(req, res, next) {
               const {query: {x: xs, z: zs}} = req;
               const x = parseInt(xs, 10);
               const z = parseInt(zs, 10);
@@ -199,7 +199,8 @@ class Objects {
                 res.status(400);
                 res.send();
               }
-            });
+            }
+            app.get('/archae/objects/chunks', serveObjectsChunks);
 
             const connections = [];
             const _connection = c => {
@@ -288,7 +289,7 @@ class Objects {
               }
 
               function removeMiddlewares(route, i, routes) {
-                if (route.handle.name === 'serveObjectsImg' || route.handle.name === 'serveObjectsSfx') {
+                if (route.handle.name === 'serveObjectsImg' || route.handle.name === 'serveObjectsSfx' || route.handle.name === 'serveObjectsChunks') {
                   routes.splice(i, 1);
                 }
                 if (route.route) {
