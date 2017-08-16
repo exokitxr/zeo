@@ -4,6 +4,8 @@ const {
   NUM_CELLS_HEIGHT,
   HEIGHT_OFFSET,
 
+  HEIGHTFIELD_DEPTH,
+
   RANGE,
 } = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
@@ -415,7 +417,7 @@ class Heightfield {
             const triangle = new THREE.Triangle(a, b, c);
             const baryCoord = new THREE.Vector3();
 
-            const _getHeightfieldIndex = (x, z) => (x + (z * (NUM_CELLS + 1))) * 4;
+            const _getHeightfieldIndex = (x, z) => (x + (z * (NUM_CELLS + 1))) * HEIGHTFIELD_DEPTH;
             const _getElevation = (x, z) => {
               const ox = Math.floor(x / NUM_CELLS);
               const oz = Math.floor(z / NUM_CELLS);
@@ -475,7 +477,7 @@ class Heightfield {
             const _getBestHeightfieldPointElevation = (heightfield, x, z, y) => {
               let bestY = -Infinity;
               let bestYDistance = Infinity;
-              for (let i = 0; i < 4; i++) {
+              for (let i = 0; i < 8; i++) {
                 const localY = heightfield[_getHeightfieldIndex(x, z) + i];
 
                 if (localY !== -Infinity) {
