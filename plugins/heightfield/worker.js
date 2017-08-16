@@ -143,6 +143,8 @@ const _generateMapChunk = (ox, oy) => {
   const localVector6 = new THREE.Vector3();
   const localLine = new THREE.Line3();
   const localQuaternion = new THREE.Quaternion();
+  const localTriangle = new THREE.Triangle();
+  localTriangle.points = [localTriangle.a, localTriangle.b, localTriangle.c];
   const ether = new Float32Array((NUM_CELLS + 2) * ((NUM_CELLS * 2) + 2) * (NUM_CELLS + 2));
   ether.fill(1024);
   for (let dy = -1; dy <= 1; dy++) {
@@ -213,38 +215,50 @@ const _generateMapChunk = (ox, oy) => {
 
   const geometry = _makeGeometry(elevations, ether);
   const positions = geometry.getAttribute('position').array;
+  const indices = geometry.index.array;
 
   const heightfield = new Float32Array(NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN * 4);
   heightfield.fill(-Infinity);
   let minY = Infinity;
   let maxY = -Infinity;
 
-  const numPositions = positions.length / 3;
-  for (let i = 0; i < numPositions; i++) {
-    const baseIndex = i * 3;
-    const x = Math.floor(positions[baseIndex + 0]);
-    const y = positions[baseIndex + 1];
-    const z = Math.floor(positions[baseIndex + 2]);
+  const numIndices = indices.length / 3;
+  for (let i = 0; i < numIndices; i++) {
+    const indexIndex = i * 3;
+    localTriangle.a.fromArray(positions, indices[indexIndex + 0] * 3);
+    localTriangle.b.fromArray(positions, indices[indexIndex + 1] * 3);
+    localTriangle.c.fromArray(positions, indices[indexIndex + 2] * 3);
+    if (localTriangle.normal(localVector).y > 0) {
+      for (let j = 0; j < 3; j++) {
+        const point = localTriangle.points[j];
+        const x = Math.floor(point.x);
+        const y = point.y;
+        const z = Math.floor(point.z);
 
-    for (let j = 0; j < 4; j++) {
-      const heightfieldXYBaseIndex = (x + (z * NUM_CELLS_OVERSCAN)) * 4;
-      const oldY = heightfield[heightfieldXYBaseIndex + j];
-      if (y > oldY) {
-        for (let k = 4 - 1; k > j; k--) {
-          heightfield[heightfieldXYBaseIndex + k] = heightfield[heightfieldXYBaseIndex + k - 1];
+        for (let layer = 0; layer < 4; layer++) {
+          const heightfieldXYBaseIndex = (x + (z * NUM_CELLS_OVERSCAN)) * 4;
+          const oldY = heightfield[heightfieldXYBaseIndex + layer];
+          if (y > oldY) {
+            for (let k = 4 - 1; k > layer; k--) {
+              heightfield[heightfieldXYBaseIndex + k] = heightfield[heightfieldXYBaseIndex + k - 1];
+            }
+            heightfield[heightfieldXYBaseIndex + layer] = y;
+            break;
+          } else if (y === oldY) {
+            break;
+          }
         }
-        heightfield[heightfieldXYBaseIndex + j] = y;
-        break;
-      } else if (y === oldY) {
-        break;
       }
     }
 
-    if (y < minY) {
-      minY = y;
-    }
-    if (y > maxY) {
-      maxY = y;
+    for (let j = 0; j < 3; j++) {
+      const {y} = localTriangle.points[j];
+      if (y < minY) {
+        minY = y;
+      }
+      if (y > maxY) {
+        maxY = y;
+      }
     }
   }
 
@@ -359,9 +373,9 @@ const _generateMapChunk = (ox, oy) => {
     return points;
   })(); */
 
+  const numPositions = positions.length / 3;
   const colors = new Float32Array(numPositions * 3);
   geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
-  const indices = geometry.index.array;
 
   for (let i = 0; i < numPositions; i++) {
     const baseIndex = i * 3;
