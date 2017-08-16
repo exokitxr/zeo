@@ -233,14 +233,16 @@ const _generateMapChunk = (ox, oy) => {
         const y = point.y;
         const z = Math.floor(point.z);
 
-        for (let layer = 0; layer < 8; layer++) {
+        for (let layer = 0; layer < HEIGHTFIELD_DEPTH; layer++) {
           const heightfieldXYBaseIndex = _getHeightfieldIndex(x, z);
           const oldY = heightfield[heightfieldXYBaseIndex + layer];
           if (y > oldY) {
-            for (let k = 4 - 1; k > layer; k--) {
-              heightfield[heightfieldXYBaseIndex + k] = heightfield[heightfieldXYBaseIndex + k - 1];
+            if (j === 0 || (y - oldY) >= 5) { // ignore non-surface heights with small height difference
+              for (let k = HEIGHTFIELD_DEPTH - 1; k > layer; k--) {
+                heightfield[heightfieldXYBaseIndex + k] = heightfield[heightfieldXYBaseIndex + k - 1];
+              }
+              heightfield[heightfieldXYBaseIndex + layer] = y;
             }
-            heightfield[heightfieldXYBaseIndex + layer] = y;
             break;
           } else if (y === oldY) {
             break;
