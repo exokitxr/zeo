@@ -116,7 +116,6 @@ class Teleport {
 
         const _update = () => {
           const {hmd, gamepads} = webvr.getStatus();
-          const {position: hmdLocalPosition, rotation: hmdLocalRotation} = hmd;
 
           for (let i = 0; i < SIDES.length; i++) {
             const side = SIDES[i];
@@ -131,10 +130,7 @@ class Teleport {
 
               let targetPosition = null;
               for (let i = 0; i < targets.length; i++) {
-                const target = targets[i];
-                const tp = target(controllerPosition, controllerRotation, controllerScale, side);
-                if (tp) {
-                  targetPosition = tp;
+                if (targetPosition = targets[i](controllerPosition, controllerRotation, controllerScale, side, hmd.worldPosition, hmd.worldRotation)) {
                   break;
                 }
               }
@@ -175,8 +171,8 @@ class Teleport {
 
                 if (vrMode === 'hmd') {
                   const cameraPosition = camera.getWorldPosition(localVector);
-                  const hmdOffsetY = localVector2.setFromMatrixPosition(webvr.getSittingToStandingTransform()).y + hmdLocalPosition.y;
-                  // const hmdOffsetY = hmdLocalPosition.y;
+                  const hmdOffsetY = localVector2.setFromMatrixPosition(webvr.getSittingToStandingTransform()).y + hmd.position.y;
+                  // const hmdOffsetY = hmd.position.y;
                   const teleportMeshEuler = localEuler.setFromQuaternion(teleportFloorMesh.quaternion, 'XZY');
                   teleportMeshEuler.y = 0;
                   webvr.setStageMatrix(
@@ -195,7 +191,7 @@ class Teleport {
                       )) // move to teleport location
                   );
                 } else if (vrMode === 'keyboard') {
-                  const hmdLocalEuler = localEuler.setFromQuaternion(hmdLocalRotation, 'YXZ');
+                  const hmdLocalEuler = localEuler.setFromQuaternion(hmd.rotation, 'YXZ');
                   hmdLocalEuler.y = 0;
 
                   webvr.setStageMatrix(
@@ -216,8 +212,8 @@ class Teleport {
 
                 if (vrMode === 'hmd') {
                   const cameraPosition = camera.getWorldPosition();
-                  const hmdOffsetY = _decomposeMatrix(webvr.getSittingToStandingTransform()).position.y + hmdLocalPosition.y;
-                  // const hmdOffsetY = hmdLocalPosition.y;
+                  const hmdOffsetY = _decomposeMatrix(webvr.getSittingToStandingTransform()).position.y + hmd.position.y;
+                  // const hmdOffsetY = hmd.position.y;
                   const teleportMeshEuler = new THREE.Euler().setFromQuaternion(teleportAirMesh.quaternion, 'XZY');
                   teleportMeshEuler.y = 0;
                   webvr.setStageMatrix(
@@ -236,7 +232,7 @@ class Teleport {
                       )) // move to teleport location
                   );
                 } else if (vrMode === 'keyboard') {
-                  const hmdLocalEuler = new THREE.Euler().setFromQuaternion(hmdLocalRotation, 'YXZ');
+                  const hmdLocalEuler = new THREE.Euler().setFromQuaternion(hmd.rotation, 'YXZ');
 
                   webvr.setStageMatrix(
                     camera.matrixWorldInverse.clone()
