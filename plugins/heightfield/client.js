@@ -454,6 +454,17 @@ class Heightfield {
                 return 0;
               }
             };
+            const _getBestElevation = (x, z, y) => {
+              const ox = Math.floor(x / NUM_CELLS);
+              const oz = Math.floor(z / NUM_CELLS);
+              const mapChunkMesh = mapChunkMeshes[_getChunkIndex(ox, oz)];
+
+              if (mapChunkMesh) {
+                return _getBestHeightfieldTriangleElevation(mapChunkMesh.heightfield, x, z, y);
+              } else {
+                return 0;
+              }
+            };
             const _getTopHeightfieldTriangleElevation = (heightfield, x, z) => {
               const ax = Math.floor(x);
               const az = Math.floor(z);
@@ -546,7 +557,11 @@ class Heightfield {
                   targetPosition.z - (oz * NUM_CELLS),
                   hmdPosition.y - 1.5
                 );
-                return targetPosition;
+                if (targetPosition.y !== -1024) {
+                  return targetPosition;
+                } else {
+                  return null;
+                }
               } else {
                 return null;
               }
@@ -554,6 +569,7 @@ class Heightfield {
             teleport.addTarget(_teleportTarget);
 
             entityElement.getElevation = _getElevation;
+            entityElement.getBestElevation = _getBestElevation;
             entityElement._cleanup = () => {
               teleport.removeTarget(_teleportTarget);
             };

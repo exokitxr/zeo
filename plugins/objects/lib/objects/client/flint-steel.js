@@ -111,10 +111,9 @@ const flintSteel = objectApi => {
           });
           grabbable.on('collide', () => {
             if (sparkMesh) {
-              const heightfieldElement = elements.getEntitiesElement().querySelector(HEIGHTFIELD_PLUGIN);
               localVector.set(
                 grabbable.position.x,
-                heightfieldElement ? heightfieldElement.getElevation(grabbable.position.x, grabbable.position.z) : 0,
+                heightfieldElement ? heightfieldElement.getBestElevation(grabbable.position.x, grabbable.position.z, grabbable.position.y) : 0,
                 grabbable.position.z
               );
               objectApi.addObject('fire', localVector, zeroQuaternion);
