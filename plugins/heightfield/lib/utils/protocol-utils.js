@@ -1,7 +1,7 @@
 const UINT32_SIZE = 4;
 const INT32_SIZE = 4;
 const FLOAT32_SIZE = 4;
-const MAP_CHUNK_HEADER_ENTRIES = 5;
+const MAP_CHUNK_HEADER_ENTRIES = 6;
 const MAP_CHUNK_HEADER_SIZE = UINT32_SIZE * MAP_CHUNK_HEADER_ENTRIES;
 const POINT_SIZE = 7 * FLOAT32_SIZE;
 
@@ -26,7 +26,7 @@ class MapPoint {
 }
 
 const _getMapChunkSizeFromMetadata = metadata => {
-  const {numPoints, numPositions, /*numNormals, */numColors, numHeightfield} = metadata;
+  const {numPoints, numPositions, /*numNormals, */numColors, numHeightfield, numStaticHeightfield} = metadata;
 
   return MAP_CHUNK_HEADER_SIZE + // header
     (POINT_SIZE * numPoints) + // points
@@ -34,17 +34,19 @@ const _getMapChunkSizeFromMetadata = metadata => {
     (FLOAT32_SIZE * numColors) + // colors
     (UINT32_SIZE * numIndices) + // indices
     (FLOAT32_SIZE * numHeightfield) + // heightfield
+    (FLOAT32_SIZE * numStaticHeightfield) + // static heightfield
     (FLOAT32_SIZE * 2); // height range
 };
 
 const _getMapChunkSize = mapChunk => {
-  const {points, positions, colors, indices, heightfield} = mapChunk;
+  const {points, positions, colors, indices, heightfield, staticHeightfield} = mapChunk;
 
   const numPoints = points.length;
   const numPositions = positions.length;
   const numColors = colors.length;
   const numIndices = indices.length;
   const numHeightfield = heightfield.length;
+  const numStaticHeightfield = staticHeightfield.length;
 
   return _getMapChunkSizeFromMetadata({
     numPoints,
@@ -52,6 +54,7 @@ const _getMapChunkSize = mapChunk => {
     numColors,
     numIndices,
     numHeightfield,
+    numStaticHeightfield,
   });
 };
 
@@ -62,6 +65,7 @@ const _getMapChunkBufferSize = (arrayBuffer, byteOffset) => {
   const numColors = headerBuffer[2];
   const numIndices = headerBuffer[3];
   const numHeightfield = headerBuffer[4];
+  const numStaticHeightfield = headerBuffer[5];
 
   return _getMapChunkSizeFromMetadata({
     numPoints,
@@ -69,13 +73,14 @@ const _getMapChunkBufferSize = (arrayBuffer, byteOffset) => {
     numColors,
     numIndices,
     numHeightfield,
+    numStaticHeightfield,
   });
 };
 
 // stringification
 
 const stringifyMapChunk = (mapChunk, arrayBuffer, byteOffset) => {
-  const {points, positions, colors, indices, heightfield, heightRange} = mapChunk;
+  const {points, positions, colors, indices, heightfield, staticHeightfield, heightRange} = mapChunk;
 
   if (arrayBuffer === undefined || byteOffset === undefined) {
     const bufferSize = _getMapChunkSize(mapChunk);
@@ -89,6 +94,7 @@ const stringifyMapChunk = (mapChunk, arrayBuffer, byteOffset) => {
   headerBuffer[2] = colors.length;
   headerBuffer[3] = indices.length;
   headerBuffer[4] = heightfield.length;
+  headerBuffer[5] = staticHeightfield.length;
   byteOffset += MAP_CHUNK_HEADER_SIZE;
 
   const pointsBuffer = new Float32Array(arrayBuffer, byteOffset, points.length * 7);
@@ -123,6 +129,10 @@ const stringifyMapChunk = (mapChunk, arrayBuffer, byteOffset) => {
   heightfieldBuffer.set(heightfield);
   byteOffset += FLOAT32_SIZE * heightfield.length;
 
+  const staticHeightfieldBuffer = new Float32Array(arrayBuffer, byteOffset, staticHeightfield.length);
+  staticHeightfieldBuffer.set(staticHeightfield);
+  byteOffset += FLOAT32_SIZE * staticHeightfield.length;
+
   const heightRangeBuffer = new Float32Array(arrayBuffer, byteOffset, 2);
   heightRangeBuffer[0] = heightRange[0];
   heightRangeBuffer[1] = heightRange[1];
@@ -144,6 +154,7 @@ const parseMapChunk = (buffer, byteOffset) => {
   const numColors = headerBuffer[2];
   const numIndices = headerBuffer[3];
   const numHeightfield = headerBuffer[4];
+  const numStaticHeightfield = headerBuffer[5];
   byteOffset += MAP_CHUNK_HEADER_SIZE;
 
   const pointsBuffer = new Float32Array(buffer, byteOffset, numPoints * 7);
@@ -187,6 +198,10 @@ const parseMapChunk = (buffer, byteOffset) => {
   const heightfield = heightfieldBuffer;
   byteOffset += FLOAT32_SIZE * numHeightfield;
 
+  const staticHeightfieldBuffer = new Float32Array(buffer, byteOffset, numStaticHeightfield);
+  const staticHeightfield = staticHeightfieldBuffer;
+  byteOffset += FLOAT32_SIZE * numStaticHeightfield;
+
   const heightRangeBuffer = new Float32Array(buffer, byteOffset, 2);
   const heightRange = [
     heightRangeBuffer[0],
@@ -201,6 +216,7 @@ const parseMapChunk = (buffer, byteOffset) => {
     colors,
     indices,
     heightfield,
+    staticHeightfield,
     heightRange,
   };
 };
@@ -212,10 +228,11 @@ const sliceHeightfield = (arrayBuffer, readByteOffset) => {
   const numColors = headerBuffer[2];
   const numIndices = headerBuffer[3];
   const numHeightfield = headerBuffer[4];
+  const numStaticHeightfield = headerBuffer[5];
   readByteOffset += MAP_CHUNK_HEADER_SIZE + POINT_SIZE * numPoints + FLOAT32_SIZE * numPositions + FLOAT32_SIZE * numColors + UINT32_SIZE * numIndices;
 
   const heightfieldBuffer = new Float32Array(arrayBuffer, readByteOffset, numHeightfield);
-  readByteOffset += FLOAT32_SIZE * numHeightfield;
+  readByteOffset += FLOAT32_SIZE * numHeightfield + FLOAT32_SIZE * numStaticHeightfield;
 
   const heightRangeBuffer = new Float32Array(arrayBuffer, readByteOffset, 2);
   readByteOffset += FLOAT32_SIZE * 2;
