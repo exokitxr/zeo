@@ -12,7 +12,7 @@ const _getGrassGeometrySizeFromMetadata = metadata => {
     (FLOAT32_SIZE * numPositions) + // positions
     (FLOAT32_SIZE * numUvs) + // uvs
     (FLOAT32_SIZE * numIndices) + // indices
-    (FLOAT32_SIZE * 2); // height range
+    (FLOAT32_SIZE * 4); // height range
 };
 
 const _getGrassGeometrySize = grassGeometry => {
@@ -32,7 +32,7 @@ const _getGrassGeometrySize = grassGeometry => {
 // stringification
 
 const stringifyGrassGeometry = (grassGeometry, arrayBuffer, byteOffset) => {
-  const {positions, uvs, indices, heightRange} = grassGeometry;
+  const {positions, uvs, indices, boundingSphere} = grassGeometry;
 
   if (arrayBuffer === undefined || byteOffset === undefined) {
     const bufferSize = _getGrassGeometrySize(grassGeometry);
@@ -58,10 +58,12 @@ const stringifyGrassGeometry = (grassGeometry, arrayBuffer, byteOffset) => {
   indicesBuffer.set(indices);
   byteOffset += UINT16_SIZE * indices.length;
 
-  const heightRangeBuffer = new Float32Array(arrayBuffer, byteOffset, 2);
-  heightRangeBuffer[0] = heightRange[0];
-  heightRangeBuffer[1] = heightRange[1];
-  byteOffset += FLOAT32_SIZE * 2;
+  const boundingSphereBuffer = new Float32Array(arrayBuffer, byteOffset, 4);
+  boundingSphereBuffer[0] = boundingSphere.center.x;
+  boundingSphereBuffer[1] = boundingSphere.center.y;
+  boundingSphereBuffer[2] = boundingSphere.center.z;
+  boundingSphereBuffer[3] = boundingSphere.radius;
+  byteOffset += FLOAT32_SIZE * 4;
 
   return arrayBuffer;
 };
@@ -91,19 +93,16 @@ const parseGrassGeometry = (buffer, byteOffset) => {
   const indices = indicesBuffer;
   byteOffset += UINT16_SIZE * numIndices;
 
-  const heightRangeBuffer = new Float32Array(buffer, byteOffset, 2);
-  const heightRange = [
-    heightRangeBuffer[0],
-    heightRangeBuffer[1],
-  ];
-  byteOffset += FLOAT32_SIZE * 2;
+  const boundingSphereBuffer = new Float32Array(buffer, byteOffset, 4);
+  const boundingSphere = boundingSphereBuffer;
+  byteOffset += FLOAT32_SIZE * 4;
 
   return {
     buffer,
     positions,
     uvs,
     indices,
-    heightRange,
+    boundingSphere,
   };
 };
 
@@ -120,17 +119,7 @@ const parseHeightfield = (buffer, byteOffset) => {
   const heightfield = heightfieldBuffer;
   byteOffset += FLOAT32_SIZE * numHeightfield;
 
-  const heightRangeBuffer = new Float32Array(buffer, byteOffset, 2);
-  const heightRange = [
-    heightRangeBuffer[0],
-    heightRangeBuffer[1],
-  ];
-  byteOffset += FLOAT32_SIZE * 2;
-
-  return {
-    heightfield,
-    heightRange,
-  };
+  return heightfield;
 };
 
 module.exports = {

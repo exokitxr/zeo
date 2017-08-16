@@ -249,15 +249,17 @@ class Grass {
 
           const _makeGrassChunkMesh = (grassChunkData, x, z) => {
             const mesh = (() => {
-              const {positions, uvs, indices, heightRange} = grassChunkData;
+              const {positions, uvs, indices, boundingSphere} = grassChunkData;
 
               const geometry = (() => {
                 const geometry = new THREE.BufferGeometry();
                 geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
                 geometry.addAttribute('uv', new THREE.BufferAttribute(uvs, 2));
                 geometry.setIndex(new THREE.BufferAttribute(indices, 1));
-                const [minY, maxY] = heightRange;
-                geometry.computeBoundingSphere(); // XXX compute this in the worker instead of the height range
+                geometry.boundingSphere = new THREE.Sphere(
+                  new THREE.Vector3().fromArray(boundingSphere, 0),
+                  boundingSphere[3]
+                );
 
                 return geometry;
               })();
