@@ -1558,6 +1558,32 @@ class Tags {
               listener.destroy();
             }
 
+            requestElement(selector) {
+              return new Promise((accept, reject) => {
+                const element = rootEntitiesElement.querySelector(selector);
+                if (element) {
+                  accept(element);
+                } else {
+                   const _elementAdded = entityElement => {
+                    if (entityElement.matches(selector)) {
+                      clearTimeout(timeout);
+
+                      accept(entityElement);
+                    }
+                  };
+                  this.on('elementAdded', _elementAdded);
+
+                  const timeout = setTimeout(() => {
+                    this.removeListener('elementAdded', _elementAdded);
+
+                    const err = new Error('timeout out');
+                    err.code = 'ETIMEOUT';
+                    reject(err);
+                  }, 10 * 1000);
+                }
+              });
+            }
+
             getWorldElement() {
               return rootWorldElement;
             }

@@ -10,6 +10,7 @@ const protocolUtils = require('./lib/utils/protocol-utils');
 
 const TEXTURE_SIZE = 1024;
 const NUM_POSITIONS_CHUNK = 200 * 1024;
+const HEIGHTFIELD_PLUGIN = 'plugins-heightfield';
 const LIGHTMAP_PLUGIN = 'plugins-lightmap';
 const DAY_NIGHT_SKYBOX_PLUGIN = 'plugins-day-night-skybox';
 
@@ -107,7 +108,6 @@ class Grass {
     const {THREE} = three;
 
     const upVector = new THREE.Vector3(0, 1, 0);
-
     const buffers = bffr(NUM_POSITIONS_CHUNK, RANGE * RANGE * 9);
 
     let live = true;
@@ -115,20 +115,24 @@ class Grass {
       live = false;
     };
 
+    const _ensureHeightfieldElement = () => elements.requestElement(HEIGHTFIELD_PLUGIN)
+      .then(() => {});
+
     const worker = new Worker('archae/plugins/_plugins_grass/build/worker.js');
     const queue = [];
-    worker.requestGenerate = (x, y) => new Promise((accept, reject) => {
-      const buffer = buffers.alloc();
-      worker.postMessage({
-        type: 'chunk',
-        x,
-        y,
-        buffer,
-      }, [buffer]);
-      queue.push(buffer => {
-        accept(buffer);
-      });
-    });
+    worker.requestGenerate = (x, y) => _ensureHeightfieldElement()
+      .then(() => new Promise((accept, reject) => {
+        const buffer = buffers.alloc();
+        worker.postMessage({
+          type: 'chunk',
+          x,
+          y,
+          buffer,
+        }, [buffer]);
+        queue.push(buffer => {
+          accept(buffer);
+        });
+      }));
     worker.requestTexture = () => new Promise((accept, reject) => {
       const buffer = new ArrayBuffer(TEXTURE_SIZE * TEXTURE_SIZE  * 4);
       worker.postMessage({
@@ -233,14 +237,7 @@ class Grass {
                 geometry.addAttribute('uv', new THREE.BufferAttribute(uvs, 2));
                 geometry.setIndex(new THREE.BufferAttribute(indices, 1));
                 const [minY, maxY] = heightRange;
-                geometry.boundingSphere = new THREE.Sphere(
-                  new THREE.Vector3(
-                    (x * NUM_CELLS) + (NUM_CELLS / 2),
-                    (minY + maxY) / 2,
-                    (z * NUM_CELLS) + (NUM_CELLS / 2)
-                  ),
-                  Math.max(Math.sqrt((NUM_CELLS / 2) * (NUM_CELLS / 2) * 3), (maxY - minY) / 2)
-                );
+                geometry.computeBoundingSphere(); // XXX compute this in the worker instead of the height range
 
                 return geometry;
               })();

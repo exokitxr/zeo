@@ -4,6 +4,7 @@ const fs = require('fs');
 const touch = require('touch');
 const trra = require('trra');
 
+const protocolUtils = require('./lib/utils/protocol-utils');
 const generator = require('./generator');
 const {
   DEFAULT_SEED,
@@ -105,9 +106,33 @@ class Heightfield {
         }
         app.get('/archae/heightfield/chunks', serveHeightfieldChunks);
 
+        function serveHeightfieldHeightfield(req, res, next) {
+          const {query: {x: xs, z: zs}} = req;
+          const x = parseInt(xs, 10);
+          const z = parseInt(zs, 10);
+
+          if (!isNaN(x) && !isNaN(z)) {
+            let chunk = tra.getChunk(x, z);
+            if (!chunk) {
+              chunk = tra.makeChunk(x, z);
+              chunk.generate(generator);
+              _saveChunks();
+            }
+            const uint32Buffer = chunk.getBuffer();
+            const arrayBuffer = protocolUtils.sliceHeightfield(uint32Buffer.buffer, uint32Buffer.byteOffset);
+            const buffer = new Buffer(arrayBuffer);
+            res.type('application/octet-stream');
+            res.send(buffer);
+          } else {
+            res.status(400);
+            res.send();
+          }
+        }
+        app.get('/archae/heightfield/heightfield', serveHeightfieldHeightfield);
+
         this._cleanup = () => {
           function removeMiddlewares(route, i, routes) {
-            if (route.handle.name === 'serveHeightfieldImg' || route.handle.name === 'serveHeightfieldChunks') {
+            if (route.handle.name === 'serveHeightfieldImg' || route.handle.name === 'serveHeightfieldChunks' || route.handle.name === 'serveHeightfieldHeightfield') {
               routes.splice(i, 1);
             }
             if (route.route) {
