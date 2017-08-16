@@ -228,11 +228,14 @@ const _generateMapChunk = (ox, oy) => {
 
     for (let j = 0; j < 4; j++) {
       const heightfieldXYBaseIndex = (x + (z * NUM_CELLS_OVERSCAN)) * 4;
-      if (y > heightfield[heightfieldXYBaseIndex + j]) {
-        for (let k = 4 - 1; k < j; k--) {
+      const oldY = heightfield[heightfieldXYBaseIndex + j];
+      if (y > oldY) {
+        for (let k = 4 - 1; k > j; k--) {
           heightfield[heightfieldXYBaseIndex + k] = heightfield[heightfieldXYBaseIndex + k - 1];
         }
         heightfield[heightfieldXYBaseIndex + j] = y;
+        break;
+      } else if (y === oldY) {
         break;
       }
     }
