@@ -25,22 +25,20 @@ const localQuaternion = new THREE.Quaternion();
 const localMatrix = new THREE.Matrix4();
 
 const hiGeometry = new THREE.PlaneBufferGeometry(NUM_CELLS, NUM_CELLS, NUM_CELLS / SCALE, NUM_CELLS / SCALE)
-  .applyMatrix(localMatrix.makeTranslation(NUM_CELLS/2, 0, NUM_CELLS/2));
+  .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromAxisAngle(
+    new THREE.Vector3(1, 0, 0),
+    -Math.PI/2
+  )))
+  .applyMatrix(localMatrix.makeTranslation(NUM_CELLS/2, 64, NUM_CELLS/2));
 const loGeometry = new THREE.PlaneBufferGeometry(NUM_CELLS, NUM_CELLS, 1, 1)
-  .applyMatrix(localMatrix.makeTranslation(NUM_CELLS/2, 0, NUM_CELLS/2));
-
-/* const _copyIndices = (src, dst, startIndexIndex, startAttributeIndex) => {
-  for (let i = 0; i < src.length; i++) {
-    dst[startIndexIndex + i] = src[i] + startAttributeIndex;
-  }
-}; */
+  .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromAxisAngle(
+    new THREE.Vector3(1, 0, 0),
+    -Math.PI/2
+  )))
+  .applyMatrix(localMatrix.makeTranslation(NUM_CELLS/2, 64, NUM_CELLS/2));
 
 function _makeOceanChunkGeometry(ox, oz, lod) {
   const geometry = (lod === 1 ? hiGeometry : loGeometry).clone()
-    .applyMatrix(localMatrix.makeRotationFromQuaternion(localQuaternion.setFromAxisAngle(
-      localVector.set(1, 0, 0),
-      -Math.PI/2
-    )))
     .applyMatrix(localMatrix.makeTranslation(ox * NUM_CELLS, 0, oz * NUM_CELLS));
 
   const positions = geometry.getAttribute('position').array;
