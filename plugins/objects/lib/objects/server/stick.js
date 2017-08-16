@@ -14,16 +14,18 @@ const stick = objectApi => {
           if (v < itemProbability && (generateApi.getHash(String(v)) % 2) === 1) {
             const elevation = chunk.heightfield[(dx + (dz * generateApi.NUM_CELLS_OVERSCAN)) * 8];
 
-            const ax = (chunk.x * generateApi.NUM_CELLS) + dx;
-            const az = (chunk.z * generateApi.NUM_CELLS) + dz;
-            localVector.set(ax, elevation, az);
-            localQuaternion.setFromEuler(localEuler.set(
-              0,
-              generateApi.getHash(String(v)) / 0xFFFFFFFF * Math.PI * 2,
-              0,
-              'YXZ'
-            ));
-            generateApi.addObject(chunk, 'stick', localVector, localQuaternion, 0);
+            if (elevation > 64) {
+              const ax = (chunk.x * generateApi.NUM_CELLS) + dx;
+              const az = (chunk.z * generateApi.NUM_CELLS) + dz;
+              localVector.set(ax, elevation, az);
+              localQuaternion.setFromEuler(localEuler.set(
+                0,
+                generateApi.getHash(String(v)) / 0xFFFFFFFF * Math.PI * 2,
+                0,
+                'YXZ'
+              ));
+              generateApi.addObject(chunk, 'stick', localVector, localQuaternion, 0);
+            }
           }
         }
       }

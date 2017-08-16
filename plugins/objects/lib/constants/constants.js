@@ -2,8 +2,7 @@ const NUM_CELLS = 32;
 const OVERSCAN = 1;
 const NUM_CELLS_OVERSCAN = NUM_CELLS + OVERSCAN;
 
-const NUM_CELLS_HEIGHT = 60;
-const HEIGHT_OFFSET = -10;
+const NUM_CELLS_HEIGHT = 128;
 
 const RANGE = 2;
 
@@ -15,7 +14,6 @@ module.exports = {
   NUM_CELLS_OVERSCAN,
 
   NUM_CELLS_HEIGHT,
-  HEIGHT_OFFSET,
 
   RANGE,
 

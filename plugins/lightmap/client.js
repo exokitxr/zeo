@@ -1,8 +1,6 @@
 const {
   NUM_CELLS,
   NUM_CELLS_HEIGHT,
-
-  HEIGHT_OFFSET,
 } = require('./lib/constants/constants');
 
 class Lightmap {
@@ -15,7 +13,6 @@ class Lightmap {
     const _getLightmapIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
 
     let idCount = 0;
-
     class Ambient {
       constructor(v, blend = Lightmapper.AddBlend) {
         this.type = 'ambient';
@@ -164,21 +161,19 @@ class Lightmap {
     }
 
     class Lightmapper {
-      constructor({width = 32 + 1, height = 128, depth = 32 + 1, heightOffset = -32} = {}) {
+      constructor({width = NUM_CELLS + 1, height = NUM_CELLS_HEIGHT, depth = NUM_CELLS + 1} = {}) {
         this.width = width;
         this.height = height;
         this.depth = depth;
-        this.heightOffset = heightOffset;
 
         const worker = new Worker('archae/plugins/_plugins_lightmap/build/worker.js');
         const queue = [];
-        worker.init = (width, height, depth, heightOffset) => {
+        worker.init = (width, height, depth) => {
           worker.postMessage({
             type: 'init',
             width,
             height,
             depth,
-            heightOffset,
           });
         };
         worker.addShape = spec => {
@@ -220,7 +215,7 @@ class Lightmap {
           const {data: {buffer}} = e;
           queue.shift()(buffer);
         };
-        worker.init(width, height, depth, heightOffset);
+        worker.init(width, height, depth);
         this.worker = worker;
 
         this._lightmaps = {};
@@ -229,7 +224,7 @@ class Lightmap {
       }
 
       getLightmapAt(x, z) {
-        const {width, height, depth, heightOffset, _lightmaps: lightmaps, _lightmapsNeedUpdate: lightmapsNeedUpdate, _buffers: buffers} = this;
+        const {width, height, depth, _lightmaps: lightmaps, _lightmapsNeedUpdate: lightmapsNeedUpdate, _buffers: buffers} = this;
         const ox = Math.floor(x / width);
         const oz = Math.floor(z / depth);
 
@@ -304,10 +299,9 @@ class Lightmap {
           width: NUM_CELLS,
           height: NUM_CELLS_HEIGHT,
           depth: NUM_CELLS,
-          heightOffset: HEIGHT_OFFSET,
         });
         lightmapper.add(new Lightmapper.Ambient(255 * 0.5));
-        lightmapper.add(new Lightmapper.Sphere(0, 32, 0, 8, 2, Lightmapper.MaxBlend));
+        lightmapper.add(new Lightmapper.Sphere(0, 64 + 32, 0, 8, 2, Lightmapper.MaxBlend));
         entityElement.lightmapper = lightmapper;
 
         let live = true;
