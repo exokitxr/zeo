@@ -10,6 +10,7 @@
   "dependencies": {
     "indev": "^3.0.10",
     "isosurface": "^1.0.0",
-    "touch": "^3.1.0"
+    "touch": "^3.1.0",
+    "trra": "0.0.1"
   }
 }

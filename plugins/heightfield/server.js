@@ -2,7 +2,8 @@ const path = require('path');
 const fs = require('fs');
 
 const touch = require('touch');
-const trra = require('./trra');
+const trra = require('trra');
+
 const generator = require('./generator');
 const {
   DEFAULT_SEED,
