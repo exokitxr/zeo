@@ -135,8 +135,9 @@ const torch = objectApi => {
 
       const torchObjectApi = {
         object: 'torch',
-        addedCallback(id) {
+        addedCallback(id, position) {
           const torch = {
+            position,
             shape: null,
           };
 
@@ -147,7 +148,7 @@ const torch = objectApi => {
           torches[id] = torch;
         },
         removedCallback(id) {
-          const torch = toches[id];
+          const torch = torches[id];
 
           if (lightmapper) {
             _unbindLightmap(torch);
