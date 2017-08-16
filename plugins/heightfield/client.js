@@ -477,7 +477,7 @@ class Heightfield {
             const _getBestHeightfieldPointElevation = (heightfield, x, z, y) => {
               let bestY = -Infinity;
               let bestYDistance = Infinity;
-              for (let i = 0; i < 8; i++) {
+              for (let i = 0; i < HEIGHTFIELD_DEPTH; i++) {
                 const localY = heightfield[_getHeightfieldIndex(x, z) + i];
 
                 if (localY !== -Infinity) {
@@ -499,7 +499,7 @@ class Heightfield {
             const localVector = new THREE.Vector3();
             const localVector2 = new THREE.Vector3();
             const localEuler = new THREE.Euler();
-            const _teleportTarget = (position, rotation, scale) => {
+            const _teleportTarget = (position, rotation, scale, side, hmdPosition) => {
               localEuler.setFromQuaternion(rotation, camera.rotation.order);
               const angleFactor = Math.min(Math.pow(Math.max(localEuler.x + Math.PI * 0.45, 0) / (Math.PI * 0.8), 2), 1);
               localEuler.x = 0;
@@ -519,7 +519,7 @@ class Heightfield {
                   mapChunkMesh.heightfield,
                   targetPosition.x - (ox * NUM_CELLS),
                   targetPosition.z - (oz * NUM_CELLS),
-                  position.y
+                  hmdPosition.y - 1.5
                 );
 
                 if (targetPosition.y > -Infinity) {
