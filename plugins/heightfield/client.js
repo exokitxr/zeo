@@ -500,12 +500,12 @@ class Heightfield {
                 baryCoord.z * ec;
             };
             const _getBestHeightfieldPointElevation = (heightfield, x, z, y) => {
-              let bestY = -Infinity;
+              let bestY = -1024;
               let bestYDistance = Infinity;
               for (let i = 0; i < HEIGHTFIELD_DEPTH; i++) {
                 const localY = heightfield[_getHeightfieldIndex(x, z) + i];
 
-                if (localY !== -Infinity) {
+                if (localY !== -1024) {
                   const distance = Math.abs(y - localY);
 
                   if (distance < bestYDistance) {
@@ -546,12 +546,7 @@ class Heightfield {
                   targetPosition.z - (oz * NUM_CELLS),
                   hmdPosition.y - 1.5
                 );
-
-                if (targetPosition.y > -Infinity) {
-                  return targetPosition;
-                } else {
-                  return null;
-                }
+                return targetPosition;
               } else {
                 return null;
               }
