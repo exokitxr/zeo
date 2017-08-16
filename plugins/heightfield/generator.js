@@ -483,5 +483,7 @@ const _colorIntToArray = n => ([
 ]);
 const _getHeightfieldIndex = (x, z) => (x + (z * NUM_CELLS_OVERSCAN)) * HEIGHTFIELD_DEPTH;
 
-const generator = (x, y) => _generateMapChunk(x, y);
+const generator = (x, y, buffer, byteOffset) => {
+  protocolUtils.stringifyMapChunk(_generateMapChunk(x, y), buffer, byteOffset);
+};
 module.exports = generator;
