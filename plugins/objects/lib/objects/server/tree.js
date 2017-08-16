@@ -11,7 +11,7 @@ const tree = objectApi => {
         for (let dx = 0; dx < generateApi.NUM_CELLS_OVERSCAN; dx++) {
           const elevation = chunk.heightfield[(dx + (dz * generateApi.NUM_CELLS_OVERSCAN)) * 8];
 
-          if (elevation > 0) {
+          if (elevation > 64) {
             const v = generateApi.getNoise('tree', chunk.x, chunk.z, dx, dz);
 
             if (v < treeProbability) {

@@ -128,7 +128,7 @@ const _makeCloudChunkMesh = (x, y, cloudPatchGeometries) => {
 
     position.set(
       (x * NUM_CELLS) + dx,
-      60 + (cloudRng() * 10),
+      64 + 60 + (cloudRng() * 10),
       (y * NUM_CELLS) + dy
     )
     quaternion.setFromAxisAngle(upVector, cloudRng() * Math.PI * 2);

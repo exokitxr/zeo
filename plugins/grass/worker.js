@@ -243,7 +243,7 @@ const _makeGrassChunkMesh = (ox, oy, grassTemplates, heightfield, heightRange) =
       if (v < grassProbability) {
         const elevation = heightfield[(dx + (dy * NUM_CELLS_OVERSCAN)) * HEIGHTFIELD_DEPTH];
 
-        if (elevation > -Infinity) {
+        if (elevation > 64) {
           position.set(
             ax,
             elevation,

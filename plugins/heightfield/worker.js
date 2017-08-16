@@ -12,7 +12,7 @@ const elevationNoise = generator.uniform({
   frequency: 0.002,
   octaves: 8,
 });
-const _getOriginHeight = () => (-0.3 + Math.pow(elevationNoise.in2D(0 + 1000, 0 + 1000), 0.5)) * 64;
+const _getOriginHeight = () => (1 - 0.3 + Math.pow(elevationNoise.in2D(0 + 1000, 0 + 1000), 0.5)) * 64;
 const _resArrayBuffer = res => {
   if (res.status >= 200 && res.status < 300) {
     return res.arrayBuffer();

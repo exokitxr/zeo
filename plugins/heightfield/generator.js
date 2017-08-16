@@ -13,15 +13,15 @@ const {
 const {three: {THREE}, utils: {hash: {murmur}}} = zeo;
 
 const _marchCubes = (fn, resolution) => isosurface.marchingCubes(
-  [resolution + 1, (resolution * 2) + 1, resolution + 1],
+  [resolution + 1, (resolution * 4) + 1, resolution + 1],
   fn,
   [
     [0, 0, 0],
-    [resolution + 1, (resolution * 2) + 1, resolution + 1],
+    [resolution + 1, (resolution * 4) + 1, resolution + 1],
   ]
 );
 const _makeGeometry = (elevations, ether) => {
-  const _getWormDistance = (x, y, z) => ether[x + (y * (NUM_CELLS + 2)) + (z * (NUM_CELLS + 2) * ((NUM_CELLS * 2) + 2))];
+  const _getWormDistance = (x, y, z) => ether[x + (y * (NUM_CELLS + 2)) + (z * (NUM_CELLS + 2) * ((NUM_CELLS * 4) + 2))];
   const {positions: positionsArray, cells: cellsArray} =
     _marchCubes((x, y, z) =>
         Math.max(y - elevations[_getCoordOverscanIndex(x, z)], -1) +
@@ -62,6 +62,7 @@ const BIOME_COLORS = {
   COAST: 0x333333,
   LAKESHORE: 0x225588,
   LAKE: 0x336699,
+  CAVE: 0x808080,
   RIVER: 0x225588,
   MARSH: 0x2f6666,
   // ICE: 0x99ffff,
@@ -128,7 +129,7 @@ const _generateMapChunk = (ox, oy) => {
   const elevations = new Float32Array(NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN);
   for (let z = 0; z < NUM_CELLS_OVERSCAN; z++) {
     for (let x = 0; x < NUM_CELLS_OVERSCAN; x++) {
-      elevations[_getCoordOverscanIndex(x, z)] = (-0.3 + Math.pow(_random.elevationNoise.in2D((ox * NUM_CELLS) + x + 1000, (oy * NUM_CELLS) + z + 1000), 0.5)) * 64;
+      elevations[_getCoordOverscanIndex(x, z)] = (1 - 0.3 + Math.pow(_random.elevationNoise.in2D((ox * NUM_CELLS) + x + 1000, (oy * NUM_CELLS) + z + 1000), 0.5)) * 64;
     }
   }
 
@@ -143,7 +144,7 @@ const _generateMapChunk = (ox, oy) => {
   const localQuaternion = new THREE.Quaternion();
   const localTriangle = new THREE.Triangle();
   localTriangle.points = [localTriangle.a, localTriangle.b, localTriangle.c];
-  const ether = new Float32Array((NUM_CELLS + 2) * ((NUM_CELLS * 2) + 2) * (NUM_CELLS + 2));
+  const ether = new Float32Array((NUM_CELLS + 2) * ((NUM_CELLS * 4) + 2) * (NUM_CELLS + 2));
   ether.fill(1024);
   for (let dy = -1; dy <= 1; dy++) {
     for (let dx = -1; dx <= 1; dx++) {
@@ -157,8 +158,7 @@ const _generateMapChunk = (ox, oy) => {
         const ax = lx + ox * NUM_CELLS;
         const az = lz + oy * NUM_CELLS;
 
-        const baseElevation = _random.elevationNoise.in2D(ax + 1000, az + 1000);
-        const elevation = (-0.3 + Math.pow(baseElevation, 0.5)) * 64;
+        const elevation = (1 - 0.3 + Math.pow(_random.elevationNoise.in2D(ax + 1000, az + 1000), 0.5)) * 64;
         const ly = elevation;
 
         let currentPosition = localVector.set(lx, ly, lz);
@@ -185,13 +185,13 @@ const _generateMapChunk = (ox, oy) => {
           );
           const max = localVector4.set(
             Math.min(Math.ceil(Math.max(worm.start.x, worm.end.x)) + 3, NUM_CELLS + 1),
-            Math.min(Math.ceil(Math.max(worm.start.y, worm.end.y)) + 3, (NUM_CELLS * 2) + 1),
+            Math.min(Math.ceil(Math.max(worm.start.y, worm.end.y)) + 3, (NUM_CELLS * 4) + 1),
             Math.min(Math.ceil(Math.max(worm.start.z, worm.end.z)) + 3, NUM_CELLS + 1)
           );
           for (let nz = min.z; nz <= max.z; nz++) {
             for (let ny = min.y; ny <= max.y; ny++) {
               for (let nx = min.x; nx <= max.x; nx++) {
-                const index = nx + (ny * (NUM_CELLS + 2)) + (nz * (NUM_CELLS + 2) * ((NUM_CELLS * 2) + 2));
+                const index = nx + (ny * (NUM_CELLS + 2)) + (nz * (NUM_CELLS + 2) * ((NUM_CELLS * 4) + 2));
                 ether[index] = Math.min(
                   ether[index],
                   worm.closestPointToPoint(localVector5.set(nx, ny, nz), true, localVector6)
@@ -236,7 +236,7 @@ const _generateMapChunk = (ox, oy) => {
         const z = Math.floor(point.z);
 
         for (let layer = 0; layer < HEIGHTFIELD_DEPTH; layer++) {
-          const heightfieldXYBaseIndex = _getHeightfieldIndex(x, z);
+          const heightfieldXYBaseIndex = _getTopHeightfieldIndex(x, z);
           const oldY = heightfield[heightfieldXYBaseIndex + layer];
           if (y > oldY) {
             if (j === 0 || (y - oldY) >= 5) { // ignore non-surface heights with small height difference
@@ -276,8 +276,7 @@ const _generateMapChunk = (ox, oy) => {
       for (let x = 0; x < NUM_CELLS_OVERSCAN; x++) {
         const dx = (ox * NUM_CELLS) + x;
         const dy = (oy * NUM_CELLS) + y;
-        const baseElevation = _random.elevationNoise.in2D(dx + 1000, dy + 1000);
-        const elevation = (-0.3 + Math.pow(baseElevation, 0.5)) * 64;
+        const elevation = (1 - 0.3 + Math.pow(_random.elevationNoise.in2D(dx + 1000, dy + 1000), 0.5)) * 64;
         const moisture = _random.moistureNoise.in2D(dx, dy);
         const land = elevation > 0;
         const water = !land;
@@ -386,22 +385,24 @@ const _generateMapChunk = (ox, oy) => {
 
   for (let i = 0; i < numPositions; i++) {
     const baseIndex = i * 3;
-
     const lx = Math.floor(positions[baseIndex + 0]);
-    const ly = Math.floor(positions[baseIndex + 2]);
-    const elevation = heightfield[_getHeightfieldIndex(lx, ly)];
+    const y = positions[baseIndex + 1];
+    const lz = Math.floor(positions[baseIndex + 2]);
+    const elevation = heightfield[_getTopHeightfieldIndex(lx, lz)];
     const dx = (ox * NUM_CELLS) + lx;
-    const dy = (oy * NUM_CELLS) + ly;
-    const moisture = _random.moistureNoise.in2D(dx, dy);
-    const land = elevation > 0;
+    const dz = (oy * NUM_CELLS) + lz;
+    const moisture = _random.moistureNoise.in2D(dx, dz);
+    const land = elevation > 64;
+    const cave = y < elevation - 3;
     const water = !land;
     const ocean = false;
     const coast = land && ocean;
     const lava = 0;
     const biome = _getBiome({
-      elevation,
+      y,
       moisture,
       land,
+      cave,
       water,
       ocean,
       coast,
@@ -429,7 +430,6 @@ const _generateMapChunk = (ox, oy) => {
     heightRange: [minY, maxY],
   };
 };
-const _getOriginHeight = () => (-0.3 + Math.pow(_random.elevationNoise.in2D(0 + 1000, 0 + 1000), 0.5)) * 64;
 const _getCoordOverscanIndex = (x, y) => x + (y * NUM_CELLS_OVERSCAN);
 
 const _getBiome = p => {
@@ -438,21 +438,23 @@ const _getBiome = p => {
   } else if (p.ocean) {
     return 'OCEAN';
   } else if (p.water) {
-    if (p.elevation < 6) { return 'MARSH'; }
-    if (p.elevation > 28) { return 'ICE'; }
+    if (p.y < 64 + 6) { return 'MARSH'; }
+    if (p.y > 64 + 28) { return 'ICE'; }
     return 'LAKE';
+  } else if (p.cave) {
+    return 'CAVE';
   } else if (p.lava > 2) {
     return 'MAGMA';
-  } else if (p.elevation > 28) {
+  } else if (p.y > 64 + 28) {
     if (p.moisture > 0.50) { return 'SNOW'; }
     else if (p.moisture > 0.33) { return 'TUNDRA'; }
     else if (p.moisture > 0.16) { return 'BARE'; }
     else { return 'SCORCHED'; }
-  } else if (p.elevation > 18) {
+  } else if (p.y > 64 + 18) {
     if (p.moisture > 0.66) { return 'TAIGA'; }
     else if (p.moisture > 0.33) { return 'SHRUBLAND'; }
     else { return 'TEMPERATE_DESERT'; }
-  } else if (p.elevation > 6) {
+  } else if (p.y > 64 + 6) {
     if (p.moisture > 0.83) { return 'TEMPERATE_RAIN_FOREST'; }
     else if (p.moisture > 0.50) { return 'TEMPERATE_DECIDUOUS_FOREST'; }
     else if (p.moisture > 0.16) { return 'GRASSLAND'; }
@@ -464,34 +466,12 @@ const _getBiome = p => {
     else { return 'SUBTROPICAL_DESERT'; }
   }
 };
-const _getTriangleBiome = (ap, bp, cp) => {
-  const elevation = (ap.elevation + bp.elevation + cp.elevation) / 3;
-  const moisture = (ap.moisture + bp.moisture + cp.moisture) / 3;
-  const numLand = (+ap.land) + (+bp.land) + (+cp.land);
-  const land = numLand > 0;
-  const numWater = (+ap.water) + (+bp.water) + (+cp.water);
-  const water = numWater > 0;
-  const numOcean = (+ap.ocean) + (+bp.ocean) + (+cp.ocean);
-  const ocean = numOcean > 0;
-  const coast = numLand >= 1 && numOcean >= 1;
-  const lava = (ap.lava || 0) + (bp.lava || 0) + (cp.lava || 0);
-
-  return _getBiome({
-    elevation,
-    moisture,
-    land,
-    water,
-    ocean,
-    coast,
-    lava,
-  });
-};
 const _colorIntToArray = n => ([
   ((n >> (8 * 2)) & 0xFF) / 0xFF,
   ((n >> (8 * 1)) & 0xFF) / 0xFF,
   ((n >> (8 * 0)) & 0xFF) / 0xFF,
 ]);
-const _getHeightfieldIndex = (x, z) => (x + (z * NUM_CELLS_OVERSCAN)) * HEIGHTFIELD_DEPTH;
+const _getTopHeightfieldIndex = (x, z) => (x + (z * NUM_CELLS_OVERSCAN)) * HEIGHTFIELD_DEPTH;
 const _getStaticHeightfieldIndex = (x, z) => x + (z * NUM_CELLS_OVERSCAN);
 
 const generator = (x, y, buffer, byteOffset) => {

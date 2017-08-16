@@ -1,8 +1,6 @@
 const {
   NUM_CELLS,
   NUM_CELLS_HEIGHT,
-
-  HEIGHT_OFFSET,
 } = require('./lib/constants/constants');
 self.module = {};
 
@@ -140,7 +138,7 @@ const _getUpdate = (ox, oz, buffer) => {
         case 'sphere': {
           const {x, y, z, r, v, blend} = shape;
           const ax = x - (ox * width);
-          const ay = y - heightOffset;
+          const ay = y;
           const az = z - (oz * depth);
 
           const dr = r - 1;
@@ -166,7 +164,7 @@ const _getUpdate = (ox, oz, buffer) => {
         case 'cylinder': {
           const {x, y, z, h, r, v, blend} = shape;
           const ax = x - (ox * width);
-          const ay = y - heightOffset;
+          const ay = y;
           const az = z - (oz * depth);
 
           const dr = r - 1;
@@ -194,7 +192,7 @@ const _getUpdate = (ox, oz, buffer) => {
         case 'voxel': {
           const {x, y, z, r, blend} = shape;
           const ax = x - (ox * width);
-          const ay = y - heightOffset;
+          const ay = y;
           const az = z - (ox * height);
 
           if (_isInRange(ax, width) && _isInRange(ay, height) && _isInRange(az, depth)) {
@@ -245,7 +243,7 @@ const _intersectRect = (r1, r2) =>
    r2[1] > r1[3] ||
    r2[3] < r1[1]);
 
-let width, height, depth, heightOffset;
+let width, height, depth;
 const shapes = [];
 
 self.onmessage = e => {
@@ -256,7 +254,6 @@ self.onmessage = e => {
     width = data.width;
     height = data.height;
     depth = data.depth;
-    heightOffset = data.heightOffset;
   } else if (type === 'addShape') {
     const {spec} = data;
     const {type} = spec;

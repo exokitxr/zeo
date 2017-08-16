@@ -1,8 +1,6 @@
 const {
   NUM_CELLS,
-
   NUM_CELLS_HEIGHT,
-  HEIGHT_OFFSET,
 
   HEIGHTFIELD_DEPTH,
 
@@ -100,7 +98,7 @@ void main() {
       (floor(clamp(vPosition.z - d.y, 0.0, ${(NUM_CELLS).toFixed(8)})) * ${(NUM_CELLS + 1).toFixed(8)}) +
       0.5
     ) / (${(NUM_CELLS + 1).toFixed(8)} * ${(NUM_CELLS + 1).toFixed(8)});
-    float v = (floor(vPosition.y - ${HEIGHT_OFFSET.toFixed(8)}) + 0.5) / ${NUM_CELLS_HEIGHT.toFixed(8)};
+    float v = (floor(vPosition.y) + 0.5) / ${NUM_CELLS_HEIGHT.toFixed(8)};
     lightColor = texture2D( lightMap, vec2(u, v) );
   } else {
     lightColor = vec4(0.5, 0.5, 0.5, 0.1);
