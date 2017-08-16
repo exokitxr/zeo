@@ -422,12 +422,12 @@ class Heightfield {
               const mapChunkMesh = mapChunkMeshes[_getChunkIndex(ox, oz)];
 
               if (mapChunkMesh) {
-                return _getHeightfieldElevation(mapChunkMesh.heightfield, x, z, 0);
+                return _getTopHeightfieldTriangleElevation(mapChunkMesh.heightfield, x, z);
               } else {
                 return 0;
               }
             };
-            const _getHeightfieldElevation = (heightfield, x, z, layer) => {
+            const _getTopHeightfieldTriangleElevation = (heightfield, x, z) => {
               const ax = Math.floor(x);
               const az = Math.floor(z);
               if ((x - ax) <= (1 - (z - az))) { // top left triangle
@@ -439,9 +439,9 @@ class Heightfield {
                 b.set(ax, 0, az + 1);
                 c.set(ax + 1, 0, az + 1);
               };
-              const ea = heightfield[_getHeightfieldIndex(a.x, a.z) + layer];
-              const eb = heightfield[_getHeightfieldIndex(b.x, b.z) + layer];
-              const ec = heightfield[_getHeightfieldIndex(c.x, c.z) + layer];
+              const ea = heightfield[_getHeightfieldIndex(a.x, a.z)];
+              const eb = heightfield[_getHeightfieldIndex(b.x, b.z)];
+              const ec = heightfield[_getHeightfieldIndex(c.x, c.z)];
 
               p.set(x, 0, z);
               triangle.barycoordFromPoint(p, baryCoord);
@@ -449,6 +449,49 @@ class Heightfield {
               return baryCoord.x * ea +
                 baryCoord.y * eb +
                 baryCoord.z * ec;
+            };
+            const _getBestHeightfieldTriangleElevation = (heightfield, x, z, y) => {
+              const ax = Math.floor(x);
+              const az = Math.floor(z);
+              if ((x - ax) <= (1 - (z - az))) { // top left triangle
+                a.set(ax, 0, az);
+                b.set(ax + 1, 0, az);
+                c.set(ax, 0, az + 1);
+              } else { // bottom right triangle
+                a.set(ax + 1, 0, az);
+                b.set(ax, 0, az + 1);
+                c.set(ax + 1, 0, az + 1);
+              };
+              const ea = _getBestHeightfieldPointElevation(heightfield, a.x, a.z, y);
+              const eb = _getBestHeightfieldPointElevation(heightfield, b.x, b.z, y);
+              const ec = _getBestHeightfieldPointElevation(heightfield, c.x, c.z, y);
+
+              triangle.barycoordFromPoint(p.set(x, 0, z), baryCoord);
+
+              return baryCoord.x * ea +
+                baryCoord.y * eb +
+                baryCoord.z * ec;
+            };
+            const _getBestHeightfieldPointElevation = (heightfield, x, z, y) => {
+              let bestY = -Infinity;
+              let bestYDistance = Infinity;
+              for (let i = 0; i < 4; i++) {
+                const localY = heightfield[_getHeightfieldIndex(x, z) + i];
+
+                if (localY !== -Infinity) {
+                  const distance = Math.abs(y - localY);
+
+                  if (distance < bestYDistance) {
+                    bestY = localY;
+                    bestYDistance = distance;
+                  } else {
+                    continue;
+                  }
+                } else {
+                  break;
+                }
+              }
+              return bestY;
             };
 
             const localVector = new THREE.Vector3();
@@ -470,37 +513,14 @@ class Heightfield {
               const mapChunkMesh = mapChunkMeshes[_getChunkIndex(ox, oz)];
 
               if (mapChunkMesh) {
-                const lx = targetPosition.x - (ox * NUM_CELLS);
-                const lz = targetPosition.z - (oz * NUM_CELLS);
+                targetPosition.y = _getBestHeightfieldTriangleElevation(
+                  mapChunkMesh.heightfield,
+                  targetPosition.x - (ox * NUM_CELLS),
+                  targetPosition.z - (oz * NUM_CELLS),
+                  position.y
+                );
 
-                const controllerY = position.y;
-                let bestY = null;
-                let bestYDistance = Infinity;
-
-                /* const candidates = Array(4); // XXX
-                for (let i = 0; i < 4; i++) {
-                  candidates[i] = _getHeightfieldElevation(mapChunkMesh.heightfield, lx, lz, i);
-                }
-                console.log('candidates', candidates.join(',')); */
-
-                for (let i = 0; i < 4; i++) {
-                  const localY = _getHeightfieldElevation(mapChunkMesh.heightfield, lx, lz, i);
-
-                  if (localY !== -Infinity) {
-                    const distance = Math.abs(controllerY - localY);
-
-                    if (distance < bestYDistance) {
-                      bestY = localY;
-                      bestYDistance = distance;
-                    } else {
-                      continue;
-                    }
-                  } else {
-                    break;
-                  }
-                }
-                if (bestY !== null) {
-                  targetPosition.y = bestY;
+                if (targetPosition.y > -Infinity) {
                   return targetPosition;
                 } else {
                   return null;
