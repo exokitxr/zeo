@@ -185,10 +185,9 @@ class Heightfield {
       }, [buffer]);
       queues.push(new QueueEntry(id, accept));
     });
-    worker.requestUngenerate = (x, z) => {
+    worker.requestUngenerate = (x, y) => {
       worker.postMessage({
         method: 'ungenerate',
-        id,
         args: {
           x,
           y,
@@ -389,7 +388,7 @@ class Heightfield {
         const {x, z, lod} = chunk;
 
         return worker.requestGenerate(x, z)
-          .then(mapChunkBuffer => protocolUtils.parseMapChunk(mapChunkBuffer))
+          .then(mapChunkBuffer => protocolUtils.parseRenderChunk(mapChunkBuffer))
           .then(mapChunkData => {
             const index = _getChunkIndex(x, z);
             const oldMapChunkMesh = mapChunkMeshes[index];
@@ -671,7 +670,10 @@ class Heightfield {
           const sunIntensity = (dayNightSkyboxEntity && dayNightSkyboxEntity.getSunIntensity) ? dayNightSkyboxEntity.getSunIntensity() : 0;
 
           for (const index in mapChunkMeshes) {
-            mapChunkMeshes[index].material.uniforms.sunIntensity.value = sunIntensity;
+            const mapChunkMesh = mapChunkMeshes[index];
+            if (mapChunkMesh) {
+              mapChunkMesh.material.uniforms.sunIntensity.value = sunIntensity;
+            }
           }
         };
         render.on('update', _update);

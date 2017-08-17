@@ -1,21 +1,31 @@
+importScripts('/archae/assets/three.js');
+const {exports: THREE} = self.module;
+importScripts('/archae/assets/murmurhash.js');
+const {exports: murmur} = self.module;
+importScripts('/archae/assets/indev.js');
+const {exports: indev} = self.module;
 self.module = {};
 
-const trra = require('/home/k/trra');
-const indev = require('indev');
+const generatorLib = require('./generator');
+const trra = require('trra');
 const {
   NUM_CELLS,
 
   DEFAULT_SEED,
 } = require('./lib/constants/constants');
+const protocolUtils = require('./lib/utils/protocol-utils');
 
+const generator = generatorLib({
+  THREE,
+  murmur,
+  indev,
+});
 const tra = trra({
   seed: DEFAULT_SEED,
 });
-
-const generator = indev({
+const elevationNoise = indev({
   seed: DEFAULT_SEED,
-});
-const elevationNoise = generator.uniform({
+}).uniform({
   frequency: 0.002,
   octaves: 8,
 });
@@ -76,7 +86,12 @@ self.onmessage = e => {
 
       _requestChunk(x, y)
         .then(chunk => {
-          new Uint32Array(buffer).set(chunk.getBuffer());
+          const uint32Buffer = chunk.getBuffer();
+          protocolUtils.stringifyRenderChunk(
+            protocolUtils.parseDataChunk(uint32Buffer.buffer, uint32Buffer.byteOffset),
+            buffer,
+            0
+          );
 
           postMessage(JSON.stringify({
             type: 'response',
@@ -91,17 +106,18 @@ self.onmessage = e => {
     }
     case 'ungenerate': {
       const {args} = data;
-      const {x, z} = args;
-      tra.removeChunk(x, z);
+      const {x, y} = args;
+      tra.removeChunk(x, y);
       break;
     }
     case 'addVoxel': {
-      const {id, args} = data;
+      throw new Error('not implemented');
+      /* const {id, args} = data;
       const {position} = args;
       const [x, y, z] = position;
       // XXX regenerate locally and return immediately
       // XXX need to inform other clients of these
-      return fetch(`/archae/heightfield/voxels?x=${x}&y=${y}&z=${z}`, {
+      fetch(`/archae/heightfield/voxels?x=${x}&y=${y}&z=${z}`, {
         method: 'POST',
         credentials: 'include',
       })
@@ -119,32 +135,48 @@ self.onmessage = e => {
         })
         .catch(err => {
           console.warn(err);
-        });
+        }); */
       break;
     }
     case 'subVoxel': {
       const {id, args} = data;
       const {position} = args;
       const [x, y, z] = position;
-      return fetch(`/archae/heightfield/voxels?x=${x}&y=${y}&z=${z}`, {
-        method: 'DELETE',
-        credentials: 'include',
-      })
-        .then(_resBlob)
-        .then(() => {
-          const ox = Math.floor(x / NUM_CELLS);
-          const oz = Math.floor(z / NUM_CELLS);
-          tra.removeChunk(ox, oz); // XXX not needed once we regenerate locally
 
-          postMessage(JSON.stringify({
-            type: 'response',
-            args: [id],
-          }));
-          postMessage(null);
+      const _respond = () => {
+        postMessage(JSON.stringify({
+          type: 'response',
+          args: [id],
+        }));
+        postMessage(null);
+      };
+
+      const ox = Math.floor(x / NUM_CELLS);
+      const oz = Math.floor(z / NUM_CELLS);
+      const chunk = tra.getChunk(ox, oz);
+      if (chunk) {
+        fetch(`/archae/heightfield/voxels?x=${x}&y=${y}&z=${z}`, {
+          method: 'DELETE',
+          credentials: 'include',
         })
-        .catch(err => {
-          console.warn(err);
+          .then(_resBlob)
+          .then(() => {
+            _respond();
+          })
+          .catch(err => {
+            console.warn(err);
+          });
+
+        const uint32Buffer = chunk.getBuffer();
+        const oldEther = protocolUtils.parseDataChunk(uint32Buffer.buffer, uint32Buffer.byteOffset).ether.slice();
+        const newEther = Float32Array.from([x - (ox * NUM_CELLS), y, z - (oz * NUM_CELLS), 1]);
+        chunk.generate(generator, {
+          oldEther,
+          newEther,
         });
+      } else {
+        _respond();
+      }
       break;
     }
     default: {

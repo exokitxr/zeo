@@ -1,4 +1,9 @@
-const indev = require('indev');
+module.exports = ({
+  THREE,
+  murmur,
+  indev,
+}) => {
+
 const isosurface = require('isosurface');
 const protocolUtils = require('./lib/utils/protocol-utils');
 const {
@@ -10,8 +15,6 @@ const {
   DEFAULT_SEED,
 } = require('./lib/constants/constants');
 const HOLE_SIZE = 2;
-
-const {three: {THREE}, utils: {hash: {murmur}}} = zeo;
 
 const _marchCubes = (fn, resolution) => isosurface.marchingCubes(
   [resolution + 1, (resolution * 4) + 1, resolution + 1],
@@ -125,6 +128,17 @@ const _random = (() => {
   };
 })();
 
+const forwardVector = new THREE.Vector3(0, 0, -1);
+const localVector = new THREE.Vector3();
+const localVector2 = new THREE.Vector3();
+const localVector3 = new THREE.Vector3();
+const localVector4 = new THREE.Vector3();
+const localVector5 = new THREE.Vector3();
+const localVector6 = new THREE.Vector3();
+const localLine = new THREE.Line3();
+const localQuaternion = new THREE.Quaternion();
+const localTriangle = new THREE.Triangle();
+localTriangle.points = [localTriangle.a, localTriangle.b, localTriangle.c];
 const _generateMapChunk = (ox, oy, opts) => {
   // generate
 
@@ -135,90 +149,81 @@ const _generateMapChunk = (ox, oy, opts) => {
     }
   }
 
-  const forwardVector = new THREE.Vector3(0, 0, -1);
-  const localVector = new THREE.Vector3();
-  const localVector2 = new THREE.Vector3();
-  const localVector3 = new THREE.Vector3();
-  const localVector4 = new THREE.Vector3();
-  const localVector5 = new THREE.Vector3();
-  const localVector6 = new THREE.Vector3();
-  const localLine = new THREE.Line3();
-  const localQuaternion = new THREE.Quaternion();
-  const localTriangle = new THREE.Triangle();
-  localTriangle.points = [localTriangle.a, localTriangle.b, localTriangle.c];
-  const ether = new Float32Array((NUM_CELLS + 2) * ((NUM_CELLS * 4) + 2) * (NUM_CELLS + 2));
-  // ether.fill(1024);
-  for (let dy = -1; dy <= 1; dy++) {
-    for (let dx = -1; dx <= 1; dx++) {
-      const n = _random.wormNoise.in2D(ox + dx, oy + dy);
-      const numWorms = Math.floor(n * 6);
+  let ether = opts.oldEther;
+  if (!ether) {
+    ether = new Float32Array((NUM_CELLS + 2) * ((NUM_CELLS * 4) + 2) * (NUM_CELLS + 2));
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        const n = _random.wormNoise.in2D(ox + dx, oy + dy);
+        const numWorms = Math.floor(n * 6);
 
-      for (let i = 0; i < numWorms; i++) {
-        const s = [n, i].join(':');
-        const lx = (dx * NUM_CELLS) + Math.floor(murmur(s + ':x') / 0xFFFFFFFF * NUM_CELLS);
-        const lz = (dy * NUM_CELLS) + Math.floor(murmur(s + ':z') / 0xFFFFFFFF * NUM_CELLS);
-        const ax = lx + ox * NUM_CELLS;
-        const az = lz + oy * NUM_CELLS;
+        for (let i = 0; i < numWorms; i++) {
+          const s = [n, i].join(':');
+          const lx = (dx * NUM_CELLS) + Math.floor(murmur(s + ':x') / 0xFFFFFFFF * NUM_CELLS);
+          const lz = (dy * NUM_CELLS) + Math.floor(murmur(s + ':z') / 0xFFFFFFFF * NUM_CELLS);
+          const ax = lx + ox * NUM_CELLS;
+          const az = lz + oy * NUM_CELLS;
 
-        const elevation = (1 - 0.3 + Math.pow(_random.elevationNoise.in2D(ax + 1000, az + 1000), 0.5)) * 64;
-        const ly = elevation;
+          const elevation = (1 - 0.3 + Math.pow(_random.elevationNoise.in2D(ax + 1000, az + 1000), 0.5)) * 64;
+          const ly = elevation;
 
-        let currentPosition = localVector.set(lx, ly, lz);
-        let currentDirection = localVector2.set(
-          -0.5 + murmur(s + ':startAngleX') / 0xFFFFFFFF,
-          -0.25 * murmur(s + ':startAngleY') / 0xFFFFFFFF,
-          -0.5 + murmur(s + ':startAngleZ') / 0xFFFFFFFF
-        ).normalize();
-        const numSegments = 4 + Math.floor(murmur(s + ':segments') / 0xFFFFFFFF * 10);
-        for (let j = 0; j < numSegments; j++) {
-          const segementLength = 1 + murmur(s + ':' + j + ':length') / 0xFFFFFFFF * 4;
-          const worm = localLine.set(
-            currentPosition,
-            localVector3.copy(currentPosition).add(
-              localVector4.copy(forwardVector)
-                .applyQuaternion(localQuaternion.setFromUnitVectors(forwardVector, currentDirection))
-                .multiplyScalar(segementLength)
-            )
-          );
-          const min = localVector3.set(
-            Math.max(Math.floor(Math.min(worm.start.x, worm.end.x)) - 3, 0),
-            Math.max(Math.floor(Math.min(worm.start.y, worm.end.y)) - 3, 0),
-            Math.max(Math.floor(Math.min(worm.start.z, worm.end.z)) - 3, 0)
-          );
-          const max = localVector4.set(
-            Math.min(Math.ceil(Math.max(worm.start.x, worm.end.x)) + 3, NUM_CELLS + 1),
-            Math.min(Math.ceil(Math.max(worm.start.y, worm.end.y)) + 3, (NUM_CELLS * 4) + 1),
-            Math.min(Math.ceil(Math.max(worm.start.z, worm.end.z)) + 3, NUM_CELLS + 1)
-          );
-          for (let nz = min.z; nz <= max.z; nz++) {
-            for (let ny = min.y; ny <= max.y; ny++) {
-              for (let nx = min.x; nx <= max.x; nx++) {
-                const index = _getEtherIndex(nx, ny, nz);
-                ether[index] = Math.max(
-                  3 - worm.closestPointToPoint(localVector5.set(nx, ny, nz), true, localVector6)
-                    .distanceTo(localVector5),
-                  ether[index]
-                );
+          let currentPosition = localVector.set(lx, ly, lz);
+          let currentDirection = localVector2.set(
+            -0.5 + murmur(s + ':startAngleX') / 0xFFFFFFFF,
+            -0.25 * murmur(s + ':startAngleY') / 0xFFFFFFFF,
+            -0.5 + murmur(s + ':startAngleZ') / 0xFFFFFFFF
+          ).normalize();
+          const numSegments = 4 + Math.floor(murmur(s + ':segments') / 0xFFFFFFFF * 10);
+          for (let j = 0; j < numSegments; j++) {
+            const segementLength = 1 + murmur(s + ':' + j + ':length') / 0xFFFFFFFF * 4;
+            const worm = localLine.set(
+              currentPosition,
+              localVector3.copy(currentPosition).add(
+                localVector4.copy(forwardVector)
+                  .applyQuaternion(localQuaternion.setFromUnitVectors(forwardVector, currentDirection))
+                  .multiplyScalar(segementLength)
+              )
+            );
+            const min = localVector3.set(
+              Math.max(Math.floor(Math.min(worm.start.x, worm.end.x)) - 3, 0),
+              Math.max(Math.floor(Math.min(worm.start.y, worm.end.y)) - 3, 0),
+              Math.max(Math.floor(Math.min(worm.start.z, worm.end.z)) - 3, 0)
+            );
+            const max = localVector4.set(
+              Math.min(Math.ceil(Math.max(worm.start.x, worm.end.x)) + 3, NUM_CELLS + 1),
+              Math.min(Math.ceil(Math.max(worm.start.y, worm.end.y)) + 3, (NUM_CELLS * 4) + 1),
+              Math.min(Math.ceil(Math.max(worm.start.z, worm.end.z)) + 3, NUM_CELLS + 1)
+            );
+            for (let nz = min.z; nz <= max.z; nz++) {
+              for (let ny = min.y; ny <= max.y; ny++) {
+                for (let nx = min.x; nx <= max.x; nx++) {
+                  const index = _getEtherIndex(nx, ny, nz);
+                  ether[index] = Math.max(
+                    3 - worm.closestPointToPoint(localVector5.set(nx, ny, nz), true, localVector6)
+                      .distanceTo(localVector5),
+                    ether[index]
+                  );
+                }
               }
             }
-          }
 
-          currentPosition.copy(worm.end);
-          currentDirection.x += (-0.5 + (murmur(s + ':' + j + ':angleX') / 0xFFFFFFFF)) * 2 * 0.5;
-          currentDirection.y += (-0.5 + (murmur(s + ':' + j + ':angleY') / 0xFFFFFFFF)) * 2 * 0.5;
-          currentDirection.z += (-0.5 + (murmur(s + ':' + j + ':angleZ') / 0xFFFFFFFF)) * 2 * 0.5;
-          currentDirection.normalize();
+            currentPosition.copy(worm.end);
+            currentDirection.x += (-0.5 + (murmur(s + ':' + j + ':angleX') / 0xFFFFFFFF)) * 2 * 0.5;
+            currentDirection.y += (-0.5 + (murmur(s + ':' + j + ':angleY') / 0xFFFFFFFF)) * 2 * 0.5;
+            currentDirection.z += (-0.5 + (murmur(s + ':' + j + ':angleZ') / 0xFFFFFFFF)) * 2 * 0.5;
+            currentDirection.normalize();
+          }
         }
       }
     }
   }
-  const numEthers = opts.ether.length / 4;
-  for (let i = 0; i < numEthers; i++) {
+  const numNewEthers = opts.newEther.length / 4;
+  for (let i = 0; i < numNewEthers; i++) {
     const baseIndex = i * 4;
-    const x = opts.ether[baseIndex + 0];
-    const y = opts.ether[baseIndex + 1];
-    const z = opts.ether[baseIndex + 2];
-    const v = opts.ether[baseIndex + 3];
+    const x = opts.newEther[baseIndex + 0];
+    const y = opts.newEther[baseIndex + 1];
+    const z = opts.newEther[baseIndex + 2];
+    const v = opts.newEther[baseIndex + 3];
     for (let dz = -HOLE_SIZE; dz <= HOLE_SIZE; dz++) {
       const az = z + dz;
       if (az >= 0 && az < (NUM_CELLS + 2)) {
@@ -329,13 +334,13 @@ const _generateMapChunk = (ox, oy, opts) => {
   const {boundingSphere} = geometry;
 
   return {
-    points: [],
     positions: geometry.getAttribute('position').array,
     normals: geometry.getAttribute('normal').array,
     colors: geometry.getAttribute('color').array,
     indices: geometry.index.array,
     heightfield,
     staticHeightfield,
+    ether,
     boundingSphere: Float32Array.from(boundingSphere.center.toArray().concat([boundingSphere.radius])),
   };
 };
@@ -498,13 +503,18 @@ const generator = (x, y, buffer, byteOffset, opts) => {
   if (opts === undefined) {
     opts = {};
   }
-  if (opts.ether === undefined) {
-    opts.ether = [];
+  if (opts.oldEther === undefined) {
+    opts.oldEther = null;
+  }
+  if (opts.newEther === undefined) {
+    opts.newEther = new Float32Array(0);
   }
   if (opts.regenerate === undefined) {
     opts.regenerate = false;
   }
 
-  protocolUtils.stringifyMapChunk(_generateMapChunk(x, y, opts), buffer, byteOffset);
+  protocolUtils.stringifyDataChunk(_generateMapChunk(x, y, opts), buffer, byteOffset);
 };
-module.exports = generator;
+return generator;
+
+};

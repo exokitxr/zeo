@@ -2,13 +2,13 @@ const path = require('path');
 const fs = require('fs');
 
 const touch = require('touch');
-const trra = require('/home/k/trra');
+const trra = require('trra');
 
 const {
   NUM_CELLS,
 } = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
-const generator = require('./generator');
+const generatorLib = require('./generator');
 const {
   DEFAULT_SEED,
 } = require('./lib/constants/constants');
@@ -22,8 +22,20 @@ class Heightfield {
     const {_archae: archae} = this;
     const {dirname, dataDirectory} = archae;
     const {express, app} = archae.getCore();
-    const {elements} = zeo;
+    const {
+      three: {THREE},
+      elements,
+      utils: {
+        hash: {murmur},
+        random: {indev},
+      },
+    } = zeo;
 
+    const generator = generatorLib({
+      THREE,
+      murmur,
+      indev,
+    });
     const trraDataPath = path.join(dirname, dataDirectory, 'trra.dat');
 
     const _getTrra = () => new Promise((accept, reject) => {
@@ -123,7 +135,7 @@ class Heightfield {
               _saveChunks();
             }
             const uint32Buffer = chunk.getBuffer();
-            const arrayBuffer = protocolUtils.sliceHeightfield(uint32Buffer.buffer, uint32Buffer.byteOffset);
+            const arrayBuffer = protocolUtils.sliceDataHeightfield(uint32Buffer.buffer, uint32Buffer.byteOffset);
             const buffer = new Buffer(arrayBuffer);
             res.type('application/octet-stream');
             res.send(buffer);
@@ -178,7 +190,7 @@ class Heightfield {
               _saveChunks();
             }
             const uint32Buffer = chunk.getBuffer();
-            const {heightfield} = protocolUtils.parseMapChunk(uint32Buffer.buffer, uint32Buffer.byteOffset);
+            const {heightfield} = protocolUtils.parseDataChunk(uint32Buffer.buffer, uint32Buffer.byteOffset);
             return Promise.resolve(heightfield);
           },
         };

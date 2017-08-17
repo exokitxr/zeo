@@ -1,35 +1,16 @@
 const UINT32_SIZE = 4;
 const INT32_SIZE = 4;
 const FLOAT32_SIZE = 4;
-const MAP_CHUNK_HEADER_ENTRIES = 7;
-const MAP_CHUNK_HEADER_SIZE = UINT32_SIZE * MAP_CHUNK_HEADER_ENTRIES;
+const DATA_HEADER_ENTRIES = 7;
+const DATA_HEADER_SIZE = UINT32_SIZE * DATA_HEADER_ENTRIES;
+const RENDER_HEADER_ENTRIES = 6;
+const RENDER_HEADER_SIZE = UINT32_SIZE * RENDER_HEADER_ENTRIES;
 const POINT_SIZE = 7 * FLOAT32_SIZE;
 
-class MapPoint {
-  constructor(
-    elevation = 0,
-    moisture = 0,
-    land = false,
-    water = false,
-    ocean = false,
-    lake = false,
-    lava = 0
-  ) {
-    this.elevation = elevation;
-    this.moisture = moisture;
-    this.land = land;
-    this.water = water;
-    this.ocean = ocean;
-    this.lake = lake;
-    this.lava = lava;
-  }
-}
+const _getDataChunkSizeFromMetadata = metadata => {
+  const {numPositions, numColors, numHeightfield, numStaticHeightfield, numBoundingSphere} = metadata;
 
-const _getMapChunkSizeFromMetadata = metadata => {
-  const {numPoints, numPositions, numColors, numHeightfield, numStaticHeightfield, numBoundingSphere} = metadata;
-
-  return MAP_CHUNK_HEADER_SIZE + // header
-    (POINT_SIZE * numPoints) + // points
+  return DATA_HEADER_SIZE + // header
     (FLOAT32_SIZE * numPositions) + // positions
     (FLOAT32_SIZE * numColors) + // colors
     (UINT32_SIZE * numIndices) + // indices
@@ -38,10 +19,9 @@ const _getMapChunkSizeFromMetadata = metadata => {
     (FLOAT32_SIZE * numBoundingSphere); // bounding sphere
 };
 
-const _getMapChunkSize = mapChunk => {
-  const {points, positions, colors, indices, heightfield, staticHeightfield, boundingSphere} = mapChunk;
+const _getDataChunkSize = mapChunk => {
+  const {positions, colors, indices, heightfield, staticHeightfield, boundingSphere} = mapChunk;
 
-  const numPoints = points.length;
   const numPositions = positions.length;
   const numColors = colors.length;
   const numIndices = indices.length;
@@ -49,8 +29,7 @@ const _getMapChunkSize = mapChunk => {
   const numStaticHeightfield = staticHeightfield.length;
   const numBoundingSphere = boundingSphere.length;
 
-  return _getMapChunkSizeFromMetadata({
-    numPoints,
+  return _getDataChunkSizeFromMetadata({
     numPositions,
     numColors,
     numIndices,
@@ -60,18 +39,16 @@ const _getMapChunkSize = mapChunk => {
   });
 };
 
-const _getMapChunkBufferSize = (arrayBuffer, byteOffset) => {
-  const headerBuffer = new Uint32Array(arrayBuffer, byteOffset, MAP_CHUNK_HEADER_ENTRIES);
-  const numPoints = headerBuffer[0];
-  const numPositions = headerBuffer[1];
-  const numColors = headerBuffer[2];
-  const numIndices = headerBuffer[3];
-  const numHeightfield = headerBuffer[4];
-  const numStaticHeightfield = headerBuffer[5];
-  const numBoundingSphere = headerBuffer[6];
+const _getDataChunkBufferSize = (arrayBuffer, byteOffset) => {
+  const headerBuffer = new Uint32Array(arrayBuffer, byteOffset, DATA_HEADER_ENTRIES);
+  const numPositions = headerBuffer[0];
+  const numColors = headerBuffer[1];
+  const numIndices = headerBuffer[2];
+  const numHeightfield = headerBuffer[3];
+  const numStaticHeightfield = headerBuffer[4];
+  const numBoundingSphere = headerBuffer[5];
 
-  return _getMapChunkSizeFromMetadata({
-    numPoints,
+  return _getDataChunkSizeFromMetadata({
     numPositions,
     numColors,
     numIndices,
@@ -81,42 +58,179 @@ const _getMapChunkBufferSize = (arrayBuffer, byteOffset) => {
   });
 };
 
-// stringification
-
-const stringifyMapChunk = (mapChunk, arrayBuffer, byteOffset) => {
-  const {points, positions, colors, indices, heightfield, staticHeightfield, boundingSphere} = mapChunk;
+const stringifyDataChunk = (mapChunk, arrayBuffer, byteOffset) => {
+  const {positions, colors, indices, heightfield, staticHeightfield, ether, boundingSphere} = mapChunk;
 
   if (arrayBuffer === undefined || byteOffset === undefined) {
-    const bufferSize = _getMapChunkSize(mapChunk);
+    const bufferSize = _getDataChunkSize(mapChunk);
     arrayBuffer = new ArrayBuffer(bufferSize);
     byteOffset = 0;
   }
 
-  const headerBuffer = new Uint32Array(arrayBuffer, byteOffset, MAP_CHUNK_HEADER_ENTRIES);
-  headerBuffer[0] = points.length;
-  headerBuffer[1] = positions.length;
-  headerBuffer[2] = colors.length;
-  headerBuffer[3] = indices.length;
-  headerBuffer[4] = heightfield.length;
-  headerBuffer[5] = staticHeightfield.length;
+  const headerBuffer = new Uint32Array(arrayBuffer, byteOffset, DATA_HEADER_ENTRIES);
+  headerBuffer[0] = positions.length;
+  headerBuffer[1] = colors.length;
+  headerBuffer[2] = indices.length;
+  headerBuffer[3] = heightfield.length;
+  headerBuffer[4] = staticHeightfield.length;
+  headerBuffer[5] = ether.length;
   headerBuffer[6] = boundingSphere.length;
-  byteOffset += MAP_CHUNK_HEADER_SIZE;
+  byteOffset += DATA_HEADER_SIZE;
 
-  const pointsBuffer = new Float32Array(arrayBuffer, byteOffset, points.length * 7);
-  for (let i = 0; i < points.length; i++) {
-    const point = points[i];
-    const {elevation, moisture, land, water, ocean, lake, lava} = point;
-    const index = i * 7;
+  const positionsBuffer = new Float32Array(arrayBuffer, byteOffset, positions.length);
+  positionsBuffer.set(positions);
+  byteOffset += FLOAT32_SIZE * positions.length;
 
-    pointsBuffer[index + 0] = elevation;
-    pointsBuffer[index + 1] = moisture;
-    pointsBuffer[index + 2] = land ? 1 : 0;
-    pointsBuffer[index + 3] = water ? 1 : 0;
-    pointsBuffer[index + 4] = ocean ? 1 : 0;
-    pointsBuffer[index + 5] = lake ? 1 : 0;
-    pointsBuffer[index + 6] = lava;
+  const colorsBuffer = new Float32Array(arrayBuffer, byteOffset, colors.length);
+  colorsBuffer.set(colors);
+  byteOffset += FLOAT32_SIZE * colors.length;
+
+  const indicesBuffer = new Uint32Array(arrayBuffer, byteOffset, indices.length);
+  indicesBuffer.set(indices);
+  byteOffset += UINT32_SIZE * indices.length;
+
+  const heightfieldBuffer = new Float32Array(arrayBuffer, byteOffset, heightfield.length);
+  heightfieldBuffer.set(heightfield);
+  byteOffset += FLOAT32_SIZE * heightfield.length;
+
+  const staticHeightfieldBuffer = new Float32Array(arrayBuffer, byteOffset, staticHeightfield.length);
+  staticHeightfieldBuffer.set(staticHeightfield);
+  byteOffset += FLOAT32_SIZE * staticHeightfield.length;
+
+  const etherBuffer = new Float32Array(arrayBuffer, byteOffset, ether.length);
+  etherBuffer.set(ether);
+  byteOffset += FLOAT32_SIZE * ether.length;
+
+  const boundingSphereBuffer = new Float32Array(arrayBuffer, byteOffset, boundingSphere.length);
+  boundingSphereBuffer.set(boundingSphere);
+  byteOffset += FLOAT32_SIZE * boundingSphere.length;
+
+  return arrayBuffer;
+};
+
+const parseDataChunk = (buffer, byteOffset) => {
+  if (byteOffset === undefined) {
+    byteOffset = 0;
   }
-  byteOffset += POINT_SIZE * points.length;
+
+  const headerBuffer = new Uint32Array(buffer, byteOffset, DATA_HEADER_ENTRIES);
+  const numPositions = headerBuffer[0];
+  const numColors = headerBuffer[1];
+  const numIndices = headerBuffer[2];
+  const numHeightfield = headerBuffer[3];
+  const numStaticHeightfield = headerBuffer[4];
+  const numEther = headerBuffer[5];
+  const numBoundingSphere = headerBuffer[6];
+  byteOffset += DATA_HEADER_SIZE;
+
+  const positionsBuffer = new Float32Array(buffer, byteOffset, numPositions);
+  const positions = positionsBuffer;
+  byteOffset += FLOAT32_SIZE * numPositions;
+
+  const colorsBuffer = new Float32Array(buffer, byteOffset, numColors);
+  const colors = colorsBuffer;
+  byteOffset += FLOAT32_SIZE * numColors;
+
+  const indicesBuffer = new Uint32Array(buffer, byteOffset, numIndices);
+  const indices = indicesBuffer;
+  byteOffset += UINT32_SIZE * numIndices;
+
+  const heightfieldBuffer = new Float32Array(buffer, byteOffset, numHeightfield);
+  const heightfield = heightfieldBuffer;
+  byteOffset += FLOAT32_SIZE * numHeightfield;
+
+  const staticHeightfieldBuffer = new Float32Array(buffer, byteOffset, numStaticHeightfield);
+  const staticHeightfield = staticHeightfieldBuffer;
+  byteOffset += FLOAT32_SIZE * numStaticHeightfield;
+
+  const etherBuffer = new Float32Array(buffer, byteOffset, numEther);
+  const ether = etherBuffer;
+  byteOffset += FLOAT32_SIZE * numEther;
+
+  const boundingSphereBuffer = new Float32Array(buffer, byteOffset, numBoundingSphere);
+  const boundingSphere = boundingSphereBuffer;
+  byteOffset += FLOAT32_SIZE * numBoundingSphere;
+
+  return {
+    buffer,
+    positions,
+    colors,
+    indices,
+    heightfield,
+    staticHeightfield,
+    ether,
+    boundingSphere,
+  };
+};
+
+const _getRenderChunkSizeFromMetadata = metadata => {
+  const {numPositions, numColors, numHeightfield, numStaticHeightfield, numBoundingSphere} = metadata;
+
+  return RENDER_HEADER_SIZE + // header
+    (FLOAT32_SIZE * numPositions) + // positions
+    (FLOAT32_SIZE * numColors) + // colors
+    (UINT32_SIZE * numIndices) + // indices
+    (FLOAT32_SIZE * numHeightfield) + // heightfield
+    (FLOAT32_SIZE * numStaticHeightfield) + // static heightfield
+    (FLOAT32_SIZE * numBoundingSphere); // bounding sphere
+};
+
+const _getRenderChunkSize = mapChunk => {
+  const {positions, colors, indices, heightfield, staticHeightfield, boundingSphere} = mapChunk;
+
+  const numPositions = positions.length;
+  const numColors = colors.length;
+  const numIndices = indices.length;
+  const numHeightfield = heightfield.length;
+  const numStaticHeightfield = staticHeightfield.length;
+  const numBoundingSphere = boundingSphere.length;
+
+  return _getRenderChunkSizeFromMetadata({
+    numPositions,
+    numColors,
+    numIndices,
+    numHeightfield,
+    numStaticHeightfield,
+    numBoundingSphere,
+  });
+};
+
+const _getRenderChunkBufferSize = (arrayBuffer, byteOffset) => {
+  const headerBuffer = new Uint32Array(arrayBuffer, byteOffset, RENDER_HEADER_ENTRIES);
+  const numPositions = headerBuffer[0];
+  const numColors = headerBuffer[1];
+  const numIndices = headerBuffer[2];
+  const numHeightfield = headerBuffer[3];
+  const numStaticHeightfield = headerBuffer[4];
+  const numBoundingSphere = headerBuffer[5];
+
+  return _getRenderChunkSizeFromMetadata({
+    numPositions,
+    numColors,
+    numIndices,
+    numHeightfield,
+    numStaticHeightfield,
+    numBoundingSphere,
+  });
+};
+
+const stringifyRenderChunk = (mapChunk, arrayBuffer, byteOffset) => {
+  const {positions, colors, indices, heightfield, staticHeightfield, boundingSphere} = mapChunk;
+
+  if (arrayBuffer === undefined || byteOffset === undefined) {
+    const bufferSize = _getDataChunkSize(mapChunk);
+    arrayBuffer = new ArrayBuffer(bufferSize);
+    byteOffset = 0;
+  }
+
+  const headerBuffer = new Uint32Array(arrayBuffer, byteOffset, RENDER_HEADER_ENTRIES);
+  headerBuffer[0] = positions.length;
+  headerBuffer[1] = colors.length;
+  headerBuffer[2] = indices.length;
+  headerBuffer[3] = heightfield.length;
+  headerBuffer[4] = staticHeightfield.length;
+  headerBuffer[5] = boundingSphere.length;
+  byteOffset += RENDER_HEADER_SIZE;
 
   const positionsBuffer = new Float32Array(arrayBuffer, byteOffset, positions.length);
   positionsBuffer.set(positions);
@@ -145,47 +259,19 @@ const stringifyMapChunk = (mapChunk, arrayBuffer, byteOffset) => {
   return arrayBuffer;
 };
 
-// parsing
-
-const parseMapChunk = (buffer, byteOffset) => {
+const parseRenderChunk = (buffer, byteOffset) => {
   if (byteOffset === undefined) {
     byteOffset = 0;
   }
 
-  const headerBuffer = new Uint32Array(buffer, byteOffset, MAP_CHUNK_HEADER_ENTRIES);
-  const numPoints = headerBuffer[0];
-  const numPositions = headerBuffer[1];
-  const numColors = headerBuffer[2];
-  const numIndices = headerBuffer[3];
-  const numHeightfield = headerBuffer[4];
-  const numStaticHeightfield = headerBuffer[5];
-  const numBoundingSphere = headerBuffer[6];
-  byteOffset += MAP_CHUNK_HEADER_SIZE;
-
-  const pointsBuffer = new Float32Array(buffer, byteOffset, numPoints * 7);
-  const points = Array(numPoints);
-  for (let i = 0; i < numPoints; i++) {
-    const index = i * 7;
-
-    const elevation = pointsBuffer[index + 0];
-    const moisture = pointsBuffer[index + 1];
-    const land = pointsBuffer[index + 2] !== 0;
-    const water = pointsBuffer[index + 3] !== 0;
-    const ocean = pointsBuffer[index + 4] !== 0;
-    const lake = pointsBuffer[index + 5] !== 0;
-    const lava = pointsBuffer[index + 6];
-
-    points[i] = new MapPoint(
-      elevation,
-      moisture,
-      land,
-      water,
-      ocean,
-      lake,
-      lava
-    );
-  }
-  byteOffset += POINT_SIZE * numPoints;
+  const headerBuffer = new Uint32Array(buffer, byteOffset, RENDER_HEADER_ENTRIES);
+  const numPositions = headerBuffer[0];
+  const numColors = headerBuffer[1];
+  const numIndices = headerBuffer[2];
+  const numHeightfield = headerBuffer[3];
+  const numStaticHeightfield = headerBuffer[4];
+  const numBoundingSphere = headerBuffer[5];
+  byteOffset += RENDER_HEADER_SIZE;
 
   const positionsBuffer = new Float32Array(buffer, byteOffset, numPositions);
   const positions = positionsBuffer;
@@ -213,7 +299,6 @@ const parseMapChunk = (buffer, byteOffset) => {
 
   return {
     buffer,
-    points,
     positions,
     colors,
     indices,
@@ -223,19 +308,19 @@ const parseMapChunk = (buffer, byteOffset) => {
   };
 };
 
-const sliceHeightfield = (arrayBuffer, readByteOffset) => {
-  const headerBuffer = new Uint32Array(arrayBuffer, readByteOffset, MAP_CHUNK_HEADER_ENTRIES);
-  const numPoints = headerBuffer[0];
-  const numPositions = headerBuffer[1];
-  const numColors = headerBuffer[2];
-  const numIndices = headerBuffer[3];
-  const numHeightfield = headerBuffer[4];
-  const numStaticHeightfield = headerBuffer[5];
+const sliceDataHeightfield = (arrayBuffer, readByteOffset) => {
+  const headerBuffer = new Uint32Array(arrayBuffer, readByteOffset, DATA_HEADER_ENTRIES);
+  const numPositions = headerBuffer[0];
+  const numColors = headerBuffer[1];
+  const numIndices = headerBuffer[2];
+  const numHeightfield = headerBuffer[3];
+  const numStaticHeightfield = headerBuffer[4];
+  const numEther = headerBuffer[5];
   const numBoundingSphere = headerBuffer[6];
-  readByteOffset += MAP_CHUNK_HEADER_SIZE + POINT_SIZE * numPoints + FLOAT32_SIZE * numPositions + FLOAT32_SIZE * numColors + UINT32_SIZE * numIndices;
+  readByteOffset += DATA_HEADER_SIZE + FLOAT32_SIZE * numPositions + FLOAT32_SIZE * numColors + UINT32_SIZE * numIndices;
 
   const heightfieldBuffer = new Float32Array(arrayBuffer, readByteOffset, numHeightfield);
-  readByteOffset += FLOAT32_SIZE * numHeightfield + FLOAT32_SIZE * numStaticHeightfield + FLOAT32_SIZE * numBoundingSphere;
+  readByteOffset += FLOAT32_SIZE * numHeightfield + FLOAT32_SIZE * numStaticHeightfield + FLOAT32_SIZE * numEther + FLOAT32_SIZE * numBoundingSphere;
 
   const resultArrayBuffer = new ArrayBuffer(UINT32_SIZE + FLOAT32_SIZE * numHeightfield + FLOAT32_SIZE * 2);
   let writeByteOffset = 0;
@@ -265,8 +350,10 @@ const parseHeightfield = (buffer, byteOffset) => {
 };
 
 module.exports = {
-  stringifyMapChunk,
-  parseMapChunk,
-  sliceHeightfield,
+  stringifyDataChunk,
+  parseDataChunk,
+  stringifyRenderChunk,
+  parseRenderChunk,
+  sliceDataHeightfield,
   parseHeightfield,
 };
