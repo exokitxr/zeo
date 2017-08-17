@@ -12,6 +12,12 @@ const generatorLib = require('./generator');
 const {
   DEFAULT_SEED,
 } = require('./lib/constants/constants');
+const DIRECTIONS = [
+  [-1, -1],
+  [-1, 1],
+  [1, -1],
+  [1, 1],
+];
 
 class Heightfield {
   constructor(archae) {
@@ -155,27 +161,37 @@ class Heightfield {
           if (!isNaN(x) && !isNaN(y) && !isNaN(z)) {
             const v = req.method === 'POST' ? -1 : 1;
 
-            const ox = Math.floor(x / NUM_CELLS);
-            const oz = Math.floor(z / NUM_CELLS);
-            const lx = x - (ox * NUM_CELLS);
-            const lz = z - (oz * NUM_CELLS);
-            const newEther = Float32Array.from([lx, y, lz, v]);
-            let chunk = tra.getChunk(ox, oz);
-            if (!chunk) {
-              chunk = tra.makeChunk(ox, oz);
-              chunk.generate(generator, {
-                newEther,
-              });
-            } else {
-              const uint32Buffer = chunk.getBuffer();
-              const chunkData = protocolUtils.parseDataChunk(uint32Buffer.buffer, uint32Buffer.byteOffset);
-              const oldElevations = chunkData.elevations.slice();
-              const oldEther = chunkData.ether.slice();
-              chunk.generate(generator, {
-                oldElevations,
-                oldEther,
-                newEther,
-              });
+            const regenerated = [];
+            for (let i = 0; i < DIRECTIONS.length; i++) {
+              const [dx, dz] = DIRECTIONS[i];
+              const ax = x + dx * 2;
+              const az = z + dz * 2;
+              const ox = Math.floor(ax / NUM_CELLS);
+              const oz = Math.floor(az / NUM_CELLS);
+              const lx = x - (ox * NUM_CELLS);
+              const lz = z - (oz * NUM_CELLS);
+              const newEther = Float32Array.from([lx, y, lz, v]);
+
+              if (!regenerated.some(entry => entry[0] === ox && entry[1] === oz)) {
+                let chunk = tra.getChunk(ox, oz);
+                if (!chunk) {
+                  chunk = tra.makeChunk(ox, oz);
+                  chunk.generate(generator, {
+                    newEther,
+                  });
+                } else {
+                  const uint32Buffer = chunk.getBuffer();
+                  const chunkData = protocolUtils.parseDataChunk(uint32Buffer.buffer, uint32Buffer.byteOffset);
+                  const oldElevations = chunkData.elevations.slice();
+                  const oldEther = chunkData.ether.slice();
+                  chunk.generate(generator, {
+                    oldElevations,
+                    oldEther,
+                    newEther,
+                  });
+                }
+                regenerated.push([ox, oz]);
+              }
             }
             _saveChunks();
             res.send();
