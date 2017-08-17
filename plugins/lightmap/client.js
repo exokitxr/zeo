@@ -221,6 +221,15 @@ class Lightmap {
         this._lightmaps = {};
         this._lightmapsNeedUpdate = {};
         this._buffers = bffr((width + 1) * (depth + 1) * height, 3 * 3 * 12);
+
+        this.debouncedUpdate = _debounce(next => {
+          this.update()
+            .then(next)
+            .catch(err => {
+              console.warn(err);
+              next();
+            });
+        });
       }
 
       getLightmapAt(x, z) {
@@ -256,6 +265,8 @@ class Lightmap {
         for (let i = 0; i < newLightmapsNeedUpdate.length; i++) {
           lightmapsNeedUpdate[newLightmapsNeedUpdate[i].index] = true;
         }
+
+        this.debouncedUpdate();
       }
 
       remove(shape) {
@@ -267,6 +278,8 @@ class Lightmap {
         for (let i = 0; i < newLightmapsNeedUpdate.length; i++) {
           lightmapsNeedUpdate[newLightmapsNeedUpdate[i].index] = true;
         }
+
+        this.debouncedUpdate();
       }
 
       update() {
@@ -306,19 +319,11 @@ class Lightmap {
 
         let live = true;
         const _recurse = () => {
-          lightmapper.update()
-            .then(() => {
-              if (live) {
-                setTimeout(_recurse, 1000);
-              }
-            })
-            .catch(err => {
-              if (live) {
-                console.warn(err.stack);
-
-                setTimeout(_recurse, 1000);
-              }
-            });
+          lightmapper.debouncedUpdate(() => {
+            if (live) {
+              setTimeout(_recurse, 1000);
+            }
+          });
         };
         _recurse();
 
@@ -341,5 +346,28 @@ class Lightmap {
     this._cleanup();
   }
 }
+const _debounce = fn => {
+  let running = false;
+  let queued = false;
+
+  const _go = () => {
+    if (!running) {
+      running = true;
+
+      fn(() => {
+        running = false;
+
+        if (queued) {
+          queued = false;
+
+          _go();
+        }
+      });
+    } else {
+      queued = true;
+    }
+  };
+  return _go;
+};
 
 module.exports = Lightmap;
