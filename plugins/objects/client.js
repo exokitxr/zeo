@@ -344,6 +344,7 @@ void main() {
           if (chunk) {
             chunk.lod = -1; // force chunk refresh
           }
+          _debouncedRequestRefreshObjectsChunks();
         } else if (type === 'objectAdded') {
           const [n, x, z, objectIndex, position, rotation, value] = args;
 
@@ -686,6 +687,7 @@ void main() {
             if (chunk) {
               chunk.lod = -1; // force chunk refresh
             }
+            _debouncedRequestRefreshObjectsChunks();
           });
       }
 
@@ -696,6 +698,7 @@ void main() {
             if (chunk) {
               chunk.lod = -1; // force chunk refresh
             }
+            _debouncedRequestRefreshObjectsChunks();
           });
       }
 
@@ -823,6 +826,15 @@ void main() {
           }
         });
     };
+    const _debouncedRequestRefreshObjectsChunks = _debounce(next => {
+      _requestRefreshObjectsChunks()
+        .then(next)
+        .catch(err => {
+          console.warn(err);
+
+          next();
+        });
+    });
 
     let bodyObject = null;
 
@@ -1017,19 +1029,11 @@ void main() {
       .then(() => {
         let live = true;
         const _recurse = () => {
-          _requestRefreshObjectsChunks()
-            .then(() => {
-              if (live) {
-                setTimeout(_recurse, 1000);
-              }
-            })
-            .catch(err => {
-              if (live) {
-                console.warn(err);
-
-                setTimeout(_recurse, 1000);
-              }
-            });
+          _debouncedRequestRefreshObjectsChunks(() => {
+            if (live) {
+              setTimeout(_recurse, 1000);
+            }
+          });
         };
         _recurse();
         cleanups.push(() => {
@@ -1047,6 +1051,29 @@ const _makeId = () => {
   const result = _id;
   _id = (_id + 1) | 0;
   return result;
+};
+const _debounce = fn => {
+  let running = false;
+  let queued = false;
+
+  const _go = () => {
+    if (!running) {
+      running = true;
+
+      fn(() => {
+        running = false;
+
+        if (queued) {
+          queued = false;
+
+          _go();
+        }
+      });
+    } else {
+      queued = true;
+    }
+  };
+  return _go;
 };
 const _parseFunction = fn => {
   const match = fn.toString().match(/[^\(]*\(([^\)]*)\)[^\{]*\{([\s\S]*)\}\s*$/); // XXX support bracketless arrow functions
