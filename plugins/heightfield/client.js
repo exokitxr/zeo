@@ -656,7 +656,9 @@ class Heightfield {
             }
           }
         };
-        input.on('triggerdown', _triggerdown);
+        input.on('triggerdown', _triggerdown, {
+          priority: -1,
+        });
 
         let live = true;
         const _recurse = () => {
