@@ -185,6 +185,18 @@ class Heightfield {
       }, [buffer]);
       queues.push(new QueueEntry(id, accept));
     });
+    worker.requestUngenerate = (x, z) => {
+      worker.postMessage({
+        method: 'ungenerate',
+        id,
+        args: {
+          x,
+          y,
+        },
+      });
+
+      return Promise.resolve();
+    };
     worker.requestAddVoxel = (x, y, z) => new Promise((accept, reject) => {
       const id = _makeId();
       worker.postMessage({
@@ -424,6 +436,8 @@ class Heightfield {
             if (lod !== 1 && mapChunkMesh.targeted) {
               _removeTarget(mapChunkMesh);
             }
+
+            worker.requestUngenerate(x, z);
           }
           for (let i = 0; i < relodded.length; i++) {
             const chunk = relodded[i];

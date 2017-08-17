@@ -1,9 +1,16 @@
 self.module = {};
 
+const trra = require('/home/k/trra');
 const indev = require('indev');
 const {
+  NUM_CELLS,
+
   DEFAULT_SEED,
 } = require('./lib/constants/constants');
+
+const tra = trra({
+  seed: DEFAULT_SEED,
+});
 
 const generator = indev({
   seed: DEFAULT_SEED,
@@ -12,7 +19,7 @@ const elevationNoise = generator.uniform({
   frequency: 0.002,
   octaves: 8,
 });
-const _getOriginHeight = () => (1 - 0.3 + Math.pow(elevationNoise.in2D(0 + 1000, 0 + 1000), 0.5)) * 64;
+
 const _resArrayBuffer = res => {
   if (res.status >= 200 && res.status < 300) {
     return res.arrayBuffer();
@@ -31,6 +38,20 @@ const _resBlob = res => {
       status: res.status,
       stack: 'API returned invalid status code: ' + res.status,
     });
+  }
+};
+const _getOriginHeight = () => (1 - 0.3 + Math.pow(elevationNoise.in2D(0 + 1000, 0 + 1000), 0.5)) * 64;
+const _requestChunk = (x, z) => {
+  const chunk = tra.getChunk(x, z);
+
+  if (chunk) {
+    return Promise.resolve(chunk);
+  } else {
+    return fetch(`/archae/heightfield/chunks?x=${x}&z=${z}`, {
+      credentials: 'include',
+    })
+      .then(_resArrayBuffer)
+      .then(buffer => tra.addChunk(x, z, new Uint32Array(buffer)));
   }
 };
 
@@ -52,12 +73,10 @@ self.onmessage = e => {
     case 'generate': {
       const {id, args} = data;
       const {x, y, buffer} = args;
-      return fetch(`/archae/heightfield/chunks?x=${x}&z=${y}`, {
-        credentials: 'include',
-      })
-        .then(_resArrayBuffer)
-        .then(chunkBuffer => {
-          new Uint32Array(buffer).set(new Uint32Array(chunkBuffer));
+
+      _requestChunk(x, y)
+        .then(chunk => {
+          new Uint32Array(buffer).set(chunk.getBuffer());
 
           postMessage(JSON.stringify({
             type: 'response',
@@ -70,16 +89,28 @@ self.onmessage = e => {
         });
       break;
     }
+    case 'ungenerate': {
+      const {args} = data;
+      const {x, z} = args;
+      tra.removeChunk(x, z);
+      break;
+    }
     case 'addVoxel': {
       const {id, args} = data;
       const {position} = args;
       const [x, y, z] = position;
+      // XXX regenerate locally and return immediately
+      // XXX need to inform other clients of these
       return fetch(`/archae/heightfield/voxels?x=${x}&y=${y}&z=${z}`, {
         method: 'POST',
         credentials: 'include',
       })
         .then(_resBlob)
         .then(() => {
+          const ox = Math.floor(x / NUM_CELLS);
+          const oz = Math.floor(z / NUM_CELLS);
+          tra.removeChunk(ox, oz); // XXX not needed once we regenerate locally
+
           postMessage(JSON.stringify({
             type: 'response',
             args: [id],
@@ -101,6 +132,10 @@ self.onmessage = e => {
       })
         .then(_resBlob)
         .then(() => {
+          const ox = Math.floor(x / NUM_CELLS);
+          const oz = Math.floor(z / NUM_CELLS);
+          tra.removeChunk(ox, oz); // XXX not needed once we regenerate locally
+
           postMessage(JSON.stringify({
             type: 'response',
             args: [id],
