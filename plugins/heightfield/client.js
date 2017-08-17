@@ -493,7 +493,12 @@ class Heightfield {
       const mapChunkMesh = mapChunkMeshes[_getChunkIndex(ox, oz)];
 
       if (mapChunkMesh) {
-        return _getBestHeightfieldTriangleElevation(mapChunkMesh.heightfield, x, z, y);
+        return _getBestHeightfieldTriangleElevation(
+          mapChunkMesh.heightfield,
+          x - (ox * NUM_CELLS),
+          z - (oz * NUM_CELLS),
+          y
+        );
       } else {
         return 0;
       }
