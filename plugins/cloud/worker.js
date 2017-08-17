@@ -147,10 +147,16 @@ const _makeCloudChunkMesh = (x, y, cloudPatchGeometries) => {
     indexIndex += newIndices.length;
   }
 
+  const geometry = new THREE.BufferGeometry();
+  geometry.addAttribute('position', new THREE.BufferAttribute(new Float32Array(positions.buffer, positions.byteOffset, attributeIndex), 3));
+  geometry.computeBoundingSphere();
+  const {boundingSphere} = geometry;
+
   return {
     positions: new Float32Array(positions.buffer, positions.byteOffset, attributeIndex),
     normals: new Float32Array(normals.buffer, normals.byteOffset, attributeIndex),
     indices: new Uint32Array(indices.buffer, indices.byteOffset, indexIndex),
+    boundingSphere: Float32Array.from(boundingSphere.center.toArray().concat([boundingSphere.radius])),
   };
 };
 

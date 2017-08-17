@@ -106,21 +106,15 @@ class Cloud {
         const cloudChunkMeshes = {};
         const _makeCloudChunkMesh = (cloudChunkData, x, z) => {
           const mesh = (() => {
-            const {positions, normals, indices} = cloudChunkData;
+            const {positions, normals, indices, boundingSphere} = cloudChunkData;
 
             const geometry = new THREE.BufferGeometry();
             geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
             geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
             geometry.setIndex(new THREE.BufferAttribute(indices, 1));
-            const minY = 0; // XXX compute this accurately
-            const maxY = 64;
             geometry.boundingSphere = new THREE.Sphere(
-              new THREE.Vector3(
-                (x * NUM_CELLS) + (NUM_CELLS / 2),
-                (minY + maxY) / 2,
-                (z * NUM_CELLS) + (NUM_CELLS / 2)
-              ),
-              Math.max(Math.sqrt((NUM_CELLS / 2) * (NUM_CELLS / 2) * 3), (maxY - minY) / 2)
+              new THREE.Vector3().fromArray(boundingSphere, 0),
+              boundingSphere[3]
             );
             /* mesh.position.x = dx;
             mesh.updateMatrixWorld();
