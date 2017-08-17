@@ -8,7 +8,7 @@ const RENDER_HEADER_SIZE = UINT32_SIZE * RENDER_HEADER_ENTRIES;
 const POINT_SIZE = 7 * FLOAT32_SIZE;
 
 const _getDataChunkSizeFromMetadata = metadata => {
-  const {numPositions, numColors, numHeightfield, numStaticHeightfield, numBoundingSphere} = metadata;
+  const {numPositions, numColors, numIndices, numHeightfield, numStaticHeightfield, numElevations, numEther, numBoundingSphere} = metadata;
 
   return DATA_HEADER_SIZE + // header
     (FLOAT32_SIZE * numPositions) + // positions
@@ -185,7 +185,7 @@ const parseDataChunk = (buffer, byteOffset) => {
 };
 
 const _getRenderChunkSizeFromMetadata = metadata => {
-  const {numPositions, numColors, numHeightfield, numStaticHeightfield, numBoundingSphere} = metadata;
+  const {numPositions, numColors, numIndices, numHeightfield, numStaticHeightfield, numBoundingSphere} = metadata;
 
   return RENDER_HEADER_SIZE + // header
     (FLOAT32_SIZE * numPositions) + // positions
@@ -373,8 +373,10 @@ const parseHeightfield = (buffer, byteOffset) => {
 module.exports = {
   stringifyDataChunk,
   parseDataChunk,
+
   stringifyRenderChunk,
   parseRenderChunk,
+
   sliceDataHeightfield,
   parseHeightfield,
 };
