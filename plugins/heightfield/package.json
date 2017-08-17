@@ -10,6 +10,6 @@
   "dependencies": {
     "mrch": "0.0.1",
     "touch": "^3.1.0",
-    "trra": "0.0.2"
+    "trra": "0.0.3"
   }
 }
