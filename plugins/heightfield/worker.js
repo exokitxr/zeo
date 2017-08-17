@@ -161,7 +161,7 @@ self.onmessage = e => {
         })
           .then(_resBlob)
           .then(() => {
-            _respond();
+            // _respond();
           })
           .catch(err => {
             console.warn(err);
@@ -177,6 +177,8 @@ self.onmessage = e => {
           oldEther,
           newEther,
         });
+
+        _respond();
       } else {
         _respond();
       }
