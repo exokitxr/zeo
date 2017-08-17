@@ -8,7 +8,7 @@ const {
 } = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
 
-const NUM_POSITIONS_CHUNK = 0.5 * 1024 * 1024;
+const NUM_POSITIONS_CHUNK = 1 * 1024 * 1024;
 const LIGHTMAP_PLUGIN = 'plugins-lightmap';
 const DAY_NIGHT_SKYBOX_PLUGIN = 'plugins-day-night-skybox';
 

@@ -159,16 +159,22 @@ class Heightfield {
             const oz = Math.floor(z / NUM_CELLS);
             const lx = x - (ox * NUM_CELLS);
             const lz = z - (oz * NUM_CELLS);
+            const newEther = Float32Array.from([lx, y, lz, v]);
             let chunk = tra.getChunk(ox, oz);
             if (!chunk) {
               chunk = tra.makeChunk(ox, oz);
               chunk.generate(generator, {
-                ether: [lx, y, lz, v],
+                newEther,
               });
             } else {
+              const uint32Buffer = chunk.getBuffer();
+              const chunkData = protocolUtils.parseDataChunk(uint32Buffer.buffer, uint32Buffer.byteOffset);
+              const oldElevations = chunkData.elevations.slice();
+              const oldEther = chunkData.ether.slice();
               chunk.generate(generator, {
-                ether: [lx, y, lz, v],
-                regenerate: true,
+                oldElevations,
+                oldEther,
+                newEther,
               });
             }
             _saveChunks();

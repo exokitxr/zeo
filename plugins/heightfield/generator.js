@@ -209,11 +209,11 @@ const _generateMapChunk = (ox, oy, opts) => {
               for (let ny = min.y; ny <= max.y; ny++) {
                 for (let nx = min.x; nx <= max.x; nx++) {
                   const index = _getEtherIndex(nx, ny, nz);
-                  ether[index] = Math.max(
+                  ether[index] += Math.max(
                     3 - worm.closestPointToPoint(localVector5.set(nx, ny, nz), true, localVector6)
                       .distanceTo(localVector5),
-                    ether[index]
-                  );
+                    0
+                  )
                 }
               }
             }
