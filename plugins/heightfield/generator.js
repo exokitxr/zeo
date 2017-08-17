@@ -4,7 +4,7 @@ module.exports = ({
   indev,
 }) => {
 
-const isosurface = require('isosurface');
+const mrch = require('mrch');
 const protocolUtils = require('./lib/utils/protocol-utils');
 const {
   NUM_CELLS,
@@ -18,7 +18,7 @@ const {
 const NUM_CELLS_OVERSCAN_Y = (NUM_CELLS * 4) + OVERSCAN;
 const HOLE_SIZE = 2;
 
-const _marchCubes = (fn, resolution) => isosurface.marchingCubes(
+const _marchCubes = (fn, resolution) => mrch.marchingCubes(
   [resolution + 1, (resolution * 4) + 1, resolution + 1],
   fn,
   [
@@ -27,27 +27,10 @@ const _marchCubes = (fn, resolution) => isosurface.marchingCubes(
   ]
 );
 const _makeGeometry = ether => {
-  const {positions: positionsArray, cells: cellsArray} = _marchCubes(
+  const {positions, indices} = _marchCubes(
     (x, y, z) => ether[_getEtherIndex(x, y, z)],
     NUM_CELLS
   );
-
-  const numPositions = positionsArray.length;
-  const positions = new Float32Array(numPositions * 3);
-  for (let i = 0; i < numPositions; i++) {
-    const baseIndex = i * 3;
-    positions[baseIndex + 0] = positionsArray[i][0];
-    positions[baseIndex + 1] = positionsArray[i][1];
-    positions[baseIndex + 2] = positionsArray[i][2];
-  }
-  const numCells = cellsArray.length;
-  const indices = new Uint32Array(numCells * 3);
-  for (let i = 0; i < numCells; i++) {
-    const baseIndex = i * 3;
-    indices[baseIndex + 0] = cellsArray[i][0];
-    indices[baseIndex + 1] = cellsArray[i][1];
-    indices[baseIndex + 2] = cellsArray[i][2];
-  }
 
   const geometry = new THREE.BufferGeometry();
   geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
