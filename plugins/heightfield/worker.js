@@ -23,6 +23,16 @@ const _resArrayBuffer = res => {
     });
   }
 };
+const _resBlob = res => {
+  if (res.status >= 200 && res.status < 300) {
+    return res.blob();
+  } else {
+    return Promise.reject({
+      status: res.status,
+      stack: 'API returned invalid status code: ' + res.status,
+    });
+  }
+};
 
 self.onmessage = e => {
   const {data} = e;
@@ -54,6 +64,48 @@ self.onmessage = e => {
             args: [id],
           }));
           postMessage(buffer, [buffer]);
+        })
+        .catch(err => {
+          console.warn(err);
+        });
+      break;
+    }
+    case 'addVoxel': {
+      const {id, args} = data;
+      const {position} = args;
+      const [x, y, z] = position;
+      return fetch(`/archae/heightfield/voxels?x=${x}&y=${y}&z=${z}`, {
+        method: 'POST',
+        credentials: 'include',
+      })
+        .then(_resBlob)
+        .then(() => {
+          postMessage(JSON.stringify({
+            type: 'response',
+            args: [id],
+          }));
+          postMessage(null);
+        })
+        .catch(err => {
+          console.warn(err);
+        });
+      break;
+    }
+    case 'subVoxel': {
+      const {id, args} = data;
+      const {position} = args;
+      const [x, y, z] = position;
+      return fetch(`/archae/heightfield/voxels?x=${x}&y=${y}&z=${z}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      })
+        .then(_resBlob)
+        .then(() => {
+          postMessage(JSON.stringify({
+            type: 'response',
+            args: [id],
+          }));
+          postMessage(null);
         })
         .catch(err => {
           console.warn(err);

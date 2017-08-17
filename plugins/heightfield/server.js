@@ -2,8 +2,11 @@ const path = require('path');
 const fs = require('fs');
 
 const touch = require('touch');
-const trra = require('trra');
+const trra = require('/home/k/trra');
 
+const {
+  NUM_CELLS,
+} = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
 const generator = require('./generator');
 const {
@@ -131,6 +134,41 @@ class Heightfield {
         }
         app.get('/archae/heightfield/heightfield', serveHeightfieldHeightfield);
 
+        function serveHeightfieldVoxels(req, res, next) {
+          const {query: {x: xs, y: ys, z: zs}} = req;
+          const x = parseInt(xs, 10);
+          const y = parseInt(ys, 10);
+          const z = parseInt(zs, 10);
+
+          if (!isNaN(x) && !isNaN(y) && !isNaN(z)) {
+            const v = req.method === 'POST' ? -1 : 1;
+
+            const ox = Math.floor(x / NUM_CELLS);
+            const oz = Math.floor(z / NUM_CELLS);
+            const lx = x - (ox * NUM_CELLS);
+            const lz = z - (oz * NUM_CELLS);
+            let chunk = tra.getChunk(ox, oz);
+            if (!chunk) {
+              chunk = tra.makeChunk(ox, oz);
+              chunk.generate(generator, {
+                ether: [lx, y, lz, v],
+              });
+            } else {
+              chunk.generate(generator, {
+                ether: [lx, y, lz, v],
+                regenerate: true,
+              });
+            }
+            _saveChunks();
+            res.send();
+          } else {
+            res.status(400);
+            res.send();
+          }
+        }
+        app.post('/archae/heightfield/voxels', serveHeightfieldVoxels);
+        app.delete('/archae/heightfield/voxels', serveHeightfieldVoxels);
+
         const heightfieldElement = {
           requestHeightfield(x, z) {
             let chunk = tra.getChunk(x, z);
@@ -148,7 +186,12 @@ class Heightfield {
 
         this._cleanup = () => {
           function removeMiddlewares(route, i, routes) {
-            if (route.handle.name === 'serveHeightfieldImg' || route.handle.name === 'serveHeightfieldChunks' || route.handle.name === 'serveHeightfieldHeightfield') {
+            if (
+              route.handle.name === 'serveHeightfieldImg' ||
+              route.handle.name === 'serveHeightfieldChunks' ||
+              route.handle.name === 'serveHeightfieldHeightfield' ||
+              route.handle.name === 'serveHeightfieldVoxels'
+            ) {
               routes.splice(i, 1);
             }
             if (route.route) {
