@@ -1027,17 +1027,15 @@ void main() {
           }))
     )
       .then(() => {
-        let live = true;
+        let recurseTimeout = null;
         const _recurse = () => {
-          _debouncedRequestRefreshObjectsChunks(() => {
-            if (live) {
-              setTimeout(_recurse, 1000);
-            }
-          });
+          _debouncedRequestRefreshObjectsChunks();
+          recurseTimeout = setTimeout(_recurse, 1000);
         };
         _recurse();
+
         cleanups.push(() => {
-          live = false;
+          clearTimeout(recurseTimeout);
         });
       });
   }

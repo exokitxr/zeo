@@ -317,18 +317,15 @@ class Lightmap {
         lightmapper.add(new Lightmapper.Sphere(0, 64 + 32, 0, 8, 2, Lightmapper.MaxBlend));
         entityElement.lightmapper = lightmapper;
 
-        let live = true;
+        let recurseTimeout = null;
         const _recurse = () => {
-          lightmapper.debouncedUpdate(() => {
-            if (live) {
-              setTimeout(_recurse, 1000);
-            }
-          });
+          lightmapper.debouncedUpdate();
+          recurseTimeout = setTimeout(_recurse, 1000);
         };
         _recurse();
 
         entityElement._cleanup = () => {
-          live = false;
+          clearTimeout(recurseTimeout);
         };
       },
       entityRemovedCallback(entityElement) {

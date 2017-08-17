@@ -464,7 +464,6 @@ class Heightfield {
         .then(next)
         .catch(err => {
           console.warn(err);
-
           next();
         });
     });
@@ -669,13 +668,10 @@ class Heightfield {
           priority: -1,
         });
 
-        let live = true;
+        let recurseTimeout = null;
         const _recurse = () => {
-          _debouncedRequestRefreshMapChunks(() => {
-            if (live) {
-              setTimeout(_recurse, 1000);
-            }
-          });
+          _debouncedRequestRefreshMapChunks();
+          recurseTimeout = setTimeout(_recurse, 1000);
         };
         _recurse();
 
@@ -693,7 +689,7 @@ class Heightfield {
         render.on('update', _update);
 
         this._cleanup = () => {
-          live = false;
+          clearTimeout(recurseTimeout);
 
           // XXX remove chunks from the scene here
 
