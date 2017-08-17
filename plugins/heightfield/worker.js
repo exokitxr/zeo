@@ -168,9 +168,12 @@ self.onmessage = e => {
           });
 
         const uint32Buffer = chunk.getBuffer();
-        const oldEther = protocolUtils.parseDataChunk(uint32Buffer.buffer, uint32Buffer.byteOffset).ether.slice();
+        const chunkData = protocolUtils.parseDataChunk(uint32Buffer.buffer, uint32Buffer.byteOffset);
+        const oldElevations = chunkData.elevations.slice();
+        const oldEther = chunkData.ether.slice();
         const newEther = Float32Array.from([x - (ox * NUM_CELLS), y, z - (oz * NUM_CELLS), 1]);
         chunk.generate(generator, {
+          oldElevations,
           oldEther,
           newEther,
         });

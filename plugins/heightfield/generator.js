@@ -8,12 +8,14 @@ const isosurface = require('isosurface');
 const protocolUtils = require('./lib/utils/protocol-utils');
 const {
   NUM_CELLS,
+  OVERSCAN,
   NUM_CELLS_OVERSCAN,
 
   HEIGHTFIELD_DEPTH,
 
   DEFAULT_SEED,
 } = require('./lib/constants/constants');
+const NUM_CELLS_OVERSCAN_Y = (NUM_CELLS * 4) + OVERSCAN;
 const HOLE_SIZE = 2;
 
 const _marchCubes = (fn, resolution) => isosurface.marchingCubes(
@@ -24,13 +26,11 @@ const _marchCubes = (fn, resolution) => isosurface.marchingCubes(
     [resolution + 1, (resolution * 4) + 1, resolution + 1],
   ]
 );
-const _makeGeometry = (elevations, ether) => {
-  const {positions: positionsArray, cells: cellsArray} =
-    _marchCubes((x, y, z) =>
-        Math.max(y - elevations[_getCoordOverscanIndex(x, z)], -1) +
-        ether[x + (y * (NUM_CELLS + 2)) + (z * (NUM_CELLS + 2) * ((NUM_CELLS * 4) + 2))],
-      NUM_CELLS
-    );
+const _makeGeometry = ether => {
+  const {positions: positionsArray, cells: cellsArray} = _marchCubes(
+    (x, y, z) => ether[_getEtherIndex(x, y, z)],
+    NUM_CELLS
+  );
 
   const numPositions = positionsArray.length;
   const positions = new Float32Array(numPositions * 3);
@@ -142,16 +142,27 @@ localTriangle.points = [localTriangle.a, localTriangle.b, localTriangle.c];
 const _generateMapChunk = (ox, oy, opts) => {
   // generate
 
-  const elevations = new Float32Array(NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN);
-  for (let z = 0; z < NUM_CELLS_OVERSCAN; z++) {
-    for (let x = 0; x < NUM_CELLS_OVERSCAN; x++) {
-      elevations[_getCoordOverscanIndex(x, z)] = (1 - 0.3 + Math.pow(_random.elevationNoise.in2D((ox * NUM_CELLS) + x + 1000, (oy * NUM_CELLS) + z + 1000), 0.5)) * 64;
+  let elevations = opts.oldElevations;
+  if (!elevations) {
+    elevations = new Float32Array(NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN);
+    for (let z = 0; z < NUM_CELLS_OVERSCAN; z++) {
+      for (let x = 0; x < NUM_CELLS_OVERSCAN; x++) {
+        elevations[_getCoordOverscanIndex(x, z)] = (1 - 0.3 + Math.pow(_random.elevationNoise.in2D((ox * NUM_CELLS) + x + 1000, (oy * NUM_CELLS) + z + 1000), 0.5)) * 64;
+      }
     }
   }
 
   let ether = opts.oldEther;
   if (!ether) {
     ether = new Float32Array((NUM_CELLS + 2) * ((NUM_CELLS * 4) + 2) * (NUM_CELLS + 2));
+    for (let z = 0; z < NUM_CELLS_OVERSCAN; z++) {
+      for (let y = 0; y < NUM_CELLS_OVERSCAN_Y; y++) {
+        for (let x = 0; x < NUM_CELLS_OVERSCAN; x++) {
+          ether[_getEtherIndex(x, y, z)] = Math.max(y - elevations[_getCoordOverscanIndex(x, z)], -1);
+        }
+      }
+    }
+
     for (let dy = -1; dy <= 1; dy++) {
       for (let dx = -1; dx <= 1; dx++) {
         const n = _random.wormNoise.in2D(ox + dx, oy + dy);
@@ -244,7 +255,7 @@ const _generateMapChunk = (ox, oy, opts) => {
 
   // compile
 
-  const geometry = _makeGeometry(elevations, ether);
+  const geometry = _makeGeometry(ether);
   const positions = geometry.getAttribute('position').array;
   const indices = geometry.index.array;
 
@@ -340,12 +351,15 @@ const _generateMapChunk = (ox, oy, opts) => {
     indices: geometry.index.array,
     heightfield,
     staticHeightfield,
+    elevations,
     ether,
     boundingSphere: Float32Array.from(boundingSphere.center.toArray().concat([boundingSphere.radius])),
   };
 };
 const _getCoordOverscanIndex = (x, y) => x + (y * NUM_CELLS_OVERSCAN);
-const _getEtherIndex = (x, y, z) => x + (y * (NUM_CELLS + 2)) + (z * (NUM_CELLS + 2) * ((NUM_CELLS * 4) + 2));
+const ETHER_INDEX_Y_FACTOR = NUM_CELLS + 2;
+const ETHER_INDEX_Z_FACTOR = ETHER_INDEX_Y_FACTOR * ((NUM_CELLS * 4) + 2);
+const _getEtherIndex = (x, y, z) => x + (y * ETHER_INDEX_Y_FACTOR) + (z * ETHER_INDEX_Z_FACTOR);
 
 const _getBiome = p => {
   if (p.coast) {
@@ -502,6 +516,9 @@ const _getStaticHeightfieldIndex = (x, z) => x + (z * NUM_CELLS_OVERSCAN);
 const generator = (x, y, buffer, byteOffset, opts) => {
   if (opts === undefined) {
     opts = {};
+  }
+  if (opts.oldElevations === undefined) {
+    opts.oldElevations = null;
   }
   if (opts.oldEther === undefined) {
     opts.oldEther = null;

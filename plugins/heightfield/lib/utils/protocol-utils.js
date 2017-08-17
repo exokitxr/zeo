@@ -1,7 +1,7 @@
 const UINT32_SIZE = 4;
 const INT32_SIZE = 4;
 const FLOAT32_SIZE = 4;
-const DATA_HEADER_ENTRIES = 7;
+const DATA_HEADER_ENTRIES = 8;
 const DATA_HEADER_SIZE = UINT32_SIZE * DATA_HEADER_ENTRIES;
 const RENDER_HEADER_ENTRIES = 6;
 const RENDER_HEADER_SIZE = UINT32_SIZE * RENDER_HEADER_ENTRIES;
@@ -16,17 +16,21 @@ const _getDataChunkSizeFromMetadata = metadata => {
     (UINT32_SIZE * numIndices) + // indices
     (FLOAT32_SIZE * numHeightfield) + // heightfield
     (FLOAT32_SIZE * numStaticHeightfield) + // static heightfield
+    (FLOAT32_SIZE * numElevations) + // elevations
+    (FLOAT32_SIZE * numEther) + // ethers
     (FLOAT32_SIZE * numBoundingSphere); // bounding sphere
 };
 
 const _getDataChunkSize = mapChunk => {
-  const {positions, colors, indices, heightfield, staticHeightfield, boundingSphere} = mapChunk;
+  const {positions, colors, indices, heightfield, staticHeightfield, elevations, ether, boundingSphere} = mapChunk;
 
   const numPositions = positions.length;
   const numColors = colors.length;
   const numIndices = indices.length;
   const numHeightfield = heightfield.length;
   const numStaticHeightfield = staticHeightfield.length;
+  const numElevations = elevations.length;
+  const numEther = ether.length;
   const numBoundingSphere = boundingSphere.length;
 
   return _getDataChunkSizeFromMetadata({
@@ -35,6 +39,8 @@ const _getDataChunkSize = mapChunk => {
     numIndices,
     numHeightfield,
     numStaticHeightfield,
+    numElevations,
+    numEther,
     numBoundingSphere,
   });
 };
@@ -46,7 +52,9 @@ const _getDataChunkBufferSize = (arrayBuffer, byteOffset) => {
   const numIndices = headerBuffer[2];
   const numHeightfield = headerBuffer[3];
   const numStaticHeightfield = headerBuffer[4];
-  const numBoundingSphere = headerBuffer[5];
+  const numElevations = headerBuffer[5];
+  const numEther = headerBuffer[6];
+  const numBoundingSphere = headerBuffer[7];
 
   return _getDataChunkSizeFromMetadata({
     numPositions,
@@ -54,12 +62,14 @@ const _getDataChunkBufferSize = (arrayBuffer, byteOffset) => {
     numIndices,
     numHeightfield,
     numStaticHeightfield,
+    numElevations,
+    numEther,
     numBoundingSphere,
   });
 };
 
 const stringifyDataChunk = (mapChunk, arrayBuffer, byteOffset) => {
-  const {positions, colors, indices, heightfield, staticHeightfield, ether, boundingSphere} = mapChunk;
+  const {positions, colors, indices, heightfield, staticHeightfield, elevations, ether, boundingSphere} = mapChunk;
 
   if (arrayBuffer === undefined || byteOffset === undefined) {
     const bufferSize = _getDataChunkSize(mapChunk);
@@ -73,8 +83,9 @@ const stringifyDataChunk = (mapChunk, arrayBuffer, byteOffset) => {
   headerBuffer[2] = indices.length;
   headerBuffer[3] = heightfield.length;
   headerBuffer[4] = staticHeightfield.length;
-  headerBuffer[5] = ether.length;
-  headerBuffer[6] = boundingSphere.length;
+  headerBuffer[5] = elevations.length;
+  headerBuffer[6] = ether.length;
+  headerBuffer[7] = boundingSphere.length;
   byteOffset += DATA_HEADER_SIZE;
 
   const positionsBuffer = new Float32Array(arrayBuffer, byteOffset, positions.length);
@@ -96,6 +107,10 @@ const stringifyDataChunk = (mapChunk, arrayBuffer, byteOffset) => {
   const staticHeightfieldBuffer = new Float32Array(arrayBuffer, byteOffset, staticHeightfield.length);
   staticHeightfieldBuffer.set(staticHeightfield);
   byteOffset += FLOAT32_SIZE * staticHeightfield.length;
+
+  const elevationsBuffer = new Float32Array(arrayBuffer, byteOffset, elevations.length);
+  elevationsBuffer.set(elevations);
+  byteOffset += FLOAT32_SIZE * elevations.length;
 
   const etherBuffer = new Float32Array(arrayBuffer, byteOffset, ether.length);
   etherBuffer.set(ether);
@@ -119,8 +134,9 @@ const parseDataChunk = (buffer, byteOffset) => {
   const numIndices = headerBuffer[2];
   const numHeightfield = headerBuffer[3];
   const numStaticHeightfield = headerBuffer[4];
-  const numEther = headerBuffer[5];
-  const numBoundingSphere = headerBuffer[6];
+  const numElevations = headerBuffer[5];
+  const numEther = headerBuffer[6];
+  const numBoundingSphere = headerBuffer[7];
   byteOffset += DATA_HEADER_SIZE;
 
   const positionsBuffer = new Float32Array(buffer, byteOffset, numPositions);
@@ -143,6 +159,10 @@ const parseDataChunk = (buffer, byteOffset) => {
   const staticHeightfield = staticHeightfieldBuffer;
   byteOffset += FLOAT32_SIZE * numStaticHeightfield;
 
+  const elevationsBuffer = new Float32Array(buffer, byteOffset, numElevations);
+  const elevations = elevationsBuffer;
+  byteOffset += FLOAT32_SIZE * numElevations;
+
   const etherBuffer = new Float32Array(buffer, byteOffset, numEther);
   const ether = etherBuffer;
   byteOffset += FLOAT32_SIZE * numEther;
@@ -158,6 +178,7 @@ const parseDataChunk = (buffer, byteOffset) => {
     indices,
     heightfield,
     staticHeightfield,
+    elevations,
     ether,
     boundingSphere,
   };
