@@ -238,9 +238,12 @@ const _generateMapChunk = (ox, oy, opts) => {
 
   // compile
 
+// console.time('march');
   const geometry = _makeGeometry(ether);
   const positions = geometry.getAttribute('position').array;
   const indices = geometry.index.array;
+// console.timeEnd('march');
+// console.time('heightfield');
 
   const heightfield = new Float32Array(NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN * HEIGHTFIELD_DEPTH);
   heightfield.fill(-1024);
@@ -283,6 +286,8 @@ const _generateMapChunk = (ox, oy, opts) => {
       }
     }
   }
+// console.timeEnd('heightfield');
+// console.time('biome');
 
   const numPositions = positions.length / 3;
   const colors = new Float32Array(numPositions * 3);
@@ -324,8 +329,12 @@ const _generateMapChunk = (ox, oy, opts) => {
     positions[baseIndex + 2] += oy * NUM_CELLS;
   }
 
+// console.timeEnd('biome');
+// console.time('bounding sphere');
+
   geometry.computeBoundingSphere();
   const {boundingSphere} = geometry;
+// console.timeEnd('bounding sphere');
 
   return {
     positions: geometry.getAttribute('position').array,

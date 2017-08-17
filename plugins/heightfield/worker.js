@@ -14,6 +14,12 @@ const {
   DEFAULT_SEED,
 } = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
+const DIRECTIONS = [
+  [-1, -1],
+  [-1, 1],
+  [1, -1],
+  [1, 1],
+];
 
 const generator = generatorLib({
   THREE,
@@ -143,19 +149,7 @@ self.onmessage = e => {
       const {position} = args;
       const [x, y, z] = position;
 
-      const _respond = () => {
-        postMessage(JSON.stringify({
-          type: 'response',
-          args: [id],
-        }));
-        postMessage(null);
-      };
-
-      const ox = Math.floor(x / NUM_CELLS);
-      const oz = Math.floor(z / NUM_CELLS);
-      const chunk = tra.getChunk(ox, oz);
-      if (chunk) {
-        fetch(`/archae/heightfield/voxels?x=${x}&y=${y}&z=${z}`, {
+      fetch(`/archae/heightfield/voxels?x=${x}&y=${y}&z=${z}`, {
           method: 'DELETE',
           credentials: 'include',
         })
@@ -167,21 +161,36 @@ self.onmessage = e => {
             console.warn(err);
           });
 
-        const uint32Buffer = chunk.getBuffer();
-        const chunkData = protocolUtils.parseDataChunk(uint32Buffer.buffer, uint32Buffer.byteOffset);
-        const oldElevations = chunkData.elevations.slice();
-        const oldEther = chunkData.ether.slice();
-        const newEther = Float32Array.from([x - (ox * NUM_CELLS), y, z - (oz * NUM_CELLS), 1]);
-        chunk.generate(generator, {
-          oldElevations,
-          oldEther,
-          newEther,
-        });
+      const regenerated = [];
+      for (let i = 0; i < DIRECTIONS.length; i++) {
+        const [dx, dz] = DIRECTIONS[i];
+        const ax = x + dx * 2;
+        const az = z + dz * 2;
+        const ox = Math.floor(ax / NUM_CELLS);
+        const oz = Math.floor(az / NUM_CELLS);
 
-        _respond();
-      } else {
-        _respond();
+        if (!regenerated.some(entry => entry[0] === ox && entry[1] === oz)) {
+          const chunk = tra.getChunk(ox, oz);
+          if (chunk) {
+            const uint32Buffer = chunk.getBuffer();
+            const chunkData = protocolUtils.parseDataChunk(uint32Buffer.buffer, uint32Buffer.byteOffset);
+            const oldElevations = chunkData.elevations.slice();
+            const oldEther = chunkData.ether.slice();
+            const newEther = Float32Array.from([x - (ox * NUM_CELLS), y, z - (oz * NUM_CELLS), 1]);
+            chunk.generate(generator, {
+              oldElevations,
+              oldEther,
+              newEther,
+            });
+          }
+          regenerated.push([ox, oz]);
+        }
       }
+      postMessage(JSON.stringify({
+        type: 'response',
+        args: [id],
+      }));
+      postMessage(regenerated);
       break;
     }
     default: {

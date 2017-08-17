@@ -643,13 +643,17 @@ class Heightfield {
             );
             if (ly !== -1024) {
               worker.requestSubVoxel(Math.round(lx), Math.round(ly), Math.round(lz))
-                .then(() => {
-                  const chunk = chunker.getChunk(ox, oz);
-                  if (chunk) {
-                    chunk.lod = -1; // force chunk refresh
+                .then(regenerated => {
+                  if (regenerated.length > 0) {
+                    for (let i = 0; i < regenerated.length; i++) {
+                      const [ox, oz] = regenerated[i];
+                      const chunk = chunker.getChunk(ox, oz);
+                      if (chunk) {
+                        chunk.lod = -1; // force chunk refresh
+                      }
+                    }
+                    _debouncedRequestRefreshMapChunks();
                   }
-
-                  _debouncedRequestRefreshMapChunks();
                 });
 
               e.stopImmediatePropagation();
