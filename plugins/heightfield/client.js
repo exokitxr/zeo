@@ -294,7 +294,7 @@ class Heightfield {
       });
     const _makeMapChunkMesh = (chunk, mapChunkData, x, z) => {
       const mesh = (() => {
-        const {position, positions, colors, indices, heightfield, staticHeightfield, boundingSphere} = mapChunkData;
+        const {positions, colors, indices, heightfield, staticHeightfield, boundingSphere} = mapChunkData;
 
         const geometry = (() => {
           let geometry = new THREE.BufferGeometry();
@@ -459,6 +459,15 @@ class Heightfield {
           mapChunkMeshes = newMapChunkMeshes;
         });
     };
+    const _debouncedRequestRefreshMapChunks = _debounce(next => {
+      _requestRefreshMapChunks()
+        .then(next)
+        .catch(err => {
+          console.warn(err);
+
+          next();
+        });
+    });
 
     const a = new THREE.Vector3();
     const b = new THREE.Vector3();
@@ -639,6 +648,8 @@ class Heightfield {
                   if (chunk) {
                     chunk.lod = -1; // force chunk refresh
                   }
+
+                  _debouncedRequestRefreshMapChunks();
                 });
 
               e.stopImmediatePropagation();
@@ -649,19 +660,11 @@ class Heightfield {
 
         let live = true;
         const _recurse = () => {
-          _requestRefreshMapChunks()
-            .then(() => {
-              if (live) {
-                setTimeout(_recurse, 1000);
-              }
-            })
-            .catch(err => {
-              if (live) {
-                console.warn(err);
-
-                setTimeout(_recurse, 1000);
-              }
-            });
+          _debouncedRequestRefreshMapChunks(() => {
+            if (live) {
+              setTimeout(_recurse, 1000);
+            }
+          });
         };
         _recurse();
 
@@ -701,6 +704,29 @@ const _makeId = () => {
   const result = _id;
   _id = (_id + 1) | 0;
   return result;
+};
+const _debounce = fn => {
+  let running = false;
+  let queued = false;
+
+  const _go = () => {
+    if (!running) {
+      running = true;
+
+      fn(() => {
+        running = false;
+
+        if (queued) {
+          queued = false;
+
+          _go();
+        }
+      });
+    } else {
+      queued = true;
+    }
+  };
+  return _go;
 };
 
 module.exports = Heightfield;
