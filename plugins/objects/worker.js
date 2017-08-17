@@ -376,6 +376,11 @@ function _makeChunkGeometry(chunk) {
     }
   });
 
+  const geometry = new THREE.BufferGeometry();
+  geometry.addAttribute('position', new THREE.BufferAttribute(new Float32Array(positions.buffer, positions.byteOffset, attributeIndex), 3));
+  geometry.computeBoundingSphere();
+  const {boundingSphere} = geometry;
+
   return {
     positions: new Float32Array(positions.buffer, positions.byteOffset, attributeIndex),
     uvs: new Float32Array(uvs.buffer, uvs.byteOffset, uvIndex),
@@ -383,6 +388,7 @@ function _makeChunkGeometry(chunk) {
     objectIndices: new Float32Array(objectIndices.buffer, objectIndices.byteOffset, objectIndexIndex),
     indices: new Uint32Array(indices.buffer, indices.byteOffset, indexIndex),
     objects: new Uint32Array(objects.buffer, objects.byteOffset, objectIndex),
+    boundingSphere: Float32Array.from(boundingSphere.center.toArray().concat([boundingSphere.radius])),
   };
 };
 function _wsUrl(s) {

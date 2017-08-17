@@ -2,30 +2,32 @@ const UINT32_SIZE = 4;
 const INT32_SIZE = 4;
 const FLOAT32_SIZE = 4;
 const UINT16_SIZE = 2;
-const GRASS_GEOMETRY_HEADER_ENTRIES = 3;
+const GRASS_GEOMETRY_HEADER_ENTRIES = 4;
 const GRASS_GEOMETRY_HEADER_SIZE = UINT32_SIZE * GRASS_GEOMETRY_HEADER_ENTRIES;
 
 const _getGrassGeometrySizeFromMetadata = metadata => {
-  const {numPositions, numNormals, numUvs, numIndices} = metadata;
+  const {numPositions, numNormals, numUvs, numIndices, numBoundingSphere} = metadata;
 
   return GRASS_GEOMETRY_HEADER_SIZE + // header
     (FLOAT32_SIZE * numPositions) + // positions
     (FLOAT32_SIZE * numUvs) + // uvs
     (FLOAT32_SIZE * numIndices) + // indices
-    (FLOAT32_SIZE * 4); // height range
+    (FLOAT32_SIZE * numBoundingSphere); // bounding sphere
 };
 
 const _getGrassGeometrySize = grassGeometry => {
-  const {positions, uvs, indices} = grassGeometry;
+  const {positions, uvs, indices, boundingSphere} = grassGeometry;
 
   const numPositions = positions.length;
   const numUvs = uvs.length
   const numIndices = indices.length
+  const numBoundingSphere = boundingSphere.length;
 
   return _getGrassGeometrySizeFromMetadata({
     numPositions,
     numUvs,
     numIndices,
+    numBoundingSphere,
   });
 };
 
@@ -44,6 +46,7 @@ const stringifyGrassGeometry = (grassGeometry, arrayBuffer, byteOffset) => {
   headerBuffer[0] = positions.length;
   headerBuffer[1] = uvs.length;
   headerBuffer[2] = indices.length;
+  headerBuffer[3] = boundingSphere.length;
   byteOffset += GRASS_GEOMETRY_HEADER_SIZE;
 
   const positionsBuffer = new Float32Array(arrayBuffer, byteOffset, positions.length);
@@ -58,12 +61,9 @@ const stringifyGrassGeometry = (grassGeometry, arrayBuffer, byteOffset) => {
   indicesBuffer.set(indices);
   byteOffset += UINT16_SIZE * indices.length;
 
-  const boundingSphereBuffer = new Float32Array(arrayBuffer, byteOffset, 4);
-  boundingSphereBuffer[0] = boundingSphere.center.x;
-  boundingSphereBuffer[1] = boundingSphere.center.y;
-  boundingSphereBuffer[2] = boundingSphere.center.z;
-  boundingSphereBuffer[3] = boundingSphere.radius;
-  byteOffset += FLOAT32_SIZE * 4;
+  const boundingSphereBuffer = new Float32Array(arrayBuffer, byteOffset, boundingSphere.length);
+  boundingSphereBuffer.set(boundingSphere);
+  byteOffset += FLOAT32_SIZE * boundingSphere.length;
 
   return arrayBuffer;
 };
@@ -79,6 +79,7 @@ const parseGrassGeometry = (buffer, byteOffset) => {
   const numPositions = headerBuffer[0];
   const numUvs = headerBuffer[1];
   const numIndices = headerBuffer[2];
+  const numBoundingSphere = headerBuffer[3];
   byteOffset += GRASS_GEOMETRY_HEADER_SIZE;
 
   const positionsBuffer = new Float32Array(buffer, byteOffset, numPositions);
@@ -93,9 +94,9 @@ const parseGrassGeometry = (buffer, byteOffset) => {
   const indices = indicesBuffer;
   byteOffset += UINT16_SIZE * numIndices;
 
-  const boundingSphereBuffer = new Float32Array(buffer, byteOffset, 4);
+  const boundingSphereBuffer = new Float32Array(buffer, byteOffset, numBoundingSphere);
   const boundingSphere = boundingSphereBuffer;
-  byteOffset += FLOAT32_SIZE * 4;
+  byteOffset += FLOAT32_SIZE * numBoundingSphere;
 
   return {
     buffer,

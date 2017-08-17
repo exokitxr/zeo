@@ -403,22 +403,16 @@ void main() {
     const _makeObjectsChunkMesh = (objectsChunkData, x, z) => {
       const mesh = (() => {
         const geometry = (() => {
-          const {positions, uvs, frames, objectIndices, indices} = objectsChunkData;
+          const {positions, uvs, frames, objectIndices, indices, boundingSphere} = objectsChunkData;
           const geometry = new THREE.BufferGeometry();
           geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
           geometry.addAttribute('uv', new THREE.BufferAttribute(uvs, 2));
           geometry.addAttribute('frame', new THREE.BufferAttribute(frames, 3));
           geometry.addAttribute('objectIndex', new THREE.BufferAttribute(objectIndices, 1));
           geometry.setIndex(new THREE.BufferAttribute(indices, 1));
-          const maxY = 100;
-          const minY = -100;
           geometry.boundingSphere = new THREE.Sphere(
-            new THREE.Vector3(
-              (x * NUM_CELLS) + (NUM_CELLS / 2),
-              (minY + maxY) / 2,
-              (z * NUM_CELLS) + (NUM_CELLS / 2)
-            ),
-            Math.max(Math.sqrt((NUM_CELLS / 2) * (NUM_CELLS / 2) * 3), (maxY - minY) / 2) // XXX really compute this
+            new THREE.Vector3().fromArray(boundingSphere, 0),
+            boundingSphere[3]
           );
 
           return geometry;

@@ -252,7 +252,8 @@ const tree = objectApi => {
             const numPositions = branchPositions.length / 3;
             // const index1 = Math.floor((1 - Math.pow(rng(), 0.5)) * numPositions);
             const index1 = Math.floor(rng() * numPositions);
-            const index2 = (index1 < (numPositions - 1)) ? (index1 + 1) : (index1 - 1); // XXX bugfix this to scan to a position with a different y
+            // XXX bugfix this to scan to a position with a different y; currently broken due to indexing
+            const index2 = (index1 < (numPositions - 1)) ? (index1 + 1) : (index1 - 1);
             const baseIndex1 = index1 * 3;
             const baseIndex2 = index2 * 3;
             const lerpFactor = rng();

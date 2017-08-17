@@ -270,7 +270,7 @@ const _makeGrassChunkMesh = (ox, oy, grassTemplates, heightfield) => {
   }
 
   const geometry = new THREE.BufferGeometry();
-  geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+  geometry.addAttribute('position', new THREE.BufferAttribute(new Float32Array(positions.buffer, positions.byteOffset, attributeIndex), 3));
   geometry.computeBoundingSphere();
   const {boundingSphere} = geometry;
 
@@ -278,7 +278,7 @@ const _makeGrassChunkMesh = (ox, oy, grassTemplates, heightfield) => {
     positions: new Float32Array(positions.buffer, positions.byteOffset, attributeIndex),
     uvs: new Float32Array(uvs.buffer, uvs.byteOffset, uvIndex),
     indices: new Uint16Array(indices.buffer, indices.byteOffset, indexIndex),
-    boundingSphere: boundingSphere,
+    boundingSphere: Float32Array.from(boundingSphere.center.toArray().concat([boundingSphere.radius])),
   };
 };
 

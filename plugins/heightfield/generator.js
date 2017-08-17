@@ -269,116 +269,6 @@ const _generateMapChunk = (ox, oy) => {
     }
   }
 
-  /* const points = (() => {
-    const points = Array(NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN);
-
-    for (let y = 0; y < NUM_CELLS_OVERSCAN; y++) {
-      for (let x = 0; x < NUM_CELLS_OVERSCAN; x++) {
-        const dx = (ox * NUM_CELLS) + x;
-        const dy = (oy * NUM_CELLS) + y;
-        const elevation = (1 - 0.3 + Math.pow(_random.elevationNoise.in2D(dx + 1000, dy + 1000), 0.5)) * 64;
-        const moisture = _random.moistureNoise.in2D(dx, dy);
-        const land = elevation > 0;
-        const water = !land;
-        points[_getCoordOverscanIndex(x, y)] = new MapPoint(
-          elevation,
-          moisture,
-          land,
-          water
-        );
-      }
-    }
-
-    const _flood = (x, y, floodSeenIndex, fn) => {
-      const nextPoints = [
-        [x, y]
-      ];
-
-      while (nextPoints.length > 0) {
-        const nextPoint = nextPoints.pop();
-        const [x, y] = nextPoint;
-        const index = _getCoordOverscanIndex(x, y);
-
-        if (!floodSeenIndex[index]) {
-          const potentialNextPoints = fn(x, y, index);
-          nextPoints.push.apply(nextPoints, potentialNextPoints);
-
-          floodSeenIndex[index] = true;
-        }
-      }
-    };
-
-    const floodOceanSeenIndex = {};
-    const _startFloodOcean = (x, y) => {
-      const _isOcean = p => p.water;
-
-      const point = points[_getCoordOverscanIndex(x, y)];
-      if (_isOcean(point)) {
-        _flood(x, y, floodOceanSeenIndex, (x, y, index) => {
-          const point = points[index];
-          point.ocean = true;
-
-          const nextPoints = [];
-          for (let i = 0; i < DIRECTIONS.length; i++) {
-            const direction = DIRECTIONS[i];
-            const dx = x + direction[0];
-            const dy = y + direction[1];
-            if (dx >= 0 && dx < NUM_CELLS_OVERSCAN && dy >= 0 && dy < NUM_CELLS_OVERSCAN) {
-              const neighborPointIndex = _getCoordOverscanIndex(dx, dy);
-              const neighborPoint = points[neighborPointIndex];
-              if (_isOcean(neighborPoint)) {
-                nextPoints.push([dx, dy]);
-              }
-            }
-          }
-          return nextPoints;
-        });
-      }
-    };
-
-    const floodLakeSeenIndex = {};
-    const _startFloodLake = (x, y) => {
-      const _isLake = p => p.water && !p.ocean;
-
-      const point = points[_getCoordOverscanIndex(x, y)];
-      if (_isLake(point)) {
-        _flood(x, y, floodLakeSeenIndex, (x, y, index) => {
-          const point = points[index];
-          point.lake = true;
-
-          const nextPoints = [];
-          for (let i = 0; i < DIRECTIONS.length; i++) {
-            const direction = DIRECTIONS[i];
-            const dx = x + direction[0];
-            const dy = y + direction[1];
-            if (dx >= 0 && dx < NUM_CELLS_OVERSCAN && dy >= 0 && dy < NUM_CELLS_OVERSCAN) {
-              const neighborPointIndex = _getCoordOverscanIndex(dx, dy);
-              const neighborPoint = points[neighborPointIndex];
-              if (_isLake(neighborPoint)) {
-                nextPoints.push([dx, dy]);
-              }
-            }
-          }
-          return nextPoints;
-        });
-      }
-    };
-
-    // flood fill oceans + lakes
-    for (let y = 0; y < NUM_CELLS_OVERSCAN; y++) {
-      for (let x = 0; x < NUM_CELLS_OVERSCAN; x++) {
-        if (x === 0 || x === (NUM_CELLS_OVERSCAN - 1) || y === 0 || y === (NUM_CELLS_OVERSCAN - 1)) {
-          _startFloodOcean(x, y);
-        }
-        _startFloodLake(x, y);
-      }
-    }
-
-    // XXX assign lava
-
-    return points;
-  })(); */
-
   const numPositions = positions.length / 3;
   const colors = new Float32Array(numPositions * 3);
   geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
@@ -473,6 +363,116 @@ const _colorIntToArray = n => ([
 ]);
 const _getTopHeightfieldIndex = (x, z) => (x + (z * NUM_CELLS_OVERSCAN)) * HEIGHTFIELD_DEPTH;
 const _getStaticHeightfieldIndex = (x, z) => x + (z * NUM_CELLS_OVERSCAN);
+
+/* const points = (() => {
+  const points = Array(NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN);
+
+  for (let y = 0; y < NUM_CELLS_OVERSCAN; y++) {
+    for (let x = 0; x < NUM_CELLS_OVERSCAN; x++) {
+      const dx = (ox * NUM_CELLS) + x;
+      const dy = (oy * NUM_CELLS) + y;
+      const elevation = (1 - 0.3 + Math.pow(_random.elevationNoise.in2D(dx + 1000, dy + 1000), 0.5)) * 64;
+      const moisture = _random.moistureNoise.in2D(dx, dy);
+      const land = elevation > 0;
+      const water = !land;
+      points[_getCoordOverscanIndex(x, y)] = new MapPoint(
+        elevation,
+        moisture,
+        land,
+        water
+      );
+    }
+  }
+
+  const _flood = (x, y, floodSeenIndex, fn) => {
+    const nextPoints = [
+      [x, y]
+    ];
+
+    while (nextPoints.length > 0) {
+      const nextPoint = nextPoints.pop();
+      const [x, y] = nextPoint;
+      const index = _getCoordOverscanIndex(x, y);
+
+      if (!floodSeenIndex[index]) {
+        const potentialNextPoints = fn(x, y, index);
+        nextPoints.push.apply(nextPoints, potentialNextPoints);
+
+        floodSeenIndex[index] = true;
+      }
+    }
+  };
+
+  const floodOceanSeenIndex = {};
+  const _startFloodOcean = (x, y) => {
+    const _isOcean = p => p.water;
+
+    const point = points[_getCoordOverscanIndex(x, y)];
+    if (_isOcean(point)) {
+      _flood(x, y, floodOceanSeenIndex, (x, y, index) => {
+        const point = points[index];
+        point.ocean = true;
+
+        const nextPoints = [];
+        for (let i = 0; i < DIRECTIONS.length; i++) {
+          const direction = DIRECTIONS[i];
+          const dx = x + direction[0];
+          const dy = y + direction[1];
+          if (dx >= 0 && dx < NUM_CELLS_OVERSCAN && dy >= 0 && dy < NUM_CELLS_OVERSCAN) {
+            const neighborPointIndex = _getCoordOverscanIndex(dx, dy);
+            const neighborPoint = points[neighborPointIndex];
+            if (_isOcean(neighborPoint)) {
+              nextPoints.push([dx, dy]);
+            }
+          }
+        }
+        return nextPoints;
+      });
+    }
+  };
+
+  const floodLakeSeenIndex = {};
+  const _startFloodLake = (x, y) => {
+    const _isLake = p => p.water && !p.ocean;
+
+    const point = points[_getCoordOverscanIndex(x, y)];
+    if (_isLake(point)) {
+      _flood(x, y, floodLakeSeenIndex, (x, y, index) => {
+        const point = points[index];
+        point.lake = true;
+
+        const nextPoints = [];
+        for (let i = 0; i < DIRECTIONS.length; i++) {
+          const direction = DIRECTIONS[i];
+          const dx = x + direction[0];
+          const dy = y + direction[1];
+          if (dx >= 0 && dx < NUM_CELLS_OVERSCAN && dy >= 0 && dy < NUM_CELLS_OVERSCAN) {
+            const neighborPointIndex = _getCoordOverscanIndex(dx, dy);
+            const neighborPoint = points[neighborPointIndex];
+            if (_isLake(neighborPoint)) {
+              nextPoints.push([dx, dy]);
+            }
+          }
+        }
+        return nextPoints;
+      });
+    }
+  };
+
+  // flood fill oceans + lakes
+  for (let y = 0; y < NUM_CELLS_OVERSCAN; y++) {
+    for (let x = 0; x < NUM_CELLS_OVERSCAN; x++) {
+      if (x === 0 || x === (NUM_CELLS_OVERSCAN - 1) || y === 0 || y === (NUM_CELLS_OVERSCAN - 1)) {
+        _startFloodOcean(x, y);
+      }
+      _startFloodLake(x, y);
+    }
+  }
+
+  // XXX assign lava
+
+  return points;
+})(); */
 
 const generator = (x, y, buffer, byteOffset) => {
   protocolUtils.stringifyMapChunk(_generateMapChunk(x, y), buffer, byteOffset);

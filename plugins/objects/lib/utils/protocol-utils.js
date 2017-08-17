@@ -1,7 +1,7 @@
 const UINT32_SIZE = 4;
 const INT32_SIZE = 4;
 const FLOAT32_SIZE = 4;
-const MAP_CHUNK_HEADER_ENTRIES = 5;
+const MAP_CHUNK_HEADER_ENTRIES = 6;
 const MAP_CHUNK_HEADER_SIZE = UINT32_SIZE * MAP_CHUNK_HEADER_ENTRIES;
 
 const _getObjectsChunkSizeFromMetadata = metadata => {
@@ -12,17 +12,19 @@ const _getObjectsChunkSizeFromMetadata = metadata => {
     (FLOAT32_SIZE * numUvs) + // uvs
     (FLOAT32_SIZE * numFrames) + // frames
     (FLOAT32_SIZE * numObjectIndices) +  // object indices
-    (UINT32_SIZE * numIndices); // indices
+    (UINT32_SIZE * numIndices) + // indices
+    (FLOAT32_SIZE * numBoundingSphere); // bounding sphere
 };
 
 const _getObjectsChunkSize = objectsChunk => {
-  const {positions, uvs, frames, objectIndices, indices} = objectsChunk;
+  const {positions, uvs, frames, objectIndices, indices, boundingSphere} = objectsChunk;
 
   const numPositions = positions.length;
   const numUvs = uvs.length;
   const numFrames = frames.length;
   const numObjectIndices = objectIndices.length;
   const numIndices = indices.length;
+  const numBoundingSphere = boundingSphere.length;
 
   return _getObjectsChunkSizeFromMetadata({
     numPositions,
@@ -30,13 +32,14 @@ const _getObjectsChunkSize = objectsChunk => {
     numFrames,
     numObjectIndices,
     numIndices,
+    numBoundingSphere,
   });
 };
 
 // stringification
 
 const stringifyGeometry = (objectsChunk, arrayBuffer, byteOffset) => {
-  const {positions, uvs, frames, objectIndices, indices, objects} = objectsChunk;
+  const {positions, uvs, frames, objectIndices, indices, objects, boundingSphere} = objectsChunk;
 
   if (arrayBuffer === undefined || byteOffset === undefined) {
     const bufferSize = _getObjectsChunkSize(objectsChunk);
@@ -50,6 +53,7 @@ const stringifyGeometry = (objectsChunk, arrayBuffer, byteOffset) => {
   headerBuffer[2] = frames.length;
   headerBuffer[3] = objectIndices.length;
   headerBuffer[4] = indices.length;
+  headerBuffer[5] = boundingSphere.length;
   byteOffset += MAP_CHUNK_HEADER_SIZE;
 
   const positionsBuffer = new Float32Array(arrayBuffer, byteOffset, positions.length);
@@ -72,6 +76,10 @@ const stringifyGeometry = (objectsChunk, arrayBuffer, byteOffset) => {
   indicesBuffer.set(indices);
   byteOffset += UINT32_SIZE * indices.length;
 
+  const boundingSphereBuffer = new Float32Array(arrayBuffer, byteOffset, boundingSphere.length);
+  boundingSphereBuffer.set(boundingSphere);
+  byteOffset += FLOAT32_SIZE * boundingSphere.length;
+
   return arrayBuffer;
 };
 
@@ -88,6 +96,7 @@ const parseGeometry = (buffer, byteOffset) => {
   const numFrames = headerBuffer[2];
   const numObjectIndices = headerBuffer[3];
   const numIndices = headerBuffer[4];
+  const numBoundingSphere = headerBuffer[5];
   byteOffset += MAP_CHUNK_HEADER_SIZE;
 
   const positionsBuffer = new Float32Array(buffer, byteOffset, numPositions);
@@ -110,6 +119,10 @@ const parseGeometry = (buffer, byteOffset) => {
   const indices = indicesBuffer;
   byteOffset += UINT32_SIZE * numIndices;
 
+  const boundingSphereBuffer = new Float32Array(buffer, byteOffset, numBoundingSphere);
+  const boundingSphere = boundingSphereBuffer;
+  byteOffset += FLOAT32_SIZE * numBoundingSphere;
+
   return {
     buffer,
     positions,
@@ -117,6 +130,7 @@ const parseGeometry = (buffer, byteOffset) => {
     frames,
     objectIndices,
     indices,
+    boundingSphere,
   };
 };
 
