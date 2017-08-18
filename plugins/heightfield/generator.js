@@ -138,74 +138,85 @@ const _generateMapChunk = (ox, oy, opts) => {
   let ether = opts.oldEther;
   if (!ether) {
     ether = new Float32Array((NUM_CELLS + 2) * ((NUM_CELLS * 4) + 2) * (NUM_CELLS + 2));
-    for (let z = 0; z < NUM_CELLS_OVERSCAN; z++) {
-      for (let y = 0; y < NUM_CELLS_OVERSCAN_Y; y++) {
-        for (let x = 0; x < NUM_CELLS_OVERSCAN; x++) {
-          ether[_getEtherIndex(x, y, z)] = Math.max(y - elevations[_getCoordOverscanIndex(x, z)], -1);
+    for (let z = 0; z <= NUM_CELLS_OVERSCAN; z++) {
+      for (let x = 0; x <= NUM_CELLS_OVERSCAN; x++) {
+        const elevation = elevations[_getCoordOverscanIndex(x, z)];
+        for (let y = 0; y <= NUM_CELLS_OVERSCAN_Y; y++) {
+          ether[_getEtherIndex(x, y, z)] = Math.max(y - elevation, -1);
         }
       }
     }
 
-    for (let dy = -1; dy <= 1; dy++) {
-      for (let dx = -1; dx <= 1; dx++) {
-        const n = _random.wormNoise.in2D(ox + dx, oy + dy);
-        const numWorms = Math.floor(n * 6);
-
-        for (let i = 0; i < numWorms; i++) {
-          const s = [n, i].join(':');
-          const lx = (dx * NUM_CELLS) + Math.floor(murmur(s + ':x') / 0xFFFFFFFF * NUM_CELLS);
-          const lz = (dy * NUM_CELLS) + Math.floor(murmur(s + ':z') / 0xFFFFFFFF * NUM_CELLS);
-          const ax = lx + ox * NUM_CELLS;
-          const az = lz + oy * NUM_CELLS;
-
-          const elevation = (1 - 0.3 + Math.pow(_random.elevationNoise.in2D(ax + 1000, az + 1000), 0.5)) * 64;
-          const ly = elevation;
-
-          let currentPosition = localVector.set(lx, ly, lz);
-          let currentDirection = localVector2.set(
-            -0.5 + murmur(s + ':startAngleX') / 0xFFFFFFFF,
-            -0.25 * murmur(s + ':startAngleY') / 0xFFFFFFFF,
-            -0.5 + murmur(s + ':startAngleZ') / 0xFFFFFFFF
-          ).normalize();
-          const numSegments = 4 + Math.floor(murmur(s + ':segments') / 0xFFFFFFFF * 10);
-          for (let j = 0; j < numSegments; j++) {
-            const segementLength = 1 + murmur(s + ':' + j + ':length') / 0xFFFFFFFF * 4;
-            const worm = localLine.set(
-              currentPosition,
-              localVector3.copy(currentPosition).add(
-                localVector4.copy(forwardVector)
-                  .applyQuaternion(localQuaternion.setFromUnitVectors(forwardVector, currentDirection))
-                  .multiplyScalar(segementLength)
-              )
-            );
-            const min = localVector3.set(
-              Math.max(Math.floor(Math.min(worm.start.x, worm.end.x)) - 3, 0),
-              Math.max(Math.floor(Math.min(worm.start.y, worm.end.y)) - 3, 0),
-              Math.max(Math.floor(Math.min(worm.start.z, worm.end.z)) - 3, 0)
-            );
-            const max = localVector4.set(
-              Math.min(Math.ceil(Math.max(worm.start.x, worm.end.x)) + 3, NUM_CELLS + 1),
-              Math.min(Math.ceil(Math.max(worm.start.y, worm.end.y)) + 3, (NUM_CELLS * 4) + 1),
-              Math.min(Math.ceil(Math.max(worm.start.z, worm.end.z)) + 3, NUM_CELLS + 1)
-            );
-            for (let nz = min.z; nz <= max.z; nz++) {
-              for (let ny = min.y; ny <= max.y; ny++) {
-                for (let nx = min.x; nx <= max.x; nx++) {
-                  const index = _getEtherIndex(nx, ny, nz);
-                  ether[index] += Math.max(
-                    3 - worm.closestPointToPoint(localVector5.set(nx, ny, nz), true, localVector6)
-                      .distanceTo(localVector5),
-                    0
-                  )
+    const _fillOblateSpheroid = (centerX, centerY, centerZ, minX, minZ, maxX, maxZ, radius) => {
+      for (let z = -radius; z <= radius; z++) {
+        const lz = centerZ + z;
+        if (lz >= minZ && lz < (maxZ + 1)) {
+          for (let y = -radius; y <= radius; y++) {
+            const ly = centerY + y;
+            if (ly >= 0 && ly < NUM_CELLS_OVERSCAN_Y) {
+              for (let x = -radius; x <= radius; x++) {
+                const lx = centerX + x;
+                if (lx >= minX && lx < (maxX + 1)) {
+                  const distance = Math.pow(x,2) + 2 * Math.pow(y,2) + Math.pow(z,2);
+                  if (distance < Math.pow(radius,2)) {
+                    const index = _getEtherIndex(Math.floor(lx - minX), Math.floor(ly), Math.floor(lz - minZ));
+                    const distance2 = Math.sqrt(distance);
+                    ether[index] += 1 + ((radius - distance2) / radius);
+                  }
                 }
               }
             }
+          }
+        }
+      }
+    };
 
-            currentPosition.copy(worm.end);
-            currentDirection.x += (-0.5 + (murmur(s + ':' + j + ':angleX') / 0xFFFFFFFF)) * 2 * 0.5;
-            currentDirection.y += (-0.5 + (murmur(s + ':' + j + ':angleY') / 0xFFFFFFFF)) * 2 * 0.5;
-            currentDirection.z += (-0.5 + (murmur(s + ':' + j + ':angleZ') / 0xFFFFFFFF)) * 2 * 0.5;
-            currentDirection.normalize();
+    for (let doy = -3; doy <= 3; doy++) {
+      for (let dox = -3; dox <= 3; dox++) {
+        const aox = ox + dox;
+        const aoy = oy + doy;
+        const n = _random.wormNoise.in2D(aox * NUM_CELLS + 1000, aoy * NUM_CELLS + 1000);
+        const numWorms = Math.floor(n * 14);
+
+        for (let i = 0; i < numWorms; i++) {
+          const s = [n, i].join(':');
+          let cavePosX = (aox * NUM_CELLS) + (murmur(s + ':x') / 0xFFFFFFFF) * NUM_CELLS;
+          let cavePosY = (murmur(s + ':y') / 0xFFFFFFFF) * NUM_CELLS * 4;
+          let cavePosZ = (aoy * NUM_CELLS) + (murmur(s + ':z') / 0xFFFFFFFF) * NUM_CELLS;
+          const caveLength = (murmur(s + ':caveLength1') / 0xFFFFFFFF) * (murmur(s + ':caveLength2') / 0xFFFFFFFF) * 200;
+
+          let theta = (murmur(s + ':theta') / 0xFFFFFFFF) * Math.PI * 2;
+          let deltaTheta = 0;
+          let phi = (murmur(s + ':phi') / 0xFFFFFFFF) * Math.PI * 2;
+          let deltaPhi = 0;
+
+          const caveRadius = (murmur(s + ':caveRadius1') / 0xFFFFFFFF) * (murmur(s + ':caveRadius2') / 0xFFFFFFFF);
+
+          for (let len = 0; len < caveLength; len++) {
+            const s2 = [s, len].join(':');
+
+            cavePosX += Math.sin(theta) * Math.cos(phi);
+            cavePosY += Math.cos(theta) * Math.cos(phi);
+            cavePosZ += Math.sin(phi);
+
+            theta += deltaTheta * 0.2;
+            deltaTheta = (deltaTheta * 0.9) + (murmur(s2 + ':deltaTheta1') / 0xFFFFFFFF) - (murmur(s2 + ':deltaTheta2') / 0xFFFFFFFF);
+            phi = phi/2 + deltaPhi/4;
+            deltaPhi = (deltaPhi * 0.75) + (murmur(s2 + ':deltaPhi1') / 0xFFFFFFFF) - (murmur(s2 + ':deltaPhi2') / 0xFFFFFFFF);
+
+            if ((murmur(s2 + ':fill') / 0xFFFFFFFF) >= 0.25) {
+              const centerPosX = cavePosX + (murmur(s2 + ':centerPosX') / 0xFFFFFFFF * 4 - 2) * 0.2;
+              const centerPosY = cavePosY + (murmur(s2 + ':centerPosY') / 0xFFFFFFFF * 4 - 2) * 0.2;
+              const centerPosZ = cavePosZ + (murmur(s2 + ':centerPosZ') / 0xFFFFFFFF * 4 - 2) * 0.2;
+
+              const height = (1 - 0.3 + Math.pow(_random.elevationNoise.in2D(centerPosX + 1000, centerPosZ + 1000), 0.5)) * 64;
+              let radius = (height - centerPosY) / height;
+              // radius = 1.3 + (radius * 3.5 + 1) * caveRadius;
+              radius = 3 + (radius * 3.5 + 1) * caveRadius;
+              radius = radius * Math.sin(len * Math.PI / caveLength);
+
+              _fillOblateSpheroid(centerPosX, centerPosY, centerPosZ, ox * NUM_CELLS, oy * NUM_CELLS, (ox + 1) * NUM_CELLS, (oy + 1) * NUM_CELLS, radius);
+            }
           }
         }
       }
