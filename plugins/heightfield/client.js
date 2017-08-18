@@ -279,6 +279,8 @@ class Heightfield {
       const {lightmap} = mapChunkMesh;
       lightmapper.releaseLightmap(lightmap);
       mapChunkMesh.lightmap = null;
+      mapChunkMesh.material.uniforms.lightMap.value = null;
+      mapChunkMesh.material.uniforms.useLightMap.value = 0;
     };
     const elementListener = elements.makeListener(LIGHTMAP_PLUGIN);
     elementListener.on('add', entityElement => {
@@ -382,12 +384,13 @@ class Heightfield {
         mapChunkMesh.targeted = false;
       };
 
-      const addedPromises = Array(added.length + relodded.length);
+      const addedPromises = Array(added.length);
       let index = 0;
-      const _addChunk = chunk => {
+      for (let i = 0; i < added.length; i++) {
+        const chunk = added[i];
         const {x, z, lod} = chunk;
 
-        return worker.requestGenerate(x, z)
+        const promise = worker.requestGenerate(x, z)
           .then(mapChunkBuffer => protocolUtils.parseRenderChunk(mapChunkBuffer))
           .then(mapChunkData => {
             const index = _getChunkIndex(x, z);
@@ -413,12 +416,17 @@ class Heightfield {
 
             chunk.data = newMapChunkMesh;
           });
-      };
-      for (let i = 0; i < added.length; i++) {
-        addedPromises[index++] = _addChunk(added[i]);
+        addedPromises[index++] = promise;
       }
       for (let i = 0; i < relodded.length; i++) {
-        addedPromises[index++] = _addChunk(relodded[i]);
+        const chunk = relodded[i];
+        const {lod, data: mapChunkMesh} = chunk;
+
+        if (!mapChunkMesh.lightmap && lod === 1) {
+          _bindLightmap(mapChunkMesh);
+        } else if (mapChunkMesh.lightmap && lod !== 1) {
+          _unbindLightmap(mapChunkMesh);
+        }
       }
       return Promise.all(addedPromises)
         .then(() => {
@@ -437,16 +445,6 @@ class Heightfield {
             }
 
             worker.requestUngenerate(x, z);
-          }
-          for (let i = 0; i < relodded.length; i++) {
-            const chunk = relodded[i];
-            const {x, z, lod, data: mapChunkMesh} = chunk;
-
-            if (lod === 1 && !mapChunkMesh.targeted) {
-              _addTarget(mapChunkMesh, x, z);
-            } else if (lod !== 1 && mapChunkMesh.targeted) {
-              _removeTarget(mapChunkMesh);
-            }
           }
 
           const newMapChunkMeshes = {};
