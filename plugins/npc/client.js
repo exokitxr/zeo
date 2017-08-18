@@ -126,11 +126,7 @@ class Mobs {
               };
               const _updateElevation = (mesh, heightfieldElement) => {
                 if (heightfieldElement && heightfieldElement.getElevation) {
-                  const elevation = heightfieldElement.getElevation(mesh.position.x, mesh.position.z);
-
-                  if (mesh.position.y !== elevation) {
-                    mesh.position.y = elevation;
-                  }
+                  mesh.position.y = heightfieldElement.getElevation(mesh.position.x, mesh.position.z);
                 }
 
                 mesh.position.add(mesh.offset);
