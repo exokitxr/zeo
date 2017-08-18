@@ -149,12 +149,12 @@ const _generateMapChunk = (ox, oy, opts) => {
       for (let z = -radius; z <= radius; z++) {
         const lz = centerZ + z;
         if (lz >= minZ && lz < (maxZ + 1)) {
-          for (let y = -radius; y <= radius; y++) {
-            const ly = centerY + y;
-            if (ly >= 0 && ly < NUM_CELLS_OVERSCAN_Y) {
-              for (let x = -radius; x <= radius; x++) {
-                const lx = centerX + x;
-                if (lx >= minX && lx < (maxX + 1)) {
+          for (let x = -radius; x <= radius; x++) {
+            const lx = centerX + x;
+            if (lx >= minX && lx < (maxX + 1)) {
+              for (let y = -radius; y <= radius; y++) {
+                const ly = centerY + y;
+                if (ly >= 0 && ly < NUM_CELLS_OVERSCAN_Y) {
                   const distance = Math.pow(x,2) + 2 * Math.pow(y,2) + Math.pow(z,2);
                   if (distance < Math.pow(radius,2)) {
                     const index = _getEtherIndex(Math.floor(lx - minX), Math.floor(ly), Math.floor(lz - minZ));
@@ -233,12 +233,12 @@ const _generateMapChunk = (ox, oy, opts) => {
     for (let dz = -HOLE_SIZE; dz <= HOLE_SIZE; dz++) {
       const az = z + dz;
       if (az >= 0 && az < (NUM_CELLS + 1)) {
-        for (let dy = -HOLE_SIZE; dy <= HOLE_SIZE; dy++) {
-          const ay = y + dy;
-          if (ay >= 0 && ay < ((NUM_CELLS * 4) + 1)) {
-            for (let dx = -HOLE_SIZE; dx <= HOLE_SIZE; dx++) {
-              const ax = x + dx;
-              if (ax >= 0 && ax < (NUM_CELLS + 1)) {
+        for (let dx = -HOLE_SIZE; dx <= HOLE_SIZE; dx++) {
+          const ax = x + dx;
+          if (ax >= 0 && ax < (NUM_CELLS + 1)) {
+            for (let dy = -HOLE_SIZE; dy <= HOLE_SIZE; dy++) {
+              const ay = y + dy;
+              if (ay >= 0 && ay < ((NUM_CELLS * 4) + 1)) {
                 ether[_getEtherIndex(ax, ay, az)] += v * Math.max(HOLE_SIZE - Math.sqrt(dx * dx + dy * dy + dz * dz), 0) / HOLE_SIZE;
               }
             }
@@ -361,9 +361,9 @@ const _generateMapChunk = (ox, oy, opts) => {
   };
 };
 const _getCoordOverscanIndex = (x, y) => x + (y * NUM_CELLS_OVERSCAN);
-const ETHER_INDEX_Y_FACTOR = NUM_CELLS + 1;
-const ETHER_INDEX_Z_FACTOR = ETHER_INDEX_Y_FACTOR * ((NUM_CELLS * 4) + 1);
-const _getEtherIndex = (x, y, z) => x + (y * ETHER_INDEX_Y_FACTOR) + (z * ETHER_INDEX_Z_FACTOR);
+const ETHER_INDEX_FACTOR = NUM_CELLS + 1;
+const ETHER_INDEX_FACTOR2 = ETHER_INDEX_FACTOR * ETHER_INDEX_FACTOR;
+const _getEtherIndex = (x, y, z) => x + (z * ETHER_INDEX_FACTOR) + (y * ETHER_INDEX_FACTOR2);
 
 const _getBiome = p => {
   if (p.coast) {
