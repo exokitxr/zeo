@@ -481,7 +481,7 @@ class Heightfield {
       const mapChunkMesh = mapChunkMeshes[_getChunkIndex(ox, oz)];
 
       if (mapChunkMesh) {
-        return _getTopHeightfieldTriangleElevation(mapChunkMesh.heightfield, x, z);
+        return _getTopHeightfieldTriangleElevation(mapChunkMesh.heightfield, x - (ox * NUM_CELLS), z - (ox * NUM_CELLS));
       } else {
         return 0;
       }
