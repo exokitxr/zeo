@@ -130,8 +130,8 @@ class Heightfield {
 
   mount() {
     const {_archae: archae} = this;
-    const {three, render, pose, input, world, elements, teleport, stck, stage, utils: {js: {mod, bffr}, random: {chnkr}}} = zeo;
-    const {THREE, camera} = three;
+    const {three, render, pose, input, world, elements, teleport, stck, utils: {js: {mod, bffr}, random: {chnkr}}} = zeo;
+    const {THREE, scene, camera} = three;
 
     const _getChunkIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
 
@@ -253,34 +253,33 @@ class Heightfield {
     };
     const _bindLightmaps = () => {
       for (const index in mapChunkMeshes) {
-        const mapChunkMesh = mapChunkMeshes[index];
-        if (mapChunkMesh) {
-          _bindLightmap(mapChunkMesh);
+        const trackedMapChunkMeshes = mapChunkMeshes[index];
+        if (trackedMapChunkMeshes) {
+          _bindLightmap(trackedMapChunkMeshes);
         }
       }
     };
     const _unbindLightmaps = () => {
       for (const index in mapChunkMeshes) {
-        const mapChunkMesh = mapChunkMeshes[index];
-        if (mapChunkMesh && mapChunkMesh.lightmap) {
-          _unbindLightmap(mapChunkMesh);
+        const trackedMapChunkMeshes = mapChunkMeshes[index];
+        if (trackedMapChunkMeshes && trackedMapChunkMeshes.lightmap) {
+          _unbindLightmap(trackedMapChunkMeshes);
         }
       }
     };
-    const _bindLightmap = mapChunkMesh => {
-      const {offset} = mapChunkMesh;
+    const _bindLightmap = trackedMapChunkMeshes => {
+      const {offset} = trackedMapChunkMeshes;
       const {x, y} = offset;
       const lightmap = lightmapper.getLightmapAt(x * NUM_CELLS, y * NUM_CELLS);
-      mapChunkMesh.material.uniforms.lightMap.value = lightmap.texture;
-      mapChunkMesh.material.uniforms.useLightMap.value = 1;
-      mapChunkMesh.lightmap = lightmap;
+      trackedMapChunkMeshes.material.uniforms.lightMap.value = lightmap.texture;
+      trackedMapChunkMeshes.material.uniforms.useLightMap.value = 1;
+      trackedMapChunkMeshes.lightmap = lightmap;
     };
-    const _unbindLightmap = mapChunkMesh => {
-      const {lightmap} = mapChunkMesh;
-      lightmapper.releaseLightmap(lightmap);
-      mapChunkMesh.lightmap = null;
-      mapChunkMesh.material.uniforms.lightMap.value = null;
-      mapChunkMesh.material.uniforms.useLightMap.value = 0;
+    const _unbindLightmap = trackedMapChunkMeshes => {
+      lightmapper.releaseLightmap(trackedMapChunkMeshes.lightmap);
+      trackedMapChunkMeshes.lightmap = null;
+      trackedMapChunkMeshes.material.uniforms.lightMap.value = null;
+      trackedMapChunkMeshes.material.uniforms.useLightMap.value = 0;
     };
     const elementListener = elements.makeListener(LIGHTMAP_PLUGIN);
     elementListener.on('add', entityElement => {
@@ -294,66 +293,64 @@ class Heightfield {
       .then(originHeight => {
         world.setSpawnMatrix(new THREE.Matrix4().makeTranslation(0, originHeight, 0));
       });
-    const _makeMapChunkMesh = (chunk, mapChunkData, x, z) => {
-      const mesh = (() => {
-        const {positions, colors, indices, heightfield, staticHeightfield, boundingSphere} = mapChunkData;
+    const _makeMapChunkMeshes = (chunk, mapChunkData, x, z) => {
+      const {geometries, heightfield, staticHeightfield} = mapChunkData;
 
-        const geometry = (() => {
-          let geometry = new THREE.BufferGeometry();
-          geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
-          geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
-          geometry.setIndex(new THREE.BufferAttribute(indices, 1));
-          geometry.boundingSphere = new THREE.Sphere(
-            new THREE.Vector3().fromArray(boundingSphere, 0),
-            boundingSphere[3]
-          );
-          return geometry;
-        })();
-        const uniforms = Object.assign(
-          THREE.UniformsUtils.clone(THREE.UniformsLib.lights),
-          THREE.UniformsUtils.clone(HEIGHTFIELD_SHADER.uniforms)
+      const uniforms = Object.assign(
+        THREE.UniformsUtils.clone(THREE.UniformsLib.lights),
+        THREE.UniformsUtils.clone(HEIGHTFIELD_SHADER.uniforms)
+      );
+      uniforms.d.value = new THREE.Vector2(x * NUM_CELLS, z * NUM_CELLS);
+      const material = new THREE.ShaderMaterial({
+        uniforms: uniforms,
+        vertexShader: HEIGHTFIELD_SHADER.vertexShader,
+        fragmentShader: HEIGHTFIELD_SHADER.fragmentShader,
+        lights: true,
+        // transparent: true,
+        extensions: {
+          derivatives: true,
+        },
+      });
+
+      const meshes = Array(4);
+      for (let i = 0; i < 4; i++) {
+        const {positions, colors, indices, boundingSphere} = geometries[i];
+
+        const geometry = new THREE.BufferGeometry();
+        geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
+        geometry.setIndex(new THREE.BufferAttribute(indices, 1));
+        geometry.boundingSphere = new THREE.Sphere(
+          new THREE.Vector3().fromArray(boundingSphere, 0),
+          boundingSphere[3]
         );
-        uniforms.d.value = new THREE.Vector2(x * NUM_CELLS, z * NUM_CELLS);
-        const material = new THREE.ShaderMaterial({
-          uniforms: uniforms,
-          vertexShader: HEIGHTFIELD_SHADER.vertexShader,
-          fragmentShader: HEIGHTFIELD_SHADER.fragmentShader,
-          lights: true,
-          // transparent: true,
-          extensions: {
-            derivatives: true,
-          },
-        });
 
-        const mesh = new THREE.Mesh(geometry, material);
-        mesh.x = x;
-        mesh.z = z;
-
-        mesh.offset = new THREE.Vector2(x, z);
-        mesh.heightfield = heightfield;
-        mesh.staticHeightfield = staticHeightfield;
-        mesh.lod = chunk.lod;
-
-        mesh.lightmap = null;
-        if (lightmapper && chunk.lod === 1) {
-          _bindLightmap(mesh);
+        meshes[i] = new THREE.Mesh(geometry, material);
+      }
+      meshes.destroy = () => {
+        for (let i = 0; i < 4; i++) {
+          meshes[i].geometry.dispose();
         }
+        material.dispose();
 
-        return mesh;
-      })();
+        buffers.free(mapChunkData.buffer);
 
-      mesh.destroy = () => {
-        mesh.geometry.dispose();
-
-        const {buffer} = mapChunkData;
-        buffers.free(buffer);
-
-        if (mesh.lightmap) {
-          _unbindLightmap(mesh);
+        if (meshes.lightmap) {
+          _unbindLightmap(meshes);
         }
       };
 
-      return mesh;
+      meshes.offset = new THREE.Vector2(x, z);
+      meshes.material = material;
+      meshes.heightfield = heightfield;
+      meshes.staticHeightfield = staticHeightfield;
+      meshes.lightmap = null;
+      meshes.stckBody = null;
+      if (lightmapper && chunk.lod === 1) {
+        _bindLightmap(meshes);
+      }
+
+      return meshes;
     };
 
     const chunker = chnkr.makeChunker({
@@ -367,21 +364,23 @@ class Heightfield {
       const {worldPosition: hmdPosition} = hmd;
       const {added, removed, relodded} = chunker.update(hmdPosition.x, hmdPosition.z);
 
-      const _addTarget = (mapChunkMesh, x, z) => {
+      const _addTarget = trackedMapChunkMeshes => {
+        const {offset} = trackedMapChunkMeshes;
+        const {x, z} = offset;
         const stckBody = stck.makeStaticHeightfieldBody(
           new THREE.Vector3(x * NUM_CELLS, 0, z * NUM_CELLS),
           NUM_CELLS,
           NUM_CELLS,
-          mapChunkMesh.staticHeightfield
+          trackedMapChunkMeshes.staticHeightfield
         );
-        mapChunkMesh.stckBody = stckBody;
+        trackedMapChunkMeshes.stckBody = stckBody;
 
-        mapChunkMesh.targeted = true;
+        trackedMapChunkMeshes.targeted = true;
       };
-      const _removeTarget = mapChunkMesh => {
-        stck.destroyBody(mapChunkMesh.stckBody);
+      const _removeTarget = trackedMapChunkMeshes => {
+        stck.destroyBody(trackedMapChunkMeshes.stckBody);
 
-        mapChunkMesh.targeted = false;
+        trackedMapChunkMeshes.targeted = false;
       };
 
       const addedPromises = [];
@@ -392,27 +391,34 @@ class Heightfield {
           .then(mapChunkBuffer => protocolUtils.parseRenderChunk(mapChunkBuffer))
           .then(mapChunkData => {
             const index = _getChunkIndex(x, z);
-            const oldMapChunkMesh = mapChunkMeshes[index];
-            if (oldMapChunkMesh) {
-              stage.remove('main', oldMapChunkMesh);
-              oldMapChunkMesh.destroy();
+            const oldMapChunkMeshes = mapChunkMeshes[index];
+            if (oldMapChunkMeshes) {
+              for (let i = 0; i < oldMapChunkMeshes.length; i++) {
+                const oldMapChunkMesh = oldMapChunkMeshes[i];
+                scene.remove(oldMapChunkMesh);
+              }
+
+              oldMapChunkMeshes.destroy();
+
+              if (lod !== 1 && oldMapChunkMeshes.targeted) {
+                _removeTarget(oldMapChunkMeshes);
+              }
 
               mapChunkMeshes[index] = null;
-
-              if (lod !== 1 && oldMapChunkMesh.targeted) {
-                _removeTarget(oldMapChunkMesh);
-              }
             }
 
-            const newMapChunkMesh = _makeMapChunkMesh(chunk, mapChunkData, x, z);
-            stage.add('main', newMapChunkMesh);
-            mapChunkMeshes[index] = newMapChunkMesh;
+            const newMapChunkMeshes = _makeMapChunkMeshes(chunk, mapChunkData, x, z);
+            for (let i = 0; i < newMapChunkMeshes.length; i++) {
+              const newMapChunkMesh = newMapChunkMeshes[i];
+              scene.add(newMapChunkMesh);
+            }
+            mapChunkMeshes[index] = newMapChunkMeshes;
 
-            if (lod === 1 && !newMapChunkMesh.targeted) {
-              _addTarget(newMapChunkMesh, x, z);
+            if (lod === 1 && !newMapChunkMeshes.targeted) {
+              _addTarget(newMapChunkMeshes);
             }
 
-            chunk.data = newMapChunkMesh;
+            chunk.data = newMapChunkMeshes;
           });
         addedPromises.push(promise);
       };
@@ -426,12 +432,12 @@ class Heightfield {
         if (lastLod === -1) {
           _addChunk(chunk);
         } else {
-          const {lod, data: mapChunkMesh} = chunk;
+          const {lod, data: mapChunkMeshes} = chunk;
 
-          if (!mapChunkMesh.lightmap && lod === 1) {
-            _bindLightmap(mapChunkMesh);
-          } else if (mapChunkMesh.lightmap && lod !== 1) {
-            _unbindLightmap(mapChunkMesh);
+          if (!mapChunkMeshes.lightmap && lod === 1) {
+            _bindLightmap(mapChunkMeshes);
+          } else if (mapChunkMeshes.lightmap && lod !== 1) {
+            _unbindLightmap(mapChunkMeshes);
           }
         }
       }
@@ -439,26 +445,29 @@ class Heightfield {
         .then(() => {
           for (let i = 0; i < removed.length; i++) {
             const chunk = removed[i];
-            const {x, z, data: mapChunkMesh} = chunk;
-            stage.remove('main', mapChunkMesh);
-            mapChunkMesh.destroy();
+            const {x, z, data: oldMapChunkMeshes} = chunk;
+            for (let i = 0; i < oldMapChunkMeshes.length; i++) {
+              const oldMapChunkMesh = oldMapChunkMeshes[i];
+              scene.remove(oldMapChunkMesh);
+            }
 
-            const index = _getChunkIndex(x, z);
-            mapChunkMeshes[index] = null;
+            oldMapChunkMeshes.destroy();
 
             const {lod} = chunk;
-            if (lod !== 1 && mapChunkMesh.targeted) {
-              _removeTarget(mapChunkMesh);
+            if (lod !== 1 && oldMapChunkMeshes.targeted) {
+              _removeTarget(oldMapChunkMeshes);
             }
+
+            mapChunkMeshes[_getChunkIndex(x, z)] = null;
 
             worker.requestUngenerate(x, z);
           }
 
           const newMapChunkMeshes = {};
           for (const index in mapChunkMeshes) {
-            const mapChunkMesh = mapChunkMeshes[index];
-            if (mapChunkMesh) {
-              newMapChunkMeshes[index] = mapChunkMesh;
+            const trackedMapChunkMeshes = mapChunkMeshes[index];
+            if (trackedMapChunkMeshes) {
+              newMapChunkMeshes[index] = trackedMapChunkMeshes;
             }
           }
           mapChunkMeshes = newMapChunkMeshes;
@@ -485,27 +494,25 @@ class Heightfield {
       const oz = Math.floor(z / NUM_CELLS);
       const mapChunkMesh = mapChunkMeshes[_getChunkIndex(ox, oz)];
 
-      if (mapChunkMesh) {
-        return _getTopHeightfieldTriangleElevation(mapChunkMesh.heightfield, x - (ox * NUM_CELLS), z - (ox * NUM_CELLS));
-      } else {
-        return 0;
-      }
+      return mapChunkMesh ?
+        _getTopHeightfieldTriangleElevation(mapChunkMesh.heightfield, x - (ox * NUM_CELLS), z - (ox * NUM_CELLS))
+      :
+        0;
     };
     const _getBestElevation = (x, z, y) => {
       const ox = Math.floor(x / NUM_CELLS);
       const oz = Math.floor(z / NUM_CELLS);
       const mapChunkMesh = mapChunkMeshes[_getChunkIndex(ox, oz)];
 
-      if (mapChunkMesh) {
-        return _getBestHeightfieldTriangleElevation(
+      return mapChunkMesh ?
+        _getBestHeightfieldTriangleElevation(
           mapChunkMesh.heightfield,
           x - (ox * NUM_CELLS),
           z - (oz * NUM_CELLS),
           y
-        );
-      } else {
-        return 0;
-      }
+        )
+      :
+        0;
     };
     const _getTopHeightfieldTriangleElevation = (heightfield, x, z) => {
       const ax = Math.floor(x);
@@ -685,9 +692,9 @@ class Heightfield {
           const sunIntensity = (dayNightSkyboxEntity && dayNightSkyboxEntity.getSunIntensity) ? dayNightSkyboxEntity.getSunIntensity() : 0;
 
           for (const index in mapChunkMeshes) {
-            const mapChunkMesh = mapChunkMeshes[index];
-            if (mapChunkMesh) {
-              mapChunkMesh.material.uniforms.sunIntensity.value = sunIntensity;
+            const trackedMapChunkMeshes = mapChunkMeshes[index];
+            if (trackedMapChunkMeshes) {
+              trackedMapChunkMeshes.material.uniforms.sunIntensity.value = sunIntensity;
             }
           }
         };

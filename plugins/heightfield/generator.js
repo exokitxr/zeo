@@ -18,26 +18,24 @@ const {
 const NUM_CELLS_OVERSCAN_Y = (NUM_CELLS * 4) + OVERSCAN;
 const HOLE_SIZE = 2;
 
-const _marchCubes = (fn, resolution) => mrch.marchingCubes(
-  [resolution + 1, (resolution * 4) + 1, resolution + 1],
-  fn,
-  [
-    [0, 0, 0],
-    [resolution + 1, (resolution * 4) + 1, resolution + 1],
-  ]
-);
-const _makeGeometry = ether => {
-  const {positions, indices} = _marchCubes(
-    (x, y, z) => ether[_getEtherIndex(x, y, z)],
-    NUM_CELLS
-  );
-
-  const geometry = new THREE.BufferGeometry();
-  geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
-  geometry.setIndex(new THREE.BufferAttribute(indices, 1));
-  geometry.computeVertexNormals();
-
-  return geometry;
+const _makeGeometries = ether => {
+  const geometries = Array(4);
+  for (let i = 0; i < 4; i++) {
+    const {positions, indices} = mrch.marchingCubes(
+      [NUM_CELLS + 1, NUM_CELLS + 1, NUM_CELLS + 1],
+      (x, y, z) => ether[_getEtherIndex(x, y, z)],
+      [
+        [0, NUM_CELLS * i, 0],
+        [NUM_CELLS + 1, (NUM_CELLS * (i + 1)) + 1, NUM_CELLS + 1],
+      ]
+    );
+    const geometry = new THREE.BufferGeometry();
+    geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geometry.setIndex(new THREE.BufferAttribute(indices, 1));
+    geometry.computeVertexNormals();
+    geometries[i] = geometry;
+  }
+  return geometries;
 };
 
 const BIOME_COLORS = {
@@ -171,8 +169,10 @@ const _generateMapChunk = (ox, oy, opts) => {
       }
     };
 
-    for (let doy = -3; doy <= 3; doy++) {
-      for (let dox = -3; dox <= 3; dox++) {
+    // for (let doy = -3; doy <= 3; doy++) {
+      // for (let dox = -3; dox <= 3; dox++) {
+    for (let doy = -1; doy <= 1; doy++) {
+      for (let dox = -1; dox <= 1; dox++) {
         const aox = ox + dox;
         const aoy = oy + doy;
         const n = _random.wormNoise.in2D(aox * NUM_CELLS + 1000, aoy * NUM_CELLS + 1000);
@@ -183,7 +183,8 @@ const _generateMapChunk = (ox, oy, opts) => {
           let cavePosX = (aox * NUM_CELLS) + (murmur(s + ':x') / 0xFFFFFFFF) * NUM_CELLS;
           let cavePosY = (murmur(s + ':y') / 0xFFFFFFFF) * NUM_CELLS * 4;
           let cavePosZ = (aoy * NUM_CELLS) + (murmur(s + ':z') / 0xFFFFFFFF) * NUM_CELLS;
-          const caveLength = (murmur(s + ':caveLength1') / 0xFFFFFFFF) * (murmur(s + ':caveLength2') / 0xFFFFFFFF) * 200;
+          // const caveLength = (murmur(s + ':caveLength1') / 0xFFFFFFFF) * (murmur(s + ':caveLength2') / 0xFFFFFFFF) * 200;
+          const caveLength = (murmur(s + ':caveLength1') / 0xFFFFFFFF) * (murmur(s + ':caveLength2') / 0xFFFFFFFF) * 100;
 
           let theta = (murmur(s + ':theta') / 0xFFFFFFFF) * Math.PI * 2;
           let deltaTheta = 0;
@@ -249,114 +250,115 @@ const _generateMapChunk = (ox, oy, opts) => {
 
   // compile
 
-// console.time('march');
-  const geometry = _makeGeometry(ether);
-  const positions = geometry.getAttribute('position').array;
-  const indices = geometry.index.array;
-// console.timeEnd('march');
-// console.time('heightfield');
+  const geometries = _makeGeometries(ether);
 
   const heightfield = new Float32Array(NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN * HEIGHTFIELD_DEPTH);
   heightfield.fill(-1024);
   const staticHeightfield = new Float32Array(NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN);
   staticHeightfield.fill(-1024);
 
-  const numIndices = indices.length / 3;
-  for (let i = 0; i < numIndices; i++) {
-    const indexIndex = i * 3;
-    localTriangle.a.fromArray(positions, indices[indexIndex + 0] * 3);
-    localTriangle.b.fromArray(positions, indices[indexIndex + 1] * 3);
-    localTriangle.c.fromArray(positions, indices[indexIndex + 2] * 3);
-    if (localTriangle.normal(localVector).y > 0) {
-      for (let j = 0; j < 3; j++) {
-        const point = localTriangle.points[j];
-        const x = Math.floor(point.x);
-        const y = point.y;
-        const z = Math.floor(point.z);
+  for (let i = 0; i < 4; i++) {
+    const geometry = geometries[i];
 
-        for (let layer = 0; layer < HEIGHTFIELD_DEPTH; layer++) {
-          const heightfieldXYBaseIndex = _getTopHeightfieldIndex(x, z);
-          const oldY = heightfield[heightfieldXYBaseIndex + layer];
-          if (y > oldY) {
-            if (j === 0 || (y - oldY) >= 5) { // ignore non-surface heights with small height difference
-              for (let k = HEIGHTFIELD_DEPTH - 1; k > layer; k--) {
-                heightfield[heightfieldXYBaseIndex + k] = heightfield[heightfieldXYBaseIndex + k - 1];
+    const positions = geometry.getAttribute('position').array;
+    const indices = geometry.index.array;
+
+    const numIndices = indices.length / 3;
+    for (let i = 0; i < numIndices; i++) {
+      const indexIndex = i * 3;
+      localTriangle.a.fromArray(positions, indices[indexIndex + 0] * 3);
+      localTriangle.b.fromArray(positions, indices[indexIndex + 1] * 3);
+      localTriangle.c.fromArray(positions, indices[indexIndex + 2] * 3);
+      if (localTriangle.normal(localVector).y > 0) {
+        for (let j = 0; j < 3; j++) {
+          const point = localTriangle.points[j];
+          const x = Math.floor(point.x);
+          const y = point.y;
+          const z = Math.floor(point.z);
+
+          for (let layer = 0; layer < HEIGHTFIELD_DEPTH; layer++) {
+            const heightfieldXYBaseIndex = _getTopHeightfieldIndex(x, z);
+            const oldY = heightfield[heightfieldXYBaseIndex + layer];
+            if (y > oldY) {
+              if (j === 0 || (y - oldY) >= 5) { // ignore non-surface heights with small height difference
+                for (let k = HEIGHTFIELD_DEPTH - 1; k > layer; k--) {
+                  heightfield[heightfieldXYBaseIndex + k] = heightfield[heightfieldXYBaseIndex + k - 1];
+                }
+                heightfield[heightfieldXYBaseIndex + layer] = y;
               }
-              heightfield[heightfieldXYBaseIndex + layer] = y;
+              break;
+            } else if (y === oldY) {
+              break;
             }
-            break;
-          } else if (y === oldY) {
-            break;
           }
-        }
 
-        const staticheightfieldIndex = _getStaticHeightfieldIndex(x, z);
-        if (y > staticHeightfield[staticheightfieldIndex]) {
-          staticHeightfield[staticheightfieldIndex] = y;
+          const staticheightfieldIndex = _getStaticHeightfieldIndex(x, z);
+          if (y > staticHeightfield[staticheightfieldIndex]) {
+            staticHeightfield[staticheightfieldIndex] = y;
+          }
         }
       }
     }
   }
-// console.timeEnd('heightfield');
-// console.time('biome');
+  for (let i = 0; i < 4; i++) {
+    const geometry = geometries[i];
 
-  const numPositions = positions.length / 3;
-  const colors = new Float32Array(numPositions * 3);
-  geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
+    const positions = geometry.getAttribute('position').array;
+    const numPositions = positions.length / 3;
+    const colors = new Float32Array(numPositions * 3);
+    geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
 
-  for (let i = 0; i < numPositions; i++) {
-    const baseIndex = i * 3;
-    const lx = Math.floor(positions[baseIndex + 0]);
-    const y = positions[baseIndex + 1];
-    const lz = Math.floor(positions[baseIndex + 2]);
-    const elevation = heightfield[_getTopHeightfieldIndex(lx, lz)];
-    const dx = (ox * NUM_CELLS) + lx;
-    const dz = (oy * NUM_CELLS) + lz;
-    const moisture = _random.moistureNoise.in2D(dx, dz);
-    const land = elevation > 64;
-    const cave = y < elevation - 3;
-    const water = !land;
-    const ocean = false;
-    const coast = land && ocean;
-    const lava = 0;
-    const biome = _getBiome({
-      y,
-      moisture,
-      land,
-      cave,
-      water,
-      ocean,
-      coast,
-      lava,
-    });
-    const colorInt = BIOME_COLORS[biome];
-    const colorArray = _colorIntToArray(colorInt);
-    colors[baseIndex + 0] = colorArray[0];
-    colors[baseIndex + 1] = colorArray[1];
-    colors[baseIndex + 2] = colorArray[2];
+    for (let i = 0; i < numPositions; i++) {
+      const baseIndex = i * 3;
+      const lx = Math.floor(positions[baseIndex + 0]);
+      const y = positions[baseIndex + 1];
+      const lz = Math.floor(positions[baseIndex + 2]);
+      const elevation = heightfield[_getTopHeightfieldIndex(lx, lz)];
+      const dx = (ox * NUM_CELLS) + lx;
+      const dz = (oy * NUM_CELLS) + lz;
+      const moisture = _random.moistureNoise.in2D(dx, dz);
+      const land = elevation > 64;
+      const cave = y < elevation - 3;
+      const water = !land;
+      const ocean = false;
+      const coast = land && ocean;
+      const lava = 0;
+      const biome = _getBiome({
+        y,
+        moisture,
+        land,
+        cave,
+        water,
+        ocean,
+        coast,
+        lava,
+      });
+      const colorInt = BIOME_COLORS[biome];
+      const colorArray = _colorIntToArray(colorInt);
+      colors[baseIndex + 0] = colorArray[0];
+      colors[baseIndex + 1] = colorArray[1];
+      colors[baseIndex + 2] = colorArray[2];
 
-    positions[baseIndex + 0] += ox * NUM_CELLS;
-    // positions[baseIndex + 1] += oy * NUM_CELLS;
-    positions[baseIndex + 2] += oy * NUM_CELLS;
+      positions[baseIndex + 0] += ox * NUM_CELLS;
+      // positions[baseIndex + 1] += oy * NUM_CELLS;
+      positions[baseIndex + 2] += oy * NUM_CELLS;
+    }
+
+    geometry.computeBoundingSphere();
   }
 
-// console.timeEnd('biome');
-// console.time('bounding sphere');
-
-  geometry.computeBoundingSphere();
-  const {boundingSphere} = geometry;
-// console.timeEnd('bounding sphere');
-
   return {
-    positions: geometry.getAttribute('position').array,
-    normals: geometry.getAttribute('normal').array,
-    colors: geometry.getAttribute('color').array,
-    indices: geometry.index.array,
+    geometries: geometries.map(geometry => ({
+      positions: geometry.getAttribute('position').array,
+      normals: geometry.getAttribute('normal').array,
+      colors: geometry.getAttribute('color').array,
+      indices: geometry.index.array,
+      boundingSphere: Float32Array.from(geometry.boundingSphere.center.toArray().concat([geometry.boundingSphere.radius])),
+    })),
     heightfield,
     staticHeightfield,
     elevations,
     ether,
-    boundingSphere: Float32Array.from(boundingSphere.center.toArray().concat([boundingSphere.radius])),
   };
 };
 const _getCoordOverscanIndex = (x, y) => x + (y * NUM_CELLS_OVERSCAN);
