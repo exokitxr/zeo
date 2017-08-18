@@ -384,10 +384,8 @@ class Heightfield {
         mapChunkMesh.targeted = false;
       };
 
-      const addedPromises = Array(added.length);
-      let index = 0;
-      for (let i = 0; i < added.length; i++) {
-        const chunk = added[i];
+      const addedPromises = [];
+      const _addChunk = chunk => {
         const {x, z, lod} = chunk;
 
         const promise = worker.requestGenerate(x, z)
@@ -416,16 +414,25 @@ class Heightfield {
 
             chunk.data = newMapChunkMesh;
           });
-        addedPromises[index++] = promise;
+        addedPromises.push(promise);
+      };
+      for (let i = 0; i < added.length; i++) {
+        _addChunk(added[i]);
       }
       for (let i = 0; i < relodded.length; i++) {
         const chunk = relodded[i];
-        const {lod, data: mapChunkMesh} = chunk;
+        const {lastLod} = chunk;
 
-        if (!mapChunkMesh.lightmap && lod === 1) {
-          _bindLightmap(mapChunkMesh);
-        } else if (mapChunkMesh.lightmap && lod !== 1) {
-          _unbindLightmap(mapChunkMesh);
+        if (lastLod === -1) {
+          _addChunk(chunk);
+        } else {
+          const {lod, data: mapChunkMesh} = chunk;
+
+          if (!mapChunkMesh.lightmap && lod === 1) {
+            _bindLightmap(mapChunkMesh);
+          } else if (mapChunkMesh.lightmap && lod !== 1) {
+            _unbindLightmap(mapChunkMesh);
+          }
         }
       }
       return Promise.all(addedPromises)
