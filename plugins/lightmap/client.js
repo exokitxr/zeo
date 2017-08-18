@@ -1,16 +1,19 @@
 const {
   NUM_CELLS,
   NUM_CELLS_HEIGHT,
+
+  RANGE,
 } = require('./lib/constants/constants');
 
 class Lightmap {
   mount() {
-    const {three, elements, render, utils: {js: jsUtils}} = zeo;
+    const {three, pose, elements, render, utils: {js: jsUtils, random: {chnkr}}} = zeo;
     const {THREE} = three;
     const {events, mod, bffr} = jsUtils;
     const {EventEmitter} = events;
 
     const _getLightmapIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
+    const zeroUint8Array = Uint8Array.from([0]);
 
     let idCount = 0;
     class Ambient {
@@ -114,20 +117,18 @@ class Lightmap {
     }
 
     class Lightmap extends EventEmitter {
-      constructor(x, z, width, height, depth, buffers) {
+      constructor(x, z) {
         super();
 
         this.x = x;
         this.z = z;
         this.index = _getLightmapIndex(x, z);
-        this.buffers = buffers;
 
-        const buffer = buffers.alloc();
-        this.buffer = buffer;
+        this.buffer = null;
         const texture = new THREE.DataTexture(
-          new Uint8Array(buffer.byteLength),
-          (width + 1) * (depth + 1),
-          height,
+          zeroUint8Array,
+          1,
+          1,
           THREE.LuminanceFormat,
           THREE.UnsignedByteType,
           THREE.UVMapping,
@@ -153,8 +154,6 @@ class Lightmap {
 
       destroy() {
         this.texture.dispose();
-
-        this.buffers.free(this.buffer);
 
         this.emit('destroy');
       }
@@ -203,10 +202,15 @@ class Lightmap {
             buffer,
           }, [buffer]);
           lightmap.buffer = null;
+          lightmap.texture.image.data = zeroUint8Array;
+          lightmap.texture.image.width = 1;
+          lightmap.texture.image.height = 1;
 
           queue.push(buffer => {
             lightmap.buffer = buffer;
-            lightmap.texture.image.data.set(new Uint8Array(buffer));
+            lightmap.texture.image.data = new Uint8Array(buffer);
+            lightmap.texture.image.width = (width + 1) * (depth + 1);
+            lightmap.texture.image.height = height;
             lightmap.texture.needsUpdate = true;
 
             accept();
@@ -219,9 +223,13 @@ class Lightmap {
         worker.init(width, height, depth);
         this.worker = worker;
 
-        this._lightmaps = {};
-        this._lightmapsNeedUpdate = {};
-        this._buffers = bffr((width + 1) * (depth + 1) * height, 4 * 4 * 12);
+        this._lightmaps = {}
+        this._buffers = bffr((width + 1) * (depth + 1) * height, 4 * 4 * 2);
+
+        this.chunker = chnkr.makeChunker({
+          resolution: NUM_CELLS,
+          range: RANGE,
+        });
 
         this.debouncedUpdate = _debounce(next => {
           this.update()
@@ -234,21 +242,24 @@ class Lightmap {
       }
 
       getLightmapAt(x, z) {
-        const {width, height, depth, _lightmaps: lightmaps, _lightmapsNeedUpdate: lightmapsNeedUpdate, _buffers: buffers} = this;
-        const ox = Math.floor(x / width);
-        const oz = Math.floor(z / depth);
+        return this.getLightmapAtIndex(Math.floor(x / this.width), Math.floor(z / this.depth));
+      }
+      getLightmapAtIndex(ox, oz) {
+        const {_lightmaps: lightmaps} = this;
 
         const index = _getLightmapIndex(ox, oz);
         let entry = lightmaps[index];
         if (!entry) {
-          entry = new Lightmap(ox, oz, width, height, depth, buffers);
+          entry = new Lightmap(ox, oz);
           entry.on('destroy', () => {
+            if (entry.buffer) {
+              this._buffers.free(entry.buffer);
+              entry.buffer = null;
+            }
             lightmaps[index] = null;
-            lightmapsNeedUpdate[index] = false;
             // XXX gc after too many destroys
           });
           lightmaps[index] = entry;
-          lightmapsNeedUpdate[index] = true;
         }
         entry.addRef();
         return entry;
@@ -261,10 +272,14 @@ class Lightmap {
       add(shape) {
         this.worker.addShape(shape);
 
-        const {width, depth, _lightmaps: lightmaps, _lightmapsNeedUpdate: lightmapsNeedUpdate} = this;
+        const {width, depth, _lightmaps: lightmaps} = this;
         const newLightmapsNeedUpdate = shape.getLightmapsInRange(width, depth, lightmaps);
         for (let i = 0; i < newLightmapsNeedUpdate.length; i++) {
-          lightmapsNeedUpdate[newLightmapsNeedUpdate[i].index] = true;
+          const {x, z} = newLightmapsNeedUpdate[i];
+          const chunk = this.chunker.getChunk(x, z);
+          if (chunk) {
+            chunk.lod = -1;
+          }
         }
 
         this.debouncedUpdate();
@@ -274,27 +289,66 @@ class Lightmap {
         const {id} = shape;
         this.worker.removeShape(id);
 
-        const {width, depth, _lightmaps: lightmaps, _lightmapsNeedUpdate: lightmapsNeedUpdate} = this;
+        const {width, depth, _lightmaps: lightmaps} = this;
         const newLightmapsNeedUpdate = shape.getLightmapsInRange(width, depth, lightmaps);
         for (let i = 0; i < newLightmapsNeedUpdate.length; i++) {
-          lightmapsNeedUpdate[newLightmapsNeedUpdate[i].index] = true;
+          const {x, z} = newLightmapsNeedUpdate[i];
+          const chunk = this.chunker.getChunk(x, z);
+          if (chunk) {
+            chunk.lod = -1;
+          }
         }
 
         this.debouncedUpdate();
       }
 
       update() {
-        const promises = [];
-        for (const index in this._lightmapsNeedUpdate) {
-          if (this._lightmapsNeedUpdate[index]) {
-            const lightmap = this._lightmaps[index];
-            if (lightmap && lightmap.buffer) {
-              promises.push(this.worker.requestUpdate(lightmap));
+        const {hmd} = pose.getStatus();
+        const {worldPosition: hmdPosition} = hmd;
+        const {added, removed, relodded} = this.chunker.update(hmdPosition.x, hmdPosition.z);
+
+        const addedPromises = Array(added.length + relodded.length);
+        let index = 0;
+        const _addChunk = chunk => {
+          const {x, z, lod} = chunk;
+
+          const lightmap = this._lightmaps[_getLightmapIndex(x, z)];
+          if (lightmap) {
+            lightmap.addRef();
+
+            if (!lightmap.buffer) {
+              lightmap.buffer = this._buffers.alloc();
             }
+
+            return this.worker.requestUpdate(lightmap)
+              .then(() => {
+                lightmap.removeRef();
+              });
+          } else {
+            return Promise.resolve();
           }
+        };
+        for (let i = 0; i < added.length; i++) {
+          addedPromises[index++] = _addChunk(added[i]);
         }
-        this._lightmapsNeedUpdate = {};
-        return Promise.all(promises);
+        for (let i = 0; i < relodded.length; i++) {
+          addedPromises[index++] = _addChunk(relodded[i]);
+        }
+        return Promise.all(addedPromises)
+          .then(() => {
+            for (let i = 0; i < removed.length; i++) {
+              const {x, z} = removed;
+              const lightmap = this._lightmaps[_getLightmapIndex(x, z)];
+              if (lightmap && lightmap.buffer) {
+                this._buffers.free(lightmap.buffer);
+                lightmap.buffer = null;
+                lightmap.texture.image.data = zeroUint8Array;
+                lightmap.texture.image.width = 1;
+                lightmap.texture.image.height = 1;
+                lightmap.texture.needsUpdate = true;
+              }
+            }
+          });
       }
     };
     Lightmapper.Ambient = Ambient;
