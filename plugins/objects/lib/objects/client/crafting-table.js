@@ -105,6 +105,7 @@ const craftingTable = objectApi => {
             const {side} = e;
 
             if (grabbable.getGrabberSide() === side) {
+              const heightfieldElement = elements.getEntitiesElement().querySelector(HEIGHTFIELD_PLUGIN);
               localVector.set(
                 grabbable.position.x,
                 heightfieldElement ? heightfieldElement.getBestElevation(grabbable.position.x, grabbable.position.z, grabbable.position.y) : 0,
