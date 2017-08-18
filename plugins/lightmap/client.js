@@ -202,6 +202,7 @@ class Lightmap {
             oz,
             buffer,
           }, [buffer]);
+          lightmap.buffer = null;
 
           queue.push(buffer => {
             lightmap.buffer = buffer;
@@ -220,7 +221,7 @@ class Lightmap {
 
         this._lightmaps = {};
         this._lightmapsNeedUpdate = {};
-        this._buffers = bffr((width + 1) * (depth + 1) * height, 3 * 3 * 12);
+        this._buffers = bffr((width + 1) * (depth + 1) * height, 4 * 4 * 12);
 
         this.debouncedUpdate = _debounce(next => {
           this.update()
@@ -287,7 +288,7 @@ class Lightmap {
         for (const index in this._lightmapsNeedUpdate) {
           if (this._lightmapsNeedUpdate[index]) {
             const lightmap = this._lightmaps[index];
-            if (lightmap) {
+            if (lightmap && lightmap.buffer) {
               promises.push(this.worker.requestUpdate(lightmap));
             }
           }
