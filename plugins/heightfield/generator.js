@@ -135,11 +135,11 @@ const _generateMapChunk = (ox, oy, opts) => {
 
   let ether = opts.oldEther;
   if (!ether) {
-    ether = new Float32Array((NUM_CELLS + 2) * ((NUM_CELLS * 4) + 2) * (NUM_CELLS + 2));
-    for (let z = 0; z <= NUM_CELLS_OVERSCAN; z++) {
-      for (let x = 0; x <= NUM_CELLS_OVERSCAN; x++) {
+    ether = new Float32Array((NUM_CELLS + 1) * ((NUM_CELLS * 4) + 1) * (NUM_CELLS + 1));
+    for (let z = 0; z < NUM_CELLS_OVERSCAN; z++) {
+      for (let x = 0; x < NUM_CELLS_OVERSCAN; x++) {
         const elevation = elevations[_getCoordOverscanIndex(x, z)];
-        for (let y = 0; y <= NUM_CELLS_OVERSCAN_Y; y++) {
+        for (let y = 0; y < NUM_CELLS_OVERSCAN_Y; y++) {
           ether[_getEtherIndex(x, y, z)] = Math.max(y - elevation, -1);
         }
       }
@@ -232,13 +232,13 @@ const _generateMapChunk = (ox, oy, opts) => {
     const v = opts.newEther[baseIndex + 3];
     for (let dz = -HOLE_SIZE; dz <= HOLE_SIZE; dz++) {
       const az = z + dz;
-      if (az >= 0 && az < (NUM_CELLS + 2)) {
+      if (az >= 0 && az < (NUM_CELLS + 1)) {
         for (let dy = -HOLE_SIZE; dy <= HOLE_SIZE; dy++) {
           const ay = y + dy;
-          if (ay >= 0 && ay < ((NUM_CELLS * 4) + 2)) {
+          if (ay >= 0 && ay < ((NUM_CELLS * 4) + 1)) {
             for (let dx = -HOLE_SIZE; dx <= HOLE_SIZE; dx++) {
               const ax = x + dx;
-              if (ax >= 0 && ax < (NUM_CELLS + 2)) {
+              if (ax >= 0 && ax < (NUM_CELLS + 1)) {
                 ether[_getEtherIndex(ax, ay, az)] += v * Math.max(HOLE_SIZE - Math.sqrt(dx * dx + dy * dy + dz * dz), 0) / HOLE_SIZE;
               }
             }
@@ -361,8 +361,8 @@ const _generateMapChunk = (ox, oy, opts) => {
   };
 };
 const _getCoordOverscanIndex = (x, y) => x + (y * NUM_CELLS_OVERSCAN);
-const ETHER_INDEX_Y_FACTOR = NUM_CELLS + 2;
-const ETHER_INDEX_Z_FACTOR = ETHER_INDEX_Y_FACTOR * ((NUM_CELLS * 4) + 2);
+const ETHER_INDEX_Y_FACTOR = NUM_CELLS + 1;
+const ETHER_INDEX_Z_FACTOR = ETHER_INDEX_Y_FACTOR * ((NUM_CELLS * 4) + 1);
 const _getEtherIndex = (x, y, z) => x + (y * ETHER_INDEX_Y_FACTOR) + (z * ETHER_INDEX_Z_FACTOR);
 
 const _getBiome = p => {
