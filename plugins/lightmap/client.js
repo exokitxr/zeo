@@ -340,7 +340,6 @@ class Lightmap {
                 lightmap.texture.image.data = zeroUint8Array;
                 lightmap.texture.image.width = 1;
                 lightmap.texture.image.height = 1;
-                lightmap.texture.needsUpdate = true;
               }
 
               removed.lightmap = null;
