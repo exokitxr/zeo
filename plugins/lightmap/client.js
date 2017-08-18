@@ -312,21 +312,17 @@ class Lightmap {
         const _addChunk = chunk => {
           const {x, z, lod} = chunk;
 
-          const lightmap = this._lightmaps[_getLightmapIndex(x, z)];
-          if (lightmap) {
-            lightmap.addRef();
-
-            if (!lightmap.buffer) {
-              lightmap.buffer = this._buffers.alloc();
-            }
-
-            return this.worker.requestUpdate(lightmap)
-              .then(() => {
-                lightmap.removeRef();
-              });
-          } else {
-            return Promise.resolve();
+          let {lightmap} = chunk;
+          if (!lightmap) {
+            lightmap = this.getLightmapAtIndex(x, z);
+            chunk.lightmap = lightmap;
           }
+
+          if (!lightmap.buffer) {
+            lightmap.buffer = this._buffers.alloc();
+          }
+
+          return this.worker.requestUpdate(lightmap);
         };
         for (let i = 0; i < added.length; i++) {
           addedPromises[index++] = _addChunk(added[i]);
@@ -337,9 +333,8 @@ class Lightmap {
         return Promise.all(addedPromises)
           .then(() => {
             for (let i = 0; i < removed.length; i++) {
-              const {x, z} = removed;
-              const lightmap = this._lightmaps[_getLightmapIndex(x, z)];
-              if (lightmap && lightmap.buffer) {
+              const {x, z, lightmap} = removed[i];
+              if (lightmap.buffer) {
                 this._buffers.free(lightmap.buffer);
                 lightmap.buffer = null;
                 lightmap.texture.image.data = zeroUint8Array;
@@ -347,6 +342,9 @@ class Lightmap {
                 lightmap.texture.image.height = 1;
                 lightmap.texture.needsUpdate = true;
               }
+
+              removed.lightmap = null;
+              lightmap.removeRef();
             }
           });
       }
