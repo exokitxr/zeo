@@ -27,7 +27,7 @@ class Biolumi {
       }
     };
 
-    const _requestImg = src => new Promise((accept, reject) => {
+    const _requestImage = src => new Promise((accept, reject) => {
       const img = new Image();
       img.src = src;
       img.onload = () => {
@@ -37,8 +37,9 @@ class Biolumi {
         reject(err);
       };
     });
-    const _requestTransparentImg = () => _requestImg(transparentImgUrl);
-    const _requestBlackImg = () => _requestImg(blackImgUrl);
+    const _requestImageBitmap = src => _requestImage(src)
+      .then(img => createImageBitmap(img, 0, 0, img.width, img.height));
+    const _requestTransparentImg = () => _requestImageBitmap(transparentImgUrl);
     const _requestUiWorker = () => {
       class UiWorker {
         constructor({frameTime = DEFAULT_FRAME_TIME} = {}) {
@@ -142,7 +143,6 @@ class Biolumi {
         '/core/utils/geometry-utils',
       ]),
       _requestTransparentImg(),
-      _requestBlackImg(),
       _requestUiWorker(),
       _requestUiTimer(),
       rasterize(),
@@ -153,7 +153,6 @@ class Biolumi {
           geometryUtils,
         ],
         transparentImg,
-        blackImg,
         uiWorker,
         uiTimer,
         rasterizer,
@@ -697,7 +696,6 @@ class Biolumi {
           const _getFontWeight = () => fontWeight;
           const _getFontStyle = () => fontStyle;
           const _getTransparentImg = () => transparentImg;
-          const _getBlackImg = () => blackImg;
 
           const transparentMaterial = new THREE.ShaderMaterial({
             vertexShader: transparentShader.vertexShader,
@@ -836,7 +834,6 @@ class Biolumi {
             getFontWeight: _getFontWeight,
             getFontStyle: _getFontStyle,
             getTransparentImg: _getTransparentImg,
-            getBlackImg: _getBlackImg,
 
             getTransparentMaterial: _getTransparentMaterial,
 
@@ -862,7 +859,6 @@ const monospaceFonts = `Consolas, "Liberation Mono", Menlo, Courier, monospace`;
 const fontWeight = 300;
 const fontStyle = 'normal';
 const transparentImgUrl = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
-const blackImgUrl = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1" viewBox="0 0 1 1"><path d="M0 0h1v1H0z"/></svg>';
 
 const _relativeWsUrl = s => {
   const l = window.location;

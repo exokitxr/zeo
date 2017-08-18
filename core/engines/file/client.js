@@ -68,8 +68,7 @@ class FileEngine {
         const fileRenderer = fileRender.makeRenderer({creatureUtils});
 
         const transparentImg = biolumi.getTransparentImg();
-        const blackImg = biolumi.getBlackImg();
-        const transparentMaterial = biolumi.getTransparentMaterial();
+        // const blackImg = biolumi.getBlackImg();
 
         /* const _decorateFile = item => {
           const {id, name, mimeType, instancing, paused, value} = item;
