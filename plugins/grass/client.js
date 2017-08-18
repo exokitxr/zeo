@@ -23,6 +23,10 @@ const GRASS_SHADER = {
       type: 't',
       value: null,
     },
+    useLightMap: {
+      type: 'f',
+      value: 0,
+    },
     d: {
       type: 'v2',
       value: null,
@@ -64,6 +68,7 @@ precision highp int;
 uniform vec3 ambientLightColor;
 uniform sampler2D map;
 uniform sampler2D lightMap;
+uniform float useLightMap;
 uniform vec2 d;
 uniform float sunIntensity;
 
@@ -73,13 +78,18 @@ varying vec2 vUv;
 void main() {
   vec4 diffuseColor = texture2D( map, vUv );
 
-  float u = (
-    floor(clamp(vPosition.x - d.x, 0.0, ${(NUM_CELLS).toFixed(8)})) +
-    (floor(clamp(vPosition.z - d.y, 0.0, ${(NUM_CELLS).toFixed(8)})) * ${(NUM_CELLS + 1).toFixed(8)}) +
-    0.5
-  ) / (${(NUM_CELLS + 1).toFixed(8)} * ${(NUM_CELLS + 1).toFixed(8)});
-  float v = (floor(vPosition.y) + 0.5) / ${NUM_CELLS_HEIGHT.toFixed(8)};
-  vec3 lightColor = texture2D( lightMap, vec2(u, v) ).rgb * 1.0;
+  vec4 lightColor;
+  if (useLightMap > 0.0) {
+    float u = (
+      floor(clamp(vPosition.x - d.x, 0.0, ${(NUM_CELLS).toFixed(8)})) +
+      (floor(clamp(vPosition.z - d.y, 0.0, ${(NUM_CELLS).toFixed(8)})) * ${(NUM_CELLS + 1).toFixed(8)}) +
+      0.5
+    ) / (${(NUM_CELLS + 1).toFixed(8)} * ${(NUM_CELLS + 1).toFixed(8)});
+    float v = (floor(vPosition.y) + 0.5) / ${NUM_CELLS_HEIGHT.toFixed(8)};
+    lightColor = texture2D( lightMap, vec2(u, v) );
+  } else {
+    lightColor = vec4(0.5, 0.5, 0.5, 0.1);
+  }
 
 #ifdef ALPHATEST
 	if ( diffuseColor.a < ALPHATEST ) discard;
@@ -229,11 +239,14 @@ class Grass {
           const _bindLightmap = grassChunkMesh => {
             const lightmap = lightmapper.getLightmapAt(grassChunkMesh.offset.x * NUM_CELLS, grassChunkMesh.offset.y * NUM_CELLS);
             grassChunkMesh.material.uniforms.lightMap.value = lightmap.texture;
+            grassChunkMesh.material.uniforms.useLightMap.value = 1;
             grassChunkMesh.lightmap = lightmap;
           };
           const _unbindLightmap = grassChunkMesh => {
             const {lightmap} = grassChunkMesh;
             lightmapper.releaseLightmap(lightmap);
+            grassChunkMesh.material.uniforms.lightMap.value = null;
+            grassChunkMesh.material.uniforms.useLightMap.value = 0;
             grassChunkMesh.lightmap = null;
           };
           const elementListener = elements.makeListener(LIGHTMAP_PLUGIN);
@@ -247,7 +260,7 @@ class Grass {
           const _requestGrassGenerate = (x, y) => worker.requestGenerate(x, y)
             .then(grassChunkBuffer => protocolUtils.parseGrassGeometry(grassChunkBuffer));
 
-          const _makeGrassChunkMesh = (grassChunkData, x, z) => {
+          const _makeGrassChunkMesh = (chunk, grassChunkData, x, z) => {
             const mesh = (() => {
               const {positions, uvs, indices, boundingSphere} = grassChunkData;
 
@@ -285,7 +298,7 @@ class Grass {
 
               mesh.offset = new THREE.Vector2(x, z);
               mesh.lightmap = null;
-              if (lightmapper) {
+              if (lightmapper && chunk.lod === 1) {
                 _bindLightmap(mesh);
               }
 
@@ -315,21 +328,35 @@ class Grass {
           const _requestRefreshGrassChunks = () => {
             const {hmd} = pose.getStatus();
             const {worldPosition: hmdPosition} = hmd;
-            const {added, removed} = chunker.update(hmdPosition.x, hmdPosition.z);
+            const {added, removed, relodded} = chunker.update(hmdPosition.x, hmdPosition.z);
 
-            const addedPromises = added.map(chunk => {
+            const addedPromises = Array(added.length);
+            let index = 0;
+            for (let i = 0; i < added.length; i++) {
+              const chunk = added[i];
               const {x, z} = chunk;
 
-              return _requestGrassGenerate(x, z)
+              const promise = _requestGrassGenerate(x, z)
                 .then(grassChunkData => {
-                  const grassChunkMesh = _makeGrassChunkMesh(grassChunkData, x, z);
+                  const grassChunkMesh = _makeGrassChunkMesh(chunk, grassChunkData, x, z);
                   stage.add('main', grassChunkMesh);
 
                   grassChunkMeshes.push(grassChunkMesh);
 
                   chunk.data = grassChunkMesh;
                 });
-            });
+              addedPromises[index++] = promise;
+            }
+            for (let i = 0; i < relodded.length; i++) {
+              const chunk = relodded[i];
+              const {lod, data: grassChunkMesh} = chunk;
+
+              if (!grassChunkMesh.lightmap && lod === 1) {
+                _bindLightmap(grassChunkMesh);
+              } else if (grassChunkMesh.lightmap && lod !== 1) {
+                _unbindLightmap(grassChunkMesh);
+              }
+            }
             return Promise.all(addedPromises)
               .then(() => {
                 for (let i = 0; i < removed.length; i++) {
