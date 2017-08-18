@@ -310,13 +310,13 @@ const _generateMapChunk = (ox, oy, opts) => {
 
     for (let i = 0; i < numPositions; i++) {
       const baseIndex = i * 3;
-      const lx = Math.floor(positions[baseIndex + 0]);
+      const x = positions[baseIndex + 0];
       const y = positions[baseIndex + 1];
-      const lz = Math.floor(positions[baseIndex + 2]);
-      const elevation = heightfield[_getTopHeightfieldIndex(lx, lz)];
-      const dx = (ox * NUM_CELLS) + lx;
-      const dz = (oy * NUM_CELLS) + lz;
-      const moisture = _random.moistureNoise.in2D(dx, dz);
+      const z = positions[baseIndex + 2];
+      const elevation = heightfield[_getTopHeightfieldIndex(Math.floor(x), Math.floor(z))];
+      const ax = (ox * NUM_CELLS) + x;
+      const az = (oy * NUM_CELLS) + z;
+      const moisture = _random.moistureNoise.in2D(ax + 1000, az + 1000);
       const land = elevation > 64;
       const cave = y < elevation - 3;
       const water = !land;
@@ -339,9 +339,8 @@ const _generateMapChunk = (ox, oy, opts) => {
       colors[baseIndex + 1] = colorArray[1];
       colors[baseIndex + 2] = colorArray[2];
 
-      positions[baseIndex + 0] += ox * NUM_CELLS;
-      // positions[baseIndex + 1] += oy * NUM_CELLS;
-      positions[baseIndex + 2] += oy * NUM_CELLS;
+      positions[baseIndex + 0] = ax;
+      positions[baseIndex + 2] = az;
     }
 
     geometry.computeBoundingSphere();
