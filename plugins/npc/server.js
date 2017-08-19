@@ -15,7 +15,7 @@ class Mobs {
   mount() {
     const {_archae: archae} = this;
     const {express, app, ws, wss} = archae.getCore();
-    const {three} = zeo;
+    const {three, utils: {js: {mod}}} = zeo;
     const {THREE} = three;
 
     const animal = animalLib(THREE);
@@ -34,6 +34,7 @@ class Mobs {
         }
       });
     });
+    const _getTrackedChunkIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
 
     return _readdir(path.join(__dirname, 'lib', 'npc', 'img'))
       .then(npcImgFiles => npcImgFiles.map(npcImgFile => npcImgFile.replace(/\.png$/, '')))
@@ -292,7 +293,7 @@ class Mobs {
 
                 if (method === 'addChunk') {
                   const [ox, oz] = args;
-                  const index = ox + ':' + oz;
+                  const index = _getTrackedChunkIndex(ox, oz);
                   let trackedChunk = trackedChunks[index];
                   if (!trackedChunk) {
                     trackedChunk = new TrackedChunk(ox, oz);
@@ -399,11 +400,13 @@ class Mobs {
                 } else if (method === 'removeChunk') {
                   const [ox, oz] = args;
 
-                  const index = ox + ':' + oz;
+                  const index = _getTrackedChunkIndex(ox, oz);
                   const trackedChunk = localTrackedChunks[index];
-                  trackedChunk[localCleanupSymbol]();
-                  delete localTrackedChunks[index];
-                  trackedChunk.removeRef();
+                  if (trackedChunk) {
+                    trackedChunk[localCleanupSymbol]();
+                    delete localTrackedChunks[index];
+                    trackedChunk.removeRef();
+                  }
                 } else if (method === 'attackMob') {
                   const [id, position, direction, damage] = args;
 
