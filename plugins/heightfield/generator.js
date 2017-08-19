@@ -17,6 +17,35 @@ const {
 } = require('./lib/constants/constants');
 const NUM_CELLS_OVERSCAN_Y = (NUM_CELLS * 4) + OVERSCAN;
 const HOLE_SIZE = 2;
+const PEEK_FACES = [
+  'FRONT',
+  'BACK',
+  'LEFT',
+  'RIGHT',
+  'TOP',
+  'BOTTOM',
+];
+const PEEK_FACE_INDICES = (() => {
+  let peekIndex = 0;
+  const result = {};
+  for (let i = 0; i < PEEK_FACES.length; i++) {
+    for (let j = 0; j < PEEK_FACES.length; j++) {
+      if (i !== j) {
+        const a = PEEK_FACES[i];
+        const b = PEEK_FACES[j];
+        let entry = result[a];
+        if (!entry) {
+          entry = {};
+          result[a] = entry;
+        }
+        const otherEntry = result[b];
+        const otherEntryValue = otherEntry && otherEntry[a];
+        entry[b] = otherEntryValue !== undefined ? otherEntryValue : peekIndex++;
+      }
+    }
+  }
+  return result;
+})();
 
 const _makeGeometries = ether => {
   const geometries = Array(4);
@@ -249,6 +278,86 @@ const _generateMapChunk = (ox, oy, opts) => {
   }
 
   // compile
+
+  const peeks = Array(4);
+  for (let i = 0; i < 4; i++) {
+    const peek = new Uint8Array(15);
+    const seenPeeks = new Uint8Array((NUM_CELLS + 1) * ((NUM_CELLS * 4) + 1) * (NUM_CELLS + 1));
+    const minY = i * NUM_CELLS;
+    const maxY = (i + 1) * NUM_CELLS;
+
+    const _getEndPeekFace = (x, y, z, startFace) => {
+      if (z === 0 && startFace !== 'BACK') {
+        return 'BACK';
+      } else if (z === NUM_CELLS && startFace !== 'FRONT') {
+        return 'FRONT';
+      } else if (x === 0 && startFace !== 'LEFT') {
+        return 'LEFT';
+      } else if (x === NUM_CELLS && startFace !== 'RIGHT') {
+        return 'RIGHT';
+      } else if (y === 0 && startFace !== 'TOP') {
+        return 'TOP';
+      } else if (y === NUM_CELLS && startFace !== 'BOTTOM') {
+        return 'BOTTOM';
+      } else {
+        return null;
+      }
+    };
+    const _floodFill = (x, y, z, startFace) => {
+      const index = _getEtherIndex(x, y, z);
+      if (!seenPeeks[index]) {
+        seenPeeks[index] = true;
+
+        if (ether[index] >= 0) { // empty
+          const endFace = _getEndPeekFace(x, y, z, startFace);
+          if (endFace !== null) {
+            peek[PEEK_FACE_INDICES[startFace][endFace]] = 1;
+          }
+
+          for (let dx = -1; dx <= 1; dx++) {
+            const ax = x + dx;
+            if (ax >= 0 && ax <= NUM_CELLS) {
+              for (let dz = -1; dz <= 1; dz++) {
+                const az = z + dz;
+                if (az >= 0 && az <= NUM_CELLS) {
+                  for (let dy = -1; dy <= 1; dy++) {
+                    const ay = y + dy;
+                    if (ay >= minY && az <= maxY) {
+                      _floodFill(ax, ay, ax, startFace);
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    };
+
+    // front/back
+    for (let x = 0; x <= NUM_CELLS; x++) {
+      for (let y = minY; y <= maxY; y++) {
+        _floodFill(x, y, NUM_CELLS, 'FRONT');
+        _floodFill(x, y, 0, 'BACK');
+      }
+    }
+    // left/right
+    for (let z = 0; z <= NUM_CELLS; z++) {
+      for (let y = minY; y <= maxY; y++) {
+        _floodFill(0, y, z, 'LEFT');
+        _floodFill(NUM_CELLS, y, z, 'RIGHT');
+      }
+    }
+    // top/bottom
+    for (let x = 0; x <= NUM_CELLS; x++) {
+      for (let z = 0; z <= NUM_CELLS; z++) {
+        _floodFill(x, maxY, z, 'TOP');
+        _floodFill(x, minY, z, 'BOTTOM');
+      }
+    }
+
+    peeks[i] = peek;
+  }
 
   const geometries = _makeGeometries(ether);
 
