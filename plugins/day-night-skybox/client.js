@@ -86,7 +86,7 @@ class DayNightSkybox {
             const now = Date.now();
             const timeDiff = now - lastLightmapUpdateTime;
 
-            if (timeDiff > 1000) {
+            if (timeDiff > 100) {
               const lightmapEntity = elements.getEntitiesElement().querySelector(LIGHTMAP_PLUGIN);
               if (lightmapEntity && lightmapEntity.lightmapper) {
                 const shapes = lightmapEntity.lightmapper.getShapes();
