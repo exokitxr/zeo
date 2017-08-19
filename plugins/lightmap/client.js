@@ -29,6 +29,46 @@ class Lightmap {
         return lightmaps;
       }
     }
+    class Heightfield {
+      constructor(x, z, data, blend = Lightmapper.AddBlend) {
+        this.type = 'heightfield';
+
+        this.id = idCount++;
+        this.x = Math.floor(x);
+        this.z = Math.floor(z);
+        this.data = data;
+        this.blend = blend;
+      }
+
+      getLightmapsInRange(width, depth, lightmaps) {
+        const {x, z} = this;
+        const ox = Math.floor(x / width);
+        const oz = Math.floor(z / depth);
+
+        const lightmap = lightmaps[_getLightmapIndex(ox, oz)];
+        return lightmap ? [lightmap] : [];
+      }
+    }
+    class Ether {
+      constructor(x, z, data, blend = Lightmapper.AddBlend) {
+        this.type = 'ether';
+
+        this.id = idCount++;
+        this.x = Math.floor(x);
+        this.z = Math.floor(z);
+        this.data = data;
+        this.blend = blend;
+      }
+
+      getLightmapsInRange(width, depth, lightmaps) {
+        const {x, z} = this;
+        const ox = Math.floor(x / width);
+        const oz = Math.floor(z / depth);
+
+        const lightmap = lightmaps[_getLightmapIndex(ox, oz)];
+        return lightmap ? [lightmap] : [];
+      }
+    }
     class Sphere {
       constructor(x, y, z, r, v, blend = Lightmapper.AddBlend) {
         this.type = 'sphere';
@@ -107,12 +147,8 @@ class Lightmap {
         const ox = Math.floor(x / width);
         const oz = Math.floor(z / depth);
 
-        const lightmap = lightmaps.find(lightmap => lightmap.x === ox && lightmap.z === oz);
-        if (lightmap) {
-          return [lightmap];
-        } else {
-          return [];
-        }
+        const lightmap = lightmaps[_getLightmapIndex(ox, oz)];
+        return lightmap ? [lightmap] : [];
       }
     }
 
@@ -349,6 +385,8 @@ class Lightmap {
       }
     };
     Lightmapper.Ambient = Ambient;
+    Lightmapper.Heightfield = Heightfield;
+    Lightmapper.Ether = Ether;
     Lightmapper.Sphere = Sphere;
     Lightmapper.Cylinder = Cylinder;
     Lightmapper.Voxel = Voxel;

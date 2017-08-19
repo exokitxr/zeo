@@ -38,6 +38,42 @@ class Ambient {
     ];
   }
 }
+class Heightfield {
+  constructor({data, blend}) {
+    this.type = 'heightfield';
+
+    this.data = data;
+    this.blend = BLENDS[blend];
+  }
+
+  getRange() {
+    const {x, z} = this;
+    return [
+      x,
+      z,
+      x + NUM_CELLS,
+      z + NUM_CELLS,
+    ];
+  }
+}
+class Ether {
+  constructor({data, blend}) {
+    this.type = 'ether';
+
+    this.data = data;
+    this.blend = BLENDS[blend];
+  }
+
+  getRange() {
+    const {x, z} = this;
+    return [
+      x,
+      z,
+      x + NUM_CELLS,
+      z + NUM_CELLS,
+    ];
+  }
+}
 class Sphere {
   constructor({id, x, y, z, r, v, blend}) {
     this.type = 'sphere';
@@ -110,6 +146,8 @@ class Voxel {
 
 const SHAPES = {
   'ambient': Ambient,
+  'heightfield': Heightfield,
+  'ether': Ether,
   'sphere': Sphere,
   'cylinder': Cylinder,
   'voxel': Voxel,
@@ -135,6 +173,29 @@ const _getUpdate = (ox, oz, buffer) => {
       const {type} = shape;
 
       switch (type) {
+        case 'heightfield': {
+          const {x, z, data, blend} = shape;
+
+          if (x === (ox * width) && z === (oz * depth)) {
+            for (let dz = 0; dz < NUM_CELLS; dz++) {
+              for (let dx = 0; dx < NUM_CELLS; dx++) {
+                const elevation = data[dx + dz * (NUM_CELLS + 1)];
+
+                for (let dy = NUM_CELLS - 1; dy >= (elevation - 10); dy++) {
+                  const lightmapIndex = lx + (lz * width1) + (ly * width1depth1);
+                  array[lightmapIndex] = blend(array[lightmapIndex], Math.min(Math.max((y - (elevation - 10)) / 10, 0), 1) * 0.5 * 255);
+                }
+              }
+            }
+          }
+
+          break;
+        }
+        case 'ether': {
+          // XXX
+
+          break;
+        }
         case 'sphere': {
           const {x, y, z, r, v, blend} = shape;
           const ax = x - (ox * width);
@@ -221,7 +282,7 @@ const _getUpdate = (ox, oz, buffer) => {
   // add/sub
   for (let i = 0; i < shapes.length; i++) {
     const shape = shapes[i];
-    if (shape.blend !== BLENDS.add) {
+    if (shape.blend !== BLENDS.max) {
       _renderShape(shape);
     }
   }
