@@ -1,5 +1,8 @@
 const SkyShader = require('./lib/three-extra/SkyShader');
 
+const LIGHTMAP_PLUGIN = 'plugins-lightmap';
+const DAY_NIGHT_SPEED = 20;
+
 class DayNightSkybox {
   mount() {
     const {three, elements, render, world} = zeo;
@@ -60,27 +63,48 @@ class DayNightSkybox {
           return Math.max(0, 1 - Math.pow(Math.E, -((cutoffAngle - Math.acos(zenithAngleCos))/steepness)));
         };
         const maxSunIntensity = computeSunIntensity(1);
+        let lastLightmapUpdateTime = 0;
         const update = () => {
-          const {sky} = mesh;
+          const _updateSunIntensity = () => {
+            mesh.sky.azimuth = (0.05 + ((world.getWorldTime() / 1000) * DAY_NIGHT_SPEED) / (60 * 10)) % 1;
+            const theta = Math.PI * (mesh.sky.inclination - 0.5);
+            const phi = 2 * Math.PI * (mesh.sky.azimuth - 0.5);
 
-          const worldTime = world.getWorldTime() + 10;
+            const x = sunDistance * Math.cos(phi);
+            const y = sunDistance * Math.sin(phi) * Math.sin(theta);
+            const z = sunDistance * Math.sin(phi) * Math.cos(theta);
 
-          const speed = 20;
-          sky.azimuth = (0.05 + ((worldTime / 1000) * speed) / (60 * 10)) % 1;
-          const theta = Math.PI * (sky.inclination - 0.5);
-          const phi = 2 * Math.PI * (sky.azimuth - 0.5);
+            mesh.sky.uniforms.sunPosition.value.set(x, y, z);
 
-          const x = sunDistance * Math.cos(phi);
-          const y = sunDistance * Math.sin(phi) * Math.sin(theta);
-          const z = sunDistance * Math.sin(phi) * Math.cos(theta);
+            sunIntensity = computeSunIntensity(
+              localVector.copy(mesh.sky.uniforms.sunPosition.value)
+                .normalize()
+                .dot(upVector)
+            ) / maxSunIntensity;
+          };
+          const _updateLightmap = () => {
+            const now = Date.now();
+            const timeDiff = now - lastLightmapUpdateTime;
 
-          sky.uniforms.sunPosition.value.set(x, y, z);
+            if (timeDiff > 1000) {
+              const lightmapEntity = elements.getEntitiesElement().querySelector(LIGHTMAP_PLUGIN);
+              if (lightmapEntity && lightmapEntity.lightmapper) {
+                const shapes = lightmapEntity.lightmapper.getShapes();
+                for (let i = 0; i < shapes.length; i++) {
+                  const shape = shapes[i];
+                  if (shape.type === 'heightfield') {
+                    shape.set({
+                      v: sunIntensity,
+                    });
+                  }
+                }
+              }
+              lastLightmapUpdateTime = now;
+            }
+          };
 
-          sunIntensity = computeSunIntensity(
-            localVector.copy(sky.uniforms.sunPosition.value)
-              .normalize()
-              .dot(upVector)
-          ) / maxSunIntensity;
+          _updateSunIntensity();
+          _updateLightmap();
         };
         updates.push(update);
 
