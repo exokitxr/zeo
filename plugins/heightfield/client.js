@@ -91,7 +91,7 @@ varying vec3 vViewPosition;
 void main() {
 	vec3 diffuseColor = vColor;
 
-  vec4 lightColor;
+  vec3 lightColor;
   if (useLightMap > 0.0) {
     float u = (
       floor(clamp(vPosition.x - d.x, 0.0, ${(NUM_CELLS).toFixed(8)})) +
@@ -99,9 +99,9 @@ void main() {
       0.5
     ) / (${(NUM_CELLS + 1).toFixed(8)} * ${(NUM_CELLS + 1).toFixed(8)});
     float v = (floor(vPosition.y) + 0.5) / ${NUM_CELLS_HEIGHT.toFixed(8)};
-    lightColor = texture2D( lightMap, vec2(u, v) );
+    lightColor = texture2D( lightMap, vec2(u, v) ).rgb;
   } else {
-    lightColor = vec4(0.5, 0.5, 0.5, 0.1);
+    lightColor = vec3(sunIntensity);
   }
 
   vec3 fdx = vec3( dFdx( vViewPosition.x ), dFdx( vViewPosition.y ), dFdx( vViewPosition.z ) );
@@ -109,14 +109,7 @@ void main() {
   vec3 normal = normalize( cross( fdx, fdy ) );
   float dotNL = saturate( dot( normal, normalize(vViewPosition)) );
   vec3 irradiance = ambientLightColor + (dotNL * 1.5);
-  vec3 outgoingLight = diffuseColor *
-    (
-      (irradiance * (0.1 + sunIntensity * 0.9)) +
-      (
-        min((lightColor.rgb - 0.5) * 2.0, 0.0) * sunIntensity +
-        max((lightColor.rgb - 0.5) * 2.0, 0.0) * (1.0 - sunIntensity)
-      )
-    );
+  vec3 outgoingLight = diffuseColor * irradiance * (0.1 + lightColor * 0.9);
 
 	gl_FragColor = vec4( outgoingLight, 1.0 );
 }
@@ -240,8 +233,10 @@ class Heightfield {
       }
     };
 
+    let Lightmapper = null;
     let lightmapper = null;
     const _bindLightmapper = lightmapElement => {
+      Lightmapper = lightmapElement.Lightmapper;
       lightmapper = lightmapElement.lightmapper;
 
       _bindLightmaps();
@@ -249,6 +244,7 @@ class Heightfield {
     const _unbindLightmapper = () => {
       _unbindLightmaps();
 
+      Lightmapper = null;
       lightmapper = null;
     };
     const _bindLightmaps = () => {
@@ -268,14 +264,28 @@ class Heightfield {
       }
     };
     const _bindLightmap = trackedMapChunkMeshes => {
-      const {offset} = trackedMapChunkMeshes;
+      const {offset, staticHeightfield/*, ether*/} = trackedMapChunkMeshes;
       const {x, y} = offset;
+
+      /* const shape = new Lightmapper.Ether(x * NUM_CELLS, y * NUM_CELLS, ether, Lightmapper.MaxBlend);
+      lightmapper.add(shape);
+      trackedMapChunkMeshes.shape = shape; */
+
+      const dayNightSkyboxEntity = elements.getEntitiesElement().querySelector(DAY_NIGHT_SKYBOX_PLUGIN);
+      const sunIntensity = (dayNightSkyboxEntity && dayNightSkyboxEntity.getSunIntensity) ? dayNightSkyboxEntity.getSunIntensity() : 0;
+      const shape = new Lightmapper.Heightfield(x * NUM_CELLS, y * NUM_CELLS, sunIntensity, staticHeightfield, Lightmapper.MaxBlend);
+      lightmapper.add(shape);
+      trackedMapChunkMeshes.shape = shape;
+
       const lightmap = lightmapper.getLightmapAt(x * NUM_CELLS, y * NUM_CELLS);
       trackedMapChunkMeshes.material.uniforms.lightMap.value = lightmap.texture;
       trackedMapChunkMeshes.material.uniforms.useLightMap.value = 1;
       trackedMapChunkMeshes.lightmap = lightmap;
     };
     const _unbindLightmap = trackedMapChunkMeshes => {
+      lightmapper.remove(trackedMapChunkMeshes.shape);
+      trackedMapChunkMeshes.shape = null;
+
       lightmapper.releaseLightmap(trackedMapChunkMeshes.lightmap);
       trackedMapChunkMeshes.lightmap = null;
       trackedMapChunkMeshes.material.uniforms.lightMap.value = null;
@@ -293,7 +303,8 @@ class Heightfield {
       .then(originHeight => {
         world.setSpawnMatrix(new THREE.Matrix4().makeTranslation(0, originHeight, 0));
       });
-    const _makeMapChunkMeshes = (chunk, mapChunkData, x, z) => {
+    const _makeMapChunkMeshes = (chunk, mapChunkData) => {
+      const {x, z} = chunk;
       const {geometries, heightfield, staticHeightfield} = mapChunkData;
 
       const uniforms = Object.assign(
@@ -345,6 +356,7 @@ class Heightfield {
       meshes.heightfield = heightfield;
       meshes.staticHeightfield = staticHeightfield;
       meshes.lightmap = null;
+      meshes.shape = null;
       meshes.stckBody = null;
       if (lightmapper && chunk.lod === 1) {
         _bindLightmap(meshes);
@@ -367,6 +379,7 @@ class Heightfield {
       const _addTarget = trackedMapChunkMeshes => {
         const {offset} = trackedMapChunkMeshes;
         const {x, z} = offset;
+
         const stckBody = stck.makeStaticHeightfieldBody(
           new THREE.Vector3(x * NUM_CELLS, 0, z * NUM_CELLS),
           NUM_CELLS,
@@ -379,6 +392,7 @@ class Heightfield {
       };
       const _removeTarget = trackedMapChunkMeshes => {
         stck.destroyBody(trackedMapChunkMeshes.stckBody);
+        trackedMapChunkMeshes.stckBody = null;
 
         trackedMapChunkMeshes.targeted = false;
       };
@@ -407,7 +421,7 @@ class Heightfield {
               mapChunkMeshes[index] = null;
             }
 
-            const newMapChunkMeshes = _makeMapChunkMeshes(chunk, mapChunkData, x, z);
+            const newMapChunkMeshes = _makeMapChunkMeshes(chunk, mapChunkData);
             for (let i = 0; i < newMapChunkMeshes.length; i++) {
               const newMapChunkMesh = newMapChunkMeshes[i];
               scene.add(newMapChunkMesh);
