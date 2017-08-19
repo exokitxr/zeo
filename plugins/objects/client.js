@@ -37,6 +37,10 @@ class Objects {
           type: 't',
           value: null,
         },
+        useLightMap: {
+          type: 'f',
+          value: 0,
+        },
         d: {
           type: 'v2',
           value: new THREE.Vector2(),
@@ -83,6 +87,7 @@ precision highp int;
 uniform vec3 ambientLightColor;
 uniform sampler2D map;
 uniform sampler2D lightMap;
+uniform float useLightMap;
 uniform vec2 d;
 uniform float selectedObject;
 uniform float sunIntensity;
@@ -106,27 +111,28 @@ void main() {
   }
   vec4 diffuseColor = texture2D( map, uv2 );
 
-  if (abs(selectedObject - vObjectIndex) < 0.5) {
-    diffuseColor.rgb = mix(diffuseColor.rgb, blueColor, 0.5);
-  }
-
-  float u = (
-    floor(clamp(vPosition.x - d.x, 0.0, ${(NUM_CELLS).toFixed(8)})) +
-    (floor(clamp(vPosition.z - d.y, 0.0, ${(NUM_CELLS).toFixed(8)})) * ${(NUM_CELLS + 1).toFixed(8)}) +
-    0.5
-  ) / (${(NUM_CELLS + 1).toFixed(8)} * ${(NUM_CELLS + 1).toFixed(8)});
-  float v = (floor(vPosition.y) + 0.5) / ${NUM_CELLS_HEIGHT.toFixed(8)};
-  vec3 lightColor = texture2D( lightMap, vec2(u, v) ).rgb * 1.0;
-
 #ifdef ALPHATEST
   if ( diffuseColor.a < ALPHATEST ) discard;
 #endif
 
-  vec3 outgoingLight = (ambientLightColor * 0.2 + diffuseColor.rgb) * (0.1 + sunIntensity * 0.9) +
-    diffuseColor.rgb * (
-      min((lightColor.rgb - 0.5) * 2.0, 0.0) * sunIntensity +
-      max((lightColor.rgb - 0.5) * 2.0, 0.0) * (1.0 - sunIntensity)
-    );
+  if (abs(selectedObject - vObjectIndex) < 0.5) {
+    diffuseColor.rgb = mix(diffuseColor.rgb, blueColor, 0.5);
+  }
+
+  vec3 lightColor;
+  if (useLightMap > 0.0) {
+    float u = (
+      floor(clamp(vPosition.x - d.x, 0.0, ${(NUM_CELLS).toFixed(8)})) +
+      (floor(clamp(vPosition.z - d.y, 0.0, ${(NUM_CELLS).toFixed(8)})) * ${(NUM_CELLS + 1).toFixed(8)}) +
+      0.5
+    ) / (${(NUM_CELLS + 1).toFixed(8)} * ${(NUM_CELLS + 1).toFixed(8)});
+    float v = (floor(vPosition.y) + 0.5) / ${NUM_CELLS_HEIGHT.toFixed(8)};
+    lightColor = texture2D( lightMap, vec2(u, v) ).rgb;
+  } else {
+    lightColor = vec3(sunIntensity);
+  }
+
+  vec3 outgoingLight = diffuseColor.rgb * (0.1 + lightColor * 0.9);
 
   gl_FragColor = vec4(outgoingLight, diffuseColor.a);
 }
@@ -401,8 +407,10 @@ void main() {
 
     const _requestObjectsGenerate = (x, z) => worker.requestGenerate(x, z)
       .then(objectsChunkBuffer => protocolUtils.parseGeometry(objectsChunkBuffer));
-    const _makeObjectsChunkMesh = (objectsChunkData, x, z) => {
+    const _makeObjectsChunkMesh = (chunk, objectsChunkData) => {
       const mesh = (() => {
+        const {x, z} = chunk;
+
         const geometry = (() => {
           const {positions, uvs, frames, objectIndices, indices, boundingSphere} = objectsChunkData;
           const geometry = new THREE.BufferGeometry();
@@ -428,6 +436,7 @@ void main() {
           return function() {
             mesh.material.uniforms.d.value.copy(mesh.uniforms.d.value);
             mesh.material.uniforms.lightMap.value = mesh.uniforms.lightMap.value;
+            mesh.material.uniforms.useLightMap.value = mesh.uniforms.useLightMap.value;
             mesh.material.uniforms.selectedObject.value = mesh.uniforms.selectedObject.value;
 
             onBeforeRender.apply(this, arguments);
@@ -436,7 +445,7 @@ void main() {
         mesh.offset = new THREE.Vector2(x, z);
         mesh.lightmap = null;
 
-        if (lightmapper) {
+        if (lightmapper && chunk.lod === 1) {
           _bindLightmap(mesh);
         }
 
@@ -561,12 +570,14 @@ void main() {
       const {x, y} = offset;
       const lightmap = lightmapper.getLightmapAt(x * NUM_CELLS, y * NUM_CELLS);
       objectChunkMesh.uniforms.lightMap.value = lightmap.texture;
+      objectChunkMesh.uniforms.useLightMap.value = 1;
       objectChunkMesh.lightmap = lightmap;
     };
     const _unbindLightmap = objectChunkMesh => {
       const {lightmap} = objectChunkMesh;
       lightmapper.releaseLightmap(lightmap);
       objectChunkMesh.uniforms.lightMap.value = null;
+      objectChunkMesh.uniforms.useLightMap.value = 0;
       objectChunkMesh.lightmap = null;
     };
     const lightmapElementListener = elements.makeListener(LIGHTMAP_PLUGIN);
@@ -782,24 +793,21 @@ void main() {
           .then(objectsChunkData => {
             const index = _getChunkIndex(x, z);
 
-            const {data: oldData} = chunk;
-            if (oldData) {
-              const {objectsChunkMesh} = oldData;
-              scene.remove(objectsChunkMesh);
+            const {data: oldObjectsChunkMesh} = chunk;
+            if (oldObjectsChunkMesh) {
+              scene.remove(oldObjectsChunkMesh);
+
+              oldObjectsChunkMesh.destroy();
 
               objectsChunkMeshes[index] = null;
-
-              objectsChunkMesh.destroy();
             }
 
-            const objectsChunkMesh = _makeObjectsChunkMesh(objectsChunkData, x, z);
+            const objectsChunkMesh = _makeObjectsChunkMesh(chunk, objectsChunkData);
             scene.add(objectsChunkMesh);
 
             objectsChunkMeshes[index] = objectsChunkMesh;
 
-            chunk.data = {
-              objectsChunkMesh,
-            };
+            chunk.data = objectsChunkMesh;
           });
         promises.push(promise);
       };
@@ -807,7 +815,20 @@ void main() {
         _addChunk(added[i]);
       }
       for (let i = 0; i < relodded.length; i++) {
-        _addChunk(relodded[i]);
+        const chunk = relodded[i];
+        const {lastLod} = chunk;
+
+        if (lastLod === -1) {
+          _addChunk(chunk);
+        } else {
+          const {lod, data: objectsChunkMesh} = chunk;
+
+          if (!objectsChunkMesh.lightmap && lod === 1) {
+            _bindLightmap(objectsChunkMesh);
+          } else if (objectsChunkMesh.lightmap && lod !== 1) {
+            _unbindLightmap(objectsChunkMesh);
+          }
+        }
       }
       return Promise.all(promises)
         .then(() => {
@@ -816,13 +837,12 @@ void main() {
             const {x, z} = chunk;
             worker.requestUngenerate(x, z);
 
-            const {data} = chunk;
-            const {objectsChunkMesh} = data;
+            const {data: objectsChunkMesh} = chunk;
             scene.remove(objectsChunkMesh);
 
-            objectsChunkMeshes[_getChunkIndex(x, z)] = null;
-
             objectsChunkMesh.destroy();
+
+            objectsChunkMeshes[_getChunkIndex(x, z)] = null;
           }
         });
     };
