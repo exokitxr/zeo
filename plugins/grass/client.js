@@ -65,7 +65,7 @@ precision highp float;
 precision highp int;
 #define ALPHATEST 0.7
 // uniform mat4 viewMatrix;
-uniform vec3 ambientLightColor;
+// uniform vec3 ambientLightColor;
 uniform sampler2D map;
 uniform sampler2D lightMap;
 uniform float useLightMap;
@@ -78,7 +78,7 @@ varying vec2 vUv;
 void main() {
   vec4 diffuseColor = texture2D( map, vUv );
 
-  vec4 lightColor;
+  vec3 lightColor;
   if (useLightMap > 0.0) {
     float u = (
       floor(clamp(vPosition.x - d.x, 0.0, ${(NUM_CELLS).toFixed(8)})) +
@@ -86,20 +86,16 @@ void main() {
       0.5
     ) / (${(NUM_CELLS + 1).toFixed(8)} * ${(NUM_CELLS + 1).toFixed(8)});
     float v = (floor(vPosition.y) + 0.5) / ${NUM_CELLS_HEIGHT.toFixed(8)};
-    lightColor = texture2D( lightMap, vec2(u, v) );
+    lightColor = texture2D( lightMap, vec2(u, v) ).rgb;
   } else {
-    lightColor = vec4(0.5, 0.5, 0.5, 0.1);
+    lightColor = vec3(sunIntensity);
   }
 
 #ifdef ALPHATEST
 	if ( diffuseColor.a < ALPHATEST ) discard;
 #endif
 
-  vec3 outgoingLight = (ambientLightColor * 0.2 + diffuseColor.rgb) * (0.1 + sunIntensity * 0.9) +
-    diffuseColor.rgb * (
-      min((lightColor.rgb - 0.5) * 2.0, 0.0) * sunIntensity +
-      max((lightColor.rgb - 0.5) * 2.0, 0.0) * (1.0 - sunIntensity)
-    );
+  vec3 outgoingLight = diffuseColor.rgb * (0.1 + lightColor * 0.9);
 
 	gl_FragColor = vec4( outgoingLight, diffuseColor.a );
 }
@@ -233,7 +229,10 @@ class Grass {
           };
           const _unbindLightmaps = () => {
             for (let i = 0; i < grassChunkMeshes.length; i++) {
-              _unbindLightmap(grassChunkMeshes[i]);
+              const grassChunkMesh = grassChunkMeshes[i];
+              if (grassChunkMesh.lightmap) {
+                _unbindLightmap(grassChunkMesh);
+              }
             }
           };
           const _bindLightmap = grassChunkMesh => {
@@ -260,8 +259,9 @@ class Grass {
           const _requestGrassGenerate = (x, y) => worker.requestGenerate(x, y)
             .then(grassChunkBuffer => protocolUtils.parseGrassGeometry(grassChunkBuffer));
 
-          const _makeGrassChunkMesh = (chunk, grassChunkData, x, z) => {
+          const _makeGrassChunkMesh = (chunk, grassChunkData) => {
             const mesh = (() => {
+              const {x, z} = chunk;
               const {positions, uvs, indices, boundingSphere} = grassChunkData;
 
               const geometry = (() => {
@@ -338,7 +338,7 @@ class Grass {
 
               const promise = _requestGrassGenerate(x, z)
                 .then(grassChunkData => {
-                  const grassChunkMesh = _makeGrassChunkMesh(chunk, grassChunkData, x, z);
+                  const grassChunkMesh = _makeGrassChunkMesh(chunk, grassChunkData);
                   stage.add('main', grassChunkMesh);
 
                   grassChunkMeshes.push(grassChunkMesh);
