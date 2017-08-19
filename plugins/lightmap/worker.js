@@ -22,11 +22,18 @@ const BLENDS = {
 };
 
 class Ambient {
-  constructor({v, blend}) {
+  constructor({id, v, blend}) {
     this.type = 'ambient';
 
+    this.id = id;
     this.v = v;
     this.blend = BLENDS[blend];
+  }
+
+  set(spec) {
+    if (spec.v !== undefined) {
+      this.v = spec.v;
+    }
   }
 
   getRange() {
@@ -39,11 +46,30 @@ class Ambient {
   }
 }
 class Heightfield {
-  constructor({data, blend}) {
+  constructor({id, x, z, v, data, blend}) {
     this.type = 'heightfield';
 
+    this.id = id;
+    this.x = x;
+    this.z = z;
+    this.v = v;
     this.data = data;
     this.blend = BLENDS[blend];
+  }
+
+  set(spec) {
+    if (spec.x !== undefined) {
+      this.x = spec.x;
+    }
+    if (spec.z !== undefined) {
+      this.z = spec.z;
+    }
+    if (spec.v !== undefined) {
+      this.v = spec.v;
+    }
+    if (spec.data !== undefined) {
+      this.data = spec.data;
+    }
   }
 
   getRange() {
@@ -57,11 +83,26 @@ class Heightfield {
   }
 }
 class Ether {
-  constructor({data, blend}) {
+  constructor({id, x, z, data, blend}) {
     this.type = 'ether';
 
+    this.id = id;
+    this.x = x;
+    this.z = z;
     this.data = data;
     this.blend = BLENDS[blend];
+  }
+
+  set(spec) {
+    if (spec.x !== undefined) {
+      this.x = spec.x;
+    }
+    if (spec.z !== undefined) {
+      this.z = spec.z;
+    }
+    if (spec.data !== undefined) {
+      this.data = spec.data;
+    }
   }
 
   getRange() {
@@ -85,6 +126,24 @@ class Sphere {
     this.r = Math.floor(r);
     this.v = v;
     this.blend = BLENDS[blend];
+  }
+
+  set(spec) {
+    if (spec.x !== undefined) {
+      this.x = spec.x;
+    }
+    if (spec.y !== undefined) {
+      this.y = spec.y;
+    }
+    if (spec.z !== undefined) {
+      this.z = spec.z;
+    }
+    if (spec.r !== undefined) {
+      this.r = spec.r;
+    }
+    if (spec.v !== undefined) {
+      this.v = spec.v;
+    }
   }
 
   getRange() {
@@ -111,6 +170,27 @@ class Cylinder {
     this.blend = BLENDS[blend];
   }
 
+  set(spec) {
+    if (spec.x !== undefined) {
+      this.x = spec.x;
+    }
+    if (spec.y !== undefined) {
+      this.y = spec.y;
+    }
+    if (spec.z !== undefined) {
+      this.z = spec.z;
+    }
+    if (spec.h !== undefined) {
+      this.h = spec.h;
+    }
+    if (spec.r !== undefined) {
+      this.r = spec.r;
+    }
+    if (spec.v !== undefined) {
+      this.v = spec.v;
+    }
+  }
+
   getRange() {
     const {x, z, r} = this;
     return [
@@ -131,6 +211,21 @@ class Voxel {
     this.z = Math.floor(z);
     this.v = v;
     this.blend = BLENDS[blend];
+  }
+
+  set(spec) {
+    if (spec.x !== undefined) {
+      this.x = spec.x;
+    }
+    if (spec.y !== undefined) {
+      this.y = spec.y;
+    }
+    if (spec.z !== undefined) {
+      this.z = spec.z;
+    }
+    if (spec.v !== undefined) {
+      this.v = spec.v;
+    }
   }
 
   getRange() {
@@ -174,16 +269,15 @@ const _getUpdate = (ox, oz, buffer) => {
 
       switch (type) {
         case 'heightfield': {
-          const {x, z, data, blend} = shape;
+          const {x, z, v, data, blend} = shape;
 
           if (x === (ox * width) && z === (oz * depth)) {
-            for (let dz = 0; dz < NUM_CELLS; dz++) {
-              for (let dx = 0; dx < NUM_CELLS; dx++) {
+            for (let dz = 0; dz <= NUM_CELLS; dz++) {
+              for (let dx = 0; dx <= NUM_CELLS; dx++) {
                 const elevation = data[dx + dz * (NUM_CELLS + 1)];
-
-                for (let dy = NUM_CELLS - 1; dy >= (elevation - 10); dy++) {
-                  const lightmapIndex = lx + (lz * width1) + (ly * width1depth1);
-                  array[lightmapIndex] = blend(array[lightmapIndex], Math.min(Math.max((y - (elevation - 10)) / 10, 0), 1) * 0.5 * 255);
+                for (let dy = NUM_CELLS_HEIGHT; dy >= (elevation - 8); dy--) {
+                  const lightmapIndex = dx + (dz * width1) + (dy * width1depth1);
+                  array[lightmapIndex] = blend(array[lightmapIndex], Math.min(Math.max((dy - (elevation - 8)) / 8, 0), 1) * v * 255);
                 }
               }
             }
@@ -326,6 +420,11 @@ self.onmessage = e => {
 
     const index = shapes.findIndex(shape => shape.id === id);
     shapes.splice(index, 1);
+  } else if (type === 'setShapeData') {
+    const {id, spec} = data;
+
+    const shape = shapes.find(shape => shape.id === id);
+    shape.set(spec);
   } else if (type === 'removeShapes') {
     const {ids} = data;
 
@@ -338,7 +437,6 @@ self.onmessage = e => {
     const {ox, oz, buffer} = data;
 
     const resultBuffer = _getUpdate(ox, oz, buffer);
-
     postMessage({
       type: 'respondUpdate',
       buffer: resultBuffer,
