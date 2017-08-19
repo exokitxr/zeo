@@ -1018,14 +1018,18 @@ class WebVR {
               if (this.isPresenting) {
                 const _handleGamepad = () => e.event.ctrlKey || e.event.altKey || this.keys.axis; // handled by the fake gamepad
                 const _handleDisplay = () => {
-                  this.rotationOffset.x = Math.max(Math.min(this.rotationOffset.x - e.event.movementY * ROTATION_SPEED, Math.PI / 2), -Math.PI / 2);
-                  this.rotationOffset.y = mod(this.rotationOffset.y - e.event.movementX * ROTATION_SPEED, Math.PI * 2);
+                  if (Math.abs(e.event.movementX) < 300 && Math.abs(e.event.movementY) < 300) { // work around fast movement glitching
+                    this.rotationOffset.x = Math.max(Math.min(this.rotationOffset.x - e.event.movementY * ROTATION_SPEED, Math.PI / 2), -Math.PI / 2);
+                    this.rotationOffset.y = mod(this.rotationOffset.y - e.event.movementX * ROTATION_SPEED, Math.PI * 2);
 
-                  this.poseNeedsUpdate = true;
-                  this.gamepads[0].poseNeedsUpdate = true;
-                  this.gamepads[1].poseNeedsUpdate = true;
+                    this.poseNeedsUpdate = true;
+                    this.gamepads[0].poseNeedsUpdate = true;
+                    this.gamepads[1].poseNeedsUpdate = true;
 
-                  return true;
+                    return true;
+                  } else {
+                    return false;
+                  }
                 };
 
                 _handleGamepad() || _handleDisplay();
