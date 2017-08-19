@@ -334,15 +334,15 @@ const tree = objectApi => {
         Lightmapper = entityElement.Lightmapper;
         lightmapper = entityElement.lightmapper;
 
-        for (let i = 0; i < trees.length; i++) {
-          _bindLightmap(trees[i]);
+        for (const id in trees) {
+          _bindLightmap(trees[id]);
         }
       });
       lightmapElementListener.on('remove', () => {
         Lightmapper = null;
         lightmapper = null;
 
-        for (const index in trees) {
+        for (const id in trees) {
           trees[id].shape = null;
         }
       });
