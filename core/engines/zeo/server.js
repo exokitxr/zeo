@@ -20,6 +20,7 @@ class Zeo {
       '/core/engines/tags',
       '/core/engines/world',
       '/core/engines/fs',
+      '/core/utils/js-utils',
       '/core/utils/hash-utils',
       '/core/utils/random-utils',
     ])
@@ -28,6 +29,7 @@ class Zeo {
         tags,
         world,
         fs,
+        jsUtils,
         hashUtils,
         randomUtils,
       ]) => {
@@ -70,6 +72,7 @@ class Zeo {
 
           class ZeoUtilsApi {
             constructor() {
+              this.js = jsUtils;
               this.hash = hashUtils;
               this.random = randomUtils;
             }

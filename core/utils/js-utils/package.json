@@ -3,6 +3,7 @@
   "description": "Provides js/node utilities for the zeo core.",
   "version": "0.0.1",
   "client": "client.js",
+  "server": "server.js",
   "dependencies": {
     "bffr": "0.0.4",
     "events": "^1.1.1",
