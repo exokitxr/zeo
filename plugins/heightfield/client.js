@@ -161,19 +161,22 @@ class Heightfield {
     const {THREE, scene, camera, renderer} = three;
 
     class PeekFace {
-      constructor(exitFace, enterFace, normal) {
+      constructor(exitFace, enterFace, x, y, z) {
         this.exitFace = exitFace;
         this.enterFace = enterFace;
         this.normal = normal;
+        this.x = x;
+        this.y = y;
+        this.z = z;
       }
     }
     const peekFaceSpecs = [
-      new PeekFace(PEEK_FACES.BACK, PEEK_FACES.FRONT, new THREE.Vector3(0, 0, -1)),
-      new PeekFace(PEEK_FACES.FRONT, PEEK_FACES.BACK, new THREE.Vector3(0, 0, 1)),
-      new PeekFace(PEEK_FACES.LEFT, PEEK_FACES.RIGHT, new THREE.Vector3(-1, 0, 0)),
-      new PeekFace(PEEK_FACES.RIGHT, PEEK_FACES.LEFT, new THREE.Vector3(1, 0, 0)),
-      new PeekFace(PEEK_FACES.TOP, PEEK_FACES.BOTTOM, new THREE.Vector3(0, 1, 0)),
-      new PeekFace(PEEK_FACES.BOTTOM, PEEK_FACES.TOP, new THREE.Vector3(0, -1, 0)),
+      new PeekFace(PEEK_FACES.BACK, PEEK_FACES.FRONT, 0, 0, -1),
+      new PeekFace(PEEK_FACES.FRONT, PEEK_FACES.BACK, 0, 0, 1),
+      new PeekFace(PEEK_FACES.LEFT, PEEK_FACES.RIGHT, -1, 0, 0),
+      new PeekFace(PEEK_FACES.RIGHT, PEEK_FACES.LEFT, 1, 0, 0),
+      new PeekFace(PEEK_FACES.TOP, PEEK_FACES.BOTTOM, 0, 1, 0),
+      new PeekFace(PEEK_FACES.BOTTOM, PEEK_FACES.TOP, 0, -1, 0),
     ];
     const _getChunkIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
 
@@ -775,12 +778,11 @@ class Heightfield {
             const oy = Math.floor(hmdPosition.y / NUM_CELLS);
             const oz = Math.floor(hmdPosition.z / NUM_CELLS);
 
-            const trackedMapChunkMesh = (() => {
-              const trackedMapChunkMeshes = mapChunkMeshes[_getChunkIndex(ox, oz)];
-              return trackedMapChunkMeshes ? trackedMapChunkMeshes[oy] : null;
-            })();
-            if (trackedMapChunkMesh) {
+            const trackedMapChunkMeshes = mapChunkMeshes[_getChunkIndex(ox, oz)];
+            if (trackedMapChunkMeshes) {
               frustum.setFromMatrix(localMatrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
+
+              const trackedMapChunkMesh = trackedMapChunkMeshes[oy];
               cullQueue.push([trackedMapChunkMesh, PEEK_FACES.NULL]);
               while (cullQueue.length > 0) {
                 const [trackedMapChunkMesh, enterFace] = cullQueue.shift();
@@ -789,14 +791,14 @@ class Heightfield {
                 trackedMapChunkMesh.visible = true;
                 for (let j = 0; j < peekFaceSpecs.length; j++) {
                   const peekFaceSpec = peekFaceSpecs[j];
-                  const ay = y + peekFaceSpec.normal.y;
+                  const ay = y + peekFaceSpec.y;
                   if (ay >= 0 && ay < 4) {
-                    const ax = x + peekFaceSpec.normal.x;
-                    const az = z + peekFaceSpec.normal.z;
+                    const ax = x + peekFaceSpec.x;
+                    const az = z + peekFaceSpec.z;
                     if (
-                      (ax - ox) * peekFaceSpec.normal.x > 0 ||
-                      (ay - oy) * peekFaceSpec.normal.y > 0 ||
-                      (az - oz) * peekFaceSpec.normal.z > 0
+                      (ax - ox) * peekFaceSpec.x > 0 ||
+                      (ay - oy) * peekFaceSpec.y > 0 ||
+                      (az - oz) * peekFaceSpec.z > 0
                     ) {
                       if (enterFace === PEEK_FACES.NULL || trackedMapChunkMesh.peeks[PEEK_FACE_INDICES[enterFace][peekFaceSpec.exitFace]] === 1) {
                         const trackedMapChunkMeshes = mapChunkMeshes[_getChunkIndex(ax, az)];
