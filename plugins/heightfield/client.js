@@ -26,25 +26,18 @@ const PEEK_FACES = (() => {
 })();
 const PEEK_FACE_INDICES = (() => {
   let peekIndex = 0;
-  const result = Array(6);
+  const result = new Uint8Array(8 * 8);
+  result.fill(0xFF);
   for (let i = 0; i < 6; i++) {
     for (let j = 0; j < 6; j++) {
       if (i !== j) {
-        let entry = result[i];
-        if (!entry) {
-          entry = new Uint8Array(6);
-          result[i] = entry;
-        }
-        const otherEntry = result[j];
-        const otherEntryValue = otherEntry && otherEntry[i];
-        entry[j] = otherEntryValue !== undefined ? otherEntryValue : peekIndex++;
+        const otherEntry = result[j << 4 | i];
+        result[i << 4 | j] = otherEntry !== 0xFF ? otherEntry : peekIndex++;
       }
     }
   }
   return result;
 })();
-window.PEEK_FACES = PEEK_FACES;
-window.PEEK_FACE_INDICES = PEEK_FACE_INDICES;
 
 const HEIGHTFIELD_SHADER = {
   uniforms: {
@@ -164,7 +157,6 @@ class Heightfield {
       constructor(exitFace, enterFace, x, y, z) {
         this.exitFace = exitFace;
         this.enterFace = enterFace;
-        this.normal = normal;
         this.x = x;
         this.y = y;
         this.z = z;
@@ -800,7 +792,7 @@ class Heightfield {
                       (ay - oy) * peekFaceSpec.y > 0 ||
                       (az - oz) * peekFaceSpec.z > 0
                     ) {
-                      if (enterFace === PEEK_FACES.NULL || trackedMapChunkMesh.peeks[PEEK_FACE_INDICES[enterFace][peekFaceSpec.exitFace]] === 1) {
+                      if (enterFace === PEEK_FACES.NULL || trackedMapChunkMesh.peeks[PEEK_FACE_INDICES[enterFace << 4 | peekFaceSpec.exitFace]] === 1) {
                         const trackedMapChunkMeshes = mapChunkMeshes[_getChunkIndex(ax, az)];
                         if (trackedMapChunkMeshes) {
                           const trackedMapChunkMesh = trackedMapChunkMeshes[ay];
