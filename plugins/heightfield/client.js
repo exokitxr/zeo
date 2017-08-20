@@ -8,7 +8,7 @@ const {
 } = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
 
-const NUM_POSITIONS_CHUNK = 2 * 1024 * 1024;
+const NUM_POSITIONS_CHUNK = 1 * 1024 * 1024;
 const LIGHTMAP_PLUGIN = 'plugins-lightmap';
 const DAY_NIGHT_SKYBOX_PLUGIN = 'plugins-day-night-skybox';
 const NUM_CELLS_HALF = NUM_CELLS / 2;
@@ -384,7 +384,12 @@ class Heightfield {
       });
     const _makeMapChunkMeshes = (chunk, mapChunkData) => {
       const {x, z} = chunk;
-      const {geometries, heightfield, staticHeightfield} = mapChunkData;
+      const {positions, colors, indices, geometries, heightfield, staticHeightfield} = mapChunkData;
+
+      const geometry = new THREE.BufferGeometry();
+      geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+      geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
+      geometry.setIndex(new THREE.BufferAttribute(indices, 1));
 
       const uniforms = Object.assign(
         THREE.UniformsUtils.clone(THREE.UniformsLib.lights),
@@ -402,32 +407,26 @@ class Heightfield {
         },
       });
 
-      const meshes = Array(4);
+      const meshes = new THREE.Mesh(geometry, material);
+      meshes.frustumCulled = false;
+      meshes.updateModelViewMatrix = _updateModelViewMatrix;
+      meshes.updateNormalMatrix = _updateNormalMatrix;
+      meshes.array = Array(4);
       for (let i = 0; i < 4; i++) {
-        const {positions, colors, indices, boundingSphere, peeks} = geometries[i];
-
-        const geometry = new THREE.BufferGeometry();
-        geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
-        geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
-        geometry.setIndex(new THREE.BufferAttribute(indices, 1));
-        geometry.boundingSphere = new THREE.Sphere(
-          new THREE.Vector3().fromArray(boundingSphere, 0),
-          boundingSphere[3]
-        );
-
-        const mesh = new THREE.Mesh(geometry, material);
-        mesh.frustumCulled = false;
-        mesh.updateModelViewMatrix = _updateModelViewMatrix;
-        mesh.updateNormalMatrix = _updateNormalMatrix;
-        mesh.offset = new THREE.Vector3(x, i, z);
-        mesh.peeks = peeks;
-
-        meshes[i] = mesh;
+        const {indexRange, boundingSphere, peeks} = geometries[i];
+        meshes.array[i] = {
+          offset: new THREE.Vector3(x, i, z),
+          indexRange,
+          boundingSphere: new THREE.Sphere(
+            new THREE.Vector3().fromArray(boundingSphere, 0),
+            boundingSphere[3]
+          ),
+          peeks,
+          visibleIndex: -1,
+        };
       }
       meshes.destroy = () => {
-        for (let i = 0; i < 4; i++) {
-          meshes[i].geometry.dispose();
-        }
+        geometry.dispose();
         material.dispose();
 
         buffers.free(mapChunkData.buffer);
@@ -493,10 +492,7 @@ class Heightfield {
             const index = _getChunkIndex(x, z);
             const oldMapChunkMeshes = mapChunkMeshes[index];
             if (oldMapChunkMeshes) {
-              for (let i = 0; i < oldMapChunkMeshes.length; i++) {
-                const oldMapChunkMesh = oldMapChunkMeshes[i];
-                scene.remove(oldMapChunkMesh);
-              }
+              scene.remove(oldMapChunkMeshes);
 
               oldMapChunkMeshes.destroy();
 
@@ -508,10 +504,7 @@ class Heightfield {
             }
 
             const newMapChunkMeshes = _makeMapChunkMeshes(chunk, mapChunkData);
-            for (let i = 0; i < newMapChunkMeshes.length; i++) {
-              const newMapChunkMesh = newMapChunkMeshes[i];
-              scene.add(newMapChunkMesh);
-            }
+            scene.add(newMapChunkMeshes);
             mapChunkMeshes[index] = newMapChunkMeshes;
 
             if (lod === 1 && !newMapChunkMeshes.targeted) {
@@ -794,19 +787,12 @@ class Heightfield {
         const cullQueueFaces = new Uint8Array(256);
         let cullQueueStart = 0;
         let cullQueueEnd = 0;
+        let visibleIndex = 0;
         const _update = () => {
           const _updateCull = () => {
             const {hmd} = pose.getStatus();
-            const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmd;
+            const {worldPosition: hmdPosition} = hmd;
 
-            for (const index in mapChunkMeshes) {
-              const trackedMapChunkMeshes = mapChunkMeshes[index];
-              if (trackedMapChunkMeshes) {
-                for (let i = 0; i < 4; i++) {
-                  trackedMapChunkMeshes[i].visible = false;
-                }
-              }
-            }
             const ox = Math.floor(hmdPosition.x / NUM_CELLS);
             const oy = Math.floor(hmdPosition.y / NUM_CELLS);
             const oz = Math.floor(hmdPosition.z / NUM_CELLS);
@@ -815,7 +801,7 @@ class Heightfield {
             if (trackedMapChunkMeshes) {
               frustum.setFromMatrix(localMatrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
 
-              const trackedMapChunkMesh = trackedMapChunkMeshes[oy];
+              const trackedMapChunkMesh = trackedMapChunkMeshes.array[oy];
               cullQueueMeshes[cullQueueEnd] = trackedMapChunkMesh;
               cullQueueFaces[cullQueueEnd] = PEEK_FACES.NULL;
               cullQueueEnd = (cullQueueEnd + 1) % 256;
@@ -825,7 +811,7 @@ class Heightfield {
                 cullQueueMeshes[cullQueueStart] = null;
                 const enterFace = cullQueueFaces[cullQueueStart];
 
-                trackedMapChunkMesh.visible = true;
+                trackedMapChunkMesh.visibleIndex = visibleIndex;
                 for (let j = 0; j < peekFaceSpecs.length; j++) {
                   const peekFaceSpec = peekFaceSpecs[j];
                   const ay = y + peekFaceSpec.y;
@@ -840,8 +826,8 @@ class Heightfield {
                       if (enterFace === PEEK_FACES.NULL || trackedMapChunkMesh.peeks[PEEK_FACE_INDICES[enterFace << 4 | peekFaceSpec.exitFace]] === 1) {
                         const trackedMapChunkMeshes = mapChunkMeshes[_getChunkIndex(ax, az)];
                         if (trackedMapChunkMeshes) {
-                          const trackedMapChunkMesh = trackedMapChunkMeshes[ay];
-                          if (frustum.intersectsSphere(trackedMapChunkMesh.geometry.boundingSphere)) {
+                          const trackedMapChunkMesh = trackedMapChunkMeshes.array[ay];
+                          if (frustum.intersectsSphere(trackedMapChunkMesh.boundingSphere)) {
                             cullQueueMeshes[cullQueueEnd] = trackedMapChunkMesh;
                             cullQueueFaces[cullQueueEnd] = peekFaceSpec.enterFace;
                             cullQueueEnd = (cullQueueEnd + 1) % 256;
@@ -853,6 +839,42 @@ class Heightfield {
                 }
               }
             }
+
+            for (const index in mapChunkMeshes) {
+              const trackedMapChunkMeshes = mapChunkMeshes[index];
+              if (trackedMapChunkMeshes) {
+                trackedMapChunkMeshes.visible = false;
+                let visible = false;
+                let start = -1;
+                let count = 0;
+                for (let i = 0; i < 4; i++) {
+                  const trackedMapChunkMesh = trackedMapChunkMeshes.array[i];
+                  if (trackedMapChunkMesh.visibleIndex === visibleIndex) {
+                    if (!visible) {
+                      trackedMapChunkMeshes.geometry.groups.length = 0;
+                      visible = true;
+                    }
+
+                    if (start === -1) {
+                      start = trackedMapChunkMesh.indexRange.start;
+                    }
+                    count += trackedMapChunkMesh.indexRange.count;
+                  } else {
+                    if (start !== -1) {
+                      trackedMapChunkMeshes.geometry.addGroup(start, count, 0);
+                      start = -1;
+                      count = 0;
+                    }
+                  }
+                }
+                if (start !== -1) {
+                  trackedMapChunkMeshes.geometry.addGroup(start, count, 0);
+                }
+                trackedMapChunkMeshes.visible = visible;
+              }
+            }
+
+            visibleIndex = (visibleIndex + 1) % 0xFFFFFFFF;
           };
           const _updateSunIntensity = () => {
             const dayNightSkyboxEntity = elements.getEntitiesElement().querySelector(DAY_NIGHT_SKYBOX_PLUGIN);

@@ -6,7 +6,7 @@ const NUM_CELLS_HEIGHT = 128;
 
 const HEIGHTFIELD_DEPTH = 8;
 
-const RANGE = 3;
+const RANGE = 2;
 
 const DEFAULT_SEED = 'a';
 

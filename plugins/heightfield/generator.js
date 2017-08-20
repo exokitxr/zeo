@@ -15,6 +15,7 @@ const {
 
   DEFAULT_SEED,
 } = require('./lib/constants/constants');
+const NUM_POSITIONS_CHUNK = 1 * 1024 * 1024;
 const NUM_CELLS_HALF = NUM_CELLS / 2;
 const NUM_CELLS_CUBE = Math.sqrt(NUM_CELLS_HALF * NUM_CELLS_HALF * 3);
 const NUM_CELLS_OVERSCAN_Y = (NUM_CELLS * 4) + OVERSCAN;
@@ -46,10 +47,23 @@ const PEEK_FACE_INDICES = (() => {
   return result;
 })();
 
+const _copyIndices = (src, dst, startIndexIndex, startAttributeIndex) => {
+  for (let i = 0; i < src.length; i++) {
+    dst[startIndexIndex + i] = src[i] + startAttributeIndex;
+  }
+};
+
 const _makeGeometries = ether => {
+  const positions = new Float32Array(NUM_POSITIONS_CHUNK);
+  // const normals = new Float32Array(NUM_POSITIONS_CHUNK);
+  const colors = new Float32Array(NUM_POSITIONS_CHUNK);
+  const indices = new Uint32Array(NUM_POSITIONS_CHUNK);
+  let attributeIndex = 0;
+  let indexIndex = 0;
+
   const geometries = Array(4);
   for (let i = 0; i < 4; i++) {
-    const {positions, indices} = mrch.marchingCubes(
+    const {positions: newPositions, indices: newIndices} = mrch.marchingCubes(
       [NUM_CELLS + 1, NUM_CELLS + 1, NUM_CELLS + 1],
       (x, y, z) => ether[_getEtherIndex(x, y, z)],
       [
@@ -57,14 +71,40 @@ const _makeGeometries = ether => {
         [NUM_CELLS + 1, (NUM_CELLS * (i + 1)) + 1, NUM_CELLS + 1],
       ]
     );
-    const geometry = new THREE.BufferGeometry();
-    geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
-    geometry.setIndex(new THREE.BufferAttribute(indices, 1));
-    geometry.computeVertexNormals();
+    // const geometry = new THREE.BufferGeometry();
+    // geometry.addAttribute('position', new THREE.BufferAttribute(newPositions, 3));
+    // geometry.computeVertexNormals();
+    // const newNormals = geometry.getAttriubte('normal').array;
 
-    geometries[i] = geometry;
+    positions.set(newPositions, attributeIndex);
+    // normals.set(newNormals, attributeIndex);
+    _copyIndices(newIndices, indices, indexIndex, attributeIndex / 3);
+
+    geometries[i] = {
+      attributeRange: {
+        start: attributeIndex,
+        count: newPositions.length,
+      },
+      indexRange: {
+        start: indexIndex,
+        count: newIndices.length,
+      },
+      boundingSphere: null,
+      peeks: null,
+    };
+
+    attributeIndex += newPositions.length;
+    indexIndex += newIndices.length;
   }
-  return geometries;
+  return {
+    positions,
+    // normals,
+    colors,
+    indices,
+    attributeIndex,
+    indexIndex,
+    geometries,
+  }
 };
 
 const BIOME_COLORS = {
@@ -279,7 +319,15 @@ const _generateMapChunk = (ox, oy, opts) => {
 
   // compile
 
-  const geometries = _makeGeometries(ether);
+  const {
+    positions,
+    // normals,
+    colors,
+    indices,
+    attributeIndex,
+    indexIndex,
+    geometries,
+  } = _makeGeometries(ether);
 
   const heightfield = new Float32Array(NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN * HEIGHTFIELD_DEPTH);
   heightfield.fill(-1024);
@@ -288,16 +336,15 @@ const _generateMapChunk = (ox, oy, opts) => {
 
   for (let i = 0; i < 4; i++) {
     const geometry = geometries[i];
+    const {attributeRange, indexRange} = geometry;
+    const geometryIndices = new Uint32Array(indices.buffer, indices.byteOffset + indexRange.start * 4, indexRange.count);
 
-    const positions = geometry.getAttribute('position').array;
-    const indices = geometry.index.array;
-
-    const numIndices = indices.length / 3;
+    const numIndices = geometryIndices.length / 3;
     for (let i = 0; i < numIndices; i++) {
       const indexIndex = i * 3;
-      localTriangle.a.fromArray(positions, indices[indexIndex + 0] * 3);
-      localTriangle.b.fromArray(positions, indices[indexIndex + 1] * 3);
-      localTriangle.c.fromArray(positions, indices[indexIndex + 2] * 3);
+      localTriangle.a.fromArray(positions, geometryIndices[indexIndex + 0] * 3);
+      localTriangle.b.fromArray(positions, geometryIndices[indexIndex + 1] * 3);
+      localTriangle.c.fromArray(positions, geometryIndices[indexIndex + 2] * 3);
       if (localTriangle.normal(localVector).y > 0) {
         for (let j = 0; j < 3; j++) {
           const point = localTriangle.points[j];
@@ -331,17 +378,16 @@ const _generateMapChunk = (ox, oy, opts) => {
   }
   for (let i = 0; i < 4; i++) {
     const geometry = geometries[i];
+    const {attributeRange, indexRange} = geometry;
+    const geometryPositions = new Float32Array(positions.buffer, positions.byteOffset + attributeRange.start * 4, attributeRange.count);
+    const geometryColors = new Float32Array(colors.buffer, colors.byteOffset + attributeRange.start * 4, attributeRange.count);
 
-    const positions = geometry.getAttribute('position').array;
-    const numPositions = positions.length / 3;
-    const colors = new Float32Array(numPositions * 3);
-    geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
-
+    const numPositions = geometryPositions.length / 3;
     for (let j = 0; j < numPositions; j++) {
       const baseIndex = j * 3;
-      const x = positions[baseIndex + 0];
-      const y = positions[baseIndex + 1];
-      const z = positions[baseIndex + 2];
+      const x = geometryPositions[baseIndex + 0];
+      const y = geometryPositions[baseIndex + 1];
+      const z = geometryPositions[baseIndex + 2];
       const elevation = heightfield[_getTopHeightfieldIndex(Math.floor(x), Math.floor(z))];
       const ax = (ox * NUM_CELLS) + x;
       const az = (oy * NUM_CELLS) + z;
@@ -362,14 +408,13 @@ const _generateMapChunk = (ox, oy, opts) => {
         coast,
         lava,
       });
-      const colorInt = BIOME_COLORS[biome];
-      const colorArray = _colorIntToArray(colorInt);
-      colors[baseIndex + 0] = colorArray[0];
-      colors[baseIndex + 1] = colorArray[1];
-      colors[baseIndex + 2] = colorArray[2];
+      const colorArray = _colorIntToArray(BIOME_COLORS[biome]);
+      geometryColors[baseIndex + 0] = colorArray[0];
+      geometryColors[baseIndex + 1] = colorArray[1];
+      geometryColors[baseIndex + 2] = colorArray[2];
 
-      positions[baseIndex + 0] = ax;
-      positions[baseIndex + 2] = az;
+      geometryPositions[baseIndex + 0] = ax;
+      geometryPositions[baseIndex + 2] = az;
     }
 
     geometry.boundingSphere = new THREE.Sphere(
@@ -486,11 +531,12 @@ const _generateMapChunk = (ox, oy, opts) => {
   }
 
   return {
+    positions: new Float32Array(positions.buffer, positions.byteOffset, attributeIndex),
+    // normals: new Float32Array(normals.buffer, normals.byteOffset, attributeIndex),
+    colors: new Float32Array(colors.buffer, colors.byteOffset, attributeIndex),
+    indices: new Uint32Array(indices.buffer, indices.byteOffset, indexIndex),
     geometries: geometries.map(geometry => ({
-      positions: geometry.getAttribute('position').array,
-      normals: geometry.getAttribute('normal').array,
-      colors: geometry.getAttribute('color').array,
-      indices: geometry.index.array,
+      indexRange: geometry.indexRange,
       boundingSphere: Float32Array.from(geometry.boundingSphere.center.toArray().concat([geometry.boundingSphere.radius])),
       peeks: geometry.peeks,
     })),
