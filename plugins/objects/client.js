@@ -20,9 +20,39 @@ const SIDES = ['left', 'right'];
 
 class Objects {
   mount() {
-    const {three, pose, input, elements, render, world, teleport, utils: {js: {events, mod, bffr}, hash: {murmur}, random: {chnkr}}} = zeo;
+    const {three, pose, input, elements, render, world, teleport, utils: {js: {mod, bffr}, hash: {murmur}, random: {chnkr}}} = zeo;
     const {THREE, scene, camera} = three;
-    const {EventEmitter} = events;
+
+    const modelViewMatrices = {
+      left: new THREE.Matrix4(),
+      right: new THREE.Matrix4(),
+    };
+    const normalMatrices = {
+      left: new THREE.Matrix3(),
+      right: new THREE.Matrix3(),
+    };
+    const modelViewMatricesValid = {
+      left: false,
+      right: false,
+    };
+    const normalMatricesValid = {
+      left: false,
+      right: false,
+    };
+    function _updateModelViewMatrix(camera) {
+      if (!modelViewMatricesValid[camera.name]) {
+        modelViewMatrices[camera.name].multiplyMatrices(camera.matrixWorldInverse, this.matrixWorld);
+        modelViewMatricesValid[camera.name] = true;
+      }
+      this.modelViewMatrix = modelViewMatrices[camera.name];
+    }
+    function _updateNormalMatrix(camera) {
+      if (!normalMatricesValid[camera.name]) {
+        normalMatrices[camera.name].getNormalMatrix(this.modelViewMatrix);
+        normalMatricesValid[camera.name] = true;
+      }
+      this.normalMatrix = normalMatrices[camera.name];
+    }
 
     const _getChunkIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
     const _getObjectIndex = (x, z, i) => (mod(x, 0xFF) << 24) | (mod(z, 0xFF) << 16) | (i & 0xFFFF);
@@ -334,7 +364,7 @@ void main() {
       worker.postMessage(localMessage);
       queues.push(new QueueEntry(id, accept));
     });
-    let pendingResponseId = null;
+    let pendingResponseId = 0;
     worker.onmessage = e => {
       const {data} = e;
       if (typeof data === 'string') {
@@ -401,7 +431,7 @@ void main() {
         const queueEntry = queues[queueEntryIndex];
         queueEntry.cb(data);
         queues.splice(queueEntryIndex, 1);
-        pendingResponseId = null;
+        pendingResponseId = 0;
       }
     };
 
@@ -442,6 +472,8 @@ void main() {
             onBeforeRender.apply(this, arguments);
           };
         })(mesh.onBeforeRender);
+        mesh.updateModelViewMatrix = _updateModelViewMatrix;
+        mesh.updateNormalMatrix = _updateNormalMatrix;
         mesh.offset = new THREE.Vector2(x, z);
         mesh.lightmap = null;
 
@@ -1017,11 +1049,18 @@ void main() {
         const sunIntensity = (dayNightSkyboxEntity && dayNightSkyboxEntity.getSunIntensity) ? dayNightSkyboxEntity.getSunIntensity() : 0;
         objectsMaterial.uniforms.sunIntensity.value = sunIntensity;
       };
+      const _updateMatrices = () => {
+        modelViewMatricesValid.left = false;
+        modelViewMatricesValid.right = false;
+        normalMatricesValid.left = false;
+        normalMatricesValid.right = false;
+      };
 
       _updateHoveredTrackedObjects();
       _updateTeleport();
       _updateBody();
       _updateMaterial();
+      _updateMatrices();
     };
     render.on('update', _update);
 

@@ -153,6 +153,37 @@ class Heightfield {
     const {three, render, pose, input, world, elements, teleport, stck, utils: {js: {mod, bffr}, random: {chnkr}}} = zeo;
     const {THREE, scene, camera, renderer} = three;
 
+    const modelViewMatrices = {
+      left: new THREE.Matrix4(),
+      right: new THREE.Matrix4(),
+    };
+    const normalMatrices = {
+      left: new THREE.Matrix3(),
+      right: new THREE.Matrix3(),
+    };
+    const modelViewMatricesValid = {
+      left: false,
+      right: false,
+    };
+    const normalMatricesValid = {
+      left: false,
+      right: false,
+    };
+    function _updateModelViewMatrix(camera) {
+      if (!modelViewMatricesValid[camera.name]) {
+        modelViewMatrices[camera.name].multiplyMatrices(camera.matrixWorldInverse, this.matrixWorld);
+        modelViewMatricesValid[camera.name] = true;
+      }
+      this.modelViewMatrix = modelViewMatrices[camera.name];
+    }
+    function _updateNormalMatrix(camera) {
+      if (!normalMatricesValid[camera.name]) {
+        normalMatrices[camera.name].getNormalMatrix(this.modelViewMatrix);
+        normalMatricesValid[camera.name] = true;
+      }
+      this.normalMatrix = normalMatrices[camera.name];
+    }
+
     class PeekFace {
       constructor(exitFace, enterFace, x, y, z) {
         this.exitFace = exitFace;
@@ -384,6 +415,8 @@ class Heightfield {
 
         const mesh = new THREE.Mesh(geometry, material);
         mesh.frustumCulled = false;
+        mesh.updateModelViewMatrix = _updateModelViewMatrix;
+        mesh.updateNormalMatrix = _updateNormalMatrix;
         mesh.offset = new THREE.Vector3(x, i, z);
         mesh.peeks = peeks;
 
@@ -830,9 +863,16 @@ class Heightfield {
               }
             }
           };
+          const _updateMatrices = () => {
+            modelViewMatricesValid.left = false;
+            modelViewMatricesValid.right = false;
+            normalMatricesValid.left = false;
+            normalMatricesValid.right = false;
+          };
 
           _updateCull();
           _updateSunIntensity();
+          _updateMatrices();
         };
         render.on('update', _update);
 

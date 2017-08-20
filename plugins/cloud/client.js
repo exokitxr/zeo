@@ -47,6 +47,37 @@ class Cloud {
     const {three, elements, render, pose, stage, utils: {js: {mod, bffr}, geometry: geometryUtils, random: {alea, chnkr}}} = zeo;
     const {THREE, camera} = three;
 
+    const modelViewMatrices = {
+      left: new THREE.Matrix4(),
+      right: new THREE.Matrix4(),
+    };
+    const normalMatrices = {
+      left: new THREE.Matrix3(),
+      right: new THREE.Matrix3(),
+    };
+    const modelViewMatricesValid = {
+      left: false,
+      right: false,
+    };
+    const normalMatricesValid = {
+      left: false,
+      right: false,
+    };
+    function _updateModelViewMatrix(camera) {
+      if (!modelViewMatricesValid[camera.name]) {
+        modelViewMatrices[camera.name].multiplyMatrices(camera.matrixWorldInverse, this.matrixWorld);
+        modelViewMatricesValid[camera.name] = true;
+      }
+      this.modelViewMatrix = modelViewMatrices[camera.name];
+    }
+    function _updateNormalMatrix(camera) {
+      if (!normalMatricesValid[camera.name]) {
+        normalMatrices[camera.name].getNormalMatrix(this.modelViewMatrix);
+        normalMatricesValid[camera.name] = true;
+      }
+      this.normalMatrix = normalMatrices[camera.name];
+    }
+
     const _getChunkIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
 
     const cloudsMaterial = new THREE.ShaderMaterial({
@@ -116,12 +147,11 @@ class Cloud {
               new THREE.Vector3().fromArray(boundingSphere, 0),
               boundingSphere[3]
             );
-            /* mesh.position.x = dx;
-            mesh.updateMatrixWorld();
-            mesh.frustumCulled = false; */
             const material = cloudsMaterial;
 
             const mesh = new THREE.Mesh(geometry, material);
+            mesh.updateModelViewMatrix = _updateModelViewMatrix;
+            mesh.updateNormalMatrix = _updateNormalMatrix;
             return mesh;
           })();
 
@@ -184,11 +214,22 @@ class Cloud {
         _recurse();
 
         const update = () => {
-          const dayNightSkyboxEntity = elements.getEntitiesElement().querySelector(DAY_NIGHT_SKYBOX_PLUGIN);
-          const sunIntensity = (dayNightSkyboxEntity && dayNightSkyboxEntity.getSunIntensity) ? dayNightSkyboxEntity.getSunIntensity() : 0;
+          const _updateSunIntensity = () => {
+            const dayNightSkyboxEntity = elements.getEntitiesElement().querySelector(DAY_NIGHT_SKYBOX_PLUGIN);
+            const sunIntensity = (dayNightSkyboxEntity && dayNightSkyboxEntity.getSunIntensity) ? dayNightSkyboxEntity.getSunIntensity() : 0;
 
-          // cloudsMaterial.uniforms.worldTime.value = world.getWorldTime();
-          cloudsMaterial.uniforms.sunIntensity.value = sunIntensity;
+            // cloudsMaterial.uniforms.worldTime.value = world.getWorldTime();
+            cloudsMaterial.uniforms.sunIntensity.value = sunIntensity;
+          };
+          const _updateMatrices = () => {
+            modelViewMatricesValid.left = false;
+            modelViewMatricesValid.right = false;
+            normalMatricesValid.left = false;
+            normalMatricesValid.right = false;
+          };
+
+          _updateSunIntensity();
+          _updateMatrices();
         };
         updates.push(update);
 

@@ -112,6 +112,37 @@ class Grass {
     const {three, render, pose, elements, stage, utils: {js: {bffr}, random: {chnkr}}} = zeo;
     const {THREE} = three;
 
+    const modelViewMatrices = {
+      left: new THREE.Matrix4(),
+      right: new THREE.Matrix4(),
+    };
+    const normalMatrices = {
+      left: new THREE.Matrix3(),
+      right: new THREE.Matrix3(),
+    };
+    const modelViewMatricesValid = {
+      left: false,
+      right: false,
+    };
+    const normalMatricesValid = {
+      left: false,
+      right: false,
+    };
+    function _updateModelViewMatrix(camera) {
+      if (!modelViewMatricesValid[camera.name]) {
+        modelViewMatrices[camera.name].multiplyMatrices(camera.matrixWorldInverse, this.matrixWorld);
+        modelViewMatricesValid[camera.name] = true;
+      }
+      this.modelViewMatrix = modelViewMatrices[camera.name];
+    }
+    function _updateNormalMatrix(camera) {
+      if (!normalMatricesValid[camera.name]) {
+        normalMatrices[camera.name].getNormalMatrix(this.modelViewMatrix);
+        normalMatricesValid[camera.name] = true;
+      }
+      this.normalMatrix = normalMatrices[camera.name];
+    }
+
     const upVector = new THREE.Vector3(0, 1, 0);
     const buffers = bffr(NUM_POSITIONS_CHUNK, RANGE * RANGE * 9);
 
@@ -295,7 +326,8 @@ class Grass {
               });
 
               const mesh = new THREE.Mesh(geometry, material);
-
+              mesh.updateModelViewMatrix = _updateModelViewMatrix;
+              mesh.updateNormalMatrix = _updateNormalMatrix;
               mesh.offset = new THREE.Vector2(x, z);
               mesh.lightmap = null;
               if (lightmapper && chunk.lod === 1) {
@@ -390,13 +422,24 @@ class Grass {
           _recurse();
 
           const _update = () => {
-            const dayNightSkyboxEntity = elements.getEntitiesElement().querySelector(DAY_NIGHT_SKYBOX_PLUGIN);
-            const sunIntensity = (dayNightSkyboxEntity && dayNightSkyboxEntity.getSunIntensity) ? dayNightSkyboxEntity.getSunIntensity() : 0;
+            const _updateSunIntensity = () => {
+              const dayNightSkyboxEntity = elements.getEntitiesElement().querySelector(DAY_NIGHT_SKYBOX_PLUGIN);
+              const sunIntensity = (dayNightSkyboxEntity && dayNightSkyboxEntity.getSunIntensity) ? dayNightSkyboxEntity.getSunIntensity() : 0;
 
-            for (let i = 0; i < grassChunkMeshes.length; i++) {
-              const grassChunkMesh = grassChunkMeshes[i];
-              grassChunkMesh.material.uniforms.sunIntensity.value = sunIntensity;
-            }
+              for (let i = 0; i < grassChunkMeshes.length; i++) {
+                const grassChunkMesh = grassChunkMeshes[i];
+                grassChunkMesh.material.uniforms.sunIntensity.value = sunIntensity;
+              }
+            };
+            const _updateMatrices = () => {
+              modelViewMatricesValid.left = false;
+              modelViewMatricesValid.right = false;
+              normalMatricesValid.left = false;
+              normalMatricesValid.right = false;
+            };
+
+            _updateSunIntensity();
+            _updateMatrices();
           };
           render.on('update', _update);
 
