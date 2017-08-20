@@ -1,19 +1,21 @@
 const UINT32_SIZE = 4;
 const INT32_SIZE = 4;
 const FLOAT32_SIZE = 4;
-const DATA_HEADER_ENTRIES = (4 * 4) + 4;
+const UINT8_SIZE = 1;
+const DATA_HEADER_ENTRIES = (4 * 5) + 4;
 const DATA_HEADER_SIZE = UINT32_SIZE * DATA_HEADER_ENTRIES;
-const RENDER_HEADER_ENTRIES = (4 * 4) + 3;
+const RENDER_HEADER_ENTRIES = (4 * 5) + 3;
 const RENDER_HEADER_SIZE = UINT32_SIZE * RENDER_HEADER_ENTRIES;
 
 const _getDataChunkSizeFromMetadata = metadata => {
-  const {numPositions, numColors, numIndices, numHeightfield, numStaticHeightfield, numElevations, numEther, numBoundingSphere} = metadata;
+  const {numPositions, numColors, numIndices, numBoundingSphere, numPeeks, numHeightfield, numStaticHeightfield, numElevations, numEther} = metadata;
 
   return DATA_HEADER_SIZE + // header
     (FLOAT32_SIZE * _sum(numPositions)) + // positions
     (FLOAT32_SIZE * _sum(numColors)) + // colors
     (UINT32_SIZE * _sum(numIndices)) + // indices
     (FLOAT32_SIZE * _sum(numBoundingSphere)) + // bounding sphere
+    (UINT8_SIZE * _sum(numPeeks)) + // peeks
     (FLOAT32_SIZE * numHeightfield) + // heightfield
     (FLOAT32_SIZE * numStaticHeightfield) + // static heightfield
     (FLOAT32_SIZE * numElevations) + // elevations
@@ -27,13 +29,15 @@ const _getDataChunkSize = mapChunk => {
   const numColors = Array(4);
   const numIndices = Array(4);
   const numBoundingSphere = Array(4);
+  const numPeeks = Array(4);
   for (let i = 0; i < 4; i++) {
     const geometry = geometries[i];
-    const {positions, colors, indices, boundingSphere} = geometry;
+    const {positions, colors, indices, peeks} = geometry;
     numPositions[i] = positions.length;
     numColors[i] = colors.length;
     numIndices[i] = indices.length;
     numBoundingSphere[i] = boundingSphere.length;
+    numPeeks[i] = peeks.length;
   }
   const numHeightfield = heightfield.length;
   const numStaticHeightfield = staticHeightfield.length;
@@ -60,11 +64,13 @@ const _getDataChunkSize = mapChunk => {
   const numColors = Array(4);
   const numIndices = Array(4);
   const numBoundingSphere = Array(4);
+  const numPeeks = Array(4);
   for (let i = 0; i < 4; i++) {
     numPositions[i] = headerBuffer[index++];
     numColors[i] = headerBuffer[index++];
     numIndices[i] = headerBuffer[index++];
     numBoundingSphere[i] = headerBuffer[index++];
+    numPeeks[i] = headerBuffer[index++];
   }
   const numHeightfield = headerBuffer[index++];
   const numStaticHeightfield = headerBuffer[index++];
@@ -96,11 +102,12 @@ const stringifyDataChunk = (mapChunk, arrayBuffer, byteOffset) => {
   let index = 0;
   for (let i = 0; i < 4; i++) {
     const geometry = geometries[i];
-    const {positions, colors, indices, boundingSphere} = geometry;
+    const {positions, colors, indices, boundingSphere, peeks} = geometry;
     headerBuffer[index++] = positions.length;
     headerBuffer[index++] = colors.length;
     headerBuffer[index++] = indices.length;
     headerBuffer[index++] = boundingSphere.length;
+    headerBuffer[index++] = peeks.length;
   }
   headerBuffer[index++] = heightfield.length;
   headerBuffer[index++] = staticHeightfield.length;
@@ -110,7 +117,7 @@ const stringifyDataChunk = (mapChunk, arrayBuffer, byteOffset) => {
 
   for (let i = 0; i < 4; i++) {
     const geometry = geometries[i];
-    const {positions, colors, indices, boundingSphere} = geometry;
+    const {positions, colors, indices, boundingSphere, peeks} = geometry;
 
     const positionsBuffer = new Float32Array(arrayBuffer, byteOffset, positions.length);
     positionsBuffer.set(positions);
@@ -127,6 +134,10 @@ const stringifyDataChunk = (mapChunk, arrayBuffer, byteOffset) => {
     const boundingSphereBuffer = new Float32Array(arrayBuffer, byteOffset, boundingSphere.length);
     boundingSphereBuffer.set(boundingSphere);
     byteOffset += FLOAT32_SIZE * boundingSphere.length;
+
+    const peeksBuffer = new Uint8Array(arrayBuffer, byteOffset, peeks.length);
+    peeksBuffer.set(peeks);
+    byteOffset += UINT8_SIZE * peeks.length;
   }
 
   const heightfieldBuffer = new Float32Array(arrayBuffer, byteOffset, heightfield.length);
@@ -159,11 +170,13 @@ const parseDataChunk = (buffer, byteOffset) => {
   const numColors = Array(4);
   const numIndices = Array(4);
   const numBoundingSphere = Array(4);
+  const numPeeks = Array(4);
   for (let i = 0; i < 4; i++) {
     numPositions[i] = headerBuffer[index++];
     numColors[i] = headerBuffer[index++];
     numIndices[i] = headerBuffer[index++];
     numBoundingSphere[i] = headerBuffer[index++];
+    numPeeks[i] = headerBuffer[index++];
   }
   const numHeightfield = headerBuffer[index++];
   const numStaticHeightfield = headerBuffer[index++];
@@ -189,11 +202,16 @@ const parseDataChunk = (buffer, byteOffset) => {
     const boundingSphere = boundingSphereBuffer;
     byteOffset += FLOAT32_SIZE * numBoundingSphere[i];
 
+    const peeksBuffer = new Uint8Array(buffer, byteOffset, numPeeks[i]);
+    const peeks = peeksBuffer;
+    byteOffset += UINT8_SIZE * numPeeks[i];
+
     geometries[i] = {
       positions,
       colors,
       indices,
       boundingSphere,
+      peeks,
     };
   }
 
@@ -243,13 +261,15 @@ const _getRenderChunkSize = mapChunk => {
   const numColors = Array(4);
   const numIndices = Array(4);
   const numBoundingSphere = Array(4);
+  const numPeeks = Array(4);
   for (let i = 0; i < 4; i++) {
     const geometry = geometries[i];
-    const {positions, colors, indices, boundingSphere} = geometry;
+    const {positions, colors, indices, boundingSphere, peeks} = geometry;
     numPositions[i] = positions.length;
     numColors[i] = colors.length;
     numIndices[i] = indices.length;
     numBoundingSphere[i] = boundingSphere.length;
+    numPeeks[i] = peeks.length;
   }
   const numHeightfield = heightfield.length;
   const numStaticHeightfield = staticHeightfield.length;
@@ -274,11 +294,13 @@ const _getRenderChunkSize = mapChunk => {
   const numColors = Array(4);
   const numIndices = Array(4);
   const numBoundingSphere = Array(4);
+  const numPeeks = Array(4);
   for (let i = 0; i < 4; i++) {
     numPositions[i] = headerBuffer[index++];
     numColors[i] = headerBuffer[index++];
     numIndices[i] = headerBuffer[index++];
     numBoundingSphere[i] = headerBuffer[index++];
+    numPeeks[i] = headerBuffer[index++];
   }
   const numHeightfield = headerBuffer[index++];
   const numStaticHeightfield = headerBuffer[index++];
@@ -291,7 +313,7 @@ const _getRenderChunkSize = mapChunk => {
     numBoundingSphere,
     numHeightfield,
     numStaticHeightfield,
-    numEhter,
+    numEther,
   });
 }; */
 
@@ -308,11 +330,12 @@ const stringifyRenderChunk = (mapChunk, arrayBuffer, byteOffset) => {
   let index = 0;
   for (let i = 0; i < 4; i++) {
     const geometry = geometries[i];
-    const {positions, colors, indices, boundingSphere} = geometry;
+    const {positions, colors, indices, boundingSphere, peeks} = geometry;
     headerBuffer[index++] = positions.length;
     headerBuffer[index++] = colors.length;
     headerBuffer[index++] = indices.length;
     headerBuffer[index++] = boundingSphere.length;
+    headerBuffer[index++] = peeks.length;
   }
   headerBuffer[index++] = heightfield.length;
   headerBuffer[index++] = staticHeightfield.length;
@@ -321,7 +344,7 @@ const stringifyRenderChunk = (mapChunk, arrayBuffer, byteOffset) => {
 
   for (let i = 0; i < 4; i++) {
     const geometry = geometries[i];
-    const {positions, colors, indices, boundingSphere} = geometry;
+    const {positions, colors, indices, boundingSphere, peeks} = geometry;
 
     const positionsBuffer = new Float32Array(arrayBuffer, byteOffset, positions.length);
     positionsBuffer.set(positions);
@@ -338,6 +361,10 @@ const stringifyRenderChunk = (mapChunk, arrayBuffer, byteOffset) => {
     const boundingSphereBuffer = new Float32Array(arrayBuffer, byteOffset, boundingSphere.length);
     boundingSphereBuffer.set(boundingSphere);
     byteOffset += FLOAT32_SIZE * boundingSphere.length;
+
+    const peeksBuffer = new Uint8Array(arrayBuffer, byteOffset, peeks.length);
+    peeksBuffer.set(peeks);
+    byteOffset += UINT8_SIZE * peeks.length;
   }
 
   const heightfieldBuffer = new Float32Array(arrayBuffer, byteOffset, heightfield.length);
@@ -366,11 +393,13 @@ const parseRenderChunk = (buffer, byteOffset) => {
   const numColors = Array(4);
   const numIndices = Array(4);
   const numBoundingSphere = Array(4);
+  const numPeeks = Array(4);
   for (let i = 0; i < 4; i++) {
     numPositions[i] = headerBuffer[index++];
     numColors[i] = headerBuffer[index++];
     numIndices[i] = headerBuffer[index++];
     numBoundingSphere[i] = headerBuffer[index++];
+    numPeeks[i] = headerBuffer[index++];
   }
   const numHeightfield = headerBuffer[index++];
   const numStaticHeightfield = headerBuffer[index++];
@@ -396,11 +425,16 @@ const parseRenderChunk = (buffer, byteOffset) => {
     const boundingSphere = boundingSphereBuffer;
     byteOffset += FLOAT32_SIZE * numBoundingSphere[i];
 
+    const peeksBuffer = new Uint8Array(buffer, byteOffset, numPeeks[i]);
+    const peeks = peeksBuffer;
+    byteOffset += UINT8_SIZE * numPeeks[i];
+
     geometries[i] = {
       positions,
       colors,
       indices,
       boundingSphere,
+      peeks,
     };
   }
 
@@ -432,17 +466,19 @@ const sliceDataHeightfield = (arrayBuffer, readByteOffset) => {
   const numColors = Array(4);
   const numIndices = Array(4);
   const numBoundingSphere = Array(4);
+  const numPeeks = Array(4);
   for (let i = 0; i < 4; i++) {
     numPositions[i] = headerBuffer[index++];
     numColors[i] = headerBuffer[index++];
     numIndices[i] = headerBuffer[index++];
     numBoundingSphere[i] = headerBuffer[index++];
+    numPeeks[i] = headerBuffer[index++];
   }
   const numHeightfield = headerBuffer[index++];
   const numStaticHeightfield = headerBuffer[index++];
   const numElevations = headerBuffer[index++];
   const numEther = headerBuffer[index++];
-  readByteOffset += DATA_HEADER_SIZE + FLOAT32_SIZE * _sum(numPositions) + FLOAT32_SIZE * _sum(numColors) + UINT32_SIZE * _sum(numIndices) + FLOAT32_SIZE * _sum(numBoundingSphere);
+  readByteOffset += DATA_HEADER_SIZE + FLOAT32_SIZE * _sum(numPositions) + FLOAT32_SIZE * _sum(numColors) + UINT32_SIZE * _sum(numIndices) + FLOAT32_SIZE * _sum(numBoundingSphere) + UINT8_SIZE * _sum(numPeeks);
 
   const heightfieldBuffer = new Float32Array(arrayBuffer, readByteOffset, numHeightfield);
   readByteOffset += FLOAT32_SIZE * numHeightfield + FLOAT32_SIZE * numStaticHeightfield + FLOAT32_SIZE * numEther;

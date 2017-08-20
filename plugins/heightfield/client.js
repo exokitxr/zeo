@@ -11,6 +11,36 @@ const protocolUtils = require('./lib/utils/protocol-utils');
 const NUM_POSITIONS_CHUNK = 2 * 1024 * 1024;
 const LIGHTMAP_PLUGIN = 'plugins-lightmap';
 const DAY_NIGHT_SKYBOX_PLUGIN = 'plugins-day-night-skybox';
+const NUM_CELLS_HALF = NUM_CELLS / 2;
+const PEEK_FACES = [
+  'FRONT',
+  'BACK',
+  'LEFT',
+  'RIGHT',
+  'TOP',
+  'BOTTOM',
+];
+const PEEK_FACE_INDICES = (() => {
+  let peekIndex = 0;
+  const result = {};
+  for (let i = 0; i < PEEK_FACES.length; i++) {
+    for (let j = 0; j < PEEK_FACES.length; j++) {
+      if (i !== j) {
+        const a = PEEK_FACES[i];
+        const b = PEEK_FACES[j];
+        let entry = result[a];
+        if (!entry) {
+          entry = {};
+          result[a] = entry;
+        }
+        const otherEntry = result[b];
+        const otherEntryValue = otherEntry && otherEntry[a];
+        entry[b] = otherEntryValue !== undefined ? otherEntryValue : peekIndex++;
+      }
+    }
+  }
+  return result;
+})();
 
 const HEIGHTFIELD_SHADER = {
   uniforms: {
@@ -124,14 +154,32 @@ class Heightfield {
   mount() {
     const {_archae: archae} = this;
     const {three, render, pose, input, world, elements, teleport, stck, utils: {js: {mod, bffr}, random: {chnkr}}} = zeo;
-    const {THREE, scene, camera} = three;
+    const {THREE, scene, camera, renderer} = three;
 
+    class PeekFace {
+      constructor(exitFace, enterFace, normal) {
+        this.exitFace = exitFace;
+        this.enterFace = enterFace;
+        this.normal = normal;
+      }
+    }
+    const peekFaceSpecs = [
+      new PeekFace('BACK', 'FRONT', new THREE.Vector3(0, 0, -1)),
+      new PeekFace('FRONT', 'BACK', new THREE.Vector3(0, 0, 1)),
+      new PeekFace('LEFT', 'RIGHT', new THREE.Vector3(-1, 0, 0)),
+      new PeekFace('RIGHT', 'LEFT', new THREE.Vector3(1, 0, 0)),
+      new PeekFace('TOP', 'BOTTOM', new THREE.Vector3(0, 1, 0)),
+      new PeekFace('BOTTOM', 'TOP', new THREE.Vector3(0, -1, 0)),
+    ];
     const _getChunkIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
+    const _getCullIndex = (x, y, z) => (mod(x, 0xFF) << 16) | (mod(y, 0xFF) << 8) | mod(z, 0xFF);
 
     const forwardVector = new THREE.Vector3(0, 0, -1);
     const localVector = new THREE.Vector3();
     const localVector2 = new THREE.Vector3();
     const localEuler = new THREE.Euler();
+    const localMatrix = new THREE.Matrix4();
+    const frustum = new THREE.Frustum();
 
     const _requestImage = src => new Promise((accept, reject) => {
       const img = new Image();
@@ -325,7 +373,7 @@ class Heightfield {
 
       const meshes = Array(4);
       for (let i = 0; i < 4; i++) {
-        const {positions, colors, indices, boundingSphere} = geometries[i];
+        const {positions, colors, indices, boundingSphere, peeks} = geometries[i];
 
         const geometry = new THREE.BufferGeometry();
         geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
@@ -336,7 +384,11 @@ class Heightfield {
           boundingSphere[3]
         );
 
-        meshes[i] = new THREE.Mesh(geometry, material);
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.frustumCulled = false;
+        mesh.peeks = peeks;
+
+        meshes[i] = mesh;
       }
       meshes.destroy = () => {
         for (let i = 0; i < 4; i++) {
@@ -702,15 +754,88 @@ class Heightfield {
         _recurse();
 
         const _update = () => {
-          const dayNightSkyboxEntity = elements.getEntitiesElement().querySelector(DAY_NIGHT_SKYBOX_PLUGIN);
-          const sunIntensity = (dayNightSkyboxEntity && dayNightSkyboxEntity.getSunIntensity) ? dayNightSkyboxEntity.getSunIntensity() : 0;
+          const _updateCull = () => {
+            const {hmd} = pose.getStatus();
+            const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmd;
 
-          for (const index in mapChunkMeshes) {
-            const trackedMapChunkMeshes = mapChunkMeshes[index];
-            if (trackedMapChunkMeshes) {
-              trackedMapChunkMeshes.material.uniforms.sunIntensity.value = sunIntensity;
+let total = 0;
+            for (const index in mapChunkMeshes) {
+              const trackedMapChunkMeshes = mapChunkMeshes[index];
+              if (trackedMapChunkMeshes) {
+                for (let i = 0; i < 4; i++) {
+                  trackedMapChunkMeshes[i].visible = false;
+total++;
+                }
+              }
             }
-          }
+            const ox = Math.floor(hmdPosition.x / NUM_CELLS);
+            const oy = Math.floor(hmdPosition.y / NUM_CELLS);
+            const oz = Math.floor(hmdPosition.z / NUM_CELLS);
+
+let culled = 0;
+            const trackedMapChunkMesh = (() => {
+              const trackedMapChunkMeshes = mapChunkMeshes[_getChunkIndex(ox, oz)];
+              return trackedMapChunkMeshes ? trackedMapChunkMeshes[oy] : null;
+            })();
+            if (trackedMapChunkMesh) {
+              frustum.setFromMatrix(localMatrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
+              const cullQueue = [[ox, oy, oz, trackedMapChunkMesh, null]];
+              const cullVisitedIndex = {};
+              cullVisitedIndex[_getCullIndex(ox, oy, oz) + ':null'] = true;
+              while (cullQueue.length > 0) {
+                const [x, y, z, trackedMapChunkMesh, enterFace] = cullQueue.shift();
+
+if (!trackedMapChunkMesh.visible) {
+culled++;
+}
+
+                trackedMapChunkMesh.visible = true;
+                for (let j = 0; j < peekFaceSpecs.length; j++) {
+                  const peekFaceSpec = peekFaceSpecs[j];
+                  const ay = y + peekFaceSpec.normal.y;
+                  if (ay >= 0 && ay < 4) {
+                    const ax = x + peekFaceSpec.normal.x;
+                    const az = z + peekFaceSpec.normal.z;
+                    localVector.set(
+                      ax - ox,
+                      ay - oy,
+                      az - oz
+                    );
+                    if (localVector.dot(peekFaceSpec.normal) >= 0) {
+                      if (enterFace === null || trackedMapChunkMesh.peeks[PEEK_FACE_INDICES[enterFace][peekFaceSpec.exitFace]] === 1) {
+                        const trackedMapChunkMeshes = mapChunkMeshes[_getChunkIndex(ax, az)];
+                        if (trackedMapChunkMeshes) {
+                          const trackedMapChunkMesh = trackedMapChunkMeshes[ay];
+                          if (frustum.intersectsObject(trackedMapChunkMesh)) {
+                            const index = _getCullIndex(ax, ay, az);
+                            if (!cullVisitedIndex[index + ':' + peekFaceSpec.enterFace]) {
+                              cullQueue.push([ax, ay, az, trackedMapChunkMesh, peekFaceSpec.enterFace]);
+                              cullVisitedIndex[index + ':' + peekFaceSpec.enterFace] = true;
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+console.log('culled', ox, oy, oz, trackedMapChunkMesh && Array.from(trackedMapChunkMesh.peeks).join(','), culled, total); // XXX
+          };
+          const _updateSunIntensity = () => {
+            const dayNightSkyboxEntity = elements.getEntitiesElement().querySelector(DAY_NIGHT_SKYBOX_PLUGIN);
+            const sunIntensity = (dayNightSkyboxEntity && dayNightSkyboxEntity.getSunIntensity) ? dayNightSkyboxEntity.getSunIntensity() : 0;
+
+            for (const index in mapChunkMeshes) {
+              const trackedMapChunkMeshes = mapChunkMeshes[index];
+              if (trackedMapChunkMeshes) {
+                trackedMapChunkMeshes.material.uniforms.sunIntensity.value = sunIntensity;
+              }
+            }
+          };
+
+          _updateCull();
+          _updateSunIntensity();
         };
         render.on('update', _update);
 

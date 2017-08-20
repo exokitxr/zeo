@@ -15,6 +15,8 @@ const {
 
   DEFAULT_SEED,
 } = require('./lib/constants/constants');
+const NUM_CELLS_HALF = NUM_CELLS / 2;
+const NUM_CELLS_CUBE = Math.sqrt(NUM_CELLS_HALF * NUM_CELLS_HALF * 3);
 const NUM_CELLS_OVERSCAN_Y = (NUM_CELLS * 4) + OVERSCAN;
 const HOLE_SIZE = 2;
 const PEEK_FACES = [
@@ -62,6 +64,7 @@ const _makeGeometries = ether => {
     geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
     geometry.setIndex(new THREE.BufferAttribute(indices, 1));
     geometry.computeVertexNormals();
+
     geometries[i] = geometry;
   }
   return geometries;
@@ -279,86 +282,6 @@ const _generateMapChunk = (ox, oy, opts) => {
 
   // compile
 
-  const peeks = Array(4);
-  for (let i = 0; i < 4; i++) {
-    const peek = new Uint8Array(15);
-    const seenPeeks = new Uint8Array((NUM_CELLS + 1) * ((NUM_CELLS * 4) + 1) * (NUM_CELLS + 1));
-    const minY = i * NUM_CELLS;
-    const maxY = (i + 1) * NUM_CELLS;
-
-    const _getEndPeekFace = (x, y, z, startFace) => {
-      if (z === 0 && startFace !== 'BACK') {
-        return 'BACK';
-      } else if (z === NUM_CELLS && startFace !== 'FRONT') {
-        return 'FRONT';
-      } else if (x === 0 && startFace !== 'LEFT') {
-        return 'LEFT';
-      } else if (x === NUM_CELLS && startFace !== 'RIGHT') {
-        return 'RIGHT';
-      } else if (y === 0 && startFace !== 'TOP') {
-        return 'TOP';
-      } else if (y === NUM_CELLS && startFace !== 'BOTTOM') {
-        return 'BOTTOM';
-      } else {
-        return null;
-      }
-    };
-    const _floodFill = (x, y, z, startFace) => {
-      const index = _getEtherIndex(x, y, z);
-      if (!seenPeeks[index]) {
-        seenPeeks[index] = true;
-
-        if (ether[index] >= 0) { // empty
-          const endFace = _getEndPeekFace(x, y, z, startFace);
-          if (endFace !== null) {
-            peek[PEEK_FACE_INDICES[startFace][endFace]] = 1;
-          }
-
-          for (let dx = -1; dx <= 1; dx++) {
-            const ax = x + dx;
-            if (ax >= 0 && ax <= NUM_CELLS) {
-              for (let dz = -1; dz <= 1; dz++) {
-                const az = z + dz;
-                if (az >= 0 && az <= NUM_CELLS) {
-                  for (let dy = -1; dy <= 1; dy++) {
-                    const ay = y + dy;
-                    if (ay >= minY && az <= maxY) {
-                      _floodFill(ax, ay, ax, startFace);
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    };
-
-    // front/back
-    for (let x = 0; x <= NUM_CELLS; x++) {
-      for (let y = minY; y <= maxY; y++) {
-        _floodFill(x, y, NUM_CELLS, 'FRONT');
-        _floodFill(x, y, 0, 'BACK');
-      }
-    }
-    // left/right
-    for (let z = 0; z <= NUM_CELLS; z++) {
-      for (let y = minY; y <= maxY; y++) {
-        _floodFill(0, y, z, 'LEFT');
-        _floodFill(NUM_CELLS, y, z, 'RIGHT');
-      }
-    }
-    // top/bottom
-    for (let x = 0; x <= NUM_CELLS; x++) {
-      for (let z = 0; z <= NUM_CELLS; z++) {
-        _floodFill(x, maxY, z, 'TOP');
-        _floodFill(x, minY, z, 'BOTTOM');
-      }
-    }
-
-    peeks[i] = peek;
-  }
-
   const geometries = _makeGeometries(ether);
 
   const heightfield = new Float32Array(NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN * HEIGHTFIELD_DEPTH);
@@ -417,8 +340,8 @@ const _generateMapChunk = (ox, oy, opts) => {
     const colors = new Float32Array(numPositions * 3);
     geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
 
-    for (let i = 0; i < numPositions; i++) {
-      const baseIndex = i * 3;
+    for (let j = 0; j < numPositions; j++) {
+      const baseIndex = j * 3;
       const x = positions[baseIndex + 0];
       const y = positions[baseIndex + 1];
       const z = positions[baseIndex + 2];
@@ -452,7 +375,120 @@ const _generateMapChunk = (ox, oy, opts) => {
       positions[baseIndex + 2] = az;
     }
 
-    geometry.computeBoundingSphere();
+    geometry.boundingSphere = new THREE.Sphere(
+      new THREE.Vector3(ox * NUM_CELLS + NUM_CELLS_HALF, i * NUM_CELLS + NUM_CELLS_HALF, oy * NUM_CELLS + NUM_CELLS_HALF),
+      NUM_CELLS_CUBE,
+    );
+
+    const peeks = new Uint8Array(16);
+    const seenPeeks = new Uint8Array((NUM_CELLS + 1) * ((NUM_CELLS * 4) + 1) * (NUM_CELLS + 1));
+    const minY = i * NUM_CELLS;
+    const maxY = (i + 1) * NUM_CELLS;
+    const _floodFill = (x, y, z, startFace) => {
+      const index = _getEtherIndex(x, y, z);
+      const queue = [[x, y, z, index]];
+      seenPeeks[index] = 1;
+      while (queue.length > 0) {
+        const [x, y, z, index] = queue.shift();
+
+        if (ether[index] >= 0) { // empty
+          if (z === 0 && startFace !== 'BACK') {
+            peeks[PEEK_FACE_INDICES[startFace].BACK] = 1;
+          }
+          if (z === NUM_CELLS && startFace !== 'FRONT') {
+            peeks[PEEK_FACE_INDICES[startFace].FRONT] = 1;
+          }
+          if (x === 0 && startFace !== 'LEFT') {
+            peeks[PEEK_FACE_INDICES[startFace].LEFT] = 1;
+          }
+          if (x === NUM_CELLS && startFace !== 'RIGHT') {
+            peeks[PEEK_FACE_INDICES[startFace].RIGHT] = 1;
+          }
+          if (y === maxY && startFace !== 'TOP') {
+            peeks[PEEK_FACE_INDICES[startFace].TOP] = 1;
+          }
+          if (y === minY && startFace !== 'BOTTOM') {
+            peeks[PEEK_FACE_INDICES[startFace].BOTTOM] = 1;
+          }
+
+          for (let dx = -1; dx <= 1; dx++) {
+            const ax = x + dx;
+            if (ax >= 0 && ax <= NUM_CELLS) {
+              for (let dz = -1; dz <= 1; dz++) {
+                const az = z + dz;
+                if (az >= 0 && az <= NUM_CELLS) {
+                  for (let dy = -1; dy <= 1; dy++) {
+                    const ay = y + dy;
+                    if (ay >= minY && ay <= maxY) {
+                      const index = _getEtherIndex(ax, ay, az);
+                      if (!seenPeeks[index]) {
+                        queue.push([ax, ay, az, index]);
+                        seenPeeks[index] = 1;
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    };
+    for (let x = 0; x <= NUM_CELLS; x++) {
+      for (let y = minY; y <= maxY; y++) {
+        _floodFill(x, y, NUM_CELLS, 'FRONT');
+      }
+    }
+    for (let x = 0; x <= NUM_CELLS; x++) {
+      for (let y = minY; y <= maxY; y++) {
+        _floodFill(x, y, 0, 'BACK');
+      }
+    }
+    for (let z = 0; z <= NUM_CELLS; z++) {
+      for (let y = minY; y <= maxY; y++) {
+        _floodFill(0, y, z, 'LEFT');
+      }
+    }
+    for (let z = 0; z <= NUM_CELLS; z++) {
+      for (let y = minY; y <= maxY; y++) {
+        _floodFill(NUM_CELLS, y, z, 'RIGHT');
+      }
+    }
+    for (let x = 0; x <= NUM_CELLS; x++) {
+      for (let z = 0; z <= NUM_CELLS; z++) {
+        _floodFill(x, maxY, z, 'TOP');
+      }
+    }
+    for (let x = 0; x <= NUM_CELLS; x++) {
+      for (let z = 0; z <= NUM_CELLS; z++) {
+        _floodFill(x, minY, z, 'BOTTOM');
+      }
+    }
+
+    for (let i = 0; i < PEEK_FACES.length; i++) {
+      const startFace = PEEK_FACES[i];
+      for (let j = 0; j < PEEK_FACES.length; j++) {
+        if (i !== j) {
+          const endFace = PEEK_FACES[j];
+          if (peeks[PEEK_FACE_INDICES[startFace][endFace]] === 1) {
+            peeks[PEEK_FACE_INDICES[endFace][startFace]] = 1;
+
+            for (let k = 0; k < PEEK_FACES.length; k++) {
+              if (k !== i && k !== j) {
+                const crossFace = PEEK_FACES[k];
+                if (peeks[PEEK_FACE_INDICES[startFace][crossFace]] === 1) {
+                  peeks[PEEK_FACE_INDICES[crossFace][startFace]] = 1;
+                  peeks[PEEK_FACE_INDICES[crossFace][endFace]] = 1;
+                  peeks[PEEK_FACE_INDICES[endFace][crossFace]] = 1;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    geometry.peeks = peeks;
   }
 
   return {
@@ -462,6 +498,7 @@ const _generateMapChunk = (ox, oy, opts) => {
       colors: geometry.getAttribute('color').array,
       indices: geometry.index.array,
       boundingSphere: Float32Array.from(geometry.boundingSphere.center.toArray().concat([geometry.boundingSphere.radius])),
+      peeks: geometry.peeks,
     })),
     heightfield,
     staticHeightfield,
