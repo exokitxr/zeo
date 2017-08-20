@@ -752,8 +752,14 @@ class Heightfield {
         };
         _recurse();
 
+        const cullQueueMeshes = Array(256);
+        for (let i = 0; i < cullQueueMeshes.length; i++) {
+          cullQueueMeshes[i] = null;
+        }
+        const cullQueueFaces = new Uint8Array(256);
+        let cullQueueStart = 0;
+        let cullQueueEnd = 0;
         const _update = () => {
-          const cullQueue = [];
           const _updateCull = () => {
             const {hmd} = pose.getStatus();
             const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmd;
@@ -775,10 +781,14 @@ class Heightfield {
               frustum.setFromMatrix(localMatrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
 
               const trackedMapChunkMesh = trackedMapChunkMeshes[oy];
-              cullQueue.push([trackedMapChunkMesh, PEEK_FACES.NULL]);
-              while (cullQueue.length > 0) {
-                const [trackedMapChunkMesh, enterFace] = cullQueue.shift();
+              cullQueueMeshes[cullQueueEnd] = trackedMapChunkMesh;
+              cullQueueFaces[cullQueueEnd] = PEEK_FACES.NULL;
+              cullQueueEnd = (cullQueueEnd + 1) % 256;
+              for (;cullQueueStart !== cullQueueEnd; cullQueueStart = (cullQueueStart + 1) % 256) {
+                const trackedMapChunkMesh = cullQueueMeshes[cullQueueStart];
                 const {offset: {x, y, z}} = trackedMapChunkMesh;
+                cullQueueMeshes[cullQueueStart] = null;
+                const enterFace = cullQueueFaces[cullQueueStart];
 
                 trackedMapChunkMesh.visible = true;
                 for (let j = 0; j < peekFaceSpecs.length; j++) {
@@ -796,8 +806,10 @@ class Heightfield {
                         const trackedMapChunkMeshes = mapChunkMeshes[_getChunkIndex(ax, az)];
                         if (trackedMapChunkMeshes) {
                           const trackedMapChunkMesh = trackedMapChunkMeshes[ay];
-                          if (frustum.intersectsObject(trackedMapChunkMesh)) {
-                            cullQueue.push([trackedMapChunkMesh, peekFaceSpec.enterFace]);
+                          if (frustum.intersectsSphere(trackedMapChunkMesh.geometry.boundingSphere)) {
+                            cullQueueMeshes[cullQueueEnd] = trackedMapChunkMesh;
+                            cullQueueFaces[cullQueueEnd] = peekFaceSpec.enterFace;
+                            cullQueueEnd = (cullQueueEnd + 1) % 256;
                           }
                         }
                       }
