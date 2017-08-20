@@ -19,30 +19,32 @@ const NUM_CELLS_HALF = NUM_CELLS / 2;
 const NUM_CELLS_CUBE = Math.sqrt(NUM_CELLS_HALF * NUM_CELLS_HALF * 3);
 const NUM_CELLS_OVERSCAN_Y = (NUM_CELLS * 4) + OVERSCAN;
 const HOLE_SIZE = 2;
-const PEEK_FACES = [
-  'FRONT',
-  'BACK',
-  'LEFT',
-  'RIGHT',
-  'TOP',
-  'BOTTOM',
-];
+const PEEK_FACES = (() => {
+  let faceIndex = 0;
+  return {
+    FRONT: faceIndex++,
+    BACK: faceIndex++,
+    LEFT: faceIndex++,
+    RIGHT: faceIndex++,
+    TOP: faceIndex++,
+    BOTTOM: faceIndex++,
+    NULL: faceIndex++,
+  };
+})();
 const PEEK_FACE_INDICES = (() => {
   let peekIndex = 0;
-  const result = {};
-  for (let i = 0; i < PEEK_FACES.length; i++) {
-    for (let j = 0; j < PEEK_FACES.length; j++) {
+  const result = Array(6);
+  for (let i = 0; i < 6; i++) {
+    for (let j = 0; j < 6; j++) {
       if (i !== j) {
-        const a = PEEK_FACES[i];
-        const b = PEEK_FACES[j];
-        let entry = result[a];
+        let entry = result[i];
         if (!entry) {
-          entry = {};
-          result[a] = entry;
+          entry = new Uint8Array(6);
+          result[i] = entry;
         }
-        const otherEntry = result[b];
-        const otherEntryValue = otherEntry && otherEntry[a];
-        entry[b] = otherEntryValue !== undefined ? otherEntryValue : peekIndex++;
+        const otherEntry = result[j];
+        const otherEntryValue = otherEntry && otherEntry[i];
+        entry[j] = otherEntryValue !== undefined ? otherEntryValue : peekIndex++;
       }
     }
   }
@@ -392,23 +394,23 @@ const _generateMapChunk = (ox, oy, opts) => {
         const [x, y, z, index] = queue.shift();
 
         if (ether[index] >= 0) { // empty
-          if (z === 0 && startFace !== 'BACK') {
-            peeks[PEEK_FACE_INDICES[startFace].BACK] = 1;
+          if (z === 0 && startFace !== PEEK_FACES.BACK) {
+            peeks[PEEK_FACE_INDICES[startFace][PEEK_FACES.BACK]] = 1;
           }
-          if (z === NUM_CELLS && startFace !== 'FRONT') {
-            peeks[PEEK_FACE_INDICES[startFace].FRONT] = 1;
+          if (z === NUM_CELLS && startFace !== PEEK_FACES.FRONT) {
+            peeks[PEEK_FACE_INDICES[startFace][PEEK_FACES.FRONT]] = 1;
           }
-          if (x === 0 && startFace !== 'LEFT') {
-            peeks[PEEK_FACE_INDICES[startFace].LEFT] = 1;
+          if (x === 0 && startFace !== PEEK_FACES.LEFT) {
+            peeks[PEEK_FACE_INDICES[startFace][PEEK_FACES.LEFT]] = 1;
           }
-          if (x === NUM_CELLS && startFace !== 'RIGHT') {
-            peeks[PEEK_FACE_INDICES[startFace].RIGHT] = 1;
+          if (x === NUM_CELLS && startFace !== PEEK_FACES.RIGHT) {
+            peeks[PEEK_FACE_INDICES[startFace][PEEK_FACES.RIGHT]] = 1;
           }
-          if (y === maxY && startFace !== 'TOP') {
-            peeks[PEEK_FACE_INDICES[startFace].TOP] = 1;
+          if (y === maxY && startFace !== PEEK_FACES.TOP) {
+            peeks[PEEK_FACE_INDICES[startFace][PEEK_FACES.TOP]] = 1;
           }
-          if (y === minY && startFace !== 'BOTTOM') {
-            peeks[PEEK_FACE_INDICES[startFace].BOTTOM] = 1;
+          if (y === minY && startFace !== PEEK_FACES.BOTTOM) {
+            peeks[PEEK_FACE_INDICES[startFace][PEEK_FACES.BOTTOM]] = 1;
           }
 
           for (let dx = -1; dx <= 1; dx++) {
@@ -436,46 +438,43 @@ const _generateMapChunk = (ox, oy, opts) => {
     };
     for (let x = 0; x <= NUM_CELLS; x++) {
       for (let y = minY; y <= maxY; y++) {
-        _floodFill(x, y, NUM_CELLS, 'FRONT');
+        _floodFill(x, y, NUM_CELLS, PEEK_FACES.FRONT);
       }
     }
     for (let x = 0; x <= NUM_CELLS; x++) {
       for (let y = minY; y <= maxY; y++) {
-        _floodFill(x, y, 0, 'BACK');
+        _floodFill(x, y, 0, PEEK_FACES.BACK);
       }
     }
     for (let z = 0; z <= NUM_CELLS; z++) {
       for (let y = minY; y <= maxY; y++) {
-        _floodFill(0, y, z, 'LEFT');
+        _floodFill(0, y, z, PEEK_FACES.LEFT);
       }
     }
     for (let z = 0; z <= NUM_CELLS; z++) {
       for (let y = minY; y <= maxY; y++) {
-        _floodFill(NUM_CELLS, y, z, 'RIGHT');
+        _floodFill(NUM_CELLS, y, z, PEEK_FACES.RIGHT);
       }
     }
     for (let x = 0; x <= NUM_CELLS; x++) {
       for (let z = 0; z <= NUM_CELLS; z++) {
-        _floodFill(x, maxY, z, 'TOP');
+        _floodFill(x, maxY, z, PEEK_FACES.TOP);
       }
     }
     for (let x = 0; x <= NUM_CELLS; x++) {
       for (let z = 0; z <= NUM_CELLS; z++) {
-        _floodFill(x, minY, z, 'BOTTOM');
+        _floodFill(x, minY, z, PEEK_FACES.BOTTOM);
       }
     }
 
-    for (let i = 0; i < PEEK_FACES.length; i++) {
-      const startFace = PEEK_FACES[i];
-      for (let j = 0; j < PEEK_FACES.length; j++) {
-        if (i !== j) {
-          const endFace = PEEK_FACES[j];
+    for (let startFace = 0; startFace < 6; startFace++) {
+      for (let endFace = 0; endFace < 6; endFace++) {
+        if (endFace !== startFace) {
           if (peeks[PEEK_FACE_INDICES[startFace][endFace]] === 1) {
             peeks[PEEK_FACE_INDICES[endFace][startFace]] = 1;
 
-            for (let k = 0; k < PEEK_FACES.length; k++) {
-              if (k !== i && k !== j) {
-                const crossFace = PEEK_FACES[k];
+            for (let crossFace = 0; crossFace < 6; crossFace++) {
+              if (crossFace !== startFace && crossFace !== endFace) {
                 if (peeks[PEEK_FACE_INDICES[startFace][crossFace]] === 1) {
                   peeks[PEEK_FACE_INDICES[crossFace][startFace]] = 1;
                   peeks[PEEK_FACE_INDICES[crossFace][endFace]] = 1;
