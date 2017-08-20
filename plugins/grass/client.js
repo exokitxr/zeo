@@ -154,15 +154,22 @@ class Grass {
     const _ensureHeightfieldElement = () => elements.requestElement(HEIGHTFIELD_PLUGIN)
       .then(() => {});
 
-    class QueueEntry {
-      constructor(id, cb) {
-        this.id = id;
-        this.cb = cb;
-      }
-    }
-
     const worker = new Worker('archae/plugins/_plugins_grass/build/worker.js');
-    const queues = [];
+    let queues = {};
+    let numRemovedQueues = 0;
+    const _cleanupQueues = () => {
+      if (++numRemovedQueues >= 16) {
+        const newQueues = {};
+        for (const id in queues) {
+          const entry = queues[id];
+          if (entry !== null) {
+            newQueues[id] = entry;
+          }
+        }
+        queues = newQueues;
+        numRemovedQueues = 0;
+      }
+    };
     worker.requestGenerate = (x, y) => _ensureHeightfieldElement()
       .then(() => new Promise((accept, reject) => {
         const id = _makeId();
@@ -174,7 +181,7 @@ class Grass {
           y,
           buffer,
         }, [buffer]);
-        queues.push(new QueueEntry(id, accept));
+        queues[id] = accept;
       }));
     worker.requestTexture = () => new Promise((accept, reject) => {
         const id = _makeId();
@@ -184,7 +191,7 @@ class Grass {
         id,
         buffer,
       }, [buffer]);
-      queues.push(new QueueEntry(id, buffer => {
+      queues[id] = buffer => {
         const canvas = document.createElement('canvas');
         canvas.width = TEXTURE_SIZE;
         canvas.height = TEXTURE_SIZE;
@@ -194,7 +201,7 @@ class Grass {
         ctx.putImageData(imageData, 0, 0);
 
         accept(canvas);
-      }));
+      };
     });
     let pendingResponseId = null;
     worker.onmessage = e => {
@@ -205,10 +212,10 @@ class Grass {
         const [id] = args;
         const {result} = data;
 
-        const queueEntryIndex = queues.findIndex(queueEntry => queueEntry.id === id);
-        const queueEntry = queues[queueEntryIndex];
-        queueEntry.cb(result);
-        queues.splice(queueEntryIndex, 1);
+        queues[id](result);
+        queues[id] = null;
+
+        _cleanupQueues();
       } else {
         console.warn('heightfield got unknown worker message type:', JSON.stringify(type));
       }

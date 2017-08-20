@@ -223,23 +223,30 @@ class Heightfield {
     const _requestImageBitmap = src => _requestImage(src)
       .then(img => createImageBitmap(img, 0, 0, img.width, img.height));
 
-    class QueueEntry {
-      constructor(id, cb) {
-        this.id = id;
-        this.cb = cb;
-      }
-    }
-
     const buffers = bffr(NUM_POSITIONS_CHUNK, RANGE * RANGE * 9);
     const worker = new Worker('archae/plugins/_plugins_heightfield/build/worker.js');
-    const queues = [];
+    let queues = {};
+    let numRemovedQueues = 0;
+    const _cleanupQueues = () => {
+      if (++numRemovedQueues >= 16) {
+        const newQueues = {};
+        for (const id in queues) {
+          const entry = queues[id];
+          if (entry !== null) {
+            newQueues[id] = entry;
+          }
+        }
+        queues = newQueues;
+        numRemovedQueues = 0;
+      }
+    };
     worker.requestOriginHeight = () => new Promise((accept, reject) => {
       const id = _makeId();
       worker.postMessage({
         method: 'getOriginHeight',
         id,
       });
-      queues.push(new QueueEntry(id, accept));
+      queues[id] = accept;
     });
     worker.requestGenerate = (x, y) => new Promise((accept, reject) => {
       const id = _makeId();
@@ -253,7 +260,7 @@ class Heightfield {
           buffer,
         },
       }, [buffer]);
-      queues.push(new QueueEntry(id, accept));
+      queues[id] = accept;
     });
     worker.requestUngenerate = (x, y) => {
       worker.postMessage({
@@ -275,7 +282,7 @@ class Heightfield {
           position: [x, y, z],
         },
       });
-      queues.push(new QueueEntry(id, accept));
+      queues[id] = accept;
     });
     worker.requestSubVoxel = (x, y, z) => new Promise((accept, reject) => {
       const id = _makeId();
@@ -286,7 +293,7 @@ class Heightfield {
           position: [x, y, z],
         },
       });
-      queues.push(new QueueEntry(id, accept));
+      queues[id] = accept;
     });
     worker.onmessage = e => {
       const {data} = e;
@@ -296,10 +303,10 @@ class Heightfield {
         const [id] = args;
         const {result} = data;
 
-        const queueEntryIndex = queues.findIndex(queueEntry => queueEntry.id === id);
-        const queueEntry = queues[queueEntryIndex];
-        queueEntry.cb(result);
-        queues.splice(queueEntryIndex, 1);
+        queues[id](result);
+        queues[id] = null;
+
+        _cleanupQueues();
       } else {
         console.warn('heightfield got unknown worker message type:', JSON.stringify(type));
       }

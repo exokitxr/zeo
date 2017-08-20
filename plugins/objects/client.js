@@ -233,15 +233,22 @@ void main() {
     });
     objectsMaterial.volatile = true;
 
-    class QueueEntry {
-      constructor(id, cb) {
-        this.id = id;
-        this.cb = cb;
-      }
-    }
-
     const worker = new Worker('archae/plugins/_plugins_objects/build/worker.js');
-    const queues = [];
+    let queues = {};
+    let numRemovedQueues = 0;
+    const _cleanupQueues = () => {
+      if (++numRemovedQueues >= 16) {
+        const newQueues = {};
+        for (const id in queues) {
+          const entry = queues[id];
+          if (entry !== null) {
+            newQueues[id] = entry;
+          }
+        }
+        queues = newQueues;
+        numRemovedQueues = 0;
+      }
+    };
     worker.requestRegisterGeometry = (name, fn) => {
       const {args, src} = _parseFunction(fn);
       worker.postMessage({
@@ -320,7 +327,7 @@ void main() {
       localMessage.args = localGenerateMessageArgs;
 
       worker.postMessage(localMessage, [buffer]);
-      queues.push(new QueueEntry(id, accept));
+      queues[id] = accept;
     });
     worker.requestUngenerate = (x, z) => {
       localMessage.type = 'ungenerate';
@@ -344,7 +351,7 @@ void main() {
       localMessage.args = localArray2;
 
       worker.postMessage(localMessage);
-      queues.push(new QueueEntry(id, accept));
+      queues[id] = accept;
     });
     worker.getTeleportObject = position => new Promise((accept, reject) => {
       localMessage.type = 'getTeleportObject';
@@ -353,7 +360,7 @@ void main() {
       localMessage.args = position.toArray(localArray3);
 
       worker.postMessage(localMessage);
-      queues.push(new QueueEntry(id, accept));
+      queues[id] = accept;
     });
     worker.getBodyObject = position => new Promise((accept, reject) => {
       localMessage.type = 'getBodyObject';
@@ -362,7 +369,7 @@ void main() {
       localMessage.args = position.toArray(localArray3);
 
       worker.postMessage(localMessage);
-      queues.push(new QueueEntry(id, accept));
+      queues[id] = accept;
     });
     worker.onmessage = e => {
       const {data} = e;
@@ -372,10 +379,10 @@ void main() {
         const [id] = args;
         const {result} = data;
 
-        const queueEntryIndex = queues.findIndex(queueEntry => queueEntry.id === id);
-        const queueEntry = queues[queueEntryIndex];
-        queueEntry.cb(result);
-        queues.splice(queueEntryIndex, 1);
+        queues[id](result);
+        queues[id] = null;
+
+        _cleanupQueues();
       } else if (type === 'chunkUpdate') {
         const [x, z] = args;
         const chunk = chunker.getChunk(x, z);
