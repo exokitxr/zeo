@@ -78,12 +78,22 @@ const _getHoveredTrackedObject = position => {
         );
 
         if (localBox.containsPoint(localVector2)) {
-          return [trackedObject.n, chunk.x, chunk.z, parseInt(k, 10), trackedObject.position.toArray()];
+          const uint32Array = new Uint32Array(8);
+          uint32Array[0] = trackedObject.n;
+          const int32Array = new Int32Array(uint32Array.buffer, uint32Array.byteOffset, uint32Array.length);
+          int32Array[1] = chunk.x;
+          int32Array[2] = chunk.z;
+          uint32Array[3] = parseInt(k, 10);
+          const float32Array = new Float32Array(uint32Array.buffer, uint32Array.byteOffset, uint32Array.length);
+          float32Array[4] = trackedObject.position.x;
+          float32Array[5] = trackedObject.position.y;
+          float32Array[6] = trackedObject.position.z;
+          return uint32Array;
         }
       }
     }
   }
-  return null;
+  return new Uint32Array(8);
 };
 const _getTeleportObject = position => {
   localRay.origin.set(position[0], 1000, position[2]);
@@ -175,9 +185,15 @@ const _getBodyObject = position => {
   }
 
   if (topN !== null) {
-    return [topN, topChunkX, topChunkZ, topObjectIndex];
+    const uint32Array = new Uint32Array(4);
+    uint32Array[0] = topN;
+    const int32Array = new Int32Array(uint32Array.buffer, uint32Array.byteOffset, uint32Array.length);
+    int32Array[1] = topChunkX;
+    int32Array[2] = topChunkZ;
+    uint32Array[3] = topObjectIndex;
+    return uint32Array;
   } else {
-    return null;
+    return new Uint32Array(4);
   }
 };
 
@@ -654,10 +670,9 @@ self.onmessage = e => {
     }
   } else if (type === 'getHoveredObjects') {
     const {id, args: positions} = data;
-    const result = [
-      _getHoveredTrackedObject(positions[0]),
-      _getHoveredTrackedObject(positions[1]),
-    ];
+    const result = new Uint32Array(8 * 2);
+    result.set(_getHoveredTrackedObject(positions[0]), 0);
+    result.set(_getHoveredTrackedObject(positions[1]), 8);
     postMessage({
       type: 'response',
       args: [id],
