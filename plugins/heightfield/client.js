@@ -176,7 +176,6 @@ class Heightfield {
       new PeekFace(PEEK_FACES.BOTTOM, PEEK_FACES.TOP, new THREE.Vector3(0, -1, 0)),
     ];
     const _getChunkIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
-    // const _getCullIndex = (x, y, z, f) => (mod(x, 0xFF) << 24) | (mod(y, 0xFF) << 16) | (mod(z, 0xFF) << 8) | mod(f, 0xFF);
 
     const forwardVector = new THREE.Vector3(0, 0, -1);
     const localVector = new THREE.Vector3();
@@ -390,6 +389,7 @@ class Heightfield {
 
         const mesh = new THREE.Mesh(geometry, material);
         mesh.frustumCulled = false;
+        mesh.offset = new THREE.Vector3(x, i, z);
         mesh.peeks = peeks;
 
         meshes[i] = mesh;
@@ -759,18 +759,15 @@ class Heightfield {
 
         const _update = () => {
           const cullQueue = [];
-          // const cullVisitedIndex = new Uint8Array(NUM_CELLS * NUM_CELLS * NUM_CELLS * 6);
           const _updateCull = () => {
             const {hmd} = pose.getStatus();
             const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmd;
 
-let total = 0;
             for (const index in mapChunkMeshes) {
               const trackedMapChunkMeshes = mapChunkMeshes[index];
               if (trackedMapChunkMeshes) {
                 for (let i = 0; i < 4; i++) {
                   trackedMapChunkMeshes[i].visible = false;
-total++;
                 }
               }
             }
@@ -778,22 +775,16 @@ total++;
             const oy = Math.floor(hmdPosition.y / NUM_CELLS);
             const oz = Math.floor(hmdPosition.z / NUM_CELLS);
 
-let culled = 0;
             const trackedMapChunkMesh = (() => {
               const trackedMapChunkMeshes = mapChunkMeshes[_getChunkIndex(ox, oz)];
               return trackedMapChunkMeshes ? trackedMapChunkMeshes[oy] : null;
             })();
             if (trackedMapChunkMesh) {
               frustum.setFromMatrix(localMatrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
-              cullQueue.push([ox, oy, oz, trackedMapChunkMesh, PEEK_FACES.NULL]);
-              // cullVisitedIndex.fill(0);
-              // cullVisitedIndex[_getCullIndex(ox, oy, oz, PEEK_FACES.NULL)] = 1;
+              cullQueue.push([trackedMapChunkMesh, PEEK_FACES.NULL]);
               while (cullQueue.length > 0) {
-                const [x, y, z, trackedMapChunkMesh, enterFace] = cullQueue.shift();
-
-if (!trackedMapChunkMesh.visible) {
-culled++;
-}
+                const [trackedMapChunkMesh, enterFace] = cullQueue.shift();
+                const {offset: {x, y, z}} = trackedMapChunkMesh;
 
                 trackedMapChunkMesh.visible = true;
                 for (let j = 0; j < peekFaceSpecs.length; j++) {
@@ -812,11 +803,7 @@ culled++;
                         if (trackedMapChunkMeshes) {
                           const trackedMapChunkMesh = trackedMapChunkMeshes[ay];
                           if (frustum.intersectsObject(trackedMapChunkMesh)) {
-                            // const index = _getCullIndex(ax, ay, az, peekFaceSpec.enterFace);
-                            // if (cullVisitedIndex[index] === 0) {
-                              cullQueue.push([ax, ay, az, trackedMapChunkMesh, peekFaceSpec.enterFace]);
-                              // cullVisitedIndex[index] = 1;
-                            // }
+                            cullQueue.push([trackedMapChunkMesh, peekFaceSpec.enterFace]);
                           }
                         }
                       }
@@ -825,7 +812,6 @@ culled++;
                 }
               }
             }
-console.log('culled', ox, oy, oz, trackedMapChunkMesh && Array.from(trackedMapChunkMesh.peeks).join(','), culled, total); // XXX
           };
           const _updateSunIntensity = () => {
             const dayNightSkyboxEntity = elements.getEntitiesElement().querySelector(DAY_NIGHT_SKYBOX_PLUGIN);
