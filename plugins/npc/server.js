@@ -328,7 +328,7 @@ class Mobs {
                     const mob = mobs[i];
                     const {id, type, skinName, position, rotation, headRotation} = mob;
 
-                    const e = {
+                    c.send(JSON.stringify({
                       type: 'mobAdd',
                       id,
                       spec: {
@@ -338,28 +338,26 @@ class Mobs {
                         rotation: rotation.toArray(),
                         headRotation: headRotation.toArray(),
                       },
-                    };
-                    const es = JSON.stringify(e);
-                    c.send(es);
+                    }));
 
                     const _animation = animation => {
-                      const {mode, positionStart, positionEnd, rotationStart, rotationEnd, headRotationStart, headRotationEnd, duration} = animation;
-                      const e = {
-                        type: 'mobAnimation',
-                        id,
-                        animation: {
-                          mode,
-                          positionStart: positionStart.toArray(),
-                          positionEnd: positionEnd.toArray(),
-                          rotationStart: rotationStart.toArray(),
-                          rotationEnd: rotationEnd.toArray(),
-                          headRotationStart: headRotationStart.toArray(),
-                          headRotationEnd: headRotationEnd.toArray(),
-                          duration,
-                        },
-                      };
-                      const es = JSON.stringify(e);
-                      c.send(es);
+                      if (c.readyState === ws.OPEN) {
+                        const {mode, positionStart, positionEnd, rotationStart, rotationEnd, headRotationStart, headRotationEnd, duration} = animation;
+                        c.send(JSON.stringify({
+                          type: 'mobAnimation',
+                          id,
+                          animation: {
+                            mode,
+                            positionStart: positionStart.toArray(),
+                            positionEnd: positionEnd.toArray(),
+                            rotationStart: rotationStart.toArray(),
+                            rotationEnd: rotationEnd.toArray(),
+                            headRotationStart: headRotationStart.toArray(),
+                            headRotationEnd: headRotationEnd.toArray(),
+                            duration,
+                          },
+                        }));
+                      }
                     };
                     mob.on('animation', _animation);
                     const _die = () => {
