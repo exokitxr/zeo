@@ -94,7 +94,7 @@ class Ocean {
       queues.push(accept);
     });
     worker.onmessage = e => {
-      queues.shift()(e.data)
+      queues.shift()(e.data);
     };
     const _requestOceanGenerate = (x, z, lod) => worker.requestGenerate(x, z, lod)
       .then(oceanBuffer => protocolUtils.parseGeometry(oceanBuffer));

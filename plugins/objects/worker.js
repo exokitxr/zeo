@@ -206,16 +206,16 @@ connection.on('message', e => {
 
       const objectApi = objectApis[n];
       if (objectApi && objectApi.added) {
-        postMessage(JSON.stringify({
+        postMessage({
           type: 'objectAdded',
           args: [n, x, z, index, positionArray, rotationArray, value],
-        }));
+        });
       }
 
-      postMessage(JSON.stringify({
+      postMessage({
         type: 'chunkUpdate',
         args: [x, z],
-      }));
+      });
     } else if (type === 'removeObject') {
       const {args: {x, z, index}} = m;
       const chunk = zde.getChunk(x, z);
@@ -224,18 +224,18 @@ connection.on('message', e => {
       const trackedObject = trackedObjects[index];
       const objectApi = objectApis[trackedObject.n];
       if (objectApi && objectApi.removed) {
-        postMessage(JSON.stringify({
+        postMessage({
           type: 'objectRemoved',
           args: [trackedObject.n, x, z, index, trackedObject.startIndex, trackedObject.endIndex],
-        }));
+        });
       }
 
       chunk.trackedObjects[index] = null;
 
-      postMessage(JSON.stringify({
+      postMessage({
         type: 'chunkUpdate',
         args: [x, z],
-      }));
+      });
     } else if (type === 'setObjectData') {
       const {args: {x, z, index, value}} = m;
       const chunk = zde.getChunk(x, z);
@@ -246,16 +246,16 @@ connection.on('message', e => {
       if (objectApi && objectApi.updated) {
         trackedObject.value = value;
 
-        postMessage(JSON.stringify({
+        postMessage({
           type: 'objectUpdated',
           args: [trackedObject.n, x, z, index, trackedObject.position.toArray(), trackedObject.rotation.toArray(), trackedObject.value],
-        }));
+        });
       }
 
-      postMessage(JSON.stringify({
+      postMessage({
         type: 'chunkUpdate',
         args: [x, z],
-      }));
+      });
     } else {
       console.warn('objects worker got invalid message type:', JSON.stringify(type));
     }
@@ -450,10 +450,10 @@ self.onmessage = e => {
             const trackedObject = chunk.trackedObjects[k];
 
             if (trackedObject && trackedObject.n === n) {
-              postMessage(JSON.stringify({
+              postMessage({
                 type: 'objectAdded',
                 args: [trackedObject.n, chunk.x, chunk.z, parseInt(k, 10), trackedObject.position, trackedObject.rotation, trackedObject.value],
-              }));
+              });
             }
           }
         }
@@ -482,10 +482,10 @@ self.onmessage = e => {
             const trackedObject = chunk.trackedObjects[k];
 
             if (trackedObject.n === n) {
-              postMessage(JSON.stringify({
+              postMessage({
                 type: 'objectRemoved',
                 args: [trackedObject.n, chunk.x, chunk.z, parseInt(k, 10), trackedObject.position, trackedObject.rotation, trackedObject.value],
-              }));
+              });
             }
           }
         }
@@ -539,10 +539,10 @@ self.onmessage = e => {
       const trackedObject = chunk.trackedObjects[index];
       const objectApi = objectApis[trackedObject.n];
       if (objectApi && objectApi.removed) {
-        postMessage(JSON.stringify({
+        postMessage({
           type: 'objectRemoved',
           args: [trackedObject.n, x, z, index, trackedObject.startIndex, trackedObject.endIndex],
-        }));
+        });
       }
 
       chunk.trackedObjects[index] = null;
@@ -568,10 +568,10 @@ self.onmessage = e => {
         if (objectApi && objectApi.updated) {
           trackedObject.value = value;
 
-          postMessage(JSON.stringify({
+          postMessage({
             type: 'objectUpdated',
             args: [trackedObject.n, x, z, index, trackedObject.position.toArray(), trackedObject.rotation.toArray(), trackedObject.value],
-          }));
+          });
         }
 
         connection.send(JSON.stringify({
@@ -597,11 +597,11 @@ self.onmessage = e => {
         const geometry = _makeChunkGeometry(chunk);
 
         resultBuffer = protocolUtils.stringifyGeometry(geometry, resultBuffer, 0);
-        postMessage(JSON.stringify({
+        postMessage({
           type: 'response',
           args: [id],
-        }));
-        postMessage(resultBuffer, [resultBuffer]);
+          result: resultBuffer,
+        }, [resultBuffer]);
 
         const {objects} = geometry
         const numObjects = objects.length / 3;
@@ -618,10 +618,10 @@ self.onmessage = e => {
           if (!trackedObject.calledBack) {
             const objectApi = objectApis[trackedObject.n];
             if (objectApi && objectApi.added) {
-              postMessage(JSON.stringify({
+              postMessage({
                 type: 'objectAdded',
                 args: [trackedObject.n, x, z, index, trackedObject.position.toArray(), trackedObject.rotation.toArray(), trackedObject.value],
-              }));
+              });
             }
             trackedObject.calledBack = true;
           }
@@ -645,10 +645,10 @@ self.onmessage = e => {
         const objectApi = objectApis[trackedObject.n];
 
         if (objectApi && objectApi.removed) {
-          postMessage(JSON.stringify({
+          postMessage({
             type: 'objectRemoved',
             args: [trackedObject.n, chunk.x, chunk.z, parseInt(k, 10), trackedObject.position, trackedObject.rotation, trackedObject.value],
-          }));
+          });
         }
       }
     }
@@ -658,27 +658,27 @@ self.onmessage = e => {
       _getHoveredTrackedObject(positions[0]),
       _getHoveredTrackedObject(positions[1]),
     ];
-    postMessage(JSON.stringify({
+    postMessage({
       type: 'response',
       args: [id],
-    }));
-    postMessage(result);
+      result,
+    });
   } else if (type === 'getTeleportObject') {
     const {id, args: position} = data;
     const result = _getTeleportObject(position);
-    postMessage(JSON.stringify({
+    postMessage({
       type: 'response',
       args: [id],
-    }));
-    postMessage(result);
+      result,
+    });
   } else if (type === 'getBodyObject') {
     const {id, args: position} = data;
     const result = _getBodyObject(position);
-    postMessage(JSON.stringify({
+    postMessage({
       type: 'response',
       args: [id],
-    }));
-    postMessage(result);
+      result,
+    });
   } else {
     console.warn('objects worker got invalid method', JSON.stringify(type));
   }

@@ -107,9 +107,7 @@ class Cloud {
       });
     });
     worker.onmessage = e => {
-      const {data: buffer} = e;
-      const cb = queue.shift();
-      cb(buffer);
+      queue.shift()(e.data);
     };
 
     const _requestCloudGenerate = (x, y) => worker.requestGenerate(x, y)

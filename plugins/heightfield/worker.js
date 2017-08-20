@@ -79,11 +79,11 @@ self.onmessage = e => {
     case 'getOriginHeight': {
       const {id} = data;
 
-      postMessage(JSON.stringify({
+      postMessage({
         type: 'response',
         args: [id],
-      }));
-      postMessage(_getOriginHeight());
+        result: _getOriginHeight(),
+      });
       break;
     }
     case 'generate': {
@@ -99,11 +99,11 @@ self.onmessage = e => {
             0
           );
 
-          postMessage(JSON.stringify({
+          postMessage({
             type: 'response',
             args: [id],
-          }));
-          postMessage(buffer, [buffer]);
+            result: buffer,
+          }, [buffer]);
         })
         .catch(err => {
           console.warn(err);
@@ -133,11 +133,11 @@ self.onmessage = e => {
           const oz = Math.floor(z / NUM_CELLS);
           tra.removeChunk(ox, oz); // XXX not needed once we regenerate locally
 
-          postMessage(JSON.stringify({
+          postMessage({
             type: 'response',
             args: [id],
-          }));
-          postMessage(null);
+            result: null,
+          });
         })
         .catch(err => {
           console.warn(err);
@@ -186,11 +186,11 @@ self.onmessage = e => {
           regenerated.push([ox, oz]);
         }
       }
-      postMessage(JSON.stringify({
+      postMessage({
         type: 'response',
         args: [id],
-      }));
-      postMessage(regenerated);
+        result: regenerated,
+      });
       break;
     }
     default: {

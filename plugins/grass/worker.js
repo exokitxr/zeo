@@ -293,11 +293,11 @@ self.onmessage = e => {
         const grassChunkGeometry = _makeGrassChunkMesh(x, y, grassTemplates, heightfield);
         const resultBuffer = protocolUtils.stringifyGrassGeometry(grassChunkGeometry);
 
-        postMessage(JSON.stringify({
+        postMessage({
           type: 'response',
           args: [id],
-        }));
-        postMessage(resultBuffer, [resultBuffer]);
+          result: resultBuffer,
+        }, [resultBuffer]);
       })
       .catch(err => {
         console.warn(err);
@@ -306,10 +306,10 @@ self.onmessage = e => {
     const {id, buffer} = data;
     new Uint8Array(buffer).set(grassTextureAtlas);
 
-    postMessage(JSON.stringify({
+    postMessage({
       type: 'response',
       args: [id],
-    }));
-    postMessage(buffer, [buffer]);
+      result: buffer,
+    }, [buffer]);
   }
 };

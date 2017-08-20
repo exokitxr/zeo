@@ -437,10 +437,7 @@ self.onmessage = e => {
     const {ox, oz, buffer} = data;
 
     const resultBuffer = _getUpdate(ox, oz, buffer);
-    postMessage({
-      type: 'respondUpdate',
-      buffer: resultBuffer,
-    }, [resultBuffer]);
+    postMessage(resultBuffer, [resultBuffer]);
   } else {
     console.warn('unknown lightmap message type:', JSON.stringify(type));
   }

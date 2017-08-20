@@ -364,8 +364,7 @@ class Lightmap {
           });
         });
         worker.onmessage = e => {
-          const {data: {buffer}} = e;
-          queue.shift()(buffer);
+          queue.shift()(e.data);
         };
         worker.init(width, height, depth);
         this.worker = worker;

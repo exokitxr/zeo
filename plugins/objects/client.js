@@ -364,74 +364,69 @@ void main() {
       worker.postMessage(localMessage);
       queues.push(new QueueEntry(id, accept));
     });
-    let pendingResponseId = 0;
     worker.onmessage = e => {
       const {data} = e;
-      if (typeof data === 'string') {
-        const m = JSON.parse(data);
-        const {type, args} = m;
+      const {type, args} = data;
 
-        if (type === 'response') {
-          const [id] = args;
-          pendingResponseId = id;
-        } else if (type === 'chunkUpdate') {
-          const [x, z] = args;
-          const chunk = chunker.getChunk(x, z);
-          if (chunk) {
-            chunk.lod = -1; // force chunk refresh
-          }
-          _debouncedRequestRefreshObjectsChunks();
-        } else if (type === 'objectAdded') {
-          const [n, x, z, objectIndex, position, rotation, value] = args;
+      if (type === 'response') {
+        const [id] = args;
+        const {result} = data;
 
-          const objectApi = objectApis[n];
-          if (objectApi) {
-            objectApi.addedCallback(
-              _getObjectIndex(x, z, objectIndex),
-              localVector.fromArray(position),
-              localQuaternion.fromArray(rotation),
-              value,
-              x,
-              z,
-              objectIndex
-            );
-          }
-        } else if (type === 'objectRemoved') {
-          const [n, x, z, objectIndex, startIndex, endIndex] = args;
+        const queueEntryIndex = queues.findIndex(queueEntry => queueEntry.id === id);
+        const queueEntry = queues[queueEntryIndex];
+        queueEntry.cb(result);
+        queues.splice(queueEntryIndex, 1);
+      } else if (type === 'chunkUpdate') {
+        const [x, z] = args;
+        const chunk = chunker.getChunk(x, z);
+        if (chunk) {
+          chunk.lod = -1; // force chunk refresh
+        }
+        _debouncedRequestRefreshObjectsChunks();
+      } else if (type === 'objectAdded') {
+        const [n, x, z, objectIndex, position, rotation, value] = args;
 
-          if (startIndex !== -1) {
-            const objectChunkMesh = objectsChunkMeshes[_getChunkIndex(x, z)];
+        const objectApi = objectApis[n];
+        if (objectApi) {
+          objectApi.addedCallback(
+            _getObjectIndex(x, z, objectIndex),
+            localVector.fromArray(position),
+            localQuaternion.fromArray(rotation),
+            value,
+            x,
+            z,
+            objectIndex
+          );
+        }
+      } else if (type === 'objectRemoved') {
+        const [n, x, z, objectIndex, startIndex, endIndex] = args;
 
-            if (objectChunkMesh) {
-              const indexAttribute = objectChunkMesh.geometry.index;
-              const indices = indexAttribute.array;
-              for (let i = startIndex; i < endIndex; i++) {
-                indices[i] = 0;
-              }
-              indexAttribute.needsUpdate = true;
+        if (startIndex !== -1) {
+          const objectChunkMesh = objectsChunkMeshes[_getChunkIndex(x, z)];
+
+          if (objectChunkMesh) {
+            const indexAttribute = objectChunkMesh.geometry.index;
+            const indices = indexAttribute.array;
+            for (let i = startIndex; i < endIndex; i++) {
+              indices[i] = 0;
             }
+            indexAttribute.needsUpdate = true;
           }
+        }
 
-          const objectApi = objectApis[n];
-          if (objectApi) {
-            objectApi.removedCallback(_getObjectIndex(x, z, objectIndex), x, z, objectIndex);
-          }
-        } else if (type === 'objectUpdated') {
-          const [n, x, z, objectIndex, position, rotation, value] = args;
+        const objectApi = objectApis[n];
+        if (objectApi) {
+          objectApi.removedCallback(_getObjectIndex(x, z, objectIndex), x, z, objectIndex);
+        }
+      } else if (type === 'objectUpdated') {
+        const [n, x, z, objectIndex, position, rotation, value] = args;
 
-          const objectApi = objectApis[n];
-          if (objectApi) {
-            objectApi.updateCallback(_getObjectIndex(x, z, objectIndex), localVector.fromArray(position), localQuaternion.fromArray(rotation), value);
-          }
-        } else {
-          console.warn('objects got unknown worker message type:', JSON.stringify(type));
+        const objectApi = objectApis[n];
+        if (objectApi) {
+          objectApi.updateCallback(_getObjectIndex(x, z, objectIndex), localVector.fromArray(position), localQuaternion.fromArray(rotation), value);
         }
       } else {
-        const queueEntryIndex = queues.findIndex(queueEntry => queueEntry.id === pendingResponseId);
-        const queueEntry = queues[queueEntryIndex];
-        queueEntry.cb(data);
-        queues.splice(queueEntryIndex, 1);
-        pendingResponseId = 0;
+        console.warn('objects got unknown worker message type:', JSON.stringify(type));
       }
     };
 

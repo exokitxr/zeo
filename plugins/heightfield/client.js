@@ -288,25 +288,20 @@ class Heightfield {
       });
       queues.push(new QueueEntry(id, accept));
     });
-    let pendingResponseId = null;
     worker.onmessage = e => {
       const {data} = e;
-      if (typeof data === 'string') {
-        const m = JSON.parse(data);
-        const {type, args} = m;
+      const {type, args} = data;
 
-        if (type === 'response') {
-          const [id] = args;
-          pendingResponseId = id;
-        } else {
-          console.warn('heightfield got unknown worker message type:', JSON.stringify(type));
-        }
-      } else {
-        const queueEntryIndex = queues.findIndex(queueEntry => queueEntry.id === pendingResponseId);
+      if (type === 'response') {
+        const [id] = args;
+        const {result} = data;
+
+        const queueEntryIndex = queues.findIndex(queueEntry => queueEntry.id === id);
         const queueEntry = queues[queueEntryIndex];
-        queueEntry.cb(data);
+        queueEntry.cb(result);
         queues.splice(queueEntryIndex, 1);
-        pendingResponseId = null;
+      } else {
+        console.warn('heightfield got unknown worker message type:', JSON.stringify(type));
       }
     };
 
