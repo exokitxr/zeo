@@ -176,7 +176,7 @@ class Heightfield {
       new PeekFace(PEEK_FACES.BOTTOM, PEEK_FACES.TOP, new THREE.Vector3(0, -1, 0)),
     ];
     const _getChunkIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
-    const _getCullIndex = (x, y, z, f) => (mod(x, 0xFF) << 24) | (mod(y, 0xFF) << 16) | (mod(z, 0xFF) << 8) | mod(f, 0xFF);
+    // const _getCullIndex = (x, y, z, f) => (mod(x, 0xFF) << 24) | (mod(y, 0xFF) << 16) | (mod(z, 0xFF) << 8) | mod(f, 0xFF);
 
     const forwardVector = new THREE.Vector3(0, 0, -1);
     const localVector = new THREE.Vector3();
@@ -758,6 +758,8 @@ class Heightfield {
         _recurse();
 
         const _update = () => {
+          const cullQueue = [];
+          // const cullVisitedIndex = new Uint8Array(NUM_CELLS * NUM_CELLS * NUM_CELLS * 6);
           const _updateCull = () => {
             const {hmd} = pose.getStatus();
             const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmd;
@@ -783,9 +785,9 @@ let culled = 0;
             })();
             if (trackedMapChunkMesh) {
               frustum.setFromMatrix(localMatrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
-              const cullQueue = [[ox, oy, oz, trackedMapChunkMesh, PEEK_FACES.NULL]];
-              const cullVisitedIndex = {};
-              cullVisitedIndex[_getCullIndex(ox, oy, oz, PEEK_FACES.NULL)] = true;
+              cullQueue.push([ox, oy, oz, trackedMapChunkMesh, PEEK_FACES.NULL]);
+              // cullVisitedIndex.fill(0);
+              // cullVisitedIndex[_getCullIndex(ox, oy, oz, PEEK_FACES.NULL)] = 1;
               while (cullQueue.length > 0) {
                 const [x, y, z, trackedMapChunkMesh, enterFace] = cullQueue.shift();
 
@@ -800,22 +802,21 @@ culled++;
                   if (ay >= 0 && ay < 4) {
                     const ax = x + peekFaceSpec.normal.x;
                     const az = z + peekFaceSpec.normal.z;
-                    localVector.set(
-                      ax - ox,
-                      ay - oy,
-                      az - oz
-                    );
-                    if (localVector.dot(peekFaceSpec.normal) >= 0) {
+                    if (
+                      (ax - ox) * peekFaceSpec.normal.x > 0 ||
+                      (ay - oy) * peekFaceSpec.normal.y > 0 ||
+                      (az - oz) * peekFaceSpec.normal.z > 0
+                    ) {
                       if (enterFace === PEEK_FACES.NULL || trackedMapChunkMesh.peeks[PEEK_FACE_INDICES[enterFace][peekFaceSpec.exitFace]] === 1) {
                         const trackedMapChunkMeshes = mapChunkMeshes[_getChunkIndex(ax, az)];
                         if (trackedMapChunkMeshes) {
                           const trackedMapChunkMesh = trackedMapChunkMeshes[ay];
                           if (frustum.intersectsObject(trackedMapChunkMesh)) {
-                            const index = _getCullIndex(ax, ay, az, peekFaceSpec.enterFace);
-                            if (!cullVisitedIndex[index]) {
+                            // const index = _getCullIndex(ax, ay, az, peekFaceSpec.enterFace);
+                            // if (cullVisitedIndex[index] === 0) {
                               cullQueue.push([ax, ay, az, trackedMapChunkMesh, peekFaceSpec.enterFace]);
-                              cullVisitedIndex[index] = true;
-                            }
+                              // cullVisitedIndex[index] = 1;
+                            // }
                           }
                         }
                       }
