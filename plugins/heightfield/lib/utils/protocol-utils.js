@@ -1,10 +1,16 @@
+const {
+  NUM_CHUNKS_HEIGHT,
+
+  NUM_RENDER_GROUPS,
+} = require('../constants/constants');
+
 const UINT32_SIZE = 4;
 const INT32_SIZE = 4;
 const FLOAT32_SIZE = 4;
 const UINT8_SIZE = 1;
-const DATA_HEADER_ENTRIES = 3 + (1 * 4) + 4;
+const DATA_HEADER_ENTRIES = 3 + (1 * NUM_CHUNKS_HEIGHT) + 4;
 const DATA_HEADER_SIZE = UINT32_SIZE * DATA_HEADER_ENTRIES;
-const RENDER_HEADER_ENTRIES = 3 + (1 * 4) + 2;
+const RENDER_HEADER_ENTRIES = 3 + (1 * NUM_CHUNKS_HEIGHT) + 2;
 const RENDER_HEADER_SIZE = UINT32_SIZE * RENDER_HEADER_ENTRIES;
 
 const _getDataChunkSizeFromMetadata = metadata => {
@@ -14,8 +20,8 @@ const _getDataChunkSizeFromMetadata = metadata => {
     (FLOAT32_SIZE * numPositions) + // positions
     (FLOAT32_SIZE * numColors) + // colors
     (UINT32_SIZE * numIndices) + // indices
-    (UINT32_SIZE * 2 * 4) + // index range
-    (FLOAT32_SIZE * 4) + // bounding sphere
+    (UINT32_SIZE * 2 * NUM_CHUNKS_HEIGHT) + // index range
+    (FLOAT32_SIZE * NUM_CHUNKS_HEIGHT) + // bounding sphere
     (UINT8_SIZE * _sum(numPeeks)) + // peeks
     (FLOAT32_SIZE * numHeightfield) + // heightfield
     (FLOAT32_SIZE * numStaticHeightfield) + // static heightfield
@@ -29,8 +35,8 @@ const _getDataChunkSize = mapChunk => {
   const numPositions = positions.length;
   const numColors = colors.length;
   const numIndices = indices.length;
-  const numPeeks = Array(4);
-  for (let i = 0; i < 4; i++) {
+  const numPeeks = Array(NUM_CHUNKS_HEIGHT);
+  for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
     const geometry = geometries[i];
     const {peeks} = geometry;
     numPeeks[i] = peeks.length;
@@ -58,8 +64,8 @@ const _getDataChunkSize = mapChunk => {
   const numPositions = headerBuffer[index++];
   const numColors = headerBuffer[index++];
   const numIndices = headerBuffer[index++];
-  const numPeeks = Array(4);
-  for (let i = 0; i < 4; i++) {
+  const numPeeks = Array(NUM_CHUNKS_HEIGHT);
+  for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
     numPeeks[i] = headerBuffer[index++];
   }
   const numHeightfield = headerBuffer[index++];
@@ -92,7 +98,7 @@ const stringifyDataChunk = (mapChunk, arrayBuffer, byteOffset) => {
   headerBuffer[index++] = positions.length;
   headerBuffer[index++] = colors.length;
   headerBuffer[index++] = indices.length;
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
     const geometry = geometries[i];
     const {peeks} = geometry;
     headerBuffer[index++] = peeks.length;
@@ -115,7 +121,7 @@ const stringifyDataChunk = (mapChunk, arrayBuffer, byteOffset) => {
   indicesBuffer.set(indices);
   byteOffset += UINT32_SIZE * indices.length;
 
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
     const geometry = geometries[i];
     const {indexRange, boundingSphere, peeks} = geometry;
 
@@ -162,8 +168,8 @@ const parseDataChunk = (buffer, byteOffset) => {
   const numPositions = headerBuffer[index++];
   const numColors = headerBuffer[index++];
   const numIndices = headerBuffer[index++];
-  const numPeeks = Array(4);
-  for (let i = 0; i < 4; i++) {
+  const numPeeks = Array(NUM_CHUNKS_HEIGHT);
+  for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
     numPeeks[i] = headerBuffer[index++];
   }
   const numHeightfield = headerBuffer[index++];
@@ -184,8 +190,8 @@ const parseDataChunk = (buffer, byteOffset) => {
   const indices = indicesBuffer;
   byteOffset += UINT32_SIZE * numIndices;
 
-  const geometries = Array(4);
-  for (let i = 0; i < 4; i++) {
+  const geometries = Array(NUM_CHUNKS_HEIGHT);
+  for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
     const indexRangeBuffer = new Uint32Array(buffer, byteOffset, 2);
     const indexRange = {
       start: indexRangeBuffer[0],
@@ -244,8 +250,8 @@ const _getRenderChunkSizeFromMetadata = metadata => {
     (FLOAT32_SIZE * numPositions) + // positions
     (FLOAT32_SIZE * numColors) + // colors
     (UINT32_SIZE * numIndices) + // indices
-    (UINT32_SIZE * 2 * 4) + // index range
-    (FLOAT32_SIZE * 4) + // bounding sphere
+    (UINT32_SIZE * 2 * NUM_CHUNKS_HEIGHT) + // index range
+    (FLOAT32_SIZE * NUM_CHUNKS_HEIGHT) + // bounding sphere
     (UINT8_SIZE * _sum(numPeeks)) + // peeks
     (FLOAT32_SIZE * numHeightfield) + // heightfield
     (FLOAT32_SIZE * numStaticHeightfield); // static heightfield
@@ -257,8 +263,8 @@ const _getRenderChunkSize = mapChunk => {
   const numPositions = positions.length;
   const numColors = colors.length;
   const numIndices = indices.length;
-  const numPeeks = Array(4);
-  for (let i = 0; i < 4; i++) {
+  const numPeeks = Array(NUM_CHUNKS_HEIGHT);
+  for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
     const geometry = geometries[i];
     const {peeks} = geometry;
     numPeeks[i] = peeks.length;
@@ -283,8 +289,8 @@ const _getRenderChunkSize = mapChunk => {
   const numPositions = headerBuffer[index++];
   const numColors = headerBuffer[index++];
   const numIndices = headerBuffer[index++];
-  const numPeeks = Array(4);
-  for (let i = 0; i < 4; i++) {
+  const numPeeks = Array(NUM_CHUNKS_HEIGHT);
+  for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
     numPeeks[i] = headerBuffer[index++];
   }
   const numHeightfield = headerBuffer[index++];
@@ -314,7 +320,7 @@ const stringifyRenderChunk = (mapChunk, arrayBuffer, byteOffset) => {
   headerBuffer[index++] = positions.length;
   headerBuffer[index++] = colors.length;
   headerBuffer[index++] = indices.length;
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
     const geometry = geometries[i];
     const {peeks} = geometry;
     headerBuffer[index++] = peeks.length;
@@ -335,7 +341,7 @@ const stringifyRenderChunk = (mapChunk, arrayBuffer, byteOffset) => {
   indicesBuffer.set(indices);
   byteOffset += UINT32_SIZE * indices.length;
 
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
     const geometry = geometries[i];
     const {indexRange, boundingSphere, peeks} = geometry;
 
@@ -373,8 +379,8 @@ const parseRenderChunk = (buffer, byteOffset) => {
   const numPositions = headerBuffer[index++];
   const numColors = headerBuffer[index++];
   const numIndices = headerBuffer[index++];
-  const numPeeks = Array(4);
-  for (let i = 0; i < 4; i++) {
+  const numPeeks = Array(NUM_CHUNKS_HEIGHT);
+  for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
     numPeeks[i] = headerBuffer[index++];
   }
   const numHeightfield = headerBuffer[index++];
@@ -394,8 +400,8 @@ const parseRenderChunk = (buffer, byteOffset) => {
   const indices = indicesBuffer;
   byteOffset += UINT32_SIZE * numIndices;
 
-  const geometries = Array(4);
-  for (let i = 0; i < 4; i++) {
+  const geometries = Array(NUM_CHUNKS_HEIGHT);
+  for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
     const indexRangeBuffer = new Uint32Array(buffer, byteOffset, 2);
     const indexRange = {
       start: indexRangeBuffer[0],
@@ -443,15 +449,15 @@ const sliceDataHeightfield = (arrayBuffer, readByteOffset) => {
   const numPositions = headerBuffer[index++];
   const numColors = headerBuffer[index++];
   const numIndices = headerBuffer[index++];
-  const numPeeks = Array(4);
-  for (let i = 0; i < 4; i++) {
+  const numPeeks = Array(NUM_CHUNKS_HEIGHT);
+  for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
     numPeeks[i] = headerBuffer[index++];
   }
   const numHeightfield = headerBuffer[index++];
   const numStaticHeightfield = headerBuffer[index++];
   const numElevations = headerBuffer[index++];
   const numEther  = headerBuffer[index++];
-  readByteOffset += DATA_HEADER_SIZE + FLOAT32_SIZE * numPositions + FLOAT32_SIZE * numColors + UINT32_SIZE * numIndices + UINT32_SIZE * 2 * 4 + FLOAT32_SIZE * 4 * 4 + UINT8_SIZE * _sum(numPeeks);
+  readByteOffset += DATA_HEADER_SIZE + FLOAT32_SIZE * numPositions + FLOAT32_SIZE * numColors + UINT32_SIZE * numIndices + UINT32_SIZE * 2 * NUM_CHUNKS_HEIGHT + FLOAT32_SIZE * 4 * NUM_CHUNKS_HEIGHT + UINT8_SIZE * _sum(numPeeks);
 
   const heightfieldBuffer = new Float32Array(arrayBuffer, readByteOffset, numHeightfield);
   readByteOffset += FLOAT32_SIZE * numHeightfield + FLOAT32_SIZE * numStaticHeightfield + FLOAT32_SIZE * numElevations + FLOAT32_SIZE * numEther;

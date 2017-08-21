@@ -11,6 +11,10 @@ const trra = require('trra');
 const {
   NUM_CELLS,
 
+  NUM_CHUNKS_HEIGHT,
+
+  NUM_RENDER_GROUPS,
+
   DEFAULT_SEED,
 
   PEEK_FACES,
@@ -115,11 +119,7 @@ self.onmessage = e => {
       _requestChunk(x, y)
         .then(chunk => {
           const uint32Buffer = chunk.getBuffer();
-          protocolUtils.stringifyRenderChunk(
-            protocolUtils.parseDataChunk(uint32Buffer.buffer, uint32Buffer.byteOffset),
-            buffer,
-            0
-          );
+          protocolUtils.stringifyRenderChunk(protocolUtils.parseDataChunk(uint32Buffer.buffer, uint32Buffer.byteOffset), buffer, 0);
 
           postMessage({
             type: 'response',

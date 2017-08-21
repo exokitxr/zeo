@@ -11,6 +11,9 @@ const {
   OVERSCAN,
   NUM_CELLS_OVERSCAN,
 
+  NUM_CELLS_HEIGHT,
+  NUM_CHUNKS_HEIGHT,
+
   HEIGHTFIELD_DEPTH,
 
   DEFAULT_SEED,
@@ -18,10 +21,10 @@ const {
   PEEK_FACES,
   PEEK_FACE_INDICES,
 } = require('./lib/constants/constants');
-const NUM_POSITIONS_CHUNK = 1 * 1024 * 1024;
+const NUM_POSITIONS_CHUNK = 800 * 1024;
 const NUM_CELLS_HALF = NUM_CELLS / 2;
 const NUM_CELLS_CUBE = Math.sqrt(NUM_CELLS_HALF * NUM_CELLS_HALF * 3);
-const NUM_CELLS_OVERSCAN_Y = (NUM_CELLS * 4) + OVERSCAN;
+const NUM_CELLS_OVERSCAN_Y = NUM_CELLS_HEIGHT + OVERSCAN;
 const HOLE_SIZE = 2;
 
 const _copyIndices = (src, dst, startIndexIndex, startAttributeIndex) => {
@@ -38,8 +41,8 @@ const _makeGeometries = ether => {
   let attributeIndex = 0;
   let indexIndex = 0;
 
-  const geometries = Array(4);
-  for (let i = 0; i < 4; i++) {
+  const geometries = Array(NUM_CHUNKS_HEIGHT);
+  for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
     const {positions: newPositions, indices: newIndices} = mrch.marchingCubes(
       [NUM_CELLS + 1, NUM_CELLS + 1, NUM_CELLS + 1],
       (x, y, z) => ether[_getEtherIndex(x, y, z)],
@@ -155,15 +158,7 @@ const _random = (() => {
   };
 })();
 
-const forwardVector = new THREE.Vector3(0, 0, -1);
 const localVector = new THREE.Vector3();
-const localVector2 = new THREE.Vector3();
-const localVector3 = new THREE.Vector3();
-const localVector4 = new THREE.Vector3();
-const localVector5 = new THREE.Vector3();
-const localVector6 = new THREE.Vector3();
-const localLine = new THREE.Line3();
-const localQuaternion = new THREE.Quaternion();
 const localTriangle = new THREE.Triangle();
 localTriangle.points = [localTriangle.a, localTriangle.b, localTriangle.c];
 const _generateMapChunk = (ox, oy, opts) => {
@@ -181,7 +176,7 @@ const _generateMapChunk = (ox, oy, opts) => {
 
   let ether = opts.oldEther;
   if (!ether) {
-    ether = new Float32Array((NUM_CELLS + 1) * ((NUM_CELLS * 4) + 1) * (NUM_CELLS + 1));
+    ether = new Float32Array((NUM_CELLS + 1) * (NUM_CELLS_HEIGHT + 1) * (NUM_CELLS + 1));
     for (let z = 0; z < NUM_CELLS_OVERSCAN; z++) {
       for (let x = 0; x < NUM_CELLS_OVERSCAN; x++) {
         const elevation = elevations[_getCoordOverscanIndex(x, z)];
@@ -222,12 +217,12 @@ const _generateMapChunk = (ox, oy, opts) => {
         const aox = ox + dox;
         const aoy = oy + doy;
         const n = _random.wormNoise.in2D(aox * NUM_CELLS + 1000, aoy * NUM_CELLS + 1000);
-        const numWorms = Math.floor(n * 14);
+        const numWorms = Math.floor(n * 4);
 
         for (let i = 0; i < numWorms; i++) {
           const s = [n, i].join(':');
           let cavePosX = (aox * NUM_CELLS) + (murmur(s + ':x') / 0xFFFFFFFF) * NUM_CELLS;
-          let cavePosY = (murmur(s + ':y') / 0xFFFFFFFF) * NUM_CELLS * 4;
+          let cavePosY = (murmur(s + ':y') / 0xFFFFFFFF) * NUM_CELLS_HEIGHT;
           let cavePosZ = (aoy * NUM_CELLS) + (murmur(s + ':z') / 0xFFFFFFFF) * NUM_CELLS;
           // const caveLength = (murmur(s + ':caveLength1') / 0xFFFFFFFF) * (murmur(s + ':caveLength2') / 0xFFFFFFFF) * 200;
           const caveLength = (murmur(s + ':caveLength1') / 0xFFFFFFFF) * (murmur(s + ':caveLength2') / 0xFFFFFFFF) * 100;
@@ -284,7 +279,7 @@ const _generateMapChunk = (ox, oy, opts) => {
           if (ax >= 0 && ax < (NUM_CELLS + 1)) {
             for (let dy = -HOLE_SIZE; dy <= HOLE_SIZE; dy++) {
               const ay = y + dy;
-              if (ay >= 0 && ay < ((NUM_CELLS * 4) + 1)) {
+              if (ay >= 0 && ay < (NUM_CELLS_HEIGHT + 1)) {
                 ether[_getEtherIndex(ax, ay, az)] += v * Math.max(HOLE_SIZE - Math.sqrt(dx * dx + dy * dy + dz * dz), 0) / HOLE_SIZE;
               }
             }
@@ -311,9 +306,11 @@ const _generateMapChunk = (ox, oy, opts) => {
   const staticHeightfield = new Float32Array(NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN);
   staticHeightfield.fill(-1024);
 
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
     const geometry = geometries[i];
     const {attributeRange, indexRange} = geometry;
+    const geometryPositions = new Float32Array(positions.buffer, positions.byteOffset + attributeRange.start * 4, attributeRange.count);
+    const geometryColors = new Float32Array(colors.buffer, colors.byteOffset + attributeRange.start * 4, attributeRange.count);
     const geometryIndices = new Uint32Array(indices.buffer, indices.byteOffset + indexRange.start * 4, indexRange.count);
 
     const numIndices = geometryIndices.length / 3;
@@ -352,12 +349,6 @@ const _generateMapChunk = (ox, oy, opts) => {
         }
       }
     }
-  }
-  for (let i = 0; i < 4; i++) {
-    const geometry = geometries[i];
-    const {attributeRange, indexRange} = geometry;
-    const geometryPositions = new Float32Array(positions.buffer, positions.byteOffset + attributeRange.start * 4, attributeRange.count);
-    const geometryColors = new Float32Array(colors.buffer, colors.byteOffset + attributeRange.start * 4, attributeRange.count);
 
     const numPositions = geometryPositions.length / 3;
     for (let j = 0; j < numPositions; j++) {
@@ -398,9 +389,12 @@ const _generateMapChunk = (ox, oy, opts) => {
       new THREE.Vector3(ox * NUM_CELLS + NUM_CELLS_HALF, i * NUM_CELLS + NUM_CELLS_HALF, oy * NUM_CELLS + NUM_CELLS_HALF),
       NUM_CELLS_CUBE,
     );
+  }
 
+  for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
+    const geometry = geometries[i];
     const peeks = new Uint8Array(16);
-    const seenPeeks = new Uint8Array((NUM_CELLS + 1) * ((NUM_CELLS * 4) + 1) * (NUM_CELLS + 1));
+    const seenPeeks = new Uint8Array((NUM_CELLS + 1) * (NUM_CELLS_HEIGHT + 1) * (NUM_CELLS + 1));
     const minY = i * NUM_CELLS;
     const maxY = (i + 1) * NUM_CELLS;
     const _floodFill = (x, y, z, startFace) => {
