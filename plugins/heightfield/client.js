@@ -5,6 +5,9 @@ const {
   HEIGHTFIELD_DEPTH,
 
   RANGE,
+
+  PEEK_FACES,
+  PEEK_FACE_INDICES,
 } = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
 
@@ -12,32 +15,6 @@ const NUM_POSITIONS_CHUNK = 800 * 1024;
 const LIGHTMAP_PLUGIN = 'plugins-lightmap';
 const DAY_NIGHT_SKYBOX_PLUGIN = 'plugins-day-night-skybox';
 const NUM_CELLS_HALF = NUM_CELLS / 2;
-const PEEK_FACES = (() => {
-  let faceIndex = 0;
-  return {
-    FRONT: faceIndex++,
-    BACK: faceIndex++,
-    LEFT: faceIndex++,
-    RIGHT: faceIndex++,
-    TOP: faceIndex++,
-    BOTTOM: faceIndex++,
-    NULL: faceIndex++,
-  };
-})();
-const PEEK_FACE_INDICES = (() => {
-  let peekIndex = 0;
-  const result = new Uint8Array(8 * 8);
-  result.fill(0xFF);
-  for (let i = 0; i < 6; i++) {
-    for (let j = 0; j < 6; j++) {
-      if (i !== j) {
-        const otherEntry = result[j << 4 | i];
-        result[i << 4 | j] = otherEntry !== 0xFF ? otherEntry : peekIndex++;
-      }
-    }
-  }
-  return result;
-})();
 
 const HEIGHTFIELD_SHADER = {
   uniforms: {
@@ -184,23 +161,6 @@ class Heightfield {
       this.normalMatrix = normalMatrices[camera.name];
     }
 
-    class PeekFace {
-      constructor(exitFace, enterFace, x, y, z) {
-        this.exitFace = exitFace;
-        this.enterFace = enterFace;
-        this.x = x;
-        this.y = y;
-        this.z = z;
-      }
-    }
-    const peekFaceSpecs = [
-      new PeekFace(PEEK_FACES.BACK, PEEK_FACES.FRONT, 0, 0, -1),
-      new PeekFace(PEEK_FACES.FRONT, PEEK_FACES.BACK, 0, 0, 1),
-      new PeekFace(PEEK_FACES.LEFT, PEEK_FACES.RIGHT, -1, 0, 0),
-      new PeekFace(PEEK_FACES.RIGHT, PEEK_FACES.LEFT, 1, 0, 0),
-      new PeekFace(PEEK_FACES.TOP, PEEK_FACES.BOTTOM, 0, 1, 0),
-      new PeekFace(PEEK_FACES.BOTTOM, PEEK_FACES.TOP, 0, -1, 0),
-    ];
     const _getChunkIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
 
     const forwardVector = new THREE.Vector3(0, 0, -1);

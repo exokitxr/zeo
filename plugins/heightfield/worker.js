@@ -12,6 +12,9 @@ const {
   NUM_CELLS,
 
   DEFAULT_SEED,
+
+  PEEK_FACES,
+  PEEK_FACE_INDICES,
 } = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
 const DIRECTIONS = [
@@ -57,6 +60,25 @@ const _resBlob = res => {
   }
 };
 const _getOriginHeight = () => (1 - 0.3 + Math.pow(elevationNoise.in2D(0 + 1000, 0 + 1000), 0.5)) * 64;
+
+class PeekFace {
+  constructor(exitFace, enterFace, x, y, z) {
+    this.exitFace = exitFace;
+    this.enterFace = enterFace;
+    this.x = x;
+    this.y = y;
+    this.z = z;
+  }
+}
+const peekFaceSpecs = [
+  new PeekFace(PEEK_FACES.BACK, PEEK_FACES.FRONT, 0, 0, -1),
+  new PeekFace(PEEK_FACES.FRONT, PEEK_FACES.BACK, 0, 0, 1),
+  new PeekFace(PEEK_FACES.LEFT, PEEK_FACES.RIGHT, -1, 0, 0),
+  new PeekFace(PEEK_FACES.RIGHT, PEEK_FACES.LEFT, 1, 0, 0),
+  new PeekFace(PEEK_FACES.TOP, PEEK_FACES.BOTTOM, 0, 1, 0),
+  new PeekFace(PEEK_FACES.BOTTOM, PEEK_FACES.TOP, 0, -1, 0),
+];
+
 const _requestChunk = (x, z) => {
   const chunk = tra.getChunk(x, z);
 

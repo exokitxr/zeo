@@ -14,38 +14,15 @@ const {
   HEIGHTFIELD_DEPTH,
 
   DEFAULT_SEED,
+
+  PEEK_FACES,
+  PEEK_FACE_INDICES,
 } = require('./lib/constants/constants');
 const NUM_POSITIONS_CHUNK = 1 * 1024 * 1024;
 const NUM_CELLS_HALF = NUM_CELLS / 2;
 const NUM_CELLS_CUBE = Math.sqrt(NUM_CELLS_HALF * NUM_CELLS_HALF * 3);
 const NUM_CELLS_OVERSCAN_Y = (NUM_CELLS * 4) + OVERSCAN;
 const HOLE_SIZE = 2;
-const PEEK_FACES = (() => {
-  let faceIndex = 0;
-  return {
-    FRONT: faceIndex++,
-    BACK: faceIndex++,
-    LEFT: faceIndex++,
-    RIGHT: faceIndex++,
-    TOP: faceIndex++,
-    BOTTOM: faceIndex++,
-    NULL: faceIndex++,
-  };
-})();
-const PEEK_FACE_INDICES = (() => {
-  let peekIndex = 0;
-  const result = new Uint8Array(8 * 8);
-  result.fill(0xFF);
-  for (let i = 0; i < 6; i++) {
-    for (let j = 0; j < 6; j++) {
-      if (i !== j) {
-        const otherEntry = result[j << 4 | i];
-        result[i << 4 | j] = otherEntry !== 0xFF ? otherEntry : peekIndex++;
-      }
-    }
-  }
-  return result;
-})();
 
 const _copyIndices = (src, dst, startIndexIndex, startAttributeIndex) => {
   for (let i = 0; i < src.length; i++) {
