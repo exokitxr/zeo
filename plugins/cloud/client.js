@@ -95,23 +95,24 @@ class Cloud {
 
     const worker = new Worker('archae/plugins/_plugins_cloud/build/worker.js');
     const queue = [];
-    worker.requestGenerate = (x, y) => new Promise((accept, reject) => {
+    worker.requestGenerate = (x, y, cb) => {
       const buffer = buffers.alloc();
       worker.postMessage({
         x,
         y,
         buffer,
       }, [buffer]);
-      queue.push(buffer => {
-        accept(buffer);
-      });
-    });
+      queue.push(cb);
+    };
     worker.onmessage = e => {
       queue.shift()(e.data);
     };
 
-    const _requestCloudGenerate = (x, y) => worker.requestGenerate(x, y)
-      .then(cloudChunkBuffer => protocolUtils.parseCloudGeometry(cloudChunkBuffer));
+    const _requestCloudGenerate = (x, y) => new Promise((accept, reject) => {
+      worker.requestGenerate(x, y, cloudChunkBuffer => {
+        accept(protocolUtils.parseCloudGeometry(cloudChunkBuffer));
+      });
+    });
 
     const updates = [];
 
@@ -168,18 +169,20 @@ class Cloud {
           // const dx = (world.getWorldTime() / 1000) * CLOUD_SPEED;
           const {added, removed} = chunker.update(hmdPosition.x/* + dx*/, hmdPosition.z);
 
-          const addedPromises = added.map(chunk => {
-            const {x, z} = chunk;
-            return _requestCloudGenerate(x, z)
+          const addedPromises = Array(added.length);
+          for (let i = 0; i < added.length; i++) {
+            const chunk = added[i];
+            const promise = _requestCloudGenerate(chunk.x, chunk.z)
               .then(cloudChunkData => {
-                const cloudChunkMesh = _makeCloudChunkMesh(cloudChunkData, x, z);
+                const cloudChunkMesh = _makeCloudChunkMesh(cloudChunkData, chunk.x, chunk.z);
                 stage.add('main', cloudChunkMesh);
 
-                cloudChunkMeshes[_getChunkIndex(x, z)] = cloudChunkMesh;
+                cloudChunkMeshes[_getChunkIndex(chunk.x, chunk.z)] = cloudChunkMesh;
 
                 chunk.data = cloudChunkMesh;
-              })
-          });
+              });
+            addedPromises[i] = promise;
+          }
           return Promise.all(addedPromises)
             .then(() => {
               removed.forEach(chunk => {

@@ -170,21 +170,23 @@ class Grass {
         numRemovedQueues = 0;
       }
     };
-    worker.requestGenerate = (x, y) => _ensureHeightfieldElement()
-      .then(() => new Promise((accept, reject) => {
-        const id = _makeId();
-        const buffer = buffers.alloc();
-        worker.postMessage({
-          type: 'chunk',
-          id,
-          x,
-          y,
-          buffer,
-        }, [buffer]);
-        queues[id] = accept;
-      }));
-    worker.requestTexture = () => new Promise((accept, reject) => {
-        const id = _makeId();
+    worker.requestGenerate = (x, y, cb) => {
+      _ensureHeightfieldElement()
+        .then(() => new Promise((accept, reject) => {
+          const id = _makeId();
+          const buffer = buffers.alloc();
+          worker.postMessage({
+            type: 'chunk',
+            id,
+            x,
+            y,
+            buffer,
+          }, [buffer]);
+          queues[id] = cb;
+        }));
+    };
+    worker.requestTexture = cb => {
+      const id = _makeId();
       const buffer = new ArrayBuffer(TEXTURE_SIZE * TEXTURE_SIZE  * 4);
       worker.postMessage({
         type: 'texture',
@@ -200,9 +202,9 @@ class Grass {
         imageData.data.set(new Uint8Array(buffer));
         ctx.putImageData(imageData, 0, 0);
 
-        accept(canvas);
+        cb(canvas);
       };
-    });
+    };
     let pendingResponseId = null;
     worker.onmessage = e => {
       const {data} = e;
@@ -220,8 +222,13 @@ class Grass {
         console.warn('heightfield got unknown worker message type:', JSON.stringify(type));
       }
     };
+    const _requestTexture = () => new Promise((accept, reject) => {
+      worker.requestTexture(canvas => {
+        accept(canvas);
+      });
+    });
 
-    worker.requestTexture()
+    _requestTexture()
       .then(mapTextureImg => {
         if (live) {
           const mapTexture = new THREE.Texture(
@@ -290,9 +297,11 @@ class Grass {
             _unbindLightmapper();
           });
 
-          const _requestGrassGenerate = (x, y) => worker.requestGenerate(x, y)
-            .then(grassChunkBuffer => protocolUtils.parseGrassGeometry(grassChunkBuffer));
-
+          const _requestGrassGenerate = (x, y) => new Promise((accept, reject) => {
+            worker.requestGenerate(x, y, grassChunkBuffer => {
+              accept(protocolUtils.parseGrassGeometry(grassChunkBuffer));
+            });
+          });
           const _makeGrassChunkMesh = (chunk, grassChunkData) => {
             const mesh = (() => {
               const {x, z} = chunk;

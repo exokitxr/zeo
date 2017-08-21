@@ -257,7 +257,6 @@ void main() {
         args,
         src,
       });
-      return Promise.resolve();
     };
     worker.requestRegisterTexture = (name, uv) => {
       worker.postMessage({
@@ -265,7 +264,6 @@ void main() {
         name,
         uv,
       });
-      return Promise.resolve();
     };
     worker.requestRegisterObject = (n, added, removed, updated) => {
       worker.postMessage({
@@ -275,7 +273,6 @@ void main() {
         removed,
         updated,
       });
-      return Promise.resolve();
     };
     worker.requestUnregisterObject = (n, added, removed, updated) => {
       worker.postMessage({
@@ -285,7 +282,6 @@ void main() {
         removed,
         updated,
       });
-      return Promise.resolve();
     };
     worker.requestAddObject = (name, position, rotation, value) => {
       worker.postMessage({
@@ -295,7 +291,6 @@ void main() {
         rotation,
         value,
       });
-      return Promise.resolve();
     };
     worker.requestRemoveObject = (x, z, index) => {
       worker.postMessage({
@@ -304,7 +299,6 @@ void main() {
         z,
         index,
       });
-      return Promise.resolve();
     };
     worker.requestSetObjectData = (x, z, index, value) => {
       worker.postMessage({
@@ -314,9 +308,8 @@ void main() {
         index,
         value,
       });
-      return Promise.resolve();
     };
-    worker.requestGenerate = (x, z) => new Promise((accept, reject) => {
+    worker.requestGenerate = (x, z, cb) => {
       localMessage.type = 'generate';
       const id = _makeId();
       localMessage.id = id;
@@ -327,8 +320,8 @@ void main() {
       localMessage.args = localGenerateMessageArgs;
 
       worker.postMessage(localMessage, [buffer]);
-      queues[id] = accept;
-    });
+      queues[id] = cb;
+    };
     worker.requestUngenerate = (x, z) => {
       localMessage.type = 'ungenerate';
       const id = _makeId();
@@ -338,10 +331,8 @@ void main() {
       localMessage.args = localUngenerateMessageArgs;
 
       worker.postMessage(localMessage);
-
-      return Promise.resolve();
     };
-    worker.getHoveredObjects = () => new Promise((accept, reject) => {
+    worker.getHoveredObjects = cb => {
       const id = _makeId();
       const {gamepads} = pose.getStatus();
 
@@ -353,26 +344,26 @@ void main() {
           gamepads.right.worldPosition.toArray(),
         ],
       });
-      queues[id] = accept;
-    });
-    worker.getTeleportObject = position => new Promise((accept, reject) => {
+      queues[id] = cb;
+    };
+    worker.getTeleportObject = (position, cb) => {
       localMessage.type = 'getTeleportObject';
       const id = _makeId();
       localMessage.id = id;
       localMessage.args = position.toArray(localArray3);
 
       worker.postMessage(localMessage);
-      queues[id] = accept;
-    });
-    worker.getBodyObject = position => new Promise((accept, reject) => {
+      queues[id] = cb;
+    };
+    worker.getBodyObject = (position, cb) => {
       localMessage.type = 'getBodyObject';
       const id = _makeId();
       localMessage.id = id;
       localMessage.args = position.toArray(localArray3);
 
       worker.postMessage(localMessage);
-      queues[id] = accept;
-    });
+      queues[id] = cb;
+    };
     worker.onmessage = e => {
       const {data} = e;
       const {type, args} = data;
@@ -439,8 +430,11 @@ void main() {
       }
     };
 
-    const _requestObjectsGenerate = (x, z) => worker.requestGenerate(x, z)
-      .then(objectsChunkBuffer => protocolUtils.parseGeometry(objectsChunkBuffer));
+    const _requestObjectsGenerate = (x, z) => new Promise((accept, reject) => {
+      worker.requestGenerate(x, z, objectsChunkBuffer => {
+        accept(protocolUtils.parseGeometry(objectsChunkBuffer));
+      });
+    });
     const _makeObjectsChunkMesh = (chunk, objectsChunkData) => {
       const mesh = (() => {
         const {x, z} = chunk;
@@ -712,16 +706,14 @@ void main() {
 
     class ObjectApi {
       registerGeometry(name, fn) {
-        return worker.requestRegisterGeometry(name, fn);
+        worker.requestRegisterGeometry(name, fn);
+        return Promise.resolve();
       }
 
       registerTexture(name, img) {
         const rect = textures.pack(img.width, img.height);
         const uv = textures.uv(rect);
-        worker.requestRegisterTexture(name, uv)
-          .catch(err => {
-            console.warn(err);
-          });
+        worker.requestRegisterTexture(name, uv);
 
         return createImageBitmap(img, 0, 0, img.width, img.height, {
           // imageOrientation: 'flipY',
@@ -910,40 +902,33 @@ void main() {
           const timeDiff = now - lastHoverUpdateTime;
 
           if (timeDiff > 1000 / 30) {
-            worker.getHoveredObjects()
-              .then(hoveredTrackedObjectSpecs => {
-                for (const index in objectsChunkMeshes) {
-                  const objectsChunkMesh = objectsChunkMeshes[index];
+            worker.getHoveredObjects(hoveredTrackedObjectSpecs => {
+              for (const index in objectsChunkMeshes) {
+                const objectsChunkMesh = objectsChunkMeshes[index];
+                if (objectsChunkMesh) {
+                  objectsChunkMesh.uniforms.selectedObject.value = -1;
+                }
+              }
+
+              for (let i = 0; i < SIDES.length; i++) {
+                const side = SIDES[i];
+                const baseIndex = i * 8;
+                if (hoveredTrackedObjectSpecs[baseIndex] !== 0) {
+                  const hoveredTrackedObject = hoveredTrackedObjects[side];
+                  hoveredTrackedObject.fromArray(hoveredTrackedObjectSpecs.buffer, hoveredTrackedObjectSpecs.byteOffset + baseIndex * 4);
+
+                  const objectsChunkMesh = objectsChunkMeshes[_getChunkIndex(hoveredTrackedObject.x, hoveredTrackedObject.z)];
                   if (objectsChunkMesh) {
-                    objectsChunkMesh.uniforms.selectedObject.value = -1;
+                    objectsChunkMesh.uniforms.selectedObject.value = hoveredTrackedObject.objectIndex;
                   }
+                } else {
+                  hoveredTrackedObjects[side].clear();
                 }
+              }
 
-                for (let i = 0; i < SIDES.length; i++) {
-                  const side = SIDES[i];
-                  const baseIndex = i * 8;
-                  if (hoveredTrackedObjectSpecs[baseIndex] !== 0) {
-                    const hoveredTrackedObject = hoveredTrackedObjects[side];
-                    hoveredTrackedObject.fromArray(hoveredTrackedObjectSpecs.buffer, hoveredTrackedObjectSpecs.byteOffset + baseIndex * 4);
-
-                    const objectsChunkMesh = objectsChunkMeshes[_getChunkIndex(hoveredTrackedObject.x, hoveredTrackedObject.z)];
-                    if (objectsChunkMesh) {
-                      objectsChunkMesh.uniforms.selectedObject.value = hoveredTrackedObject.objectIndex;
-                    }
-                  } else {
-                    hoveredTrackedObjects[side].clear();
-                  }
-                }
-
-                updatingHover = false;
-                lastHoverUpdateTime = Date.now();
-              })
-              .catch(err => {
-                 console.warn(err);
-
-                 updatingHover = false;
-                 lastHoverUpdateTime = Date.now();
-              });
+              updatingHover = false;
+              lastHoverUpdateTime = Date.now();
+            });
 
             updatingHover = true;
           }
@@ -978,42 +963,35 @@ void main() {
               const timeDiff = now - lastTeleportUpdateTime;
 
               if (timeDiff > 1000 / 30) {
-                worker.getTeleportObject(teleportPosition)
-                  .then(teleportObjectSpec => {
-                    const teleportPosition = teleportPositions[side];
+                worker.getTeleportObject(teleportPosition, teleportObjectSpec => {
+                  const teleportPosition = teleportPositions[side];
 
-                    if (teleportPosition && teleportObjectSpec) {
-                      let offset = 0;
-                      teleportSpec.box.min.x = teleportObjectSpec[0];
-                      teleportSpec.box.min.y = teleportObjectSpec[1];
-                      teleportSpec.box.min.z = teleportObjectSpec[2];
-                      teleportSpec.box.max.x = teleportObjectSpec[3];
-                      teleportSpec.box.max.y = teleportObjectSpec[4];
-                      teleportSpec.box.max.z = teleportObjectSpec[5];
-                      teleportSpec.position.x = teleportObjectSpec[6];
-                      teleportSpec.position.y = teleportObjectSpec[7];
-                      teleportSpec.position.z = teleportObjectSpec[8];
-                      teleportSpec.rotation.x = teleportObjectSpec[9];
-                      teleportSpec.rotation.y = teleportObjectSpec[10];
-                      teleportSpec.rotation.z = teleportObjectSpec[11];
-                      teleportSpec.rotation.w = teleportObjectSpec[12];
-                      teleportSpec.rotationInverse.x = teleportObjectSpec[13];
-                      teleportSpec.rotationInverse.y = teleportObjectSpec[14];
-                      teleportSpec.rotationInverse.z = teleportObjectSpec[15];
-                      teleportSpec.rotationInverse.w = teleportObjectSpec[16];
-                    } else {
-                      _clear();
-                    }
+                  if (teleportPosition && teleportObjectSpec) {
+                    let offset = 0;
+                    teleportSpec.box.min.x = teleportObjectSpec[0];
+                    teleportSpec.box.min.y = teleportObjectSpec[1];
+                    teleportSpec.box.min.z = teleportObjectSpec[2];
+                    teleportSpec.box.max.x = teleportObjectSpec[3];
+                    teleportSpec.box.max.y = teleportObjectSpec[4];
+                    teleportSpec.box.max.z = teleportObjectSpec[5];
+                    teleportSpec.position.x = teleportObjectSpec[6];
+                    teleportSpec.position.y = teleportObjectSpec[7];
+                    teleportSpec.position.z = teleportObjectSpec[8];
+                    teleportSpec.rotation.x = teleportObjectSpec[9];
+                    teleportSpec.rotation.y = teleportObjectSpec[10];
+                    teleportSpec.rotation.z = teleportObjectSpec[11];
+                    teleportSpec.rotation.w = teleportObjectSpec[12];
+                    teleportSpec.rotationInverse.x = teleportObjectSpec[13];
+                    teleportSpec.rotationInverse.y = teleportObjectSpec[14];
+                    teleportSpec.rotationInverse.z = teleportObjectSpec[15];
+                    teleportSpec.rotationInverse.w = teleportObjectSpec[16];
+                  } else {
+                    _clear();
+                  }
 
-                    updatingTeleport = false;
-                    lastTeleportUpdateTime = Date.now();
-                  })
-                  .catch(err => {
-                     console.warn(err);
-
-                     updatingTeleport = false;
-                     lastTeleportUpdateTime = Date.now();
-                  });
+                  updatingTeleport = false;
+                  lastTeleportUpdateTime = Date.now();
+                });
 
                 updatingTeleport = true;
               }
@@ -1033,32 +1011,25 @@ void main() {
           if (timeDiff > 1000 / 30) {
             const {hmd} = pose.getStatus();
             const {worldPosition: hmdPosition} = hmd;
-            worker.getBodyObject(hmdPosition)
-              .then(bodyObjectSpec => {
-                if (bodyObjectSpec[0] !== 0) {
-                  const uint32Array = bodyObjectSpec;
-                  const n = uint32Array[0];
+            worker.getBodyObject(hmdPosition, bodyObjectSpec => {
+              if (bodyObjectSpec[0] !== 0) {
+                const uint32Array = bodyObjectSpec;
+                const n = uint32Array[0];
 
-                  const int32Array = new Int32Array(bodyObjectSpec.buffer, bodyObjectSpec.byteOffset, 4);
-                  const x = int32Array[1];
-                  const z = int32Array[2];
-                  const objectIndex = uint32Array[3];
+                const int32Array = new Int32Array(bodyObjectSpec.buffer, bodyObjectSpec.byteOffset, 4);
+                const x = int32Array[1];
+                const z = int32Array[2];
+                const objectIndex = uint32Array[3];
 
-                  const objectApi = objectApis[n];
-                  if (objectApi && objectApi.collideCallback) {
-                    objectApi.collideCallback(_getObjectIndex(x, z, objectIndex), x, z, objectIndex);
-                  }
+                const objectApi = objectApis[n];
+                if (objectApi && objectApi.collideCallback) {
+                  objectApi.collideCallback(_getObjectIndex(x, z, objectIndex), x, z, objectIndex);
                 }
+              }
 
-                updatingBody = false;
-                lastBodyUpdateTime = Date.now();
-              })
-              .catch(err => {
-                 console.warn(err);
-
-                 updatingBody = false;
-                 lastBodyUpdateTime = Date.now();
-              });
+              updatingBody = false;
+              lastBodyUpdateTime = Date.now();
+            });
 
             updatingBody = true;
           }

@@ -83,7 +83,7 @@ class Ocean {
     const buffers = bffr(NUM_POSITIONS_CHUNK, (RANGE * 2) * (RANGE * 2) * 2);
     const worker = new Worker('archae/plugins/_plugins_ocean/build/worker.js');
     const queues = [];
-    worker.requestGenerate = (x, z, lod) => new Promise((accept, reject) => {
+    worker.requestGenerate = (x, z, lod, cb) => {
       const buffer = buffers.alloc();
       worker.postMessage({
         x,
@@ -91,13 +91,16 @@ class Ocean {
         lod,
         buffer,
       }, [buffer]);
-      queues.push(accept);
-    });
+      queues.push(cb);
+    };
     worker.onmessage = e => {
       queues.shift()(e.data);
     };
-    const _requestOceanGenerate = (x, z, lod) => worker.requestGenerate(x, z, lod)
-      .then(oceanBuffer => protocolUtils.parseGeometry(oceanBuffer));
+    const _requestOceanGenerate = (x, z, lod) => new Promise((accept, reject) => {
+      worker.requestGenerate(x, z, lod, oceanBuffer => {
+        accept(protocolUtils.parseGeometry(oceanBuffer));
+      });
+    });
 
     const _requestImg = src => new Promise((accept, reject) => {
       const img = new Image();

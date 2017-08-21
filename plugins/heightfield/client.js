@@ -240,15 +240,15 @@ class Heightfield {
         numRemovedQueues = 0;
       }
     };
-    worker.requestOriginHeight = () => new Promise((accept, reject) => {
+    worker.requestOriginHeight = cb => {
       const id = _makeId();
       worker.postMessage({
         method: 'getOriginHeight',
         id,
       });
-      queues[id] = accept;
-    });
-    worker.requestGenerate = (x, y) => new Promise((accept, reject) => {
+      queues[id] = cb;
+    };
+    worker.requestGenerate = (x, y, cb) => {
       const id = _makeId();
       const buffer = buffers.alloc();
       worker.postMessage({
@@ -260,8 +260,8 @@ class Heightfield {
           buffer,
         },
       }, [buffer]);
-      queues[id] = accept;
-    });
+      queues[id] = cb;
+    };
     worker.requestUngenerate = (x, y) => {
       worker.postMessage({
         method: 'ungenerate',
@@ -270,10 +270,8 @@ class Heightfield {
           y,
         },
       });
-
-      return Promise.resolve();
     };
-    worker.requestAddVoxel = (x, y, z) => new Promise((accept, reject) => {
+    /* worker.requestAddVoxel = (x, y, z) => new Promise((accept, reject) => {
       const id = _makeId();
       worker.postMessage({
         method: 'addVoxel',
@@ -283,8 +281,8 @@ class Heightfield {
         },
       });
       queues[id] = accept;
-    });
-    worker.requestSubVoxel = (x, y, z) => new Promise((accept, reject) => {
+    }); */
+    worker.requestSubVoxel = (x, y, z, cb) => {
       const id = _makeId();
       worker.postMessage({
         method: 'subVoxel',
@@ -293,8 +291,8 @@ class Heightfield {
           position: [x, y, z],
         },
       });
-      queues[id] = accept;
-    });
+      queues[id] = cb;
+    };
     worker.onmessage = e => {
       const {data} = e;
       const {type, args} = data;
@@ -378,10 +376,18 @@ class Heightfield {
       _unbindLightmapper();
     });
 
-    const _bootstrap = () => worker.requestOriginHeight()
-      .then(originHeight => {
+    const _bootstrap = () => new Promise((accept, reject) => {
+      worker.requestOriginHeight(originHeight => {
         world.setSpawnMatrix(new THREE.Matrix4().makeTranslation(0, originHeight, 0));
+
+        accept();
       });
+    });
+    const _requestGenerate = (x, z) => new Promise((accept, reject) => {
+      worker.requestGenerate(x, z, mapChunkBuffer => {
+        accept(protocolUtils.parseRenderChunk(mapChunkBuffer));
+      });
+    });
     const _makeMapChunkMeshes = (chunk, mapChunkData) => {
       const {x, z} = chunk;
       const {positions, colors, indices, geometries, heightfield, staticHeightfield} = mapChunkData;
@@ -485,9 +491,7 @@ class Heightfield {
       const addedPromises = [];
       const _addChunk = chunk => {
         const {x, z, lod} = chunk;
-
-        const promise = worker.requestGenerate(x, z)
-          .then(mapChunkBuffer => protocolUtils.parseRenderChunk(mapChunkBuffer))
+        const promise = _requestGenerate(x, z)
           .then(mapChunkData => {
             const index = _getChunkIndex(x, z);
             const oldMapChunkMeshes = mapChunkMeshes[index];
@@ -748,19 +752,18 @@ class Heightfield {
               hmdPosition.y - 1.5
             );
             if (ly !== -1024) {
-              worker.requestSubVoxel(Math.round(lx), Math.round(ly), Math.round(lz))
-                .then(regenerated => {
-                  if (regenerated.length > 0) {
-                    for (let i = 0; i < regenerated.length; i++) {
-                      const [ox, oz] = regenerated[i];
-                      const chunk = chunker.getChunk(ox, oz);
-                      if (chunk) {
-                        chunk.lod = -1; // force chunk refresh
-                      }
+              worker.requestSubVoxel(Math.round(lx), Math.round(ly), Math.round(lz), regenerated => {
+                if (regenerated.length > 0) {
+                  for (let i = 0; i < regenerated.length; i++) {
+                    const [ox, oz] = regenerated[i];
+                    const chunk = chunker.getChunk(ox, oz);
+                    if (chunk) {
+                      chunk.lod = -1; // force chunk refresh
                     }
-                    _debouncedRequestRefreshMapChunks();
                   }
-                });
+                  _debouncedRequestRefreshMapChunks();
+                }
+              });
 
               e.stopImmediatePropagation();
             }
