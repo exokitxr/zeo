@@ -5,7 +5,7 @@ const {
 } = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
 
-const NUM_POSITIONS_CHUNK = 200 * 1024;
+const NUM_POSITIONS_CHUNK = 300 * 1024;
 const CLOUD_SPEED = 1;
 const DAY_NIGHT_SKYBOX_PLUGIN = 'plugins-day-night-skybox';
 
@@ -91,7 +91,7 @@ class Cloud {
       color: 0xFFFFFF,
     }); */
 
-    const buffers = bffr(NUM_POSITIONS_CHUNK * 3, (RANGE + 1) * (RANGE + 1) * 2);
+    const buffers = bffr(NUM_POSITIONS_CHUNK, RANGE * RANGE * 9);
 
     const worker = new Worker('archae/plugins/_plugins_cloud/build/worker.js');
     const queue = [];

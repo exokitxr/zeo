@@ -11,7 +11,7 @@ const {
 const protocolUtils = require('./lib/utils/protocol-utils');
 
 const NUM_POSITIONS = 20 * 1024;
-const NUM_POSITIONS_CHUNK = 200 * 1024;
+const NUM_POSITIONS_CHUNK = 300 * 1024;
 const CAMERA_ROTATION_ORDER = 'YXZ';
 
 const upVector = new THREE.Vector3(0, 1, 0);
@@ -108,9 +108,9 @@ const cloudPatchGeometries = (() => {
 })();
 
 const _makeCloudChunkMesh = (x, y, cloudPatchGeometries) => {
-  const positions = new Float32Array(NUM_POSITIONS_CHUNK * 3);
-  const normals = new Float32Array(NUM_POSITIONS_CHUNK * 3);
-  const indices = new Uint32Array(NUM_POSITIONS_CHUNK * 3);
+  const positions = new Float32Array(NUM_POSITIONS_CHUNK);
+  const normals = new Float32Array(NUM_POSITIONS_CHUNK);
+  const indices = new Uint32Array(NUM_POSITIONS_CHUNK);
   let attributeIndex = 0;
   let indexIndex = 0;
 
@@ -120,7 +120,7 @@ const _makeCloudChunkMesh = (x, y, cloudPatchGeometries) => {
   const matrix = new THREE.Matrix4();
 
   const cloudRng = new alea(x + ':' + y);
-  const numCloudPatches = Math.floor(Math.random() * 5);
+  const numCloudPatches = Math.round(Math.random() * 0.7);
   for (let i = 0; i < numCloudPatches; i++) {
     const dx = cloudRng() * NUM_CELLS;
     const dy = cloudRng() * NUM_CELLS;
