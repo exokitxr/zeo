@@ -12,6 +12,8 @@ const DATA_HEADER_ENTRIES = 3 + (1 * NUM_CHUNKS_HEIGHT) + 4;
 const DATA_HEADER_SIZE = UINT32_SIZE * DATA_HEADER_ENTRIES;
 const RENDER_HEADER_ENTRIES = 3 + (1 * NUM_CHUNKS_HEIGHT) + 2;
 const RENDER_HEADER_SIZE = UINT32_SIZE * RENDER_HEADER_ENTRIES;
+const CULL_HEADER_ENTRIES = 1;
+const CULL_HEADER_SIZE = UINT32_SIZE * CULL_HEADER_ENTRIES;
 
 const _getDataChunkSizeFromMetadata = metadata => {
   const {numPositions, numColors, numIndices, numPeeks, numHeightfield, numStaticHeightfield, numElevations, numEther} = metadata;
@@ -443,6 +445,95 @@ const parseRenderChunk = (buffer, byteOffset) => {
   };
 };
 
+const _getCullSizeFromMetadata = metadata => {
+  const {numMapChunks} = metadata;
+
+  return CULL_HEADER_SIZE + // header
+    ((INT32_SIZE + (INT32_SIZE * 2 * NUM_RENDER_GROUPS)) * numMapChunks); // map chunks
+};
+
+const _getCullSize = mapChunks => {
+  let numMapChunks = 0;
+  for (const index in mapChunks) {
+    if (mapChunks[index]) {
+      numMapChunks++;
+    }
+  }
+  return _getCullSizeFromMetadata({
+    numMapChunks,
+  });
+};
+
+const stringifyCull = (mapChunks, arrayBuffer, byteOffset) => {
+  if (arrayBuffer === undefined || byteOffset === undefined) {
+    const bufferSize = _getCullSize(mapChunks);
+    arrayBuffer = new ArrayBuffer(bufferSize);
+    byteOffset = 0;
+  }
+
+  let numMapChunks = 0;
+  for (const index in mapChunks) {
+    if (mapChunks[index]) {
+      numMapChunks++;
+    }
+  }
+
+  const headerBuffer = new Uint32Array(arrayBuffer, byteOffset, CULL_HEADER_ENTRIES);
+  let index = 0;
+  headerBuffer[index++] = numMapChunks;
+  byteOffset += CULL_HEADER_SIZE;
+
+  for (const index in mapChunks) {
+    const trackedMapChunkMeshes = mapChunks[index];
+    if (trackedMapChunkMeshes) {
+      const indexArray = new Int32Array(arrayBuffer, byteOffset, 1);
+      indexArray[0] = parseInt(index, 10);
+      byteOffset += INT32_SIZE;
+
+      const groupsArray = new Int32Array(arrayBuffer, byteOffset, NUM_RENDER_GROUPS * 2);
+      groupsArray.set(trackedMapChunkMeshes.groups);
+      byteOffset += INT32_SIZE * 2 * NUM_RENDER_GROUPS;
+    }
+  }
+
+  return arrayBuffer;
+};
+
+const parseCull = (buffer, byteOffset) => {
+  if (byteOffset === undefined) {
+    byteOffset = 0;
+  }
+
+  const headerBuffer = new Uint32Array(buffer, byteOffset, CULL_HEADER_ENTRIES);
+  let index = 0;
+  const numMapChunks = headerBuffer[index++];
+  byteOffset += CULL_HEADER_SIZE;
+
+  const mapChunks = Array(numMapChunks);
+  for (let i = 0; i < numMapChunks; i++) {
+    const indexArray = new Int32Array(buffer, byteOffset, 1);
+    const index = indexArray[0];
+    byteOffset += INT32_SIZE;
+
+    const groups = [];
+    const groupsArray = new Int32Array(buffer, byteOffset, NUM_RENDER_GROUPS * 2);
+    for (let i = 0; i < NUM_RENDER_GROUPS; i++) {
+      const baseIndex = i * 2;
+      groups.push({
+        start: groupsArray[baseIndex + 0],
+        count: groupsArray[baseIndex + 1],
+      });
+    }
+    byteOffset += INT32_SIZE * 2 * NUM_RENDER_GROUPS;
+
+    mapChunks[i] = {
+      index,
+      groups,
+    };
+  }
+  return mapChunks;
+};
+
 const sliceDataHeightfield = (arrayBuffer, readByteOffset) => {
   const headerBuffer = new Uint32Array(arrayBuffer, readByteOffset, DATA_HEADER_ENTRIES);
   let index = 0;
@@ -503,6 +594,9 @@ module.exports = {
 
   stringifyRenderChunk,
   parseRenderChunk,
+
+  stringifyCull,
+  parseCull,
 
   sliceDataHeightfield,
   parseHeightfield,

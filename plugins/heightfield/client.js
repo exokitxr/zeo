@@ -170,8 +170,9 @@ class Heightfield {
     const localVector = new THREE.Vector3();
     const localVector2 = new THREE.Vector3();
     const localEuler = new THREE.Euler();
-    const localMatrix = new THREE.Matrix4();
-    const frustum = new THREE.Frustum();
+    const localArray3 = Array(3);
+    const localArray16 = Array(16);
+    const localArray162 = Array(16);
 
     const _requestImage = src => new Promise((accept, reject) => {
       const img = new Image();
@@ -187,6 +188,7 @@ class Heightfield {
       .then(img => createImageBitmap(img, 0, 0, img.width, img.height));
 
     const buffers = bffr(NUM_POSITIONS_CHUNK, RANGE * RANGE * 9);
+    let cullBuffer = new ArrayBuffer(4096);
     const worker = new Worker('archae/plugins/_plugins_heightfield/build/worker.js');
     let queues = {};
     let numRemovedQueues = 0;
@@ -233,6 +235,25 @@ class Heightfield {
           y,
         },
       });
+    };
+    worker.requestCull = (hmdPosition, projectionMatrix, matrixWorldInverse, cb) => {
+      const id = _makeId();
+      worker.postMessage({
+        method: 'cull',
+        id,
+        args: {
+          hmdPosition: hmdPosition.toArray(localArray3),
+          projectionMatrix: projectionMatrix.toArray(localArray16),
+          matrixWorldInverse: matrixWorldInverse.toArray(localArray162),
+          buffer: cullBuffer,
+        },
+      }, [cullBuffer]);
+      cullBuffer = null;
+
+      queues[id] = buffer => {
+        cullBuffer = buffer;
+        cb(buffer);
+      };
     };
     /* worker.requestAddVoxel = (x, y, z) => new Promise((accept, reject) => {
       const id = _makeId();
@@ -380,20 +401,6 @@ class Heightfield {
       meshes.frustumCulled = false;
       meshes.updateModelViewMatrix = _updateModelViewMatrix;
       meshes.updateNormalMatrix = _updateNormalMatrix;
-      meshes.array = Array(4);
-      for (let i = 0; i < 4; i++) {
-        const {indexRange, boundingSphere, peeks} = geometries[i];
-        meshes.array[i] = {
-          offset: new THREE.Vector3(x, i, z),
-          indexRange,
-          boundingSphere: new THREE.Sphere(
-            new THREE.Vector3().fromArray(boundingSphere, 0),
-            boundingSphere[3]
-          ),
-          peeks,
-          visibleIndex: -1,
-        };
-      }
       meshes.destroy = () => {
         geometry.dispose();
         material.dispose();
@@ -736,109 +743,50 @@ class Heightfield {
           priority: -1,
         });
 
-        let recurseTimeout = null;
-        const _recurse = () => {
-          _debouncedRequestRefreshMapChunks();
-          recurseTimeout = setTimeout(_recurse, 1000);
+        const _requestCull = (hmdPosition, projectionMatrix, matrixWorldInverse, cb) => {
+          worker.requestCull(hmdPosition, projectionMatrix, matrixWorldInverse, cullBuffer => {
+            cb(protocolUtils.parseCull(cullBuffer));
+          });
         };
-        _recurse();
+        const _debouncedRefreshCull = _debounce(next => {
+          const {hmd} = pose.getStatus();
+          const {worldPosition: hmdPosition} = hmd;
+          const {projectionMatrix, matrixWorldInverse} = camera;
+          _requestCull(hmdPosition, projectionMatrix, matrixWorldInverse, culls => {
+            for (let i = 0; i < culls.length; i++) {
+              const {index, groups} = culls[i];
 
-        const cullQueueMeshes = Array(256);
-        for (let i = 0; i < cullQueueMeshes.length; i++) {
-          cullQueueMeshes[i] = null;
-        }
-        const cullQueueFaces = new Uint8Array(256);
-        let cullQueueStart = 0;
-        let cullQueueEnd = 0;
-        let visibleIndex = 0;
-        const _update = () => {
-          const _updateCull = () => {
-            const {hmd} = pose.getStatus();
-            const {worldPosition: hmdPosition} = hmd;
-
-            const ox = Math.floor(hmdPosition.x / NUM_CELLS);
-            const oy = Math.floor(hmdPosition.y / NUM_CELLS);
-            const oz = Math.floor(hmdPosition.z / NUM_CELLS);
-
-            const trackedMapChunkMeshes = mapChunkMeshes[_getChunkIndex(ox, oz)];
-            if (trackedMapChunkMeshes) {
-              frustum.setFromMatrix(localMatrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
-
-              const trackedMapChunkMesh = trackedMapChunkMeshes.array[oy];
-              cullQueueMeshes[cullQueueEnd] = trackedMapChunkMesh;
-              cullQueueFaces[cullQueueEnd] = PEEK_FACES.NULL;
-              cullQueueEnd = (cullQueueEnd + 1) % 256;
-              for (;cullQueueStart !== cullQueueEnd; cullQueueStart = (cullQueueStart + 1) % 256) {
-                const trackedMapChunkMesh = cullQueueMeshes[cullQueueStart];
-                const {offset: {x, y, z}} = trackedMapChunkMesh;
-                cullQueueMeshes[cullQueueStart] = null;
-                const enterFace = cullQueueFaces[cullQueueStart];
-
-                trackedMapChunkMesh.visibleIndex = visibleIndex;
-                for (let j = 0; j < peekFaceSpecs.length; j++) {
-                  const peekFaceSpec = peekFaceSpecs[j];
-                  const ay = y + peekFaceSpec.y;
-                  if (ay >= 0 && ay < 4) {
-                    const ax = x + peekFaceSpec.x;
-                    const az = z + peekFaceSpec.z;
-                    if (
-                      (ax - ox) * peekFaceSpec.x > 0 ||
-                      (ay - oy) * peekFaceSpec.y > 0 ||
-                      (az - oz) * peekFaceSpec.z > 0
-                    ) {
-                      if (enterFace === PEEK_FACES.NULL || trackedMapChunkMesh.peeks[PEEK_FACE_INDICES[enterFace << 4 | peekFaceSpec.exitFace]] === 1) {
-                        const trackedMapChunkMeshes = mapChunkMeshes[_getChunkIndex(ax, az)];
-                        if (trackedMapChunkMeshes) {
-                          const trackedMapChunkMesh = trackedMapChunkMeshes.array[ay];
-                          if (frustum.intersectsSphere(trackedMapChunkMesh.boundingSphere)) {
-                            cullQueueMeshes[cullQueueEnd] = trackedMapChunkMesh;
-                            cullQueueFaces[cullQueueEnd] = peekFaceSpec.enterFace;
-                            cullQueueEnd = (cullQueueEnd + 1) % 256;
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-
-            for (const index in mapChunkMeshes) {
               const trackedMapChunkMeshes = mapChunkMeshes[index];
               if (trackedMapChunkMeshes) {
                 trackedMapChunkMeshes.visible = false;
-                let visible = false;
-                let start = -1;
-                let count = 0;
-                for (let i = 0; i < 4; i++) {
-                  const trackedMapChunkMesh = trackedMapChunkMeshes.array[i];
-                  if (trackedMapChunkMesh.visibleIndex === visibleIndex) {
-                    if (!visible) {
-                      trackedMapChunkMeshes.geometry.groups.length = 0;
-                      visible = true;
-                    }
-
-                    if (start === -1) {
-                      start = trackedMapChunkMesh.indexRange.start;
-                    }
-                    count += trackedMapChunkMesh.indexRange.count;
-                  } else {
-                    if (start !== -1) {
-                      trackedMapChunkMeshes.geometry.addGroup(start, count, 0);
-                      start = -1;
-                      count = 0;
-                    }
+                for (let i = 0; i < NUM_RENDER_GROUPS; i++) {
+                  if (groups[i].start !== -1) {
+                    trackedMapChunkMeshes.visible = true;
+                    break;
                   }
                 }
-                if (start !== -1) {
-                  trackedMapChunkMeshes.geometry.addGroup(start, count, 0);
-                }
-                trackedMapChunkMeshes.visible = visible;
+                trackedMapChunkMeshes.geometry.groups = groups;
               }
             }
 
-            visibleIndex = (visibleIndex + 1) % 0xFFFFFFFF;
-          };
+            next();
+          });
+        });
+
+        let refreshChunksTimeout = null;
+        const _recurseRefreshChunks = () => {
+          _debouncedRequestRefreshMapChunks();
+          refreshChunksTimeout = setTimeout(_recurseRefreshChunks, 1000);
+        };
+        _recurseRefreshChunks();
+        let refreshCullTimeout = null;
+        const _recurseRefreshCull = () => {
+          _debouncedRefreshCull();
+          refreshCullTimeout = setTimeout(_recurseRefreshCull, 1000 / 30);
+        };
+        _recurseRefreshCull();
+
+        const _update = () => {
           const _updateSunIntensity = () => {
             const dayNightSkyboxEntity = elements.getEntitiesElement().querySelector(DAY_NIGHT_SKYBOX_PLUGIN);
             const sunIntensity = (dayNightSkyboxEntity && dayNightSkyboxEntity.getSunIntensity) ? dayNightSkyboxEntity.getSunIntensity() : 0;
@@ -857,14 +805,14 @@ class Heightfield {
             normalMatricesValid.right = false;
           };
 
-          _updateCull();
           _updateSunIntensity();
           _updateMatrices();
         };
         render.on('update', _update);
 
         this._cleanup = () => {
-          clearTimeout(recurseTimeout);
+          clearTimeout(refreshChunksTimeout);
+          clearTimeout(refreshCullTimeout);
 
           // XXX remove chunks from the scene here
 

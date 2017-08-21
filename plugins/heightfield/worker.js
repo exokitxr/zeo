@@ -63,6 +63,11 @@ const _resBlob = res => {
     });
   }
 };
+function mod(value, divisor) {
+  var n = value % divisor;
+  return n < 0 ? (divisor + n) : n;
+}
+const _getChunkIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
 const _getOriginHeight = () => (1 - 0.3 + Math.pow(elevationNoise.in2D(0 + 1000, 0 + 1000), 0.5)) * 64;
 
 class PeekFace {
@@ -83,6 +88,7 @@ const peekFaceSpecs = [
   new PeekFace(PEEK_FACES.BOTTOM, PEEK_FACES.TOP, 0, -1, 0),
 ];
 
+const mapChunkMeshes = {};
 const _requestChunk = (x, z) => {
   const chunk = tra.getChunk(x, z);
 
@@ -93,8 +99,137 @@ const _requestChunk = (x, z) => {
       credentials: 'include',
     })
       .then(_resArrayBuffer)
-      .then(buffer => tra.addChunk(x, z, new Uint32Array(buffer)));
+      .then(buffer => {
+        const {geometries} = protocolUtils.parseDataChunk(buffer, 0);
+
+        const trackedMapChunkMeshes = {
+          array: Array(NUM_CHUNKS_HEIGHT),
+          groups: new Int32Array(NUM_RENDER_GROUPS * 2),
+        };
+        for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
+          const {indexRange, boundingSphere, peeks} = geometries[i];
+          trackedMapChunkMeshes.array[i] = {
+            offset: new THREE.Vector3(x, i, z),
+            indexRange,
+            boundingSphere: new THREE.Sphere(
+              new THREE.Vector3().fromArray(boundingSphere, 0),
+              boundingSphere[3]
+            ),
+            peeks,
+            visibleIndex: -1,
+          };
+        }
+        mapChunkMeshes[_getChunkIndex(x, z)] = trackedMapChunkMeshes;
+
+        return tra.addChunk(x, z, new Uint32Array(buffer));
+      });
   }
+};
+const _unrequestChunk = (x, z) => {
+  mapChunkMeshes[_getChunkIndex(x, z)] = null;
+  tra.removeChunk(x, z);
+};
+
+const localMatrix = new THREE.Matrix4();
+const localMatrix2 = new THREE.Matrix4();
+const localMatrix3 = new THREE.Matrix4();
+const localFrustum = new THREE.Frustum();
+const cullQueueMeshes = Array(256);
+for (let i = 0; i < cullQueueMeshes.length; i++) {
+  cullQueueMeshes[i] = null;
+}
+const cullQueueFaces = new Uint8Array(256);
+let cullQueueStart = 0;
+let cullQueueEnd = 0;
+let visibleIndex = 0;
+const _getCull = (hmdPosition, projectionMatrix, matrixWorldInverse) => {
+  const ox = Math.floor(hmdPosition[0] / NUM_CELLS);
+  const oy = Math.min(Math.max(Math.floor(hmdPosition[1] / NUM_CELLS), 0), NUM_CHUNKS_HEIGHT);
+  const oz = Math.floor(hmdPosition[2] / NUM_CELLS);
+
+  const trackedMapChunkMeshes = mapChunkMeshes[_getChunkIndex(ox, oz)];
+  if (trackedMapChunkMeshes) {
+    localFrustum.setFromMatrix(localMatrix3.multiplyMatrices(localMatrix.fromArray(projectionMatrix), localMatrix2.fromArray(matrixWorldInverse)));
+
+    const trackedMapChunkMesh = trackedMapChunkMeshes.array[oy];
+    cullQueueMeshes[cullQueueEnd] = trackedMapChunkMesh;
+    cullQueueFaces[cullQueueEnd] = PEEK_FACES.NULL;
+    cullQueueEnd = (cullQueueEnd + 1) % 256;
+    for (;cullQueueStart !== cullQueueEnd; cullQueueStart = (cullQueueStart + 1) % 256) {
+      const trackedMapChunkMesh = cullQueueMeshes[cullQueueStart];
+      const {offset: {x, y, z}} = trackedMapChunkMesh;
+      cullQueueMeshes[cullQueueStart] = null;
+      const enterFace = cullQueueFaces[cullQueueStart];
+
+      trackedMapChunkMesh.visibleIndex = visibleIndex;
+      for (let j = 0; j < peekFaceSpecs.length; j++) {
+        const peekFaceSpec = peekFaceSpecs[j];
+        const ay = y + peekFaceSpec.y;
+        if (ay >= 0 && ay < NUM_CHUNKS_HEIGHT) {
+          const ax = x + peekFaceSpec.x;
+          const az = z + peekFaceSpec.z;
+          if (
+            (ax - ox) * peekFaceSpec.x > 0 ||
+            (ay - oy) * peekFaceSpec.y > 0 ||
+            (az - oz) * peekFaceSpec.z > 0
+          ) {
+            if (enterFace === PEEK_FACES.NULL || trackedMapChunkMesh.peeks[PEEK_FACE_INDICES[enterFace << 4 | peekFaceSpec.exitFace]] === 1) {
+              const trackedMapChunkMeshes = mapChunkMeshes[_getChunkIndex(ax, az)];
+              if (trackedMapChunkMeshes) {
+                const trackedMapChunkMesh = trackedMapChunkMeshes.array[ay];
+                if (localFrustum.intersectsSphere(trackedMapChunkMesh.boundingSphere)) {
+                  cullQueueMeshes[cullQueueEnd] = trackedMapChunkMesh;
+                  cullQueueFaces[cullQueueEnd] = peekFaceSpec.enterFace;
+                  cullQueueEnd = (cullQueueEnd + 1) % 256;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  for (const index in mapChunkMeshes) {
+    const trackedMapChunkMeshes = mapChunkMeshes[index];
+    if (trackedMapChunkMeshes) {
+      trackedMapChunkMeshes.groups.fill(-1);
+      let groupIndex = 0;
+      let start = -1;
+      let count = 0;
+      // for (let i = NUM_CHUNKS_HEIGHT - 1; i >= 0; i--) { // optimization: top to bottom
+      for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) { // XXX optimize this direction
+        const trackedMapChunkMesh = trackedMapChunkMeshes.array[i];
+        if (trackedMapChunkMesh.visibleIndex === visibleIndex) {
+          if (start === -1) {
+            start = trackedMapChunkMesh.indexRange.start;
+          }
+          count += trackedMapChunkMesh.indexRange.count;
+        } else {
+          if (start !== -1) {
+            const baseIndex = groupIndex * 2;
+            trackedMapChunkMeshes.groups[baseIndex + 0] = start;
+            trackedMapChunkMeshes.groups[baseIndex + 1] = count;
+            groupIndex++;
+            start = -1;
+            count = 0;
+          }
+        }
+      }
+      if (start !== -1) {
+        const baseIndex = groupIndex * 2;
+        trackedMapChunkMeshes.groups[baseIndex + 0] = start;
+        trackedMapChunkMeshes.groups[baseIndex + 1] = count;
+        /* groupIndex++;
+        start = -1;
+        count = 0; */
+      }
+    }
+  }
+
+  visibleIndex = (visibleIndex + 1) % 0xFFFFFFFF;
+
+  return mapChunkMeshes;
 };
 
 self.onmessage = e => {
@@ -135,7 +270,20 @@ self.onmessage = e => {
     case 'ungenerate': {
       const {args} = data;
       const {x, y} = args;
-      tra.removeChunk(x, y);
+      _unrequestChunk(x, y);
+      break;
+    }
+    case 'cull': {
+      const {id, args} = data;
+      const {hmdPosition, projectionMatrix, matrixWorldInverse, buffer} = args;
+
+      const mapChunkMeshes = _getCull(hmdPosition, projectionMatrix, matrixWorldInverse);
+      protocolUtils.stringifyCull(mapChunkMeshes, buffer, 0);
+      postMessage({
+        type: 'response',
+        args: [id],
+        result: buffer,
+      }, [buffer]);
       break;
     }
     case 'addVoxel': {
