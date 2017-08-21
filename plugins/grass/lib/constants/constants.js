@@ -1,10 +1,10 @@
-const NUM_CELLS = 32;
+const NUM_CELLS = 16;
 const OVERSCAN = 1;
 const NUM_CELLS_OVERSCAN = NUM_CELLS + OVERSCAN;
 
 const NUM_CELLS_HEIGHT = 128;
 
-const RANGE = 2;
+const RANGE = 3;
 
 const DEFAULT_SEED = 'a';
 

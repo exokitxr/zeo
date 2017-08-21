@@ -14,7 +14,7 @@ const {
 const protocolUtils = require('./lib/utils/protocol-utils');
 const objectsLib = require('./lib/objects/client/index');
 
-const NUM_POSITIONS_CHUNK = 1 * 1024 * 1024;
+const NUM_POSITIONS_CHUNK = 500 * 1024;
 const TEXTURE_SIZE = 512;
 const SIDES = ['left', 'right'];
 

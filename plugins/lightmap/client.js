@@ -371,7 +371,7 @@ class Lightmap {
 
         this._shapes = [];
         this._lightmaps = {};
-        this._buffers = bffr((width + 1) * (depth + 1) * height, 4 * 4 * 2);
+        this._buffers = bffr((width + 1) * (depth + 1) * height, RANGE * RANGE * 9);
 
         this.chunker = chnkr.makeChunker({
           resolution: NUM_CELLS,

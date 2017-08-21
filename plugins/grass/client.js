@@ -8,7 +8,7 @@ const {
 const protocolUtils = require('./lib/utils/protocol-utils');
 
 const TEXTURE_SIZE = 1024;
-const NUM_POSITIONS_CHUNK = 200 * 1024;
+const NUM_POSITIONS_CHUNK = 100 * 1024;
 const HEIGHTFIELD_PLUGIN = 'plugins-heightfield';
 const LIGHTMAP_PLUGIN = 'plugins-lightmap';
 const DAY_NIGHT_SKYBOX_PLUGIN = 'plugins-day-night-skybox';

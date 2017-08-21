@@ -1,7 +1,7 @@
-const NUM_CELLS = 32;
+const NUM_CELLS = 16;
 const NUM_CELLS_HEIGHT = 128;
 
-const RANGE = 2;
+const RANGE = 3;
 
 module.exports = {
   NUM_CELLS,
