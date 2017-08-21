@@ -340,7 +340,7 @@ class Lightmap {
             ids: ids,
           });
         };
-        worker.requestUpdate = lightmap => new Promise((accept, reject) => {
+        worker.requestUpdate = (lightmap, cb) => {
           const {x: ox, z: oz, buffer} = lightmap;
           worker.postMessage({
             type: 'requestUpdate',
@@ -353,16 +353,8 @@ class Lightmap {
           lightmap.texture.image.width = 1;
           lightmap.texture.image.height = 1;
 
-          queue.push(buffer => {
-            lightmap.buffer = buffer;
-            lightmap.texture.image.data = new Uint8Array(buffer);
-            lightmap.texture.image.width = (width + 1) * (depth + 1);
-            lightmap.texture.image.height = height;
-            lightmap.texture.needsUpdate = true;
-
-            accept();
-          });
-        });
+          queue.push(cb);
+        };
         worker.onmessage = e => {
           queue.shift()(e.data);
         };
@@ -480,6 +472,20 @@ class Lightmap {
         const {worldPosition: hmdPosition} = hmd;
         const {added, removed, relodded} = this.chunker.update(hmdPosition.x, hmdPosition.z);
 
+        const _requestUpdate = lightmap => new Promise((accept, reject) => {
+          this.worker.requestUpdate(lightmap, lightmapBuffer => {
+            _applyLightmapBuffer(lightmap, lightmapBuffer);
+            accept();
+          });
+        });
+        const _applyLightmapBuffer = (lightmap, lightmapBuffer) => {
+          lightmap.buffer = lightmapBuffer;
+          lightmap.texture.image.data = new Uint8Array(lightmapBuffer);
+          lightmap.texture.image.width = (this.width + 1) * (this.depth + 1);
+          lightmap.texture.image.height = this.height;
+          lightmap.texture.needsUpdate = true;
+        };
+
         const addedPromises = Array(added.length + relodded.length);
         let index = 0;
         const _addChunk = chunk => {
@@ -495,7 +501,7 @@ class Lightmap {
             lightmap.buffer = this._buffers.alloc();
           }
 
-          return this.worker.requestUpdate(lightmap);
+          return _requestUpdate(lightmap);
         };
         for (let i = 0; i < added.length; i++) {
           addedPromises[index++] = _addChunk(added[i]);
