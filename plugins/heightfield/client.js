@@ -539,10 +539,7 @@ class Heightfield {
           for (let i = 0; i < removed.length; i++) {
             const chunk = removed[i];
             const {x, z, data: oldMapChunkMeshes} = chunk;
-            for (let i = 0; i < oldMapChunkMeshes.length; i++) {
-              const oldMapChunkMesh = oldMapChunkMeshes[i];
-              scene.remove(oldMapChunkMesh);
-            }
+            scene.remove(oldMapChunkMeshes);
 
             oldMapChunkMeshes.destroy();
 
