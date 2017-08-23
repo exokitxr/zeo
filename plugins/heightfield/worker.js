@@ -101,7 +101,6 @@ const _requestChunk = (x, z) => {
       .then(_resArrayBuffer)
       .then(buffer => {
         const {geometries} = protocolUtils.parseDataChunk(buffer, 0);
-
         const trackedMapChunkMeshes = {
           array: Array(NUM_CHUNKS_HEIGHT),
           groups: new Int32Array(NUM_RENDER_GROUPS * 2),
@@ -132,7 +131,6 @@ const _unrequestChunk = (x, z) => {
 
 const localMatrix = new THREE.Matrix4();
 const localMatrix2 = new THREE.Matrix4();
-const localMatrix3 = new THREE.Matrix4();
 const localFrustum = new THREE.Frustum();
 const cullQueueMeshes = Array(256);
 for (let i = 0; i < cullQueueMeshes.length; i++) {
@@ -149,7 +147,7 @@ const _getCull = (hmdPosition, projectionMatrix, matrixWorldInverse) => {
 
   const trackedMapChunkMeshes = mapChunkMeshes[_getChunkIndex(ox, oz)];
   if (trackedMapChunkMeshes) {
-    localFrustum.setFromMatrix(localMatrix3.multiplyMatrices(localMatrix.fromArray(projectionMatrix), localMatrix2.fromArray(matrixWorldInverse)));
+    localFrustum.setFromMatrix(localMatrix.fromArray(projectionMatrix).multiply(localMatrix2.fromArray(matrixWorldInverse)));
 
     const trackedMapChunkMesh = trackedMapChunkMeshes.array[oy];
     cullQueueMeshes[cullQueueEnd] = trackedMapChunkMesh;
@@ -197,7 +195,6 @@ const _getCull = (hmdPosition, projectionMatrix, matrixWorldInverse) => {
       let groupIndex = 0;
       let start = -1;
       let count = 0;
-      // for (let i = NUM_CHUNKS_HEIGHT - 1; i >= 0; i--) { // optimization: top to bottom
       for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) { // XXX optimize this direction
         const trackedMapChunkMesh = trackedMapChunkMeshes.array[i];
         if (trackedMapChunkMesh.visibleIndex === visibleIndex) {
@@ -220,9 +217,6 @@ const _getCull = (hmdPosition, projectionMatrix, matrixWorldInverse) => {
         const baseIndex = groupIndex * 2;
         trackedMapChunkMeshes.groups[baseIndex + 0] = start;
         trackedMapChunkMeshes.groups[baseIndex + 1] = count;
-        /* groupIndex++;
-        start = -1;
-        count = 0; */
       }
     }
   }

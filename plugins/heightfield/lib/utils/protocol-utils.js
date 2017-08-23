@@ -140,7 +140,6 @@ const stringifyDataChunk = (mapChunk, arrayBuffer, byteOffset) => {
     byteOffset += UINT8_SIZE * peeks.length;
   }
 
-
   const heightfieldBuffer = new Float32Array(arrayBuffer, byteOffset, heightfield.length);
   heightfieldBuffer.set(heightfield);
   byteOffset += FLOAT32_SIZE * heightfield.length;
@@ -519,10 +518,14 @@ const parseCull = (buffer, byteOffset) => {
     const groupsArray = new Int32Array(buffer, byteOffset, NUM_RENDER_GROUPS * 2);
     for (let i = 0; i < NUM_RENDER_GROUPS; i++) {
       const baseIndex = i * 2;
-      groups.push({
-        start: groupsArray[baseIndex + 0],
-        count: groupsArray[baseIndex + 1],
-      });
+      const start = groupsArray[baseIndex + 0];
+      if (start !== -1) {
+        groups.push({
+          start,
+          count: groupsArray[baseIndex + 1],
+          materialIndex: 0,
+        });
+      }
     }
     byteOffset += INT32_SIZE * 2 * NUM_RENDER_GROUPS;
 
@@ -562,6 +565,7 @@ const sliceDataHeightfield = (arrayBuffer, readByteOffset) => {
 
   return resultArrayBuffer;
 };
+
 const parseHeightfield = (buffer, byteOffset) => {
   if (byteOffset === undefined) {
     byteOffset = 0;

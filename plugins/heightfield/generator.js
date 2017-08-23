@@ -210,10 +210,8 @@ const _generateMapChunk = (ox, oy, opts) => {
       }
     };
 
-    // for (let doy = -3; doy <= 3; doy++) {
-      // for (let dox = -3; dox <= 3; dox++) {
-    for (let doy = -1; doy <= 1; doy++) {
-      for (let dox = -1; dox <= 1; dox++) {
+    for (let doy = -2; doy <= 2; doy++) {
+      for (let dox = -2; dox <= 2; dox++) {
         const aox = ox + dox;
         const aoy = oy + doy;
         const n = _random.wormNoise.in2D(aox * NUM_CELLS + 1000, aoy * NUM_CELLS + 1000);

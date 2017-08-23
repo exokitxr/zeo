@@ -129,7 +129,7 @@ class Heightfield {
 
   mount() {
     const {_archae: archae} = this;
-    const {three, render, pose, input, world, elements, teleport, stck, utils: {js: {mod, bffr}, random: {chnkr}}} = zeo;
+    const {three, render, pose, input, world, elements, teleport, stck, utils: {js: {mod, bffr, sbffr}, random: {chnkr}}} = zeo;
     const {THREE, scene, camera, renderer} = three;
 
     const modelViewMatrices = {
@@ -148,6 +148,10 @@ class Heightfield {
       left: false,
       right: false,
     };
+    const uniformsNeedUpdate = {
+      left: true,
+      right: true,
+    };
     function _updateModelViewMatrix(camera) {
       if (!modelViewMatricesValid[camera.name]) {
         modelViewMatrices[camera.name].multiplyMatrices(camera.matrixWorldInverse, this.matrixWorld);
@@ -161,6 +165,14 @@ class Heightfield {
         normalMatricesValid[camera.name] = true;
       }
       this.normalMatrix = normalMatrices[camera.name];
+    }
+    function _uniformsNeedUpdate(camera) {
+      if (uniformsNeedUpdate[camera.name]) {
+        uniformsNeedUpdate[camera.name] = false;
+        return true;
+      } else {
+        return false;
+      }
     }
 
     const _getChunkIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
@@ -186,7 +198,28 @@ class Heightfield {
     const _requestImageBitmap = src => _requestImage(src)
       .then(img => createImageBitmap(img, 0, 0, img.width, img.height));
 
-    const buffers = bffr(NUM_POSITIONS_CHUNK, RANGE * RANGE * 9);
+    const geometryBuffer = sbffr(
+      NUM_POSITIONS_CHUNK,
+      RANGE * 2 * RANGE * 2 + RANGE * 2,
+      [
+        {
+          name: 'positions',
+          constructor: Float32Array,
+          size: 3 * 3 * 4,
+        },
+        {
+          name: 'colors',
+          constructor: Float32Array,
+          size: 3 * 3 * 4,
+        },
+        {
+          name: 'indices',
+          constructor: Uint32Array,
+          size: 3 * 4,
+        }
+      ]
+    );
+    const buffers = bffr(NUM_POSITIONS_CHUNK, (RANGE * 2) * (RANGE * 2) * 2);
     let cullBuffer = new ArrayBuffer(4096);
     const worker = new Worker('archae/plugins/_plugins_heightfield/build/worker.js');
     let queues = {};
@@ -373,12 +406,26 @@ class Heightfield {
     });
     const _makeMapChunkMeshes = (chunk, mapChunkData) => {
       const {x, z} = chunk;
-      const {positions, colors, indices, geometries, heightfield, staticHeightfield} = mapChunkData;
+      const {positions: newPositions, colors: newColors, indices: newIndices, heightfield, staticHeightfield} = mapChunkData;
 
-      const geometry = new THREE.BufferGeometry();
-      geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
-      geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
-      geometry.setIndex(new THREE.BufferAttribute(indices, 1));
+      // geometery
+
+      const gbuffer = geometryBuffer.alloc();
+      const {index, slices: {positions, colors, indices}} = gbuffer;
+
+      positions.set(newPositions);
+      renderer.updateAttribute(heightfieldObject.geometry.attributes.position, index * positions.length, newPositions.length, false);
+
+      colors.set(newColors);
+      renderer.updateAttribute(heightfieldObject.geometry.attributes.color, index * colors.length, newColors.length, false);
+
+      const positionOffset = index * (positions.length / 3);
+      for (let i = 0; i < newIndices.length; i++)  {
+        indices[i] = newIndices[i] + positionOffset; // XXX do this in the worker
+      }
+      renderer.updateAttribute(heightfieldObject.geometry.index, index * indices.length, newIndices.length, true);
+
+      // material
 
       const uniforms = Object.assign(
         THREE.UniformsUtils.clone(THREE.UniformsLib.lights),
@@ -386,7 +433,7 @@ class Heightfield {
       );
       uniforms.d.value = new THREE.Vector2(x * NUM_CELLS, z * NUM_CELLS);
       const material = new THREE.ShaderMaterial({
-        uniforms: uniforms,
+        uniforms,
         vertexShader: HEIGHTFIELD_SHADER.vertexShader,
         fragmentShader: HEIGHTFIELD_SHADER.fragmentShader,
         lights: true,
@@ -395,29 +442,36 @@ class Heightfield {
           derivatives: true,
         },
       });
+      material.uniformsNeedUpdate = _uniformsNeedUpdate;
 
-      const meshes = new THREE.Mesh(geometry, material);
-      meshes.frustumCulled = false;
-      meshes.updateModelViewMatrix = _updateModelViewMatrix;
-      meshes.updateNormalMatrix = _updateNormalMatrix;
-      meshes.destroy = () => {
-        geometry.dispose();
-        material.dispose();
+      // mesh
 
-        buffers.free(mapChunkData.buffer);
+      const meshes = {
+        material,
+        indexOffset: index * indices.length,
+        renderListEntry: {
+          object: heightfieldObject,
+          material,
+          groups: [],
+        },
+        offset: new THREE.Vector2(x, z),
+        lod: chunk.lod,
+        heightfield,
+        staticHeightfield,
+        lightmap: null,
+        shape: null,
+        stckBody: null,
+        destroy: () => {
+          buffers.free(mapChunkData.buffer);
+          geometryBuffer.free(gbuffer);
 
-        if (meshes.lightmap) {
-          _unbindLightmap(meshes);
-        }
+          material.dispose();
+
+          if (meshes.lightmap) {
+            _unbindLightmap(meshes);
+          }
+        },
       };
-
-      meshes.offset = new THREE.Vector2(x, z);
-      meshes.material = material;
-      meshes.heightfield = heightfield;
-      meshes.staticHeightfield = staticHeightfield;
-      meshes.lightmap = null;
-      meshes.shape = null;
-      meshes.stckBody = null;
       if (lightmapper && chunk.lod === 1) {
         _bindLightmap(meshes);
       }
@@ -430,6 +484,29 @@ class Heightfield {
       range: RANGE,
     });
     let mapChunkMeshes = {};
+
+    const heightfieldObject = (() => {
+      const {positions, colors, indices} = geometryBuffer.getAll();
+
+      const geometry = new THREE.BufferGeometry();
+      const positionAttribute = new THREE.BufferAttribute(positions, 3);
+      positionAttribute.dynamic = true;
+      geometry.addAttribute('position', positionAttribute);
+      const colorAttribute = new THREE.BufferAttribute(colors, 3);
+      colorAttribute.dynamic = true;
+      geometry.addAttribute('color', colorAttribute);
+      const indexAttribute = new THREE.BufferAttribute(indices, 1);
+      indexAttribute.dynamic = true;
+      geometry.setIndex(indexAttribute);
+
+      const mesh = new THREE.Mesh(geometry, null);
+      mesh.frustumCulled = false;
+      mesh.updateModelViewMatrix = _updateModelViewMatrix;
+      mesh.updateNormalMatrix = _updateNormalMatrix;
+      mesh.renderList = [];
+      return mesh;
+    })();
+    scene.add(heightfieldObject);
 
     const _requestRefreshMapChunks = () => {
       const {hmd} = pose.getStatus();
@@ -465,7 +542,7 @@ class Heightfield {
             const index = _getChunkIndex(x, z);
             const oldMapChunkMeshes = mapChunkMeshes[index];
             if (oldMapChunkMeshes) {
-              scene.remove(oldMapChunkMeshes);
+              heightfieldObject.renderList.splice(heightfieldObject.renderList.indexOf(oldMapChunkMeshes.renderListEntry), 1);
 
               oldMapChunkMeshes.destroy();
 
@@ -477,7 +554,7 @@ class Heightfield {
             }
 
             const newMapChunkMeshes = _makeMapChunkMeshes(chunk, mapChunkData);
-            scene.add(newMapChunkMeshes);
+            heightfieldObject.renderList.push(newMapChunkMeshes.renderListEntry);
             mapChunkMeshes[index] = newMapChunkMeshes;
 
             if (lod === 1 && !newMapChunkMeshes.targeted) {
@@ -507,25 +584,24 @@ class Heightfield {
           }
         }
       }
+      for (let i = 0; i < removed.length; i++) {
+        const chunk = removed[i];
+        const {x, z, data: oldMapChunkMeshes} = chunk;
+        heightfieldObject.renderList.splice(heightfieldObject.renderList.indexOf(oldMapChunkMeshes.renderListEntry), 1);
+
+        oldMapChunkMeshes.destroy();
+
+        const {lod} = chunk;
+        if (lod !== 1 && oldMapChunkMeshes.targeted) {
+          _removeTarget(oldMapChunkMeshes);
+        }
+
+        mapChunkMeshes[_getChunkIndex(x, z)] = null;
+
+        worker.requestUngenerate(x, z);
+      }
       return Promise.all(addedPromises)
         .then(() => {
-          for (let i = 0; i < removed.length; i++) {
-            const chunk = removed[i];
-            const {x, z, data: oldMapChunkMeshes} = chunk;
-            scene.remove(oldMapChunkMeshes);
-
-            oldMapChunkMeshes.destroy();
-
-            const {lod} = chunk;
-            if (lod !== 1 && oldMapChunkMeshes.targeted) {
-              _removeTarget(oldMapChunkMeshes);
-            }
-
-            mapChunkMeshes[_getChunkIndex(x, z)] = null;
-
-            worker.requestUngenerate(x, z);
-          }
-
           const newMapChunkMeshes = {};
           for (const index in mapChunkMeshes) {
             const trackedMapChunkMeshes = mapChunkMeshes[index];
@@ -757,14 +833,10 @@ class Heightfield {
 
               const trackedMapChunkMeshes = mapChunkMeshes[index];
               if (trackedMapChunkMeshes) {
-                trackedMapChunkMeshes.visible = false;
-                for (let i = 0; i < NUM_RENDER_GROUPS; i++) {
-                  if (groups[i].start !== -1) {
-                    trackedMapChunkMeshes.visible = true;
-                    break;
-                  }
+                for (let j = 0; j < groups.length; j++) {
+                  groups[j].start += trackedMapChunkMeshes.indexOffset; // XXX do this reindexing in the worker
                 }
-                trackedMapChunkMeshes.geometry.groups = groups;
+                trackedMapChunkMeshes.renderListEntry.groups = groups;
               }
             }
 
@@ -802,6 +874,8 @@ class Heightfield {
             modelViewMatricesValid.right = false;
             normalMatricesValid.left = false;
             normalMatricesValid.right = false;
+            uniformsNeedUpdate.left = true;
+            uniformsNeedUpdate.right = true;
           };
 
           _updateSunIntensity();
@@ -810,10 +884,10 @@ class Heightfield {
         render.on('update', _update);
 
         this._cleanup = () => {
+          scene.remove(heightfieldObject);
+
           clearTimeout(refreshChunksTimeout);
           clearTimeout(refreshCullTimeout);
-
-          // XXX remove chunks from the scene here
 
           elements.destroyListener(elementListener);
 
