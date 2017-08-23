@@ -1,3 +1,7 @@
+const {
+  NUM_RENDER_GROUPS,
+} = require('../constants/constants');
+
 const UINT32_SIZE = 4;
 const UINT16_SIZE = 2;
 const INT32_SIZE = 4;

@@ -1,7 +1,10 @@
+const {
+  NUM_CELLS,
+
+  RANGE,
+} = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
 
-const NUM_CELLS = 256;
-const RANGE = 2;
 const NUM_POSITIONS_CHUNK = 200 * 1024;
 const DAY_NIGHT_SKYBOX_PLUGIN = 'plugins-day-night-skybox';
 

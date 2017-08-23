@@ -6,9 +6,14 @@ const {exports: murmur} = self.module;
 // const {exports: indev} = self.module;
 self.module = {};
 
+const {
+  NUM_CELLS,
+
+  NUM_CHUNKS_HEIGHT,
+  NUM_RENDER_GROUPS,
+} = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
 
-const NUM_CELLS = 256;
 const SCALE = 8;
 const UV_SCALE = 32;
 const NUM_FRAMES = 16;
