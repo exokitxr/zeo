@@ -109,8 +109,8 @@ class Grass {
 
   mount() {
     const {_archae: archae} = this;
-    const {three, render, pose, elements, stage, utils: {js: {bffr}, random: {chnkr}}} = zeo;
-    const {THREE} = three;
+    const {three, render, pose, elements, /*stage, */utils: {js: {mod, bffr, sbffr}, random: {chnkr}}} = zeo;
+    const {THREE, scene, camera, renderer} = three;
 
     const modelViewMatrices = {
       left: new THREE.Matrix4(),
@@ -128,6 +128,10 @@ class Grass {
       left: false,
       right: false,
     };
+    const uniformsNeedUpdate = {
+      left: true,
+      right: true,
+    };
     function _updateModelViewMatrix(camera) {
       if (!modelViewMatricesValid[camera.name]) {
         modelViewMatrices[camera.name].multiplyMatrices(camera.matrixWorldInverse, this.matrixWorld);
@@ -142,18 +146,31 @@ class Grass {
       }
       this.normalMatrix = normalMatrices[camera.name];
     }
+    function _uniformsNeedUpdate(camera) {
+      if (uniformsNeedUpdate[camera.name]) {
+        uniformsNeedUpdate[camera.name] = false;
+        return true;
+      } else {
+        return false;
+      }
+    }
 
-    const upVector = new THREE.Vector3(0, 1, 0);
-    const buffers = bffr(NUM_POSITIONS_CHUNK, RANGE * RANGE * 9);
+    const _getChunkIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
+
+    const localArray3 = Array(3);
+    const localArray16 = Array(16);
+    const localArray162 = Array(16);
 
     let live = true;
     this._cleanup = () => {
-      live = false;
+      live  = false;
     };
 
     const _ensureHeightfieldElement = () => elements.requestElement(HEIGHTFIELD_PLUGIN)
       .then(() => {});
 
+    const buffers = bffr(NUM_POSITIONS_CHUNK, RANGE * RANGE * 9);
+    let cullBuffer = new ArrayBuffer(4096);
     const worker = new Worker('archae/plugins/_plugins_grass/build/worker.js');
     let queues = {};
     let numRemovedQueues = 0;
@@ -176,7 +193,7 @@ class Grass {
           const id = _makeId();
           const buffer = buffers.alloc();
           worker.postMessage({
-            type: 'chunk',
+            type: 'generate',
             id,
             x,
             y,
@@ -184,6 +201,32 @@ class Grass {
           }, [buffer]);
           queues[id] = cb;
         }));
+    };
+    worker.requestUngenerate = (x, y) => {
+      worker.postMessage({
+        type: 'ungenerate',
+        x,
+        y,
+      });
+    };
+    worker.requestCull = (hmdPosition, projectionMatrix, matrixWorldInverse, cb) => { // XXX hmdPosition is unused
+      const id = _makeId();
+      worker.postMessage({
+        type: 'cull',
+        id,
+        args: {
+          hmdPosition: hmdPosition.toArray(localArray3),
+          projectionMatrix: projectionMatrix.toArray(localArray16),
+          matrixWorldInverse: matrixWorldInverse.toArray(localArray162),
+          buffer: cullBuffer,
+        },
+      }, [cullBuffer]);
+      cullBuffer = null;
+
+      queues[id] = buffer => {
+        cullBuffer = buffer;
+        cb(buffer);
+      };
     };
     worker.requestTexture = cb => {
       const id = _makeId();
@@ -205,7 +248,6 @@ class Grass {
         cb(canvas);
       };
     };
-    let pendingResponseId = null;
     worker.onmessage = e => {
       const {data} = e;
       const {type, args} = data;
@@ -219,7 +261,7 @@ class Grass {
 
         _cleanupQueues();
       } else {
-        console.warn('heightfield got unknown worker message type:', JSON.stringify(type));
+        console.warn('grass got unknown worker message type:', JSON.stringify(type));
       }
     };
     const _requestTexture = () => new Promise((accept, reject) => {
@@ -264,14 +306,17 @@ class Grass {
             lightmapper = null;
           };
           const _bindLightmaps = () => {
-            for (let i = 0; i < grassChunkMeshes.length; i++) {
-              _bindLightmap(grassChunkMeshes[i]);
+            for (const index in grassChunkMeshes) {
+              const grassChunkMesh = grassChunkMeshes[index];
+              if (grassChunkMesh) {
+                _bindLightmap(grassChunkMesh);
+              }
             }
           };
           const _unbindLightmaps = () => {
-            for (let i = 0; i < grassChunkMeshes.length; i++) {
-              const grassChunkMesh = grassChunkMeshes[i];
-              if (grassChunkMesh.lightmap) {
+            for (const index in grassChunkMeshes) {
+              const grassChunkMesh = grassChunkMeshes[index];
+              if (grassChunkMesh && grassChunkMesh.lightmap) {
                 _unbindLightmap(grassChunkMesh);
               }
             }
@@ -303,62 +348,70 @@ class Grass {
             });
           });
           const _makeGrassChunkMesh = (chunk, grassChunkData) => {
-            const mesh = (() => {
-              const {x, z} = chunk;
-              const {positions, uvs, indices, boundingSphere} = grassChunkData;
+            const {x, z} = chunk;
+            const {positions: newPositions, uvs: newUvs, indices: newIndices} = grassChunkData;
 
-              const geometry = (() => {
-                const geometry = new THREE.BufferGeometry();
-                geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
-                geometry.addAttribute('uv', new THREE.BufferAttribute(uvs, 2));
-                geometry.setIndex(new THREE.BufferAttribute(indices, 1));
-                geometry.boundingSphere = new THREE.Sphere(
-                  new THREE.Vector3().fromArray(boundingSphere, 0),
-                  boundingSphere[3]
-                );
+            // geometry
 
-                return geometry;
-              })();
-              const uniforms = Object.assign(
-                THREE.UniformsUtils.clone(THREE.UniformsLib.lights),
-                THREE.UniformsUtils.clone(GRASS_SHADER.uniforms)
-              );
-              uniforms.map.value = mapTexture;
-              uniforms.d.value = new THREE.Vector2(x * NUM_CELLS, z * NUM_CELLS);
-              const material = new THREE.ShaderMaterial({
-                uniforms: uniforms,
-                vertexShader: GRASS_SHADER.vertexShader,
-                fragmentShader: GRASS_SHADER.fragmentShader,
-                lights: true,
-                side: THREE.DoubleSide,
-                transparent: true,
-                /* extensions: {
-                  derivatives: true,
-                }, */
-              });
+            const gbuffer = geometryBuffer.alloc();
+            const {index, slices: {positions, uvs, indices}} = gbuffer;
 
-              const mesh = new THREE.Mesh(geometry, material);
-              mesh.updateModelViewMatrix = _updateModelViewMatrix;
-              mesh.updateNormalMatrix = _updateNormalMatrix;
-              mesh.offset = new THREE.Vector2(x, z);
-              mesh.lightmap = null;
-              if (lightmapper && chunk.lod === 1) {
-                _bindLightmap(mesh);
+            if (newPositions.length > 0) {
+              positions.set(newPositions);
+              renderer.updateAttribute(grassMesh.geometry.attributes.position, index * positions.length, newPositions.length, false);
+
+              uvs.set(newUvs);
+              renderer.updateAttribute(grassMesh.geometry.attributes.uv, index * uvs.length, newUvs.length, false);
+
+              const positionOffset = index * (positions.length / 3);
+              for (let i = 0; i < newIndices.length; i++)  {
+                indices[i] = newIndices[i] + positionOffset; // XXX do this in the worker
               }
+              renderer.updateAttribute(grassMesh.geometry.index, index * indices.length, newIndices.length, true);
+            }
 
-              return mesh;
-            })();
+            // material
 
-            mesh.destroy = () => {
-              mesh.geometry.dispose();
+            const uniforms = Object.assign(
+              THREE.UniformsUtils.clone(THREE.UniformsLib.lights),
+              THREE.UniformsUtils.clone(GRASS_SHADER.uniforms)
+            );
+            uniforms.map.value = mapTexture;
+            uniforms.d.value = new THREE.Vector2(x * NUM_CELLS, z * NUM_CELLS);
+            const material = new THREE.ShaderMaterial({
+              uniforms: uniforms,
+              vertexShader: GRASS_SHADER.vertexShader,
+              fragmentShader: GRASS_SHADER.fragmentShader,
+              lights: true,
+              side: THREE.DoubleSide,
+            });
+            material.uniformsNeedUpdate = _uniformsNeedUpdate;
 
-              const {buffer} = grassChunkData;
-              buffers.free(buffer);
+            const mesh = {
+              material,
+              indexOffset: index * indices.length,
+              offset: new THREE.Vector2(x, z),
+              lod: chunk.lod,
+              lightmap: null,
+              renderListEntry: {
+                object: grassMesh,
+                material: material,
+                groups: [],
+              },
+              destroy: () => {
+                buffers.free(grassChunkData.buffer);
+                geometryBuffer.free(gbuffer);
 
-              if (mesh.lightmap) {
-                _unbindLightmap(mesh);
-              }
+                material.dispose();
+
+                if (mesh.lightmap) {
+                  _unbindLightmap(mesh);
+                }
+              },
             };
+            if (lightmapper && chunk.lod === 1) {
+              _bindLightmap(mesh);
+            }
 
             return mesh;
           };
@@ -367,9 +420,53 @@ class Grass {
             resolution: NUM_CELLS,
             range: RANGE,
           });
-          const grassChunkMeshes = [];
+          const grassChunkMeshes = {};
 
-          const _requestRefreshGrassChunks = () => {
+          const geometryBuffer = sbffr(
+            NUM_POSITIONS_CHUNK,
+            RANGE * 2 * RANGE * 2 + RANGE * 2,
+            [
+              {
+                name: 'positions',
+                constructor: Float32Array,
+                size: 3 * 3 * 4,
+              },
+              {
+                name: 'uvs',
+                constructor: Float32Array,
+                size: 2 * 3 * 4,
+              },
+              {
+                name: 'indices',
+                constructor: Uint32Array,
+                size: 3 * 4,
+              }
+            ]
+          );
+          const grassMesh = (() => {
+            const {positions, uvs, indices} = geometryBuffer.getAll();
+
+            const geometry = new THREE.BufferGeometry();
+            const positionAttribute = new THREE.BufferAttribute(positions, 3);
+            positionAttribute.dynamic = true;
+            geometry.addAttribute('position', positionAttribute);
+            const uvAttribute = new THREE.BufferAttribute(uvs, 2);
+            uvAttribute.dynamic = true;
+            geometry.addAttribute('uv', uvAttribute);
+            const indexAttribute = new THREE.BufferAttribute(indices, 1);
+            indexAttribute.dynamic = true;
+            geometry.setIndex(indexAttribute);
+
+            const mesh = new THREE.Mesh(geometry, null);
+            mesh.frustumCulled = false;
+            mesh.updateModelViewMatrix = _updateModelViewMatrix;
+            mesh.updateNormalMatrix = _updateNormalMatrix;
+            mesh.renderList = [];
+            return mesh;
+          })();
+          scene.add(grassMesh);
+
+          const _debouncedRequestRefreshGrassChunks = _debounce(next => {
             const {hmd} = pose.getStatus();
             const {worldPosition: hmdPosition} = hmd;
             const {added, removed, relodded} = chunker.update(hmdPosition.x, hmdPosition.z);
@@ -383,9 +480,10 @@ class Grass {
               const promise = _requestGrassGenerate(x, z)
                 .then(grassChunkData => {
                   const grassChunkMesh = _makeGrassChunkMesh(chunk, grassChunkData);
-                  stage.add('main', grassChunkMesh);
+                  // stage.add('main', grassChunkMesh);
+                  grassMesh.renderList.push(grassChunkMesh.renderListEntry);
 
-                  grassChunkMeshes.push(grassChunkMesh);
+                  grassChunkMeshes[_getChunkIndex(x, z)] = grassChunkMesh;
 
                   chunk.data = grassChunkMesh;
                 });
@@ -401,46 +499,79 @@ class Grass {
                 _unbindLightmap(grassChunkMesh);
               }
             }
-            return Promise.all(addedPromises)
+            for (let i = 0; i < removed.length; i++) {
+              const chunk = removed[i];
+              const {x, z, data: grassChunkMesh} = chunk;
+
+              worker.requestUngenerate(x, z);
+
+              // stage.remove('main', grassChunkMesh);
+              grassMesh.renderList.splice(grassMesh.renderList.indexOf(grassChunkMesh.renderListEntry), 1);
+
+              grassChunkMeshes[_getChunkIndex(x, z)] = null;
+
+              grassChunkMesh.destroy();
+            }
+
+            Promise.all(addedPromises)
               .then(() => {
-                for (let i = 0; i < removed.length; i++) {
-                  const chunk = removed[i];
-                  const {data: grassChunkMesh} = chunk;
-                  stage.remove('main', grassChunkMesh);
-
-                  grassChunkMeshes.splice(grassChunkMeshes.indexOf(grassChunkMesh), 1);
-
-                  grassChunkMesh.destroy();
-                }
-              })
-          };
-
-          let live = true;
-          const _recurse = () => {
-            _requestRefreshGrassChunks()
-              .then(() => {
-                if (live) {
-                  setTimeout(_recurse, 1000);
-                }
+                next();
               })
               .catch(err => {
-                if (live) {
-                  console.warn(err);
-
-                  setTimeout(_recurse, 1000);
-                }
+                console.warn(err);
+                next();
               });
+          });
+
+          const _requestCull = (hmdPosition, projectionMatrix, matrixWorldInverse, cb) => {
+            worker.requestCull(hmdPosition, projectionMatrix, matrixWorldInverse, cullBuffer => {
+              cb(protocolUtils.parseCull(cullBuffer));
+            });
           };
-          _recurse();
+          const _debouncedRefreshCull = _debounce(next => {
+            const {hmd} = pose.getStatus();
+            const {worldPosition: hmdPosition} = hmd;
+            const {projectionMatrix, matrixWorldInverse} = camera;
+            _requestCull(hmdPosition, projectionMatrix, matrixWorldInverse, culls => {
+              for (let i = 0; i < culls.length; i++) {
+                const {index, groups} = culls[i];
+
+                const trackedGrassChunkMeshes = grassChunkMeshes[index];
+                if (trackedGrassChunkMeshes) {
+                  for (let j = 0; j < groups.length; j++) {
+                    groups[j].start += trackedGrassChunkMeshes.indexOffset; // XXX do this reindexing in the worker
+                  }
+                  trackedGrassChunkMeshes.renderListEntry.groups = groups;
+                }
+              }
+
+              next();
+            });
+          });
+
+          let refreshChunksTimeout = null;
+          const _recurseRefreshChunks = () => {
+            _debouncedRequestRefreshGrassChunks();
+            refreshChunksTimeout = setTimeout(_recurseRefreshChunks, 1000);
+          };
+          _recurseRefreshChunks();
+          let refreshCullTimeout = null;
+          const _recurseRefreshCull = () => {
+            _debouncedRefreshCull();
+            refreshCullTimeout = setTimeout(_recurseRefreshCull, 1000 / 30);
+          };
+          _recurseRefreshCull();
 
           const _update = () => {
             const _updateSunIntensity = () => {
               const dayNightSkyboxEntity = elements.getEntitiesElement().querySelector(DAY_NIGHT_SKYBOX_PLUGIN);
               const sunIntensity = (dayNightSkyboxEntity && dayNightSkyboxEntity.getSunIntensity) ? dayNightSkyboxEntity.getSunIntensity() : 0;
 
-              for (let i = 0; i < grassChunkMeshes.length; i++) {
-                const grassChunkMesh = grassChunkMeshes[i];
-                grassChunkMesh.material.uniforms.sunIntensity.value = sunIntensity;
+              for (const index in grassChunkMeshes) {
+                const grassChunkMesh = grassChunkMeshes[index];
+                if (grassChunkMesh) {
+                  grassChunkMesh.material.uniforms.sunIntensity.value = sunIntensity;
+                }
               }
             };
             const _updateMatrices = () => {
@@ -448,6 +579,8 @@ class Grass {
               modelViewMatricesValid.right = false;
               normalMatricesValid.left = false;
               normalMatricesValid.right = false;
+              uniformsNeedUpdate.left = true;
+              uniformsNeedUpdate.right = true;
             };
 
             _updateSunIntensity();
@@ -456,9 +589,10 @@ class Grass {
           render.on('update', _update);
 
           this._cleanup = () => {
-            live = false;
+            scene.remove(grassMesh);
 
-            // XXX remove old grass meshes here
+            clearTimeout(refreshChunksTimeout);
+            clearTimeout(refreshCullTimeout);
 
             elements.destroyListener(elementListener);
 
@@ -477,6 +611,29 @@ const _makeId = () => {
   const result = _id;
   _id = (_id + 1) | 0;
   return result;
+};
+const _debounce = fn => {
+  let running = false;
+  let queued = false;
+
+  const _go = () => {
+    if (!running) {
+      running = true;
+
+      fn(() => {
+        running = false;
+
+        if (queued) {
+          queued = false;
+
+          _go();
+        }
+      });
+    } else {
+      queued = true;
+    }
+  };
+  return _go;
 };
 
 module.exports = Grass;
