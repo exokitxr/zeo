@@ -1,8 +1,16 @@
+const {
+  NUM_CHUNKS_HEIGHT,
+
+  NUM_RENDER_GROUPS,
+} = require('../constants/constants');
+
 const UINT32_SIZE = 4;
 const INT32_SIZE = 4;
 const FLOAT32_SIZE = 4;
-const MAP_CHUNK_HEADER_ENTRIES = 6;
+const MAP_CHUNK_HEADER_ENTRIES = 5;
 const MAP_CHUNK_HEADER_SIZE = UINT32_SIZE * MAP_CHUNK_HEADER_ENTRIES;
+const CULL_HEADER_ENTRIES = 1;
+const CULL_HEADER_SIZE = UINT32_SIZE * CULL_HEADER_ENTRIES;
 
 const _getObjectsChunkSizeFromMetadata = metadata => {
   const {numPositions, numUvs, numFrames, numObjectIndices, numIndices} = metadata;
@@ -13,18 +21,18 @@ const _getObjectsChunkSizeFromMetadata = metadata => {
     (FLOAT32_SIZE * numFrames) + // frames
     (FLOAT32_SIZE * numObjectIndices) +  // object indices
     (UINT32_SIZE * numIndices) + // indices
-    (FLOAT32_SIZE * numBoundingSphere); // bounding sphere
+    (UINT32_SIZE * 2 * NUM_CHUNKS_HEIGHT) + // index range
+    (FLOAT32_SIZE * NUM_CHUNKS_HEIGHT); // bounding sphere
 };
 
 const _getObjectsChunkSize = objectsChunk => {
-  const {positions, uvs, frames, objectIndices, indices, boundingSphere} = objectsChunk;
+  const {positions, uvs, frames, objectIndices, indices} = objectsChunk;
 
   const numPositions = positions.length;
   const numUvs = uvs.length;
   const numFrames = frames.length;
   const numObjectIndices = objectIndices.length;
   const numIndices = indices.length;
-  const numBoundingSphere = boundingSphere.length;
 
   return _getObjectsChunkSizeFromMetadata({
     numPositions,
@@ -32,14 +40,13 @@ const _getObjectsChunkSize = objectsChunk => {
     numFrames,
     numObjectIndices,
     numIndices,
-    numBoundingSphere,
   });
 };
 
 // stringification
 
 const stringifyGeometry = (objectsChunk, arrayBuffer, byteOffset) => {
-  const {positions, uvs, frames, objectIndices, indices, objects, boundingSphere} = objectsChunk;
+  const {positions, uvs, frames, objectIndices, indices, objects, geometries} = objectsChunk;
 
   if (arrayBuffer === undefined || byteOffset === undefined) {
     const bufferSize = _getObjectsChunkSize(objectsChunk);
@@ -48,12 +55,12 @@ const stringifyGeometry = (objectsChunk, arrayBuffer, byteOffset) => {
   }
 
   const headerBuffer = new Uint32Array(arrayBuffer, byteOffset, MAP_CHUNK_HEADER_ENTRIES);
-  headerBuffer[0] = positions.length;
-  headerBuffer[1] = uvs.length;
-  headerBuffer[2] = frames.length;
-  headerBuffer[3] = objectIndices.length;
-  headerBuffer[4] = indices.length;
-  headerBuffer[5] = boundingSphere.length;
+  let index = 0;
+  headerBuffer[index++] = positions.length;
+  headerBuffer[index++] = uvs.length;
+  headerBuffer[index++] = frames.length;
+  headerBuffer[index++] = objectIndices.length;
+  headerBuffer[index++] = indices.length;
   byteOffset += MAP_CHUNK_HEADER_SIZE;
 
   const positionsBuffer = new Float32Array(arrayBuffer, byteOffset, positions.length);
@@ -76,9 +83,18 @@ const stringifyGeometry = (objectsChunk, arrayBuffer, byteOffset) => {
   indicesBuffer.set(indices);
   byteOffset += UINT32_SIZE * indices.length;
 
-  const boundingSphereBuffer = new Float32Array(arrayBuffer, byteOffset, boundingSphere.length);
-  boundingSphereBuffer.set(boundingSphere);
-  byteOffset += FLOAT32_SIZE * boundingSphere.length;
+  for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
+    const geometry = geometries[i];
+    const {indexRange, boundingSphere, peeks} = geometry;
+
+    const indexRangeBuffer = new Uint32Array(arrayBuffer, byteOffset, 2);
+    indexRangeBuffer.set(Uint32Array.from([indexRange.start, indexRange.count]));
+    byteOffset += UINT32_SIZE * 2;
+
+    const boundingSphereBuffer = new Float32Array(arrayBuffer, byteOffset, 4);
+    boundingSphereBuffer.set(boundingSphere);
+    byteOffset += FLOAT32_SIZE * 4;
+  }
 
   return arrayBuffer;
 };
@@ -91,12 +107,12 @@ const parseGeometry = (buffer, byteOffset) => {
   }
 
   const headerBuffer = new Uint32Array(buffer, byteOffset, MAP_CHUNK_HEADER_ENTRIES);
-  const numPositions = headerBuffer[0];
-  const numUvs = headerBuffer[1];
-  const numFrames = headerBuffer[2];
-  const numObjectIndices = headerBuffer[3];
-  const numIndices = headerBuffer[4];
-  const numBoundingSphere = headerBuffer[5];
+  let index = 0;
+  const numPositions = headerBuffer[index++];
+  const numUvs = headerBuffer[index++];
+  const numFrames = headerBuffer[index++];
+  const numObjectIndices = headerBuffer[index++];
+  const numIndices = headerBuffer[index++];
   byteOffset += MAP_CHUNK_HEADER_SIZE;
 
   const positionsBuffer = new Float32Array(buffer, byteOffset, numPositions);
@@ -119,9 +135,24 @@ const parseGeometry = (buffer, byteOffset) => {
   const indices = indicesBuffer;
   byteOffset += UINT32_SIZE * numIndices;
 
-  const boundingSphereBuffer = new Float32Array(buffer, byteOffset, numBoundingSphere);
-  const boundingSphere = boundingSphereBuffer;
-  byteOffset += FLOAT32_SIZE * numBoundingSphere;
+  const geometries = Array(NUM_CHUNKS_HEIGHT);
+  for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
+    const indexRangeBuffer = new Uint32Array(buffer, byteOffset, 2);
+    const indexRange = {
+      start: indexRangeBuffer[0],
+      count: indexRangeBuffer[1],
+    };
+    byteOffset += UINT32_SIZE * 2;
+
+    const boundingSphereBuffer = new Float32Array(buffer, byteOffset, 4);
+    const boundingSphere = boundingSphereBuffer;
+    byteOffset += FLOAT32_SIZE * 4;
+
+    geometries[i] = {
+      indexRange,
+      boundingSphere,
+    };
+  }
 
   return {
     buffer,
@@ -130,11 +161,107 @@ const parseGeometry = (buffer, byteOffset) => {
     frames,
     objectIndices,
     indices,
-    boundingSphere,
+    geometries,
   };
+};
+
+const _getCullSizeFromMetadata = metadata => {
+  const {numObjectChunks} = metadata;
+
+  return CULL_HEADER_SIZE + // header
+    ((INT32_SIZE + (INT32_SIZE * 2 * NUM_RENDER_GROUPS)) * numObjectChunks); // object chunks
+};
+
+const _getCullSize = objectChunks => {
+  let numObjectChunks = 0;
+  for (const index in objectChunks) {
+    if (objectChunks[index]) {
+      numObjectChunks++;
+    }
+  }
+  return _getCullSizeFromMetadata({
+    numObjectChunks,
+  });
+};
+
+const stringifyCull = (objectChunks, arrayBuffer, byteOffset) => {
+  if (arrayBuffer === undefined || byteOffset === undefined) {
+    const bufferSize = _getCullSize(objectChunks);
+    arrayBuffer = new ArrayBuffer(bufferSize);
+    byteOffset = 0;
+  }
+
+  let numObjectChunks = 0;
+  for (const index in objectChunks) {
+    if (objectChunks[index]) {
+      numObjectChunks++;
+    }
+  }
+
+  const headerBuffer = new Uint32Array(arrayBuffer, byteOffset, CULL_HEADER_ENTRIES);
+  let index = 0;
+  headerBuffer[index++] = numObjectChunks;
+  byteOffset += CULL_HEADER_SIZE;
+
+  for (const index in objectChunks) {
+    const trackedObjectChunkMeshes = objectChunks[index];
+    if (trackedObjectChunkMeshes) {
+      const indexArray = new Int32Array(arrayBuffer, byteOffset, 1);
+      indexArray[0] = parseInt(index, 10);
+      byteOffset += INT32_SIZE;
+
+      const groupsArray = new Int32Array(arrayBuffer, byteOffset, NUM_RENDER_GROUPS * 2);
+      groupsArray.set(trackedObjectChunkMeshes.groups);
+      byteOffset += INT32_SIZE * 2 * NUM_RENDER_GROUPS;
+    }
+  }
+
+  return arrayBuffer;
+};
+
+const parseCull = (buffer, byteOffset) => {
+  if (byteOffset === undefined) {
+    byteOffset = 0;
+  }
+
+  const headerBuffer = new Uint32Array(buffer, byteOffset, CULL_HEADER_ENTRIES);
+  let index = 0;
+  const numObjectChunks = headerBuffer[index++];
+  byteOffset += CULL_HEADER_SIZE;
+
+  const objectChunks = Array(numObjectChunks);
+  for (let i = 0; i < numObjectChunks; i++) {
+    const indexArray = new Int32Array(buffer, byteOffset, 1);
+    const index = indexArray[0];
+    byteOffset += INT32_SIZE;
+
+    const groups = [];
+    const groupsArray = new Int32Array(buffer, byteOffset, NUM_RENDER_GROUPS * 2);
+    for (let i = 0; i < NUM_RENDER_GROUPS; i++) {
+      const baseIndex = i * 2;
+      const start = groupsArray[baseIndex + 0];
+      if (start !== -1) {
+        groups.push({
+          start,
+          count: groupsArray[baseIndex + 1],
+          materialIndex: 0,
+        });
+      }
+    }
+    byteOffset += INT32_SIZE * 2 * NUM_RENDER_GROUPS;
+
+    objectChunks[i] = {
+      index,
+      groups,
+    };
+  }
+  return objectChunks;
 };
 
 module.exports = {
   stringifyGeometry,
   parseGeometry,
+
+  stringifyCull,
+  parseCull,
 };

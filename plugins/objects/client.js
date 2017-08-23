@@ -14,14 +14,14 @@ const {
 const protocolUtils = require('./lib/utils/protocol-utils');
 const objectsLib = require('./lib/objects/client/index');
 
-const NUM_POSITIONS_CHUNK = 500 * 1024;
+const NUM_POSITIONS_CHUNK = 800 * 1024;
 const TEXTURE_SIZE = 512;
 const SIDES = ['left', 'right'];
 
 class Objects {
   mount() {
-    const {three, pose, input, elements, render, world, teleport, utils: {js: {mod, bffr}, hash: {murmur}, random: {chnkr}}} = zeo;
-    const {THREE, scene, camera} = three;
+    const {three, pose, input, elements, render, world, teleport, utils: {js: {mod, bffr, sbffr}, hash: {murmur}, random: {chnkr}}} = zeo;
+    const {THREE, scene, camera, renderer} = three;
 
     const modelViewMatrices = {
       left: new THREE.Matrix4(),
@@ -39,6 +39,10 @@ class Objects {
       left: false,
       right: false,
     };
+    const uniformsNeedUpdate = {
+      left: true,
+      right: true,
+    };
     function _updateModelViewMatrix(camera) {
       if (!modelViewMatricesValid[camera.name]) {
         modelViewMatrices[camera.name].multiplyMatrices(camera.matrixWorldInverse, this.matrixWorld);
@@ -52,6 +56,14 @@ class Objects {
         normalMatricesValid[camera.name] = true;
       }
       this.normalMatrix = normalMatrices[camera.name];
+    }
+    function _uniformsNeedUpdate(camera) {
+      if (uniformsNeedUpdate[camera.name]) {
+        uniformsNeedUpdate[camera.name] = false;
+        return true;
+      } else {
+        return false;
+      }
     }
 
     const _getChunkIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
@@ -180,6 +192,8 @@ void main() {
     const localArray2 = Array(2);
     const localArray3 = Array(3);
     const localArray32 = Array(3);
+    const localArray16 = Array(16);
+    const localArray162 = Array(16);
     const localMessage = {
       type: '',
       id: 0,
@@ -203,7 +217,6 @@ void main() {
       }
     };
 
-    const buffers = bffr(NUM_POSITIONS_CHUNK, RANGE * RANGE * 9);
     const textures = txtr(TEXTURE_SIZE, TEXTURE_SIZE);
     const canvas = document.createElement('canvas');
     canvas.width = TEXTURE_SIZE;
@@ -221,19 +234,9 @@ void main() {
       1
     );
 
-    const objectsMaterial = new THREE.ShaderMaterial({
-      uniforms: (() => {
-        const uniforms = THREE.UniformsUtils.clone(OBJECTS_SHADER.uniforms);
-        uniforms.map.value = textureAtlas;
-        return uniforms;
-      })(),
-      vertexShader: OBJECTS_SHADER.vertexShader,
-      fragmentShader: OBJECTS_SHADER.fragmentShader,
-      side: THREE.DoubleSide,
-    });
-    objectsMaterial.volatile = true;
-
     const worker = new Worker('archae/plugins/_plugins_objects/build/worker.js');
+    const buffers = bffr(NUM_POSITIONS_CHUNK, RANGE * RANGE * 9);
+    let cullBuffer = new ArrayBuffer(4096);
     let queues = {};
     let numRemovedQueues = 0;
     const _cleanupQueues = () => {
@@ -332,6 +335,25 @@ void main() {
 
       worker.postMessage(localMessage);
     };
+    worker.requestCull = (hmdPosition, projectionMatrix, matrixWorldInverse, cb) => {
+      const id = _makeId();
+      worker.postMessage({
+        type: 'cull',
+        id,
+        args: {
+          hmdPosition: hmdPosition.toArray(localArray3),
+          projectionMatrix: projectionMatrix.toArray(localArray16),
+          matrixWorldInverse: matrixWorldInverse.toArray(localArray162),
+          buffer: cullBuffer,
+        },
+      }, [cullBuffer]);
+      cullBuffer = null;
+
+      queues[id] = buffer => {
+        cullBuffer = buffer;
+        cb(buffer);
+      };
+    };
     worker.getHoveredObjects = cb => {
       const id = _makeId();
       const {gamepads} = pose.getStatus();
@@ -384,6 +406,7 @@ void main() {
         }
         _debouncedRequestRefreshObjectsChunks();
       } else if (type === 'objectAdded') {
+return; // XXX rewrite this
         const [n, x, z, objectIndex, position, rotation, value] = args;
 
         const objectApi = objectApis[n];
@@ -399,6 +422,7 @@ void main() {
           );
         }
       } else if (type === 'objectRemoved') {
+return; // XXX rewrite this
         const [n, x, z, objectIndex, startIndex, endIndex] = args;
 
         if (startIndex !== -1) {
@@ -419,6 +443,7 @@ void main() {
           objectApi.removedCallback(_getObjectIndex(x, z, objectIndex), x, z, objectIndex);
         }
       } else if (type === 'objectUpdated') {
+return; // XXX rewrite this
         const [n, x, z, objectIndex, position, rotation, value] = args;
 
         const objectApi = objectApis[n];
@@ -436,61 +461,74 @@ void main() {
       });
     });
     const _makeObjectsChunkMesh = (chunk, objectsChunkData) => {
-      const mesh = (() => {
-        const {x, z} = chunk;
+      const {x, z} = chunk;
+      const {positions: newPositions, uvs: newUvs, frames: newFrames, objectIndices: newObjectIndices, indices: newIndices} = objectsChunkData;
 
-        const geometry = (() => {
-          const {positions, uvs, frames, objectIndices, indices, boundingSphere} = objectsChunkData;
-          const geometry = new THREE.BufferGeometry();
-          geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
-          geometry.addAttribute('uv', new THREE.BufferAttribute(uvs, 2));
-          geometry.addAttribute('frame', new THREE.BufferAttribute(frames, 3));
-          geometry.addAttribute('objectIndex', new THREE.BufferAttribute(objectIndices, 1));
-          geometry.setIndex(new THREE.BufferAttribute(indices, 1));
-          geometry.boundingSphere = new THREE.Sphere(
-            new THREE.Vector3().fromArray(boundingSphere, 0),
-            boundingSphere[3]
-          );
+      // geometry
 
-          return geometry;
-        })();
-        const material = objectsMaterial;
+      const gbuffer = geometryBuffer.alloc();
+      const {index, slices: {positions, uvs, frames, objectIndices, indices}} = gbuffer;
 
-        const mesh = new THREE.Mesh(geometry, material);
-        const uniforms = THREE.UniformsUtils.clone(OBJECTS_SHADER.uniforms);
-        uniforms.d.value.set(x * NUM_CELLS, z * NUM_CELLS);
-        mesh.uniforms = uniforms;
-        mesh.onBeforeRender = (function(onBeforeRender) {
-          return function() {
-            mesh.material.uniforms.d.value.copy(mesh.uniforms.d.value);
-            mesh.material.uniforms.lightMap.value = mesh.uniforms.lightMap.value;
-            mesh.material.uniforms.useLightMap.value = mesh.uniforms.useLightMap.value;
-            mesh.material.uniforms.selectedObject.value = mesh.uniforms.selectedObject.value;
+      if (newPositions.length > 0) {
+        positions.set(newPositions);
+        renderer.updateAttribute(objectsObject.geometry.attributes.position, index * positions.length, newPositions.length, false);
 
-            onBeforeRender.apply(this, arguments);
-          };
-        })(mesh.onBeforeRender);
-        mesh.updateModelViewMatrix = _updateModelViewMatrix;
-        mesh.updateNormalMatrix = _updateNormalMatrix;
-        mesh.offset = new THREE.Vector2(x, z);
-        mesh.lightmap = null;
+        uvs.set(newUvs);
+        renderer.updateAttribute(objectsObject.geometry.attributes.uv, index * uvs.length, newUvs.length, false);
 
-        if (lightmapper && chunk.lod === 1) {
-          _bindLightmap(mesh);
+        frames.set(newFrames);
+        renderer.updateAttribute(objectsObject.geometry.attributes.frame, index * frames.length, newFrames.length, false);
+
+        objectIndices.set(newObjectIndices);
+        renderer.updateAttribute(objectsObject.geometry.attributes.objectIndex, index * objectIndices.length, newObjectIndices.length, false);
+
+        const positionOffset = index * (positions.length / 3);
+        for (let i = 0; i < newIndices.length; i++)  {
+          indices[i] = newIndices[i] + positionOffset; // XXX do this in the worker
         }
+        renderer.updateAttribute(objectsObject.geometry.index, index * indices.length, newIndices.length, true);
+      }
 
-        return mesh;
-      })();
+      // material
 
-      mesh.destroy = () => {
-        mesh.geometry.dispose();
+      const uniforms = THREE.UniformsUtils.clone(OBJECTS_SHADER.uniforms);
+      uniforms.map.value = textureAtlas;
+      uniforms.d.value.set(x * NUM_CELLS, z * NUM_CELLS);
+      const material = new THREE.ShaderMaterial({
+        uniforms,
+        vertexShader: OBJECTS_SHADER.vertexShader,
+        fragmentShader: OBJECTS_SHADER.fragmentShader,
+        side: THREE.DoubleSide,
+      });
+      material.uniformsNeedUpdate = _uniformsNeedUpdate;
 
-        buffers.free(objectsChunkData.buffer);
+      // mesh
 
-        if (mesh.lightmap) {
-          _unbindLightmap(mesh);
-        }
+      const mesh = {
+        material,
+        indexOffset: index * indices.length,
+        renderListEntry: {
+          object: objectsObject,
+          material,
+          groups: [],
+        },
+        offset: new THREE.Vector2(x, z),
+        lod: chunk.lod,
+        lightmap: null,
+        destroy: () => {
+          buffers.free(objectsChunkData.buffer);
+          geometryBuffer.free(gbuffer);
+
+          material.dispose();
+
+          if (mesh.lightmap) {
+            _unbindLightmap(mesh);
+          }
+        },
       };
+      if (lightmapper && chunk.lod === 1) {
+        _bindLightmap(mesh);
+      }
 
       return mesh;
     };
@@ -606,15 +644,15 @@ void main() {
       const {offset} = objectChunkMesh;
       const {x, y} = offset;
       const lightmap = lightmapper.getLightmapAt(x * NUM_CELLS, y * NUM_CELLS);
-      objectChunkMesh.uniforms.lightMap.value = lightmap.texture;
-      objectChunkMesh.uniforms.useLightMap.value = 1;
+      objectChunkMesh.material.uniforms.lightMap.value = lightmap.texture;
+      objectChunkMesh.material.uniforms.useLightMap.value = 1;
       objectChunkMesh.lightmap = lightmap;
     };
     const _unbindLightmap = objectChunkMesh => {
       const {lightmap} = objectChunkMesh;
       lightmapper.releaseLightmap(lightmap);
-      objectChunkMesh.uniforms.lightMap.value = null;
-      objectChunkMesh.uniforms.useLightMap.value = 0;
+      objectChunkMesh.material.uniforms.lightMap.value = null;
+      objectChunkMesh.material.uniforms.useLightMap.value = 0;
       objectChunkMesh.lightmap = null;
     };
     const lightmapElementListener = elements.makeListener(LIGHTMAP_PLUGIN);
@@ -815,6 +853,66 @@ void main() {
     });
     const objectsChunkMeshes = {};
 
+    const geometryBuffer = sbffr(
+      NUM_POSITIONS_CHUNK,
+      RANGE * 2 * RANGE * 2 + RANGE * 2,
+      [
+        {
+          name: 'positions',
+          constructor: Float32Array,
+          size: 3 * 3 * 4,
+        },
+        {
+          name: 'uvs',
+          constructor: Float32Array,
+          size: 2 * 3 * 4,
+        },
+        {
+          name: 'frames',
+          constructor: Float32Array,
+          size: 3 * 3 * 4,
+        },
+        {
+          name: 'objectIndices',
+          constructor: Float32Array,
+          size: 3 * 4,
+        },
+        {
+          name: 'indices',
+          constructor: Uint32Array,
+          size: 3 * 4,
+        }
+      ]
+    );
+    const objectsObject = (() => {
+      const {positions, uvs, frames, objectIndices, indices} = geometryBuffer.getAll();
+
+      const geometry = new THREE.BufferGeometry();
+      const positionAttribute = new THREE.BufferAttribute(positions, 3);
+      positionAttribute.dynamic = true;
+      geometry.addAttribute('position', positionAttribute);
+      const uvAttribute = new THREE.BufferAttribute(uvs, 2);
+      uvAttribute.dynamic = true;
+      geometry.addAttribute('uv', uvAttribute);
+      const frameAttribute = new THREE.BufferAttribute(frames, 3);
+      frameAttribute.dynamic = true;
+      geometry.addAttribute('frame', frameAttribute);
+      const objectIndexAttribute = new THREE.BufferAttribute(objectIndices, 1);
+      objectIndexAttribute.dynamic = true;
+      geometry.addAttribute('objectIndex', objectIndexAttribute);
+      const indexAttribute = new THREE.BufferAttribute(indices, 1);
+      indexAttribute.dynamic = true;
+      geometry.setIndex(indexAttribute);
+
+      const mesh = new THREE.Mesh(geometry, null);
+      mesh.frustumCulled = false;
+      mesh.updateModelViewMatrix = _updateModelViewMatrix;
+      mesh.updateNormalMatrix = _updateNormalMatrix;
+      mesh.renderList = [];
+      return mesh;
+    })();
+    scene.add(objectsObject);
+
     const _requestRefreshObjectsChunks = () => {
       const {hmd} = pose.getStatus();
       const {worldPosition: hmdPosition} = hmd;
@@ -830,19 +928,21 @@ void main() {
 
             const {data: oldObjectsChunkMesh} = chunk;
             if (oldObjectsChunkMesh) {
-              scene.remove(oldObjectsChunkMesh);
+              // scene.remove(oldObjectsChunkMesh);
+              objectsObject.renderList.splice(objectsObject.renderList.indexOf(oldObjectsChunkMesh.renderListEntry), 1);
 
               oldObjectsChunkMesh.destroy();
 
               objectsChunkMeshes[index] = null;
             }
 
-            const objectsChunkMesh = _makeObjectsChunkMesh(chunk, objectsChunkData);
-            scene.add(objectsChunkMesh);
+            const newObjectsChunkMesh = _makeObjectsChunkMesh(chunk, objectsChunkData);
+            objectsObject.renderList.push(newObjectsChunkMesh.renderListEntry);
+            // scene.add(newObjectsChunkMesh);
 
-            objectsChunkMeshes[index] = objectsChunkMesh;
+            objectsChunkMeshes[index] = newObjectsChunkMesh;
 
-            chunk.data = objectsChunkMesh;
+            chunk.data = newObjectsChunkMesh;
           });
         promises.push(promise);
       };
@@ -865,21 +965,20 @@ void main() {
           }
         }
       }
-      return Promise.all(promises)
-        .then(() => {
-          for (let i = 0; i < removed.length; i++) {
-            const chunk = removed[i];
-            const {x, z} = chunk;
-            worker.requestUngenerate(x, z);
+      for (let i = 0; i < removed.length; i++) {
+        const chunk = removed[i];
+        const {x, z} = chunk;
+        worker.requestUngenerate(x, z);
 
-            const {data: objectsChunkMesh} = chunk;
-            scene.remove(objectsChunkMesh);
+        const {data: objectsChunkMesh} = chunk;
+        objectsObject.renderList.splice(objectsObject.renderList.indexOf(objectsChunkMesh.renderListEntry), 1);
+        // scene.remove(objectsChunkMesh);
 
-            objectsChunkMesh.destroy();
+        objectsChunkMesh.destroy();
 
-            objectsChunkMeshes[_getChunkIndex(x, z)] = null;
-          }
-        });
+        objectsChunkMeshes[_getChunkIndex(x, z)] = null;
+      }
+      return Promise.all(promises);
     };
     const _debouncedRequestRefreshObjectsChunks = _debounce(next => {
       _requestRefreshObjectsChunks()
@@ -906,7 +1005,7 @@ void main() {
               for (const index in objectsChunkMeshes) {
                 const objectsChunkMesh = objectsChunkMeshes[index];
                 if (objectsChunkMesh) {
-                  objectsChunkMesh.uniforms.selectedObject.value = -1;
+                  objectsChunkMesh.material.uniforms.selectedObject.value = -1;
                 }
               }
 
@@ -919,7 +1018,7 @@ void main() {
 
                   const objectsChunkMesh = objectsChunkMeshes[_getChunkIndex(hoveredTrackedObject.x, hoveredTrackedObject.z)];
                   if (objectsChunkMesh) {
-                    objectsChunkMesh.uniforms.selectedObject.value = hoveredTrackedObject.objectIndex;
+                    objectsChunkMesh.material.uniforms.selectedObject.value = hoveredTrackedObject.objectIndex;
                   }
                 } else {
                   hoveredTrackedObjects[side].clear();
@@ -1037,17 +1136,24 @@ void main() {
       };
       const _updateMaterial = () => {
         const worldTime = world.getWorldTime();
-        objectsMaterial.uniforms.worldTime.value = worldTime;
-
         const dayNightSkyboxEntity = elements.getEntitiesElement().querySelector(DAY_NIGHT_SKYBOX_PLUGIN);
         const sunIntensity = (dayNightSkyboxEntity && dayNightSkyboxEntity.getSunIntensity) ? dayNightSkyboxEntity.getSunIntensity() : 0;
-        objectsMaterial.uniforms.sunIntensity.value = sunIntensity;
+
+        for (const index in objectsChunkMeshes) {
+          const objectsChunkMesh = objectsChunkMeshes[index];
+          if (objectsChunkMesh) {
+            objectsChunkMesh.material.uniforms.worldTime.value = worldTime;
+            objectsChunkMesh.material.uniforms.sunIntensity.value = sunIntensity;
+          }
+        }
       };
       const _updateMatrices = () => {
         modelViewMatricesValid.left = false;
         modelViewMatricesValid.right = false;
         normalMatricesValid.left = false;
         normalMatricesValid.right = false;
+        uniformsNeedUpdate.left = true;
+        uniformsNeedUpdate.right = true;
       };
 
       _updateHoveredTrackedObjects();
@@ -1059,6 +1165,8 @@ void main() {
     render.on('update', _update);
 
     cleanups.push(() => {
+      scene.remove(objectsObject);
+
       elements.destroyListener(lightmapElementListener);
       elements.destroyListener(craftElementListener);
 
@@ -1080,15 +1188,48 @@ void main() {
           }))
     )
       .then(() => {
-        let recurseTimeout = null;
-        const _recurse = () => {
-          _debouncedRequestRefreshObjectsChunks();
-          recurseTimeout = setTimeout(_recurse, 1000);
+        const _requestCull = (hmdPosition, projectionMatrix, matrixWorldInverse, cb) => {
+          worker.requestCull(hmdPosition, projectionMatrix, matrixWorldInverse, cullBuffer => {
+            cb(protocolUtils.parseCull(cullBuffer));
+          });
         };
-        _recurse();
+        const _debouncedRefreshCull = _debounce(next => {
+          const {hmd} = pose.getStatus();
+          const {worldPosition: hmdPosition} = hmd;
+          const {projectionMatrix, matrixWorldInverse} = camera;
+          _requestCull(hmdPosition, projectionMatrix, matrixWorldInverse, culls => {
+            for (let i = 0; i < culls.length; i++) {
+              const {index, groups} = culls[i];
+
+              const trackedObjectChunkMeshes = objectsChunkMeshes[index];
+              if (trackedObjectChunkMeshes) {
+                for (let j = 0; j < groups.length; j++) {
+                  groups[j].start += trackedObjectChunkMeshes.indexOffset; // XXX do this reindexing in the worker
+                }
+                trackedObjectChunkMeshes.renderListEntry.groups = groups;
+              }
+            }
+
+            next();
+          });
+        });
+
+        let refreshChunksTimeout = null;
+        const _recurseRefreshChunks = () => {
+          _debouncedRequestRefreshObjectsChunks();
+          refreshChunksTimeout = setTimeout(_recurseRefreshChunks, 1000);
+        };
+        _recurseRefreshChunks();
+        let refreshCullTimeout = null;
+        const _recurseRefreshCull = () => {
+          _debouncedRefreshCull();
+          refreshCullTimeout = setTimeout(_recurseRefreshCull, 1000 / 30);
+        };
+        _recurseRefreshCull();
 
         cleanups.push(() => {
-          clearTimeout(recurseTimeout);
+          clearTimeout(refreshChunksTimeout);
+          clearTimeout(refreshCullTimeout);
         });
       });
   }

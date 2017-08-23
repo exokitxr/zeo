@@ -8,16 +8,22 @@ importScripts('/archae/assets/alea.js');
 const {exports: alea} = self.module;
 self.module = {};
 
+const zeode = require('zeode');
 const {
   NUM_CELLS,
   NUM_CELLS_OVERSCAN,
 
+  NUM_CHUNKS_HEIGHT,
+
+  NUM_RENDER_GROUPS,
+
   DEFAULT_SEED,
 } = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
-const zeode = require('zeode');
 
-const NUM_POSITIONS_CHUNK = 2 * 1024 * 1024;
+const NUM_POSITIONS_CHUNK = 500 * 1024;
+const NUM_CELLS_HALF = NUM_CELLS / 2;
+const NUM_CELLS_CUBE = Math.sqrt((NUM_CELLS_HALF + 16) * (NUM_CELLS_HALF + 16) * 3); // larger than the actual bouinding box to account for geometry overflow
 
 const rng = new alea(DEFAULT_SEED);
 
@@ -33,8 +39,10 @@ const localRay = new THREE.Ray();
 const localRay2 = new THREE.Ray();
 const localQuaternion = new THREE.Quaternion();
 const localMatrix = new THREE.Matrix4();
+const localMatrix2 = new THREE.Matrix4();
 const localBox = new THREE.Box3();
 const localBox2 = new THREE.Box3();
+const localFrustum = new THREE.Frustum();
 const oneVector = new THREE.Vector3(1, 1, 1);
 const bodyOffsetVector = new THREE.Vector3(0, -1.6 / 2, 0);
 
@@ -290,6 +298,13 @@ const _resArrayBuffer = res => {
     });
   }
 };
+function mod(value, divisor) {
+  var n = value % divisor;
+  return n < 0 ? (divisor + n) : n;
+}
+const _getChunkIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
+
+const objectChunkMeshes = {};
 const _requestChunk = (x, z) => {
   const chunk = zde.getChunk(x, z);
 
@@ -302,17 +317,54 @@ const _requestChunk = (x, z) => {
       .then(_resArrayBuffer)
       .then(buffer => {
         const chunk = zde.addChunk(x, z, new Uint32Array(buffer));
-
         chunk.trackedObjects = {};
         chunk.forEachObject((n, matrix, value, i) => {
           const position = new THREE.Vector3().fromArray(matrix, 0);
           const rotation = new THREE.Quaternion().fromArray(matrix, 3);
           chunk.trackedObjects[i] = new TrackedObject(n, position, rotation, value, -1, -1);
         });
-
         return chunk;
       });
   }
+};
+
+const _getCull = (hmdPosition, projectionMatrix, matrixWorldInverse) => {
+  localFrustum.setFromMatrix(localMatrix.fromArray(projectionMatrix).multiply(localMatrix2.fromArray(matrixWorldInverse)));
+
+  for (const index in objectChunkMeshes) {
+    const trackedObjectChunkMeshes = objectChunkMeshes[index];
+    if (trackedObjectChunkMeshes) {
+      trackedObjectChunkMeshes.groups.fill(-1);
+      let groupIndex = 0;
+      let start = -1;
+      let count = 0;
+      for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) { // XXX optimize this direction
+        const trackedObjectChunkMesh = trackedObjectChunkMeshes.array[i];
+        if (localFrustum.intersectsSphere(trackedObjectChunkMesh.boundingSphere)) {
+          if (start === -1) {
+            start = trackedObjectChunkMesh.indexRange.start;
+          }
+          count += trackedObjectChunkMesh.indexRange.count;
+        } else {
+          if (start !== -1) {
+            const baseIndex = groupIndex * 2;
+            trackedObjectChunkMeshes.groups[baseIndex + 0] = start;
+            trackedObjectChunkMeshes.groups[baseIndex + 1] = count;
+            groupIndex++;
+            start = -1;
+            count = 0;
+          }
+        }
+      }
+      if (start !== -1) {
+        const baseIndex = groupIndex * 2;
+        trackedObjectChunkMeshes.groups[baseIndex + 0] = start;
+        trackedObjectChunkMeshes.groups[baseIndex + 1] = count;
+      }
+    }
+  }
+
+  return objectChunkMeshes;
 };
 
 const registerApi = {
@@ -325,6 +377,17 @@ const registerApi = {
     return rng();
   },
 };
+
+const _makeGeometeriesBuffer = constructor => {
+  const result = Array(NUM_CHUNKS_HEIGHT);
+  for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
+    result[i] = {
+      array: new constructor(NUM_POSITIONS_CHUNK / NUM_CHUNKS_HEIGHT),
+      index: 0,
+    };
+  }
+  return result;
+};
 const _copyIndices = (src, dst, startIndexIndex, startAttributeIndex) => {
   for (let i = 0; i < src.length; i++) {
     dst[startIndexIndex + i] = src[i] + startAttributeIndex;
@@ -332,6 +395,65 @@ const _copyIndices = (src, dst, startIndexIndex, startAttributeIndex) => {
 };
 
 function _makeChunkGeometry(chunk) {
+  const {x: ox, z: oy} = chunk;
+
+  const geometriesPositions = _makeGeometeriesBuffer(Float32Array);
+  const geometriesUvs = _makeGeometeriesBuffer(Float32Array);
+  const geometriesFrames = _makeGeometeriesBuffer(Float32Array);
+  const geometriesObjectIndices = _makeGeometeriesBuffer(Float32Array);
+  const geometriesIndices = _makeGeometeriesBuffer(Uint32Array);
+  const geometriesObjects = _makeGeometeriesBuffer(Uint32Array);
+
+  chunk.forEachObject((n, matrix, value, index) => {
+    const geometryEntries = geometries[n];
+
+    if (geometryEntries) {
+      for (let j = 0; j < geometryEntries.length; j++) {
+        const newGeometry = geometryEntries[j].clone()
+          .applyMatrix(localMatrix.makeRotationFromQuaternion(localQuaternion.set(matrix[3], matrix[4], matrix[5], matrix[6])))
+          .applyMatrix(localMatrix.makeTranslation(matrix[0], matrix[1], matrix[2]));
+          // .applyMatrix(localMatrix.makeScale(matrix[7], matrix[8], matrix[9]));
+
+        const i = Math.min(Math.max(Math.floor(matrix[1] / NUM_CELLS), 0), NUM_CHUNKS_HEIGHT);
+
+        const newPositions = newGeometry.getAttribute('position').array;
+        geometriesPositions[i].array.set(newPositions, geometriesPositions[i].index);
+
+        const newUvs = newGeometry.getAttribute('uv').array;
+        const numNewUvs = newUvs.length / 2;
+        for (let k = 0; k < numNewUvs; k++) {
+          const baseIndex = k * 2;
+          geometriesUvs[i].array[geometriesUvs[i].index + baseIndex + 0] = newUvs[baseIndex + 0];
+          geometriesUvs[i].array[geometriesUvs[i].index + baseIndex + 1] = 1 - newUvs[baseIndex + 1];
+        }
+
+        const newFrames = newGeometry.getAttribute('frame').array;
+        geometriesFrames[i].array.set(newFrames, geometriesFrames[i].index);
+
+        const numNewPositions = newPositions.length / 3;
+        const newObjectIndices = new Float32Array(numNewPositions);
+        for (let k = 0; k < numNewPositions; k++) {
+          newObjectIndices[k] = index;
+        }
+        geometriesObjectIndices[i].array.set(newObjectIndices, geometriesObjectIndices[i].index);
+
+        const newIndices = newGeometry.index.array;
+        _copyIndices(newIndices, geometriesIndices[i].array, geometriesIndices[i].index, geometriesPositions[i].index / 3);
+
+        const newObjects = Uint32Array.from([index, geometriesIndices[i].index, geometriesIndices[i].index + newIndices.length]);
+        geometriesObjects[i].array.set(newObjects, geometriesObjects[i].index);
+
+        geometriesPositions[i].index += newPositions.length;
+        geometriesUvs[i].index += newUvs.length;
+        geometriesFrames[i].index += newFrames.length;
+        geometriesObjectIndices[i].index += newObjectIndices.length;
+        geometriesIndices[i].index += newIndices.length;
+        geometriesObjects[i].index += newObjects.length;
+      }
+    }
+  });
+
+  const geometry = new THREE.BufferGeometry();
   const positions = new Float32Array(NUM_POSITIONS_CHUNK);
   const uvs = new Float32Array(NUM_POSITIONS_CHUNK);
   const frames = new Float32Array(NUM_POSITIONS_CHUNK);
@@ -345,57 +467,55 @@ function _makeChunkGeometry(chunk) {
   let indexIndex = 0;
   let objectIndex = 0;
 
-  chunk.forEachObject((n, matrix, value, index) => {
-    const geometryEntries = geometries[n];
+  const localGeometries = Array(NUM_CHUNKS_HEIGHT);
+  for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
+    const newPositions = geometriesPositions[i].array.subarray(0, geometriesPositions[i].index);
+    positions.set(newPositions, attributeIndex);
 
-    if (geometryEntries) {
-      for (let j = 0; j < geometryEntries.length; j++) {
-        const geometry = geometryEntries[j].clone()
-          .applyMatrix(localMatrix.makeRotationFromQuaternion(localQuaternion.set(matrix[3], matrix[4], matrix[5], matrix[6])))
-          .applyMatrix(localMatrix.makeTranslation(matrix[0], matrix[1], matrix[2]));
-          // .applyMatrix(localMatrix.makeScale(matrix[7], matrix[8], matrix[9]));
+    const newUvs = geometriesUvs[i].array.subarray(0, geometriesUvs[i].index);
+    uvs.set(newUvs, uvIndex);
 
-        const newPositions = geometry.getAttribute('position').array;
-        positions.set(newPositions, attributeIndex);
+    const newFrames = geometriesFrames[i].array.subarray(0, geometriesFrames[i].index);
+    frames.set(newFrames, frameIndex);
 
-        const newUvs = geometry.getAttribute('uv').array;
-        const numNewUvs = newUvs.length / 2;
-        for (let k = 0; k < numNewUvs; k++) {
-          const baseIndex = k * 2;
-          uvs[uvIndex + baseIndex + 0] = newUvs[baseIndex + 0];
-          uvs[uvIndex + baseIndex + 1] = 1 - newUvs[baseIndex + 1];
-        }
+    const newObjectIndices = geometriesObjectIndices[i].array.subarray(0, geometriesObjectIndices[i].index);
+    objectIndices.set(newObjectIndices, objectIndexIndex);
 
-        const newFrames = geometry.getAttribute('frame').array;
-        frames.set(newFrames, frameIndex);
+    const newIndices = geometriesIndices[i].array.subarray(0, geometriesIndices[i].index);
+    _copyIndices(newIndices, indices, indexIndex, attributeIndex / 3);
 
-        const numNewPositions = newPositions.length / 3;
-        const newObjectIndices = new Float32Array(numNewPositions);
-        for (let k = 0; k < numNewPositions; k++) {
-          newObjectIndices[k] = index;
-        }
-        objectIndices.set(newObjectIndices, objectIndexIndex);
-
-        const newIndices = geometry.index.array;
-        _copyIndices(newIndices, indices, indexIndex, attributeIndex / 3);
-
-        const newObjects = Uint32Array.from([index, indexIndex, indexIndex + newIndices.length]);
-        objects.set(newObjects, objectIndex);
-
-        attributeIndex += newPositions.length;
-        uvIndex += newUvs.length;
-        frameIndex += newFrames.length;
-        objectIndexIndex += newObjectIndices.length;
-        indexIndex += newIndices.length;
-        objectIndex += newObjects.length;
-      }
+    const newObjects = new Uint32Array(geometriesObjects[i].index);
+    const numNewObjects = geometriesObjects[i].index / 3;
+    for (let j = 0; j < numNewObjects; j++) {
+      const baseIndex = j * 3;
+      newObjects[baseIndex + 0] = geometriesObjects[i].array[baseIndex + 0];
+      newObjects[baseIndex + 1] = indexIndex + geometriesObjects[i].array[baseIndex + 1];
+      newObjects[baseIndex + 2] = indexIndex + geometriesObjects[i].array[baseIndex + 2];
     }
-  });
+    objects.set(newObjects, objectIndex);
 
-  const geometry = new THREE.BufferGeometry();
-  geometry.addAttribute('position', new THREE.BufferAttribute(new Float32Array(positions.buffer, positions.byteOffset, attributeIndex), 3));
-  geometry.computeBoundingSphere();
-  const {boundingSphere} = geometry;
+    localGeometries[i] = {
+      attributeRange: {
+        start: attributeIndex,
+        count: newPositions.length,
+      },
+      indexRange: {
+        start: indexIndex,
+        count: newIndices.length,
+      },
+      boundingSphere: new THREE.Sphere(
+        new THREE.Vector3(ox * NUM_CELLS + NUM_CELLS_HALF, i * NUM_CELLS + NUM_CELLS_HALF, oy * NUM_CELLS + NUM_CELLS_HALF),
+        NUM_CELLS_CUBE
+      ),
+    };
+
+    attributeIndex += newPositions.length;
+    uvIndex += newUvs.length;
+    frameIndex += newFrames.length;
+    objectIndexIndex += newObjectIndices.length;
+    indexIndex += newIndices.length;
+    objectIndex += newObjects.length;
+  };
 
   return {
     positions: new Float32Array(positions.buffer, positions.byteOffset, attributeIndex),
@@ -404,7 +524,7 @@ function _makeChunkGeometry(chunk) {
     objectIndices: new Float32Array(objectIndices.buffer, objectIndices.byteOffset, objectIndexIndex),
     indices: new Uint32Array(indices.buffer, indices.byteOffset, indexIndex),
     objects: new Uint32Array(objects.buffer, objects.byteOffset, objectIndex),
-    boundingSphere: Float32Array.from(boundingSphere.center.toArray().concat([boundingSphere.radius])),
+    geometries: localGeometries,
   };
 };
 function _wsUrl(s) {
@@ -619,6 +739,21 @@ self.onmessage = e => {
           result: resultBuffer,
         }, [resultBuffer]);
 
+        const {geometries: localGeometries} = geometry;
+        const trackedObjectChunkMeshes = {
+          array: Array(NUM_CHUNKS_HEIGHT),
+          groups: new Int32Array(NUM_RENDER_GROUPS * 2),
+        };
+        for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
+          const {indexRange, boundingSphere} = localGeometries[i];
+          trackedObjectChunkMeshes.array[i] = {
+            // offset: new THREE.Vector3(x, i, z),
+            indexRange,
+            boundingSphere,
+          };
+        }
+        objectChunkMeshes[_getChunkIndex(x, z)] = trackedObjectChunkMeshes;
+
         const {objects} = geometry
         const numObjects = objects.length / 3;
         for (let i = 0; i < numObjects; i++) {
@@ -651,8 +786,9 @@ self.onmessage = e => {
     const {x, z} = args;
 
     const chunk = zde.getChunk(x, z);
-
     zde.removeChunk(x, z);
+
+    objectChunkMeshes[_getChunkIndex(x, z)] = null;
 
     for (const k in chunk.trackedObjects) {
       const trackedObject = chunk.trackedObjects[k];
@@ -668,6 +804,17 @@ self.onmessage = e => {
         }
       }
     }
+  } else if (type === 'cull') {
+    const {id, args} = data;
+    const {hmdPosition, projectionMatrix, matrixWorldInverse, buffer} = args;
+
+    const objectChunkMeshes = _getCull(hmdPosition, projectionMatrix, matrixWorldInverse);
+    protocolUtils.stringifyCull(objectChunkMeshes, buffer, 0);
+    postMessage({
+      type: 'response',
+      args: [id],
+      result: buffer,
+    }, [buffer]);
   } else if (type === 'getHoveredObjects') {
     const {id, args: positions} = data;
     const result = new Uint32Array(8 * 2);
