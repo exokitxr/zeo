@@ -135,7 +135,7 @@ class Scale {
             scaleState.startStageMatrix = null;
           }
         };
-        rend.on('update', _update);
+        // rend.on('update', _update); // XXX
 
         this._cleanup = () => {
           input.removeListener('gripdown', _gripdown);
