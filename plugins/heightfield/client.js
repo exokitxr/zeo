@@ -17,7 +17,6 @@ const protocolUtils = require('./lib/utils/protocol-utils');
 const NUM_POSITIONS_CHUNK = 800 * 1024;
 const LIGHTMAP_PLUGIN = 'plugins-lightmap';
 const DAY_NIGHT_SKYBOX_PLUGIN = 'plugins-day-night-skybox';
-const NUM_CELLS_HALF = NUM_CELLS / 2;
 
 const HEIGHTFIELD_SHADER = {
   uniforms: {
