@@ -7,16 +7,29 @@ self.module = {};
 const {
   NUM_CELLS,
   NUM_CELLS_OVERSCAN,
+
+  NUM_CHUNKS_HEIGHT,
+  NUM_RENDER_GROUPS,
 } = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
 
 const NUM_POSITIONS = 20 * 1024;
-const NUM_POSITIONS_CHUNK = 300 * 1024;
+const NUM_POSITIONS_CHUNK = 100 * 1024;
 const CAMERA_ROTATION_ORDER = 'YXZ';
 
 const upVector = new THREE.Vector3(0, 1, 0);
 
 const rng = new alea();
+
+function mod(value, divisor) {
+  var n = value % divisor;
+  return n < 0 ? (divisor + n) : n;
+}
+const _getChunkIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
+
+const localMatrix = new THREE.Matrix4();
+const localMatrix2 = new THREE.Matrix4();
+const localFrustum = new THREE.Frustum();
 
 const _makeIndices = numPositions => {
   const indices = new Uint32Array(numPositions);
@@ -107,6 +120,8 @@ const cloudPatchGeometries = (() => {
   return result;
 })();
 
+const cloudChunkMeshes = {};
+
 const _makeCloudChunkMesh = (x, y, cloudPatchGeometries) => {
   const positions = new Float32Array(NUM_POSITIONS_CHUNK);
   const normals = new Float32Array(NUM_POSITIONS_CHUNK);
@@ -160,9 +175,111 @@ const _makeCloudChunkMesh = (x, y, cloudPatchGeometries) => {
   };
 };
 
+const _getCull = (hmdPosition, projectionMatrix, matrixWorldInverse) => {
+  localFrustum.setFromMatrix(localMatrix.fromArray(projectionMatrix).multiply(localMatrix2.fromArray(matrixWorldInverse)));
+
+  for (const index in cloudChunkMeshes) {
+    const trackedCloudChunkMeshes = cloudChunkMeshes[index];
+    if (trackedCloudChunkMeshes) {
+      trackedCloudChunkMeshes.groups.fill(-1);
+      let groupIndex = 0;
+      let start = -1;
+      let count = 0;
+      for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) { // XXX optimize this direction
+        const trackedCloudChunkMesh = trackedCloudChunkMeshes.array[i];
+        if (localFrustum.intersectsSphere(trackedCloudChunkMesh.boundingSphere)) {
+          if (start === -1) {
+            start = trackedCloudChunkMesh.indexRange.start;
+          }
+          count += trackedCloudChunkMesh.indexRange.count;
+        } else {
+          if (start !== -1) {
+            const baseIndex = groupIndex * 2;
+            trackedCloudChunkMeshes.groups[baseIndex + 0] = start;
+            trackedCloudChunkMeshes.groups[baseIndex + 1] = count;
+            groupIndex++;
+            start = -1;
+            count = 0;
+          }
+        }
+      }
+      if (start !== -1) {
+        const baseIndex = groupIndex * 2;
+        trackedCloudChunkMeshes.groups[baseIndex + 0] = start;
+        trackedCloudChunkMeshes.groups[baseIndex + 1] = count;
+      }
+    }
+  }
+
+  return cloudChunkMeshes;
+};
+
 self.onmessage = e => {
-  const {data: {x, y, buffer}} = e;
-  const cloudChunkGeometry = _makeCloudChunkMesh(x, y, cloudPatchGeometries);
-  const resultBuffer = protocolUtils.stringifyCloudGeometry(cloudChunkGeometry, buffer, 0);
-  postMessage(resultBuffer, [resultBuffer]);
+  const {data} = e;
+  const {type} = data;
+
+  if (type === 'generate') {
+    const {id, x, y, buffer} = data;
+    const cloudChunkGeometry = _makeCloudChunkMesh(x, y, cloudPatchGeometries);
+
+    const geometries = (() => { // XXX actually split into multiple geometries
+      const result = Array(NUM_CHUNKS_HEIGHT);
+      for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
+        result[i] = {
+          indexRange: {
+            start: -1,
+            count: 0,
+          },
+          boundingSphere: new Float32Array(4),
+        };
+      }
+      result[0] = {
+        indexRange: {
+          start: 0,
+          count: cloudChunkGeometry.indices.length,
+        },
+        boundingSphere: cloudChunkGeometry.boundingSphere,
+      };
+      return result;
+    })();
+    const trackedCloudChunkMeshes = {
+      array: Array(NUM_CHUNKS_HEIGHT),
+      groups: new Int32Array(NUM_RENDER_GROUPS * 2),
+    };
+    for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
+      const {indexRange, boundingSphere} = geometries[i];
+      trackedCloudChunkMeshes.array[i] = {
+        indexRange,
+        boundingSphere: new THREE.Sphere(
+          new THREE.Vector3().fromArray(boundingSphere, 0),
+          boundingSphere[3]
+        ),
+      };
+    }
+    cloudChunkMeshes[_getChunkIndex(x, y)] = trackedCloudChunkMeshes;
+
+    const resultBuffer = protocolUtils.stringifyCloudGeometry(cloudChunkGeometry, buffer, 0);
+    postMessage({
+      type: 'response',
+      args: [id],
+      result: buffer,
+    }, [buffer]);
+  } else if (type === 'ungenerate') {
+    const {x, y} = data;
+
+    cloudChunkMeshes[_getChunkIndex(x, y)] = null;
+  } else if (type === 'cull') {
+    const {id, args} = data;
+    const {hmdPosition, projectionMatrix, matrixWorldInverse, buffer} = args;
+
+    const cloudChunkMeshes = _getCull(hmdPosition, projectionMatrix, matrixWorldInverse);
+    protocolUtils.stringifyCull(cloudChunkMeshes, buffer, 0);
+    postMessage({
+      type: 'response',
+      args: [id],
+      result: buffer,
+    }, [buffer]);
+  } else {
+    console.warn('invalid cloud worker method:', JSON.stringify(type));
+  }
 };

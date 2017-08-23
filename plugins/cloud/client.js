@@ -5,7 +5,7 @@ const {
 } = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
 
-const NUM_POSITIONS_CHUNK = 300 * 1024;
+const NUM_POSITIONS_CHUNK = 100 * 1024;
 const CLOUD_SPEED = 1;
 const DAY_NIGHT_SKYBOX_PLUGIN = 'plugins-day-night-skybox';
 
@@ -44,8 +44,8 @@ void main() {
 
 class Cloud {
   mount() {
-    const {three, elements, render, pose, stage, utils: {js: {mod, bffr}, geometry: geometryUtils, random: {alea, chnkr}}} = zeo;
-    const {THREE, camera} = three;
+    const {three, elements, render, pose, /*stage, */utils: {js: {mod, bffr, sbffr}, geometry: geometryUtils, random: {alea, chnkr}}} = zeo;
+    const {THREE, scene, camera, renderer} = three;
 
     const modelViewMatrices = {
       left: new THREE.Matrix4(),
@@ -63,6 +63,10 @@ class Cloud {
       left: false,
       right: false,
     };
+    const uniformsNeedUpdate = {
+      left: true,
+      right: true,
+    };
     function _updateModelViewMatrix(camera) {
       if (!modelViewMatricesValid[camera.name]) {
         modelViewMatrices[camera.name].multiplyMatrices(camera.matrixWorldInverse, this.matrixWorld);
@@ -77,35 +81,145 @@ class Cloud {
       }
       this.normalMatrix = normalMatrices[camera.name];
     }
+    function _uniformsNeedUpdate(camera) {
+      if (uniformsNeedUpdate[camera.name]) {
+        uniformsNeedUpdate[camera.name] = false;
+        return true;
+      } else {
+        return false;
+      }
+    }
 
     const _getChunkIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
 
-    const cloudsMaterial = new THREE.ShaderMaterial({
+    const localArray3 = Array(3);
+    const localArray16 = Array(16);
+    const localArray162 = Array(16);
+
+    const geometryBuffer = sbffr(
+      NUM_POSITIONS_CHUNK,
+      RANGE * 2 * RANGE * 2 + RANGE * 2,
+      [
+        {
+          name: 'positions',
+          constructor: Float32Array,
+          size: 3 * 3 * 4,
+        },
+        {
+          name: 'normals',
+          constructor: Float32Array,
+          size: 3 * 3 * 4,
+        },
+        {
+          name: 'indices',
+          constructor: Uint32Array,
+          size: 3 * 4,
+        }
+      ]
+    );
+    const cloudObject = (() => {
+      const {positions, normals, indices} = geometryBuffer.getAll();
+
+      const geometry = new THREE.BufferGeometry();
+      const positionAttribute = new THREE.BufferAttribute(positions, 3);
+      positionAttribute.dynamic = true;
+      geometry.addAttribute('position', positionAttribute);
+      const normalAttribute = new THREE.BufferAttribute(normals, 3);
+      normalAttribute.dynamic = true;
+      geometry.addAttribute('normal', normalAttribute);
+      const indexAttribute = new THREE.BufferAttribute(indices, 1);
+      indexAttribute.dynamic = true;
+      geometry.setIndex(indexAttribute);
+
+      const mesh = new THREE.Mesh(geometry, null);
+      mesh.frustumCulled = false;
+      mesh.updateModelViewMatrix = _updateModelViewMatrix;
+      mesh.updateNormalMatrix = _updateNormalMatrix;
+      mesh.renderList = [];
+      return mesh;
+    })();
+    scene.add(cloudObject);
+
+    const cloudMaterial = new THREE.ShaderMaterial({
       uniforms: THREE.UniformsUtils.clone(CLOUD_SHADER.uniforms),
       vertexShader: CLOUD_SHADER.vertexShader,
       fragmentShader: CLOUD_SHADER.fragmentShader,
       transparent: true,
       // depthWrite: false,
     });
-    /* const cloudsMaterial = new THREE.MeshBasicMaterial({
-      color: 0xFFFFFF,
-    }); */
+    cloudMaterial.uniformsNeedUpdate = _uniformsNeedUpdate;
 
     const buffers = bffr(NUM_POSITIONS_CHUNK, RANGE * RANGE * 9);
-
+    let cullBuffer = new ArrayBuffer(4096);
     const worker = new Worker('archae/plugins/_plugins_cloud/build/worker.js');
-    const queue = [];
+    let queues = {};
+    let numRemovedQueues = 0;
+    const _cleanupQueues = () => {
+      if (++numRemovedQueues >= 16) {
+        const newQueues = {};
+        for (const id in queues) {
+          const entry = queues[id];
+          if (entry !== null) {
+            newQueues[id] = entry;
+          }
+        }
+        queues = newQueues;
+        numRemovedQueues = 0;
+      }
+    };
     worker.requestGenerate = (x, y, cb) => {
+      const id = _makeId();
       const buffer = buffers.alloc();
       worker.postMessage({
+        type: 'generate',
+        id,
         x,
         y,
         buffer,
       }, [buffer]);
-      queue.push(cb);
+      queues[id] = cb;
+    };
+    worker.requestUngenerate = (x, y) => {
+      worker.postMessage({
+        type: 'ungenerate',
+        x,
+        y,
+      });
+    };
+    worker.requestCull = (hmdPosition, projectionMatrix, matrixWorldInverse, cb) => { // XXX hmdPosition is unused
+      const id = _makeId();
+      worker.postMessage({
+        type: 'cull',
+        id,
+        args: {
+          hmdPosition: hmdPosition.toArray(localArray3),
+          projectionMatrix: projectionMatrix.toArray(localArray16),
+          matrixWorldInverse: matrixWorldInverse.toArray(localArray162),
+          buffer: cullBuffer,
+        },
+      }, [cullBuffer]);
+      cullBuffer = null;
+
+      queues[id] = buffer => {
+        cullBuffer = buffer;
+        cb(buffer);
+      };
     };
     worker.onmessage = e => {
-      queue.shift()(e.data);
+      const {data} = e;
+      const {type, args} = data;
+
+      if (type === 'response') {
+        const [id] = args;
+        const {result} = data;
+
+        queues[id](result);
+        queues[id] = null;
+
+        _cleanupQueues();
+      } else {
+        console.warn('cloud got unknown worker message type:', JSON.stringify(type));
+      }
     };
 
     const _requestCloudGenerate = (x, y) => new Promise((accept, reject) => {
@@ -134,36 +248,45 @@ class Cloud {
         });
 
         const cloudChunkMeshes = {};
-        const _makeCloudChunkMesh = (cloudChunkData, x, z) => {
-          const mesh = (() => {
-            const {positions, normals, indices, boundingSphere} = cloudChunkData;
+        const _makeCloudChunkMesh = (chunk, cloudChunkData) => {
+          const {x, z} = chunk;
+          const {positions: newPositions, normals: newNormals, indices: newIndices} = cloudChunkData;
 
-            const geometry = new THREE.BufferGeometry();
-            geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
-            geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
-            geometry.setIndex(new THREE.BufferAttribute(indices, 1));
-            geometry.boundingSphere = new THREE.Sphere(
-              new THREE.Vector3().fromArray(boundingSphere, 0),
-              boundingSphere[3]
-            );
-            const material = cloudsMaterial;
+          // geometry
 
-            const mesh = new THREE.Mesh(geometry, material);
-            mesh.updateModelViewMatrix = _updateModelViewMatrix;
-            mesh.updateNormalMatrix = _updateNormalMatrix;
-            return mesh;
-          })();
+          const gbuffer = geometryBuffer.alloc();
+          const {index, slices: {positions, normals, indices}} = gbuffer;
 
-          mesh.destroy = () => {
-            mesh.geometry.dispose();
+          if (newPositions.length > 0) {
+            positions.set(newPositions);
+            renderer.updateAttribute(cloudObject.geometry.attributes.position, index * positions.length, newPositions.length, false);
 
-            const {buffer} = cloudChunkData;
-            buffers.free(buffer);
+            normals.set(newNormals);
+            renderer.updateAttribute(cloudObject.geometry.attributes.normal, index * normals.length, newNormals.length, false);
+
+            const positionOffset = index * (positions.length / 3);
+            for (let i = 0; i < newIndices.length; i++)  {
+              indices[i] = newIndices[i] + positionOffset; // XXX do this in the worker
+            }
+            renderer.updateAttribute(cloudObject.geometry.index, index * indices.length, newIndices.length, true);
+          }
+
+          const mesh = {
+            indexOffset: index * indices.length,
+            renderListEntry: {
+              object: cloudObject,
+              material: cloudMaterial,
+              groups: [],
+            },
+            destroy: () => {
+              buffers.free(cloudChunkData.buffer);
+              geometryBuffer.free(gbuffer);
+            },
           };
 
           return mesh;
         };
-        const _requestRefreshCloudChunks = () => {
+        const _debouncedRequestRefreshCloudChunks = _debounce(next => {
           const {hmd} = pose.getStatus();
           const {worldPosition: hmdPosition} = hmd;
           // const dx = (world.getWorldTime() / 1000) * CLOUD_SPEED;
@@ -174,8 +297,9 @@ class Cloud {
             const chunk = added[i];
             const promise = _requestCloudGenerate(chunk.x, chunk.z)
               .then(cloudChunkData => {
-                const cloudChunkMesh = _makeCloudChunkMesh(cloudChunkData, chunk.x, chunk.z);
-                stage.add('main', cloudChunkMesh);
+                const cloudChunkMesh = _makeCloudChunkMesh(chunk, cloudChunkData);
+                // stage.add('main', cloudChunkMesh);
+                cloudObject.renderList.push(cloudChunkMesh.renderListEntry);
 
                 cloudChunkMeshes[_getChunkIndex(chunk.x, chunk.z)] = cloudChunkMesh;
 
@@ -183,50 +307,84 @@ class Cloud {
               });
             addedPromises[i] = promise;
           }
-          return Promise.all(addedPromises)
+          for (let i = 0; i < removed.length; i++) {
+            const chunk = removed[i];
+            const {x, z, data: cloudChunkMesh} = chunk;
+
+            worker.requestUngenerate(x, z);
+
+            // stage.remove('main', cloudChunkMesh);
+            cloudObject.renderList.splice(cloudObject.renderList.indexOf(cloudChunkMesh.renderListEntry), 1);
+
+            cloudChunkMesh.destroy();
+
+            cloudChunkMeshes[_getChunkIndex(x, z)] = null;
+          }
+
+          Promise.all(addedPromises)
             .then(() => {
-              removed.forEach(chunk => {
-                const {data: cloudChunkMesh} = chunk;
-                stage.remove('main', cloudChunkMesh);
-
-                cloudChunkMeshes[_getChunkIndex(chunk.x, chunk.z)] = null;
-
-                cloudChunkMesh.destroy();
-              });
-            })
-        }
-
-        let live = true;
-        const _recurse = () => {
-          _requestRefreshCloudChunks()
-            .then(() => {
-              if (live) {
-                setTimeout(_recurse, 1000);
-              }
+              next();
             })
             .catch(err => {
-              if (live) {
-                console.warn(err);
-
-                setTimeout(_recurse, 1000);
-              }
+              console.warn(err);
+              next();
             });
+        });
+
+        const _requestCull = (hmdPosition, projectionMatrix, matrixWorldInverse, cb) => {
+          worker.requestCull(hmdPosition, projectionMatrix, matrixWorldInverse, cullBuffer => {
+            cb(protocolUtils.parseCull(cullBuffer));
+          });
         };
-        _recurse();
+        const _debouncedRefreshCull = _debounce(next => {
+          const {hmd} = pose.getStatus();
+          const {worldPosition: hmdPosition} = hmd;
+          const {projectionMatrix, matrixWorldInverse} = camera;
+          _requestCull(hmdPosition, projectionMatrix, matrixWorldInverse, culls => {
+            for (let i = 0; i < culls.length; i++) {
+              const {index, groups} = culls[i];
+
+              const trackedCloudChunkMeshes = cloudChunkMeshes[index];
+              if (trackedCloudChunkMeshes) {
+                for (let j = 0; j < groups.length; j++) {
+                  groups[j].start += trackedCloudChunkMeshes.indexOffset; // XXX do this reindexing in the worker
+                }
+                trackedCloudChunkMeshes.renderListEntry.groups = groups;
+              }
+            }
+
+            next();
+          });
+        });
+
+        let refreshChunksTimeout = null;
+        const _recurseRefreshChunks = () => {
+          _debouncedRequestRefreshCloudChunks();
+          refreshChunksTimeout = setTimeout(_recurseRefreshChunks, 1000);
+        };
+        _recurseRefreshChunks();
+        let refreshCullTimeout = null;
+        const _recurseRefreshCull = () => {
+          _debouncedRefreshCull();
+          refreshCullTimeout = setTimeout(_recurseRefreshCull, 1000 / 30);
+        };
+        _recurseRefreshCull();
 
         const update = () => {
           const _updateSunIntensity = () => {
             const dayNightSkyboxEntity = elements.getEntitiesElement().querySelector(DAY_NIGHT_SKYBOX_PLUGIN);
             const sunIntensity = (dayNightSkyboxEntity && dayNightSkyboxEntity.getSunIntensity) ? dayNightSkyboxEntity.getSunIntensity() : 0;
 
-            // cloudsMaterial.uniforms.worldTime.value = world.getWorldTime();
-            cloudsMaterial.uniforms.sunIntensity.value = sunIntensity;
+            // cloudMaterial.uniforms.worldTime.value = world.getWorldTime();
+            cloudMaterial.uniforms.sunIntensity.value = sunIntensity;
           };
           const _updateMatrices = () => {
             modelViewMatricesValid.left = false;
             modelViewMatricesValid.right = false;
             normalMatricesValid.left = false;
             normalMatricesValid.right = false;
+            uniformsNeedUpdate.left = true;
+            uniformsNeedUpdate.right = true;
           };
 
           _updateSunIntensity();
@@ -235,12 +393,14 @@ class Cloud {
         updates.push(update);
 
         entityElement._cleanup = () => {
-          live = false;
+          clearTimeout(refreshChunksTimeout);
+          clearTimeout(refreshCullTimeout);
 
           for (const index in cloudChunkMeshes) {
             const cloudChunkMesh = cloudChunkMeshes[index];
             if (cloudChunkMesh) {
-              stage.remove('main', cloudChunkMesh);
+              // stage.remove('main', cloudChunkMesh);
+              cloudObject.renderList.splice(cloudObject.renderList.indexOf(cloudChunkMesh.renderListEntry), 1);
             }
           }
 
@@ -275,6 +435,8 @@ class Cloud {
     render.on('update', _update);
 
     this._cleanup = () => {
+      scene.remove(cloudObject);
+
       elements.unregisterEntity(this, cloudEntity);
 
       render.removeListener('update', _update);
@@ -285,5 +447,34 @@ class Cloud {
     this._cleanup();
   }
 }
+let _id = 0;
+const _makeId = () => {
+  const result = _id;
+  _id = (_id + 1) | 0;
+  return result;
+};
+const _debounce = fn => {
+  let running = false;
+  let queued = false;
+
+  const _go = () => {
+    if (!running) {
+      running = true;
+
+      fn(() => {
+        running = false;
+
+        if (queued) {
+          queued = false;
+
+          _go();
+        }
+      });
+    } else {
+      queued = true;
+    }
+  };
+  return _go;
+};
 
 module.exports = Cloud;
