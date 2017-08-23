@@ -5,7 +5,7 @@ const {
 } = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
 
-const NUM_POSITIONS_CHUNK = 200 * 1024;
+const NUM_POSITIONS_CHUNK = 30 * 1024;
 const DAY_NIGHT_SKYBOX_PLUGIN = 'plugins-day-night-skybox';
 
 const OCEAN_SHADER = {
@@ -71,12 +71,16 @@ const OCEAN_SHADER = {
 
 class Ocean {
   mount() {
-    const {three, render, elements, pose, world, stage, utils: {js: jsUtils, random: randomUtils, hash: hashUtils}} = zeo;
-    const {THREE, scene} = three;
-    const {bffr, mod} = jsUtils;
+    const {three, render, elements, pose, world, /*stage, */utils: {js: jsUtils, random: randomUtils, hash: hashUtils}} = zeo;
+    const {THREE, scene, camera, renderer} = three;
+    const {mod, bffr, sbffr} = jsUtils;
     const {chnkr} = randomUtils;
 
     const _getChunkIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
+
+    const localArray3 = Array(3);
+    const localArray16 = Array(16);
+    const localArray162 = Array(16);
 
     let live = true;
     this._cleanup = () => {
@@ -84,27 +88,83 @@ class Ocean {
     };
 
     const buffers = bffr(NUM_POSITIONS_CHUNK, (RANGE * 2) * (RANGE * 2) * 2);
+    let cullBuffer = new ArrayBuffer(4096);
     const worker = new Worker('archae/plugins/_plugins_ocean/build/worker.js');
-    const queues = [];
-    worker.requestGenerate = (x, z, lod, cb) => {
+    let queues = {};
+    let numRemovedQueues = 0;
+    const _cleanupQueues = () => {
+      if (++numRemovedQueues >= 16) {
+        const newQueues = {};
+        for (const id in queues) {
+          const entry = queues[id];
+          if (entry !== null) {
+            newQueues[id] = entry;
+          }
+        }
+        queues = newQueues;
+        numRemovedQueues = 0;
+      }
+    };
+    worker.requestGenerate = (x, y, cb) => {
+      const id = _makeId();
       const buffer = buffers.alloc();
       worker.postMessage({
+        type: 'generate',
+        id,
         x,
-        z,
-        lod,
+        y,
         buffer,
       }, [buffer]);
-      queues.push(cb);
+      queues[id] = cb;
+    };
+    worker.requestUngenerate = (x, y) => {
+      worker.postMessage({
+        type: 'ungenerate',
+        x,
+        y,
+      });
+    };
+    worker.requestCull = (hmdPosition, projectionMatrix, matrixWorldInverse, cb) => { // XXX hmdPosition is unused
+      const id = _makeId();
+      worker.postMessage({
+        type: 'cull',
+        id,
+        args: {
+          hmdPosition: hmdPosition.toArray(localArray3),
+          projectionMatrix: projectionMatrix.toArray(localArray16),
+          matrixWorldInverse: matrixWorldInverse.toArray(localArray162),
+          buffer: cullBuffer,
+        },
+      }, [cullBuffer]);
+      cullBuffer = null;
+
+      queues[id] = buffer => {
+        cullBuffer = buffer;
+        cb(buffer);
+      };
     };
     worker.onmessage = e => {
-      queues.shift()(e.data);
+      const {data} = e;
+      const {type, args} = data;
+
+      if (type === 'response') {
+        const [id] = args;
+        const {result} = data;
+
+        queues[id](result);
+        queues[id] = null;
+
+        _cleanupQueues();
+      } else {
+        console.warn('ocean got unknown worker message type:', JSON.stringify(type));
+      }
     };
-    const _requestOceanGenerate = (x, z, lod) => new Promise((accept, reject) => {
-      worker.requestGenerate(x, z, lod, oceanBuffer => {
+
+    const _requestOceanGenerate = (x, z) => new Promise((accept, reject) => {
+      worker.requestGenerate(x, z, oceanBuffer => {
         accept(protocolUtils.parseGeometry(oceanBuffer));
       });
     });
-
     const _requestImg = src => new Promise((accept, reject) => {
       const img = new Image();
       img.onload = () => {
@@ -113,9 +173,103 @@ class Ocean {
       img.onerror = err => {
         reject(err);
       };
-      // img.crossOrigin = 'Anonymous';
       img.src = src;
     });
+
+    const modelViewMatrices = {
+      left: new THREE.Matrix4(),
+      right: new THREE.Matrix4(),
+    };
+    const normalMatrices = {
+      left: new THREE.Matrix3(),
+      right: new THREE.Matrix3(),
+    };
+    const modelViewMatricesValid = {
+      left: false,
+      right: false,
+    };
+    const normalMatricesValid = {
+      left: false,
+      right: false,
+    };
+    const uniformsNeedUpdate = {
+      left: true,
+      right: true,
+    };
+    function _updateModelViewMatrix(camera) {
+      if (!modelViewMatricesValid[camera.name]) {
+        modelViewMatrices[camera.name].multiplyMatrices(camera.matrixWorldInverse, this.matrixWorld);
+        modelViewMatricesValid[camera.name] = true;
+      }
+      this.modelViewMatrix = modelViewMatrices[camera.name];
+    }
+    function _updateNormalMatrix(camera) {
+      if (!normalMatricesValid[camera.name]) {
+        normalMatrices[camera.name].getNormalMatrix(this.modelViewMatrix);
+        normalMatricesValid[camera.name] = true;
+      }
+      this.normalMatrix = normalMatrices[camera.name];
+    }
+    function _uniformsNeedUpdate(camera) {
+      if (uniformsNeedUpdate[camera.name]) {
+        uniformsNeedUpdate[camera.name] = false;
+        return true;
+      } else {
+        return false;
+      }
+    }
+
+    const geometryBuffer = sbffr(
+      NUM_POSITIONS_CHUNK,
+      RANGE * 2 * RANGE * 2 + RANGE * 2,
+      [
+        {
+          name: 'positions',
+          constructor: Float32Array,
+          size: 3 * 3 * 4,
+        },
+        {
+          name: 'uvs',
+          constructor: Float32Array,
+          size: 2 * 3 * 4,
+        },
+        {
+          name: 'waves',
+          constructor: Float32Array,
+          size: 3 * 3 * 4,
+        },
+        {
+          name: 'indices',
+          constructor: Uint32Array,
+          size: 3 * 4,
+        }
+      ]
+    );
+    const oceanObject = (() => {
+      const {positions, uvs, waves, indices} = geometryBuffer.getAll();
+
+      const geometry = new THREE.BufferGeometry();
+      const positionAttribute = new THREE.BufferAttribute(positions, 3);
+      positionAttribute.dynamic = true;
+      geometry.addAttribute('position', positionAttribute);
+      const uvAttribute = new THREE.BufferAttribute(uvs, 2);
+      uvAttribute.dynamic = true;
+      geometry.addAttribute('uv', uvAttribute);
+      const waveAttribute = new THREE.BufferAttribute(waves, 3);
+      waveAttribute.dynamic = true;
+      geometry.addAttribute('wave', waveAttribute);
+      const indexAttribute = new THREE.BufferAttribute(indices, 1);
+      indexAttribute.dynamic = true;
+      geometry.setIndex(indexAttribute);
+
+      const mesh = new THREE.Mesh(geometry, null);
+      mesh.frustumCulled = false;
+      mesh.updateModelViewMatrix = _updateModelViewMatrix;
+      mesh.updateNormalMatrix = _updateNormalMatrix;
+      mesh.renderList = [];
+      return mesh;
+    })();
+    scene.add(oceanObject);
 
     return _requestImg('/archae/ocean/img/water.png')
       .then(waterImg => {
@@ -125,32 +279,13 @@ class Ocean {
             THREE.UVMapping,
             THREE.RepeatWrapping,
             THREE.RepeatWrapping,
-            // THREE.LinearMipMapLinearFilter,
-            // THREE.LinearMipMapLinearFilter,
             THREE.NearestFilter,
             THREE.NearestFilter,
-            // THREE.NearestMipMapNearestFilter,
-            // THREE.NearestMipMapNearestFilter,
-            // THREE.LinearFilter,
-            // THREE.LinearFilter,
-            // THREE.NearestFilter,
-            // THREE.NearestFilter,
             THREE.RGBAFormat,
             THREE.UnsignedByteType,
             1
           );
           texture.needsUpdate = true;
-
-          const uniforms = THREE.UniformsUtils.clone(OCEAN_SHADER.uniforms);
-          uniforms.map.value = texture;
-          uniforms.fogColor.value = scene.fog.color;
-          uniforms.fogDensity.value = scene.fog.density;
-          const oceanMaterial = new THREE.ShaderMaterial({
-            uniforms: uniforms,
-            vertexShader: OCEAN_SHADER.vertexShader,
-            fragmentShader: OCEAN_SHADER.fragmentShader,
-            transparent: true,
-          });
 
           const updates = [];
           const _update = () => {
@@ -176,92 +311,123 @@ class Ocean {
                 resolution: NUM_CELLS,
                 range: RANGE,
               });
-              const oceanMeshes = {};
+              const oceanChunkMeshes = {};
 
               const update = () => {
-                const _updateMeshes = () => {
-                  for (const index in oceanMeshes) {
-                    const oceanMesh = oceanMeshes[index];
-                    if (oceanMesh) {
-                      oceanMesh.update();
+                const _updateMaterials = () => {
+                  for (const index in oceanChunkMeshes) {
+                    const oceanChunkMesh = oceanChunkMeshes[index];
+                    if (oceanChunkMesh) {
+                      oceanChunkMesh.material.uniforms.fogColor.value = scene.fog.color;
+                      oceanChunkMesh.material.uniforms.fogDensity.value = scene.fog.density;
+                      oceanChunkMesh.material.uniforms.worldTime.value = world.getWorldTime();
+
+                      const dayNightSkyboxEntity = elements.getEntitiesElement().querySelector(DAY_NIGHT_SKYBOX_PLUGIN);
+                      const sunIntensity = (dayNightSkyboxEntity && dayNightSkyboxEntity.getSunIntensity) ? dayNightSkyboxEntity.getSunIntensity() : 0;
+                      oceanChunkMesh.material.uniforms.sunIntensity.value = sunIntensity;
                     }
                   }
                 };
-                const _updateMaterial = () => {
-                  oceanMaterial.uniforms.sunIntensity.value = (() => {
-                    const dayNightSkyboxEntity = elements.getEntitiesElement().querySelector(DAY_NIGHT_SKYBOX_PLUGIN);
-                    return (dayNightSkyboxEntity && dayNightSkyboxEntity.getSunIntensity) ? dayNightSkyboxEntity.getSunIntensity() : 0;
-                  })();
+                const _updateMatrices = () => {
+                  modelViewMatricesValid.left = false;
+                  modelViewMatricesValid.right = false;
+                  normalMatricesValid.left = false;
+                  normalMatricesValid.right = false;
+                  uniformsNeedUpdate.left = true;
+                  uniformsNeedUpdate.right = true;
                 };
 
-                _updateMeshes();
-                _updateMaterial();
+                _updateMaterials();
+                _updateMatrices();
               };
               updates.push(update);
 
-              const _makeOceanChunkMesh = (x, z, oceanChunkData) => {
-                const {positions, uvs, waves, indices} = oceanChunkData;
-                const geometry = new THREE.BufferGeometry();
-                geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
-                geometry.addAttribute('uv', new THREE.BufferAttribute(uvs, 2));
-                geometry.addAttribute('wave', new THREE.BufferAttribute(waves, 3));
-                geometry.setIndex(new THREE.BufferAttribute(indices, 1));
-                const maxY = 100;
-                const minY = -100;
-                geometry.boundingSphere = new THREE.Sphere(
-                  new THREE.Vector3(
-                    (x * NUM_CELLS) + (NUM_CELLS / 2),
-                    (minY + maxY) / 2,
-                    (z * NUM_CELLS) + (NUM_CELLS / 2)
-                  ),
-                  Math.max(Math.sqrt((NUM_CELLS / 2) * (NUM_CELLS / 2) * 3), (maxY - minY) / 2) // XXX really compute this
-                );
-                const material = oceanMaterial;
+              const _makeOceanChunkMesh = (chunk, oceanChunkData) => {
+                const {x, z} = chunk;
+                const {positions: newPositions, uvs: newUvs, waves: newWaves, indices: newIndices} = oceanChunkData;
 
-                const mesh = new THREE.Mesh(geometry, material);
-                mesh.update = () => {
-                  uniforms.worldTime.value = world.getWorldTime();
-                  uniforms.fogColor.value = scene.fog.color;
-                  uniforms.fogDensity.value = scene.fog.density;
-                };
-                mesh.destroy = () => {
-                  geometry.dispose();
+                // geometry
 
-                  buffers.free(oceanChunkData.buffer);
+                const gbuffer = geometryBuffer.alloc();
+                const {index, slices: {positions, uvs, waves, indices}} = gbuffer;
+
+                if (newPositions.length > 0) {
+                  positions.set(newPositions);
+                  renderer.updateAttribute(oceanObject.geometry.attributes.position, index * positions.length, newPositions.length, false);
+
+                  uvs.set(newUvs);
+                  renderer.updateAttribute(oceanObject.geometry.attributes.uv, index * uvs.length, newUvs.length, false);
+
+                  waves.set(newWaves);
+                  renderer.updateAttribute(oceanObject.geometry.attributes.wave, index * waves.length, newWaves.length, false);
+
+                  const positionOffset = index * (positions.length / 3);
+                  for (let i = 0; i < newIndices.length; i++)  {
+                    indices[i] = newIndices[i] + positionOffset; // XXX do this in the worker
+                  }
+                  renderer.updateAttribute(oceanObject.geometry.index, index * indices.length, newIndices.length, true);
+                }
+
+                // material
+
+                const uniforms = THREE.UniformsUtils.clone(OCEAN_SHADER.uniforms);
+                uniforms.map.value = texture;
+                uniforms.fogColor.value = scene.fog.color;
+                uniforms.fogDensity.value = scene.fog.density;
+                const material = new THREE.ShaderMaterial({
+                  uniforms: uniforms,
+                  vertexShader: OCEAN_SHADER.vertexShader,
+                  fragmentShader: OCEAN_SHADER.fragmentShader,
+                  transparent: true,
+                });
+                material.uniformsNeedUpdate = _uniformsNeedUpdate;
+
+                const mesh = {
+                  material,
+                  indexOffset: index * indices.length,
+                  renderListEntry: {
+                    object: oceanObject,
+                    material: material,
+                    groups: [],
+                  },
+                  destroy: () => {
+                    buffers.free(oceanChunkData.buffer);
+                    geometryBuffer.free(gbuffer);
+                  },
                 };
+
                 return mesh;
               };
 
-              const _requestRefreshOceanChunks = () => {
+              const _debouncedRequestRefreshOceanChunks = _debounce(next => {
                 const {hmd} = pose.getStatus();
                 const {worldPosition: hmdPosition} = hmd;
                 const {added, removed, relodded} = chunker.update(hmdPosition.x, hmdPosition.z);
 
                 const promises = [];
                 const _addChunk = chunk => {
-                  const {x, z, lod, data: oldData} = chunk;
+                  const {x, z, data: oldOceanChunkMesh} = chunk;
 
                   const index = _getChunkIndex(x, z);
 
-                  if (oldData) {
-                    const {oceanChunkMesh} = oldData;
-                    scene.remove(oceanChunkMesh);
+                  if (oldOceanChunkMesh) {
+                    // scene.remove(oldOceanChunkMesh);
+                    oceanObject.renderList.splice(oceanObject.renderList.indexOf(oldOceanChunkMesh.renderListEntry), 1);
 
-                    oceanMeshes[index] = null;
+                    oldOceanChunkMesh.destroy();
 
-                    oceanChunkMesh.destroy();
+                    oceanChunkMeshes[index] = null;
                   }
 
-                  const promise = _requestOceanGenerate(x, z, lod)
+                  const promise = _requestOceanGenerate(x, z)
                     .then(oceanChunkData => {
-                      const oceanChunkMesh = _makeOceanChunkMesh(x, z, oceanChunkData);
-                      scene.add(oceanChunkMesh);
+                      const oceanChunkMesh = _makeOceanChunkMesh(chunk, oceanChunkData);
+                      // scene.add(oceanChunkMesh);
+                      oceanObject.renderList.push(oceanChunkMesh.renderListEntry);
 
-                      oceanMeshes[index] = oceanChunkMesh;
+                      oceanChunkMeshes[index] = oceanChunkMesh;
 
-                      chunk.data = {
-                        oceanChunkMesh,
-                      };
+                      chunk.data = oceanChunkMesh;
                     });
                   promises.push(promise);
                 };
@@ -271,46 +437,77 @@ class Ocean {
                 for (let i = 0; i < relodded.length; i++) {
                   _addChunk(relodded[i]);
                 }
+                for (let i = 0; i < removed.length; i++) {
+                  const chunk = removed[i];
+                  const {x, z, data: oceanChunkMesh} = chunk;
+
+                  worker.requestUngenerate(x, z);
+
+                  // scene.remove(oceanChunkMesh);
+                  oceanObject.renderList.splice(oceanObject.renderList.indexOf(oceanChunkMesh.renderListEntry), 1);
+
+                  oceanChunkMesh.destroy();
+
+                  oceanChunkMeshes[_getChunkIndex(x, z)] = null;
+                }
                 return Promise.all(promises)
                   .then(() => {
-                    for (let i = 0; i < removed.length; i++) {
-                      const chunk = removed[i];
-                      const {data} = chunk;
-                      const {oceanChunkMesh} = data;
-                      scene.remove(oceanChunkMesh);
-
-                      oceanMeshes[_getChunkIndex(chunk.x, chunk.z)] = null;
-
-                      oceanChunkMesh.destroy();
-                    }
-                  });
-              };
-
-              let live = true;
-              const _recurse = () => {
-                _requestRefreshOceanChunks()
-                  .then(() => {
-                    if (live) {
-                      setTimeout(_recurse, 1000);
-                    }
+                    next();
                   })
                   .catch(err => {
-                    if (live) {
-                      console.warn(err);
-
-                      setTimeout(_recurse, 1000);
-                    }
+                    console.warn(err);
+                    next();
                   });
+              });
+
+              const _requestCull = (hmdPosition, projectionMatrix, matrixWorldInverse, cb) => {
+                worker.requestCull(hmdPosition, projectionMatrix, matrixWorldInverse, cullBuffer => {
+                  cb(protocolUtils.parseCull(cullBuffer));
+                });
               };
-              _recurse();
+              const _debouncedRefreshCull = _debounce(next => {
+                const {hmd} = pose.getStatus();
+                const {worldPosition: hmdPosition} = hmd;
+                const {projectionMatrix, matrixWorldInverse} = camera;
+                _requestCull(hmdPosition, projectionMatrix, matrixWorldInverse, culls => {
+                  for (let i = 0; i < culls.length; i++) {
+                    const {index, groups} = culls[i];
+
+                    const trackedOceanChunkMeshes = oceanChunkMeshes[index];
+                    if (trackedOceanChunkMeshes) {
+                      for (let j = 0; j < groups.length; j++) {
+                        groups[j].start += trackedOceanChunkMeshes.indexOffset; // XXX do this reindexing in the worker
+                      }
+                      trackedOceanChunkMeshes.renderListEntry.groups = groups;
+                    }
+                  }
+
+                  next();
+                });
+              });
+
+              let refreshChunksTimeout = null;
+              const _recurseRefreshChunks = () => {
+                _debouncedRequestRefreshOceanChunks();
+                refreshChunksTimeout = setTimeout(_recurseRefreshChunks, 1000);
+              };
+              _recurseRefreshChunks();
+              let refreshCullTimeout = null;
+              const _recurseRefreshCull = () => {
+                _debouncedRefreshCull();
+                refreshCullTimeout = setTimeout(_recurseRefreshCull, 1000 / 30);
+              };
+              _recurseRefreshCull();
             
               entityElement._cleanup = () => {
-                live = false;
+                clearTimeout(refreshChunksTimeout);
+                clearTimeout(refreshCullTimeout);
 
-                for (const index in oceanMeshes) {
-                  const oceanMesh = oceanMeshes[index];
-                  if (oceanMesh) {
-                    stage.remove('main', oceanMesh);
+                for (const index in oceanChunkMeshes) {
+                  const oceanChunkMesh = oceanChunkMeshes[index];
+                  if (oceanChunkMesh) {
+                    // stage.remove('main', oceanMesh);
+                    oceanObject.renderList.splice(oceanObject.renderList.indexOf(oceanChunkMesh.renderListEntry), 1);
                   }
                 }
 
@@ -339,6 +536,8 @@ class Ocean {
           render.on('update', _update);
 
           this._cleanup = () => {
+            scene.remove(oceanObject);
+
             worker.terminate();
 
             elements.unregisterEntity(this, oceanEntity);
@@ -353,5 +552,34 @@ class Ocean {
     this._cleanup();
   }
 }
+let _id = 0;
+const _makeId = () => {
+  const result = _id;
+  _id = (_id + 1) | 0;
+  return result;
+};
+const _debounce = fn => {
+  let running = false;
+  let queued = false;
+
+  const _go = () => {
+    if (!running) {
+      running = true;
+
+      fn(() => {
+        running = false;
+
+        if (queued) {
+          queued = false;
+
+          _go();
+        }
+      });
+    } else {
+      queued = true;
+    }
+  };
+  return _go;
+};
 
 module.exports = Ocean;
