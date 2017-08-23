@@ -455,7 +455,6 @@ class Heightfield {
           groups: [],
         },
         offset: new THREE.Vector2(x, z),
-        lod: chunk.lod,
         heightfield,
         staticHeightfield,
         lightmap: null,

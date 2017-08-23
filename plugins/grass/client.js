@@ -391,7 +391,6 @@ class Grass {
               material,
               indexOffset: index * indices.length,
               offset: new THREE.Vector2(x, z),
-              lod: chunk.lod,
               lightmap: null,
               renderListEntry: {
                 object: grassMesh,

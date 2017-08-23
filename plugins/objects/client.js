@@ -513,7 +513,6 @@ return; // XXX rewrite this
           groups: [],
         },
         offset: new THREE.Vector2(x, z),
-        lod: chunk.lod,
         lightmap: null,
         destroy: () => {
           buffers.free(objectsChunkData.buffer);
