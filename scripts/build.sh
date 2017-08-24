@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION="8.1.3";
+VERSION="8.4.0";
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 pushd "$DIR"/..;
