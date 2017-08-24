@@ -1,7 +1,7 @@
 {
   "name": "zeo",
   "version": "0.0.1",
-  "description": "WebVR worlds in Javascript",
+  "description": "Multiplayer WebVR game server",
   "main": "index.js",
   "bin": {
     "zeo": "index.js"
@@ -17,8 +17,13 @@
   },
   "keywords": [
     "zeo",
+    "multiplayer",
     "webvr",
-    "javascript",
+    "game",
+    "server",
+    "vr",
+    "procedural",
+    "generation",
     "npm",
     "modules",
     "threejs"
