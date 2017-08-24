@@ -1,0 +1,16 @@
+
+version: 2
+jobs:
+  build:
+    docker:
+      - image: circleci/node:8.4.0
+
+    working_directory: ~/zeo
+
+    steps:
+      - checkout
+
+      - run: npm install
+        
+      # run tests!
+      - run: npm test
