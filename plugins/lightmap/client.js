@@ -9,7 +9,7 @@ class Lightmap {
   mount() {
     const {three, pose, elements, render, utils: {js: jsUtils, random: {chnkr}}} = zeo;
     const {THREE} = three;
-    const {events, mod, bffr} = jsUtils;
+    const {events, mod} = jsUtils;
     const {EventEmitter} = events;
 
     const _getLightmapIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
@@ -256,65 +256,10 @@ class Lightmap {
       }
     }
 
-    class Lightmap extends EventEmitter {
-      constructor(x, z) {
-        super();
-
-        this.x = x;
-        this.z = z;
-        this.index = _getLightmapIndex(x, z);
-
-        this.buffer = null;
-        const texture = new THREE.DataTexture(
-          zeroUint8Array,
-          1,
-          1,
-          THREE.LuminanceFormat,
-          THREE.UnsignedByteType,
-          THREE.UVMapping,
-          THREE.ClampToEdgeWrapping,
-          THREE.ClampToEdgeWrapping,
-          THREE.NearestFilter,
-          THREE.NearestFilter,
-          1
-        );
-        this.texture = texture;
-        this.refCount = 0;
-      }
-
-      addRef() {
-        this.refCount++;
-      }
-
-      removeRef() {
-        if (--this.refCount === 0) {
-          this.destroy();
-        }
-      }
-
-      destroy() {
-        this.texture.dispose();
-
-        this.emit('destroy');
-      }
-    }
-
     class Lightmapper {
-      constructor({width = NUM_CELLS + 1, height = NUM_CELLS_HEIGHT, depth = NUM_CELLS + 1} = {}) {
-        this.width = width;
-        this.height = height;
-        this.depth = depth;
-
+      constructor() {
         const worker = new Worker('archae/plugins/_plugins_lightmap/build/worker.js');
         const queue = [];
-        worker.init = (width, height, depth) => {
-          worker.postMessage({
-            type: 'init',
-            width,
-            height,
-            depth,
-          });
-        };
         worker.addShape = spec => {
           worker.postMessage({
             type: 'addShape',
@@ -340,6 +285,14 @@ class Lightmap {
             ids: ids,
           });
         };
+        worker.requestRender = (lightmapBuffer, cb) => {
+          worker.postMessage({
+            type: 'render',
+            lightmapBuffer,
+          }, [lightmapBuffer.buffer]);
+
+          queue.push(cb);
+        };
         worker.requestUpdate = (ox, oz, buffer, cb) => {
           worker.postMessage({
             type: 'requestUpdate',
@@ -353,49 +306,15 @@ class Lightmap {
         worker.onmessage = e => {
           queue.shift()(e.data);
         };
-        worker.init(width, height, depth);
         this.worker = worker;
 
         this._shapes = [];
         this._lightmaps = {};
-        this._buffers = bffr((width + 1) * (depth + 1) * height, RANGE * RANGE * 9);
 
         this.chunker = chnkr.makeChunker({
           resolution: NUM_CELLS,
           range: RANGE,
         });
-
-        this.debouncedUpdate = _debounce(next => {
-          this.update(next);
-        });
-      }
-
-      getLightmapAt(x, z) {
-        return this.getLightmapAtIndex(Math.floor(x / this.width), Math.floor(z / this.depth));
-      }
-      getLightmapAtIndex(ox, oz) {
-        const {_lightmaps: lightmaps} = this;
-
-        const index = _getLightmapIndex(ox, oz);
-        let entry = lightmaps[index];
-        if (!entry) {
-          entry = new Lightmap(ox, oz);
-          entry.on('destroy', () => {
-            if (entry.buffer) {
-              this._buffers.free(entry.buffer);
-              entry.buffer = null;
-            }
-            lightmaps[index] = null;
-            // XXX gc after too many destroys
-          });
-          lightmaps[index] = entry;
-        }
-        entry.addRef();
-        return entry;
-      }
-
-      releaseLightmap(lightmap) {
-        lightmap.removeRef();
       }
 
       getShapes() {
@@ -417,8 +336,6 @@ class Lightmap {
             chunk.lod = -1;
           }
         }
-
-        this.debouncedUpdate();
       }
 
       remove(shape) {
@@ -436,8 +353,6 @@ class Lightmap {
             chunk.lod = -1;
           }
         }
-
-        this.debouncedUpdate();
       }
 
       _setShapeData(shape, spec) {
@@ -453,82 +368,10 @@ class Lightmap {
             chunk.lod = -1;
           }
         }
-
-        this.debouncedUpdate();
       }
 
-      update(cb) {
-        const {hmd} = pose.getStatus();
-        const {worldPosition: hmdPosition} = hmd;
-        const {added, removed, relodded} = this.chunker.update(hmdPosition.x, hmdPosition.z);
-
-        const _requestUpdate = (lightmap, cb) => {
-          this.worker.requestUpdate(lightmap.x, lightmap.z, lightmap.buffer, lightmapBuffer => {
-            lightmap.buffer = lightmapBuffer;
-            lightmap.texture.image.data = new Uint8Array(lightmapBuffer);
-            lightmap.texture.image.width = (this.width + 1) * (this.depth + 1);
-            lightmap.texture.image.height = this.height;
-            lightmap.texture.needsUpdate = true;
-
-            cb();
-          });
-
-          lightmap.buffer = null;
-          lightmap.texture.image.data = zeroUint8Array;
-          lightmap.texture.image.width = 1;
-          lightmap.texture.image.height = 1;
-        };
-
-        let pending = added.length + relodded.length;
-        function pend() {
-          if (--pending === 0) {
-            _done();
-          }
-        }
-        const _done = () => {
-          for (let i = 0; i < removed.length; i++) {
-            const {x, z, lightmap} = removed[i];
-            if (lightmap.buffer) {
-              this._buffers.free(lightmap.buffer);
-              lightmap.buffer = null;
-              lightmap.texture.image.data = zeroUint8Array;
-              lightmap.texture.image.width = 1;
-              lightmap.texture.image.height = 1;
-            }
-
-            removed.lightmap = null;
-            lightmap.removeRef();
-          }
-
-          cb();
-        };
-
-        if (pending > 0) {
-          let index = 0;
-          const _addChunk = chunk => {
-            const {x, z, lod} = chunk;
-
-            let {lightmap} = chunk;
-            if (!lightmap) {
-              lightmap = this.getLightmapAtIndex(x, z);
-              chunk.lightmap = lightmap;
-            }
-
-            if (!lightmap.buffer) {
-              lightmap.buffer = this._buffers.alloc();
-            }
-
-            _requestUpdate(lightmap, pend);
-          };
-          for (let i = 0; i < added.length; i++) {
-            _addChunk(added[i]);
-          }
-          for (let i = 0; i < relodded.length; i++) {
-            _addChunk(relodded[i]);
-          }
-        } else {
-          _done();
-        }
+      requestRender(lightmapBuffer, cb) {
+        this.worker.requestRender(lightmapBuffer, cb);
       }
     };
     Lightmapper.Ambient = Ambient;
@@ -545,27 +388,12 @@ class Lightmap {
       entityAddedCallback(entityElement) {
         entityElement.Lightmapper = Lightmapper;
 
-        const lightmapper = new Lightmapper({
-          width: NUM_CELLS,
-          height: NUM_CELLS_HEIGHT,
-          depth: NUM_CELLS,
-        });
+        const lightmapper = new Lightmapper();
         lightmapper.add(new Lightmapper.Sphere(0, 64 + 32, 0, 8, 2, Lightmapper.MaxBlend));
         entityElement.lightmapper = lightmapper;
-
-        let recurseTimeout = null;
-        const _recurse = () => {
-          lightmapper.debouncedUpdate();
-          recurseTimeout = setTimeout(_recurse, 1000);
-        };
-        _recurse();
-
-        entityElement._cleanup = () => {
-          clearTimeout(recurseTimeout);
-        };
       },
       entityRemovedCallback(entityElement) {
-        entityElement._cleanup();
+        // XXX
       },
     };
     elements.registerEntity(this, lightmapEntity);

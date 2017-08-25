@@ -4,6 +4,13 @@ const {
 } = require('./lib/constants/constants');
 self.module = {};
 
+const width = NUM_CELLS;
+const depth = NUM_CELLS;
+const height = NUM_CELLS_HEIGHT;
+const width1 = NUM_CELLS + 1;
+const depth1 = NUM_CELLS + 1;
+const width1depth1 = width1 * depth1;
+
 const DIRECTIONS = [
   [0, -1],
   [-1, 0],
@@ -248,8 +255,8 @@ const SHAPES = {
   'voxel': Voxel,
 };
 
-const _getUpdate = (ox, oz, buffer) => {
-  const array = new Uint8Array(buffer);
+const _getUpdate = (ox, oz, buffer, byteOffset) => {
+  const array = new Uint8Array(buffer, byteOffset);
 
   const chunkRange = [
     ox * width,
@@ -257,9 +264,6 @@ const _getUpdate = (ox, oz, buffer) => {
     (ox + 1) * width,
     (oz + 1) * depth,
   ];
-  const width1 = width + 1;
-  const depth1 = depth + 1;
-  const width1depth1 = width1 * depth1;
 
   const _renderShape = shape => {
     const shapeRange = shape.getRange();
@@ -398,18 +402,14 @@ const _intersectRect = (r1, r2) =>
    r2[1] > r1[3] ||
    r2[3] < r1[1]);
 
-let width, height, depth;
 const shapes = [];
+const lightmapRenderArray = new Uint8Array(width1 * depth1 * height);
 
 self.onmessage = e => {
   const {data} = e;
   const {type} = data;
 
-  if (type === 'init') {
-    width = data.width;
-    height = data.height;
-    depth = data.depth;
-  } else if (type === 'addShape') {
+  if (type === 'addShape') {
     const {spec} = data;
     const {type} = spec;
 
@@ -433,10 +433,59 @@ self.onmessage = e => {
       const index = shapes.findIndex(shape => shape.id === id);
       shapes.splice(index, 1);
     }
+  } else if (type === 'render') {
+    const {lightmapBuffer} = data;
+
+    let readByteOffset = 0;
+    let writeByteOffset = 0;
+    const numLightmaps = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + readByteOffset, 1)[0];
+    readByteOffset += 4;
+
+    for (let i = 0; i < numLightmaps; i++) {
+      const lightmapHeaderArray = new Int32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + readByteOffset, 2);
+      const x = lightmapHeaderArray[0];
+      const z = lightmapHeaderArray[1];
+      readByteOffset += 4 * 2;
+
+      const numPositions = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + readByteOffset, 1)[0];
+      readByteOffset += 4;
+
+      const positions = new Float32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + readByteOffset, numPositions);
+      readByteOffset += 4 * numPositions;
+
+      // new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + writeByteOffset, 1)[0] = numPositions;
+      const chunkWriteByteOffset = writeByteOffset;
+      writeByteOffset += 4;
+
+      const lightmapsLength = numPositions / 3;
+      const lightmap = new Uint8Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + writeByteOffset, lightmapsLength);
+      writeByteOffset += lightmapsLength;
+      const alignDiff = writeByteOffset % 4;
+      if (alignDiff > 0) {
+        writeByteOffset += 4 - alignDiff;
+      }
+
+      _getUpdate(x, z, lightmapRenderArray.buffer, 0);
+
+      const offsetX = x * width;
+      const offsetZ = z * depth;
+      for (let i = 0; i < lightmapsLength; i++) {
+        const baseIndex = i * 3;
+        const dx = Math.min(Math.max(Math.floor(positions[baseIndex + 0] - offsetX), 0), NUM_CELLS + 1);
+        const dy = Math.min(Math.max(Math.floor(positions[baseIndex + 1]), 0), NUM_CELLS_HEIGHT);
+        const dz = Math.min(Math.max(Math.floor(positions[baseIndex + 2] - offsetZ), 0), NUM_CELLS + 1);
+        const lightmapIndex = dx + (dz * width1) + (dy * width1depth1);
+        lightmap[i] = lightmapRenderArray[lightmapIndex];
+      }
+
+      new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + chunkWriteByteOffset, 1)[0] = lightmapsLength; // do this last to not scribble
+    }
+
+    postMessage(lightmapBuffer, [lightmapBuffer.buffer]);
   } else if (type === 'requestUpdate') {
     const {ox, oz, buffer} = data;
 
-    const resultBuffer = _getUpdate(ox, oz, buffer);
+    const resultBuffer = _getUpdate(ox, oz, buffer, 0);
     postMessage(resultBuffer, [resultBuffer]);
   } else {
     console.warn('unknown lightmap message type:', JSON.stringify(type));
