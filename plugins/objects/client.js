@@ -15,6 +15,8 @@ const protocolUtils = require('./lib/utils/protocol-utils');
 const objectsLib = require('./lib/objects/client/index');
 
 const NUM_POSITIONS_CHUNK = 800 * 1024;
+const LIGHTMAP_BUFFER_SIZE = 100 * 1024 * 4;
+const NUM_BUFFERS = RANGE * RANGE * 9;
 const TEXTURE_SIZE = 512;
 const SIDES = ['left', 'right'];
 
@@ -57,12 +59,17 @@ class Objects {
       }
       this.normalMatrix = normalMatrices[camera.name];
     }
-    function _uniformsNeedUpdate(camera) {
+    function _uniformsNeedUpdate(camera, material) {
       if (uniformsNeedUpdate[camera.name]) {
         uniformsNeedUpdate[camera.name] = false;
         return true;
       } else {
-        return false;
+        if (material.uniforms.selectedObject.value !== -1) {
+          uniformsNeedUpdate[camera.name] = true;
+          return true;
+        } else {
+          return false;
+        }
       }
     }
 
@@ -75,14 +82,14 @@ class Objects {
           type: 't',
           value: null,
         },
-        lightMap: {
+        /* lightMap: {
           type: 't',
           value: null,
         },
         useLightMap: {
           type: 'f',
           value: 0,
-        },
+        }, */
         d: {
           type: 'v2',
           value: new THREE.Vector2(),
@@ -91,10 +98,10 @@ class Objects {
           type: 'f',
           value: -1,
         },
-        sunIntensity: {
+        /* sunIntensity: {
           type: 'f',
           value: 0,
-        },
+        }, */
         worldTime: {
           type: 'f',
           value: 0,
@@ -104,11 +111,13 @@ class Objects {
 precision highp float;
 precision highp int;
 attribute vec3 frame;
+attribute float lightmap;
 attribute float objectIndex;
 
 varying vec3 vPosition;
 varying vec2 vUv;
 varying vec3 vFrame;
+varying float vLightmap;
 varying float vObjectIndex;
 
 void main() {
@@ -118,6 +127,7 @@ void main() {
   vPosition = position.xyz;
   vUv = uv;
   vFrame = frame;
+  vLightmap = lightmap;
   vObjectIndex = objectIndex;
 }
       `,
@@ -128,16 +138,17 @@ precision highp int;
 #define DOUBLE_SIDED
 uniform vec3 ambientLightColor;
 uniform sampler2D map;
-uniform sampler2D lightMap;
-uniform float useLightMap;
+// uniform sampler2D lightMap;
+// uniform float useLightMap;
 uniform vec2 d;
 uniform float selectedObject;
-uniform float sunIntensity;
+// uniform float sunIntensity;
 uniform float worldTime;
 
 varying vec3 vPosition;
 varying vec2 vUv;
 varying vec3 vFrame;
+varying float vLightmap;
 varying float vObjectIndex;
 
 float speed = 1.0;
@@ -157,21 +168,24 @@ void main() {
   if ( diffuseColor.a < ALPHATEST ) discard;
 #endif
 
+  vec3 lightColor;
   if (abs(selectedObject - vObjectIndex) < 0.5) {
     diffuseColor.rgb = mix(diffuseColor.rgb, blueColor, 0.5);
-  }
-
-  vec3 lightColor;
-  if (useLightMap > 0.0) {
-    float u = (
-      floor(clamp(vPosition.x - d.x, 0.0, ${(NUM_CELLS).toFixed(8)})) +
-      (floor(clamp(vPosition.z - d.y, 0.0, ${(NUM_CELLS).toFixed(8)})) * ${(NUM_CELLS + 1).toFixed(8)}) +
-      0.5
-    ) / (${(NUM_CELLS + 1).toFixed(8)} * ${(NUM_CELLS + 1).toFixed(8)});
-    float v = (floor(vPosition.y) + 0.5) / ${NUM_CELLS_HEIGHT.toFixed(8)};
-    lightColor = texture2D( lightMap, vec2(u, v) ).rgb;
+    lightColor = vec3(1.0);
   } else {
-    lightColor = vec3(sunIntensity);
+    lightColor = vec3(floor(vLightmap * 4.0 + 0.5) / 4.0);
+    /* vec3 lightColor;
+    if (useLightMap > 0.0) {
+      float u = (
+        floor(clamp(vPosition.x - d.x, 0.0, ${(NUM_CELLS).toFixed(8)})) +
+        (floor(clamp(vPosition.z - d.y, 0.0, ${(NUM_CELLS).toFixed(8)})) * ${(NUM_CELLS + 1).toFixed(8)}) +
+        0.5
+      ) / (${(NUM_CELLS + 1).toFixed(8)} * ${(NUM_CELLS + 1).toFixed(8)});
+      float v = (floor(vPosition.y) + 0.5) / ${NUM_CELLS_HEIGHT.toFixed(8)};
+      lightColor = texture2D( lightMap, vec2(u, v) ).rgb;
+    } else {
+      lightColor = vec3(sunIntensity);
+    } */
   }
 
   vec3 outgoingLight = diffuseColor.rgb * (0.1 + lightColor * 0.9);
@@ -235,7 +249,8 @@ void main() {
     );
 
     const worker = new Worker('archae/plugins/_plugins_objects/build/worker.js');
-    const buffers = bffr(NUM_POSITIONS_CHUNK, RANGE * RANGE * 9);
+    const buffers = bffr(NUM_POSITIONS_CHUNK, NUM_BUFFERS);
+    let lightmapBuffer = new Uint8Array(LIGHTMAP_BUFFER_SIZE * NUM_BUFFERS);
     let cullBuffer = new ArrayBuffer(4096);
     let queues = {};
     let numRemovedQueues = 0;
@@ -335,6 +350,17 @@ void main() {
 
       worker.postMessage(localMessage);
     };
+    worker.requestLightmaps = (lightmapBuffer, cb) => {
+      const id = _makeId();
+      worker.postMessage({
+        type: 'lightmaps',
+        id,
+        args: {
+          lightmapBuffer,
+        },
+      }, [lightmapBuffer.buffer]);
+      queues[id] = cb;
+    };
     worker.requestCull = (hmdPosition, projectionMatrix, matrixWorldInverse, cb) => {
       const id = _makeId();
       worker.postMessage({
@@ -386,6 +412,13 @@ void main() {
       worker.postMessage(localMessage);
       queues[id] = cb;
     };
+    worker.requestResponse = (id, result, transfers) => {
+      worker.postMessage({
+        type: 'response',
+        id,
+        result,
+      }, transfers);
+    };
     worker.onmessage = e => {
       const {data} = e;
       const {type, args} = data;
@@ -398,6 +431,21 @@ void main() {
         queues[id] = null;
 
         _cleanupQueues();
+      } else if (type === 'request') {
+        const [id] = args;
+        const {lightmapBuffer} = data;
+
+        if (lightmapper) {
+          lightmapper.requestRender(lightmapBuffer, lightmapBuffer => {
+            worker.requestResponse(id, lightmapBuffer, [lightmapBuffer.buffer]);
+          });
+        } else {
+          const lightmapArray = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset);
+          const numLightmaps = lightmapArray;
+          for (let i = 0; i < numLightmaps; i++) {
+            lightmapArray[i] = 0;
+          }
+        }
       } else if (type === 'chunkUpdate') {
         const [x, z] = args;
         const chunk = chunker.getChunk(x, z);
@@ -406,7 +454,6 @@ void main() {
         }
         _debouncedRequestRefreshObjectsChunks();
       } else if (type === 'objectAdded') {
-return; // XXX rewrite this
         const [n, x, z, objectIndex, position, rotation, value] = args;
 
         const objectApi = objectApis[n];
@@ -422,7 +469,6 @@ return; // XXX rewrite this
           );
         }
       } else if (type === 'objectRemoved') {
-return; // XXX rewrite this
         const [n, x, z, objectIndex, startIndex, endIndex] = args;
 
         if (startIndex !== -1) {
@@ -443,7 +489,6 @@ return; // XXX rewrite this
           objectApi.removedCallback(_getObjectIndex(x, z, objectIndex), x, z, objectIndex);
         }
       } else if (type === 'objectUpdated') {
-return; // XXX rewrite this
         const [n, x, z, objectIndex, position, rotation, value] = args;
 
         const objectApi = objectApis[n];
@@ -462,13 +507,14 @@ return; // XXX rewrite this
     });
     const _makeObjectsChunkMesh = (chunk, objectsChunkData) => {
       const {x, z} = chunk;
-      const {positions: newPositions, uvs: newUvs, frames: newFrames, objectIndices: newObjectIndices, indices: newIndices} = objectsChunkData;
+      const {positions: newPositions, uvs: newUvs, frames: newFrames, lightmaps: newLightmaps, objectIndices: newObjectIndices, indices: newIndices} = objectsChunkData;
 
       // geometry
 
       const gbuffer = geometryBuffer.alloc();
-      const {index, slices: {positions, uvs, frames, objectIndices, indices}} = gbuffer;
+      const {index, slices: {positions, uvs, frames, lightmaps, objectIndices, indices}} = gbuffer;
 
+      const objectIndexOffset = index * objectIndices.length;
       if (newPositions.length > 0) {
         positions.set(newPositions);
         renderer.updateAttribute(objectsObject.geometry.attributes.position, index * positions.length, newPositions.length, false);
@@ -479,7 +525,12 @@ return; // XXX rewrite this
         frames.set(newFrames);
         renderer.updateAttribute(objectsObject.geometry.attributes.frame, index * frames.length, newFrames.length, false);
 
-        objectIndices.set(newObjectIndices);
+        lightmaps.set(newLightmaps);
+        renderer.updateAttribute(objectsObject.geometry.attributes.lightmap, index * lightmaps.length, newLightmaps.length, false);
+
+        for (let i = 0; i < newObjectIndices.length; i++)  {
+          objectIndices[i] = newObjectIndices[i] + objectIndexOffset; // XXX do this in the worker
+        }
         renderer.updateAttribute(objectsObject.geometry.attributes.objectIndex, index * objectIndices.length, newObjectIndices.length, false);
 
         const positionOffset = index * (positions.length / 3);
@@ -506,13 +557,16 @@ return; // XXX rewrite this
 
       const mesh = {
         material,
-        indexOffset: index * indices.length,
         renderListEntry: {
           object: objectsObject,
           material,
           groups: [],
         },
+        index,
+        objectIndexOffset,
+        indexOffset: index * indices.length,
         offset: new THREE.Vector2(x, z),
+        lightmaps,
         lightmap: null,
         destroy: () => {
           buffers.free(objectsChunkData.buffer);
@@ -521,12 +575,12 @@ return; // XXX rewrite this
           material.dispose();
 
           if (mesh.lightmap) {
-            _unbindLightmap(mesh);
+            // _unbindLightmap(mesh);
           }
         },
       };
       if (lightmapper && chunk.lod === 1) {
-        _bindLightmap(mesh);
+        // _bindLightmap(mesh);
       }
 
       return mesh;
@@ -616,10 +670,10 @@ return; // XXX rewrite this
     const _bindLightmapper = lightmapElement => {
       lightmapper = lightmapElement.lightmapper;
 
-      _bindLightmaps();
+      // _bindLightmaps();
     };
     const _unbindLightmapper = () => {
-      _unbindLightmaps();
+      // _unbindLightmaps();
 
       lightmapper = null;
     };
@@ -762,27 +816,25 @@ return; // XXX rewrite this
       }
 
       addObject(name, position = zeroVector, rotation = zeroQuaternion, value = 0) {
-        worker.requestAddObject(name, position.toArray(), rotation.toArray(), value)
-          .then(() => {
-            const x = Math.floor(position.x / NUM_CELLS);
-            const z = Math.floor(position.z / NUM_CELLS);
-            const chunk = chunker.getChunk(x, z);
-            if (chunk) {
-              chunk.lod = -1; // force chunk refresh
-            }
-            _debouncedRequestRefreshObjectsChunks();
-          });
+        worker.requestAddObject(name, position.toArray(), rotation.toArray(), value);
+
+        const x = Math.floor(position.x / NUM_CELLS);
+        const z = Math.floor(position.z / NUM_CELLS);
+        const chunk = chunker.getChunk(x, z);
+        if (chunk) {
+          chunk.lod = -1; // force chunk refresh
+        }
+        _debouncedRequestRefreshObjectsChunks();
       }
 
       removeObject(x, z, objectIndex) {
-        worker.requestRemoveObject(x, z, objectIndex)
-          .then(() => {
-            const chunk = chunker.getChunk(x, z);
-            if (chunk) {
-              chunk.lod = -1; // force chunk refresh
-            }
-            _debouncedRequestRefreshObjectsChunks();
-          });
+        worker.requestRemoveObject(x, z, objectIndex);
+
+        const chunk = chunker.getChunk(x, z);
+        if (chunk) {
+          chunk.lod = -1; // force chunk refresh
+        }
+        _debouncedRequestRefreshObjectsChunks();
       }
 
       setData(x, z, objectIndex, value) {
@@ -872,6 +924,11 @@ return; // XXX rewrite this
           size: 3 * 3 * 4,
         },
         {
+          name: 'lightmaps',
+          constructor: Uint8Array,
+          size: 3 * 1,
+        },
+        {
           name: 'objectIndices',
           constructor: Float32Array,
           size: 3 * 4,
@@ -884,7 +941,7 @@ return; // XXX rewrite this
       ]
     );
     const objectsObject = (() => {
-      const {positions, uvs, frames, objectIndices, indices} = geometryBuffer.getAll();
+      const {positions, uvs, frames, lightmaps, objectIndices, indices} = geometryBuffer.getAll();
 
       const geometry = new THREE.BufferGeometry();
       const positionAttribute = new THREE.BufferAttribute(positions, 3);
@@ -896,6 +953,9 @@ return; // XXX rewrite this
       const frameAttribute = new THREE.BufferAttribute(frames, 3);
       frameAttribute.dynamic = true;
       geometry.addAttribute('frame', frameAttribute);
+      const lightmapAttribute = new THREE.BufferAttribute(lightmaps, 1, true);
+      lightmapAttribute.dynamic = true;
+      geometry.addAttribute('lightmap', lightmapAttribute);
       const objectIndexAttribute = new THREE.BufferAttribute(objectIndices, 1);
       objectIndexAttribute.dynamic = true;
       geometry.addAttribute('objectIndex', objectIndexAttribute);
@@ -958,9 +1018,9 @@ return; // XXX rewrite this
           const {lod, data: objectsChunkMesh} = chunk;
 
           if (!objectsChunkMesh.lightmap && lod === 1) {
-            _bindLightmap(objectsChunkMesh);
+            // _bindLightmap(objectsChunkMesh);
           } else if (objectsChunkMesh.lightmap && lod !== 1) {
-            _unbindLightmap(objectsChunkMesh);
+            // _unbindLightmap(objectsChunkMesh);
           }
         }
       }
@@ -1017,7 +1077,7 @@ return; // XXX rewrite this
 
                   const objectsChunkMesh = objectsChunkMeshes[_getChunkIndex(hoveredTrackedObject.x, hoveredTrackedObject.z)];
                   if (objectsChunkMesh) {
-                    objectsChunkMesh.material.uniforms.selectedObject.value = hoveredTrackedObject.objectIndex;
+                    objectsChunkMesh.material.uniforms.selectedObject.value = hoveredTrackedObject.objectIndex + objectsChunkMesh.objectIndexOffset;
                   }
                 } else {
                   hoveredTrackedObjects[side].clear();
@@ -1135,14 +1195,14 @@ return; // XXX rewrite this
       };
       const _updateMaterial = () => {
         const worldTime = world.getWorldTime();
-        const dayNightSkyboxEntity = elements.getEntitiesElement().querySelector(DAY_NIGHT_SKYBOX_PLUGIN);
-        const sunIntensity = (dayNightSkyboxEntity && dayNightSkyboxEntity.getSunIntensity) ? dayNightSkyboxEntity.getSunIntensity() : 0;
+        /* const dayNightSkyboxEntity = elements.getEntitiesElement().querySelector(DAY_NIGHT_SKYBOX_PLUGIN);
+        const sunIntensity = (dayNightSkyboxEntity && dayNightSkyboxEntity.getSunIntensity) ? dayNightSkyboxEntity.getSunIntensity() : 0; */
 
         for (const index in objectsChunkMeshes) {
           const objectsChunkMesh = objectsChunkMeshes[index];
           if (objectsChunkMesh) {
             objectsChunkMesh.material.uniforms.worldTime.value = worldTime;
-            objectsChunkMesh.material.uniforms.sunIntensity.value = sunIntensity;
+            // objectsChunkMesh.material.uniforms.sunIntensity.value = sunIntensity;
           }
         }
       };
@@ -1187,6 +1247,57 @@ return; // XXX rewrite this
           }))
     )
       .then(() => {
+        const _debouncedRefreshLightmaps = _debounce(next => {
+          const requestObjectChunkMeshes = [];
+          for (const index in objectsChunkMeshes) {
+            const trackedObjectChunkMeshes = objectsChunkMeshes[index];
+
+            if (trackedObjectChunkMeshes) {
+              requestObjectChunkMeshes.push(trackedObjectChunkMeshes);
+            }
+          }
+
+          let byteOffset = 0;
+          new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, 1)[0] = requestObjectChunkMeshes.length;
+          byteOffset += 4;
+
+          for (let i = 0; i < requestObjectChunkMeshes.length; i++) {
+            const trackedObjectChunkMeshes = requestObjectChunkMeshes[i];
+            const {offset: {x, y}} = trackedObjectChunkMeshes;
+
+            const lightmapRequestHeaderBuffer = new Int32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, 2);
+            lightmapRequestHeaderBuffer[0] = x;
+            lightmapRequestHeaderBuffer[1] = y;
+            byteOffset += 4 * 2;
+          }
+
+          worker.requestLightmaps(lightmapBuffer, newLightmapBuffer => {
+            let byteOffset = 0;
+            for (let i = 0; i < requestObjectChunkMeshes.length; i++) {
+              const lightmapsLength = new Uint32Array(newLightmapBuffer.buffer, newLightmapBuffer.byteOffset + byteOffset, 1)[0];
+              byteOffset += 4;
+
+              const newLightmaps = new Uint8Array(newLightmapBuffer.buffer, newLightmapBuffer.byteOffset + byteOffset, lightmapsLength);
+              byteOffset += lightmapsLength;
+              const alignDiff = byteOffset % 4;
+              if (alignDiff > 0) {
+                byteOffset += 4 - alignDiff;
+              }
+
+              if (newLightmaps.length > 0) {
+                const trackedObjectChunkMeshes = requestObjectChunkMeshes[i];
+                const {index, lightmaps} = trackedObjectChunkMeshes;
+                lightmaps.set(newLightmaps);
+                renderer.updateAttribute(objectsObject.geometry.attributes.lightmap, index * lightmaps.length, newLightmaps.length, false);
+              }
+            }
+
+            lightmapBuffer = newLightmapBuffer;
+
+            next();
+          });
+        });
+
         const _requestCull = (hmdPosition, projectionMatrix, matrixWorldInverse, cb) => {
           worker.requestCull(hmdPosition, projectionMatrix, matrixWorldInverse, cullBuffer => {
             cb(protocolUtils.parseCull(cullBuffer));
@@ -1219,6 +1330,12 @@ return; // XXX rewrite this
           refreshChunksTimeout = setTimeout(_recurseRefreshChunks, 1000);
         };
         _recurseRefreshChunks();
+        let refreshLightmapsTimeout = null;
+        const _recurseRefreshLightmaps = () => {
+          _debouncedRefreshLightmaps();
+          refreshLightmapsTimeout = setTimeout(_recurseRefreshLightmaps, 1000 / 10);
+        };
+        _recurseRefreshLightmaps();
         let refreshCullTimeout = null;
         const _recurseRefreshCull = () => {
           _debouncedRefreshCull();
@@ -1228,6 +1345,7 @@ return; // XXX rewrite this
 
         cleanups.push(() => {
           clearTimeout(refreshChunksTimeout);
+          clearTimeout(refreshLightmapsTimeout);
           clearTimeout(refreshCullTimeout);
         });
       });

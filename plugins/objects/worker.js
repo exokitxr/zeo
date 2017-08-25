@@ -22,6 +22,7 @@ const {
 const protocolUtils = require('./lib/utils/protocol-utils');
 
 const NUM_POSITIONS_CHUNK = 500 * 1024;
+const LIGHTMAP_BUFFER_SIZE = 100 * 1024 * 4;
 const NUM_CELLS_HALF = NUM_CELLS / 2;
 const NUM_CELLS_CUBE = Math.sqrt((NUM_CELLS_HALF + 16) * (NUM_CELLS_HALF + 16) * 3); // larger than the actual bouinding box to account for geometry overflow
 
@@ -238,6 +239,7 @@ connection.on('message', e => {
       const {args: {x, z, n, matrix, value}} = m;
       const chunk = zde.getChunk(x, z);
       const index = chunk.addObject(n, matrix);
+      chunk.geometry = null;
 
       const positionArray = matrix.slice(0, 3);
       const position = new THREE.Vector3().fromArray(positionArray);
@@ -261,6 +263,7 @@ connection.on('message', e => {
       const {args: {x, z, index}} = m;
       const chunk = zde.getChunk(x, z);
       chunk.removeObject(index);
+      chunk.geometry = null;
 
       const trackedObject = trackedObjects[index];
       const objectApi = objectApis[trackedObject.n];
@@ -281,6 +284,7 @@ connection.on('message', e => {
       const {args: {x, z, index, value}} = m;
       const chunk = zde.getChunk(x, z);
       chunk.setObjectData(index, value);
+      chunk.geometry = null;
 
       const trackedObject = chunk.trackedObjects[index];
       const objectApi = objectApis[trackedObject.n];
@@ -320,13 +324,26 @@ function mod(value, divisor) {
   return n < 0 ? (divisor + n) : n;
 }
 const _getChunkIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
+const _copyIndices = (src, dst, startIndexIndex, startAttributeIndex) => {
+  for (let i = 0; i < src.length; i++) {
+    dst[startIndexIndex + i] = src[i] + startAttributeIndex;
+  }
+};
 
 const objectChunkMeshes = {};
+
+const _decorateChunkGeometry = chunk => {
+  if (!chunk.geometry) {
+    chunk.geometry = _makeChunkGeometry(chunk);
+  }
+  return chunk;
+};
 const _requestChunk = (x, z) => {
   const chunk = zde.getChunk(x, z);
 
   if (chunk) {
-    return Promise.resolve(chunk);
+    return Promise.resolve(chunk)
+      .then(_decorateChunkGeometry);
   } else {
     return fetch(`/archae/objects/chunks?x=${x}&z=${z}`, {
       credentials: 'include',
@@ -341,10 +358,20 @@ const _requestChunk = (x, z) => {
           chunk.trackedObjects[i] = new TrackedObject(n, position, rotation, value, -1, -1);
         });
         return chunk;
-      });
+      })
+      .then(_decorateChunkGeometry);
   }
 };
-
+const _requestLightmaps = (lightmapBuffer, cb) => {
+  const id = _makeId();
+  postMessage({
+    type: 'request',
+    method: 'render',
+    args: [id],
+    lightmapBuffer,
+  }, [lightmapBuffer.buffer]);
+  queues[id] = cb;
+};
 const _getCull = (hmdPosition, projectionMatrix, matrixWorldInverse) => {
   localFrustum.setFromMatrix(localMatrix.fromArray(projectionMatrix).multiply(localMatrix2.fromArray(matrixWorldInverse)));
 
@@ -405,9 +432,20 @@ const _makeGeometeriesBuffer = constructor => {
   }
   return result;
 };
-const _copyIndices = (src, dst, startIndexIndex, startAttributeIndex) => {
-  for (let i = 0; i < src.length; i++) {
-    dst[startIndexIndex + i] = src[i] + startAttributeIndex;
+
+let queues = {};
+let numRemovedQueues = 0;
+const _cleanupQueues = () => {
+  if (++numRemovedQueues >= 16) {
+    const newQueues = {};
+    for (const id in queues) {
+      const entry = queues[id];
+      if (entry !== null) {
+        newQueues[id] = entry;
+      }
+    }
+    queues = newQueues;
+    numRemovedQueues = 0;
   }
 };
 
@@ -553,312 +591,440 @@ self.onmessage = e => {
   const {data} = e;
   const {type} = data;
 
-  if (type === 'registerGeometry') {
-    const {name, args, src} = data;
-    const fn = Reflect.construct(Function, args.concat(src));
+  switch (type) {
+    case 'registerGeometry': {
+      const {name, args, src} = data;
+      const fn = Reflect.construct(Function, args.concat(src));
 
-    let geometry;
-    try {
-      geometry = fn(registerApi);
-    } catch (err) {
-      console.warn(err);
-    }
-
-    const frameAttribute = geometry.getAttribute('frame');
-    if (!frameAttribute) {
-      const frames = new Float32Array(geometry.getAttribute('position').array.length);
-      geometry.addAttribute('frame', new THREE.BufferAttribute(frames, 3));
-    }
-
-    if (!geometry.boundingBox) {
-      geometry.computeBoundingBox();
-    }
-
-    const n = murmur(name);
-    let entry = geometries[n];
-    if (!entry) {
-      entry = [];
-      geometries[n] = entry;
-    }
-    entry.push(geometry);
-  } else if (type === 'registerObject') {
-    const {n, added, removed, updated} = data;
-    let entry = objectApis[n];
-    if (!entry) {
-      entry = {
-        added: 0,
-        removed: 0,
-        updated: 0,
-      };
-      objectApis[n] = entry;
-    }
-    if (added) {
-      entry.added++;
-
-      if (entry.added === 1) {
-        for (let i = 0; i < zde.chunks.length; i++) {
-          const chunk = zde.chunks[i];
-
-          for (const k in chunk.trackedObjects) {
-            const trackedObject = chunk.trackedObjects[k];
-
-            if (trackedObject && trackedObject.n === n) {
-              postMessage({
-                type: 'objectAdded',
-                args: [trackedObject.n, chunk.x, chunk.z, parseInt(k, 10), trackedObject.position, trackedObject.rotation, trackedObject.value],
-              });
-            }
-          }
-        }
-      }
-    }
-    if (removed) {
-      entry.removed++;
-    }
-    if (updated) {
-      entry.updated++;
-    }
-  } else if (type === 'unregisterObject') {
-    const {n, added, removed, updated} = data;
-    const entry = objectApis[n];
-    if (added) {
-      entry.added--;
-    }
-    if (removed) {
-      entry.removed--;
-
-      /* if (entry.removed === 0) { // XXX figure out how to call this, since the callbacks will be removed in the client by the time this fires
-        for (let i = 0; i < zde.chunks.length; i++) {
-          const chunk = zde.chunks[i];
-
-          for (const k in chunk.trackedObjects) {
-            const trackedObject = chunk.trackedObjects[k];
-
-            if (trackedObject.n === n) {
-              postMessage({
-                type: 'objectRemoved',
-                args: [trackedObject.n, chunk.x, chunk.z, parseInt(k, 10), trackedObject.position, trackedObject.rotation, trackedObject.value],
-              });
-            }
-          }
-        }
-      } */
-    }
-    if (updated) {
-      entry.updated--;
-    }
-    if (entry.added === 0 && entry.removed === 0 && entry.updated === 0) {
-      objectApis[n] = null;
-    }
-  } else if (type === 'registerTexture') {
-    const {name, uv} = data;
-    const n = murmur(name);
-    textures[n] = uv;
-  } else if (type === 'addObject') {
-    const {name, position: positionArray, rotation: rotationArray, value} = data;
-
-    const x = Math.floor(positionArray[0] / NUM_CELLS);
-    const z = Math.floor(positionArray[2] / NUM_CELLS);
-    _requestChunk(x, z)
-      .then(chunk => {
-        const n = murmur(name);
-        const matrix = positionArray.concat(rotationArray).concat(oneVector.toArray());
-        const index = chunk.addObject(n, matrix);
-        const position = new THREE.Vector3().fromArray(positionArray);
-        const rotation = new THREE.Quaternion().fromArray(rotationArray);
-        chunk.trackedObjects[index] = new TrackedObject(n, position, rotation, value, -1, -1);
-
-        connection.send(JSON.stringify({
-          method: 'addObject',
-          args: {
-            x,
-            z,
-            n,
-            matrix,
-            value,
-          },
-        }));
-      })
-      .catch(err => {
+      let geometry;
+      try {
+        geometry = fn(registerApi);
+      } catch (err) {
         console.warn(err);
-      });
-  } else if (type === 'removeObject') {
-    const {x, z, index} = data;
-
-    const chunk = zde.getChunk(x, z);
-    if (chunk) {
-      chunk.removeObject(index);
-
-      const trackedObject = chunk.trackedObjects[index];
-      const objectApi = objectApis[trackedObject.n];
-      if (objectApi && objectApi.removed) {
-        postMessage({
-          type: 'objectRemoved',
-          args: [trackedObject.n, x, z, index, trackedObject.startIndex, trackedObject.endIndex],
-        });
       }
 
-      chunk.trackedObjects[index] = null;
+      const frameAttribute = geometry.getAttribute('frame');
+      if (!frameAttribute) {
+        const frames = new Float32Array(geometry.getAttribute('position').array.length);
+        geometry.addAttribute('frame', new THREE.BufferAttribute(frames, 3));
+      }
+
+      if (!geometry.boundingBox) {
+        geometry.computeBoundingBox();
+      }
+
+      const n = murmur(name);
+      let entry = geometries[n];
+      if (!entry) {
+        entry = [];
+        geometries[n] = entry;
+      }
+      entry.push(geometry);
+      break;
     }
+    case 'registerObject': {
+      const {n, added, removed, updated} = data;
+      let entry = objectApis[n];
+      if (!entry) {
+        entry = {
+          added: 0,
+          removed: 0,
+          updated: 0,
+        };
+        objectApis[n] = entry;
+      }
+      if (added) {
+        entry.added++;
 
-    connection.send(JSON.stringify({
-      method: 'removeObject',
-      args: {
-        x,
-        z,
-        index,
-      },
-    }));
-  } else if (type === 'setObjectData') {
-    const {x, z, index, value} = data;
+        if (entry.added === 1) {
+          for (let i = 0; i < zde.chunks.length; i++) {
+            const chunk = zde.chunks[i];
 
-    _requestChunk(x, z)
-      .then(chunk => {
-        chunk.setObjectData(index, value);
+            for (const k in chunk.trackedObjects) {
+              const trackedObject = chunk.trackedObjects[k];
+
+              if (trackedObject && trackedObject.n === n) {
+                postMessage({
+                  type: 'objectAdded',
+                  args: [trackedObject.n, chunk.x, chunk.z, parseInt(k, 10), trackedObject.position, trackedObject.rotation, trackedObject.value],
+                });
+              }
+            }
+          }
+        }
+      }
+      if (removed) {
+        entry.removed++;
+      }
+      if (updated) {
+        entry.updated++;
+      }
+      break;
+    }
+    case 'unregisterObject': {
+      const {n, added, removed, updated} = data;
+      const entry = objectApis[n];
+      if (added) {
+        entry.added--;
+      }
+      if (removed) {
+        entry.removed--;
+
+        /* if (entry.removed === 0) { // XXX figure out how to call this, since the callbacks will be removed in the client by the time this fires
+          for (let i = 0; i < zde.chunks.length; i++) {
+            const chunk = zde.chunks[i];
+
+            for (const k in chunk.trackedObjects) {
+              const trackedObject = chunk.trackedObjects[k];
+
+              if (trackedObject.n === n) {
+                postMessage({
+                  type: 'objectRemoved',
+                  args: [trackedObject.n, chunk.x, chunk.z, parseInt(k, 10), trackedObject.position, trackedObject.rotation, trackedObject.value],
+                });
+              }
+            }
+          }
+        } */
+      }
+      if (updated) {
+        entry.updated--;
+      }
+      if (entry.added === 0 && entry.removed === 0 && entry.updated === 0) {
+        objectApis[n] = null;
+      }
+      break;
+    }
+    case 'registerTexture': {
+      const {name, uv} = data;
+      const n = murmur(name);
+      textures[n] = uv;
+      break;
+    }
+    case 'addObject': {
+      const {name, position: positionArray, rotation: rotationArray, value} = data;
+
+      const x = Math.floor(positionArray[0] / NUM_CELLS);
+      const z = Math.floor(positionArray[2] / NUM_CELLS);
+      _requestChunk(x, z)
+        .then(chunk => {
+          const n = murmur(name);
+          const matrix = positionArray.concat(rotationArray).concat(oneVector.toArray());
+          const index = chunk.addObject(n, matrix);
+          chunk.geometry = null;
+          const position = new THREE.Vector3().fromArray(positionArray);
+          const rotation = new THREE.Quaternion().fromArray(rotationArray);
+          chunk.trackedObjects[index] = new TrackedObject(n, position, rotation, value, -1, -1);
+
+          connection.send(JSON.stringify({
+            method: 'addObject',
+            args: {
+              x,
+              z,
+              n,
+              matrix,
+              value,
+            },
+          }));
+        })
+        .catch(err => {
+          console.warn(err);
+        });
+      break;
+    }
+    case 'removeObject': {
+      const {x, z, index} = data;
+
+      const chunk = zde.getChunk(x, z);
+      if (chunk) {
+        chunk.removeObject(index);
+        chunk.geometry = null;
 
         const trackedObject = chunk.trackedObjects[index];
         const objectApi = objectApis[trackedObject.n];
-        if (objectApi && objectApi.updated) {
-          trackedObject.value = value;
-
-          postMessage({
-            type: 'objectUpdated',
-            args: [trackedObject.n, x, z, index, trackedObject.position.toArray(), trackedObject.rotation.toArray(), trackedObject.value],
-          });
-        }
-
-        connection.send(JSON.stringify({
-          method: 'setObjectData',
-          args: {
-            x,
-            z,
-            index,
-            value,
-          },
-        }));
-      })
-      .catch(err => {
-        console.warn(err);
-      });
-  } else if (type === 'generate') {
-    const {id, args} = data;
-    const {x, z} = args;
-    let {buffer: resultBuffer} = args;
-
-    _requestChunk(x, z)
-      .then(chunk => {
-        const geometry = _makeChunkGeometry(chunk);
-
-        resultBuffer = protocolUtils.stringifyGeometry(geometry, resultBuffer, 0);
-        postMessage({
-          type: 'response',
-          args: [id],
-          result: resultBuffer,
-        }, [resultBuffer]);
-
-        const {geometries: localGeometries} = geometry;
-        const trackedObjectChunkMeshes = {
-          array: Array(NUM_CHUNKS_HEIGHT),
-          groups: new Int32Array(NUM_RENDER_GROUPS * 2),
-        };
-        for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
-          const {indexRange, boundingSphere} = localGeometries[i];
-          trackedObjectChunkMeshes.array[i] = {
-            // offset: new THREE.Vector3(x, i, z),
-            indexRange,
-            boundingSphere,
-          };
-        }
-        objectChunkMeshes[_getChunkIndex(x, z)] = trackedObjectChunkMeshes;
-
-        const {objects} = geometry
-        const numObjects = objects.length / 3;
-        for (let i = 0; i < numObjects; i++) {
-          const baseIndex = i * 3;
-          const index = objects[baseIndex + 0];
-          const startIndex = objects[baseIndex + 1];
-          const endIndex = objects[baseIndex + 2];
-
-          const trackedObject = chunk.trackedObjects[index];
-          trackedObject.startIndex = startIndex;
-          trackedObject.endIndex = endIndex;
-
-          if (!trackedObject.calledBack) {
-            const objectApi = objectApis[trackedObject.n];
-            if (objectApi && objectApi.added) {
-              postMessage({
-                type: 'objectAdded',
-                args: [trackedObject.n, x, z, index, trackedObject.position.toArray(), trackedObject.rotation.toArray(), trackedObject.value],
-              });
-            }
-            trackedObject.calledBack = true;
-          }
-        }
-      })
-      .catch(err => {
-        console.warn(err);
-      });
-  } else if (type === 'ungenerate') {
-    const {args} = data;
-    const {x, z} = args;
-
-    const chunk = zde.getChunk(x, z);
-    zde.removeChunk(x, z);
-
-    objectChunkMeshes[_getChunkIndex(x, z)] = null;
-
-    for (const k in chunk.trackedObjects) {
-      const trackedObject = chunk.trackedObjects[k];
-
-      if (trackedObject) {
-        const objectApi = objectApis[trackedObject.n];
-
         if (objectApi && objectApi.removed) {
           postMessage({
             type: 'objectRemoved',
-            args: [trackedObject.n, chunk.x, chunk.z, parseInt(k, 10), trackedObject.position, trackedObject.rotation, trackedObject.value],
+            args: [trackedObject.n, x, z, index, trackedObject.startIndex, trackedObject.endIndex],
           });
         }
-      }
-    }
-  } else if (type === 'cull') {
-    const {id, args} = data;
-    const {hmdPosition, projectionMatrix, matrixWorldInverse, buffer} = args;
 
-    const objectChunkMeshes = _getCull(hmdPosition, projectionMatrix, matrixWorldInverse);
-    protocolUtils.stringifyCull(objectChunkMeshes, buffer, 0);
-    postMessage({
-      type: 'response',
-      args: [id],
-      result: buffer,
-    }, [buffer]);
-  } else if (type === 'getHoveredObjects') {
-    const {id, args: positions} = data;
-    const result = new Uint32Array(8 * 2);
-    result.set(_getHoveredTrackedObject(positions[0]), 0);
-    result.set(_getHoveredTrackedObject(positions[1]), 8);
-    postMessage({
-      type: 'response',
-      args: [id],
-      result,
-    });
-  } else if (type === 'getTeleportObject') {
-    const {id, args: position} = data;
-    const result = _getTeleportObject(position);
-    postMessage({
-      type: 'response',
-      args: [id],
-      result,
-    });
-  } else if (type === 'getBodyObject') {
-    const {id, args: position} = data;
-    const result = _getBodyObject(position);
-    postMessage({
-      type: 'response',
-      args: [id],
-      result,
-    });
-  } else {
-    console.warn('objects worker got invalid method', JSON.stringify(type));
+        chunk.trackedObjects[index] = null;
+      }
+
+      connection.send(JSON.stringify({
+        method: 'removeObject',
+        args: {
+          x,
+          z,
+          index,
+        },
+      }));
+      break;
+    }
+    case 'setObjectData': {
+      const {x, z, index, value} = data;
+
+      _requestChunk(x, z)
+        .then(chunk => {
+          chunk.setObjectData(index, value);
+          chunk.geometry = null;
+
+          const trackedObject = chunk.trackedObjects[index];
+          const objectApi = objectApis[trackedObject.n];
+          if (objectApi && objectApi.updated) {
+            trackedObject.value = value;
+
+            postMessage({
+              type: 'objectUpdated',
+              args: [trackedObject.n, x, z, index, trackedObject.position.toArray(), trackedObject.rotation.toArray(), trackedObject.value],
+            });
+          }
+
+          connection.send(JSON.stringify({
+            method: 'setObjectData',
+            args: {
+              x,
+              z,
+              index,
+              value,
+            },
+          }));
+        })
+        .catch(err => {
+          console.warn(err);
+        });
+      break;
+    }
+    case 'generate': {
+      const {id, args} = data;
+      const {x, z} = args;
+      let {buffer} = args;
+
+      _requestChunk(x, z)
+        .then(chunk => {
+          const {geometry} = chunk;
+
+          const lightmapBuffer = new Uint8Array(buffer, Math.floor(buffer.byteLength * 3 / 4));
+
+          let byteOffset = 0;
+          new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, 1)[0] = 1;
+          byteOffset += 4;
+
+          const lightmapHeaderArray = new Int32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, 2);
+          lightmapHeaderArray[0] = chunk.x;
+          lightmapHeaderArray[1] = chunk.z;
+          byteOffset += 4 * 2;
+
+          const {positions} = geometry;
+          const numPositions = positions.length;
+          new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, 1)[0] = numPositions;
+          byteOffset += 4;
+
+          new Float32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, numPositions).set(positions);
+          byteOffset += 4 * numPositions;
+
+          _requestLightmaps(lightmapBuffer, lightmapBuffer => {
+            const {buffer} = lightmapBuffer;
+
+            const lightmapsLength = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset, 1)[0];
+            const lightmaps = new Uint8Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + 4, lightmapsLength);
+
+            protocolUtils.stringifyGeometry(geometry, lightmaps, buffer, 0);
+            postMessage({
+              type: 'response',
+              args: [id],
+              result: buffer,
+            }, [buffer]);
+
+            const {geometries: localGeometries} = geometry;
+            const trackedObjectChunkMeshes = {
+              array: Array(NUM_CHUNKS_HEIGHT),
+              groups: new Int32Array(NUM_RENDER_GROUPS * 2),
+            };
+            for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
+              const {indexRange, boundingSphere} = localGeometries[i];
+              trackedObjectChunkMeshes.array[i] = {
+                // offset: new THREE.Vector3(x, i, z),
+                indexRange,
+                boundingSphere,
+              };
+            }
+            objectChunkMeshes[_getChunkIndex(x, z)] = trackedObjectChunkMeshes;
+
+            const {objects} = geometry
+            const numObjects = objects.length / 3;
+            for (let i = 0; i < numObjects; i++) {
+              const baseIndex = i * 3;
+              const index = objects[baseIndex + 0];
+              const startIndex = objects[baseIndex + 1];
+              const endIndex = objects[baseIndex + 2];
+
+              const trackedObject = chunk.trackedObjects[index];
+              trackedObject.startIndex = startIndex;
+              trackedObject.endIndex = endIndex;
+
+              if (!trackedObject.calledBack) {
+                const objectApi = objectApis[trackedObject.n];
+                if (objectApi && objectApi.added) {
+                  postMessage({
+                    type: 'objectAdded',
+                    args: [trackedObject.n, x, z, index, trackedObject.position.toArray(), trackedObject.rotation.toArray(), trackedObject.value],
+                  });
+                }
+                trackedObject.calledBack = true;
+              }
+            }
+          });
+        })
+        .catch(err => {
+          console.warn(err);
+        });
+      break;
+    }
+    case 'ungenerate': {
+      const {args} = data;
+      const {x, z} = args;
+
+      const chunk = zde.getChunk(x, z);
+      zde.removeChunk(x, z);
+
+      objectChunkMeshes[_getChunkIndex(x, z)] = null;
+
+      for (const k in chunk.trackedObjects) {
+        const trackedObject = chunk.trackedObjects[k];
+
+        if (trackedObject) {
+          const objectApi = objectApis[trackedObject.n];
+
+          if (objectApi && objectApi.removed) {
+            postMessage({
+              type: 'objectRemoved',
+              args: [trackedObject.n, chunk.x, chunk.z, parseInt(k, 10), trackedObject.position, trackedObject.rotation, trackedObject.value],
+            });
+          }
+        }
+      }
+      break;
+    }
+    case 'lightmaps': {
+      const {id, args} = data;
+      const {lightmapBuffer} = args;
+
+      let byteOffset = 0;
+      const numLightmaps = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, 1)[0];
+      byteOffset += 4;
+
+      const lightmapsCoordsArray = new Int32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, numLightmaps * 2);
+      byteOffset += 4 * numLightmaps * 2;
+
+      const promises = [];
+      for (let i = 0; i < numLightmaps; i++) {
+        const baseIndex = i * 2;
+        const x = lightmapsCoordsArray[baseIndex + 0];
+        const y = lightmapsCoordsArray[baseIndex + 1];
+        promises.push(_requestChunk(x, y));
+      }
+      Promise.all(promises)
+        .then(chunks => {
+          let byteOffset = 4;
+
+          for (let i = 0; i < numLightmaps; i++) {
+            const chunk = chunks[i];
+            const {geometry} = chunk;
+
+            const lightmapHeaderArray = new Int32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, 2);
+            lightmapHeaderArray[0] = chunk.x;
+            lightmapHeaderArray[1] = chunk.z;
+            byteOffset += 4 * 2;
+
+            const {positions} = geometry;
+            const numPositions = positions.length;
+            new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, 1)[0] = numPositions;
+            byteOffset += 4;
+
+            new Float32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, numPositions).set(positions);
+            byteOffset += 4 * numPositions;
+          }
+
+          _requestLightmaps(lightmapBuffer, lightmapBuffer => {
+            postMessage({
+              type: 'response',
+              args: [id],
+              result: lightmapBuffer,
+            }, [lightmapBuffer.buffer]);
+          });
+        })
+        .catch(err => {
+          console.warn(err);
+        });
+
+      break;
+    }
+    case 'cull': {
+      const {id, args} = data;
+      const {hmdPosition, projectionMatrix, matrixWorldInverse, buffer} = args;
+
+      const objectChunkMeshes = _getCull(hmdPosition, projectionMatrix, matrixWorldInverse);
+      protocolUtils.stringifyCull(objectChunkMeshes, buffer, 0);
+      postMessage({
+        type: 'response',
+        args: [id],
+        result: buffer,
+      }, [buffer]);
+      break;
+    }
+    case 'getHoveredObjects': {
+      const {id, args: positions} = data;
+      const result = new Uint32Array(8 * 2);
+      result.set(_getHoveredTrackedObject(positions[0]), 0);
+      result.set(_getHoveredTrackedObject(positions[1]), 8);
+      postMessage({
+        type: 'response',
+        args: [id],
+        result,
+      });
+      break;
+    }
+    case 'getTeleportObject': {
+      const {id, args: position} = data;
+      const result = _getTeleportObject(position);
+      postMessage({
+        type: 'response',
+        args: [id],
+        result,
+      });
+      break;
+    }
+    case 'getBodyObject': {
+      const {id, args: position} = data;
+      const result = _getBodyObject(position);
+      postMessage({
+        type: 'response',
+        args: [id],
+        result,
+      });
+      break;
+    }
+    case 'response': {
+      const {id, result} = data;
+
+      queues[id](result);
+      queues[id] = null;
+
+      _cleanupQueues();
+      break;
+    }
+    default: {
+      console.warn('objects worker got invalid method', JSON.stringify(type));
+      break;
+    }
   }
+};
+
+let _id = 0;
+const _makeId = () => {
+  const result = _id;
+  _id = (_id + 1) | 0;
+  return result;
 };
