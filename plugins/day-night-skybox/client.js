@@ -137,8 +137,7 @@ class DayNightSkybox {
 
     const _update = () => {
       for (let i = 0; i < updates.length; i++) {
-        const update = updates[i];
-        update();
+        updates[i]();
       }
     };
     render.on('update', _update);
