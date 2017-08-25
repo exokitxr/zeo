@@ -117,7 +117,7 @@ class Grass {
 
   mount() {
     const {_archae: archae} = this;
-    const {three, render, pose, elements, /*stage, */utils: {js: {mod, bffr, sbffr}, random: {chnkr}}} = zeo;
+    const {three, render, pose, elements, /*stage, */utils: {js: {mod, sbffr}, random: {chnkr}}} = zeo;
     const {THREE, scene, camera, renderer} = three;
 
     const modelViewMatrices = {
@@ -225,7 +225,7 @@ class Grass {
       _unbindLightmapper();
     });
 
-    const buffers = bffr(NUM_POSITIONS_CHUNK, NUM_BUFFERS);
+    let generateBuffer = new ArrayBuffer(NUM_POSITIONS_CHUNK);
     let lightmapBuffer = new Uint8Array(LIGHTMAP_BUFFER_SIZE * NUM_BUFFERS);
     let cullBuffer = new ArrayBuffer(4096);
     const worker = new Worker('archae/plugins/_plugins_grass/build/worker.js');
@@ -248,15 +248,18 @@ class Grass {
       _ensureHeightfieldElement()
         .then(() => new Promise((accept, reject) => {
           const id = _makeId();
-          const buffer = buffers.alloc();
           worker.postMessage({
             type: 'generate',
             id,
             x,
             y,
-            buffer,
-          }, [buffer]);
-          queues[id] = cb;
+            buffer: generateBuffer,
+          }, [generateBuffer]);
+          queues[id] = newGenerateBuffer => {
+            generateBuffer = newGenerateBuffer;
+
+            cb(newGenerateBuffer);
+          };
         }));
     };
     worker.requestUngenerate = (x, y) => {
@@ -294,26 +297,6 @@ class Grass {
       queues[id] = buffer => {
         cullBuffer = buffer;
         cb(buffer);
-      };
-    };
-    worker.requestTexture = cb => {
-      const id = _makeId();
-      const buffer = new ArrayBuffer(TEXTURE_SIZE * TEXTURE_SIZE  * 4);
-      worker.postMessage({
-        type: 'texture',
-        id,
-        buffer,
-      }, [buffer]);
-      queues[id] = buffer => {
-        const canvas = document.createElement('canvas');
-        canvas.width = TEXTURE_SIZE;
-        canvas.height = TEXTURE_SIZE;
-        const ctx = canvas.getContext('2d');
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        imageData.data.set(new Uint8Array(buffer));
-        ctx.putImageData(imageData, 0, 0);
-
-        cb(canvas);
       };
     };
     worker.requestResponse = (id, result, transfers) => {
@@ -374,33 +357,45 @@ class Grass {
         console.warn('grass got unknown worker message type:', JSON.stringify(type));
       }
     };
-    const _requestTexture = () => new Promise((accept, reject) => {
-      worker.requestTexture(canvas => {
-        accept(canvas);
+    const _requestTexture = () => _requestImageData('archae/grass/img/texture-atlas.png')
+      .then(imageData => {
+        const texture = new THREE.Texture(
+          imageData,
+          THREE.UVMapping,
+          THREE.ClampToEdgeWrapping,
+          THREE.ClampToEdgeWrapping,
+          THREE.NearestMipMapLinearFilter,
+          THREE.NearestMipMapLinearFilter,
+          THREE.RGBAFormat,
+          THREE.UnsignedByteType,
+          16
+        );
+        texture.needsUpdate = true;
+        return texture;
       });
+    const _requestImage = src => new Promise((accept, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        accept(img);
+      };
+      img.onerror = err => {
+        reject(img);
+      };
+      img.src = src;
     });
+    const _requestImageData = src => _requestImage(src)
+      .then(img => createImageBitmap(img, 0, 0, img.width, img.height, {
+        imageOrientation: 'flipY',
+      }));
 
     _requestTexture()
-      .then(mapTextureImg => {
+      .then(mapTexture => {
         if (live) {
-          const mapTexture = new THREE.Texture(
-            mapTextureImg,
-            THREE.UVMapping,
-            THREE.ClampToEdgeWrapping,
-            THREE.ClampToEdgeWrapping,
-            THREE.NearestMipMapLinearFilter,
-            THREE.NearestMipMapLinearFilter,
-            THREE.RGBAFormat,
-            THREE.UnsignedByteType,
-            16
-          );
-          mapTexture.needsUpdate = true;
-
-          const _requestGrassGenerate = (x, y) => new Promise((accept, reject) => {
+          const _requestGrassGenerate = (x, y, cb) => {
             worker.requestGenerate(x, y, grassChunkBuffer => {
-              accept(protocolUtils.parseGrassGeometry(grassChunkBuffer));
+              cb(protocolUtils.parseRenderGeometry(grassChunkBuffer));
             });
-          });
+          };
           const _makeGrassChunkMesh = (chunk, grassChunkData) => {
             const {x, z} = chunk;
             const {positions: newPositions, uvs: newUvs, lightmaps: newLightmaps, indices: newIndices} = grassChunkData;
@@ -457,7 +452,6 @@ class Grass {
               lightmaps,
               lightmap: null,
               destroy: () => {
-                buffers.free(grassChunkData.buffer);
                 geometryBuffer.free(gbuffer);
 
                 material.dispose();
@@ -537,14 +531,24 @@ class Grass {
             const {worldPosition: hmdPosition} = hmd;
             const {added, removed, relodded} = chunker.update(hmdPosition.x, hmdPosition.z);
 
-            const addedPromises = Array(added.length);
-            let index = 0;
-            for (let i = 0; i < added.length; i++) {
-              const chunk = added[i];
-              const {x, z} = chunk;
+            let running = false;
+            const queue = [];
+            const _addChunk = chunk => {
+              if (!running) {
+                running = true;
 
-              const promise = _requestGrassGenerate(x, z)
-                .then(grassChunkData => {
+                const _next = () => {
+                  running = false;
+
+                  if (queue.length > 0) {
+                    _addChunk(queue.shift());
+                  } else {
+                    next();
+                  }
+                };
+
+                const {x, z} = chunk;
+                _requestGrassGenerate(x, z, grassChunkData => {
                   const grassChunkMesh = _makeGrassChunkMesh(chunk, grassChunkData);
                   // stage.add('main', grassChunkMesh);
                   grassMesh.renderList.push(grassChunkMesh.renderListEntry);
@@ -552,19 +556,26 @@ class Grass {
                   grassChunkMeshes[_getChunkIndex(x, z)] = grassChunkMesh;
 
                   chunk.data = grassChunkMesh;
+
+                  _next();
                 });
-              addedPromises[index++] = promise;
+              } else {
+                queue.push(chunk);
+              }
+            };
+            for (let i = 0; i < added.length; i++) {
+              _addChunk(added[i]);
             }
-            for (let i = 0; i < relodded.length; i++) {
+            /* for (let i = 0; i < relodded.length; i++) {
               const chunk = relodded[i];
               const {lod, data: grassChunkMesh} = chunk;
 
               if (!grassChunkMesh.lightmap && lod === 1) {
-                // _bindLightmap(grassChunkMesh);
+                _bindLightmap(grassChunkMesh);
               } else if (grassChunkMesh.lightmap && lod !== 1) {
-                // _unbindLightmap(grassChunkMesh);
+                _unbindLightmap(grassChunkMesh);
               }
-            }
+            } */
             for (let i = 0; i < removed.length; i++) {
               const chunk = removed[i];
               const {x, z, data: grassChunkMesh} = chunk;
@@ -579,14 +590,9 @@ class Grass {
               grassChunkMesh.destroy();
             }
 
-            Promise.all(addedPromises)
-              .then(() => {
-                next();
-              })
-              .catch(err => {
-                console.warn(err);
-                next();
-              });
+            if (!running) {
+              next();
+            }
           });
 
           const _debouncedRefreshLightmaps = _debounce(next => {
