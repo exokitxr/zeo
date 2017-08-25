@@ -73,7 +73,7 @@ class Ocean {
   mount() {
     const {three, render, elements, pose, world, /*stage, */utils: {js: jsUtils, random: randomUtils, hash: hashUtils}} = zeo;
     const {THREE, scene, camera, renderer} = three;
-    const {mod, bffr, sbffr} = jsUtils;
+    const {mod, sbffr} = jsUtils;
     const {chnkr} = randomUtils;
 
     const _getChunkIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
@@ -87,7 +87,7 @@ class Ocean {
       live = false;
     };
 
-    const buffers = bffr(NUM_POSITIONS_CHUNK, (RANGE * 2) * (RANGE * 2) * 2);
+    let generateBuffer = new ArrayBuffer(NUM_POSITIONS_CHUNK);
     let cullBuffer = new ArrayBuffer(4096);
     const worker = new Worker('archae/plugins/_plugins_ocean/build/worker.js');
     let queues = {};
@@ -107,15 +107,18 @@ class Ocean {
     };
     worker.requestGenerate = (x, y, cb) => {
       const id = _makeId();
-      const buffer = buffers.alloc();
       worker.postMessage({
         type: 'generate',
         id,
         x,
         y,
-        buffer,
-      }, [buffer]);
-      queues[id] = cb;
+        buffer: generateBuffer,
+      }, [generateBuffer]);
+      queues[id] = newGenerateBuffer => {
+        generateBuffer = newGenerateBuffer;
+
+        cb(newGenerateBuffer);
+      };
     };
     worker.requestUngenerate = (x, y) => {
       worker.postMessage({
@@ -160,11 +163,11 @@ class Ocean {
       }
     };
 
-    const _requestOceanGenerate = (x, z) => new Promise((accept, reject) => {
+    const _requestOceanGenerate = (x, z, cb) => {
       worker.requestGenerate(x, z, oceanBuffer => {
-        accept(protocolUtils.parseGeometry(oceanBuffer));
+        cb(protocolUtils.parseGeometry(oceanBuffer));
       });
-    });
+    };
     const _requestImg = src => new Promise((accept, reject) => {
       const img = new Image();
       img.onload = () => {
@@ -391,7 +394,6 @@ class Ocean {
                     groups: [],
                   },
                   destroy: () => {
-                    buffers.free(oceanChunkData.buffer);
                     geometryBuffer.free(gbuffer);
                   },
                 };
@@ -402,25 +404,36 @@ class Ocean {
               const _debouncedRequestRefreshOceanChunks = _debounce(next => {
                 const {hmd} = pose.getStatus();
                 const {worldPosition: hmdPosition} = hmd;
-                const {added, removed, relodded} = chunker.update(hmdPosition.x, hmdPosition.z);
+                const {added, removed} = chunker.update(hmdPosition.x, hmdPosition.z);
 
-                const promises = [];
+                let running = false;
+                const queue = [];
                 const _addChunk = chunk => {
-                  const {x, z, data: oldOceanChunkMesh} = chunk;
+                  if (!running) {
+                    running = true;
 
-                  const index = _getChunkIndex(x, z);
+                    const _next = () => {
+                      running = false;
 
-                  if (oldOceanChunkMesh) {
-                    // scene.remove(oldOceanChunkMesh);
-                    oceanObject.renderList.splice(oceanObject.renderList.indexOf(oldOceanChunkMesh.renderListEntry), 1);
+                      if (queue.length > 0) {
+                        _addChunk(queue.shift());
+                      } else {
+                        next();
+                      }
+                    };
 
-                    oldOceanChunkMesh.destroy();
+                    const {x, z, data: oldOceanChunkMesh} = chunk;
+                    const index = _getChunkIndex(x, z);
+                    if (oldOceanChunkMesh) {
+                      // scene.remove(oldOceanChunkMesh);
+                      oceanObject.renderList.splice(oceanObject.renderList.indexOf(oldOceanChunkMesh.renderListEntry), 1);
 
-                    oceanChunkMeshes[index] = null;
-                  }
+                      oldOceanChunkMesh.destroy();
 
-                  const promise = _requestOceanGenerate(x, z)
-                    .then(oceanChunkData => {
+                      oceanChunkMeshes[index] = null;
+                    }
+
+                    _requestOceanGenerate(x, z, oceanChunkData => {
                       const oceanChunkMesh = _makeOceanChunkMesh(chunk, oceanChunkData);
                       // scene.add(oceanChunkMesh);
                       oceanObject.renderList.push(oceanChunkMesh.renderListEntry);
@@ -428,14 +441,15 @@ class Ocean {
                       oceanChunkMeshes[index] = oceanChunkMesh;
 
                       chunk.data = oceanChunkMesh;
+
+                      _next();
                     });
-                  promises.push(promise);
+                  } else {
+                    queue.push(chunk);
+                  }
                 };
                 for (let i = 0; i < added.length; i++) {
                   _addChunk(added[i]);
-                }
-                for (let i = 0; i < relodded.length; i++) {
-                  _addChunk(relodded[i]);
                 }
                 for (let i = 0; i < removed.length; i++) {
                   const chunk = removed[i];
@@ -450,14 +464,10 @@ class Ocean {
 
                   oceanChunkMeshes[_getChunkIndex(x, z)] = null;
                 }
-                return Promise.all(promises)
-                  .then(() => {
-                    next();
-                  })
-                  .catch(err => {
-                    console.warn(err);
-                    next();
-                  });
+
+                if (!running) {
+                  next();
+                }
               });
 
               const _requestCull = (hmdPosition, projectionMatrix, matrixWorldInverse, cb) => {
