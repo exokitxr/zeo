@@ -44,7 +44,7 @@ void main() {
 
 class Cloud {
   mount() {
-    const {three, elements, render, pose, /*stage, */utils: {js: {mod, bffr, sbffr}, geometry: geometryUtils, random: {alea, chnkr}}} = zeo;
+    const {three, elements, render, pose, /*stage, */utils: {js: {mod, sbffr}, geometry: geometryUtils, random: {alea, chnkr}}} = zeo;
     const {THREE, scene, camera, renderer} = three;
 
     const modelViewMatrices = {
@@ -149,7 +149,7 @@ class Cloud {
     });
     cloudMaterial.uniformsNeedUpdate = _uniformsNeedUpdate;
 
-    const buffers = bffr(NUM_POSITIONS_CHUNK, RANGE * RANGE * 9);
+    let generateBuffer = new ArrayBuffer(NUM_POSITIONS_CHUNK);
     let cullBuffer = new ArrayBuffer(4096);
     const worker = new Worker('archae/plugins/_plugins_cloud/build/worker.js');
     let queues = {};
@@ -169,15 +169,18 @@ class Cloud {
     };
     worker.requestGenerate = (x, y, cb) => {
       const id = _makeId();
-      const buffer = buffers.alloc();
       worker.postMessage({
         type: 'generate',
         id,
         x,
         y,
-        buffer,
-      }, [buffer]);
-      queues[id] = cb;
+        buffer: generateBuffer,
+      }, [generateBuffer]);
+      queues[id] = newGenerateBuffer => {
+        generateBuffer = newGenerateBuffer;
+
+        cb(newGenerateBuffer);
+      };
     };
     worker.requestUngenerate = (x, y) => {
       worker.postMessage({
@@ -222,11 +225,11 @@ class Cloud {
       }
     };
 
-    const _requestCloudGenerate = (x, y) => new Promise((accept, reject) => {
+    const _requestCloudGenerate = (x, y, cb) => {
       worker.requestGenerate(x, y, cloudChunkBuffer => {
-        accept(protocolUtils.parseCloudGeometry(cloudChunkBuffer));
+        cb(protocolUtils.parseCloudGeometry(cloudChunkBuffer));
       });
-    });
+    };
 
     const updates = [];
 
@@ -279,24 +282,36 @@ class Cloud {
               groups: [],
             },
             destroy: () => {
-              buffers.free(cloudChunkData.buffer);
               geometryBuffer.free(gbuffer);
             },
           };
 
           return mesh;
         };
+
+        let running = false;
+        const queue = [];
         const _debouncedRequestRefreshCloudChunks = _debounce(next => {
           const {hmd} = pose.getStatus();
           const {worldPosition: hmdPosition} = hmd;
           // const dx = (world.getWorldTime() / 1000) * CLOUD_SPEED;
           const {added, removed} = chunker.update(hmdPosition.x/* + dx*/, hmdPosition.z);
 
-          const addedPromises = Array(added.length);
-          for (let i = 0; i < added.length; i++) {
-            const chunk = added[i];
-            const promise = _requestCloudGenerate(chunk.x, chunk.z)
-              .then(cloudChunkData => {
+          const _addChunk = chunk => {
+            if (!running) {
+              running = true;
+
+              const _next = () => {
+                running = false;
+
+                if (queue.length > 0) {
+                  _addChunk(queue.shift());
+                } else {
+                  next();
+                }
+              };
+
+              _requestCloudGenerate(chunk.x, chunk.z, cloudChunkData => {
                 const cloudChunkMesh = _makeCloudChunkMesh(chunk, cloudChunkData);
                 // stage.add('main', cloudChunkMesh);
                 cloudObject.renderList.push(cloudChunkMesh.renderListEntry);
@@ -304,8 +319,16 @@ class Cloud {
                 cloudChunkMeshes[_getChunkIndex(chunk.x, chunk.z)] = cloudChunkMesh;
 
                 chunk.data = cloudChunkMesh;
+
+                _next();
               });
-            addedPromises[i] = promise;
+            } else {
+              queue.push(chunk);
+            }
+          };
+
+          for (let i = 0; i < added.length; i++) {
+            _addChunk(added[i]);
           }
           for (let i = 0; i < removed.length; i++) {
             const chunk = removed[i];
@@ -321,14 +344,9 @@ class Cloud {
             cloudChunkMeshes[_getChunkIndex(x, z)] = null;
           }
 
-          Promise.all(addedPromises)
-            .then(() => {
-              next();
-            })
-            .catch(err => {
-              console.warn(err);
-              next();
-            });
+          if (!running) {
+            next();
+          }
         });
 
         const _requestCull = (hmdPosition, projectionMatrix, matrixWorldInverse, cb) => {
