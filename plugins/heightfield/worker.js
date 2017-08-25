@@ -118,7 +118,7 @@ const _requestChunk = (x, z) => {
       credentials: 'include',
     })
       .then(_resArrayBuffer)
-      .then(buffer => new Promise((accept, reject) => {
+      .then(buffer => {
         const chunkData = protocolUtils.parseDataChunk(buffer, 0);
 
         const trackedMapChunkMeshes = {
@@ -142,8 +142,8 @@ const _requestChunk = (x, z) => {
 
         const chunk = tra.addChunk(x, z, new Uint32Array(buffer));
         chunk.chunkData = chunkData;
-        accept(chunk);
-      }));
+        return chunk;
+      });
   }
 };
 const _requestLightmaps = (lightmapBuffer, cb) => {

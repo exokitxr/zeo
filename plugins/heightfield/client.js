@@ -126,7 +126,7 @@ class Heightfield {
 
   mount() {
     const {_archae: archae} = this;
-    const {three, render, pose, input, world, elements, teleport, stck, utils: {js: {mod, bffr, sbffr}, random: {chnkr}}} = zeo;
+    const {three, render, pose, input, world, elements, teleport, stck, utils: {js: {mod, sbffr}, random: {chnkr}}} = zeo;
     const {THREE, scene, camera, renderer} = three;
 
     const modelViewMatrices = {
@@ -221,7 +221,7 @@ class Heightfield {
         }
       ]
     );
-    const buffers = bffr(NUM_POSITIONS_CHUNK, NUM_BUFFERS); // XXX try to make this work with a single buffer
+    let generateBuffer = new ArrayBuffer(NUM_POSITIONS_CHUNK);
     let lightmapBuffer = new Uint8Array(LIGHTMAP_BUFFER_SIZE * NUM_BUFFERS);
     let cullBuffer = new ArrayBuffer(4096);
     const worker = new Worker('archae/plugins/_plugins_heightfield/build/worker.js');
@@ -250,17 +250,20 @@ class Heightfield {
     };
     worker.requestGenerate = (x, y, cb) => {
       const id = _makeId();
-      const buffer = buffers.alloc();
       worker.postMessage({
         method: 'generate',
         id,
         args: {
           x,
           y,
-          buffer,
+          buffer: generateBuffer,
         },
-      }, [buffer]);
-      queues[id] = cb;
+      }, [generateBuffer]);
+      queues[id] = newGenerateBuffer => {
+        generateBuffer = newGenerateBuffer;
+
+        cb(newGenerateBuffer);
+      };
     };
     worker.requestUngenerate = (x, y) => {
       worker.postMessage({
@@ -448,14 +451,16 @@ class Heightfield {
         accept();
       });
     });
-    const _requestGenerate = (x, z) => new Promise((accept, reject) => {
+    const _requestGenerate = (x, z, cb) => {
       worker.requestGenerate(x, z, mapChunkBuffer => {
-        accept(protocolUtils.parseRenderChunk(mapChunkBuffer));
+        cb(protocolUtils.parseRenderChunk(mapChunkBuffer));
       });
-    });
+    };
     const _makeMapChunkMeshes = (chunk, mapChunkData) => {
       const {x, z} = chunk;
       const {positions: newPositions, colors: newColors, lightmaps: newLightmaps, indices: newIndices, heightfield, staticHeightfield} = mapChunkData;
+      // XXX move heightfield interpolation entirely into the worker
+      // XXX preallocate staticHeightfield feedthrough for lightmap and stck
 
       // geometery
 
@@ -509,13 +514,12 @@ class Heightfield {
         indexOffset: index * indices.length,
         offset: new THREE.Vector2(x, z),
         lightmaps,
-        heightfield,
-        staticHeightfield,
+        heightfield: heightfield.slice(),
+        staticHeightfield: staticHeightfield.slice(),
         lightmap: null,
         shape: null,
         stckBody: null,
         destroy: () => {
-          buffers.free(mapChunkData.buffer);
           geometryBuffer.free(gbuffer);
 
           material.dispose();
@@ -564,7 +568,7 @@ class Heightfield {
     })();
     scene.add(heightfieldObject);
 
-    const _requestRefreshMapChunks = () => {
+    const _debouncedRequestRefreshMapChunks = _debounce(next => {
       const {hmd} = pose.getStatus();
       const {worldPosition: hmdPosition} = hmd;
       const {added, removed, relodded} = chunker.update(hmdPosition.x, hmdPosition.z);
@@ -590,11 +594,24 @@ class Heightfield {
         trackedMapChunkMeshes.targeted = false;
       };
 
-      const addedPromises = [];
+      let running = false;
+      const queue = [];
       const _addChunk = chunk => {
-        const {x, z, lod} = chunk;
-        const promise = _requestGenerate(x, z)
-          .then(mapChunkData => {
+        if (!running) {
+          running = true;
+
+          const _next = () => {
+            running = false;
+
+            if (queue.length > 0) {
+              _addChunk(queue.shift());
+            } else {
+              next();
+            }
+          };
+
+          const {x, z, lod} = chunk;
+          _requestGenerate(x, z, mapChunkData => {
             const index = _getChunkIndex(x, z);
             const oldMapChunkMeshes = mapChunkMeshes[index];
             if (oldMapChunkMeshes) {
@@ -618,8 +635,12 @@ class Heightfield {
             }
 
             chunk.data = newMapChunkMeshes;
+
+            _next();
           });
-        addedPromises.push(promise);
+        } else {
+          queue.push(chunk);
+        }
       };
       for (let i = 0; i < added.length; i++) {
         _addChunk(added[i]);
@@ -632,41 +653,37 @@ class Heightfield {
           _addChunk(chunk);
         }
       }
-      for (let i = 0; i < removed.length; i++) {
-        const chunk = removed[i];
-        const {x, z, data: oldMapChunkMeshes} = chunk;
-        heightfieldObject.renderList.splice(heightfieldObject.renderList.indexOf(oldMapChunkMeshes.renderListEntry), 1);
+      if (removed.length > 0) {
+        for (let i = 0; i < removed.length; i++) {
+          const chunk = removed[i];
+          const {x, z, data: oldMapChunkMeshes} = chunk;
+          heightfieldObject.renderList.splice(heightfieldObject.renderList.indexOf(oldMapChunkMeshes.renderListEntry), 1);
 
-        oldMapChunkMeshes.destroy();
+          oldMapChunkMeshes.destroy();
 
-        const {lod} = chunk;
-        if (lod !== 1 && oldMapChunkMeshes.targeted) {
-          _removeTarget(oldMapChunkMeshes);
+          const {lod} = chunk;
+          if (lod !== 1 && oldMapChunkMeshes.targeted) {
+            _removeTarget(oldMapChunkMeshes);
+          }
+
+          mapChunkMeshes[_getChunkIndex(x, z)] = null;
+
+          worker.requestUngenerate(x, z);
         }
 
-        mapChunkMeshes[_getChunkIndex(x, z)] = null;
-
-        worker.requestUngenerate(x, z);
-      }
-      return Promise.all(addedPromises)
-        .then(() => {
-          const newMapChunkMeshes = {};
-          for (const index in mapChunkMeshes) {
-            const trackedMapChunkMeshes = mapChunkMeshes[index];
-            if (trackedMapChunkMeshes) {
-              newMapChunkMeshes[index] = trackedMapChunkMeshes;
-            }
+        const newMapChunkMeshes = {};
+        for (const index in mapChunkMeshes) {
+          const trackedMapChunkMeshes = mapChunkMeshes[index];
+          if (trackedMapChunkMeshes) {
+            newMapChunkMeshes[index] = trackedMapChunkMeshes;
           }
-          mapChunkMeshes = newMapChunkMeshes;
-        });
-    };
-    const _debouncedRequestRefreshMapChunks = _debounce(next => {
-      _requestRefreshMapChunks()
-        .then(next)
-        .catch(err => {
-          console.warn(err);
-          next();
-        });
+        }
+        mapChunkMeshes = newMapChunkMeshes;
+      }
+
+      if (!running) {
+        next();
+      }
     });
 
     const a = new THREE.Vector3();
