@@ -35,6 +35,7 @@ const localVector = new THREE.Vector3();
 const localVector2 = new THREE.Vector3();
 const localVector3 = new THREE.Vector3();
 const localVector4 = new THREE.Vector3();
+const localCoord = new THREE.Vector2();
 const localRay = new THREE.Ray();
 const localRay2 = new THREE.Ray();
 const localQuaternion = new THREE.Quaternion();
@@ -43,6 +44,7 @@ const localMatrix2 = new THREE.Matrix4();
 const localBox = new THREE.Box3();
 const localBox2 = new THREE.Box3();
 const localFrustum = new THREE.Frustum();
+
 const oneVector = new THREE.Vector3(1, 1, 1);
 const bodyOffsetVector = new THREE.Vector3(0, -1.6 / 2, 0);
 
@@ -65,38 +67,43 @@ class TrackedObject {
 const _getHoveredTrackedObject = position => {
   localVector.fromArray(position);
 
+  const ox = Math.floor(localVector.x / NUM_CELLS);
+  const oz = Math.floor(localVector.z / NUM_CELLS);
+
   for (let i = 0; i < zde.chunks.length; i++) {
     const chunk = zde.chunks[i];
 
-    for (const k in chunk.trackedObjects) {
-      const trackedObject = chunk.trackedObjects[k];
+    if (localCoord.set(chunk.x - ox, chunk.z - oz).lengthSq() <= 2) {
+      for (const k in chunk.trackedObjects) {
+        const trackedObject = chunk.trackedObjects[k];
 
-      if (trackedObject) {
-        const entry = geometries[trackedObject.n];
-        const geometry = entry.length > 0 ? entry[0] : null;
+        if (trackedObject) {
+          const entry = geometries[trackedObject.n];
+          const geometry = entry.length > 0 ? entry[0] : null;
 
-        localVector2.copy(localVector)
-          .sub(trackedObject.position)
-          .applyQuaternion(trackedObject.rotationInverse)
-          .add(trackedObject.position);
+          localVector2.copy(localVector)
+            .sub(trackedObject.position)
+            .applyQuaternion(trackedObject.rotationInverse)
+            .add(trackedObject.position);
 
-        localBox.set(
-          geometry ? localVector3.copy(geometry.boundingBox.min).add(trackedObject.position) : trackedObject.position,
-          geometry ? localVector4.copy(geometry.boundingBox.max).add(trackedObject.position) : localVector4.set(0, 0, 0)
-        );
+          localBox.set(
+            geometry ? localVector3.copy(geometry.boundingBox.min).add(trackedObject.position) : trackedObject.position,
+            geometry ? localVector4.copy(geometry.boundingBox.max).add(trackedObject.position) : localVector4.set(0, 0, 0)
+          );
 
-        if (localBox.containsPoint(localVector2)) {
-          const uint32Array = new Uint32Array(8);
-          uint32Array[0] = trackedObject.n;
-          const int32Array = new Int32Array(uint32Array.buffer, uint32Array.byteOffset, uint32Array.length);
-          int32Array[1] = chunk.x;
-          int32Array[2] = chunk.z;
-          uint32Array[3] = parseInt(k, 10);
-          const float32Array = new Float32Array(uint32Array.buffer, uint32Array.byteOffset, uint32Array.length);
-          float32Array[4] = trackedObject.position.x;
-          float32Array[5] = trackedObject.position.y;
-          float32Array[6] = trackedObject.position.z;
-          return uint32Array;
+          if (localBox.containsPoint(localVector2)) {
+            const uint32Array = new Uint32Array(8);
+            uint32Array[0] = trackedObject.n;
+            const int32Array = new Int32Array(uint32Array.buffer, uint32Array.byteOffset, uint32Array.length);
+            int32Array[1] = chunk.x;
+            int32Array[2] = chunk.z;
+            uint32Array[3] = parseInt(k, 10);
+            const float32Array = new Float32Array(uint32Array.buffer, uint32Array.byteOffset, uint32Array.length);
+            float32Array[4] = trackedObject.position.x;
+            float32Array[5] = trackedObject.position.y;
+            float32Array[6] = trackedObject.position.z;
+            return uint32Array;
+          }
         }
       }
     }
@@ -107,6 +114,9 @@ const _getTeleportObject = position => {
   localRay.origin.set(position[0], 1000, position[2]);
   localRay.direction.set(0, -1, 0);
 
+  const ox = Math.floor(position[0] / NUM_CELLS);
+  const oz = Math.floor(position[2] / NUM_CELLS);
+
   let topY = -Infinity;
   let topTrackedObject = null;
   let topBox = null;
@@ -114,29 +124,31 @@ const _getTeleportObject = position => {
   for (let i = 0; i < zde.chunks.length; i++) {
     const chunk = zde.chunks[i];
 
-    for (const k in chunk.trackedObjects) {
-      const trackedObject = chunk.trackedObjects[k];
+    if (localCoord.set(chunk.x - ox, chunk.z - oz).lengthSq() <= 2) {
+      for (const k in chunk.trackedObjects) {
+        const trackedObject = chunk.trackedObjects[k];
 
-      if (trackedObject) {
-        const entry = geometries[trackedObject.n];
-        const geometry = entry.length > 0 ? entry[0] : null;
+        if (trackedObject) {
+          const entry = geometries[trackedObject.n];
+          const geometry = entry.length > 0 ? entry[0] : null;
 
-        localRay2.origin.copy(localRay.origin)
-          .sub(trackedObject.position)
-          .applyQuaternion(trackedObject.rotationInverse)
-          .add(trackedObject.position);
-        localRay2.direction.copy(localRay.direction);
+          localRay2.origin.copy(localRay.origin)
+            .sub(trackedObject.position)
+            .applyQuaternion(trackedObject.rotationInverse)
+            .add(trackedObject.position);
+          localRay2.direction.copy(localRay.direction);
 
-        localBox.set(
-          geometry ? localVector2.copy(geometry.boundingBox.min).add(trackedObject.position) : trackedObject.position,
-          geometry ? localVector3.copy(geometry.boundingBox.max).add(trackedObject.position) : localVector3.set(0, 0, 0)
-        );
+          localBox.set(
+            geometry ? localVector2.copy(geometry.boundingBox.min).add(trackedObject.position) : trackedObject.position,
+            geometry ? localVector3.copy(geometry.boundingBox.max).add(trackedObject.position) : localVector3.set(0, 0, 0)
+          );
 
-        const intersectionPoint = localRay2.intersectBox(localBox, localVector4);
-        if (intersectionPoint && (topTrackedObject === null || intersectionPoint.y > topY)) {
-          topY = intersectionPoint.y;
-          topTrackedObject = trackedObject;
-          topBox = localBox2.copy(localBox);
+          const intersectionPoint = localRay2.intersectBox(localBox, localVector4);
+          if (intersectionPoint && (topTrackedObject === null || intersectionPoint.y > topY)) {
+            topY = intersectionPoint.y;
+            topTrackedObject = trackedObject;
+            topBox = localBox2.copy(localBox);
+          }
         }
       }
     }
@@ -154,6 +166,9 @@ const _getTeleportObject = position => {
 const _getBodyObject = position => {
   const bodyCenterPoint = localVector.fromArray(position).add(bodyOffsetVector);
 
+  const ox = Math.floor(bodyCenterPoint.x / NUM_CELLS);
+  const oz = Math.floor(bodyCenterPoint.z / NUM_CELLS);
+
   let topDistance = Infinity;
   let topN = -1;
   let topChunkX = -1;
@@ -163,30 +178,32 @@ const _getBodyObject = position => {
   for (let i = 0; i < zde.chunks.length; i++) {
     const chunk = zde.chunks[i];
 
-    for (const k in chunk.trackedObjects) {
-      const trackedObject = chunk.trackedObjects[k];
+    if (localCoord.set(chunk.x - ox, chunk.z - oz).lengthSq() <= 2) {
+      for (const k in chunk.trackedObjects) {
+        const trackedObject = chunk.trackedObjects[k];
 
-      if (trackedObject) {
-        const entry = geometries[trackedObject.n];
-        const geometry = entry.length > 0 ? entry[0] : null;
+        if (trackedObject) {
+          const entry = geometries[trackedObject.n];
+          const geometry = entry.length > 0 ? entry[0] : null;
 
-        localVector2.copy(bodyCenterPoint)
-          .sub(trackedObject.position)
-          .applyQuaternion(trackedObject.rotationInverse)
-          .add(trackedObject.position);
+          localVector2.copy(bodyCenterPoint)
+            .sub(trackedObject.position)
+            .applyQuaternion(trackedObject.rotationInverse)
+            .add(trackedObject.position);
 
-        localBox.set(
-          geometry ? localVector3.copy(geometry.boundingBox.min).add(trackedObject.position) : trackedObject.position,
-          geometry ? localVector4.copy(geometry.boundingBox.max).add(trackedObject.position) : localVector4.set(0, 0, 0)
-        );
+          localBox.set(
+            geometry ? localVector3.copy(geometry.boundingBox.min).add(trackedObject.position) : trackedObject.position,
+            geometry ? localVector4.copy(geometry.boundingBox.max).add(trackedObject.position) : localVector4.set(0, 0, 0)
+          );
 
-        const distance = localBox.distanceToPoint(localVector2);
-        if (distance < 0.3 && (distance < topDistance)) {
-          topDistance = distance;
-          topN = trackedObject.n;
-          topChunkX = chunk.x;
-          topChunkZ = chunk.z;
-          topObjectIndex = parseInt(k, 10);
+          const distance = localBox.distanceToPoint(localVector2);
+          if (distance < 0.3 && (distance < topDistance)) {
+            topDistance = distance;
+            topN = trackedObject.n;
+            topChunkX = chunk.x;
+            topChunkZ = chunk.z;
+            topObjectIndex = parseInt(k, 10);
+          }
         }
       }
     }
