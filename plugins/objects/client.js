@@ -249,7 +249,7 @@ void main() {
     );
 
     const worker = new Worker('archae/plugins/_plugins_objects/build/worker.js');
-    const buffers = bffr(NUM_POSITIONS_CHUNK, NUM_BUFFERS);
+    let generateBuffer = new ArrayBuffer(NUM_POSITIONS_CHUNK);
     let lightmapBuffer = new Uint8Array(LIGHTMAP_BUFFER_SIZE * NUM_BUFFERS);
     let cullBuffer = new ArrayBuffer(4096);
     let queues = {};
@@ -331,14 +331,17 @@ void main() {
       localMessage.type = 'generate';
       const id = _makeId();
       localMessage.id = id;
-      const buffer = buffers.alloc();
       localGenerateMessageArgs.x = x;
       localGenerateMessageArgs.z = z;
-      localGenerateMessageArgs.buffer = buffer;
+      localGenerateMessageArgs.buffer = generateBuffer;
       localMessage.args = localGenerateMessageArgs;
 
-      worker.postMessage(localMessage, [buffer]);
-      queues[id] = cb;
+      worker.postMessage(localMessage, [generateBuffer]);
+      queues[id] = newGenerateBuffer => {
+        generateBuffer = newGenerateBuffer;
+
+        cb(newGenerateBuffer);
+      };
     };
     worker.requestUngenerate = (x, z) => {
       localMessage.type = 'ungenerate';
@@ -500,11 +503,11 @@ void main() {
       }
     };
 
-    const _requestObjectsGenerate = (x, z) => new Promise((accept, reject) => {
+    const _requestObjectsGenerate = (x, z, cb) => {
       worker.requestGenerate(x, z, objectsChunkBuffer => {
-        accept(protocolUtils.parseGeometry(objectsChunkBuffer));
+        cb(protocolUtils.parseGeometry(objectsChunkBuffer));
       });
-    });
+    };
     const _makeObjectsChunkMesh = (chunk, objectsChunkData) => {
       const {x, z} = chunk;
       const {positions: newPositions, uvs: newUvs, frames: newFrames, lightmaps: newLightmaps, objectIndices: newObjectIndices, indices: newIndices} = objectsChunkData;
@@ -569,7 +572,6 @@ void main() {
         lightmaps,
         lightmap: null,
         destroy: () => {
-          buffers.free(objectsChunkData.buffer);
           geometryBuffer.free(gbuffer);
 
           material.dispose();
@@ -972,17 +974,29 @@ void main() {
     })();
     scene.add(objectsObject);
 
-    const _requestRefreshObjectsChunks = () => {
+    const _debouncedRequestRefreshObjectsChunks = _debounce(next => {
       const {hmd} = pose.getStatus();
       const {worldPosition: hmdPosition} = hmd;
       const {added, removed, relodded} = chunker.update(hmdPosition.x, hmdPosition.z);
 
-      const promises = [];
+      let running = false;
+      const queue = [];
       const _addChunk = chunk => {
-        const {x, z} = chunk;
+        if (!running) {
+          running = true;
 
-        const promise = _requestObjectsGenerate(x, z)
-          .then(objectsChunkData => {
+          const _next = () => {
+            running = false;
+
+            if (queue.length > 0) {
+              _addChunk(queue.shift());
+            } else {
+              next();
+            }
+          };
+
+          const {x, z} = chunk;
+          _requestObjectsGenerate(x, z, objectsChunkData => {
             const index = _getChunkIndex(x, z);
 
             const {data: oldObjectsChunkMesh} = chunk;
@@ -1002,27 +1016,30 @@ void main() {
             objectsChunkMeshes[index] = newObjectsChunkMesh;
 
             chunk.data = newObjectsChunkMesh;
+
+            _next();
           });
-        promises.push(promise);
+        } else {
+          queue.push(chunk);
+        }
       };
       for (let i = 0; i < added.length; i++) {
         _addChunk(added[i]);
       }
       for (let i = 0; i < relodded.length; i++) {
         const chunk = relodded[i];
-        const {lastLod} = chunk;
 
-        if (lastLod === -1) {
+        if (chunk.lastLod === -1) {
           _addChunk(chunk);
-        } else {
+        } /* else {
           const {lod, data: objectsChunkMesh} = chunk;
 
           if (!objectsChunkMesh.lightmap && lod === 1) {
-            // _bindLightmap(objectsChunkMesh);
+            _bindLightmap(objectsChunkMesh);
           } else if (objectsChunkMesh.lightmap && lod !== 1) {
-            // _unbindLightmap(objectsChunkMesh);
+            _unbindLightmap(objectsChunkMesh);
           }
-        }
+        } */
       }
       for (let i = 0; i < removed.length; i++) {
         const chunk = removed[i];
@@ -1037,16 +1054,10 @@ void main() {
 
         objectsChunkMeshes[_getChunkIndex(x, z)] = null;
       }
-      return Promise.all(promises);
-    };
-    const _debouncedRequestRefreshObjectsChunks = _debounce(next => {
-      _requestRefreshObjectsChunks()
-        .then(next)
-        .catch(err => {
-          console.warn(err);
 
-          next();
-        });
+      if (!running) {
+        next();
+      }
     });
 
     let bodyObject = null;

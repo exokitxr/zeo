@@ -11,8 +11,6 @@ const grass = objectApi => {
   const {three, pose, input, render, elements, items} = zeo;
   const {THREE, scene} = three;
 
-  const localVector = new THREE.Vector3();
-
   const _requestImage = src => new Promise((accept, reject) => {
     const img = new Image();
     img.onload = () => {
