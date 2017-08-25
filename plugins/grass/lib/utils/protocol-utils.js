@@ -224,22 +224,6 @@ const parseCull = (buffer, byteOffset) => {
   return mapChunks;
 };
 
-const parseHeightfield = (buffer, byteOffset) => {
-  if (byteOffset === undefined) {
-    byteOffset = 0;
-  }
-
-  const headerBuffer = new Uint32Array(buffer, byteOffset, 1);
-  const numHeightfield = headerBuffer[0];
-  byteOffset += UINT32_SIZE * 1;
-
-  const heightfieldBuffer = new Float32Array(buffer, byteOffset, numHeightfield);
-  const heightfield = heightfieldBuffer;
-  byteOffset += FLOAT32_SIZE * numHeightfield;
-
-  return heightfield;
-};
-
 const _align = (n, alignment) => {
   let alignDiff = n % alignment;
   if (alignDiff > 0) {
@@ -254,6 +238,4 @@ module.exports = {
 
   stringifyCull,
   parseCull,
-
-  parseHeightfield,
 };

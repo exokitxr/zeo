@@ -560,53 +560,6 @@ const parseCull = (buffer, byteOffset) => {
   return mapChunks;
 };
 
-const sliceDataHeightfield = (arrayBuffer, readByteOffset) => {
-  const headerBuffer = new Uint32Array(arrayBuffer, readByteOffset, DATA_HEADER_ENTRIES);
-  let index = 0;
-  const numPositions = headerBuffer[index++];
-  const numColors = headerBuffer[index++];
-  const numIndices = headerBuffer[index++];
-  const numPeeks = Array(NUM_CHUNKS_HEIGHT);
-  for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
-    numPeeks[i] = headerBuffer[index++];
-  }
-  const numHeightfield = headerBuffer[index++];
-  const numStaticHeightfield = headerBuffer[index++];
-  const numElevations = headerBuffer[index++];
-  const numEther  = headerBuffer[index++];
-  readByteOffset += DATA_HEADER_SIZE + FLOAT32_SIZE * numPositions + FLOAT32_SIZE * numColors + UINT32_SIZE * numIndices + UINT32_SIZE * 2 * NUM_CHUNKS_HEIGHT + FLOAT32_SIZE * 4 * NUM_CHUNKS_HEIGHT + UINT8_SIZE * _sum(numPeeks);
-
-  const heightfieldBuffer = new Float32Array(arrayBuffer, readByteOffset, numHeightfield);
-  readByteOffset += FLOAT32_SIZE * numHeightfield + FLOAT32_SIZE * numStaticHeightfield + FLOAT32_SIZE * numElevations + FLOAT32_SIZE * numEther;
-
-  const resultArrayBuffer = new ArrayBuffer(UINT32_SIZE + FLOAT32_SIZE * numHeightfield);
-  let writeByteOffset = 0;
-  new Uint32Array(resultArrayBuffer, writeByteOffset, 1)[0] = numHeightfield;
-  writeByteOffset += UINT32_SIZE;
-  new Float32Array(resultArrayBuffer, writeByteOffset, numHeightfield).set(heightfieldBuffer);
-  writeByteOffset += FLOAT32_SIZE * numHeightfield;
-
-  return resultArrayBuffer;
-};
-
-const parseHeightfield = (buffer, byteOffset) => {
-  if (byteOffset === undefined) {
-    byteOffset = 0;
-  }
-
-  const headerBuffer = new Uint32Array(buffer, byteOffset, 1);
-  const numHeightfield = headerBuffer[0];
-  byteOffset += UINT32_SIZE * 1;
-
-  const heightfieldBuffer = new Float32Array(buffer, byteOffset, numHeightfield);
-  const heightfield = heightfieldBuffer;
-  byteOffset += FLOAT32_SIZE * numHeightfield;
-
-  return {
-    heightfield,
-  };
-};
-
 const _sum = a => {
   let result = 0;
   for (let i = 0; i < a.length; i++) {
@@ -631,7 +584,4 @@ module.exports = {
 
   stringifyCull,
   parseCull,
-
-  sliceDataHeightfield,
-  parseHeightfield,
 };

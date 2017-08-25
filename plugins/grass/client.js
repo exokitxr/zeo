@@ -337,18 +337,38 @@ class Grass {
         _cleanupQueues();
       } else if (type === 'request') {
         const [id] = args;
-        const {lightmapBuffer} = data;
+        const {method} = data;
 
-        if (lightmapper) {
-          lightmapper.requestRender(lightmapBuffer, lightmapBuffer => {
-            worker.requestResponse(id, lightmapBuffer, [lightmapBuffer.buffer]);
-          });
-        } else {
-          const lightmapArray = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset);
-          const numLightmaps = lightmapArray;
-          for (let i = 0; i < numLightmaps; i++) {
-            lightmapArray[i] = 0;
+        if (method === 'render') {
+          const {lightmapBuffer} = data;
+
+          if (lightmapper) {
+            lightmapper.requestRender(lightmapBuffer, lightmapBuffer => {
+              worker.requestResponse(id, lightmapBuffer, [lightmapBuffer.buffer]);
+            });
+          } else {
+            const lightmapArray = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset);
+            const numLightmaps = lightmapArray;
+            for (let i = 0; i < numLightmaps; i++) {
+              lightmapArray[i] = 0;
+            }
           }
+        } else if (method === 'heightfield') {
+          const [id, x, y] = args;
+          const {buffer} = data;
+
+          const heightfieldElement = elements.getEntitiesElement().querySelector(HEIGHTFIELD_PLUGIN);
+          if (heightfieldElement) {
+            heightfieldElement.requestHeightfield(x, y, buffer, heightfield => {
+              worker.requestResponse(id, heightfield, [heightfield.buffer]);
+            });
+          } else {
+            const heightfield = new Float32Array(buffer, 0, (NUM_CELLS + 1) * (NUM_CELLS + 1));
+            heightfield.fill(0);
+            worker.requestResponse(id, buffer, [buffer]);
+          }
+        } else {
+          console.warn('grass got unknown worker response method type:', JSON.stringify(method));
         }
       } else {
         console.warn('grass got unknown worker message type:', JSON.stringify(type));

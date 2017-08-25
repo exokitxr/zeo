@@ -224,12 +224,15 @@ const localMatrix = new THREE.Matrix4();
 const localMatrix2 = new THREE.Matrix4();
 const localFrustum = new THREE.Frustum();
 
-const _requestHeightfield = (x, y) => { // XXX pipe this through a channel instead of requesting it from the backend
-  return fetch(`/archae/heightfield/heightfield?x=${x}&z=${y}`, {
-    credentials: 'include',
-  })
-    .then(_resArrayBuffer)
-    .then(arrayBuffer => protocolUtils.parseHeightfield(arrayBuffer, 0));
+const _requestHeightfield = (x, y, buffer, cb) => {
+  const id = _makeId();
+  postMessage({
+    type: 'request',
+    method: 'heightfield',
+    args: [id, x, y],
+    buffer,
+  }, [buffer]);
+  queues[id] = cb;
 };
 
 const grassChunkMeshes = {};
@@ -369,84 +372,82 @@ self.onmessage = e => {
     case 'generate': {
       const {id, x, y, buffer} = data;
 
-      _requestHeightfield(x, y)
-        .then(heightfield => {
-          const grassChunkGeometry = _makeGrassChunkMesh(x, y, grassTemplates, heightfield);
+      _requestHeightfield(x, y, buffer, heightfield => {
+        const {buffer} = heightfield;
 
-          const lightmapBuffer = new Uint8Array(buffer, Math.floor(buffer.byteLength * 3 / 4));
+        const grassChunkGeometry = _makeGrassChunkMesh(x, y, grassTemplates, heightfield);
 
-          let byteOffset = 0;
-          new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, 1)[0] = 1;
-          byteOffset += 4;
+        const lightmapBuffer = new Uint8Array(buffer, Math.floor(buffer.byteLength * 3 / 4));
 
-          const lightmapHeaderArray = new Int32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, 2);
-          lightmapHeaderArray[0] = x;
-          lightmapHeaderArray[1] = y;
-          byteOffset += 4 * 2;
+        let byteOffset = 0;
+        new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, 1)[0] = 1;
+        byteOffset += 4;
 
-          const {positions} = grassChunkGeometry;
-          const numPositions = positions.length;
-          new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, 1)[0] = numPositions;
-          byteOffset += 4;
+        const lightmapHeaderArray = new Int32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, 2);
+        lightmapHeaderArray[0] = x;
+        lightmapHeaderArray[1] = y;
+        byteOffset += 4 * 2;
 
-          new Float32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, numPositions).set(positions);
-          byteOffset += 4 * numPositions;
+        const {positions} = grassChunkGeometry;
+        const numPositions = positions.length;
+        new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, 1)[0] = numPositions;
+        byteOffset += 4;
 
-          _requestLightmaps(lightmapBuffer, lightmapBuffer => {
-            const {buffer} = lightmapBuffer;
+        new Float32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, numPositions).set(positions);
+        byteOffset += 4 * numPositions;
 
-            const lightmapsLength = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset, 1)[0];
-            const lightmaps = new Uint8Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + 4, lightmapsLength);
+        _requestLightmaps(lightmapBuffer, lightmapBuffer => {
+          const {buffer} = lightmapBuffer;
 
-            const geometries = (() => { // XXX actually split into multiple geometries
-              const result = Array(NUM_CHUNKS_HEIGHT);
-              for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
-                result[i] = {
-                  indexRange: {
-                    start: -1,
-                    count: 0,
-                  },
-                  boundingSphere: new Float32Array(4),
-                };
-              }
-              result[0] = {
-                indexRange: {
-                  start: 0,
-                  count: grassChunkGeometry.indices.length,
-                },
-                boundingSphere: grassChunkGeometry.boundingSphere,
-              };
-              return result;
-            })();
-            const trackedGrassChunkMeshes = {
-              offset: new THREE.Vector2(x, y),
-              positions: grassChunkGeometry.positions,
-              array: Array(NUM_CHUNKS_HEIGHT),
-              groups: new Int32Array(NUM_RENDER_GROUPS * 2),
-            };
+          const lightmapsLength = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset, 1)[0];
+          const lightmaps = new Uint8Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + 4, lightmapsLength);
+
+          const geometries = (() => { // XXX actually split into multiple geometries
+            const result = Array(NUM_CHUNKS_HEIGHT);
             for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
-              const {indexRange, boundingSphere} = geometries[i];
-              trackedGrassChunkMeshes.array[i] = {
-                indexRange,
-                boundingSphere: new THREE.Sphere(
-                  new THREE.Vector3().fromArray(boundingSphere, 0),
-                  boundingSphere[3]
-                ),
+              result[i] = {
+                indexRange: {
+                  start: -1,
+                  count: 0,
+                },
+                boundingSphere: new Float32Array(4),
               };
             }
-            grassChunkMeshes[_getChunkIndex(x, y)] = trackedGrassChunkMeshes;
+            result[0] = {
+              indexRange: {
+                start: 0,
+                count: grassChunkGeometry.indices.length,
+              },
+              boundingSphere: grassChunkGeometry.boundingSphere,
+            };
+            return result;
+          })();
+          const trackedGrassChunkMeshes = {
+            offset: new THREE.Vector2(x, y),
+            positions: grassChunkGeometry.positions,
+            array: Array(NUM_CHUNKS_HEIGHT),
+            groups: new Int32Array(NUM_RENDER_GROUPS * 2),
+          };
+          for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
+            const {indexRange, boundingSphere} = geometries[i];
+            trackedGrassChunkMeshes.array[i] = {
+              indexRange,
+              boundingSphere: new THREE.Sphere(
+                new THREE.Vector3().fromArray(boundingSphere, 0),
+                boundingSphere[3]
+              ),
+            };
+          }
+          grassChunkMeshes[_getChunkIndex(x, y)] = trackedGrassChunkMeshes;
 
-            protocolUtils.stringifyGrassGeometry(grassChunkGeometry, lightmaps, buffer, 0);
-            postMessage({
-              type: 'response',
-              args: [id],
-              result: buffer,
-            }, [buffer]);
-          });
-        })
-        .catch(err => {
-          console.warn(err);
+          protocolUtils.stringifyGrassGeometry(grassChunkGeometry, lightmaps, buffer, 0);
+          postMessage({
+            type: 'response',
+            args: [id],
+            result: buffer,
+          }, [buffer]);
         });
+      });
       break;
     }
     case 'ungenerate': {

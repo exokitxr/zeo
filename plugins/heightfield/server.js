@@ -128,30 +128,6 @@ class Heightfield {
         }
         app.get('/archae/heightfield/chunks', serveHeightfieldChunks);
 
-        function serveHeightfieldHeightfield(req, res, next) {
-          const {query: {x: xs, z: zs}} = req;
-          const x = parseInt(xs, 10);
-          const z = parseInt(zs, 10);
-
-          if (!isNaN(x) && !isNaN(z)) {
-            let chunk = tra.getChunk(x, z);
-            if (!chunk) {
-              chunk = tra.makeChunk(x, z);
-              chunk.generate(generator);
-              _saveChunks();
-            }
-            const uint32Buffer = chunk.getBuffer();
-            const arrayBuffer = protocolUtils.sliceDataHeightfield(uint32Buffer.buffer, uint32Buffer.byteOffset);
-            const buffer = new Buffer(arrayBuffer);
-            res.type('application/octet-stream');
-            res.send(buffer);
-          } else {
-            res.status(400);
-            res.send();
-          }
-        }
-        app.get('/archae/heightfield/heightfield', serveHeightfieldHeightfield);
-
         function serveHeightfieldVoxels(req, res, next) {
           const {query: {x: xs, y: ys, z: zs}} = req;
           const x = parseInt(xs, 10);
@@ -223,7 +199,6 @@ class Heightfield {
             if (
               route.handle.name === 'serveHeightfieldImg' ||
               route.handle.name === 'serveHeightfieldChunks' ||
-              route.handle.name === 'serveHeightfieldHeightfield' ||
               route.handle.name === 'serveHeightfieldVoxels'
             ) {
               routes.splice(i, 1);

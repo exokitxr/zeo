@@ -323,6 +323,19 @@ class Heightfield {
       });
       queues[id] = cb;
     };
+    worker.requestHeightfield = (x, y, buffer, cb) => {
+      const id = _makeId();
+      worker.postMessage({
+        method: 'heightfield',
+        id,
+        args: {
+          x,
+          y,
+          buffer,
+        },
+      }, [buffer]);
+      queues[id] = cb;
+    };
     worker.requestResponse = (id, result, transfers) => {
       worker.postMessage({
         method: 'response',
@@ -796,6 +809,9 @@ class Heightfield {
             entityElement.getBestElevation = _getBestElevation;
             entityElement._cleanup = () => {
               teleport.removeTarget(_teleportTarget);
+            };
+            entityElement.requestHeightfield = (x, z, buffer, cb) => {
+              worker.requestHeightfield(x, z, buffer, cb);
             };
           },
         };

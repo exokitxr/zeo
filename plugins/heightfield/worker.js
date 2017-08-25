@@ -322,6 +322,28 @@ self.onmessage = e => {
       _unrequestChunk(x, y);
       break;
     }
+    case 'heightfield': {
+      const {id, args} = data;
+      const {x, y, buffer} = args;
+
+      _requestChunk(x, y)
+        .then(chunk => {
+          const {heightfield: newHeightfield} = chunk.chunkData;
+
+          const heightfield = new Float32Array(buffer, 0, newHeightfield.length);
+          heightfield.set(newHeightfield);
+
+          postMessage({
+            type: 'response',
+            args: [id],
+            result: heightfield,
+          }, [heightfield.buffer]);
+        })
+        .catch(err => {
+          console.warn(err);
+        });
+      break;
+    }
     case 'lightmaps': {
       const {id, args} = data;
       const {lightmapBuffer} = args;
