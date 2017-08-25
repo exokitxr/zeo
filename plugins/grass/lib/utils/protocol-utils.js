@@ -4,44 +4,51 @@ const {
 
 const UINT32_SIZE = 4;
 const INT32_SIZE = 4;
+const UINT8_SIZE = 1;
 const FLOAT32_SIZE = 4;
 const UINT16_SIZE = 2;
-const GRASS_GEOMETRY_HEADER_ENTRIES = 4;
+const GRASS_GEOMETRY_HEADER_ENTRIES = 5;
 const GRASS_GEOMETRY_HEADER_SIZE = UINT32_SIZE * GRASS_GEOMETRY_HEADER_ENTRIES;
 const CULL_HEADER_ENTRIES = 1;
 const CULL_HEADER_SIZE = UINT32_SIZE * CULL_HEADER_ENTRIES;
 
 const _getGrassGeometrySizeFromMetadata = metadata => {
-  const {numPositions, numNormals, numUvs, numIndices, numBoundingSphere} = metadata;
+  const {numPositions, numUvs, numLightmaps, numIndices, numBoundingSphere} = metadata;
 
-  return GRASS_GEOMETRY_HEADER_SIZE + // header
-    (FLOAT32_SIZE * numPositions) + // positions
-    (FLOAT32_SIZE * numUvs) + // uvs
-    (FLOAT32_SIZE * numIndices) + // indices
-    (FLOAT32_SIZE * numBoundingSphere); // bounding sphere
+  return _align(
+    GRASS_GEOMETRY_HEADER_SIZE + // header
+      (FLOAT32_SIZE * numPositions) + // positions
+      (FLOAT32_SIZE * numUvs) + // uvs
+      (UINT8_SIZE * numLightmaps), // lightmaps
+    UINT16_SIZE
+  ) +
+  (UINT16_SIZE * numIndices) + // indices
+  (FLOAT32_SIZE * numBoundingSphere); // bounding sphere
 };
 
-const _getGrassGeometrySize = grassGeometry => {
+const _getGrassGeometrySize = (grassGeometry, lightmaps) => {
   const {positions, uvs, indices, boundingSphere} = grassGeometry;
 
   const numPositions = positions.length;
   const numUvs = uvs.length
+  const numLightmaps = lightmaps.length
   const numIndices = indices.length
   const numBoundingSphere = boundingSphere.length;
 
   return _getGrassGeometrySizeFromMetadata({
     numPositions,
     numUvs,
+    numLightmaps,
     numIndices,
     numBoundingSphere,
   });
 };
 
-const stringifyGrassGeometry = (grassGeometry, arrayBuffer, byteOffset) => {
+const stringifyGrassGeometry = (grassGeometry, lightmaps, arrayBuffer, byteOffset) => {
   const {positions, uvs, indices, boundingSphere} = grassGeometry;
 
   if (arrayBuffer === undefined || byteOffset === undefined) {
-    const bufferSize = _getGrassGeometrySize(grassGeometry);
+    const bufferSize = _getGrassGeometrySize(grassGeometry, lightmaps);
     arrayBuffer = new ArrayBuffer(bufferSize);
     byteOffset = 0;
   }
@@ -49,8 +56,9 @@ const stringifyGrassGeometry = (grassGeometry, arrayBuffer, byteOffset) => {
   const headerBuffer = new Uint32Array(arrayBuffer, byteOffset, GRASS_GEOMETRY_HEADER_ENTRIES);
   headerBuffer[0] = positions.length;
   headerBuffer[1] = uvs.length;
-  headerBuffer[2] = indices.length;
-  headerBuffer[3] = boundingSphere.length;
+  headerBuffer[2] = lightmaps.length;
+  headerBuffer[3] = indices.length;
+  headerBuffer[4] = boundingSphere.length;
   byteOffset += GRASS_GEOMETRY_HEADER_SIZE;
 
   const positionsBuffer = new Float32Array(arrayBuffer, byteOffset, positions.length);
@@ -60,6 +68,12 @@ const stringifyGrassGeometry = (grassGeometry, arrayBuffer, byteOffset) => {
   const uvsBuffer = new Float32Array(arrayBuffer, byteOffset, uvs.length);
   uvsBuffer.set(uvs);
   byteOffset += FLOAT32_SIZE * uvs.length;
+
+  const lightmapsBuffer = new Uint8Array(arrayBuffer, byteOffset, lightmaps.length);
+  lightmapsBuffer.set(lightmaps);
+  byteOffset += UINT8_SIZE * lightmaps.length;
+
+  byteOffset = _align(byteOffset, UINT16_SIZE);
 
   const indicesBuffer = new Uint16Array(arrayBuffer, byteOffset, indices.length);
   indicesBuffer.set(indices);
@@ -80,8 +94,9 @@ const parseGrassGeometry = (buffer, byteOffset) => {
   const headerBuffer = new Uint32Array(buffer, byteOffset, GRASS_GEOMETRY_HEADER_ENTRIES);
   const numPositions = headerBuffer[0];
   const numUvs = headerBuffer[1];
-  const numIndices = headerBuffer[2];
-  const numBoundingSphere = headerBuffer[3];
+  const numLightmaps = headerBuffer[2];
+  const numIndices = headerBuffer[3];
+  const numBoundingSphere = headerBuffer[4];
   byteOffset += GRASS_GEOMETRY_HEADER_SIZE;
 
   const positionsBuffer = new Float32Array(buffer, byteOffset, numPositions);
@@ -91,6 +106,12 @@ const parseGrassGeometry = (buffer, byteOffset) => {
   const uvBuffer = new Float32Array(buffer, byteOffset, numUvs);
   const uvs = uvBuffer;
   byteOffset += FLOAT32_SIZE * numUvs;
+
+  const lightmapBuffer = new Uint8Array(buffer, byteOffset, numLightmaps);
+  const lightmaps = lightmapBuffer;
+  byteOffset += UINT8_SIZE * numLightmaps;
+
+  byteOffset = _align(byteOffset, UINT16_SIZE);
 
   const indicesBuffer = new Uint16Array(buffer, byteOffset, numIndices);
   const indices = indicesBuffer;
@@ -104,6 +125,7 @@ const parseGrassGeometry = (buffer, byteOffset) => {
     buffer,
     positions,
     uvs,
+    lightmaps,
     indices,
     boundingSphere,
   };
@@ -216,6 +238,14 @@ const parseHeightfield = (buffer, byteOffset) => {
   byteOffset += FLOAT32_SIZE * numHeightfield;
 
   return heightfield;
+};
+
+const _align = (n, alignment) => {
+  let alignDiff = n % alignment;
+  if (alignDiff > 0) {
+    n += alignment - alignDiff;
+  }
+  return n;
 };
 
 module.exports = {

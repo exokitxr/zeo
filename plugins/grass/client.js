@@ -7,8 +7,10 @@ const {
 } = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
 
+const NUM_POSITIONS_CHUNK = 200 * 1024;
+const LIGHTMAP_BUFFER_SIZE = 100 * 1024 * 4;
+const NUM_BUFFERS = RANGE * RANGE * 9;
 const TEXTURE_SIZE = 1024;
-const NUM_POSITIONS_CHUNK = 100 * 1024;
 const HEIGHTFIELD_PLUGIN = 'plugins-heightfield';
 const LIGHTMAP_PLUGIN = 'plugins-lightmap';
 const DAY_NIGHT_SKYBOX_PLUGIN = 'plugins-day-night-skybox';
@@ -19,22 +21,22 @@ const GRASS_SHADER = {
       type: 't',
       value: null,
     },
-    lightMap: {
+    /* lightMap: {
       type: 't',
       value: null,
     },
     useLightMap: {
       type: 'f',
       value: 0,
-    },
+    }, */
     d: {
       type: 'v2',
       value: null,
     },
-    sunIntensity: {
+    /* sunIntensity: {
       type: 'f',
       value: 0,
-    },
+    }, */
   },
   vertexShader: `\
 precision highp float;
@@ -47,9 +49,11 @@ uniform mat3 normalMatrix;
 attribute vec3 position;
 attribute vec3 normal;
 attribute vec2 uv; */
+attribute float lightmap;
 
 varying vec3 vPosition;
 varying vec2 vUv;
+varying float vLightmap;
 
 void main() {
   vUv = uv;
@@ -58,6 +62,8 @@ void main() {
   gl_Position = projectionMatrix * mvPosition;
 
 	vPosition = position.xyz;
+
+  vLightmap = lightmap;
 }
 `,
   fragmentShader: `\
@@ -67,18 +73,20 @@ precision highp int;
 // uniform mat4 viewMatrix;
 // uniform vec3 ambientLightColor;
 uniform sampler2D map;
-uniform sampler2D lightMap;
-uniform float useLightMap;
+// uniform sampler2D lightMap;
+// uniform float useLightMap;
 uniform vec2 d;
-uniform float sunIntensity;
+// uniform float sunIntensity;
 
 varying vec3 vPosition;
 varying vec2 vUv;
+varying float vLightmap;
 
 void main() {
   vec4 diffuseColor = texture2D( map, vUv );
 
-  vec3 lightColor;
+  vec3 lightColor = vec3(floor(vLightmap * 4.0 + 0.5) / 4.0);
+  /* vec3 lightColor;
   if (useLightMap > 0.0) {
     float u = (
       floor(clamp(vPosition.x - d.x, 0.0, ${(NUM_CELLS).toFixed(8)})) +
@@ -89,7 +97,7 @@ void main() {
     lightColor = texture2D( lightMap, vec2(u, v) ).rgb;
   } else {
     lightColor = vec3(sunIntensity);
-  }
+  } */
 
 #ifdef ALPHATEST
 	if ( diffuseColor.a < ALPHATEST ) discard;
@@ -169,7 +177,56 @@ class Grass {
     const _ensureHeightfieldElement = () => elements.requestElement(HEIGHTFIELD_PLUGIN)
       .then(() => {});
 
-    const buffers = bffr(NUM_POSITIONS_CHUNK, RANGE * RANGE * 9);
+    let lightmapper = null;
+    const _bindLightmapper = lightmapElement => {
+      lightmapper = lightmapElement.lightmapper;
+
+      // _bindLightmaps();
+    };
+    const _unbindLightmapper = () => {
+      // _unbindLightmaps();
+
+      lightmapper = null;
+    };
+    const _bindLightmaps = () => {
+      for (const index in grassChunkMeshes) {
+        const grassChunkMesh = grassChunkMeshes[index];
+        if (grassChunkMesh) {
+          _bindLightmap(grassChunkMesh);
+        }
+      }
+    };
+    const _unbindLightmaps = () => {
+      for (const index in grassChunkMeshes) {
+        const grassChunkMesh = grassChunkMeshes[index];
+        if (grassChunkMesh && grassChunkMesh.lightmap) {
+          _unbindLightmap(grassChunkMesh);
+        }
+      }
+    };
+    const _bindLightmap = grassChunkMesh => {
+      const lightmap = lightmapper.getLightmapAt(grassChunkMesh.offset.x * NUM_CELLS, grassChunkMesh.offset.y * NUM_CELLS);
+      grassChunkMesh.material.uniforms.lightMap.value = lightmap.texture;
+      grassChunkMesh.material.uniforms.useLightMap.value = 1;
+      grassChunkMesh.lightmap = lightmap;
+    };
+    const _unbindLightmap = grassChunkMesh => {
+      const {lightmap} = grassChunkMesh;
+      lightmapper.releaseLightmap(lightmap);
+      grassChunkMesh.material.uniforms.lightMap.value = null;
+      grassChunkMesh.material.uniforms.useLightMap.value = 0;
+      grassChunkMesh.lightmap = null;
+    };
+    const elementListener = elements.makeListener(LIGHTMAP_PLUGIN); // XXX clean this up properly
+    elementListener.on('add', entityElement => {
+      _bindLightmapper(entityElement);
+    });
+    elementListener.on('remove', () => {
+      _unbindLightmapper();
+    });
+
+    const buffers = bffr(NUM_POSITIONS_CHUNK, NUM_BUFFERS);
+    let lightmapBuffer = new Uint8Array(LIGHTMAP_BUFFER_SIZE * NUM_BUFFERS);
     let cullBuffer = new ArrayBuffer(4096);
     const worker = new Worker('archae/plugins/_plugins_grass/build/worker.js');
     let queues = {};
@@ -208,6 +265,17 @@ class Grass {
         x,
         y,
       });
+    };
+    worker.requestLightmaps = (lightmapBuffer, cb) => {
+      const id = _makeId();
+      worker.postMessage({
+        type: 'lightmaps',
+        id,
+        args: {
+          lightmapBuffer,
+        },
+      }, [lightmapBuffer.buffer]);
+      queues[id] = cb;
     };
     worker.requestCull = (hmdPosition, projectionMatrix, matrixWorldInverse, cb) => { // XXX hmdPosition is unused
       const id = _makeId();
@@ -248,6 +316,13 @@ class Grass {
         cb(canvas);
       };
     };
+    worker.requestResponse = (id, result, transfers) => {
+      worker.postMessage({
+        type: 'response',
+        id,
+        result,
+      }, transfers);
+    };
     worker.onmessage = e => {
       const {data} = e;
       const {type, args} = data;
@@ -260,6 +335,21 @@ class Grass {
         queues[id] = null;
 
         _cleanupQueues();
+      } else if (type === 'request') {
+        const [id] = args;
+        const {lightmapBuffer} = data;
+
+        if (lightmapper) {
+          lightmapper.requestRender(lightmapBuffer, lightmapBuffer => {
+            worker.requestResponse(id, lightmapBuffer, [lightmapBuffer.buffer]);
+          });
+        } else {
+          const lightmapArray = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset);
+          const numLightmaps = lightmapArray;
+          for (let i = 0; i < numLightmaps; i++) {
+            lightmapArray[i] = 0;
+          }
+        }
       } else {
         console.warn('grass got unknown worker message type:', JSON.stringify(type));
       }
@@ -278,69 +368,13 @@ class Grass {
             THREE.UVMapping,
             THREE.ClampToEdgeWrapping,
             THREE.ClampToEdgeWrapping,
-            // THREE.LinearMipMapLinearFilter,
-            // THREE.LinearMipMapLinearFilter,
             THREE.NearestMipMapLinearFilter,
             THREE.NearestMipMapLinearFilter,
-            // THREE.NearestMipMapNearestFilter,
-            // THREE.NearestMipMapNearestFilter,
-            // THREE.LinearFilter,
-            // THREE.LinearFilter,
-            // THREE.NearestFilter,
-            // THREE.NearestFilter,
             THREE.RGBAFormat,
             THREE.UnsignedByteType,
             16
           );
           mapTexture.needsUpdate = true;
-
-          let lightmapper = null;
-          const _bindLightmapper = lightmapElement => {
-            lightmapper = lightmapElement.lightmapper;
-
-            _bindLightmaps();
-          };
-          const _unbindLightmapper = () => {
-            _unbindLightmaps();
-
-            lightmapper = null;
-          };
-          const _bindLightmaps = () => {
-            for (const index in grassChunkMeshes) {
-              const grassChunkMesh = grassChunkMeshes[index];
-              if (grassChunkMesh) {
-                _bindLightmap(grassChunkMesh);
-              }
-            }
-          };
-          const _unbindLightmaps = () => {
-            for (const index in grassChunkMeshes) {
-              const grassChunkMesh = grassChunkMeshes[index];
-              if (grassChunkMesh && grassChunkMesh.lightmap) {
-                _unbindLightmap(grassChunkMesh);
-              }
-            }
-          };
-          const _bindLightmap = grassChunkMesh => {
-            const lightmap = lightmapper.getLightmapAt(grassChunkMesh.offset.x * NUM_CELLS, grassChunkMesh.offset.y * NUM_CELLS);
-            grassChunkMesh.material.uniforms.lightMap.value = lightmap.texture;
-            grassChunkMesh.material.uniforms.useLightMap.value = 1;
-            grassChunkMesh.lightmap = lightmap;
-          };
-          const _unbindLightmap = grassChunkMesh => {
-            const {lightmap} = grassChunkMesh;
-            lightmapper.releaseLightmap(lightmap);
-            grassChunkMesh.material.uniforms.lightMap.value = null;
-            grassChunkMesh.material.uniforms.useLightMap.value = 0;
-            grassChunkMesh.lightmap = null;
-          };
-          const elementListener = elements.makeListener(LIGHTMAP_PLUGIN);
-          elementListener.on('add', entityElement => {
-            _bindLightmapper(entityElement);
-          });
-          elementListener.on('remove', () => {
-            _unbindLightmapper();
-          });
 
           const _requestGrassGenerate = (x, y) => new Promise((accept, reject) => {
             worker.requestGenerate(x, y, grassChunkBuffer => {
@@ -349,12 +383,12 @@ class Grass {
           });
           const _makeGrassChunkMesh = (chunk, grassChunkData) => {
             const {x, z} = chunk;
-            const {positions: newPositions, uvs: newUvs, indices: newIndices} = grassChunkData;
+            const {positions: newPositions, uvs: newUvs, lightmaps: newLightmaps, indices: newIndices} = grassChunkData;
 
             // geometry
 
             const gbuffer = geometryBuffer.alloc();
-            const {index, slices: {positions, uvs, indices}} = gbuffer;
+            const {index, slices: {positions, uvs, lightmaps, indices}} = gbuffer;
 
             if (newPositions.length > 0) {
               positions.set(newPositions);
@@ -362,6 +396,9 @@ class Grass {
 
               uvs.set(newUvs);
               renderer.updateAttribute(grassMesh.geometry.attributes.uv, index * uvs.length, newUvs.length, false);
+
+              lightmaps.set(newLightmaps);
+              renderer.updateAttribute(grassMesh.geometry.attributes.lightmap, index * lightmaps.length, newLightmaps.length, false);
 
               const positionOffset = index * (positions.length / 3);
               for (let i = 0; i < newIndices.length; i++)  {
@@ -389,14 +426,16 @@ class Grass {
 
             const mesh = {
               material,
-              indexOffset: index * indices.length,
-              offset: new THREE.Vector2(x, z),
-              lightmap: null,
               renderListEntry: {
                 object: grassMesh,
                 material: material,
                 groups: [],
               },
+              index,
+              indexOffset: index * indices.length,
+              offset: new THREE.Vector2(x, z),
+              lightmaps,
+              lightmap: null,
               destroy: () => {
                 buffers.free(grassChunkData.buffer);
                 geometryBuffer.free(gbuffer);
@@ -409,7 +448,7 @@ class Grass {
               },
             };
             if (lightmapper && chunk.lod === 1) {
-              _bindLightmap(mesh);
+              // _bindLightmap(mesh);
             }
 
             return mesh;
@@ -436,6 +475,11 @@ class Grass {
                 size: 2 * 3 * 4,
               },
               {
+                name: 'lightmaps',
+                constructor: Uint8Array,
+                size: 3 * 1,
+              },
+              {
                 name: 'indices',
                 constructor: Uint32Array,
                 size: 3 * 4,
@@ -443,7 +487,7 @@ class Grass {
             ]
           );
           const grassMesh = (() => {
-            const {positions, uvs, indices} = geometryBuffer.getAll();
+            const {positions, uvs, lightmaps, indices} = geometryBuffer.getAll();
 
             const geometry = new THREE.BufferGeometry();
             const positionAttribute = new THREE.BufferAttribute(positions, 3);
@@ -452,6 +496,9 @@ class Grass {
             const uvAttribute = new THREE.BufferAttribute(uvs, 2);
             uvAttribute.dynamic = true;
             geometry.addAttribute('uv', uvAttribute);
+            const lightmapAttribute = new THREE.BufferAttribute(lightmaps, 1, true);
+            lightmapAttribute.dynamic = true;
+            geometry.addAttribute('lightmap', lightmapAttribute);
             const indexAttribute = new THREE.BufferAttribute(indices, 1);
             indexAttribute.dynamic = true;
             geometry.setIndex(indexAttribute);
@@ -493,9 +540,9 @@ class Grass {
               const {lod, data: grassChunkMesh} = chunk;
 
               if (!grassChunkMesh.lightmap && lod === 1) {
-                _bindLightmap(grassChunkMesh);
+                // _bindLightmap(grassChunkMesh);
               } else if (grassChunkMesh.lightmap && lod !== 1) {
-                _unbindLightmap(grassChunkMesh);
+                // _unbindLightmap(grassChunkMesh);
               }
             }
             for (let i = 0; i < removed.length; i++) {
@@ -520,6 +567,57 @@ class Grass {
                 console.warn(err);
                 next();
               });
+          });
+
+          const _debouncedRefreshLightmaps = _debounce(next => {
+            const requestGrassChunkMeshes = [];
+            for (const index in grassChunkMeshes) {
+              const trackedGrassChunkMeshes = grassChunkMeshes[index];
+
+              if (trackedGrassChunkMeshes) {
+                requestGrassChunkMeshes.push(trackedGrassChunkMeshes);
+              }
+            }
+
+            let byteOffset = 0;
+            new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, 1)[0] = requestGrassChunkMeshes.length;
+            byteOffset += 4;
+
+            for (let i = 0; i < requestGrassChunkMeshes.length; i++) {
+              const trackedGrassChunkMeshes = requestGrassChunkMeshes[i];
+              const {offset: {x, y}} = trackedGrassChunkMeshes;
+
+              const lightmapRequestHeaderBuffer = new Int32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, 2);
+              lightmapRequestHeaderBuffer[0] = x;
+              lightmapRequestHeaderBuffer[1] = y;
+              byteOffset += 4 * 2;
+            }
+
+            worker.requestLightmaps(lightmapBuffer, newLightmapBuffer => {
+              let byteOffset = 0;
+              for (let i = 0; i < requestGrassChunkMeshes.length; i++) {
+                const lightmapsLength = new Uint32Array(newLightmapBuffer.buffer, newLightmapBuffer.byteOffset + byteOffset, 1)[0];
+                byteOffset += 4;
+
+                const newLightmaps = new Uint8Array(newLightmapBuffer.buffer, newLightmapBuffer.byteOffset + byteOffset, lightmapsLength);
+                byteOffset += lightmapsLength;
+                const alignDiff = byteOffset % 4;
+                if (alignDiff > 0) {
+                  byteOffset += 4 - alignDiff;
+                }
+
+                if (newLightmaps.length > 0) {
+                  const trackedGrassChunkMeshes = requestGrassChunkMeshes[i];
+                  const {index, lightmaps} = trackedGrassChunkMeshes;
+                  lightmaps.set(newLightmaps);
+                  renderer.updateAttribute(grassMesh.geometry.attributes.lightmap, index * lightmaps.length, newLightmaps.length, false);
+                }
+              }
+
+              lightmapBuffer = newLightmapBuffer;
+
+              next();
+            });
           });
 
           const _requestCull = (hmdPosition, projectionMatrix, matrixWorldInverse, cb) => {
@@ -554,6 +652,12 @@ class Grass {
             refreshChunksTimeout = setTimeout(_recurseRefreshChunks, 1000);
           };
           _recurseRefreshChunks();
+          let refreshLightmapsTimeout = null;
+          const _recurseRefreshLightmaps = () => {
+            _debouncedRefreshLightmaps();
+            refreshLightmapsTimeout = setTimeout(_recurseRefreshLightmaps, 1000 / 10);
+          };
+          _recurseRefreshLightmaps();
           let refreshCullTimeout = null;
           const _recurseRefreshCull = () => {
             _debouncedRefreshCull();
@@ -562,7 +666,7 @@ class Grass {
           _recurseRefreshCull();
 
           const _update = () => {
-            const _updateSunIntensity = () => {
+            /* const _updateSunIntensity = () => {
               const dayNightSkyboxEntity = elements.getEntitiesElement().querySelector(DAY_NIGHT_SKYBOX_PLUGIN);
               const sunIntensity = (dayNightSkyboxEntity && dayNightSkyboxEntity.getSunIntensity) ? dayNightSkyboxEntity.getSunIntensity() : 0;
 
@@ -572,7 +676,7 @@ class Grass {
                   grassChunkMesh.material.uniforms.sunIntensity.value = sunIntensity;
                 }
               }
-            };
+            }; */
             const _updateMatrices = () => {
               modelViewMatricesValid.left = false;
               modelViewMatricesValid.right = false;
@@ -582,7 +686,7 @@ class Grass {
               uniformsNeedUpdate.right = true;
             };
 
-            _updateSunIntensity();
+            // _updateSunIntensity();
             _updateMatrices();
           };
           render.on('update', _update);
@@ -591,6 +695,7 @@ class Grass {
             scene.remove(grassMesh);
 
             clearTimeout(refreshChunksTimeout);
+            clearTimeout(refreshLightmapsTimeout);
             clearTimeout(refreshCullTimeout);
 
             elements.destroyListener(elementListener);
