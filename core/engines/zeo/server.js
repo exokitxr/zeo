@@ -23,6 +23,7 @@ class Zeo {
       '/core/utils/js-utils',
       '/core/utils/hash-utils',
       '/core/utils/random-utils',
+      '/core/utils/image-utils',
     ])
       .then(([
         three,
@@ -32,6 +33,7 @@ class Zeo {
         jsUtils,
         hashUtils,
         randomUtils,
+        imageUtils,
       ]) => {
         if (live) {
           class ZeoThreeApi {
@@ -75,6 +77,7 @@ class Zeo {
               this.js = jsUtils;
               this.hash = hashUtils;
               this.random = randomUtils;
+              this.image = imageUtils;
             }
           }
 

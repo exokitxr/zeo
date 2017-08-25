@@ -3,5 +3,8 @@
   "description": "Provides image transformation support for the zeo core.",
   "version": "0.0.1",
   "client": "client.js",
-  "dependencies": {}
+  "server": "server.js",
+  "dependencies": {
+    "jimp": "^0.2.28"
+  }
 }
