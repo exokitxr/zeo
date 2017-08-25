@@ -10,7 +10,7 @@ const FLOAT32_SIZE = 4;
 const UINT8_SIZE = 1;
 const DATA_HEADER_ENTRIES = 3 + (1 * NUM_CHUNKS_HEIGHT) + 4;
 const DATA_HEADER_SIZE = UINT32_SIZE * DATA_HEADER_ENTRIES;
-const RENDER_HEADER_ENTRIES = 3 + (1 * NUM_CHUNKS_HEIGHT) + 2;
+const RENDER_HEADER_ENTRIES = 4 + (1 * NUM_CHUNKS_HEIGHT) + 2;
 const RENDER_HEADER_SIZE = UINT32_SIZE * RENDER_HEADER_ENTRIES;
 const CULL_HEADER_ENTRIES = 1;
 const CULL_HEADER_SIZE = UINT32_SIZE * CULL_HEADER_ENTRIES;
@@ -245,24 +245,29 @@ const parseDataChunk = (buffer, byteOffset) => {
 };
 
 const _getRenderChunkSizeFromMetadata = metadata => {
-  const {numPositions, numColors, numIndices, numPeeks, numHeightfield, numStaticHeightfield} = metadata;
+  const {numPositions, numColors, numLightmaps, numIndices, numPeeks, numHeightfield, numStaticHeightfield} = metadata;
 
-  return RENDER_HEADER_SIZE + // header
-    (FLOAT32_SIZE * numPositions) + // positions
-    (FLOAT32_SIZE * numColors) + // colors
-    (UINT32_SIZE * numIndices) + // indices
-    (UINT32_SIZE * 2 * NUM_CHUNKS_HEIGHT) + // index range
-    (FLOAT32_SIZE * NUM_CHUNKS_HEIGHT) + // bounding sphere
-    (UINT8_SIZE * _sum(numPeeks)) + // peeks
-    (FLOAT32_SIZE * numHeightfield) + // heightfield
-    (FLOAT32_SIZE * numStaticHeightfield); // static heightfield
+  return _align(
+    RENDER_HEADER_SIZE + // header
+      (FLOAT32_SIZE * numPositions) + // positions
+      (FLOAT32_SIZE * numColors) + // colors
+      (UINT8_SIZE * numLightmaps), // lightmaps
+    UINT32_SIZE
+  ) +
+  (UINT32_SIZE * numIndices) + // indices
+  (UINT32_SIZE * 2 * NUM_CHUNKS_HEIGHT) + // index range
+  (FLOAT32_SIZE * NUM_CHUNKS_HEIGHT) + // bounding sphere
+  (UINT8_SIZE * _sum(numPeeks)) + // peeks
+  (FLOAT32_SIZE * numHeightfield) + // heightfield
+  (FLOAT32_SIZE * numStaticHeightfield); // static heightfield
 };
 
-const _getRenderChunkSize = mapChunk => {
+const _getRenderChunkSize = (mapChunk, lightmaps) => {
   const {positions, colors, indices, geometries, heightfield, staticHeightfield} = mapChunk;
 
   const numPositions = positions.length;
   const numColors = colors.length;
+  const numLightmaps = lightmaps.length;
   const numIndices = indices.length;
   const numPeeks = Array(NUM_CHUNKS_HEIGHT);
   for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
@@ -276,6 +281,7 @@ const _getRenderChunkSize = mapChunk => {
   return _getRenderChunkSizeFromMetadata({
     numPositions,
     numColors,
+    numLightmaps,
     numIndices,
     numPeeks,
     numHeightfield,
@@ -289,6 +295,7 @@ const _getRenderChunkSize = mapChunk => {
   let index = 0;
   const numPositions = headerBuffer[index++];
   const numColors = headerBuffer[index++];
+  const numLightmaps = headerBuffer[index++];
   const numIndices = headerBuffer[index++];
   const numPeeks = Array(NUM_CHUNKS_HEIGHT);
   for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
@@ -300,6 +307,7 @@ const _getRenderChunkSize = mapChunk => {
   return _getRenderChunkSizeFromMetadata({
     numPositions,
     numColors,
+    numLightmaps,
     numIndices,
     numPeeks,
     numHeightfield,
@@ -307,11 +315,11 @@ const _getRenderChunkSize = mapChunk => {
   });
 }; */
 
-const stringifyRenderChunk = (mapChunk, arrayBuffer, byteOffset) => {
+const stringifyRenderChunk = (mapChunk, lightmaps, arrayBuffer, byteOffset) => {
   const {positions, colors, indices, geometries, heightfield, staticHeightfield} = mapChunk;
 
   if (arrayBuffer === undefined || byteOffset === undefined) {
-    const bufferSize = _getDataChunkSize(mapChunk);
+    const bufferSize = _getDataChunkSize(mapChunk, lightmaps);
     arrayBuffer = new ArrayBuffer(bufferSize);
     byteOffset = 0;
   }
@@ -320,6 +328,7 @@ const stringifyRenderChunk = (mapChunk, arrayBuffer, byteOffset) => {
   let index = 0;
   headerBuffer[index++] = positions.length;
   headerBuffer[index++] = colors.length;
+  headerBuffer[index++] = lightmaps.length;
   headerBuffer[index++] = indices.length;
   for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
     const geometry = geometries[i];
@@ -337,6 +346,12 @@ const stringifyRenderChunk = (mapChunk, arrayBuffer, byteOffset) => {
   const colorsBuffer = new Float32Array(arrayBuffer, byteOffset, colors.length);
   colorsBuffer.set(colors);
   byteOffset += FLOAT32_SIZE * colors.length;
+
+  const lightmapsBuffer = new Uint8Array(arrayBuffer, byteOffset, lightmaps.length);
+  lightmapsBuffer.set(lightmaps);
+  byteOffset += UINT8_SIZE * lightmaps.length;
+
+  byteOffset = _align(byteOffset, UINT32_SIZE);
 
   const indicesBuffer = new Uint32Array(arrayBuffer, byteOffset, indices.length);
   indicesBuffer.set(indices);
@@ -379,6 +394,7 @@ const parseRenderChunk = (buffer, byteOffset) => {
   let index = 0;
   const numPositions = headerBuffer[index++];
   const numColors = headerBuffer[index++];
+  const numLightmaps = headerBuffer[index++];
   const numIndices = headerBuffer[index++];
   const numPeeks = Array(NUM_CHUNKS_HEIGHT);
   for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
@@ -396,6 +412,12 @@ const parseRenderChunk = (buffer, byteOffset) => {
   const colorsBuffer = new Float32Array(buffer, byteOffset, numColors);
   const colors = colorsBuffer;
   byteOffset += FLOAT32_SIZE * numColors;
+
+  const lightmapsBuffer = new Uint8Array(buffer, byteOffset, numLightmaps);
+  const lightmaps = lightmapsBuffer;
+  byteOffset += UINT8_SIZE * numLightmaps;
+
+  byteOffset = _align(byteOffset, UINT32_SIZE);
 
   const indicesBuffer = new Uint32Array(buffer, byteOffset, numIndices);
   const indices = indicesBuffer;
@@ -437,6 +459,7 @@ const parseRenderChunk = (buffer, byteOffset) => {
     buffer,
     positions,
     colors,
+    lightmaps,
     indices,
     geometries,
     heightfield,
@@ -590,6 +613,13 @@ const _sum = a => {
     result += a[i];
   }
   return result;
+};
+const _align = (n, alignment) => {
+  let alignDiff = n % alignment;
+  if (alignDiff > 0) {
+    n += alignment - alignDiff;
+  }
+  return n;
 };
 
 module.exports = {

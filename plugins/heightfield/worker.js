@@ -21,6 +21,9 @@ const {
   PEEK_FACE_INDICES,
 } = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
+
+const LIGHTMAP_BUFFER_SIZE = 100 * 1024 * 4;
+
 const DIRECTIONS = [
   [-1, -1],
   [-1, 1],
@@ -89,6 +92,22 @@ const peekFaceSpecs = [
 ];
 
 const mapChunkMeshes = {};
+
+let queues = {};
+let numRemovedQueues = 0;
+const _cleanupQueues = () => {
+  if (++numRemovedQueues >= 16) {
+    const newQueues = {};
+    for (const id in queues) {
+      const entry = queues[id];
+      if (entry !== null) {
+        newQueues[id] = entry;
+      }
+    }
+    queues = newQueues;
+    numRemovedQueues = 0;
+  }
+};
 const _requestChunk = (x, z) => {
   const chunk = tra.getChunk(x, z);
 
@@ -99,14 +118,15 @@ const _requestChunk = (x, z) => {
       credentials: 'include',
     })
       .then(_resArrayBuffer)
-      .then(buffer => {
-        const {geometries} = protocolUtils.parseDataChunk(buffer, 0);
+      .then(buffer => new Promise((accept, reject) => {
+        const chunkData = protocolUtils.parseDataChunk(buffer, 0);
+
         const trackedMapChunkMeshes = {
           array: Array(NUM_CHUNKS_HEIGHT),
           groups: new Int32Array(NUM_RENDER_GROUPS * 2),
         };
         for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
-          const {indexRange, boundingSphere, peeks} = geometries[i];
+          const {indexRange, boundingSphere, peeks} = chunkData.geometries[i];
           trackedMapChunkMeshes.array[i] = {
             offset: new THREE.Vector3(x, i, z),
             indexRange,
@@ -120,9 +140,21 @@ const _requestChunk = (x, z) => {
         }
         mapChunkMeshes[_getChunkIndex(x, z)] = trackedMapChunkMeshes;
 
-        return tra.addChunk(x, z, new Uint32Array(buffer));
-      });
+        const chunk = tra.addChunk(x, z, new Uint32Array(buffer));
+        chunk.chunkData = chunkData;
+        accept(chunk);
+      }));
   }
+};
+const _requestLightmaps = (lightmapBuffer, cb) => {
+  const id = _makeId();
+  postMessage({
+    type: 'request',
+    method: 'render',
+    args: [id],
+    lightmapBuffer,
+  }, [lightmapBuffer.buffer]);
+  queues[id] = cb;
 };
 const _unrequestChunk = (x, z) => {
   mapChunkMeshes[_getChunkIndex(x, z)] = null;
@@ -247,14 +279,37 @@ self.onmessage = e => {
 
       _requestChunk(x, y)
         .then(chunk => {
-          const uint32Buffer = chunk.getBuffer();
-          protocolUtils.stringifyRenderChunk(protocolUtils.parseDataChunk(uint32Buffer.buffer, uint32Buffer.byteOffset), buffer, 0);
+          const lightmapBuffer = new Uint8Array(buffer, Math.floor(buffer.byteLength * 3 / 4));
 
-          postMessage({
-            type: 'response',
-            args: [id],
-            result: buffer,
-          }, [buffer]);
+          let byteOffset = 0;
+          new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, 1)[0] = 1;
+          byteOffset += 4;
+
+          const lightmapHeaderArray = new Int32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, 2);
+          lightmapHeaderArray[0] = chunk.x;
+          lightmapHeaderArray[1] = chunk.z;
+          byteOffset += 4 * 2;
+
+          const positions = chunk.chunkData.positions;
+          const numPositions = positions.length;
+          new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, 1)[0] = numPositions;
+          byteOffset += 4;
+
+          new Float32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, numPositions).set(positions);
+          byteOffset += 4 * numPositions;
+
+          _requestLightmaps(lightmapBuffer, lightmapBuffer => {
+            const lightmapsLength = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset, 1)[0];
+            const lightmaps = new Uint8Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + 4, lightmapsLength);
+
+            protocolUtils.stringifyRenderChunk(chunk.chunkData, lightmaps, lightmapBuffer.buffer, 0);
+
+            postMessage({
+              type: 'response',
+              args: [id],
+              result: lightmapBuffer.buffer,
+            }, [lightmapBuffer.buffer]);
+          });
         })
         .catch(err => {
           console.warn(err);
@@ -265,6 +320,59 @@ self.onmessage = e => {
       const {args} = data;
       const {x, y} = args;
       _unrequestChunk(x, y);
+      break;
+    }
+    case 'lightmaps': {
+      const {id, args} = data;
+      const {lightmapBuffer} = args;
+
+      let byteOffset = 0;
+      const numLightmaps = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, 1)[0];
+      byteOffset += 4;
+
+      const lightmapsCoordsArray = new Int32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, numLightmaps * 2);
+      byteOffset += 4 * numLightmaps * 2;
+
+      const promises = [];
+      for (let i = 0; i < numLightmaps; i++) {
+        const baseIndex = i * 2;
+        const x = lightmapsCoordsArray[baseIndex + 0];
+        const y = lightmapsCoordsArray[baseIndex + 1];
+        promises.push(_requestChunk(x, y));
+      }
+      Promise.all(promises)
+        .then(chunks => {
+          let byteOffset = 4;
+
+          for (let i = 0; i < numLightmaps; i++) {
+            const chunk = chunks[i];
+
+            const lightmapHeaderArray = new Int32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, 2);
+            lightmapHeaderArray[0] = chunk.x;
+            lightmapHeaderArray[1] = chunk.z;
+            byteOffset += 4 * 2;
+
+            const positions = chunk.chunkData.positions;
+            const numPositions = positions.length;
+            new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, 1)[0] = numPositions;
+            byteOffset += 4;
+
+            new Float32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, numPositions).set(positions);
+            byteOffset += 4 * numPositions;
+          }
+
+          _requestLightmaps(lightmapBuffer, lightmapBuffer => {
+            postMessage({
+              type: 'response',
+              args: [id],
+              result: lightmapBuffer,
+            }, [lightmapBuffer.buffer]);
+          });
+        })
+        .catch(err => {
+          console.warn(err);
+        });
+
       break;
     }
     case 'cull': {
@@ -346,6 +454,7 @@ self.onmessage = e => {
               oldEther,
               newEther,
             });
+            chunk.chunkData = chunkData;
           }
           regenerated.push([ox, oz]);
         }
@@ -357,9 +466,24 @@ self.onmessage = e => {
       });
       break;
     }
+    case 'response': {
+      const {id, result} = data;
+
+      queues[id](result);
+      queues[id] = null;
+
+      _cleanupQueues();
+      break;
+    }
     default: {
       console.warn('invalid heightfield worker method:', JSON.stringify(method));
       break;
     }
   }
+};
+let _id = 0;
+const _makeId = () => {
+  const result = _id;
+  _id = (_id + 1) | 0;
+  return result;
 };

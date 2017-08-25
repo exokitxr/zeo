@@ -15,32 +15,33 @@ const {
 const protocolUtils = require('./lib/utils/protocol-utils');
 
 const NUM_POSITIONS_CHUNK = 800 * 1024;
+const LIGHTMAP_BUFFER_SIZE = 100 * 1024 * 4;
+const NUM_BUFFERS = (RANGE * 2) * (RANGE * 2) * 2;
 const LIGHTMAP_PLUGIN = 'plugins-lightmap';
 const DAY_NIGHT_SKYBOX_PLUGIN = 'plugins-day-night-skybox';
 
 const HEIGHTFIELD_SHADER = {
   uniforms: {
-    lightMap: {
+    /* lightMap: {
       type: 't',
       value: null,
     },
     useLightMap: {
       type: 'f',
       value: 0,
-    },
+    }, */
     d: {
       type: 'v2',
       value: null,
     },
-    sunIntensity: {
+    /* sunIntensity: {
       type: 'f',
       value: 0,
-    },
+    }, */
   },
   vertexShader: `\
 precision highp float;
 precision highp int;
-#define USE_COLOR
 #define FLAT_SHADED
 /*uniform mat4 modelMatrix;
 uniform mat4 modelViewMatrix;
@@ -50,54 +51,50 @@ uniform mat3 normalMatrix;
 attribute vec3 position;
 attribute vec3 normal;
 attribute vec2 uv; */
-#ifdef USE_COLOR
-	attribute vec3 color;
-#endif
+attribute vec3 color;
+attribute float lightmap;
 
-varying vec3 vPosition;
+// varying vec3 vPosition;
 varying vec3 vViewPosition;
-
-#ifdef USE_COLOR
-	varying vec3 vColor;
-#endif
+varying vec3 vColor;
+varying float vLightmap;
 
 void main() {
-#ifdef USE_COLOR
 	vColor.xyz = color.xyz;
-#endif
 
   vec4 mvPosition = modelViewMatrix * vec4( position.xyz, 1.0 );
   gl_Position = projectionMatrix * mvPosition;
 
-	vPosition = position.xyz;
+	// vPosition = position.xyz;
   vViewPosition = -mvPosition.xyz;
+  vLightmap = lightmap;
 }
 `,
   fragmentShader: `\
 precision highp float;
 precision highp int;
-#define USE_COLOR
 #define FLAT_SHADED
 // uniform mat4 viewMatrix;
 uniform vec3 ambientLightColor;
-uniform sampler2D lightMap;
-uniform float useLightMap;
+// uniform sampler2D lightMap;
+// uniform float useLightMap;
 uniform vec2 d;
-uniform float sunIntensity;
+// uniform float sunIntensity;
 
 #define saturate(a) clamp( a, 0.0, 1.0 )
 
-#ifdef USE_COLOR
-	varying vec3 vColor;
-#endif
-
-varying vec3 vPosition;
+// varying vec3 vPosition;
 varying vec3 vViewPosition;
+varying vec3 vColor;
+varying float vLightmap;
 
 void main() {
 	vec3 diffuseColor = vColor;
 
-  vec3 lightColor;
+  // vec3 lightColor = vec3(vLightmap);
+  vec3 lightColor = vec3(floor(vLightmap * 4.0 + 0.5) / 4.0);
+  // vec3 lightColor = vec3(floor(vLightmap * 32.0 + 0.5) / 32.0);
+  /* vec3 lightColor;
   if (useLightMap > 0.0) {
     float u = (
       floor(clamp(vPosition.x - d.x, 0.0, ${(NUM_CELLS).toFixed(8)})) +
@@ -108,7 +105,7 @@ void main() {
     lightColor = texture2D( lightMap, vec2(u, v) ).rgb;
   } else {
     lightColor = vec3(sunIntensity);
-  }
+  } */
 
   vec3 fdx = vec3( dFdx( vViewPosition.x ), dFdx( vViewPosition.y ), dFdx( vViewPosition.z ) );
   vec3 fdy = vec3( dFdy( vViewPosition.x ), dFdy( vViewPosition.y ), dFdy( vViewPosition.z ) );
@@ -213,13 +210,19 @@ class Heightfield {
           size: 3 * 3 * 4,
         },
         {
+          name: 'lightmaps',
+          constructor: Uint8Array,
+          size: 3 * 1,
+        },
+        {
           name: 'indices',
           constructor: Uint32Array,
           size: 3 * 4,
         }
       ]
     );
-    const buffers = bffr(NUM_POSITIONS_CHUNK, (RANGE * 2) * (RANGE * 2) * 2);
+    const buffers = bffr(NUM_POSITIONS_CHUNK, NUM_BUFFERS); // XXX try to make this work with a single buffer
+    let lightmapBuffer = new Uint8Array(LIGHTMAP_BUFFER_SIZE * NUM_BUFFERS);
     let cullBuffer = new ArrayBuffer(4096);
     const worker = new Worker('archae/plugins/_plugins_heightfield/build/worker.js');
     let queues = {};
@@ -268,6 +271,17 @@ class Heightfield {
         },
       });
     };
+    worker.requestLightmaps = (lightmapBuffer, cb) => {
+      const id = _makeId();
+      worker.postMessage({
+        method: 'lightmaps',
+        id,
+        args: {
+          lightmapBuffer,
+        },
+      }, [lightmapBuffer.buffer]);
+      queues[id] = cb;
+    };
     worker.requestCull = (hmdPosition, projectionMatrix, matrixWorldInverse, cb) => {
       const id = _makeId();
       worker.postMessage({
@@ -309,6 +323,13 @@ class Heightfield {
       });
       queues[id] = cb;
     };
+    worker.requestResponse = (id, result, transfers) => {
+      worker.postMessage({
+        method: 'response',
+        id,
+        result,
+      }, transfers);
+    };
     worker.onmessage = e => {
       const {data} = e;
       const {type, args} = data;
@@ -321,6 +342,21 @@ class Heightfield {
         queues[id] = null;
 
         _cleanupQueues();
+      } else if (type === 'request') {
+        const [id] = args;
+        const {lightmapBuffer} = data;
+
+        if (lightmapper) {
+          lightmapper.requestRender(lightmapBuffer, lightmapBuffer => {
+            worker.requestResponse(id, lightmapBuffer, [lightmapBuffer.buffer]);
+          });
+        } else {
+          const lightmapArray = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset);
+          const numLightmaps = lightmapArray;
+          for (let i = 0; i < numLightmaps; i++) {
+            lightmapArray[i] = 0;
+          }
+        }
       } else {
         console.warn('heightfield got unknown worker message type:', JSON.stringify(type));
       }
@@ -367,22 +403,22 @@ class Heightfield {
       const dayNightSkyboxEntity = elements.getEntitiesElement().querySelector(DAY_NIGHT_SKYBOX_PLUGIN);
       const sunIntensity = (dayNightSkyboxEntity && dayNightSkyboxEntity.getSunIntensity) ? dayNightSkyboxEntity.getSunIntensity() : 0;
       const shape = new Lightmapper.Heightfield(x * NUM_CELLS, y * NUM_CELLS, sunIntensity, staticHeightfield, Lightmapper.MaxBlend);
-      lightmapper.add(shape);
+      lightmapper.add(shape); // XXX this can be done completely on the worker side
       trackedMapChunkMeshes.shape = shape;
 
-      const lightmap = lightmapper.getLightmapAt(x * NUM_CELLS, y * NUM_CELLS);
+      /* const lightmap = lightmapper.getLightmapAt(x * NUM_CELLS, y * NUM_CELLS);
       trackedMapChunkMeshes.material.uniforms.lightMap.value = lightmap.texture;
       trackedMapChunkMeshes.material.uniforms.useLightMap.value = 1;
-      trackedMapChunkMeshes.lightmap = lightmap;
+      trackedMapChunkMeshes.lightmap = lightmap; */
     };
     const _unbindLightmap = trackedMapChunkMeshes => {
       lightmapper.remove(trackedMapChunkMeshes.shape);
       trackedMapChunkMeshes.shape = null;
 
-      lightmapper.releaseLightmap(trackedMapChunkMeshes.lightmap);
+      /* lightmapper.releaseLightmap(trackedMapChunkMeshes.lightmap);
       trackedMapChunkMeshes.lightmap = null;
       trackedMapChunkMeshes.material.uniforms.lightMap.value = null;
-      trackedMapChunkMeshes.material.uniforms.useLightMap.value = 0;
+      trackedMapChunkMeshes.material.uniforms.useLightMap.value = 0; */
     };
     const elementListener = elements.makeListener(LIGHTMAP_PLUGIN);
     elementListener.on('add', entityElement => {
@@ -406,18 +442,21 @@ class Heightfield {
     });
     const _makeMapChunkMeshes = (chunk, mapChunkData) => {
       const {x, z} = chunk;
-      const {positions: newPositions, colors: newColors, indices: newIndices, heightfield, staticHeightfield} = mapChunkData;
+      const {positions: newPositions, colors: newColors, lightmaps: newLightmaps, indices: newIndices, heightfield, staticHeightfield} = mapChunkData;
 
       // geometery
 
       const gbuffer = geometryBuffer.alloc();
-      const {index, slices: {positions, colors, indices}} = gbuffer;
+      const {index, slices: {positions, colors, lightmaps, indices}} = gbuffer;
 
       positions.set(newPositions);
       renderer.updateAttribute(heightfieldObject.geometry.attributes.position, index * positions.length, newPositions.length, false);
 
       colors.set(newColors);
       renderer.updateAttribute(heightfieldObject.geometry.attributes.color, index * colors.length, newColors.length, false);
+
+      lightmaps.set(newLightmaps);
+      renderer.updateAttribute(heightfieldObject.geometry.attributes.lightmap, index * lightmaps.length, newLightmaps.length, false);
 
       const positionOffset = index * (positions.length / 3);
       for (let i = 0; i < newIndices.length; i++)  {
@@ -448,13 +487,15 @@ class Heightfield {
 
       const meshes = {
         material,
-        indexOffset: index * indices.length,
         renderListEntry: {
           object: heightfieldObject,
           material,
           groups: [],
         },
+        index,
+        indexOffset: index * indices.length,
         offset: new THREE.Vector2(x, z),
+        lightmaps,
         heightfield,
         staticHeightfield,
         lightmap: null,
@@ -471,7 +512,7 @@ class Heightfield {
           }
         },
       };
-      if (lightmapper && chunk.lod === 1) {
+      if (lightmapper) {
         _bindLightmap(meshes);
       }
 
@@ -485,7 +526,7 @@ class Heightfield {
     let mapChunkMeshes = {};
 
     const heightfieldObject = (() => {
-      const {positions, colors, indices} = geometryBuffer.getAll();
+      const {positions, colors, lightmaps, indices} = geometryBuffer.getAll();
 
       const geometry = new THREE.BufferGeometry();
       const positionAttribute = new THREE.BufferAttribute(positions, 3);
@@ -494,6 +535,9 @@ class Heightfield {
       const colorAttribute = new THREE.BufferAttribute(colors, 3);
       colorAttribute.dynamic = true;
       geometry.addAttribute('color', colorAttribute);
+      const lightmapAttribute = new THREE.BufferAttribute(lightmaps, 1, true);
+      lightmapAttribute.dynamic = true;
+      geometry.addAttribute('lightmap', lightmapAttribute);
       const indexAttribute = new THREE.BufferAttribute(indices, 1);
       indexAttribute.dynamic = true;
       geometry.setIndex(indexAttribute);
@@ -573,14 +617,6 @@ class Heightfield {
 
         if (lastLod === -1) {
           _addChunk(chunk);
-        } else {
-          const {lod, data: mapChunkMeshes} = chunk;
-
-          if (!mapChunkMeshes.lightmap && lod === 1) {
-            _bindLightmap(mapChunkMeshes);
-          } else if (mapChunkMeshes.lightmap && lod !== 1) {
-            _unbindLightmap(mapChunkMeshes);
-          }
         }
       }
       for (let i = 0; i < removed.length; i++) {
@@ -817,6 +853,57 @@ class Heightfield {
           priority: -1,
         });
 
+        const _debouncedRefreshLightmaps = _debounce(next => {
+          const requestMapChunkMeshes = [];
+          for (const index in mapChunkMeshes) {
+            const trackedMapChunkMeshes = mapChunkMeshes[index];
+
+            if (trackedMapChunkMeshes) {
+              requestMapChunkMeshes.push(trackedMapChunkMeshes);
+            }
+          }
+
+          let byteOffset = 0;
+          new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, 1)[0] = requestMapChunkMeshes.length;
+          byteOffset += 4;
+
+          for (let i = 0; i < requestMapChunkMeshes.length; i++) {
+            const trackedMapChunkMeshes = requestMapChunkMeshes[i];
+            const {offset: {x, y}} = trackedMapChunkMeshes;
+
+            const lightmapRequestHeaderBuffer = new Int32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, 2);
+            lightmapRequestHeaderBuffer[0] = x;
+            lightmapRequestHeaderBuffer[1] = y;
+            byteOffset += 4 * 2;
+          }
+
+          worker.requestLightmaps(lightmapBuffer, newLightmapBuffer => {
+            let byteOffset = 0;
+            for (let i = 0; i < requestMapChunkMeshes.length; i++) {
+              const lightmapsLength = new Uint32Array(newLightmapBuffer.buffer, newLightmapBuffer.byteOffset + byteOffset, 1)[0];
+              byteOffset += 4;
+
+              const newLightmaps = new Uint8Array(newLightmapBuffer.buffer, newLightmapBuffer.byteOffset + byteOffset, lightmapsLength);
+              byteOffset += lightmapsLength;
+              const alignDiff = byteOffset % 4;
+              if (alignDiff > 0) {
+                byteOffset += 4 - alignDiff;
+              }
+
+              if (newLightmaps.length > 0) {
+                const trackedMapChunkMeshes = requestMapChunkMeshes[i];
+                const {index, lightmaps} = trackedMapChunkMeshes;
+                lightmaps.set(newLightmaps);
+                renderer.updateAttribute(heightfieldObject.geometry.attributes.lightmap, index * lightmaps.length, newLightmaps.length, false);
+              }
+            }
+
+            lightmapBuffer = newLightmapBuffer;
+
+            next();
+          });
+        });
+
         const _requestCull = (hmdPosition, projectionMatrix, matrixWorldInverse, cb) => {
           worker.requestCull(hmdPosition, projectionMatrix, matrixWorldInverse, cullBuffer => {
             cb(protocolUtils.parseCull(cullBuffer));
@@ -849,6 +936,12 @@ class Heightfield {
           refreshChunksTimeout = setTimeout(_recurseRefreshChunks, 1000);
         };
         _recurseRefreshChunks();
+        let refreshLightmapsTimeout = null;
+        const _recurseRefreshLightmaps = () => {
+          _debouncedRefreshLightmaps();
+          refreshLightmapsTimeout = setTimeout(_recurseRefreshLightmaps, 1000 / 10);
+        };
+        _recurseRefreshLightmaps();
         let refreshCullTimeout = null;
         const _recurseRefreshCull = () => {
           _debouncedRefreshCull();
@@ -857,7 +950,7 @@ class Heightfield {
         _recurseRefreshCull();
 
         const _update = () => {
-          const _updateSunIntensity = () => {
+          /* const _updateSunIntensity = () => {
             const dayNightSkyboxEntity = elements.getEntitiesElement().querySelector(DAY_NIGHT_SKYBOX_PLUGIN);
             const sunIntensity = (dayNightSkyboxEntity && dayNightSkyboxEntity.getSunIntensity) ? dayNightSkyboxEntity.getSunIntensity() : 0;
 
@@ -867,7 +960,7 @@ class Heightfield {
                 trackedMapChunkMeshes.material.uniforms.sunIntensity.value = sunIntensity;
               }
             }
-          };
+          }; */
           const _updateMatrices = () => {
             modelViewMatricesValid.left = false;
             modelViewMatricesValid.right = false;
@@ -877,7 +970,7 @@ class Heightfield {
             uniformsNeedUpdate.right = true;
           };
 
-          _updateSunIntensity();
+          // _updateSunIntensity();
           _updateMatrices();
         };
         render.on('update', _update);
@@ -886,6 +979,7 @@ class Heightfield {
           scene.remove(heightfieldObject);
 
           clearTimeout(refreshChunksTimeout);
+          clearTimeout(refreshLightmapsTimeout);
           clearTimeout(refreshCullTimeout);
 
           elements.destroyListener(elementListener);
