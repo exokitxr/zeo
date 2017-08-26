@@ -1,5 +1,6 @@
 const txtr = require('txtr');
 
+const HEIGHTFIELD_PLUGIN = 'plugins-heightfield';
 const LIGHTMAP_PLUGIN = 'plugins-lightmap';
 const DAY_NIGHT_SKYBOX_PLUGIN = 'plugins-day-night-skybox';
 const CRAFT_PLUGIN = 'plugins-craft';
@@ -14,15 +15,17 @@ const {
 const protocolUtils = require('./lib/utils/protocol-utils');
 const objectsLib = require('./lib/objects/client/index');
 
-const NUM_POSITIONS_CHUNK = 800 * 1024;
+const NUM_POSITIONS_CHUNK = 1 * 1024 * 1024;
 const LIGHTMAP_BUFFER_SIZE = 100 * 1024 * 4;
 const NUM_BUFFERS = RANGE * RANGE * 9;
 const TEXTURE_SIZE = 512;
 const SIDES = ['left', 'right'];
 
+const dataSymbol = Symbol();
+
 class Objects {
   mount() {
-    const {three, pose, input, elements, render, world, teleport, utils: {js: {mod, bffr, sbffr}, hash: {murmur}, random: {chnkr}}} = zeo;
+    const {three, pose, input, elements, render, world, teleport, utils: {js: {mod, bffr, sbffr}, hash: {murmur}}} = zeo;
     const {THREE, scene, camera, renderer} = three;
 
     const modelViewMatrices = {
@@ -64,7 +67,7 @@ class Objects {
         uniformsNeedUpdate[camera.name] = false;
         return true;
       } else {
-        if (material.uniforms.selectedObject.value !== -1) {
+        if (material.uniforms.selectedObject.value.x !== -1 || material.uniforms.selectedObject.value.y !== -1) {
           uniformsNeedUpdate[camera.name] = true;
           return true;
         } else {
@@ -89,14 +92,14 @@ class Objects {
         useLightMap: {
           type: 'f',
           value: 0,
-        }, */
+        },
         d: {
           type: 'v2',
           value: new THREE.Vector2(),
-        },
+        }, */
         selectedObject: {
-          type: 'f',
-          value: -1,
+          type: '2f',
+          value: new THREE.Vector2(-1, -1),
         },
         /* sunIntensity: {
           type: 'f',
@@ -140,8 +143,8 @@ uniform vec3 ambientLightColor;
 uniform sampler2D map;
 // uniform sampler2D lightMap;
 // uniform float useLightMap;
-uniform vec2 d;
-uniform float selectedObject;
+// uniform vec2 d;
+uniform vec2 selectedObject;
 // uniform float sunIntensity;
 uniform float worldTime;
 
@@ -169,7 +172,7 @@ void main() {
 #endif
 
   vec3 lightColor;
-  if (abs(selectedObject - vObjectIndex) < 0.5) {
+  if (abs(selectedObject.x - vObjectIndex) < 0.5 || abs(selectedObject.y - vObjectIndex) < 0.5) {
     diffuseColor.rgb = mix(diffuseColor.rgb, blueColor, 0.5);
     lightColor = vec3(1.0);
   } else {
@@ -216,6 +219,10 @@ void main() {
     const localGenerateMessageArgs = {
       x: 0,
       z: 0,
+      index: 0,
+      numPositions: 0,
+      numObjectIndices: 0,
+      numIndices: 0,
       buffer: null,
     };
     const localUngenerateMessageArgs = {
@@ -247,6 +254,17 @@ void main() {
       THREE.UnsignedByteType,
       1
     );
+
+    const uniforms = THREE.UniformsUtils.clone(OBJECTS_SHADER.uniforms);
+    uniforms.map.value = textureAtlas;
+    // uniforms.d.value.set(x * NUM_CELLS, z * NUM_CELLS);
+    const objectsMaterial = new THREE.ShaderMaterial({
+      uniforms,
+      vertexShader: OBJECTS_SHADER.vertexShader,
+      fragmentShader: OBJECTS_SHADER.fragmentShader,
+      side: THREE.DoubleSide,
+    });
+    objectsMaterial.objectsMaterial = _uniformsNeedUpdate;
 
     const worker = new Worker('archae/plugins/_plugins_objects/build/worker.js');
     let generateBuffer = new ArrayBuffer(NUM_POSITIONS_CHUNK);
@@ -327,12 +345,16 @@ void main() {
         value,
       });
     };
-    worker.requestGenerate = (x, z, cb) => {
+    worker.requestGenerate = (x, z, index, numPositions, numObjectIndices, numIndices, cb) => {
       localMessage.type = 'generate';
       const id = _makeId();
       localMessage.id = id;
       localGenerateMessageArgs.x = x;
       localGenerateMessageArgs.z = z;
+      localGenerateMessageArgs.index = index;
+      localGenerateMessageArgs.numPositions = numPositions;
+      localGenerateMessageArgs.numObjectIndices = numObjectIndices;
+      localGenerateMessageArgs.numIndices = numIndices;
       localGenerateMessageArgs.buffer = generateBuffer;
       localMessage.args = localGenerateMessageArgs;
 
@@ -451,11 +473,7 @@ void main() {
         }
       } else if (type === 'chunkUpdate') {
         const [x, z] = args;
-        const chunk = chunker.getChunk(x, z);
-        if (chunk) {
-          chunk.lod = -1; // force chunk refresh
-        }
-        _debouncedRequestRefreshObjectsChunks();
+        _refreshChunk(x, z);
       } else if (type === 'objectAdded') {
         const [n, x, z, objectIndex, position, rotation, value] = args;
 
@@ -503,21 +521,19 @@ void main() {
       }
     };
 
-    const _requestObjectsGenerate = (x, z, cb) => {
-      worker.requestGenerate(x, z, objectsChunkBuffer => {
+    const _requestObjectsGenerate = (x, z, index, numPositions, numObjectIndices, numIndices, cb) => {
+      worker.requestGenerate(x, z, index, numPositions, numObjectIndices, numIndices, objectsChunkBuffer => {
         cb(protocolUtils.parseGeometry(objectsChunkBuffer));
       });
     };
-    const _makeObjectsChunkMesh = (chunk, objectsChunkData) => {
+    const _makeObjectsChunkMesh = (chunk, gbuffer, objectsChunkData) => {
       const {x, z} = chunk;
       const {positions: newPositions, uvs: newUvs, frames: newFrames, lightmaps: newLightmaps, objectIndices: newObjectIndices, indices: newIndices} = objectsChunkData;
 
       // geometry
 
-      const gbuffer = geometryBuffer.alloc();
       const {index, slices: {positions, uvs, frames, lightmaps, objectIndices, indices}} = gbuffer;
 
-      const objectIndexOffset = index * objectIndices.length;
       if (newPositions.length > 0) {
         positions.set(newPositions);
         renderer.updateAttribute(objectsObject.geometry.attributes.position, index * positions.length, newPositions.length, false);
@@ -531,42 +547,27 @@ void main() {
         lightmaps.set(newLightmaps);
         renderer.updateAttribute(objectsObject.geometry.attributes.lightmap, index * lightmaps.length, newLightmaps.length, false);
 
-        for (let i = 0; i < newObjectIndices.length; i++)  {
-          objectIndices[i] = newObjectIndices[i] + objectIndexOffset; // XXX do this in the worker
-        }
+        objectIndices.set(newObjectIndices);
         renderer.updateAttribute(objectsObject.geometry.attributes.objectIndex, index * objectIndices.length, newObjectIndices.length, false);
 
-        const positionOffset = index * (positions.length / 3);
-        for (let i = 0; i < newIndices.length; i++)  {
-          indices[i] = newIndices[i] + positionOffset; // XXX do this in the worker
-        }
+        indices.set(newIndices);
         renderer.updateAttribute(objectsObject.geometry.index, index * indices.length, newIndices.length, true);
       }
 
       // material
 
-      const uniforms = THREE.UniformsUtils.clone(OBJECTS_SHADER.uniforms);
-      uniforms.map.value = textureAtlas;
-      uniforms.d.value.set(x * NUM_CELLS, z * NUM_CELLS);
-      const material = new THREE.ShaderMaterial({
-        uniforms,
-        vertexShader: OBJECTS_SHADER.vertexShader,
-        fragmentShader: OBJECTS_SHADER.fragmentShader,
-        side: THREE.DoubleSide,
-      });
-      material.uniformsNeedUpdate = _uniformsNeedUpdate;
+      const material = objectsMaterial;
 
       // mesh
 
       const mesh = {
-        material,
+        // material,
         renderListEntry: {
           object: objectsObject,
           material,
           groups: [],
         },
         index,
-        objectIndexOffset,
         indexOffset: index * indices.length,
         offset: new THREE.Vector2(x, z),
         lightmaps,
@@ -820,23 +821,13 @@ void main() {
       addObject(name, position = zeroVector, rotation = zeroQuaternion, value = 0) {
         worker.requestAddObject(name, position.toArray(), rotation.toArray(), value);
 
-        const x = Math.floor(position.x / NUM_CELLS);
-        const z = Math.floor(position.z / NUM_CELLS);
-        const chunk = chunker.getChunk(x, z);
-        if (chunk) {
-          chunk.lod = -1; // force chunk refresh
-        }
-        _debouncedRequestRefreshObjectsChunks();
+        _refreshChunk(Math.floor(position.x / NUM_CELLS), Math.floor(position.z / NUM_CELLS));
       }
 
       removeObject(x, z, objectIndex) {
         worker.requestRemoveObject(x, z, objectIndex);
 
-        const chunk = chunker.getChunk(x, z);
-        if (chunk) {
-          chunk.lod = -1; // force chunk refresh
-        }
-        _debouncedRequestRefreshObjectsChunks();
+        _refreshChunk(x, z);
       }
 
       setData(x, z, objectIndex, value) {
@@ -900,10 +891,6 @@ void main() {
     }
     const objectApi = new ObjectApi();
 
-    const chunker = chnkr.makeChunker({
-      resolution: NUM_CELLS,
-      range: RANGE,
-    });
     const objectsChunkMeshes = {};
 
     const geometryBuffer = sbffr(
@@ -974,91 +961,70 @@ void main() {
     })();
     scene.add(objectsObject);
 
-    const _debouncedRequestRefreshObjectsChunks = _debounce(next => {
-      const {hmd} = pose.getStatus();
-      const {worldPosition: hmdPosition} = hmd;
-      const {added, removed, relodded} = chunker.update(hmdPosition.x, hmdPosition.z);
+    let running = false;
+    const queue = [];
+    const _next = () => {
+      running = false;
 
-      let running = false;
-      const queue = [];
-      const _addChunk = chunk => {
-        if (!running) {
-          running = true;
-
-          const _next = () => {
-            running = false;
-
-            if (queue.length > 0) {
-              _addChunk(queue.shift());
-            } else {
-              next();
-            }
-          };
-
-          const {x, z} = chunk;
-          _requestObjectsGenerate(x, z, objectsChunkData => {
-            const index = _getChunkIndex(x, z);
-
-            const {data: oldObjectsChunkMesh} = chunk;
-            if (oldObjectsChunkMesh) {
-              // scene.remove(oldObjectsChunkMesh);
-              objectsObject.renderList.splice(objectsObject.renderList.indexOf(oldObjectsChunkMesh.renderListEntry), 1);
-
-              oldObjectsChunkMesh.destroy();
-
-              objectsChunkMeshes[index] = null;
-            }
-
-            const newObjectsChunkMesh = _makeObjectsChunkMesh(chunk, objectsChunkData);
-            objectsObject.renderList.push(newObjectsChunkMesh.renderListEntry);
-            // scene.add(newObjectsChunkMesh);
-
-            objectsChunkMeshes[index] = newObjectsChunkMesh;
-
-            chunk.data = newObjectsChunkMesh;
-
-            _next();
-          });
-        } else {
-          queue.push(chunk);
-        }
-      };
-      for (let i = 0; i < added.length; i++) {
-        _addChunk(added[i]);
+      if (queue.length > 0) {
+        _addChunk(queue.shift());
       }
-      for (let i = 0; i < relodded.length; i++) {
-        const chunk = relodded[i];
-
-        if (chunk.lastLod === -1) {
-          _addChunk(chunk);
-        } /* else {
-          const {lod, data: objectsChunkMesh} = chunk;
-
-          if (!objectsChunkMesh.lightmap && lod === 1) {
-            _bindLightmap(objectsChunkMesh);
-          } else if (objectsChunkMesh.lightmap && lod !== 1) {
-            _unbindLightmap(objectsChunkMesh);
-          }
-        } */
-      }
-      for (let i = 0; i < removed.length; i++) {
-        const chunk = removed[i];
-        const {x, z} = chunk;
-        worker.requestUngenerate(x, z);
-
-        const {data: objectsChunkMesh} = chunk;
-        objectsObject.renderList.splice(objectsObject.renderList.indexOf(objectsChunkMesh.renderListEntry), 1);
-        // scene.remove(objectsChunkMesh);
-
-        objectsChunkMesh.destroy();
-
-        objectsChunkMeshes[_getChunkIndex(x, z)] = null;
-      }
-
+    };
+    const _addChunk = chunk => {
       if (!running) {
-        next();
+        running = true;
+
+        const {x, z} = chunk;
+        const gbuffer = geometryBuffer.alloc();
+        _requestObjectsGenerate(x, z, gbuffer.index, gbuffer.slices.positions.length, gbuffer.slices.objectIndices.length, gbuffer.slices.indices.length, objectsChunkData => {
+          const index = _getChunkIndex(x, z);
+
+          const {[dataSymbol]: oldObjectsChunkMesh} = chunk;
+          if (oldObjectsChunkMesh) {
+            // scene.remove(oldObjectsChunkMesh);
+            objectsObject.renderList.splice(objectsObject.renderList.indexOf(oldObjectsChunkMesh.renderListEntry), 1);
+
+            oldObjectsChunkMesh.destroy();
+
+            objectsChunkMeshes[index] = null;
+          }
+
+          const newObjectsChunkMesh = _makeObjectsChunkMesh(chunk, gbuffer, objectsChunkData);
+          objectsObject.renderList.push(newObjectsChunkMesh.renderListEntry);
+          // scene.add(newObjectsChunkMesh);
+
+          objectsChunkMeshes[index] = newObjectsChunkMesh;
+
+          chunk[dataSymbol] = newObjectsChunkMesh;
+
+          _next();
+        });
+      } else {
+        queue.push(chunk);
       }
-    });
+    };
+    const _removeChunk = chunk => {
+      const {x, z} = chunk;
+      worker.requestUngenerate(x, z);
+
+      const {[dataSymbol]: objectsChunkMesh} = chunk;
+      objectsObject.renderList.splice(objectsObject.renderList.indexOf(objectsChunkMesh.renderListEntry), 1);
+
+      objectsChunkMesh.destroy();
+
+      objectsChunkMeshes[_getChunkIndex(x, z)] = null;
+    };
+    const _refreshChunk = (x, z) => {
+      const heightfieldElement = elements.getEntitiesElement().querySelector(HEIGHTFIELD_PLUGIN);
+
+      if (heightfieldElement) {
+        const chunk = heightfieldElement.getChunk(x, z);
+
+        if (chunk) {
+          _addChunk(chunk);
+        }
+      }
+    };
 
     let bodyObject = null;
 
@@ -1072,12 +1038,7 @@ void main() {
 
           if (timeDiff > 1000 / 30) {
             worker.getHoveredObjects(hoveredTrackedObjectSpecs => {
-              for (const index in objectsChunkMeshes) {
-                const objectsChunkMesh = objectsChunkMeshes[index];
-                if (objectsChunkMesh) {
-                  objectsChunkMesh.material.uniforms.selectedObject.value = -1;
-                }
-              }
+              objectsMaterial.uniforms.selectedObject.value.set(-1, -1);
 
               for (let i = 0; i < SIDES.length; i++) {
                 const side = SIDES[i];
@@ -1088,7 +1049,7 @@ void main() {
 
                   const objectsChunkMesh = objectsChunkMeshes[_getChunkIndex(hoveredTrackedObject.x, hoveredTrackedObject.z)];
                   if (objectsChunkMesh) {
-                    objectsChunkMesh.material.uniforms.selectedObject.value = hoveredTrackedObject.objectIndex + objectsChunkMesh.objectIndexOffset;
+                    objectsMaterial.uniforms.selectedObject.value[side === 'left' ? 'x' : 'y'] = hoveredTrackedObject.objectIndex;
                   }
                 } else {
                   hoveredTrackedObjects[side].clear();
@@ -1205,17 +1166,7 @@ void main() {
         }
       };
       const _updateMaterial = () => {
-        const worldTime = world.getWorldTime();
-        /* const dayNightSkyboxEntity = elements.getEntitiesElement().querySelector(DAY_NIGHT_SKYBOX_PLUGIN);
-        const sunIntensity = (dayNightSkyboxEntity && dayNightSkyboxEntity.getSunIntensity) ? dayNightSkyboxEntity.getSunIntensity() : 0; */
-
-        for (const index in objectsChunkMeshes) {
-          const objectsChunkMesh = objectsChunkMeshes[index];
-          if (objectsChunkMesh) {
-            objectsChunkMesh.material.uniforms.worldTime.value = worldTime;
-            // objectsChunkMesh.material.uniforms.sunIntensity.value = sunIntensity;
-          }
-        }
+        objectsMaterial.uniforms.worldTime.value = world.getWorldTime();
       };
       const _updateMatrices = () => {
         modelViewMatricesValid.left = false;
@@ -1324,9 +1275,9 @@ void main() {
 
               const trackedObjectChunkMeshes = objectsChunkMeshes[index];
               if (trackedObjectChunkMeshes) {
-                for (let j = 0; j < groups.length; j++) {
+                /* for (let j = 0; j < groups.length; j++) {
                   groups[j].start += trackedObjectChunkMeshes.indexOffset; // XXX do this reindexing in the worker
-                }
+                } */
                 trackedObjectChunkMeshes.renderListEntry.groups = groups;
               }
             }
@@ -1335,12 +1286,17 @@ void main() {
           });
         });
 
-        let refreshChunksTimeout = null;
-        const _recurseRefreshChunks = () => {
-          _debouncedRequestRefreshObjectsChunks();
-          refreshChunksTimeout = setTimeout(_recurseRefreshChunks, 1000);
-        };
-        _recurseRefreshChunks();
+        const heightfieldListener = elements.makeListener(HEIGHTFIELD_PLUGIN);
+        heightfieldListener.on('add', heightfieldElement => {
+          heightfieldElement.registerListener((event, chunk) => {
+            if (event === 'add') {
+              _addChunk(chunk);
+            } else if (event === 'remove') {
+              _removeChunk(chunk);
+            }
+          });
+        });
+
         let refreshLightmapsTimeout = null;
         const _recurseRefreshLightmaps = () => {
           _debouncedRefreshLightmaps();
@@ -1355,7 +1311,8 @@ void main() {
         _recurseRefreshCull();
 
         cleanups.push(() => {
-          clearTimeout(refreshChunksTimeout);
+          elements.destroyListener(heightfieldListener);
+
           clearTimeout(refreshLightmapsTimeout);
           clearTimeout(refreshCullTimeout);
         });
