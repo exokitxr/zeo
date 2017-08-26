@@ -20,6 +20,8 @@ const NUM_BUFFERS = (RANGE * 2) * (RANGE * 2) * 2;
 const LIGHTMAP_PLUGIN = 'plugins-lightmap';
 const DAY_NIGHT_SKYBOX_PLUGIN = 'plugins-day-night-skybox';
 
+const dataSymbol = Symbol();
+
 const HEIGHTFIELD_SHADER = {
   uniforms: {
     /* lightMap: {
@@ -29,12 +31,12 @@ const HEIGHTFIELD_SHADER = {
     useLightMap: {
       type: 'f',
       value: 0,
-    }, */
+    },
     d: {
       type: 'v2',
       value: null,
     },
-    /* sunIntensity: {
+    sunIntensity: {
       type: 'f',
       value: 0,
     }, */
@@ -78,7 +80,7 @@ precision highp int;
 uniform vec3 ambientLightColor;
 // uniform sampler2D lightMap;
 // uniform float useLightMap;
-uniform vec2 d;
+// uniform vec2 d;
 // uniform float sunIntensity;
 
 #define saturate(a) clamp( a, 0.0, 1.0 )
@@ -248,7 +250,7 @@ class Heightfield {
       });
       queues[id] = cb;
     };
-    worker.requestGenerate = (x, y, cb) => {
+    worker.requestGenerate = (x, y, index, numPositions, numIndices, cb) => {
       const id = _makeId();
       worker.postMessage({
         method: 'generate',
@@ -256,6 +258,9 @@ class Heightfield {
         args: {
           x,
           y,
+          index,
+          numPositions,
+          numIndices,
           buffer: generateBuffer,
         },
       }, [generateBuffer]);
@@ -451,20 +456,19 @@ class Heightfield {
         accept();
       });
     });
-    const _requestGenerate = (x, z, cb) => {
-      worker.requestGenerate(x, z, mapChunkBuffer => {
+    const _requestGenerate = (x, z, index, numPositions, numIndices, cb) => {
+      worker.requestGenerate(x, z, index, numPositions, numIndices, mapChunkBuffer => {
         cb(protocolUtils.parseRenderChunk(mapChunkBuffer));
       });
     };
-    const _makeMapChunkMeshes = (chunk, mapChunkData) => {
+    const _makeMapChunkMeshes = (chunk, gbuffer, mapChunkData) => {
       const {x, z} = chunk;
       const {positions: newPositions, colors: newColors, lightmaps: newLightmaps, indices: newIndices, heightfield, staticHeightfield} = mapChunkData;
       // XXX move heightfield interpolation entirely into the worker
       // XXX preallocate staticHeightfield feedthrough for lightmap and stck
 
-      // geometery
+      // geometry
 
-      const gbuffer = geometryBuffer.alloc();
       const {index, slices: {positions, colors, lightmaps, indices}} = gbuffer;
 
       positions.set(newPositions);
@@ -476,10 +480,7 @@ class Heightfield {
       lightmaps.set(newLightmaps);
       renderer.updateAttribute(heightfieldObject.geometry.attributes.lightmap, index * lightmaps.length, newLightmaps.length, false);
 
-      const positionOffset = index * (positions.length / 3);
-      for (let i = 0; i < newIndices.length; i++)  {
-        indices[i] = newIndices[i] + positionOffset; // XXX do this in the worker
-      }
+      indices.set(newIndices);
       renderer.updateAttribute(heightfieldObject.geometry.index, index * indices.length, newIndices.length, true);
 
       // material
@@ -488,7 +489,7 @@ class Heightfield {
         THREE.UniformsUtils.clone(THREE.UniformsLib.lights),
         THREE.UniformsUtils.clone(HEIGHTFIELD_SHADER.uniforms)
       );
-      uniforms.d.value = new THREE.Vector2(x * NUM_CELLS, z * NUM_CELLS);
+      // uniforms.d.value = new THREE.Vector2(x * NUM_CELLS, z * NUM_CELLS);
       const material = new THREE.ShaderMaterial({
         uniforms,
         vertexShader: HEIGHTFIELD_SHADER.vertexShader,
@@ -568,6 +569,13 @@ class Heightfield {
     })();
     scene.add(heightfieldObject);
 
+    const listeners = [];
+    const _emit = (e, d) => {
+      for (let i = 0; i < listeners.length; i++) {
+        listeners[i](e, d);
+      }
+    };
+
     const _debouncedRequestRefreshMapChunks = _debounce(next => {
       const {hmd} = pose.getStatus();
       const {worldPosition: hmdPosition} = hmd;
@@ -596,22 +604,22 @@ class Heightfield {
 
       let running = false;
       const queue = [];
+      const _next = () => {
+        running = false;
+
+        if (queue.length > 0) {
+          _addChunk(queue.shift());
+        } else {
+          next();
+        }
+      };
       const _addChunk = chunk => {
         if (!running) {
           running = true;
 
-          const _next = () => {
-            running = false;
-
-            if (queue.length > 0) {
-              _addChunk(queue.shift());
-            } else {
-              next();
-            }
-          };
-
           const {x, z, lod} = chunk;
-          _requestGenerate(x, z, mapChunkData => {
+          const gbuffer = geometryBuffer.alloc();
+          _requestGenerate(x, z, gbuffer.index, gbuffer.slices.positions.length, gbuffer.slices.indices.length, mapChunkData => {
             const index = _getChunkIndex(x, z);
             const oldMapChunkMeshes = mapChunkMeshes[index];
             if (oldMapChunkMeshes) {
@@ -623,10 +631,12 @@ class Heightfield {
                 _removeTarget(oldMapChunkMeshes);
               }
 
+              _emit('remove', oldMapChunkMeshes);
+
               mapChunkMeshes[index] = null;
             }
 
-            const newMapChunkMeshes = _makeMapChunkMeshes(chunk, mapChunkData);
+            const newMapChunkMeshes = _makeMapChunkMeshes(chunk, gbuffer, mapChunkData);
             heightfieldObject.renderList.push(newMapChunkMeshes.renderListEntry);
             mapChunkMeshes[index] = newMapChunkMeshes;
 
@@ -634,7 +644,9 @@ class Heightfield {
               _addTarget(newMapChunkMeshes);
             }
 
-            chunk.data = newMapChunkMeshes;
+            chunk[dataSymbol] = newMapChunkMeshes;
+
+            _emit('add', chunk);
 
             _next();
           });
@@ -642,21 +654,10 @@ class Heightfield {
           queue.push(chunk);
         }
       };
-      for (let i = 0; i < added.length; i++) {
-        _addChunk(added[i]);
-      }
-      for (let i = 0; i < relodded.length; i++) {
-        const chunk = relodded[i];
-        const {lastLod} = chunk;
-
-        if (lastLod === -1) {
-          _addChunk(chunk);
-        }
-      }
       if (removed.length > 0) {
         for (let i = 0; i < removed.length; i++) {
           const chunk = removed[i];
-          const {x, z, data: oldMapChunkMeshes} = chunk;
+          const {x, z, [dataSymbol]: oldMapChunkMeshes} = chunk;
           heightfieldObject.renderList.splice(heightfieldObject.renderList.indexOf(oldMapChunkMeshes.renderListEntry), 1);
 
           oldMapChunkMeshes.destroy();
@@ -666,9 +667,11 @@ class Heightfield {
             _removeTarget(oldMapChunkMeshes);
           }
 
-          mapChunkMeshes[_getChunkIndex(x, z)] = null;
+          _emit('remove', chunk);
 
           worker.requestUngenerate(x, z);
+
+          mapChunkMeshes[_getChunkIndex(x, z)] = null;
         }
 
         const newMapChunkMeshes = {};
@@ -679,6 +682,17 @@ class Heightfield {
           }
         }
         mapChunkMeshes = newMapChunkMeshes;
+      }
+      for (let i = 0; i < added.length; i++) {
+        _addChunk(added[i]);
+      }
+      for (let i = 0; i < relodded.length; i++) {
+        const chunk = relodded[i];
+        const {lastLod} = chunk;
+
+        if (lastLod === -1) {
+          _addChunk(chunk);
+        }
       }
 
       if (!running) {
@@ -822,13 +836,28 @@ class Heightfield {
             };
             teleport.addTarget(_teleportTarget);
 
+            entityElement.getChunk = (x, z) => chunker.getChunk(x, z);
             entityElement.getElevation = _getElevation;
             entityElement.getBestElevation = _getBestElevation;
-            entityElement._cleanup = () => {
-              teleport.removeTarget(_teleportTarget);
-            };
             entityElement.requestHeightfield = (x, z, buffer, cb) => {
               worker.requestHeightfield(x, z, buffer, cb);
+            };
+            entityElement.registerListener = listener => {
+              listeners.push(listener);
+
+              for (const index in chunker.chunks) {
+                const chunk = chunker.chunks[index];
+                if (chunk) {
+                  listener('add', chunk);
+                }
+              }
+            };
+            entityElement.unregisterListener = listener => {
+              listeners.splice(listeners.indexOf(listener), 1);
+            };
+
+            entityElement._cleanup = () => {
+              teleport.removeTarget(_teleportTarget);
             };
           },
         };
@@ -952,9 +981,6 @@ class Heightfield {
 
               const trackedMapChunkMeshes = mapChunkMeshes[index];
               if (trackedMapChunkMeshes) {
-                for (let j = 0; j < groups.length; j++) {
-                  groups[j].start += trackedMapChunkMeshes.indexOffset; // XXX do this reindexing in the worker
-                }
                 trackedMapChunkMeshes.renderListEntry.groups = groups;
               }
             }

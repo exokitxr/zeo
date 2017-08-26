@@ -108,7 +108,7 @@ const _cleanupQueues = () => {
     numRemovedQueues = 0;
   }
 };
-const _requestChunk = (x, z) => {
+const _requestChunk = (x, z, index, numPositions, numIndices) => {
   const chunk = tra.getChunk(x, z);
 
   if (chunk) {
@@ -120,6 +120,11 @@ const _requestChunk = (x, z) => {
       .then(_resArrayBuffer)
       .then(buffer => {
         const chunkData = protocolUtils.parseDataChunk(buffer, 0);
+        const {indices} = chunkData;
+        const positionOffset = index * (numPositions / 3);
+        for (let i = 0; i < indices.length; i++) {
+          indices[i] += positionOffset;
+        }
 
         const trackedMapChunkMeshes = {
           array: Array(NUM_CHUNKS_HEIGHT),
@@ -127,9 +132,13 @@ const _requestChunk = (x, z) => {
         };
         for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
           const {indexRange, boundingSphere, peeks} = chunkData.geometries[i];
+          const indexOffset = index * numIndices;
           trackedMapChunkMeshes.array[i] = {
             offset: new THREE.Vector3(x, i, z),
-            indexRange,
+            indexRange: {
+              start: indexRange.start + indexOffset,
+              count: indexRange.count,
+            },
             boundingSphere: new THREE.Sphere(
               new THREE.Vector3().fromArray(boundingSphere, 0),
               boundingSphere[3]
@@ -227,6 +236,7 @@ const _getCull = (hmdPosition, projectionMatrix, matrixWorldInverse) => {
       let groupIndex = 0;
       let start = -1;
       let count = 0;
+
       for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) { // XXX optimize this direction
         const trackedMapChunkMesh = trackedMapChunkMeshes.array[i];
         if (trackedMapChunkMesh.visibleIndex === visibleIndex) {
@@ -275,9 +285,9 @@ self.onmessage = e => {
     }
     case 'generate': {
       const {id, args} = data;
-      const {x, y, buffer} = args;
+      const {x, y, index, numPositions, numIndices, buffer} = args;
 
-      _requestChunk(x, y)
+      _requestChunk(x, y, index, numPositions, numIndices)
         .then(chunk => {
           const lightmapBuffer = new Uint8Array(buffer, Math.floor(buffer.byteLength * 3 / 4));
 
@@ -326,22 +336,20 @@ self.onmessage = e => {
       const {id, args} = data;
       const {x, y, buffer} = args;
 
-      _requestChunk(x, y)
-        .then(chunk => {
-          const {heightfield: newHeightfield} = chunk.chunkData;
+      const chunk = tra.getChunk(x, y);
 
-          const heightfield = new Float32Array(buffer, 0, newHeightfield.length);
-          heightfield.set(newHeightfield);
+      const heightfield = new Float32Array(buffer, 0, newHeightfield.length);
+      if (chunk) {
+        heightfield.set(chunk.chunkData.heightfield);
+      } else {
+        heightfield.fill(0);
+      }
 
-          postMessage({
-            type: 'response',
-            args: [id],
-            result: heightfield,
-          }, [heightfield.buffer]);
-        })
-        .catch(err => {
-          console.warn(err);
-        });
+      postMessage({
+        type: 'response',
+        args: [id],
+        result: heightfield,
+      }, [heightfield.buffer]);
       break;
     }
     case 'lightmaps': {
@@ -359,8 +367,14 @@ self.onmessage = e => {
       for (let i = 0; i < numLightmaps; i++) {
         const baseIndex = i * 2;
         const x = lightmapsCoordsArray[baseIndex + 0];
-        const y = lightmapsCoordsArray[baseIndex + 1];
-        promises.push(_requestChunk(x, y));
+        const z = lightmapsCoordsArray[baseIndex + 1];
+        promises.push(tra.getChunk(x, z) || {
+          x,
+          z,
+          chunkData: {
+            positions: new Float32Array(0),
+          },
+        });
       }
       Promise.all(promises)
         .then(chunks => {
