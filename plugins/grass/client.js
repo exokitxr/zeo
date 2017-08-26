@@ -28,12 +28,12 @@ const GRASS_SHADER = {
     useLightMap: {
       type: 'f',
       value: 0,
-    }, */
+    },
     d: {
       type: 'v2',
       value: null,
     },
-    /* sunIntensity: {
+    sunIntensity: {
       type: 'f',
       value: 0,
     }, */
@@ -75,7 +75,7 @@ precision highp int;
 uniform sampler2D map;
 // uniform sampler2D lightMap;
 // uniform float useLightMap;
-uniform vec2 d;
+// uniform vec2 d;
 // uniform float sunIntensity;
 
 varying vec3 vPosition;
@@ -244,7 +244,7 @@ class Grass {
         numRemovedQueues = 0;
       }
     };
-    worker.requestGenerate = (x, y, cb) => {
+    worker.requestGenerate = (x, y, index, numPositions, numIndices, cb) => {
       _ensureHeightfieldElement()
         .then(() => new Promise((accept, reject) => {
           const id = _makeId();
@@ -253,6 +253,9 @@ class Grass {
             id,
             x,
             y,
+            index,
+            numPositions,
+            numIndices,
             buffer: generateBuffer,
           }, [generateBuffer]);
           queues[id] = newGenerateBuffer => {
@@ -391,18 +394,17 @@ class Grass {
     _requestTexture()
       .then(mapTexture => {
         if (live) {
-          const _requestGrassGenerate = (x, y, cb) => {
-            worker.requestGenerate(x, y, grassChunkBuffer => {
+          const _requestGrassGenerate = (x, y, index, numPositions, numIndices, cb) => {
+            worker.requestGenerate(x, y, index, numPositions, numIndices, grassChunkBuffer => {
               cb(protocolUtils.parseRenderGeometry(grassChunkBuffer));
             });
           };
-          const _makeGrassChunkMesh = (chunk, grassChunkData) => {
+          const _makeGrassChunkMesh = (chunk, gbuffer, grassChunkData) => {
             const {x, z} = chunk;
             const {positions: newPositions, uvs: newUvs, lightmaps: newLightmaps, indices: newIndices} = grassChunkData;
 
             // geometry
 
-            const gbuffer = geometryBuffer.alloc();
             const {index, slices: {positions, uvs, lightmaps, indices}} = gbuffer;
 
             if (newPositions.length > 0) {
@@ -415,10 +417,7 @@ class Grass {
               lightmaps.set(newLightmaps);
               renderer.updateAttribute(grassMesh.geometry.attributes.lightmap, index * lightmaps.length, newLightmaps.length, false);
 
-              const positionOffset = index * (positions.length / 3);
-              for (let i = 0; i < newIndices.length; i++)  {
-                indices[i] = newIndices[i] + positionOffset; // XXX do this in the worker
-              }
+              indices.set(newIndices);
               renderer.updateAttribute(grassMesh.geometry.index, index * indices.length, newIndices.length, true);
             }
 
@@ -429,7 +428,7 @@ class Grass {
               THREE.UniformsUtils.clone(GRASS_SHADER.uniforms)
             );
             uniforms.map.value = mapTexture;
-            uniforms.d.value = new THREE.Vector2(x * NUM_CELLS, z * NUM_CELLS);
+            // uniforms.d.value = new THREE.Vector2(x * NUM_CELLS, z * NUM_CELLS);
             const material = new THREE.ShaderMaterial({
               uniforms: uniforms,
               vertexShader: GRASS_SHADER.vertexShader,
@@ -447,7 +446,6 @@ class Grass {
                 groups: [],
               },
               index,
-              indexOffset: index * indices.length,
               offset: new THREE.Vector2(x, z),
               lightmaps,
               lightmap: null,
@@ -548,8 +546,9 @@ class Grass {
                 };
 
                 const {x, z} = chunk;
-                _requestGrassGenerate(x, z, grassChunkData => {
-                  const grassChunkMesh = _makeGrassChunkMesh(chunk, grassChunkData);
+                const gbuffer = geometryBuffer.alloc();
+                _requestGrassGenerate(x, z, gbuffer.index, gbuffer.slices.positions.length, gbuffer.slices.indices.length, grassChunkData => {
+                  const grassChunkMesh = _makeGrassChunkMesh(chunk, gbuffer, grassChunkData);
                   // stage.add('main', grassChunkMesh);
                   grassMesh.renderList.push(grassChunkMesh.renderListEntry);
 
@@ -661,9 +660,6 @@ class Grass {
 
                 const trackedGrassChunkMeshes = grassChunkMeshes[index];
                 if (trackedGrassChunkMeshes) {
-                  for (let j = 0; j < groups.length; j++) {
-                    groups[j].start += trackedGrassChunkMeshes.indexOffset; // XXX do this reindexing in the worker
-                  }
                   trackedGrassChunkMeshes.renderListEntry.groups = groups;
                 }
               }

@@ -20,7 +20,7 @@ const _getDataGeometrySizeFromMetadata = metadata => {
   return RENDER_GEOMETRY_HEADER_SIZE + // header
     (FLOAT32_SIZE * numPositions) + // positions
     (FLOAT32_SIZE * numUvs) + // uvs
-    (UINT16_SIZE * numIndices) + // indices
+    (UINT32_SIZE * numIndices) + // indices
     (FLOAT32_SIZE * numBoundingSphere); // bounding sphere
 };
 
@@ -64,9 +64,9 @@ const stringifyDataGeometry = (grassGeometry, arrayBuffer, byteOffset) => {
   uvsBuffer.set(uvs);
   byteOffset += FLOAT32_SIZE * uvs.length;
 
-  const indicesBuffer = new Uint16Array(arrayBuffer, byteOffset, indices.length);
+  const indicesBuffer = new Uint32Array(arrayBuffer, byteOffset, indices.length);
   indicesBuffer.set(indices);
-  byteOffset += UINT16_SIZE * indices.length;
+  byteOffset += UINT32_SIZE * indices.length;
 
   const boundingSphereBuffer = new Float32Array(arrayBuffer, byteOffset, boundingSphere.length);
   boundingSphereBuffer.set(boundingSphere);
@@ -95,9 +95,9 @@ const parseDataGeometry = (buffer, byteOffset) => {
   const uvs = uvBuffer;
   byteOffset += FLOAT32_SIZE * numUvs;
 
-  const indicesBuffer = new Uint16Array(buffer, byteOffset, numIndices);
+  const indicesBuffer = new Uint32Array(buffer, byteOffset, numIndices);
   const indices = indicesBuffer;
-  byteOffset += UINT16_SIZE * numIndices;
+  byteOffset += UINT32_SIZE * numIndices;
 
   const boundingSphereBuffer = new Float32Array(buffer, byteOffset, numBoundingSphere);
   const boundingSphere = boundingSphereBuffer;
@@ -120,9 +120,9 @@ const _getRenderGeometrySizeFromMetadata = metadata => {
       (FLOAT32_SIZE * numPositions) + // positions
       (FLOAT32_SIZE * numUvs) + // uvs
       (UINT8_SIZE * numLightmaps), // lightmaps
-    UINT16_SIZE
+    UINT32_SIZE
   ) +
-  (UINT16_SIZE * numIndices) + // indices
+  (UINT32_SIZE * numIndices) + // indices
   (FLOAT32_SIZE * numBoundingSphere); // bounding sphere
 };
 
@@ -173,11 +173,11 @@ const stringifyRenderGeometry = (grassGeometry, lightmaps, arrayBuffer, byteOffs
   lightmapsBuffer.set(lightmaps);
   byteOffset += UINT8_SIZE * lightmaps.length;
 
-  byteOffset = _align(byteOffset, UINT16_SIZE);
+  byteOffset = _align(byteOffset, UINT32_SIZE);
 
-  const indicesBuffer = new Uint16Array(arrayBuffer, byteOffset, indices.length);
+  const indicesBuffer = new Uint32Array(arrayBuffer, byteOffset, indices.length);
   indicesBuffer.set(indices);
-  byteOffset += UINT16_SIZE * indices.length;
+  byteOffset += UINT32_SIZE * indices.length;
 
   const boundingSphereBuffer = new Float32Array(arrayBuffer, byteOffset, boundingSphere.length);
   boundingSphereBuffer.set(boundingSphere);
@@ -211,11 +211,11 @@ const parseRenderGeometry = (buffer, byteOffset) => {
   const lightmaps = lightmapBuffer;
   byteOffset += UINT8_SIZE * numLightmaps;
 
-  byteOffset = _align(byteOffset, UINT16_SIZE);
+  byteOffset = _align(byteOffset, UINT32_SIZE);
 
-  const indicesBuffer = new Uint16Array(buffer, byteOffset, numIndices);
+  const indicesBuffer = new Uint32Array(buffer, byteOffset, numIndices);
   const indices = indicesBuffer;
-  byteOffset += UINT16_SIZE * numIndices;
+  byteOffset += UINT32_SIZE * numIndices;
 
   const boundingSphereBuffer = new Float32Array(buffer, byteOffset, numBoundingSphere);
   const boundingSphere = boundingSphereBuffer;

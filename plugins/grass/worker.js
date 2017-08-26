@@ -32,7 +32,7 @@ const localMatrix = new THREE.Matrix4();
 const localMatrix2 = new THREE.Matrix4();
 const localFrustum = new THREE.Frustum();
 
-const _requestGrassGeometry = (x, y) => {
+const _requestGrassGeometry = (x, y, index, numPositions, numIndices) => {
   const grassChunkMesh = grassChunkMeshes[_getChunkIndex(x, y)];
 
   if (grassChunkMesh) {
@@ -45,9 +45,17 @@ const _requestGrassGeometry = (x, y) => {
       .then(buffer => {
         const geometry = protocolUtils.parseDataGeometry(buffer, 0);
 
+        const positionOffset = index * (numPositions / 3);
+        const indexOffset = index * numIndices;
+
+        const {indices} = geometry;
+        for (let i = 0; i < indices.length; i++) {
+          indices[i] += positionOffset;
+        }
+
         const geometries = (() => { // XXX actually split into multiple geometries
           const result = Array(NUM_CHUNKS_HEIGHT);
-          for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
+          for (let i = 1; i < NUM_CHUNKS_HEIGHT; i++) {
             result[i] = {
               indexRange: {
                 start: -1,
@@ -58,7 +66,7 @@ const _requestGrassGeometry = (x, y) => {
           }
           result[0] = {
             indexRange: {
-              start: 0,
+              start: indexOffset,
               count: geometry.indices.length,
             },
             boundingSphere: geometry.boundingSphere,
@@ -160,9 +168,9 @@ self.onmessage = e => {
 
   switch (type) {
     case 'generate': {
-      const {id, x, y, buffer} = data;
+      const {id, x, y, index, numPositions, numIndices, buffer} = data;
 
-      _requestGrassGeometry(x, y)
+      _requestGrassGeometry(x, y, index, numPositions, numIndices)
         .then(geometry => {
           const lightmapBuffer = new Uint8Array(buffer, Math.floor(buffer.byteLength * 3 / 4));
 
