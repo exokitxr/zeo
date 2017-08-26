@@ -7,8 +7,8 @@ const grass = objectApi => {
 
       const grassProbability = 0.3;
 
-      for (let dz = 0; dz < generateApi.NUM_CELLS_OVERSCAN; dz++) {
-        for (let dx = 0; dx < generateApi.NUM_CELLS_OVERSCAN; dx++) {
+      for (let dz = 0; dz < generateApi.NUM_CELLS; dz++) {
+        for (let dx = 0; dx < generateApi.NUM_CELLS; dx++) {
           const v = generateApi.getNoise('grass', chunk.x, chunk.z, dx, dz);
 
           if (v < grassProbability) {

@@ -7,8 +7,8 @@ const tree = objectApi => {
 
       const treeProbability = 0.015;
 
-      for (let dz = 0; dz < generateApi.NUM_CELLS_OVERSCAN; dz++) {
-        for (let dx = 0; dx < generateApi.NUM_CELLS_OVERSCAN; dx++) {
+      for (let dz = 0; dz < generateApi.NUM_CELLS; dz++) {
+        for (let dx = 0; dx < generateApi.NUM_CELLS; dx++) {
           const elevation = chunk.heightfield[(dx + (dz * generateApi.NUM_CELLS_OVERSCAN)) * 8];
 
           if (elevation > 64) {
