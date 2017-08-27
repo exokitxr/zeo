@@ -56,16 +56,6 @@ const _resArrayBuffer = res => {
     });
   }
 };
-const _resBlob = res => {
-  if (res.status >= 200 && res.status < 300) {
-    return res.blob();
-  } else {
-    return Promise.reject({
-      status: res.status,
-      stack: 'API returned invalid status code: ' + res.status,
-    });
-  }
-};
 function mod(value, divisor) {
   var n = value % divisor;
   return n < 0 ? (divisor + n) : n;
