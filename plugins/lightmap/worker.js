@@ -437,9 +437,12 @@ self.onmessage = e => {
     const {lightmapBuffer} = data;
 
     let readByteOffset = 0;
-    let writeByteOffset = 0;
     const numLightmaps = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + readByteOffset, 1)[0];
     readByteOffset += 4;
+
+    let writeByteOffset = 0;
+    new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + writeByteOffset, 1)[0] = numLightmaps;
+    writeByteOffset += 4;
 
     for (let i = 0; i < numLightmaps; i++) {
       const lightmapHeaderArray = new Int32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + readByteOffset, 2);
@@ -453,11 +456,13 @@ self.onmessage = e => {
       const positions = new Float32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + readByteOffset, numPositions);
       readByteOffset += 4 * numPositions;
 
-      // new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + writeByteOffset, 1)[0] = numPositions;
-      const chunkWriteByteOffset = writeByteOffset;
-      writeByteOffset += 4;
-
+      const header = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + writeByteOffset, 3);
       const lightmapsLength = numPositions / 3;
+      header[0] = x;
+      header[1] = z;
+      header[2] = lightmapsLength;
+      writeByteOffset += 3 * 4;
+
       const lightmap = new Uint8Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + writeByteOffset, lightmapsLength);
       writeByteOffset += lightmapsLength;
       const alignDiff = writeByteOffset % 4;
@@ -477,8 +482,6 @@ self.onmessage = e => {
         const lightmapIndex = dx + (dz * width1) + (dy * width1depth1);
         lightmap[i] = lightmapRenderArray[lightmapIndex];
       }
-
-      new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + chunkWriteByteOffset, 1)[0] = lightmapsLength; // do this last to not scribble
     }
 
     postMessage(lightmapBuffer, [lightmapBuffer.buffer]);

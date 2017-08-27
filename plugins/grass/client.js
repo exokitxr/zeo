@@ -595,33 +595,44 @@ class Grass {
           });
 
           const _debouncedRefreshLightmaps = _debounce(next => {
-            const requestGrassChunkMeshes = [];
-            for (const index in grassChunkMeshes) {
-              const trackedGrassChunkMeshes = grassChunkMeshes[index];
+            (() => {
+              let wordOffset = 0;
+              const uint32Array = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset);
+              const int32Array = new Int32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset);
+              wordOffset++;
 
-              if (trackedGrassChunkMeshes) {
-                requestGrassChunkMeshes.push(trackedGrassChunkMeshes);
+              let numLightmaps = 0;
+              for (const index in grassChunkMeshes) {
+                const trackedGrassChunkMeshes = grassChunkMeshes[index];
+
+                if (trackedGrassChunkMeshes) {
+                   const {offset: {x, y}} = trackedGrassChunkMeshes;
+
+                  int32Array[wordOffset + 0] = x;
+                  int32Array[wordOffset + 1] = y;
+                  wordOffset += 2;
+
+                  numLightmaps++;
+                }
               }
-            }
-
-            let byteOffset = 0;
-            new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, 1)[0] = requestGrassChunkMeshes.length;
-            byteOffset += 4;
-
-            for (let i = 0; i < requestGrassChunkMeshes.length; i++) {
-              const trackedGrassChunkMeshes = requestGrassChunkMeshes[i];
-              const {offset: {x, y}} = trackedGrassChunkMeshes;
-
-              const lightmapRequestHeaderBuffer = new Int32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, 2);
-              lightmapRequestHeaderBuffer[0] = x;
-              lightmapRequestHeaderBuffer[1] = y;
-              byteOffset += 4 * 2;
-            }
+              uint32Array[0] = numLightmaps;
+            })();
 
             worker.requestLightmaps(lightmapBuffer, newLightmapBuffer => {
+              const uint32Array = new Uint32Array(newLightmapBuffer.buffer, newLightmapBuffer.byteOffset);
+              const int32Array = new Int32Array(newLightmapBuffer.buffer, newLightmapBuffer.byteOffset);
+
               let byteOffset = 0;
-              for (let i = 0; i < requestGrassChunkMeshes.length; i++) {
-                const lightmapsLength = new Uint32Array(newLightmapBuffer.buffer, newLightmapBuffer.byteOffset + byteOffset, 1)[0];
+              const numLightmaps = uint32Array[byteOffset / 4];
+              byteOffset += 4;
+
+              for (let i = 0; i < numLightmaps; i++) {
+                const x = int32Array[byteOffset / 4];
+                byteOffset += 4;
+                const z = int32Array[byteOffset / 4];
+                byteOffset += 4;
+
+                const lightmapsLength = uint32Array[byteOffset / 4];
                 byteOffset += 4;
 
                 const newLightmaps = new Uint8Array(newLightmapBuffer.buffer, newLightmapBuffer.byteOffset + byteOffset, lightmapsLength);
@@ -632,10 +643,13 @@ class Grass {
                 }
 
                 if (newLightmaps.length > 0) {
-                  const trackedGrassChunkMeshes = requestGrassChunkMeshes[i];
-                  const {index, lightmaps} = trackedGrassChunkMeshes;
-                  lightmaps.set(newLightmaps);
-                  renderer.updateAttribute(grassMesh.geometry.attributes.lightmap, index * lightmaps.length, newLightmaps.length, false);
+                  const trackedGrassChunkMeshes = grassChunkMeshes[_getChunkIndex(x, z)];
+
+                  if (trackedGrassChunkMeshes) {
+                    const {index, lightmaps} = trackedGrassChunkMeshes;
+                    lightmaps.set(newLightmaps);
+                    renderer.updateAttribute(grassMesh.geometry.attributes.lightmap, index * lightmaps.length, newLightmaps.length, false);
+                  }
                 }
               }
 

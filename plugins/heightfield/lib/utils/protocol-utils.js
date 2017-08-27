@@ -156,7 +156,7 @@ const stringifyDataChunk = (mapChunk, arrayBuffer, byteOffset) => {
   etherBuffer.set(ether);
   byteOffset += FLOAT32_SIZE * ether.length;
 
-  return arrayBuffer;
+  return [arrayBuffer, byteOffset];
 };
 
 const parseDataChunk = (buffer, byteOffset) => {
@@ -382,7 +382,7 @@ const stringifyRenderChunk = (mapChunk, lightmaps, arrayBuffer, byteOffset) => {
   staticHeightfieldBuffer.set(staticHeightfield);
   byteOffset += FLOAT32_SIZE * staticHeightfield.length;
 
-  return arrayBuffer;
+  return [arrayBuffer, byteOffset];
 };
 
 const parseRenderChunk = (buffer, byteOffset) => {

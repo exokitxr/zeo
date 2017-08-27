@@ -829,8 +829,8 @@ self.onmessage = e => {
           _requestLightmaps(lightmapBuffer, lightmapBuffer => {
             const {buffer} = lightmapBuffer;
 
-            const lightmapsLength = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset, 1)[0];
-            const lightmaps = new Uint8Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + 4, lightmapsLength);
+            const lightmapsLength = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + 3 * 4, 1)[0];
+            const lightmaps = new Uint8Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + 4 * 4, lightmapsLength);
 
             protocolUtils.stringifyGeometry(geometry, lightmaps, buffer, 0);
             postMessage({

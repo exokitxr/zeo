@@ -117,43 +117,73 @@ const _requestChunk = (x, z, index, numPositions, numIndices) => {
     return fetch(`/archae/heightfield/chunks?x=${x}&z=${z}`, {
       credentials: 'include',
     })
-      .then(_resArrayBuffer)
-      .then(buffer => {
-        const chunkData = protocolUtils.parseDataChunk(buffer, 0);
-        const {indices} = chunkData;
-        const positionOffset = index * (numPositions / 3);
-        for (let i = 0; i < indices.length; i++) {
-          indices[i] += positionOffset;
-        }
-
-        const trackedMapChunkMeshes = {
-          array: Array(NUM_CHUNKS_HEIGHT),
-          groups: new Int32Array(NUM_RENDER_GROUPS * 2),
-        };
-        for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
-          const {indexRange, boundingSphere, peeks} = chunkData.geometries[i];
-          const indexOffset = index * numIndices;
-          trackedMapChunkMeshes.array[i] = {
-            offset: new THREE.Vector3(x, i, z),
-            indexRange: {
-              start: indexRange.start + indexOffset,
-              count: indexRange.count,
-            },
-            boundingSphere: new THREE.Sphere(
-              new THREE.Vector3().fromArray(boundingSphere, 0),
-              boundingSphere[3]
-            ),
-            peeks,
-            visibleIndex: -1,
-          };
-        }
-        mapChunkMeshes[_getChunkIndex(x, z)] = trackedMapChunkMeshes;
-
-        const chunk = tra.addChunk(x, z, new Uint32Array(buffer));
-        chunk.chunkData = chunkData;
-        return chunk;
-      });
+      .then(_resArrayBuffer);
   }
+};
+const _requestChunkLightmaps = (chunk, scratchBuffer, scratchBufferByteOffset, cb) => {
+  const lightmapBuffer = new Uint8Array(scratchBuffer, scratchBufferByteOffset);
+
+  let byteOffset = 0;
+  new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, 1)[0] = 1;
+  byteOffset += 4;
+
+  const lightmapHeaderArray = new Int32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, 2);
+  lightmapHeaderArray[0] = chunk.x;
+  lightmapHeaderArray[1] = chunk.z;
+  byteOffset += 4 * 2;
+
+  const positions = chunk.chunkData.positions;
+  const numPositions = positions.length;
+  new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, 1)[0] = numPositions;
+  byteOffset += 4;
+
+  new Float32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, numPositions).set(positions);
+  byteOffset += 4 * numPositions;
+
+  _requestLightmaps(lightmapBuffer, lightmapBuffer => {
+    const {buffer: scratchBuffer} = lightmapBuffer;
+
+    const lightmapsLength = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + 3 * 4, 1)[0];
+    const lightmaps = new Uint8Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + 4 * 4, lightmapsLength);
+
+    cb({
+      lightmaps,
+      scratchBuffer,
+    });
+  });
+};
+const _offsetChunkData = (chunkData, index, numPositions) => {
+  const {indices} = chunkData;
+  const positionOffset = index * (numPositions / 3);
+  for (let i = 0; i < indices.length; i++) {
+    indices[i] += positionOffset;
+  }
+};
+const _registerChunk = (chunk, index, numIndices) => {
+  const {x, z} = chunk;
+
+  const trackedMapChunkMeshes = {
+    array: Array(NUM_CHUNKS_HEIGHT),
+    groups: new Int32Array(NUM_RENDER_GROUPS * 2),
+  };
+  for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
+    const {indexRange, boundingSphere, peeks} = chunk.chunkData.geometries[i];
+    const indexOffset = index * numIndices;
+    trackedMapChunkMeshes.array[i] = {
+      offset: new THREE.Vector3(x, i, z),
+      indexRange: {
+        start: indexRange.start + indexOffset,
+        count: indexRange.count,
+      },
+      boundingSphere: new THREE.Sphere(
+        new THREE.Vector3().fromArray(boundingSphere, 0),
+        boundingSphere[3]
+      ),
+      peeks,
+      visibleIndex: -1,
+    };
+  }
+  mapChunkMeshes[_getChunkIndex(x, z)] = trackedMapChunkMeshes;
 };
 const _requestLightmaps = (lightmapBuffer, cb) => {
   const id = _makeId();
@@ -285,41 +315,35 @@ self.onmessage = e => {
     }
     case 'generate': {
       const {id, args} = data;
-      const {x, y, index, numPositions, numIndices, buffer} = args;
+      const {x, y, index, numPositions, numIndices} = args;
+      let {buffer} = args;
 
       _requestChunk(x, y, index, numPositions, numIndices)
-        .then(chunk => {
-          const lightmapBuffer = new Uint8Array(buffer, Math.floor(buffer.byteLength * 3 / 4));
+        .then(chunkBuffer => {
+          const chunkData = protocolUtils.parseDataChunk(chunkBuffer, 0);
+          _offsetChunkData(chunkData, index, numPositions);
+          const chunk = tra.addChunk(x, y, new Uint32Array(chunkBuffer, 0));
+          chunk.chunkData = chunkData;
+          _registerChunk(chunk, index, numIndices);
+          return chunk;
+        })
+        .then(chunk => new Promise((accept, reject) => {
+          _requestChunkLightmaps(chunk, buffer, buffer.byteLength - LIGHTMAP_BUFFER_SIZE, ({lightmaps, scratchBuffer}) => {
+            buffer = scratchBuffer;
+            accept({
+              chunk,
+              lightmaps,
+            });
+          })
+        }))
+        .then(({chunk, lightmaps}) => {
+          protocolUtils.stringifyRenderChunk(chunk.chunkData, lightmaps, buffer, 0);
 
-          let byteOffset = 0;
-          new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, 1)[0] = 1;
-          byteOffset += 4;
-
-          const lightmapHeaderArray = new Int32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, 2);
-          lightmapHeaderArray[0] = chunk.x;
-          lightmapHeaderArray[1] = chunk.z;
-          byteOffset += 4 * 2;
-
-          const positions = chunk.chunkData.positions;
-          const numPositions = positions.length;
-          new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, 1)[0] = numPositions;
-          byteOffset += 4;
-
-          new Float32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, numPositions).set(positions);
-          byteOffset += 4 * numPositions;
-
-          _requestLightmaps(lightmapBuffer, lightmapBuffer => {
-            const lightmapsLength = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset, 1)[0];
-            const lightmaps = new Uint8Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + 4, lightmapsLength);
-
-            protocolUtils.stringifyRenderChunk(chunk.chunkData, lightmaps, lightmapBuffer.buffer, 0);
-
-            postMessage({
-              type: 'response',
-              args: [id],
-              result: lightmapBuffer.buffer,
-            }, [lightmapBuffer.buffer]);
-          });
+          postMessage({
+            type: 'response',
+            args: [id],
+            result: buffer,
+          }, [buffer]);
         })
         .catch(err => {
           console.warn(err);

@@ -916,33 +916,44 @@ class Heightfield {
         });
 
         const _debouncedRefreshLightmaps = _debounce(next => {
-          const requestMapChunkMeshes = [];
-          for (const index in mapChunkMeshes) {
-            const trackedMapChunkMeshes = mapChunkMeshes[index];
+          (() => {
+            let wordOffset = 0;
+            const uint32Array = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset);
+            const int32Array = new Int32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset);
+            wordOffset++;
 
-            if (trackedMapChunkMeshes) {
-              requestMapChunkMeshes.push(trackedMapChunkMeshes);
+            let numLightmaps = 0;
+            for (const index in mapChunkMeshes) {
+              const trackedMapChunkMeshes = mapChunkMeshes[index];
+
+              if (trackedMapChunkMeshes) {
+                 const {offset: {x, y}} = trackedMapChunkMeshes;
+
+                int32Array[wordOffset + 0] = x;
+                int32Array[wordOffset + 1] = y;
+                wordOffset += 2;
+
+                numLightmaps++;
+              }
             }
-          }
-
-          let byteOffset = 0;
-          new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, 1)[0] = requestMapChunkMeshes.length;
-          byteOffset += 4;
-
-          for (let i = 0; i < requestMapChunkMeshes.length; i++) {
-            const trackedMapChunkMeshes = requestMapChunkMeshes[i];
-            const {offset: {x, y}} = trackedMapChunkMeshes;
-
-            const lightmapRequestHeaderBuffer = new Int32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, 2);
-            lightmapRequestHeaderBuffer[0] = x;
-            lightmapRequestHeaderBuffer[1] = y;
-            byteOffset += 4 * 2;
-          }
+            uint32Array[0] = numLightmaps;
+          })();
 
           worker.requestLightmaps(lightmapBuffer, newLightmapBuffer => {
+            const uint32Array = new Uint32Array(newLightmapBuffer.buffer, newLightmapBuffer.byteOffset);
+            const int32Array = new Int32Array(newLightmapBuffer.buffer, newLightmapBuffer.byteOffset);
+
             let byteOffset = 0;
-            for (let i = 0; i < requestMapChunkMeshes.length; i++) {
-              const lightmapsLength = new Uint32Array(newLightmapBuffer.buffer, newLightmapBuffer.byteOffset + byteOffset, 1)[0];
+            const numLightmaps = uint32Array[byteOffset / 4];
+            byteOffset += 4;
+
+            for (let i = 0; i < numLightmaps; i++) {
+              const x = int32Array[byteOffset / 4];
+              byteOffset += 4;
+              const z = int32Array[byteOffset / 4];
+              byteOffset += 4;
+
+              const lightmapsLength = uint32Array[byteOffset / 4];
               byteOffset += 4;
 
               const newLightmaps = new Uint8Array(newLightmapBuffer.buffer, newLightmapBuffer.byteOffset + byteOffset, lightmapsLength);
@@ -953,10 +964,13 @@ class Heightfield {
               }
 
               if (newLightmaps.length > 0) {
-                const trackedMapChunkMeshes = requestMapChunkMeshes[i];
-                const {index, lightmaps} = trackedMapChunkMeshes;
-                lightmaps.set(newLightmaps);
-                renderer.updateAttribute(heightfieldObject.geometry.attributes.lightmap, index * lightmaps.length, newLightmaps.length, false);
+                const trackedMapChunkMeshes = mapChunkMeshes[_getChunkIndex(x, z)];
+
+                if (trackedMapChunkMeshes) {
+                  const {index, lightmaps} = trackedMapChunkMeshes;
+                  lightmaps.set(newLightmaps);
+                  renderer.updateAttribute(heightfieldObject.geometry.attributes.lightmap, index * lightmaps.length, newLightmaps.length, false);
+                }
               }
             }
 

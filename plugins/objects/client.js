@@ -1210,33 +1210,44 @@ void main() {
     )
       .then(() => {
         const _debouncedRefreshLightmaps = _debounce(next => {
-          const requestObjectChunkMeshes = [];
-          for (const index in objectsChunkMeshes) {
-            const trackedObjectChunkMeshes = objectsChunkMeshes[index];
+          (() => {
+            let wordOffset = 0;
+            const uint32Array = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset);
+            const int32Array = new Int32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset);
+            wordOffset++;
 
-            if (trackedObjectChunkMeshes) {
-              requestObjectChunkMeshes.push(trackedObjectChunkMeshes);
+            let numLightmaps = 0;
+            for (const index in objectsChunkMeshes) {
+              const trackedObjectChunkMeshes = objectsChunkMeshes[index];
+
+              if (trackedObjectChunkMeshes) {
+                 const {offset: {x, y}} = trackedObjectChunkMeshes;
+
+                int32Array[wordOffset + 0] = x;
+                int32Array[wordOffset + 1] = y;
+                wordOffset += 2;
+
+                numLightmaps++;
+              }
             }
-          }
-
-          let byteOffset = 0;
-          new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, 1)[0] = requestObjectChunkMeshes.length;
-          byteOffset += 4;
-
-          for (let i = 0; i < requestObjectChunkMeshes.length; i++) {
-            const trackedObjectChunkMeshes = requestObjectChunkMeshes[i];
-            const {offset: {x, y}} = trackedObjectChunkMeshes;
-
-            const lightmapRequestHeaderBuffer = new Int32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, 2);
-            lightmapRequestHeaderBuffer[0] = x;
-            lightmapRequestHeaderBuffer[1] = y;
-            byteOffset += 4 * 2;
-          }
+            uint32Array[0] = numLightmaps;
+          })();
 
           worker.requestLightmaps(lightmapBuffer, newLightmapBuffer => {
+            const uint32Array = new Uint32Array(newLightmapBuffer.buffer, newLightmapBuffer.byteOffset);
+            const int32Array = new Int32Array(newLightmapBuffer.buffer, newLightmapBuffer.byteOffset);
+
             let byteOffset = 0;
-            for (let i = 0; i < requestObjectChunkMeshes.length; i++) {
-              const lightmapsLength = new Uint32Array(newLightmapBuffer.buffer, newLightmapBuffer.byteOffset + byteOffset, 1)[0];
+            const numLightmaps = uint32Array[byteOffset / 4];
+            byteOffset += 4;
+
+            for (let i = 0; i < numLightmaps; i++) {
+              const x = int32Array[byteOffset / 4];
+              byteOffset += 4;
+              const z = int32Array[byteOffset / 4];
+              byteOffset += 4;
+
+              const lightmapsLength = uint32Array[byteOffset / 4];
               byteOffset += 4;
 
               const newLightmaps = new Uint8Array(newLightmapBuffer.buffer, newLightmapBuffer.byteOffset + byteOffset, lightmapsLength);
@@ -1247,10 +1258,13 @@ void main() {
               }
 
               if (newLightmaps.length > 0) {
-                const trackedObjectChunkMeshes = requestObjectChunkMeshes[i];
-                const {index, lightmaps} = trackedObjectChunkMeshes;
-                lightmaps.set(newLightmaps);
-                renderer.updateAttribute(objectsObject.geometry.attributes.lightmap, index * lightmaps.length, newLightmaps.length, false);
+                const trackedObjectChunkMeshes = objectsChunkMeshes[_getChunkIndex(x, z)];
+
+                if (trackedObjectChunkMeshes) {
+                  const {index, lightmaps} = trackedObjectChunkMeshes;
+                  lightmaps.set(newLightmaps);
+                  renderer.updateAttribute(objectsObject.geometry.attributes.lightmap, index * lightmaps.length, newLightmaps.length, false);
+                }
               }
             }
 
