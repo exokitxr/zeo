@@ -423,20 +423,9 @@ class Grass {
 
             // material
 
-            const uniforms = Object.assign(
-              THREE.UniformsUtils.clone(THREE.UniformsLib.lights),
-              THREE.UniformsUtils.clone(GRASS_SHADER.uniforms)
-            );
-            uniforms.map.value = mapTexture;
-            // uniforms.d.value = new THREE.Vector2(x * NUM_CELLS, z * NUM_CELLS);
-            const material = new THREE.ShaderMaterial({
-              uniforms: uniforms,
-              vertexShader: GRASS_SHADER.vertexShader,
-              fragmentShader: GRASS_SHADER.fragmentShader,
-              lights: true,
-              side: THREE.DoubleSide,
-            });
-            material.uniformsNeedUpdate = _uniformsNeedUpdate;
+            const material = grassMaterial;
+
+            // mesh
 
             const mesh = {
               material,
@@ -523,6 +512,20 @@ class Grass {
             return mesh;
           })();
           scene.add(grassMesh);
+
+          const uniforms = Object.assign(
+            THREE.UniformsUtils.clone(THREE.UniformsLib.lights),
+            THREE.UniformsUtils.clone(GRASS_SHADER.uniforms)
+          );
+          uniforms.map.value = mapTexture;
+          const grassMaterial = new THREE.ShaderMaterial({
+            uniforms: uniforms,
+            vertexShader: GRASS_SHADER.vertexShader,
+            fragmentShader: GRASS_SHADER.fragmentShader,
+            lights: true,
+            side: THREE.DoubleSide,
+          });
+          grassMaterial.uniformsNeedUpdate = _uniformsNeedUpdate;
 
           const _debouncedRequestRefreshGrassChunks = _debounce(next => {
             const {hmd} = pose.getStatus();
