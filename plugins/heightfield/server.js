@@ -117,10 +117,11 @@ class Heightfield {
               chunk.generate(generator);
               _saveChunks();
             }
-            const uint32Buffer = chunk.getBuffer();
-            const buffer = new Buffer(uint32Buffer.buffer, uint32Buffer.byteOffset, uint32Buffer.byteLength);
+
             res.type('application/octet-stream');
-            res.send(buffer);
+
+            const uint32Buffer = chunk.getBuffer();
+            res.send(new Buffer(uint32Buffer.buffer, uint32Buffer.byteOffset, uint32Buffer.byteLength));
           } else {
             res.status(400);
             res.send();
@@ -148,7 +149,7 @@ class Heightfield {
               const lz = z - (oz * NUM_CELLS);
               const newEther = Float32Array.from([lx, y, lz, v]);
 
-              if (!regenerated.some(entry => entry[0] === ox && entry[1] === oz)) {
+              if (!regenerated.some(chunk => chunk.x === ox && chunk.z === oz)) {
                 let chunk = tra.getChunk(ox, oz);
                 if (!chunk) {
                   chunk = tra.makeChunk(ox, oz);
@@ -166,11 +167,28 @@ class Heightfield {
                     newEther,
                   });
                 }
-                regenerated.push([ox, oz]);
+                regenerated.push(chunk);
               }
             }
             _saveChunks();
-            res.send();
+
+            res.type('application/octet-stream');
+
+            const chunksHeader = Uint32Array.from([regenerated.length]);
+            res.write(new Buffer(chunksHeader.buffer, chunksHeader.byteOffset, chunksHeader.byteLength));
+            for (let i = 0; i < regenerated.length; i++) {
+              const chunk = regenerated[i];
+
+              const chunkHeader1 = Int32Array.from([chunk.x, chunk.z]);
+              res.write(new Buffer(chunkHeader1.buffer, chunkHeader1.byteOffset, chunkHeader1.byteLength));
+
+              const uint32Buffer = chunk.getBuffer();
+              const chunkHeader2 = Uint32Array.from([uint32Buffer.byteLength]);
+              res.write(new Buffer(chunkHeader2.buffer, chunkHeader2.byteOffset, chunkHeader2.byteLength));
+
+              res.write(new Buffer(uint32Buffer.buffer, uint32Buffer.byteOffset, uint32Buffer.byteLength));
+            }
+            res.end();
           } else {
             res.status(400);
             res.send();

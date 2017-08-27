@@ -224,6 +224,7 @@ class Heightfield {
       ]
     );
     let generateBuffer = new ArrayBuffer(NUM_POSITIONS_CHUNK);
+    let terrainBuffer = new ArrayBuffer(NUM_POSITIONS_CHUNK * 4);
     let lightmapBuffer = new Uint8Array(LIGHTMAP_BUFFER_SIZE * NUM_BUFFERS);
     let cullBuffer = new ArrayBuffer(4096);
     const worker = new Worker('archae/plugins/_plugins_heightfield/build/worker.js');
@@ -320,16 +321,22 @@ class Heightfield {
       });
       queues[id] = accept;
     }); */
-    worker.requestSubVoxel = (x, y, z, cb) => {
+    worker.requestSubVoxel = (x, y, z, gslots, cb) => {
       const id = _makeId();
       worker.postMessage({
         method: 'subVoxel',
         id,
         args: {
           position: [x, y, z],
+          gslots,
+          buffer: terrainBuffer,
         },
-      });
-      queues[id] = cb;
+      }, [terrainBuffer]);
+      queues[id] = newTerrainBuffer => {
+        terrainBuffer = newTerrainBuffer;
+
+        cb(newTerrainBuffer);
+      };
     };
     worker.requestHeightfield = (x, y, buffer, cb) => {
       const id = _makeId();
@@ -461,48 +468,8 @@ class Heightfield {
         cb(protocolUtils.parseRenderChunk(mapChunkBuffer));
       });
     };
-    const _makeMapChunkMeshes = (chunk, gbuffer, mapChunkData) => {
-      const {x, z} = chunk;
-      const {positions: newPositions, colors: newColors, lightmaps: newLightmaps, indices: newIndices, heightfield, staticHeightfield} = mapChunkData;
-      // XXX move heightfield interpolation entirely into the worker
-      // XXX preallocate staticHeightfield feedthrough for lightmap and stck
-
-      // geometry
-
-      const {index, slices: {positions, colors, lightmaps, indices}} = gbuffer;
-
-      positions.set(newPositions);
-      renderer.updateAttribute(heightfieldObject.geometry.attributes.position, index * positions.length, newPositions.length, false);
-
-      colors.set(newColors);
-      renderer.updateAttribute(heightfieldObject.geometry.attributes.color, index * colors.length, newColors.length, false);
-
-      lightmaps.set(newLightmaps);
-      renderer.updateAttribute(heightfieldObject.geometry.attributes.lightmap, index * lightmaps.length, newLightmaps.length, false);
-
-      indices.set(newIndices);
-      renderer.updateAttribute(heightfieldObject.geometry.index, index * indices.length, newIndices.length, true);
-
-      // material
-
-      const uniforms = Object.assign(
-        THREE.UniformsUtils.clone(THREE.UniformsLib.lights),
-        THREE.UniformsUtils.clone(HEIGHTFIELD_SHADER.uniforms)
-      );
-      // uniforms.d.value = new THREE.Vector2(x * NUM_CELLS, z * NUM_CELLS);
-      const material = new THREE.ShaderMaterial({
-        uniforms,
-        vertexShader: HEIGHTFIELD_SHADER.vertexShader,
-        fragmentShader: HEIGHTFIELD_SHADER.fragmentShader,
-        lights: true,
-        // transparent: true,
-        extensions: {
-          derivatives: true,
-        },
-      });
-      material.uniformsNeedUpdate = _uniformsNeedUpdate;
-
-      // mesh
+    const _makeMapChunkMeshes = (chunk, gbuffer) => {
+      const material = heightfieldMaterial;
 
       const meshes = {
         material,
@@ -511,28 +478,58 @@ class Heightfield {
           material,
           groups: [],
         },
-        index,
-        indexOffset: index * indices.length,
-        offset: new THREE.Vector2(x, z),
-        lightmaps,
-        heightfield: heightfield.slice(),
-        staticHeightfield: staticHeightfield.slice(),
+        index: gbuffer.index,
+        numPositions: gbuffer.slices.positions.length,
+        numIndices: gbuffer.slices.indices.length,
+        lightmaps: gbuffer.slices.lightmaps,
+        offset: new THREE.Vector2(chunk.x, chunk.z),
+        heightfield: null,
+        staticHeightfield: null,
         lightmap: null,
         shape: null,
         stckBody: null,
+        update: chunkData => {
+          const {positions: newPositions, colors: newColors, lightmaps: newLightmaps, indices: newIndices, heightfield, staticHeightfield} = chunkData;
+          // XXX move heightfield interpolation entirely into the worker
+          // XXX preallocate staticHeightfield feedthrough for lightmap and stck
+
+          // geometry
+
+          const {index, slices: {positions, colors, lightmaps, indices}} = gbuffer;
+
+          positions.set(newPositions);
+          renderer.updateAttribute(heightfieldObject.geometry.attributes.position, index * positions.length, newPositions.length, false);
+
+          colors.set(newColors);
+          renderer.updateAttribute(heightfieldObject.geometry.attributes.color, index * colors.length, newColors.length, false);
+
+          lightmaps.set(newLightmaps);
+          renderer.updateAttribute(heightfieldObject.geometry.attributes.lightmap, index * lightmaps.length, newLightmaps.length, false);
+
+          indices.set(newIndices);
+          renderer.updateAttribute(heightfieldObject.geometry.index, index * indices.length, newIndices.length, true);
+
+          if (meshes.shape) {
+            _unbindLightmap(meshes);
+          }
+
+          meshes.heightfield = heightfield.slice();
+          meshes.staticHeightfield = staticHeightfield.slice();
+
+          if (lightmapper) {
+            _bindLightmap(meshes);
+          }
+        },
         destroy: () => {
           geometryBuffer.free(gbuffer);
 
           material.dispose();
 
-          if (meshes.lightmap) {
+          if (meshes.shape) {
             _unbindLightmap(meshes);
           }
         },
       };
-      if (lightmapper) {
-        _bindLightmap(meshes);
-      }
 
       return meshes;
     };
@@ -568,6 +565,20 @@ class Heightfield {
       return mesh;
     })();
     scene.add(heightfieldObject);
+
+    const heightfieldMaterial = new THREE.ShaderMaterial({
+      uniforms: Object.assign(
+        THREE.UniformsUtils.clone(THREE.UniformsLib.lights),
+        THREE.UniformsUtils.clone(HEIGHTFIELD_SHADER.uniforms)
+      ),
+      vertexShader: HEIGHTFIELD_SHADER.vertexShader,
+      fragmentShader: HEIGHTFIELD_SHADER.fragmentShader,
+      lights: true,
+      extensions: {
+        derivatives: true,
+      },
+    });
+    heightfieldMaterial.uniformsNeedUpdate = _uniformsNeedUpdate;
 
     const listeners = [];
     const _emit = (e, d) => {
@@ -619,7 +630,7 @@ class Heightfield {
 
           const {x, z, lod} = chunk;
           const gbuffer = geometryBuffer.alloc();
-          _requestGenerate(x, z, gbuffer.index, gbuffer.slices.positions.length, gbuffer.slices.indices.length, mapChunkData => {
+          _requestGenerate(x, z, gbuffer.index, gbuffer.slices.positions.length, gbuffer.slices.indices.length, chunkData => {
             const index = _getChunkIndex(x, z);
             const oldMapChunkMeshes = mapChunkMeshes[index];
             if (oldMapChunkMeshes) {
@@ -636,7 +647,8 @@ class Heightfield {
               mapChunkMeshes[index] = null;
             }
 
-            const newMapChunkMeshes = _makeMapChunkMeshes(chunk, gbuffer, mapChunkData);
+            const newMapChunkMeshes = _makeMapChunkMeshes(chunk, gbuffer);
+            newMapChunkMeshes.update(chunkData);
             heightfieldObject.renderList.push(newMapChunkMeshes.renderListEntry);
             mapChunkMeshes[index] = newMapChunkMeshes;
 
@@ -699,6 +711,70 @@ class Heightfield {
         next();
       }
     });
+    const _requestSubVoxel = (() => {
+      let running = false;
+      const queue = [];
+      const _next = () => {
+        running = false;
+
+        if (queue.length > 0) {
+          const {x, y, z} = queue.shift();
+          _recurse(x, y, z);
+        }
+      };
+
+      const _recurse = (x, y, z) => {
+        if (!running) {
+          running = true;
+
+          const ox = Math.floor(x / NUM_CELLS);
+          const oz = Math.floor(z / NUM_CELLS);
+
+          const gslots = {};
+          for (let dz = -1; dz <= 1; dz++) {
+            for (let dx = -1; dx <= 1; dx++) {
+              const index = _getChunkIndex(ox + dx, oz + dz);
+              const mapChunkMesh = mapChunkMeshes[index];
+              if (mapChunkMesh) {
+                gslots[index] = {
+                  index: mapChunkMesh.index,
+                  numPositions: mapChunkMesh.numPositions,
+                  numIndices: mapChunkMesh.numIndices,
+                };
+              }
+            }
+          }
+          worker.requestSubVoxel(x, y, z, gslots, buffer => {
+            let byteOffset = 0;
+            const numChunks = new Uint32Array(buffer, byteOffset, 1);
+            byteOffset += 4;
+
+            for (let i = 0; i < numChunks; i++) {
+              const chunkHeader1 = new Int32Array(buffer, byteOffset, 2);
+              const x = chunkHeader1[0];
+              const z = chunkHeader1[1];
+              byteOffset += 4 * 2;
+
+              const chunkLength = new Uint32Array(buffer, byteOffset, 1)[0];
+              byteOffset += 4;
+
+              const chunkBuffer = new Uint8Array(buffer, byteOffset, chunkLength);
+              byteOffset += chunkLength;
+
+              const trackedMapChunkMeshes = mapChunkMeshes[_getChunkIndex(x, z)];
+              if (trackedMapChunkMeshes) {
+                trackedMapChunkMeshes.update(protocolUtils.parseRenderChunk(chunkBuffer.buffer, chunkBuffer.byteOffset));
+              }
+            }
+
+            _next();
+          });
+        } else {
+          queue.push({x, y, z});
+        }
+      };
+      return _recurse;
+    })();
 
     const a = new THREE.Vector3();
     const b = new THREE.Vector3();
@@ -880,12 +956,11 @@ class Heightfield {
                 .applyEuler(localEuler)
                 .multiplyScalar(15 * angleFactor)
             );
-          const lx = localVector.x;
-          const lz = localVector.z;
+          const {x: lx, z: lz} = localVector;
           const ox = Math.floor(lx / NUM_CELLS);
           const oz = Math.floor(lz / NUM_CELLS);
-          const mapChunkMesh = mapChunkMeshes[_getChunkIndex(ox, oz)];
 
+          const mapChunkMesh = mapChunkMeshes[_getChunkIndex(ox, oz)];
           if (mapChunkMesh) {
             const ly = _getBestHeightfieldTriangleElevation(
               mapChunkMesh.heightfield,
@@ -894,18 +969,7 @@ class Heightfield {
               hmdPosition.y - 1.5
             );
             if (ly !== -1024) {
-              worker.requestSubVoxel(Math.round(lx), Math.round(ly), Math.round(lz), regenerated => {
-                if (regenerated.length > 0) {
-                  for (let i = 0; i < regenerated.length; i++) {
-                    const [ox, oz] = regenerated[i];
-                    const chunk = chunker.getChunk(ox, oz);
-                    if (chunk) {
-                      chunk.lod = -1; // force chunk refresh
-                    }
-                  }
-                  _debouncedRequestRefreshMapChunks();
-                }
-              });
+              _requestSubVoxel(Math.round(lx), Math.round(ly), Math.round(lz));
 
               e.stopImmediatePropagation();
             }

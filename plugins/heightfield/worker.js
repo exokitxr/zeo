@@ -478,52 +478,137 @@ self.onmessage = e => {
     }
     case 'subVoxel': {
       const {id, args} = data;
-      const {position} = args;
-      const [x, y, z] = position;
+      const {position: [x, y, z], gslots} = args;
+      let {buffer} = args;
 
       fetch(`/archae/heightfield/voxels?x=${x}&y=${y}&z=${z}`, {
-          method: 'DELETE',
-          credentials: 'include',
-        })
-          .then(_resBlob)
-          .then(() => {
-            // _respond();
-          })
-          .catch(err => {
-            console.warn(err);
-          });
+        method: 'DELETE',
+        credentials: 'include',
+      })
+        .then(_resArrayBuffer)
+        .then(responseBuffer => {
+          let readByteOffset = 0;
+          const numChunks = new Uint32Array(responseBuffer, readByteOffset, 1)[0];
+          readByteOffset += 4;
 
-      const regenerated = [];
-      for (let i = 0; i < DIRECTIONS.length; i++) {
-        const [dx, dz] = DIRECTIONS[i];
-        const ax = x + dx * 2;
-        const az = z + dz * 2;
-        const ox = Math.floor(ax / NUM_CELLS);
-        const oz = Math.floor(az / NUM_CELLS);
+          if (numChunks > 0) {
+            const chunkSpecs = [];
+            for (let i = 0; i < numChunks; i++) {
+              const chunkHeader = new Int32Array(responseBuffer, readByteOffset, 2);
+              const x = chunkHeader[0];
+              const z = chunkHeader[1];
+              readByteOffset += 4 * 2;
 
-        if (!regenerated.some(entry => entry[0] === ox && entry[1] === oz)) {
-          const chunk = tra.getChunk(ox, oz);
-          if (chunk) {
-            const uint32Buffer = chunk.getBuffer();
-            const chunkData = protocolUtils.parseDataChunk(uint32Buffer.buffer, uint32Buffer.byteOffset);
-            const oldElevations = chunkData.elevations.slice();
-            const oldEther = chunkData.ether.slice();
-            const newEther = Float32Array.from([x - (ox * NUM_CELLS), y, z - (oz * NUM_CELLS), 1]);
-            chunk.generate(generator, {
-              oldElevations,
-              oldEther,
-              newEther,
+              const chunkLength = new Uint32Array(responseBuffer, readByteOffset, 1)[0];
+              readByteOffset += 4;
+
+              const chunkBuffer = new Uint8Array(responseBuffer, readByteOffset, chunkLength);
+              readByteOffset += chunkLength;
+
+              const chunk = tra.getChunk(x, z);
+              const index = _getChunkIndex(x, z);
+              const gslot = gslots[index];
+              if (chunk && gslot) {
+                const {index, numPositions, numIndices} = gslot;
+
+                const chunkData = protocolUtils.parseDataChunk(chunkBuffer.buffer, chunkBuffer.byteOffset);
+                _offsetChunkData(chunkData, index, numPositions);
+                chunk.chunkData = chunkData;
+
+                const uint32Array = chunk.getBuffer();
+                new Uint8Array(uint32Array.buffer, uint32Array.byteOffset).set(chunkBuffer);
+
+                _registerChunk(chunk, index, numIndices);
+
+                chunkSpecs.push({
+                  x,
+                  z,
+                  chunkData,
+                });
+              }
+            }
+            const numChunkSpecs = chunkSpecs.length;
+
+            const lightmapBuffer = new Uint8Array(buffer, buffer.byteLength - LIGHTMAP_BUFFER_SIZE * numChunkSpecs);
+
+            let lightmapByteOffset = 0;
+            new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + lightmapByteOffset, 1)[0] = numChunkSpecs;
+            lightmapByteOffset += 4;
+
+            for (let i = 0; i < numChunkSpecs; i++) {
+              const chunkSpec = chunkSpecs[i];
+              const {x, z, chunkData: {positions}} = chunkSpec;
+
+              const lightmapHeaderArray = new Int32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + lightmapByteOffset, 2);
+              lightmapHeaderArray[0] = x;
+              lightmapHeaderArray[1] = z;
+              lightmapByteOffset += 4 * 2;
+
+              const numPositions = positions.length;
+              new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + lightmapByteOffset, 1)[0] = numPositions;
+              lightmapByteOffset += 4;
+
+              new Float32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + lightmapByteOffset, numPositions).set(positions);
+              lightmapByteOffset += 4 * numPositions;
+            }
+
+            _requestLightmaps(lightmapBuffer, lightmapBuffer => { // XXX make sure new heightfield is passed to lightmap plugin before this
+              const {buffer} = lightmapBuffer;
+
+              const lightmapsLength = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + 3 * 4, 1)[0];
+              const lightmaps = new Uint8Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + 4 * 4, lightmapsLength);
+
+              let writeByteOffset = 0;
+              const chunksHeader = new Uint32Array(buffer, writeByteOffset, 1);
+              writeByteOffset += 4;
+
+              let numResponseChunks = 0;
+              for (let i = 0; i < numChunkSpecs; i++) {
+                const chunkSpec = chunkSpecs[i];
+                const {x, z} = chunkSpec;
+                const chunk = tra.getChunk(x, z);
+
+                if (chunk) {
+                  const chunkHeader1 = new Int32Array(buffer, writeByteOffset, 2);
+                  chunkHeader1[0] = x;
+                  chunkHeader1[1] = z;
+                  writeByteOffset += 4 * 2;
+
+                  const chunkHeader2 = new Uint32Array(buffer, writeByteOffset, 1);
+                  writeByteOffset += 4;
+
+                  const newWriteByteOffset = protocolUtils.stringifyRenderChunk(chunk.chunkData, lightmaps, buffer, writeByteOffset)[1];
+                  const numChunkBytes = newWriteByteOffset - writeByteOffset;
+                  writeByteOffset = newWriteByteOffset;
+
+                  chunkHeader2[0] = numChunkBytes;
+
+                  numResponseChunks++;
+                }
+              }
+              chunksHeader[0] = numResponseChunks;
+
+              postMessage({
+                type: 'response',
+                args: [id],
+                result: buffer,
+              }, [buffer]);
             });
-            chunk.chunkData = chunkData;
+          } else {
+            let writeByteOffset = 0;
+            new Uint32Array(buffer, writeByteOffset, 1)[0] = 0;
+            writeByteOffset += 4;
+
+            postMessage({
+              type: 'response',
+              args: [id],
+              result: buffer,
+            }, [buffer]);
           }
-          regenerated.push([ox, oz]);
-        }
-      }
-      postMessage({
-        type: 'response',
-        args: [id],
-        result: regenerated,
-      });
+        })
+        .catch(err => {
+          console.warn(err);
+        });
       break;
     }
     case 'response': {
