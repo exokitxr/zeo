@@ -257,14 +257,13 @@ void main() {
 
     const uniforms = THREE.UniformsUtils.clone(OBJECTS_SHADER.uniforms);
     uniforms.map.value = textureAtlas;
-    // uniforms.d.value.set(x * NUM_CELLS, z * NUM_CELLS);
     const objectsMaterial = new THREE.ShaderMaterial({
       uniforms,
       vertexShader: OBJECTS_SHADER.vertexShader,
       fragmentShader: OBJECTS_SHADER.fragmentShader,
       side: THREE.DoubleSide,
     });
-    objectsMaterial.objectsMaterial = _uniformsNeedUpdate;
+    objectsMaterial.uniformsNeedUpdate = _uniformsNeedUpdate;
 
     const worker = new Worker('archae/plugins/_plugins_objects/build/worker.js');
     let generateBuffer = new ArrayBuffer(NUM_POSITIONS_CHUNK);
