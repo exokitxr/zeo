@@ -688,17 +688,6 @@ class Grass {
           _recurseRefreshCull();
 
           const _update = () => {
-            /* const _updateSunIntensity = () => {
-              const dayNightSkyboxEntity = elements.getEntitiesElement().querySelector(DAY_NIGHT_SKYBOX_PLUGIN);
-              const sunIntensity = (dayNightSkyboxEntity && dayNightSkyboxEntity.getSunIntensity) ? dayNightSkyboxEntity.getSunIntensity() : 0;
-
-              for (const index in grassChunkMeshes) {
-                const grassChunkMesh = grassChunkMeshes[index];
-                if (grassChunkMesh) {
-                  grassChunkMesh.material.uniforms.sunIntensity.value = sunIntensity;
-                }
-              }
-            }; */
             const _updateMatrices = () => {
               modelViewMatricesValid.left = false;
               modelViewMatricesValid.right = false;
@@ -708,7 +697,6 @@ class Grass {
               uniformsNeedUpdate.right = true;
             };
 
-            // _updateSunIntensity();
             _updateMatrices();
           };
           render.on('update', _update);
