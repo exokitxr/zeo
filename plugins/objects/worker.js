@@ -67,8 +67,8 @@ class TrackedObject {
   }
 }
 
-const _getHoveredTrackedObject = position => {
-  localVector.fromArray(position);
+const _getHoveredTrackedObject = (x, y, z, buffer, byteOffset) => {
+  localVector.set(x, y, z);
 
   const ox = Math.floor(localVector.x / NUM_CELLS);
   const oz = Math.floor(localVector.z / NUM_CELLS);
@@ -95,30 +95,30 @@ const _getHoveredTrackedObject = position => {
           );
 
           if (localBox.containsPoint(localVector2)) {
-            const uint32Array = new Uint32Array(8);
+            const uint32Array = new Uint32Array(buffer, byteOffset, 8);
             uint32Array[0] = trackedObject.n;
-            const int32Array = new Int32Array(uint32Array.buffer, uint32Array.byteOffset, uint32Array.length);
+            const int32Array = new Int32Array(buffer, byteOffset, 8);
             int32Array[1] = chunk.x;
             int32Array[2] = chunk.z;
             uint32Array[3] = parseInt(k, 10) + trackedObject.index * trackedObject.numObjectIndices;
-            const float32Array = new Float32Array(uint32Array.buffer, uint32Array.byteOffset, uint32Array.length);
+            const float32Array = new Float32Array(buffer, byteOffset, 8);
             float32Array[4] = trackedObject.position.x;
             float32Array[5] = trackedObject.position.y;
             float32Array[6] = trackedObject.position.z;
-            return uint32Array;
+            return;
           }
         }
       }
     }
   }
-  return new Uint32Array(8);
+  new Uint32Array(buffer, byteOffset, 8).fill(0);
 };
-const _getTeleportObject = position => {
-  localRay.origin.set(position[0], 1000, position[2]);
+const _getTeleportObject = (x, y, z, buffer) => {
+  localRay.origin.set(x, 1000, z);
   localRay.direction.set(0, -1, 0);
 
-  const ox = Math.floor(position[0] / NUM_CELLS);
-  const oz = Math.floor(position[2] / NUM_CELLS);
+  const ox = Math.floor(x / NUM_CELLS);
+  const oz = Math.floor(z / NUM_CELLS);
 
   let topY = -Infinity;
   let topTrackedObject = null;
@@ -158,16 +158,22 @@ const _getTeleportObject = position => {
   }
 
   if (topTrackedObject !== null) {
-    return topBox.min.toArray().concat(topBox.max.toArray())
-      .concat(topTrackedObject.position.toArray())
-      .concat(topTrackedObject.rotation.toArray())
-      .concat(topTrackedObject.rotationInverse.toArray());
+    let byteOffset = 0;
+    new Uint32Array(buffer, byteOffset, 1)[0] = 1;
+    byteOffset += 4;
+
+    const float32Array = new Float32Array(buffer, byteOffset, 3 + 3 + 3 + 4 + 4);
+    topBox.min.toArray(float32Array, 0);
+    topBox.max.toArray(float32Array, 3);
+    topTrackedObject.position.toArray(float32Array, 6);
+    topTrackedObject.rotation.toArray(float32Array, 9);
+    topTrackedObject.rotationInverse.toArray(float32Array, 13);
   } else {
-    return null;
+    new Uint32Array(buffer, 0, 1)[0] = 0;
   }
 };
-const _getBodyObject = position => {
-  const bodyCenterPoint = localVector.fromArray(position).add(bodyOffsetVector);
+const _getBodyObject = (x, y, z, buffer) => {
+  const bodyCenterPoint = localVector.set(x, y, z).add(bodyOffsetVector);
 
   const ox = Math.floor(bodyCenterPoint.x / NUM_CELLS);
   const oz = Math.floor(bodyCenterPoint.z / NUM_CELLS);
@@ -213,15 +219,15 @@ const _getBodyObject = position => {
   }
 
   if (topN !== null) {
-    const uint32Array = new Uint32Array(4);
+    const uint32Array = new Uint32Array(buffer, 0, 4);
+    const int32Array = new Int32Array(buffer, 0, 4);
+
     uint32Array[0] = topN;
-    const int32Array = new Int32Array(uint32Array.buffer, uint32Array.byteOffset, uint32Array.length);
     int32Array[1] = topChunkX;
     int32Array[2] = topChunkZ;
     uint32Array[3] = topObjectIndex;
-    return uint32Array;
   } else {
-    return new Uint32Array(4);
+    new Uint32Array(buffer, 0, 1)[0] = 0;
   }
 };
 
@@ -983,35 +989,49 @@ self.onmessage = e => {
       break;
     }
     case 'getHoveredObjects': {
-      const {id, args: positions} = data;
-      const result = new Uint32Array(8 * 2);
-      result.set(_getHoveredTrackedObject(positions[0]), 0);
-      result.set(_getHoveredTrackedObject(positions[1]), 8);
+      const {id, args: {buffer}} = data;
+
+      const float32Array = new Float32Array(buffer);
+      const lx = float32Array[0];
+      const ly = float32Array[1];
+      const lz = float32Array[2];
+      const rx = float32Array[3];
+      const ry = float32Array[4];
+      const rz = float32Array[5];
+      _getHoveredTrackedObject(lx, ly, lz, buffer, 0)
+      _getHoveredTrackedObject(rx, ry, rz, buffer, 8 * 4);
+
       postMessage({
         type: 'response',
         args: [id],
-        result,
-      });
+        result: buffer,
+      }, [buffer]);
       break;
     }
     case 'getTeleportObject': {
-      const {id, args: position} = data;
-      const result = _getTeleportObject(position);
+      const {id, args: {buffer}} = data;
+
+      const float32Array = new Float32Array(buffer, 0, 3);
+      _getTeleportObject(float32Array[0], float32Array[1], float32Array[2], buffer);
+
       postMessage({
         type: 'response',
         args: [id],
-        result,
-      });
+        result: buffer,
+      }, [buffer]);
       break;
     }
     case 'getBodyObject': {
-      const {id, args: position} = data;
-      const result = _getBodyObject(position);
+      const {id, args: {buffer}} = data;
+
+      const float32Array = new Float32Array(buffer, 0, 3);
+      _getBodyObject(float32Array[0], float32Array[1], float32Array[2], buffer);
+
       postMessage({
         type: 'response',
         args: [id],
-        result,
-      });
+        result: buffer,
+      }, [buffer]);
       break;
     }
     case 'response': {

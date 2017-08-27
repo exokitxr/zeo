@@ -269,6 +269,12 @@ void main() {
     let generateBuffer = new ArrayBuffer(NUM_POSITIONS_CHUNK);
     let lightmapBuffer = new Uint8Array(LIGHTMAP_BUFFER_SIZE * NUM_BUFFERS);
     let cullBuffer = new ArrayBuffer(4096);
+    let hoveredObjectsBuffer = new ArrayBuffer(8 * 2 * 4);
+    const teleportObjectBuffers = {
+      left: new ArrayBuffer((1 + 3 + 3 + 3 + 4 + 4) * 4),
+      right: new ArrayBuffer((1 + 3 + 3 + 3 + 4 + 4) * 4),
+    };
+    let bodyObjectBuffer = new ArrayBuffer(4 * 4);
     let queues = {};
     let numRemovedQueues = 0;
     const _cleanupQueues = () => {
@@ -408,33 +414,69 @@ void main() {
       const id = _makeId();
       const {gamepads} = pose.getStatus();
 
+      const float32Array = new Float32Array(hoveredObjectsBuffer, 0, 6);
+      float32Array[0] = gamepads.left.worldPosition.x;
+      float32Array[1] = gamepads.left.worldPosition.y;
+      float32Array[2] = gamepads.left.worldPosition.z;
+      float32Array[3] = gamepads.right.worldPosition.x;
+      float32Array[4] = gamepads.right.worldPosition.y;
+      float32Array[5] = gamepads.right.worldPosition.z;
+
       worker.postMessage({
         type: 'getHoveredObjects',
         id,
-        args: [
-          gamepads.left.worldPosition.toArray(),
-          gamepads.right.worldPosition.toArray(),
-        ],
-      });
-      queues[id] = cb;
-    };
-    worker.getTeleportObject = (position, cb) => {
-      localMessage.type = 'getTeleportObject';
-      const id = _makeId();
-      localMessage.id = id;
-      localMessage.args = position.toArray(localArray3);
+        args: {
+          buffer: hoveredObjectsBuffer,
+        },
+      }, [hoveredObjectsBuffer]);
+      queues[id] = newHoveredObjectsBuffer => {
+        hoveredObjectsBuffer = newHoveredObjectsBuffer;
 
-      worker.postMessage(localMessage);
-      queues[id] = cb;
+        cb(newHoveredObjectsBuffer);
+      };
+    };
+    worker.getTeleportObject = (position, side, cb) => {
+      const id = _makeId();
+
+      const teleportObjectBuffer = teleportObjectBuffers[side];
+      const float32Array = new Float32Array(teleportObjectBuffer, 0, 3);
+      float32Array[0] = position.x;
+      float32Array[1] = position.y;
+      float32Array[2] = position.z;
+
+      worker.postMessage({
+        type: 'getTeleportObject',
+        id,
+        args: {
+          buffer: teleportObjectBuffer,
+        },
+      }, [teleportObjectBuffer]);
+      queues[id] = newTeleportObjectsBuffer => {
+        teleportObjectBuffers[side] = newTeleportObjectsBuffer;
+
+        cb(newTeleportObjectsBuffer);
+      };
     };
     worker.getBodyObject = (position, cb) => {
-      localMessage.type = 'getBodyObject';
       const id = _makeId();
-      localMessage.id = id;
-      localMessage.args = position.toArray(localArray3);
 
-      worker.postMessage(localMessage);
-      queues[id] = cb;
+      const float32Array = new Float32Array(bodyObjectBuffer, 0, 3);
+      float32Array[0] = position.x;
+      float32Array[1] = position.y;
+      float32Array[2] = position.z;
+
+      worker.postMessage({
+        type: 'getBodyObject',
+        id,
+        args: {
+          buffer: bodyObjectBuffer,
+        },
+      }, [bodyObjectBuffer]);
+      queues[id] = newBodyObjectBuffer => {
+        bodyObjectBuffer = newBodyObjectBuffer;
+
+        cb(newBodyObjectBuffer);
+      };
     };
     worker.requestResponse = (id, result, transfers) => {
       worker.postMessage({
@@ -741,6 +783,7 @@ void main() {
       right: null,
     };
     const _makeTeleportSpec = () => ({
+      hit: false,
       box: new THREE.Box3(),
       position: new THREE.Vector3(),
       rotation: new THREE.Quaternion(),
@@ -755,18 +798,10 @@ void main() {
     }
     teleport.on('start', _teleportStart);
     const _teleportEnd = e => {
-      teleportPositions[e.side] = new THREE.Vector3();
+      teleportPositions[e.side] = null;
     }
     teleport.on('end', _teleportEnd);
     const _teleportTarget = (position, rotation, scale, side) => {
-      const teleportSpec = teleportSpecs[side];
-      const {
-        box: teleportBox,
-        position: teleportPosition,
-        rotation: teleportRotation,
-        rotationInverse: teleportRotationInverse,
-      } = teleportSpec;
-
       localEuler.setFromQuaternion(rotation, camera.rotation.order);
       const angleFactor = Math.min(Math.pow(Math.max(localEuler.x + Math.PI * 0.45, 0) / (Math.PI * 0.8), 2), 1);
       localEuler.x = 0;
@@ -780,17 +815,29 @@ void main() {
 
       teleportPositions[side].copy(localRay.origin);
 
-      localRay.origin.sub(teleportPosition)
-        .applyQuaternion(teleportRotationInverse)
-        .add(teleportPosition);
-      localRay.direction.set(0, -1, 0);
+      const teleportSpec = teleportSpecs[side];
+      if (teleportSpec.hit) {
+        const {
+          box: teleportBox,
+          position: teleportPosition,
+          rotation: teleportRotation,
+          rotationInverse: teleportRotationInverse,
+        } = teleportSpec;
 
-      const targetPosition = localRay.intersectBox(teleportBox, localVector2);
-      if (targetPosition) {
-        return targetPosition
-          .sub(teleportPosition)
-          .applyQuaternion(teleportRotation)
+        localRay.origin.sub(teleportPosition)
+          .applyQuaternion(teleportRotationInverse)
           .add(teleportPosition);
+        localRay.direction.set(0, -1, 0);
+
+        const targetPosition = localRay.intersectBox(teleportBox, localVector2);
+        if (targetPosition) {
+          return targetPosition
+            .sub(teleportPosition)
+            .applyQuaternion(teleportRotation)
+            .add(teleportPosition);
+        } else {
+          return null;
+        }
       } else {
         return null;
       }
@@ -1025,26 +1072,34 @@ void main() {
       }
     };
 
-    let bodyObject = null;
-
+    let updatingHover = false;
+    let lastHoverUpdateTime = 0;
+    const updatingTeleport = {
+      left: false,
+      right: false,
+    };
+    const lastTeleportUpdateTime = {
+      left: 0,
+      right: 0,
+    };
+    let updatingBody = false;
+    let lastBodyUpdateTime = 0;
     const _update = () => {
-      let updatingHover = false;
-      let lastHoverUpdateTime = 0;
       const _updateHoveredTrackedObjects = () => {
         if (!updatingHover) {
           const now = Date.now();
           const timeDiff = now - lastHoverUpdateTime;
 
           if (timeDiff > 1000 / 30) {
-            worker.getHoveredObjects(hoveredTrackedObjectSpecs => {
+            worker.getHoveredObjects(hoveredObjectsBuffer => {
               objectsMaterial.uniforms.selectedObject.value.set(-1, -1);
 
+              let byteOffset = 0;
               for (let i = 0; i < SIDES.length; i++) {
                 const side = SIDES[i];
-                const baseIndex = i * 8;
-                if (hoveredTrackedObjectSpecs[baseIndex] !== 0) {
+                if (new Uint32Array(hoveredObjectsBuffer, byteOffset, 1)[0] !== 0) {
                   const hoveredTrackedObject = hoveredTrackedObjects[side];
-                  hoveredTrackedObject.fromArray(hoveredTrackedObjectSpecs.buffer, hoveredTrackedObjectSpecs.byteOffset + baseIndex * 4);
+                  hoveredTrackedObject.fromArray(hoveredObjectsBuffer, byteOffset);
 
                   const objectsChunkMesh = objectsChunkMeshes[_getChunkIndex(hoveredTrackedObject.x, hoveredTrackedObject.z)];
                   if (objectsChunkMesh) {
@@ -1053,6 +1108,8 @@ void main() {
                 } else {
                   hoveredTrackedObjects[side].clear();
                 }
+
+                byteOffset += 8 * 4;
               }
 
               updatingHover = false;
@@ -1063,75 +1120,54 @@ void main() {
           }
         }
       };
-      let updatingTeleport = false;
-      let lastTeleportUpdateTime = 0;
       const _updateTeleport = () => {
         for (let i = 0; i < SIDES.length; i++) {
           const side = SIDES[i];
           const teleportPosition = teleportPositions[side];
           const teleportSpec = teleportSpecs[side];
 
-          const _clear = () => {
-            if (!teleportSpec.box.min.equals(zeroVector)) {
-              teleportSpec.box.min.copy(zeroVector);
-            }
-            if (!teleportSpec.box.max.equals(zeroVector)) {
-              teleportSpec.box.max.copy(zeroVector);
-            }
-            if (!teleportSpec.position.equals(zeroVector)) {
-              teleportSpec.position.copy(zeroVector);
-            }
-            if (!teleportSpec.rotationInverse.equals(zeroQuaternion)) {
-              teleportSpec.rotationInverse.copy(zeroQuaternion);
-            }
-          };
-
           if (teleportPosition) {
-            if (!updatingTeleport) {
+            if (!updatingTeleport[side]) {
               const now = Date.now();
-              const timeDiff = now - lastTeleportUpdateTime;
+              const timeDiff = now - lastTeleportUpdateTime[side];
 
               if (timeDiff > 1000 / 30) {
-                worker.getTeleportObject(teleportPosition, teleportObjectSpec => {
+                worker.getTeleportObject(teleportPosition, side, teleportObjectBuffer => {
                   const teleportPosition = teleportPositions[side];
 
-                  if (teleportPosition && teleportObjectSpec) {
-                    let offset = 0;
-                    teleportSpec.box.min.x = teleportObjectSpec[0];
-                    teleportSpec.box.min.y = teleportObjectSpec[1];
-                    teleportSpec.box.min.z = teleportObjectSpec[2];
-                    teleportSpec.box.max.x = teleportObjectSpec[3];
-                    teleportSpec.box.max.y = teleportObjectSpec[4];
-                    teleportSpec.box.max.z = teleportObjectSpec[5];
-                    teleportSpec.position.x = teleportObjectSpec[6];
-                    teleportSpec.position.y = teleportObjectSpec[7];
-                    teleportSpec.position.z = teleportObjectSpec[8];
-                    teleportSpec.rotation.x = teleportObjectSpec[9];
-                    teleportSpec.rotation.y = teleportObjectSpec[10];
-                    teleportSpec.rotation.z = teleportObjectSpec[11];
-                    teleportSpec.rotation.w = teleportObjectSpec[12];
-                    teleportSpec.rotationInverse.x = teleportObjectSpec[13];
-                    teleportSpec.rotationInverse.y = teleportObjectSpec[14];
-                    teleportSpec.rotationInverse.z = teleportObjectSpec[15];
-                    teleportSpec.rotationInverse.w = teleportObjectSpec[16];
+                  if (teleportPosition) {
+                    let byteOffset = 0;
+                    const hit = new Uint32Array(teleportObjectBuffer, byteOffset, 1)[0];
+                    byteOffset += 4;
+
+                    if (hit) {
+                      const float32Array = new Float32Array(teleportObjectBuffer, byteOffset, 3 + 3 + 3 + 4 + 4);
+                      teleportSpec.box.min.fromArray(float32Array, 0);
+                      teleportSpec.box.max.fromArray(float32Array, 3);
+                      teleportSpec.position.fromArray(float32Array, 6);
+                      teleportSpec.rotation.fromArray(float32Array, 9);
+                      teleportSpec.rotationInverse.fromArray(float32Array, 13);
+
+                      teleportSpec.hit = true;
+                    } else {
+                      teleportSpec.hit = false;
+                    }
                   } else {
-                    _clear();
+                    teleportSpec.hit = false;
                   }
 
-                  updatingTeleport = false;
-                  lastTeleportUpdateTime = Date.now();
+                  updatingTeleport[side] = false;
+                  lastTeleportUpdateTime[side] = Date.now();
                 });
 
-                updatingTeleport = true;
+                updatingTeleport[side] = true;
               }
             }
           } else {
-            _clear();
+            teleportSpec.hit = false;
           }
         }
       };
-      let updatingBody = false;
-      let lastBodyUpdateTime = 0;
       const _updateBody = () => {
         if (!updatingBody) {
           const now = Date.now();
@@ -1140,12 +1176,12 @@ void main() {
           if (timeDiff > 1000 / 30) {
             const {hmd} = pose.getStatus();
             const {worldPosition: hmdPosition} = hmd;
-            worker.getBodyObject(hmdPosition, bodyObjectSpec => {
-              if (bodyObjectSpec[0] !== 0) {
-                const uint32Array = bodyObjectSpec;
-                const n = uint32Array[0];
+            worker.getBodyObject(hmdPosition, hoveredBodyBuffer => {
+              if (new Uint32Array(hoveredBodyBuffer, 0, 1)[0] !== 0) {
+                const uint32Array = new Uint32Array(hoveredBodyBuffer, 0, 4);
+                const int32Array = new Int32Array(hoveredBodyBuffer, 0, 4);
 
-                const int32Array = new Int32Array(bodyObjectSpec.buffer, bodyObjectSpec.byteOffset, 4);
+                const n = uint32Array[0];
                 const x = int32Array[1];
                 const z = int32Array[2];
                 const objectIndex = uint32Array[3];
