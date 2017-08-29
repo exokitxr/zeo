@@ -610,8 +610,6 @@ void main() {
         destroy: () => {
           geometryBuffer.free(gbuffer);
 
-          material.dispose();
-
           if (mesh.lightmap) {
             // _unbindLightmap(mesh);
           }
