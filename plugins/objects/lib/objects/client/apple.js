@@ -12,9 +12,6 @@ const apple = objectApi => {
   const {three, pose, input, render, elements, items, sound} = zeo;
   const {THREE, scene, camera} = three;
 
-  const zeroQuaternion = new THREE.Quaternion();
-  const oneVector = new THREE.Vector3(1, 1, 1);
-  const upVector = new THREE.Vector3(0, 1, 0);
   const mouthOffsetVector = new THREE.Vector3(0, -0.1, 0);
   const localVector = new THREE.Vector3();
   const localVector2 = new THREE.Vector3();
@@ -23,158 +20,118 @@ const apple = objectApi => {
 
   const apples = [];
 
-  const _requestImage = src => new Promise((accept, reject) => {
-    const img = new Image();
-    img.onload = () => {
-      accept(img);
-    };
-    img.onerror = err => {
-      reject(img);
-    };
-    img.src = src;
-  });
+  return () => sound.requestSfx('archae/objects/sfx/eat.ogg')
+    .then(eatSfx => {
+      const appleItemApi = {
+        asset: 'ITEM.APPLE',
+        itemAddedCallback(grabbable) {
+          const _triggerdown = e => {
+            const {side} = e;
 
-  return () => Promise.all([
-    _requestImage('/archae/objects/img/apple.png'),
-    sound.requestSfx('archae/objects/sfx/eat.ogg'),
-  ])
-    .then(([
-      appleImg,
-      eatSfx,
-    ]) => objectApi.registerTexture('apple', appleImg)
-      .then(() => Promise.all([
-        objectApi.registerGeometry('apple', (args) => {
-          const {THREE, getUv} = args;
-          const appleUvs = getUv('apple');
-          const uvWidth = appleUvs[2] - appleUvs[0];
-          const uvHeight = appleUvs[3] - appleUvs[1];
+            if (grabbable.getGrabberSide() === side) {
+              const heightfieldElement = elements.getEntitiesElement().querySelector(HEIGHTFIELD_PLUGIN);
+              localVector.set(
+                grabbable.position.x,
+                heightfieldElement ? heightfieldElement.getBestElevation(grabbable.position.x, grabbable.position.z, grabbable.position.y) : 0,
+                grabbable.position.z
+              );
+              localEuler.setFromQuaternion(grabbable.rotation, camera.rotation.order);
+              localEuler.x = 0;
+              localEuler.z = 0;
+              localQuaternion.setFromEuler(localEuler);
+              objectApi.addObject('apple', localVector, localQuaternion);
 
-          const geometry = new THREE.BoxBufferGeometry(0.2, 0.2, 0.2)
-            .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.2/2, 0));
+              items.destroyItem(grabbable);
 
-          const uvs = geometry.getAttribute('uv').array;
-          const numUvs = uvs.length / 2;
-          for (let i = 0; i < numUvs; i++) {
-            uvs[i * 2 + 0] = appleUvs[0] + (uvs[i * 2 + 0] * uvWidth);
-            uvs[i * 2 + 1] = (appleUvs[1] + uvHeight) - (uvs[i * 2 + 1] * uvHeight);
-          }
+              e.stopImmediatePropagation();
+            }
+          };
+          input.on('triggerdown', _triggerdown);
 
-          return geometry;
-        }),
-      ]))
-      .then(() => {
-        const appleItemApi = {
-          asset: 'ITEM.APPLE',
-          itemAddedCallback(grabbable) {
-            const _triggerdown = e => {
-              const {side} = e;
+          apples.push(grabbable);
 
-              if (grabbable.getGrabberSide() === side) {
-                const heightfieldElement = elements.getEntitiesElement().querySelector(HEIGHTFIELD_PLUGIN);
-                localVector.set(
-                  grabbable.position.x,
-                  heightfieldElement ? heightfieldElement.getBestElevation(grabbable.position.x, grabbable.position.z, grabbable.position.y) : 0,
-                  grabbable.position.z
-                );
-                localEuler.setFromQuaternion(grabbable.rotation, camera.rotation.order);
-                localEuler.x = 0;
-                localEuler.z = 0;
-                localQuaternion.setFromEuler(localEuler);
-                objectApi.addObject('apple', localVector, localQuaternion);
+          grabbable[dataSymbol] = {
+            cleanup: () => {
+              input.removeListener('triggerdown', _triggerdown);
 
-                items.destroyItem(grabbable);
+              apples.splice(apples.indexOf(grabbable), 1);
+            },
+          };
+        },
+        itemRemovedCallback(grabbable) {
+          const {[dataSymbol]: {cleanup}} = grabbable;
+          cleanup();
 
-                e.stopImmediatePropagation();
-              }
-            };
-            input.on('triggerdown', _triggerdown);
+          delete grabbable[dataSymbol];
+        },
+      };
+      items.registerItem(this, appleItemApi);
 
-            apples.push(grabbable);
+      const appleObjectApi = {
+        object: 'apple',
+        gripCallback(id, side, x, z, objectIndex) {
+          const itemId = _makeId();
+          const asset = 'ITEM.APPLE';
+          const assetInstance = items.makeItem({
+            type: 'asset',
+            id: itemId,
+            name: asset,
+            displayName: asset,
+            attributes: {
+              type: {value: 'asset'},
+              value: {value: asset},
+              position: {value: DEFAULT_MATRIX},
+              quantity: {value: 1},
+              owner: {value: null},
+              bindOwner: {value: null},
+              physics: {value: false},
+            },
+          });
+          assetInstance.grab(side);
 
-            grabbable[dataSymbol] = {
-              cleanup: () => {
-                input.removeListener('triggerdown', _triggerdown);
+          objectApi.removeObject(x, z, objectIndex);
+        },
+      };
+      objectApi.registerObject(appleObjectApi);
 
-                apples.splice(apples.indexOf(grabbable), 1);
-              },
-            };
-          },
-          itemRemovedCallback(grabbable) {
-            const {[dataSymbol]: {cleanup}} = grabbable;
-            cleanup();
+      const _update = () => {
+        if (apples.length > 0) {
+          const healthElement = elements.getEntitiesElement().querySelector(HEALTH_PLUGIN);
 
-            delete grabbable[dataSymbol];
-          },
-        };
-        items.registerItem(this, appleItemApi);
+          if (healthElement) {
+            const {hmd} = pose.getStatus();
+            const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmd;
 
-        const appleObjectApi = {
-          object: 'apple',
-          gripCallback(id, side, x, z, objectIndex) {
-            const itemId = _makeId();
-            const asset = 'ITEM.APPLE';
-            const assetInstance = items.makeItem({
-              type: 'asset',
-              id: itemId,
-              name: asset,
-              displayName: asset,
-              attributes: {
-                type: {value: 'asset'},
-                value: {value: asset},
-                position: {value: DEFAULT_MATRIX},
-                quantity: {value: 1},
-                owner: {value: null},
-                bindOwner: {value: null},
-                physics: {value: false},
-              },
-            });
-            assetInstance.grab(side);
+            for (let i = 0; i < apples.length; i++) {
+              const apple = apples[i];
 
-            objectApi.removeObject(x, z, objectIndex);
-          },
-        };
-        objectApi.registerObject(appleObjectApi);
+              if (apple.isGrabbed()) {
+                const mouthPosition = localVector.copy(hmdPosition)
+                  .add(
+                    localVector2.copy(mouthOffsetVector)
+                      .applyQuaternion(hmdRotation)
+                  );
+                if (apple.position.distanceTo(mouthPosition) < 0.21) {
+                  healthElement.heal(30);
 
-        const _update = () => {
-          if (apples.length > 0) {
-            const healthElement = elements.getEntitiesElement().querySelector(HEALTH_PLUGIN);
+                  items.destroyItem(apple);
 
-            if (healthElement) {
-              const {hmd} = pose.getStatus();
-              const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmd;
-
-              for (let i = 0; i < apples.length; i++) {
-                const apple = apples[i];
-
-                if (apple.isGrabbed()) {
-                  const mouthPosition = localVector.copy(hmdPosition)
-                    .add(
-                      localVector2.copy(mouthOffsetVector)
-                        .applyQuaternion(hmdRotation)
-                    );
-                  if (apple.position.distanceTo(mouthPosition) < 0.21) {
-                    healthElement.heal(30);
-
-                    items.destroyItem(apple);
-
-                    eatSfx.trigger();
-                  }
+                  eatSfx.trigger();
                 }
               }
             }
           }
-        };
-        render.on('update', _update);
+        }
+      };
+      render.on('update', _update);
 
-        return () => {
-          items.unregisterItem(this, appleItemApi);
-          objectApi.unregisterObject(appleObjectApi);
+      return () => {
+        items.unregisterItem(this, appleItemApi);
+        objectApi.unregisterObject(appleObjectApi);
 
-          render.removeListener('update', _update);
-        };
-      })
-    );
+        render.removeListener('update', _update);
+      };
+    });
 };
-const _makeId = () => Math.random().toString(36).substring(7);
 
 module.exports = apple;

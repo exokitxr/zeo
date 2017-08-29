@@ -15,187 +15,136 @@ const fire = objectApi => {
 
   const localVector = new THREE.Vector3();
   const zeroQuaternion = new THREE.Quaternion();
-  const oneVector = new THREE.Vector3(1, 1, 1);
 
-  const _requestImage = src => new Promise((accept, reject) => {
-    const img = new Image();
-    img.onload = () => {
-      accept(img);
+  return () => new Promise((accept, reject) => {
+    const fireItemApi = {
+      asset: 'ITEM.FIRE',
+      itemAddedCallback(grabbable) {
+        const _triggerdown = e => {
+          const {side} = e;
+
+          if (grabbable.getGrabberSide() === side) {
+            const heightfieldElement = elements.getEntitiesElement().querySelector(HEIGHTFIELD_PLUGIN);
+            localVector.set(
+              grabbable.position.x,
+              heightfieldElement ? heightfieldElement.getBestElevation(grabbable.position.x, grabbable.position.z, grabbable.position.y) : 0,
+              grabbable.position.z
+            );
+            objectApi.addObject('fire', localVector, zeroQuaternion);
+
+            items.destroyItem(grabbable);
+
+            e.stopImmediatePropagation();
+          }
+        };
+        input.on('triggerdown', _triggerdown);
+
+        grabbable[dataSymbol] = {
+          cleanup: () => {
+            input.removeListener('triggerdown', _triggerdown);
+          },
+        };
+      },
+      itemRemovedCallback(grabbable) {
+        const {[dataSymbol]: {cleanup}} = grabbable;
+        cleanup();
+
+        delete grabbable[dataSymbol];
+      },
     };
-    img.onerror = err => {
-      reject(img);
+    items.registerItem(this, fireItemApi);
+
+    const fires = {};
+    let Lightmapper = null;
+    let lightmapper = null;
+    const _bindLightmap = fire => {
+      const shape = new Lightmapper.Sphere(fire.position.x, fire.position.y, fire.position.z, 8, 2, Lightmapper.MaxBlend);
+      lightmapper.add(shape);
+      fire.shape = shape;
     };
-    img.src = src;
-  });
+    const _unbindLightmap = fire => {
+      lightmapper.remove(fire.shape);
+      fire.shape = null;
+    };
+    const lightmapElementListener = elements.makeListener(LIGHTMAP_PLUGIN);
+    lightmapElementListener.on('add', entityElement => {
+      Lightmapper = entityElement.Lightmapper;
+      lightmapper = entityElement.lightmapper;
 
-  return () => _requestImage('/archae/objects/img/fire.png')
-    .then(fireImg => objectApi.registerTexture('fire', fireImg))
-    .then(() => objectApi.registerGeometry('fire', (args) => {
-      const {THREE, getUv} = args;
-      const fireUvs = getUv('fire');
-      const fireUvWidth = fireUvs[2] - fireUvs[0];
-      const fireUvHeight = fireUvs[3] - fireUvs[1];
-
-      const geometry = new THREE.BoxBufferGeometry(1, 1, 1)
-        .applyMatrix(new THREE.Matrix4().makeTranslation(0, 1/2, 0));
-      const positions = geometry.getAttribute('position').array;
-      const uvs = geometry.getAttribute('uv').array;
-
-      const numUvs = uvs.length / 2;
-      for (let i = 0; i < numUvs; i++) {
-        if (
-          i === 8 || i === 9 || i === 10 || i === 11 || // top
-          i === 12 || i === 13 || i === 14 || i === 15 // bottom
-        ) {
-          uvs[i * 2 + 0] = 1;
-          uvs[i * 2 + 1] = 0;
-        } else {
-          uvs[i * 2 + 0] = fireUvs[0] + (uvs[i * 2 + 0] * fireUvWidth);
-          uvs[i * 2 + 1] = (fireUvs[1] + fireUvHeight) - (uvs[i * 2 + 1] * fireUvHeight);
-        }
+      for (let i = 0; i < fires.length; i++) {
+        _bindLightmap(fires[i]);
       }
-
-      const numPositions = positions.length;
-      const frames = new Float32Array(numPositions);
-      for (let i = 0; i < numPositions; i++) {
-        const baseIndex = i * 3;
-        frames[baseIndex + 0] = fireUvs[1];
-        frames[baseIndex + 1] = fireUvHeight / 8;
-        frames[baseIndex + 2] = 8;
-      }
-      geometry.addAttribute('frame', new THREE.BufferAttribute(frames, 3));
-
-      return geometry;
-    }))
-    .then(() => {
-      const fireItemApi = {
-        asset: 'ITEM.FIRE',
-        itemAddedCallback(grabbable) {
-          const _triggerdown = e => {
-            const {side} = e;
-
-            if (grabbable.getGrabberSide() === side) {
-              const heightfieldElement = elements.getEntitiesElement().querySelector(HEIGHTFIELD_PLUGIN);
-              localVector.set(
-                grabbable.position.x,
-                heightfieldElement ? heightfieldElement.getBestElevation(grabbable.position.x, grabbable.position.z, grabbable.position.y) : 0,
-                grabbable.position.z
-              );
-              objectApi.addObject('fire', localVector, zeroQuaternion);
-
-              items.destroyItem(grabbable);
-
-              e.stopImmediatePropagation();
-            }
-          };
-          input.on('triggerdown', _triggerdown);
-
-          grabbable[dataSymbol] = {
-            cleanup: () => {
-              input.removeListener('triggerdown', _triggerdown);
-            },
-          };
-        },
-        itemRemovedCallback(grabbable) {
-          const {[dataSymbol]: {cleanup}} = grabbable;
-          cleanup();
-
-          delete grabbable[dataSymbol];
-        },
-      };
-      items.registerItem(this, fireItemApi);
-
-      const fires = {};
-      let Lightmapper = null;
-      let lightmapper = null;
-      const _bindLightmap = fire => {
-        const shape = new Lightmapper.Sphere(fire.position.x, fire.position.y, fire.position.z, 8, 2, Lightmapper.MaxBlend);
-        lightmapper.add(shape);
-        fire.shape = shape;
-      };
-      const _unbindLightmap = fire => {
-        lightmapper.remove(fire.shape);
-        fire.shape = null;
-      };
-      const lightmapElementListener = elements.makeListener(LIGHTMAP_PLUGIN);
-      lightmapElementListener.on('add', entityElement => {
-        Lightmapper = entityElement.Lightmapper;
-        lightmapper = entityElement.lightmapper;
-
-        for (let i = 0; i < fires.length; i++) {
-          _bindLightmap(fires[i]);
-        }
-      });
-      lightmapElementListener.on('remove', () => {
-        Lightmapper = null;
-        lightmapper = null;
-
-        for (const id in fires) {
-          fires[id].shape = null;
-        }
-      });
-
-      const fireObjectApi = {
-        object: 'fire',
-        addedCallback(id, position) {
-          const fire = {
-            position: position.clone(),
-            shape: null,
-          };
-
-          if (lightmapper) {
-            _bindLightmap(fire);
-          }
-
-          fires[id] = fire;
-        },
-        removedCallback(id) {
-          const fire = fires[id];
-
-          if (lightmapper) {
-            _unbindLightmap(fire);
-          }
-
-          fires[id] = null;
-        },
-        gripCallback(id, side, x, z, objectIndex) {
-          const itemId = _makeId();
-          const asset = 'ITEM.FIRE';
-          const assetInstance = items.makeItem({
-            type: 'asset',
-            id: itemId,
-            name: asset,
-            displayName: asset,
-            attributes: {
-              type: {value: 'asset'},
-              value: {value: asset},
-              position: {value: DEFAULT_MATRIX},
-              quantity: {value: 1},
-              owner: {value: null},
-              bindOwner: {value: null},
-              physics: {value: false},
-            },
-          });
-          assetInstance.grab(side);
-
-          objectApi.removeObject(x, z, objectIndex);
-        },
-        collideCallback() {
-          const healthElement = elements.getEntitiesElement().querySelector(HEALTH_PLUGIN);
-          if (healthElement) {
-            healthElement.hurt(10);
-          }
-        },
-      };
-      objectApi.registerObject(fireObjectApi);
-
-      return () => {
-        elements.destroyListener(lightmapElementListener);
-
-        items.unregisterItem(this, fireItemApi);
-        objectApi.unregisterObject(fireObjectApi);
-      };
     });
+    lightmapElementListener.on('remove', () => {
+      Lightmapper = null;
+      lightmapper = null;
+
+      for (const id in fires) {
+        fires[id].shape = null;
+      }
+    });
+
+    const fireObjectApi = {
+      object: 'fire',
+      addedCallback(id, position) {
+        const fire = {
+          position: position.clone(),
+          shape: null,
+        };
+
+        if (lightmapper) {
+          _bindLightmap(fire);
+        }
+
+        fires[id] = fire;
+      },
+      removedCallback(id) {
+        const fire = fires[id];
+
+        if (lightmapper) {
+          _unbindLightmap(fire);
+        }
+
+        fires[id] = null;
+      },
+      gripCallback(id, side, x, z, objectIndex) {
+        const itemId = _makeId();
+        const asset = 'ITEM.FIRE';
+        const assetInstance = items.makeItem({
+          type: 'asset',
+          id: itemId,
+          name: asset,
+          displayName: asset,
+          attributes: {
+            type: {value: 'asset'},
+            value: {value: asset},
+            position: {value: DEFAULT_MATRIX},
+            quantity: {value: 1},
+            owner: {value: null},
+            bindOwner: {value: null},
+            physics: {value: false},
+          },
+        });
+        assetInstance.grab(side);
+
+        objectApi.removeObject(x, z, objectIndex);
+      },
+      collideCallback() {
+        const healthElement = elements.getEntitiesElement().querySelector(HEALTH_PLUGIN);
+        if (healthElement) {
+          healthElement.hurt(10);
+        }
+      },
+    };
+    objectApi.registerObject(fireObjectApi);
+
+    accept(() => {
+      elements.destroyListener(lightmapElementListener);
+
+      items.unregisterItem(this, fireItemApi);
+      objectApi.unregisterObject(fireObjectApi);
+    });
+  });
 };
 const _makeId = () => Math.random().toString(36).substring(7);
 

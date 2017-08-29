@@ -8,13 +8,13 @@ const UINT32_SIZE = 4;
 const INT32_SIZE = 4;
 const UINT8_SIZE = 1;
 const FLOAT32_SIZE = 4;
-const MAP_CHUNK_HEADER_ENTRIES = 6;
+const MAP_CHUNK_HEADER_ENTRIES = 7;
 const MAP_CHUNK_HEADER_SIZE = UINT32_SIZE * MAP_CHUNK_HEADER_ENTRIES;
 const CULL_HEADER_ENTRIES = 1;
 const CULL_HEADER_SIZE = UINT32_SIZE * CULL_HEADER_ENTRIES;
 
 const _getObjectsChunkSizeFromMetadata = metadata => {
-  const {numPositions, numUvs, numFrames, numLightmaps, numObjectIndices, numIndices} = metadata;
+  const {numPositions, numUvs, numFrames, numLightmaps, numObjectIndices, numIndices, numObjects} = metadata;
 
   return _align(
     MAP_CHUNK_HEADER_SIZE + // header
@@ -26,12 +26,13 @@ const _getObjectsChunkSizeFromMetadata = metadata => {
   ) +
   (FLOAT32_SIZE * numObjectIndices) +  // object indices
   (UINT32_SIZE * numIndices) + // indices
+  (UINT32_SIZE * numObjects) + // objects
   (UINT32_SIZE * 2 * NUM_CHUNKS_HEIGHT) + // index range
   (FLOAT32_SIZE * NUM_CHUNKS_HEIGHT); // bounding sphere
 };
 
 const _getObjectsChunkSize = (objectsChunk, lightmaps) => {
-  const {positions, uvs, frames, objectIndices, indices} = objectsChunk;
+  const {positions, uvs, frames, objectIndices, indices, objects} = objectsChunk;
 
   const numPositions = positions.length;
   const numUvs = uvs.length;
@@ -39,6 +40,7 @@ const _getObjectsChunkSize = (objectsChunk, lightmaps) => {
   const numLightmaps = lightmaps.length;
   const numObjectIndices = objectIndices.length;
   const numIndices = indices.length;
+  const numObjects = objects.length;
 
   return _getObjectsChunkSizeFromMetadata({
     numPositions,
@@ -47,10 +49,9 @@ const _getObjectsChunkSize = (objectsChunk, lightmaps) => {
     numLightmaps,
     numObjectIndices,
     numIndices,
+    numObjects,
   });
 };
-
-// stringification
 
 const stringifyGeometry = (objectsChunk, lightmaps, arrayBuffer, byteOffset) => {
   const {positions, uvs, frames, objectIndices, indices, objects, geometries} = objectsChunk;
@@ -69,6 +70,7 @@ const stringifyGeometry = (objectsChunk, lightmaps, arrayBuffer, byteOffset) => 
   headerBuffer[index++] = lightmaps.length;
   headerBuffer[index++] = objectIndices.length;
   headerBuffer[index++] = indices.length;
+  headerBuffer[index++] = objects.length;
   byteOffset += MAP_CHUNK_HEADER_SIZE;
 
   const positionsBuffer = new Float32Array(arrayBuffer, byteOffset, positions.length);
@@ -97,6 +99,10 @@ const stringifyGeometry = (objectsChunk, lightmaps, arrayBuffer, byteOffset) => 
   indicesBuffer.set(indices);
   byteOffset += UINT32_SIZE * indices.length;
 
+  const objectsBuffer = new Uint32Array(arrayBuffer, byteOffset, objects.length);
+  objectsBuffer.set(objects);
+  byteOffset += UINT32_SIZE * objects.length;
+
   for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
     const geometry = geometries[i];
     const {indexRange, boundingSphere, peeks} = geometry;
@@ -113,8 +119,6 @@ const stringifyGeometry = (objectsChunk, lightmaps, arrayBuffer, byteOffset) => 
   return arrayBuffer;
 };
 
-// parsing
-
 const parseGeometry = (buffer, byteOffset) => {
   if (byteOffset === undefined) {
     byteOffset = 0;
@@ -128,6 +132,7 @@ const parseGeometry = (buffer, byteOffset) => {
   const numLightmaps = headerBuffer[index++];
   const numObjectIndices = headerBuffer[index++];
   const numIndices = headerBuffer[index++];
+  const numObjects = headerBuffer[index++];
   byteOffset += MAP_CHUNK_HEADER_SIZE;
 
   const positionsBuffer = new Float32Array(buffer, byteOffset, numPositions);
@@ -156,6 +161,10 @@ const parseGeometry = (buffer, byteOffset) => {
   const indices = indicesBuffer;
   byteOffset += UINT32_SIZE * numIndices;
 
+  const objectsBuffer = new Uint32Array(buffer, byteOffset, numObjects);
+  const objects = objectsBuffer;
+  byteOffset += UINT32_SIZE * numObjects;
+
   const geometries = Array(NUM_CHUNKS_HEIGHT);
   for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
     const indexRangeBuffer = new Uint32Array(buffer, byteOffset, 2);
@@ -183,6 +192,7 @@ const parseGeometry = (buffer, byteOffset) => {
     lightmaps,
     objectIndices,
     indices,
+    objects,
     geometries,
   };
 };

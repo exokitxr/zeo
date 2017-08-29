@@ -11,8 +11,6 @@ const stone = objectApi => {
   const {three, pose, input, render, elements, items} = zeo;
   const {THREE, scene, camera} = three;
 
-  const zeroQuaternion = new THREE.Quaternion();
-  const oneVector = new THREE.Vector3(1, 1, 1);
   const upVector = new THREE.Vector3(0, 1, 0);
   const localVector = new THREE.Vector3();
   const localQuaternion = new THREE.Quaternion();
@@ -29,219 +27,151 @@ const stone = objectApi => {
     img.src = src;
   });
 
-  return () => _requestImage('/archae/objects/img/stone.png')
-    .then(stoneImg => objectApi.registerTexture('stone', stoneImg))
-    .then(() =>
-      Promise.all([
-        objectApi.registerGeometry('stone', (args) => {
-          const {THREE, getUv} = args;
-          const stoneUvs = getUv('stone');
-          const uvWidth = (stoneUvs[2] - stoneUvs[0]) * 0.25;
-          const uvHeight = (stoneUvs[3] - stoneUvs[1]) * 0.25;
+  return () => new Promise((accept, reject) => {
+    const stoneItemApi = {
+      asset: 'ITEM.STONE',
+      itemAddedCallback(grabbable) {
+        const _triggerdown = e => {
+          const {side} = e;
 
-          const geometry = new THREE.BoxBufferGeometry(0.3, 0.2, 0.2)
-            .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.2/2, 0));
-          const uvs = geometry.getAttribute('uv').array;
-          const numUvs = uvs.length / 2;
-          for (let i = 0; i < numUvs; i++) {
-            uvs[i * 2 + 0] = stoneUvs[0] + (uvs[i * 2 + 0] * uvWidth);
-            uvs[i * 2 + 1] = (stoneUvs[1] + uvHeight) - (uvs[i * 2 + 1] * uvHeight);
-          }
+          if (grabbable.getGrabberSide() === side) {
+            const hoveredObject = objectApi.getHoveredObject(side);
 
-          return geometry;
-        }),
-        objectApi.registerGeometry('stone-wall', (args) => {
-          const {THREE, getUv} = args;
-          const stoneUvs = getUv('stone');
-          const uvWidth = stoneUvs[2] - stoneUvs[0];
-          const uvHeight = stoneUvs[3] - stoneUvs[1];
+            if (hoveredObject && (hoveredObject.is('stone-wall') || hoveredObject.is('stone-wall-2'))) {
+              localVector.copy(hoveredObject.position).add(upVector);
 
-          const geometry = new THREE.BoxBufferGeometry(2, 1, 1);
+              // if (!objectApi.getObjectAt(localVector, hoveredObject.rotation)) {
+                objectApi.removeObject(hoveredObject.x, hoveredObject.z, hoveredObject.objectIndex);
+                objectApi.addObject('stone-wall-2', hoveredObject.position, hoveredObject.rotation);
 
-          const positions = geometry.getAttribute('position').array;
-          const numPositions = positions.length / 3;
-          for (let i = 0; i < numPositions; i++) {
-            if (positions[i * 3 + 1] > 0) {
-              positions[i * 3 + 0] *= 0.75;
-              positions[i * 3 + 2] *= 0.75;
-            }
-          }
-          geometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, 1/2, 0));
-
-          const uvs = geometry.getAttribute('uv').array;
-          const numUvs = uvs.length / 2;
-          for (let i = 0; i < numUvs; i++) {
-            uvs[i * 2 + 0] = stoneUvs[0] + (uvs[i * 2 + 0] * uvWidth);
-            uvs[i * 2 + 1] = (stoneUvs[1] + uvHeight) - (uvs[i * 2 + 1] * uvHeight);
-          }
-
-          return geometry;
-        }),
-        objectApi.registerGeometry('stone-wall-2', (args) => {
-          const {THREE, getUv} = args;
-          const stoneUvs = getUv('stone');
-          const uvWidth = stoneUvs[2] - stoneUvs[0];
-          const uvHeight = stoneUvs[3] - stoneUvs[1];
-
-          const geometry = new THREE.BoxBufferGeometry(2, 1, 1)
-            .applyMatrix(new THREE.Matrix4().makeTranslation(0, 1/2, 0));
-
-          const uvs = geometry.getAttribute('uv').array;
-          const numUvs = uvs.length / 2;
-          for (let i = 0; i < numUvs; i++) {
-            uvs[i * 2 + 0] = stoneUvs[0] + (uvs[i * 2 + 0] * uvWidth);
-            uvs[i * 2 + 1] = (stoneUvs[1] + uvHeight) - (uvs[i * 2 + 1] * uvHeight);
-          }
-
-          return geometry;
-        }),
-      ])
-    )
-    .then(() => {
-      const stoneItemApi = {
-        asset: 'ITEM.STONE',
-        itemAddedCallback(grabbable) {
-          const _triggerdown = e => {
-            const {side} = e;
-
-            if (grabbable.getGrabberSide() === side) {
-              const hoveredObject = objectApi.getHoveredObject(side);
-
-              if (hoveredObject && (hoveredObject.is('stone-wall') || hoveredObject.is('stone-wall-2'))) {
-                localVector.copy(hoveredObject.position).add(upVector);
-
-                // if (!objectApi.getObjectAt(localVector, hoveredObject.rotation)) {
-                  objectApi.removeObject(hoveredObject.x, hoveredObject.z, hoveredObject.objectIndex);
-                  objectApi.addObject('stone-wall-2', hoveredObject.position, hoveredObject.rotation);
-
-                  objectApi.addObject('stone-wall-2', localVector, hoveredObject.rotation);
-
-                  items.destroyItem(grabbable);
-                // }
-              } else {
-                const heightfieldElement = elements.getEntitiesElement().querySelector(HEIGHTFIELD_PLUGIN);
-                localVector.set(
-                  grabbable.position.x,
-                  heightfieldElement ? heightfieldElement.getBestElevation(grabbable.position.x, grabbable.position.z, grabbable.position.y) : 0,
-                  grabbable.position.z
-                );
-                localEuler.setFromQuaternion(grabbable.rotation, camera.rotation.order);
-                localEuler.x = 0;
-                localEuler.z = 0;
-                localQuaternion.setFromEuler(localEuler);
-                objectApi.addObject('stone-wall', localVector, localQuaternion);
+                objectApi.addObject('stone-wall-2', localVector, hoveredObject.rotation);
 
                 items.destroyItem(grabbable);
-              }
+              // }
+            } else {
+              const heightfieldElement = elements.getEntitiesElement().querySelector(HEIGHTFIELD_PLUGIN);
+              localVector.set(
+                grabbable.position.x,
+                heightfieldElement ? heightfieldElement.getBestElevation(grabbable.position.x, grabbable.position.z, grabbable.position.y) : 0,
+                grabbable.position.z
+              );
+              localEuler.setFromQuaternion(grabbable.rotation, camera.rotation.order);
+              localEuler.x = 0;
+              localEuler.z = 0;
+              localQuaternion.setFromEuler(localEuler);
+              objectApi.addObject('stone-wall', localVector, localQuaternion);
 
-              e.stopImmediatePropagation();
+              items.destroyItem(grabbable);
             }
-          };
-          input.on('triggerdown', _triggerdown);
 
-          grabbable[dataSymbol] = {
-            cleanup: () => {
-              input.removeListener('triggerdown', _triggerdown);
-            },
-          };
-        },
-        itemRemovedCallback(grabbable) {
-          const {[dataSymbol]: {cleanup}} = grabbable;
-          cleanup();
+            e.stopImmediatePropagation();
+          }
+        };
+        input.on('triggerdown', _triggerdown);
 
-          delete grabbable[dataSymbol];
-        },
-      };
-      items.registerItem(this, stoneItemApi);
+        grabbable[dataSymbol] = {
+          cleanup: () => {
+            input.removeListener('triggerdown', _triggerdown);
+          },
+        };
+      },
+      itemRemovedCallback(grabbable) {
+        const {[dataSymbol]: {cleanup}} = grabbable;
+        cleanup();
 
-      const stoneObjectApi = {
-        object: 'stone',
-        grabCallback(id, side, x, z, objectIndex) {
-          const itemId = _makeId();
-          const asset = 'ITEM.STONE';
-          const assetInstance = items.makeItem({
-            type: 'asset',
-            id: itemId,
-            name: asset,
-            displayName: asset,
-            attributes: {
-              type: {value: 'asset'},
-              value: {value: asset},
-              position: {value: DEFAULT_MATRIX},
-              quantity: {value: 1},
-              owner: {value: null},
-              bindOwner: {value: null},
-              physics: {value: false},
-            },
-          });
-          assetInstance.grab(side);
+        delete grabbable[dataSymbol];
+      },
+    };
+    items.registerItem(this, stoneItemApi);
 
-          objectApi.removeObject(x, z, objectIndex);
-        },
-      };
-      objectApi.registerObject(stoneObjectApi);
+    const stoneObjectApi = {
+      object: 'stone',
+      grabCallback(id, side, x, z, objectIndex) {
+        const itemId = _makeId();
+        const asset = 'ITEM.STONE';
+        const assetInstance = items.makeItem({
+          type: 'asset',
+          id: itemId,
+          name: asset,
+          displayName: asset,
+          attributes: {
+            type: {value: 'asset'},
+            value: {value: asset},
+            position: {value: DEFAULT_MATRIX},
+            quantity: {value: 1},
+            owner: {value: null},
+            bindOwner: {value: null},
+            physics: {value: false},
+          },
+        });
+        assetInstance.grab(side);
 
-      const stoneWallObjectApi = {
-        object: 'stone-wall',
-        gripCallback(id, side, x, z, objectIndex) {
-          const itemId = _makeId();
-          const asset = 'ITEM.STONE';
-          const assetInstance = items.makeItem({
-            type: 'asset',
-            id: itemId,
-            name: asset,
-            displayName: asset,
-            attributes: {
-              type: {value: 'asset'},
-              value: {value: asset},
-              position: {value: DEFAULT_MATRIX},
-              quantity: {value: 1},
-              owner: {value: null},
-              bindOwner: {value: null},
-              physics: {value: false},
-            },
-          });
-          assetInstance.grab(side);
+        objectApi.removeObject(x, z, objectIndex);
+      },
+    };
+    objectApi.registerObject(stoneObjectApi);
 
-          objectApi.removeObject(x, z, objectIndex);
-        },
-      };
-      objectApi.registerObject(stoneWallObjectApi);
+    const stoneWallObjectApi = {
+      object: 'stone-wall',
+      gripCallback(id, side, x, z, objectIndex) {
+        const itemId = _makeId();
+        const asset = 'ITEM.STONE';
+        const assetInstance = items.makeItem({
+          type: 'asset',
+          id: itemId,
+          name: asset,
+          displayName: asset,
+          attributes: {
+            type: {value: 'asset'},
+            value: {value: asset},
+            position: {value: DEFAULT_MATRIX},
+            quantity: {value: 1},
+            owner: {value: null},
+            bindOwner: {value: null},
+            physics: {value: false},
+          },
+        });
+        assetInstance.grab(side);
 
-      const stoneWall2ObjectApi = {
-        object: 'stone-wall-2',
-        gripCallback(id, side, x, z, objectIndex) {
-          const itemId = _makeId();
-          const asset = 'ITEM.STONE';
-          const assetInstance = items.makeItem({
-            type: 'asset',
-            id: itemId,
-            name: asset,
-            displayName: asset,
-            attributes: {
-              type: {value: 'asset'},
-              value: {value: asset},
-              position: {value: DEFAULT_MATRIX},
-              quantity: {value: 1},
-              owner: {value: null},
-              bindOwner: {value: null},
-              physics: {value: false},
-            },
-          });
-          assetInstance.grab(side);
+        objectApi.removeObject(x, z, objectIndex);
+      },
+    };
+    objectApi.registerObject(stoneWallObjectApi);
 
-          objectApi.removeObject(x, z, objectIndex);
-        },
-      };
-      objectApi.registerObject(stoneWall2ObjectApi);
+    const stoneWall2ObjectApi = {
+      object: 'stone-wall-2',
+      gripCallback(id, side, x, z, objectIndex) {
+        const itemId = _makeId();
+        const asset = 'ITEM.STONE';
+        const assetInstance = items.makeItem({
+          type: 'asset',
+          id: itemId,
+          name: asset,
+          displayName: asset,
+          attributes: {
+            type: {value: 'asset'},
+            value: {value: asset},
+            position: {value: DEFAULT_MATRIX},
+            quantity: {value: 1},
+            owner: {value: null},
+            bindOwner: {value: null},
+            physics: {value: false},
+          },
+        });
+        assetInstance.grab(side);
 
-      return () => {
-        items.unregisterItem(this, stoneItemApi);
-        objectApi.unregisterObject(stoneObjectApi);
-        objectApi.unregisterObject(stoneWallObjectApi);
-        objectApi.unregisterObject(stoneWall2ObjectApi);
-      };
+        objectApi.removeObject(x, z, objectIndex);
+      },
+    };
+    objectApi.registerObject(stoneWall2ObjectApi);
+
+    accept(() => {
+      items.unregisterItem(this, stoneItemApi);
+      objectApi.unregisterObject(stoneObjectApi);
+      objectApi.unregisterObject(stoneWallObjectApi);
+      objectApi.unregisterObject(stoneWall2ObjectApi);
     });
+  });
 };
 const _makeId = () => Math.random().toString(36).substring(7);
 

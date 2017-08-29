@@ -1,5 +1,3 @@
-const txtr = require('txtr');
-
 const HEIGHTFIELD_PLUGIN = 'plugins-heightfield';
 const LIGHTMAP_PLUGIN = 'plugins-lightmap';
 const DAY_NIGHT_SKYBOX_PLUGIN = 'plugins-day-night-skybox';
@@ -7,10 +5,11 @@ const CRAFT_PLUGIN = 'plugins-craft';
 
 const {
   NUM_CELLS,
-
   NUM_CELLS_HEIGHT,
 
   RANGE,
+
+  TEXTURE_SIZE,
 } = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
 const objectsLib = require('./lib/objects/client/index');
@@ -18,7 +17,6 @@ const objectsLib = require('./lib/objects/client/index');
 const NUM_POSITIONS_CHUNK = 1 * 1024 * 1024;
 const LIGHTMAP_BUFFER_SIZE = 100 * 1024 * 4;
 const NUM_BUFFERS = RANGE * RANGE * 9;
-const TEXTURE_SIZE = 512;
 const SIDES = ['left', 'right'];
 
 const dataSymbol = Symbol();
@@ -238,13 +236,8 @@ void main() {
       }
     };
 
-    const textures = txtr(TEXTURE_SIZE, TEXTURE_SIZE);
-    const canvas = document.createElement('canvas');
-    canvas.width = TEXTURE_SIZE;
-    canvas.height = TEXTURE_SIZE;
-    const ctx = canvas.getContext('2d');
     const textureAtlas = new THREE.Texture(
-      canvas,
+      null,
       THREE.UVMapping,
       THREE.ClampToEdgeWrapping,
       THREE.ClampToEdgeWrapping,
@@ -289,22 +282,6 @@ void main() {
         queues = newQueues;
         numRemovedQueues = 0;
       }
-    };
-    worker.requestRegisterGeometry = (name, fn) => {
-      const {args, src} = _parseFunction(fn);
-      worker.postMessage({
-        type: 'registerGeometry',
-        name,
-        args,
-        src,
-      });
-    };
-    worker.requestRegisterTexture = (name, uv) => {
-      worker.postMessage({
-        type: 'registerTexture',
-        name,
-        uv,
-      });
     };
     worker.requestRegisterObject = (n, added, removed, updated) => {
       worker.postMessage({
@@ -515,6 +492,10 @@ void main() {
       } else if (type === 'chunkUpdate') {
         const [x, z] = args;
         _refreshChunk(x, z);
+      } else if (type === 'textureAtlas') {
+        const [imageBitmap] = args;
+        textureAtlas.image = imageBitmap;
+        textureAtlas.needsUpdate = true;
       } else if (type === 'objectAdded') {
         const [n, x, z, objectIndex, position, rotation, value] = args;
 
@@ -826,13 +807,13 @@ void main() {
 
         localRay.origin.sub(teleportPosition)
           .applyQuaternion(teleportRotationInverse)
-          .add(teleportPosition);
+          // .add(teleportPosition);
         localRay.direction.set(0, -1, 0);
 
         const targetPosition = localRay.intersectBox(teleportBox, localVector2);
         if (targetPosition) {
           return targetPosition
-            .sub(teleportPosition)
+            // .sub(teleportPosition)
             .applyQuaternion(teleportRotation)
             .add(teleportPosition);
         } else {
@@ -1238,10 +1219,12 @@ void main() {
 
     return Promise.all(
       objectsLib(objectApi)
-        .map(makeObject => makeObject()
-          .then(cleanup => {
-            cleanups.push(cleanup);
-          }))
+        .map(makeObject =>
+          makeObject()
+            .then(cleanup => {
+              cleanups.push(cleanup);
+            })
+        )
     )
       .then(() => {
         const _debouncedRefreshLightmaps = _debounce(next => {
@@ -1324,9 +1307,6 @@ void main() {
 
               const trackedObjectChunkMeshes = objectsChunkMeshes[index];
               if (trackedObjectChunkMeshes) {
-                /* for (let j = 0; j < groups.length; j++) {
-                  groups[j].start += trackedObjectChunkMeshes.indexOffset; // XXX do this reindexing in the worker
-                } */
                 trackedObjectChunkMeshes.renderListEntry.groups = groups;
               }
             }
@@ -1400,12 +1380,6 @@ const _debounce = fn => {
     }
   };
   return _go;
-};
-const _parseFunction = fn => {
-  const match = fn.toString().match(/[^\(]*\(([^\)]*)\)[^\{]*\{([\s\S]*)\}\s*$/); // XXX support bracketless arrow functions
-  const args = match[1].split(',').map(arg => arg.trim());
-  const src = match[2];
-  return {args, src};
 };
 
 module.exports = Objects;

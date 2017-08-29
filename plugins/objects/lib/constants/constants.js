@@ -9,6 +9,8 @@ const NUM_RENDER_GROUPS = NUM_CHUNKS_HEIGHT / 2;
 
 const RANGE = 3;
 
+const TEXTURE_SIZE = 512;
+
 const DEFAULT_SEED = 'a';
 
 module.exports = {
@@ -22,6 +24,8 @@ module.exports = {
   NUM_RENDER_GROUPS,
 
   RANGE,
+
+  TEXTURE_SIZE,
 
   DEFAULT_SEED,
 };
