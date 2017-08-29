@@ -400,13 +400,25 @@ self.onmessage = e => {
   } else if (type === 'removeShape') {
     const {id} = data;
 
-    const index = shapes.findIndex(shape => shape.id === id);
-    shapes.splice(index, 1);
+    const shape = shapes.splice(shapes.findIndex(shape => shape.id === id), 1)[0];
+    if (shape.data) {
+      postMessage({
+        type: 'releaseBuffer',
+        buffer: shape.data.buffer,
+      }, [shape.data.buffer]);
+    }
   } else if (type === 'setShapeData') {
     const {id, spec} = data;
 
     const shape = shapes.find(shape => shape.id === id);
+    const {data: oldData} = shape;
     shape.set(spec);
+    if (spec.data && oldData) {
+      postMessage({
+        type: 'releaseBuffer',
+        buffer: oldData.buffer,
+      }, [oldData.buffer]);
+    }
   } else if (type === 'removeShapes') {
     const {ids} = data;
 
@@ -487,7 +499,10 @@ self.onmessage = e => {
       uint32Array[torchLightmapsLengthWordOffset] = lightmapsLength;
     }
 
-    postMessage(lightmapBuffer, [lightmapBuffer.buffer]);
+    postMessage({
+      type: 'response',
+      result: lightmapBuffer
+    }, [lightmapBuffer.buffer]);
   } else {
     console.warn('unknown lightmap message type:', JSON.stringify(type));
   }

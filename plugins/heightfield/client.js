@@ -14,7 +14,7 @@ const {
 } = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
 
-const NUM_POSITIONS_CHUNK = 800 * 1024;
+const NUM_POSITIONS_CHUNK = 1 * 1024 * 1024;
 const LIGHTMAP_BUFFER_SIZE = 100 * 1024 * 4;
 const NUM_BUFFERS = (RANGE * 2) * (RANGE * 2) * 2;
 const LIGHTMAP_PLUGIN = 'plugins-lightmap';
@@ -265,24 +265,29 @@ class Heightfield {
       queues[id] = cb;
     };
     worker.requestGenerate = (x, y, index, numPositions, numIndices, cb) => {
-      const id = _makeId();
-      worker.postMessage({
-        method: 'generate',
-        id,
-        args: {
-          x,
-          y,
-          index,
-          numPositions,
-          numIndices,
-          buffer: generateBuffer,
-        },
-      }, [generateBuffer]);
-      queues[id] = newGenerateBuffer => {
-        generateBuffer = newGenerateBuffer;
+      elements.requestElement(LIGHTMAP_PLUGIN)
+        .then(lightmapElement => {
+          const id = _makeId();
+          const heightfieldBuffer = new Float32Array(lightmapElement.lightmapper.buffers.alloc());
+          worker.postMessage({
+            method: 'generate',
+            id,
+            args: {
+              x,
+              y,
+              index,
+              numPositions,
+              numIndices,
+              buffer: generateBuffer,
+              heightfieldBuffer,
+            },
+          }, [generateBuffer, heightfieldBuffer.buffer]);
+          queues[id] = newGenerateBuffer => {
+            generateBuffer = newGenerateBuffer;
 
-        cb(newGenerateBuffer);
-      };
+            cb(newGenerateBuffer);
+          };
+        });
     };
     worker.requestUngenerate = (x, y) => {
       worker.postMessage({
@@ -364,7 +369,7 @@ class Heightfield {
       }, [buffer]);
       queues[id] = cb;
     };
-    worker.requestResponse = (id, result, transfers) => {
+    worker.respond = (id, result, transfers) => {
       worker.postMessage({
         method: 'response',
         id,
@@ -387,13 +392,13 @@ class Heightfield {
         const [id] = args;
         const {method} = data;
 
-        if (method === 'render') {
+        if (method === 'renderLightmap') {
           const {lightmapBuffer} = data;
 
           elements.requestElement(LIGHTMAP_PLUGIN)
             .then(lightmapElement => {
               lightmapElement.lightmapper.requestRender(lightmapBuffer, lightmapBuffer => {
-                worker.requestResponse(id, lightmapBuffer, [lightmapBuffer.buffer]);
+                worker.respond(id, lightmapBuffer, [lightmapBuffer.buffer]);
               });
             });
         } else if (method === 'addLightmap') {
@@ -402,11 +407,11 @@ class Heightfield {
           elements.requestElement(LIGHTMAP_PLUGIN)
             .then(lightmapElement => {
               const dayNightSkyboxEntity = elements.getEntitiesElement().querySelector(DAY_NIGHT_SKYBOX_PLUGIN);
-              const sunIntensity = (dayNightSkyboxEntity && dayNightSkyboxEntity.getSunIntensity) ? dayNightSkyboxEntity.getSunIntensity() : 0;
+              const sunIntensity = (dayNightSkyboxEntity && dayNightSkyboxEntity.getSunIntensity) ? dayNightSkyboxEntity.getSunIntensity() : 0; // XXX do not need sun intensity
               const shape = new lightmapElement.Lightmapper.Heightfield(x * NUM_CELLS, y * NUM_CELLS, sunIntensity, heightfield, lightmapElement.Lightmapper.MaxBlend);
               lightmapElement.lightmapper.add(shape, [heightfield.buffer]);
 
-              worker.requestResponse(id, shape.id);
+              worker.respond(id, shape.id);
             });
         } else if (method === 'updateLightmap') {
           const {shapeId, heightfield} = data;
@@ -417,11 +422,18 @@ class Heightfield {
                 data: heightfield,
               }, [heightfield.buffer]);
 
-              worker.requestResponse(id, null);
+              worker.respond(id, null);
             });
         } else {
           console.warn('heightfield got unknown worker request method:', JSON.stringify(method));
         }
+      } else if (type === 'removeLightmap') {
+        const {shapeId} = data;
+
+        elements.requestElement(LIGHTMAP_PLUGIN)
+          .then(lightmapElement => {
+            lightmapElement.lightmapper.worker.removeShape(shapeId);
+          });
       } else {
         console.warn('heightfield got unknown worker message type:', JSON.stringify(type));
       }

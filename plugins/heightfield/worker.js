@@ -196,7 +196,7 @@ const _requestLightmaps = (lightmapBuffer, cb) => {
   const id = _makeId();
   postMessage({
     type: 'request',
-    method: 'render',
+    method: 'renderLightmap',
     args: [id],
     lightmapBuffer,
   }, [lightmapBuffer.buffer]);
@@ -211,7 +211,7 @@ const _requestAddLightmap = (x, y, heightfield, cb) => { // XXX need to remove l
     x,
     y,
     heightfield,
-  });
+  }, [heightfield.buffer]);
   queues[id] = cb;
 };
 const _requestUpdateLightmap = (shapeId, heightfield, cb) => {
@@ -226,8 +226,14 @@ const _requestUpdateLightmap = (shapeId, heightfield, cb) => {
   queues[id] = cb;
 };
 const _unrequestChunk = (x, z) => {
+  const chunk = tra.removeChunk(x, z);
+
+  postMessage({
+    type: 'removeLightmap',
+    shapeId: chunk.shapeId,
+  });
+
   mapChunkMeshes[_getChunkIndex(x, z)] = null;
-  tra.removeChunk(x, z);
 };
 
 const localMatrix = new THREE.Matrix4();
@@ -345,7 +351,7 @@ self.onmessage = e => {
     }
     case 'generate': {
       const {id, args} = data;
-      const {x, y, index, numPositions, numIndices} = args;
+      const {x, y, index, numPositions, numIndices, heightfieldBuffer} = args;
       let {buffer} = args;
 
       _requestChunk(x, y, index, numPositions, numIndices)
@@ -361,7 +367,9 @@ self.onmessage = e => {
           return chunk;
         })
         .then(chunk => new Promise((accept, reject) => {
-          _requestAddLightmap(chunk.x, chunk.z, chunk.chunkData.staticHeightfield, shapeId => {
+          heightfieldBuffer.set(chunk.chunkData.staticHeightfield);
+
+          _requestAddLightmap(chunk.x, chunk.z, heightfieldBuffer, shapeId => {
             chunk.shapeId = shapeId;
 
             _requestChunkLightmaps(chunk, buffer, buffer.byteLength - LIGHTMAP_BUFFER_SIZE, ({skyLightmaps, torchLightmaps, scratchBuffer}) => {
@@ -391,7 +399,9 @@ self.onmessage = e => {
     case 'ungenerate': {
       const {args} = data;
       const {x, y} = args;
+
       _unrequestChunk(x, y);
+
       break;
     }
     case 'heightfield': {

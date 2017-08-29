@@ -7,9 +7,8 @@ const {
 
 class Lightmap {
   mount() {
-    const {three, pose, elements, render, utils: {js: jsUtils, random: {chnkr}}} = zeo;
+    const {three, pose, elements, render, utils: {js: {events, mod, bffr}, random: {chnkr}}} = zeo;
     const {THREE} = three;
-    const {events, mod} = jsUtils;
     const {EventEmitter} = events;
 
     const _getLightmapIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
@@ -304,11 +303,22 @@ class Lightmap {
           queue.push(cb);
         };
         worker.onmessage = e => {
-          queue.shift()(e.data);
+          const {data} = e;
+          const {type} = data;
+
+          if (type === 'response') {
+            queue.shift()(data.result);
+          } else if (type === 'releaseBuffer') {
+            this.buffers.free(data.buffer);
+          } else {
+            console.warn('lightmap unknwoen worker message type:', JSON.stringify(type));
+          }
         };
         this.worker = worker;
 
-        this._lightmaps = {};
+        this.buffers = bffr((NUM_CELLS + 1) * (NUM_CELLS + 1) * 4, (RANGE + 1) * (RANGE + 1) * 2);
+
+        // this._lightmaps = {};
 
         /* this.chunker = chnkr.makeChunker({
           resolution: NUM_CELLS,

@@ -1015,7 +1015,7 @@ void main() {
       running = false;
 
       if (queue.length > 0) {
-        _addChunk(queue.shift());
+        queue.shift()();
       }
     };
     const _addChunk = chunk => {
@@ -1048,19 +1048,27 @@ void main() {
           _next();
         });
       } else {
-        queue.push(chunk);
+        queue.push(_addChunk.bind(this, chunk));
       }
     };
     const _removeChunk = chunk => {
-      const {x, z} = chunk;
-      worker.requestUngenerate(x, z);
+      if (!running) {
+        running = true;
 
-      const {[dataSymbol]: objectsChunkMesh} = chunk;
-      objectsObject.renderList.splice(objectsObject.renderList.indexOf(objectsChunkMesh.renderListEntry), 1);
+        const {x, z} = chunk;
+        worker.requestUngenerate(x, z);
 
-      objectsChunkMesh.destroy();
+        const {[dataSymbol]: objectsChunkMesh} = chunk;
+        objectsObject.renderList.splice(objectsObject.renderList.indexOf(objectsChunkMesh.renderListEntry), 1);
 
-      objectsChunkMeshes[_getChunkIndex(x, z)] = null;
+        objectsChunkMesh.destroy();
+
+        objectsChunkMeshes[_getChunkIndex(x, z)] = null;
+
+        _next();
+      } else {
+        queue.push(_removeChunk.bind(this, chunk));
+      }
     };
     const _refreshChunk = (x, z) => {
       const heightfieldElement = elements.getEntitiesElement().querySelector(HEIGHTFIELD_PLUGIN);

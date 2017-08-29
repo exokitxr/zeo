@@ -554,7 +554,7 @@ class Grass {
             running = false;
 
             if (queue.length > 0) {
-              _addChunk(queue.shift());
+              queue.shift()();
             }
           };
           const _addChunk = chunk => {
@@ -575,20 +575,28 @@ class Grass {
                 _next();
               });
             } else {
-              queue.push(chunk);
+              queue.push(_addChunk.bind(this, chunk));
             }
           };
           const _removeChunk = chunk => {
-            const {x, z, data: grassChunkMesh} = chunk;
+            if (!running) {
+              running = true;
 
-            worker.requestUngenerate(x, z);
+              const {x, z, data: grassChunkMesh} = chunk;
 
-            // stage.remove('main', grassChunkMesh);
-            grassMesh.renderList.splice(grassMesh.renderList.indexOf(grassChunkMesh.renderListEntry), 1);
+              worker.requestUngenerate(x, z);
 
-            grassChunkMeshes[_getChunkIndex(x, z)] = null;
+              // stage.remove('main', grassChunkMesh);
+              grassMesh.renderList.splice(grassMesh.renderList.indexOf(grassChunkMesh.renderListEntry), 1);
 
-            grassChunkMesh.destroy();
+              grassChunkMeshes[_getChunkIndex(x, z)] = null;
+
+              grassChunkMesh.destroy();
+
+              _next();
+            } else {
+              queue.push(_removeChunk.bind(this, chunk));
+            }
           };
 
           const _debouncedRefreshLightmaps = _debounce(next => {
