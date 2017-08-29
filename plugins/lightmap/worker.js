@@ -456,12 +456,14 @@ self.onmessage = e => {
       const positions = new Float32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + readByteOffset, numPositions);
       readByteOffset += 4 * numPositions;
 
-      const header = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + writeByteOffset, 3);
+      const header = new Int32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + writeByteOffset, 3);
       const lightmapsLength = numPositions / 3;
       header[0] = x;
       header[1] = z;
-      header[2] = lightmapsLength;
-      writeByteOffset += 3 * 4;
+      writeByteOffset += 2 * 4;
+
+      const lightmapsLengthArray = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + writeByteOffset, 1);
+      writeByteOffset += 4;
 
       const lightmap = new Uint8Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + writeByteOffset, lightmapsLength);
       writeByteOffset += lightmapsLength;
@@ -482,6 +484,8 @@ self.onmessage = e => {
         const lightmapIndex = dx + (dz * width1) + (dy * width1depth1);
         lightmap[i] = lightmapRenderArray[lightmapIndex];
       }
+
+      lightmapsLengthArray[0] = lightmapsLength;
     }
 
     postMessage(lightmapBuffer, [lightmapBuffer.buffer]);
