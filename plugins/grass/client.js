@@ -49,11 +49,11 @@ uniform mat3 normalMatrix;
 attribute vec3 position;
 attribute vec3 normal;
 attribute vec2 uv; */
-attribute float lightmap;
+attribute float skyLightmap;
 
 varying vec3 vPosition;
 varying vec2 vUv;
-varying float vLightmap;
+varying float vSkyLightmap;
 
 void main() {
   vUv = uv;
@@ -63,7 +63,7 @@ void main() {
 
 	vPosition = position.xyz;
 
-  vLightmap = lightmap;
+  vSkyLightmap = skyLightmap;
 }
 `,
   fragmentShader: `\
@@ -80,12 +80,12 @@ uniform sampler2D map;
 
 varying vec3 vPosition;
 varying vec2 vUv;
-varying float vLightmap;
+varying float vSkyLightmap;
 
 void main() {
   vec4 diffuseColor = texture2D( map, vUv );
 
-  vec3 lightColor = vec3(floor(vLightmap * 4.0 + 0.5) / 4.0);
+  vec3 lightColor = vec3(floor(vSkyLightmap * 4.0 + 0.5) / 4.0);
   /* vec3 lightColor;
   if (useLightMap > 0.0) {
     float u = (
@@ -401,11 +401,11 @@ class Grass {
           };
           const _makeGrassChunkMesh = (chunk, gbuffer, grassChunkData) => {
             const {x, z} = chunk;
-            const {positions: newPositions, uvs: newUvs, skyLightmaps: newSkyLightmaps, indices: newIndices} = grassChunkData;
+            const {positions: newPositions, uvs: newUvs, skyLightmaps: newSkyLightmaps, torchLightmaps: newTorchLightmaps, indices: newIndices} = grassChunkData;
 
             // geometry
 
-            const {index, slices: {positions, uvs, lightmaps, indices}} = gbuffer;
+            const {index, slices: {positions, uvs, skyLightmaps, torchLightmaps, indices}} = gbuffer;
 
             if (newPositions.length > 0) {
               positions.set(newPositions);
@@ -414,8 +414,11 @@ class Grass {
               uvs.set(newUvs);
               renderer.updateAttribute(grassMesh.geometry.attributes.uv, index * uvs.length, newUvs.length, false);
 
-              lightmaps.set(newSkyLightmaps);
-              renderer.updateAttribute(grassMesh.geometry.attributes.lightmap, index * lightmaps.length, newSkyLightmaps.length, false);
+              skyLightmaps.set(newSkyLightmaps);
+              renderer.updateAttribute(grassMesh.geometry.attributes.skyLightmap, index * skyLightmaps.length, newSkyLightmaps.length, false);
+
+              torchLightmaps.set(newTorchLightmaps);
+              renderer.updateAttribute(grassMesh.geometry.attributes.torchLightmap, index * torchLightmaps.length, newTorchLightmaps.length, false);
 
               indices.set(newIndices);
               renderer.updateAttribute(grassMesh.geometry.index, index * indices.length, newIndices.length, true);
@@ -436,7 +439,8 @@ class Grass {
               },
               index,
               offset: new THREE.Vector2(x, z),
-              lightmaps,
+              skyLightmaps,
+              torchLightmaps,
               lightmap: null,
               destroy: () => {
                 geometryBuffer.free(gbuffer);
@@ -476,7 +480,12 @@ class Grass {
                 size: 2 * 3 * 4,
               },
               {
-                name: 'lightmaps',
+                name: 'skyLightmaps',
+                constructor: Uint8Array,
+                size: 3 * 1,
+              },
+              {
+                name: 'torchLightmaps',
                 constructor: Uint8Array,
                 size: 3 * 1,
               },
@@ -488,7 +497,7 @@ class Grass {
             ]
           );
           const grassMesh = (() => {
-            const {positions, uvs, lightmaps, indices} = geometryBuffer.getAll();
+            const {positions, uvs, skyLightmaps, torchLightmaps, indices} = geometryBuffer.getAll();
 
             const geometry = new THREE.BufferGeometry();
             const positionAttribute = new THREE.BufferAttribute(positions, 3);
@@ -497,9 +506,12 @@ class Grass {
             const uvAttribute = new THREE.BufferAttribute(uvs, 2);
             uvAttribute.dynamic = true;
             geometry.addAttribute('uv', uvAttribute);
-            const lightmapAttribute = new THREE.BufferAttribute(lightmaps, 1, true);
-            lightmapAttribute.dynamic = true;
-            geometry.addAttribute('lightmap', lightmapAttribute);
+            const skyLightmapAttribute = new THREE.BufferAttribute(skyLightmaps, 1, true);
+            skyLightmapAttribute.dynamic = true;
+            geometry.addAttribute('skyLightmap', skyLightmapAttribute);
+            const torchLightmapsAttribute = new THREE.BufferAttribute(torchLightmaps, 1, true);
+            torchLightmapsAttribute.dynamic = true;
+            geometry.addAttribute('torchLightmap', torchLightmapsAttribute);
             const indexAttribute = new THREE.BufferAttribute(indices, 1);
             indexAttribute.dynamic = true;
             geometry.setIndex(indexAttribute);
@@ -568,16 +580,6 @@ class Grass {
             for (let i = 0; i < added.length; i++) {
               _addChunk(added[i]);
             }
-            /* for (let i = 0; i < relodded.length; i++) {
-              const chunk = relodded[i];
-              const {lod, data: grassChunkMesh} = chunk;
-
-              if (!grassChunkMesh.lightmap && lod === 1) {
-                _bindLightmap(grassChunkMesh);
-              } else if (grassChunkMesh.lightmap && lod !== 1) {
-                _unbindLightmap(grassChunkMesh);
-              }
-            } */
             for (let i = 0; i < removed.length; i++) {
               const chunk = removed[i];
               const {x, z, data: grassChunkMesh} = chunk;
@@ -658,9 +660,14 @@ class Grass {
                 const trackedGrassChunkMeshes = grassChunkMeshes[_getChunkIndex(x, z)];
                 if (trackedGrassChunkMeshes) {
                   if (newSkyLightmaps.length > 0) {
-                    const {index, lightmaps} = trackedGrassChunkMeshes;
-                    lightmaps.set(newSkyLightmaps);
-                    renderer.updateAttribute(grassMesh.geometry.attributes.lightmap, index * lightmaps.length, newSkyLightmaps.length, false);
+                    const {index, skyLightmaps} = trackedGrassChunkMeshes;
+                    skyLightmaps.set(newSkyLightmaps);
+                    renderer.updateAttribute(grassMesh.geometry.attributes.skyLightmap, index * skyLightmaps.length, newSkyLightmaps.length, false);
+                  }
+                  if (newTorchLightmaps.length > 0) {
+                    const {index, torchLightmaps} = trackedGrassChunkMeshes;
+                    torchLightmaps.set(newTorchLightmaps);
+                    renderer.updateAttribute(grassMesh.geometry.attributes.torchLightmap, index * torchLightmaps.length, newTorchLightmaps.length, false);
                   }
                 }
               }
