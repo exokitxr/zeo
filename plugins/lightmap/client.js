@@ -36,13 +36,12 @@ class Lightmap {
       }
     }
     class Heightfield {
-      constructor(x, z, v, data, blend = Lightmapper.AddBlend) {
+      constructor(x, z, data, blend = Lightmapper.AddBlend) {
         this.type = 'heightfield';
 
         this.id = idCount++;
         this.x = Math.floor(x);
         this.z = Math.floor(z);
-        this.v = v;
         this.data = data;
         this.blend = blend;
 
@@ -55,9 +54,6 @@ class Lightmap {
         }
         if (spec.z !== undefined) {
           this.z = spec.z;
-        }
-        if (spec.v !== undefined) {
-          this.v = spec.v;
         }
         if (spec.data !== undefined) {
           this.data = spec.data;

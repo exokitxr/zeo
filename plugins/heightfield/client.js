@@ -418,9 +418,7 @@ class Heightfield {
 
           elements.requestElement(LIGHTMAP_PLUGIN)
             .then(lightmapElement => {
-              const dayNightSkyboxEntity = elements.getEntitiesElement().querySelector(DAY_NIGHT_SKYBOX_PLUGIN);
-              const sunIntensity = (dayNightSkyboxEntity && dayNightSkyboxEntity.getSunIntensity) ? dayNightSkyboxEntity.getSunIntensity() : 0; // XXX do not need sun intensity
-              const shape = new lightmapElement.Lightmapper.Heightfield(x * NUM_CELLS, y * NUM_CELLS, sunIntensity, heightfield, lightmapElement.Lightmapper.MaxBlend);
+              const shape = new lightmapElement.Lightmapper.Heightfield(x * NUM_CELLS, y * NUM_CELLS, heightfield, lightmapElement.Lightmapper.MaxBlend);
               lightmapElement.lightmapper.add(shape, [heightfield.buffer]);
 
               worker.respond(id, shape.id);

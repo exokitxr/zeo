@@ -53,13 +53,12 @@ class Ambient {
   }
 }
 class Heightfield {
-  constructor({id, x, z, v, data, blend}) {
+  constructor({id, x, z, data, blend}) {
     this.type = 'heightfield';
 
     this.id = id;
     this.x = x;
     this.z = z;
-    this.v = v;
     this.data = data;
     this.blend = BLENDS[blend];
 
@@ -72,9 +71,6 @@ class Heightfield {
     }
     if (spec.z !== undefined) {
       this.z = spec.z;
-    }
-    if (spec.v !== undefined) {
-      this.v = spec.v;
     }
     if (spec.data !== undefined) {
       this.data = spec.data;
@@ -268,7 +264,7 @@ const SHAPES = {
 const _renderShape = (shape, ox, oz, lx, ly, lz, value) => {
   switch (shape.type) {
     case 'heightfield': {
-      const {x, z, v, data, blend} = shape; // XXX get rid of v
+      const {x, z, data, blend} = shape;
 
       if (ox === (x / width) && oz === (z / depth)) {
         const elevation = data[lx + lz * (NUM_CELLS + 1)];
