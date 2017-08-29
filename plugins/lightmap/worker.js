@@ -433,67 +433,73 @@ self.onmessage = e => {
   } else if (type === 'render') {
     const {lightmapBuffer} = data;
 
-    let readByteOffset = 0;
-    const numLightmaps = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + readByteOffset, 1)[0];
-    readByteOffset += 4;
+    const int32Array = new Int32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset);
+    const uint32Array = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset);
+    const float32Array = new Float32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset);
+    const uint8Array = new Uint8Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset);
 
-    let writeByteOffset = 0;
-    new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + writeByteOffset, 1)[0] = numLightmaps;
-    writeByteOffset += 4;
+    let readWordOffset = 0;
+    const numLightmaps = uint32Array[readWordOffset];
+    readWordOffset++;
+
+    let writeWordOffset = 0;
+    uint32Array[writeWordOffset] = numLightmaps;
+    writeWordOffset++;
 
     for (let i = 0; i < numLightmaps; i++) {
-      const lightmapHeaderArray = new Int32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + readByteOffset, 2);
-      const x = lightmapHeaderArray[0];
-      const z = lightmapHeaderArray[1];
-      readByteOffset += 4 * 2;
+      const x = int32Array[readWordOffset + 0];
+      const z = int32Array[readWordOffset + 1];
+      readWordOffset += 2;
 
-      const numPositions = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + readByteOffset, 1)[0];
-      readByteOffset += 4;
+      const numPositions = uint32Array[readWordOffset];
+      readWordOffset++;
 
-      const positions = new Float32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + readByteOffset, numPositions);
-      readByteOffset += 4 * numPositions;
+      const positionsWordOffset = readWordOffset;
+      readWordOffset += numPositions;
 
-      const header = new Int32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + writeByteOffset, 3);
       const lightmapsLength = numPositions / 3;
-      header[0] = x;
-      header[1] = z;
-      writeByteOffset += 2 * 4;
+      int32Array[writeWordOffset + 0] = x;
+      int32Array[writeWordOffset + 1] = z;
+      writeWordOffset += 2;
 
-      const skyLightmapsLengthArray = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + writeByteOffset, 1);
-      writeByteOffset += 4;
+      const skyLightmapsLengthWordOffset = writeWordOffset;
+      writeWordOffset++;
 
-      const skyLightmap = new Uint8Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + writeByteOffset, lightmapsLength);
-      writeByteOffset += lightmapsLength;
+      const skyLightmapsByteOffset = writeWordOffset * 4;
+      let writeByteOffset = skyLightmapsByteOffset + lightmapsLength;
       let alignDiff = writeByteOffset % 4;
       if (alignDiff > 0) {
         writeByteOffset += 4 - alignDiff;
       }
+      writeWordOffset = writeByteOffset / 4;
 
-      const torchLightmapsLengthArray = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + writeByteOffset, 1);
-      writeByteOffset += 4;
+      const torchLightmapsLengthWordOffset = writeWordOffset;
+      writeWordOffset++;
 
-      const torchLightmap = new Uint8Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + writeByteOffset, lightmapsLength);
-      writeByteOffset += lightmapsLength;
+      const torchLightmapsByteOffset = writeWordOffset * 4;
+      writeByteOffset = torchLightmapsByteOffset + lightmapsLength;
       alignDiff = writeByteOffset % 4;
       if (alignDiff > 0) {
         writeByteOffset += 4 - alignDiff;
       }
+      writeWordOffset = writeByteOffset / 4;
 
       _getUpdate(x, z, skyLightmapsArray, torchLightmapsArray);
 
       const offsetX = x * width;
       const offsetZ = z * depth;
       for (let i = 0; i < lightmapsLength; i++) {
-        const baseIndex = i * 3;
-        const dx = Math.min(Math.max(Math.floor(positions[baseIndex + 0] - offsetX), 0), NUM_CELLS + 1);
-        const dy = Math.min(Math.max(Math.floor(positions[baseIndex + 1]), 0), NUM_CELLS_HEIGHT);
-        const dz = Math.min(Math.max(Math.floor(positions[baseIndex + 2] - offsetZ), 0), NUM_CELLS + 1);
+        const baseIndex = positionsWordOffset + i * 3;
+        const dx = Math.min(Math.max(Math.floor(float32Array[baseIndex + 0] - offsetX), 0), NUM_CELLS + 1);
+        const dy = Math.min(Math.max(Math.floor(float32Array[baseIndex + 1]), 0), NUM_CELLS_HEIGHT);
+        const dz = Math.min(Math.max(Math.floor(float32Array[baseIndex + 2] - offsetZ), 0), NUM_CELLS + 1);
         const lightmapIndex = dx + (dz * width1) + (dy * width1depth1);
-        skyLightmap[i] = skyLightmapsArray[lightmapIndex];
+        uint8Array[skyLightmapsByteOffset + i] = skyLightmapsArray[lightmapIndex];
+        uint8Array[torchLightmapsByteOffset + i] = torchLightmapsArray[lightmapIndex];
       }
 
-      skyLightmapsLengthArray[0] = lightmapsLength;
-      torchLightmapsLengthArray[0] = lightmapsLength;
+      uint32Array[skyLightmapsLengthWordOffset] = lightmapsLength;
+      uint32Array[torchLightmapsLengthWordOffset] = lightmapsLength;
     }
 
     postMessage(lightmapBuffer, [lightmapBuffer.buffer]);
