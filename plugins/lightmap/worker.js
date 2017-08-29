@@ -255,131 +255,104 @@ const SHAPES = {
   'voxel': Voxel,
 };
 
-const _getUpdate = (ox, oz, skyArray, torchArray) => {
-  const chunkRange = [
-    ox * width,
-    oz * depth,
-    (ox + 1) * width,
-    (oz + 1) * depth,
-  ];
+const _renderShape = (shape, ox, oz, lx, ly, lz, value) => {
+  switch (shape.type) {
+    case 'heightfield': {
+      const {x, z, v, data, blend} = shape;
 
-  const _renderShape = shape => {
-    const shapeRange = shape.getRange();
+      if (ox === (x / width) && oz === (z / depth)) {
+        const elevation = data[lx + lz * (NUM_CELLS + 1)];
+        value = blend(value, Math.min(Math.max((ly - (elevation - 8)) / 8, 0), 1) * v * 255);
+      }
 
-    if (_intersectRect(shapeRange, chunkRange)) {
-      const {type} = shape;
+      break;
+    }
+    case 'ether': {
+      // XXX
 
-      switch (type) {
-        case 'heightfield': {
-          const {x, z, v, data, blend} = shape;
+      break;
+    }
+    case 'sphere': {
+      const {x, y, z, r, v, blend} = shape;
 
-          if (x === (ox * width) && z === (oz * depth)) {
-            for (let dz = 0; dz <= NUM_CELLS; dz++) {
-              for (let dx = 0; dx <= NUM_CELLS; dx++) {
-                const elevation = data[dx + dz * (NUM_CELLS + 1)];
-                for (let dy = NUM_CELLS_HEIGHT; dy >= (elevation - 8); dy--) {
-                  const lightmapIndex = dx + (dz * width1) + (dy * width1depth1);
-                  skyArray[lightmapIndex] = blend(skyArray[lightmapIndex], Math.min(Math.max((dy - (elevation - 8)) / 8, 0), 1) * v * 255);
-                }
-              }
+      const ax = (ox * width) + lx;
+      const ay = ly;
+      const az = (oz * depth) + lz;
+
+      const dx = ax - x;
+      const dy = ay - y;
+      const dz = az - z;
+
+      const distance = Math.sqrt(dx*dx + dy*dy + dz*dz);
+      const dr = r - 1;
+      const maxDistance = Math.sqrt(dr * dr * 3);
+      if (distance < maxDistance) {
+        const distanceFactor = (maxDistance - distance) / maxDistance;
+        value = blend(value, Math.min(distanceFactor * distanceFactor * v, 1) * 255);
+      }
+
+      break;
+    }
+    /* case 'cylinder': {
+      const {x, y, z, h, r, v, blend} = shape;
+      const ax = x - (ox * width);
+      const ay = y;
+      const az = z - (oz * depth);
+
+      const dr = r - 1;
+      const maxDistance = Math.sqrt(dr*dr*2);
+      for (let dz = -dr; dz <= dr; dz++) {
+        for (let dx = -dr; dx <= dr; dx++) {
+          const radiusFactor = (maxDistance - Math.sqrt(dx*dx + dz*dz)) / maxDistance;
+
+          for (let dy = 0; dy < h; dy++) {
+            const lx = ax + dx;
+            const ly = ay + dy;
+            const lz = az + dz;
+
+            if (_isInRange(lx, width) && _isInRange(ly, height) && _isInRange(lz, depth)) {
+              const lightmapIndex = lx + (lz * width1) + (ly * width1depth1);
+              const distanceFactor = radiusFactor * (1 - (dy / h));
+              skyArray[lightmapIndex] = blend(skyArray[lightmapIndex], Math.min(distanceFactor * distanceFactor * v, 1) * 255);
             }
           }
-
-          break;
-        }
-        case 'ether': {
-          // XXX
-
-          break;
-        }
-        case 'sphere': {
-          const {x, y, z, r, v, blend} = shape;
-          const ax = x - (ox * width);
-          const ay = y;
-          const az = z - (oz * depth);
-
-          const dr = r - 1;
-          const maxDistance = Math.sqrt(dr*dr*3);
-          for (let dy = -dr; dy <= dr; dy++) {
-            for (let dz = -dr; dz <= dr; dz++) {
-              for (let dx = -dr; dx <= dr; dx++) {
-                const lx = ax + dx;
-                const ly = ay + dy;
-                const lz = az + dz;
-
-                if (_isInRange(lx, width) && _isInRange(ly, height) && _isInRange(lz, depth)) {
-                  const distanceFactor = (maxDistance - Math.sqrt(dx*dx + dy*dy + dz*dz)) / maxDistance;
-                  const lightmapIndex = lx + (lz * width1) + (ly * width1depth1);
-                  skyArray[lightmapIndex] = blend(skyArray[lightmapIndex], Math.min(distanceFactor * distanceFactor * v, 1) * 255);
-                }
-              }
-            }
-          }
-
-          break;
-        }
-        case 'cylinder': {
-          const {x, y, z, h, r, v, blend} = shape;
-          const ax = x - (ox * width);
-          const ay = y;
-          const az = z - (oz * depth);
-
-          const dr = r - 1;
-          const maxDistance = Math.sqrt(dr*dr*2);
-          for (let dz = -dr; dz <= dr; dz++) {
-            for (let dx = -dr; dx <= dr; dx++) {
-              const radiusFactor = (maxDistance - Math.sqrt(dx*dx + dz*dz)) / maxDistance;
-
-              for (let dy = 0; dy < h; dy++) {
-                const lx = ax + dx;
-                const ly = ay + dy;
-                const lz = az + dz;
-
-                if (_isInRange(lx, width) && _isInRange(ly, height) && _isInRange(lz, depth)) {
-                  const lightmapIndex = lx + (lz * width1) + (ly * width1depth1);
-                  const distanceFactor = radiusFactor * (1 - (dy / h));
-                  skyArray[lightmapIndex] = blend(skyArray[lightmapIndex], Math.min(distanceFactor * distanceFactor * v, 1) * 255);
-                }
-              }
-            }
-          }
-
-          break;
-        }
-        case 'voxel': {
-          const {x, y, z, r, blend} = shape;
-          const ax = x - (ox * width);
-          const ay = y;
-          const az = z - (ox * height);
-
-          if (_isInRange(ax, width) && _isInRange(ay, height) && _isInRange(az, depth)) {
-            const lightmapIndex = ax + (az * width1) + (ay * width1depth1);
-            skyArray[lightmapIndex] = blend(skyArray[lightmapIndex], v);
-          }
-
-          break;
         }
       }
-    }
-  };
 
-  const ambientValue = (() => {
-    let result = 0;
-    for (let i = 0; i < shapes.length; i++) {
-      const shape = shapes[i];
-      if (shape.type === 'ambient') {
-        result += shape.v;
-      }
+      break;
     }
-    return result;
-  })();
-  skyArray.fill(ambientValue);
+    case 'voxel': {
+      const {x, y, z, r, blend} = shape;
+      const ax = x - (ox * width);
+      const ay = y;
+      const az = z - (ox * height);
+
+      if (_isInRange(ax, width) && _isInRange(ay, height) && _isInRange(az, depth)) {
+        const lightmapIndex = ax + (az * width1) + (ay * width1depth1);
+        skyArray[lightmapIndex] = blend(skyArray[lightmapIndex], v);
+      }
+
+      break;
+    } */
+  }
+
+  return value;
+};
+const _getLight = (ox, oz, lx, ly, lz) => {
+  let ambientValue = 0;
+  for (let i = 0; i < shapes.length; i++) {
+    const shape = shapes[i];
+    if (shape.type === 'ambient') {
+      ambientValue += shape.v;
+    }
+  }
+  let value = ambientValue;
 
   // add/sub
   for (let i = 0; i < shapes.length; i++) {
     const shape = shapes[i];
     if (shape.blend !== BLENDS.max) {
-      _renderShape(shape);
+      value = _renderShape(shape, ox, oz, lx, ly, lz, value);
     }
   }
 
@@ -387,9 +360,11 @@ const _getUpdate = (ox, oz, skyArray, torchArray) => {
   for (let i = 0; i < shapes.length; i++) {
     const shape = shapes[i];
     if (shape.blend === BLENDS.max) {
-      _renderShape(shape);
+      value = _renderShape(shape, ox, oz, lx, ly, lz, value);
     }
   }
+
+  return value;
 };
 const _isInRange = (n, l) => n >= 0 && n <= l;
 const _intersectRect = (r1, r2) =>
@@ -399,8 +374,8 @@ const _intersectRect = (r1, r2) =>
    r2[3] < r1[1]);
 
 const shapes = [];
-const skyLightmapsArray = new Uint8Array(width1 * depth1 * height);
-const torchLightmapsArray = new Uint8Array(width1 * depth1 * height);
+/* const skyLightmapsArray = new Uint8Array(width1 * depth1 * height);
+const torchLightmapsArray = new Uint8Array(width1 * depth1 * height); */
 
 self.onmessage = e => {
   const {data} = e;
@@ -484,18 +459,18 @@ self.onmessage = e => {
       }
       writeWordOffset = writeByteOffset / 4;
 
-      _getUpdate(x, z, skyLightmapsArray, torchLightmapsArray);
+      // _getUpdate(x, z, skyLightmapsArray, torchLightmapsArray);
 
       const offsetX = x * width;
       const offsetZ = z * depth;
       for (let i = 0; i < lightmapsLength; i++) {
         const baseIndex = positionsWordOffset + i * 3;
-        const dx = Math.min(Math.max(Math.floor(float32Array[baseIndex + 0] - offsetX), 0), NUM_CELLS + 1);
-        const dy = Math.min(Math.max(Math.floor(float32Array[baseIndex + 1]), 0), NUM_CELLS_HEIGHT);
-        const dz = Math.min(Math.max(Math.floor(float32Array[baseIndex + 2] - offsetZ), 0), NUM_CELLS + 1);
-        const lightmapIndex = dx + (dz * width1) + (dy * width1depth1);
-        uint8Array[skyLightmapsByteOffset + i] = skyLightmapsArray[lightmapIndex];
-        uint8Array[torchLightmapsByteOffset + i] = torchLightmapsArray[lightmapIndex];
+        const lx = Math.min(Math.max(Math.floor(float32Array[baseIndex + 0] - offsetX), 0), NUM_CELLS + 1);
+        const ly = Math.min(Math.max(Math.floor(float32Array[baseIndex + 1]), 0), NUM_CELLS_HEIGHT);
+        const lz = Math.min(Math.max(Math.floor(float32Array[baseIndex + 2] - offsetZ), 0), NUM_CELLS + 1);
+        // const lightmapIndex = dx + (dz * width1) + (dy * width1depth1);
+        uint8Array[skyLightmapsByteOffset + i] = _getLight(x, z, lx, ly, lz);
+        // uint8Array[torchLightmapsByteOffset + i] = torchLightmapsArray[lightmapIndex];
       }
 
       uint32Array[skyLightmapsLengthWordOffset] = lightmapsLength;
