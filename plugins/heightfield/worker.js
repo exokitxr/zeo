@@ -622,35 +622,35 @@ self.onmessage = e => {
               _requestLightmaps(lightmapBuffer, lightmapBuffer => {
                 const {buffer} = lightmapBuffer;
 
-                let readByteOffset = 3 * 4; // XXX handle multiple lightmaps coming back in the cross-chunk destruction case
-                const skyLightmapsLength = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + readByteOffset, 1)[0];
-                readByteOffset += 4;
-                const skyLightmaps = new Uint8Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + readByteOffset, skyLightmapsLength);
-                readByteOffset += skyLightmapsLength;
-                let alignDiff = readByteOffset % 4;
-                if (alignDiff > 0) {
-                  readByteOffset += 4 - alignDiff;
-                }
-
-                const torchLightmapsLength = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + readByteOffset, 1)[0];
-                readByteOffset += 4;
-                const torchLightmaps = new Uint8Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + readByteOffset, torchLightmapsLength);
-                readByteOffset += torchLightmapsLength;
-                alignDiff = readByteOffset % 4;
-                if (alignDiff > 0) {
-                  readByteOffset += 4 - alignDiff;
-                }
-
+                let readByteOffset = 4;
                 let writeByteOffset = 0;
                 const chunksHeader = new Uint32Array(buffer, writeByteOffset, 1);
                 writeByteOffset += 4;
 
                 let numResponseChunks = 0;
                 for (let i = 0; i < numChunkSpecs; i++) {
+                  readByteOffset += 2 * 4;
+                  const skyLightmapsLength = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + readByteOffset, 1)[0];
+                  readByteOffset += 4;
+                  const skyLightmaps = new Uint8Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + readByteOffset, skyLightmapsLength);
+                  readByteOffset += skyLightmapsLength;
+                  let alignDiff = readByteOffset % 4;
+                  if (alignDiff > 0) {
+                    readByteOffset += 4 - alignDiff;
+                  }
+
+                  const torchLightmapsLength = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + readByteOffset, 1)[0];
+                  readByteOffset += 4;
+                  const torchLightmaps = new Uint8Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + readByteOffset, torchLightmapsLength);
+                  readByteOffset += torchLightmapsLength;
+                  alignDiff = readByteOffset % 4;
+                  if (alignDiff > 0) {
+                    readByteOffset += 4 - alignDiff;
+                  }
+
                   const chunkSpec = chunkSpecs[i];
                   const {x, z} = chunkSpec;
                   const chunk = tra.getChunk(x, z);
-
                   if (chunk) {
                     const chunkHeader1 = new Int32Array(buffer, writeByteOffset, 2);
                     chunkHeader1[0] = x;
