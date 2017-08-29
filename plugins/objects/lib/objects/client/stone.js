@@ -86,7 +86,7 @@ const stone = objectApi => {
 
     const stoneObjectApi = {
       object: 'stone',
-      grabCallback(id, side, x, z, objectIndex) {
+      gripCallback(id, side, x, z, objectIndex) {
         const itemId = _makeId();
         const asset = 'ITEM.STONE';
         const assetInstance = items.makeItem({
