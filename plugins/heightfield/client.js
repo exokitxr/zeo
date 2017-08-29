@@ -1154,7 +1154,7 @@ class Heightfield {
           scene.remove(heightfieldObject);
 
           clearTimeout(refreshChunksTimeout);
-          clearTimeout(refreshLightmapsTimeout);
+          // clearTimeout(refreshLightmapsTimeout);
           clearTimeout(refreshCullTimeout);
 
           elements.destroyListener(elementListener);

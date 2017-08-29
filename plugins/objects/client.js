@@ -1381,7 +1381,7 @@ void main() {
         cleanups.push(() => {
           elements.destroyListener(heightfieldListener);
 
-          clearTimeout(refreshLightmapsTimeout);
+          // clearTimeout(refreshLightmapsTimeout);
           clearTimeout(refreshCullTimeout);
         });
       });
