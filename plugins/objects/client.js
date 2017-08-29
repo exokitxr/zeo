@@ -75,7 +75,7 @@ class Objects {
     }
 
     const _getChunkIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
-    const _getObjectIndex = (x, z, i) => (mod(x, 0xFF) << 24) | (mod(z, 0xFF) << 16) | (i & 0xFFFF);
+    const _getObjectId = (x, z, i) => (mod(x, 0xFF) << 24) | (mod(z, 0xFF) << 16) | (i & 0xFFFF);
 
     const OBJECTS_SHADER = {
       uniforms: {
@@ -511,7 +511,7 @@ void main() {
         const objectApi = objectApis[n];
         if (objectApi) {
           objectApi.addedCallback(
-            _getObjectIndex(x, z, objectIndex),
+            _getObjectId(x, z, objectIndex),
             localVector.fromArray(position),
             localQuaternion.fromArray(rotation),
             value,
@@ -538,14 +538,14 @@ void main() {
 
         const objectApi = objectApis[n];
         if (objectApi) {
-          objectApi.removedCallback(_getObjectIndex(x, z, objectIndex), x, z, objectIndex);
+          objectApi.removedCallback(_getObjectId(x, z, objectIndex), x, z, objectIndex);
         }
       } else if (type === 'objectUpdated') {
         const [n, x, z, objectIndex, position, rotation, value] = args;
 
         const objectApi = objectApis[n];
         if (objectApi) {
-          objectApi.updateCallback(_getObjectIndex(x, z, objectIndex), localVector.fromArray(position), localQuaternion.fromArray(rotation), value);
+          objectApi.updateCallback(_getObjectId(x, z, objectIndex), localVector.fromArray(position), localQuaternion.fromArray(rotation), value);
         }
       } else {
         console.warn('objects got unknown worker message type:', JSON.stringify(type));
@@ -677,7 +677,7 @@ void main() {
 
         if (objectApi && objectApi.triggerCallback) {
           const {x, z, objectIndex} = hoveredTrackedObjectSpec;
-          objectApi.triggerCallback(_getObjectIndex(x, z, objectIndex), side, x, z, objectIndex);
+          objectApi.triggerCallback(_getObjectId(x, z, objectIndex), side, x, z, objectIndex);
         }
       }
     };
@@ -692,7 +692,7 @@ void main() {
 
         if (objectApi && objectApi.gripCallback) {
           const {x, z, objectIndex} = hoveredTrackedObjectSpec;
-          objectApi.gripCallback(_getObjectIndex(x, z, objectIndex), side, x, z, objectIndex);
+          objectApi.gripCallback(_getObjectId(x, z, objectIndex), side, x, z, objectIndex);
         }
       }
     };
@@ -1193,7 +1193,7 @@ void main() {
 
                 const objectApi = objectApis[n];
                 if (objectApi && objectApi.collideCallback) {
-                  objectApi.collideCallback(_getObjectIndex(x, z, objectIndex), x, z, objectIndex);
+                  objectApi.collideCallback(_getObjectId(x, z, objectIndex), x, z, objectIndex);
                 }
               }
 
