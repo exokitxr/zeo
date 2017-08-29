@@ -312,9 +312,12 @@ self.onmessage = e => {
         .then(chunkBuffer => {
           const chunkData = protocolUtils.parseDataChunk(chunkBuffer, 0);
           _offsetChunkData(chunkData, index, numPositions);
+
           const chunk = tra.addChunk(x, y, new Uint32Array(chunkBuffer, 0));
           chunk.chunkData = chunkData;
+
           _registerChunk(chunk, index, numIndices);
+
           return chunk;
         })
         .then(chunk => new Promise((accept, reject) => {
