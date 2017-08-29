@@ -14,7 +14,7 @@ const {
 } = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
 
-const NUM_POSITIONS_CHUNK = 1400 * 1024;
+const NUM_POSITIONS_CHUNK = 800 * 1024;
 const LIGHTMAP_BUFFER_SIZE = 100 * 1024 * 4;
 const NUM_BUFFERS = (RANGE * 2) * (RANGE * 2) * 2;
 const LIGHTMAP_PLUGIN = 'plugins-lightmap';
