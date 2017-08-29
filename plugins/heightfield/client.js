@@ -14,7 +14,7 @@ const {
 } = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
 
-const NUM_POSITIONS_CHUNK = 800 * 1024;
+const NUM_POSITIONS_CHUNK = 1400 * 1024;
 const LIGHTMAP_BUFFER_SIZE = 100 * 1024 * 4;
 const NUM_BUFFERS = (RANGE * 2) * (RANGE * 2) * 2;
 const LIGHTMAP_PLUGIN = 'plugins-lightmap';
@@ -54,12 +54,12 @@ attribute vec3 position;
 attribute vec3 normal;
 attribute vec2 uv; */
 attribute vec3 color;
-attribute float lightmap;
+attribute float skyLightmap;
 
 // varying vec3 vPosition;
 varying vec3 vViewPosition;
 varying vec3 vColor;
-varying float vLightmap;
+varying float vSkyLightmap;
 
 void main() {
 	vColor.xyz = color.xyz;
@@ -69,7 +69,7 @@ void main() {
 
 	// vPosition = position.xyz;
   vViewPosition = -mvPosition.xyz;
-  vLightmap = lightmap;
+  vSkyLightmap = skyLightmap;
 }
 `,
   fragmentShader: `\
@@ -88,13 +88,13 @@ uniform vec3 ambientLightColor;
 // varying vec3 vPosition;
 varying vec3 vViewPosition;
 varying vec3 vColor;
-varying float vLightmap;
+varying float vSkyLightmap;
 
 void main() {
 	vec3 diffuseColor = vColor;
 
   // vec3 lightColor = vec3(vLightmap);
-  vec3 lightColor = vec3(floor(vLightmap * 4.0 + 0.5) / 4.0);
+  vec3 lightColor = vec3(floor(vSkyLightmap * 4.0 + 0.5) / 4.0);
   // vec3 lightColor = vec3(floor(vLightmap * 32.0 + 0.5) / 32.0);
   /* vec3 lightColor;
   if (useLightMap > 0.0) {
@@ -212,7 +212,12 @@ class Heightfield {
           size: 3 * 3 * 4,
         },
         {
-          name: 'lightmaps',
+          name: 'skyLightmaps',
+          constructor: Uint8Array,
+          size: 3 * 1,
+        },
+        {
+          name: 'torchLightmaps',
           constructor: Uint8Array,
           size: 3 * 1,
         },
@@ -481,7 +486,8 @@ class Heightfield {
         index: gbuffer.index,
         numPositions: gbuffer.slices.positions.length,
         numIndices: gbuffer.slices.indices.length,
-        lightmaps: gbuffer.slices.lightmaps,
+        skyLightmaps: gbuffer.slices.skyLightmaps,
+        torchLightmaps: gbuffer.slices.torchLightmaps,
         offset: new THREE.Vector2(chunk.x, chunk.z),
         heightfield: null,
         staticHeightfield: null,
@@ -489,13 +495,13 @@ class Heightfield {
         shape: null,
         stckBody: null,
         update: chunkData => {
-          const {positions: newPositions, colors: newColors, skyLightmaps: newSkyLightmaps, indices: newIndices, heightfield, staticHeightfield} = chunkData;
+          const {positions: newPositions, colors: newColors, skyLightmaps: newSkyLightmaps, torchLightmaps: newTorchLightmaps, indices: newIndices, heightfield, staticHeightfield} = chunkData;
           // XXX move heightfield interpolation entirely into the worker
           // XXX preallocate staticHeightfield feedthrough for lightmap and stck
 
           // geometry
 
-          const {index, slices: {positions, colors, lightmaps, indices}} = gbuffer;
+          const {index, slices: {positions, colors, skyLightmaps, torchLightmaps, indices}} = gbuffer;
 
           positions.set(newPositions);
           renderer.updateAttribute(heightfieldObject.geometry.attributes.position, index * positions.length, newPositions.length, false);
@@ -503,8 +509,11 @@ class Heightfield {
           colors.set(newColors);
           renderer.updateAttribute(heightfieldObject.geometry.attributes.color, index * colors.length, newColors.length, false);
 
-          lightmaps.set(newSkyLightmaps);
-          renderer.updateAttribute(heightfieldObject.geometry.attributes.lightmap, index * lightmaps.length, newSkyLightmaps.length, false);
+          skyLightmaps.set(newSkyLightmaps);
+          renderer.updateAttribute(heightfieldObject.geometry.attributes.skyLightmap, index * skyLightmaps.length, newSkyLightmaps.length, false);
+
+          torchLightmaps.set(newTorchLightmaps);
+          renderer.updateAttribute(heightfieldObject.geometry.attributes.torchLightmap, index * torchLightmaps.length, newTorchLightmaps.length, false);
 
           indices.set(newIndices);
           renderer.updateAttribute(heightfieldObject.geometry.index, index * indices.length, newIndices.length, true);
@@ -541,7 +550,7 @@ class Heightfield {
     let mapChunkMeshes = {};
 
     const heightfieldObject = (() => {
-      const {positions, colors, lightmaps, indices} = geometryBuffer.getAll();
+      const {positions, colors, skyLightmaps, torchLightmaps, indices} = geometryBuffer.getAll();
 
       const geometry = new THREE.BufferGeometry();
       const positionAttribute = new THREE.BufferAttribute(positions, 3);
@@ -550,9 +559,12 @@ class Heightfield {
       const colorAttribute = new THREE.BufferAttribute(colors, 3);
       colorAttribute.dynamic = true;
       geometry.addAttribute('color', colorAttribute);
-      const lightmapAttribute = new THREE.BufferAttribute(lightmaps, 1, true);
-      lightmapAttribute.dynamic = true;
-      geometry.addAttribute('lightmap', lightmapAttribute);
+      const skyLightmapAttribute = new THREE.BufferAttribute(skyLightmaps, 1, true);
+      skyLightmapAttribute.dynamic = true;
+      geometry.addAttribute('skyLightmap', skyLightmapAttribute);
+      const torchLightmapAttribute = new THREE.BufferAttribute(torchLightmaps, 1, true);
+      torchLightmapAttribute.dynamic = true;
+      geometry.addAttribute('torchLightmap', torchLightmapAttribute);
       const indexAttribute = new THREE.BufferAttribute(indices, 1);
       indexAttribute.dynamic = true;
       geometry.setIndex(indexAttribute);
@@ -1040,9 +1052,14 @@ class Heightfield {
               const trackedMapChunkMeshes = mapChunkMeshes[_getChunkIndex(x, z)];
               if (trackedMapChunkMeshes) {
                 if (newSkyLightmaps.length > 0) {
-                  const {index, lightmaps} = trackedMapChunkMeshes;
-                  lightmaps.set(newSkyLightmaps);
-                  renderer.updateAttribute(heightfieldObject.geometry.attributes.lightmap, index * lightmaps.length, newSkyLightmaps.length, false);
+                  const {index, skyLightmaps} = trackedMapChunkMeshes;
+                  skyLightmaps.set(newSkyLightmaps);
+                  renderer.updateAttribute(heightfieldObject.geometry.attributes.skyLightmap, index * skyLightmaps.length, newSkyLightmaps.length, false);
+                }
+                if (newTorchLightmaps.length > 0) {
+                  const {index, torchLightmaps} = trackedMapChunkMeshes;
+                  torchLightmaps.set(newTorchLightmaps);
+                  renderer.updateAttribute(heightfieldObject.geometry.attributes.torchLightmap, index * torchLightmaps.length, newTorchLightmaps.length, false);
                 }
               }
             }
