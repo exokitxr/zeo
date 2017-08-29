@@ -62,6 +62,8 @@ class Heightfield {
     this.v = v;
     this.data = data;
     this.blend = BLENDS[blend];
+
+    this.sky = true;
   }
 
   set(spec) {
@@ -98,6 +100,8 @@ class Ether {
     this.z = z;
     this.data = data;
     this.blend = BLENDS[blend];
+
+    this.sky = true;
   }
 
   set(spec) {
@@ -133,6 +137,8 @@ class Sphere {
     this.r = Math.floor(r);
     this.v = v;
     this.blend = BLENDS[blend];
+
+    this.sky = false;
   }
 
   set(spec) {
@@ -175,6 +181,8 @@ class Cylinder {
     this.r = Math.floor(r);
     this.v = v;
     this.blend = BLENDS[blend];
+
+    this.sky = false;
   }
 
   set(spec) {
@@ -218,6 +226,8 @@ class Voxel {
     this.z = Math.floor(z);
     this.v = v;
     this.blend = BLENDS[blend];
+
+    this.sky = false;
   }
 
   set(spec) {
@@ -258,11 +268,11 @@ const SHAPES = {
 const _renderShape = (shape, ox, oz, lx, ly, lz, value) => {
   switch (shape.type) {
     case 'heightfield': {
-      const {x, z, v, data, blend} = shape;
+      const {x, z, v, data, blend} = shape; // XXX get rid of v
 
       if (ox === (x / width) && oz === (z / depth)) {
         const elevation = data[lx + lz * (NUM_CELLS + 1)];
-        value = blend(value, Math.min(Math.max((ly - (elevation - 8)) / 8, 0), 1) * v * 255);
+        value = blend(value, Math.min(Math.max((ly - (elevation - 8)) / 8, 0), 1) * 255);
       }
 
       break;
@@ -338,7 +348,7 @@ const _renderShape = (shape, ox, oz, lx, ly, lz, value) => {
 
   return value;
 };
-const _getLight = (ox, oz, lx, ly, lz) => {
+const _getLight = (ox, oz, lx, ly, lz, sky) => {
   let ambientValue = 0;
   for (let i = 0; i < shapes.length; i++) {
     const shape = shapes[i];
@@ -351,7 +361,7 @@ const _getLight = (ox, oz, lx, ly, lz) => {
   // add/sub
   for (let i = 0; i < shapes.length; i++) {
     const shape = shapes[i];
-    if (shape.blend !== BLENDS.max) {
+    if (shape.sky === sky && shape.blend !== BLENDS.max) {
       value = _renderShape(shape, ox, oz, lx, ly, lz, value);
     }
   }
@@ -359,19 +369,19 @@ const _getLight = (ox, oz, lx, ly, lz) => {
   // max
   for (let i = 0; i < shapes.length; i++) {
     const shape = shapes[i];
-    if (shape.blend === BLENDS.max) {
+    if (shape.sky === sky && shape.blend === BLENDS.max) {
       value = _renderShape(shape, ox, oz, lx, ly, lz, value);
     }
   }
 
   return value;
 };
-const _isInRange = (n, l) => n >= 0 && n <= l;
+/* const _isInRange = (n, l) => n >= 0 && n <= l;
 const _intersectRect = (r1, r2) =>
   !(r2[0] > r1[2] || 
    r2[2] < r1[0] || 
    r2[1] > r1[3] ||
-   r2[3] < r1[1]);
+   r2[3] < r1[1]); */
 
 const shapes = [];
 /* const skyLightmapsArray = new Uint8Array(width1 * depth1 * height);
@@ -469,8 +479,8 @@ self.onmessage = e => {
         const ly = Math.min(Math.max(Math.floor(float32Array[baseIndex + 1]), 0), NUM_CELLS_HEIGHT);
         const lz = Math.min(Math.max(Math.floor(float32Array[baseIndex + 2] - offsetZ), 0), NUM_CELLS + 1);
         // const lightmapIndex = dx + (dz * width1) + (dy * width1depth1);
-        uint8Array[skyLightmapsByteOffset + i] = _getLight(x, z, lx, ly, lz);
-        // uint8Array[torchLightmapsByteOffset + i] = torchLightmapsArray[lightmapIndex];
+        uint8Array[skyLightmapsByteOffset + i] = _getLight(x, z, lx, ly, lz, true);
+        uint8Array[torchLightmapsByteOffset + i] = _getLight(x, z, lx, ly, lz, false);
       }
 
       uint32Array[skyLightmapsLengthWordOffset] = lightmapsLength;

@@ -99,10 +99,10 @@ class Objects {
           type: '2f',
           value: new THREE.Vector2(-1, -1),
         },
-        /* sunIntensity: {
+        sunIntensity: {
           type: 'f',
           value: 0,
-        }, */
+        },
         worldTime: {
           type: 'f',
           value: 0,
@@ -113,12 +113,14 @@ precision highp float;
 precision highp int;
 attribute vec3 frame;
 attribute float skyLightmap;
+attribute float torchLightmap;
 attribute float objectIndex;
 
 varying vec3 vPosition;
 varying vec2 vUv;
 varying vec3 vFrame;
 varying float vSkyLightmap;
+varying float vTorchLightmap;
 varying float vObjectIndex;
 
 void main() {
@@ -129,6 +131,7 @@ void main() {
   vUv = uv;
   vFrame = frame;
   vSkyLightmap = skyLightmap;
+  vTorchLightmap = torchLightmap;
   vObjectIndex = objectIndex;
 }
       `,
@@ -143,13 +146,14 @@ uniform sampler2D map;
 // uniform float useLightMap;
 // uniform vec2 d;
 uniform vec2 selectedObject;
-// uniform float sunIntensity;
+uniform float sunIntensity;
 uniform float worldTime;
 
 varying vec3 vPosition;
 varying vec2 vUv;
 varying vec3 vFrame;
 varying float vSkyLightmap;
+varying float vTorchLightmap;
 varying float vObjectIndex;
 
 float speed = 1.0;
@@ -174,7 +178,12 @@ void main() {
     diffuseColor.rgb = mix(diffuseColor.rgb, blueColor, 0.5);
     lightColor = vec3(1.0);
   } else {
-    lightColor = vec3(floor(vSkyLightmap * 4.0 + 0.5) / 4.0);
+    // lightColor = vec3(floor(vSkyLightmap * 4.0 + 0.5) / 4.0);
+    lightColor = vec3(floor(
+      (
+        min((vSkyLightmap * sunIntensity) + vTorchLightmap, 1.0)
+      ) * 4.0 + 0.5) / 4.0
+    );
     /* vec3 lightColor;
     if (useLightMap > 0.0) {
       float u = (
@@ -1194,6 +1203,10 @@ void main() {
         }
       };
       const _updateMaterial = () => {
+        const dayNightSkyboxEntity = elements.getEntitiesElement().querySelector(DAY_NIGHT_SKYBOX_PLUGIN);
+          objectsMaterial.uniforms.sunIntensity.value =
+            (dayNightSkyboxEntity && dayNightSkyboxEntity.getSunIntensity) ? dayNightSkyboxEntity.getSunIntensity() : 0;
+
         objectsMaterial.uniforms.worldTime.value = world.getWorldTime();
       };
       const _updateMatrices = () => {
@@ -1355,7 +1368,7 @@ void main() {
         let refreshLightmapsTimeout = null;
         const _recurseRefreshLightmaps = () => {
           _debouncedRefreshLightmaps();
-          refreshLightmapsTimeout = setTimeout(_recurseRefreshLightmaps, 1000 / 10);
+          refreshLightmapsTimeout = setTimeout(_recurseRefreshLightmaps, 2000);
         };
         _recurseRefreshLightmaps();
         let refreshCullTimeout = null;

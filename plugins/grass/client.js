@@ -32,11 +32,11 @@ const GRASS_SHADER = {
     d: {
       type: 'v2',
       value: null,
-    },
+    }, */
     sunIntensity: {
       type: 'f',
       value: 0,
-    }, */
+    },
   },
   vertexShader: `\
 precision highp float;
@@ -50,10 +50,12 @@ attribute vec3 position;
 attribute vec3 normal;
 attribute vec2 uv; */
 attribute float skyLightmap;
+attribute float torchLightmap;
 
 varying vec3 vPosition;
 varying vec2 vUv;
 varying float vSkyLightmap;
+varying float vTorchLightmap;
 
 void main() {
   vUv = uv;
@@ -64,6 +66,7 @@ void main() {
 	vPosition = position.xyz;
 
   vSkyLightmap = skyLightmap;
+  vTorchLightmap = torchLightmap;
 }
 `,
   fragmentShader: `\
@@ -76,16 +79,22 @@ uniform sampler2D map;
 // uniform sampler2D lightMap;
 // uniform float useLightMap;
 // uniform vec2 d;
-// uniform float sunIntensity;
+uniform float sunIntensity;
 
 varying vec3 vPosition;
 varying vec2 vUv;
 varying float vSkyLightmap;
+varying float vTorchLightmap;
 
 void main() {
   vec4 diffuseColor = texture2D( map, vUv );
 
-  vec3 lightColor = vec3(floor(vSkyLightmap * 4.0 + 0.5) / 4.0);
+  // vec3 lightColor = vec3(floor(vSkyLightmap * 4.0 + 0.5) / 4.0);
+  vec3 lightColor = vec3(floor(
+    (
+      min((vSkyLightmap * sunIntensity) + vTorchLightmap, 1.0)
+    ) * 4.0 + 0.5) / 4.0
+  );
   /* vec3 lightColor;
   if (useLightMap > 0.0) {
     float u = (
@@ -710,7 +719,7 @@ class Grass {
           let refreshLightmapsTimeout = null;
           const _recurseRefreshLightmaps = () => {
             _debouncedRefreshLightmaps();
-            refreshLightmapsTimeout = setTimeout(_recurseRefreshLightmaps, 1000 / 10);
+            refreshLightmapsTimeout = setTimeout(_recurseRefreshLightmaps, 2000);
           };
           _recurseRefreshLightmaps();
           let refreshCullTimeout = null;
@@ -721,6 +730,11 @@ class Grass {
           _recurseRefreshCull();
 
           const _update = () => {
+            const _updateMaterial = () => {
+              const dayNightSkyboxEntity = elements.getEntitiesElement().querySelector(DAY_NIGHT_SKYBOX_PLUGIN);
+              grassMaterial.uniforms.sunIntensity.value =
+                (dayNightSkyboxEntity && dayNightSkyboxEntity.getSunIntensity) ? dayNightSkyboxEntity.getSunIntensity() : 0;
+            };
             const _updateMatrices = () => {
               modelViewMatricesValid.left = false;
               modelViewMatricesValid.right = false;
@@ -730,6 +744,7 @@ class Grass {
               uniformsNeedUpdate.right = true;
             };
 
+            _updateMaterial();
             _updateMatrices();
           };
           render.on('update', _update);

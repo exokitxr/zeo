@@ -35,11 +35,11 @@ const HEIGHTFIELD_SHADER = {
     d: {
       type: 'v2',
       value: null,
-    },
+    }, */
     sunIntensity: {
       type: 'f',
       value: 0,
-    }, */
+    },
   },
   vertexShader: `\
 precision highp float;
@@ -55,11 +55,13 @@ attribute vec3 normal;
 attribute vec2 uv; */
 attribute vec3 color;
 attribute float skyLightmap;
+attribute float torchLightmap;
 
 // varying vec3 vPosition;
 varying vec3 vViewPosition;
 varying vec3 vColor;
 varying float vSkyLightmap;
+varying float vTorchLightmap;
 
 void main() {
 	vColor.xyz = color.xyz;
@@ -70,6 +72,7 @@ void main() {
 	// vPosition = position.xyz;
   vViewPosition = -mvPosition.xyz;
   vSkyLightmap = skyLightmap;
+  vTorchLightmap = torchLightmap;
 }
 `,
   fragmentShader: `\
@@ -81,7 +84,7 @@ uniform vec3 ambientLightColor;
 // uniform sampler2D lightMap;
 // uniform float useLightMap;
 // uniform vec2 d;
-// uniform float sunIntensity;
+uniform float sunIntensity;
 
 #define saturate(a) clamp( a, 0.0, 1.0 )
 
@@ -89,12 +92,17 @@ uniform vec3 ambientLightColor;
 varying vec3 vViewPosition;
 varying vec3 vColor;
 varying float vSkyLightmap;
+varying float vTorchLightmap;
 
 void main() {
 	vec3 diffuseColor = vColor;
 
   // vec3 lightColor = vec3(vLightmap);
-  vec3 lightColor = vec3(floor(vSkyLightmap * 4.0 + 0.5) / 4.0);
+  vec3 lightColor = vec3(floor(
+    (
+      min((vSkyLightmap * sunIntensity) + vTorchLightmap, 1.0)
+    ) * 4.0 + 0.5) / 4.0
+  );
   // vec3 lightColor = vec3(floor(vLightmap * 32.0 + 0.5) / 32.0);
   /* vec3 lightColor;
   if (useLightMap > 0.0) {
@@ -1102,7 +1110,7 @@ class Heightfield {
         let refreshLightmapsTimeout = null;
         const _recurseRefreshLightmaps = () => {
           _debouncedRefreshLightmaps();
-          refreshLightmapsTimeout = setTimeout(_recurseRefreshLightmaps, 1000 / 10);
+          refreshLightmapsTimeout = setTimeout(_recurseRefreshLightmaps, 2000);
         };
         _recurseRefreshLightmaps();
         let refreshCullTimeout = null;
@@ -1113,17 +1121,11 @@ class Heightfield {
         _recurseRefreshCull();
 
         const _update = () => {
-          /* const _updateSunIntensity = () => {
+          const _updateSunIntensity = () => {
             const dayNightSkyboxEntity = elements.getEntitiesElement().querySelector(DAY_NIGHT_SKYBOX_PLUGIN);
-            const sunIntensity = (dayNightSkyboxEntity && dayNightSkyboxEntity.getSunIntensity) ? dayNightSkyboxEntity.getSunIntensity() : 0;
-
-            for (const index in mapChunkMeshes) {
-              const trackedMapChunkMeshes = mapChunkMeshes[index];
-              if (trackedMapChunkMeshes) {
-                trackedMapChunkMeshes.material.uniforms.sunIntensity.value = sunIntensity;
-              }
-            }
-          }; */
+            heightfieldMaterial.uniforms.sunIntensity.value =
+              (dayNightSkyboxEntity && dayNightSkyboxEntity.getSunIntensity) ? dayNightSkyboxEntity.getSunIntensity() : 0;
+          };
           const _updateMatrices = () => {
             modelViewMatricesValid.left = false;
             modelViewMatricesValid.right = false;
@@ -1133,7 +1135,7 @@ class Heightfield {
             uniformsNeedUpdate.right = true;
           };
 
-          // _updateSunIntensity();
+          _updateSunIntensity();
           _updateMatrices();
         };
         render.on('update', _update);
