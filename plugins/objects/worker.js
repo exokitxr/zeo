@@ -92,7 +92,8 @@ const _getHoveredTrackedObject = (x, y, z, buffer, byteOffset) => {
           const int32Array = new Int32Array(buffer, byteOffset, 8);
           int32Array[1] = chunk.x;
           int32Array[2] = chunk.z;
-          uint32Array[3] = objectIndex + chunk.offsets.index * chunk.offsets.numObjectIndices;
+          uint32Array[3] = objectIndex;
+          // uint32Array[3] = objectIndex + chunk.offsets.index * chunk.offsets.numObjectIndices;
           const float32Array = new Float32Array(buffer, byteOffset, 8);
           float32Array[4] = position.x;
           float32Array[5] = position.y;
@@ -268,8 +269,8 @@ connection.on('message', e => {
       });
     } else if (type === 'removeObject') {
       const {args: {x, z, index: objectIndex}} = m;
-      const chunk = zde.getChunk(x, z);
-      chunk.removeObject(objectIndex);
+      // const chunk = zde.getChunk(x, z);
+      // chunk.removeObject(objectIndex);
 
       /* const trackedObject = trackedObjects[objectIndex];
       const objectApi = objectApis[trackedObject.n];
@@ -465,6 +466,11 @@ const _updateTextureAtlas = _debounce(next => {
       next();
     });
 });
+const _unrequestChunk = (x, z) => {
+  zde.removeChunk(x, z);
+
+  objectChunkMeshes[_getChunkIndex(x, z)] = null;
+};
 const _requestLightmaps = (lightmapBuffer, cb) => {
   const id = _makeId();
   postMessage({
@@ -653,11 +659,11 @@ self.onmessage = e => {
     case 'removeObject': {
       const {x, z, index} = data;
 
-      const chunk = zde.getChunk(x, z);
+      /* const chunk = zde.getChunk(x, z);
       if (chunk) {
         chunk.removeObject(index);
 
-        /* const trackedObject = chunk.trackedObjects[index];
+        const trackedObject = chunk.trackedObjects[index];
         const objectApi = objectApis[trackedObject.n];
         if (objectApi && objectApi.removed) {
           postMessage({
@@ -666,8 +672,8 @@ self.onmessage = e => {
           });
         }
 
-        chunk.trackedObjects[index] = null; */
-      }
+        chunk.trackedObjects[index] = null;
+      } */
 
       connection.send(JSON.stringify({
         method: 'removeObject',
@@ -677,6 +683,13 @@ self.onmessage = e => {
           index,
         },
       }));
+
+      _unrequestChunk(x, z);
+
+      postMessage({
+        type: 'chunkUpdate',
+        args: [x, z],
+      });
       break;
     }
     case 'setObjectData': {
@@ -775,10 +788,9 @@ self.onmessage = e => {
       const {args} = data;
       const {x, z} = args;
 
-      const chunk = zde.getChunk(x, z);
-      zde.removeChunk(x, z);
+      _unrequestChunk(x, z);
 
-      objectChunkMeshes[_getChunkIndex(x, z)] = null;
+      // const chunk = zde.getChunk(x, z);
 
       /* for (const k in chunk.trackedObjects) {
         const trackedObject = chunk.trackedObjects[k];

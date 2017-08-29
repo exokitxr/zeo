@@ -602,7 +602,7 @@ void main() {
           groups: [],
         },
         index,
-        indexOffset: index * indices.length,
+        numObjectIndices: objectIndices.length,
         offset: new THREE.Vector2(x, z),
         skyLightmaps,
         torchLightmaps,
@@ -858,14 +858,10 @@ void main() {
 
       addObject(name, position = zeroVector, rotation = zeroQuaternion, value = 0) {
         worker.requestAddObject(name, position.toArray(), rotation.toArray(), value);
-
-        _refreshChunk(Math.floor(position.x / NUM_CELLS), Math.floor(position.z / NUM_CELLS));
       }
 
       removeObject(x, z, objectIndex) {
         worker.requestRemoveObject(x, z, objectIndex);
-
-        _refreshChunk(x, z);
       }
 
       setData(x, z, objectIndex, value) {
@@ -1111,7 +1107,8 @@ void main() {
 
                   const objectsChunkMesh = objectsChunkMeshes[_getChunkIndex(hoveredTrackedObject.x, hoveredTrackedObject.z)];
                   if (objectsChunkMesh) {
-                    objectsMaterial.uniforms.selectedObject.value[side === 'left' ? 'x' : 'y'] = hoveredTrackedObject.objectIndex;
+                    objectsMaterial.uniforms.selectedObject.value[side === 'left' ? 'x' : 'y'] =
+                      hoveredTrackedObject.objectIndex + objectsChunkMesh.index * objectsChunkMesh.numObjectIndices;
                   }
                 } else {
                   hoveredTrackedObjects[side].clear();

@@ -506,6 +506,8 @@ class Objects {
                     if (chunk) {
                       chunk.removeObject(index);
 
+                      _geometrizeChunk(chunk);
+
                       _saveChunks();
 
                       _broadcast({
