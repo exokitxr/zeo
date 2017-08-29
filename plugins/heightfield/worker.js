@@ -153,7 +153,8 @@ const _requestChunkLightmaps = (chunk, scratchBuffer, scratchBufferByteOffset, c
     }
 
     cb({
-      lightmaps: skyLightmaps,
+      skyLightmaps,
+      torchLightmaps,
       scratchBuffer,
     });
   });
@@ -337,16 +338,17 @@ self.onmessage = e => {
           return chunk;
         })
         .then(chunk => new Promise((accept, reject) => {
-          _requestChunkLightmaps(chunk, buffer, buffer.byteLength - LIGHTMAP_BUFFER_SIZE, ({lightmaps, scratchBuffer}) => {
+          _requestChunkLightmaps(chunk, buffer, buffer.byteLength - LIGHTMAP_BUFFER_SIZE, ({skyLightmaps, torchLightmaps, scratchBuffer}) => {
             buffer = scratchBuffer;
             accept({
               chunk,
-              lightmaps,
+              skyLightmaps,
+              torchLightmaps,
             });
           })
         }))
-        .then(({chunk, lightmaps}) => {
-          protocolUtils.stringifyRenderChunk(chunk.chunkData, lightmaps, buffer, 0);
+        .then(({chunk, skyLightmaps, torchLightmaps}) => {
+          protocolUtils.stringifyRenderChunk(chunk.chunkData, skyLightmaps, torchLightmaps, buffer, 0);
 
           postMessage({
             type: 'response',

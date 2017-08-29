@@ -206,7 +206,6 @@ self.onmessage = e => {
 
             const torchLightmapsLength = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, 1)[0];
             byteOffset += 4;
-console.log('got sky', skyLightmaps, skyLightmapsLength, torchLightmapsLength, lightmapBuffer.byteOffset + byteOffset, lightmapBuffer.byteLength);
             const torchLightmaps = new Uint8Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, torchLightmapsLength);
             byteOffset += torchLightmapsLength;
             alignDiff = byteOffset % 4;
@@ -214,7 +213,7 @@ console.log('got sky', skyLightmaps, skyLightmapsLength, torchLightmapsLength, l
               byteOffset += 4 - alignDiff;
             }
 
-            protocolUtils.stringifyRenderGeometry(geometry, skyLightmaps, buffer, 0);
+            protocolUtils.stringifyRenderGeometry(geometry, skyLightmaps, torchLightmaps, buffer, 0);
             postMessage({
               type: 'response',
               args: [id],

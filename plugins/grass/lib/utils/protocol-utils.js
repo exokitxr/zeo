@@ -9,7 +9,7 @@ const FLOAT32_SIZE = 4;
 const UINT16_SIZE = 2;
 const DATA_GEOMETRY_HEADER_ENTRIES = 4;
 const DATA_GEOMETRY_HEADER_SIZE = UINT32_SIZE * DATA_GEOMETRY_HEADER_ENTRIES;
-const RENDER_GEOMETRY_HEADER_ENTRIES = 5;
+const RENDER_GEOMETRY_HEADER_ENTRIES = 6;
 const RENDER_GEOMETRY_HEADER_SIZE = UINT32_SIZE * RENDER_GEOMETRY_HEADER_ENTRIES;
 const CULL_HEADER_ENTRIES = 1;
 const CULL_HEADER_SIZE = UINT32_SIZE * CULL_HEADER_ENTRIES;
@@ -113,52 +113,54 @@ const parseDataGeometry = (buffer, byteOffset) => {
 };
 
 const _getRenderGeometrySizeFromMetadata = metadata => {
-  const {numPositions, numUvs, numLightmaps, numIndices, numBoundingSphere} = metadata;
+  const {numPositions, numUvs, numSkyLightmaps, numTorchLightmaps, numIndices, numBoundingSphere} = metadata;
 
-  return _align(
-    RENDER_GEOMETRY_HEADER_SIZE + // header
-      (FLOAT32_SIZE * numPositions) + // positions
-      (FLOAT32_SIZE * numUvs) + // uvs
-      (UINT8_SIZE * numLightmaps), // lightmaps
-    UINT32_SIZE
-  ) +
-  (UINT32_SIZE * numIndices) + // indices
-  (FLOAT32_SIZE * numBoundingSphere); // bounding sphere
+  return RENDER_GEOMETRY_HEADER_SIZE + // header
+    (FLOAT32_SIZE * numPositions) + // positions
+    (FLOAT32_SIZE * numUvs) + // uvs
+    _align(UINT8_SIZE * numSkyLightmaps, UINT32_SIZE) + // sky lightmaps
+    _align(UINT8_SIZE * numTorchLightmaps, UINT32_SIZE) + // torch lightmaps
+    (UINT32_SIZE * numIndices) + // indices
+    (FLOAT32_SIZE * numBoundingSphere); // bounding sphere
 };
 
-const _getRenderGeometrySize = (grassGeometry, lightmaps) => {
+const _getRenderGeometrySize = (grassGeometry, skyLightmaps, torchLightmaps) => {
   const {positions, uvs, indices, boundingSphere} = grassGeometry;
 
   const numPositions = positions.length;
   const numUvs = uvs.length
-  const numLightmaps = lightmaps.length
+  const numSkyLightmaps = skyLightmaps.length
+  const numTorchLightmaps = torchLightmaps.length
   const numIndices = indices.length
   const numBoundingSphere = boundingSphere.length;
 
   return _getRenderGeometrySizeFromMetadata({
     numPositions,
     numUvs,
-    numLightmaps,
+    numSkyLightmaps,
+    numTorchLightmaps,
     numIndices,
     numBoundingSphere,
   });
 };
 
-const stringifyRenderGeometry = (grassGeometry, lightmaps, arrayBuffer, byteOffset) => {
+const stringifyRenderGeometry = (grassGeometry, skyLightmaps, torchLightmaps, arrayBuffer, byteOffset) => {
   const {positions, uvs, indices, boundingSphere} = grassGeometry;
 
   if (arrayBuffer === undefined || byteOffset === undefined) {
-    const bufferSize = _getGrassGeometrySize(grassGeometry, lightmaps);
+    const bufferSize = _getGrassGeometrySize(grassGeometry, skyLightmaps, torchLightmaps);
     arrayBuffer = new ArrayBuffer(bufferSize);
     byteOffset = 0;
   }
 
   const headerBuffer = new Uint32Array(arrayBuffer, byteOffset, RENDER_GEOMETRY_HEADER_ENTRIES);
-  headerBuffer[0] = positions.length;
-  headerBuffer[1] = uvs.length;
-  headerBuffer[2] = lightmaps.length;
-  headerBuffer[3] = indices.length;
-  headerBuffer[4] = boundingSphere.length;
+  let index = 0;
+  headerBuffer[index++] = positions.length;
+  headerBuffer[index++] = uvs.length;
+  headerBuffer[index++] = skyLightmaps.length;
+  headerBuffer[index++] = torchLightmaps.length;
+  headerBuffer[index++] = indices.length;
+  headerBuffer[index++] = boundingSphere.length;
   byteOffset += RENDER_GEOMETRY_HEADER_SIZE;
 
   const positionsBuffer = new Float32Array(arrayBuffer, byteOffset, positions.length);
@@ -169,10 +171,14 @@ const stringifyRenderGeometry = (grassGeometry, lightmaps, arrayBuffer, byteOffs
   uvsBuffer.set(uvs);
   byteOffset += FLOAT32_SIZE * uvs.length;
 
-  const lightmapsBuffer = new Uint8Array(arrayBuffer, byteOffset, lightmaps.length);
-  lightmapsBuffer.set(lightmaps);
-  byteOffset += UINT8_SIZE * lightmaps.length;
+  const skyLightmapsBuffer = new Uint8Array(arrayBuffer, byteOffset, skyLightmaps.length);
+  skyLightmapsBuffer.set(skyLightmaps);
+  byteOffset += UINT8_SIZE * skyLightmaps.length;
+  byteOffset = _align(byteOffset, UINT32_SIZE);
 
+  const torchLightmapsBuffer = new Uint8Array(arrayBuffer, byteOffset, torchLightmaps.length);
+  torchLightmapsBuffer.set(torchLightmaps);
+  byteOffset += UINT8_SIZE * torchLightmaps.length;
   byteOffset = _align(byteOffset, UINT32_SIZE);
 
   const indicesBuffer = new Uint32Array(arrayBuffer, byteOffset, indices.length);
@@ -192,11 +198,13 @@ const parseRenderGeometry = (buffer, byteOffset) => {
   }
 
   const headerBuffer = new Uint32Array(buffer, byteOffset, RENDER_GEOMETRY_HEADER_ENTRIES);
-  const numPositions = headerBuffer[0];
-  const numUvs = headerBuffer[1];
-  const numLightmaps = headerBuffer[2];
-  const numIndices = headerBuffer[3];
-  const numBoundingSphere = headerBuffer[4];
+  let index = 0;
+  const numPositions = headerBuffer[index++];
+  const numUvs = headerBuffer[index++];
+  const numSkyLightmaps = headerBuffer[index++];
+  const numTorchLightmaps = headerBuffer[index++];
+  const numIndices = headerBuffer[index++];
+  const numBoundingSphere = headerBuffer[index++];
   byteOffset += RENDER_GEOMETRY_HEADER_SIZE;
 
   const positionsBuffer = new Float32Array(buffer, byteOffset, numPositions);
@@ -207,10 +215,14 @@ const parseRenderGeometry = (buffer, byteOffset) => {
   const uvs = uvBuffer;
   byteOffset += FLOAT32_SIZE * numUvs;
 
-  const lightmapBuffer = new Uint8Array(buffer, byteOffset, numLightmaps);
-  const lightmaps = lightmapBuffer;
-  byteOffset += UINT8_SIZE * numLightmaps;
+  const skyLightmapsBuffer = new Uint8Array(buffer, byteOffset, numSkyLightmaps);
+  const skyLightmaps = skyLightmapsBuffer;
+  byteOffset += UINT8_SIZE * numSkyLightmaps;
+  byteOffset = _align(byteOffset, UINT32_SIZE);
 
+  const torchLightmapsBuffer = new Uint8Array(buffer, byteOffset, numTorchLightmaps);
+  const torchLightmaps = torchLightmapsBuffer;
+  byteOffset += UINT8_SIZE * numTorchLightmaps;
   byteOffset = _align(byteOffset, UINT32_SIZE);
 
   const indicesBuffer = new Uint32Array(buffer, byteOffset, numIndices);
@@ -225,7 +237,8 @@ const parseRenderGeometry = (buffer, byteOffset) => {
     buffer,
     positions,
     uvs,
-    lightmaps,
+    skyLightmaps,
+    torchLightmaps,
     indices,
     boundingSphere,
   };

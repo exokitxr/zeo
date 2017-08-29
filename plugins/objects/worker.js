@@ -758,7 +758,7 @@ self.onmessage = e => {
               byteOffset += 4 - alignDiff;
             }
 
-            protocolUtils.stringifyGeometry(chunk.chunkData, skyLightmaps, buffer, 0);
+            protocolUtils.stringifyGeometry(chunk.chunkData, skyLightmaps, torchLightmaps, buffer, 0);
             postMessage({
               type: 'response',
               args: [id],

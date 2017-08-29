@@ -401,7 +401,7 @@ class Grass {
           };
           const _makeGrassChunkMesh = (chunk, gbuffer, grassChunkData) => {
             const {x, z} = chunk;
-            const {positions: newPositions, uvs: newUvs, lightmaps: newLightmaps, indices: newIndices} = grassChunkData;
+            const {positions: newPositions, uvs: newUvs, skyLightmaps: newSkyLightmaps, indices: newIndices} = grassChunkData;
 
             // geometry
 
@@ -414,8 +414,8 @@ class Grass {
               uvs.set(newUvs);
               renderer.updateAttribute(grassMesh.geometry.attributes.uv, index * uvs.length, newUvs.length, false);
 
-              lightmaps.set(newLightmaps);
-              renderer.updateAttribute(grassMesh.geometry.attributes.lightmap, index * lightmaps.length, newLightmaps.length, false);
+              lightmaps.set(newSkyLightmaps);
+              renderer.updateAttribute(grassMesh.geometry.attributes.lightmap, index * lightmaps.length, newSkyLightmaps.length, false);
 
               indices.set(newIndices);
               renderer.updateAttribute(grassMesh.geometry.index, index * indices.length, newIndices.length, true);

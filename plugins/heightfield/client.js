@@ -489,7 +489,7 @@ class Heightfield {
         shape: null,
         stckBody: null,
         update: chunkData => {
-          const {positions: newPositions, colors: newColors, lightmaps: newLightmaps, indices: newIndices, heightfield, staticHeightfield} = chunkData;
+          const {positions: newPositions, colors: newColors, skyLightmaps: newSkyLightmaps, indices: newIndices, heightfield, staticHeightfield} = chunkData;
           // XXX move heightfield interpolation entirely into the worker
           // XXX preallocate staticHeightfield feedthrough for lightmap and stck
 
@@ -503,8 +503,8 @@ class Heightfield {
           colors.set(newColors);
           renderer.updateAttribute(heightfieldObject.geometry.attributes.color, index * colors.length, newColors.length, false);
 
-          lightmaps.set(newLightmaps);
-          renderer.updateAttribute(heightfieldObject.geometry.attributes.lightmap, index * lightmaps.length, newLightmaps.length, false);
+          lightmaps.set(newSkyLightmaps);
+          renderer.updateAttribute(heightfieldObject.geometry.attributes.lightmap, index * lightmaps.length, newSkyLightmaps.length, false);
 
           indices.set(newIndices);
           renderer.updateAttribute(heightfieldObject.geometry.index, index * indices.length, newIndices.length, true);

@@ -550,7 +550,7 @@ void main() {
     };
     const _makeObjectsChunkMesh = (chunk, gbuffer, objectsChunkData) => {
       const {x, z} = chunk;
-      const {positions: newPositions, uvs: newUvs, frames: newFrames, lightmaps: newLightmaps, objectIndices: newObjectIndices, indices: newIndices} = objectsChunkData;
+      const {positions: newPositions, uvs: newUvs, frames: newFrames, skyLightmaps: newSkyLightmaps, objectIndices: newObjectIndices, indices: newIndices} = objectsChunkData;
 
       // geometry
 
@@ -566,8 +566,8 @@ void main() {
         frames.set(newFrames);
         renderer.updateAttribute(objectsObject.geometry.attributes.frame, index * frames.length, newFrames.length, false);
 
-        lightmaps.set(newLightmaps);
-        renderer.updateAttribute(objectsObject.geometry.attributes.lightmap, index * lightmaps.length, newLightmaps.length, false);
+        lightmaps.set(newSkyLightmaps);
+        renderer.updateAttribute(objectsObject.geometry.attributes.lightmap, index * lightmaps.length, newSkyLightmaps.length, false);
 
         objectIndices.set(newObjectIndices);
         renderer.updateAttribute(objectsObject.geometry.attributes.objectIndex, index * objectIndices.length, newObjectIndices.length, false);
@@ -1287,10 +1287,10 @@ void main() {
 
               const trackedObjectChunkMeshes = objectsChunkMeshes[_getChunkIndex(x, z)];
               if (trackedObjectChunkMeshes) {
-                if (skyLightmapsLength.length > 0) {                
+                if (newSkyLightmaps.length > 0) {
                   const {index, lightmaps} = trackedObjectChunkMeshes;
-                  lightmaps.set(skyLightmapsLength);
-                  renderer.updateAttribute(objectsObject.geometry.attributes.lightmap, index * lightmaps.length, skyLightmapsLength.length, false);
+                  lightmaps.set(newSkyLightmaps);
+                  renderer.updateAttribute(objectsObject.geometry.attributes.lightmap, index * lightmaps.length, newSkyLightmaps.length, false);
                 }
               }
             }

@@ -8,36 +8,35 @@ const UINT32_SIZE = 4;
 const INT32_SIZE = 4;
 const UINT8_SIZE = 1;
 const FLOAT32_SIZE = 4;
-const MAP_CHUNK_HEADER_ENTRIES = 7;
+const MAP_CHUNK_HEADER_ENTRIES = 8;
 const MAP_CHUNK_HEADER_SIZE = UINT32_SIZE * MAP_CHUNK_HEADER_ENTRIES;
 const CULL_HEADER_ENTRIES = 1;
 const CULL_HEADER_SIZE = UINT32_SIZE * CULL_HEADER_ENTRIES;
 
 const _getObjectsChunkSizeFromMetadata = metadata => {
-  const {numPositions, numUvs, numFrames, numLightmaps, numObjectIndices, numIndices, numObjects} = metadata;
+  const {numPositions, numUvs, numFrames, numSkyLightmaps, numTorchLightmaps, numObjectIndices, numIndices, numObjects} = metadata;
 
-  return _align(
-    MAP_CHUNK_HEADER_SIZE + // header
-      (FLOAT32_SIZE * numPositions) + // positions
-      (FLOAT32_SIZE * numUvs) + // uvs
-      (FLOAT32_SIZE * numFrames) + // frames
-      (UINT8_SIZE * numLightmaps), // lightmaps
-    FLOAT32_SIZE
-  ) +
-  (FLOAT32_SIZE * numObjectIndices) +  // object indices
-  (UINT32_SIZE * numIndices) + // indices
-  (UINT32_SIZE * numObjects) + // objects
-  (UINT32_SIZE * 2 * NUM_CHUNKS_HEIGHT) + // index range
-  (FLOAT32_SIZE * NUM_CHUNKS_HEIGHT); // bounding sphere
+  return MAP_CHUNK_HEADER_SIZE + // header
+    (FLOAT32_SIZE * numPositions) + // positions
+    (FLOAT32_SIZE * numUvs) + // uvs
+    (FLOAT32_SIZE * numFrames) + // frames
+    _align(UINT8_SIZE * numSkyLightmaps, FLOAT32_SIZE) + // sky lightmaps
+    _align(UINT8_SIZE * numTorchLightmaps, FLOAT32_SIZE) + // torch lightmaps
+    (FLOAT32_SIZE * numObjectIndices) +  // object indices
+    (UINT32_SIZE * numIndices) + // indices
+    (UINT32_SIZE * numObjects) + // objects
+    (UINT32_SIZE * 2 * NUM_CHUNKS_HEIGHT) + // index range
+    (FLOAT32_SIZE * NUM_CHUNKS_HEIGHT); // bounding sphere
 };
 
-const _getObjectsChunkSize = (objectsChunk, lightmaps) => {
+const _getObjectsChunkSize = (objectsChunk, skyLightmaps, torchLightmaps) => {
   const {positions, uvs, frames, objectIndices, indices, objects} = objectsChunk;
 
   const numPositions = positions.length;
   const numUvs = uvs.length;
   const numFrames = frames.length;
-  const numLightmaps = lightmaps.length;
+  const numSkyLightmaps = skyLightmaps.length;
+  const numTorchLightmaps = torchLightmaps.length;
   const numObjectIndices = objectIndices.length;
   const numIndices = indices.length;
   const numObjects = objects.length;
@@ -46,18 +45,19 @@ const _getObjectsChunkSize = (objectsChunk, lightmaps) => {
     numPositions,
     numUvs,
     numFrames,
-    numLightmaps,
+    numSkyLightmaps,
+    numTorchLightmaps,
     numObjectIndices,
     numIndices,
     numObjects,
   });
 };
 
-const stringifyGeometry = (objectsChunk, lightmaps, arrayBuffer, byteOffset) => {
+const stringifyGeometry = (objectsChunk, skyLightmaps, torchLightmaps, arrayBuffer, byteOffset) => {
   const {positions, uvs, frames, objectIndices, indices, objects, geometries} = objectsChunk;
 
   if (arrayBuffer === undefined || byteOffset === undefined) {
-    const bufferSize = _getObjectsChunkSize(objectsChunk, lightmaps);
+    const bufferSize = _getObjectsChunkSize(objectsChunk, skyLightmaps, torchLightmaps);
     arrayBuffer = new ArrayBuffer(bufferSize);
     byteOffset = 0;
   }
@@ -67,7 +67,8 @@ const stringifyGeometry = (objectsChunk, lightmaps, arrayBuffer, byteOffset) => 
   headerBuffer[index++] = positions.length;
   headerBuffer[index++] = uvs.length;
   headerBuffer[index++] = frames.length;
-  headerBuffer[index++] = lightmaps.length;
+  headerBuffer[index++] = skyLightmaps.length;
+  headerBuffer[index++] = torchLightmaps.length;
   headerBuffer[index++] = objectIndices.length;
   headerBuffer[index++] = indices.length;
   headerBuffer[index++] = objects.length;
@@ -85,10 +86,14 @@ const stringifyGeometry = (objectsChunk, lightmaps, arrayBuffer, byteOffset) => 
   framesBuffer.set(frames);
   byteOffset += FLOAT32_SIZE * frames.length;
 
-  const lightmapsBuffer = new Uint8Array(arrayBuffer, byteOffset, lightmaps.length);
-  lightmapsBuffer.set(lightmaps);
-  byteOffset += UINT8_SIZE * lightmaps.length;
+  const skyLightmapsBuffer = new Uint8Array(arrayBuffer, byteOffset, skyLightmaps.length);
+  skyLightmapsBuffer.set(skyLightmaps);
+  byteOffset += UINT8_SIZE * skyLightmaps.length;
+  byteOffset = _align(byteOffset, FLOAT32_SIZE);
 
+  const torchLightmapsBuffer = new Uint8Array(arrayBuffer, byteOffset, torchLightmaps.length);
+  torchLightmapsBuffer.set(torchLightmaps);
+  byteOffset += UINT8_SIZE * torchLightmaps.length;
   byteOffset = _align(byteOffset, FLOAT32_SIZE);
 
   const objectIndexBuffer = new Float32Array(arrayBuffer, byteOffset, objectIndices.length);
@@ -129,7 +134,8 @@ const parseGeometry = (buffer, byteOffset) => {
   const numPositions = headerBuffer[index++];
   const numUvs = headerBuffer[index++];
   const numFrames = headerBuffer[index++];
-  const numLightmaps = headerBuffer[index++];
+  const numSkyLightmaps = headerBuffer[index++];
+  const numTorchLightmaps = headerBuffer[index++];
   const numObjectIndices = headerBuffer[index++];
   const numIndices = headerBuffer[index++];
   const numObjects = headerBuffer[index++];
@@ -147,10 +153,14 @@ const parseGeometry = (buffer, byteOffset) => {
   const frames = framesBuffer;
   byteOffset += FLOAT32_SIZE * numFrames;
 
-  const lightmapsBuffer = new Uint8Array(buffer, byteOffset, numLightmaps);
-  const lightmaps = lightmapsBuffer;
-  byteOffset += UINT8_SIZE * numLightmaps;
+  const skyLightmapsBuffer = new Uint8Array(buffer, byteOffset, numSkyLightmaps);
+  const skyLightmaps = skyLightmapsBuffer;
+  byteOffset += UINT8_SIZE * numSkyLightmaps;
+  byteOffset = _align(byteOffset, FLOAT32_SIZE);
 
+  const torchLightmapsBuffer = new Uint8Array(buffer, byteOffset, numTorchLightmaps);
+  const torchLightmaps = torchLightmapsBuffer;
+  byteOffset += UINT8_SIZE * numTorchLightmaps;
   byteOffset = _align(byteOffset, FLOAT32_SIZE);
 
   const objectIndexBuffer = new Float32Array(buffer, byteOffset, numObjectIndices);
@@ -189,7 +199,8 @@ const parseGeometry = (buffer, byteOffset) => {
     positions,
     uvs,
     frames,
-    lightmaps,
+    skyLightmaps,
+    torchLightmaps,
     objectIndices,
     indices,
     objects,

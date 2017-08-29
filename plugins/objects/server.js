@@ -69,7 +69,7 @@ class Objects {
     const _geometrizeChunk = chunk => {
       const geometryBuffer = chunk.getGeometryBuffer();
       const geometry = _makeChunkGeometry(chunk);
-      protocolUtils.stringifyGeometry(geometry, zeroUint8Array, geometryBuffer.buffer, geometryBuffer.byteOffset);
+      protocolUtils.stringifyGeometry(geometry, zeroUint8Array, zeroUint8Array, geometryBuffer.buffer, geometryBuffer.byteOffset);
       chunk.dirty = true; // XXX can internalize this in the module
     };
     const _makeGeometeriesBuffer = constructor => {
