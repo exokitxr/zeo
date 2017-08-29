@@ -63,7 +63,7 @@ class DayNightSkybox {
           return Math.max(0, 1 - Math.pow(Math.E, -((cutoffAngle - Math.acos(zenithAngleCos))/steepness)));
         };
         const maxSunIntensity = computeSunIntensity(1);
-        let lastLightmapUpdateTime = 0;
+        // let lastLightmapUpdateTime = 0;
         const update = () => {
           const _updateSunIntensity = () => {
             mesh.sky.azimuth = (0.05 + ((world.getWorldTime() / 1000) * DAY_NIGHT_SPEED) / (60 * 10)) % 1;
@@ -82,7 +82,7 @@ class DayNightSkybox {
                 .dot(upVector)
             ) / maxSunIntensity;
           };
-          const _updateLightmap = () => {
+          /* const _updateLightmap = () => {
             const now = Date.now();
             const timeDiff = now - lastLightmapUpdateTime;
 
@@ -101,10 +101,10 @@ class DayNightSkybox {
               }
               lastLightmapUpdateTime = now;
             }
-          };
+          }; */
 
           _updateSunIntensity();
-          _updateLightmap();
+          // _updateLightmap();
         };
         updates.push(update);
 

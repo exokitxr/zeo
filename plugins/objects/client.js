@@ -1370,7 +1370,7 @@ void main() {
           _debouncedRefreshLightmaps();
           refreshLightmapsTimeout = setTimeout(_recurseRefreshLightmaps, 2000);
         };
-        _recurseRefreshLightmaps();
+        // _recurseRefreshLightmaps();
         let refreshCullTimeout = null;
         const _recurseRefreshCull = () => {
           _debouncedRefreshCull();

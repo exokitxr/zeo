@@ -25,11 +25,11 @@ class Lightmap {
         this.blend = blend;
       }
 
-      set(spec) {
+      set(spec, transfers) {
         if (spec.v !== undefined) {
           this.v = spec.v;
         }
-        this._parent._setShapeData(this, spec);
+        this._parent._setShapeData(this, spec, transfers);
       }
 
       getLightmapsInRange(width, depth, lightmaps) {
@@ -50,7 +50,7 @@ class Lightmap {
         this._parent = null;
       }
 
-      set(spec) {
+      set(spec, transfers) {
         if (spec.x !== undefined) {
           this.x = spec.x;
         }
@@ -63,7 +63,7 @@ class Lightmap {
         if (spec.data !== undefined) {
           this.data = spec.data;
         }
-        this._parent._setShapeData(this, spec);
+        this._parent._setShapeData(this, spec, transfers);
       }
 
       getLightmapsInRange(width, depth, lightmaps) {
@@ -88,7 +88,7 @@ class Lightmap {
         this._parent = null;
       }
 
-      set(spec) {
+      set(spec, transfers) {
         if (spec.x !== undefined) {
           this.x = spec.x;
         }
@@ -98,7 +98,7 @@ class Lightmap {
         if (spec.data !== undefined) {
           this.data = spec.data;
         }
-        this._parent._setShapeData(this, spec);
+        this._parent._setShapeData(this, spec, transfers);
       }
 
       getLightmapsInRange(width, depth, lightmaps) {
@@ -125,7 +125,7 @@ class Lightmap {
         this._parent = null;
       }
 
-      set(spec) {
+      set(spec, transfers) {
         if (spec.x !== undefined) {
           this.x = spec.x;
         }
@@ -141,7 +141,7 @@ class Lightmap {
         if (spec.v !== undefined) {
           this.v = spec.v;
         }
-        this._parent._setShapeData(this, spec);
+        this._parent._setShapeData(this, spec, transfers);
       }
 
       getLightmapsInRange(width, depth, lightmaps) {
@@ -177,7 +177,7 @@ class Lightmap {
         this._parent = null;
       }
 
-      set(spec) {
+      set(spec, transfers) {
         if (spec.x !== undefined) {
           this.x = spec.x;
         }
@@ -196,7 +196,7 @@ class Lightmap {
         if (spec.v !== undefined) {
           this.v = spec.v;
         }
-        this._parent._setShapeData(this, spec);
+        this._parent._setShapeData(this, spec, transfers);
       }
 
       getLightmapsInRange(width, depth, lightmaps) {
@@ -230,7 +230,7 @@ class Lightmap {
         this._parent = null;
       }
 
-      set(spec) {
+      set(spec, transfers) {
         if (spec.x !== undefined) {
           this.x = spec.x;
         }
@@ -243,7 +243,7 @@ class Lightmap {
         if (spec.v !== undefined) {
           this.v = spec.v;
         }
-        this._parent._setShapeData(this, spec);
+        this._parent._setShapeData(this, spec, transfers);
       }
 
       getLightmapsInRange(width, depth, lightmaps) {
@@ -260,11 +260,11 @@ class Lightmap {
       constructor() {
         const worker = new Worker('archae/plugins/_plugins_lightmap/build/worker.js');
         const queue = [];
-        worker.addShape = spec => {
+        worker.addShape = (spec, transfers) => {
           worker.postMessage({
             type: 'addShape',
             spec: spec,
-          });
+          }, transfers);
         };
         worker.removeShape = id => {
           worker.postMessage({
@@ -272,12 +272,12 @@ class Lightmap {
             id: id,
           });
         };
-        worker.setShapeData = (id, spec) => {
+        worker.setShapeData = (id, spec, transfers) => {
           worker.postMessage({
             type: 'setShapeData',
             id: id,
             spec: spec,
-          });
+          }, transfers);
         };
         worker.removeShapes = ids => {
           worker.postMessage({
@@ -308,26 +308,20 @@ class Lightmap {
         };
         this.worker = worker;
 
-        this._shapes = [];
         this._lightmaps = {};
 
-        this.chunker = chnkr.makeChunker({
+        /* this.chunker = chnkr.makeChunker({
           resolution: NUM_CELLS,
           range: RANGE,
-        });
+        }); */
       }
 
-      getShapes() {
-        return this._shapes;
-      }
+      add(shape, transfers) {
+        this.worker.addShape(shape, transfers);
 
-      add(shape) {
-        this.worker.addShape(shape);
-
-        this._shapes.push(shape);
         shape._parent = this;
 
-        const {width, depth, _lightmaps: lightmaps} = this;
+        /* const {width, depth, _lightmaps: lightmaps} = this;
         const newLightmapsNeedUpdate = shape.getLightmapsInRange(width, depth, lightmaps);
         for (let i = 0; i < newLightmapsNeedUpdate.length; i++) {
           const {x, z} = newLightmapsNeedUpdate[i];
@@ -335,16 +329,14 @@ class Lightmap {
           if (chunk) {
             chunk.lod = -1;
           }
-        }
+        } */
       }
 
       remove(shape) {
-        const {id} = shape;
-        this.worker.removeShape(id);
+        // const {id} = shape;
+        this.worker.removeShape(shape.id);
 
-        this._shapes.splice(this._shapes.indexOf(shape), 1);
-
-        const {width, depth, _lightmaps: lightmaps} = this;
+        /* const {width, depth, _lightmaps: lightmaps} = this;
         const newLightmapsNeedUpdate = shape.getLightmapsInRange(width, depth, lightmaps);
         for (let i = 0; i < newLightmapsNeedUpdate.length; i++) {
           const {x, z} = newLightmapsNeedUpdate[i];
@@ -352,14 +344,14 @@ class Lightmap {
           if (chunk) {
             chunk.lod = -1;
           }
-        }
+        } */
       }
 
-      _setShapeData(shape, spec) {
-        const {id} = shape;
-        this.worker.setShapeData(id, spec);
+      _setShapeData(shape, spec, transfers) {
+        // const {id} = shape;
+        this.worker.setShapeData(shape.id, spec, transfers);
 
-        const {width, depth, _lightmaps: lightmaps} = this;
+        /* const {width, depth, _lightmaps: lightmaps} = this;
         const newLightmapsNeedUpdate = shape.getLightmapsInRange(width, depth, lightmaps);
         for (let i = 0; i < newLightmapsNeedUpdate.length; i++) {
           const {x, z} = newLightmapsNeedUpdate[i];
@@ -367,7 +359,7 @@ class Lightmap {
           if (chunk) {
             chunk.lod = -1;
           }
-        }
+        } */
       }
 
       requestRender(lightmapBuffer, cb) {

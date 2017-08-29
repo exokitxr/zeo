@@ -385,25 +385,49 @@ class Heightfield {
         _cleanupQueues();
       } else if (type === 'request') {
         const [id] = args;
-        const {lightmapBuffer} = data;
+        const {method} = data;
 
-        if (lightmapper) {
-          lightmapper.requestRender(lightmapBuffer, lightmapBuffer => {
-            worker.requestResponse(id, lightmapBuffer, [lightmapBuffer.buffer]);
-          });
+        if (method === 'render') {
+          const {lightmapBuffer} = data;
+
+          elements.requestElement(LIGHTMAP_PLUGIN)
+            .then(lightmapElement => {
+              lightmapElement.lightmapper.requestRender(lightmapBuffer, lightmapBuffer => {
+                worker.requestResponse(id, lightmapBuffer, [lightmapBuffer.buffer]);
+              });
+            });
+        } else if (method === 'addLightmap') {
+          const {x, y, heightfield} = data;
+
+          elements.requestElement(LIGHTMAP_PLUGIN)
+            .then(lightmapElement => {
+              const dayNightSkyboxEntity = elements.getEntitiesElement().querySelector(DAY_NIGHT_SKYBOX_PLUGIN);
+              const sunIntensity = (dayNightSkyboxEntity && dayNightSkyboxEntity.getSunIntensity) ? dayNightSkyboxEntity.getSunIntensity() : 0;
+              const shape = new lightmapElement.Lightmapper.Heightfield(x * NUM_CELLS, y * NUM_CELLS, sunIntensity, heightfield, lightmapElement.Lightmapper.MaxBlend);
+              lightmapElement.lightmapper.add(shape, [heightfield.buffer]);
+
+              worker.requestResponse(id, shape.id);
+            });
+        } else if (method === 'updateLightmap') {
+          const {shapeId, heightfield} = data;
+
+          elements.requestElement(LIGHTMAP_PLUGIN)
+            .then(lightmapElement => {
+              lightmapper.worker.setShapeData(shapeId, {
+                data: heightfield,
+              }, [heightfield.buffer]);
+
+              worker.requestResponse(id, null);
+            });
         } else {
-          const lightmapArray = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset);
-          const numLightmaps = lightmapArray;
-          for (let i = 0; i < numLightmaps; i++) {
-            lightmapArray[i] = 0;
-          }
+          console.warn('heightfield got unknown worker request method:', JSON.stringify(method));
         }
       } else {
         console.warn('heightfield got unknown worker message type:', JSON.stringify(type));
       }
     };
 
-    let Lightmapper = null;
+    /* let Lightmapper = null;
     let lightmapper = null;
     const _bindLightmapper = lightmapElement => {
       Lightmapper = lightmapElement.Lightmapper;
@@ -434,32 +458,18 @@ class Heightfield {
       }
     };
     const _bindLightmap = trackedMapChunkMeshes => {
-      const {offset, staticHeightfield/*, ether*/} = trackedMapChunkMeshes;
+      const {offset, staticHeightfield} = trackedMapChunkMeshes;
       const {x, y} = offset;
-
-      /* const shape = new Lightmapper.Ether(x * NUM_CELLS, y * NUM_CELLS, ether, Lightmapper.MaxBlend);
-      lightmapper.add(shape);
-      trackedMapChunkMeshes.shape = shape; */
 
       const dayNightSkyboxEntity = elements.getEntitiesElement().querySelector(DAY_NIGHT_SKYBOX_PLUGIN);
       const sunIntensity = (dayNightSkyboxEntity && dayNightSkyboxEntity.getSunIntensity) ? dayNightSkyboxEntity.getSunIntensity() : 0;
       const shape = new Lightmapper.Heightfield(x * NUM_CELLS, y * NUM_CELLS, sunIntensity, staticHeightfield, Lightmapper.MaxBlend);
-      lightmapper.add(shape); // XXX this can be done completely on the worker side
+      lightmapper.add(shape);
       trackedMapChunkMeshes.shape = shape;
-
-      /* const lightmap = lightmapper.getLightmapAt(x * NUM_CELLS, y * NUM_CELLS);
-      trackedMapChunkMeshes.material.uniforms.lightMap.value = lightmap.texture;
-      trackedMapChunkMeshes.material.uniforms.useLightMap.value = 1;
-      trackedMapChunkMeshes.lightmap = lightmap; */
     };
     const _unbindLightmap = trackedMapChunkMeshes => {
       lightmapper.remove(trackedMapChunkMeshes.shape);
       trackedMapChunkMeshes.shape = null;
-
-      /* lightmapper.releaseLightmap(trackedMapChunkMeshes.lightmap);
-      trackedMapChunkMeshes.lightmap = null;
-      trackedMapChunkMeshes.material.uniforms.lightMap.value = null;
-      trackedMapChunkMeshes.material.uniforms.useLightMap.value = 0; */
     };
     const elementListener = elements.makeListener(LIGHTMAP_PLUGIN);
     elementListener.on('add', entityElement => {
@@ -467,7 +477,7 @@ class Heightfield {
     });
     elementListener.on('remove', () => {
       _unbindLightmapper();
-    });
+    }); */
 
     const _bootstrap = () => new Promise((accept, reject) => {
       worker.requestOriginHeight(originHeight => {
@@ -500,7 +510,7 @@ class Heightfield {
         heightfield: null,
         staticHeightfield: null,
         lightmap: null,
-        shape: null,
+        // shape: null,
         stckBody: null,
         update: chunkData => {
           const {positions: newPositions, colors: newColors, skyLightmaps: newSkyLightmaps, torchLightmaps: newTorchLightmaps, indices: newIndices, heightfield, staticHeightfield} = chunkData;
@@ -526,25 +536,25 @@ class Heightfield {
           indices.set(newIndices);
           renderer.updateAttribute(heightfieldObject.geometry.index, index * indices.length, newIndices.length, true);
 
-          if (meshes.shape) {
+          /* if (meshes.shape) {
             _unbindLightmap(meshes);
-          }
+          } */
 
           meshes.heightfield = heightfield.slice();
           meshes.staticHeightfield = staticHeightfield.slice();
 
-          if (lightmapper) {
+          /* if (lightmapper) {
             _bindLightmap(meshes);
-          }
+          } */
         },
         destroy: () => {
           geometryBuffer.free(gbuffer);
 
           material.dispose();
 
-          if (meshes.shape) {
+          /* if (meshes.shape) {
             _unbindLightmap(meshes);
-          }
+          } */
         },
       };
 
@@ -1112,7 +1122,7 @@ class Heightfield {
           _debouncedRefreshLightmaps();
           refreshLightmapsTimeout = setTimeout(_recurseRefreshLightmaps, 2000);
         };
-        _recurseRefreshLightmaps();
+        // _recurseRefreshLightmaps();
         let refreshCullTimeout = null;
         const _recurseRefreshCull = () => {
           _debouncedRefreshCull();

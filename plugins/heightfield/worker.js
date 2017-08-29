@@ -202,6 +202,29 @@ const _requestLightmaps = (lightmapBuffer, cb) => {
   }, [lightmapBuffer.buffer]);
   queues[id] = cb;
 };
+const _requestAddLightmap = (x, y, heightfield, cb) => { // XXX need to remove lightmaps on ungenerate
+  const id = _makeId();
+  postMessage({
+    type: 'request',
+    method: 'addLightmap',
+    args: [id],
+    x,
+    y,
+    heightfield,
+  });
+  queues[id] = cb;
+};
+const _requestUpdateLightmap = (shapeId, heightfield, cb) => {
+  const id = _makeId();
+  postMessage({
+    type: 'request',
+    method: 'updateLightmap',
+    args: [id],
+    shapeId,
+    heightfield,
+  });
+  queues[id] = cb;
+};
 const _unrequestChunk = (x, z) => {
   mapChunkMeshes[_getChunkIndex(x, z)] = null;
   tra.removeChunk(x, z);
@@ -338,14 +361,18 @@ self.onmessage = e => {
           return chunk;
         })
         .then(chunk => new Promise((accept, reject) => {
-          _requestChunkLightmaps(chunk, buffer, buffer.byteLength - LIGHTMAP_BUFFER_SIZE, ({skyLightmaps, torchLightmaps, scratchBuffer}) => {
-            buffer = scratchBuffer;
-            accept({
-              chunk,
-              skyLightmaps,
-              torchLightmaps,
+          _requestAddLightmap(chunk.x, chunk.z, chunk.chunkData.staticHeightfield, shapeId => {
+            chunk.shapeId = shapeId;
+
+            _requestChunkLightmaps(chunk, buffer, buffer.byteLength - LIGHTMAP_BUFFER_SIZE, ({skyLightmaps, torchLightmaps, scratchBuffer}) => {
+              buffer = scratchBuffer;
+              accept({
+                chunk,
+                skyLightmaps,
+                torchLightmaps,
+              });
             });
-          })
+          });
         }))
         .then(({chunk, skyLightmaps, torchLightmaps}) => {
           protocolUtils.stringifyRenderChunk(chunk.chunkData, skyLightmaps, torchLightmaps, buffer, 0);
@@ -535,6 +562,7 @@ self.onmessage = e => {
                   x,
                   z,
                   chunkData,
+                  shapeId: chunk.shapeId,
                 });
               }
             }
@@ -563,63 +591,65 @@ self.onmessage = e => {
               lightmapByteOffset += 4 * numPositions;
             }
 
-            _requestLightmaps(lightmapBuffer, lightmapBuffer => { // XXX make sure new heightfield is passed to lightmap plugin before this
-              const {buffer} = lightmapBuffer;
+            _requestUpdateLightmap(chunkSpec.shapeId, chunkSpec.chunkData.staticHeightfield, () => { // XXX support multiple updates at once
+              _requestLightmaps(lightmapBuffer, lightmapBuffer => {
+                const {buffer} = lightmapBuffer;
 
-              let readByteOffset = 3 * 4;
-              const skyLightmapsLength = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + readByteOffset, 1)[0];
-              readByteOffset += 4;
-              const skyLightmaps = new Uint8Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + readByteOffset, skyLightmapsLength);
-              readByteOffset += skyLightmapsLength;
-              let alignDiff = readByteOffset % 4;
-              if (alignDiff > 0) {
-                readByteOffset += 4 - alignDiff;
-              }
-
-              const torchLightmapsLength = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + readByteOffset, 1)[0];
-              readByteOffset += 4;
-              const torchLightmaps = new Uint8Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + readByteOffset, torchLightmapsLength);
-              readByteOffset += torchLightmapsLength;
-              alignDiff = readByteOffset % 4;
-              if (alignDiff > 0) {
-                readByteOffset += 4 - alignDiff;
-              }
-
-              let writeByteOffset = 0;
-              const chunksHeader = new Uint32Array(buffer, writeByteOffset, 1);
-              writeByteOffset += 4;
-
-              let numResponseChunks = 0;
-              for (let i = 0; i < numChunkSpecs; i++) {
-                const chunkSpec = chunkSpecs[i];
-                const {x, z} = chunkSpec;
-                const chunk = tra.getChunk(x, z);
-
-                if (chunk) {
-                  const chunkHeader1 = new Int32Array(buffer, writeByteOffset, 2);
-                  chunkHeader1[0] = x;
-                  chunkHeader1[1] = z;
-                  writeByteOffset += 4 * 2;
-
-                  const chunkHeader2 = new Uint32Array(buffer, writeByteOffset, 1);
-                  writeByteOffset += 4;
-
-                  const newWriteByteOffset = protocolUtils.stringifyRenderChunk(chunk.chunkData, skyLightmaps, torchLightmaps, buffer, writeByteOffset)[1];
-                  const numChunkBytes = newWriteByteOffset - writeByteOffset;
-                  writeByteOffset = newWriteByteOffset;
-
-                  chunkHeader2[0] = numChunkBytes;
-
-                  numResponseChunks++;
+                let readByteOffset = 3 * 4;
+                const skyLightmapsLength = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + readByteOffset, 1)[0];
+                readByteOffset += 4;
+                const skyLightmaps = new Uint8Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + readByteOffset, skyLightmapsLength);
+                readByteOffset += skyLightmapsLength;
+                let alignDiff = readByteOffset % 4;
+                if (alignDiff > 0) {
+                  readByteOffset += 4 - alignDiff;
                 }
-              }
-              chunksHeader[0] = numResponseChunks;
 
-              postMessage({
-                type: 'response',
-                args: [id],
-                result: buffer,
-              }, [buffer]);
+                const torchLightmapsLength = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + readByteOffset, 1)[0];
+                readByteOffset += 4;
+                const torchLightmaps = new Uint8Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + readByteOffset, torchLightmapsLength);
+                readByteOffset += torchLightmapsLength;
+                alignDiff = readByteOffset % 4;
+                if (alignDiff > 0) {
+                  readByteOffset += 4 - alignDiff;
+                }
+
+                let writeByteOffset = 0;
+                const chunksHeader = new Uint32Array(buffer, writeByteOffset, 1);
+                writeByteOffset += 4;
+
+                let numResponseChunks = 0;
+                for (let i = 0; i < numChunkSpecs; i++) {
+                  const chunkSpec = chunkSpecs[i];
+                  const {x, z} = chunkSpec;
+                  const chunk = tra.getChunk(x, z);
+
+                  if (chunk) {
+                    const chunkHeader1 = new Int32Array(buffer, writeByteOffset, 2);
+                    chunkHeader1[0] = x;
+                    chunkHeader1[1] = z;
+                    writeByteOffset += 4 * 2;
+
+                    const chunkHeader2 = new Uint32Array(buffer, writeByteOffset, 1);
+                    writeByteOffset += 4;
+
+                    const newWriteByteOffset = protocolUtils.stringifyRenderChunk(chunk.chunkData, skyLightmaps, torchLightmaps, buffer, writeByteOffset)[1];
+                    const numChunkBytes = newWriteByteOffset - writeByteOffset;
+                    writeByteOffset = newWriteByteOffset;
+
+                    chunkHeader2[0] = numChunkBytes;
+
+                    numResponseChunks++;
+                  }
+                }
+                chunksHeader[0] = numResponseChunks;
+
+                postMessage({
+                  type: 'response',
+                  args: [id],
+                  result: buffer,
+                }, [buffer]);
+              });
             });
           } else {
             let writeByteOffset = 0;
