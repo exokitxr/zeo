@@ -133,11 +133,27 @@ const _requestChunkLightmaps = (chunk, scratchBuffer, scratchBufferByteOffset, c
   _requestLightmaps(lightmapBuffer, lightmapBuffer => {
     const {buffer: scratchBuffer} = lightmapBuffer;
 
-    const lightmapsLength = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + 3 * 4, 1)[0];
-    const lightmaps = new Uint8Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + 4 * 4, lightmapsLength);
+    let byteOffset = 3 * 4;
+    const skyLightmapsLength = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, 1)[0];
+    byteOffset += 4;
+    const skyLightmaps = new Uint8Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, skyLightmapsLength);
+    byteOffset += skyLightmapsLength;
+    let alignDiff = byteOffset % 4;
+    if (alignDiff > 0) {
+      byteOffset += 4 - alignDiff;
+    }
+
+    const torchLightmapsLength = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, 1)[0];
+    byteOffset += 4;
+    const torchLightmaps = new Uint8Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, torchLightmapsLength);
+    byteOffset += torchLightmapsLength;
+    alignDiff = byteOffset % 4;
+    if (alignDiff > 0) {
+      byteOffset += 4 - alignDiff;
+    }
 
     cb({
-      lightmaps,
+      lightmaps: skyLightmaps,
       scratchBuffer,
     });
   });
@@ -548,8 +564,24 @@ self.onmessage = e => {
             _requestLightmaps(lightmapBuffer, lightmapBuffer => { // XXX make sure new heightfield is passed to lightmap plugin before this
               const {buffer} = lightmapBuffer;
 
-              const lightmapsLength = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + 3 * 4, 1)[0];
-              const lightmaps = new Uint8Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + 4 * 4, lightmapsLength);
+              let readByteOffset = 3 * 4;
+              const skyLightmapsLength = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + readByteOffset, 1)[0];
+              readByteOffset += 4;
+              const skyLightmaps = new Uint8Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + readByteOffset, skyLightmapsLength);
+              byteOffset += skyLightmapsLength;
+              let alignDiff = byteOffset % 4;
+              if (alignDiff > 0) {
+                byteOffset += 4 - alignDiff;
+              }
+
+              const torchLightmapsLength = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + readByteOffset, 1)[0];
+              readByteOffset += 4;
+              const torchLightmaps = new Uint8Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + readByteOffset, torchLightmapsLength);
+              byteOffset += torchLightmapsLength;
+              alignDiff = byteOffset % 4;
+              if (alignDiff > 0) {
+                byteOffset += 4 - alignDiff;
+              }
 
               let writeByteOffset = 0;
               const chunksHeader = new Uint32Array(buffer, writeByteOffset, 1);
@@ -570,7 +602,7 @@ self.onmessage = e => {
                   const chunkHeader2 = new Uint32Array(buffer, writeByteOffset, 1);
                   writeByteOffset += 4;
 
-                  const newWriteByteOffset = protocolUtils.stringifyRenderChunk(chunk.chunkData, lightmaps, buffer, writeByteOffset)[1];
+                  const newWriteByteOffset = protocolUtils.stringifyRenderChunk(chunk.chunkData, skyLightmaps, buffer, writeByteOffset)[1];
                   const numChunkBytes = newWriteByteOffset - writeByteOffset;
                   writeByteOffset = newWriteByteOffset;
 

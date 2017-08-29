@@ -194,10 +194,27 @@ self.onmessage = e => {
           _requestLightmaps(lightmapBuffer, lightmapBuffer => {
             const {buffer} = lightmapBuffer;
 
-            const lightmapsLength = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + 3 * 4, 1)[0];
-            const lightmaps = new Uint8Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + 4 * 4, lightmapsLength);
+            let byteOffset = 3 * 4;
+            const skyLightmapsLength = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, 1)[0];
+            byteOffset += 4;
+            const skyLightmaps = new Uint8Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, skyLightmapsLength);
+            byteOffset += skyLightmapsLength;
+            let alignDiff = byteOffset % 4;
+            if (alignDiff > 0) {
+              byteOffset += 4 - alignDiff;
+            }
 
-            protocolUtils.stringifyRenderGeometry(geometry, lightmaps, buffer, 0);
+            const torchLightmapsLength = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, 1)[0];
+            byteOffset += 4;
+console.log('got sky', skyLightmaps, skyLightmapsLength, torchLightmapsLength, lightmapBuffer.byteOffset + byteOffset, lightmapBuffer.byteLength);
+            const torchLightmaps = new Uint8Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, torchLightmapsLength);
+            byteOffset += torchLightmapsLength;
+            alignDiff = byteOffset % 4;
+            if (alignDiff > 0) {
+              byteOffset += 4 - alignDiff;
+            }
+
+            protocolUtils.stringifyRenderGeometry(geometry, skyLightmaps, buffer, 0);
             postMessage({
               type: 'response',
               args: [id],

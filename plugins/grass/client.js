@@ -635,23 +635,32 @@ class Grass {
                 const z = int32Array[byteOffset / 4];
                 byteOffset += 4;
 
-                const lightmapsLength = uint32Array[byteOffset / 4];
+                const skyLightmapsLength = uint32Array[byteOffset / 4];
                 byteOffset += 4;
 
-                const newLightmaps = new Uint8Array(newLightmapBuffer.buffer, newLightmapBuffer.byteOffset + byteOffset, lightmapsLength);
-                byteOffset += lightmapsLength;
-                const alignDiff = byteOffset % 4;
+                const newSkyLightmaps = new Uint8Array(newLightmapBuffer.buffer, newLightmapBuffer.byteOffset + byteOffset, skyLightmapsLength);
+                byteOffset += skyLightmapsLength;
+                let alignDiff = byteOffset % 4;
                 if (alignDiff > 0) {
                   byteOffset += 4 - alignDiff;
                 }
 
-                if (newLightmaps.length > 0) {
-                  const trackedGrassChunkMeshes = grassChunkMeshes[_getChunkIndex(x, z)];
+                const torchLightmapsLength = uint32Array[byteOffset / 4];
+                byteOffset += 4;
 
-                  if (trackedGrassChunkMeshes) {
+                const newTorchLightmaps = new Uint8Array(newLightmapBuffer.buffer, newLightmapBuffer.byteOffset + byteOffset, torchLightmapsLength);
+                byteOffset += torchLightmapsLength;
+                alignDiff = byteOffset % 4;
+                if (alignDiff > 0) {
+                  byteOffset += 4 - alignDiff;
+                }
+
+                const trackedGrassChunkMeshes = grassChunkMeshes[_getChunkIndex(x, z)];
+                if (trackedGrassChunkMeshes) {
+                  if (newSkyLightmaps.length > 0) {
                     const {index, lightmaps} = trackedGrassChunkMeshes;
-                    lightmaps.set(newLightmaps);
-                    renderer.updateAttribute(grassMesh.geometry.attributes.lightmap, index * lightmaps.length, newLightmaps.length, false);
+                    lightmaps.set(newSkyLightmaps);
+                    renderer.updateAttribute(grassMesh.geometry.attributes.lightmap, index * lightmaps.length, newSkyLightmaps.length, false);
                   }
                 }
               }

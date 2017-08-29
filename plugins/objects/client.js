@@ -1265,23 +1265,32 @@ void main() {
               const z = int32Array[byteOffset / 4];
               byteOffset += 4;
 
-              const lightmapsLength = uint32Array[byteOffset / 4];
+              const skyLightmapsLength = uint32Array[byteOffset / 4];
               byteOffset += 4;
 
-              const newLightmaps = new Uint8Array(newLightmapBuffer.buffer, newLightmapBuffer.byteOffset + byteOffset, lightmapsLength);
-              byteOffset += lightmapsLength;
-              const alignDiff = byteOffset % 4;
+              const newSkyLightmaps = new Uint8Array(newLightmapBuffer.buffer, newLightmapBuffer.byteOffset + byteOffset, skyLightmapsLength);
+              byteOffset += skyLightmapsLength;
+              let alignDiff = byteOffset % 4;
               if (alignDiff > 0) {
                 byteOffset += 4 - alignDiff;
               }
 
-              if (newLightmaps.length > 0) {
-                const trackedObjectChunkMeshes = objectsChunkMeshes[_getChunkIndex(x, z)];
+              const torchLightmapsLength = uint32Array[byteOffset / 4];
+              byteOffset += 4;
 
-                if (trackedObjectChunkMeshes) {
+              const newTorchLightmaps = new Uint8Array(newLightmapBuffer.buffer, newLightmapBuffer.byteOffset + byteOffset, torchLightmapsLength);
+              byteOffset += torchLightmapsLength;
+              alignDiff = byteOffset % 4;
+              if (alignDiff > 0) {
+                byteOffset += 4 - alignDiff;
+              }
+
+              const trackedObjectChunkMeshes = objectsChunkMeshes[_getChunkIndex(x, z)];
+              if (trackedObjectChunkMeshes) {
+                if (skyLightmapsLength.length > 0) {                
                   const {index, lightmaps} = trackedObjectChunkMeshes;
-                  lightmaps.set(newLightmaps);
-                  renderer.updateAttribute(objectsObject.geometry.attributes.lightmap, index * lightmaps.length, newLightmaps.length, false);
+                  lightmaps.set(skyLightmapsLength);
+                  renderer.updateAttribute(objectsObject.geometry.attributes.lightmap, index * lightmaps.length, skyLightmapsLength.length, false);
                 }
               }
             }

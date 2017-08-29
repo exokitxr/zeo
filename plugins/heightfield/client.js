@@ -1017,23 +1017,32 @@ class Heightfield {
               const z = int32Array[byteOffset / 4];
               byteOffset += 4;
 
-              const lightmapsLength = uint32Array[byteOffset / 4];
+              const skyLightmapsLength = uint32Array[byteOffset / 4];
               byteOffset += 4;
 
-              const newLightmaps = new Uint8Array(newLightmapBuffer.buffer, newLightmapBuffer.byteOffset + byteOffset, lightmapsLength);
-              byteOffset += lightmapsLength;
-              const alignDiff = byteOffset % 4;
+              const newSkyLightmaps = new Uint8Array(newLightmapBuffer.buffer, newLightmapBuffer.byteOffset + byteOffset, skyLightmapsLength);
+              byteOffset += skyLightmapsLength;
+              let alignDiff = byteOffset % 4;
               if (alignDiff > 0) {
                 byteOffset += 4 - alignDiff;
               }
 
-              if (newLightmaps.length > 0) {
-                const trackedMapChunkMeshes = mapChunkMeshes[_getChunkIndex(x, z)];
+              const torchLightmapsLength = uint32Array[byteOffset / 4];
+              byteOffset += 4;
 
-                if (trackedMapChunkMeshes) {
+              const newTorchLightmaps = new Uint8Array(newLightmapBuffer.buffer, newLightmapBuffer.byteOffset + byteOffset, torchLightmapsLength);
+              byteOffset += torchLightmapsLength;
+              alignDiff = byteOffset % 4;
+              if (alignDiff > 0) {
+                byteOffset += 4 - alignDiff;
+              }
+
+              const trackedMapChunkMeshes = mapChunkMeshes[_getChunkIndex(x, z)];
+              if (trackedMapChunkMeshes) {
+                if (newSkyLightmaps.length > 0) {
                   const {index, lightmaps} = trackedMapChunkMeshes;
-                  lightmaps.set(newLightmaps);
-                  renderer.updateAttribute(heightfieldObject.geometry.attributes.lightmap, index * lightmaps.length, newLightmaps.length, false);
+                  lightmaps.set(newSkyLightmaps);
+                  renderer.updateAttribute(heightfieldObject.geometry.attributes.lightmap, index * lightmaps.length, newSkyLightmaps.length, false);
                 }
               }
             }

@@ -255,9 +255,7 @@ const SHAPES = {
   'voxel': Voxel,
 };
 
-const _getUpdate = (ox, oz, buffer, byteOffset) => {
-  const array = new Uint8Array(buffer, byteOffset);
-
+const _getUpdate = (ox, oz, skyArray, torchArray) => {
   const chunkRange = [
     ox * width,
     oz * depth,
@@ -281,7 +279,7 @@ const _getUpdate = (ox, oz, buffer, byteOffset) => {
                 const elevation = data[dx + dz * (NUM_CELLS + 1)];
                 for (let dy = NUM_CELLS_HEIGHT; dy >= (elevation - 8); dy--) {
                   const lightmapIndex = dx + (dz * width1) + (dy * width1depth1);
-                  array[lightmapIndex] = blend(array[lightmapIndex], Math.min(Math.max((dy - (elevation - 8)) / 8, 0), 1) * v * 255);
+                  skyArray[lightmapIndex] = blend(skyArray[lightmapIndex], Math.min(Math.max((dy - (elevation - 8)) / 8, 0), 1) * v * 255);
                 }
               }
             }
@@ -312,7 +310,7 @@ const _getUpdate = (ox, oz, buffer, byteOffset) => {
                 if (_isInRange(lx, width) && _isInRange(ly, height) && _isInRange(lz, depth)) {
                   const distanceFactor = (maxDistance - Math.sqrt(dx*dx + dy*dy + dz*dz)) / maxDistance;
                   const lightmapIndex = lx + (lz * width1) + (ly * width1depth1);
-                  array[lightmapIndex] = blend(array[lightmapIndex], Math.min(distanceFactor * distanceFactor * v, 1) * 255);
+                  skyArray[lightmapIndex] = blend(skyArray[lightmapIndex], Math.min(distanceFactor * distanceFactor * v, 1) * 255);
                 }
               }
             }
@@ -340,7 +338,7 @@ const _getUpdate = (ox, oz, buffer, byteOffset) => {
                 if (_isInRange(lx, width) && _isInRange(ly, height) && _isInRange(lz, depth)) {
                   const lightmapIndex = lx + (lz * width1) + (ly * width1depth1);
                   const distanceFactor = radiusFactor * (1 - (dy / h));
-                  array[lightmapIndex] = blend(array[lightmapIndex], Math.min(distanceFactor * distanceFactor * v, 1) * 255);
+                  skyArray[lightmapIndex] = blend(skyArray[lightmapIndex], Math.min(distanceFactor * distanceFactor * v, 1) * 255);
                 }
               }
             }
@@ -356,7 +354,7 @@ const _getUpdate = (ox, oz, buffer, byteOffset) => {
 
           if (_isInRange(ax, width) && _isInRange(ay, height) && _isInRange(az, depth)) {
             const lightmapIndex = ax + (az * width1) + (ay * width1depth1);
-            array[lightmapIndex] = blend(array[lightmapIndex], v);
+            skyArray[lightmapIndex] = blend(skyArray[lightmapIndex], v);
           }
 
           break;
@@ -375,7 +373,7 @@ const _getUpdate = (ox, oz, buffer, byteOffset) => {
     }
     return result;
   })();
-  array.fill(ambientValue);
+  skyArray.fill(ambientValue);
 
   // add/sub
   for (let i = 0; i < shapes.length; i++) {
@@ -392,8 +390,6 @@ const _getUpdate = (ox, oz, buffer, byteOffset) => {
       _renderShape(shape);
     }
   }
-
-  return buffer;
 };
 const _isInRange = (n, l) => n >= 0 && n <= l;
 const _intersectRect = (r1, r2) =>
@@ -403,7 +399,8 @@ const _intersectRect = (r1, r2) =>
    r2[3] < r1[1]);
 
 const shapes = [];
-const lightmapRenderArray = new Uint8Array(width1 * depth1 * height);
+const skyLightmapsArray = new Uint8Array(width1 * depth1 * height);
+const torchLightmapsArray = new Uint8Array(width1 * depth1 * height);
 
 self.onmessage = e => {
   const {data} = e;
@@ -462,17 +459,27 @@ self.onmessage = e => {
       header[1] = z;
       writeByteOffset += 2 * 4;
 
-      const lightmapsLengthArray = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + writeByteOffset, 1);
+      const skyLightmapsLengthArray = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + writeByteOffset, 1);
       writeByteOffset += 4;
 
-      const lightmap = new Uint8Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + writeByteOffset, lightmapsLength);
+      const skyLightmap = new Uint8Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + writeByteOffset, lightmapsLength);
       writeByteOffset += lightmapsLength;
-      const alignDiff = writeByteOffset % 4;
+      let alignDiff = writeByteOffset % 4;
       if (alignDiff > 0) {
         writeByteOffset += 4 - alignDiff;
       }
 
-      _getUpdate(x, z, lightmapRenderArray.buffer, 0);
+      const torchLightmapsLengthArray = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + writeByteOffset, 1);
+      writeByteOffset += 4;
+
+      const torchLightmap = new Uint8Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + writeByteOffset, lightmapsLength);
+      writeByteOffset += lightmapsLength;
+      alignDiff = writeByteOffset % 4;
+      if (alignDiff > 0) {
+        writeByteOffset += 4 - alignDiff;
+      }
+
+      _getUpdate(x, z, skyLightmapsArray, torchLightmapsArray);
 
       const offsetX = x * width;
       const offsetZ = z * depth;
@@ -482,18 +489,14 @@ self.onmessage = e => {
         const dy = Math.min(Math.max(Math.floor(positions[baseIndex + 1]), 0), NUM_CELLS_HEIGHT);
         const dz = Math.min(Math.max(Math.floor(positions[baseIndex + 2] - offsetZ), 0), NUM_CELLS + 1);
         const lightmapIndex = dx + (dz * width1) + (dy * width1depth1);
-        lightmap[i] = lightmapRenderArray[lightmapIndex];
+        skyLightmap[i] = skyLightmapsArray[lightmapIndex];
       }
 
-      lightmapsLengthArray[0] = lightmapsLength;
+      skyLightmapsLengthArray[0] = lightmapsLength;
+      torchLightmapsLengthArray[0] = lightmapsLength;
     }
 
     postMessage(lightmapBuffer, [lightmapBuffer.buffer]);
-  } else if (type === 'requestUpdate') {
-    const {ox, oz, buffer} = data;
-
-    const resultBuffer = _getUpdate(ox, oz, buffer, 0);
-    postMessage(resultBuffer, [resultBuffer]);
   } else {
     console.warn('unknown lightmap message type:', JSON.stringify(type));
   }
