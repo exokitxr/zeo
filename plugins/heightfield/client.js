@@ -240,6 +240,8 @@ class Heightfield {
     let terrainBuffer = new ArrayBuffer(NUM_POSITIONS_CHUNK * 4);
     let lightmapBuffer = new Uint8Array(LIGHTMAP_BUFFER_SIZE * NUM_BUFFERS);
     let cullBuffer = new ArrayBuffer(4096);
+    const _allocHslot = lightmapElement => new Float32Array(lightmapElement.lightmapper.buffers.alloc());
+
     const worker = new Worker('archae/plugins/_plugins_heightfield/build/worker.js');
     let queues = {};
     let numRemovedQueues = 0;
@@ -268,7 +270,7 @@ class Heightfield {
       elements.requestElement(LIGHTMAP_PLUGIN)
         .then(lightmapElement => {
           const id = _makeId();
-          const heightfieldBuffer = new Float32Array(lightmapElement.lightmapper.buffers.alloc());
+          const heightfieldBuffer = _allocHslot(lightmapElement);
           worker.postMessage({
             method: 'generate',
             id,
@@ -340,21 +342,31 @@ class Heightfield {
       queues[id] = accept;
     }); */
     worker.requestSubVoxel = (x, y, z, gslots, cb) => {
-      const id = _makeId();
-      worker.postMessage({
-        method: 'subVoxel',
-        id,
-        args: {
-          position: [x, y, z],
-          gslots,
-          buffer: terrainBuffer,
-        },
-      }, [terrainBuffer]);
-      queues[id] = newTerrainBuffer => {
-        terrainBuffer = newTerrainBuffer;
+      elements.requestElement(LIGHTMAP_PLUGIN)
+        .then(lightmapElement => {
+          const id = _makeId();
+          const hslots = [
+            _allocHslot(lightmapElement),
+            _allocHslot(lightmapElement),
+            _allocHslot(lightmapElement),
+            _allocHslot(lightmapElement),
+          ];
+          worker.postMessage({
+            method: 'subVoxel',
+            id,
+            args: {
+              position: [x, y, z],
+              gslots,
+              hslots,
+              buffer: terrainBuffer,
+            },
+          }, [hslots[0].buffer, hslots[1].buffer, hslots[2].buffer, hslots[3].buffer, terrainBuffer]);
+          queues[id] = newTerrainBuffer => {
+            terrainBuffer = newTerrainBuffer;
 
-        cb(newTerrainBuffer);
-      };
+            cb(newTerrainBuffer);
+          };
+        });
     };
     worker.requestHeightfield = (x, y, buffer, cb) => {
       const id = _makeId();
@@ -413,14 +425,22 @@ class Heightfield {
 
               worker.respond(id, shape.id);
             });
-        } else if (method === 'updateLightmap') {
-          const {shapeId, heightfield} = data;
+        } else if (method === 'updateLightmaps') {
+          const {updatedLightmaps, freedHslots} = data;
 
           elements.requestElement(LIGHTMAP_PLUGIN)
             .then(lightmapElement => {
-              lightmapper.worker.setShapeData(shapeId, {
-                data: heightfield,
-              }, [heightfield.buffer]);
+              for (let i = 0; i < updatedLightmaps.length; i++) {
+                const updatedLightmap = updatedLightmaps[i];
+                const {shapeId, heightfield} = updatedLightmap;
+
+                lightmapElement.lightmapper.worker.setShapeData(shapeId, {
+                  data: heightfield,
+                }, [heightfield.buffer]);
+              }
+              for (let i = 0; i < freedHslots.length; i++) {
+                lightmapElement.lightmapper.buffers.free(freedHslots[i]);
+              }
 
               worker.respond(id, null);
             });

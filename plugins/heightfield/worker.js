@@ -202,7 +202,7 @@ const _requestLightmaps = (lightmapBuffer, cb) => {
   }, [lightmapBuffer.buffer]);
   queues[id] = cb;
 };
-const _requestAddLightmap = (x, y, heightfield, cb) => { // XXX need to remove lightmaps on ungenerate
+const _requestAddLightmap = (x, y, heightfield, cb) => {
   const id = _makeId();
   postMessage({
     type: 'request',
@@ -214,15 +214,15 @@ const _requestAddLightmap = (x, y, heightfield, cb) => { // XXX need to remove l
   }, [heightfield.buffer]);
   queues[id] = cb;
 };
-const _requestUpdateLightmap = (shapeId, heightfield, cb) => {
+const _requestUpdateLightmaps = (updatedLightmaps, freedHslots, hslots, cb) => {
   const id = _makeId();
   postMessage({
     type: 'request',
-    method: 'updateLightmap',
+    method: 'updateLightmaps',
     args: [id],
-    shapeId,
-    heightfield,
-  });
+    updatedLightmaps,
+    freedHslots,
+  }, [hslots[0].buffer, hslots[1].buffer, hslots[2].buffer, hslots[3].buffer]);
   queues[id] = cb;
 };
 const _unrequestChunk = (x, z) => {
@@ -526,7 +526,7 @@ self.onmessage = e => {
     }
     case 'subVoxel': {
       const {id, args} = data;
-      const {position: [x, y, z], gslots} = args;
+      const {position: [x, y, z], gslots, hslots} = args;
       let {buffer} = args;
 
       fetch(`/archae/heightfield/voxels?x=${x}&y=${y}&z=${z}`, {
@@ -578,34 +578,51 @@ self.onmessage = e => {
             }
             const numChunkSpecs = chunkSpecs.length;
 
-            const lightmapBuffer = new Uint8Array(buffer, buffer.byteLength - LIGHTMAP_BUFFER_SIZE * numChunkSpecs);
-
-            let lightmapByteOffset = 0;
-            new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + lightmapByteOffset, 1)[0] = numChunkSpecs;
-            lightmapByteOffset += 4;
-
-            for (let i = 0; i < numChunkSpecs; i++) {
+            const updatedLightmaps = Array(numChunkSpecs);
+            for (let i = 0; i < updatedLightmaps.length; i++) {
               const chunkSpec = chunkSpecs[i];
-              const {x, z, chunkData: {positions}} = chunkSpec;
+              const {chunkData: {staticHeightfield}, shapeId} = chunkSpec;
+              const heightfield = hslots[i];
+              heightfield.set(staticHeightfield);
 
-              const lightmapHeaderArray = new Int32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + lightmapByteOffset, 2);
-              lightmapHeaderArray[0] = x;
-              lightmapHeaderArray[1] = z;
-              lightmapByteOffset += 4 * 2;
-
-              const numPositions = positions.length;
-              new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + lightmapByteOffset, 1)[0] = numPositions;
-              lightmapByteOffset += 4;
-
-              new Float32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + lightmapByteOffset, numPositions).set(positions);
-              lightmapByteOffset += 4 * numPositions;
+              updatedLightmaps[i] = {
+                shapeId,
+                heightfield,
+              };
+            }
+            const freedHslots = Array(hslots.length - updatedLightmaps.length);
+            for (let i = 0; i < freedHslots.length; i++) {
+              freedHslots[i] = hslots[numChunkSpecs + i];
             }
 
-            _requestUpdateLightmap(chunkSpec.shapeId, chunkSpec.chunkData.staticHeightfield, () => { // XXX support multiple updates at once
+            _requestUpdateLightmaps(updatedLightmaps, freedHslots, hslots, () => {
+              const lightmapBuffer = new Uint8Array(buffer, buffer.byteLength - LIGHTMAP_BUFFER_SIZE * numChunkSpecs);
+
+              let lightmapByteOffset = 0;
+              new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + lightmapByteOffset, 1)[0] = numChunkSpecs;
+              lightmapByteOffset += 4;
+
+              for (let i = 0; i < numChunkSpecs; i++) {
+                const chunkSpec = chunkSpecs[i];
+                const {x, z, chunkData: {positions}} = chunkSpec;
+
+                const lightmapHeaderArray = new Int32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + lightmapByteOffset, 2);
+                lightmapHeaderArray[0] = x;
+                lightmapHeaderArray[1] = z;
+                lightmapByteOffset += 4 * 2;
+
+                const numPositions = positions.length;
+                new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + lightmapByteOffset, 1)[0] = numPositions;
+                lightmapByteOffset += 4;
+
+                new Float32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + lightmapByteOffset, numPositions).set(positions);
+                lightmapByteOffset += 4 * numPositions;
+              }
+
               _requestLightmaps(lightmapBuffer, lightmapBuffer => {
                 const {buffer} = lightmapBuffer;
 
-                let readByteOffset = 3 * 4;
+                let readByteOffset = 3 * 4; // XXX handle multiple lightmaps coming back in the cross-chunk destruction case
                 const skyLightmapsLength = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + readByteOffset, 1)[0];
                 readByteOffset += 4;
                 const skyLightmaps = new Uint8Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + readByteOffset, skyLightmapsLength);
