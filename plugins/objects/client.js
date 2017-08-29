@@ -112,13 +112,13 @@ class Objects {
 precision highp float;
 precision highp int;
 attribute vec3 frame;
-attribute float lightmap;
+attribute float skyLightmap;
 attribute float objectIndex;
 
 varying vec3 vPosition;
 varying vec2 vUv;
 varying vec3 vFrame;
-varying float vLightmap;
+varying float vSkyLightmap;
 varying float vObjectIndex;
 
 void main() {
@@ -128,7 +128,7 @@ void main() {
   vPosition = position.xyz;
   vUv = uv;
   vFrame = frame;
-  vLightmap = lightmap;
+  vSkyLightmap = skyLightmap;
   vObjectIndex = objectIndex;
 }
       `,
@@ -149,7 +149,7 @@ uniform float worldTime;
 varying vec3 vPosition;
 varying vec2 vUv;
 varying vec3 vFrame;
-varying float vLightmap;
+varying float vSkyLightmap;
 varying float vObjectIndex;
 
 float speed = 1.0;
@@ -174,7 +174,7 @@ void main() {
     diffuseColor.rgb = mix(diffuseColor.rgb, blueColor, 0.5);
     lightColor = vec3(1.0);
   } else {
-    lightColor = vec3(floor(vLightmap * 4.0 + 0.5) / 4.0);
+    lightColor = vec3(floor(vSkyLightmap * 4.0 + 0.5) / 4.0);
     /* vec3 lightColor;
     if (useLightMap > 0.0) {
       float u = (
@@ -550,11 +550,11 @@ void main() {
     };
     const _makeObjectsChunkMesh = (chunk, gbuffer, objectsChunkData) => {
       const {x, z} = chunk;
-      const {positions: newPositions, uvs: newUvs, frames: newFrames, skyLightmaps: newSkyLightmaps, objectIndices: newObjectIndices, indices: newIndices} = objectsChunkData;
+      const {positions: newPositions, uvs: newUvs, frames: newFrames, skyLightmaps: newSkyLightmaps, torchLightmaps: newTorchLightmaps, objectIndices: newObjectIndices, indices: newIndices} = objectsChunkData;
 
       // geometry
 
-      const {index, slices: {positions, uvs, frames, lightmaps, objectIndices, indices}} = gbuffer;
+      const {index, slices: {positions, uvs, frames, skyLightmaps, torchLightmaps, objectIndices, indices}} = gbuffer;
 
       if (newPositions.length > 0) {
         positions.set(newPositions);
@@ -566,8 +566,11 @@ void main() {
         frames.set(newFrames);
         renderer.updateAttribute(objectsObject.geometry.attributes.frame, index * frames.length, newFrames.length, false);
 
-        lightmaps.set(newSkyLightmaps);
-        renderer.updateAttribute(objectsObject.geometry.attributes.lightmap, index * lightmaps.length, newSkyLightmaps.length, false);
+        skyLightmaps.set(newSkyLightmaps);
+        renderer.updateAttribute(objectsObject.geometry.attributes.skyLightmap, index * skyLightmaps.length, newSkyLightmaps.length, false);
+
+        torchLightmaps.set(newTorchLightmaps);
+        renderer.updateAttribute(objectsObject.geometry.attributes.torchLightmap, index * torchLightmaps.length, newTorchLightmaps.length, false);
 
         objectIndices.set(newObjectIndices);
         renderer.updateAttribute(objectsObject.geometry.attributes.objectIndex, index * objectIndices.length, newObjectIndices.length, false);
@@ -592,7 +595,8 @@ void main() {
         index,
         indexOffset: index * indices.length,
         offset: new THREE.Vector2(x, z),
-        lightmaps,
+        skyLightmaps,
+        torchLightmaps,
         lightmap: null,
         destroy: () => {
           geometryBuffer.free(gbuffer);
@@ -940,7 +944,12 @@ void main() {
           size: 3 * 3 * 4,
         },
         {
-          name: 'lightmaps',
+          name: 'skyLightmaps',
+          constructor: Uint8Array,
+          size: 3 * 1,
+        },
+        {
+          name: 'torchLightmaps',
           constructor: Uint8Array,
           size: 3 * 1,
         },
@@ -957,7 +966,7 @@ void main() {
       ]
     );
     const objectsObject = (() => {
-      const {positions, uvs, frames, lightmaps, objectIndices, indices} = geometryBuffer.getAll();
+      const {positions, uvs, frames, skyLightmaps, torchLightmaps, objectIndices, indices} = geometryBuffer.getAll();
 
       const geometry = new THREE.BufferGeometry();
       const positionAttribute = new THREE.BufferAttribute(positions, 3);
@@ -969,9 +978,12 @@ void main() {
       const frameAttribute = new THREE.BufferAttribute(frames, 3);
       frameAttribute.dynamic = true;
       geometry.addAttribute('frame', frameAttribute);
-      const lightmapAttribute = new THREE.BufferAttribute(lightmaps, 1, true);
-      lightmapAttribute.dynamic = true;
-      geometry.addAttribute('lightmap', lightmapAttribute);
+      const skyLightmapAttribute = new THREE.BufferAttribute(skyLightmaps, 1, true);
+      skyLightmapAttribute.dynamic = true;
+      geometry.addAttribute('skyLightmap', skyLightmapAttribute);
+      const torchLightmapAttribute = new THREE.BufferAttribute(torchLightmaps, 1, true);
+      torchLightmapAttribute.dynamic = true;
+      geometry.addAttribute('torchLightmap', torchLightmapAttribute);
       const objectIndexAttribute = new THREE.BufferAttribute(objectIndices, 1);
       objectIndexAttribute.dynamic = true;
       geometry.addAttribute('objectIndex', objectIndexAttribute);
@@ -1288,9 +1300,14 @@ void main() {
               const trackedObjectChunkMeshes = objectsChunkMeshes[_getChunkIndex(x, z)];
               if (trackedObjectChunkMeshes) {
                 if (newSkyLightmaps.length > 0) {
-                  const {index, lightmaps} = trackedObjectChunkMeshes;
-                  lightmaps.set(newSkyLightmaps);
-                  renderer.updateAttribute(objectsObject.geometry.attributes.lightmap, index * lightmaps.length, newSkyLightmaps.length, false);
+                  const {index, skyLightmaps} = trackedObjectChunkMeshes;
+                  skyLightmaps.set(newSkyLightmaps);
+                  renderer.updateAttribute(objectsObject.geometry.attributes.skyLightmap, index * skyLightmaps.length, newSkyLightmaps.length, false);
+                }
+                if (newTorchLightmaps.length > 0) {
+                  const {index, torchLightmaps} = trackedObjectChunkMeshes;
+                  torchLightmaps.set(newTorchLightmaps);
+                  renderer.updateAttribute(objectsObject.geometry.attributes.torchLightmap, index * torchLightmaps.length, newTorchLightmaps.length, false);
                 }
               }
             }
