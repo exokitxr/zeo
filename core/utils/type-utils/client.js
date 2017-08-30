@@ -77,7 +77,7 @@ const _jsonParse = s => {
   }
 };
 
-module.exports = {
+const typeUtils = {
   mount() {
     return {
       castValueStringToValue,
@@ -86,3 +86,4 @@ module.exports = {
   },
   unmount() {},
 };
+module.exports = typeUtils;
