@@ -1127,7 +1127,7 @@ class Heightfield {
           priority: -1,
         });
 
-        const _debouncedRefreshLightmaps = _debounce(next => {
+        /* const _debouncedRefreshLightmaps = _debounce(next => {
           (() => {
             let wordOffset = 0;
             const uint32Array = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset);
@@ -1204,7 +1204,7 @@ class Heightfield {
 
             next();
           });
-        });
+        }); */
 
         const _requestCull = (hmdPosition, projectionMatrix, matrixWorldInverse, cb) => {
           worker.requestCull(hmdPosition, projectionMatrix, matrixWorldInverse, cullBuffer => {
@@ -1235,12 +1235,12 @@ class Heightfield {
           refreshChunksTimeout = setTimeout(_recurseRefreshChunks, 1000);
         };
         _recurseRefreshChunks();
-        let refreshLightmapsTimeout = null;
+        /* let refreshLightmapsTimeout = null;
         const _recurseRefreshLightmaps = () => {
           _debouncedRefreshLightmaps();
           refreshLightmapsTimeout = setTimeout(_recurseRefreshLightmaps, 2000);
         };
-        // _recurseRefreshLightmaps();
+        _recurseRefreshLightmaps(); */
         let refreshCullTimeout = null;
         const _recurseRefreshCull = () => {
           _debouncedRefreshCull();
