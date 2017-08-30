@@ -21,4 +21,4 @@ jobs:
 
       - store_artifacts:
           path: ~/zeo/windows-release.zip
-          destination: windows-release
+          destination: windows-release.zip
