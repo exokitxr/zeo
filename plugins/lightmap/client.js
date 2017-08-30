@@ -374,7 +374,7 @@ class Lightmap {
           } else if (type === 'releaseBuffer') {
             this.buffers.free(data.buffer);
           } else {
-            console.warn('lightmap unknwoen worker message type:', JSON.stringify(type));
+            console.warn('lightmap unknown worker message type:', JSON.stringify(type));
           }
         };
         this.worker = worker;
