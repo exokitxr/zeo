@@ -12,7 +12,7 @@ class Lightmap {
     const {EventEmitter} = events;
 
     const _getLightmapIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
-    const zeroUint8Array = Uint8Array.from([0]);
+    const _chunkRangeContains = (a, b) => b[0] >= a[0] && b[2] <= a[2] && b[1] >= a[1] && b[3] <= a[3];
 
     let idCount = 0;
     class Ambient {
@@ -381,12 +381,7 @@ class Lightmap {
 
         this.buffers = bffr((NUM_CELLS + 1) * (NUM_CELLS + 1) * 4, (RANGE + 1) * (RANGE + 1) * 2);
 
-        // this._lightmaps = {};
-
-        /* this.chunker = chnkr.makeChunker({
-          resolution: NUM_CELLS,
-          range: RANGE,
-        }); */
+        this.chunkRangesNeedUpdate = [];
       }
 
       add(shape, transfers, {update = true} = {}) {
@@ -395,50 +390,41 @@ class Lightmap {
         shape._parent = this;
 
         if (update) {
-          this.emit('update', shape.getChunkRange());
-        }
+          this.addChunkRangeNeedsUpdate(shape.getChunkRange());
 
-        /* const {width, depth, _lightmaps: lightmaps} = this;
-        const newLightmapsNeedUpdate = shape.getLightmapsInRange(width, depth, lightmaps);
-        for (let i = 0; i < newLightmapsNeedUpdate.length; i++) {
-          const {x, z} = newLightmapsNeedUpdate[i];
-          const chunk = this.chunker.getChunk(x, z);
-          if (chunk) {
-            chunk.lod = -1;
-          }
-        } */
+          setTimeout(() => {
+            this.updateChunkRanges();
+          });
+        }
       }
 
-      remove(shape) {
-        // const {id} = shape;
+      remove(shape, {update = true} = {}) {
         this.worker.removeShape(shape.id);
 
-        this.emit('update', shape.getChunkRange());
+        if (update) {
+          this.addChunkRangeNeedsUpdate(shape.getChunkRange());
 
-        /* const {width, depth, _lightmaps: lightmaps} = this;
-        const newLightmapsNeedUpdate = shape.getLightmapsInRange(width, depth, lightmaps);
-        for (let i = 0; i < newLightmapsNeedUpdate.length; i++) {
-          const {x, z} = newLightmapsNeedUpdate[i];
-          const chunk = this.chunker.getChunk(x, z);
-          if (chunk) {
-            chunk.lod = -1;
-          }
-        } */
+          setTimeout(() => {
+            this.updateChunkRanges();
+          });
+        }
       }
 
       _setShapeData(shape, spec, transfers) {
-        // const {id} = shape;
         this.worker.setShapeData(shape.id, spec, transfers);
+      }
 
-        /* const {width, depth, _lightmaps: lightmaps} = this;
-        const newLightmapsNeedUpdate = shape.getLightmapsInRange(width, depth, lightmaps);
-        for (let i = 0; i < newLightmapsNeedUpdate.length; i++) {
-          const {x, z} = newLightmapsNeedUpdate[i];
-          const chunk = this.chunker.getChunk(x, z);
-          if (chunk) {
-            chunk.lod = -1;
-          }
-        } */
+      addChunkRangeNeedsUpdate(chunkRange) {
+        if (!this.chunkRangesNeedUpdate.some(localChunkRange => _chunkRangeContains(localChunkRange, chunkRange))) {
+          this.chunkRangesNeedUpdate.push(chunkRange);
+        }
+      }
+
+      updateChunkRanges() {
+        for (let i = 0; i < this.chunkRangesNeedUpdate.length; i++) {
+          this.emit('update', this.chunkRangesNeedUpdate[i]);
+        }
+        this.chunkRangesNeedUpdate.length = 0;
       }
 
       requestRender(lightmapBuffer, cb) {

@@ -246,9 +246,9 @@ return; // XXX rewrite this
     const objectIndex = chunk.addObject(n, matrix);
 
     const positionArray = matrix.slice(0, 3);
-    const position = new THREE.Vector3().fromArray(positionArray);
+    // const position = new THREE.Vector3().fromArray(positionArray);
     const rotationArray = matrix.slice(3, 7);
-    const rotation = new THREE.Quaternion().fromArray(rotationArray);
+    // const rotation = new THREE.Quaternion().fromArray(rotationArray);
 
     const objectApi = objectApis[n];
     if (objectApi && objectApi.added) {
@@ -517,9 +517,7 @@ const _updateTextureAtlas = _debounce(next => {
       next();
     });
 });
-const _unrequestChunk = (x, z) => {
-  zde.removeChunk(x, z);
-};
+const _unrequestChunk = (x, z) => zde.removeChunk(x, z);
 const _requestLightmaps = (lightmapBuffer, cb) => {
   const id = _makeId();
   postMessage({
@@ -624,14 +622,9 @@ self.onmessage = e => {
 
             chunk.forEachObject((localN, matrix, value, objectIndex) => {
               if (localN === n) {
-                const positionArray = matrix.slice(0, 3);
-                const rotationArray = matrix.slice(3, 7);
-                // const position = localVector.fromArray(matrix, 0);
-                // const rotation = localQuaternion.fromArray(matrix, 3);
-
                 postMessage({
                   type: 'objectAdded',
-                  args: [localN, chunk.x, chunk.z, objectIndex, positionArray, rotationArray, value],
+                  args: [localN, chunk.x, chunk.z, objectIndex, matrix.slice(0, 3), matrix.slice(3, 7), value],
                 });
               }
             });
@@ -733,7 +726,7 @@ self.onmessage = e => {
             });
 
             const objectApi = objectApis[n];
-            if (objectApi && objectApi.added) {
+            if (objectApi && objectApi.removed) {
               postMessage({
                 type: 'objectRemoved',
                 args: [n, x, z, objectIndex],
@@ -770,12 +763,24 @@ self.onmessage = e => {
       _requestChunk(x, z, index, numPositions, numObjectIndices, numIndices)
         .then(chunk => {
           zde.pushChunk(chunk);
+
           _requestChunkUpdate(chunk, buffer, buffer => {
             postMessage({
               type: 'response',
               args: [id],
               result: buffer,
             }, [buffer]);
+
+            chunk.forEachObject((n, matrix, value, objectIndex) => {
+              const objectApi = objectApis[n];
+
+              if (objectApi && objectApi.added) {
+                postMessage({
+                  type: 'objectAdded',
+                  args: [n, x, z, objectIndex, matrix.slice(0, 3), matrix.slice(3, 7), value],
+                });
+              }
+            });
           });
         })
         .catch(err => {
@@ -786,7 +791,18 @@ self.onmessage = e => {
     case 'ungenerate': {
       const {args} = data;
       const {x, z} = args;
-      _unrequestChunk(x, z);
+
+      const chunk = _unrequestChunk(x, z);
+      chunk.forEachObject((n, matrix, value, objectIndex) => {
+        const objectApi = objectApis[n];
+
+        if (objectApi && objectApi.removed) {
+          postMessage({
+            type: 'objectRemoved',
+            args: [n, x, z, objectIndex],
+          });
+        }
+      });
       break;
     }
     case 'update': {
@@ -815,7 +831,7 @@ self.onmessage = e => {
       const lightmapsCoordsArray = new Int32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, numLightmaps * 2);
       byteOffset += 4 * numLightmaps * 2;
 
-      const promises = [];
+      const promises = []; // XXX can be cleaned up
       for (let i = 0; i < numLightmaps; i++) {
         const baseIndex = i * 2;
         const x = lightmapsCoordsArray[baseIndex + 0];

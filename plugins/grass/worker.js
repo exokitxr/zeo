@@ -243,20 +243,16 @@ self.onmessage = e => {
       const lightmapsCoordsArray = new Int32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + readByteOffset, numLightmaps * 2);
       readByteOffset += 4 * numLightmaps * 2;
 
-      const requestGrassChunkMeshes = [];
+      const requestGrassChunkMeshes = []; // XXX can be cleaned up
       for (let i = 0; i < numLightmaps; i++) {
         const baseIndex = i * 2;
         const x = lightmapsCoordsArray[baseIndex + 0];
         const y = lightmapsCoordsArray[baseIndex + 1];
         const grassChunkMesh = grassChunkMeshes[_getChunkIndex(x, y)];
-        if (grassChunkMesh) {
-          requestGrassChunkMeshes.push(grassChunkMesh);
-        } else {
-          requestGrassChunkMeshes.push({
-            offset: new THREE.Vector2(x, y),
-            positions: new Float32Array(0),
-          });
-        }
+        requestGrassChunkMeshes.push(grassChunkMesh || {
+          offset: new THREE.Vector2(x, y),
+          positions: new Float32Array(0),
+        });
       }
 
       let writeByteOffset = 4;
