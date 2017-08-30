@@ -63,6 +63,8 @@ function mod(value, divisor) {
 const _getChunkIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
 const _getOriginHeight = () => (1 - 0.3 + Math.pow(elevationNoise.in2D(0 + 1000, 0 + 1000), 0.5)) * 64;
 
+const zeroFloat32Array = new Float32Array(0);
+
 class PeekFace {
   constructor(exitFace, enterFace, x, y, z) {
     this.exitFace = exitFace;
@@ -428,58 +430,47 @@ self.onmessage = e => {
       const {id, args} = data;
       const {lightmapBuffer} = args;
 
-      let byteOffset = 0;
-      const numLightmaps = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, 1)[0];
-      byteOffset += 4;
+      let readByteOffset = 0;
+      const numLightmaps = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + readByteOffset, 1)[0];
+      readByteOffset += 4;
 
-      const lightmapsCoordsArray = new Int32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, numLightmaps * 2);
-      byteOffset += 4 * numLightmaps * 2;
+      const lightmapsCoordsArray = new Int32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + readByteOffset, numLightmaps * 2);
+      readByteOffset += 4 * numLightmaps * 2;
 
-      const promises = [];
+      let writeByteOffset = 4;
       for (let i = 0; i < numLightmaps; i++) {
         const baseIndex = i * 2;
         const x = lightmapsCoordsArray[baseIndex + 0];
         const z = lightmapsCoordsArray[baseIndex + 1];
-        promises.push(tra.getChunk(x, z) || {
+        const chunk = tra.getChunk(x, z) || {
           x,
           z,
           chunkData: {
-            positions: new Float32Array(0),
+            positions: zeroFloat32Array,
           },
-        });
+        };
+
+        const lightmapHeaderArray = new Int32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + writeByteOffset, 2);
+        lightmapHeaderArray[0] = chunk.x;
+        lightmapHeaderArray[1] = chunk.z;
+        writeByteOffset += 4 * 2;
+
+        const positions = chunk.chunkData.positions;
+        const numPositions = positions.length;
+        new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + writeByteOffset, 1)[0] = numPositions;
+        writeByteOffset += 4;
+
+        new Float32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + writeByteOffset, numPositions).set(positions);
+        writeByteOffset += 4 * numPositions;
       }
-      Promise.all(promises)
-        .then(chunks => {
-          let byteOffset = 4;
 
-          for (let i = 0; i < numLightmaps; i++) {
-            const chunk = chunks[i];
-
-            const lightmapHeaderArray = new Int32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, 2);
-            lightmapHeaderArray[0] = chunk.x;
-            lightmapHeaderArray[1] = chunk.z;
-            byteOffset += 4 * 2;
-
-            const positions = chunk.chunkData.positions;
-            const numPositions = positions.length;
-            new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, 1)[0] = numPositions;
-            byteOffset += 4;
-
-            new Float32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, numPositions).set(positions);
-            byteOffset += 4 * numPositions;
-          }
-
-          _requestLightmaps(lightmapBuffer, lightmapBuffer => {
-            postMessage({
-              type: 'response',
-              args: [id],
-              result: lightmapBuffer,
-            }, [lightmapBuffer.buffer]);
-          });
-        })
-        .catch(err => {
-          console.warn(err);
-        });
+      _requestLightmaps(lightmapBuffer, lightmapBuffer => {
+        postMessage({
+          type: 'response',
+          args: [id],
+          result: lightmapBuffer,
+        }, [lightmapBuffer.buffer]);
+      });
 
       break;
     }
