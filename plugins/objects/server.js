@@ -64,6 +64,9 @@ class Objects {
       if (!chunk.hasTrailer(n)) {
         generator[1](chunk);
         chunk.addTrailer(n);
+        return true;
+      } else {
+        return false;
       }
     };
     const _geometrizeChunk = chunk => {
@@ -358,12 +361,17 @@ class Objects {
               generators.push(generator);
 
               if (zde.chunks.length > 0) {
+                let updated = false;
                 for (let i = 0; i < zde.chunks.length; i++) {
                   const chunk = zde.chunks[i];
-                  _generateChunkWithGenerator(chunk, generator);
-                  _geometrizeChunk(chunk);
+                  if (_generateChunkWithGenerator(chunk, generator)) {
+                    _geometrizeChunk(chunk);
+                    updated = true;
+                  }
                 }
-                _saveChunks();
+                if (updated) {
+                  _saveChunks();
+                }
               }
             },
             addObject(chunk, name, position, rotation, value) {
