@@ -376,7 +376,7 @@ class Grass {
       }
     };
 
-    const elementListener = elements.makeListener(LIGHTMAP_PLUGIN); // XXX clean this up properly
+    const elementListener = elements.makeListener(LIGHTMAP_PLUGIN);
     elementListener.on('add', lightmapElement => {
       lightmapElement.lightmapper.on('update', ([minX, minZ, maxX, maxZ]) => {
         const refreshed = [];

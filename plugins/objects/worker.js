@@ -45,6 +45,7 @@ const localBox = new THREE.Box3();
 const localBox2 = new THREE.Box3();
 const localFrustum = new THREE.Frustum();
 
+const zeroFloat32Array = new Float32Array(0);
 const oneVector = new THREE.Vector3(1, 1, 1);
 const bodyOffsetVector = new THREE.Vector3(0, -1.6 / 2, 0);
 
@@ -824,58 +825,52 @@ self.onmessage = e => {
       const {id, args} = data;
       const {lightmapBuffer} = args;
 
-      let byteOffset = 0;
-      const numLightmaps = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, 1)[0];
-      byteOffset += 4;
+      let readByteOffset = 0;
+      const numLightmaps = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + readByteOffset, 1)[0];
+      readByteOffset += 4;
 
-      const lightmapsCoordsArray = new Int32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, numLightmaps * 2);
-      byteOffset += 4 * numLightmaps * 2;
+      const lightmapsCoordsArray = new Int32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + readByteOffset, numLightmaps * 2);
+      readByteOffset += 4 * numLightmaps * 2;
 
-      const promises = []; // XXX can be cleaned up
+      const requestObjectChunkMeshes = Array(numLightmaps);
       for (let i = 0; i < numLightmaps; i++) {
         const baseIndex = i * 2;
         const x = lightmapsCoordsArray[baseIndex + 0];
         const z = lightmapsCoordsArray[baseIndex + 1];
-        promises.push(zde.getChunk(x, z) || {
+        requestObjectChunkMeshes[i] = zde.getChunk(x, z) || {
           x,
           z,
           chunkData: {
-            positions: new Float32Array(0),
+            positions: zeroFloat32Array,
           },
-        });
+        };
       }
-      Promise.all(promises)
-        .then(chunks => {
-          let byteOffset = 4;
 
-          for (let i = 0; i < numLightmaps; i++) {
-            const chunk = chunks[i];
+      let writeByteOffset = 4;
+      for (let i = 0; i < numLightmaps; i++) {
+        const chunk = requestObjectChunkMeshes[i];
 
-            const lightmapHeaderArray = new Int32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, 2);
-            lightmapHeaderArray[0] = chunk.x;
-            lightmapHeaderArray[1] = chunk.z;
-            byteOffset += 4 * 2;
+        const lightmapHeaderArray = new Int32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + writeByteOffset, 2);
+        lightmapHeaderArray[0] = chunk.x;
+        lightmapHeaderArray[1] = chunk.z;
+        writeByteOffset += 4 * 2;
 
-            const {positions} = chunk.chunkData;
-            const numPositions = positions.length;
-            new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, 1)[0] = numPositions;
-            byteOffset += 4;
+        const {positions} = chunk.chunkData;
+        const numPositions = positions.length;
+        new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + writeByteOffset, 1)[0] = numPositions;
+        writeByteOffset += 4;
 
-            new Float32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, numPositions).set(positions);
-            byteOffset += 4 * numPositions;
-          }
+        new Float32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + writeByteOffset, numPositions).set(positions);
+        writeByteOffset += 4 * numPositions;
+      }
 
-          _requestLightmaps(lightmapBuffer, lightmapBuffer => {
-            postMessage({
-              type: 'response',
-              args: [id],
-              result: lightmapBuffer,
-            }, [lightmapBuffer.buffer]);
-          });
-        })
-        .catch(err => {
-          console.warn(err);
-        });
+      _requestLightmaps(lightmapBuffer, lightmapBuffer => {
+        postMessage({
+          type: 'response',
+          args: [id],
+          result: lightmapBuffer,
+        }, [lightmapBuffer.buffer]);
+      });
 
       break;
     }

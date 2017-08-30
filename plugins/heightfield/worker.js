@@ -437,18 +437,23 @@ self.onmessage = e => {
       const lightmapsCoordsArray = new Int32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + readByteOffset, numLightmaps * 2);
       readByteOffset += 4 * numLightmaps * 2;
 
-      let writeByteOffset = 4;
+      const requestMapChunkMeshes = Array(numLightmaps);
       for (let i = 0; i < numLightmaps; i++) {
         const baseIndex = i * 2;
         const x = lightmapsCoordsArray[baseIndex + 0];
         const z = lightmapsCoordsArray[baseIndex + 1];
-        const chunk = tra.getChunk(x, z) || {
+        requestMapChunkMeshes[i] = tra.getChunk(x, z) || {
           x,
           z,
           chunkData: {
             positions: zeroFloat32Array,
           },
         };
+      }
+
+      let writeByteOffset = 4;
+      for (let i = 0; i < numLightmaps; i++) {
+        const chunk = requestMapChunkMeshes[i]
 
         const lightmapHeaderArray = new Int32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + writeByteOffset, 2);
         lightmapHeaderArray[0] = chunk.x;

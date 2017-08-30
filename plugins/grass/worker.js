@@ -28,6 +28,7 @@ function mod(value, divisor) {
 }
 const _getChunkIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
 
+const zeroFloat32Array = new Float32Array(0);
 const localMatrix = new THREE.Matrix4();
 const localMatrix2 = new THREE.Matrix4();
 const localFrustum = new THREE.Frustum();
@@ -243,32 +244,33 @@ self.onmessage = e => {
       const lightmapsCoordsArray = new Int32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + readByteOffset, numLightmaps * 2);
       readByteOffset += 4 * numLightmaps * 2;
 
-      const requestGrassChunkMeshes = []; // XXX can be cleaned up
+      const requestGrassChunkMeshes = Array(numLightmaps);
       for (let i = 0; i < numLightmaps; i++) {
         const baseIndex = i * 2;
         const x = lightmapsCoordsArray[baseIndex + 0];
         const y = lightmapsCoordsArray[baseIndex + 1];
-        const grassChunkMesh = grassChunkMeshes[_getChunkIndex(x, y)];
-        requestGrassChunkMeshes.push(grassChunkMesh || {
+        requestGrassChunkMeshes[i] = grassChunkMeshes[_getChunkIndex(x, y)] || {
           offset: new THREE.Vector2(x, y),
-          positions: new Float32Array(0),
-        });
+          geometry: {
+            positions: zeroFloat32Array,
+          },
+        };
       }
 
       let writeByteOffset = 4;
       for (let i = 0; i < numLightmaps; i++) {
-        const {offset: {x, y}, geometry: {positions}} = requestGrassChunkMeshes[i];
+        const chunk = requestGrassChunkMeshes[i];
 
         const lightmapHeaderArray = new Int32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + writeByteOffset, 2);
-        lightmapHeaderArray[0] = x;
-        lightmapHeaderArray[1] = y;
+        lightmapHeaderArray[0] = chunk.offset.x;
+        lightmapHeaderArray[1] = chunk.offset.y;
         writeByteOffset += 4 * 2;
 
-        const numPositions = positions.length;
+        const numPositions = chunk.geometry.positions.length;
         new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + writeByteOffset, 1)[0] = numPositions;
         writeByteOffset += 4;
 
-        new Float32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + writeByteOffset, numPositions).set(positions);
+        new Float32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + writeByteOffset, numPositions).set(chunk.geometry.positions);
         writeByteOffset += 4 * numPositions;
       }
 
