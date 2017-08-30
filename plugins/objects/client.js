@@ -711,23 +711,17 @@ void main() {
         let wordOffset = 0;
         const uint32Array = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset);
         const int32Array = new Int32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset);
-        wordOffset++;
 
-        let numLightmaps = 0;
+        uint32Array[wordOffset] = refreshed.length;
+        wordOffset++;
         for (let i = 0; i < refreshed.length; i++) {
           const trackedObjectChunkMeshes = refreshed[i];
+          const {offset: {x, y}} = trackedObjectChunkMeshes;
 
-          if (trackedObjectChunkMeshes) {
-             const {offset: {x, y}} = trackedObjectChunkMeshes;
-
-            int32Array[wordOffset + 0] = x;
-            int32Array[wordOffset + 1] = y;
-            wordOffset += 2;
-
-            numLightmaps++;
-          }
+          int32Array[wordOffset + 0] = x;
+          int32Array[wordOffset + 1] = y;
+          wordOffset += 2;
         }
-        uint32Array[0] = numLightmaps;
       })();
 
       worker.requestLightmaps(lightmapBuffer, newLightmapBuffer => {
@@ -784,27 +778,8 @@ void main() {
     };
 
     // let lightmapper = null;
-    const _bindLightmapper = lightmapElement => {
+    /* const _bindLightmapper = lightmapElement => {
       // lightmapper = lightmapElement.lightmapper;
-
-      lightmapElement.lightmapper.on('update', chunkRange => { // XXX do not update for local heightfield adds
-        const [minX, minZ, maxX, maxZ] = chunkRange;
-
-        const refreshed = [];
-        for (const index in objectsChunkMeshes) {
-          const objectChunkMesh = objectsChunkMeshes[index];
-          if (objectChunkMesh) {
-            const {offset: {x, y: z}} = objectChunkMesh;
-
-            if (x >= minX && x < maxX && z >= minZ && z < maxZ) {
-              refreshed.push(objectChunkMesh);
-            }
-          }
-        }
-        if (refreshed.length > 0) {
-          _refreshLightmaps(refreshed);
-        }
-      });
 
       // _bindLightmaps();
     };
@@ -812,7 +787,7 @@ void main() {
       // _unbindLightmaps();
 
       // lightmapper = null;
-    };
+    }; */
     /* const _bindLightmaps = () => {
       for (const index in objectsChunkMeshes) {
         const objectChunkMesh = objectsChunkMeshes[index];
@@ -845,12 +820,29 @@ void main() {
       objectChunkMesh.lightmap = null;
     }; */
     const lightmapElementListener = elements.makeListener(LIGHTMAP_PLUGIN);
-    lightmapElementListener.on('add', entityElement => {
-      _bindLightmapper(entityElement);
+    lightmapElementListener.on('add', lightmapElement => {
+      lightmapElement.lightmapper.on('update', chunkRange => {
+        const [minX, minZ, maxX, maxZ] = chunkRange;
+
+        const refreshed = [];
+        for (const index in objectsChunkMeshes) {
+          const objectChunkMesh = objectsChunkMeshes[index];
+          if (objectChunkMesh) {
+            const {offset: {x, y: z}} = objectChunkMesh;
+
+            if (x >= minX && x < maxX && z >= minZ && z < maxZ) {
+              refreshed.push(objectChunkMesh);
+            }
+          }
+        }
+        if (refreshed.length > 0) {
+          _refreshLightmaps(refreshed);
+        }
+      });
     });
-    lightmapElementListener.on('remove', () => {
+    /* lightmapElementListener.on('remove', () => {
       _unbindLightmapper();
-    });
+    }); */
 
     let craftElement = null;
     const recipeQueue = [];

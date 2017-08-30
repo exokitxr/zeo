@@ -457,6 +457,77 @@ class Heightfield {
       }
     };
 
+    const _refreshLightmaps = refreshed => {
+      (() => {
+        let wordOffset = 0;
+        const uint32Array = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset);
+        const int32Array = new Int32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset);
+
+        uint32Array[wordOffset] = refreshed.length;
+        wordOffset++;
+        for (let i = 0; i < refreshed.length; i++) {
+          const trackedMapChunkMeshes = refreshed[i];
+          const {offset: {x, y}} = trackedMapChunkMeshes;
+
+          int32Array[wordOffset + 0] = x;
+          int32Array[wordOffset + 1] = y;
+          wordOffset += 2;
+        }
+      })();
+
+      worker.requestLightmaps(lightmapBuffer, newLightmapBuffer => {
+        const uint32Array = new Uint32Array(newLightmapBuffer.buffer, newLightmapBuffer.byteOffset);
+        const int32Array = new Int32Array(newLightmapBuffer.buffer, newLightmapBuffer.byteOffset);
+
+        let byteOffset = 0;
+        const numLightmaps = uint32Array[byteOffset / 4];
+        byteOffset += 4;
+
+        for (let i = 0; i < numLightmaps; i++) {
+          const x = int32Array[byteOffset / 4];
+          byteOffset += 4;
+          const z = int32Array[byteOffset / 4];
+          byteOffset += 4;
+
+          const skyLightmapsLength = uint32Array[byteOffset / 4];
+          byteOffset += 4;
+
+          const newSkyLightmaps = new Uint8Array(newLightmapBuffer.buffer, newLightmapBuffer.byteOffset + byteOffset, skyLightmapsLength);
+          byteOffset += skyLightmapsLength;
+          let alignDiff = byteOffset % 4;
+          if (alignDiff > 0) {
+            byteOffset += 4 - alignDiff;
+          }
+
+          const torchLightmapsLength = uint32Array[byteOffset / 4];
+          byteOffset += 4;
+
+          const newTorchLightmaps = new Uint8Array(newLightmapBuffer.buffer, newLightmapBuffer.byteOffset + byteOffset, torchLightmapsLength);
+          byteOffset += torchLightmapsLength;
+          alignDiff = byteOffset % 4;
+          if (alignDiff > 0) {
+            byteOffset += 4 - alignDiff;
+          }
+
+          const trackedMapChunkMeshes = mapChunkMeshes[_getChunkIndex(x, z)];
+          if (trackedMapChunkMeshes) {
+            if (newSkyLightmaps.length > 0) {
+              const {index, skyLightmaps} = trackedMapChunkMeshes;
+              skyLightmaps.set(newSkyLightmaps);
+              renderer.updateAttribute(heightfieldObject.geometry.attributes.skyLightmap, index * skyLightmaps.length, newSkyLightmaps.length, false);
+            }
+            if (newTorchLightmaps.length > 0) {
+              const {index, torchLightmaps} = trackedMapChunkMeshes;
+              torchLightmaps.set(newTorchLightmaps);
+              renderer.updateAttribute(heightfieldObject.geometry.attributes.torchLightmap, index * torchLightmaps.length, newTorchLightmaps.length, false);
+            }
+          }
+        }
+
+        lightmapBuffer = newLightmapBuffer;
+      });
+    };
+
     /* let Lightmapper = null;
     let lightmapper = null;
     const _bindLightmapper = lightmapElement => {
@@ -500,12 +571,29 @@ class Heightfield {
     const _unbindLightmap = trackedMapChunkMeshes => {
       lightmapper.remove(trackedMapChunkMeshes.shape);
       trackedMapChunkMeshes.shape = null;
-    };
+    }; */
     const elementListener = elements.makeListener(LIGHTMAP_PLUGIN);
-    elementListener.on('add', entityElement => {
-      _bindLightmapper(entityElement);
+    elementListener.on('add', lightmapElement => {
+      lightmapElement.lightmapper.on('update', chunkRange => {
+        const [minX, minZ, maxX, maxZ] = chunkRange;
+
+        const refreshed = [];
+        for (const index in mapChunkMeshes) {
+          const trackedMapChunkMeshes = mapChunkMeshes[index];
+          if (trackedMapChunkMeshes) {
+            const {offset: {x, y: z}} = trackedMapChunkMeshes;
+
+            if (x >= minX && x < maxX && z >= minZ && z < maxZ) {
+              refreshed.push(trackedMapChunkMeshes);
+            }
+          }
+        }
+        if (refreshed.length > 0) {
+          _refreshLightmaps(refreshed);
+        }
+      });
     });
-    elementListener.on('remove', () => {
+    /* elementListener.on('remove', () => {
       _unbindLightmapper();
     }); */
 
