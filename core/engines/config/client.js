@@ -25,8 +25,6 @@ const DEFAULT_BROWSER_CONFIG = {
 };
 const NUM_SERVERS = 5;
 
-const STATS_REFRESH_RATE = 1000;
-
 const SIDES = ['left', 'right'];
 
 class Config {
