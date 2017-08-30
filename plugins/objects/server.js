@@ -478,26 +478,28 @@ class Objects {
                   const {method} = m;
 
                   if (method === 'addObject') {
-                    const {args} = m;
+                    const {id, args} = m;
                     const {x, z, n, matrix, value} = args;
 
-                    _requestChunk(x, z)
-                      .then(chunk => {
-                        chunk.addObject(n, matrix, value);
+                    const chunk = zde.getChunk(x, z);
+                    if (chunk) {
+                      chunk.addObject(n, matrix, value);
 
-                        _saveChunks();
+                      _geometrizeChunk(chunk);
 
-                        _broadcast({
-                          type: 'addObject',
-                          args,
-                        });
-                      })
-                      .catch(err => {
-                        res.status(500);
-                        res.json({
-                          error: err.stack,
-                        });
+                      _saveChunks();
+
+                      c.send(JSON.stringify({
+                        type: 'response',
+                        id,
+                        result: null,
+                      }));
+
+                      _broadcast({
+                        type: 'addObject',
+                        args,
                       });
+                    }
                   } else if (method === 'removeObject') {
                     const {id, args} = m;
                     const {x, z, index} = args;

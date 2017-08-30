@@ -248,7 +248,6 @@ connection.on('message', e => {
     const position = new THREE.Vector3().fromArray(positionArray);
     const rotationArray = matrix.slice(3, 7);
     const rotation = new THREE.Quaternion().fromArray(rotationArray);
-    // chunk.trackedObjects[objectIndex] = new TrackedObject(n, position, rotation, value);
 
     const objectApi = objectApis[n];
     if (objectApi && objectApi.added) {
@@ -313,6 +312,21 @@ connection.on('message', e => {
     console.warn('objects worker got invalid message type:', JSON.stringify(type));
   }
 });
+connection.addObject = (x, z, n, matrix, value, cb) => {
+  const id = _makeId();
+  connection.send(JSON.stringify({
+    method: 'addObject',
+    id,
+    args: {
+      x,
+      z,
+      n,
+      matrix,
+      value,
+    },
+  }));
+  queues[id] = cb;
+};
 connection.removeObject = (x, z, index, cb) => {
   const id = _makeId();
   connection.send(JSON.stringify({
@@ -673,30 +687,21 @@ self.onmessage = e => {
         const position = new THREE.Vector3().fromArray(positionArray);
         const rotation = new THREE.Quaternion().fromArray(rotationArray);
 
-        connection.send(JSON.stringify({
-          method: 'addObject',
-          args: {
-            x,
-            z,
-            n,
-            matrix,
-            value,
-          },
-        }));
+        connection.addObject(x, z, n, matrix, value, () => {
+          const {offsets: {index, numPositions, numObjectIndices, numIndices}} = oldChunk;
+          _requestChunk(x, z, index, numPositions, numObjectIndices, numIndices)
+            .then(newChunk => {
+              zde.removeChunk(x, z);
+              zde.pushChunk(newChunk);
 
-        const {offsets: {index, numPositions, numObjectIndices, numIndices}} = oldChunk;
-        _requestChunk(x, z, index, numPositions, numObjectIndices, numIndices)
-          .then(newChunk => {
-            zde.removeChunk(x, z);
-            zde.pushChunk(newChunk);
+              postMessage({
+                type: 'chunkUpdate',
+                args: [x, z],
+              });
 
-            postMessage({
-              type: 'chunkUpdate',
-              args: [x, z],
+              // XXX post object added to client
             });
-
-            // XXX post object added to client
-          });
+        });
       }
       break;
     }
