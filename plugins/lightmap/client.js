@@ -389,12 +389,14 @@ class Lightmap {
         }); */
       }
 
-      add(shape, transfers) {
+      add(shape, transfers, {update = true} = {}) {
         this.worker.addShape(shape, transfers);
 
         shape._parent = this;
 
-        this.emit('update', shape.getChunkRange());
+        if (update) {
+          this.emit('update', shape.getChunkRange());
+        }
 
         /* const {width, depth, _lightmaps: lightmaps} = this;
         const newLightmapsNeedUpdate = shape.getLightmapsInRange(width, depth, lightmaps);

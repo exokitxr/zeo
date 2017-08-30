@@ -419,7 +419,7 @@ class Heightfield {
           elements.requestElement(LIGHTMAP_PLUGIN)
             .then(lightmapElement => {
               const shape = new lightmapElement.Lightmapper.Heightfield(x * NUM_CELLS, y * NUM_CELLS, heightfield, lightmapElement.Lightmapper.MaxBlend);
-              lightmapElement.lightmapper.add(shape, [heightfield.buffer]);
+              lightmapElement.lightmapper.add(shape, [heightfield.buffer], {update: false});
 
               worker.respond(id, shape.id);
             });
