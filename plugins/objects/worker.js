@@ -8,7 +8,7 @@ importScripts('/archae/assets/alea.js');
 const {exports: alea} = self.module;
 self.module = {};
 
-const zeode = require('/home/k/zeode');
+const zeode = require('zeode');
 const {
   OBJECT_BUFFER_SIZE,
   GEOMETRY_BUFFER_SIZE,
@@ -236,84 +236,96 @@ let pendingMessage = null;
 const connection = new AutoWs(_wsUrl('/archae/objectsWs'));
 connection.on('message', e => {
   const {data} = e;
+  const m = JSON.parse(data);
+  const {type} = m;
 
-  if (!pendingMessage) {
-    const m = JSON.parse(data);
-    const {type} = m;
+  if (type === 'addObject') {
+    const {args: {x, z, n, matrix, value}} = m;
+    const chunk = zde.getChunk(x, z);
+    const objectIndex = chunk.addObject(n, matrix);
 
-    if (type === 'response') {
-      pendingMessage = m;
-    } else if (type === 'addObject') {
-      const {args: {x, z, n, matrix, value}} = m;
-      const chunk = zde.getChunk(x, z);
-      const objectIndex = chunk.addObject(n, matrix);
+    const positionArray = matrix.slice(0, 3);
+    const position = new THREE.Vector3().fromArray(positionArray);
+    const rotationArray = matrix.slice(3, 7);
+    const rotation = new THREE.Quaternion().fromArray(rotationArray);
+    // chunk.trackedObjects[objectIndex] = new TrackedObject(n, position, rotation, value);
 
-      const positionArray = matrix.slice(0, 3);
-      const position = new THREE.Vector3().fromArray(positionArray);
-      const rotationArray = matrix.slice(3, 7);
-      const rotation = new THREE.Quaternion().fromArray(rotationArray);
-      // chunk.trackedObjects[objectIndex] = new TrackedObject(n, position, rotation, value);
-
-      const objectApi = objectApis[n];
-      if (objectApi && objectApi.added) {
-        postMessage({
-          type: 'objectAdded',
-          args: [n, x, z, objectIndex, positionArray, rotationArray, value],
-        });
-      }
-
+    const objectApi = objectApis[n];
+    if (objectApi && objectApi.added) {
       postMessage({
-        type: 'chunkUpdate',
-        args: [x, z],
+        type: 'objectAdded',
+        args: [n, x, z, objectIndex, positionArray, rotationArray, value],
       });
-    } else if (type === 'removeObject') {
-      const {args: {x, z, index: objectIndex}} = m;
-      // const chunk = zde.getChunk(x, z);
-      // chunk.removeObject(objectIndex);
-
-      /* const trackedObject = trackedObjects[objectIndex];
-      const objectApi = objectApis[trackedObject.n];
-      if (objectApi && objectApi.removed) {
-        postMessage({
-          type: 'objectRemoved',
-          args: [trackedObject.n, x, z, objectIndex],
-        });
-      }
-
-      chunk.trackedObjects[objectIndex] = null; */
-
-      postMessage({
-        type: 'chunkUpdate',
-        args: [x, z],
-      });
-    } else if (type === 'setObjectData') {
-      const {args: {x, z, index: objectIndex, value}} = m;
-      const chunk = zde.getChunk(x, z);
-      chunk.setObjectData(objectIndex, value);
-
-      /* const trackedObject = chunk.trackedObjects[objectIndex];
-      const objectApi = objectApis[trackedObject.n];
-      if (objectApi && objectApi.updated) {
-        trackedObject.value = value;
-
-        postMessage({
-          type: 'objectUpdated',
-          args: [trackedObject.n, x, z, objectIndex, trackedObject.position.toArray(), trackedObject.rotation.toArray(), trackedObject.value],
-        });
-      } */
-
-      postMessage({
-        type: 'chunkUpdate',
-        args: [x, z],
-      });
-    } else {
-      console.warn('objects worker got invalid message type:', JSON.stringify(type));
     }
+
+    postMessage({
+      type: 'chunkUpdate',
+      args: [x, z],
+    });
+  } else if (type === 'removeObject') {
+    const {args: {x, z, index: objectIndex}} = m;
+    // const chunk = zde.getChunk(x, z);
+    // chunk.removeObject(objectIndex);
+
+    /* const trackedObject = trackedObjects[objectIndex];
+    const objectApi = objectApis[trackedObject.n];
+    if (objectApi && objectApi.removed) {
+      postMessage({
+        type: 'objectRemoved',
+        args: [trackedObject.n, x, z, objectIndex],
+      });
+    }
+
+    chunk.trackedObjects[objectIndex] = null; */
+
+    postMessage({
+      type: 'chunkUpdate',
+      args: [x, z],
+    });
+  } else if (type === 'setObjectData') {
+    const {args: {x, z, index: objectIndex, value}} = m;
+    const chunk = zde.getChunk(x, z);
+    chunk.setObjectData(objectIndex, value);
+
+    /* const trackedObject = chunk.trackedObjects[objectIndex];
+    const objectApi = objectApis[trackedObject.n];
+    if (objectApi && objectApi.updated) {
+      trackedObject.value = value;
+
+      postMessage({
+        type: 'objectUpdated',
+        args: [trackedObject.n, x, z, objectIndex, trackedObject.position.toArray(), trackedObject.rotation.toArray(), trackedObject.value],
+      });
+    } */
+
+    postMessage({
+      type: 'chunkUpdate',
+      args: [x, z],
+    });
+  } else if (type === 'response') {
+    const {id, result} = m;
+
+    queues[id](result);
+    queues[id] = null;
+
+    _cleanupQueues();
   } else {
-    queue.shift()(data);
-    pendingMessage = null;
+    console.warn('objects worker got invalid message type:', JSON.stringify(type));
   }
 });
+connection.removeObject = (x, z, index, cb) => {
+  const id = _makeId();
+  connection.send(JSON.stringify({
+    method: 'removeObject',
+    id,
+    args: {
+      x,
+      z,
+      index,
+    },
+  }));
+  queues[id] = cb;
+};
 const _resArrayBufferHeaders = res => {
   if (res.status >= 200 && res.status < 300) {
     return res.arrayBuffer()
@@ -345,27 +357,25 @@ function mod(value, divisor) {
 const _getChunkIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
 
 const _requestChunk = (x, z, index, numPositions, numObjectIndices, numIndices) => fetch(`/archae/objects/chunks?x=${x}&z=${z}`, {
-    credentials: 'include',
-  })
-    .then(_resArrayBufferHeaders)
-    .then(({buffer, headers}) => {
-      const newTextureAtlasVersion = headers.get('Texture-Atlas-Version');
-      if (newTextureAtlasVersion !== textureAtlasVersion) {
-        textureAtlasVersion = newTextureAtlasVersion;
+  credentials: 'include',
+})
+  .then(_resArrayBufferHeaders)
+  .then(({buffer, headers}) => {
+    const newTextureAtlasVersion = headers.get('Texture-Atlas-Version');
+    if (newTextureAtlasVersion !== textureAtlasVersion) {
+      textureAtlasVersion = newTextureAtlasVersion;
 
-        _updateTextureAtlas();
-      }
+      _updateTextureAtlas();
+    }
 
-      const objectBuffer = new Uint32Array(buffer, 0, OBJECT_BUFFER_SIZE / 4);
-      const geometryBuffer = new Uint8Array(buffer, OBJECT_BUFFER_SIZE, GEOMETRY_BUFFER_SIZE)
+    const objectBuffer = new Uint32Array(buffer, 0, OBJECT_BUFFER_SIZE / 4);
+    const geometryBuffer = new Uint8Array(buffer, OBJECT_BUFFER_SIZE, GEOMETRY_BUFFER_SIZE)
 
-      const chunkData = protocolUtils.parseGeometry(geometryBuffer.buffer, geometryBuffer.byteOffset);
-      _offsetChunkData(chunkData, index, numPositions);
+    const chunkData = protocolUtils.parseGeometry(geometryBuffer.buffer, geometryBuffer.byteOffset);
+    _offsetChunkData(chunkData, index, numPositions);
 
-      const chunk = zde.addChunk(x, z, objectBuffer, geometryBuffer);
-      _registerChunk(chunk, chunkData, index, numPositions, numObjectIndices, numIndices);
-      return chunk;
-    });
+    return _decorateChunk(new zeode.Chunk(x, z, objectBuffer, geometryBuffer), chunkData, index, numPositions, numObjectIndices, numIndices);
+  });
 const _offsetChunkData = (chunkData, index, numPositions) => {
   const {indices} = chunkData;
   const positionOffset = index * (numPositions / 3);
@@ -373,7 +383,10 @@ const _offsetChunkData = (chunkData, index, numPositions) => {
     indices[i] += positionOffset;
   }
 };
-const _registerChunk = (chunk, chunkData, index, numPositions, numObjectIndices, numIndices) => {
+let ids = 0;
+const _decorateChunk = (chunk, chunkData, index, numPositions, numObjectIndices, numIndices) => {
+  chunk.id = ids++;
+
   chunk.chunkData = chunkData;
 
   chunk.offsets = {
@@ -420,6 +433,56 @@ const _registerChunk = (chunk, chunkData, index, numPositions, numObjectIndices,
     };
   }
   chunk.renderSpec = renderSpec;
+
+  return chunk;
+};
+const _requestChunkUpdate = (chunk, buffer, cb) => {
+  const {positions} = chunk.chunkData;
+
+  const lightmapBuffer = new Uint8Array(buffer, Math.floor(buffer.byteLength * 3 / 4));
+
+  let byteOffset = 0;
+  new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, 1)[0] = 1;
+  byteOffset += 4;
+
+  const lightmapHeaderArray = new Int32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, 2);
+  lightmapHeaderArray[0] = chunk.x;
+  lightmapHeaderArray[1] = chunk.z;
+  byteOffset += 4 * 2;
+
+  const numPositions = positions.length;
+  new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, 1)[0] = numPositions;
+  byteOffset += 4;
+
+  new Float32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, numPositions).set(positions);
+  byteOffset += 4 * numPositions;
+
+  _requestLightmaps(lightmapBuffer, lightmapBuffer => {
+    const {buffer} = lightmapBuffer;
+
+    let byteOffset = 3 * 4;
+    const skyLightmapsLength = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, 1)[0];
+    byteOffset += 4;
+    const skyLightmaps = new Uint8Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, skyLightmapsLength);
+    byteOffset += skyLightmapsLength;
+    let alignDiff = byteOffset % 4;
+    if (alignDiff > 0) {
+      byteOffset += 4 - alignDiff;
+    }
+
+    const torchLightmapsLength = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, 1)[0];
+    byteOffset += 4;
+    const torchLightmaps = new Uint8Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, torchLightmapsLength);
+    byteOffset += torchLightmapsLength;
+    alignDiff = byteOffset % 4;
+    if (alignDiff > 0) {
+      byteOffset += 4 - alignDiff;
+    }
+
+    protocolUtils.stringifyGeometry(chunk.chunkData, skyLightmaps, torchLightmaps, buffer, 0);
+
+    cb(buffer);
+  });
 };
 const _updateTextureAtlas = _debounce(next => {
   return fetch(`/archae/objects/texture-atlas.png`, {
@@ -603,14 +666,12 @@ self.onmessage = e => {
 
       const x = Math.floor(positionArray[0] / NUM_CELLS);
       const z = Math.floor(positionArray[2] / NUM_CELLS);
-      const chunk = zde.getChunk(x, z);
-      if (chunk) {
+      const oldChunk = zde.getChunk(x, z);
+      if (oldChunk) {
         const n = murmur(name);
         const matrix = positionArray.concat(rotationArray).concat(oneVector.toArray());
-        const index = chunk.addObject(n, matrix);
         const position = new THREE.Vector3().fromArray(positionArray);
         const rotation = new THREE.Quaternion().fromArray(rotationArray);
-        // chunk.trackedObjects[index] = new TrackedObject(n, position, rotation, value);
 
         connection.send(JSON.stringify({
           method: 'addObject',
@@ -622,42 +683,41 @@ self.onmessage = e => {
             value,
           },
         }));
+
+        const {offsets: {index, numPositions, numObjectIndices, numIndices}} = oldChunk;
+        _requestChunk(x, z, index, numPositions, numObjectIndices, numIndices)
+          .then(newChunk => {
+            zde.removeChunk(x, z);
+            zde.pushChunk(newChunk);
+
+            postMessage({
+              type: 'chunkUpdate',
+              args: [x, z],
+            });
+
+            // XXX post object added to client
+          });
       }
       break;
     }
     case 'removeObject': {
-      const {x, z, index} = data;
+      const {x, z, index: objectIndex} = data;
 
-      /* const chunk = zde.getChunk(x, z);
-      if (chunk) {
-        chunk.removeObject(index);
+      connection.removeObject(x, z, objectIndex, () => {
+        const oldChunk = zde.getChunk(x, z);
+        const {offsets: {index, numPositions, numObjectIndices, numIndices}} = oldChunk;
+        _requestChunk(x, z, index, numPositions, numObjectIndices, numIndices)
+          .then(newChunk => {
+            const oldChunk = zde.removeChunk(x, z);
+            zde.pushChunk(newChunk);
 
-        const trackedObject = chunk.trackedObjects[index];
-        const objectApi = objectApis[trackedObject.n];
-        if (objectApi && objectApi.removed) {
-          postMessage({
-            type: 'objectRemoved',
-            args: [trackedObject.n, x, z, index],
+            postMessage({
+              type: 'chunkUpdate',
+              args: [x, z],
+            });
+
+            // XXX post object removed to client
           });
-        }
-
-        chunk.trackedObjects[index] = null;
-      } */
-
-      connection.send(JSON.stringify({
-        method: 'removeObject',
-        args: {
-          x,
-          z,
-          index,
-        },
-      }));
-
-      _unrequestChunk(x, z);
-
-      postMessage({
-        type: 'chunkUpdate',
-        args: [x, z],
       });
       break;
     }
@@ -667,17 +727,6 @@ self.onmessage = e => {
       const chunk = zde.getChunk(x, z);
       if (chunk) {
         chunk.setObjectData(index, value);
-
-        /* const trackedObject = chunk.trackedObjects[index];
-        const objectApi = objectApis[trackedObject.n];
-        if (objectApi && objectApi.updated) {
-          trackedObject.value = value;
-
-          postMessage({
-            type: 'objectUpdated',
-            args: [trackedObject.n, x, z, index, trackedObject.position.toArray(), trackedObject.rotation.toArray(), trackedObject.value],
-          });
-        } */
 
         connection.send(JSON.stringify({
           method: 'setObjectData',
@@ -698,55 +747,14 @@ self.onmessage = e => {
 
       _requestChunk(x, z, index, numPositions, numObjectIndices, numIndices)
         .then(chunk => {
-          const {positions} = chunk.chunkData;
-
-          const lightmapBuffer = new Uint8Array(buffer, Math.floor(buffer.byteLength * 3 / 4));
-
-          let byteOffset = 0;
-          new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, 1)[0] = 1;
-          byteOffset += 4;
-
-          const lightmapHeaderArray = new Int32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, 2);
-          lightmapHeaderArray[0] = chunk.x;
-          lightmapHeaderArray[1] = chunk.z;
-          byteOffset += 4 * 2;
-
-          const numPositions = positions.length;
-          new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, 1)[0] = numPositions;
-          byteOffset += 4;
-
-          new Float32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, numPositions).set(positions);
-          byteOffset += 4 * numPositions;
-
-          _requestLightmaps(lightmapBuffer, lightmapBuffer => {
-            const {buffer} = lightmapBuffer;
-
-            let byteOffset = 3 * 4;
-            const skyLightmapsLength = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, 1)[0];
-            byteOffset += 4;
-            const skyLightmaps = new Uint8Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, skyLightmapsLength);
-            byteOffset += skyLightmapsLength;
-            let alignDiff = byteOffset % 4;
-            if (alignDiff > 0) {
-              byteOffset += 4 - alignDiff;
-            }
-
-            const torchLightmapsLength = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, 1)[0];
-            byteOffset += 4;
-            const torchLightmaps = new Uint8Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, torchLightmapsLength);
-            byteOffset += torchLightmapsLength;
-            alignDiff = byteOffset % 4;
-            if (alignDiff > 0) {
-              byteOffset += 4 - alignDiff;
-            }
-
-            protocolUtils.stringifyGeometry(chunk.chunkData, skyLightmaps, torchLightmaps, buffer, 0);
+          zde.pushChunk(chunk);
+          _requestChunkUpdate(chunk, buffer, buffer => {
             postMessage({
               type: 'response',
               args: [id],
               result: buffer,
             }, [buffer]);
-          })
+          });
         })
         .catch(err => {
           console.warn(err);
@@ -756,25 +764,22 @@ self.onmessage = e => {
     case 'ungenerate': {
       const {args} = data;
       const {x, z} = args;
-
       _unrequestChunk(x, z);
+      break;
+    }
+    case 'update': {
+      const {id, args} = data;
+      const {x, z} = args;
+      let {buffer} = args;
 
-      // const chunk = zde.getChunk(x, z);
-
-      /* for (const k in chunk.trackedObjects) {
-        const trackedObject = chunk.trackedObjects[k];
-
-        if (trackedObject) {
-          const objectApi = objectApis[trackedObject.n];
-
-          if (objectApi && objectApi.removed) {
-            postMessage({
-              type: 'objectRemoved',
-              args: [trackedObject.n, chunk.x, chunk.z, parseInt(k, 10), trackedObject.position, trackedObject.rotation, trackedObject.value],
-            });
-          }
-        }
-      } */
+      const chunk = zde.getChunk(x, z);
+      _requestChunkUpdate(chunk, buffer, buffer => {
+        postMessage({
+          type: 'response',
+          args: [id],
+          result: buffer,
+        }, [buffer]);
+      });
       break;
     }
     case 'lightmaps': {

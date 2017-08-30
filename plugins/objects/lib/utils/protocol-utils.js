@@ -225,7 +225,7 @@ const _getCullSize = objectChunks => {
 
 const stringifyCull = (objectChunks, arrayBuffer, byteOffset) => {
   if (arrayBuffer === undefined || byteOffset === undefined) {
-    const bufferSize = _getCullSize(chunks);
+    const bufferSize = _getCullSize(objectChunks);
     arrayBuffer = new ArrayBuffer(bufferSize);
     byteOffset = 0;
   }

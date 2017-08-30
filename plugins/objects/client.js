@@ -232,6 +232,11 @@ void main() {
       numIndices: 0,
       buffer: null,
     };
+    const localUpdateMessageArgs = {
+      x: 0,
+      z: 0,
+      buffer: null,
+    };
     const localUngenerateMessageArgs = {
       x: 0,
       z: 0,
@@ -365,6 +370,22 @@ void main() {
       localMessage.args = localUngenerateMessageArgs;
 
       worker.postMessage(localMessage);
+    };
+    worker.requestUpdate = (x, z, cb) => {
+      localMessage.type = 'update';
+      const id = _makeId();
+      localMessage.id = id;
+      localUpdateMessageArgs.x = x;
+      localUpdateMessageArgs.z = z;
+      localUpdateMessageArgs.buffer = generateBuffer;
+      localMessage.args = localUpdateMessageArgs;
+
+      worker.postMessage(localMessage, [generateBuffer]);
+      queues[id] = newGenerateBuffer => {
+        generateBuffer = newGenerateBuffer;
+
+        cb(newGenerateBuffer);
+      };
     };
     worker.requestLightmaps = (lightmapBuffer, cb) => {
       const id = _makeId();
@@ -557,69 +578,57 @@ void main() {
         cb(protocolUtils.parseGeometry(objectsChunkBuffer));
       });
     };
-    const _makeObjectsChunkMesh = (chunk, gbuffer, objectsChunkData) => {
+    const _requestObjectsUpdate = (x, z, cb) => {
+      worker.requestUpdate(x, z, objectsChunkBuffer => {
+        cb(protocolUtils.parseGeometry(objectsChunkBuffer));
+      });
+    };
+    const _makeObjectsChunkMesh = (chunk, gbuffer) => {
       const {x, z} = chunk;
-      const {positions: newPositions, uvs: newUvs, frames: newFrames, skyLightmaps: newSkyLightmaps, torchLightmaps: newTorchLightmaps, objectIndices: newObjectIndices, indices: newIndices} = objectsChunkData;
-
-      // geometry
 
       const {index, slices: {positions, uvs, frames, skyLightmaps, torchLightmaps, objectIndices, indices}} = gbuffer;
-
-      if (newPositions.length > 0) {
-        positions.set(newPositions);
-        renderer.updateAttribute(objectsObject.geometry.attributes.position, index * positions.length, newPositions.length, false);
-
-        uvs.set(newUvs);
-        renderer.updateAttribute(objectsObject.geometry.attributes.uv, index * uvs.length, newUvs.length, false);
-
-        frames.set(newFrames);
-        renderer.updateAttribute(objectsObject.geometry.attributes.frame, index * frames.length, newFrames.length, false);
-
-        skyLightmaps.set(newSkyLightmaps);
-        renderer.updateAttribute(objectsObject.geometry.attributes.skyLightmap, index * skyLightmaps.length, newSkyLightmaps.length, false);
-
-        torchLightmaps.set(newTorchLightmaps);
-        renderer.updateAttribute(objectsObject.geometry.attributes.torchLightmap, index * torchLightmaps.length, newTorchLightmaps.length, false);
-
-        objectIndices.set(newObjectIndices);
-        renderer.updateAttribute(objectsObject.geometry.attributes.objectIndex, index * objectIndices.length, newObjectIndices.length, false);
-
-        indices.set(newIndices);
-        renderer.updateAttribute(objectsObject.geometry.index, index * indices.length, newIndices.length, true);
-      }
-
-      // material
-
       const material = objectsMaterial;
 
-      // mesh
-
-      const mesh = {
-        // material,
+      return {
         renderListEntry: {
           object: objectsObject,
           material,
           groups: [],
         },
-        index,
-        numObjectIndices: objectIndices.length,
+        gbuffer,
         offset: new THREE.Vector2(x, z),
         skyLightmaps,
         torchLightmaps,
-        lightmap: null,
-        destroy: () => {
-          geometryBuffer.free(gbuffer);
+        update: chunkData => {
+          const {positions: newPositions, uvs: newUvs, frames: newFrames, skyLightmaps: newSkyLightmaps, torchLightmaps: newTorchLightmaps, objectIndices: newObjectIndices, indices: newIndices} = chunkData;
 
-          if (mesh.lightmap) {
-            // _unbindLightmap(mesh);
+          if (newPositions.length > 0) {
+            positions.set(newPositions);
+            renderer.updateAttribute(objectsObject.geometry.attributes.position, index * positions.length, newPositions.length, false);
+
+            uvs.set(newUvs);
+            renderer.updateAttribute(objectsObject.geometry.attributes.uv, index * uvs.length, newUvs.length, false);
+
+            frames.set(newFrames);
+            renderer.updateAttribute(objectsObject.geometry.attributes.frame, index * frames.length, newFrames.length, false);
+
+            skyLightmaps.set(newSkyLightmaps);
+            renderer.updateAttribute(objectsObject.geometry.attributes.skyLightmap, index * skyLightmaps.length, newSkyLightmaps.length, false);
+
+            torchLightmaps.set(newTorchLightmaps);
+            renderer.updateAttribute(objectsObject.geometry.attributes.torchLightmap, index * torchLightmaps.length, newTorchLightmaps.length, false);
+
+            objectIndices.set(newObjectIndices);
+            renderer.updateAttribute(objectsObject.geometry.attributes.objectIndex, index * objectIndices.length, newObjectIndices.length, false);
+
+            indices.set(newIndices);
+            renderer.updateAttribute(objectsObject.geometry.index, index * indices.length, newIndices.length, true);
           }
         },
+        destroy: () => {
+          geometryBuffer.free(gbuffer);
+        },
       };
-      if (lightmapper && chunk.lod === 1) {
-        // _bindLightmap(mesh);
-      }
-
-      return mesh;
     };
 
     class HoveredTrackedObject {
@@ -1023,20 +1032,17 @@ void main() {
 
           const {[dataSymbol]: oldObjectsChunkMesh} = chunk;
           if (oldObjectsChunkMesh) {
-            // scene.remove(oldObjectsChunkMesh);
             objectsObject.renderList.splice(objectsObject.renderList.indexOf(oldObjectsChunkMesh.renderListEntry), 1);
 
             oldObjectsChunkMesh.destroy();
-
             objectsChunkMeshes[index] = null;
           }
 
-          const newObjectsChunkMesh = _makeObjectsChunkMesh(chunk, gbuffer, objectsChunkData);
+          const newObjectsChunkMesh = _makeObjectsChunkMesh(chunk, gbuffer);
+          newObjectsChunkMesh.update(objectsChunkData);
           objectsObject.renderList.push(newObjectsChunkMesh.renderListEntry);
-          // scene.add(newObjectsChunkMesh);
 
           objectsChunkMeshes[index] = newObjectsChunkMesh;
-
           chunk[dataSymbol] = newObjectsChunkMesh;
 
           _next();
@@ -1065,14 +1071,25 @@ void main() {
       }
     };
     const _refreshChunk = (x, z) => {
-      const heightfieldElement = elements.getEntitiesElement().querySelector(HEIGHTFIELD_PLUGIN);
+      if (!running) {
+        running = true;
 
-      if (heightfieldElement) {
-        const chunk = heightfieldElement.getChunk(x, z);
+        _requestObjectsUpdate(x, z, objectsChunkData => {
+          const heightfieldElement = elements.getEntitiesElement().querySelector(HEIGHTFIELD_PLUGIN);
+          if (heightfieldElement) {
+            const chunk = heightfieldElement.getChunk(x, z);
+            if (chunk) {
+              const {[dataSymbol]: oldObjectsChunkMesh} = chunk;
+              if (oldObjectsChunkMesh) {
+                oldObjectsChunkMesh.update(objectsChunkData);
+              }
+            }
+          }
 
-        if (chunk) {
-          _addChunk(chunk);
-        }
+          _next();
+        });
+      } else {
+        queue.push(_refreshChunk.bind(this, x, z));
       }
     };
 
@@ -1108,7 +1125,7 @@ void main() {
                   const objectsChunkMesh = objectsChunkMeshes[_getChunkIndex(hoveredTrackedObject.x, hoveredTrackedObject.z)];
                   if (objectsChunkMesh) {
                     objectsMaterial.uniforms.selectedObject.value[side === 'left' ? 'x' : 'y'] =
-                      hoveredTrackedObject.objectIndex + objectsChunkMesh.index * objectsChunkMesh.numObjectIndices;
+                      hoveredTrackedObject.objectIndex + objectsChunkMesh.gbuffer.index * objectsChunkMesh.gbuffer.slices.objectIndices.length;
                   }
                 } else {
                   hoveredTrackedObjects[side].clear();

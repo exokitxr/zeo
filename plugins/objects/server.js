@@ -499,7 +499,7 @@ class Objects {
                         });
                       });
                   } else if (method === 'removeObject') {
-                    const {args} = m;
+                    const {id, args} = m;
                     const {x, z, index} = args;
 
                     const chunk = zde.getChunk(x, z);
@@ -509,6 +509,12 @@ class Objects {
                       _geometrizeChunk(chunk);
 
                       _saveChunks();
+
+                      c.send(JSON.stringify({
+                        type: 'response',
+                        id,
+                        result: null,
+                      }));
 
                       _broadcast({
                         type: 'removeObject',
