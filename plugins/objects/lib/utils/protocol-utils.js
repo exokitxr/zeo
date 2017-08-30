@@ -216,12 +216,8 @@ const _getCullSizeFromMetadata = metadata => {
 };
 
 const _getCullSize = objectChunks => {
-  let numObjectChunks = 0;
-  for (const index in objectChunks) {
-    if (objectChunks[index]) {
-      numObjectChunks++;
-    }
-  }
+  const numObjectChunks = objectChunks.length;
+
   return _getCullSizeFromMetadata({
     numObjectChunks,
   });
@@ -229,32 +225,26 @@ const _getCullSize = objectChunks => {
 
 const stringifyCull = (objectChunks, arrayBuffer, byteOffset) => {
   if (arrayBuffer === undefined || byteOffset === undefined) {
-    const bufferSize = _getCullSize(objectChunks);
+    const bufferSize = _getCullSize(chunks);
     arrayBuffer = new ArrayBuffer(bufferSize);
     byteOffset = 0;
   }
 
-  let numObjectChunks = 0;
-  for (const index in objectChunks) {
-    if (objectChunks[index]) {
-      numObjectChunks++;
-    }
-  }
-
   const headerBuffer = new Uint32Array(arrayBuffer, byteOffset, CULL_HEADER_ENTRIES);
   let index = 0;
-  headerBuffer[index++] = numObjectChunks;
+  headerBuffer[index++] = objectChunks.length;
   byteOffset += CULL_HEADER_SIZE;
 
-  for (const index in objectChunks) {
-    const trackedObjectChunkMeshes = objectChunks[index];
-    if (trackedObjectChunkMeshes) {
+  for (let i = 0; i < objectChunks.length; i++) {
+    const {renderSpec} = objectChunks[i];
+
+    if (renderSpec) {
       const indexArray = new Int32Array(arrayBuffer, byteOffset, 1);
-      indexArray[0] = parseInt(index, 10);
+      indexArray[0] = renderSpec.index;
       byteOffset += INT32_SIZE;
 
       const groupsArray = new Int32Array(arrayBuffer, byteOffset, NUM_RENDER_GROUPS * 2);
-      groupsArray.set(trackedObjectChunkMeshes.groups);
+      groupsArray.set(renderSpec.groups);
       byteOffset += INT32_SIZE * 2 * NUM_RENDER_GROUPS;
     }
   }

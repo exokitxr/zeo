@@ -50,7 +50,6 @@ const bodyOffsetVector = new THREE.Vector3(0, -1.6 / 2, 0);
 
 let textureAtlasVersion = '';
 const objectApis = {};
-const objectChunkMeshes = {};
 
 class TrackedObject {
   constructor(n, position, rotation, value) {
@@ -345,39 +344,28 @@ function mod(value, divisor) {
 }
 const _getChunkIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
 
-const _requestChunk = (x, z, index, numPositions, numObjectIndices, numIndices) => {
-  const chunk = zde.getChunk(x, z);
+const _requestChunk = (x, z, index, numPositions, numObjectIndices, numIndices) => fetch(`/archae/objects/chunks?x=${x}&z=${z}`, {
+    credentials: 'include',
+  })
+    .then(_resArrayBufferHeaders)
+    .then(({buffer, headers}) => {
+      const newTextureAtlasVersion = headers.get('Texture-Atlas-Version');
+      if (newTextureAtlasVersion !== textureAtlasVersion) {
+        textureAtlasVersion = newTextureAtlasVersion;
 
-  if (chunk) {
-    return Promise.resolve(chunk);
-  } else {
-    return fetch(`/archae/objects/chunks?x=${x}&z=${z}`, {
-      credentials: 'include',
-    })
-      .then(_resArrayBufferHeaders)
-      .then(({buffer, headers}) => {
-        const newTextureAtlasVersion = headers.get('Texture-Atlas-Version');
-        if (newTextureAtlasVersion !== textureAtlasVersion) {
-          textureAtlasVersion = newTextureAtlasVersion;
+        _updateTextureAtlas();
+      }
 
-          _updateTextureAtlas();
-        }
+      const objectBuffer = new Uint32Array(buffer, 0, OBJECT_BUFFER_SIZE / 4);
+      const geometryBuffer = new Uint8Array(buffer, OBJECT_BUFFER_SIZE, GEOMETRY_BUFFER_SIZE)
 
-        const objectBuffer = new Uint32Array(buffer, 0, OBJECT_BUFFER_SIZE / 4);
-        const geometryBuffer = new Uint8Array(buffer, OBJECT_BUFFER_SIZE, GEOMETRY_BUFFER_SIZE)
+      const chunkData = protocolUtils.parseGeometry(geometryBuffer.buffer, geometryBuffer.byteOffset);
+      _offsetChunkData(chunkData, index, numPositions);
 
-        const chunkData = protocolUtils.parseGeometry(geometryBuffer.buffer, geometryBuffer.byteOffset);
-        _offsetChunkData(chunkData, index, numPositions);
-
-        const chunk = zde.addChunk(x, z, objectBuffer, geometryBuffer);
-        chunk.chunkData = chunkData;
-
-        _registerChunk(chunk, index, numPositions, numObjectIndices, numIndices);
-
-        return chunk;
-      });
-  }
-};
+      const chunk = zde.addChunk(x, z, objectBuffer, geometryBuffer);
+      _registerChunk(chunk, chunkData, index, numPositions, numObjectIndices, numIndices);
+      return chunk;
+    });
 const _offsetChunkData = (chunkData, index, numPositions) => {
   const {indices} = chunkData;
   const positionOffset = index * (numPositions / 3);
@@ -385,21 +373,15 @@ const _offsetChunkData = (chunkData, index, numPositions) => {
     indices[i] += positionOffset;
   }
 };
-const _registerChunk = (chunk, index, numPositions, numObjectIndices, numIndices) => {
+const _registerChunk = (chunk, chunkData, index, numPositions, numObjectIndices, numIndices) => {
+  chunk.chunkData = chunkData;
+
   chunk.offsets = {
     index,
     numPositions,
     numObjectIndices,
     numIndices,
   };
-
-  /* const trackedObjects = {};
-  chunk.forEachObject((n, matrix, value, objectIndex) => {
-    const position = new THREE.Vector3().fromArray(matrix, 0);
-    const rotation = new THREE.Quaternion().fromArray(matrix, 3);
-    trackedObjects[objectIndex] = new TrackedObject(n, position, rotation, value);
-  });
-  chunk.trackedObjects = trackedObjects; */
 
   const objectsMap = {};
   const {objects} = chunk.chunkData;
@@ -410,16 +392,6 @@ const _registerChunk = (chunk, index, numPositions, numObjectIndices, numIndices
     objectsMap[index] = new Float32Array(objects.buffer, objects.byteOffset + ((baseIndex + 1) * 4), 6);
   }
   chunk.objectsMap = objectsMap;
-  /* if (!trackedObject.calledBack) {
-    const objectApi = objectApis[trackedObject.n];
-    if (objectApi && objectApi.added) {
-      postMessage({
-        type: 'objectAdded',
-        args: [trackedObject.n, x, z, index, trackedObject.position.toArray(), trackedObject.rotation.toArray(), trackedObject.value],
-      });
-    }
-    trackedObject.calledBack = true;
-  } */
 
   const {objectIndices} = chunk.chunkData;
   const objectIndexOffset = index * numObjectIndices;
@@ -428,15 +400,15 @@ const _registerChunk = (chunk, index, numPositions, numObjectIndices, numIndices
   }
 
   const {geometries} = chunk.chunkData;
-  const trackedObjectChunkMeshes = {
+  const renderSpec = {
+    index: _getChunkIndex(chunk.x, chunk.z),
     array: Array(NUM_CHUNKS_HEIGHT),
     groups: new Int32Array(NUM_RENDER_GROUPS * 2),
   };
   const indexOffset = index * numIndices;
   for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
     const {indexRange, boundingSphere} = geometries[i];
-    trackedObjectChunkMeshes.array[i] = {
-      // offset: new THREE.Vector3(x, i, z),
+    renderSpec.array[i] = {
       indexRange: {
         start: indexRange.start + indexOffset,
         count: indexRange.count,
@@ -447,7 +419,7 @@ const _registerChunk = (chunk, index, numPositions, numObjectIndices, numIndices
       ),
     };
   }
-  objectChunkMeshes[_getChunkIndex(chunk.x, chunk.z)] = trackedObjectChunkMeshes;
+  chunk.renderSpec = renderSpec;
 };
 const _updateTextureAtlas = _debounce(next => {
   return fetch(`/archae/objects/texture-atlas.png`, {
@@ -468,8 +440,6 @@ const _updateTextureAtlas = _debounce(next => {
 });
 const _unrequestChunk = (x, z) => {
   zde.removeChunk(x, z);
-
-  objectChunkMeshes[_getChunkIndex(x, z)] = null;
 };
 const _requestLightmaps = (lightmapBuffer, cb) => {
   const id = _makeId();
@@ -484,40 +454,39 @@ const _requestLightmaps = (lightmapBuffer, cb) => {
 const _getCull = (hmdPosition, projectionMatrix, matrixWorldInverse) => {
   localFrustum.setFromMatrix(localMatrix.fromArray(projectionMatrix).multiply(localMatrix2.fromArray(matrixWorldInverse)));
 
-  for (const index in objectChunkMeshes) {
-    const trackedObjectChunkMeshes = objectChunkMeshes[index];
-    if (trackedObjectChunkMeshes) {
-      trackedObjectChunkMeshes.groups.fill(-1);
-      let groupIndex = 0;
-      let start = -1;
-      let count = 0;
-      for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) { // XXX optimize this direction
-        const trackedObjectChunkMesh = trackedObjectChunkMeshes.array[i];
-        if (localFrustum.intersectsSphere(trackedObjectChunkMesh.boundingSphere)) {
-          if (start === -1) {
-            start = trackedObjectChunkMesh.indexRange.start;
-          }
-          count += trackedObjectChunkMesh.indexRange.count;
-        } else {
-          if (start !== -1) {
-            const baseIndex = groupIndex * 2;
-            trackedObjectChunkMeshes.groups[baseIndex + 0] = start;
-            trackedObjectChunkMeshes.groups[baseIndex + 1] = count;
-            groupIndex++;
-            start = -1;
-            count = 0;
-          }
+  for (let i = 0; i < zde.chunks.length; i++) {
+    const {renderSpec} = zde.chunks[i];
+
+    renderSpec.groups.fill(-1);
+    let groupIndex = 0;
+    let start = -1;
+    let count = 0;
+    for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) { // XXX optimize this direction
+      const trackedObjectChunkMesh = renderSpec.array[i];
+      if (localFrustum.intersectsSphere(trackedObjectChunkMesh.boundingSphere)) {
+        if (start === -1) {
+          start = trackedObjectChunkMesh.indexRange.start;
+        }
+        count += trackedObjectChunkMesh.indexRange.count;
+      } else {
+        if (start !== -1) {
+          const baseIndex = groupIndex * 2;
+          renderSpec.groups[baseIndex + 0] = start;
+          renderSpec.groups[baseIndex + 1] = count;
+          groupIndex++;
+          start = -1;
+          count = 0;
         }
       }
-      if (start !== -1) {
-        const baseIndex = groupIndex * 2;
-        trackedObjectChunkMeshes.groups[baseIndex + 0] = start;
-        trackedObjectChunkMeshes.groups[baseIndex + 1] = count;
-      }
+    }
+    if (start !== -1) {
+      const baseIndex = groupIndex * 2;
+      renderSpec.groups[baseIndex + 0] = start;
+      renderSpec.groups[baseIndex + 1] = count;
     }
   }
 
-  return objectChunkMeshes;
+  return zde.chunks;
 };
 
 const registerApi = {
@@ -871,8 +840,8 @@ self.onmessage = e => {
       const {id, args} = data;
       const {hmdPosition, projectionMatrix, matrixWorldInverse, buffer} = args;
 
-      const objectChunkMeshes = _getCull(hmdPosition, projectionMatrix, matrixWorldInverse);
-      protocolUtils.stringifyCull(objectChunkMeshes, buffer, 0);
+      const chunks = _getCull(hmdPosition, projectionMatrix, matrixWorldInverse);
+      protocolUtils.stringifyCull(chunks, buffer, 0);
       postMessage({
         type: 'response',
         args: [id],
