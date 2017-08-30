@@ -508,17 +508,12 @@ void main() {
         const [id] = args;
         const {lightmapBuffer} = data;
 
-        if (lightmapper) {
-          lightmapper.requestRender(lightmapBuffer, lightmapBuffer => {
-            worker.requestResponse(id, lightmapBuffer, [lightmapBuffer.buffer]);
+        elements.requestElement(LIGHTMAP_PLUGIN)
+          .then(lightmapElement => {
+            lightmapElement.lightmapper.requestRender(lightmapBuffer, lightmapBuffer => {
+              worker.requestResponse(id, lightmapBuffer, [lightmapBuffer.buffer]);
+            });
           });
-        } else {
-          const lightmapArray = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset);
-          const numLightmaps = lightmapArray;
-          for (let i = 0; i < numLightmaps; i++) {
-            lightmapArray[i] = 0;
-          }
-        }
       } else if (type === 'chunkUpdate') {
         const [x, z] = args;
         _refreshChunk(x, z);
@@ -542,9 +537,9 @@ void main() {
           );
         }
       } else if (type === 'objectRemoved') {
-        const [n, x, z, objectIndex, startIndex, endIndex] = args;
+        const [n, x, z, objectIndex/*, startIndex, endIndex*/] = args;
 
-        if (startIndex !== -1) {
+        /* if (startIndex !== -1) {
           const objectChunkMesh = objectsChunkMeshes[_getChunkIndex(x, z)];
 
           if (objectChunkMesh) {
@@ -555,7 +550,7 @@ void main() {
             }
             indexAttribute.needsUpdate = true;
           }
-        }
+        } */
 
         const objectApi = objectApis[n];
         if (objectApi) {
@@ -711,18 +706,114 @@ void main() {
 
     const objectApis = {};
 
-    let lightmapper = null;
+    const _refreshLightmaps = refreshed => {
+      (() => {
+        let wordOffset = 0;
+        const uint32Array = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset);
+        const int32Array = new Int32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset);
+        wordOffset++;
+
+        let numLightmaps = 0;
+        for (let i = 0; i < refreshed.length; i++) {
+          const trackedObjectChunkMeshes = refreshed[i];
+
+          if (trackedObjectChunkMeshes) {
+             const {offset: {x, y}} = trackedObjectChunkMeshes;
+
+            int32Array[wordOffset + 0] = x;
+            int32Array[wordOffset + 1] = y;
+            wordOffset += 2;
+
+            numLightmaps++;
+          }
+        }
+        uint32Array[0] = numLightmaps;
+      })();
+
+      worker.requestLightmaps(lightmapBuffer, newLightmapBuffer => {
+        const uint32Array = new Uint32Array(newLightmapBuffer.buffer, newLightmapBuffer.byteOffset);
+        const int32Array = new Int32Array(newLightmapBuffer.buffer, newLightmapBuffer.byteOffset);
+
+        let byteOffset = 0;
+        const numLightmaps = uint32Array[byteOffset / 4];
+        byteOffset += 4;
+
+        for (let i = 0; i < numLightmaps; i++) {
+          const x = int32Array[byteOffset / 4];
+          byteOffset += 4;
+          const z = int32Array[byteOffset / 4];
+          byteOffset += 4;
+
+          const skyLightmapsLength = uint32Array[byteOffset / 4];
+          byteOffset += 4;
+
+          const newSkyLightmaps = new Uint8Array(newLightmapBuffer.buffer, newLightmapBuffer.byteOffset + byteOffset, skyLightmapsLength);
+          byteOffset += skyLightmapsLength;
+          let alignDiff = byteOffset % 4;
+          if (alignDiff > 0) {
+            byteOffset += 4 - alignDiff;
+          }
+
+          const torchLightmapsLength = uint32Array[byteOffset / 4];
+          byteOffset += 4;
+
+          const newTorchLightmaps = new Uint8Array(newLightmapBuffer.buffer, newLightmapBuffer.byteOffset + byteOffset, torchLightmapsLength);
+          byteOffset += torchLightmapsLength;
+          alignDiff = byteOffset % 4;
+          if (alignDiff > 0) {
+            byteOffset += 4 - alignDiff;
+          }
+
+          const trackedObjectChunkMeshes = objectsChunkMeshes[_getChunkIndex(x, z)];
+          if (trackedObjectChunkMeshes) {
+            if (newSkyLightmaps.length > 0) {
+              const {index, skyLightmaps} = trackedObjectChunkMeshes;
+              skyLightmaps.set(newSkyLightmaps);
+              renderer.updateAttribute(objectsObject.geometry.attributes.skyLightmap, index * skyLightmaps.length, newSkyLightmaps.length, false);
+            }
+            if (newTorchLightmaps.length > 0) {
+              const {index, torchLightmaps} = trackedObjectChunkMeshes;
+              torchLightmaps.set(newTorchLightmaps);
+              renderer.updateAttribute(objectsObject.geometry.attributes.torchLightmap, index * torchLightmaps.length, newTorchLightmaps.length, false);
+            }
+          }
+        }
+
+        lightmapBuffer = newLightmapBuffer;
+      });
+    };
+
+    // let lightmapper = null;
     const _bindLightmapper = lightmapElement => {
-      lightmapper = lightmapElement.lightmapper;
+      // lightmapper = lightmapElement.lightmapper;
+
+      lightmapElement.lightmapper.on('update', chunkRange => { // XXX do not update for local heightfield adds
+        const [minX, minZ, maxX, maxZ] = chunkRange;
+
+        const refreshed = [];
+        for (const index in objectsChunkMeshes) {
+          const objectChunkMesh = objectsChunkMeshes[index];
+          if (objectChunkMesh) {
+            const {offset: {x, y: z}} = objectChunkMesh;
+
+            if (x >= minX && x < maxX && z >= minZ && z < maxZ) {
+              refreshed.push(objectChunkMesh);
+            }
+          }
+        }
+        if (refreshed.length > 0) {
+          _refreshLightmaps(refreshed);
+        }
+      });
 
       // _bindLightmaps();
     };
     const _unbindLightmapper = () => {
       // _unbindLightmaps();
 
-      lightmapper = null;
+      // lightmapper = null;
     };
-    const _bindLightmaps = () => {
+    /* const _bindLightmaps = () => {
       for (const index in objectsChunkMeshes) {
         const objectChunkMesh = objectsChunkMeshes[index];
         if (objectChunkMesh) {
@@ -752,7 +843,7 @@ void main() {
       objectChunkMesh.material.uniforms.lightMap.value = null;
       objectChunkMesh.material.uniforms.useLightMap.value = 0;
       objectChunkMesh.lightmap = null;
-    };
+    }; */
     const lightmapElementListener = elements.makeListener(LIGHTMAP_PLUGIN);
     lightmapElementListener.on('add', entityElement => {
       _bindLightmapper(entityElement);
@@ -1272,7 +1363,7 @@ void main() {
         )
     )
       .then(() => {
-        const _debouncedRefreshLightmaps = _debounce(next => {
+        /* const _debouncedRefreshLightmaps = _debounce(next => {
           (() => {
             let wordOffset = 0;
             const uint32Array = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset);
@@ -1349,7 +1440,7 @@ void main() {
 
             next();
           });
-        });
+        }); */
 
         const _requestCull = (hmdPosition, projectionMatrix, matrixWorldInverse, cb) => {
           worker.requestCull(hmdPosition, projectionMatrix, matrixWorldInverse, cullBuffer => {
@@ -1385,12 +1476,12 @@ void main() {
           });
         });
 
-        let refreshLightmapsTimeout = null;
+        /* let refreshLightmapsTimeout = null;
         const _recurseRefreshLightmaps = () => {
           _debouncedRefreshLightmaps();
           refreshLightmapsTimeout = setTimeout(_recurseRefreshLightmaps, 2000);
         };
-        // _recurseRefreshLightmaps();
+        _recurseRefreshLightmaps(); */
         let refreshCullTimeout = null;
         const _recurseRefreshCull = () => {
           _debouncedRefreshCull();

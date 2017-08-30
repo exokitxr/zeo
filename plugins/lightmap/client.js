@@ -31,8 +31,17 @@ class Lightmap {
         this._parent._setShapeData(this, spec, transfers);
       }
 
-      getLightmapsInRange(width, depth, lightmaps) {
+      /* getLightmapsInRange(width, depth, lightmaps) {
         return lightmaps;
+      } */
+
+      getChunkRange() {
+        return [
+          -Infinity,
+          -Infinity,
+          Infinity,
+          Infinity,
+        ];
       }
     }
     class Heightfield {
@@ -61,13 +70,25 @@ class Lightmap {
         this._parent._setShapeData(this, spec, transfers);
       }
 
-      getLightmapsInRange(width, depth, lightmaps) {
+      /* getLightmapsInRange(width, depth, lightmaps) {
         const {x, z} = this;
         const ox = Math.floor(x / width);
         const oz = Math.floor(z / depth);
 
         const lightmap = lightmaps[_getLightmapIndex(ox, oz)];
         return lightmap ? [lightmap] : [];
+      } */
+
+      getChunkRange() {
+        const {x, z} = this;
+        const ox = Math.floor(x / NUM_CELLS);
+        const oz = Math.floor(z / NUM_CELLS);
+        return [
+          ox,
+          oz,
+          ox + 1,
+          oz + 1,
+        ];
       }
     }
     class Ether {
@@ -96,13 +117,25 @@ class Lightmap {
         this._parent._setShapeData(this, spec, transfers);
       }
 
-      getLightmapsInRange(width, depth, lightmaps) {
+      /* getLightmapsInRange(width, depth, lightmaps) {
         const {x, z} = this;
         const ox = Math.floor(x / width);
         const oz = Math.floor(z / depth);
 
         const lightmap = lightmaps[_getLightmapIndex(ox, oz)];
         return lightmap ? [lightmap] : [];
+      } */
+
+      getChunkRange() {
+        const {x, z} = this;
+        const ox = Math.floor(x / NUM_CELLS);
+        const oz = Math.floor(z / NUM_CELLS);
+        return [
+          ox,
+          oz,
+          ox + 1,
+          oz + 1,
+        ];
       }
     }
     class Sphere {
@@ -139,7 +172,7 @@ class Lightmap {
         this._parent._setShapeData(this, spec, transfers);
       }
 
-      getLightmapsInRange(width, depth, lightmaps) {
+      /* getLightmapsInRange(width, depth, lightmaps) {
         const {x, z, r} = this;
 
         const result = [];
@@ -154,6 +187,16 @@ class Lightmap {
         _tryPoint(Math.floor((x - r) / width), Math.floor((z + r) / depth));
         _tryPoint(Math.floor((x + r) / width), Math.floor((z + r) / depth));
         return result;
+      } */
+
+      getChunkRange() {
+        const {x, z, r} = this;
+        return [
+          Math.floor((x - r) / NUM_CELLS),
+          Math.floor((z - r) / NUM_CELLS),
+          Math.floor((x + r) / NUM_CELLS) + 1,
+          Math.floor((z + r) / NUM_CELLS) + 1,
+        ];
       }
     }
     class Cylinder {
@@ -194,7 +237,7 @@ class Lightmap {
         this._parent._setShapeData(this, spec, transfers);
       }
 
-      getLightmapsInRange(width, depth, lightmaps) {
+      /* getLightmapsInRange(width, depth, lightmaps) {
         const {x, z, r} = this;
 
         const result = [];
@@ -209,6 +252,16 @@ class Lightmap {
         _tryPoint(Math.floor((x - r) / width), Math.floor((z + r) / depth));
         _tryPoint(Math.floor((x + r) / width), Math.floor((z + r) / depth));
         return result;
+      } */
+
+      getChunkRange() {
+        const {x, z, r} = this;
+        return [
+          Math.floor((x - r) / NUM_CELLS),
+          Math.floor((z - r) / NUM_CELLS),
+          Math.floor((x + r) / NUM_CELLS) + 1,
+          Math.floor((z + r) / NUM_CELLS) + 1,
+        ];
       }
     }
     class Voxel {
@@ -241,18 +294,32 @@ class Lightmap {
         this._parent._setShapeData(this, spec, transfers);
       }
 
-      getLightmapsInRange(width, depth, lightmaps) {
+      /* getLightmapsInRange(width, depth, lightmaps) {
         const {x, z} = this;
         const ox = Math.floor(x / width);
         const oz = Math.floor(z / depth);
 
         const lightmap = lightmaps[_getLightmapIndex(ox, oz)];
         return lightmap ? [lightmap] : [];
+      } */
+
+      getChunkRange() {
+        const {x, z, r} = this;
+        const ox = Math.floor(x / NUM_CELLS);
+        const oz = Math.floor(z / NUM_CELLS);
+        return [
+          ox,
+          oz,
+          ox + 1,
+          oz + 1,
+        ];
       }
     }
 
-    class Lightmapper {
+    class Lightmapper extends EventEmitter {
       constructor() {
+        super();
+
         const worker = new Worker('archae/plugins/_plugins_lightmap/build/worker.js');
         const queue = [];
         worker.addShape = (spec, transfers) => {
@@ -327,6 +394,8 @@ class Lightmap {
 
         shape._parent = this;
 
+        this.emit('update', shape.getChunkRange());
+
         /* const {width, depth, _lightmaps: lightmaps} = this;
         const newLightmapsNeedUpdate = shape.getLightmapsInRange(width, depth, lightmaps);
         for (let i = 0; i < newLightmapsNeedUpdate.length; i++) {
@@ -341,6 +410,8 @@ class Lightmap {
       remove(shape) {
         // const {id} = shape;
         this.worker.removeShape(shape.id);
+
+        this.emit('update', shape.getChunkRange());
 
         /* const {width, depth, _lightmaps: lightmaps} = this;
         const newLightmapsNeedUpdate = shape.getLightmapsInRange(width, depth, lightmaps);

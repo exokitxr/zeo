@@ -483,7 +483,7 @@ class Objects {
 
                     const chunk = zde.getChunk(x, z);
                     if (chunk) {
-                      chunk.addObject(n, matrix, value);
+                      const objectIndex = chunk.addObject(n, matrix, value);
 
                       _geometrizeChunk(chunk);
 
@@ -492,12 +492,13 @@ class Objects {
                       c.send(JSON.stringify({
                         type: 'response',
                         id,
-                        result: null,
+                        result: objectIndex,
                       }));
 
                       _broadcast({
                         type: 'addObject',
                         args,
+                        result: objectIndex,
                       });
                     }
                   } else if (method === 'removeObject') {
@@ -506,7 +507,7 @@ class Objects {
 
                     const chunk = zde.getChunk(x, z);
                     if (chunk) {
-                      chunk.removeObject(index);
+                      const n = chunk.removeObject(index);
 
                       _geometrizeChunk(chunk);
 
@@ -515,12 +516,13 @@ class Objects {
                       c.send(JSON.stringify({
                         type: 'response',
                         id,
-                        result: null,
+                        result: n,
                       }));
 
                       _broadcast({
                         type: 'removeObject',
                         args,
+                        result: n,
                       });
                     }
                   } else if (method === 'setObjectData') {

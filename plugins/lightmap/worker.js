@@ -43,14 +43,14 @@ class Ambient {
     }
   }
 
-  getRange() {
+  /* getRange() {
     return [
       -Infinity,
       -Infinity,
       Infinity,
       Infinity,
     ];
-  }
+  } */
 }
 class Heightfield {
   constructor({id, x, z, data, blend}) {
@@ -77,7 +77,7 @@ class Heightfield {
     }
   }
 
-  getRange() {
+  /* getRange() {
     const {x, z} = this;
     return [
       x,
@@ -85,7 +85,7 @@ class Heightfield {
       x + NUM_CELLS,
       z + NUM_CELLS,
     ];
-  }
+  } */
 }
 class Ether {
   constructor({id, x, z, data, blend}) {
@@ -112,7 +112,7 @@ class Ether {
     }
   }
 
-  getRange() {
+  /* getRange () {
     const {x, z} = this;
     return [
       x,
@@ -120,7 +120,7 @@ class Ether {
       x + NUM_CELLS,
       z + NUM_CELLS,
     ];
-  }
+  } */
 }
 class Sphere {
   constructor({id, x, y, z, r, v, blend}) {
@@ -155,7 +155,7 @@ class Sphere {
     }
   }
 
-  getRange() {
+  /* getRange() {
     const {x, z, r} = this;
     return [
       x - r,
@@ -163,7 +163,7 @@ class Sphere {
       x + r,
       z + r,
     ];
-  }
+  } */
 }
 class Cylinder {
   constructor({id, x, y, z, h, r, v, blend}) {
@@ -202,7 +202,7 @@ class Cylinder {
     }
   }
 
-  getRange() {
+  /* getRange() {
     const {x, z, r} = this;
     return [
       x - r,
@@ -210,7 +210,7 @@ class Cylinder {
       x + r,
       z + r,
     ];
-  }
+  } */
 }
 class Voxel {
   constructor({id, x, y, z, v, blend}) {
@@ -241,7 +241,7 @@ class Voxel {
     }
   }
 
-  getRange() {
+  /* getRange() {
     const {x, z} = this;
     return [
       x,
@@ -249,7 +249,7 @@ class Voxel {
       x + 1,
       z + 1,
     ];
-  }
+  } */
 }
 
 const SHAPES = {

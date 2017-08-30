@@ -240,6 +240,7 @@ connection.on('message', e => {
   const {type} = m;
 
   if (type === 'addObject') {
+return; // XXX rewrite this
     const {args: {x, z, n, matrix, value}} = m;
     const chunk = zde.getChunk(x, z);
     const objectIndex = chunk.addObject(n, matrix);
@@ -262,6 +263,7 @@ connection.on('message', e => {
       args: [x, z],
     });
   } else if (type === 'removeObject') {
+return; // XXX rewrite this
     const {args: {x, z, index: objectIndex}} = m;
     // const chunk = zde.getChunk(x, z);
     // chunk.removeObject(objectIndex);
@@ -620,16 +622,19 @@ self.onmessage = e => {
           for (let i = 0; i < zde.chunks.length; i++) {
             const chunk = zde.chunks[i];
 
-            /* for (const k in chunk.trackedObjects) {
-              const trackedObject = chunk.trackedObjects[k];
+            chunk.forEachObject((localN, matrix, value, objectIndex) => {
+              if (localN === n) {
+                const positionArray = matrix.slice(0, 3);
+                const rotationArray = matrix.slice(3, 7);
+                // const position = localVector.fromArray(matrix, 0);
+                // const rotation = localQuaternion.fromArray(matrix, 3);
 
-              if (trackedObject && trackedObject.n === n) {
                 postMessage({
                   type: 'objectAdded',
-                  args: [trackedObject.n, chunk.x, chunk.z, parseInt(k, 10), trackedObject.position, trackedObject.rotation, trackedObject.value],
+                  args: [localN, chunk.x, chunk.z, objectIndex, positionArray, rotationArray, value],
                 });
               }
-            } */
+            });
           }
         }
       }
@@ -684,10 +689,10 @@ self.onmessage = e => {
       if (oldChunk) {
         const n = murmur(name);
         const matrix = positionArray.concat(rotationArray).concat(oneVector.toArray());
-        const position = new THREE.Vector3().fromArray(positionArray);
-        const rotation = new THREE.Quaternion().fromArray(rotationArray);
+        // const position = new THREE.Vector3().fromArray(positionArray);
+        // const rotation = new THREE.Quaternion().fromArray(rotationArray);
 
-        connection.addObject(x, z, n, matrix, value, () => {
+        connection.addObject(x, z, n, matrix, value, objectIndex => {
           const {offsets: {index, numPositions, numObjectIndices, numIndices}} = oldChunk;
           _requestChunk(x, z, index, numPositions, numObjectIndices, numIndices)
             .then(newChunk => {
@@ -699,7 +704,13 @@ self.onmessage = e => {
                 args: [x, z],
               });
 
-              // XXX post object added to client
+              const objectApi = objectApis[n];
+              if (objectApi && objectApi.added) {
+                postMessage({
+                  type: 'objectAdded',
+                  args: [n, x, z, objectIndex, positionArray, rotationArray, value],
+                });
+              }
             });
         });
       }
@@ -708,7 +719,7 @@ self.onmessage = e => {
     case 'removeObject': {
       const {x, z, index: objectIndex} = data;
 
-      connection.removeObject(x, z, objectIndex, () => {
+      connection.removeObject(x, z, objectIndex, n => {
         const oldChunk = zde.getChunk(x, z);
         const {offsets: {index, numPositions, numObjectIndices, numIndices}} = oldChunk;
         _requestChunk(x, z, index, numPositions, numObjectIndices, numIndices)
@@ -721,7 +732,13 @@ self.onmessage = e => {
               args: [x, z],
             });
 
-            // XXX post object removed to client
+            const objectApi = objectApis[n];
+            if (objectApi && objectApi.added) {
+              postMessage({
+                type: 'objectRemoved',
+                args: [n, x, z, objectIndex],
+              });
+            }
           });
       });
       break;
