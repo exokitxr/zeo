@@ -241,69 +241,70 @@ connection.on('message', e => {
   const {type} = m;
 
   if (type === 'addObject') {
-return; // XXX rewrite this
-    const {args: {x, z, n, matrix, value}} = m;
-    const chunk = zde.getChunk(x, z);
-    const objectIndex = chunk.addObject(n, matrix);
+    const {args: {x, z, n, matrix, value, result: objectIndex}} = m;
 
-    const positionArray = matrix.slice(0, 3);
-    // const position = new THREE.Vector3().fromArray(positionArray);
-    const rotationArray = matrix.slice(3, 7);
-    // const rotation = new THREE.Quaternion().fromArray(rotationArray);
+    const oldChunk = zde.getChunk(x, z);
+    if (oldChunk) {
+      const {offsets: {index, numPositions, numObjectIndices, numIndices}} = oldChunk;
+      _requestChunk(x, z, index, numPositions, numObjectIndices, numIndices)
+        .then(newChunk => {
+          zde.removeChunk(x, z);
+          zde.pushChunk(newChunk);
 
-    const objectApi = objectApis[n];
-    if (objectApi && objectApi.added) {
-      postMessage({
-        type: 'objectAdded',
-        args: [n, x, z, objectIndex, positionArray, rotationArray, value],
-      });
+          postMessage({
+            type: 'chunkUpdate',
+            args: [x, z],
+          });
+
+          const objectApi = objectApis[n];
+          if (objectApi && objectApi.added) {
+            postMessage({
+              type: 'objectAdded',
+              args: [n, x, z, objectIndex, matrix.slice(0, 3), matrix.slice(3, 7), value],
+            });
+          }
+        });
     }
-
-    postMessage({
-      type: 'chunkUpdate',
-      args: [x, z],
-    });
   } else if (type === 'removeObject') {
-return; // XXX rewrite this
     const {args: {x, z, index: objectIndex}} = m;
-    // const chunk = zde.getChunk(x, z);
-    // chunk.removeObject(objectIndex);
 
-    /* const trackedObject = trackedObjects[objectIndex];
-    const objectApi = objectApis[trackedObject.n];
-    if (objectApi && objectApi.removed) {
-      postMessage({
-        type: 'objectRemoved',
-        args: [trackedObject.n, x, z, objectIndex],
-      });
+    const oldChunk = zde.getChunk(x, z);
+    if (oldChunk) {
+      const {offsets: {index, numPositions, numObjectIndices, numIndices}} = oldChunk;
+      _requestChunk(x, z, index, numPositions, numObjectIndices, numIndices)
+        .then(newChunk => {
+          zde.removeChunk(x, z);
+          zde.pushChunk(newChunk);
+
+          postMessage({
+            type: 'chunkUpdate',
+            args: [x, z],
+          });
+
+          const objectApi = objectApis[n];
+          if (objectApi && objectApi.removed) {
+            postMessage({
+              type: 'objectRemoved',
+              args: [n, x, z, objectIndex],
+            });
+          }
+        });
     }
-
-    chunk.trackedObjects[objectIndex] = null; */
-
-    postMessage({
-      type: 'chunkUpdate',
-      args: [x, z],
-    });
   } else if (type === 'setObjectData') {
     const {args: {x, z, index: objectIndex, value}} = m;
     const chunk = zde.getChunk(x, z);
     chunk.setObjectData(objectIndex, value);
 
-    /* const trackedObject = chunk.trackedObjects[objectIndex];
-    const objectApi = objectApis[trackedObject.n];
+    const n = chunk.getObjectN(objectIndex);
+    const objectApi = objectApis[n];
     if (objectApi && objectApi.updated) {
-      trackedObject.value = value;
+      const matrix = chunk.getObjectMatrix(objectIndex);
 
       postMessage({
         type: 'objectUpdated',
-        args: [trackedObject.n, x, z, objectIndex, trackedObject.position.toArray(), trackedObject.rotation.toArray(), trackedObject.value],
+        args: [n, x, z, objectIndex, matrix.slice(0, 3), matrix.slice(3, 7), value],
       });
-    } */
-
-    postMessage({
-      type: 'chunkUpdate',
-      args: [x, z],
-    });
+    }
   } else if (type === 'response') {
     const {id, result} = m;
 
@@ -677,9 +678,9 @@ self.onmessage = e => {
     case 'addObject': {
       const {name, position: positionArray, rotation: rotationArray, value} = data;
 
-      const x = Math.floor(positionArray[0] / NUM_CELLS);
-      const z = Math.floor(positionArray[2] / NUM_CELLS);
-      const oldChunk = zde.getChunk(x, z);
+      const ox = Math.floor(positionArray[0] / NUM_CELLS);
+      const oz = Math.floor(positionArray[2] / NUM_CELLS);
+      const oldChunk = zde.getChunk(ox, oz);
       if (oldChunk) {
         const n = murmur(name);
         const matrix = positionArray.concat(rotationArray).concat(oneVector.toArray());
@@ -713,28 +714,30 @@ self.onmessage = e => {
     case 'removeObject': {
       const {x, z, index: objectIndex} = data;
 
-      connection.removeObject(x, z, objectIndex, n => {
-        const oldChunk = zde.getChunk(x, z);
-        const {offsets: {index, numPositions, numObjectIndices, numIndices}} = oldChunk;
-        _requestChunk(x, z, index, numPositions, numObjectIndices, numIndices)
-          .then(newChunk => {
-            const oldChunk = zde.removeChunk(x, z);
-            zde.pushChunk(newChunk);
+      const oldChunk = zde.getChunk(x, z);
+      if (oldChunk) {
+        connection.removeObject(x, z, objectIndex, n => {
+          const {offsets: {index, numPositions, numObjectIndices, numIndices}} = oldChunk;
+          _requestChunk(x, z, index, numPositions, numObjectIndices, numIndices)
+            .then(newChunk => {
+              zde.removeChunk(x, z);
+              zde.pushChunk(newChunk);
 
-            postMessage({
-              type: 'chunkUpdate',
-              args: [x, z],
-            });
-
-            const objectApi = objectApis[n];
-            if (objectApi && objectApi.removed) {
               postMessage({
-                type: 'objectRemoved',
-                args: [n, x, z, objectIndex],
+                type: 'chunkUpdate',
+                args: [x, z],
               });
-            }
-          });
-      });
+
+              const objectApi = objectApis[n];
+              if (objectApi && objectApi.removed) {
+                postMessage({
+                  type: 'objectRemoved',
+                  args: [n, x, z, objectIndex],
+                });
+              }
+            });
+        });
+      }
       break;
     }
     case 'setObjectData': {
