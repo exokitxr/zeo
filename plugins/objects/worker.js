@@ -678,9 +678,9 @@ self.onmessage = e => {
     case 'addObject': {
       const {name, position: positionArray, rotation: rotationArray, value} = data;
 
-      const ox = Math.floor(positionArray[0] / NUM_CELLS);
-      const oz = Math.floor(positionArray[2] / NUM_CELLS);
-      const oldChunk = zde.getChunk(ox, oz);
+      const x = Math.floor(positionArray[0] / NUM_CELLS);
+      const z = Math.floor(positionArray[2] / NUM_CELLS);
+      const oldChunk = zde.getChunk(x, z);
       if (oldChunk) {
         const n = murmur(name);
         const matrix = positionArray.concat(rotationArray).concat(oneVector.toArray());
