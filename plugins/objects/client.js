@@ -766,14 +766,14 @@ void main() {
             const trackedObjectChunkMeshes = objectsChunkMeshes[_getChunkIndex(x, z)];
             if (trackedObjectChunkMeshes) {
               if (newSkyLightmaps.length > 0) {
-                const {index, skyLightmaps} = trackedObjectChunkMeshes;
+                const {gbuffer, skyLightmaps} = trackedObjectChunkMeshes;
                 skyLightmaps.set(newSkyLightmaps);
-                renderer.updateAttribute(objectsObject.geometry.attributes.skyLightmap, index * skyLightmaps.length, newSkyLightmaps.length, false);
+                renderer.updateAttribute(objectsObject.geometry.attributes.skyLightmap, gbuffer.index * skyLightmaps.length, newSkyLightmaps.length, false);
               }
               if (newTorchLightmaps.length > 0) {
-                const {index, torchLightmaps} = trackedObjectChunkMeshes;
+                const {gbuffer, torchLightmaps} = trackedObjectChunkMeshes;
                 torchLightmaps.set(newTorchLightmaps);
-                renderer.updateAttribute(objectsObject.geometry.attributes.torchLightmap, index * torchLightmaps.length, newTorchLightmaps.length, false);
+                renderer.updateAttribute(objectsObject.geometry.attributes.torchLightmap, gbuffer.index * torchLightmaps.length, newTorchLightmaps.length, false);
               }
             }
           }
