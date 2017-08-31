@@ -4,56 +4,15 @@ const {
   NUM_CELLS,
   NUM_CELLS_OVERSCAN,
 } = require('../../constants/constants');
+const {
+  parseBlueprint,
+}= require('../../utils/block-utils.js');
 
 const {three: {THREE}, utils: {image: {jimp}}} = zeo;
 
 const NUM_POSITIONS = 10 * 1024;
 
-const _parseSpec = s => {
-  const lines = s.split('\n');
-  const legend = (() => {
-    const result = {};
-    const headerString = lines[0];
-    const legendEntries = headerString.split('|');
-    for (let i = 0; i < legendEntries.length; i++) {
-      const match = legendEntries[i].match(/^(.)=(.+)$/);
-      result[match[1]] = match[2];
-    }
-    return result;
-  })();
-
-  const result = [];
-  let currentLayer = null;
-  const layersLines = lines.slice(1);
-  for (let i = 0; i < layersLines.length; i++) {
-    const layerLine = layersLines[i];
-
-    if (layerLine[0] === '|') {
-      if (currentLayer) {
-        result.push(currentLayer);
-        currentLayer = null;
-      }
-    } else {
-      if (!currentLayer) {
-        currentLayer = [];
-      }
-
-      const row = [];
-      for (let j = 0; j < layerLine.length; j++) {
-        const c = layerLine[j];
-        row.push(c === ' ' ? null : legend[c]);
-      }
-      currentLayer.push(row);
-    }
-  }
-  if (currentLayer) {
-    result.push(currentLayer);
-    currentLayer = null;
-  }
-  return result;
-};
-
-const HOUSE_SPEC = _parseSpec(`\
+const HOUSE_SPEC = parseBlueprint(`\
 c=stone|s=stone-stairs|j=oak-wood-planks|H=ladder|G=glass-top|g=glass-west|l=glass-east|!=torch|w=oak-wood|1=fence-nw|2=fence-ne|3=fence-sw|4=fence-se|a=fence-top|b=fence-side
 |----Layer 1|
 ccccc
