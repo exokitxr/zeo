@@ -14,7 +14,7 @@ const {
 const protocolUtils = require('./lib/utils/protocol-utils');
 const objectsLib = require('./lib/objects/client/index');
 
-const NUM_POSITIONS_CHUNK = 1 * 1024 * 1024;
+const NUM_POSITIONS_CHUNK = 1.25 * 1024 * 1024;
 const LIGHTMAP_BUFFER_SIZE = 100 * 1024 * 4;
 const NUM_BUFFERS = RANGE * RANGE * 9;
 const SIDES = ['left', 'right'];
