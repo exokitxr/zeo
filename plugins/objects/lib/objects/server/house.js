@@ -54,7 +54,7 @@ const _parseSpec = s => {
 };
 
 const HOUSE_SPEC = _parseSpec(`\
-c=cobblestone|s=cobblestone-stairs|j=oak-wood-planks|H=ladder|G=glass-top|g=glass-west|l=glass-east|!=torch|w=oak-wood|1=fence-nw|2=fence-ne|3=fence-sw|4=fence-se|a=fence-top|b=fence-side
+c=stone|s=stone-stairs|j=oak-wood-planks|H=ladder|G=glass-top|g=glass-west|l=glass-east|!=torch|w=oak-wood|1=fence-nw|2=fence-ne|3=fence-sw|4=fence-se|a=fence-top|b=fence-side
 |----Layer 1|
 ccccc
 ccccc
@@ -190,7 +190,7 @@ const house = objectApi => {
       })();
       objectApi.registerGeometry('house-plank', housePlankGeometry);
 
-      const stairsGeometry = (() => {
+      const stoneStairsGeometry = (() => {
         const woodUvs = objectApi.getUv('house-stone');
         const uvWidth = woodUvs[2] - woodUvs[0];
         const uvHeight = woodUvs[3] - woodUvs[1];
@@ -246,7 +246,7 @@ const house = objectApi => {
 
         return geometry;
       })();
-      objectApi.registerGeometry('stairs', stairsGeometry);
+      objectApi.registerGeometry('stone-stairs', stoneStairsGeometry);
 
       const fenceTopGeometry = (() => {
         const woodUvs = objectApi.getUv('fence');
@@ -504,9 +504,9 @@ const house = objectApi => {
 
                 if (col) {
                   const block = (() => {
-                    if (col === 'cobblestone-stairs') {
-                      return 'stairs';
-                    } else if (col === 'cobblestone') {
+                    if (col === 'stone-stairs') {
+                      return 'stone-stairs';
+                    } else if (col === 'stone') {
                       return 'house-stone';
                     } else if (col === 'oak-wood-planks') {
                       return 'house-plank';
