@@ -1,7 +1,7 @@
 const SkyShader = require('./lib/three-extra/SkyShader');
 
 const LIGHTMAP_PLUGIN = 'plugins-lightmap';
-const DAY_NIGHT_SPEED = 20;
+const DAY_NIGHT_SPEED = 2000;
 
 class DayNightSkybox {
   mount() {
@@ -25,7 +25,14 @@ class DayNightSkybox {
             0, 0, 0, 1,
             1, 1, 1,
           ],
-        }
+        },
+        speed: {
+          type: 'number',
+          value: DAY_NIGHT_SPEED,
+          min: 1,
+          max: 2000,
+          step: 1,
+        },
       },
       entityAddedCallback(entityElement) {
         const mesh = (() => {
@@ -49,6 +56,8 @@ class DayNightSkybox {
           object.add(sky.mesh);
           object.sky = sky;
 
+          object.speed = DAY_NIGHT_SPEED;
+
           return object;
         })();
         scene.add(mesh);
@@ -66,7 +75,7 @@ class DayNightSkybox {
         // let lastLightmapUpdateTime = 0;
         const update = () => {
           const _updateSunIntensity = () => {
-            mesh.sky.azimuth = (0.05 + ((world.getWorldTime() / 1000) * DAY_NIGHT_SPEED) / (60 * 10)) % 1;
+            mesh.sky.azimuth = (0.05 + ((world.getWorldTime() / 1000) * mesh.speed / 100000)) % 1;
             const theta = Math.PI * (mesh.sky.inclination - 0.5);
             const phi = 2 * Math.PI * (mesh.sky.azimuth - 0.5);
 
@@ -127,6 +136,13 @@ class DayNightSkybox {
             mesh.position.set(newValue[0], newValue[1], newValue[2]);
             mesh.quaternion.set(newValue[3], newValue[4], newValue[5], newValue[6]);
             mesh.scale.set(newValue[7], newValue[8], newValue[9]);
+
+            break;
+          }
+          case 'speed': {
+            const {mesh} = entityElement;
+
+            mesh.speed = newValue;
 
             break;
           }
