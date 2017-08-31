@@ -670,7 +670,8 @@ class Heightfield {
           } */
 
           meshes.heightfield = heightfield.slice();
-          meshes.staticHeightfield = staticHeightfield.slice();
+          // XXX preallocate stck buffers
+          meshes.staticHeightfield = staticHeightfield.slice(); // XXX this needs to be refreshed along with terrain destruction
 
           /* if (lightmapper) {
             _bindLightmap(meshes);
@@ -749,28 +750,7 @@ class Heightfield {
     const _debouncedRequestRefreshMapChunks = _debounce(next => {
       const {hmd} = pose.getStatus();
       const {worldPosition: hmdPosition} = hmd;
-      const {added, removed, relodded} = chunker.update(hmdPosition.x, hmdPosition.z);
-
-      const _addTarget = trackedMapChunkMeshes => {
-        const {offset} = trackedMapChunkMeshes;
-        const {x, z} = offset;
-
-        const stckBody = stck.makeStaticHeightfieldBody(
-          new THREE.Vector3(x * NUM_CELLS, 0, z * NUM_CELLS),
-          NUM_CELLS,
-          NUM_CELLS,
-          trackedMapChunkMeshes.staticHeightfield
-        );
-        trackedMapChunkMeshes.stckBody = stckBody;
-
-        trackedMapChunkMeshes.targeted = true;
-      };
-      const _removeTarget = trackedMapChunkMeshes => {
-        stck.destroyBody(trackedMapChunkMeshes.stckBody);
-        trackedMapChunkMeshes.stckBody = null;
-
-        trackedMapChunkMeshes.targeted = false;
-      };
+      const {added, removed/*, relodded*/} = chunker.update(hmdPosition.x, hmdPosition.z);
 
       let running = false;
       const queue = [];
@@ -797,9 +777,7 @@ class Heightfield {
 
               oldMapChunkMeshes.destroy();
 
-              if (lod !== 1 && oldMapChunkMeshes.targeted) {
-                _removeTarget(oldMapChunkMeshes);
-              }
+              stck.destroyBody(oldMapChunkMeshes.stckBody);
 
               _emit('remove', oldMapChunkMeshes);
 
@@ -808,13 +786,17 @@ class Heightfield {
 
             const newMapChunkMeshes = _makeMapChunkMeshes(chunk, gbuffer);
             newMapChunkMeshes.update(chunkData);
+
             heightfieldObject.renderList.push(newMapChunkMeshes.renderListEntry);
+
+            newMapChunkMeshes.stckBody = stck.makeStaticHeightfieldBody(
+              new THREE.Vector3(x * NUM_CELLS, 0, z * NUM_CELLS),
+              NUM_CELLS,
+              NUM_CELLS,
+              newMapChunkMeshes.staticHeightfield
+            );
+
             mapChunkMeshes[index] = newMapChunkMeshes;
-
-            if (lod === 1 && !newMapChunkMeshes.targeted) {
-              _addTarget(newMapChunkMeshes);
-            }
-
             chunk[dataSymbol] = newMapChunkMeshes;
 
             _emit('add', chunk);
@@ -832,11 +814,6 @@ class Heightfield {
           heightfieldObject.renderList.splice(heightfieldObject.renderList.indexOf(oldMapChunkMeshes.renderListEntry), 1);
 
           oldMapChunkMeshes.destroy();
-
-          const {lod} = chunk;
-          if (lod !== 1 && oldMapChunkMeshes.targeted) {
-            _removeTarget(oldMapChunkMeshes);
-          }
 
           _emit('remove', chunk);
 
@@ -857,14 +834,14 @@ class Heightfield {
       for (let i = 0; i < added.length; i++) {
         _addChunk(added[i]);
       }
-      for (let i = 0; i < relodded.length; i++) {
+      /* for (let i = 0; i < relodded.length; i++) {
         const chunk = relodded[i];
         const {lastLod} = chunk;
 
         if (lastLod === -1) {
           _addChunk(chunk);
         }
-      }
+      } */
 
       if (!running) {
         next();
