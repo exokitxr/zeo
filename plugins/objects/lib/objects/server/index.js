@@ -10,6 +10,7 @@ const paper = require('./paper');
 const monitor = require('./monitor');
 const torch = require('./torch');
 const fire = require('./fire');
+const house = require('./house');
 
 const objectsLib = options => [
   stick,
@@ -24,6 +25,7 @@ const objectsLib = options => [
   monitor,
   torch,
   fire,
+  house,
 ].map(objectLib => objectLib(options));
 
 module.exports = objectsLib;
