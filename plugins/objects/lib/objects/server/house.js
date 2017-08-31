@@ -100,8 +100,16 @@ fffff
 `);
 
 const house = objectApi => {
-  return () => jimp.read(path.join(__dirname, '../../img/wood.png'))
-    .then(woodImg => objectApi.registerTexture('house', woodImg))
+  return () => Promise.all([
+    jimp.read(path.join(__dirname, '../../img/wood.png'))
+      .then(houseImg => objectApi.registerTexture('house', houseImg)),
+    jimp.read(path.join(__dirname, '../../img/fence.png'))
+      .then(fenceImg => objectApi.registerTexture('fence', fenceImg)),
+    jimp.read(path.join(__dirname, '../../img/ladder.png'))
+      .then(ladderImg => objectApi.registerTexture('ladder', ladderImg)),
+    /* jimp.read(path.join(__dirname, '../../img/door.png'))
+      .then(doorImg => objectApi.registerTexture('door', doorImg)), */
+  ])
     .then(() => {
       const houseGeometry = (() => {
         const woodUvs = objectApi.getUv('house');
@@ -186,6 +194,44 @@ const house = objectApi => {
       })();
       objectApi.registerGeometry('stairs', stairsGeometry);
 
+      const fenceGeometry = (() => {
+        const woodUvs = objectApi.getUv('fence');
+        const uvWidth = woodUvs[2] - woodUvs[0];
+        const uvHeight = woodUvs[3] - woodUvs[1];
+
+        const geometry = new THREE.PlaneBufferGeometry(1, 1/2, 1)
+          .applyMatrix(new THREE.Matrix4().makeTranslation(0, 1/2/2, 0));
+
+        const uvs = geometry.getAttribute('uv').array;
+        const numUvs = uvs.length / 2;
+        for (let i = 0; i < numUvs; i++) {
+          uvs[i * 2 + 0] = woodUvs[0] + (uvs[i * 2 + 0] * uvWidth);
+          uvs[i * 2 + 1] = (woodUvs[1] + uvHeight) - (uvs[i * 2 + 1] * uvHeight);
+        }
+
+        return geometry;
+      })();
+      objectApi.registerGeometry('fence', fenceGeometry);
+
+      const ladderGeometry = (() => {
+        const woodUvs = objectApi.getUv('ladder');
+        const uvWidth = woodUvs[2] - woodUvs[0];
+        const uvHeight = woodUvs[3] - woodUvs[1];
+
+        const geometry = new THREE.PlaneBufferGeometry(1, 1, 1)
+          .applyMatrix(new THREE.Matrix4().makeTranslation(0, 1/2, -1/2 + 0.05));
+
+        const uvs = geometry.getAttribute('uv').array;
+        const numUvs = uvs.length / 2;
+        for (let i = 0; i < numUvs; i++) {
+          uvs[i * 2 + 0] = woodUvs[0] + (uvs[i * 2 + 0] * uvWidth);
+          uvs[i * 2 + 1] = (woodUvs[1] + uvHeight) - (uvs[i * 2 + 1] * uvHeight);
+        }
+
+        return geometry;
+      })();
+      objectApi.registerGeometry('ladder', ladderGeometry);
+
       objectApi.registerGenerator('house', chunk => {
         if (chunk.x === 0 && chunk.z === -1) {
           const elevation = chunk.heightfield[(0 + (0 * NUM_CELLS_OVERSCAN)) * 8];
@@ -207,6 +253,10 @@ const house = objectApi => {
                   const block = (() => {
                     if (col === 'cobblestone-stairs') {
                       return 'stairs';
+                    } else if (col === 'fence') {
+                      return 'fence';
+                    } else if (col === 'ladder') {
+                      return 'ladder';
                     } else if (col === 'torch') {
                       return 'torch';
                     } else {
