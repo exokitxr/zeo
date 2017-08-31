@@ -99,17 +99,17 @@ const skinUtils = archae => ({
           mesh.update = status => {
             const {
               hmd: {
-                worldPosition: hmdPosition,
-                worldRotation: hmdRotation,
+                position: hmdPosition,
+                rotation: hmdRotation,
               },
               gamepads: {
                 left: {
-                  worldPosition: controllerLeftPosition,
-                  worldRotation: controllerLeftRotation,
+                  position: controllerLeftPosition,
+                  rotation: controllerLeftRotation,
                 },
                 right: {
-                  worldPosition: controllerRightPosition,
-                  worldRotation: controllerRightRotation,
+                  position: controllerRightPosition,
+                  rotation: controllerRightRotation,
                 },
               },
             } = status;

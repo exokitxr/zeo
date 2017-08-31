@@ -55,6 +55,23 @@ class Cyborg {
           const {EventEmitter} = events;
 
           const zeroVector = new THREE.Vector3();
+          const localSkinStatus = {
+            hmd: {
+              position: null,
+              rotation: null,
+            },
+            gamepads: {
+              left: {
+                position: null,
+                rotation: null,
+              },
+              right: {
+                position: null,
+                rotation: null,
+              },
+            },
+          };
+
           const solidMaterial = new THREE.MeshPhongMaterial({
             color: 0x666666,
             shininess: 0,
@@ -390,7 +407,13 @@ class Cyborg {
 
             // update player skin mesh
             if (playerSkinMesh) {
-              playerSkinMesh.update(status);
+              localSkinStatus.hmd.position = hmdStatus.worldPosition;
+              localSkinStatus.hmd.rotation = hmdStatus.worldRotation;
+              localSkinStatus.gamepads.left.position = gamepadsStatus.left.worldPosition;
+              localSkinStatus.gamepads.left.rotation = gamepadsStatus.left.worldRotation;
+              localSkinStatus.gamepads.right.position = gamepadsStatus.right.worldPosition;
+              localSkinStatus.gamepads.right.rotation = gamepadsStatus.right.worldRotation;
+              playerSkinMesh.update(localSkinStatus);
             }
 
             // update hud mesh
