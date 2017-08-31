@@ -50,7 +50,6 @@ const paper = objectApi => {
     _requestImageBitmap('/archae/objects/img/brush.png'),
   ])
     .then(([
-      paperTexture,
       pencilImg,
       brushImg,
     ]) => {
