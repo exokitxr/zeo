@@ -40,13 +40,11 @@ class Objects {
     const {jimp} = imageUtils;
 
     const zeodeDataPath = path.join(dirname, dataDirectory, 'zeode.dat');
+    const texturesPngDataPath = path.join(dirname, dataDirectory, 'textures.png');
+    const texturesJsonDataPath = path.join(dirname, dataDirectory, 'textures.json');
 
     const rng = new alea(DEFAULT_SEED);
     const geometries = {};
-    const textures = txtr(TEXTURE_SIZE, TEXTURE_SIZE);
-    const uvs = {};
-    const textureAtlas = new jimp(TEXTURE_SIZE, TEXTURE_SIZE);
-    textureAtlas.version = 0;
     const noises = {};
     const generators = [];
 
@@ -226,16 +224,14 @@ class Objects {
       }
     };
 
-    const _getZeode = () => new Promise((accept, reject) => {
-      fs.readFile(zeodeDataPath, (err, b) => {
+    const _readEnsureFile = (p, opts) => new Promise((accept, reject) => {
+      fs.readFile(p, opts, (err, d) => {
         if (!err) {
-          const zde = zeode();
-          zde.load(b);
-          accept(zde);
+          accept(d);
         } else if (err.code === 'ENOENT') {
-          touch(zeodeDataPath, err => {
+          touch(p, err => {
             if (!err) {
-              accept(zeode());
+              accept(null);
             } else {
               reject(err);
             }
@@ -245,9 +241,67 @@ class Objects {
         }
       });
     });
+    const _getZeode = () => _readEnsureFile(zeodeDataPath)
+      .then(b => {
+        const zde = zeode();
+        if (b) {
+          zde.load(b);
+        }
+        return zde;
+      });
+    const _getTextures = () => Promise.all([
+      _readEnsureFile(texturesPngDataPath)
+        .then(b => {
+          if (b !== null && b.length > 0) {
+            return jimp.read(b);
+          } else {
+            return Promise.resolve(new jimp(TEXTURE_SIZE, TEXTURE_SIZE));
+          }
+        })
+        .then(textureImg => {
+          textureImg.version = 0;
+          return textureImg;
+        }),
+      _readEnsureFile(texturesJsonDataPath, 'utf8')
+        .then(s => {
+          if (s !== null && s.length > 0) {
+            const {atlas, uvs} = JSON.parse(s);
+            return [
+              txtr.fromJson(atlas),
+              uvs,
+            ];
+          } else {
+            return [
+              txtr(TEXTURE_SIZE, TEXTURE_SIZE),
+              {},
+            ];
+          }
+        }),
+    ])
+      .then(([
+        textureImg,
+        [
+          textureAtlas,
+          textureUvs,
+        ],
+      ]) => ({
+        textureImg,
+        textureAtlas,
+        textureUvs,
+      }));
 
-    return _getZeode()
-      .then(zde => {
+    return Promise.all([
+      _getZeode(),
+      _getTextures(),
+    ])
+      .then(([
+        zde,
+        {
+          textureImg,
+          textureAtlas,
+          textureUvs,
+        },
+      ]) => {
         const _decorateChunkHeightfield = chunk => elements.requestElement(HEIGHTFIELD_PLUGIN)
           .then(heightfieldElement => heightfieldElement.requestHeightfield(chunk.x, chunk.z))
           .then(heightfield => {
@@ -270,8 +324,8 @@ class Objects {
           }
         };
 
-        const _writeFileData = (data, byteOffset) => new Promise((accept, reject) => {
-          const ws = fs.createWriteStream(zeodeDataPath, {
+        const _writeFileData = (p, data, byteOffset) => new Promise((accept, reject) => {
+          const ws = fs.createWriteStream(p, {
             flags: 'r+',
             start: byteOffset,
           });
@@ -286,9 +340,26 @@ class Objects {
         const _saveChunks = _debounce(next => {
           const promises = [];
           zde.save((byteOffset, data) => {
-            promises.push(_writeFileData(new Buffer(data.buffer, data.byteOffset, data.byteLength), byteOffset));
+            promises.push(_writeFileData(zeodeDataPath, new Buffer(data.buffer, data.byteOffset, data.byteLength), byteOffset));
           });
           Promise.all(promises)
+            .then(() => {
+              next();
+            })
+            .catch(err => {
+              console.warn(err);
+
+              next();
+            });
+        });
+        const _saveTextures = _debounce(next => {
+          Promise.all([
+            textureImg.write(texturesPngDataPath),
+            _writeFileData(texturesJsonDataPath, JSON.stringify({
+              atlas: textureAtlas.toJson(),
+              uvs: textureUvs,
+            }, null, 2)),
+          ])
             .then(() => {
               next();
             })
@@ -342,18 +413,22 @@ class Objects {
               entry.push(geometry);
             },
             getUv(name) {
-              const n = murmur(name);
-              return uvs[n];
+              return textureUvs[murmur(name)];
             },
             registerTexture(name, img) {
               const n = murmur(name);
-              const rect = textures.pack(img.bitmap.width, img.bitmap.height);
-              const uv = textures.uv(rect);
 
-              textureAtlas.composite(img, rect.x, rect.y);
-              textureAtlas.version++;
+              if (!textureUvs[n]) {
+                const rect = textureAtlas.pack(img.bitmap.width, img.bitmap.height);
+                const uv = textureAtlas.uv(rect);
 
-              uvs[n] = uv;
+                textureImg.composite(img, rect.x, rect.y);
+                textureImg.version++;
+
+                textureUvs[n] = uv;
+
+                _saveTextures();
+              }
             },
             registerGenerator(name, fn) {
               const n = murmur(name);
@@ -419,7 +494,7 @@ class Objects {
             app.use('/archae/objects/sfx', serveObjectsSfx);
 
             function serveObjectsTextureAtlas(req, res, next) {
-              textureAtlas.getBuffer('image/png', (err, buffer) => {
+              textureImg.getBuffer('image/png', (err, buffer) => {
                 if (!err) {
                   res.type('image/png');
                   res.send(buffer);
@@ -442,7 +517,7 @@ class Objects {
                 _requestChunk(x, z)
                   .then(chunk => {
                     res.type('application/octet-stream');
-                    res.set('Texture-Atlas-Version', textureAtlas.version);
+                    res.set('Texture-Atlas-Version', textureImg.version);
 
                     const objectBuffer = chunk.getObjectBuffer();
                     const objects = new Buffer(objectBuffer.buffer, objectBuffer.byteOffset, objectBuffer.byteLength);

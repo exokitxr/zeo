@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "touch": "^3.1.0",
-    "txtr": "0.0.1",
+    "txtr": "0.0.2",
     "zeode": "0.0.20"
   }
 }
