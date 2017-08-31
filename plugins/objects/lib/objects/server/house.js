@@ -54,7 +54,7 @@ const _parseSpec = s => {
 };
 
 const HOUSE_SPEC = _parseSpec(`\
-c=cobblestone|s=cobblestone-stairs|j=oak-wood-planks|H=ladder|g=glass-pane|!=torch|w=oak-wood|1=fence-nw|2=fence-ne|3=fence-sw|4=fence-se|a=fence-top|b=fence-side
+c=cobblestone|s=cobblestone-stairs|j=oak-wood-planks|H=ladder|G=glass-top|g=glass-west|l=glass-east|!=torch|w=oak-wood|1=fence-nw|2=fence-ne|3=fence-sw|4=fence-se|a=fence-top|b=fence-side
 |----Layer 1|
 ccccc
 ccccc
@@ -70,9 +70,9 @@ j   j
 cj jc
      
 |----Layer 3|
-cjgjc
+cjGjc
 j  Hj
-g   g
+g   l
 j   j
 cj jc
      
@@ -113,10 +113,26 @@ const house = objectApi => {
       .then(fenceImg => objectApi.registerTexture('fence', fenceImg)),
     jimp.read(path.join(__dirname, '../../img/ladder.png'))
       .then(ladderImg => objectApi.registerTexture('ladder', ladderImg)),
+    jimp.read(path.join(__dirname, '../../img/glass.png'))
+      .then(glassImg => objectApi.registerTexture('glass', glassImg)),
     /* jimp.read(path.join(__dirname, '../../img/door.png'))
       .then(doorImg => objectApi.registerTexture('door', doorImg)), */
   ])
     .then(() => {
+      const _applyUvs = (geometry, x, y, w, h) => {
+        const uvs = geometry.getAttribute('uv').array;
+        const numUvs = uvs.length / 2;
+        for (let i = 0; i < numUvs; i++) {
+          uvs[i * 2 + 0] = x + (uvs[i * 2 + 0] * w);
+          uvs[i * 2 + 1] = (y + h) - (uvs[i * 2 + 1] * h);
+        }
+      };
+      const _copyIndices = (src, dst, startIndexIndex, startAttributeIndex) => {
+        for (let i = 0; i < src.length; i++) {
+          dst[startIndexIndex + i] = src[i] + startAttributeIndex;
+        }
+      };
+
       const houseWoodGeometry = (() => {
         const woodUvs = objectApi.getUv('wood');
         const uvWidth = woodUvs[2] - woodUvs[0];
@@ -189,12 +205,6 @@ const house = objectApi => {
           const backGeometry = new THREE.BoxBufferGeometry(1, 1/4, 1/3)
             .applyMatrix(new THREE.Matrix4().makeTranslation(0, 1/4/2 + 2/4, -2/3/2));
 
-          const _copyIndices = (src, dst, startIndexIndex, startAttributeIndex) => {
-            for (let i = 0; i < src.length; i++) {
-              dst[startIndexIndex + i] = src[i] + startAttributeIndex;
-            }
-          };
-
           const geometry = new THREE.BufferGeometry();
           const positions = new Float32Array(NUM_POSITIONS);
           const normals = new Float32Array(NUM_POSITIONS);
@@ -238,15 +248,6 @@ const house = objectApi => {
       })();
       objectApi.registerGeometry('stairs', stairsGeometry);
 
-      const _applyUvs = (geometry, x, y, w, h) => {
-        const uvs = geometry.getAttribute('uv').array;
-        const numUvs = uvs.length / 2;
-        for (let i = 0; i < numUvs; i++) {
-          uvs[i * 2 + 0] = x + (uvs[i * 2 + 0] * w);
-          uvs[i * 2 + 1] = (y + h) - (uvs[i * 2 + 1] * h);
-        }
-      };
-
       const fenceTopGeometry = (() => {
         const woodUvs = objectApi.getUv('fence');
 
@@ -265,12 +266,6 @@ const house = objectApi => {
         const bottomGeometry = new THREE.BoxBufferGeometry(1, 1/16, 1/16)
           .applyMatrix(new THREE.Matrix4().makeTranslation(0, 1/4, 0));
         _applyUvs(bottomGeometry, woodUvs[0], woodUvs[1], woodUvs[2] - woodUvs[0], (woodUvs[3] - woodUvs[1]) * 2 / 16);
-
-        const _copyIndices = (src, dst, startIndexIndex, startAttributeIndex) => {
-          for (let i = 0; i < src.length; i++) {
-            dst[startIndexIndex + i] = src[i] + startAttributeIndex;
-          }
-        };
 
         const geometry = new THREE.BufferGeometry();
         const positions = new Float32Array(NUM_POSITIONS);
@@ -330,12 +325,6 @@ const house = objectApi => {
           .applyMatrix(new THREE.Matrix4().makeTranslation(1/2/2, 1/4, 0));
         _applyUvs(right2Geometry, woodUvs[0], woodUvs[1], woodUvs[2] - woodUvs[0], (woodUvs[3] - woodUvs[1]) * 2 / 16);
 
-        const _copyIndices = (src, dst, startIndexIndex, startAttributeIndex) => {
-          for (let i = 0; i < src.length; i++) {
-            dst[startIndexIndex + i] = src[i] + startAttributeIndex;
-          }
-        };
-
         const geometry = new THREE.BufferGeometry();
         const positions = new Float32Array(NUM_POSITIONS);
         const normals = new Float32Array(NUM_POSITIONS);
@@ -377,19 +366,124 @@ const house = objectApi => {
         const uvWidth = woodUvs[2] - woodUvs[0];
         const uvHeight = woodUvs[3] - woodUvs[1];
 
-        const geometry = new THREE.PlaneBufferGeometry(1, 1, 1)
-          .applyMatrix(new THREE.Matrix4().makeTranslation(0, 1/2, -1/2 + 0.05));
+        const backGeometry = (() => {
+          const geometry = new THREE.PlaneBufferGeometry(1, 1, 1)
+            .applyMatrix(new THREE.Matrix4().makeTranslation(0, 1/2, -1/2 + 0.05));
 
-        const uvs = geometry.getAttribute('uv').array;
-        const numUvs = uvs.length / 2;
-        for (let i = 0; i < numUvs; i++) {
-          uvs[i * 2 + 0] = woodUvs[0] + (uvs[i * 2 + 0] * uvWidth);
-          uvs[i * 2 + 1] = (woodUvs[1] + uvHeight) - (uvs[i * 2 + 1] * uvHeight);
-        }
+          const uvs = geometry.getAttribute('uv').array;
+          const numUvs = uvs.length / 2;
+          for (let i = 0; i < numUvs; i++) {
+            uvs[i * 2 + 0] = woodUvs[0] + (uvs[i * 2 + 0] * uvWidth);
+            uvs[i * 2 + 1] = (woodUvs[1] + uvHeight) - (uvs[i * 2 + 1] * uvHeight);
+          }
 
+          return geometry;
+        })();
+        const frontGeometry = (() => {
+          const geometry = new THREE.PlaneBufferGeometry(1, 1, 1);
+            // .applyMatrix(new THREE.Matrix4().makeTranslation(0, 1/2, -1/2 + 0.05));
+
+          const uvs = geometry.getAttribute('uv').array;
+          uvs.fill(1);
+
+          return geometry;
+        })();
+
+        const geometry = new THREE.BufferGeometry();
+        const positions = new Float32Array(NUM_POSITIONS);
+        const normals = new Float32Array(NUM_POSITIONS);
+        const uvs = new Float32Array(NUM_POSITIONS);
+        const indices = new Uint16Array(NUM_POSITIONS);
+        let attributeIndex = 0;
+        let uvIndex = 0;
+        let indexIndex = 0;
+        [
+          backGeometry,
+          frontGeometry,
+        ].forEach(newGeometry => {
+          const newPositions = newGeometry.getAttribute('position').array;
+          positions.set(newPositions, attributeIndex);
+          const newNormals = newGeometry.getAttribute('normal').array;
+          normals.set(newNormals, attributeIndex);
+          const newUvs = newGeometry.getAttribute('uv').array;
+          uvs.set(newUvs, uvIndex);
+          const newIndices = newGeometry.index.array;
+          _copyIndices(newIndices, indices, indexIndex, attributeIndex / 3);
+
+          attributeIndex += newPositions.length;
+          uvIndex += newUvs.length;
+          indexIndex += newIndices.length;
+        });
+        geometry.addAttribute('position', new THREE.BufferAttribute(new Float32Array(positions.buffer, positions.byteOffset, attributeIndex), 3));
+        geometry.addAttribute('normal', new THREE.BufferAttribute(new Float32Array(normals.buffer, normals.byteOffset, attributeIndex), 3));
+        geometry.addAttribute('uv', new THREE.BufferAttribute(new Float32Array(uvs.buffer, uvs.byteOffset, uvIndex), 2));
+        geometry.setIndex(new THREE.BufferAttribute(new Uint16Array(indices.buffer, indices.byteOffset, indexIndex), 1));
         return geometry;
       })();
       objectApi.registerGeometry('ladder', ladderGeometry);
+
+      const glassGeometry = (() => {
+        const woodUvs = objectApi.getUv('glass');
+        const uvWidth = woodUvs[2] - woodUvs[0];
+        const uvHeight = woodUvs[3] - woodUvs[1];
+
+        const backGeometry = (() => {
+          const geometry = new THREE.PlaneBufferGeometry(1, 1, 1)
+            .applyMatrix(new THREE.Matrix4().makeTranslation(0, 1/2, -1/2 + 0.05));
+
+          const uvs = geometry.getAttribute('uv').array;
+          const numUvs = uvs.length / 2;
+          for (let i = 0; i < numUvs; i++) {
+            uvs[i * 2 + 0] = woodUvs[0] + (uvs[i * 2 + 0] * uvWidth);
+            uvs[i * 2 + 1] = (woodUvs[1] + uvHeight) - (uvs[i * 2 + 1] * uvHeight);
+          }
+
+          return geometry;
+        })();
+        const frontGeometry = (() => {
+          const geometry = new THREE.PlaneBufferGeometry(1, 1, 1);
+            // .applyMatrix(new THREE.Matrix4().makeTranslation(0, 1/2, -1/2 + 0.05));
+
+          const uvs = geometry.getAttribute('uv').array;
+          uvs.fill(1);
+
+          return geometry;
+        })();
+
+        const geometry = new THREE.BufferGeometry();
+        const positions = new Float32Array(NUM_POSITIONS);
+        const normals = new Float32Array(NUM_POSITIONS);
+        const uvs = new Float32Array(NUM_POSITIONS);
+        const indices = new Uint16Array(NUM_POSITIONS);
+        let attributeIndex = 0;
+        let uvIndex = 0;
+        let indexIndex = 0;
+        [
+          backGeometry,
+          frontGeometry,
+        ].forEach(newGeometry => {
+          const newPositions = newGeometry.getAttribute('position').array;
+          positions.set(newPositions, attributeIndex);
+          const newNormals = newGeometry.getAttribute('normal').array;
+          normals.set(newNormals, attributeIndex);
+          const newUvs = newGeometry.getAttribute('uv').array;
+          uvs.set(newUvs, uvIndex);
+          const newIndices = newGeometry.index.array;
+          _copyIndices(newIndices, indices, indexIndex, attributeIndex / 3);
+
+          attributeIndex += newPositions.length;
+          uvIndex += newUvs.length;
+          indexIndex += newIndices.length;
+        });
+        geometry.addAttribute('position', new THREE.BufferAttribute(new Float32Array(positions.buffer, positions.byteOffset, attributeIndex), 3));
+        geometry.addAttribute('normal', new THREE.BufferAttribute(new Float32Array(normals.buffer, normals.byteOffset, attributeIndex), 3));
+        geometry.addAttribute('uv', new THREE.BufferAttribute(new Float32Array(uvs.buffer, uvs.byteOffset, uvIndex), 2));
+        geometry.setIndex(new THREE.BufferAttribute(new Uint16Array(indices.buffer, indices.byteOffset, indexIndex), 1));
+        return geometry;
+
+        return geometry;
+      })();
+      objectApi.registerGeometry('glass', glassGeometry);
 
       objectApi.registerGenerator('house', chunk => {
         if (chunk.x === 0 && chunk.z === -1) {
@@ -424,15 +518,15 @@ const house = objectApi => {
                       return 'fence';
                     } else if (col === 'ladder') {
                       return 'ladder';
+                    } else if (col === 'glass-top' || col === 'glass-west' || col === 'glass-east') {
+                      return 'glass';
                     } else if (col === 'torch') {
                       return 'torch';
                     } else {
                       return 'house-wood';
                     }
                   })();
-                  if (col === 'fence-nw') {
-                    localQuaternion.set(0, 0, 0, 1);                   
-                  } else if (col === 'fence-ne') {
+                  if (col === 'fence-ne') {
                     localQuaternion.setFromUnitVectors(
                       new THREE.Vector3(0, 0, -1),
                       new THREE.Vector3(1, 0, 0)
@@ -451,6 +545,16 @@ const house = objectApi => {
                     localQuaternion.setFromUnitVectors(
                       new THREE.Vector3(0, 0, -1),
                       new THREE.Vector3(-1, 0, 0)
+                    );
+                  } else if (col === 'glass-west') {
+                    localQuaternion.setFromUnitVectors(
+                      new THREE.Vector3(0, 0, -1),
+                      new THREE.Vector3(-1, 0, 0)
+                    );
+                  } else if (col === 'glass-east') {
+                    localQuaternion.setFromUnitVectors(
+                      new THREE.Vector3(0, 0, -1),
+                      new THREE.Vector3(1, 0, 0)
                     );
                   } else {
                     localQuaternion.set(0, 0, 0, 1);
