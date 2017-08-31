@@ -251,7 +251,7 @@ let cullQueueEnd = 0;
 let visibleIndex = 0;
 const _getCull = (hmdPosition, projectionMatrix, matrixWorldInverse) => {
   const ox = Math.floor(hmdPosition[0] / NUM_CELLS);
-  const oy = Math.min(Math.max(Math.floor(hmdPosition[1] / NUM_CELLS), 0), NUM_CHUNKS_HEIGHT);
+  const oy = Math.min(Math.max(Math.floor(hmdPosition[1] / NUM_CELLS), 0), NUM_CHUNKS_HEIGHT - 1);
   const oz = Math.floor(hmdPosition[2] / NUM_CELLS);
 
   const trackedMapChunkMeshes = mapChunkMeshes[_getChunkIndex(ox, oz)];
