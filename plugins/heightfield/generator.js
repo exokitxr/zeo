@@ -72,8 +72,6 @@ const _makeGeometries = (ox, oy, ether, liquid) => {
     );
     positions.set(newLiquidPositions, attributeIndex + newLandPositions.length);
     _copyIndices(newLiquidIndices, indices, indexIndex + newLandIndices.length, (attributeIndex + newLandPositions.length) / 3);
-    /* const newLiquidPositions = [];
-    const newLiquidIndices = []; */
 
     geometries[i] = {
       attributeRange: {
@@ -139,6 +137,7 @@ const TERRAIN_COLORS = {
   TROPICAL_SEASONAL_FOREST: 0x559944,
   MAGMA: 0xff3333,
 };
+const TERRAIN_NAMES = Object.keys(TERRAIN_COLORS);
 const DIRECTIONS = [
   [0, -1],
   [-1, 0],
@@ -165,11 +164,38 @@ const _random = (() => {
     frequency: 0.001,
     octaves: 2,
   });
+  const biomeNoiseX = generator.uniform({
+    frequency: 1,
+    octaves: 1,
+  });
+  const biomeNoiseZ = generator.uniform({
+    frequency: 1,
+    octaves: 1,
+  });
+  const biomeNoiseV = generator.uniform({
+    frequency: 0.0001,
+    octaves: 4,
+  });
+  /* let frequency = 100;
+  let m_Seed = (generator._random() * 0xffffffff) & 0xffffffff;
+  const int = n => n | 0;
+  const biomeNoiseV = {
+    in2D(a_X, a_Y) {
+      a_X = int(a_X * frequency);
+      a_Y = int(a_Y * frequency);
+      let n = int(a_X + int(a_Y * 57) + int(int(m_Seed * 57) * 57));
+      n = (n << 13) ^ n;
+      return (int(n * (int(int(n * n) * 15731) + 789221) + 1376312589) & 0xffffffff) / 0xffffffff;
+    },
+  }; */
 
   return {
     elevationNoise,
     moistureNoise,
     wormNoise,
+    biomeNoiseX,
+    biomeNoiseZ,
+    biomeNoiseV,
   };
 })();
 
@@ -399,6 +425,8 @@ const _generateMapChunk = (ox, oy, opts) => {
     const geometrySkyLightmaps = new Uint8Array(skyLightmaps.buffer, skyLightmaps.byteOffset + attributeRange.start / 3, attributeRange.count / 3);
     const geometryTorchLightmaps = new Uint8Array(torchLightmaps.buffer, torchLightmaps.byteOffset + attributeRange.start / 3, attributeRange.count / 3);
 
+    const biomeCaches = {};
+
     const numPositions = geometryPositions.length / 3;
     for (let j = 0; j < numPositions; j++) {
       const baseIndex = j * 3;
@@ -416,7 +444,7 @@ const _generateMapChunk = (ox, oy, opts) => {
       // const coast = land && ocean;
       const coast = false;
       const lava = 0;
-      const terrain = _getTerrain({
+      /* const terrain = _getTerrain({
         y,
         moisture,
         land,
@@ -425,8 +453,9 @@ const _generateMapChunk = (ox, oy, opts) => {
         ocean,
         coast,
         lava,
-      });
-      const colorArray = _colorIntToArray(TERRAIN_COLORS[terrain]);
+      }); */
+      const biome = _getBiome(ax, az, biomeCaches);
+      const colorArray = _colorIntToArray(TERRAIN_COLORS[biome]);
       geometryColors[baseIndex + 0] = colorArray[0];
       geometryColors[baseIndex + 1] = colorArray[1];
       geometryColors[baseIndex + 2] = colorArray[2];
@@ -609,6 +638,49 @@ const _getTerrain = p => {
     else if (p.moisture > 0.16) { return 'GRASSLAND'; }
     else { return 'SUBTROPICAL_DESERT'; }
   }
+};
+let count = 0;
+const _getBiome = (x, z, biomeCaches) => {
+  const CELL_SIZE = 4;
+  const ox = Math.floor(x / CELL_SIZE);
+  const oz = Math.floor(z / CELL_SIZE);
+
+  const index = ox + oz * 256;
+  let biomeCache = biomeCaches[index];
+  if (!biomeCache) {
+    biomeCache = Array(5 * 5);
+
+    const bx = (ox - 2) * CELL_SIZE;
+    const bz = (oz - 2) * CELL_SIZE;
+
+    for (let dz = 0; dz < 5; dz++) {
+      for (let dx = 0; dx < 5; dx++) {
+        biomeCache[dx + dz * 5] = [
+          bx + dx * CELL_SIZE + _random.biomeNoiseX.in2D(bx + dx * CELL_SIZE, bz + dz * CELL_SIZE) * CELL_SIZE,
+          bz + dz * CELL_SIZE + _random.biomeNoiseZ.in2D(bx + dx * CELL_SIZE, bz + dz * CELL_SIZE) * CELL_SIZE,
+          _random.biomeNoiseV.in2D(bx + dx * CELL_SIZE, bz + dz * CELL_SIZE)
+        ];
+      }
+    }
+
+    biomeCaches[index] = biomeCache;
+  }
+
+  let result = 0;
+  let minDistance = Infinity;
+  for (let dz = 0; dz < 5; dz++) {
+    for (let dx = 0; dx < 5; dx++) {
+      const entry = biomeCache[dx + dz * 5];
+      const ddx = entry[0] - x;
+      const ddz = entry[1] - z;
+      const distance = ddx * ddx + ddz * ddz;
+      if (distance < minDistance) {
+        result = entry[2];
+        minDistance = distance;
+      }
+    }
+  }
+  return TERRAIN_NAMES[Math.floor(Math.min(Math.max(result, 0), 1) * TERRAIN_NAMES.length)];
 };
 const _colorIntToArray = n => ([
   ((n >> (8 * 2)) & 0xFF) / 0xFF,

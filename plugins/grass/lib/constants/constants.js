@@ -7,7 +7,7 @@ const NUM_CHUNKS_HEIGHT = NUM_CELLS_HEIGHT / NUM_CELLS;
 
 const NUM_RENDER_GROUPS = NUM_CHUNKS_HEIGHT / 2;
 
-const RANGE = 3;
+const RANGE = 5;
 
 const DEFAULT_SEED = 'a';
 
