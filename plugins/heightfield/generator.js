@@ -102,7 +102,7 @@ const _makeGeometries = (ox, oy, ether, liquid) => {
   }
 };
 
-const BIOME_COLORS = {
+const TERRAIN_COLORS = {
   // Features
   OCEAN: 0x44447a,
   // OCEAN: 0x000000,
@@ -416,7 +416,7 @@ const _generateMapChunk = (ox, oy, opts) => {
       // const coast = land && ocean;
       const coast = false;
       const lava = 0;
-      const biome = _getBiome({
+      const terrain = _getTerrain({
         y,
         moisture,
         land,
@@ -426,7 +426,7 @@ const _generateMapChunk = (ox, oy, opts) => {
         coast,
         lava,
       });
-      const colorArray = _colorIntToArray(BIOME_COLORS[biome]);
+      const colorArray = _colorIntToArray(TERRAIN_COLORS[terrain]);
       geometryColors[baseIndex + 0] = colorArray[0];
       geometryColors[baseIndex + 1] = colorArray[1];
       geometryColors[baseIndex + 2] = colorArray[2];
@@ -576,7 +576,7 @@ const ETHER_INDEX_FACTOR = NUM_CELLS + 1;
 const ETHER_INDEX_FACTOR2 = ETHER_INDEX_FACTOR * ETHER_INDEX_FACTOR;
 const _getEtherIndex = (x, y, z) => x + (z * ETHER_INDEX_FACTOR) + (y * ETHER_INDEX_FACTOR2);
 
-const _getBiome = p => {
+const _getTerrain = p => {
   if (p.coast) {
     return 'BEACH';
   } else if (p.ocean) {
