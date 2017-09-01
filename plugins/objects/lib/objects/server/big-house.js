@@ -13,7 +13,7 @@ const {three: {THREE}, utils: {image: {jimp}}} = zeo;
 const NUM_POSITIONS = 10 * 1024;
 
 const BIG_HOUSE_SPEC = parseBlueprint(`\
-c=Cobblestone|b=Oak Wood Planks|o=Cobblestone Stairs|d=Door Oak Bottom|w=Oak Wood|g=Glass Pane|s=Oak Wood Stairs|t=Torch
+c=Cobblestone|b=Oak Wood Planks|o=Cobblestone Stairs|d=Door Oak Bottom|w=Oak Wood|g=Glass West|G=Glass East|l=Glass North|L=Glass South|s=Oak Wood Stairs|t=Torch
 |----Layer 1|
 ccccccc  
 cbbbbbc  
@@ -43,15 +43,15 @@ ccccccdcc
 |----Layer 3|
 ccccccc  
 w     w  
-g     g  
-g     g  
+g     G  
+g     G  
 w     w  
 b     bbc
 w       w
-g       g
-g       g
+g       G
+g       G
 w       w
-cbwgwb bc
+cbwLwb bc
          
 |----Layer 4|
 cccccccs 
@@ -67,7 +67,7 @@ c     t c
 cbbbbbbbc
 sssssssss
 |----Layer 5|
-sbwgwbs  
+sbwlwbs  
 sb   bs  
 sb   bs  
 sb   bs  
@@ -283,7 +283,7 @@ const bigHouse = objectApi => {
                       return 'door';
                     } else if (col === 'Oak Wood') {
                       return 'house-wood';
-                    } else if (col === 'Glass Pane') {
+                    } else if (col === 'Glass West' || col === 'Glass East' || col === 'Glass North' || col === 'Glass South') {
                       return 'glass';
                     } else if (col === 'Torch') {
                       return 'torch';
@@ -291,35 +291,20 @@ const bigHouse = objectApi => {
                       return 'house-wood';
                     }
                   })();
-                  if (col === 'fence-ne') {
+                  if (col === 'Glass West') {
+                    localQuaternion.setFromUnitVectors(
+                      new THREE.Vector3(0, 0, -1),
+                      new THREE.Vector3(-1, 0, 0)
+                    );
+                  } else if (col === 'Glass East') {
                     localQuaternion.setFromUnitVectors(
                       new THREE.Vector3(0, 0, -1),
                       new THREE.Vector3(1, 0, 0)
                     );
-                  } else if (col === 'fence-se') {
+                  } else if (col === 'Glass South') {
                     localQuaternion.setFromUnitVectors(
                       new THREE.Vector3(0, 0, -1),
                       new THREE.Vector3(0, 0, 1)
-                    );
-                  } else if (col === 'fence-sw') {
-                    localQuaternion.setFromUnitVectors(
-                      new THREE.Vector3(0, 0, -1),
-                      new THREE.Vector3(-1, 0, 0)
-                    );
-                  } else if (col === 'fence-side') {
-                    localQuaternion.setFromUnitVectors(
-                      new THREE.Vector3(0, 0, -1),
-                      new THREE.Vector3(-1, 0, 0)
-                    );
-                  } else if (col === 'glass-west') {
-                    localQuaternion.setFromUnitVectors(
-                      new THREE.Vector3(0, 0, -1),
-                      new THREE.Vector3(-1, 0, 0)
-                    );
-                  } else if (col === 'glass-east') {
-                    localQuaternion.setFromUnitVectors(
-                      new THREE.Vector3(0, 0, -1),
-                      new THREE.Vector3(1, 0, 0)
                     );
                   } else {
                     localQuaternion.set(0, 0, 0, 1);
