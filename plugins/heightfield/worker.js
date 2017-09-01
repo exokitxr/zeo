@@ -61,7 +61,7 @@ function mod(value, divisor) {
   return n < 0 ? (divisor + n) : n;
 }
 const _getChunkIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
-const _getOriginHeight = () => (1 - 0.3 + Math.pow(elevationNoise.in2D(0 + 1000, 0 + 1000), 0.5)) * 64;
+const _getOriginHeight = () => 64;
 
 const zeroFloat32Array = new Float32Array(0);
 

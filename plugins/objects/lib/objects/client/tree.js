@@ -1,5 +1,5 @@
 const HEIGHTFIELD_PLUGIN = 'plugins-heightfield';
-const LIGHTMAP_PLUGIN = 'plugins-lightmap';
+// const LIGHTMAP_PLUGIN = 'plugins-lightmap';
 const DEFAULT_MATRIX = [
   0, 0, 0,
   0, 0, 0, 1,
@@ -15,7 +15,7 @@ const tree = objectApi => {
   const localVector = new THREE.Vector3();
 
   return () => new Promise((accept, reject) => {
-    const trees = {};
+    /* const trees = {};
     let Lightmapper = null;
     let lightmapper = null;
     const _bindLightmap = tree => {
@@ -43,17 +43,17 @@ const tree = objectApi => {
       for (const id in trees) {
         trees[id].shape = null;
       }
-    });
+    }); */
 
     const treeObjectApi = {
       object: 'tree',
-      addedCallback(id, position) {
+      /* addedCallback(id, position) {
         const tree = {
           position: position.clone(),
           shape: null,
         };
 
-        if (lightmapper) {
+         if (lightmapper) {
           _bindLightmap(tree);
         }
 
@@ -67,7 +67,7 @@ const tree = objectApi => {
         }
 
         trees[id] = null;
-      },
+      }, */
       gripCallback(id, side, x, z, objectIndex) {
         const itemId = _makeId();
         const asset = 'ITEM.WOOD';

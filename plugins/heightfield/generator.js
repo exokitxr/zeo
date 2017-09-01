@@ -21,6 +21,9 @@ const {
 
   PEEK_FACES,
   PEEK_FACE_INDICES,
+
+  BIOMES,
+  BIOMES_TH,
 } = require('./lib/constants/constants');
 const NUM_POSITIONS_CHUNK = 800 * 1024;
 const NUM_CELLS_HALF = NUM_CELLS / 2;
@@ -100,44 +103,6 @@ const _makeGeometries = (ox, oy, ether, liquid) => {
   }
 };
 
-const TERRAIN_COLORS = {
-  // Features
-  OCEAN: 0x44447a,
-  // OCEAN: 0x000000,
-  // COAST: 0x33335a,
-  COAST: 0x333333,
-  LAKESHORE: 0x225588,
-  LAKE: 0x336699,
-  CAVE: 0x808080,
-  RIVER: 0x225588,
-  MARSH: 0x2f6666,
-  // ICE: 0x99ffff,
-  ICE: 0x99dddd,
-  // BEACH: 0xa09077,
-  BEACH: 0xa0b077,
-  ROAD1: 0x442211,
-  ROAD2: 0x553322,
-  ROAD3: 0x664433,
-  BRIDGE: 0x686860,
-  LAVA: 0xcc3333,
-
-  // Terrain
-  SNOW: 0xffffff,
-  TUNDRA: 0xbbbbaa,
-  BARE: 0x888888,
-  SCORCHED: 0x555555,
-  TAIGA: 0x99aa77,
-  SHRUBLAND: 0x889977,
-  TEMPERATE_DESERT: 0xc9d29b,
-  TEMPERATE_RAIN_FOREST: 0x448855,
-  TEMPERATE_DECIDUOUS_FOREST: 0x679459,
-  GRASSLAND: 0x88aa55,
-  SUBTROPICAL_DESERT: 0xd2b98b,
-  TROPICAL_RAIN_FOREST: 0x337755,
-  TROPICAL_SEASONAL_FOREST: 0x559944,
-  MAGMA: 0xff3333,
-};
-const TERRAIN_NAMES = Object.keys(TERRAIN_COLORS);
 const DIRECTIONS = [
   [0, -1],
   [-1, 0],
@@ -152,17 +117,37 @@ const _random = (() => {
   const generator = indev({
     seed: DEFAULT_SEED,
   });
-  const elevationNoise = generator.uniform({
-    frequency: 0.002,
-    octaves: 8,
+  const elevationNoise1 = generator.uniform({
+    frequency: 2,
+    octaves: 1,
   });
-  const moistureNoise = generator.uniform({
-    frequency: 0.001,
-    octaves: 2,
+  const elevationNoise2 = generator.uniform({
+    frequency: 2,
+    octaves: 1,
+  });
+  const elevationNoise3 = generator.uniform({
+    frequency: 2,
+    octaves: 1,
   });
   const wormNoise = generator.uniform({
     frequency: 0.001,
     octaves: 2,
+  });
+  const oceanNoise = generator.uniform({
+    frequency: 0.001,
+    octaves: 4,
+  });
+  const riverNoise = generator.uniform({
+    frequency: 0.001,
+    octaves: 4,
+  });
+  const temperatureNoise = generator.uniform({
+    frequency: 0.001,
+    octaves: 4,
+  });
+  const humidityNoise = generator.uniform({
+    frequency: 0.001,
+    octaves: 4,
   });
   const biomeNoiseX = generator.uniform({
     frequency: 1,
@@ -176,23 +161,16 @@ const _random = (() => {
     frequency: 0.0001,
     octaves: 4,
   });
-  /* let frequency = 100;
-  let m_Seed = (generator._random() * 0xffffffff) & 0xffffffff;
-  const int = n => n | 0;
-  const biomeNoiseV = {
-    in2D(a_X, a_Y) {
-      a_X = int(a_X * frequency);
-      a_Y = int(a_Y * frequency);
-      let n = int(a_X + int(a_Y * 57) + int(int(m_Seed * 57) * 57));
-      n = (n << 13) ^ n;
-      return (int(n * (int(int(n * n) * 15731) + 789221) + 1376312589) & 0xffffffff) / 0xffffffff;
-    },
-  }; */
 
   return {
-    elevationNoise,
-    moistureNoise,
+    elevationNoise1,
+    elevationNoise2,
+    elevationNoise3,
     wormNoise,
+    oceanNoise,
+    riverNoise,
+    temperatureNoise,
+    humidityNoise,
     biomeNoiseX,
     biomeNoiseZ,
     biomeNoiseV,
@@ -205,12 +183,71 @@ localTriangle.points = [localTriangle.a, localTriangle.b, localTriangle.c];
 const _generateMapChunk = (ox, oy, opts) => {
   // generate
 
+  const biomes = Array(NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN);
+  const _genOcean = () => {
+    for (let z = 0; z < NUM_CELLS_OVERSCAN; z++) {
+      for (let x = 0; x < NUM_CELLS_OVERSCAN; x++) {
+        if (_random.oceanNoise.in2D((ox * NUM_CELLS) + x + 1000, (oy * NUM_CELLS) + z + 1000) < (90 / 255)) {
+          biomes[_getCoordOverscanIndex(x, z)] = BIOMES.biOcean;
+        }
+      }
+    }
+  };
+  const _genRivers = () => {
+    for (let z = 0; z < NUM_CELLS_OVERSCAN; z++) {
+      for (let x = 0; x < NUM_CELLS_OVERSCAN; x++) {
+        const index = _getCoordOverscanIndex(x, z);
+        if (biomes[index] === undefined && _random.riverNoise.in2D((ox * NUM_CELLS) + x + 1000, (oy * NUM_CELLS) + z + 1000) < 0.1) {
+          biomes[index] = BIOMES.biRiver;
+        }
+      }
+    }
+  };
+  const _genFreezeWater = () => {
+    for (let z = 0; z < NUM_CELLS_OVERSCAN; z++) {
+      for (let x = 0; x < NUM_CELLS_OVERSCAN; x++) {
+        if (_random.temperatureNoise.in2D((ox * NUM_CELLS) + x + 1000, (oy * NUM_CELLS) + z + 1000) < ((4 * 16) / 255)) {
+          const index = _getCoordOverscanIndex(x, z);
+          if (biomes[index] === BIOMES.biOcean) {
+            biomes[index] = BIOMES.biFrozenOcean;
+          } else if (biomes[index] === BIOMES.biRiver) {
+            biomes[index] = BIOMES.biFrozenRiver;
+          }
+        }
+      }
+    }
+  };
+  const _genLand = () => {
+    for (let z = 0; z < NUM_CELLS_OVERSCAN; z++) {
+      for (let x = 0; x < NUM_CELLS_OVERSCAN; x++) {
+        const index = _getCoordOverscanIndex(x, z);
+        if (biomes[index] === undefined) {
+          const t = Math.floor(_random.temperatureNoise.in2D((ox * NUM_CELLS) + x + 1000, (oy * NUM_CELLS) + z + 1000) * 16);
+          const h = Math.floor(_random.humidityNoise.in2D((ox * NUM_CELLS) + x + 1000, (oy * NUM_CELLS) + z + 1000) * 16);
+          biomes[index] = BIOMES_TH[t + 16 * h];
+        }
+      }
+    }
+  };
+  _genOcean();
+  _genRivers();
+  _genFreezeWater();
+  _genLand();
+
   let elevations = opts.oldElevations;
   if (!elevations) {
     elevations = new Float32Array(NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN);
     for (let z = 0; z < NUM_CELLS_OVERSCAN; z++) {
       for (let x = 0; x < NUM_CELLS_OVERSCAN; x++) {
-        elevations[_getCoordOverscanIndex(x, z)] = (1 - 0.3 + Math.pow(_random.elevationNoise.in2D((ox * NUM_CELLS) + x + 1000, (oy * NUM_CELLS) + z + 1000), 0.5)) * 64;
+        const index = _getCoordOverscanIndex(x, z);
+        const biome = biomes[index];
+        const ax = (ox * NUM_CELLS) + x;
+        const az = (oy * NUM_CELLS) + z;
+
+        elevations[index] = biome.baseHeight +
+          _random.elevationNoise1.in2D(ax * biome.amps[0][0], az * biome.amps[0][0]) * biome.amps[0][1] +
+          _random.elevationNoise2.in2D(ax * biome.amps[1][0], az * biome.amps[1][0]) * biome.amps[1][1] +
+          _random.elevationNoise3.in2D(ax * biome.amps[2][0], az * biome.amps[2][0]) * biome.amps[2][1];
       }
     }
   }
@@ -227,7 +264,7 @@ const _generateMapChunk = (ox, oy, opts) => {
       }
     }
 
-    const _fillOblateSpheroid = (centerX, centerY, centerZ, minX, minZ, maxX, maxZ, radius) => {
+    /* const _fillOblateSpheroid = (centerX, centerY, centerZ, minX, minZ, maxX, maxZ, radius) => {
       for (let z = -radius; z <= radius; z++) {
         const lz = centerZ + z;
         if (lz >= minZ && lz < (maxZ + 1)) {
@@ -301,7 +338,7 @@ const _generateMapChunk = (ox, oy, opts) => {
           }
         }
       }
-    }
+    } */
   }
   let liquid = opts.oldLiquid;
   if (!liquid) {
@@ -334,8 +371,8 @@ const _generateMapChunk = (ox, oy, opts) => {
       }
     };
 
-    _setLiquid(6, Math.floor(elevations[_getCoordOverscanIndex(6, 16 - 3)]), -3, 1);
-    _setLiquid(6, Math.floor(elevations[_getCoordOverscanIndex(6, 16 - 4)]), -4, 1);
+    // _setLiquid(6, Math.floor(elevations[_getCoordOverscanIndex(6, 16 - 3)]), -3, 1);
+    // _setLiquid(6, Math.floor(elevations[_getCoordOverscanIndex(6, 16 - 4)]), -4, 1);
   }
   const numNewEthers = opts.newEther.length / 4;
   for (let i = 0; i < numNewEthers; i++) {
@@ -371,6 +408,7 @@ const _generateMapChunk = (ox, oy, opts) => {
     indexIndex,
     geometries,
   } = _makeGeometries(ox, oy, ether, liquid);
+// console.log('pos', attributeIndex, indexIndex);
   const colors = new Float32Array(NUM_POSITIONS_CHUNK);
   const skyLightmaps = new Uint8Array(NUM_POSITIONS_CHUNK);
   const torchLightmaps = new Uint8Array(NUM_POSITIONS_CHUNK);
@@ -425,45 +463,23 @@ const _generateMapChunk = (ox, oy, opts) => {
     const geometrySkyLightmaps = new Uint8Array(skyLightmaps.buffer, skyLightmaps.byteOffset + attributeRange.start / 3, attributeRange.count / 3);
     const geometryTorchLightmaps = new Uint8Array(torchLightmaps.buffer, torchLightmaps.byteOffset + attributeRange.start / 3, attributeRange.count / 3);
 
-    const biomeCaches = {};
-
     const numPositions = geometryPositions.length / 3;
     for (let j = 0; j < numPositions; j++) {
       const baseIndex = j * 3;
       const x = geometryPositions[baseIndex + 0];
       const y = geometryPositions[baseIndex + 1];
       const z = geometryPositions[baseIndex + 2];
-      const elevation = staticHeightfield[_getStaticHeightfieldIndex(Math.floor(x), Math.floor(z))];
-      const ax = (ox * NUM_CELLS) + x;
-      const az = (oy * NUM_CELLS) + z;
-      const moisture = _random.moistureNoise.in2D(ax + 1000, az + 1000);
-      const land = elevation > 64;
-      const cave = y < elevation - 3;
-      const water = !land;
-      const ocean = baseIndex >= attributeRange.landCount;
-      // const coast = land && ocean;
-      const coast = false;
-      const lava = 0;
-      /* const terrain = _getTerrain({
-        y,
-        moisture,
-        land,
-        cave,
-        water,
-        ocean,
-        coast,
-        lava,
-      }); */
-      const biome = _getBiome(ax, az, biomeCaches);
-      const colorArray = _colorIntToArray(TERRAIN_COLORS[biome]);
+
+      const biome = biomes[_getCoordOverscanIndex(Math.floor(x), Math.floor(z))];
+      const colorArray = _colorIntToArray(biome.color);
       geometryColors[baseIndex + 0] = colorArray[0];
       geometryColors[baseIndex + 1] = colorArray[1];
       geometryColors[baseIndex + 2] = colorArray[2];
 
       geometrySkyLightmaps[j] = lightmapUtils.render(x, y, z, staticHeightfield);
 
-      geometryPositions[baseIndex + 0] = ax;
-      geometryPositions[baseIndex + 2] = az;
+      geometryPositions[baseIndex + 0] = (ox * NUM_CELLS) + x;
+      geometryPositions[baseIndex + 2] = (oy * NUM_CELLS) + z;
     }
 
     geometry.boundingSphere = new THREE.Sphere(
@@ -605,7 +621,7 @@ const ETHER_INDEX_FACTOR = NUM_CELLS + 1;
 const ETHER_INDEX_FACTOR2 = ETHER_INDEX_FACTOR * ETHER_INDEX_FACTOR;
 const _getEtherIndex = (x, y, z) => x + (z * ETHER_INDEX_FACTOR) + (y * ETHER_INDEX_FACTOR2);
 
-const _getTerrain = p => {
+/* const _getTerrain = p => {
   if (p.coast) {
     return 'BEACH';
   } else if (p.ocean) {
@@ -681,7 +697,7 @@ const _getBiome = (x, z, biomeCaches) => {
     }
   }
   return TERRAIN_NAMES[Math.floor(Math.min(Math.max(result, 0), 1) * TERRAIN_NAMES.length)];
-};
+}; */
 const _colorIntToArray = n => ([
   ((n >> (8 * 2)) & 0xFF) / 0xFF,
   ((n >> (8 * 1)) & 0xFF) / 0xFF,

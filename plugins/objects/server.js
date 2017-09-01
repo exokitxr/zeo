@@ -115,7 +115,7 @@ class Objects {
               .applyMatrix(localMatrix.makeTranslation(matrix[0], matrix[1], matrix[2]));
               // .applyMatrix(localMatrix.makeScale(matrix[7], matrix[8], matrix[9]));
 
-            const i = Math.min(Math.max(Math.floor(matrix[1] / NUM_CELLS), 0), NUM_CHUNKS_HEIGHT);
+            const i = Math.min(Math.max(Math.floor(matrix[1] / NUM_CELLS), 0), NUM_CHUNKS_HEIGHT - 1);
 
             const newPositions = newGeometry.getAttribute('position').array;
             geometriesPositions[i].array.set(newPositions, geometriesPositions[i].index);
