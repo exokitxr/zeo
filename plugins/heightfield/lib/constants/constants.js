@@ -1140,6 +1140,10 @@ const BIOMES = {
     "color": 0xf2b48d
   }
 };
+let biomeIndex = 0;
+for (const k in BIOMES) {
+  BIOMES[k].index = biomeIndex++;
+}
 
 const BIOMES_TH = [
 		//       0         1         2               3               4               5               6         7         8         9         10              11              12              13              14             15
