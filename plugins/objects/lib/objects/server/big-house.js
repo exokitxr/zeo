@@ -13,7 +13,7 @@ const {three: {THREE}, utils: {image: {jimp}}} = zeo;
 const NUM_POSITIONS = 10 * 1024;
 
 const BIG_HOUSE_SPEC = parseBlueprint(`\
-c=Cobblestone|b=Oak Wood Planks|o=Cobblestone Stairs|d=Door Oak Bottom|w=Oak Wood|g=Glass West|G=Glass East|l=Glass North|L=Glass South|s=Oak Wood Stairs|t=Torch
+c=Cobblestone|b=Oak Wood Planks|o=Cobblestone Stairs|d=Door Oak Bottom|w=Oak Wood|g=Glass West|G=Glass East|l=Glass North|L=Glass South|s=Oak Wood Stairs West|S=Oak Wood Stairs East|t=Oak Wood Stairs North|T=Oak Wood Stairs South|!=Torch
 |----Layer 1|
 ccccccc  
 cbbbbbc  
@@ -26,7 +26,7 @@ cbbbbbbbc
 cbbbbbbbc
 cbbbbbbbc
 ccccccccc
-      s  
+      o  
 |----Layer 2|
 ccccccc  
 c     c  
@@ -54,54 +54,54 @@ w       w
 cbwLwb bc
          
 |----Layer 4|
-cccccccs 
-c     cs 
-c     cs 
-c     cs 
-c     cbs
+cccccccS 
+c     cS 
+c     cS 
+c     cS 
+c     cbS
 c     bbc
 c       c
 c       c
 c       c
-c     t c
+c     ! c
 cbbbbbbbc
-sssssssss
+TTTTTTTTT
 |----Layer 5|
-sbwlwbs  
-sb   bs  
-sb   bs  
-sb   bs  
-sb   bs  
-sb   bbss
+sbwlwbS  
+sb   bS  
+sb   bS  
+sb   bS  
+sb   bS  
+sb   bbtt
 bb   bbbb
 bb      b
 bb      b
 bbbbbbbbb
-sssssssss
+TTTTTTTTT
          
 |----Layer 6|
- sbbbs   
- sb bs   
- sb bs   
- sb bs   
- sb bs   
- sb bs   
-sbb bbsss
+ sbbbS   
+ sb bS   
+ sb bS   
+ sb bS   
+ sb bS   
+ sb bS   
+tbb bbttt
 bbbbbbbbb
 bbbbbbbbb
-sssssssss
+TTTTTTTTT
          
          
 |----Layer 7|
-  sbs    
-  sbs    
-  sbs    
-  sbs    
-  sbs    
-  sbs    
-  sbs    
-ssbbbssss
-sssssssss
+  sbS    
+  sbS    
+  sbS    
+  sbS    
+  sbS    
+  sbS    
+  sbS    
+ttbbbtttt
+TTTTTTTTT
          
          
          
@@ -277,7 +277,7 @@ const bigHouse = objectApi => {
                       return 'house-plank';
                     } else if (col === 'Cobblestone Stairs') {
                       return 'stone-stairs';
-                    } else if (col === 'Oak Wood Stairs') {
+                    } else if (col === 'Oak Wood Stairs West' || col === 'Oak Wood Stairs East' || col === 'Oak Wood Stairs North' || col === 'Oak Wood Stairs South') {
                       return 'wood-stairs';
                     } else if (col === 'Door Oak Bottom') {
                       return 'door';
@@ -291,17 +291,17 @@ const bigHouse = objectApi => {
                       return 'house-wood';
                     }
                   })();
-                  if (col === 'Glass West') {
+                  if (col === 'Glass West' || col === 'Oak Wood Stairs East') {
                     localQuaternion.setFromUnitVectors(
                       new THREE.Vector3(0, 0, -1),
                       new THREE.Vector3(-1, 0, 0)
                     );
-                  } else if (col === 'Glass East') {
+                  } else if (col === 'Glass East' || col === 'Oak Wood Stairs West') {
                     localQuaternion.setFromUnitVectors(
                       new THREE.Vector3(0, 0, -1),
                       new THREE.Vector3(1, 0, 0)
                     );
-                  } else if (col === 'Glass South') {
+                  } else if (col === 'Glass South' || col === 'Oak Wood Stairs North') {
                     localQuaternion.setFromUnitVectors(
                       new THREE.Vector3(0, 0, -1),
                       new THREE.Vector3(0, 0, 1)
