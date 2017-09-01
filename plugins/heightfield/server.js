@@ -162,9 +162,11 @@ class Heightfield {
                   const chunkData = protocolUtils.parseDataChunk(uint32Buffer.buffer, uint32Buffer.byteOffset);
                   const oldElevations = chunkData.elevations.slice();
                   const oldEther = chunkData.ether.slice();
+                  const oldLiquid = chunkData.liquid.slice();
                   chunk.generate(generator, {
                     oldElevations,
                     oldEther,
+                    oldLiquid,
                     newEther,
                   });
                 }

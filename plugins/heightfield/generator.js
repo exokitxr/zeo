@@ -34,19 +34,15 @@ const _copyIndices = (src, dst, startIndexIndex, startAttributeIndex) => {
   }
 };
 
-const _makeGeometries = ether => {
+const _makeGeometries = (ox, oy, ether, liquid) => {
   const positions = new Float32Array(NUM_POSITIONS_CHUNK);
-  // const normals = new Float32Array(NUM_POSITIONS_CHUNK);
-  const colors = new Float32Array(NUM_POSITIONS_CHUNK);
-  const skyLightmaps = new Uint8Array(NUM_POSITIONS_CHUNK);
-  const torchLightmaps = new Uint8Array(NUM_POSITIONS_CHUNK);
   const indices = new Uint32Array(NUM_POSITIONS_CHUNK);
   let attributeIndex = 0;
   let indexIndex = 0;
 
   const geometries = Array(NUM_CHUNKS_HEIGHT);
   for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
-    const {positions: newPositions, indices: newIndices} = mrch.marchingCubes(
+    const {positions: newLandPositions, indices: newLandIndices} = mrch.marchingCubes(
       [NUM_CELLS + 1, NUM_CELLS + 1, NUM_CELLS + 1],
       (x, y, z) => ether[_getEtherIndex(x, y, z)],
       [
@@ -54,37 +50,51 @@ const _makeGeometries = ether => {
         [NUM_CELLS + 1, (NUM_CELLS * (i + 1)) + 1, NUM_CELLS + 1],
       ]
     );
-    // const geometry = new THREE.BufferGeometry();
-    // geometry.addAttribute('position', new THREE.BufferAttribute(newPositions, 3));
-    // geometry.computeVertexNormals();
-    // const newNormals = geometry.getAttriubte('normal').array;
+    positions.set(newLandPositions, attributeIndex);
+    _copyIndices(newLandIndices, indices, indexIndex, attributeIndex / 3);
 
-    positions.set(newPositions, attributeIndex);
-    // normals.set(newNormals, attributeIndex);
-    _copyIndices(newIndices, indices, indexIndex, attributeIndex / 3);
+    const {positions: newLiquidPositions, indices: newLiquidIndices} = mrch.marchingCubes(
+      [NUM_CELLS + 1, NUM_CELLS + 1, NUM_CELLS + 1],
+      (x, y, z) => {
+        const index = _getEtherIndex(x, y, z);
+        const liquidValue = liquid[index];
+        if (liquidValue > 0) {
+          const etherValue = ether[index];
+          return -etherValue * (liquidValue === 0xFF ? -1 : 1);
+        } else {
+          return 1;
+        }
+      },
+      [
+        [0, NUM_CELLS * i, 0],
+        [NUM_CELLS + 1, (NUM_CELLS * (i + 1)) + 1, NUM_CELLS + 1],
+      ]
+    );
+    positions.set(newLiquidPositions, attributeIndex + newLandPositions.length);
+    _copyIndices(newLiquidIndices, indices, indexIndex + newLandIndices.length, (attributeIndex + newLandPositions.length) / 3);
+    /* const newLiquidPositions = [];
+    const newLiquidIndices = []; */
 
     geometries[i] = {
       attributeRange: {
         start: attributeIndex,
-        count: newPositions.length,
+        landCount: newLandPositions.length,
+        count: newLandPositions.length + newLiquidPositions.length,
       },
       indexRange: {
         start: indexIndex,
-        count: newIndices.length,
+        landCount: newLandIndices.length,
+        count: newLandIndices.length + newLiquidIndices.length,
       },
       boundingSphere: null,
       peeks: null,
     };
 
-    attributeIndex += newPositions.length;
-    indexIndex += newIndices.length;
+    attributeIndex += newLandPositions.length + newLiquidPositions.length;
+    indexIndex += newLandIndices.length + newLiquidIndices.length;
   }
   return {
     positions,
-    // normals,
-    colors,
-    skyLightmaps,
-    torchLightmaps,
     indices,
     attributeIndex,
     indexIndex,
@@ -186,7 +196,7 @@ const _generateMapChunk = (ox, oy, opts) => {
       for (let x = 0; x < NUM_CELLS_OVERSCAN; x++) {
         const elevation = elevations[_getCoordOverscanIndex(x, z)];
         for (let y = 0; y < NUM_CELLS_OVERSCAN_Y; y++) {
-          ether[_getEtherIndex(x, y, z)] = Math.max(y - elevation, -1);
+          ether[_getEtherIndex(x, y, z)] = Math.min(Math.max(y - elevation, -1), 1);
         }
       }
     }
@@ -267,6 +277,40 @@ const _generateMapChunk = (ox, oy, opts) => {
       }
     }
   }
+  let liquid = opts.oldLiquid;
+  if (!liquid) {
+    liquid = new Uint8Array((NUM_CELLS + 1) * (NUM_CELLS_HEIGHT + 1) * (NUM_CELLS + 1));
+
+    const _setLiquid = (x, y, z, v) => {
+      x -= ox * NUM_CELLS;
+      z -= oy * NUM_CELLS;
+
+      for (let dz = -1; dz <= 1; dz++) {
+        const az = z + dz;
+        if (az >= 0 && az < (NUM_CELLS + 1)) {
+          for (let dx = -1; dx <= 1; dx++) {
+            const ax = x + dx;
+            if (ax >= 0 && ax < (NUM_CELLS + 1)) {
+              for (let dy = -1; dy <= 1; dy++) {
+                const ay = y + dy;
+                if (ay >= 0 && ay < (NUM_CELLS_HEIGHT + 1)) {
+                  const index = _getEtherIndex(ax, ay, az);
+                  if (dx === 0 && dy === 0 && dz === 0) {
+                    liquid[index] = v;
+                  } else if (liquid[index] === 0) {
+                    liquid[index] = (dy >= 0) ? 0xFF : (dx === 0 && dz === 0 ? 0xFE : 0);
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    };
+
+    _setLiquid(6, Math.floor(elevations[_getCoordOverscanIndex(6, 16 - 3)]), -3, 1);
+    _setLiquid(6, Math.floor(elevations[_getCoordOverscanIndex(6, 16 - 4)]), -4, 1);
+  }
   const numNewEthers = opts.newEther.length / 4;
   for (let i = 0; i < numNewEthers; i++) {
     const baseIndex = i * 4;
@@ -283,7 +327,7 @@ const _generateMapChunk = (ox, oy, opts) => {
             for (let dy = -HOLE_SIZE; dy <= HOLE_SIZE; dy++) {
               const ay = y + dy;
               if (ay >= 0 && ay < (NUM_CELLS_HEIGHT + 1)) {
-                ether[_getEtherIndex(ax, ay, az)] += v * Math.max(HOLE_SIZE - Math.sqrt(dx * dx + dy * dy + dz * dz), 0) / HOLE_SIZE;
+                ether[_getEtherIndex(ax, ay, az)] += v * Math.max(HOLE_SIZE - Math.sqrt(dx * dx + dy * dy + dz * dz), 0) / Math.sqrt(HOLE_SIZE * HOLE_SIZE * 3);
               }
             }
           }
@@ -296,15 +340,14 @@ const _generateMapChunk = (ox, oy, opts) => {
 
   const {
     positions,
-    // normals,
-    colors,
-    skyLightmaps,
-    torchLightmaps,
     indices,
     attributeIndex,
     indexIndex,
     geometries,
-  } = _makeGeometries(ether);
+  } = _makeGeometries(ox, oy, ether, liquid);
+  const colors = new Float32Array(NUM_POSITIONS_CHUNK);
+  const skyLightmaps = new Uint8Array(NUM_POSITIONS_CHUNK);
+  const torchLightmaps = new Uint8Array(NUM_POSITIONS_CHUNK);
 
   const heightfield = new Float32Array(NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN * HEIGHTFIELD_DEPTH);
   heightfield.fill(-1024);
@@ -369,8 +412,9 @@ const _generateMapChunk = (ox, oy, opts) => {
       const land = elevation > 64;
       const cave = y < elevation - 3;
       const water = !land;
-      const ocean = false;
-      const coast = land && ocean;
+      const ocean = baseIndex >= attributeRange.landCount;
+      // const coast = land && ocean;
+      const coast = false;
       const lava = 0;
       const biome = _getBiome({
         y,
@@ -511,7 +555,6 @@ const _generateMapChunk = (ox, oy, opts) => {
 
   return {
     positions: new Float32Array(positions.buffer, positions.byteOffset, attributeIndex),
-    // normals: new Float32Array(normals.buffer, normals.byteOffset, attributeIndex),
     colors: new Float32Array(colors.buffer, colors.byteOffset, attributeIndex),
     skyLightmaps: new Uint8Array(skyLightmaps.buffer, skyLightmaps.byteOffset, attributeIndex / 3),
     torchLightmaps: new Uint8Array(torchLightmaps.buffer, torchLightmaps.byteOffset, attributeIndex / 3),
@@ -525,6 +568,7 @@ const _generateMapChunk = (ox, oy, opts) => {
     staticHeightfield,
     elevations,
     ether,
+    liquid,
   };
 };
 const _getCoordOverscanIndex = (x, y) => x + (y * NUM_CELLS_OVERSCAN);
@@ -696,6 +740,9 @@ const generator = (x, y, buffer, byteOffset, opts) => {
   }
   if (opts.newEther === undefined) {
     opts.newEther = new Float32Array(0);
+  }
+  if (opts.oldLiquid === undefined) {
+    opts.oldLiquid = null;
   }
   if (opts.regenerate === undefined) {
     opts.regenerate = false;
