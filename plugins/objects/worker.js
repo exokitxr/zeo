@@ -344,6 +344,20 @@ connection.removeObject = (x, z, index, cb) => {
   }));
   queues[id] = cb;
 };
+connection.setObjectData = (x, z, index, value, cb) => {
+  const id = _makeId();
+  connection.send(JSON.stringify({
+    method: 'setObjectData',
+    id,
+    args: {
+      x,
+      z,
+      index,
+      value,
+    },
+  }));
+  queues[id] = cb;
+};
 const _resArrayBufferHeaders = res => {
   if (res.status >= 200 && res.status < 300) {
     return res.arrayBuffer()
@@ -745,17 +759,20 @@ self.onmessage = e => {
 
       const chunk = zde.getChunk(x, z);
       if (chunk) {
-        chunk.setObjectData(index, value);
+        connection.setObjectData(x, z, index, value, () => {
+          chunk.setObjectData(index, value);
 
-        connection.send(JSON.stringify({
-          method: 'setObjectData',
-          args: {
-            x,
-            z,
-            index,
-            value,
-          },
-        }));
+          const n = chunk.getObjectN(index);
+            const objectApi = objectApis[n];
+            if (objectApi && objectApi.updated) {
+              const matrix = chunk.getObjectMatrix(index);
+
+              postMessage({
+                type: 'objectUpdated',
+                args: [n, x, z, index, matrix.slice(0, 3), matrix.slice(3, 7), value],
+              });
+            }
+        });
       }
       break;
     }

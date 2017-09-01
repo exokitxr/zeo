@@ -609,7 +609,7 @@ class Objects {
                       });
                     }
                   } else if (method === 'setObjectData') {
-                    const {args} = m;
+                    const {id, args} = m;
                     const {x, z, index, value} = args;
 
                     const chunk = zde.getChunk(x, z);
@@ -618,9 +618,16 @@ class Objects {
 
                       _saveChunks();
 
+                      c.send(JSON.stringify({
+                        type: 'response',
+                        id,
+                        result: null,
+                      }));
+
                       _broadcast({
                         type: 'setObjectData',
                         args,
+                        result: null,
                       });
                     }
                   } else {
