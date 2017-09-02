@@ -7,6 +7,7 @@ const {
 
 class Lightmap {
   mount() {
+    return;
     const {three, pose, elements, render, utils: {js: {events, mod, bffr}, random: {chnkr}}} = zeo;
     const {THREE} = three;
     const {EventEmitter} = events;
