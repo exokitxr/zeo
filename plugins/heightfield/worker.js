@@ -112,7 +112,7 @@ const _requestChunk = (x, z, index, numPositions, numIndices) => {
       .then(_resArrayBuffer);
   }
 };
-const _requestChunkLightmaps = (chunk, scratchBuffer, scratchBufferByteOffset, cb) => {
+/* const _requestChunkLightmaps = (chunk, scratchBuffer, scratchBufferByteOffset, cb) => {
   const lightmapBuffer = new Uint8Array(scratchBuffer, scratchBufferByteOffset);
 
   let byteOffset = 0;
@@ -160,7 +160,7 @@ const _requestChunkLightmaps = (chunk, scratchBuffer, scratchBufferByteOffset, c
       scratchBuffer,
     });
   });
-};
+}; */
 const _offsetChunkData = (chunkData, index, numPositions) => {
   const {indices} = chunkData;
   const positionOffset = index * (numPositions / 3);
@@ -230,10 +230,10 @@ const _requestUpdateLightmaps = (updatedLightmaps, freedHslots, hslots, cb) => {
 const _unrequestChunk = (x, z) => {
   const chunk = tra.removeChunk(x, z);
 
-  postMessage({
+  /* postMessage({
     type: 'removeLightmap',
     shapeId: chunk.shapeId,
-  });
+  }); */
 
   mapChunkMeshes[_getChunkIndex(x, z)] = null;
 };
@@ -353,7 +353,7 @@ self.onmessage = e => {
     }
     case 'generate': {
       const {id, args} = data;
-      const {x, y, index, numPositions, numIndices, heightfieldBuffer} = args;
+      const {x, y, index, numPositions, numIndices/*, heightfieldBuffer*/} = args;
       let {buffer} = args;
 
       _requestChunk(x, y, index, numPositions, numIndices)
@@ -368,7 +368,7 @@ self.onmessage = e => {
 
           return chunk;
         })
-        .then(chunk => new Promise((accept, reject) => {
+        /* .then(chunk => new Promise((accept, reject) => {
           heightfieldBuffer.set(chunk.chunkData.staticHeightfield);
 
           _requestAddLightmap(chunk.x, chunk.z, heightfieldBuffer, shapeId => {
@@ -383,9 +383,10 @@ self.onmessage = e => {
               });
             });
           });
-        }))
-        .then(({chunk, skyLightmaps, torchLightmaps}) => {
-          protocolUtils.stringifyRenderChunk(chunk.chunkData, skyLightmaps, torchLightmaps, buffer, 0);
+        })) */
+        // .then(({chunk, skyLightmaps, torchLightmaps}) => {
+        .then(chunk => {
+          protocolUtils.stringifyRenderChunk(chunk.chunkData, buffer, 0);
 
           postMessage({
             type: 'response',
@@ -568,13 +569,13 @@ self.onmessage = e => {
                   x,
                   z,
                   chunkData,
-                  shapeId: chunk.shapeId,
+                  // shapeId: chunk.shapeId,
                 });
               }
             }
             const numChunkSpecs = chunkSpecs.length;
 
-            const updatedLightmaps = Array(numChunkSpecs);
+            /* const updatedLightmaps = Array(numChunkSpecs);
             for (let i = 0; i < updatedLightmaps.length; i++) {
               const chunkSpec = chunkSpecs[i];
               const {chunkData: {staticHeightfield}, shapeId} = chunkSpec;
@@ -589,9 +590,9 @@ self.onmessage = e => {
             const freedHslots = Array(hslots.length - updatedLightmaps.length);
             for (let i = 0; i < freedHslots.length; i++) {
               freedHslots[i] = hslots[numChunkSpecs + i];
-            }
+            } */
 
-            _requestUpdateLightmaps(updatedLightmaps, freedHslots, hslots, () => {
+            /* _requestUpdateLightmaps(updatedLightmaps, freedHslots, hslots, () => {
               const lightmapBuffer = new Uint8Array(buffer, buffer.byteLength - LIGHTMAP_BUFFER_SIZE * numChunkSpecs);
 
               let lightmapByteOffset = 0;
@@ -613,19 +614,19 @@ self.onmessage = e => {
 
                 new Float32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + lightmapByteOffset, numPositions).set(positions);
                 lightmapByteOffset += 4 * numPositions;
-              }
+              } */
 
-              _requestLightmaps(lightmapBuffer, lightmapBuffer => {
-                const {buffer} = lightmapBuffer;
+              /* _requestLightmaps(lightmapBuffer, lightmapBuffer => {
+                const {buffer} = lightmapBuffer; */
 
-                let readByteOffset = 4;
+                // let readByteOffset = 4;
                 let writeByteOffset = 0;
                 const chunksHeader = new Uint32Array(buffer, writeByteOffset, 1);
                 writeByteOffset += 4;
 
                 let numResponseChunks = 0;
                 for (let i = 0; i < numChunkSpecs; i++) {
-                  readByteOffset += 2 * 4;
+                  /* readByteOffset += 2 * 4;
                   const skyLightmapsLength = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + readByteOffset, 1)[0];
                   readByteOffset += 4;
                   const skyLightmaps = new Uint8Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + readByteOffset, skyLightmapsLength);
@@ -642,7 +643,7 @@ self.onmessage = e => {
                   alignDiff = readByteOffset % 4;
                   if (alignDiff > 0) {
                     readByteOffset += 4 - alignDiff;
-                  }
+                  } */
 
                   const chunkSpec = chunkSpecs[i];
                   const {x, z} = chunkSpec;
@@ -656,7 +657,7 @@ self.onmessage = e => {
                     const chunkHeader2 = new Uint32Array(buffer, writeByteOffset, 1);
                     writeByteOffset += 4;
 
-                    const newWriteByteOffset = protocolUtils.stringifyRenderChunk(chunk.chunkData, skyLightmaps, torchLightmaps, buffer, writeByteOffset)[1];
+                    const newWriteByteOffset = protocolUtils.stringifyRenderChunk(chunk.chunkData, buffer, writeByteOffset)[1];
                     const numChunkBytes = newWriteByteOffset - writeByteOffset;
                     writeByteOffset = newWriteByteOffset;
 
@@ -672,8 +673,8 @@ self.onmessage = e => {
                   args: [id],
                   result: buffer,
                 }, [buffer]);
-              });
-            });
+              // });
+            // });
           } else {
             let writeByteOffset = 0;
             new Uint32Array(buffer, writeByteOffset, 1)[0] = 0;

@@ -15,7 +15,7 @@ const {
 const protocolUtils = require('./lib/utils/protocol-utils');
 
 const NUM_POSITIONS_CHUNK = 800 * 1024;
-const LIGHTMAP_BUFFER_SIZE = 100 * 1024 * 4;
+// const LIGHTMAP_BUFFER_SIZE = 100 * 1024 * 4;
 const NUM_BUFFERS = (RANGE * 2) * (RANGE * 2) * 2;
 const LIGHTMAP_PLUGIN = 'plugins-lightmap';
 const DAY_NIGHT_SKYBOX_PLUGIN = 'plugins-day-night-skybox';
@@ -238,9 +238,9 @@ class Heightfield {
     );
     let generateBuffer = new ArrayBuffer(NUM_POSITIONS_CHUNK);
     let terrainBuffer = new ArrayBuffer(NUM_POSITIONS_CHUNK * 4);
-    let lightmapBuffer = new Uint8Array(LIGHTMAP_BUFFER_SIZE * NUM_BUFFERS);
+    // let lightmapBuffer = new Uint8Array(LIGHTMAP_BUFFER_SIZE * NUM_BUFFERS);
     let cullBuffer = new ArrayBuffer(4096);
-    const _allocHslot = lightmapElement => new Float32Array(lightmapElement.lightmapper.buffers.alloc());
+    // const _allocHslot = lightmapElement => new Float32Array(lightmapElement.lightmapper.buffers.alloc());
 
     const worker = new Worker('archae/plugins/_plugins_heightfield/build/worker.js');
     let queues = {};
@@ -267,10 +267,10 @@ class Heightfield {
       queues[id] = cb;
     };
     worker.requestGenerate = (x, y, index, numPositions, numIndices, cb) => {
-      elements.requestElement(LIGHTMAP_PLUGIN)
-        .then(lightmapElement => {
+      /* elements.requestElement(LIGHTMAP_PLUGIN)
+        .then(lightmapElement => { */
           const id = _makeId();
-          const heightfieldBuffer = _allocHslot(lightmapElement);
+          // const heightfieldBuffer = _allocHslot(lightmapElement);
           worker.postMessage({
             method: 'generate',
             id,
@@ -281,15 +281,15 @@ class Heightfield {
               numPositions,
               numIndices,
               buffer: generateBuffer,
-              heightfieldBuffer,
+              // heightfieldBuffer,
             },
-          }, [generateBuffer, heightfieldBuffer.buffer]);
+          }, [generateBuffer/*, heightfieldBuffer.buffer*/]);
           queues[id] = newGenerateBuffer => {
             generateBuffer = newGenerateBuffer;
 
             cb(newGenerateBuffer);
           };
-        });
+        // });
     };
     worker.requestUngenerate = (x, y) => {
       worker.postMessage({
@@ -300,7 +300,7 @@ class Heightfield {
         },
       });
     };
-    worker.requestLightmaps = (lightmapBuffer, cb) => {
+    /* worker.requestLightmaps = (lightmapBuffer, cb) => {
       const id = _makeId();
       worker.postMessage({
         method: 'lightmaps',
@@ -310,7 +310,7 @@ class Heightfield {
         },
       }, [lightmapBuffer.buffer]);
       queues[id] = cb;
-    };
+    }; */
     worker.requestCull = (hmdPosition, projectionMatrix, matrixWorldInverse, cb) => {
       const id = _makeId();
       worker.postMessage({
@@ -342,31 +342,31 @@ class Heightfield {
       queues[id] = accept;
     }); */
     worker.requestSubVoxel = (x, y, z, gslots, cb) => {
-      elements.requestElement(LIGHTMAP_PLUGIN)
-        .then(lightmapElement => {
+      /* elements.requestElement(LIGHTMAP_PLUGIN)
+        .then(lightmapElement => { */
           const id = _makeId();
-          const hslots = [
+          /* const hslots = [
             _allocHslot(lightmapElement),
             _allocHslot(lightmapElement),
             _allocHslot(lightmapElement),
             _allocHslot(lightmapElement),
-          ];
+          ]; */
           worker.postMessage({
             method: 'subVoxel',
             id,
             args: {
               position: [x, y, z],
               gslots,
-              hslots,
+              // hslots,
               buffer: terrainBuffer,
             },
-          }, [hslots[0].buffer, hslots[1].buffer, hslots[2].buffer, hslots[3].buffer, terrainBuffer]);
+          }, [/*hslots[0].buffer, hslots[1].buffer, hslots[2].buffer, hslots[3].buffer, */terrainBuffer]);
           queues[id] = newTerrainBuffer => {
             terrainBuffer = newTerrainBuffer;
 
             cb(newTerrainBuffer);
           };
-        });
+        // });
     };
     worker.requestHeightfield = (x, y, buffer, cb) => {
       const id = _makeId();
@@ -405,16 +405,20 @@ class Heightfield {
         const {method} = data;
 
         if (method === 'renderLightmap') {
-          const {lightmapBuffer} = data;
+          throw new Error('not implemented');
+
+          /* const {lightmapBuffer} = data;
 
           elements.requestElement(LIGHTMAP_PLUGIN)
             .then(lightmapElement => {
               lightmapElement.lightmapper.requestRender(lightmapBuffer, lightmapBuffer => {
                 worker.respond(id, lightmapBuffer, [lightmapBuffer.buffer]);
               });
-            });
+            }); */
         } else if (method === 'addLightmap') {
-          const {x, y, heightfield} = data;
+          throw new Error('not implemented');
+
+          /* const {x, y, heightfield} = data;
 
           elements.requestElement(LIGHTMAP_PLUGIN)
             .then(lightmapElement => {
@@ -422,9 +426,11 @@ class Heightfield {
               lightmapElement.lightmapper.add(shape, [heightfield.buffer], {update: false});
 
               worker.respond(id, shape.id);
-            });
+            }); */
         } else if (method === 'updateLightmaps') {
-          const {updatedLightmaps, freedHslots} = data;
+          throw new Error('not implemented');
+
+          /* const {updatedLightmaps, freedHslots} = data;
 
           elements.requestElement(LIGHTMAP_PLUGIN)
             .then(lightmapElement => {
@@ -441,23 +447,25 @@ class Heightfield {
               }
 
               worker.respond(id, null);
-            });
+            }); */
         } else {
           console.warn('heightfield got unknown worker request method:', JSON.stringify(method));
         }
       } else if (type === 'removeLightmap') {
-        const {shapeId} = data;
+        throw new Error('not implemented');
+
+        /* const {shapeId} = data;
 
         elements.requestElement(LIGHTMAP_PLUGIN)
           .then(lightmapElement => {
             lightmapElement.lightmapper.worker.removeShape(shapeId);
-          });
+          }); */
       } else {
         console.warn('heightfield got unknown worker message type:', JSON.stringify(type));
       }
     };
 
-    let refreshingLightmaps = false;
+    /* let refreshingLightmaps = false;
     const refreshingLightmapsQueue = [];
     const _refreshLightmaps = refreshed => {
       if (!refreshingLightmaps) {
@@ -539,7 +547,7 @@ class Heightfield {
       } else {
         refreshingLightmapsQueue.push(refreshed);
       }
-    };
+    }; */
 
     /* let Lightmapper = null;
     let lightmapper = null;
@@ -585,7 +593,7 @@ class Heightfield {
       lightmapper.remove(trackedMapChunkMeshes.shape);
       trackedMapChunkMeshes.shape = null;
     }; */
-    const elementListener = elements.makeListener(LIGHTMAP_PLUGIN);
+    /* const elementListener = elements.makeListener(LIGHTMAP_PLUGIN);
     elementListener.on('add', lightmapElement => {
       lightmapElement.lightmapper.on('update', ([minX, minZ, maxX, maxZ]) => {
         const refreshed = [];
@@ -603,7 +611,7 @@ class Heightfield {
           _refreshLightmaps(refreshed);
         }
       });
-    });
+    }); */
     /* elementListener.on('remove', () => {
       _unbindLightmapper();
     }); */
@@ -1177,7 +1185,7 @@ class Heightfield {
           clearTimeout(refreshChunksTimeout);
           clearTimeout(refreshCullTimeout);
 
-          elements.destroyListener(elementListener);
+          // elements.destroyListener(elementListener);
 
           elements.unregisterEntity(this, heightfieldEntity);
 

@@ -353,11 +353,11 @@ const _getRenderChunkSize = (mapChunk, skyLightmaps, torchLightmaps) => {
   });
 }; */
 
-const stringifyRenderChunk = (mapChunk, skyLightmaps, torchLightmaps, arrayBuffer, byteOffset) => {
-  const {positions, colors, indices, geometries, heightfield, staticHeightfield} = mapChunk;
+const stringifyRenderChunk = (mapChunk, arrayBuffer, byteOffset) => {
+  const {positions, colors, skyLightmaps, torchLightmaps, indices, geometries, heightfield, staticHeightfield} = mapChunk;
 
   if (arrayBuffer === undefined || byteOffset === undefined) {
-    const bufferSize = _getDataChunkSize(mapChunk, skyLightmaps, torchLightmaps);
+    const bufferSize = _getDataChunkSize(mapChunk);
     arrayBuffer = new ArrayBuffer(bufferSize);
     byteOffset = 0;
   }

@@ -352,8 +352,8 @@ const _generateMapChunk = (ox, oy, opts) => {
     const {attributeRange, indexRange} = geometry;
     const geometryPositions = new Float32Array(positions.buffer, positions.byteOffset + attributeRange.start * 4, attributeRange.count);
     const geometryColors = new Float32Array(colors.buffer, colors.byteOffset + attributeRange.start * 4, attributeRange.count);
-    const geometrySkyLightmaps = new Uint8Array(skyLightmaps.buffer, skyLightmaps.byteOffset + attributeRange.start, attributeRange.count / 3);
-    const geometryTorchLightmaps = new Uint8Array(torchLightmaps.buffer, torchLightmaps.byteOffset + attributeRange.start, attributeRange.count / 3);
+    const geometrySkyLightmaps = new Uint8Array(skyLightmaps.buffer, skyLightmaps.byteOffset + attributeRange.start / 3, attributeRange.count / 3);
+    const geometryTorchLightmaps = new Uint8Array(torchLightmaps.buffer, torchLightmaps.byteOffset + attributeRange.start / 3, attributeRange.count / 3);
 
     const numPositions = geometryPositions.length / 3;
     for (let j = 0; j < numPositions; j++) {
@@ -361,7 +361,7 @@ const _generateMapChunk = (ox, oy, opts) => {
       const x = geometryPositions[baseIndex + 0];
       const y = geometryPositions[baseIndex + 1];
       const z = geometryPositions[baseIndex + 2];
-      const elevation = heightfield[_getTopHeightfieldIndex(Math.floor(x), Math.floor(z))];
+      const elevation = staticHeightfield[_getStaticHeightfieldIndex(Math.floor(x), Math.floor(z))];
       const ax = (ox * NUM_CELLS) + x;
       const az = (oy * NUM_CELLS) + z;
       const moisture = _random.moistureNoise.in2D(ax + 1000, az + 1000);
@@ -512,8 +512,8 @@ const _generateMapChunk = (ox, oy, opts) => {
     positions: new Float32Array(positions.buffer, positions.byteOffset, attributeIndex),
     // normals: new Float32Array(normals.buffer, normals.byteOffset, attributeIndex),
     colors: new Float32Array(colors.buffer, colors.byteOffset, attributeIndex),
-    skyLightmaps: new Float32Array(skyLightmaps.buffer, skyLightmaps.byteOffset, attributeIndex / 3),
-    torchLightmaps: new Float32Array(torchLightmaps.buffer, torchLightmaps.byteOffset, attributeIndex / 3),
+    skyLightmaps: new Uint8Array(skyLightmaps.buffer, skyLightmaps.byteOffset, attributeIndex / 3),
+    torchLightmaps: new Uint8Array(torchLightmaps.buffer, torchLightmaps.byteOffset, attributeIndex / 3),
     indices: new Uint32Array(indices.buffer, indices.byteOffset, indexIndex),
     geometries: geometries.map(geometry => ({
       indexRange: geometry.indexRange,
