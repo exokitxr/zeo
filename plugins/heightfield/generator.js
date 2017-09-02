@@ -6,6 +6,7 @@ module.exports = ({
 
 const mrch = require('mrch');
 const protocolUtils = require('./lib/utils/protocol-utils');
+const lightmapUtils = require('./lib/utils/lightmap-utils');
 const {
   NUM_CELLS,
   OVERSCAN,
@@ -386,7 +387,7 @@ const _generateMapChunk = (ox, oy, opts) => {
       geometryColors[baseIndex + 1] = colorArray[1];
       geometryColors[baseIndex + 2] = colorArray[2];
 
-      geometrySkyLightmaps[j] = Math.min(Math.max((y - (elevation - 8)) / 8, 0), 1) * 255;
+      geometrySkyLightmaps[j] = lightmapUtils.render(x, y, z, staticHeightfield);
 
       geometryPositions[baseIndex + 0] = ax;
       geometryPositions[baseIndex + 2] = az;

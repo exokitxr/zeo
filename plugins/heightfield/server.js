@@ -8,6 +8,7 @@ const {
   NUM_CELLS,
 } = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
+const lightmapUtils = require('./lib/utils/lightmap-utils');
 const generatorLib = require('./generator');
 const {
   DEFAULT_SEED,
@@ -208,6 +209,40 @@ class Heightfield {
             const uint32Buffer = chunk.getBuffer();
             const {heightfield} = protocolUtils.parseDataChunk(uint32Buffer.buffer, uint32Buffer.byteOffset);
             return Promise.resolve(heightfield);
+          },
+          requestStaticHeightfield(x, z) {
+            let chunk = tra.getChunk(x, z);
+            if (!chunk) {
+              chunk = tra.makeChunk(x, z);
+              chunk.generate(generator);
+              _saveChunks();
+            }
+            const uint32Buffer = chunk.getBuffer();
+            const {staticHeightfield} = protocolUtils.parseDataChunk(uint32Buffer.buffer, uint32Buffer.byteOffset);
+            return Promise.resolve(staticHeightfield);
+          },
+          requestLightmaps(x, z, positions) {
+            return this.requestStaticHeightfield(x, z)
+              .then(staticHeightfield => {
+                const numPositions = positions.length / 3;
+                const skyLightmaps = new Uint8Array(numPositions);
+                const torchLightmaps = new Uint8Array(numPositions);
+
+                for (let i = 0; i < numPositions; i++) {
+                  const baseIndex = i * 3;
+                  skyLightmaps[i] = lightmapUtils.render(
+                    positions[baseIndex + 0],
+                    positions[baseIndex + 1],
+                    positions[baseIndex + 2],
+                    staticHeightfield
+                  );
+                }
+
+                return {
+                  skyLightmaps,
+                  torchLightmaps,
+                };
+              });
           },
         };
         elements.registerEntity(this, heightfieldElement);

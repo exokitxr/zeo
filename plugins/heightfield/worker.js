@@ -428,7 +428,9 @@ self.onmessage = e => {
       break;
     }
     case 'lightmaps': {
-      const {id, args} = data;
+      throw new Error('not implemented');
+
+      /* const {id, args} = data;
       const {lightmapBuffer} = args;
 
       let readByteOffset = 0;
@@ -476,7 +478,7 @@ self.onmessage = e => {
           args: [id],
           result: lightmapBuffer,
         }, [lightmapBuffer.buffer]);
-      });
+      }); */
 
       break;
     }

@@ -288,10 +288,23 @@ class Grass {
 
           if (!isNaN(x) && !isNaN(z)) {
             elements.requestElement(HEIGHTFIELD_PLUGIN)
-              .then(heightfieldElement => heightfieldElement.requestHeightfield(x, z))
-              .then(heightfield => {
-                const geometry = _makeGrassChunkMesh(x, z, grassTemplates, heightfield);
+              .then(heightfieldElement => {
+                return heightfieldElement.requestHeightfield(x, z)
+                  .then(heightfield => {
+                    const geometry = _makeGrassChunkMesh(x, z, grassTemplates, heightfield);
 
+                    return heightfieldElement.requestLightmaps(x, z, geometry.positions)
+                      .then(({
+                        skyLightmaps,
+                        torchLightmaps,
+                      }) => {
+                        geometry.skyLightmaps = skyLightmaps;
+                        geometry.torchLightmaps = torchLightmaps;
+                        return geometry;
+                      });
+                  });
+              })
+              .then(geometry => {
                 const [_, byteOffset] = protocolUtils.stringifyDataGeometry(geometry, generateBuffer.buffer, generateBuffer.byteOffset);
 
                 res.type('application/octet-stream');

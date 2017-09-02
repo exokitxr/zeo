@@ -12,7 +12,7 @@ const LIGHTMAP_BUFFER_SIZE = 100 * 1024 * 4;
 const NUM_BUFFERS = RANGE * RANGE * 9;
 const TEXTURE_SIZE = 1024;
 const HEIGHTFIELD_PLUGIN = 'plugins-heightfield';
-const LIGHTMAP_PLUGIN = 'plugins-lightmap';
+// const LIGHTMAP_PLUGIN = 'plugins-lightmap';
 const DAY_NIGHT_SKYBOX_PLUGIN = 'plugins-day-night-skybox';
 
 const GRASS_SHADER = {
@@ -289,7 +289,7 @@ class Grass {
 
     const grassChunkMeshes = {};
 
-    let refreshingLightmaps = false;
+    /* let refreshingLightmaps = false;
     const refreshingLightmapsQueue = [];
     const _refreshLightmaps = refreshed => {
       if (!refreshingLightmaps) {
@@ -374,9 +374,9 @@ class Grass {
       } else {
         refreshingLightmapsQueue.push(refreshed);
       }
-    };
+    }; */
 
-    const elementListener = elements.makeListener(LIGHTMAP_PLUGIN);
+    /* const elementListener = elements.makeListener(LIGHTMAP_PLUGIN);
     elementListener.on('add', lightmapElement => {
       lightmapElement.lightmapper.on('update', ([minX, minZ, maxX, maxZ]) => {
         const refreshed = [];
@@ -394,7 +394,7 @@ class Grass {
           _refreshLightmaps(refreshed);
         }
       });
-    });
+    }); */
     /* elementListener.on('remove', () => {
       _unbindLightmapper();
     }); */
@@ -446,7 +446,7 @@ class Grass {
         y,
       });
     };
-    worker.requestLightmaps = (lightmapBuffer, cb) => {
+    /* worker.requestLightmaps = (lightmapBuffer, cb) => {
       const id = _makeId();
       worker.postMessage({
         type: 'lightmaps',
@@ -456,7 +456,7 @@ class Grass {
         },
       }, [lightmapBuffer.buffer]);
       queues[id] = cb;
-    };
+    }; */
     worker.requestCull = (hmdPosition, projectionMatrix, matrixWorldInverse, cb) => { // XXX hmdPosition is unused
       const id = _makeId();
       worker.postMessage({
@@ -500,14 +500,16 @@ class Grass {
         const {method} = data;
 
         if (method === 'render') {
-          const {lightmapBuffer} = data;
+          throw new Error('not implemented');
+
+          /* const {lightmapBuffer} = data;
 
           elements.requestElement(LIGHTMAP_PLUGIN)
             .then(lightmapElement => {
               lightmapElement.lightmapper.requestRender(lightmapBuffer, lightmapBuffer => {
                 worker.requestResponse(id, lightmapBuffer, [lightmapBuffer.buffer]);
               });
-            });
+            }); */
         } else if (method === 'heightfield') {
           const [id, x, y] = args;
           const {buffer} = data;
@@ -849,7 +851,7 @@ class Grass {
             // clearTimeout(refreshLightmapsTimeout);
             clearTimeout(refreshCullTimeout);
 
-            elements.destroyListener(elementListener);
+            // elements.destroyListener(elementListener);
             elements.destroyListener(heightfieldListener);
 
             render.removeListener('update', _update);

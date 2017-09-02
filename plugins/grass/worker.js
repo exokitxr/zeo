@@ -173,7 +173,7 @@ self.onmessage = e => {
 
       _requestGrassGeometry(x, y, index, numPositions, numIndices)
         .then(geometry => {
-          const lightmapBuffer = new Uint8Array(buffer, Math.floor(buffer.byteLength * 3 / 4));
+          /* const lightmapBuffer = new Uint8Array(buffer, Math.floor(buffer.byteLength * 3 / 4));
 
           let byteOffset = 0;
           new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, 1)[0] = 1;
@@ -190,12 +190,12 @@ self.onmessage = e => {
           byteOffset += 4;
 
           new Float32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, numPositions).set(positions);
-          byteOffset += 4 * numPositions;
+          byteOffset += 4 * numPositions; */
 
-          _requestLightmaps(lightmapBuffer, lightmapBuffer => {
-            const {buffer} = lightmapBuffer;
+          /* _requestLightmaps(lightmapBuffer, lightmapBuffer => {
+            const {buffer} = lightmapBuffer; */
 
-            let byteOffset = 3 * 4;
+            /* let byteOffset = 3 * 4;
             const skyLightmapsLength = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, 1)[0];
             byteOffset += 4;
             const skyLightmaps = new Uint8Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, skyLightmapsLength);
@@ -212,15 +212,15 @@ self.onmessage = e => {
             alignDiff = byteOffset % 4;
             if (alignDiff > 0) {
               byteOffset += 4 - alignDiff;
-            }
+            } */
 
-            protocolUtils.stringifyRenderGeometry(geometry, skyLightmaps, torchLightmaps, buffer, 0);
+            protocolUtils.stringifyRenderGeometry(geometry, buffer, 0);
             postMessage({
               type: 'response',
               args: [id],
               result: buffer,
             }, [buffer]);
-          });
+          // });
         })
         .catch(err => {
           console.warn(err);
@@ -234,7 +234,9 @@ self.onmessage = e => {
       break;
     }
     case 'lightmaps': {
-      const {id, args} = data;
+      throw new Error('not implemented');
+
+      /* const {id, args} = data;
       const {lightmapBuffer} = args;
 
       let readByteOffset = 0;
@@ -280,7 +282,7 @@ self.onmessage = e => {
           args: [id],
           result: lightmapBuffer,
         }, [lightmapBuffer.buffer]);
-      });
+      }); */
 
       break;
     }
