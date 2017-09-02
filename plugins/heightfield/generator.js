@@ -37,6 +37,8 @@ const _makeGeometries = ether => {
   const positions = new Float32Array(NUM_POSITIONS_CHUNK);
   // const normals = new Float32Array(NUM_POSITIONS_CHUNK);
   const colors = new Float32Array(NUM_POSITIONS_CHUNK);
+  const skyLightmaps = new Uint8Array(NUM_POSITIONS_CHUNK);
+  const torchLightmaps = new Uint8Array(NUM_POSITIONS_CHUNK);
   const indices = new Uint32Array(NUM_POSITIONS_CHUNK);
   let attributeIndex = 0;
   let indexIndex = 0;
@@ -80,6 +82,8 @@ const _makeGeometries = ether => {
     positions,
     // normals,
     colors,
+    skyLightmaps,
+    torchLightmaps,
     indices,
     attributeIndex,
     indexIndex,
@@ -293,6 +297,8 @@ const _generateMapChunk = (ox, oy, opts) => {
     positions,
     // normals,
     colors,
+    skyLightmaps,
+    torchLightmaps,
     indices,
     attributeIndex,
     indexIndex,
@@ -346,6 +352,8 @@ const _generateMapChunk = (ox, oy, opts) => {
     const {attributeRange, indexRange} = geometry;
     const geometryPositions = new Float32Array(positions.buffer, positions.byteOffset + attributeRange.start * 4, attributeRange.count);
     const geometryColors = new Float32Array(colors.buffer, colors.byteOffset + attributeRange.start * 4, attributeRange.count);
+    const geometrySkyLightmaps = new Uint8Array(skyLightmaps.buffer, skyLightmaps.byteOffset + attributeRange.start, attributeRange.count / 3);
+    const geometryTorchLightmaps = new Uint8Array(torchLightmaps.buffer, torchLightmaps.byteOffset + attributeRange.start, attributeRange.count / 3);
 
     const numPositions = geometryPositions.length / 3;
     for (let j = 0; j < numPositions; j++) {
@@ -377,6 +385,8 @@ const _generateMapChunk = (ox, oy, opts) => {
       geometryColors[baseIndex + 0] = colorArray[0];
       geometryColors[baseIndex + 1] = colorArray[1];
       geometryColors[baseIndex + 2] = colorArray[2];
+
+      geometrySkyLightmaps[j] = Math.min(Math.max((y - (elevation - 8)) / 8, 0), 1) * 255;
 
       geometryPositions[baseIndex + 0] = ax;
       geometryPositions[baseIndex + 2] = az;
@@ -502,6 +512,8 @@ const _generateMapChunk = (ox, oy, opts) => {
     positions: new Float32Array(positions.buffer, positions.byteOffset, attributeIndex),
     // normals: new Float32Array(normals.buffer, normals.byteOffset, attributeIndex),
     colors: new Float32Array(colors.buffer, colors.byteOffset, attributeIndex),
+    skyLightmaps: new Float32Array(skyLightmaps.buffer, skyLightmaps.byteOffset, attributeIndex / 3),
+    torchLightmaps: new Float32Array(torchLightmaps.buffer, torchLightmaps.byteOffset, attributeIndex / 3),
     indices: new Uint32Array(indices.buffer, indices.byteOffset, indexIndex),
     geometries: geometries.map(geometry => ({
       indexRange: geometry.indexRange,

@@ -8,7 +8,7 @@ const UINT32_SIZE = 4;
 const INT32_SIZE = 4;
 const FLOAT32_SIZE = 4;
 const UINT8_SIZE = 1;
-const DATA_HEADER_ENTRIES = 3 + (1 * NUM_CHUNKS_HEIGHT) + 4;
+const DATA_HEADER_ENTRIES = 5 + (1 * NUM_CHUNKS_HEIGHT) + 4;
 const DATA_HEADER_SIZE = UINT32_SIZE * DATA_HEADER_ENTRIES;
 const RENDER_HEADER_ENTRIES = 5 + (1 * NUM_CHUNKS_HEIGHT) + 2;
 const RENDER_HEADER_SIZE = UINT32_SIZE * RENDER_HEADER_ENTRIES;
@@ -16,11 +16,13 @@ const CULL_HEADER_ENTRIES = 1;
 const CULL_HEADER_SIZE = UINT32_SIZE * CULL_HEADER_ENTRIES;
 
 const _getDataChunkSizeFromMetadata = metadata => {
-  const {numPositions, numColors, numIndices, numPeeks, numHeightfield, numStaticHeightfield, numElevations, numEther} = metadata;
+  const {numPositions, numColors, numSkyLightmaps, numTorchLightmaps, numIndices, numPeeks, numHeightfield, numStaticHeightfield, numElevations, numEther} = metadata;
 
   return DATA_HEADER_SIZE + // header
     (FLOAT32_SIZE * numPositions) + // positions
     (FLOAT32_SIZE * numColors) + // colors
+    _align(UINT8_SIZE * numSkyLightmaps, UINT32_SIZE) + // sky lightmaps
+    _align(UINT8_SIZE * numTorchLightmaps, UINT32_SIZE) + // torch lightmaps
     (UINT32_SIZE * numIndices) + // indices
     (UINT32_SIZE * 2 * NUM_CHUNKS_HEIGHT) + // index range
     (FLOAT32_SIZE * NUM_CHUNKS_HEIGHT) + // bounding sphere
@@ -32,10 +34,12 @@ const _getDataChunkSizeFromMetadata = metadata => {
 };
 
 const _getDataChunkSize = mapChunk => {
-  const {positions, colors, indices, geometries, heightfield, staticHeightfield, elevations, ether} = mapChunk;
+  const {positions, colors, skyLightmaps, torchLightmaps, indices, geometries, heightfield, staticHeightfield, elevations, ether} = mapChunk;
 
   const numPositions = positions.length;
   const numColors = colors.length;
+  const numSkyLightmaps = skyLightmaps.length;
+  const numTorchLightmaps = torchLightmaps.length;
   const numIndices = indices.length;
   const numPeeks = Array(NUM_CHUNKS_HEIGHT);
   for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
@@ -51,6 +55,8 @@ const _getDataChunkSize = mapChunk => {
   return _getDataChunkSizeFromMetadata({
     numPositions,
     numColors,
+    numSkyLightmaps,
+    numTorchLightmaps,
     numIndices,
     numHeightfield,
     numStaticHeightfield,
@@ -65,6 +71,8 @@ const _getDataChunkSize = mapChunk => {
   let index = 0;
   const numPositions = headerBuffer[index++];
   const numColors = headerBuffer[index++];
+  const numSkyLightmaps = headerBuffer[index++];
+  const numTorchLightmaps = headerBuffer[index++];
   const numIndices = headerBuffer[index++];
   const numPeeks = Array(NUM_CHUNKS_HEIGHT);
   for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
@@ -78,6 +86,8 @@ const _getDataChunkSize = mapChunk => {
   return _getDataChunkSizeFromMetadata({
     numPositions,
     numColors,
+    numSkyLightmaps,
+    numTorchLightmaps,
     numIndices,
     numHeightfield,
     numStaticHeightfield,
@@ -87,7 +97,7 @@ const _getDataChunkSize = mapChunk => {
 }; */
 
 const stringifyDataChunk = (mapChunk, arrayBuffer, byteOffset) => {
-  const {positions, colors, indices, geometries, heightfield, staticHeightfield, elevations, ether} = mapChunk;
+  const {positions, colors, skyLightmaps, torchLightmaps, indices, geometries, heightfield, staticHeightfield, elevations, ether} = mapChunk;
 
   if (arrayBuffer === undefined || byteOffset === undefined) {
     const bufferSize = _getDataChunkSize(mapChunk);
@@ -99,6 +109,8 @@ const stringifyDataChunk = (mapChunk, arrayBuffer, byteOffset) => {
   let index = 0;
   headerBuffer[index++] = positions.length;
   headerBuffer[index++] = colors.length;
+  headerBuffer[index++] = skyLightmaps.length;
+  headerBuffer[index++] = torchLightmaps.length;
   headerBuffer[index++] = indices.length;
   for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
     const geometry = geometries[i];
@@ -118,6 +130,16 @@ const stringifyDataChunk = (mapChunk, arrayBuffer, byteOffset) => {
   const colorsBuffer = new Float32Array(arrayBuffer, byteOffset, colors.length);
   colorsBuffer.set(colors);
   byteOffset += FLOAT32_SIZE * colors.length;
+
+  const skyLightmapsBuffer = new Uint8Array(arrayBuffer, byteOffset, skyLightmaps.length);
+  skyLightmapsBuffer.set(skyLightmaps);
+  byteOffset += UINT8_SIZE * skyLightmaps.length;
+  byteOffset = _align(byteOffset, UINT32_SIZE);
+
+  const torchLightmapsBuffer = new Uint8Array(arrayBuffer, byteOffset, torchLightmaps.length);
+  torchLightmapsBuffer.set(torchLightmaps);
+  byteOffset += UINT8_SIZE * torchLightmaps.length;
+  byteOffset = _align(byteOffset, UINT32_SIZE);
 
   const indicesBuffer = new Uint32Array(arrayBuffer, byteOffset, indices.length);
   indicesBuffer.set(indices);
@@ -168,6 +190,8 @@ const parseDataChunk = (buffer, byteOffset) => {
   let index = 0;
   const numPositions = headerBuffer[index++];
   const numColors = headerBuffer[index++];
+  const numSkyLightmaps = headerBuffer[index++];
+  const numTorchLightmaps = headerBuffer[index++];
   const numIndices = headerBuffer[index++];
   const numPeeks = Array(NUM_CHUNKS_HEIGHT);
   for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
@@ -186,6 +210,16 @@ const parseDataChunk = (buffer, byteOffset) => {
   const colorsBuffer = new Float32Array(buffer, byteOffset, numColors);
   const colors = colorsBuffer;
   byteOffset += FLOAT32_SIZE * numColors;
+
+  const skyLightmapsBuffer = new Uint8Array(buffer, byteOffset, numSkyLightmaps);
+  const skyLightmaps = skyLightmapsBuffer;
+  byteOffset += UINT8_SIZE * numSkyLightmaps;
+  byteOffset = _align(byteOffset, UINT32_SIZE);
+
+  const torchLightmapsBuffer = new Uint8Array(buffer, byteOffset, numTorchLightmaps);
+  const torchLightmaps = torchLightmapsBuffer;
+  byteOffset += UINT8_SIZE * numTorchLightmaps;
+  byteOffset = _align(byteOffset, UINT32_SIZE);
 
   const indicesBuffer = new Uint32Array(buffer, byteOffset, numIndices);
   const indices = indicesBuffer;
@@ -235,6 +269,8 @@ const parseDataChunk = (buffer, byteOffset) => {
     buffer,
     positions,
     colors,
+    skyLightmaps,
+    torchLightmaps,
     indices,
     geometries,
     heightfield,
