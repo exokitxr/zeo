@@ -31,10 +31,6 @@ class Lightmap {
         this._parent._setShapeData(this, spec, transfers);
       }
 
-      /* getLightmapsInRange(width, depth, lightmaps) {
-        return lightmaps;
-      } */
-
       getChunkRange() {
         return [
           -Infinity,
@@ -69,15 +65,6 @@ class Lightmap {
         }
         this._parent._setShapeData(this, spec, transfers);
       }
-
-      /* getLightmapsInRange(width, depth, lightmaps) {
-        const {x, z} = this;
-        const ox = Math.floor(x / width);
-        const oz = Math.floor(z / depth);
-
-        const lightmap = lightmaps[_getLightmapIndex(ox, oz)];
-        return lightmap ? [lightmap] : [];
-      } */
 
       getChunkRange() {
         const {x, z} = this;
@@ -116,15 +103,6 @@ class Lightmap {
         }
         this._parent._setShapeData(this, spec, transfers);
       }
-
-      /* getLightmapsInRange(width, depth, lightmaps) {
-        const {x, z} = this;
-        const ox = Math.floor(x / width);
-        const oz = Math.floor(z / depth);
-
-        const lightmap = lightmaps[_getLightmapIndex(ox, oz)];
-        return lightmap ? [lightmap] : [];
-      } */
 
       getChunkRange() {
         const {x, z} = this;
@@ -171,23 +149,6 @@ class Lightmap {
         }
         this._parent._setShapeData(this, spec, transfers);
       }
-
-      /* getLightmapsInRange(width, depth, lightmaps) {
-        const {x, z, r} = this;
-
-        const result = [];
-        const _tryPoint = (ox, oz) => {
-          const lightmap = lightmaps[_getLightmapIndex(ox, oz)];
-          if (lightmap) {
-            result.push(lightmap);
-          }
-        };
-        _tryPoint(Math.floor((x - r) / width), Math.floor((z - r) / depth));
-        _tryPoint(Math.floor((x + r) / width), Math.floor((z - r) / depth));
-        _tryPoint(Math.floor((x - r) / width), Math.floor((z + r) / depth));
-        _tryPoint(Math.floor((x + r) / width), Math.floor((z + r) / depth));
-        return result;
-      } */
 
       getChunkRange() {
         const {x, z, r} = this;
@@ -237,23 +198,6 @@ class Lightmap {
         this._parent._setShapeData(this, spec, transfers);
       }
 
-      /* getLightmapsInRange(width, depth, lightmaps) {
-        const {x, z, r} = this;
-
-        const result = [];
-        const _tryPoint = (ox, oz) => {
-          const lightmap = lightmaps[_getLightmapIndex(ox, oz)];
-          if (lightmap) {
-            result.push(lightmap);
-          }
-        };
-        _tryPoint(Math.floor((x - r) / width), Math.floor((z - r) / depth));
-        _tryPoint(Math.floor((x + r) / width), Math.floor((z - r) / depth));
-        _tryPoint(Math.floor((x - r) / width), Math.floor((z + r) / depth));
-        _tryPoint(Math.floor((x + r) / width), Math.floor((z + r) / depth));
-        return result;
-      } */
-
       getChunkRange() {
         const {x, z, r} = this;
         return [
@@ -293,15 +237,6 @@ class Lightmap {
         }
         this._parent._setShapeData(this, spec, transfers);
       }
-
-      /* getLightmapsInRange(width, depth, lightmaps) {
-        const {x, z} = this;
-        const ox = Math.floor(x / width);
-        const oz = Math.floor(z / depth);
-
-        const lightmap = lightmaps[_getLightmapIndex(ox, oz)];
-        return lightmap ? [lightmap] : [];
-      } */
 
       getChunkRange() {
         const {x, z, r} = this;
