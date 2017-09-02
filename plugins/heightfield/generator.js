@@ -304,49 +304,48 @@ const _generateMapChunk = (ox, oy, opts) => {
   const staticHeightfield = new Float32Array(NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN);
   staticHeightfield.fill(-1024);
 
+  const numIndices = indices.length / 3;
+  for (let i = 0; i < numIndices; i++) {
+    const indexIndex = i * 3;
+    localTriangle.a.fromArray(positions, indices[indexIndex + 0] * 3);
+    localTriangle.b.fromArray(positions, indices[indexIndex + 1] * 3);
+    localTriangle.c.fromArray(positions, indices[indexIndex + 2] * 3);
+    if (localTriangle.normal(localVector).y > 0) {
+      for (let j = 0; j < 3; j++) {
+        const point = localTriangle.points[j];
+        const x = Math.floor(point.x);
+        const y = point.y;
+        const z = Math.floor(point.z);
+
+        for (let layer = 0; layer < HEIGHTFIELD_DEPTH; layer++) {
+          const heightfieldXYBaseIndex = _getTopHeightfieldIndex(x, z);
+          const oldY = heightfield[heightfieldXYBaseIndex + layer];
+          if (y > oldY) {
+            if (j === 0 || (y - oldY) >= 5) { // ignore non-surface heights with small height difference
+              for (let k = HEIGHTFIELD_DEPTH - 1; k > layer; k--) {
+                heightfield[heightfieldXYBaseIndex + k] = heightfield[heightfieldXYBaseIndex + k - 1];
+              }
+              heightfield[heightfieldXYBaseIndex + layer] = y;
+            }
+            break;
+          } else if (y === oldY) {
+            break;
+          }
+        }
+
+        const staticheightfieldIndex = _getStaticHeightfieldIndex(x, z);
+        if (y > staticHeightfield[staticheightfieldIndex]) {
+          staticHeightfield[staticheightfieldIndex] = y;
+        }
+      }
+    }
+  }
+
   for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
     const geometry = geometries[i];
     const {attributeRange, indexRange} = geometry;
     const geometryPositions = new Float32Array(positions.buffer, positions.byteOffset + attributeRange.start * 4, attributeRange.count);
     const geometryColors = new Float32Array(colors.buffer, colors.byteOffset + attributeRange.start * 4, attributeRange.count);
-    const geometryIndices = new Uint32Array(indices.buffer, indices.byteOffset + indexRange.start * 4, indexRange.count);
-
-    const numIndices = geometryIndices.length / 3;
-    for (let i = 0; i < numIndices; i++) {
-      const indexIndex = i * 3;
-      localTriangle.a.fromArray(positions, geometryIndices[indexIndex + 0] * 3);
-      localTriangle.b.fromArray(positions, geometryIndices[indexIndex + 1] * 3);
-      localTriangle.c.fromArray(positions, geometryIndices[indexIndex + 2] * 3);
-      if (localTriangle.normal(localVector).y > 0) {
-        for (let j = 0; j < 3; j++) {
-          const point = localTriangle.points[j];
-          const x = Math.floor(point.x);
-          const y = point.y;
-          const z = Math.floor(point.z);
-
-          for (let layer = 0; layer < HEIGHTFIELD_DEPTH; layer++) {
-            const heightfieldXYBaseIndex = _getTopHeightfieldIndex(x, z);
-            const oldY = heightfield[heightfieldXYBaseIndex + layer];
-            if (y > oldY) {
-              if (j === 0 || (y - oldY) >= 5) { // ignore non-surface heights with small height difference
-                for (let k = HEIGHTFIELD_DEPTH - 1; k > layer; k--) {
-                  heightfield[heightfieldXYBaseIndex + k] = heightfield[heightfieldXYBaseIndex + k - 1];
-                }
-                heightfield[heightfieldXYBaseIndex + layer] = y;
-              }
-              break;
-            } else if (y === oldY) {
-              break;
-            }
-          }
-
-          const staticheightfieldIndex = _getStaticHeightfieldIndex(x, z);
-          if (y > staticHeightfield[staticheightfieldIndex]) {
-            staticHeightfield[staticheightfieldIndex] = y;
-          }
-        }
-      }
-    }
 
     const numPositions = geometryPositions.length / 3;
     for (let j = 0; j < numPositions; j++) {
