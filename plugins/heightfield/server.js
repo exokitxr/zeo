@@ -228,12 +228,15 @@ class Heightfield {
                 const skyLightmaps = new Uint8Array(numPositions);
                 const torchLightmaps = new Uint8Array(numPositions);
 
+                const ox = x * NUM_CELLS;
+                const oz = z * NUM_CELLS;
+
                 for (let i = 0; i < numPositions; i++) {
                   const baseIndex = i * 3;
                   skyLightmaps[i] = lightmapUtils.render(
-                    positions[baseIndex + 0],
+                    positions[baseIndex + 0] - ox,
                     positions[baseIndex + 1],
-                    positions[baseIndex + 2],
+                    positions[baseIndex + 2] - oz,
                     staticHeightfield
                   );
                 }

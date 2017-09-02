@@ -8,7 +8,7 @@ const {
 const protocolUtils = require('./lib/utils/protocol-utils');
 
 const NUM_POSITIONS_CHUNK = 200 * 1024;
-const LIGHTMAP_BUFFER_SIZE = 100 * 1024 * 4;
+// const LIGHTMAP_BUFFER_SIZE = 100 * 1024 * 4;
 const NUM_BUFFERS = RANGE * RANGE * 9;
 const TEXTURE_SIZE = 1024;
 const HEIGHTFIELD_PLUGIN = 'plugins-heightfield';
@@ -400,7 +400,7 @@ class Grass {
     }); */
 
     let generateBuffer = new ArrayBuffer(NUM_POSITIONS_CHUNK);
-    let lightmapBuffer = new Uint8Array(LIGHTMAP_BUFFER_SIZE * NUM_BUFFERS);
+    // let lightmapBuffer = new Uint8Array(LIGHTMAP_BUFFER_SIZE * NUM_BUFFERS);
     let cullBuffer = new ArrayBuffer(4096);
     const worker = new Worker('archae/plugins/_plugins_grass/build/worker.js');
     let queues = {};
