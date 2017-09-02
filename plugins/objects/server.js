@@ -67,12 +67,25 @@ class Objects {
         return false;
       }
     };
-    const _geometrizeChunk = chunk => {
-      const geometryBuffer = chunk.getGeometryBuffer();
-      const geometry = _makeChunkGeometry(chunk);
-      protocolUtils.stringifyGeometry(geometry, zeroUint8Array, zeroUint8Array, geometryBuffer.buffer, geometryBuffer.byteOffset);
-      chunk.dirty = true; // XXX can internalize this in the module
-    };
+    const _decorateChunkGeometry = chunk => elements.requestElement(HEIGHTFIELD_PLUGIN)
+      .then(heightfieldElement => {
+        const geometry = _makeChunkGeometry(chunk);
+
+        return heightfieldElement.requestLightmaps(chunk.x, chunk.z, geometry.positions)
+          .then(({
+            skyLightmaps,
+            torchLightmaps,
+          }) => {
+            geometry.skyLightmaps = skyLightmaps;
+            geometry.torchLightmaps = torchLightmaps;
+
+            const geometryBuffer = chunk.getGeometryBuffer();
+            protocolUtils.stringifyGeometry(geometry, geometryBuffer.buffer, geometryBuffer.byteOffset);
+            chunk.dirty = true; // XXX can internalize this in the module
+
+            return chunk;
+          });
+      });
     const _makeGeometeriesBuffer = constructor => {
       const result = Array(NUM_CHUNKS_HEIGHT);
       for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
@@ -302,23 +315,25 @@ class Objects {
           textureUvs,
         },
       ]) => {
-        const _decorateChunkHeightfield = chunk => elements.requestElement(HEIGHTFIELD_PLUGIN)
-          .then(heightfieldElement => heightfieldElement.requestHeightfield(chunk.x, chunk.z))
-          .then(heightfield => {
-            chunk.heightfield = heightfield;
-            return chunk;
-          });
         const _requestChunk = (x, z) => {
           const chunk = zde.getChunk(x, z);
 
           if (chunk) {
             return Promise.resolve(chunk);
           } else {
-            return _decorateChunkHeightfield(zde.makeChunk(x, z))
-              .then(chunk => {
+            return elements.requestElement(HEIGHTFIELD_PLUGIN)
+              .then(heightfieldElement => heightfieldElement.requestHeightfield(x, z))
+              .then(heightfield => {
+                const chunk = zde.makeChunk(x, z);
+                chunk.heightfield = heightfield;
+
                 _generateChunk(chunk);
-                _geometrizeChunk(chunk);
+
+                return _decorateChunkGeometry(chunk);
+              })
+              .then(chunk => {
                 _saveChunks();
+
                 return chunk;
               });
           }
@@ -436,16 +451,21 @@ class Objects {
               generators.push(generator);
 
               if (zde.chunks.length > 0) {
-                let updated = false;
+                const promises = [];
                 for (let i = 0; i < zde.chunks.length; i++) {
                   const chunk = zde.chunks[i];
                   if (_generateChunkWithGenerator(chunk, generator)) {
-                    _geometrizeChunk(chunk);
-                    updated = true;
+                    promises.push(_decorateChunkGeometry(chunk));
                   }
                 }
-                if (updated) {
-                  _saveChunks();
+                if (promises.length > 0) {
+                  Promise.all(promises)
+                    .then(() => {
+                      _saveChunks();
+                    })
+                    .catch(err => {
+                      console.warn(err);
+                    });
                 }
               }
             },
@@ -568,21 +588,22 @@ class Objects {
                     if (chunk) {
                       const objectIndex = chunk.addObject(n, matrix, value);
 
-                      _geometrizeChunk(chunk);
+                      _decorateChunkGeometry(chunk)
+                        .then(() => {
+                          _saveChunks();
 
-                      _saveChunks();
+                          c.send(JSON.stringify({
+                            type: 'response',
+                            id,
+                            result: objectIndex,
+                          }));
 
-                      c.send(JSON.stringify({
-                        type: 'response',
-                        id,
-                        result: objectIndex,
-                      }));
-
-                      _broadcast({
-                        type: 'addObject',
-                        args,
-                        result: objectIndex,
-                      });
+                          _broadcast({
+                            type: 'addObject',
+                            args,
+                            result: objectIndex,
+                          });
+                        });
                     }
                   } else if (method === 'removeObject') {
                     const {id, args} = m;
@@ -592,21 +613,22 @@ class Objects {
                     if (chunk) {
                       const n = chunk.removeObject(index);
 
-                      _geometrizeChunk(chunk);
+                      _decorateChunkGeometry(chunk)
+                        .then(() => {
+                          _saveChunks();
 
-                      _saveChunks();
+                          c.send(JSON.stringify({
+                            type: 'response',
+                            id,
+                            result: n,
+                          }));
 
-                      c.send(JSON.stringify({
-                        type: 'response',
-                        id,
-                        result: n,
-                      }));
-
-                      _broadcast({
-                        type: 'removeObject',
-                        args,
-                        result: n,
-                      });
+                          _broadcast({
+                            type: 'removeObject',
+                            args,
+                            result: n,
+                          });
+                        });
                     }
                   } else if (method === 'setObjectData') {
                     const {id, args} = m;

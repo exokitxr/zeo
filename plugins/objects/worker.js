@@ -469,7 +469,7 @@ const _decorateChunk = (chunk, chunkData, index, numPositions, numObjectIndices,
   return chunk;
 };
 const _requestChunkUpdate = (chunk, buffer, cb) => {
-  const {positions} = chunk.chunkData;
+  /* const {positions} = chunk.chunkData;
 
   const lightmapBuffer = new Uint8Array(buffer, Math.floor(buffer.byteLength * 3 / 4));
 
@@ -490,9 +490,9 @@ const _requestChunkUpdate = (chunk, buffer, cb) => {
   byteOffset += 4 * numPositions;
 
   _requestLightmaps(lightmapBuffer, lightmapBuffer => {
-    const {buffer} = lightmapBuffer;
+    const {buffer} = lightmapBuffer; */
 
-    let byteOffset = 3 * 4;
+    /* let byteOffset = 3 * 4;
     const skyLightmapsLength = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, 1)[0];
     byteOffset += 4;
     const skyLightmaps = new Uint8Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, skyLightmapsLength);
@@ -509,12 +509,12 @@ const _requestChunkUpdate = (chunk, buffer, cb) => {
     alignDiff = byteOffset % 4;
     if (alignDiff > 0) {
       byteOffset += 4 - alignDiff;
-    }
+    } */
 
-    protocolUtils.stringifyGeometry(chunk.chunkData, skyLightmaps, torchLightmaps, buffer, 0);
+    protocolUtils.stringifyGeometry(chunk.chunkData, buffer, 0);
 
     cb(buffer);
-  });
+  // });
 };
 const _updateTextureAtlas = _debounce(next => {
   return fetch(`/archae/objects/texture-atlas.png`, {
@@ -785,7 +785,9 @@ self.onmessage = e => {
         .then(chunk => {
           zde.pushChunk(chunk);
 
-          _requestChunkUpdate(chunk, buffer, buffer => {
+          // _requestChunkUpdate(chunk, buffer, buffer => {
+            protocolUtils.stringifyGeometry(chunk.chunkData, buffer, 0);
+
             postMessage({
               type: 'response',
               args: [id],
@@ -802,7 +804,7 @@ self.onmessage = e => {
                 });
               }
             });
-          });
+          // });
         })
         .catch(err => {
           console.warn(err);
@@ -832,13 +834,14 @@ self.onmessage = e => {
       let {buffer} = args;
 
       const chunk = zde.getChunk(x, z);
-      _requestChunkUpdate(chunk, buffer, buffer => {
+      protocolUtils.stringifyGeometry(chunk.chunkData, buffer, 0);
+      // _requestChunkUpdate(chunk, buffer, buffer => {
         postMessage({
           type: 'response',
           args: [id],
           result: buffer,
         }, [buffer]);
-      });
+      // });
       break;
     }
     case 'lightmaps': {

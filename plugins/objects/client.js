@@ -1,5 +1,5 @@
 const HEIGHTFIELD_PLUGIN = 'plugins-heightfield';
-const LIGHTMAP_PLUGIN = 'plugins-lightmap';
+// const LIGHTMAP_PLUGIN = 'plugins-lightmap';
 const DAY_NIGHT_SKYBOX_PLUGIN = 'plugins-day-night-skybox';
 const CRAFT_PLUGIN = 'plugins-craft';
 
@@ -15,7 +15,7 @@ const protocolUtils = require('./lib/utils/protocol-utils');
 const objectsLib = require('./lib/objects/client/index');
 
 const NUM_POSITIONS_CHUNK = 1.25 * 1024 * 1024;
-const LIGHTMAP_BUFFER_SIZE = 100 * 1024 * 4;
+// const LIGHTMAP_BUFFER_SIZE = 100 * 1024 * 4;
 const NUM_BUFFERS = RANGE * RANGE * 9;
 const SIDES = ['left', 'right'];
 
@@ -274,7 +274,7 @@ void main() {
 
     const worker = new Worker('archae/plugins/_plugins_objects/build/worker.js');
     let generateBuffer = new ArrayBuffer(NUM_POSITIONS_CHUNK);
-    let lightmapBuffer = new Uint8Array(LIGHTMAP_BUFFER_SIZE * NUM_BUFFERS);
+    // let lightmapBuffer = new Uint8Array(LIGHTMAP_BUFFER_SIZE * NUM_BUFFERS);
     let cullBuffer = new ArrayBuffer(4096);
     let hoveredObjectsBuffer = new ArrayBuffer(8 * 2 * 4);
     const teleportObjectBuffers = {
@@ -387,7 +387,7 @@ void main() {
         cb(newGenerateBuffer);
       };
     };
-    worker.requestLightmaps = (lightmapBuffer, cb) => {
+    /* worker.requestLightmaps = (lightmapBuffer, cb) => {
       const id = _makeId();
       worker.postMessage({
         type: 'lightmaps',
@@ -397,7 +397,7 @@ void main() {
         },
       }, [lightmapBuffer.buffer]);
       queues[id] = cb;
-    };
+    }; */
     worker.requestCull = (hmdPosition, projectionMatrix, matrixWorldInverse, cb) => {
       const id = _makeId();
       worker.postMessage({
@@ -505,7 +505,9 @@ void main() {
 
         _cleanupQueues();
       } else if (type === 'request') {
-        const [id] = args;
+        throw new Error('not implemented');
+
+        /* const [id] = args;
         const {lightmapBuffer} = data;
 
         elements.requestElement(LIGHTMAP_PLUGIN)
@@ -513,7 +515,7 @@ void main() {
             lightmapElement.lightmapper.requestRender(lightmapBuffer, lightmapBuffer => {
               worker.requestResponse(id, lightmapBuffer, [lightmapBuffer.buffer]);
             });
-          });
+          }); */
       } else if (type === 'chunkUpdate') {
         const [x, z] = args;
         _refreshChunk(x, z);
@@ -706,7 +708,7 @@ void main() {
 
     const objectApis = {};
 
-    let refreshingLightmaps = false;
+    /* let refreshingLightmaps = false;
     const refreshingLightmapsQueue = [];
     const _refreshLightmaps = refreshed => {
       if (!refreshingLightmaps) {
@@ -788,7 +790,7 @@ void main() {
       } else {
         refreshingLightmapsQueue.push(refreshed);
       }
-    };
+    }; */
 
     // let lightmapper = null;
     /* const _bindLightmapper = lightmapElement => {
@@ -832,7 +834,7 @@ void main() {
       objectChunkMesh.material.uniforms.useLightMap.value = 0;
       objectChunkMesh.lightmap = null;
     }; */
-    const lightmapElementListener = elements.makeListener(LIGHTMAP_PLUGIN);
+    /* const lightmapElementListener = elements.makeListener(LIGHTMAP_PLUGIN);
     lightmapElementListener.on('add', lightmapElement => {
       lightmapElement.lightmapper.on('update', ([minX, minZ, maxX, maxZ]) => {
         const refreshed = [];
@@ -850,7 +852,7 @@ void main() {
           _refreshLightmaps(refreshed);
         }
       });
-    });
+    }); */
     /* lightmapElementListener.on('remove', () => {
       _unbindLightmapper();
     }); */
@@ -1343,7 +1345,7 @@ void main() {
     cleanups.push(() => {
       scene.remove(objectsObject);
 
-      elements.destroyListener(lightmapElementListener);
+      // elements.destroyListener(lightmapElementListener);
       elements.destroyListener(craftElementListener);
 
       teleport.removeListener('start', _teleportStart);

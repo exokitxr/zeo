@@ -53,8 +53,8 @@ const _getObjectsChunkSize = (objectsChunk, skyLightmaps, torchLightmaps) => {
   });
 };
 
-const stringifyGeometry = (objectsChunk, skyLightmaps, torchLightmaps, arrayBuffer, byteOffset) => {
-  const {positions, uvs, frames, objectIndices, indices, objects, geometries} = objectsChunk;
+const stringifyGeometry = (objectsChunk, arrayBuffer, byteOffset) => {
+  const {positions, uvs, frames, objectIndices, skyLightmaps, torchLightmaps, indices, objects, geometries} = objectsChunk;
 
   if (arrayBuffer === undefined || byteOffset === undefined) {
     const bufferSize = _getObjectsChunkSize(objectsChunk, skyLightmaps, torchLightmaps);
@@ -65,7 +65,7 @@ const stringifyGeometry = (objectsChunk, skyLightmaps, torchLightmaps, arrayBuff
   const headerBuffer = new Uint32Array(arrayBuffer, byteOffset, MAP_CHUNK_HEADER_ENTRIES);
   let index = 0;
   headerBuffer[index++] = positions.length;
-  headerBuffer[index++] = uvs.length;
+  headerBuffer[index++] = uvs.length;  
   headerBuffer[index++] = frames.length;
   headerBuffer[index++] = skyLightmaps.length;
   headerBuffer[index++] = torchLightmaps.length;
