@@ -57,7 +57,8 @@ const BIOMES = {
         8
       ]
     ],
-    "color": 0x000070
+    "color": 112,
+    "index": 0
   },
   "biPlains": {
     "baseHeight": 68,
@@ -75,7 +76,8 @@ const BIOMES = {
         4
       ]
     ],
-    "color": 0x8db360
+    "color": 9286496,
+    "index": 1
   },
   "biDesert": {
     "baseHeight": 68,
@@ -93,7 +95,8 @@ const BIOMES = {
         4
       ]
     ],
-    "color": 0xfa9418
+    "color": 16421912,
+    "index": 2
   },
   "biExtremeHills": {
     "baseHeight": 100,
@@ -111,7 +114,8 @@ const BIOMES = {
         16
       ]
     ],
-    "color": 0x606060
+    "color": 6316128,
+    "index": 3
   },
   "biForest": {
     "baseHeight": 70,
@@ -129,7 +133,8 @@ const BIOMES = {
         4
       ]
     ],
-    "color": 0x056621
+    "color": 353825,
+    "index": 4
   },
   "biTaiga": {
     "baseHeight": 70,
@@ -147,7 +152,8 @@ const BIOMES = {
         4
       ]
     ],
-    "color": 0x0b6659
+    "color": 747097,
+    "index": 5
   },
   "biSwampland": {
     "baseHeight": 61.5,
@@ -165,7 +171,8 @@ const BIOMES = {
         2.5
       ]
     ],
-    "color": 0x2fffda
+    "color": 3145690,
+    "index": 6
   },
   "biRiver": {
     "baseHeight": 56,
@@ -183,7 +190,8 @@ const BIOMES = {
         0.1
       ]
     ],
-    "color": 0x3030af
+    "color": 3158191,
+    "index": 7
   },
   "biNether": {
     "baseHeight": 0,
@@ -201,7 +209,8 @@ const BIOMES = {
         0
       ]
     ],
-    "color": 0x7f0000
+    "color": 8323072,
+    "index": 8
   },
   "biEnd": {
     "baseHeight": 0,
@@ -219,7 +228,8 @@ const BIOMES = {
         0
       ]
     ],
-    "color": 0x007fff
+    "color": 32767,
+    "index": 9
   },
   "biFrozenOcean": {
     "baseHeight": 40,
@@ -237,7 +247,8 @@ const BIOMES = {
         10
       ]
     ],
-    "color": 0xa0a0df
+    "color": 10526943,
+    "index": 10
   },
   "biFrozenRiver": {
     "baseHeight": 56,
@@ -255,7 +266,8 @@ const BIOMES = {
         0.1
       ]
     ],
-    "color": 0xa0a0ff
+    "color": 10526975,
+    "index": 11
   },
   "biTundra": {
     "baseHeight": 68,
@@ -273,7 +285,8 @@ const BIOMES = {
         4
       ]
     ],
-    "color": 0xffffff
+    "color": 16777215,
+    "index": 12
   },
   "biIceMountains": {
     "baseHeight": 80,
@@ -291,7 +304,8 @@ const BIOMES = {
         8
       ]
     ],
-    "color": 0xa0a0a0
+    "color": 10526880,
+    "index": 13
   },
   "biMushroomIsland": {
     "baseHeight": 80,
@@ -309,7 +323,8 @@ const BIOMES = {
         6
       ]
     ],
-    "color": 0xff00ff
+    "color": 16711935,
+    "index": 14
   },
   "biMushroomShore": {
     "baseHeight": 64,
@@ -327,7 +342,8 @@ const BIOMES = {
         4
       ]
     ],
-    "color": 0xa000ff
+    "color": 10486015,
+    "index": 15
   },
   "biBeach": {
     "baseHeight": 64,
@@ -345,7 +361,8 @@ const BIOMES = {
         1
       ]
     ],
-    "color": 0xfade55
+    "color": 16440917,
+    "index": 16
   },
   "biDesertHills": {
     "baseHeight": 75,
@@ -363,7 +380,8 @@ const BIOMES = {
         4
       ]
     ],
-    "color": 0xd25f12
+    "color": 13786898,
+    "index": 17
   },
   "biForestHills": {
     "baseHeight": 80,
@@ -381,7 +399,8 @@ const BIOMES = {
         10
       ]
     ],
-    "color": 0x22551c
+    "color": 2250012,
+    "index": 18
   },
   "biTaigaHills": {
     "baseHeight": 80,
@@ -399,7 +418,8 @@ const BIOMES = {
         10
       ]
     ],
-    "color": 0x163933
+    "color": 1456435,
+    "index": 19
   },
   "biExtremeHillsEdge": {
     "baseHeight": 80,
@@ -417,7 +437,8 @@ const BIOMES = {
         12
       ]
     ],
-    "color": 0x7f8f7f
+    "color": 8359807,
+    "index": 20
   },
   "biJungle": {
     "baseHeight": 70,
@@ -435,7 +456,8 @@ const BIOMES = {
         6
       ]
     ],
-    "color": 0x537b09
+    "color": 5470985,
+    "index": 21
   },
   "biJungleHills": {
     "baseHeight": 80,
@@ -453,7 +475,8 @@ const BIOMES = {
         10
       ]
     ],
-    "color": 0x2c4205
+    "color": 2900485,
+    "index": 22
   },
   "biJungleEdge": {
     "baseHeight": 70,
@@ -471,7 +494,8 @@ const BIOMES = {
         6
       ]
     ],
-    "color": 0x628b17
+    "color": 6458135,
+    "index": 23
   },
   "biDeepOcean": {
     "baseHeight": 40,
@@ -489,7 +513,8 @@ const BIOMES = {
         10
       ]
     ],
-    "color": 0x000030
+    "color": 48,
+    "index": 24
   },
   "biStoneBeach": {
     "baseHeight": 40,
@@ -507,7 +532,8 @@ const BIOMES = {
         10
       ]
     ],
-    "color": 0xa2a284
+    "color": 10658436,
+    "index": 25
   },
   "biColdBeach": {
     "baseHeight": 64,
@@ -525,7 +551,8 @@ const BIOMES = {
         1
       ]
     ],
-    "color": 0xfaf0c0
+    "color": 16445632,
+    "index": 26
   },
   "biBirchForest": {
     "baseHeight": 70,
@@ -543,7 +570,8 @@ const BIOMES = {
         4
       ]
     ],
-    "color": 0x307444
+    "color": 3175492,
+    "index": 27
   },
   "biBirchForestHills": {
     "baseHeight": 80,
@@ -561,7 +589,8 @@ const BIOMES = {
         8
       ]
     ],
-    "color": 0x1f5f32
+    "color": 2055986,
+    "index": 28
   },
   "biRoofedForest": {
     "baseHeight": 70,
@@ -579,7 +608,8 @@ const BIOMES = {
         4
       ]
     ],
-    "color": 0x40511a
+    "color": 4215066,
+    "index": 29
   },
   "biColdTaiga": {
     "baseHeight": 70,
@@ -597,7 +627,8 @@ const BIOMES = {
         4
       ]
     ],
-    "color": 0x31554a
+    "color": 3233098,
+    "index": 30
   },
   "biColdTaigaHills": {
     "baseHeight": 80,
@@ -615,7 +646,8 @@ const BIOMES = {
         8
       ]
     ],
-    "color": 0x597d72
+    "color": 5864818,
+    "index": 31
   },
   "biMegaTaiga": {
     "baseHeight": 70,
@@ -633,7 +665,8 @@ const BIOMES = {
         4
       ]
     ],
-    "color": 0x596651
+    "color": 5858897,
+    "index": 32
   },
   "biMegaTaigaHills": {
     "baseHeight": 80,
@@ -651,7 +684,8 @@ const BIOMES = {
         8
       ]
     ],
-    "color": 0x596659
+    "color": 5858905,
+    "index": 33
   },
   "biExtremeHillsPlus": {
     "baseHeight": 120,
@@ -669,7 +703,8 @@ const BIOMES = {
         16
       ]
     ],
-    "color": 0x507050
+    "color": 5271632,
+    "index": 34
   },
   "biSavanna": {
     "baseHeight": 68,
@@ -687,7 +722,8 @@ const BIOMES = {
         4
       ]
     ],
-    "color": 0xbdb25f
+    "color": 12431967,
+    "index": 35
   },
   "biSavannaPlateau": {
     "baseHeight": 80,
@@ -705,7 +741,8 @@ const BIOMES = {
         4
       ]
     ],
-    "color": 0xa79d64
+    "color": 10984804,
+    "index": 36
   },
   "biMesa": {
     "baseHeight": 70,
@@ -723,7 +760,8 @@ const BIOMES = {
         8
       ]
     ],
-    "color": 0xd94515
+    "color": 14238997,
+    "index": 37
   },
   "biMesaPlateauF": {
     "baseHeight": 80,
@@ -741,7 +779,8 @@ const BIOMES = {
         4
       ]
     ],
-    "color": 0xb09765
+    "color": 11573093,
+    "index": 38
   },
   "biMesaPlateau": {
     "baseHeight": 80,
@@ -759,7 +798,8 @@ const BIOMES = {
         4
       ]
     ],
-    "color": 0xca8c65
+    "color": 13274213,
+    "index": 39
   },
   "biSunflowerPlains": {
     "baseHeight": 40,
@@ -777,7 +817,8 @@ const BIOMES = {
         10
       ]
     ],
-    "color": 0xb5db88
+    "color": 11918216,
+    "index": 40
   },
   "biDesertM": {
     "baseHeight": 40,
@@ -795,7 +836,8 @@ const BIOMES = {
         10
       ]
     ],
-    "color": 0xffbc40
+    "color": 16759872,
+    "index": 41
   },
   "biExtremeHillsM": {
     "baseHeight": 40,
@@ -813,7 +855,8 @@ const BIOMES = {
         10
       ]
     ],
-    "color": 0x888888
+    "color": 8947848,
+    "index": 42
   },
   "biFlowerForest": {
     "baseHeight": 40,
@@ -831,7 +874,8 @@ const BIOMES = {
         10
       ]
     ],
-    "color": 0x2d8e49
+    "color": 2985545,
+    "index": 43
   },
   "biTaigaM": {
     "baseHeight": 40,
@@ -849,7 +893,8 @@ const BIOMES = {
         10
       ]
     ],
-    "color": 0x338e81
+    "color": 3378817,
+    "index": 44
   },
   "biSwamplandM": {
     "baseHeight": 60,
@@ -867,7 +912,8 @@ const BIOMES = {
         0.01
       ]
     ],
-    "color": 0x07f9b2
+    "color": 522674,
+    "index": 45
   },
   "biIcePlainsSpikes": {
     "baseHeight": 40,
@@ -885,7 +931,8 @@ const BIOMES = {
         10
       ]
     ],
-    "color": 0xb4dcdc
+    "color": 11853020,
+    "index": 46
   },
   "biJungleM": {
     "baseHeight": 70,
@@ -903,7 +950,8 @@ const BIOMES = {
         6
       ]
     ],
-    "color": 0x7ba331
+    "color": 8102705,
+    "index": 47
   },
   "biJungleEdgeM": {
     "baseHeight": 70,
@@ -921,7 +969,8 @@ const BIOMES = {
         6
       ]
     ],
-    "color": 0x628b17
+    "color": 6458135,
+    "index": 48
   },
   "biBirchForestM": {
     "baseHeight": 70,
@@ -939,7 +988,8 @@ const BIOMES = {
         4
       ]
     ],
-    "color": 0x589c6c
+    "color": 5807212,
+    "index": 49
   },
   "biBirchForestHillsM": {
     "baseHeight": 80,
@@ -957,7 +1007,8 @@ const BIOMES = {
         8
       ]
     ],
-    "color": 0x47875a
+    "color": 4687706,
+    "index": 50
   },
   "biRoofedForestM": {
     "baseHeight": 70,
@@ -975,7 +1026,8 @@ const BIOMES = {
         4
       ]
     ],
-    "color": 0x687942
+    "color": 6846786,
+    "index": 51
   },
   "biColdTaigaM": {
     "baseHeight": 70,
@@ -993,7 +1045,8 @@ const BIOMES = {
         4
       ]
     ],
-    "color": 0x243f36
+    "color": 2375478,
+    "index": 52
   },
   "biMegaSpruceTaiga": {
     "baseHeight": 70,
@@ -1011,7 +1064,8 @@ const BIOMES = {
         4
       ]
     ],
-    "color": 0x454f3e
+    "color": 4542270,
+    "index": 53
   },
   "biMegaSpruceTaigaHills": {
     "baseHeight": 80,
@@ -1029,7 +1083,8 @@ const BIOMES = {
         8
       ]
     ],
-    "color": 0x454f4e
+    "color": 4542286,
+    "index": 54
   },
   "biExtremeHillsPlusM": {
     "baseHeight": 120,
@@ -1047,7 +1102,8 @@ const BIOMES = {
         16
       ]
     ],
-    "color": 0x789878
+    "color": 7903352,
+    "index": 55
   },
   "biSavannaM": {
     "baseHeight": 68,
@@ -1065,7 +1121,8 @@ const BIOMES = {
         4
       ]
     ],
-    "color": 0xe5da87
+    "color": 15063687,
+    "index": 56
   },
   "biSavannaPlateauM": {
     "baseHeight": 80,
@@ -1083,7 +1140,8 @@ const BIOMES = {
         4
       ]
     ],
-    "color": 0xa79d74
+    "color": 10984820,
+    "index": 57
   },
   "biMesaBryce": {
     "baseHeight": 80,
@@ -1101,7 +1159,8 @@ const BIOMES = {
         8
       ]
     ],
-    "color": 0xff6d3d
+    "color": 16739645,
+    "index": 58
   },
   "biMesaPlateauFM": {
     "baseHeight": 80,
@@ -1119,7 +1178,8 @@ const BIOMES = {
         4
       ]
     ],
-    "color": 0xd8bf8d
+    "color": 14204813,
+    "index": 59
   },
   "biMesaPlateauM": {
     "baseHeight": 80,
@@ -1137,13 +1197,10 @@ const BIOMES = {
         4
       ]
     ],
-    "color": 0xf2b48d
+    "color": 15905933,
+    "index": 60
   }
 };
-let biomeIndex = 0;
-for (const k in BIOMES) {
-  BIOMES[k].index = biomeIndex++;
-}
 
 const BIOMES_TH = [
 		//       0         1         2               3               4               5               6         7         8         9         10              11              12              13              14             15
@@ -1187,3 +1244,5 @@ module.exports = {
   BIOMES,
   BIOMES_TH,
 };
+
+biomes = BIOMES;
