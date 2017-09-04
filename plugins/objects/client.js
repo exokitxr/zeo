@@ -591,8 +591,10 @@ void main() {
         geometry,
         material,
         groups: [],
-        visible: true,
+        visible: false,
       };
+
+      let version = 0;
 
       return {
         renderListEntry,
@@ -604,6 +606,8 @@ void main() {
           const {positions: newPositions, uvs: newUvs, frames: newFrames, skyLightmaps: newSkyLightmaps, torchLightmaps: newTorchLightmaps, objectIndices: newObjectIndices, indices: newIndices} = chunkData;
           const heightfieldElement = elements.getEntitiesElement().querySelector(HEIGHTFIELD_PLUGIN)
           if (newPositions.length > 0 && heightfieldElement) {
+            version++;
+
             positions.set(newPositions);
             uvs.set(newUvs);
             frames.set(newFrames);
@@ -660,27 +664,34 @@ console.log('done');
     _recurse(0);
   });
 }); */
+            const localVersion = version;
             heightfieldElement.requestFrame(next => {
-              renderListEntry.visible = false;
+              if (version === localVersion) {
+                renderListEntry.visible = false;
 
-              renderer.updateAttribute(geometry.attributes.position, index * positions.length, newPositionsLength, false);
-              renderer.updateAttribute(geometry.attributes.uv, index * uvs.length, newUvsLength, false);
-              renderer.updateAttribute(geometry.attributes.frame, index * frames.length, newFramesLength, false);
-              renderer.updateAttribute(geometry.attributes.skyLightmap, index * skyLightmaps.length, newSkyLightmapsLength, false);
-              renderer.updateAttribute(geometry.attributes.torchLightmap, index * torchLightmaps.length, newTorchLightmapsLength, false);
-              renderer.updateAttribute(geometry.index, index * indices.length, newIndicesLength, true);
-              renderer.updateAttribute(geometry.attributes.objectIndex, index * objectIndices.length, newObjectIndicesLength, false);
-              // renderer.getContext().flush();
+                renderer.updateAttribute(geometry.attributes.position, index * positions.length, newPositionsLength, false);
+                renderer.updateAttribute(geometry.attributes.uv, index * uvs.length, newUvsLength, false);
+                renderer.updateAttribute(geometry.attributes.frame, index * frames.length, newFramesLength, false);
+                renderer.updateAttribute(geometry.attributes.skyLightmap, index * skyLightmaps.length, newSkyLightmapsLength, false);
+                renderer.updateAttribute(geometry.attributes.torchLightmap, index * torchLightmaps.length, newTorchLightmapsLength, false);
+                renderer.updateAttribute(geometry.index, index * indices.length, newIndicesLength, true);
+                renderer.updateAttribute(geometry.attributes.objectIndex, index * objectIndices.length, newObjectIndicesLength, false);
+                // renderer.getContext().flush();
 
-              requestAnimationFrame(() => {
-                renderListEntry.visible = true;
+                requestAnimationFrame(() => {
+                  renderListEntry.visible = true;
 
+                  next();
+                });
+              } else {
                 next();
-              });
+              }
             });
           }
         },
         destroy: () => {
+          version++;
+
           geometries.free(gbuffer);
         },
       };
@@ -1270,17 +1281,18 @@ console.log('done');
         running = true;
 
         const {x, z} = chunk;
+        const index = _getChunkIndex(x, z);
+
+        const {[dataSymbol]: oldObjectsChunkMesh} = chunk;
+        if (oldObjectsChunkMesh) {
+          objectsObject.renderList.splice(objectsObject.renderList.indexOf(oldObjectsChunkMesh.renderListEntry), 1);
+
+          oldObjectsChunkMesh.destroy();
+          objectsChunkMeshes[index] = null;
+        }
+
         const gbuffer = geometries.alloc();
         _requestObjectsGenerate(x, z, gbuffer.index, gbuffer.slices.positions.length, gbuffer.slices.objectIndices.length, gbuffer.slices.indices.length, objectsChunkData => {
-          const index = _getChunkIndex(x, z);
-
-          const {[dataSymbol]: oldObjectsChunkMesh} = chunk;
-          if (oldObjectsChunkMesh) {
-            objectsObject.renderList.splice(objectsObject.renderList.indexOf(oldObjectsChunkMesh.renderListEntry), 1);
-
-            oldObjectsChunkMesh.destroy();
-            objectsChunkMeshes[index] = null;
-          }
 
           const newObjectsChunkMesh = _makeObjectsChunkMesh(chunk, gbuffer);
           newObjectsChunkMesh.update(objectsChunkData);
