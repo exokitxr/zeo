@@ -787,7 +787,7 @@ class Heightfield {
                 count: Infinity,
                 materialIndex: 0,
               }], */
-              visible: true,
+              visible: false,
             },
             {
               object: heightfieldObject,
@@ -795,9 +795,10 @@ class Heightfield {
               material: oceanMaterial,
               // material: heightfieldMaterial,
               groups: [],
-              visible: true,
+              visible: false,
             },
           ];
+          let version = 0;
 
           const meshes = {
             renderListEntries,
@@ -815,6 +816,8 @@ class Heightfield {
               const {positions: newPositions, colors: newColors, skyLightmaps: newSkyLightmaps, torchLightmaps: newTorchLightmaps, indices: newIndices, heightfield, staticHeightfield} = chunkData;
 
               if (newPositions.length > 0) {
+                version++;
+
                 // XXX move heightfield interpolation entirely into the worker
                 // XXX preallocate staticHeightfield feedthrough for lightmap and stck
 
@@ -835,27 +838,35 @@ class Heightfield {
                 const newSkyLightmapsLength = newSkyLightmaps.length;
                 const newTorchLightmapsLength = newTorchLightmaps.length;
                 const newIndicesLength = newIndices.length;
+
+                const localVersion = version;
                 _requestFrame(next => {
-                  renderListEntries[0].visible = false;
-                  renderListEntries[1].visible = false;
+                  if (version === localVersion) {
+                    renderListEntries[0].visible = false;
+                    renderListEntries[1].visible = false;
 
-                  renderer.updateAttribute(geometry.attributes.position, index * positions.length, newPositionsLength, false);
-                  renderer.updateAttribute(geometry.attributes.color, index * colors.length, newColorsLength, false);
-                  renderer.updateAttribute(geometry.attributes.skyLightmap, index * skyLightmaps.length, newSkyLightmapsLength, false);
-                  renderer.updateAttribute(geometry.attributes.torchLightmap, index * torchLightmaps.length, newTorchLightmapsLength, false);
-                  renderer.updateAttribute(geometry.index, index * indices.length, newIndicesLength, true);
-                  // renderer.getContext().finish();
+                    renderer.updateAttribute(geometry.attributes.position, index * positions.length, newPositionsLength, false);
+                    renderer.updateAttribute(geometry.attributes.color, index * colors.length, newColorsLength, false);
+                    renderer.updateAttribute(geometry.attributes.skyLightmap, index * skyLightmaps.length, newSkyLightmapsLength, false);
+                    renderer.updateAttribute(geometry.attributes.torchLightmap, index * torchLightmaps.length, newTorchLightmapsLength, false);
+                    renderer.updateAttribute(geometry.index, index * indices.length, newIndicesLength, true);
+                    // renderer.getContext().flush();
 
-                  requestAnimationFrame(() => {
-                    renderListEntries[0].visible = true;
-                    renderListEntries[1].visible = true;
+                    requestAnimationFrame(() => {
+                      renderListEntries[0].visible = true;
+                      renderListEntries[1].visible = true;
 
+                      next();
+                    });
+                  } else {
                     next();
-                  });
+                  }
                 });
               }
             },
             destroy: () => {
+              version++;
+
               geometries.free(gbuffer);
 
               /* if (meshes.shape) {
@@ -980,22 +991,22 @@ class Heightfield {
               running = true;
 
               const {x, z, lod} = chunk;
+              const index = _getChunkIndex(x, z);
+              const oldMapChunkMeshes = mapChunkMeshes[index];
+              if (oldMapChunkMeshes) {
+                heightfieldObject.renderList.splice(heightfieldObject.renderList.indexOf(oldMapChunkMeshes.renderListEntries[0]), 2);
+
+                oldMapChunkMeshes.destroy();
+
+                stck.destroyBody(oldMapChunkMeshes.stckBody);
+
+                _emit('remove', oldMapChunkMeshes);
+
+                mapChunkMeshes[index] = null;
+              }
+
               const gbuffer = geometries.alloc();
               _requestGenerate(x, z, gbuffer.index, gbuffer.slices.positions.length, gbuffer.slices.indices.length, chunkData => {
-                const index = _getChunkIndex(x, z);
-                const oldMapChunkMeshes = mapChunkMeshes[index];
-                if (oldMapChunkMeshes) {
-                  heightfieldObject.renderList.splice(heightfieldObject.renderList.indexOf(oldMapChunkMeshes.renderListEntries[0]), 2);
-
-                  oldMapChunkMeshes.destroy();
-
-                  stck.destroyBody(oldMapChunkMeshes.stckBody);
-
-                  _emit('remove', oldMapChunkMeshes);
-
-                  mapChunkMeshes[index] = null;
-                }
-
                 const newMapChunkMeshes = _makeMapChunkMeshes(chunk, gbuffer);
                 newMapChunkMeshes.update(chunkData);
 
