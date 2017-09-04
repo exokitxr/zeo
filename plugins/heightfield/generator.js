@@ -383,38 +383,39 @@ const _generateMapChunk = (ox, oy, opts) => {
     } */
   }
   let liquid = opts.oldLiquid;
-  if (!liquid) {
+  let liquidTypes = opts.oldLiquidTypes;
+  if (!liquid || !liquidTypes) {
     liquid = new Uint8Array((NUM_CELLS + 1) * (NUM_CELLS_HEIGHT + 1) * (NUM_CELLS + 1));
+    liquidTypes = new Uint8Array((NUM_CELLS + 1) * (NUM_CELLS_HEIGHT + 1) * (NUM_CELLS + 1));
 
-    /* const _setLiquid = (x, y, z, v) => {
+    const _setLiquid = (x, y, z, liquidType) => {
       x -= ox * NUM_CELLS;
       z -= oy * NUM_CELLS;
 
-      for (let dz = -1; dz <= 1; dz++) {
+      for (let dz = -2; dz <= 2; dz++) {
         const az = z + dz;
         if (az >= 0 && az < (NUM_CELLS + 1)) {
-          for (let dx = -1; dx <= 1; dx++) {
+          for (let dx = -2; dx <= 2; dx++) {
             const ax = x + dx;
             if (ax >= 0 && ax < (NUM_CELLS + 1)) {
-              for (let dy = -1; dy <= 1; dy++) {
+              for (let dy = -2; dy <= 2; dy++) {
                 const ay = y + dy;
-                if (ay >= 0 && ay < (NUM_CELLS_HEIGHT + 1)) {
-                  const index = _getEtherIndex(ax, ay, az);
+                const index = _getEtherIndex(ax, ay, az);
+
+                if (dx > -2 && dx < 2 && dz > -2 && dz < 2 && ay >= 0 && ay < (NUM_CELLS_HEIGHT + 1)) {
                   if (dx === 0 && dy === 0 && dz === 0) {
-                    liquid[index] = v;
+                    liquid[index] = 1;
                   } else if (liquid[index] === 0) {
                     liquid[index] = (dy >= 0) ? 0xFF : (dx === 0 && dz === 0 ? 0xFE : 0);
                   }
                 }
+                liquidTypes[index] = liquidType;
               }
             }
           }
         }
       }
-    }; */
-
-    // _setLiquid(6, Math.floor(elevations[_getCoordOverscanIndex(6, 16 - 3)]), -3, 1);
-    // _setLiquid(6, Math.floor(elevations[_getCoordOverscanIndex(6, 16 - 4)]), -4, 1);
+    };
 
     for (let z = 0; z <= NUM_CELLS; z++) {
       for (let x = 0; x <= NUM_CELLS; x++) {
@@ -422,11 +423,15 @@ const _generateMapChunk = (ox, oy, opts) => {
 
         for (let y = 0; y <= NUM_CELLS_HEIGHT; y++) {
           if (y < 64 && y >= elevation) {
-            liquid[_getEtherIndex(x, y, z)] = 1;
+            const index = _getEtherIndex(x, y, z);
+            liquid[index] = 1;
+            liquidTypes[index] = 1;
           }
         }
       }
     }
+
+    _setLiquid(6, Math.floor(elevations[_getCoordOverscanIndex(6, 16 - 8)] + 1), -8, 2);
   }
   const numNewEthers = opts.newEther.length / 4;
   for (let i = 0; i < numNewEthers; i++) {
@@ -508,7 +513,7 @@ const _generateMapChunk = (ox, oy, opts) => {
     }
   }
 
-  const _postProcessGeometry = (start, count) => {
+  const _postProcessGeometry = (start, count, getColor) => {
     const geometryPositions = new Float32Array(positions.buffer, positions.byteOffset + start * 4, count);
     const geometryColors = new Float32Array(colors.buffer, colors.byteOffset + start * 4, count);
     const geometrySkyLightmaps = new Uint8Array(skyLightmaps.buffer, skyLightmaps.byteOffset + start / 3, count / 3);
@@ -521,8 +526,7 @@ const _generateMapChunk = (ox, oy, opts) => {
       const y = geometryPositions[baseIndex + 1];
       const z = geometryPositions[baseIndex + 2];
 
-      const biome = _getBiome(Math.floor((ox * NUM_CELLS) + x), Math.floor((oy * NUM_CELLS) + z));
-      const colorArray = _colorIntToArray(biome.color);
+      const colorArray = _colorIntToArray(getColor((ox * NUM_CELLS) + x, y, (oy * NUM_CELLS) + z));
       geometryColors[baseIndex + 0] = colorArray[0];
       geometryColors[baseIndex + 1] = colorArray[1];
       geometryColors[baseIndex + 2] = colorArray[2];
@@ -537,8 +541,10 @@ const _generateMapChunk = (ox, oy, opts) => {
   for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
     const geometry = geometries[i];
     const {attributeRange} = geometry;
-    _postProcessGeometry(attributeRange.landStart, attributeRange.landCount);
-    _postProcessGeometry(attributeRange.liquidStart, attributeRange.liquidCount);
+    _postProcessGeometry(attributeRange.landStart, attributeRange.landCount, (x, y, z) =>
+      _getBiome(Math.floor(x), Math.floor(z)).color);
+    _postProcessGeometry(attributeRange.liquidStart, attributeRange.liquidCount, (x, y, z) =>
+      liquidTypes[_getEtherIndex(Math.floor(x), Math.floor(y), Math.floor(z))]);
 
     geometry.boundingSphere = new THREE.Sphere(
       new THREE.Vector3(ox * NUM_CELLS + NUM_CELLS_HALF, i * NUM_CELLS + NUM_CELLS_HALF, oy * NUM_CELLS + NUM_CELLS_HALF),
@@ -676,6 +682,7 @@ const _generateMapChunk = (ox, oy, opts) => {
     elevations,
     ether,
     liquid,
+    liquidTypes,
   };
 };
 const _getCoordOverscanIndex = (x, y) => x + (y * NUM_CELLS_OVERSCAN);
@@ -893,6 +900,9 @@ const generator = (x, y, buffer, byteOffset, opts) => {
   }
   if (opts.oldLiquid === undefined) {
     opts.oldLiquid = null;
+  }
+  if (opts.oldLiquidTypes === undefined) {
+    opts.oldLiquidTypes = null;
   }
   if (opts.regenerate === undefined) {
     opts.regenerate = false;

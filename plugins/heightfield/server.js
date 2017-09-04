@@ -165,10 +165,12 @@ class Heightfield {
                   const oldElevations = chunkData.elevations.slice();
                   const oldEther = chunkData.ether.slice();
                   const oldLiquid = chunkData.liquid.slice();
+                  const oldLiquidTypes = chunkData.liquidTypes.slice();
                   chunk.generate(generator, {
                     oldElevations,
                     oldEther,
                     oldLiquid,
+                    oldLiquidTypes,
                     newEther,
                   });
                 }

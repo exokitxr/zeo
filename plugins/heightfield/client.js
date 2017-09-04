@@ -63,7 +63,7 @@ varying float vSkyLightmap;
 varying float vTorchLightmap;
 
 void main() {
-	vColor.xyz = color.xyz;
+	vColor = color.rgb;
 
   vec4 mvPosition = modelViewMatrix * vec4( position.xyz, 1.0 );
   gl_Position = projectionMatrix * mvPosition;
@@ -138,6 +138,10 @@ const OCEAN_SHADER = {
       type: 't',
       value: null,
     },
+    map2: {
+      type: 't',
+      value: null,
+    },
     /* fogColor: {
       type: '3f',
       value: new THREE.Color(),
@@ -154,7 +158,9 @@ const OCEAN_SHADER = {
   vertexShader: [
     "uniform float worldTime;",
     // "attribute vec3 wave;",
+    "attribute vec3 color;",
     "varying vec2 vUv;",
+    "varying vec3 vColor;",
     "varying float fogDepth;",
     "void main() {",
     /* "  float ang = wave[0];",
@@ -164,6 +170,7 @@ const OCEAN_SHADER = {
     "  gl_Position = projectionMatrix * modelViewMatrix * vec4(position.xyz, 1.0);",
     "  vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );",
     "  vUv = vec2(position.x / 16.0 * 4.0, position.z / 16.0 * 4.0 / 16.0);",
+    "  vColor = color.rgb;",
     "  fogDepth = -mvPosition.z;",
     "}"
   ].join("\n"),
@@ -173,10 +180,12 @@ const OCEAN_SHADER = {
     "#define whiteCompliment(a) ( 1.0 - saturate( a ) )",
     "uniform float worldTime;",
     "uniform sampler2D map;",
+    "uniform sampler2D map2;",
     "uniform vec3 fogColor;",
     "uniform float fogDensity;",
     "uniform float sunIntensity;",
     "varying vec2 vUv;",
+    "varying vec3 vColor;",
     "varying float fogDepth;",
     "float speed = 2.0;",
     "void main() {",
@@ -184,8 +193,10 @@ const OCEAN_SHADER = {
     "  float frame1 = mod(floor(animationFactor / 16.0), 1.0);",
     "  float frame2 = mod(frame1 + 1.0/16.0, 1.0);",
     "  float mixFactor = fract(animationFactor / 16.0) * 16.0;",
-    "  vec4 diffuseColor = mix(texture2D( map, vUv * vec2(1.0, 1.0 - frame1) ), texture2D( map, vUv * vec2(1.0, 1.0 - frame2) ), mixFactor);",
-    "  diffuseColor = vec4((0.2 + 0.8 * sunIntensity) * diffuseColor.xyz, 0.7);",
+    "  vec2 uv1 = vUv * vec2(1.0, 1.0 - frame1);",
+    "  vec2 uv2 = vUv * vec2(1.0, 1.0 - frame2);",
+    "  vec4 diffuseColor = (vColor.b * 256.0) <= 1.5 ? mix(texture2D( map, uv1 ), texture2D( map, uv2 ), mixFactor) : mix(texture2D( map2, uv1 ), texture2D( map2, uv2 ), mixFactor);",
+    "  diffuseColor = vec4((0.2 + 0.8 * sunIntensity) * diffuseColor.xyz, 0.9);",
     "  float fogFactor = whiteCompliment( exp2( - fogDensity * fogDensity * fogDepth * fogDepth * LOG2 ) );",
     "  gl_FragColor = vec4(mix( diffuseColor.rgb, fogColor, fogFactor ), diffuseColor.a);",
     "}"
@@ -661,11 +672,13 @@ class Heightfield {
           accept();
         });
       }),
-      _requestImageBitmap('/archae/ocean/img/water.png'),
+      _requestImageBitmap('/archae/heightfield/img/water.png'),
+      _requestImageBitmap('/archae/heightfield/img/lava.png'),
     ])
       .then(([
         setSpawnMatrixResult,
         waterImg,
+        lavaImg,
       ]) => {
         const NUM_GEOMETRIES = 4;
         const _makeGeometryBuffer = () => sbffr(
@@ -866,8 +879,21 @@ class Heightfield {
           1
         );
         waterTexture.needsUpdate = true;
+        const lavaTexture = new THREE.Texture(
+          lavaImg,
+          THREE.UVMapping,
+          THREE.RepeatWrapping,
+          THREE.RepeatWrapping,
+          THREE.NearestFilter,
+          THREE.NearestFilter,
+          THREE.RGBAFormat,
+          THREE.UnsignedByteType,
+          1
+        );
+        lavaTexture.needsUpdate = true;
         const uniforms = THREE.UniformsUtils.clone(OCEAN_SHADER.uniforms);
         uniforms.map.value = waterTexture;
+        uniforms.map2.value = lavaTexture;
         // uniforms.fogColor.value = scene.fog.color;
         // uniforms.fogDensity.value = scene.fog.density;
         const oceanMaterial = new THREE.ShaderMaterial({
