@@ -16,7 +16,7 @@ const objectsLib = require('./lib/objects/client/index');
 
 const NUM_POSITIONS_CHUNK = 1.25 * 1024 * 1024;
 // const LIGHTMAP_BUFFER_SIZE = 100 * 1024 * 4;
-const NUM_BUFFERS = RANGE * RANGE * 9;
+// const NUM_BUFFERS = RANGE * RANGE + RANGE;
 const SIDES = ['left', 'right'];
 
 const dataSymbol = Symbol();
@@ -275,7 +275,7 @@ void main() {
     const worker = new Worker('archae/plugins/_plugins_objects/build/worker.js');
     let generateBuffer = new ArrayBuffer(NUM_POSITIONS_CHUNK);
     // let lightmapBuffer = new Uint8Array(LIGHTMAP_BUFFER_SIZE * NUM_BUFFERS);
-    let cullBuffer = new ArrayBuffer(4096);
+    let cullBuffer = new ArrayBuffer(100 * 1024);
     let hoveredObjectsBuffer = new ArrayBuffer(8 * 2 * 4);
     const teleportObjectBuffers = {
       left: new ArrayBuffer((1 + 3 + 3 + 3 + 4 + 4) * 4),
@@ -583,47 +583,105 @@ void main() {
     const _makeObjectsChunkMesh = (chunk, gbuffer) => {
       const {x, z} = chunk;
 
-      const {index, slices: {positions, uvs, frames, skyLightmaps, torchLightmaps, objectIndices, indices}} = gbuffer;
+      const {index, geometry, slices: {positions, uvs, frames, skyLightmaps, torchLightmaps, objectIndices, indices}} = gbuffer;
       const material = objectsMaterial;
 
+      const renderListEntry = {
+        object: objectsObject,
+        geometry,
+        material,
+        groups: [],
+        visible: true,
+      };
+
       return {
-        renderListEntry: {
-          object: objectsObject,
-          material,
-          groups: [],
-        },
+        renderListEntry,
         gbuffer,
         offset: new THREE.Vector2(x, z),
         skyLightmaps,
         torchLightmaps,
         update: chunkData => {
           const {positions: newPositions, uvs: newUvs, frames: newFrames, skyLightmaps: newSkyLightmaps, torchLightmaps: newTorchLightmaps, objectIndices: newObjectIndices, indices: newIndices} = chunkData;
-
-          if (newPositions.length > 0) {
+          const heightfieldElement = elements.getEntitiesElement().querySelector(HEIGHTFIELD_PLUGIN)
+          if (newPositions.length > 0 && heightfieldElement) {
             positions.set(newPositions);
-            renderer.updateAttribute(objectsObject.geometry.attributes.position, index * positions.length, newPositions.length, false);
-
             uvs.set(newUvs);
-            renderer.updateAttribute(objectsObject.geometry.attributes.uv, index * uvs.length, newUvs.length, false);
-
             frames.set(newFrames);
-            renderer.updateAttribute(objectsObject.geometry.attributes.frame, index * frames.length, newFrames.length, false);
-
             skyLightmaps.set(newSkyLightmaps);
-            renderer.updateAttribute(objectsObject.geometry.attributes.skyLightmap, index * skyLightmaps.length, newSkyLightmaps.length, false);
-
             torchLightmaps.set(newTorchLightmaps);
-            renderer.updateAttribute(objectsObject.geometry.attributes.torchLightmap, index * torchLightmaps.length, newTorchLightmaps.length, false);
-
-            objectIndices.set(newObjectIndices);
-            renderer.updateAttribute(objectsObject.geometry.attributes.objectIndex, index * objectIndices.length, newObjectIndices.length, false);
-
             indices.set(newIndices);
-            renderer.updateAttribute(objectsObject.geometry.index, index * indices.length, newIndices.length, true);
+            objectIndices.set(newObjectIndices);
+
+            const newPositionsLength = newPositions.length;
+            const newUvsLength = newUvs.length;
+            const newFramesLength = newFrames.length;
+            const newSkyLightmapsLength = newSkyLightmaps.length;
+            const newTorchLightmapsLength = newTorchLightmaps.length;
+            const newIndicesLength = newIndices.length;
+            const newObjectIndicesLength = newObjectIndices.length;
+/* x === -1 && z === -1 && (window._trigger = () => {
+  // objectsObject.geometry.index.array.fill(0);
+  // renderer.updateAttribute(objectsObject.geometry.index, 0, objectsObject.geometry.index.array.length, true);
+  heightfieldElement.requestFrame(next => {
+    const _recurse = i => {
+      if (i < 100) {
+        objectsObject.renderList.splice(objectsObject.renderList.indexOf(renderListEntry), 1);
+        // objectsObject.visible = false;
+
+        const gbuffer = geometries.alloc();
+        const {index, slices: {positions, uvs, frames, skyLightmaps, torchLightmaps, objectIndices, indices}} = gbuffer;
+        renderer.updateAttribute(objectsObject.geometry.attributes.position, index * positions.length, newPositionsLength, false);
+        renderer.updateAttribute(objectsObject.geometry.attributes.uv, index * uvs.length, newUvsLength, false);
+        renderer.updateAttribute(objectsObject.geometry.attributes.frame, index * frames.length, newFramesLength, false);
+        renderer.updateAttribute(objectsObject.geometry.attributes.skyLightmap, index * skyLightmaps.length, newSkyLightmapsLength, false);
+        renderer.updateAttribute(objectsObject.geometry.attributes.torchLightmap, index * torchLightmaps.length, newTorchLightmapsLength, false);
+        renderer.updateAttribute(objectsObject.geometry.index, index * indices.length, newIndicesLength, true);
+        renderer.updateAttribute(objectsObject.geometry.attributes.objectIndex, index * objectIndices.length, newObjectIndicesLength, false);
+        renderer.getContext().flush();
+        // renderer.getContext().finish();
+
+        requestAnimationFrame(() => {
+          objectsObject.renderList.push(renderListEntry);
+          // objectsObject.visible = true;
+
+          // objectsObject.geometry.index.array.subarray(index * indices.length, newIndicesLength).fill(0);
+          // renderer.updateAttribute(objectsObject.geometry.index, index * indices.length, newIndicesLength, true);
+          geometries.free(gbuffer);
+
+          requestAnimationFrame(() => {
+            _recurse(i + 1);
+          });
+        });
+      } else {
+console.log('done');
+        next();
+      }
+    };
+    _recurse(0);
+  });
+}); */
+            heightfieldElement.requestFrame(next => {
+              renderListEntry.visible = false;
+
+              renderer.updateAttribute(geometry.attributes.position, index * positions.length, newPositionsLength, false);
+              renderer.updateAttribute(geometry.attributes.uv, index * uvs.length, newUvsLength, false);
+              renderer.updateAttribute(geometry.attributes.frame, index * frames.length, newFramesLength, false);
+              renderer.updateAttribute(geometry.attributes.skyLightmap, index * skyLightmaps.length, newSkyLightmapsLength, false);
+              renderer.updateAttribute(geometry.attributes.torchLightmap, index * torchLightmaps.length, newTorchLightmapsLength, false);
+              renderer.updateAttribute(geometry.index, index * indices.length, newIndicesLength, true);
+              renderer.updateAttribute(geometry.attributes.objectIndex, index * objectIndices.length, newObjectIndicesLength, false);
+              // renderer.getContext().flush();
+
+              requestAnimationFrame(() => {
+                renderListEntry.visible = true;
+
+                next();
+              });
+            });
           }
         },
         destroy: () => {
-          geometryBuffer.free(gbuffer);
+          geometries.free(gbuffer);
         },
       };
     };
@@ -1032,9 +1090,10 @@ void main() {
 
     const objectsChunkMeshes = {};
 
-    const geometryBuffer = sbffr(
+    const NUM_GEOMETRIES = 4;
+    const _makeGeometryBuffer = () => sbffr(
       NUM_POSITIONS_CHUNK,
-      RANGE * 2 * RANGE * 2 + RANGE * 2,
+      (RANGE * RANGE * 2 + RANGE * 2) / NUM_GEOMETRIES,
       [
         {
           name: 'positions',
@@ -1073,34 +1132,123 @@ void main() {
         }
       ]
     );
+    const geometries = (() => {
+      const geometryBuffers = Array(NUM_GEOMETRIES);
+      for (let i = 0; i < NUM_GEOMETRIES; i++) {
+        geometryBuffers[i] = _makeGeometryBuffer();
+      }
+
+      const geometries = Array(NUM_GEOMETRIES);
+      for (let i = 0; i < NUM_GEOMETRIES; i++) {
+        const geometry = new THREE.BufferGeometry();
+
+        const {positions, uvs, frames, skyLightmaps, torchLightmaps, objectIndices, indices} = geometryBuffers[i].getAll();
+
+        const positionAttribute = new THREE.BufferAttribute(positions, 3);
+        positionAttribute.dynamic = true;
+        geometry.addAttribute('position', positionAttribute);
+        const uvAttribute = new THREE.BufferAttribute(uvs, 2);
+        uvAttribute.dynamic = true;
+        geometry.addAttribute('uv', uvAttribute);
+        const frameAttribute = new THREE.BufferAttribute(frames, 3);
+        frameAttribute.dynamic = true;
+        geometry.addAttribute('frame', frameAttribute);
+        const skyLightmapAttribute = new THREE.BufferAttribute(skyLightmaps, 1, true);
+        skyLightmapAttribute.dynamic = true;
+        geometry.addAttribute('skyLightmap', skyLightmapAttribute);
+        const torchLightmapAttribute = new THREE.BufferAttribute(torchLightmaps, 1, true);
+        torchLightmapAttribute.dynamic = true;
+        geometry.addAttribute('torchLightmap', torchLightmapAttribute);
+        const objectIndexAttribute = new THREE.BufferAttribute(objectIndices, 1);
+        objectIndexAttribute.dynamic = true;
+        geometry.addAttribute('objectIndex', objectIndexAttribute);
+        const indexAttribute = new THREE.BufferAttribute(indices, 1);
+        indexAttribute.dynamic = true;
+        geometry.setIndex(indexAttribute);
+
+        renderer.updateAttribute(geometry.attributes.position, 0, geometry.attributes.position.array.length, false);
+        renderer.updateAttribute(geometry.attributes.uv, 0, geometry.attributes.uv.array.length, false);
+        renderer.updateAttribute(geometry.attributes.frame, 0, geometry.attributes.frame.array.length, false);
+        renderer.updateAttribute(geometry.attributes.skyLightmap, 0, geometry.attributes.skyLightmap.array.length, false);
+        renderer.updateAttribute(geometry.attributes.torchLightmap, 0, geometry.attributes.torchLightmap.array.length, false);
+        renderer.updateAttribute(geometry.index, 0, geometry.index.array.length, true);
+
+        geometries[i] = geometry;
+      }
+
+      return {
+        alloc() {
+          for (let i = 0; i < geometryBuffers.length; i++) {
+            const geometryBuffer = geometryBuffers[i];
+            const gbuffer = geometryBuffer.alloc();
+            if (gbuffer) {
+              gbuffer.geometry = geometries[i];
+              gbuffer.geometryBuffer = geometryBuffer;
+              return gbuffer;
+            }
+          }
+          return null;
+        },
+        free(gbuffer) {
+          gbuffer.geometryBuffer.free(gbuffer);
+        },
+      };
+    })();
     const objectsObject = (() => {
-      const {positions, uvs, frames, skyLightmaps, torchLightmaps, objectIndices, indices} = geometryBuffer.getAll();
+      /* const {positions, uvs, frames, skyLightmaps, torchLightmaps, objectIndices, indices} = geometryBuffer.getAll();
 
       const geometry = new THREE.BufferGeometry();
+
       const positionAttribute = new THREE.BufferAttribute(positions, 3);
       positionAttribute.dynamic = true;
-      geometry.addAttribute('position', positionAttribute);
       const uvAttribute = new THREE.BufferAttribute(uvs, 2);
       uvAttribute.dynamic = true;
-      geometry.addAttribute('uv', uvAttribute);
       const frameAttribute = new THREE.BufferAttribute(frames, 3);
       frameAttribute.dynamic = true;
-      geometry.addAttribute('frame', frameAttribute);
       const skyLightmapAttribute = new THREE.BufferAttribute(skyLightmaps, 1, true);
       skyLightmapAttribute.dynamic = true;
-      geometry.addAttribute('skyLightmap', skyLightmapAttribute);
       const torchLightmapAttribute = new THREE.BufferAttribute(torchLightmaps, 1, true);
       torchLightmapAttribute.dynamic = true;
-      geometry.addAttribute('torchLightmap', torchLightmapAttribute);
       const objectIndexAttribute = new THREE.BufferAttribute(objectIndices, 1);
       objectIndexAttribute.dynamic = true;
-      geometry.addAttribute('objectIndex', objectIndexAttribute);
+      geometry.attributes = {
+        position: positionAttribute,
+        uv: uvAttribute,
+        frame: frameAttribute,
+        skyLightmap: skyLightmapAttribute,
+        torchLightmap: torchLightmapAttribute,
+        objectIndex: objectIndexAttribute,
+      };
       const indexAttribute = new THREE.BufferAttribute(indices, 1);
       indexAttribute.dynamic = true;
       geometry.setIndex(indexAttribute);
 
-      const mesh = new THREE.Mesh(geometry, null);
-      mesh.frustumCulled = false;
+      const positionAttribute2 = new THREE.BufferAttribute(positions, 3);
+      positionAttribute2.dynamic = true;
+      const uvAttribute2 = new THREE.BufferAttribute(uvs, 2);
+      uvAttribute2.dynamic = true;
+      const frameAttribute2 = new THREE.BufferAttribute(frames, 3);
+      frameAttribute2.dynamic = true;
+      const skyLightmapAttribute2 = new THREE.BufferAttribute(skyLightmaps, 1, true);
+      skyLightmapAttribute2.dynamic = true;
+      const torchLightmapAttribute2 = new THREE.BufferAttribute(torchLightmaps, 1, true);
+      torchLightmapAttribute2.dynamic = true;
+      const objectIndexAttribute2 = new THREE.BufferAttribute(objectIndices, 1);
+      objectIndexAttribute2.dynamic = true;
+      geometry.attributes2 = {
+        position: positionAttribute2,
+        uv: uvAttribute2,
+        frame: frameAttribute2,
+        skyLightmap: skyLightmapAttribute2,
+        torchLightmap: torchLightmapAttribute2,
+        objectIndex: objectIndexAttribute2,
+      };
+      const indexAttribute2 = new THREE.BufferAttribute(indices, 1);
+      indexAttribute2.dynamic = true;
+      geometry.index2 = indexAttribute2; */
+
+      const mesh = new THREE.Object3D();
+      // mesh.frustumCulled = false;
       mesh.updateModelViewMatrix = _updateModelViewMatrix;
       mesh.updateNormalMatrix = _updateNormalMatrix;
       mesh.renderList = [];
@@ -1122,7 +1270,7 @@ void main() {
         running = true;
 
         const {x, z} = chunk;
-        const gbuffer = geometryBuffer.alloc();
+        const gbuffer = geometries.alloc();
         _requestObjectsGenerate(x, z, gbuffer.index, gbuffer.slices.positions.length, gbuffer.slices.objectIndices.length, gbuffer.slices.indices.length, objectsChunkData => {
           const index = _getChunkIndex(x, z);
 
