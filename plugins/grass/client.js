@@ -183,50 +183,6 @@ class Grass {
       live  = false;
     };
 
-    /* const _ensureHeightfieldElement = () => elements.requestElement(HEIGHTFIELD_PLUGIN)
-      .then(() => {}); */
-
-    /* let lightmapper = null;
-    const _bindLightmapper = lightmapElement => {
-      lightmapper = lightmapElement.lightmapper;
-
-      // _bindLightmaps();
-    };
-    const _unbindLightmapper = () => {
-      // _unbindLightmaps();
-
-      lightmapper = null;
-    };
-    const _bindLightmaps = () => {
-      for (const index in grassChunkMeshes) {
-        const grassChunkMesh = grassChunkMeshes[index];
-        if (grassChunkMesh) {
-          _bindLightmap(grassChunkMesh);
-        }
-      }
-    };
-    const _unbindLightmaps = () => {
-      for (const index in grassChunkMeshes) {
-        const grassChunkMesh = grassChunkMeshes[index];
-        if (grassChunkMesh && grassChunkMesh.lightmap) {
-          _unbindLightmap(grassChunkMesh);
-        }
-      }
-    };
-    const _bindLightmap = grassChunkMesh => {
-      const lightmap = lightmapper.getLightmapAt(grassChunkMesh.offset.x * NUM_CELLS, grassChunkMesh.offset.y * NUM_CELLS);
-      grassChunkMesh.material.uniforms.lightMap.value = lightmap.texture;
-      grassChunkMesh.material.uniforms.useLightMap.value = 1;
-      grassChunkMesh.lightmap = lightmap;
-    };
-    const _unbindLightmap = grassChunkMesh => {
-      const {lightmap} = grassChunkMesh;
-      lightmapper.releaseLightmap(lightmap);
-      grassChunkMesh.material.uniforms.lightMap.value = null;
-      grassChunkMesh.material.uniforms.useLightMap.value = 0;
-      grassChunkMesh.lightmap = null;
-    }; */
-
     const NUM_GEOMETRIES = 4;
     const _makeGeometryBuffer = () => sbffr(
       NUM_POSITIONS_CHUNK,
@@ -344,116 +300,6 @@ class Grass {
 
     const grassChunkMeshes = {};
 
-    /* let refreshingLightmaps = false;
-    const refreshingLightmapsQueue = [];
-    const _refreshLightmaps = refreshed => {
-      if (!refreshingLightmaps) {
-        refreshingLightmaps = true;
-
-        (() => {
-          let wordOffset = 0;
-          const uint32Array = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset);
-          const int32Array = new Int32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset);
-
-          uint32Array[wordOffset] = refreshed.length;
-          wordOffset++;
-          for (let i = 0; i < refreshed.length; i++) {
-            const trackedGrassChunkMeshes = refreshed[i];
-
-            if (trackedGrassChunkMeshes) {
-               const {offset: {x, y}} = trackedGrassChunkMeshes;
-
-              int32Array[wordOffset + 0] = x;
-              int32Array[wordOffset + 1] = y;
-              wordOffset += 2;
-            }
-          }
-        })();
-
-        worker.requestLightmaps(lightmapBuffer, newLightmapBuffer => {
-          const uint32Array = new Uint32Array(newLightmapBuffer.buffer, newLightmapBuffer.byteOffset);
-          const int32Array = new Int32Array(newLightmapBuffer.buffer, newLightmapBuffer.byteOffset);
-
-          let byteOffset = 0;
-          const numLightmaps = uint32Array[byteOffset / 4];
-          byteOffset += 4;
-
-          for (let i = 0; i < numLightmaps; i++) {
-            const x = int32Array[byteOffset / 4];
-            byteOffset += 4;
-            const z = int32Array[byteOffset / 4];
-            byteOffset += 4;
-
-            const skyLightmapsLength = uint32Array[byteOffset / 4];
-            byteOffset += 4;
-
-            const newSkyLightmaps = new Uint8Array(newLightmapBuffer.buffer, newLightmapBuffer.byteOffset + byteOffset, skyLightmapsLength);
-            byteOffset += skyLightmapsLength;
-            let alignDiff = byteOffset % 4;
-            if (alignDiff > 0) {
-              byteOffset += 4 - alignDiff;
-            }
-
-            const torchLightmapsLength = uint32Array[byteOffset / 4];
-            byteOffset += 4;
-
-            const newTorchLightmaps = new Uint8Array(newLightmapBuffer.buffer, newLightmapBuffer.byteOffset + byteOffset, torchLightmapsLength);
-            byteOffset += torchLightmapsLength;
-            alignDiff = byteOffset % 4;
-            if (alignDiff > 0) {
-              byteOffset += 4 - alignDiff;
-            }
-
-            const trackedGrassChunkMeshes = grassChunkMeshes[_getChunkIndex(x, z)];
-            if (trackedGrassChunkMeshes) {
-              if (newSkyLightmaps.length > 0) {
-                const {index, skyLightmaps} = trackedGrassChunkMeshes;
-                skyLightmaps.set(newSkyLightmaps);
-                renderer.updateAttribute(grassMesh.geometry.attributes.skyLightmap, index * skyLightmaps.length, newSkyLightmaps.length, false);
-              }
-              if (newTorchLightmaps.length > 0) {
-                const {index, torchLightmaps} = trackedGrassChunkMeshes;
-                torchLightmaps.set(newTorchLightmaps);
-                renderer.updateAttribute(grassMesh.geometry.attributes.torchLightmap, index * torchLightmaps.length, newTorchLightmaps.length, false);
-              }
-            }
-          }
-
-          lightmapBuffer = newLightmapBuffer;
-
-          refreshingLightmaps = false;
-          if (refreshingLightmapsQueue.length > 0) {
-            _refreshLightmaps(refreshingLightmapsQueue.shift());
-          }
-        });
-      } else {
-        refreshingLightmapsQueue.push(refreshed);
-      }
-    }; */
-
-    /* const elementListener = elements.makeListener(LIGHTMAP_PLUGIN);
-    elementListener.on('add', lightmapElement => {
-      lightmapElement.lightmapper.on('update', ([minX, minZ, maxX, maxZ]) => {
-        const refreshed = [];
-        for (const index in grassChunkMeshes) {
-          const grassChunkMesh = grassChunkMeshes[index];
-          if (grassChunkMesh) {
-            const {offset: {x, y: z}} = grassChunkMesh;
-
-            if (x >= minX && x < maxX && z >= minZ && z < maxZ) {
-              refreshed.push(grassChunkMesh);
-            }
-          }
-        }
-        if (refreshed.length > 0) {
-          _refreshLightmaps(refreshed);
-        }
-      });
-    }); */
-    /* elementListener.on('remove', () => {
-      _unbindLightmapper();
-    }); */
-
     let generateBuffer = new ArrayBuffer(NUM_POSITIONS_CHUNK);
     // let lightmapBuffer = new Uint8Array(LIGHTMAP_BUFFER_SIZE * NUM_BUFFERS);
     let cullBuffer = new ArrayBuffer(100 * 1024);
@@ -474,25 +320,22 @@ class Grass {
       }
     };
     worker.requestGenerate = (x, y, index, numPositions, numIndices, cb) => {
-      // _ensureHeightfieldElement()
-        // .then(() => new Promise((accept, reject) => {
-          const id = _makeId();
-          worker.postMessage({
-            type: 'generate',
-            id,
-            x,
-            y,
-            index,
-            numPositions,
-            numIndices,
-            buffer: generateBuffer,
-          }, [generateBuffer]);
-          queues[id] = newGenerateBuffer => {
-            generateBuffer = newGenerateBuffer;
+      const id = _makeId();
+      worker.postMessage({
+        type: 'generate',
+        id,
+        x,
+        y,
+        index,
+        numPositions,
+        numIndices,
+        buffer: generateBuffer,
+      }, [generateBuffer]);
+      queues[id] = newGenerateBuffer => {
+        generateBuffer = newGenerateBuffer;
 
-            cb(newGenerateBuffer);
-          };
-        // }));
+        cb(newGenerateBuffer);
+      };
     };
     worker.requestUngenerate = (x, y) => {
       worker.postMessage({
@@ -652,8 +495,9 @@ class Grass {
               geometry,
               material,
               groups: [],
-              visible: true,
+              visible: false,
             };
+            let version = 0;
 
             const mesh = {
               renderListEntry,
@@ -661,18 +505,17 @@ class Grass {
               offset: new THREE.Vector2(x, z),
               skyLightmaps,
               torchLightmaps,
-              // lightmap: null,
               destroy: () => {
-                geometries.free(gbuffer);
+                version++;
 
-                /* if (mesh.lightmap) {
-                  _unbindLightmap(mesh);
-                } */
+                geometries.free(gbuffer);
               },
             };
 
             const heightfieldElement = elements.getEntitiesElement().querySelector(HEIGHTFIELD_PLUGIN)
             if (newPositions.length > 0 && heightfieldElement) {
+              version++;
+
               positions.set(newPositions);
               uvs.set(newUvs);
               skyLightmaps.set(newSkyLightmaps);
@@ -684,21 +527,27 @@ class Grass {
               const newSkyLightmapsLength = newSkyLightmaps.length;
               const newTorchLightmapsLength = newTorchLightmaps.length;
               const newIndicesLength = newIndices.length;
+
+              const localVersion = version;
               heightfieldElement.requestFrame(next => {
-                renderListEntry.visible = false;
+                if (version === localVersion) {
+                  renderListEntry.visible = false;
 
-                renderer.updateAttribute(geometry.attributes.position, index * positions.length, newPositionsLength, false);
-                renderer.updateAttribute(geometry.attributes.uv, index * uvs.length, newUvsLength, false);
-                renderer.updateAttribute(geometry.attributes.skyLightmap, index * skyLightmaps.length, newSkyLightmapsLength, false);
-                renderer.updateAttribute(geometry.attributes.torchLightmap, index * torchLightmaps.length, newTorchLightmapsLength, false);
-                renderer.updateAttribute(geometry.index, index * indices.length, newIndicesLength, true);
-                // renderer.getContext().finish();
+                  renderer.updateAttribute(geometry.attributes.position, index * positions.length, newPositionsLength, false);
+                  renderer.updateAttribute(geometry.attributes.uv, index * uvs.length, newUvsLength, false);
+                  renderer.updateAttribute(geometry.attributes.skyLightmap, index * skyLightmaps.length, newSkyLightmapsLength, false);
+                  renderer.updateAttribute(geometry.attributes.torchLightmap, index * torchLightmaps.length, newTorchLightmapsLength, false);
+                  renderer.updateAttribute(geometry.index, index * indices.length, newIndicesLength, true);
+                  // renderer.getContext().flush();
 
-                requestAnimationFrame(() => {
-                  renderListEntry.visible = true;
+                  requestAnimationFrame(() => {
+                    renderListEntry.visible = true;
 
+                    next();
+                  });
+                } else {
                   next();
-                });
+                }
               });
             }
 
