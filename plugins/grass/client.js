@@ -9,7 +9,7 @@ const protocolUtils = require('./lib/utils/protocol-utils');
 
 const NUM_POSITIONS_CHUNK = 200 * 1024;
 // const LIGHTMAP_BUFFER_SIZE = 100 * 1024 * 4;
-const NUM_BUFFERS = RANGE * RANGE * 9;
+// const NUM_BUFFERS = RANGE * RANGE + RANGE;
 const TEXTURE_SIZE = 1024;
 const HEIGHTFIELD_PLUGIN = 'plugins-heightfield';
 // const LIGHTMAP_PLUGIN = 'plugins-lightmap';
@@ -227,9 +227,10 @@ class Grass {
       grassChunkMesh.lightmap = null;
     }; */
 
-    const geometryBuffer = sbffr(
+    const NUM_GEOMETRIES = 4;
+    const _makeGeometryBuffer = () => sbffr(
       NUM_POSITIONS_CHUNK,
-      RANGE * 2 * RANGE * 2 + RANGE * 2,
+      (RANGE * RANGE * 2 + RANGE * 2) / NUM_GEOMETRIES,
       [
         {
           name: 'positions',
@@ -258,8 +259,63 @@ class Grass {
         }
       ]
     );
+    const geometries = (() => {
+      const geometryBuffers = Array(NUM_GEOMETRIES);
+      for (let i = 0; i < NUM_GEOMETRIES; i++) {
+        geometryBuffers[i] = _makeGeometryBuffer();
+      }
+
+      const geometries = Array(NUM_GEOMETRIES);
+      for (let i = 0; i < NUM_GEOMETRIES; i++) {
+        const geometry = new THREE.BufferGeometry();
+
+        const {positions, uvs, skyLightmaps, torchLightmaps, indices} = geometryBuffers[i].getAll();
+
+        const positionAttribute = new THREE.BufferAttribute(positions, 3);
+        positionAttribute.dynamic = true;
+        geometry.addAttribute('position', positionAttribute);
+        const uvAttribute = new THREE.BufferAttribute(uvs, 2);
+        uvAttribute.dynamic = true;
+        geometry.addAttribute('uv', uvAttribute);
+        const skyLightmapAttribute = new THREE.BufferAttribute(skyLightmaps, 1, true);
+        skyLightmapAttribute.dynamic = true;
+        geometry.addAttribute('skyLightmap', skyLightmapAttribute);
+        const torchLightmapsAttribute = new THREE.BufferAttribute(torchLightmaps, 1, true);
+        torchLightmapsAttribute.dynamic = true;
+        geometry.addAttribute('torchLightmap', torchLightmapsAttribute);
+        const indexAttribute = new THREE.BufferAttribute(indices, 1);
+        indexAttribute.dynamic = true;
+        geometry.setIndex(indexAttribute);
+
+        renderer.updateAttribute(geometry.attributes.position, 0, geometry.attributes.position.array.length, false);
+        renderer.updateAttribute(geometry.attributes.uv, 0, geometry.attributes.uv.array.length, false);
+        renderer.updateAttribute(geometry.attributes.skyLightmap, 0, geometry.attributes.skyLightmap.array.length, false);
+        renderer.updateAttribute(geometry.attributes.torchLightmap, 0, geometry.attributes.torchLightmap.array.length, false);
+        renderer.updateAttribute(geometry.index, 0, geometry.index.array.length, true);
+
+        geometries[i] = geometry;
+      }
+
+      return {
+        alloc() {
+          for (let i = 0; i < geometryBuffers.length; i++) {
+            const geometryBuffer = geometryBuffers[i];
+            const gbuffer = geometryBuffer.alloc();
+            if (gbuffer) {
+              gbuffer.geometry = geometries[i];
+              gbuffer.geometryBuffer = geometryBuffer;
+              return gbuffer;
+            }
+          }
+          return null;
+        },
+        free(gbuffer) {
+          gbuffer.geometryBuffer.free(gbuffer);
+        },
+      };
+    })();
     const grassMesh = (() => {
-      const {positions, uvs, skyLightmaps, torchLightmaps, indices} = geometryBuffer.getAll();
+      /* const {positions, uvs, skyLightmaps, torchLightmaps, indices} = geometryBuffer.getAll();
 
       const geometry = new THREE.BufferGeometry();
       const positionAttribute = new THREE.BufferAttribute(positions, 3);
@@ -276,10 +332,9 @@ class Grass {
       geometry.addAttribute('torchLightmap', torchLightmapsAttribute);
       const indexAttribute = new THREE.BufferAttribute(indices, 1);
       indexAttribute.dynamic = true;
-      geometry.setIndex(indexAttribute);
+      geometry.setIndex(indexAttribute); */
 
-      const mesh = new THREE.Mesh(geometry, null);
-      mesh.frustumCulled = false;
+      const mesh = new THREE.Object3D();
       mesh.updateModelViewMatrix = _updateModelViewMatrix;
       mesh.updateNormalMatrix = _updateNormalMatrix;
       mesh.renderList = [];
@@ -401,7 +456,7 @@ class Grass {
 
     let generateBuffer = new ArrayBuffer(NUM_POSITIONS_CHUNK);
     // let lightmapBuffer = new Uint8Array(LIGHTMAP_BUFFER_SIZE * NUM_BUFFERS);
-    let cullBuffer = new ArrayBuffer(4096);
+    let cullBuffer = new ArrayBuffer(100 * 1024);
     const worker = new Worker('archae/plugins/_plugins_grass/build/worker.js');
     let queues = {};
     let numRemovedQueues = 0;
@@ -586,57 +641,66 @@ class Grass {
           };
           const _makeGrassChunkMesh = (chunk, gbuffer, grassChunkData) => {
             const {x, z} = chunk;
+
+            const {index, geometry, slices: {positions, uvs, skyLightmaps, torchLightmaps, indices}} = gbuffer;
             const {positions: newPositions, uvs: newUvs, skyLightmaps: newSkyLightmaps, torchLightmaps: newTorchLightmaps, indices: newIndices} = grassChunkData;
-
-            // geometry
-
-            const {index, slices: {positions, uvs, skyLightmaps, torchLightmaps, indices}} = gbuffer;
-
-            if (newPositions.length > 0) {
-              positions.set(newPositions);
-              renderer.updateAttribute(grassMesh.geometry.attributes.position, index * positions.length, newPositions.length, false);
-
-              uvs.set(newUvs);
-              renderer.updateAttribute(grassMesh.geometry.attributes.uv, index * uvs.length, newUvs.length, false);
-
-              skyLightmaps.set(newSkyLightmaps);
-              renderer.updateAttribute(grassMesh.geometry.attributes.skyLightmap, index * skyLightmaps.length, newSkyLightmaps.length, false);
-
-              torchLightmaps.set(newTorchLightmaps);
-              renderer.updateAttribute(grassMesh.geometry.attributes.torchLightmap, index * torchLightmaps.length, newTorchLightmaps.length, false);
-
-              indices.set(newIndices);
-              renderer.updateAttribute(grassMesh.geometry.index, index * indices.length, newIndices.length, true);
-            }
-
-            // material
 
             const material = grassMaterial;
 
-            // mesh
+            const renderListEntry = {
+              object: grassMesh,
+              geometry,
+              material,
+              groups: [],
+              visible: true,
+            };
 
             const mesh = {
-              material,
-              renderListEntry: {
-                object: grassMesh,
-                material: material,
-                groups: [],
-              },
+              renderListEntry,
               index,
               offset: new THREE.Vector2(x, z),
               skyLightmaps,
               torchLightmaps,
               // lightmap: null,
               destroy: () => {
-                geometryBuffer.free(gbuffer);
-
-                material.dispose();
+                geometries.free(gbuffer);
 
                 /* if (mesh.lightmap) {
                   _unbindLightmap(mesh);
                 } */
               },
             };
+
+            const heightfieldElement = elements.getEntitiesElement().querySelector(HEIGHTFIELD_PLUGIN)
+            if (newPositions.length > 0 && heightfieldElement) {
+              positions.set(newPositions);
+              uvs.set(newUvs);
+              skyLightmaps.set(newSkyLightmaps);
+              torchLightmaps.set(newTorchLightmaps);
+              indices.set(newIndices);
+
+              const newPositionsLength = newPositions.length;
+              const newUvsLength = newUvs.length;
+              const newSkyLightmapsLength = newSkyLightmaps.length;
+              const newTorchLightmapsLength = newTorchLightmaps.length;
+              const newIndicesLength = newIndices.length;
+              heightfieldElement.requestFrame(next => {
+                renderListEntry.visible = false;
+
+                renderer.updateAttribute(geometry.attributes.position, index * positions.length, newPositionsLength, false);
+                renderer.updateAttribute(geometry.attributes.uv, index * uvs.length, newUvsLength, false);
+                renderer.updateAttribute(geometry.attributes.skyLightmap, index * skyLightmaps.length, newSkyLightmapsLength, false);
+                renderer.updateAttribute(geometry.attributes.torchLightmap, index * torchLightmaps.length, newTorchLightmapsLength, false);
+                renderer.updateAttribute(geometry.index, index * indices.length, newIndicesLength, true);
+                // renderer.getContext().finish();
+
+                requestAnimationFrame(() => {
+                  renderListEntry.visible = true;
+
+                  next();
+                });
+              });
+            }
 
             return mesh;
           };
@@ -655,7 +719,7 @@ class Grass {
               running = true;
 
               const {x, z} = chunk;
-              const gbuffer = geometryBuffer.alloc();
+              const gbuffer = geometries.alloc();
               _requestGrassGenerate(x, z, gbuffer.index, gbuffer.slices.positions.length, gbuffer.slices.indices.length, grassChunkData => {
                 const grassChunkMesh = _makeGrassChunkMesh(chunk, gbuffer, grassChunkData);
                 // stage.add('main', grassChunkMesh);
