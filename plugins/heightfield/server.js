@@ -33,6 +33,7 @@ class Heightfield {
       three: {THREE},
       elements,
       utils: {
+        js: {mod},
         hash: {murmur},
         random: {indev},
       },
@@ -40,6 +41,7 @@ class Heightfield {
 
     const generator = generatorLib({
       THREE,
+      mod,
       murmur,
       indev,
     });

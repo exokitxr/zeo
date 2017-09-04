@@ -21,6 +21,7 @@ const {
   PEEK_FACE_INDICES,
 } = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
+_PEEK_FACES = PEEK_FACES;
 
 const LIGHTMAP_BUFFER_SIZE = 100 * 1024 * 4;
 
@@ -173,16 +174,19 @@ const _registerChunk = (chunk, index, numIndices) => {
 
   const trackedMapChunkMeshes = {
     array: Array(NUM_CHUNKS_HEIGHT),
-    groups: new Int32Array(NUM_RENDER_GROUPS * 2),
+    groups: new Int32Array(NUM_RENDER_GROUPS * 4),
   };
   for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
     const {indexRange, boundingSphere, peeks} = chunk.chunkData.geometries[i];
     const indexOffset = index * numIndices;
+
     trackedMapChunkMeshes.array[i] = {
       offset: new THREE.Vector3(x, i, z),
       indexRange: {
-        start: indexRange.start + indexOffset,
-        count: indexRange.count,
+        landStart: indexRange.landStart + indexOffset,
+        landCount: indexRange.landCount,
+        liquidStart: indexRange.liquidStart + indexOffset,
+        liquidCount: indexRange.liquidCount,
       },
       boundingSphere: new THREE.Sphere(
         new THREE.Vector3().fromArray(boundingSphere, 0),
@@ -238,37 +242,73 @@ const _unrequestChunk = (x, z) => {
   mapChunkMeshes[_getChunkIndex(x, z)] = null;
 };
 
+/* const _getFaceName = i => {
+  for (const k in PEEK_FACES) {
+    if (PEEK_FACES[k] === i) {
+      return k;
+    }
+  }
+  return null;
+};
+const PEEK_FACE_NAMES = (() => {
+  const result = Array(16);
+  let peekIndex = 0;
+  const cache = new Uint8Array(8 * 8);
+  cache.fill(0xFF);
+  for (let i = 0; i < 6; i++) {
+    for (let j = 0; j < 6; j++) {
+      if (i !== j) {
+        const otherEntry = cache[j << 3 | i];
+        const had = otherEntry !== 0xFF;
+        if (!had) {
+          result[peekIndex] = _getFaceName(i) + ':' + _getFaceName(j);
+        }
+        cache[i << 3 | j] = had ? otherEntry : peekIndex++;
+      }
+    }
+  }
+  return result;
+})();
+console.log('peeks', ox, oy, oz, Array.from(trackedMapChunkMesh.peeks).map((peek, i) => {
+  return peek ? PEEK_FACE_NAMES[i] : undefined;
+}).filter(v => v).join(', ')); */
+
 const localMatrix = new THREE.Matrix4();
 const localMatrix2 = new THREE.Matrix4();
 const localFrustum = new THREE.Frustum();
-const cullQueueMeshes = Array(256);
-for (let i = 0; i < cullQueueMeshes.length; i++) {
-  cullQueueMeshes[i] = null;
-}
-const cullQueueFaces = new Uint8Array(256);
+const cullQueueX = new Int32Array(100000);
+const cullQueueY = new Int32Array(100000);
+const cullQueueZ = new Int32Array(100000);
+const cullQueueFaces = new Uint8Array(100000);
 let cullQueueStart = 0;
 let cullQueueEnd = 0;
 let visibleIndex = 0;
+let max = 0;
 const _getCull = (hmdPosition, projectionMatrix, matrixWorldInverse) => {
   const ox = Math.floor(hmdPosition[0] / NUM_CELLS);
   const oy = Math.min(Math.max(Math.floor(hmdPosition[1] / NUM_CELLS), 0), NUM_CHUNKS_HEIGHT - 1);
   const oz = Math.floor(hmdPosition[2] / NUM_CELLS);
 
-  const trackedMapChunkMeshes = mapChunkMeshes[_getChunkIndex(ox, oz)];
+  const index =_getChunkIndex(ox, oz);
+  const trackedMapChunkMeshes = mapChunkMeshes[index];
   if (trackedMapChunkMeshes) {
     localFrustum.setFromMatrix(localMatrix.fromArray(projectionMatrix).multiply(localMatrix2.fromArray(matrixWorldInverse)));
 
     const trackedMapChunkMesh = trackedMapChunkMeshes.array[oy];
-    cullQueueMeshes[cullQueueEnd] = trackedMapChunkMesh;
+    cullQueueX[cullQueueEnd] = ox;
+    cullQueueY[cullQueueEnd] = oy;
+    cullQueueZ[cullQueueEnd] = oz;
     cullQueueFaces[cullQueueEnd] = PEEK_FACES.NULL;
-    cullQueueEnd = (cullQueueEnd + 1) % 256;
-    for (;cullQueueStart !== cullQueueEnd; cullQueueStart = (cullQueueStart + 1) % 256) {
-      const trackedMapChunkMesh = cullQueueMeshes[cullQueueStart];
-      const {offset: {x, y, z}} = trackedMapChunkMesh;
-      cullQueueMeshes[cullQueueStart] = null;
+    cullQueueEnd = (cullQueueEnd + 1) % 100000;
+    for (;cullQueueStart !== cullQueueEnd; cullQueueStart = (cullQueueStart + 1) % 100000) {
+      const x = cullQueueX[cullQueueStart];
+      const y = cullQueueY[cullQueueStart];
+      const z = cullQueueZ[cullQueueStart];
       const enterFace = cullQueueFaces[cullQueueStart];
 
+      const trackedMapChunkMesh = mapChunkMeshes[_getChunkIndex(x, z)].array[y];
       trackedMapChunkMesh.visibleIndex = visibleIndex;
+
       for (let j = 0; j < peekFaceSpecs.length; j++) {
         const peekFaceSpec = peekFaceSpecs[j];
         const ay = y + peekFaceSpec.y;
@@ -280,14 +320,17 @@ const _getCull = (hmdPosition, projectionMatrix, matrixWorldInverse) => {
             (ay - oy) * peekFaceSpec.y > 0 ||
             (az - oz) * peekFaceSpec.z > 0
           ) {
-            if (enterFace === PEEK_FACES.NULL || trackedMapChunkMesh.peeks[PEEK_FACE_INDICES[enterFace << 4 | peekFaceSpec.exitFace]] === 1) {
+            if (enterFace === PEEK_FACES.NULL || trackedMapChunkMesh.peeks[PEEK_FACE_INDICES[enterFace << 3 | peekFaceSpec.exitFace]] === 1) {
               const trackedMapChunkMeshes = mapChunkMeshes[_getChunkIndex(ax, az)];
               if (trackedMapChunkMeshes) {
                 const trackedMapChunkMesh = trackedMapChunkMeshes.array[ay];
+
                 if (localFrustum.intersectsSphere(trackedMapChunkMesh.boundingSphere)) {
-                  cullQueueMeshes[cullQueueEnd] = trackedMapChunkMesh;
+                  cullQueueX[cullQueueEnd] = ax;
+                  cullQueueY[cullQueueEnd] = ay;
+                  cullQueueZ[cullQueueEnd] = az;
                   cullQueueFaces[cullQueueEnd] = peekFaceSpec.enterFace;
-                  cullQueueEnd = (cullQueueEnd + 1) % 256;
+                  cullQueueEnd = (cullQueueEnd + 1) % 100000;
                 }
               }
             }
@@ -301,32 +344,54 @@ const _getCull = (hmdPosition, projectionMatrix, matrixWorldInverse) => {
     const trackedMapChunkMeshes = mapChunkMeshes[index];
     if (trackedMapChunkMeshes) {
       trackedMapChunkMeshes.groups.fill(-1);
-      let groupIndex = 0;
-      let start = -1;
-      let count = 0;
+      let landGroupIndex = 0;
+      let liquidGroupIndex = 0;
+      let landStart = -1;
+      let landCount = 0;
+      let liquidStart = -1;
+      let liquidCount = 0;
 
       for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) { // XXX optimize this direction
         const trackedMapChunkMesh = trackedMapChunkMeshes.array[i];
         if (trackedMapChunkMesh.visibleIndex === visibleIndex) {
-          if (start === -1) {
-            start = trackedMapChunkMesh.indexRange.start;
+          if (landStart === -1 && trackedMapChunkMesh.indexRange.landCount > 0) {
+            landStart = trackedMapChunkMesh.indexRange.landStart;
           }
-          count += trackedMapChunkMesh.indexRange.count;
+          landCount += trackedMapChunkMesh.indexRange.landCount;
+
+          if (liquidStart === -1 && trackedMapChunkMesh.indexRange.liquidCount > 0) {
+            liquidStart = trackedMapChunkMesh.indexRange.liquidStart;
+          }
+          liquidCount += trackedMapChunkMesh.indexRange.liquidCount;
         } else {
-          if (start !== -1) {
-            const baseIndex = groupIndex * 2;
-            trackedMapChunkMeshes.groups[baseIndex + 0] = start;
-            trackedMapChunkMeshes.groups[baseIndex + 1] = count;
-            groupIndex++;
-            start = -1;
-            count = 0;
+          if (landStart !== -1) {
+            const baseIndex = landGroupIndex * 4;
+            trackedMapChunkMeshes.groups[baseIndex + 0] = landStart;
+            trackedMapChunkMeshes.groups[baseIndex + 1] = landCount;
+            landGroupIndex++;
+            landStart = -1;
+            landCount = 0;
           }
+          if (liquidStart !== -1) {
+            const baseIndex = liquidGroupIndex * 4;
+            trackedMapChunkMeshes.groups[baseIndex + 2] = liquidStart;
+            trackedMapChunkMeshes.groups[baseIndex + 3] = liquidCount;
+            liquidGroupIndex++;
+            liquidStart = -1;
+            liquidCount = 0;
+          }
+
         }
       }
-      if (start !== -1) {
-        const baseIndex = groupIndex * 2;
-        trackedMapChunkMeshes.groups[baseIndex + 0] = start;
-        trackedMapChunkMeshes.groups[baseIndex + 1] = count;
+      if (landStart !== -1) {
+        const baseIndex = landGroupIndex * 4;
+        trackedMapChunkMeshes.groups[baseIndex + 0] = landStart;
+        trackedMapChunkMeshes.groups[baseIndex + 1] = landCount;
+      }
+      if (liquidStart !== -1) {
+        const baseIndex = liquidGroupIndex * 4;
+        trackedMapChunkMeshes.groups[baseIndex + 2] = liquidStart;
+        trackedMapChunkMeshes.groups[baseIndex + 3] = liquidCount;
       }
     }
   }

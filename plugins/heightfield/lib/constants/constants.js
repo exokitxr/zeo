@@ -9,7 +9,7 @@ const NUM_RENDER_GROUPS = NUM_CHUNKS_HEIGHT / 2;
 
 const HEIGHTFIELD_DEPTH = 8;
 
-const RANGE = 5;
+const RANGE = 10;
 
 const DEFAULT_SEED = 'a';
 
@@ -32,8 +32,8 @@ const PEEK_FACE_INDICES = (() => {
   for (let i = 0; i < 6; i++) {
     for (let j = 0; j < 6; j++) {
       if (i !== j) {
-        const otherEntry = result[j << 4 | i];
-        result[i << 4 | j] = otherEntry !== 0xFF ? otherEntry : peekIndex++;
+        const otherEntry = result[j << 3 | i];
+        result[i << 3 | j] = otherEntry !== 0xFF ? otherEntry : peekIndex++;
       }
     }
   }

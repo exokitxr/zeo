@@ -24,7 +24,7 @@ const _getDataChunkSizeFromMetadata = metadata => {
     _align(UINT8_SIZE * numSkyLightmaps, UINT32_SIZE) + // sky lightmaps
     _align(UINT8_SIZE * numTorchLightmaps, UINT32_SIZE) + // torch lightmaps
     (UINT32_SIZE * numIndices) + // indices
-    (UINT32_SIZE * 2 * NUM_CHUNKS_HEIGHT) + // index range
+    (UINT32_SIZE * 4 * NUM_CHUNKS_HEIGHT) + // index range
     (FLOAT32_SIZE * NUM_CHUNKS_HEIGHT) + // bounding sphere
     (UINT8_SIZE * _sum(numPeeks)) + // peeks
     (FLOAT32_SIZE * numHeightfield) + // heightfield
@@ -155,9 +155,9 @@ const stringifyDataChunk = (mapChunk, arrayBuffer, byteOffset) => {
     const geometry = geometries[i];
     const {indexRange, boundingSphere, peeks} = geometry;
 
-    const indexRangeBuffer = new Uint32Array(arrayBuffer, byteOffset, 2);
-    indexRangeBuffer.set(Uint32Array.from([indexRange.start, indexRange.count]));
-    byteOffset += UINT32_SIZE * 2;
+    const indexRangeBuffer = new Uint32Array(arrayBuffer, byteOffset, 4);
+    indexRangeBuffer.set(Uint32Array.from([indexRange.landStart, indexRange.landCount, indexRange.liquidStart, indexRange.liquidCount]));
+    byteOffset += UINT32_SIZE * 4;
 
     const boundingSphereBuffer = new Float32Array(arrayBuffer, byteOffset, 4);
     boundingSphereBuffer.set(boundingSphere);
@@ -238,12 +238,14 @@ const parseDataChunk = (buffer, byteOffset) => {
 
   const geometries = Array(NUM_CHUNKS_HEIGHT);
   for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
-    const indexRangeBuffer = new Uint32Array(buffer, byteOffset, 2);
+    const indexRangeBuffer = new Uint32Array(buffer, byteOffset, 4);
     const indexRange = {
-      start: indexRangeBuffer[0],
-      count: indexRangeBuffer[1],
+      landStart: indexRangeBuffer[0],
+      landCount: indexRangeBuffer[1],
+      liquidStart: indexRangeBuffer[2],
+      liquidCount: indexRangeBuffer[3],
     };
-    byteOffset += UINT32_SIZE * 2;
+    byteOffset += UINT32_SIZE * 4;
 
     const boundingSphereBuffer = new Float32Array(buffer, byteOffset, 4);
     const boundingSphere = boundingSphereBuffer;
@@ -305,7 +307,7 @@ const _getRenderChunkSizeFromMetadata = metadata => {
     _align(UINT8_SIZE * numSkyLightmaps, UINT32_SIZE) + // sky lightmaps
     _align(UINT8_SIZE * numTorchLightmaps, UINT32_SIZE) + // torch lightmaps
     (UINT32_SIZE * numIndices) + // indices
-    (UINT32_SIZE * 2 * NUM_CHUNKS_HEIGHT) + // index range
+    (UINT32_SIZE * 4 * NUM_CHUNKS_HEIGHT) + // index range
     (FLOAT32_SIZE * NUM_CHUNKS_HEIGHT) + // bounding sphere
     (UINT8_SIZE * _sum(numPeeks)) + // peeks
     (FLOAT32_SIZE * numHeightfield) + // heightfield
@@ -420,9 +422,9 @@ const stringifyRenderChunk = (mapChunk, arrayBuffer, byteOffset) => {
     const geometry = geometries[i];
     const {indexRange, boundingSphere, peeks} = geometry;
 
-    const indexRangeBuffer = new Uint32Array(arrayBuffer, byteOffset, 2);
-    indexRangeBuffer.set(Uint32Array.from([indexRange.start, indexRange.count]));
-    byteOffset += UINT32_SIZE * 2;
+    const indexRangeBuffer = new Uint32Array(arrayBuffer, byteOffset, 4);
+    indexRangeBuffer.set(Uint32Array.from([indexRange.landStart, indexRange.landCount, indexRange.liquidStart, indexRange.liquidCount]));
+    byteOffset += UINT32_SIZE * 4;
 
     const boundingSphereBuffer = new Float32Array(arrayBuffer, byteOffset, 4);
     boundingSphereBuffer.set(boundingSphere);
@@ -489,12 +491,14 @@ const parseRenderChunk = (buffer, byteOffset) => {
 
   const geometries = Array(NUM_CHUNKS_HEIGHT);
   for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
-    const indexRangeBuffer = new Uint32Array(buffer, byteOffset, 2);
+    const indexRangeBuffer = new Uint32Array(buffer, byteOffset, 4);
     const indexRange = {
-      start: indexRangeBuffer[0],
-      count: indexRangeBuffer[1],
+      landStart: indexRangeBuffer[0],
+      landCount: indexRangeBuffer[1],
+      liquidStart: indexRangeBuffer[2],
+      liquidCount: indexRangeBuffer[3],
     };
-    byteOffset += UINT32_SIZE * 2;
+    byteOffset += UINT32_SIZE * 4;
 
     const boundingSphereBuffer = new Float32Array(buffer, byteOffset, 4);
     const boundingSphere = boundingSphereBuffer;
@@ -577,9 +581,9 @@ const stringifyCull = (mapChunks, arrayBuffer, byteOffset) => {
       indexArray[0] = parseInt(index, 10);
       byteOffset += INT32_SIZE;
 
-      const groupsArray = new Int32Array(arrayBuffer, byteOffset, NUM_RENDER_GROUPS * 2);
+      const groupsArray = new Int32Array(arrayBuffer, byteOffset, NUM_RENDER_GROUPS * 4);
       groupsArray.set(trackedMapChunkMeshes.groups);
-      byteOffset += INT32_SIZE * 2 * NUM_RENDER_GROUPS;
+      byteOffset += INT32_SIZE * 4 * NUM_RENDER_GROUPS;
     }
   }
 
@@ -602,24 +606,35 @@ const parseCull = (buffer, byteOffset) => {
     const index = indexArray[0];
     byteOffset += INT32_SIZE;
 
-    const groups = [];
-    const groupsArray = new Int32Array(buffer, byteOffset, NUM_RENDER_GROUPS * 2);
+    const landGroups = [];
+    const liquidGroups = [];
+    const groupsArray = new Int32Array(buffer, byteOffset, NUM_RENDER_GROUPS * 4);
     for (let i = 0; i < NUM_RENDER_GROUPS; i++) {
-      const baseIndex = i * 2;
-      const start = groupsArray[baseIndex + 0];
-      if (start !== -1) {
-        groups.push({
-          start,
+      const baseIndex = i * 4;
+      const landStart = groupsArray[baseIndex + 0];
+      if (landStart !== -1) {
+        landGroups.push({
+          start: landStart,
           count: groupsArray[baseIndex + 1],
           materialIndex: 0,
         });
       }
+
+      const liquidStart = groupsArray[baseIndex + 2];
+      if (liquidStart !== -1) {
+        liquidGroups.push({
+          start: liquidStart,
+          count: groupsArray[baseIndex + 3],
+          materialIndex: 0,
+        });
+      }
     }
-    byteOffset += INT32_SIZE * 2 * NUM_RENDER_GROUPS;
+    byteOffset += INT32_SIZE * 4 * NUM_RENDER_GROUPS;
 
     mapChunks[i] = {
       index,
-      groups,
+      landGroups,
+      liquidGroups,
     };
   }
   return mapChunks;

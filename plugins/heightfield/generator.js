@@ -1,5 +1,6 @@
 module.exports = ({
   THREE,
+  mod,
   murmur,
   indev,
 }) => {
@@ -45,7 +46,7 @@ const _makeGeometries = (ox, oy, ether, liquid) => {
 
   const geometries = Array(NUM_CHUNKS_HEIGHT);
   for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
-    const {positions: newLandPositions, indices: newLandIndices} = mrch.marchingCubes(
+    const {positions: newPositions, indices: newIndices} = mrch.marchingCubes(
       [NUM_CELLS + 1, NUM_CELLS + 1, NUM_CELLS + 1],
       (x, y, z) => ether[_getEtherIndex(x, y, z)],
       [
@@ -53,10 +54,31 @@ const _makeGeometries = (ox, oy, ether, liquid) => {
         [NUM_CELLS + 1, (NUM_CELLS * (i + 1)) + 1, NUM_CELLS + 1],
       ]
     );
-    positions.set(newLandPositions, attributeIndex);
-    _copyIndices(newLandIndices, indices, indexIndex, attributeIndex / 3);
+    positions.set(newPositions, attributeIndex);
+    _copyIndices(newIndices, indices, indexIndex, attributeIndex / 3);
 
-    const {positions: newLiquidPositions, indices: newLiquidIndices} = mrch.marchingCubes(
+    geometries[i] = {
+      attributeRange: {
+        landStart: attributeIndex,
+        landCount: newPositions.length,
+        liquidStart: 0,
+        liquidCount: 0,
+      },
+      indexRange: {
+        landStart: indexIndex,
+        landCount: newIndices.length,
+        liquidStart: 0,
+        liquidCount: 0,
+      },
+      boundingSphere: null,
+      peeks: null,
+    };
+
+    attributeIndex += newPositions.length;
+    indexIndex += newIndices.length;
+  }
+  for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
+     const {positions: newPositions, indices: newIndices} = mrch.marchingCubes(
       [NUM_CELLS + 1, NUM_CELLS + 1, NUM_CELLS + 1],
       (x, y, z) => {
         const index = _getEtherIndex(x, y, z);
@@ -73,27 +95,19 @@ const _makeGeometries = (ox, oy, ether, liquid) => {
         [NUM_CELLS + 1, (NUM_CELLS * (i + 1)) + 1, NUM_CELLS + 1],
       ]
     );
-    positions.set(newLiquidPositions, attributeIndex + newLandPositions.length);
-    _copyIndices(newLiquidIndices, indices, indexIndex + newLandIndices.length, (attributeIndex + newLandPositions.length) / 3);
+    positions.set(newPositions, attributeIndex);
+    _copyIndices(newIndices, indices, indexIndex, attributeIndex / 3);
 
-    geometries[i] = {
-      attributeRange: {
-        start: attributeIndex,
-        landCount: newLandPositions.length,
-        count: newLandPositions.length + newLiquidPositions.length,
-      },
-      indexRange: {
-        start: indexIndex,
-        landCount: newLandIndices.length,
-        count: newLandIndices.length + newLiquidIndices.length,
-      },
-      boundingSphere: null,
-      peeks: null,
-    };
+    const {attributeRange, indexRange} = geometries[i];
+    attributeRange.liquidStart = attributeIndex;
+    attributeRange.liquidCount = newPositions.length;
+    indexRange.liquidStart = indexIndex;
+    indexRange.liquidCount = newIndices.length;
 
-    attributeIndex += newLandPositions.length + newLiquidPositions.length;
-    indexIndex += newLandIndices.length + newLiquidIndices.length;
+    attributeIndex += newPositions.length;
+    indexIndex += newIndices.length;
   }
+
   return {
     positions,
     indices,
@@ -232,13 +246,13 @@ const _generateMapChunk = (ox, oy, opts) => {
 
   const biomeHeightCache = {};
   const _getBiomeHeight = (biome, x, z) => {
-    const index = biome.index + x * 256 + z * 256 * 256;
+    const index = mod(biome.index, 64) + mod(x, 64) * 64 + mod(z, 64) * 64 * 64;
     let entry = biomeHeightCache[index];
     if (!entry) {
       entry = biome.baseHeight +
         _random.elevationNoise1.in2D(x * biome.amps[0][0], z * biome.amps[0][0]) * biome.amps[0][1] +
         _random.elevationNoise2.in2D(x * biome.amps[1][0], z * biome.amps[1][0]) * biome.amps[1][1] +
-        _random.elevationNoise3.in2D(x * biome.amps[2][0], z * biome.amps[2][0]) * biome.amps[2][1]
+        _random.elevationNoise3.in2D(x * biome.amps[2][0], z * biome.amps[2][0]) * biome.amps[2][1];
       biomeHeightCache[index] = entry;
     }
     return entry;
@@ -372,7 +386,7 @@ const _generateMapChunk = (ox, oy, opts) => {
   if (!liquid) {
     liquid = new Uint8Array((NUM_CELLS + 1) * (NUM_CELLS_HEIGHT + 1) * (NUM_CELLS + 1));
 
-    const _setLiquid = (x, y, z, v) => {
+    /* const _setLiquid = (x, y, z, v) => {
       x -= ox * NUM_CELLS;
       z -= oy * NUM_CELLS;
 
@@ -397,10 +411,22 @@ const _generateMapChunk = (ox, oy, opts) => {
           }
         }
       }
-    };
+    }; */
 
     // _setLiquid(6, Math.floor(elevations[_getCoordOverscanIndex(6, 16 - 3)]), -3, 1);
     // _setLiquid(6, Math.floor(elevations[_getCoordOverscanIndex(6, 16 - 4)]), -4, 1);
+
+    for (let z = 0; z <= NUM_CELLS; z++) {
+      for (let x = 0; x <= NUM_CELLS; x++) {
+        const elevation = elevations[_getCoordOverscanIndex(x, z)];
+
+        for (let y = 0; y <= NUM_CELLS_HEIGHT; y++) {
+          if (y < 64 && y >= elevation) {
+            liquid[_getEtherIndex(x, y, z)] = 1;
+          }
+        }
+      }
+    }
   }
   const numNewEthers = opts.newEther.length / 4;
   for (let i = 0; i < numNewEthers; i++) {
@@ -436,7 +462,6 @@ const _generateMapChunk = (ox, oy, opts) => {
     indexIndex,
     geometries,
   } = _makeGeometries(ox, oy, ether, liquid);
-// console.log('pos', attributeIndex, indexIndex);
   const colors = new Float32Array(NUM_POSITIONS_CHUNK);
   const skyLightmaps = new Uint8Array(NUM_POSITIONS_CHUNK);
   const torchLightmaps = new Uint8Array(NUM_POSITIONS_CHUNK);
@@ -483,13 +508,11 @@ const _generateMapChunk = (ox, oy, opts) => {
     }
   }
 
-  for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
-    const geometry = geometries[i];
-    const {attributeRange, indexRange} = geometry;
-    const geometryPositions = new Float32Array(positions.buffer, positions.byteOffset + attributeRange.start * 4, attributeRange.count);
-    const geometryColors = new Float32Array(colors.buffer, colors.byteOffset + attributeRange.start * 4, attributeRange.count);
-    const geometrySkyLightmaps = new Uint8Array(skyLightmaps.buffer, skyLightmaps.byteOffset + attributeRange.start / 3, attributeRange.count / 3);
-    const geometryTorchLightmaps = new Uint8Array(torchLightmaps.buffer, torchLightmaps.byteOffset + attributeRange.start / 3, attributeRange.count / 3);
+  const _postProcessGeometry = (start, count) => {
+    const geometryPositions = new Float32Array(positions.buffer, positions.byteOffset + start * 4, count);
+    const geometryColors = new Float32Array(colors.buffer, colors.byteOffset + start * 4, count);
+    const geometrySkyLightmaps = new Uint8Array(skyLightmaps.buffer, skyLightmaps.byteOffset + start / 3, count / 3);
+    const geometryTorchLightmaps = new Uint8Array(torchLightmaps.buffer, torchLightmaps.byteOffset + start / 3, count / 3);
 
     const numPositions = geometryPositions.length / 3;
     for (let j = 0; j < numPositions; j++) {
@@ -509,6 +532,13 @@ const _generateMapChunk = (ox, oy, opts) => {
       geometryPositions[baseIndex + 0] = (ox * NUM_CELLS) + x;
       geometryPositions[baseIndex + 2] = (oy * NUM_CELLS) + z;
     }
+  };
+
+  for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
+    const geometry = geometries[i];
+    const {attributeRange} = geometry;
+    _postProcessGeometry(attributeRange.landStart, attributeRange.landCount);
+    _postProcessGeometry(attributeRange.liquidStart, attributeRange.liquidCount);
 
     geometry.boundingSphere = new THREE.Sphere(
       new THREE.Vector3(ox * NUM_CELLS + NUM_CELLS_HALF, i * NUM_CELLS + NUM_CELLS_HALF, oy * NUM_CELLS + NUM_CELLS_HALF),
@@ -531,22 +561,22 @@ const _generateMapChunk = (ox, oy, opts) => {
 
         if (ether[index] >= 0) { // empty
           if (z === 0 && startFace !== PEEK_FACES.BACK) {
-            peeks[PEEK_FACE_INDICES[startFace << 4 | PEEK_FACES.BACK]] = 1;
+            peeks[PEEK_FACE_INDICES[startFace << 3 | PEEK_FACES.BACK]] = 1;
           }
           if (z === NUM_CELLS && startFace !== PEEK_FACES.FRONT) {
-            peeks[PEEK_FACE_INDICES[startFace << 4 | PEEK_FACES.FRONT]] = 1;
+            peeks[PEEK_FACE_INDICES[startFace << 3 | PEEK_FACES.FRONT]] = 1;
           }
           if (x === 0 && startFace !== PEEK_FACES.LEFT) {
-            peeks[PEEK_FACE_INDICES[startFace << 4 | PEEK_FACES.LEFT]] = 1;
+            peeks[PEEK_FACE_INDICES[startFace << 3 | PEEK_FACES.LEFT]] = 1;
           }
           if (x === NUM_CELLS && startFace !== PEEK_FACES.RIGHT) {
-            peeks[PEEK_FACE_INDICES[startFace << 4 | PEEK_FACES.RIGHT]] = 1;
+            peeks[PEEK_FACE_INDICES[startFace << 3 | PEEK_FACES.RIGHT]] = 1;
           }
           if (y === maxY && startFace !== PEEK_FACES.TOP) {
-            peeks[PEEK_FACE_INDICES[startFace << 4 | PEEK_FACES.TOP]] = 1;
+            peeks[PEEK_FACE_INDICES[startFace << 3 | PEEK_FACES.TOP]] = 1;
           }
           if (y === minY && startFace !== PEEK_FACES.BOTTOM) {
-            peeks[PEEK_FACE_INDICES[startFace << 4 | PEEK_FACES.BOTTOM]] = 1;
+            peeks[PEEK_FACE_INDICES[startFace << 3 | PEEK_FACES.BOTTOM]] = 1;
           }
 
           for (let dx = -1; dx <= 1; dx++) {
@@ -606,15 +636,19 @@ const _generateMapChunk = (ox, oy, opts) => {
     for (let startFace = 0; startFace < 6; startFace++) {
       for (let endFace = 0; endFace < 6; endFace++) {
         if (endFace !== startFace) {
-          if (peeks[PEEK_FACE_INDICES[startFace << 4 | endFace]] === 1) {
-            peeks[PEEK_FACE_INDICES[endFace << 4 | startFace]] = 1;
+          if (peeks[PEEK_FACE_INDICES[startFace << 3 | endFace]] === 1) {
+            peeks[PEEK_FACE_INDICES[endFace << 3 | startFace]] = 1;
 
             for (let crossFace = 0; crossFace < 6; crossFace++) {
               if (crossFace !== startFace && crossFace !== endFace) {
-                if (peeks[PEEK_FACE_INDICES[startFace << 4 | crossFace]] === 1) {
-                  peeks[PEEK_FACE_INDICES[crossFace << 4 | startFace]] = 1;
-                  peeks[PEEK_FACE_INDICES[crossFace << 4 | endFace]] = 1;
-                  peeks[PEEK_FACE_INDICES[endFace << 4 | crossFace]] = 1;
+                if (peeks[PEEK_FACE_INDICES[startFace << 3 | crossFace]] === 1) {
+                  peeks[PEEK_FACE_INDICES[crossFace << 3 | startFace]] = 1;
+                  peeks[PEEK_FACE_INDICES[crossFace << 3 | endFace]] = 1;
+                  peeks[PEEK_FACE_INDICES[endFace << 3 | crossFace]] = 1;
+                } else if (peeks[PEEK_FACE_INDICES[endFace << 3 | crossFace]] === 1) {
+                  peeks[PEEK_FACE_INDICES[crossFace << 3 | startFace]] = 1;
+                  peeks[PEEK_FACE_INDICES[crossFace << 3 | endFace]] = 1;
+                  peeks[PEEK_FACE_INDICES[startFace << 3 | crossFace]] = 1;
                 }
               }
             }
