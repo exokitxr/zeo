@@ -96,17 +96,6 @@
       "attributes": [],
       "metadata": {}
     },
-    "17mv4p": {
-      "type": "entity",
-      "id": "17mv4p",
-      "name": "/plugins/cloud",
-      "displayName": "cloud",
-      "version": "0.0.1",
-      "module": "/plugins/cloud",
-      "tagName": "cloud",
-      "attributes": [],
-      "metadata": {}
-    },
     "kkvl7d": {
       "type": "entity",
       "id": "kkvl7d",
