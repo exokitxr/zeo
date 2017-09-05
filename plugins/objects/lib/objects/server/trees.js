@@ -65,7 +65,7 @@ const tree = objectApi => {
         /*  1 */ new THREE.Vector2(-2,  1), new THREE.Vector2(-1,  1), new THREE.Vector2(0,  1), new THREE.Vector2(1,  1), new THREE.Vector2(2,  1),
         /*  2 */           new THREE.Vector2(-1,  2), new THREE.Vector2(0,  2), new THREE.Vector2(1,  2),
       ];
-      const AvailableDirections = [
+      const LargeAppleTreeAvailableDirections = [
         new THREE.Vector3( -1, 0, 0 ), new THREE.Vector3( 0, 0, -1  ),
         new THREE.Vector3( -1, 0, 1 ), new THREE.Vector3( -1, 0, -1 ),
         new THREE.Vector3( 1, 0, 1  ), new THREE.Vector3( 1, 0, -1  ),
@@ -85,6 +85,12 @@ const tree = objectApi => {
         new THREE.Vector3( -0.5, 0.5, 0.5 ),  new THREE.Vector3( -0.5, 0.5, -0.5 ),
         new THREE.Vector3( 0.5, 0.5, 0.5  ),  new THREE.Vector3( 0.5, 0.5, -0.5  ),
         new THREE.Vector3( 0.5, 0.5, 0    ),  new THREE.Vector3( 0, 0.5, 0.5     ),
+      ];
+      const AcaciaTreeAvailableDirections = [
+        new THREE.Vector3( -1, 1, 0 ), new THREE.Vector3( 0, 1, -1 ),
+        new THREE.Vector3( -1, 1, 1 ), new THREE.Vector3( -1, 1, -1 ),
+        new THREE.Vector3( 1, 1, 1 ), new THREE.Vector3( 1, 1, -1 ),
+        new THREE.Vector3( 1, 1, 0 ), new THREE.Vector3( 0, 1, 1 ),
       ];
       const Corners = [
         new THREE.Vector2(-1, -1),
@@ -121,8 +127,8 @@ const tree = objectApi => {
         // Create branches
         for (let i = 4; i < Height; i++) {
           // Get a direction for the trunk to go to.
-          const BranchStartDirection = AvailableDirections[objectApi.getHash(a_Seq + ':appleTreeLargeBranchStartDirection:' + i) % AvailableDirections.length];
-          const BranchDirection = localVector.copy(AvailableDirections[objectApi.getHash(a_Seq + ':appleTreeLargeBranchDirection:' + i) % AvailableDirections.length])
+          const BranchStartDirection = LargeAppleTreeAvailableDirections[objectApi.getHash(a_Seq + ':appleTreeLargeBranchStartDirection:' + i) % LargeAppleTreeAvailableDirections.length];
+          const BranchDirection = localVector.copy(LargeAppleTreeAvailableDirections[objectApi.getHash(a_Seq + ':appleTreeLargeBranchDirection:' + i) % LargeAppleTreeAvailableDirections.length])
             .divide(thirdVector);
 
           const BranchLength = 2 + objectApi.getHash(a_Seq + ':appleTreeLargeBranchLength:' + i) % 3;
@@ -211,7 +217,7 @@ const tree = objectApi => {
         return branches;
       };
       const GetBirchTreeImage = (a_BlockX, a_BlockY, a_BlockZ, a_Seq) => {
-        const Height = 5 + (objectApi.getHash(a_Seq + ':birchTreeHeight') % 3);
+        const Height = 5 + objectApi.getHash(a_Seq + ':birchTreeHeight') % 3;
 
         // The entire trunk, out of logs:
         for (let i = Height - 1; i >= 0; --i) {
@@ -236,6 +242,61 @@ const tree = objectApi => {
           h--;
         }  // for Row - 2*
       };
+      const GetAcaciaTreeImage = (a_BlockX, a_BlockY, a_BlockZ, a_Seq) => {
+        // Calculate a base height
+        const Height = 2 + (objectApi.getHash(a_Seq + ':acaciaTreeHeight') % 3);
+
+        // Create the trunk
+        for (let i = 0; i < Height; i++) {
+          objectApi.setBlock(currentChunk, a_BlockX, a_BlockY + i, a_BlockZ, 'tree');
+        }
+
+        // Set the starting point of the branch
+        const BranchPos = localVector.set(a_BlockX, a_BlockY + Height - 1, a_BlockZ);
+
+        // Get a direction for the trunk to go to.
+        const BranchDirection = localVector2.copy(AcaciaTreeAvailableDirections[objectApi.getHash(a_Seq + ':acaciaTreeBranchDirection') % 8]);
+
+        // Calculate a height for the branch between 1 and 3
+        let BranchHeight = objectApi.getHash(a_Seq + ':acaciaTreeBranchHeight') % 3 + 1;
+
+        // Place the logs of the branch.
+        for (let i = 0; i < BranchHeight; i++) {
+          BranchPos.add(BranchDirection);
+          objectApi.setBlock(currentChunk, BranchPos.x, BranchPos.y, BranchPos.z, 'tree');
+        }
+
+        // Add the leaves to the top of the branch
+        PushCoordBlocks(BranchPos.x, BranchPos.y, BranchPos.z, BigO2, 'leaf');
+        PushCoordBlocks(BranchPos.x, BranchPos.y + 1, BranchPos.z, BigO1, 'leaf');
+        objectApi.setBlock(currentChunk, BranchPos.x, BranchPos.y + 1, BranchPos.z, 'leaf');
+
+        // Choose if we have to add another branch
+        const TwoTop = (objectApi.getHash(a_Seq + ':acaciaTreeTwoTop') < 0 ? true : false);
+        if (!TwoTop) {
+          return;
+        }
+
+        // Reset the starting point of the branch
+        BranchPos.set(a_BlockX, a_BlockY + Height - 1, a_BlockZ);
+
+        // Invert the direction of the previous branch.
+        BranchDirection.set(-BranchDirection.x, 1, -BranchDirection.z);
+
+        // Calculate a new height for the second branch
+        BranchHeight = objectApi.getHash(a_Seq + ':acaciaTreeBranchHeight2') % 3 + 1;
+
+        // Place the logs in the same way as the first branch
+        for (let i = 0; i < BranchHeight; i++) {
+          BranchPos.add(BranchDirection);
+          objectApi.setBlock(currentChunk, BranchPos.x, BranchPos.y, BranchPos.z, 'tree');
+        }
+
+        // And add the leaves ontop of the second branch
+        PushCoordBlocks(BranchPos.x, BranchPos.y, BranchPos.z, BigO2, 'leaf');
+        PushCoordBlocks(BranchPos.x, BranchPos.y + 1, BranchPos.z, BigO1, 'leaf');
+        objectApi.setBlock(currentChunk, BranchPos.x, BranchPos.y + 1, BranchPos.z, 'leaf');
+      };
       const localVector = new THREE.Vector3();
       const localVector2 = new THREE.Vector3();
       const localVector3 = new THREE.Vector3();
@@ -259,7 +320,7 @@ const tree = objectApi => {
                   const v = objectApi.getNoise('tree', ox, oz, dx, dz);
 
                   if (v < treeProbability) {
-                    GetBirchTreeImage((ox * NUM_CELLS) + dx, Math.floor(elevation), (oz * NUM_CELLS) + dz, String(v));
+                    GetAcaciaTreeImage((ox * NUM_CELLS) + dx, Math.floor(elevation), (oz * NUM_CELLS) + dz, String(v));
                   }
                 }
               }
