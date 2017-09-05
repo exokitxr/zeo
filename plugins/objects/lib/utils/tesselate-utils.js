@@ -18,9 +18,9 @@ function tesselate(voxels, dims, {isTransparent, isTranslucent, getFaceUvs}) {
 
 function getMeshData(voxels, dims, {isTransparent, isTranslucent}) {
   const vertices = new Float32Array(NUM_POSITIONS_CHUNK);
-  const faces = new Int32Array(NUM_POSITIONS_CHUNK);
+  const faces = new Uint32Array(NUM_POSITIONS_CHUNK);
   const tVertices = new Float32Array(NUM_POSITIONS_CHUNK);
-  const tFaces = new Int32Array(NUM_POSITIONS_CHUNK);
+  const tFaces = new Uint32Array(NUM_POSITIONS_CHUNK);
   let vertexIndex = 0;
   let faceIndex = 0;
   let tVertexIndex = 0;

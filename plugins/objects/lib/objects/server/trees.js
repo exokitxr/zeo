@@ -17,11 +17,15 @@ const tree = objectApi => {
       .then(img => objectApi.registerTexture('tree-top', img)),
     jimp.read(path.join(__dirname, '../../img/leaf.png'))
       .then(img => objectApi.registerTexture('leaf', img)),
+    jimp.read(path.join(__dirname, '../../img/vine.png'))
+      .then(img => objectApi.registerTexture('vine', img)),
   ])
     .then(() => {
       const treeUvs = objectApi.getUv('tree');
       const treeTopUvs = objectApi.getUv('tree-top');
       const leafUvs = objectApi.getUv('leaf');
+      const vineUvs = objectApi.getUv('vine');
+      const zeroUvs = [1, 1, 1, 1];
       const treeBlock = {
         uvs: [
           treeUvs,
@@ -35,7 +39,6 @@ const tree = objectApi => {
         translucent: false,
       };
       objectApi.registerBlock('tree', treeBlock);
-
       const leafBlock = {
         uvs: [
           leafUvs,
@@ -49,6 +52,19 @@ const tree = objectApi => {
         translucent: true,
       };
       objectApi.registerBlock('leaf', leafBlock);
+      const vineBlock = {
+        uvs: [
+          vineUvs,
+          vineUvs,
+          zeroUvs,
+          zeroUvs,
+          vineUvs,
+          vineUvs,
+        ],
+        transparent: true,
+        translucent: true,
+      };
+      objectApi.registerBlock('vine', vineBlock);
 
       let currentChunk = null;
 
@@ -64,6 +80,26 @@ const tree = objectApi => {
         /*  0 */ new THREE.Vector2(-2,  0), new THREE.Vector2(-1,  0),          new THREE.Vector2(1,  0), new THREE.Vector2(2,  0),
         /*  1 */ new THREE.Vector2(-2,  1), new THREE.Vector2(-1,  1), new THREE.Vector2(0,  1), new THREE.Vector2(1,  1), new THREE.Vector2(2,  1),
         /*  2 */           new THREE.Vector2(-1,  2), new THREE.Vector2(0,  2), new THREE.Vector2(1,  2),
+      ];
+      const BigO3 = [
+        /* -3 */           new THREE.Vector2(-2, -3), new THREE.Vector2(-1, -3), new THREE.Vector2(0, -3), new THREE.Vector2(1, -3), new THREE.Vector2(2, -3),
+        /* -2 */ new THREE.Vector2(-3, -2), new THREE.Vector2(-2, -2), new THREE.Vector2(-1, -2), new THREE.Vector2(0, -2), new THREE.Vector2(1, -2), new THREE.Vector2(2, -2), new THREE.Vector2(3, -2),
+        /* -1 */ new THREE.Vector2(-3, -1), new THREE.Vector2(-2, -1), new THREE.Vector2(-1, -1), new THREE.Vector2(0, -1), new THREE.Vector2(1, -1), new THREE.Vector2(2, -1), new THREE.Vector2(3, -1),
+        /*  0 */ new THREE.Vector2(-3,  0), new THREE.Vector2(-2,  0), new THREE.Vector2(-1,  0),          new THREE.Vector2(1,  0), new THREE.Vector2(2,  0), new THREE.Vector2(3,  0),
+        /*  1 */ new THREE.Vector2(-3,  1), new THREE.Vector2(-2,  1), new THREE.Vector2(-1,  1), new THREE.Vector2(0,  1), new THREE.Vector2(1,  1), new THREE.Vector2(2,  1), new THREE.Vector2(3,  1),
+        /*  2 */ new THREE.Vector2(-3,  2), new THREE.Vector2(-2,  2), new THREE.Vector2(-1,  2), new THREE.Vector2(0,  2), new THREE.Vector2(1,  2), new THREE.Vector2(2,  2), new THREE.Vector2(3,  2),
+        /*  3 */           new THREE.Vector2(-2,  3), new THREE.Vector2(-1,  3), new THREE.Vector2(0,  3), new THREE.Vector2(1,  3), new THREE.Vector2(2,  3),
+      ];
+      const BigO4 = [
+        /* -4 */                     new THREE.Vector2(-2, -4), new THREE.Vector2(-1, -4), new THREE.Vector2(0, -4), new THREE.Vector2(1, -4), new THREE.Vector2(2, -4),
+        /* -3 */           new THREE.Vector2(-3, -3), new THREE.Vector2(-2, -3), new THREE.Vector2(-1, -3), new THREE.Vector2(0, -3), new THREE.Vector2(1, -3), new THREE.Vector2(2, -3), new THREE.Vector2(3, -3),
+        /* -2 */ new THREE.Vector2(-4, -2), new THREE.Vector2(-3, -2), new THREE.Vector2(-2, -2), new THREE.Vector2(-1, -2), new THREE.Vector2(0, -2), new THREE.Vector2(1, -2), new THREE.Vector2(2, -2), new THREE.Vector2(3, -2), new THREE.Vector2(4, -2),
+        /* -1 */ new THREE.Vector2(-4, -1), new THREE.Vector2(-3, -1), new THREE.Vector2(-2, -1), new THREE.Vector2(-1, -1), new THREE.Vector2(0, -1), new THREE.Vector2(1, -1), new THREE.Vector2(2, -1), new THREE.Vector2(3, -1), new THREE.Vector2(4, -1),
+        /*  0 */ new THREE.Vector2(-4,  0), new THREE.Vector2(-3,  0), new THREE.Vector2(-2,  0), new THREE.Vector2(-1,  0),          new THREE.Vector2(1,  0), new THREE.Vector2(2,  0), new THREE.Vector2(3,  0), new THREE.Vector2(4,  0),
+        /*  1 */ new THREE.Vector2(-4,  1), new THREE.Vector2(-3,  1), new THREE.Vector2(-2,  1), new THREE.Vector2(-1,  1), new THREE.Vector2(0,  1), new THREE.Vector2(1,  1), new THREE.Vector2(2,  1), new THREE.Vector2(3,  1), new THREE.Vector2(4,  1),
+        /*  2 */ new THREE.Vector2(-4,  2), new THREE.Vector2(-3,  2), new THREE.Vector2(-2,  2), new THREE.Vector2(-1,  2), new THREE.Vector2(0,  2), new THREE.Vector2(1,  2), new THREE.Vector2(2,  2), new THREE.Vector2(3,  2), new THREE.Vector2(4,  2),
+        /*  3 */           new THREE.Vector2(-3,  3), new THREE.Vector2(-2,  3), new THREE.Vector2(-1,  3), new THREE.Vector2(0,  3), new THREE.Vector2(1,  3), new THREE.Vector2(2,  3), new THREE.Vector2(3,  3),
+        /*  4 */                     new THREE.Vector2(-2,  4), new THREE.Vector2(-1,  4), new THREE.Vector2(0,  4), new THREE.Vector2(1,  4), new THREE.Vector2(2,  4),
       ];
       const LargeAppleTreeAvailableDirections = [
         new THREE.Vector3( -1, 0, 0 ), new THREE.Vector3( 0, 0, -1  ),
@@ -92,6 +128,22 @@ const tree = objectApi => {
         new THREE.Vector3( 1, 1, 1 ), new THREE.Vector3( 1, 1, -1 ),
         new THREE.Vector3( 1, 1, 0 ), new THREE.Vector3( 0, 1, 1 ),
       ];
+      // Vines are around the BigO4, but not in the corners; need proper meta for direction
+      const LargeVines = [
+        new THREE.Vector3(-2, -5, 1), new THREE.Vector3(-1, -5, 1), new THREE.Vector3(0, -5, 1), new THREE.Vector3(1, -5, 1), new THREE.Vector3(2, -5, 1),  // North face
+        new THREE.Vector3(-2,  5, 4), new THREE.Vector3(-1,  5, 4), new THREE.Vector3(0,  5, 4), new THREE.Vector3(1,  5, 4), new THREE.Vector3(2,  5, 4),  // South face
+        new THREE.Vector3(5,  -2, 2), new THREE.Vector3(5,  -1, 2), new THREE.Vector3(5,  0, 2), new THREE.Vector3(5,  1, 2), new THREE.Vector3(5,  2, 2),  // East face
+        new THREE.Vector3(-5, -2, 8), new THREE.Vector3(-5, -1, 8), new THREE.Vector3(-5, 0, 8), new THREE.Vector3(-5, 1, 8), new THREE.Vector3(-5, 2, 8),  // West face
+        // TODO: vines around the trunk, proper metas and height
+      ];
+      // Vines are around the BigO3, but not in the corners; need proper meta for direction
+      const SmallVines = [
+        new THREE.Vector3(-2, -4, 1), new THREE.Vector3(-1, -4, 1), new THREE.Vector3(0, -4, 1), new THREE.Vector3(1, -4, 1), new THREE.Vector3(2, -4, 1),  // North face
+        new THREE.Vector3(-2,  4, 4), new THREE.Vector3(-1,  4, 4), new THREE.Vector3(0,  4, 4), new THREE.Vector3(1,  4, 4), new THREE.Vector3(2,  4, 4),  // South face
+        new THREE.Vector3(4,  -2, 2), new THREE.Vector3(4,  -1, 2), new THREE.Vector3(4,  0, 2), new THREE.Vector3(4,  1, 2), new THREE.Vector3(4,  2, 2),  // East face
+        new THREE.Vector3(-4, -2, 8), new THREE.Vector3(-4, -1, 8), new THREE.Vector3(-4, 0, 8), new THREE.Vector3(-4, 1, 8),              // West face
+        // TODO: proper metas and height: {0,  1, 1},  {0, -1, 4},  {-1, 0, 2}, {1,  1, 8},  // Around the tunk
+      ];
       const Corners = [
         new THREE.Vector2(-1, -1),
         new THREE.Vector2(-1, 1),
@@ -111,6 +163,17 @@ const tree = objectApi => {
             objectApi.setBlock(currentChunk, x, a_Height, z, a_BlockType);
           }
         }  // for i - Corners[]
+      };
+      const PushSomeColumns = (a_BlockX, a_Height, a_BlockZ, a_ColumnHeight, a_Seq, a_Chance, a_Coords, a_BlockType) => {
+        for (let i = 0; i < a_Coords.length; i++) {
+          const x = a_BlockX + a_Coords[i].x;
+          const z = a_BlockZ + a_Coords[i].y;
+          if (objectApi.getHash(a_Seq + ':columns:' + x + ':' + z) <= a_Chance) {
+            for (let j = 0; j < a_ColumnHeight; j++) {
+              objectApi.setBlock(currentChunk, x, a_Height - j, z, a_BlockType);
+            }
+          }
+        }  // for i - a_Coords[]
       };
       const GetAppleTreeImage = (a_BlockX, a_BlockY, a_BlockZ, a_Seq) => {
         if (objectApi.getHash(a_Seq + ':appleTreeType') < 0x60000000) {
@@ -297,6 +360,79 @@ const tree = objectApi => {
         PushCoordBlocks(BranchPos.x, BranchPos.y + 1, BranchPos.z, BigO1, 'leaf');
         objectApi.setBlock(currentChunk, BranchPos.x, BranchPos.y + 1, BranchPos.z, 'leaf');
       };
+      const GetJungleTreeImage = (a_BlockX, a_BlockY, a_BlockZ, a_Seq) => {
+        const IsLarge = objectApi.getHash(a_Seq + ':jungleTreeIsLarge') < 0x60000000;
+        if (!IsLarge) {
+          GetSmallJungleTreeImage(a_BlockX, a_BlockY, a_BlockZ, a_Seq);
+        } else {
+          GetLargeJungleTreeImage(a_BlockX, a_BlockY, a_BlockZ, a_Seq);
+        }
+      };
+      const GetLargeJungleTreeImage = (a_BlockX, a_BlockY, a_BlockZ, a_Seq) => {
+        // TODO: Generate proper jungle trees with branches
+
+        const Height = 14 + objectApi.getHash(a_Seq + ':jungleTreeLargeHeight') % 8;
+
+        for (let i = 0; i < Height; i++) {
+          objectApi.setBlock(currentChunk, a_BlockX,     a_BlockY + i, a_BlockZ, 'tree');
+          objectApi.setBlock(currentChunk, a_BlockX + 1, a_BlockY + i, a_BlockZ, 'tree');
+          objectApi.setBlock(currentChunk, a_BlockX,     a_BlockY + i, a_BlockZ + 1, 'tree');
+          objectApi.setBlock(currentChunk, a_BlockX + 1, a_BlockY + i, a_BlockZ + 1, 'tree');
+        }
+        let hei = a_BlockY + Height - 2;
+
+        // Prevent floating trees by placing dirt under them
+        /* for (let i = 1; i < 5; i++) {
+          a_OtherBlocks.push_back(sSetBlock(a_BlockX, a_BlockY - i, a_BlockZ, E_BLOCK_DIRT, E_META_DIRT_NORMAL));
+          a_OtherBlocks.push_back(sSetBlock(a_BlockX + 1, a_BlockY - i, a_BlockZ, E_BLOCK_DIRT, E_META_DIRT_NORMAL));
+          a_OtherBlocks.push_back(sSetBlock(a_BlockX, a_BlockY - i, a_BlockZ + 1, E_BLOCK_DIRT, E_META_DIRT_NORMAL));
+          a_OtherBlocks.push_back(sSetBlock(a_BlockX + 1, a_BlockY - i, a_BlockZ + 1, E_BLOCK_DIRT, E_META_DIRT_NORMAL));
+        } */
+
+        // Put vines around the lowermost leaves layer:
+        PushSomeColumns(a_BlockX, hei, a_BlockZ, Height, a_Seq, 0x3fffffff, LargeVines, 'vine');
+
+        // The lower two leaves layers are BigO4 with log in the middle and possibly corners:
+        for (let i = 0; i < 2; i++) {
+          PushCoordBlocks(a_BlockX, hei, a_BlockZ, BigO4, 'leaf');
+          PushCornerBlocks(a_BlockX, hei, a_BlockZ, a_Seq, 0x5fffffff, 3, 'leaf');
+          hei++;
+        }  // for i - 2*
+
+        // The top leaves layer is a BigO3 with leaves in the middle and possibly corners:
+        PushCoordBlocks(a_BlockX, hei, a_BlockZ, BigO3, 'leaf');
+        PushCornerBlocks(a_BlockX, hei, a_BlockZ, a_Seq, 0x5fffffff, 3, 'leaf');
+        objectApi.setBlock(currentChunk, a_BlockX, hei, a_BlockZ, 'leaf');
+      };
+      const GetSmallJungleTreeImage = (a_BlockX, a_BlockY, a_BlockZ, a_Seq) => {
+        const Height = 7 + objectApi.getHash(a_Seq + ':jungleTreeSmallHeight') % 3;
+
+        for (let i = 0; i < Height; i++) {
+          objectApi.setBlock(currentChunk, a_BlockX, a_BlockY + i, a_BlockZ, 'tree');
+        }
+        let hei = a_BlockY + Height - 3;
+
+        // Put vines around the lowermost leaves layer:
+        PushSomeColumns(a_BlockX, hei, a_BlockZ, Height, a_Seq, 0x3fffffff, SmallVines, 'vine');
+
+        // The lower two leaves layers are BigO3 with log in the middle and possibly corners:
+        for (let i = 0; i < 2; i++) {
+          PushCoordBlocks(a_BlockX, hei, a_BlockZ, BigO3, 'leaf');
+          PushCornerBlocks(a_BlockX, hei, a_BlockZ, a_Seq, 0x5fffffff, 3, 'leaf');
+          hei++;
+        }  // for i - 2*
+
+        // Two layers of BigO2 leaves, possibly with corners:
+        for (let i = 0; i < 1; i++) {
+          PushCoordBlocks(a_BlockX, hei, a_BlockZ, BigO2, 'leaf');
+          PushCornerBlocks(a_BlockX, hei, a_BlockZ, a_Seq, 0x5fffffff, 2, 'leaf');
+          hei++;
+        }  // for i - 2*
+
+        // Top plus, all leaves:
+        PushCoordBlocks(a_BlockX, hei, a_BlockZ, BigO1, 'leaf');
+        objectApi.setBlock(currentChunk, a_BlockX, hei, a_BlockZ, 'leaf');
+      };
       const localVector = new THREE.Vector3();
       const localVector2 = new THREE.Vector3();
       const localVector3 = new THREE.Vector3();
@@ -320,7 +456,7 @@ const tree = objectApi => {
                   const v = objectApi.getNoise('tree', ox, oz, dx, dz);
 
                   if (v < treeProbability) {
-                    GetAcaciaTreeImage((ox * NUM_CELLS) + dx, Math.floor(elevation), (oz * NUM_CELLS) + dz, String(v));
+                    GetJungleTreeImage((ox * NUM_CELLS) + dx, Math.floor(elevation), (oz * NUM_CELLS) + dz, String(v));
                   }
                 }
               }
