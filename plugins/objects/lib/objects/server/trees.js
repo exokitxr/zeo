@@ -128,6 +128,13 @@ const tree = objectApi => {
         new THREE.Vector3( 1, 1, 1 ), new THREE.Vector3( 1, 1, -1 ),
         new THREE.Vector3( 1, 1, 0 ), new THREE.Vector3( 0, 1, 1 ),
       ];
+      // Vines are around the BigO3, but not in the corners; need proper meta for direction
+      const SwampVines = [
+        new THREE.Vector3(-2, -4, 1), new THREE.Vector3(-1, -4, 1), new THREE.Vector3(0, -4, 1), new THREE.Vector3(1, -4, 1), new THREE.Vector3(2, -4, 1),  // North face
+        new THREE.Vector3(-2,  4, 4), new THREE.Vector3(-1,  4, 4), new THREE.Vector3(0,  4, 4), new THREE.Vector3(1,  4, 4), new THREE.Vector3(2,  4, 4),  // South face
+        new THREE.Vector3(4,  -2, 2), new THREE.Vector3(4,  -1, 2), new THREE.Vector3(4,  0, 2), new THREE.Vector3(4,  1, 2), new THREE.Vector3(4,  2, 2),  // East face
+        new THREE.Vector3(-4, -2, 8), new THREE.Vector3(-4, -1, 8), new THREE.Vector3(-4, 0, 8), new THREE.Vector3(-4, 1, 8), new THREE.Vector3(-4, 2, 8),  // West face
+      ];
       // Vines are around the BigO4, but not in the corners; need proper meta for direction
       const LargeVines = [
         new THREE.Vector3(-2, -5, 1), new THREE.Vector3(-1, -5, 1), new THREE.Vector3(0, -5, 1), new THREE.Vector3(1, -5, 1), new THREE.Vector3(2, -5, 1),  // North face
@@ -416,6 +423,44 @@ const tree = objectApi => {
         PushCornerBlocks(a_BlockX, hei, a_BlockZ, a_Seq, 0x5fffffff, 3, 'leaf');
         objectApi.setBlock(currentChunk, a_BlockX, hei, a_BlockZ, 'leaf');
       };
+      const GetSwampTreeImage = (a_BlockX, a_BlockY, a_BlockZ, a_Seq) => {
+        const Height = 3 + objectApi.getHash(a_Seq + ':swampTreeHeight') % 3;
+
+        for (let i = 0; i < Height; i++) {
+          objectApi.setBlock(currentChunk, a_BlockX, a_BlockY + i, a_BlockZ, 'tree');
+        }
+        let hei = a_BlockY + Height - 2;
+
+        // Put vines around the lowermost leaves layer:
+        PushSomeColumns(a_BlockX, hei, a_BlockZ, Height, a_Seq, 0x3fffffff, SwampVines, 'vine');
+
+        // The lower two leaves layers are BigO3 with log in the middle and possibly corners:
+        for (let i = 0; i < 2; i++) {
+          PushCoordBlocks(a_BlockX, hei, a_BlockZ, BigO3, 'leaf');
+          PushCornerBlocks(a_BlockX, hei, a_BlockZ, a_Seq, 0x5fffffff, 3, 'leaf');
+          hei++;
+        }  // for i - 2*
+
+        // The upper two leaves layers are BigO2 with leaves in the middle and possibly corners:
+        for (let i = 0; i < 2; i++) {
+          PushCoordBlocks(a_BlockX, hei, a_BlockZ, BigO2, 'leaf');
+          PushCornerBlocks(a_BlockX, hei, a_BlockZ, a_Seq, 0x5fffffff, 3, 'leaf');
+          objectApi.setBlock(currentChunk, a_BlockX, hei, a_BlockZ, 'leaf');
+          hei++;
+        }  // for i - 2*
+      };
+      const GetAppleBushImage = (a_BlockX, a_BlockY, a_BlockZ, a_Seq) => {
+        let hei = a_BlockY;
+        objectApi.setBlock(currentChunk, a_BlockX, hei, a_BlockZ, 'tree');
+        PushCoordBlocks(a_BlockX, hei, a_BlockZ, BigO2, 'leaf');
+        hei++;
+
+        objectApi.setBlock(currentChunk, a_BlockX, hei, a_BlockZ, 'leaf');
+        PushCoordBlocks(a_BlockX, hei, a_BlockZ, BigO1, 'leaf');
+        hei++;
+
+        objectApi.setBlock(currentChunk, a_BlockX, hei, a_BlockZ, 'leaf');
+      };
       const GetJungleTreeImage = (a_BlockX, a_BlockY, a_BlockZ, a_Seq) => {
         const IsLarge = objectApi.getHash(a_Seq + ':jungleTreeIsLarge') < 0x60000000;
         if (!IsLarge) {
@@ -512,7 +557,7 @@ const tree = objectApi => {
                   const v = objectApi.getNoise('tree', ox, oz, dx, dz);
 
                   if (v < treeProbability) {
-                    GetDarkoakTreeImage((ox * NUM_CELLS) + dx, Math.floor(elevation), (oz * NUM_CELLS) + dz, String(v));
+                    GetAppleBushImage((ox * NUM_CELLS) + dx, Math.floor(elevation), (oz * NUM_CELLS) + dz, String(v));
                   }
                 }
               }
