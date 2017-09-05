@@ -690,6 +690,129 @@ const tree = objectApi => {
         PushCoordBlocks(a_BlockX, hei, a_BlockZ, BigO1, 'leaf');
         objectApi.setBlock(currentChunk, a_BlockX, hei, a_BlockZ, 'leaf');
       };
+      const GetTreeImageByBiome = (a_BlockX, a_BlockY, a_BlockZ, a_Seq, a_Biome) => {
+        switch (a_Biome) {
+          case 1: // biPlains
+          case 3: // biExtremeHills
+          case 20: // biExtremeHillsEdge
+          case 4: // biForest
+          case 14: // biMushroomIsland
+          case 15: // biMushroomShore
+          case 18: // biForestHills
+          case 24: // biDeepOcean
+          case 25: // biStoneBeach
+          case 26: // biColdBeach
+          {
+            // Apple or birch trees:
+            if (objectApi.getHash(a_Seq + ':treeType') < 0x5fffffff) {
+              GetAppleTreeImage(a_BlockX, a_BlockY, a_BlockZ, a_Seq);
+            } else {
+              GetBirchTreeImage(a_BlockX, a_BlockY, a_BlockZ, a_Seq);
+            }
+            return;
+          }
+
+          case 5: // biTaiga
+          case 13: // biIceMountains
+          case 19: // biTaigaHills
+          {
+            // Conifers
+            GetConiferTreeImage(a_BlockX, a_BlockY, a_BlockZ, a_Seq);
+            return;
+          }
+
+          case 45: // biSwamplandM
+          case 6: // biSwampland
+          {
+            // Swamp trees:
+            GetSwampTreeImage(a_BlockX, a_BlockY, a_BlockZ, a_Seq);
+            return;
+          }
+
+          case 21: // biJungle
+          case 22: // biJungleHills
+          case 23: // biJungleEdge
+          {
+            // Apple bushes, large jungle trees, small jungle trees
+            if (objectApi.getHash(a_Seq + ':treeType') < 0x6fffffff) {
+              GetAppleBushImage(a_BlockX, a_BlockY, a_BlockZ, a_Seq);
+            } else {
+              GetJungleTreeImage(a_BlockX, a_BlockY, a_BlockZ, a_Seq);
+            }
+            return;
+          }
+
+          case 27: // biBirchForest
+          case 28: // biBirchForestHills
+          {
+            GetBirchTreeImage(a_BlockX, a_BlockY, a_BlockZ, a_Seq);
+            return;
+          }
+
+          case 49: // biBirchForestM
+          case 50: // biBirchForestHillsM
+          {
+            GetTallBirchTreeImage(a_BlockX, a_BlockY, a_BlockZ, a_Seq);
+            return;
+          }
+
+          case 30: // biColdTaiga
+          case 31: // biColdTaigaHills
+          case 32: // biMegaTaiga
+          case 33: // biMegaTaigaHills
+          case 34: // biExtremeHillsPlus
+          case 40: // biSunflowerPlains
+          case 41: // biDesertM
+          case 42: // biExtremeHillsM
+          case 43: // biFlowerForest
+          case 44: // biTaigaM
+          case 46: // biIcePlainsSpikes
+          case 47: // biJungleM
+          case 48: // biJungleEdgeM
+          case 52: // biColdTaigaM
+          case 53: // biMegaSpruceTaiga
+          case 54: // biMegaSpruceTaigaHills
+          case 55: // biExtremeHillsPlusM
+          {
+            // TODO: These need their special trees
+            GetBirchTreeImage(a_BlockX, a_BlockY, a_BlockZ, a_Seq);
+            return;
+          }
+
+          case 35: // biSavanna
+          case 36: // biSavannaPlateau
+          case 56: // biSavannaM
+          case 57: // biSavannaPlateauM
+          {
+            GetAcaciaTreeImage(a_BlockX, a_BlockY, a_BlockZ, a_Seq);
+            return;
+          }
+
+          case 29: // biRoofedForest
+          case 51: // biRoofedForestM
+          {
+            GetDarkoakTreeImage(a_BlockX, a_BlockY, a_BlockZ, a_Seq);
+            return;
+          }
+
+          case 37: // biMesa
+          case 38: // biMesaPlateauF
+          case 39: // biMesaPlateau
+          case 58: // biMesaBryce
+          case 59: // biMesaPlateauFM
+          case 60: // biMesaPlateauM
+          {
+            GetSmallAppleTreeImage(a_BlockX, a_BlockY, a_BlockZ, a_Seq);
+            return;
+          }
+
+          default:
+          {
+            // These biomes have no trees, or are non-biome members of the enum.
+            return;
+          }
+        }
+      };
       const localVector = new THREE.Vector3();
       const localVector2 = new THREE.Vector3();
       const localVector3 = new THREE.Vector3();
@@ -713,7 +836,13 @@ const tree = objectApi => {
                   const v = objectApi.getNoise('tree', ox, oz, dx, dz);
 
                   if (v < treeProbability) {
-                    GetPineTreeImage((ox * NUM_CELLS) + dx, Math.floor(elevation), (oz * NUM_CELLS) + dz, String(v));
+                    GetTreeImageByBiome(
+                      (ox * NUM_CELLS) + dx,
+                      Math.floor(elevation),
+                      (oz * NUM_CELLS) + dz,
+                      String(v),
+                      objectApi.getBiomes(ox, oz)[dx + (dz * NUM_CELLS_OVERSCAN)]
+                    );
                   }
                 }
               }
@@ -722,14 +851,6 @@ const tree = objectApi => {
         }
 
         currentChunk = null;
-
-        /* const x = 6;
-        const y = 80;
-        objectApi.setBlock(chunk, x, y + 0, -2, 'tree');
-        objectApi.setBlock(chunk, x, y + 1, -2, 'tree');
-        objectApi.setBlock(chunk, x, y + 2, -2, 'leaf');
-        objectApi.setBlock(chunk, x, y + 2, -1, 'leaf');
-        objectApi.setBlock(chunk, x, y + 2, -3, 'leaf'); */
       });
 
       return () => {

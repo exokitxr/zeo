@@ -52,7 +52,8 @@ class Objects {
     const texturesJsonDataPath = path.join(dirname, dataDirectory, 'textures.json');
 
     const rng = new alea(DEFAULT_SEED);
-    const heightfields = {}; // XXX this should be an LRU ache
+    const heightfields = {}; // XXX these should be LRU aches
+    const biomes = {};
     const geometries = {};
     const noises = {};
     const generators = [];
@@ -62,7 +63,7 @@ class Objects {
     const localQuaternion = new THREE.Quaternion();
     const localMatrix = new THREE.Matrix4();
 
-    const _ensureChunkHeightfields = (x, z) => elements.requestElement(HEIGHTFIELD_PLUGIN)
+    const _ensureChunks = (x, z) => elements.requestElement(HEIGHTFIELD_PLUGIN)
       .then(heightfieldElement => {
         const promises = [];
         for (let dz = -1; dz <= 1; dz++) {
@@ -70,15 +71,21 @@ class Objects {
 
           for (let dx = -1; dx <= 1; dx++) {
             const ax = x + dx;
-// console.log('ensure heightfields', ax, az);
 
             const index = _getChunkIndex(ax, az);
             if (!heightfields[index]) {
-              const promise = heightfieldElement.requestHeightfield(ax, az)
-                .then(heightfield => {
-                  heightfields[index] = heightfield;
-                });
-              promises.push(promise);
+              promises.push(
+                heightfieldElement.requestHeightfield(ax, az)
+                  .then(heightfield => {
+                    heightfields[index] = heightfield;
+                  })
+              );
+              promises.push(
+                heightfieldElement.requestBiomes(ax, az)
+                  .then(biome => {
+                    biomes[index] = biome;
+                  })
+              );
             }
           }
         }
@@ -407,7 +414,7 @@ class Objects {
           if (chunk) {
             return Promise.resolve(chunk);
           } else {
-            return _ensureChunkHeightfields(x, z)
+            return _ensureChunks(x, z)
               .then(() => {
                 const chunk = zde.makeChunk(x, z);
                 _generateChunk(chunk);
@@ -497,6 +504,9 @@ class Objects {
             }, */
             getHeightfield(x, z) {
               return heightfields[_getChunkIndex(x, z)];
+            },
+            getBiomes(x, z) {
+              return biomes[_getChunkIndex(x, z)];
             },
             registerGeometry(name, geometry) {
               const frameAttribute = geometry.getAttribute('frame');
