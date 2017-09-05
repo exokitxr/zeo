@@ -101,6 +101,12 @@ const tree = objectApi => {
         /*  3 */           new THREE.Vector2(-3,  3), new THREE.Vector2(-2,  3), new THREE.Vector2(-1,  3), new THREE.Vector2(0,  3), new THREE.Vector2(1,  3), new THREE.Vector2(2,  3), new THREE.Vector2(3,  3),
         /*  4 */                     new THREE.Vector2(-2,  4), new THREE.Vector2(-1,  4), new THREE.Vector2(0,  4), new THREE.Vector2(1,  4), new THREE.Vector2(2,  4),
       ];
+      const BigOs = [
+        BigO1,
+        BigO2,
+        BigO3,
+        BigO4,
+      ];
       const LargeAppleTreeAvailableDirections = [
         new THREE.Vector3( -1, 0, 0 ), new THREE.Vector3( 0, 0, -1  ),
         new THREE.Vector3( -1, 0, 1 ), new THREE.Vector3( -1, 0, -1 ),
@@ -423,6 +429,156 @@ const tree = objectApi => {
         PushCornerBlocks(a_BlockX, hei, a_BlockZ, a_Seq, 0x5fffffff, 3, 'leaf');
         objectApi.setBlock(currentChunk, a_BlockX, hei, a_BlockZ, 'leaf');
       };
+      const GetTallBirchTreeImage = (a_BlockX, a_BlockY, a_BlockZ, a_Seq) => {
+        const Height = 9 + (objectApi.getHash(a_Seq + ':tallBirchTreeHeight') % 3);
+
+        // The entire trunk, out of logs:
+        for (let i = Height - 1; i >= 0; --i) {
+        objectApi.setBlock(currentChunk, a_BlockX, a_BlockY + i, a_BlockZ, 'tree');
+        }
+        let h = a_BlockY + Height;
+
+        // Top layer - just the Plus:
+        PushCoordBlocks(a_BlockX, h, a_BlockZ, BigO1, 'leaf');
+        objectApi.setBlock(currentChunk, a_BlockX, h, a_BlockZ, 'leaf'); // There's no log at this layer
+        h--;
+
+        // Second layer - log, Plus and maybe Corners:
+        PushCoordBlocks (a_BlockX, h, a_BlockZ, BigO1, 'leaf');
+        PushCornerBlocks(a_BlockX, h, a_BlockZ, a_Seq, 0x5fffffff, 1, 'leaf');
+        h--;
+
+        // Third and fourth layers - BigO2 and maybe 2 * Corners:
+        for (let Row = 0; Row < 2; Row++) {
+          PushCoordBlocks (a_BlockX, h, a_BlockZ, BigO2, 'leaf');
+          PushCornerBlocks(a_BlockX, h, a_BlockZ, a_Seq, 0x3fffffff + Row * 0x10000000, 2, 'leaf');
+          h--;
+        }  // for Row - 2*
+      };
+      const GetConiferTreeImage = (a_BlockX, a_BlockY, a_BlockZ, a_Seq) => {
+        // Half chance for a spruce, half for a pine:
+        if (objectApi.getHash(a_Seq + ':coniferTreeType') < 0x40000000) {
+          GetSpruceTreeImage(a_BlockX, a_BlockY, a_BlockZ, a_Seq);
+        } else {
+          GetPineTreeImage(a_BlockX, a_BlockY, a_BlockZ, a_Seq);
+        }
+      };
+      const GetSpruceTreeImage = (a_BlockX, a_BlockY, a_BlockZ, a_Seq) => {
+        // Spruces have a top section with layer sizes of (0, 1, 0) or only (1, 0),
+        // then 1 - 3 sections of ascending sizes (1, 2) [most often], (1, 3) or (1, 2, 3)
+        // and an optional bottom section of size 1, followed by 1 - 3 clear trunk blocks
+
+        let MyRandom = objectApi.getHash(a_Seq + ':spruceTreeMyRandom');
+
+        const sHeights = [1, 2, 2, 3];
+        let Height = sHeights[MyRandom & 3];
+        MyRandom >>= 2;
+
+        // Clear trunk blocks:
+        for (let i = 0; i < Height; i++) {
+          objectApi.setBlock(currentChunk, a_BlockX, a_BlockY + i, a_BlockZ, 'tree');
+        }
+        Height += a_BlockY;
+
+        // Optional size-1 bottom leaves layer:
+        if ((MyRandom & 1) == 0) {
+          PushCoordBlocks(a_BlockX, Height, a_BlockZ, BigO1, 'leaf');
+          objectApi.setBlock(currentChunk, a_BlockX, Height, a_BlockZ, 'tree');
+          Height++;
+        }
+        MyRandom >>= 1;
+
+        // 1 to 3 sections of leaves layers:
+        const sNumSections = [1, 2, 2, 3];
+        const NumSections = sNumSections[MyRandom & 3];
+        MyRandom >>= 2;
+        for (let i = 0; i < NumSections; i++) {
+          switch (MyRandom & 3) { // SectionType; (1, 2) twice as often as the other two
+            case 0:
+            case 1:
+            {
+              PushCoordBlocks(a_BlockX, Height,     a_BlockZ, BigO2, 'leaf');
+              PushCoordBlocks(a_BlockX, Height + 1, a_BlockZ, BigO1, 'leaf');
+              objectApi.setBlock(currentChunk, a_BlockX, Height,     a_BlockZ, 'tree');
+              objectApi.setBlock(currentChunk, a_BlockX, Height + 1, a_BlockZ, 'tree');
+              Height += 2;
+              break;
+            }
+            case 2:
+            {
+              PushCoordBlocks(a_BlockX, Height,     a_BlockZ, BigO3, 'leaf');
+              PushCoordBlocks(a_BlockX, Height + 1, a_BlockZ, BigO1, 'leaf');
+              objectApi.setBlock(currentChunk, a_BlockX, Height,     a_BlockZ, 'tree');
+              objectApi.setBlock(currentChunk, a_BlockX, Height + 1, a_BlockZ, 'tree');
+              Height += 2;
+              break;
+            }
+            case 3:
+            {
+              PushCoordBlocks(a_BlockX, Height,     a_BlockZ, BigO3, 'leaf');
+              PushCoordBlocks(a_BlockX, Height + 1, a_BlockZ, BigO2, 'leaf');
+              PushCoordBlocks(a_BlockX, Height + 2, a_BlockZ, BigO1, 'leaf');
+              objectApi.setBlock(currentChunk, a_BlockX, Height,     a_BlockZ, 'tree');
+              objectApi.setBlock(currentChunk, a_BlockX, Height + 1, a_BlockZ, 'tree');
+              objectApi.setBlock(currentChunk, a_BlockX, Height + 2, a_BlockZ, 'tree');
+              Height += 3;
+              break;
+            }
+          }  // switch (SectionType)
+          MyRandom >>= 2;
+        }  // for i - Sections
+
+        if ((MyRandom & 1) == 0) {
+          // (0, 1, 0) top:
+          objectApi.setBlock(currentChunk, a_BlockX, Height,     a_BlockZ, 'tree');
+          PushCoordBlocks                  (a_BlockX, Height + 1, a_BlockZ, BigO1, 'leaf');
+          objectApi.setBlock(currentChunk, a_BlockX, Height + 1, a_BlockZ, 'leaf');
+          objectApi.setBlock(currentChunk, a_BlockX, Height + 2, a_BlockZ, 'leaf');
+        } else {
+          // (1, 0) top:
+          objectApi.setBlock(currentChunk, a_BlockX, Height,     a_BlockZ, 'leaf');
+          PushCoordBlocks                  (a_BlockX, Height + 1, a_BlockZ, BigO1, 'leaf');
+          objectApi.setBlock(currentChunk, a_BlockX, Height + 1, a_BlockZ, 'leaf');
+        }
+      };
+      const GetPineTreeImage = (a_BlockX, a_BlockY, a_BlockZ, a_Seq) => {
+        // Tall, little leaves on top. The top leaves are arranged in a shape of two cones joined by their bases.
+        // There can be one or two layers representing the cone bases (SameSizeMax)
+
+        let MyRandom = objectApi.getHash(a_Seq + ':pineTreeMyRandom');
+        const TrunkHeight = 8 + (MyRandom % 3);
+        let SameSizeMax = ((MyRandom & 8) == 0) ? 1 : 0;
+        MyRandom >>= 3;
+        const NumLeavesLayers = 2 + (MyRandom % 3);  // Number of layers that have leaves in them
+        if (NumLeavesLayers == 2) {
+          SameSizeMax = 0;
+        }
+
+        // The entire trunk, out of logs:
+        for (let i = TrunkHeight; i >= 0; --i) {
+          objectApi.setBlock(currentChunk, a_BlockX, a_BlockY + i, a_BlockZ, 'tree');
+        }
+        let h = a_BlockY + TrunkHeight + 2;
+
+        // Top layer - just a single leaves block:
+        objectApi.setBlock(currentChunk, a_BlockX, h, a_BlockZ, 'leaf');
+        h--;
+
+        // One more layer is above the trunk, push the central leaves:
+        objectApi.setBlock(currentChunk, a_BlockX, h, a_BlockZ, 'leaf');
+
+        // Layers expanding in size, then collapsing again:
+        // LOGD("Generating %d layers of pine leaves, SameSizeMax = %d", NumLeavesLayers, SameSizeMax);
+        for (let i = 0; i < NumLeavesLayers; ++i) {
+          const LayerSize = Math.min(i, NumLeavesLayers - i + SameSizeMax - 1);
+          // LOGD("LayerSize %d: %d", i, LayerSize);
+          if (LayerSize < 0) {
+            break;
+          }
+          PushCoordBlocks(a_BlockX, h, a_BlockZ, BigOs[LayerSize], 'leaf');
+          h--;
+        }
+      };
       const GetSwampTreeImage = (a_BlockX, a_BlockY, a_BlockZ, a_Seq) => {
         const Height = 3 + objectApi.getHash(a_Seq + ':swampTreeHeight') % 3;
 
@@ -557,7 +713,7 @@ const tree = objectApi => {
                   const v = objectApi.getNoise('tree', ox, oz, dx, dz);
 
                   if (v < treeProbability) {
-                    GetAppleBushImage((ox * NUM_CELLS) + dx, Math.floor(elevation), (oz * NUM_CELLS) + dz, String(v));
+                    GetPineTreeImage((ox * NUM_CELLS) + dx, Math.floor(elevation), (oz * NUM_CELLS) + dz, String(v));
                   }
                 }
               }
