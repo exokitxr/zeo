@@ -360,6 +360,62 @@ const tree = objectApi => {
         PushCoordBlocks(BranchPos.x, BranchPos.y + 1, BranchPos.z, BigO1, 'leaf');
         objectApi.setBlock(currentChunk, BranchPos.x, BranchPos.y + 1, BranchPos.z, 'leaf');
       };
+      const GetDarkoakTreeImage = (a_BlockX, a_BlockY, a_BlockZ, a_Seq) => {
+        // Pick a height
+        const Height = 5 + objectApi.getHash(a_Seq + ':darkOakTreeHeight') % 4;
+
+        // Create the trunk
+        for (let i = 0; i < Height; i++) {
+          objectApi.setBlock(currentChunk, a_BlockX, a_BlockY + i, a_BlockZ, 'tree');
+          objectApi.setBlock(currentChunk, a_BlockX + 1, a_BlockY + i, a_BlockZ, 'tree');
+          objectApi.setBlock(currentChunk, a_BlockX, a_BlockY + i, a_BlockZ + 1, 'tree');
+          objectApi.setBlock(currentChunk, a_BlockX + 1, a_BlockY + i, a_BlockZ + 1, 'tree');
+        }
+
+        // Prevent floating trees by placing dirt under them
+        /* for (let i = 1; i < 5; i++) {
+          a_OtherBlocks.push_back(sSetBlock(a_BlockX, a_BlockY - i, a_BlockZ, E_BLOCK_DIRT, E_META_DIRT_NORMAL));
+          a_OtherBlocks.push_back(sSetBlock(a_BlockX + 1, a_BlockY - i, a_BlockZ, E_BLOCK_DIRT, E_META_DIRT_NORMAL));
+          a_OtherBlocks.push_back(sSetBlock(a_BlockX, a_BlockY - i, a_BlockZ + 1, E_BLOCK_DIRT, E_META_DIRT_NORMAL));
+          a_OtherBlocks.push_back(sSetBlock(a_BlockX + 1, a_BlockY - i, a_BlockZ + 1, E_BLOCK_DIRT, E_META_DIRT_NORMAL));
+        } */
+
+        // Create branches
+        for (let i = 0; i < 3; i++) {
+          let x = (objectApi.getHash(a_Seq + ':darkOakTreeBranchX:' + i) % 3) - 1;
+          let z = (objectApi.getHash(a_Seq + ':darkOakTreeBranchZ:' + i) % 3) - 1;
+
+          // The branches would end up in the trunk.
+          if ((x >= a_BlockX) && (x <= a_BlockX + 1) && (z >= a_BlockZ) && (z <= a_BlockZ + 1)) {
+            const Val1 = ((objectApi.getHash(a_Seq + ':darkOakTreeBranchV:' + i) / 0xFFFFFFFF) - 0.5) * 2;
+            if (Val1 < 0) {
+              x = a_BlockX + ((Val1 < -0.5) ? -1 : 3);
+            } else {
+              z = a_BlockZ + ((Val1 < 0.5) ? -1 : 3);
+            }
+          }
+
+          const y = Height - (objectApi.getHash(a_Seq + ':darkOakTreeBranchY:' + i) % Math.floor(Height - (Height / 4)));
+
+          for (let Y = y; Y < Height; Y++) {
+            objectApi.setBlock(currentChunk, a_BlockX + x, a_BlockY + Y, a_BlockZ + z, 'tree');
+          }
+        }
+
+        let hei = a_BlockY + Height - 2;
+
+        // The lower two leaves layers are BigO4 with log in the middle and possibly corners:
+        for (let i = 0; i < 2; i++) {
+          PushCoordBlocks(a_BlockX, hei, a_BlockZ, BigO4, 'leaf');
+          PushCornerBlocks(a_BlockX, hei, a_BlockZ, a_Seq, 0x5fffffff, 3, 'leaf');
+          hei++;
+        }  // for i < 2
+
+        // The top leaves layer is a BigO3 with leaves in the middle and possibly corners:
+        PushCoordBlocks(a_BlockX, hei, a_BlockZ, BigO3, 'leaf');
+        PushCornerBlocks(a_BlockX, hei, a_BlockZ, a_Seq, 0x5fffffff, 3, 'leaf');
+        objectApi.setBlock(currentChunk, a_BlockX, hei, a_BlockZ, 'leaf');
+      };
       const GetJungleTreeImage = (a_BlockX, a_BlockY, a_BlockZ, a_Seq) => {
         const IsLarge = objectApi.getHash(a_Seq + ':jungleTreeIsLarge') < 0x60000000;
         if (!IsLarge) {
@@ -371,7 +427,7 @@ const tree = objectApi => {
       const GetLargeJungleTreeImage = (a_BlockX, a_BlockY, a_BlockZ, a_Seq) => {
         // TODO: Generate proper jungle trees with branches
 
-        const Height = 14 + objectApi.getHash(a_Seq + ':jungleTreeLargeHeight') % 8;
+        const Height = 24 + objectApi.getHash(a_Seq + ':jungleTreeLargeHeight') % 24;
 
         for (let i = 0; i < Height; i++) {
           objectApi.setBlock(currentChunk, a_BlockX,     a_BlockY + i, a_BlockZ, 'tree');
@@ -456,7 +512,7 @@ const tree = objectApi => {
                   const v = objectApi.getNoise('tree', ox, oz, dx, dz);
 
                   if (v < treeProbability) {
-                    GetJungleTreeImage((ox * NUM_CELLS) + dx, Math.floor(elevation), (oz * NUM_CELLS) + dz, String(v));
+                    GetDarkoakTreeImage((ox * NUM_CELLS) + dx, Math.floor(elevation), (oz * NUM_CELLS) + dz, String(v));
                   }
                 }
               }
