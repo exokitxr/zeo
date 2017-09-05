@@ -210,6 +210,32 @@ const tree = objectApi => {
         }
         return branches;
       };
+      const GetBirchTreeImage = (a_BlockX, a_BlockY, a_BlockZ, a_Seq) => {
+        const Height = 5 + (objectApi.getHash(a_Seq + ':birchTreeHeight') % 3);
+
+        // The entire trunk, out of logs:
+        for (let i = Height - 1; i >= 0; --i) {
+          objectApi.setBlock(currentChunk, a_BlockX, a_BlockY + i, a_BlockZ, 'tree');
+        }
+        let h = a_BlockY + Height;
+
+        // Top layer - just the Plus:
+        PushCoordBlocks(a_BlockX, h, a_BlockZ, BigO1, 'leaf');
+        objectApi.setBlock(currentChunk, a_BlockX, h, a_BlockZ, 'leaf');
+        h--;
+
+        // Second layer - log, Plus and maybe Corners:
+        PushCoordBlocks(a_BlockX, h, a_BlockZ, BigO1, 'leaf');
+        PushCornerBlocks(a_BlockX, h, a_BlockZ, a_Seq, 0x5fffffff, 1, 'leaf');
+        h--;
+
+        // Third and fourth layers - BigO2 and maybe 2 * Corners:
+        for (let Row = 0; Row < 2; Row++) {
+          PushCoordBlocks (a_BlockX, h, a_BlockZ, BigO2, 'leaf');
+          PushCornerBlocks(a_BlockX, h, a_BlockZ, a_Seq, 0x3fffffff + Row * 0x10000000, 2, 'leaf');
+          h--;
+        }  // for Row - 2*
+      };
       const localVector = new THREE.Vector3();
       const localVector2 = new THREE.Vector3();
       const localVector3 = new THREE.Vector3();
@@ -233,7 +259,7 @@ const tree = objectApi => {
                   const v = objectApi.getNoise('tree', ox, oz, dx, dz);
 
                   if (v < treeProbability) {
-                    GetAppleTreeImage((ox * NUM_CELLS) + dx, Math.floor(elevation), (oz * NUM_CELLS) + dz, String(v));
+                    GetBirchTreeImage((ox * NUM_CELLS) + dx, Math.floor(elevation), (oz * NUM_CELLS) + dz, String(v));
                   }
                 }
               }
