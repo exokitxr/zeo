@@ -1,7 +1,8 @@
 const stick = require('./stick');
 const stone = require('./stone');
 // const grass = require('./grass');
-const tree = require('./tree');
+// const tree = require('./tree');
+const trees = require('./trees');
 const wood = require('./wood');
 const apple = require('./apple');
 const craftingTable = require('./crafting-table');
@@ -17,7 +18,8 @@ const objectsLib = options => [
   stick,
   stone,
   // grass,
-  tree,
+  // tree,
+  trees,
   wood,
   apple,
   craftingTable,

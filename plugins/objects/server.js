@@ -4,6 +4,7 @@ const fs = require('fs');
 const touch = require('touch');
 const zeode = require('zeode');
 const {
+  BLOCK_BUFFER_SIZE,
   GEOMETRY_BUFFER_SIZE,
 } = zeode;
 const txtr = require('txtr');
@@ -11,6 +12,7 @@ const {
   NUM_CELLS,
   NUM_CELLS_OVERSCAN,
 
+  NUM_CELLS_HEIGHT,
   NUM_CHUNKS_HEIGHT,
 
   TEXTURE_SIZE,
@@ -18,10 +20,12 @@ const {
   DEFAULT_SEED,
 } = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
+const tesselateUtilsLib = require('./lib/utils/tesselate-utils');
 const objectsLib = require('./lib/objects/server/index');
 
 const NUM_CELLS_HALF = NUM_CELLS / 2;
 const NUM_CELLS_CUBE = Math.sqrt((NUM_CELLS_HALF + 16) * (NUM_CELLS_HALF + 16) * 3); // larger than the actual bounding box to account for geometry overflow
+const NUM_VOXELS_CHUNK_HEIGHT = BLOCK_BUFFER_SIZE / 4 / NUM_CHUNKS_HEIGHT;
 const HEIGHTFIELD_PLUGIN = 'plugins-heightfield';
 
 class Objects {
@@ -33,25 +37,53 @@ class Objects {
     const {_archae: archae} = this;
     const {dirname, dataDirectory} = archae;
     const {express, ws, app, wss} = archae.getCore();
-    const {three, elements, utils: {hash: hashUtils, random: randomUtils, image: imageUtils}} = zeo;
+    const {three, elements, utils: {js: jsUtils, hash: hashUtils, random: randomUtils, image: imageUtils}} = zeo;
     const {THREE} = three;
+    const {mod} = jsUtils;
     const {murmur} = hashUtils;
     const {alea, indev} = randomUtils;
     const {jimp} = imageUtils;
+
+    const tesselateUtils = tesselateUtilsLib({THREE});
+    const _getChunkIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
 
     const zeodeDataPath = path.join(dirname, dataDirectory, 'zeode.dat');
     const texturesPngDataPath = path.join(dirname, dataDirectory, 'textures.png');
     const texturesJsonDataPath = path.join(dirname, dataDirectory, 'textures.json');
 
     const rng = new alea(DEFAULT_SEED);
+    const heightfields = {}; // XXX this should be an LRU ache
     const geometries = {};
     const noises = {};
     const generators = [];
+    const blockTypes = {};
 
     const zeroUint8Array = new Uint8Array(0);
     const localQuaternion = new THREE.Quaternion();
     const localMatrix = new THREE.Matrix4();
 
+    const _ensureChunkHeightfields = (x, z) => elements.requestElement(HEIGHTFIELD_PLUGIN)
+      .then(heightfieldElement => {
+        const promises = [];
+        for (let dz = -1; dz <= 1; dz++) {
+          const az = z + dz;
+
+          for (let dx = -1; dx <= 1; dx++) {
+            const ax = x + dx;
+// console.log('ensure heightfields', ax, az);
+
+            const index = _getChunkIndex(ax, az);
+            if (!heightfields[index]) {
+              const promise = heightfieldElement.requestHeightfield(ax, az)
+                .then(heightfield => {
+                  heightfields[index] = heightfield;
+                });
+              promises.push(promise);
+            }
+          }
+        }
+        return Promise.all(promises);
+      });
     const _generateChunk = chunk => {
       for (let i = 0; i < generators.length; i++) {
         _generateChunkWithGenerator(chunk, generators[i]);
@@ -161,6 +193,60 @@ class Objects {
           }
         }
       });
+
+      const blockBuffer = chunk.getBlockBuffer();
+      for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
+        const voxels = blockBuffer.subarray(i * NUM_VOXELS_CHUNK_HEIGHT, (i + 1) * NUM_VOXELS_CHUNK_HEIGHT);
+        const {positions: newPositions, uvs: newUvs} = tesselateUtils.tesselate(voxels, [NUM_CELLS, NUM_CELLS, NUM_CELLS], {
+          isTransparent: n => n ? blockTypes[n].transparent : false,
+          isTranslucent: n => n ? blockTypes[n].translucent : false,
+          getFaceUvs: (n, direction) => blockTypes[n].uvs[direction],
+        });
+
+        if (newPositions.length > 0) {
+          for (let j = 0; j < newPositions.length / 3; j++) {
+            const baseIndex = j * 3;
+            newPositions[baseIndex + 0] += chunk.x * NUM_CELLS;
+            newPositions[baseIndex + 1] += i * NUM_CELLS;
+            newPositions[baseIndex + 2] += chunk.z * NUM_CELLS;
+          }
+          geometriesPositions[i].array.set(newPositions, geometriesPositions[i].index);
+
+          geometriesUvs[i].array.set(newUvs, geometriesUvs[i].index);
+
+          const newFrames = new Float32Array(newPositions.length);
+          geometriesFrames[i].array.set(newFrames, geometriesFrames[i].index);
+
+          const numNewPositions = newPositions.length / 3;
+          const newObjectIndices = new Float32Array(numNewPositions);
+          geometriesObjectIndices[i].array.set(newObjectIndices, geometriesObjectIndices[i].index);
+
+          const newIndices = new Uint32Array(newPositions.length / 3);
+          for (let j = 0; j < newIndices.length; j++) {
+            newIndices[j] = j;
+          }
+          _copyIndices(newIndices, geometriesIndices[i].array, geometriesIndices[i].index, geometriesPositions[i].index / 3);
+
+          const newObjects = new Uint32Array(0);
+          geometriesObjects[i].array.set(newObjects, geometriesObjects[i].index);
+
+/* console.log('new positions', chunk.x, i, chunk.z, Array.from(newPositions).join(','), Array.from(newIndices).join(','),
+  newPositions.length,
+  newUvs.length,
+  newFrames.length,
+  newObjectIndices.length,
+  newIndices.length,
+  newObjects.length
+); */
+
+          geometriesPositions[i].index += newPositions.length;
+          geometriesUvs[i].index += newUvs.length;
+          geometriesFrames[i].index += newFrames.length;
+          geometriesObjectIndices[i].index += newObjectIndices.length;
+          geometriesIndices[i].index += newIndices.length;
+          geometriesObjects[i].index += newObjects.length;
+        }
+      }
 
       const geometry = new THREE.BufferGeometry();
       const positions = new Float32Array(GEOMETRY_BUFFER_SIZE / 4);
@@ -321,14 +407,10 @@ class Objects {
           if (chunk) {
             return Promise.resolve(chunk);
           } else {
-            return elements.requestElement(HEIGHTFIELD_PLUGIN)
-              .then(heightfieldElement => heightfieldElement.requestHeightfield(x, z))
-              .then(heightfield => {
+            return _ensureChunkHeightfields(x, z)
+              .then(() => {
                 const chunk = zde.makeChunk(x, z);
-                chunk.heightfield = heightfield;
-
                 _generateChunk(chunk);
-
                 return _decorateChunkGeometry(chunk);
               })
               .then(chunk => {
@@ -403,10 +485,18 @@ class Objects {
                 octaves: spec.octaves,
               });
             },
-            getNoise(name, ox, oz, x, z) {
+            getNoise(name, ox, oz, x, z) { // XXX rename to 2d
               const ax = (ox * NUM_CELLS) + x;
               const az = (oz * NUM_CELLS) + z;
               return noises[name].in2D(ax + 1000, az + 1000);
+            },
+            /* getNoise3D(name, ox, oz, x, y, z) {
+              const ax = (ox * NUM_CELLS) + x;
+              const az = (oz * NUM_CELLS) + z;
+              return noises[name].in3D(ax + 1000, y, az + 1000);
+            }, */
+            getHeightfield(x, z) {
+              return heightfields[_getChunkIndex(x, z)];
             },
             registerGeometry(name, geometry) {
               const frameAttribute = geometry.getAttribute('frame');
@@ -426,6 +516,23 @@ class Objects {
                 geometries[n] = entry;
               }
               entry.push(geometry);
+            },
+            registerBlock(name, blockSpec) {
+              blockTypes[murmur(name)] = blockSpec;
+            },
+            setBlock(chunk, x, y, z, name) {
+              const ox = Math.floor(x / NUM_CELLS);
+              const oz = Math.floor(z / NUM_CELLS);
+              if (ox === chunk.x && oz === chunk.z && y > 0 && y < NUM_CELLS_HEIGHT) {
+                chunk.setBlock(x - ox * NUM_CELLS, y, z - oz * NUM_CELLS, murmur(name));
+              }
+            },
+            clearBlock(chunk, x, y, z) {
+              const ox = Math.floor(x / NUM_CELLS);
+              const oz = Math.floor(z / NUM_CELLS);
+              if (ox === chunk.x && oz === chunk.z && y > 0 && y < NUM_CELLS_HEIGHT) {
+                chunk.setBlock(x - ox * NUM_CELLS, y, z - oz * NUM_CELLS);
+              }
             },
             getUv(name) {
               return textureUvs[murmur(name)];
@@ -481,17 +588,17 @@ class Objects {
             octaves: 8,
           });
           objectApi.registerNoise('grass', {
-            seed: DEFAULT_SEED,
+            seed: DEFAULT_SEED + ':grass',
             frequency: 0.1,
             octaves: 4,
           });
           objectApi.registerNoise('tree', {
-            seed: DEFAULT_SEED,
+            seed: DEFAULT_SEED + ':tree',
             frequency: 0.1,
             octaves: 4,
           });
           objectApi.registerNoise('items', {
-            seed: DEFAULT_SEED + '2',
+            seed: DEFAULT_SEED + ':items',
             frequency: 0.1,
             octaves: 4,
           });

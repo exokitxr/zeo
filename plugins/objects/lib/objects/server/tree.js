@@ -300,16 +300,15 @@ const tree = objectApi => {
       })();
       objectApi.registerGeometry('tree', treeGeometry);
 
+      const localVector = new THREE.Vector3();
+      const localQuaternion = new THREE.Quaternion();
+      const localEuler = new THREE.Euler();
+      const treeProbability = 0.015;
+
       objectApi.registerGenerator('tree', chunk => {
-        const localVector = new THREE.Vector3();
-        const localQuaternion = new THREE.Quaternion();
-        const localEuler = new THREE.Euler();
-
-        const treeProbability = 0.015;
-
         for (let dz = 0; dz < NUM_CELLS; dz++) {
           for (let dx = 0; dx < NUM_CELLS; dx++) {
-            const elevation = chunk.heightfield[(dx + (dz * NUM_CELLS_OVERSCAN)) * 8];
+            const elevation = objectApi.getHeightfield(chunk.x, chunk.z)[(dx + (dz * NUM_CELLS_OVERSCAN)) * 8];
 
             if (elevation > 64) {
               const v = objectApi.getNoise('tree', chunk.x, chunk.z, dx, dz);

@@ -268,7 +268,7 @@ void main() {
       uniforms,
       vertexShader: OBJECTS_SHADER.vertexShader,
       fragmentShader: OBJECTS_SHADER.fragmentShader,
-      side: THREE.DoubleSide,
+      // side: THREE.DoubleSide,
     });
     objectsMaterial.uniformsNeedUpdate = _uniformsNeedUpdate;
 
