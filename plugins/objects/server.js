@@ -237,15 +237,6 @@ class Objects {
           const newObjects = new Uint32Array(0);
           geometriesObjects[i].array.set(newObjects, geometriesObjects[i].index);
 
-/* console.log('new positions', chunk.x, i, chunk.z, Array.from(newPositions).join(','), Array.from(newIndices).join(','),
-  newPositions.length,
-  newUvs.length,
-  newFrames.length,
-  newObjectIndices.length,
-  newIndices.length,
-  newObjects.length
-); */
-
           geometriesPositions[i].index += newPositions.length;
           geometriesUvs[i].index += newUvs.length;
           geometriesFrames[i].index += newFrames.length;
