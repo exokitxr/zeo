@@ -8,7 +8,7 @@ const UINT32_SIZE = 4;
 const INT32_SIZE = 4;
 const FLOAT32_SIZE = 4;
 const UINT8_SIZE = 1;
-const DATA_HEADER_ENTRIES = 5 + (1 * NUM_CHUNKS_HEIGHT) + 6;
+const DATA_HEADER_ENTRIES = 5 + (1 * NUM_CHUNKS_HEIGHT) + 7;
 const DATA_HEADER_SIZE = UINT32_SIZE * DATA_HEADER_ENTRIES;
 const RENDER_HEADER_ENTRIES = 5 + (1 * NUM_CHUNKS_HEIGHT) + 2;
 const RENDER_HEADER_SIZE = UINT32_SIZE * RENDER_HEADER_ENTRIES;
@@ -16,7 +16,7 @@ const CULL_HEADER_ENTRIES = 1;
 const CULL_HEADER_SIZE = UINT32_SIZE * CULL_HEADER_ENTRIES;
 
 const _getDataChunkSizeFromMetadata = metadata => {
-  const {numPositions, numColors, numSkyLightmaps, numTorchLightmaps, numIndices, numPeeks, numHeightfield, numStaticHeightfield, numElevations, numEther, numLiquid} = metadata;
+  const {numPositions, numColors, numSkyLightmaps, numTorchLightmaps, numIndices, numPeeks, numHeightfield, numStaticHeightfield, numBiomes, numElevations, numEther, numLiquid} = metadata;
 
   return DATA_HEADER_SIZE + // header
     (FLOAT32_SIZE * numPositions) + // positions
@@ -29,6 +29,7 @@ const _getDataChunkSizeFromMetadata = metadata => {
     (UINT8_SIZE * _sum(numPeeks)) + // peeks
     (FLOAT32_SIZE * numHeightfield) + // heightfield
     (FLOAT32_SIZE * numStaticHeightfield) + // static heightfield
+    _align(UINT8_SIZE * numBiomes, FLOAT32_SIZE) + // biomes
     (FLOAT32_SIZE * numElevations) + // elevations
     (FLOAT32_SIZE * numEther) + // ethers
     (UINT8_SIZE * numLiquid) + // liquids
@@ -36,7 +37,7 @@ const _getDataChunkSizeFromMetadata = metadata => {
 };
 
 const _getDataChunkSize = mapChunk => {
-  const {positions, colors, skyLightmaps, torchLightmaps, indices, geometries, heightfield, staticHeightfield, elevations, ether, liquid, liquidTypes} = mapChunk;
+  const {positions, colors, skyLightmaps, torchLightmaps, indices, geometries, heightfield, staticHeightfield, biomes, elevations, ether, liquid, liquidTypes} = mapChunk;
 
   const numPositions = positions.length;
   const numColors = colors.length;
@@ -51,6 +52,7 @@ const _getDataChunkSize = mapChunk => {
   }
   const numHeightfield = heightfield.length;
   const numStaticHeightfield = staticHeightfield.length;
+  const numBiomes = biomes.length;
   const numElevations = elevations.length;
   const numEther = ether.length;
   const numLiquid = liquid.length;
@@ -64,6 +66,7 @@ const _getDataChunkSize = mapChunk => {
     numIndices,
     numHeightfield,
     numStaticHeightfield,
+    numBiomes,
     numElevations,
     numEther,
     numLiquid,
@@ -86,9 +89,11 @@ const _getDataChunkSize = mapChunk => {
   }
   const numHeightfield = headerBuffer[index++];
   const numStaticHeightfield = headerBuffer[index++];
+  const numBiomes = headerBuffer[index++];
   const numElevations = headerBuffer[index++];
   const numEther = headerBuffer[index++];
   const numLiquid = headerBuffer[index++];
+  const numLiquidTypes = headerBuffer[index++];
 
   return _getDataChunkSizeFromMetadata({
     numPositions,
@@ -98,14 +103,16 @@ const _getDataChunkSize = mapChunk => {
     numIndices,
     numHeightfield,
     numStaticHeightfield,
+    numBiomes,
     numElevations,
     numEther,
     numLiquid,
+    numLiquidTypes,
   });
 }; */
 
 const stringifyDataChunk = (mapChunk, arrayBuffer, byteOffset) => {
-  const {positions, colors, skyLightmaps, torchLightmaps, indices, geometries, heightfield, staticHeightfield, elevations, ether, liquid, liquidTypes} = mapChunk;
+  const {positions, colors, skyLightmaps, torchLightmaps, indices, geometries, heightfield, staticHeightfield, biomes, elevations, ether, liquid, liquidTypes} = mapChunk;
 
   if (arrayBuffer === undefined || byteOffset === undefined) {
     const bufferSize = _getDataChunkSize(mapChunk);
@@ -127,6 +134,7 @@ const stringifyDataChunk = (mapChunk, arrayBuffer, byteOffset) => {
   }
   headerBuffer[index++] = heightfield.length;
   headerBuffer[index++] = staticHeightfield.length;
+  headerBuffer[index++] = biomes.length;
   headerBuffer[index++] = elevations.length;
   headerBuffer[index++] = ether.length;
   headerBuffer[index++] = liquid.length;
@@ -180,6 +188,11 @@ const stringifyDataChunk = (mapChunk, arrayBuffer, byteOffset) => {
   staticHeightfieldBuffer.set(staticHeightfield);
   byteOffset += FLOAT32_SIZE * staticHeightfield.length;
 
+  const biomesBuffer = new Uint8Array(arrayBuffer, byteOffset, biomes.length);
+  biomesBuffer.set(biomes);
+  byteOffset += UINT8_SIZE * biomes.length;
+  byteOffset = _align(byteOffset, FLOAT32_SIZE);
+
   const elevationsBuffer = new Float32Array(arrayBuffer, byteOffset, elevations.length);
   elevationsBuffer.set(elevations);
   byteOffset += FLOAT32_SIZE * elevations.length;
@@ -217,6 +230,7 @@ const parseDataChunk = (buffer, byteOffset) => {
   }
   const numHeightfield = headerBuffer[index++];
   const numStaticHeightfield = headerBuffer[index++];
+  const numBiomes = headerBuffer[index++];
   const numElevations = headerBuffer[index++];
   const numEther = headerBuffer[index++];
   const numLiquid = headerBuffer[index++];
@@ -279,6 +293,11 @@ const parseDataChunk = (buffer, byteOffset) => {
   const staticHeightfield = staticHeightfieldBuffer;
   byteOffset += FLOAT32_SIZE * numStaticHeightfield;
 
+  const biomesBuffer = new Uint8Array(buffer, byteOffset, numBiomes);
+  const biomes = biomesBuffer;
+  byteOffset += UINT8_SIZE * numBiomes;
+  byteOffset = _align(byteOffset, FLOAT32_SIZE);
+
   const elevationsBuffer = new Float32Array(buffer, byteOffset, numElevations);
   const elevations = elevationsBuffer;
   byteOffset += FLOAT32_SIZE * numElevations;
@@ -305,6 +324,7 @@ const parseDataChunk = (buffer, byteOffset) => {
     geometries,
     heightfield,
     staticHeightfield,
+    biomes,
     elevations,
     ether,
     liquid,

@@ -258,6 +258,16 @@ const _generateMapChunk = (ox, oy, opts) => {
     return entry;
   }
 
+  let biomes = opts.oldBiomes;
+  if (!biomes) {
+    biomes = new Uint8Array(NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN);
+    for (let z = 0; z < NUM_CELLS_OVERSCAN; z++) {
+      for (let x = 0; x < NUM_CELLS_OVERSCAN; x++) {
+        biomes[_getCoordOverscanIndex(x, z)] = _getBiome((ox * NUM_CELLS) + x, (oy * NUM_CELLS) + z).index;
+      }
+    }
+  }
+
   let elevations = opts.oldElevations;
   if (!elevations) {
     elevations = new Float32Array(NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN);
@@ -679,6 +689,7 @@ const _generateMapChunk = (ox, oy, opts) => {
     })),
     heightfield,
     staticHeightfield,
+    biomes,
     elevations,
     ether,
     liquid,

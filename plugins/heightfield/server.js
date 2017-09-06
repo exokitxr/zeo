@@ -162,11 +162,13 @@ class Heightfield {
                 } else {
                   const uint32Buffer = chunk.getBuffer();
                   const chunkData = protocolUtils.parseDataChunk(uint32Buffer.buffer, uint32Buffer.byteOffset);
+                  const oldBiomes = chunkData.biomes.slice();
                   const oldElevations = chunkData.elevations.slice();
                   const oldEther = chunkData.ether.slice();
                   const oldLiquid = chunkData.liquid.slice();
                   const oldLiquidTypes = chunkData.liquidTypes.slice();
                   chunk.generate(generator, {
+                    oldBiomes,
                     oldElevations,
                     oldEther,
                     oldLiquid,
@@ -213,8 +215,7 @@ class Heightfield {
               _saveChunks();
             }
             const uint32Buffer = chunk.getBuffer();
-            const {heightfield} = protocolUtils.parseDataChunk(uint32Buffer.buffer, uint32Buffer.byteOffset);
-            return Promise.resolve(heightfield);
+            return Promise.resolve(protocolUtils.parseDataChunk(uint32Buffer.buffer, uint32Buffer.byteOffset).heightfield);
           },
           requestStaticHeightfield(x, z) {
             let chunk = tra.getChunk(x, z);
@@ -224,8 +225,17 @@ class Heightfield {
               _saveChunks();
             }
             const uint32Buffer = chunk.getBuffer();
-            const {staticHeightfield} = protocolUtils.parseDataChunk(uint32Buffer.buffer, uint32Buffer.byteOffset);
-            return Promise.resolve(staticHeightfield);
+            return Promise.resolve(protocolUtils.parseDataChunk(uint32Buffer.buffer, uint32Buffer.byteOffset).staticHeightfield);
+          },
+          requestBiomes(x, z) {
+            let chunk = tra.getChunk(x, z);
+            if (!chunk) {
+              chunk = tra.makeChunk(x, z);
+              chunk.generate(generator);
+              _saveChunks();
+            }
+            const uint32Buffer = chunk.getBuffer();
+            return Promise.resolve(protocolUtils.parseDataChunk(uint32Buffer.buffer, uint32Buffer.byteOffset).biomes);
           },
           requestLightmaps(x, z, positions) {
             return this.requestStaticHeightfield(x, z)
