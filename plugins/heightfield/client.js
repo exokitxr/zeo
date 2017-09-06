@@ -884,7 +884,7 @@ class Heightfield {
           THREE.RepeatWrapping,
           THREE.RepeatWrapping,
           THREE.NearestFilter,
-          THREE.NearestFilter,
+          THREE.LinearMipMapLinearFilter,
           THREE.RGBAFormat,
           THREE.UnsignedByteType,
           1
@@ -896,7 +896,7 @@ class Heightfield {
           THREE.RepeatWrapping,
           THREE.RepeatWrapping,
           THREE.NearestFilter,
-          THREE.NearestFilter,
+          THREE.LinearMipMapLinearFilter,
           THREE.RGBAFormat,
           THREE.UnsignedByteType,
           1
