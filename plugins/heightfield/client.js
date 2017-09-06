@@ -970,21 +970,28 @@ class Heightfield {
           }
         };
 
-        const _debouncedRequestRefreshMapChunks = _debounce(next => {
+        const _debouncedRequestRefreshMapChunks = _debounce(nextDebounce => {
           const {hmd} = pose.getStatus();
           const {worldPosition: hmdPosition} = hmd;
-          const {added, removed/*, relodded*/} = chunker.update(hmdPosition.x, hmdPosition.z);
+          const {added, removed, done} = chunker.update(hmdPosition.x, hmdPosition.z);
 
           let running = false;
           const queue = [];
-          const _next = () => {
+          const nextAddChunk = () => {
             running = false;
 
             if (queue.length > 0) {
               _addChunk(queue.shift());
             } else {
-              next();
+              doneAddChunks();
             }
+          };
+          const doneAddChunks = () => {
+            if (!done) {
+              _debouncedRequestRefreshMapChunks();
+            }
+
+            nextDebounce();
           };
           const _addChunk = chunk => {
             if (!running) {
@@ -1024,7 +1031,7 @@ class Heightfield {
 
                 _emit('add', chunk);
 
-                _next();
+                nextAddChunk();
               });
             } else {
               queue.push(chunk);
@@ -1057,23 +1064,15 @@ class Heightfield {
           for (let i = 0; i < added.length; i++) {
             _addChunk(added[i]);
           }
-          /* for (let i = 0; i < relodded.length; i++) {
-            const chunk = relodded[i];
-            const {lastLod} = chunk;
-
-            if (lastLod === -1) {
-              _addChunk(chunk);
-            }
-          } */
 
           if (!running) {
-            next();
+            doneAddChunks();
           }
         });
         const _requestSubVoxel = (() => {
           let running = false;
           const queue = [];
-          const _next = () => {
+          const nextSubVoxel = () => {
             running = false;
 
             if (queue.length > 0) {
@@ -1126,7 +1125,7 @@ class Heightfield {
                   }
                 }
 
-                _next();
+                nextSubVoxel();
               });
             } else {
               queue.push({x, y, z});
