@@ -9,7 +9,7 @@ const NUM_RENDER_GROUPS = NUM_CHUNKS_HEIGHT / 2;
 
 const HEIGHTFIELD_DEPTH = 8;
 
-const RANGE = 10;
+const RANGE = 11;
 
 const DEFAULT_SEED = 'a';
 
