@@ -850,7 +850,7 @@ class Heightfield {
                     renderer.updateAttribute(geometry.attributes.skyLightmap, index * skyLightmaps.length, newSkyLightmapsLength, false);
                     renderer.updateAttribute(geometry.attributes.torchLightmap, index * torchLightmaps.length, newTorchLightmapsLength, false);
                     renderer.updateAttribute(geometry.index, index * indices.length, newIndicesLength, true);
-                    // renderer.getContext().flush();
+                    renderer.getContext().flush();
 
                     requestAnimationFrame(() => {
                       renderListEntries[0].visible = true;

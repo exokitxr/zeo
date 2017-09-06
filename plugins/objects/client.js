@@ -676,7 +676,7 @@ console.log('done');
                 renderer.updateAttribute(geometry.attributes.torchLightmap, index * torchLightmaps.length, newTorchLightmapsLength, false);
                 renderer.updateAttribute(geometry.index, index * indices.length, newIndicesLength, true);
                 renderer.updateAttribute(geometry.attributes.objectIndex, index * objectIndices.length, newObjectIndicesLength, false);
-                // renderer.getContext().flush();
+                renderer.getContext().flush();
 
                 requestAnimationFrame(() => {
                   renderListEntry.visible = true;
