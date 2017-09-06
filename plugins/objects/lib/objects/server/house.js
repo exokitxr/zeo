@@ -62,6 +62,8 @@ const house = objectApi => {
   return () => Promise.all([
     jimp.read(path.join(__dirname, '../../img/wood.png'))
       .then(houseWoodImg => objectApi.registerTexture('house-wood', houseWoodImg)),
+    jimp.read(path.join(__dirname, '../../img/tree-top.png'))
+      .then(houseWoodTopImg => objectApi.registerTexture('house-wood-top', houseWoodTopImg)),
     jimp.read(path.join(__dirname, '../../img/stone.png'))
       .then(houseStoneImg => objectApi.registerTexture('house-stone', houseStoneImg)),
     jimp.read(path.join(__dirname, '../../img/plank.png'))
@@ -88,62 +90,51 @@ const house = objectApi => {
         }
       };
 
-      const houseWoodGeometry = (() => {
-        const woodUvs = objectApi.getUv('house-wood');
-        const uvWidth = woodUvs[2] - woodUvs[0];
-        const uvHeight = woodUvs[3] - woodUvs[1];
+      const houseWoodUvs = objectApi.getTileUv('house-wood');
+      const houseWoodTopUvs = objectApi.getTileUv('house-wood-top');
+      const houseWoodBlock = {
+        uvs: [
+          houseWoodUvs,
+          houseWoodUvs,
+          houseWoodTopUvs,
+          houseWoodTopUvs,
+          houseWoodUvs,
+          houseWoodUvs,
+        ],
+        transparent: false,
+        translucent: false,
+      };
+      objectApi.registerBlock('house-wood', houseWoodBlock);
 
-        const geometry = new THREE.BoxBufferGeometry(1, 1, 1)
-          .applyMatrix(new THREE.Matrix4().makeTranslation(0, 1/2, 0));
+      const houseStoneUvs = objectApi.getTileUv('house-stone');
+      const houseStoneBlock = {
+        uvs: [
+          houseStoneUvs,
+          houseStoneUvs,
+          houseStoneUvs,
+          houseStoneUvs,
+          houseStoneUvs,
+          houseStoneUvs,
+        ],
+        transparent: false,
+        translucent: false,
+      };
+      objectApi.registerBlock('house-stone', houseStoneBlock);
 
-        const uvs = geometry.getAttribute('uv').array;
-        const numUvs = uvs.length / 2;
-        for (let i = 0; i < numUvs; i++) {
-          uvs[i * 2 + 0] = woodUvs[0] + (uvs[i * 2 + 0] * uvWidth);
-          uvs[i * 2 + 1] = (woodUvs[1] + uvHeight) - (uvs[i * 2 + 1] * uvHeight);
-        }
-
-        return geometry;
-      })();
-      objectApi.registerGeometry('house-wood', houseWoodGeometry);
-
-      const houseStoneGeometry = (() => {
-        const woodUvs = objectApi.getUv('house-stone');
-        const uvWidth = woodUvs[2] - woodUvs[0];
-        const uvHeight = woodUvs[3] - woodUvs[1];
-
-        const geometry = new THREE.BoxBufferGeometry(1, 1, 1)
-          .applyMatrix(new THREE.Matrix4().makeTranslation(0, 1/2, 0));
-
-        const uvs = geometry.getAttribute('uv').array;
-        const numUvs = uvs.length / 2;
-        for (let i = 0; i < numUvs; i++) {
-          uvs[i * 2 + 0] = woodUvs[0] + (uvs[i * 2 + 0] * uvWidth);
-          uvs[i * 2 + 1] = (woodUvs[1] + uvHeight) - (uvs[i * 2 + 1] * uvHeight);
-        }
-
-        return geometry;
-      })();
-      objectApi.registerGeometry('house-stone', houseStoneGeometry);
-
-      const housePlankGeometry = (() => {
-        const woodUvs = objectApi.getUv('house-plank');
-        const uvWidth = woodUvs[2] - woodUvs[0];
-        const uvHeight = woodUvs[3] - woodUvs[1];
-
-        const geometry = new THREE.BoxBufferGeometry(1, 1, 1)
-          .applyMatrix(new THREE.Matrix4().makeTranslation(0, 1/2, 0));
-
-        const uvs = geometry.getAttribute('uv').array;
-        const numUvs = uvs.length / 2;
-        for (let i = 0; i < numUvs; i++) {
-          uvs[i * 2 + 0] = woodUvs[0] + (uvs[i * 2 + 0] * uvWidth);
-          uvs[i * 2 + 1] = (woodUvs[1] + uvHeight) - (uvs[i * 2 + 1] * uvHeight);
-        }
-
-        return geometry;
-      })();
-      objectApi.registerGeometry('house-plank', housePlankGeometry);
+      const housePlankUvs = objectApi.getTileUv('house-plank');
+      const housePlankBlock = {
+        uvs: [
+          housePlankUvs,
+          housePlankUvs,
+          housePlankUvs,
+          housePlankUvs,
+          housePlankUvs,
+          housePlankUvs,
+        ],
+        transparent: false,
+        translucent: false,
+      };
+      objectApi.registerBlock('house-plank', housePlankBlock);
 
       const stoneStairsGeometry = (() => {
         const woodUvs = objectApi.getUv('house-stone');
@@ -152,13 +143,13 @@ const house = objectApi => {
 
         const geometry = (() => {
           const frontGeometry = new THREE.BoxBufferGeometry(1, 1/4, 1)
-            .applyMatrix(new THREE.Matrix4().makeTranslation(0, 1/4/2, 0));
+            .applyMatrix(new THREE.Matrix4().makeTranslation(0, -1/2 + 1/4/2, 0));
 
           const middleGeometry = new THREE.BoxBufferGeometry(1, 1/4, 2/3)
-            .applyMatrix(new THREE.Matrix4().makeTranslation(0, 1/4/2 + 1/4, -1/3/2));
+            .applyMatrix(new THREE.Matrix4().makeTranslation(0, -1/2 + 1/4/2 + 1/4, -1/3/2));
 
           const backGeometry = new THREE.BoxBufferGeometry(1, 1/4, 1/3)
-            .applyMatrix(new THREE.Matrix4().makeTranslation(0, 1/4/2 + 2/4, -2/3/2));
+            .applyMatrix(new THREE.Matrix4().makeTranslation(0, -1/2 + 1/4/2 + 2/4, -2/3/2));
 
           const geometry = new THREE.BufferGeometry();
           const positions = new Float32Array(NUM_POSITIONS);
@@ -207,19 +198,19 @@ const house = objectApi => {
         const woodUvs = objectApi.getUv('fence');
 
         const leftGeometry = new THREE.BoxBufferGeometry(1/8, 1/2+0.075, 1/8)
-          .applyMatrix(new THREE.Matrix4().makeTranslation(-1/4, (1/2+0.075)/2, 0));
+          .applyMatrix(new THREE.Matrix4().makeTranslation(-1/4, -1/2 + (1/2+0.075)/2, 0));
         _applyUvs(leftGeometry, woodUvs[0], woodUvs[1], (woodUvs[2] - woodUvs[0]) * 4 / 16, woodUvs[3] - woodUvs[1]);
 
         const rightGeometry = new THREE.BoxBufferGeometry(1/8, 1/2+0.075, 1/8)
-          .applyMatrix(new THREE.Matrix4().makeTranslation(1/4, (1/2+0.075)/2, 0));
+          .applyMatrix(new THREE.Matrix4().makeTranslation(1/4, -1/2 + (1/2+0.075)/2, 0));
         _applyUvs(rightGeometry, woodUvs[0], woodUvs[1], (woodUvs[2] - woodUvs[0]) * 4 / 16, woodUvs[3] - woodUvs[1]);
 
         const topGeometry = new THREE.BoxBufferGeometry(1, 1/16, 1/16)
-          .applyMatrix(new THREE.Matrix4().makeTranslation(0, 1/2, 0));
+          .applyMatrix(new THREE.Matrix4().makeTranslation(0, -1/2 + 1/2, 0));
         _applyUvs(topGeometry, woodUvs[0], woodUvs[1], woodUvs[2] - woodUvs[0], (woodUvs[3] - woodUvs[1]) * 2 / 16);
 
         const bottomGeometry = new THREE.BoxBufferGeometry(1, 1/16, 1/16)
-          .applyMatrix(new THREE.Matrix4().makeTranslation(0, 1/4, 0));
+          .applyMatrix(new THREE.Matrix4().makeTranslation(0, -1/2 + 1/4, 0));
         _applyUvs(bottomGeometry, woodUvs[0], woodUvs[1], woodUvs[2] - woodUvs[0], (woodUvs[3] - woodUvs[1]) * 2 / 16);
 
         const geometry = new THREE.BufferGeometry();
@@ -261,23 +252,23 @@ const house = objectApi => {
         const woodUvs = objectApi.getUv('fence');
 
         const centerGeometry = new THREE.BoxBufferGeometry(1/8, 1/2+0.075, 1/8)
-          .applyMatrix(new THREE.Matrix4().makeTranslation(0, (1/2+0.075)/2, 0));
+          .applyMatrix(new THREE.Matrix4().makeTranslation(0, -1/2 + (1/2+0.075)/2, 0));
         _applyUvs(centerGeometry, woodUvs[0], woodUvs[1], (woodUvs[2] - woodUvs[0]) * 4 / 16, woodUvs[3] - woodUvs[1]);
 
         const bottom1Geometry = new THREE.BoxBufferGeometry(1/16, 1/16, 1/2)
-          .applyMatrix(new THREE.Matrix4().makeTranslation(0, 1/2, 1/2/2));
+          .applyMatrix(new THREE.Matrix4().makeTranslation(0, -1/2 + 1/2, 1/2/2));
         _applyUvs(bottom1Geometry, woodUvs[0], woodUvs[1], woodUvs[2] - woodUvs[0], (woodUvs[3] - woodUvs[1]) * 2 / 16);
 
         const bottom2Geometry = new THREE.BoxBufferGeometry(1/16, 1/16, 1/2)
-          .applyMatrix(new THREE.Matrix4().makeTranslation(0, 1/4, 1/2/2));
+          .applyMatrix(new THREE.Matrix4().makeTranslation(0, -1/2 + 1/4, 1/2/2));
         _applyUvs(bottom2Geometry, woodUvs[0], woodUvs[1], woodUvs[2] - woodUvs[0], (woodUvs[3] - woodUvs[1]) * 2 / 16);
 
         const right1Geometry = new THREE.BoxBufferGeometry(1/2, 1/16, 1/16)
-          .applyMatrix(new THREE.Matrix4().makeTranslation(1/2/2, 1/2, 0));
+          .applyMatrix(new THREE.Matrix4().makeTranslation(1/2/2, -1/2 + 1/2, 0));
         _applyUvs(right1Geometry, woodUvs[0], woodUvs[1], woodUvs[2] - woodUvs[0], (woodUvs[3] - woodUvs[1]) * 2 / 16);
 
         const right2Geometry = new THREE.BoxBufferGeometry(1/2, 1/16, 1/16)
-          .applyMatrix(new THREE.Matrix4().makeTranslation(1/2/2, 1/4, 0));
+          .applyMatrix(new THREE.Matrix4().makeTranslation(1/2/2, -1/2 + 1/4, 0));
         _applyUvs(right2Geometry, woodUvs[0], woodUvs[1], woodUvs[2] - woodUvs[0], (woodUvs[3] - woodUvs[1]) * 2 / 16);
 
         const geometry = new THREE.BufferGeometry();
@@ -323,7 +314,7 @@ const house = objectApi => {
 
         const backGeometry = (() => {
           const geometry = new THREE.PlaneBufferGeometry(1, 1, 1)
-            .applyMatrix(new THREE.Matrix4().makeTranslation(0, 1/2, -1/2 + 0.05));
+            .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -1/2 + 0.05));
 
           const uvs = geometry.getAttribute('uv').array;
           const numUvs = uvs.length / 2;
@@ -336,7 +327,7 @@ const house = objectApi => {
         })();
         const frontGeometry = (() => {
           const geometry = new THREE.PlaneBufferGeometry(1, 1, 1)
-            .applyMatrix(new THREE.Matrix4().makeTranslation(0, 1/2, 1/2));
+            .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, 1/2));
 
           const uvs = geometry.getAttribute('uv').array;
           uvs.fill(1);
@@ -384,7 +375,7 @@ const house = objectApi => {
 
         const backGeometry = (() => {
           const geometry = new THREE.PlaneBufferGeometry(1, 1, 1)
-            .applyMatrix(new THREE.Matrix4().makeTranslation(0, 1/2, -1/2 + 0.05));
+            .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -1/2 + 0.05));
 
           const uvs = geometry.getAttribute('uv').array;
           const numUvs = uvs.length / 2;
@@ -397,7 +388,7 @@ const house = objectApi => {
         })();
         const frontGeometry = (() => {
           const geometry = new THREE.PlaneBufferGeometry(1, 1, 1)
-            .applyMatrix(new THREE.Matrix4().makeTranslation(0, 1/2, 1/2));
+            .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, 1/2));
 
           const uvs = geometry.getAttribute('uv').array;
           uvs.fill(1);
@@ -442,7 +433,7 @@ const house = objectApi => {
 
       objectApi.registerGenerator('house', chunk => {
         if (chunk.x === 0 && chunk.z === -1) {
-          const elevation = objectApi.getHeightfield(chunk.x, chunk.z)[(0 + (0 * NUM_CELLS_OVERSCAN)) * 8];
+          const elevation = Math.floor(objectApi.getHeightfield(chunk.x, chunk.z)[(0 + (0 * NUM_CELLS_OVERSCAN)) * 8]);
 
           const localVector = new THREE.Vector3();
           const localQuaternion = new THREE.Quaternion();
@@ -457,13 +448,9 @@ const house = objectApi => {
                 const col = row[x];
 
                 if (col) {
-                  const block = (() => {
+                  const objectType = (() => {
                     if (col === 'stone-stairs') {
                       return 'stone-stairs';
-                    } else if (col === 'stone') {
-                      return 'house-stone';
-                    } else if (col === 'oak-wood-planks') {
-                      return 'house-plank';
                     } else if (col === 'fence-nw' || col === 'fence-ne' || col === 'fence-sw' || col === 'fence-se') {
                       return 'fence-nw';
                     } else if (col === 'fence-top' || col === 'fence-side') {
@@ -477,43 +464,56 @@ const house = objectApi => {
                     } else if (col === 'torch') {
                       return 'torch';
                     } else {
-                      return 'house-wood';
+                      return null;
                     }
                   })();
-                  if (col === 'fence-ne') {
-                    localQuaternion.setFromUnitVectors(
-                      new THREE.Vector3(0, 0, -1),
-                      new THREE.Vector3(1, 0, 0)
-                    );
-                  } else if (col === 'fence-se') {
-                    localQuaternion.setFromUnitVectors(
-                      new THREE.Vector3(0, 0, -1),
-                      new THREE.Vector3(0, 0, 1)
-                    );
-                  } else if (col === 'fence-sw') {
-                    localQuaternion.setFromUnitVectors(
-                      new THREE.Vector3(0, 0, -1),
-                      new THREE.Vector3(-1, 0, 0)
-                    );
-                  } else if (col === 'fence-side') {
-                    localQuaternion.setFromUnitVectors(
-                      new THREE.Vector3(0, 0, -1),
-                      new THREE.Vector3(-1, 0, 0)
-                    );
-                  } else if (col === 'glass-west') {
-                    localQuaternion.setFromUnitVectors(
-                      new THREE.Vector3(0, 0, -1),
-                      new THREE.Vector3(-1, 0, 0)
-                    );
-                  } else if (col === 'glass-east') {
-                    localQuaternion.setFromUnitVectors(
-                      new THREE.Vector3(0, 0, -1),
-                      new THREE.Vector3(1, 0, 0)
-                    );
+                  if (objectType) {
+                    if (col === 'fence-ne') {
+                      localQuaternion.setFromUnitVectors(
+                        new THREE.Vector3(0, 0, -1),
+                        new THREE.Vector3(1, 0, 0)
+                      );
+                    } else if (col === 'fence-se') {
+                      localQuaternion.setFromUnitVectors(
+                        new THREE.Vector3(0, 0, -1),
+                        new THREE.Vector3(0, 0, 1)
+                      );
+                    } else if (col === 'fence-sw') {
+                      localQuaternion.setFromUnitVectors(
+                        new THREE.Vector3(0, 0, -1),
+                        new THREE.Vector3(-1, 0, 0)
+                      );
+                    } else if (col === 'fence-side') {
+                      localQuaternion.setFromUnitVectors(
+                        new THREE.Vector3(0, 0, -1),
+                        new THREE.Vector3(-1, 0, 0)
+                      );
+                    } else if (col === 'glass-west') {
+                      localQuaternion.setFromUnitVectors(
+                        new THREE.Vector3(0, 0, -1),
+                        new THREE.Vector3(-1, 0, 0)
+                      );
+                    } else if (col === 'glass-east') {
+                      localQuaternion.setFromUnitVectors(
+                        new THREE.Vector3(0, 0, -1),
+                        new THREE.Vector3(1, 0, 0)
+                      );
+                    } else {
+                      localQuaternion.set(0, 0, 0, 1);
+                    }
+                    objectApi.addObject(chunk, objectType, localVector.set(chunk.x * NUM_CELLS + x + 0.5, elevation + y + 0.5, chunk.z * NUM_CELLS + z + 0.5), localQuaternion, 0);
                   } else {
-                    localQuaternion.set(0, 0, 0, 1);
+                    const blockType = (() => {
+                      if (col === 'stone') {
+                        return 'house-stone';
+                      } else if (col === 'oak-wood-planks') {
+                        return 'house-plank';
+                      } else {
+                        return 'house-wood';
+                      }
+                    })();
+                    objectApi.setBlock(chunk, chunk.x * NUM_CELLS + x, elevation + y, chunk.z * NUM_CELLS + z, blockType);
                   }
-                  objectApi.addObject(chunk, block, localVector.set(chunk.x * NUM_CELLS + x, elevation + y, chunk.z * NUM_CELLS + z), localQuaternion, 0);
                 }
               }
             }

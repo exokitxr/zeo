@@ -111,6 +111,8 @@ const bigHouse = objectApi => {
   return () => Promise.all([
     jimp.read(path.join(__dirname, '../../img/wood.png'))
       .then(houseWoodImg => objectApi.registerTexture('big-house-wood', houseWoodImg)),
+    jimp.read(path.join(__dirname, '../../img/tree-top.png'))
+      .then(houseWoodTopImg => objectApi.registerTexture('big-house-wood-top', houseWoodTopImg)),
     jimp.read(path.join(__dirname, '../../img/stone.png'))
       .then(houseStoneImg => objectApi.registerTexture('big-house-stone', houseStoneImg)),
     jimp.read(path.join(__dirname, '../../img/plank.png'))
@@ -133,6 +135,52 @@ const bigHouse = objectApi => {
         }
       };
 
+      const houseWoodUvs = objectApi.getTileUv('big-house-wood');
+      const houseWoodTopUvs = objectApi.getTileUv('big-house-wood-top');
+      const houseWoodBlock = {
+        uvs: [
+          houseWoodUvs,
+          houseWoodUvs,
+          houseWoodTopUvs,
+          houseWoodTopUvs,
+          houseWoodUvs,
+          houseWoodUvs,
+        ],
+        transparent: false,
+        translucent: false,
+      };
+      objectApi.registerBlock('big-house-wood', houseWoodBlock);
+
+      const houseStoneUvs = objectApi.getTileUv('big-house-stone');
+      const houseStoneBlock = {
+        uvs: [
+          houseStoneUvs,
+          houseStoneUvs,
+          houseStoneUvs,
+          houseStoneUvs,
+          houseStoneUvs,
+          houseStoneUvs,
+        ],
+        transparent: false,
+        translucent: false,
+      };
+      objectApi.registerBlock('big-house-stone', houseStoneBlock);
+
+      const housePlankUvs = objectApi.getTileUv('big-house-plank');
+      const housePlankBlock = {
+        uvs: [
+          housePlankUvs,
+          housePlankUvs,
+          housePlankUvs,
+          housePlankUvs,
+          housePlankUvs,
+          housePlankUvs,
+        ],
+        transparent: false,
+        translucent: false,
+      };
+      objectApi.registerBlock('big-house-plank', housePlankBlock);
+
       const woodStairsGeometry = (() => {
         const woodUvs = objectApi.getUv('big-house-plank');
         const uvWidth = woodUvs[2] - woodUvs[0];
@@ -140,13 +188,13 @@ const bigHouse = objectApi => {
 
         const geometry = (() => {
           const frontGeometry = new THREE.BoxBufferGeometry(1, 1/4, 1)
-            .applyMatrix(new THREE.Matrix4().makeTranslation(0, 1/4/2, 0));
+            .applyMatrix(new THREE.Matrix4().makeTranslation(0, -1/2 + 1/4/2, 0));
 
           const middleGeometry = new THREE.BoxBufferGeometry(1, 1/4, 2/3)
-            .applyMatrix(new THREE.Matrix4().makeTranslation(0, 1/4/2 + 1/4, -1/3/2));
+            .applyMatrix(new THREE.Matrix4().makeTranslation(0, -1/2 + 1/4/2 + 1/4, -1/3/2));
 
           const backGeometry = new THREE.BoxBufferGeometry(1, 1/4, 1/3)
-            .applyMatrix(new THREE.Matrix4().makeTranslation(0, 1/4/2 + 2/4, -2/3/2));
+            .applyMatrix(new THREE.Matrix4().makeTranslation(0, -1/2 + 1/4/2 + 2/4, -2/3/2));
 
           const geometry = new THREE.BufferGeometry();
           const positions = new Float32Array(NUM_POSITIONS);
@@ -198,7 +246,7 @@ const bigHouse = objectApi => {
 
         const backGeometry = (() => {
           const geometry = new THREE.PlaneBufferGeometry(1, 2, 1)
-            .applyMatrix(new THREE.Matrix4().makeTranslation(0, 2/2, 1/2 - 0.1));
+            .applyMatrix(new THREE.Matrix4().makeTranslation(0, -1/2 + 2/2, 1/2 - 0.1));
 
           const uvs = geometry.getAttribute('uv').array;
           const numUvs = uvs.length / 2;
@@ -211,7 +259,7 @@ const bigHouse = objectApi => {
         })();
         const frontGeometry = (() => {
           const geometry = new THREE.PlaneBufferGeometry(1, 2, 1)
-            .applyMatrix(new THREE.Matrix4().makeTranslation(0, 2/2, -1/2));
+            .applyMatrix(new THREE.Matrix4().makeTranslation(0, -1/2 + 2/2, -1/2));
 
           const uvs = geometry.getAttribute('uv').array;
           uvs.fill(1);
@@ -254,7 +302,7 @@ const bigHouse = objectApi => {
 
       objectApi.registerGenerator('big-house', chunk => {
         if (chunk.x === -1 && chunk.z === -1) {
-          const elevation = objectApi.getHeightfield(chunk.x, chunk.z)[(0 + (0 * NUM_CELLS_OVERSCAN)) * 8];
+          const elevation = Math.floor(objectApi.getHeightfield(chunk.x, chunk.z)[(0 + (0 * NUM_CELLS_OVERSCAN)) * 8]);
 
           const localVector = new THREE.Vector3();
           const localQuaternion = new THREE.Quaternion();
@@ -269,46 +317,53 @@ const bigHouse = objectApi => {
                 const col = row[x];
 
                 if (col) {
-                  const block = (() => {
-                    if (col === 'Cobblestone') {
-                      return 'house-stone';
-                    } else if (col === 'Oak Wood Planks') {
-                      return 'house-plank';
-                    } else if (col === 'Cobblestone Stairs') {
+                  const objectType = (() => {
+                    if (col === 'Cobblestone Stairs') {
                       return 'stone-stairs';
                     } else if (col === 'Oak Wood Stairs West' || col === 'Oak Wood Stairs East' || col === 'Oak Wood Stairs North' || col === 'Oak Wood Stairs South') {
                       return 'wood-stairs';
                     } else if (col === 'Door Oak Bottom') {
                       return 'door';
-                    } else if (col === 'Oak Wood') {
-                      return 'house-wood';
                     } else if (col === 'Glass West' || col === 'Glass East' || col === 'Glass North' || col === 'Glass South') {
                       return 'glass';
                     } else if (col === 'Torch') {
                       return 'torch';
                     } else {
-                      return 'house-wood';
+                      return null;
                     }
                   })();
-                  if (col === 'Glass West' || col === 'Oak Wood Stairs East') {
-                    localQuaternion.setFromUnitVectors(
-                      new THREE.Vector3(0, 0, -1),
-                      new THREE.Vector3(-1, 0, 0)
-                    );
-                  } else if (col === 'Glass East' || col === 'Oak Wood Stairs West') {
-                    localQuaternion.setFromUnitVectors(
-                      new THREE.Vector3(0, 0, -1),
-                      new THREE.Vector3(1, 0, 0)
-                    );
-                  } else if (col === 'Glass South' || col === 'Oak Wood Stairs North') {
-                    localQuaternion.setFromUnitVectors(
-                      new THREE.Vector3(0, 0, -1),
-                      new THREE.Vector3(0, 0, 1)
-                    );
+                  if (objectType) {
+                    if (col === 'Glass West' || col === 'Oak Wood Stairs East') {
+                      localQuaternion.setFromUnitVectors(
+                        new THREE.Vector3(0, 0, -1),
+                        new THREE.Vector3(-1, 0, 0)
+                      );
+                    } else if (col === 'Glass East' || col === 'Oak Wood Stairs West') {
+                      localQuaternion.setFromUnitVectors(
+                        new THREE.Vector3(0, 0, -1),
+                        new THREE.Vector3(1, 0, 0)
+                      );
+                    } else if (col === 'Glass South' || col === 'Oak Wood Stairs North') {
+                      localQuaternion.setFromUnitVectors(
+                        new THREE.Vector3(0, 0, -1),
+                        new THREE.Vector3(0, 0, 1)
+                      );
+                    } else {
+                      localQuaternion.set(0, 0, 0, 1);
+                    }
+                    objectApi.addObject(chunk, objectType, localVector.set(chunk.x * NUM_CELLS + x + 0.5, elevation + y + 0.5, chunk.z * NUM_CELLS + z + 0.5), localQuaternion, 0);
                   } else {
-                    localQuaternion.set(0, 0, 0, 1);
+                    const blockType = (() => {
+                      if (col === 'Cobblestone') {
+                        return 'big-house-stone';
+                      } else if (col === 'Oak Wood Planks') {
+                        return 'big-house-plank';
+                      } else {
+                        return 'big-house-wood';
+                      }
+                    })();
+                    objectApi.setBlock(chunk, chunk.x * NUM_CELLS + x, elevation + y, chunk.z * NUM_CELLS + z, blockType);
                   }
-                  objectApi.addObject(chunk, block, localVector.set(chunk.x * NUM_CELLS + x, elevation + y, chunk.z * NUM_CELLS + z), localQuaternion, 0);
                 }
               }
             }
