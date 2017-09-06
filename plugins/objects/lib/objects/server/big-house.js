@@ -110,13 +110,13 @@ TTTTTTTTT
 const bigHouse = objectApi => {
   return () => Promise.all([
     jimp.read(path.join(__dirname, '../../img/wood.png'))
-      .then(houseWoodImg => objectApi.registerTexture('big-house-wood', houseWoodImg)),
+      .then(houseWoodImg => objectApi.registerTexture('big-house-wood', houseWoodImg, {fourTap: true})),
     jimp.read(path.join(__dirname, '../../img/tree-top.png'))
-      .then(houseWoodTopImg => objectApi.registerTexture('big-house-wood-top', houseWoodTopImg)),
+      .then(houseWoodTopImg => objectApi.registerTexture('big-house-wood-top', houseWoodTopImg, {fourTap: true})),
     jimp.read(path.join(__dirname, '../../img/stone.png'))
-      .then(houseStoneImg => objectApi.registerTexture('big-house-stone', houseStoneImg)),
+      .then(houseStoneImg => objectApi.registerTexture('big-house-stone', houseStoneImg, {fourTap: true})),
     jimp.read(path.join(__dirname, '../../img/plank.png'))
-      .then(housePlankImg => objectApi.registerTexture('big-house-plank', housePlankImg)),
+      .then(housePlankImg => objectApi.registerTexture('big-house-plank', housePlankImg, {fourTap: true})),
     jimp.read(path.join(__dirname, '../../img/door.png'))
       .then(doorImg => objectApi.registerTexture('door', doorImg)),
   ])
@@ -183,8 +183,8 @@ const bigHouse = objectApi => {
 
       const woodStairsGeometry = (() => {
         const woodUvs = objectApi.getUv('big-house-plank');
-        const uvWidth = woodUvs[2] - woodUvs[0];
-        const uvHeight = woodUvs[3] - woodUvs[1];
+        const uvWidth = (woodUvs[2] - woodUvs[0]) / 2;
+        const uvHeight = (woodUvs[3] - woodUvs[1]) / 2;
 
         const geometry = (() => {
           const frontGeometry = new THREE.BoxBufferGeometry(1, 1/4, 1)

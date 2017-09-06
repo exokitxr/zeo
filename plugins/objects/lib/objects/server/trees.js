@@ -12,19 +12,19 @@ const {three: {THREE}, utils: {image: {jimp}}} = zeo;
 const tree = objectApi => {
   return () => Promise.all([
     jimp.read(path.join(__dirname, '../../img/tree.png'))
-      .then(img => objectApi.registerTexture('tree', img)),
+      .then(img => objectApi.registerTexture('tree', img, {fourTap: true})),
     jimp.read(path.join(__dirname, '../../img/tree-top.png'))
-      .then(img => objectApi.registerTexture('tree-top', img)),
+      .then(img => objectApi.registerTexture('tree-top', img, {fourTap: true})),
     jimp.read(path.join(__dirname, '../../img/leaf.png'))
-      .then(img => objectApi.registerTexture('leaf', img)),
+      .then(img => objectApi.registerTexture('leaf', img, {fourTap: true})),
     jimp.read(path.join(__dirname, '../../img/vine.png'))
-      .then(img => objectApi.registerTexture('vine', img)),
+      .then(img => objectApi.registerTexture('vine', img, {fourTap: true})),
   ])
     .then(() => {
-      const treeUvs = objectApi.getUv('tree');
-      const treeTopUvs = objectApi.getUv('tree-top');
-      const leafUvs = objectApi.getUv('leaf');
-      const vineUvs = objectApi.getUv('vine');
+      const treeUvs = objectApi.getTileUv('tree');
+      const treeTopUvs = objectApi.getTileUv('tree-top');
+      const leafUvs = objectApi.getTileUv('leaf');
+      const vineUvs = objectApi.getTileUv('vine');
       const zeroUvs = [1, 1, 1, 1];
       const treeBlock = {
         uvs: [
