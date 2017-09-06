@@ -547,10 +547,32 @@ class Objects {
             getUv(name) {
               return textureUvs[murmur(name)];
             },
-            registerTexture(name, img) {
+            getTileUv(name) {
+              const uv = textureUvs[murmur(name)];
+
+              const tileSizeU = uv[2] - uv[0];
+              const tileSizeV = uv[3] - uv[1];
+
+              const tileSizeIntU = Math.floor(tileSizeU * TEXTURE_SIZE) / 2;
+              const tileSizeIntV = Math.floor(tileSizeV * TEXTURE_SIZE) / 2;
+
+              const u = tileSizeIntU + uv[0];
+              const v = tileSizeIntV + uv[1];
+
+              return [-u, 1 - v, -u, 1 - v];
+            },
+            registerTexture(name, img, {fourTap = false} = {}) {
               const n = murmur(name);
 
               if (!textureUvs[n]) {
+                if (fourTap) {
+                  const srcImg = img;
+                  img = new jimp(srcImg.bitmap.width * 2, srcImg.bitmap.height * 2);
+                  img.composite(srcImg, 0, 0);
+                  img.composite(srcImg, srcImg.bitmap.width, 0);
+                  img.composite(srcImg, 0, srcImg.bitmap.height);
+                  img.composite(srcImg, srcImg.bitmap.width, srcImg.bitmap.height);
+                }
                 const rect = textureAtlas.pack(img.bitmap.width, img.bitmap.height);
                 const uv = textureAtlas.uv(rect);
 

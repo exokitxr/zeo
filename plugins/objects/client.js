@@ -118,10 +118,14 @@ attribute float objectIndex;
 
 varying vec3 vPosition;
 varying vec2 vUv;
+varying vec3 vViewPosition;
 varying vec3 vFrame;
 varying float vSkyLightmap;
 varying float vTorchLightmap;
 varying float vObjectIndex;
+varying float vTiled;
+varying vec2 vTileOffset;
+varying vec2 vTileSize;
 
 void main() {
   vec4 mvPosition = modelViewMatrix * vec4( position.xyz, 1.0 );
@@ -129,16 +133,25 @@ void main() {
 
   vPosition = position.xyz;
   vUv = uv;
+  vViewPosition = mvPosition.xyz;
   vFrame = frame;
   vSkyLightmap = skyLightmap;
   vTorchLightmap = torchLightmap;
   vObjectIndex = objectIndex;
+
+  if (vUv.x < 0.0) {
+    vec2 uv = vec2(vUv.x * -1.0, vUv.y);
+    vTiled = 1.0;
+    vTileOffset = fract(uv);
+    vTileSize = floor(uv) / ${TEXTURE_SIZE.toFixed(1)};
+  } else {
+    vTiled = 0.0;
+  }
 }
       `,
       fragmentShader: `\
 precision highp float;
 precision highp int;
-#define ALPHATEST 0.7
 #define DOUBLE_SIDED
 uniform vec3 ambientLightColor;
 uniform sampler2D map;
@@ -151,51 +164,110 @@ uniform float worldTime;
 
 varying vec3 vPosition;
 varying vec2 vUv;
+varying vec3 vViewPosition;
 varying vec3 vFrame;
 varying float vSkyLightmap;
 varying float vTorchLightmap;
 varying float vObjectIndex;
+varying float vTiled;
+varying vec2 vTileOffset;
+varying vec2 vTileSize;
 
 float speed = 1.0;
 vec3 blueColor = vec3(0.12941176470588237, 0.5882352941176471, 0.9529411764705882);
 
-void main() {
-  vec2 uv2 = vUv;
-  if (vFrame.z > 0.0) {
+vec4 fourTapSample(
+  vec2 tileOffset,
+  vec2 tileUV,
+  vec2 tileSize,
+  sampler2D atlas
+) {
+  //Initialize accumulators
+  vec4 color = vec4(0.0, 0.0, 0.0, 0.0);
+  float totalWeight = 0.0;
+
+  for(int dx=0; dx<2; ++dx)
+  for(int dy=0; dy<2; ++dy) {
+    //Compute coordinate in 2x2 tile patch
+    vec2 tileCoord = 2.0 * fract(0.5 * (tileUV + vec2(dx,dy)));
+
+    //Weight sample based on distance to center
+    float w = pow(1.0 - max(abs(tileCoord.x-1.0), abs(tileCoord.y-1.0)), 16.0);
+
+    //Compute atlas coord
+    vec2 atlasUV = tileOffset + tileSize * tileCoord;
+    atlasUV.y = 1.0 - atlasUV.y;
+
+    //Sample and accumulate
+    color += w * texture2D(atlas, atlasUV);
+    totalWeight += w;
+  }
+
+  //Return weighted color
+  return color / totalWeight;
+}
+
+vec2 animateUv(vec2 uv, vec3 frame, float worldTime) {
+  if (frame.z > 0.0) {
     float animationFactor = mod(worldTime, 1000.0) / 1000.0;
     // float animationFactor = (speed - abs(mod(worldTime / 1000.0, speed*2.0) - speed)) / speed;
-    float frameIndex = floor(animationFactor * vFrame.z);
-    uv2.y = 1.0 - (((1.0 - uv2.y) - vFrame.x) / vFrame.z + vFrame.x + frameIndex * vFrame.y);
+    float frameIndex = floor(animationFactor * frame.z);
+    uv.y = 1.0 - (((1.0 - uv.y) - frame.x) / frame.z + frame.x + frameIndex * frame.y);
   }
-  vec4 diffuseColor = texture2D( map, uv2 );
+  return uv;
+}
 
-#ifdef ALPHATEST
-  if ( diffuseColor.a < ALPHATEST ) discard;
-#endif
+void main() {
+  vec4 diffuseColor;
+  if (vTiled > 0.0) {
+    vec3 fdx = dFdx(vPosition);
+    vec3 fdy = dFdy(vPosition);
+    vec3 normal = floor(normalize( cross( fdx, fdy ) ) + 0.5);
+
+    vec2 tileUv = fract(vec2(dot(normal.zxy, vPosition), dot(normal.yzx, vPosition)));
+    // back and bottom: flip 180',
+    if (normal.z < 0.0 || normal.y < 0.0) tileUv.t = 1.0 - tileUv.t;
+    // left: rotate 90 cw
+    if (normal.x < 0.0) {
+        float r = tileUv.s;
+        tileUv.s = 1.0 - tileUv.t;
+        tileUv.t = r;
+    }
+    // right and top and bottom: rotate 90 ccw
+    if (normal.x > 0.0 || normal.y != 0.0) {
+        float r = tileUv.s;
+        tileUv.s = 1.0 - tileUv.t;
+        tileUv.t = 1.0 - r;
+    }
+    // front and back and bottom: flip 180', // TODO: make top and bottom consistent (pointing north?)
+    if (normal.z > 0.0 || normal.z < 0.0 || normal.y < 0.0) {
+      tileUv.t = 1.0 - tileUv.t;
+    }
+
+    diffuseColor = fourTapSample(
+      animateUv(vTileOffset, vFrame, worldTime),
+      tileUv,
+      vTileSize,
+      map
+    );
+  } else {
+    diffuseColor = texture2D(map, animateUv(vUv, vFrame, worldTime));
+  }
+
+  if ( diffuseColor.a < 0.5 ) {
+    discard;
+  }
 
   vec3 lightColor;
   if (abs(selectedObject.x - vObjectIndex) < 0.5 || abs(selectedObject.y - vObjectIndex) < 0.5) {
     diffuseColor.rgb = mix(diffuseColor.rgb, blueColor, 0.5);
     lightColor = vec3(1.0);
   } else {
-    // lightColor = vec3(floor(vSkyLightmap * 4.0 + 0.5) / 4.0);
     lightColor = vec3(floor(
       (
         min((vSkyLightmap * sunIntensity) + vTorchLightmap, 1.0)
       ) * 4.0 + 0.5) / 4.0
     );
-    /* vec3 lightColor;
-    if (useLightMap > 0.0) {
-      float u = (
-        floor(clamp(vPosition.x - d.x, 0.0, ${(NUM_CELLS).toFixed(8)})) +
-        (floor(clamp(vPosition.z - d.y, 0.0, ${(NUM_CELLS).toFixed(8)})) * ${(NUM_CELLS + 1).toFixed(8)}) +
-        0.5
-      ) / (${(NUM_CELLS + 1).toFixed(8)} * ${(NUM_CELLS + 1).toFixed(8)});
-      float v = (floor(vPosition.y) + 0.5) / ${NUM_CELLS_HEIGHT.toFixed(8)};
-      lightColor = texture2D( lightMap, vec2(u, v) ).rgb;
-    } else {
-      lightColor = vec3(sunIntensity);
-    } */
   }
 
   vec3 outgoingLight = diffuseColor.rgb * (0.1 + lightColor * 0.9);
@@ -256,7 +328,7 @@ void main() {
       THREE.ClampToEdgeWrapping,
       THREE.ClampToEdgeWrapping,
       THREE.NearestFilter,
-      THREE.NearestFilter,
+      THREE.LinearMipMapLinearFilter,
       THREE.RGBAFormat,
       THREE.UnsignedByteType,
       1
@@ -269,6 +341,9 @@ void main() {
       vertexShader: OBJECTS_SHADER.vertexShader,
       fragmentShader: OBJECTS_SHADER.fragmentShader,
       // side: THREE.DoubleSide,
+      extensions: {
+        derivatives: true,
+      },
     });
     objectsMaterial.uniformsNeedUpdate = _uniformsNeedUpdate;
 
