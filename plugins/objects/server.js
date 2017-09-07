@@ -18,15 +18,21 @@ const {
   TEXTURE_SIZE,
 
   DEFAULT_SEED,
+
+  NUM_POSITIONS_CHUNK,
 } = require('./lib/constants/constants');
-const protocolUtils = require('./lib/utils/protocol-utils');
 const tesselateUtilsLib = require('./lib/utils/tesselate-utils');
+const protocolUtils = require('./lib/utils/protocol-utils');
 const objectsLib = require('./lib/objects/server/index');
 
 const NUM_CELLS_HALF = NUM_CELLS / 2;
 const NUM_CELLS_CUBE = Math.sqrt((NUM_CELLS_HALF + 16) * (NUM_CELLS_HALF + 16) * 3); // larger than the actual bounding box to account for geometry overflow
 const NUM_VOXELS_CHUNK_HEIGHT = BLOCK_BUFFER_SIZE / 4 / NUM_CHUNKS_HEIGHT;
 const HEIGHTFIELD_PLUGIN = 'plugins-heightfield';
+
+const responseArrayBuffer = new ArrayBuffer(NUM_POSITIONS_CHUNK);
+
+const decorationsSymbol = Symbol();
 
 class Objects {
   constructor(archae) {
@@ -110,18 +116,26 @@ class Objects {
       .then(heightfieldElement => {
         const geometry = _makeChunkGeometry(chunk);
 
-        return heightfieldElement.requestLightmaps(chunk.x, chunk.z, geometry.positions)
+        const geometryBuffer = chunk.getGeometryBuffer();
+        protocolUtils.stringifyGeometry(geometry, geometryBuffer.buffer, geometryBuffer.byteOffset);
+        chunk.dirty = true; // XXX can internalize this in zeode module
+
+        return _decorateChunkLightmaps(chunk);
+      });
+    const _decorateChunkLightmaps = chunk => elements.requestElement(HEIGHTFIELD_PLUGIN)
+      .then(heightfieldElement => {
+        const geometryBuffer = chunk.getGeometryBuffer();
+        const geometry = protocolUtils.parseGeometry(geometryBuffer.buffer, geometryBuffer.byteOffset);
+
+         return heightfieldElement.requestLightmaps(chunk.x, chunk.z, geometry.positions)
           .then(({
             skyLightmaps,
             torchLightmaps,
           }) => {
-            geometry.skyLightmaps = skyLightmaps;
-            geometry.torchLightmaps = torchLightmaps;
-
-            const geometryBuffer = chunk.getGeometryBuffer();
-            protocolUtils.stringifyGeometry(geometry, geometryBuffer.buffer, geometryBuffer.byteOffset);
-            chunk.dirty = true; // XXX can internalize this in the module
-
+            chunk[decorationsSymbol] = {
+              skyLightmaps,
+              torchLightmaps,
+            };
             return chunk;
           });
       });
@@ -418,7 +432,7 @@ class Objects {
           const chunk = zde.getChunk(x, z);
 
           if (chunk) {
-            return Promise.resolve(chunk);
+            return Promise.resolve(_decorateChunkLightmaps(chunk));
           } else {
             return _ensureChunks(x, z)
               .then(() => {
@@ -688,13 +702,19 @@ class Objects {
                     res.type('application/octet-stream');
                     res.set('Texture-Atlas-Version', textureImg.version);
 
+
                     const objectBuffer = chunk.getObjectBuffer();
                     const objects = new Buffer(objectBuffer.buffer, objectBuffer.byteOffset, objectBuffer.byteLength);
                     res.write(objects);
 
                     const geometryBuffer = chunk.getGeometryBuffer();
                     const geometry = new Buffer(geometryBuffer.buffer, geometryBuffer.byteOffset, geometryBuffer.byteLength);
-                    res.end(geometry);
+                    res.write(geometry);
+
+                    const {[decorationsSymbol]: decorationsObject} = chunk;
+                    const [arrayBuffer, byteOffset] = protocolUtils.stringifyDecorations(geometry, decorationsObject, responseArrayBuffer, 0);
+                    const decorations = new Buffer(arrayBuffer, 0, byteOffset);
+                    res.end(decorations);
                   })
                   .catch(err => {
                     res.status(500);

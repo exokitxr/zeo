@@ -8,15 +8,274 @@ const UINT32_SIZE = 4;
 const INT32_SIZE = 4;
 const UINT8_SIZE = 1;
 const FLOAT32_SIZE = 4;
-const MAP_CHUNK_HEADER_ENTRIES = 9;
-const MAP_CHUNK_HEADER_SIZE = UINT32_SIZE * MAP_CHUNK_HEADER_ENTRIES;
+const GEOMETRY_HEADER_ENTRIES = 7;
+const GEOMETRY_HEADER_SIZE = UINT32_SIZE * GEOMETRY_HEADER_ENTRIES;
+const WORKER_HEADER_ENTRIES = 9;
+const WORKER_HEADER_SIZE = UINT32_SIZE * WORKER_HEADER_ENTRIES;
+const DECORATIONS_HEADER_ENTRIES = 2;
+const DECORATIONS_HEADER_SIZE = UINT32_SIZE * DECORATIONS_HEADER_ENTRIES;
 const CULL_HEADER_ENTRIES = 1;
 const CULL_HEADER_SIZE = UINT32_SIZE * CULL_HEADER_ENTRIES;
 
-const _getObjectsChunkSizeFromMetadata = metadata => {
+const _getGeometrySizeFromMetadata = metadata => {
+  const {numPositions, numUvs, numSsaos, numFrames, numObjectIndices, numIndices, numObjects} = metadata;
+
+  return GEOMETRY_HEADER_SIZE + // header
+    (FLOAT32_SIZE * numPositions) + // positions
+    (FLOAT32_SIZE * numUvs) + // uvs
+    _align(UINT8_SIZE * numSsaos, FLOAT32_SIZE) + // ssaos
+    (FLOAT32_SIZE * numFrames) + // frames
+    (FLOAT32_SIZE * numObjectIndices) +  // object indices
+    (UINT32_SIZE * numIndices) + // indices
+    (UINT32_SIZE * numObjects) + // objects
+    (UINT32_SIZE * 2 * NUM_CHUNKS_HEIGHT) + // index range
+    (FLOAT32_SIZE * NUM_CHUNKS_HEIGHT); // bounding sphere
+};
+
+const _getGeometrySize = geometry => {
+  const {positions, uvs, ssaos, frames, objectIndices, indices, objects} = geometry;
+
+  const numPositions = positions.length;
+  const numUvs = uvs.length;
+  const numSsaos = ssaos.length;
+  const numFrames = frames.length;
+  const numObjectIndices = objectIndices.length;
+  const numIndices = indices.length;
+  const numObjects = objects.length;
+
+  return _getGeometrySizeFromMetadata({
+    numPositions,
+    numUvs,
+    numSsaos,
+    numFrames,
+    numObjectIndices,
+    numIndices,
+    numObjects,
+  });
+};
+
+const stringifyGeometry = (geometry, arrayBuffer, byteOffset) => {
+  const {positions, uvs, ssaos, frames, objectIndices, indices, objects, geometries} = geometry;
+
+  if (arrayBuffer === undefined || byteOffset === undefined) {
+    const bufferSize = _getGeometrySize(geometry);
+    arrayBuffer = new ArrayBuffer(bufferSize);
+    byteOffset = 0;
+  }
+
+  const headerBuffer = new Uint32Array(arrayBuffer, byteOffset, GEOMETRY_HEADER_ENTRIES);
+  let index = 0;
+  headerBuffer[index++] = positions.length;
+  headerBuffer[index++] = uvs.length;
+  headerBuffer[index++] = ssaos.length;
+  headerBuffer[index++] = frames.length;
+  headerBuffer[index++] = objectIndices.length;
+  headerBuffer[index++] = indices.length;
+  headerBuffer[index++] = objects.length;
+  byteOffset += GEOMETRY_HEADER_SIZE;
+
+  const positionsBuffer = new Float32Array(arrayBuffer, byteOffset, positions.length);
+  positionsBuffer.set(positions);
+  byteOffset += FLOAT32_SIZE * positions.length;
+
+  const uvsBuffer = new Float32Array(arrayBuffer, byteOffset, uvs.length);
+  uvsBuffer.set(uvs);
+  byteOffset += FLOAT32_SIZE * uvs.length;
+
+  const ssaosBuffer = new Uint8Array(arrayBuffer, byteOffset, ssaos.length);
+  ssaosBuffer.set(ssaos);
+  byteOffset += UINT8_SIZE * ssaos.length;
+  byteOffset = _align(byteOffset, FLOAT32_SIZE);
+
+  const framesBuffer = new Float32Array(arrayBuffer, byteOffset, frames.length);
+  framesBuffer.set(frames);
+  byteOffset += FLOAT32_SIZE * frames.length;
+
+  const objectIndexBuffer = new Float32Array(arrayBuffer, byteOffset, objectIndices.length);
+  objectIndexBuffer.set(objectIndices);
+  byteOffset += FLOAT32_SIZE * objectIndices.length;
+
+  const indicesBuffer = new Uint32Array(arrayBuffer, byteOffset, indices.length);
+  indicesBuffer.set(indices);
+  byteOffset += UINT32_SIZE * indices.length;
+
+  const objectsBuffer = new Uint32Array(arrayBuffer, byteOffset, objects.length);
+  objectsBuffer.set(objects);
+  byteOffset += UINT32_SIZE * objects.length;
+
+  for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
+    const geometry = geometries[i];
+    const {indexRange, boundingSphere, peeks} = geometry;
+
+    const indexRangeBuffer = new Uint32Array(arrayBuffer, byteOffset, 2);
+    indexRangeBuffer.set(Uint32Array.from([indexRange.start, indexRange.count]));
+    byteOffset += UINT32_SIZE * 2;
+
+    const boundingSphereBuffer = new Float32Array(arrayBuffer, byteOffset, 4);
+    boundingSphereBuffer.set(boundingSphere);
+    byteOffset += FLOAT32_SIZE * 4;
+  }
+
+  return [arrayBuffer, byteOffset];
+};
+
+const parseGeometry = (buffer, byteOffset) => {
+  if (byteOffset === undefined) {
+    byteOffset = 0;
+  }
+
+  const headerBuffer = new Uint32Array(buffer, byteOffset, GEOMETRY_HEADER_ENTRIES);
+  let index = 0;
+  const numPositions = headerBuffer[index++];
+  const numUvs = headerBuffer[index++];
+  const numSsaos = headerBuffer[index++];
+  const numFrames = headerBuffer[index++];
+  const numObjectIndices = headerBuffer[index++];
+  const numIndices = headerBuffer[index++];
+  const numObjects = headerBuffer[index++];
+  byteOffset += GEOMETRY_HEADER_SIZE;
+
+  const positionsBuffer = new Float32Array(buffer, byteOffset, numPositions);
+  const positions = positionsBuffer;
+  byteOffset += FLOAT32_SIZE * numPositions;
+
+  const uvsBuffer = new Float32Array(buffer, byteOffset, numUvs);
+  const uvs = uvsBuffer;
+  byteOffset += FLOAT32_SIZE * numUvs;
+
+  const ssaosBuffer = new Uint8Array(buffer, byteOffset, numSsaos);
+  const ssaos = ssaosBuffer;
+  byteOffset += UINT8_SIZE * numSsaos;
+  byteOffset = _align(byteOffset, FLOAT32_SIZE);
+
+  const framesBuffer = new Float32Array(buffer, byteOffset, numFrames);
+  const frames = framesBuffer;
+  byteOffset += FLOAT32_SIZE * numFrames;
+
+  const objectIndexBuffer = new Float32Array(buffer, byteOffset, numObjectIndices);
+  const objectIndices = objectIndexBuffer;
+  byteOffset += FLOAT32_SIZE * numObjectIndices;
+
+  const indicesBuffer = new Uint32Array(buffer, byteOffset, numIndices);
+  const indices = indicesBuffer;
+  byteOffset += UINT32_SIZE * numIndices;
+
+  const objectsBuffer = new Uint32Array(buffer, byteOffset, numObjects);
+  const objects = objectsBuffer;
+  byteOffset += UINT32_SIZE * numObjects;
+
+  const geometries = Array(NUM_CHUNKS_HEIGHT);
+  for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
+    const indexRangeBuffer = new Uint32Array(buffer, byteOffset, 2);
+    const indexRange = {
+      start: indexRangeBuffer[0],
+      count: indexRangeBuffer[1],
+    };
+    byteOffset += UINT32_SIZE * 2;
+
+    const boundingSphereBuffer = new Float32Array(buffer, byteOffset, 4);
+    const boundingSphere = boundingSphereBuffer;
+    byteOffset += FLOAT32_SIZE * 4;
+
+    geometries[i] = {
+      indexRange,
+      boundingSphere,
+    };
+  }
+
+  return {
+    buffer,
+    positions,
+    uvs,
+    ssaos,
+    frames,
+    objectIndices,
+    indices,
+    objects,
+    geometries,
+  };
+};
+
+const _getDecorationsSizeFromMetadata = metadata => {
+  const {numSkyLightmaps, numTorchLightmaps} = metadata;
+
+  return DECORATIONS_HEADER_SIZE + // header
+    _align(UINT8_SIZE * numSkyLightmaps, FLOAT32_SIZE) + // sky lightmaps
+    _align(UINT8_SIZE * numTorchLightmaps, FLOAT32_SIZE); // torch lightmaps
+};
+
+const _getDecorationsSize = decorations => {
+  const {skyLightmaps, torchLightmaps} = decorations;
+
+  const numSkyLightmaps = skyLightmaps.length;
+  const numTorchLightmaps = torchLightmaps.length;
+
+  return _getWorkerSizeFromMetadata({
+    numSkyLightmaps,
+    numTorchLightmaps,
+  });
+};
+
+const stringifyDecorations = (geometry, decorations, arrayBuffer, byteOffset) => {
+  const {positions, uvs, ssaos, frames, objectIndices, indices, objects, geometries} = geometry;
+  const {skyLightmaps, torchLightmaps} = decorations;
+
+  if (arrayBuffer === undefined || byteOffset === undefined) {
+    const bufferSize = _getWorkerSize(geometry, decorations);
+    arrayBuffer = new ArrayBuffer(bufferSize);
+    byteOffset = 0;
+  }
+
+  const headerBuffer = new Uint32Array(arrayBuffer, byteOffset, DECORATIONS_HEADER_ENTRIES);
+  let index = 0;
+  headerBuffer[index++] = skyLightmaps.length;
+  headerBuffer[index++] = torchLightmaps.length;
+  byteOffset += DECORATIONS_HEADER_SIZE;
+
+  const skyLightmapsBuffer = new Uint8Array(arrayBuffer, byteOffset, skyLightmaps.length);
+  skyLightmapsBuffer.set(skyLightmaps);
+  byteOffset += UINT8_SIZE * skyLightmaps.length;
+  byteOffset = _align(byteOffset, FLOAT32_SIZE);
+
+  const torchLightmapsBuffer = new Uint8Array(arrayBuffer, byteOffset, torchLightmaps.length);
+  torchLightmapsBuffer.set(torchLightmaps);
+  byteOffset += UINT8_SIZE * torchLightmaps.length;
+  byteOffset = _align(byteOffset, FLOAT32_SIZE);
+
+  return [arrayBuffer, byteOffset];
+};
+
+const parseDecorations = (buffer, byteOffset) => {
+  if (byteOffset === undefined) {
+    byteOffset = 0;
+  }
+
+  const headerBuffer = new Uint32Array(buffer, byteOffset, DECORATIONS_HEADER_ENTRIES);
+  let index = 0;
+  const numSkyLightmaps = headerBuffer[index++];
+  const numTorchLightmaps = headerBuffer[index++];
+  byteOffset += DECORATIONS_HEADER_SIZE;
+
+  const skyLightmapsBuffer = new Uint8Array(buffer, byteOffset, numSkyLightmaps);
+  const skyLightmaps = skyLightmapsBuffer;
+  byteOffset += UINT8_SIZE * numSkyLightmaps;
+  byteOffset = _align(byteOffset, FLOAT32_SIZE);
+
+  const torchLightmapsBuffer = new Uint8Array(buffer, byteOffset, numTorchLightmaps);
+  const torchLightmaps = torchLightmapsBuffer;
+  byteOffset += UINT8_SIZE * numTorchLightmaps;
+  byteOffset = _align(byteOffset, FLOAT32_SIZE);
+
+  return {
+    skyLightmaps,
+    torchLightmaps,
+  };
+};
+
+const _getWorkerSizeFromMetadata = metadata => {
   const {numPositions, numUvs, numSsaos, numFrames, numSkyLightmaps, numTorchLightmaps, numObjectIndices, numIndices, numObjects} = metadata;
 
-  return MAP_CHUNK_HEADER_SIZE + // header
+  return WORKER_HEADER_SIZE + // header
     (FLOAT32_SIZE * numPositions) + // positions
     (FLOAT32_SIZE * numUvs) + // uvs
     _align(UINT8_SIZE * numSsaos, FLOAT32_SIZE) + // ssaos
@@ -30,8 +289,9 @@ const _getObjectsChunkSizeFromMetadata = metadata => {
     (FLOAT32_SIZE * NUM_CHUNKS_HEIGHT); // bounding sphere
 };
 
-const _getObjectsChunkSize = (objectsChunk, skyLightmaps, torchLightmaps) => {
-  const {positions, uvs, ssaos, frames, objectIndices, indices, objects} = objectsChunk;
+const _getWorkerSize = (geometry, decorations) => {
+  const {positions, uvs, ssaos, frames, objectIndices, indices, objects} = geometry;
+  const {skyLightmaps, torchLightmaps} = decorations;
 
   const numPositions = positions.length;
   const numUvs = uvs.length;
@@ -43,7 +303,7 @@ const _getObjectsChunkSize = (objectsChunk, skyLightmaps, torchLightmaps) => {
   const numIndices = indices.length;
   const numObjects = objects.length;
 
-  return _getObjectsChunkSizeFromMetadata({
+  return _getWorkerSizeFromMetadata({
     numPositions,
     numUvs,
     numSsaos,
@@ -56,16 +316,17 @@ const _getObjectsChunkSize = (objectsChunk, skyLightmaps, torchLightmaps) => {
   });
 };
 
-const stringifyGeometry = (objectsChunk, arrayBuffer, byteOffset) => {
-  const {positions, uvs, ssaos, frames, objectIndices, skyLightmaps, torchLightmaps, indices, objects, geometries} = objectsChunk;
+const stringifyWorker = (geometry, decorations, arrayBuffer, byteOffset) => {
+  const {positions, uvs, ssaos, frames, objectIndices, indices, objects, geometries} = geometry;
+  const {skyLightmaps, torchLightmaps} = decorations;
 
   if (arrayBuffer === undefined || byteOffset === undefined) {
-    const bufferSize = _getObjectsChunkSize(objectsChunk, skyLightmaps, torchLightmaps);
+    const bufferSize = _getWorkerSize(geometry, decorations);
     arrayBuffer = new ArrayBuffer(bufferSize);
     byteOffset = 0;
   }
 
-  const headerBuffer = new Uint32Array(arrayBuffer, byteOffset, MAP_CHUNK_HEADER_ENTRIES);
+  const headerBuffer = new Uint32Array(arrayBuffer, byteOffset, WORKER_HEADER_ENTRIES);
   let index = 0;
   headerBuffer[index++] = positions.length;
   headerBuffer[index++] = uvs.length;  
@@ -76,7 +337,7 @@ const stringifyGeometry = (objectsChunk, arrayBuffer, byteOffset) => {
   headerBuffer[index++] = objectIndices.length;
   headerBuffer[index++] = indices.length;
   headerBuffer[index++] = objects.length;
-  byteOffset += MAP_CHUNK_HEADER_SIZE;
+  byteOffset += WORKER_HEADER_SIZE;
 
   const positionsBuffer = new Float32Array(arrayBuffer, byteOffset, positions.length);
   positionsBuffer.set(positions);
@@ -130,15 +391,15 @@ const stringifyGeometry = (objectsChunk, arrayBuffer, byteOffset) => {
     byteOffset += FLOAT32_SIZE * 4;
   }
 
-  return arrayBuffer;
+  return [arrayBuffer, byteOffset];
 };
 
-const parseGeometry = (buffer, byteOffset) => {
+const parseWorker = (buffer, byteOffset) => {
   if (byteOffset === undefined) {
     byteOffset = 0;
   }
 
-  const headerBuffer = new Uint32Array(buffer, byteOffset, MAP_CHUNK_HEADER_ENTRIES);
+  const headerBuffer = new Uint32Array(buffer, byteOffset, WORKER_HEADER_ENTRIES);
   let index = 0;
   const numPositions = headerBuffer[index++];
   const numUvs = headerBuffer[index++];
@@ -149,7 +410,7 @@ const parseGeometry = (buffer, byteOffset) => {
   const numObjectIndices = headerBuffer[index++];
   const numIndices = headerBuffer[index++];
   const numObjects = headerBuffer[index++];
-  byteOffset += MAP_CHUNK_HEADER_SIZE;
+  byteOffset += WORKER_HEADER_SIZE;
 
   const positionsBuffer = new Float32Array(buffer, byteOffset, numPositions);
   const positions = positionsBuffer;
@@ -318,6 +579,12 @@ const _align = (n, alignment) => {
 module.exports = {
   stringifyGeometry,
   parseGeometry,
+
+  stringifyDecorations,
+  parseDecorations,
+
+  stringifyWorker,
+  parseWorker,
 
   stringifyCull,
   parseCull,

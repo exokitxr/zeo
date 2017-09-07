@@ -13,6 +13,8 @@ const TEXTURE_SIZE = 512;
 
 const DEFAULT_SEED = 'a';
 
+const NUM_POSITIONS_CHUNK = 1.25 * 1024 * 1024;
+
 module.exports = {
   NUM_CELLS,
   OVERSCAN,
@@ -28,4 +30,6 @@ module.exports = {
   TEXTURE_SIZE,
 
   DEFAULT_SEED,
+
+  NUM_POSITIONS_CHUNK,
 };

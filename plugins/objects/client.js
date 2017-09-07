@@ -653,12 +653,12 @@ void main() {
 
     const _requestObjectsGenerate = (x, z, index, numPositions, numObjectIndices, numIndices, cb) => {
       worker.requestGenerate(x, z, index, numPositions, numObjectIndices, numIndices, objectsChunkBuffer => {
-        cb(protocolUtils.parseGeometry(objectsChunkBuffer));
+        cb(protocolUtils.parseWorker(objectsChunkBuffer));
       });
     };
     const _requestObjectsUpdate = (x, z, cb) => {
       worker.requestUpdate(x, z, objectsChunkBuffer => {
-        cb(protocolUtils.parseGeometry(objectsChunkBuffer));
+        cb(protocolUtils.parseWorker(objectsChunkBuffer));
       });
     };
     const _makeObjectsChunkMesh = (chunk, gbuffer) => {

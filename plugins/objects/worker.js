@@ -401,9 +401,11 @@ const _requestChunk = (x, z, index, numPositions, numObjectIndices, numIndices) 
     }
 
     const objectBuffer = new Uint32Array(buffer, 0, OBJECT_BUFFER_SIZE / 4);
-    const geometryBuffer = new Uint8Array(buffer, OBJECT_BUFFER_SIZE, GEOMETRY_BUFFER_SIZE)
+    const geometryBuffer = new Uint8Array(buffer, OBJECT_BUFFER_SIZE, GEOMETRY_BUFFER_SIZE);
+    const decorationsBuffer = new Uint8Array(buffer, OBJECT_BUFFER_SIZE + GEOMETRY_BUFFER_SIZE);
 
     const chunkData = protocolUtils.parseGeometry(geometryBuffer.buffer, geometryBuffer.byteOffset);
+    chunkData.decorations = protocolUtils.parseDecorations(decorationsBuffer.buffer, decorationsBuffer.byteOffset);
     _offsetChunkData(chunkData, index, numPositions);
 
     return _decorateChunk(new zeode.Chunk(x, z, objectBuffer, geometryBuffer), chunkData, index, numPositions, numObjectIndices, numIndices);
@@ -467,54 +469,6 @@ const _decorateChunk = (chunk, chunkData, index, numPositions, numObjectIndices,
   chunk.renderSpec = renderSpec;
 
   return chunk;
-};
-const _requestChunkUpdate = (chunk, buffer, cb) => {
-  /* const {positions} = chunk.chunkData;
-
-  const lightmapBuffer = new Uint8Array(buffer, Math.floor(buffer.byteLength * 3 / 4));
-
-  let byteOffset = 0;
-  new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, 1)[0] = 1;
-  byteOffset += 4;
-
-  const lightmapHeaderArray = new Int32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, 2);
-  lightmapHeaderArray[0] = chunk.x;
-  lightmapHeaderArray[1] = chunk.z;
-  byteOffset += 4 * 2;
-
-  const numPositions = positions.length;
-  new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, 1)[0] = numPositions;
-  byteOffset += 4;
-
-  new Float32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, numPositions).set(positions);
-  byteOffset += 4 * numPositions;
-
-  _requestLightmaps(lightmapBuffer, lightmapBuffer => {
-    const {buffer} = lightmapBuffer; */
-
-    /* let byteOffset = 3 * 4;
-    const skyLightmapsLength = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, 1)[0];
-    byteOffset += 4;
-    const skyLightmaps = new Uint8Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, skyLightmapsLength);
-    byteOffset += skyLightmapsLength;
-    let alignDiff = byteOffset % 4;
-    if (alignDiff > 0) {
-      byteOffset += 4 - alignDiff;
-    }
-
-    const torchLightmapsLength = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, 1)[0];
-    byteOffset += 4;
-    const torchLightmaps = new Uint8Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset + byteOffset, torchLightmapsLength);
-    byteOffset += torchLightmapsLength;
-    alignDiff = byteOffset % 4;
-    if (alignDiff > 0) {
-      byteOffset += 4 - alignDiff;
-    } */
-
-    protocolUtils.stringifyGeometry(chunk.chunkData, buffer, 0);
-
-    cb(buffer);
-  // });
 };
 const _updateTextureAtlas = _debounce(next => {
   return fetch(`/archae/objects/texture-atlas.png`, {
@@ -785,26 +739,24 @@ self.onmessage = e => {
         .then(chunk => {
           zde.pushChunk(chunk);
 
-          // _requestChunkUpdate(chunk, buffer, buffer => {
-            protocolUtils.stringifyGeometry(chunk.chunkData, buffer, 0);
+          protocolUtils.stringifyWorker(chunk.chunkData, chunk.chunkData.decorations, buffer, 0);
 
-            postMessage({
-              type: 'response',
-              args: [id],
-              result: buffer,
-            }, [buffer]);
+          postMessage({
+            type: 'response',
+            args: [id],
+            result: buffer,
+          }, [buffer]);
 
-            chunk.forEachObject((n, matrix, value, objectIndex) => {
-              const objectApi = objectApis[n];
+          chunk.forEachObject((n, matrix, value, objectIndex) => {
+            const objectApi = objectApis[n];
 
-              if (objectApi && objectApi.added) {
-                postMessage({
-                  type: 'objectAdded',
-                  args: [n, x, z, objectIndex, matrix.slice(0, 3), matrix.slice(3, 7), value],
-                });
-              }
-            });
-          // });
+            if (objectApi && objectApi.added) {
+              postMessage({
+                type: 'objectAdded',
+                args: [n, x, z, objectIndex, matrix.slice(0, 3), matrix.slice(3, 7), value],
+              });
+            }
+          });
         })
         .catch(err => {
           console.warn(err);
@@ -834,14 +786,12 @@ self.onmessage = e => {
       let {buffer} = args;
 
       const chunk = zde.getChunk(x, z);
-      protocolUtils.stringifyGeometry(chunk.chunkData, buffer, 0);
-      // _requestChunkUpdate(chunk, buffer, buffer => {
-        postMessage({
-          type: 'response',
-          args: [id],
-          result: buffer,
-        }, [buffer]);
-      // });
+      protocolUtils.stringifyData(chunk.chunkData, buffer, 0);
+      postMessage({
+        type: 'response',
+        args: [id],
+        result: buffer,
+      }, [buffer]);
       break;
     }
     case 'lightmaps': {
