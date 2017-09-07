@@ -30,8 +30,6 @@ const NUM_CELLS_CUBE = Math.sqrt((NUM_CELLS_HALF + 16) * (NUM_CELLS_HALF + 16) *
 const NUM_VOXELS_CHUNK_HEIGHT = BLOCK_BUFFER_SIZE / 4 / NUM_CHUNKS_HEIGHT;
 const HEIGHTFIELD_PLUGIN = 'plugins-heightfield';
 
-const responseArrayBuffer = new ArrayBuffer(NUM_POSITIONS_CHUNK);
-
 const decorationsSymbol = Symbol();
 
 class Objects {
@@ -704,17 +702,14 @@ class Objects {
 
 
                     const objectBuffer = chunk.getObjectBuffer();
-                    const objects = new Buffer(objectBuffer.buffer, objectBuffer.byteOffset, objectBuffer.byteLength);
-                    res.write(objects);
+                    res.write(new Buffer(objectBuffer.buffer, objectBuffer.byteOffset, objectBuffer.byteLength));
 
                     const geometryBuffer = chunk.getGeometryBuffer();
-                    const geometry = new Buffer(geometryBuffer.buffer, geometryBuffer.byteOffset, geometryBuffer.byteLength);
-                    res.write(geometry);
+                    res.write(new Buffer(geometryBuffer.buffer, geometryBuffer.byteOffset, geometryBuffer.byteLength));
 
                     const {[decorationsSymbol]: decorationsObject} = chunk;
-                    const [arrayBuffer, byteOffset] = protocolUtils.stringifyDecorations(geometry, decorationsObject, responseArrayBuffer, 0);
-                    const decorations = new Buffer(arrayBuffer, 0, byteOffset);
-                    res.end(decorations);
+                    const [arrayBuffer, byteOffset] = protocolUtils.stringifyDecorations(decorationsObject);
+                    res.end(new Buffer(arrayBuffer, 0, byteOffset));
                   })
                   .catch(err => {
                     res.status(500);

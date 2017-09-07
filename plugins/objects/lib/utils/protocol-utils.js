@@ -210,18 +210,17 @@ const _getDecorationsSize = decorations => {
   const numSkyLightmaps = skyLightmaps.length;
   const numTorchLightmaps = torchLightmaps.length;
 
-  return _getWorkerSizeFromMetadata({
+  return _getDecorationsSizeFromMetadata({
     numSkyLightmaps,
     numTorchLightmaps,
   });
 };
 
-const stringifyDecorations = (geometry, decorations, arrayBuffer, byteOffset) => {
-  const {positions, uvs, ssaos, frames, objectIndices, indices, objects, geometries} = geometry;
+const stringifyDecorations = (decorations, arrayBuffer, byteOffset) => {
   const {skyLightmaps, torchLightmaps} = decorations;
 
   if (arrayBuffer === undefined || byteOffset === undefined) {
-    const bufferSize = _getWorkerSize(geometry, decorations);
+    const bufferSize = _getDecorationsSize(decorations);
     arrayBuffer = new ArrayBuffer(bufferSize);
     byteOffset = 0;
   }
