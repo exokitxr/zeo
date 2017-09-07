@@ -1,4 +1,4 @@
-module.exports = ({THREE}) => {
+module.exports = ({THREE, BLOCK_BUFFER_SIZE}) => {
 
 const NUM_POSITIONS_CHUNK = 100 * 1024;
 const MASK_SIZE = 4096;
@@ -13,8 +13,9 @@ function tesselate(voxels, dims, {isTransparent, isTranslucent, getFaceUvs}) {
   const positions = getPositions(verticesData);
   const normals = getNormals(positions);
   const uvs = getUvs(facesData, normals, {getFaceUvs});
-  return {positions, /*normals, */uvs};
-};
+  const ssaos = getSsaos(verticesData, voxels);
+  return {positions, /*normals, */uvs, ssaos};
+}
 
 function getMeshData(voxels, dims, {isTransparent, isTranslucent}) {
   const vertices = new Float32Array(NUM_POSITIONS_CHUNK);
@@ -209,14 +210,14 @@ function getMeshData(voxels, dims, {isTransparent, isTranslucent}) {
     vertices: vertices.subarray(0, vertexIndex + tVertexIndex),
     faces: faces.subarray(0, faceIndex + tFaceIndex),
   };
-};
+}
 
 function getPositions(verticesData) {
   const numFaces = verticesData.length / (4 * 3);
   const result = new Float32Array(numFaces * 18);
 
   for (let i = 0; i < numFaces; i++) {
-    const faceVertices = verticesData.slice(i * 4 * 3, (i + 1) * 4 * 3);
+    const faceVertices = verticesData.subarray(i * 4 * 3, (i + 1) * 4 * 3);
 
     // abd
     result[i * 18 + 0] = faceVertices[0 * 3 + 0];
@@ -246,14 +247,14 @@ function getPositions(verticesData) {
   }
 
   return result;
-};
+}
 
 function getNormals(positions) {
   const geometry = new THREE.BufferGeometry();
   geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
   geometry.computeVertexNormals();
   return geometry.getAttribute('normal').array;
-};
+}
 
 function getUvs(facesData, normals, {getFaceUvs}) {
   const numFaces = facesData.length;
@@ -297,7 +298,220 @@ function getUvs(facesData, normals, {getFaceUvs}) {
     else if (normals[normalIndex + 2] === 1)  return 5;
     else                                      return 0;
   }
+}
+
+const OCCLUSIONS_MAP = {
+  x: {
+    true: [
+      0,
+      3,
+      2,
+      1,
+    ],
+    false: [
+      0,
+      1,
+      2,
+      3,
+    ],
+  },
+  y: {
+    true: [
+      0,
+      3,
+      2,
+      1,
+    ],
+    false: [
+      0,
+      1,
+      2,
+      3,
+    ],
+  },
+  z: {
+    true: [
+      0,
+      1,
+      2,
+      3,
+    ],
+    false: [
+      0,
+      3,
+      2,
+      1,
+    ],
+  },
 };
+
+const localVector = new THREE.Vector3();
+const localVector2 = new THREE.Vector3();
+const localVector3 = new THREE.Vector3();
+const localVector4 = new THREE.Vector3();
+const localVector5 = new THREE.Vector3();
+const localCoord = new THREE.Vector2();
+const localTriangle = new THREE.Triangle();
+function getSsaos(verticesData, voxels) {
+  const numFaces = verticesData.length / (4 * 3);
+  const result = new Uint8Array(numFaces * 6);
+
+  const _isOccluded = p => !!voxels[_getBlockIndex(p.x, p.y, p.z)];
+
+  for (let i = 0; i < numFaces; i++) {
+    const faceVertices = verticesData.subarray(i * 4 * 3, (i + 1) * 4 * 3);
+    const minPoint = localVector.set(Infinity, Infinity, Infinity);
+
+    for (let j = 0; j < 4; j++) {
+      const faceVertex = localVector2.fromArray(faceVertices.subarray(j * 3, (j + 1) * 3));
+
+      minPoint.min(faceVertex);
+
+      if (j === 0) {
+        localTriangle.a.copy(faceVertex);
+      } else if (j === 1) {
+        localTriangle.b.copy(faceVertex);
+      } else if (j === 2) {
+        localTriangle.c.copy(faceVertex);
+      }
+    }
+
+    const normal = localTriangle.normal(localVector2);
+
+    const directions = (() => { // normal, sign, u, v
+      if (normal.x !== 0) {
+        return {normal: 'x', normalSign: normal.x > 0, u: 'z', v: 'y'};
+      } else if (normal.y !== 0) {
+        return {normal: 'y', normalSign: normal.y > 0, u: 'x', v: 'z'};
+      } else if (normal.z !== 0) {
+        return {normal: 'z', normalSign: normal.z > 0, u: 'x', v: 'y'};
+      } else {
+        return null;
+      }
+    })();
+
+// const testVector = new THREE.Vector3(5, 5, 4);
+
+    const occlusions = Array(4);
+    const occlusionsMap = OCCLUSIONS_MAP[directions.normal][directions.normalSign];
+    for (let j = 0; j < 4; j++) {
+      const faceVertex = localVector3.fromArray(faceVertices.subarray(j * 3, (j + 1) * 3));
+      const faceVertexOffset = localVector4.copy(faceVertex).sub(minPoint);
+      const faceVertexUv = localCoord.set(faceVertexOffset[directions.u], faceVertexOffset[directions.v]);
+
+      if (faceVertexUv.x === 0 && faceVertexUv.y === 0) {
+        let numOcclusions = 0;
+
+        localVector5.copy(minPoint);
+        localVector5[directions.normal] += directions.normalSign ? 0 : -1;
+        localVector5[directions.u]--;
+        numOcclusions += _isOccluded(localVector5);
+
+        localVector5.copy(minPoint);
+        localVector5[directions.normal] += directions.normalSign ? 0 : -1;
+        localVector5[directions.v]--;
+        numOcclusions += _isOccluded(localVector5);
+
+        localVector5.copy(minPoint);
+        localVector5[directions.normal] += directions.normalSign ? 0 : -1;
+        localVector5[directions.u]--;
+        localVector5[directions.v]--;
+        numOcclusions += _isOccluded(localVector5);
+
+// minPoint.equals(testVector) && directions.normal === 'x' && directions.normalSign && console.log('got', directions, '00', numOcclusions);
+
+        occlusions[occlusionsMap[0]] = numOcclusions;
+      } else if (faceVertexUv.x > 0 && faceVertexUv.y === 0) {
+        let numOcclusions = 0;
+
+        localVector5.copy(minPoint);
+        localVector5[directions.normal] += directions.normalSign ? 0 : -1;
+        localVector5[directions.u] += faceVertexUv.x;
+        numOcclusions += _isOccluded(localVector5);
+// minPoint.equals(testVector) && directions.normal === 'x' && directions.normalSign && console.log('check 1', directions, '10', localVector5, _isOccluded(localVector5));
+
+        localVector5.copy(minPoint);
+        localVector5[directions.normal] += directions.normalSign ? 0 : -1;
+        localVector5[directions.v]--;
+        numOcclusions += _isOccluded(localVector5);
+
+        localVector5.copy(minPoint);
+        localVector5[directions.normal] += directions.normalSign ? 0 : -1;
+        localVector5[directions.u] += faceVertexUv.x;
+        localVector5[directions.v]--;
+        numOcclusions += _isOccluded(localVector5);
+
+// minPoint.equals(testVector) && directions.normal === 'x' && directions.normalSign && console.log('got', directions, '10', numOcclusions);
+
+        occlusions[occlusionsMap[1]] = numOcclusions;
+      } else if (faceVertexUv.x > 0 && faceVertexUv.y > 0) {
+        let numOcclusions = 0;
+
+        localVector5.copy(minPoint);
+        localVector5[directions.normal] += directions.normalSign ? 0 : -1;
+        localVector5[directions.u] += faceVertexUv.x;
+        numOcclusions += _isOccluded(localVector5);
+
+        localVector5.copy(minPoint);
+        localVector5[directions.normal] += directions.normalSign ? 0 : -1;
+        localVector5[directions.v] += faceVertexUv.y;
+        numOcclusions += _isOccluded(localVector5);
+
+        localVector5.copy(minPoint);
+        localVector5[directions.normal] += directions.normalSign ? 0 : -1;
+        localVector5[directions.u] += faceVertexUv.x;
+        localVector5[directions.v] += faceVertexUv.y;
+        numOcclusions += _isOccluded(localVector5);
+
+// minPoint.equals(testVector) && directions.normal === 'x' && directions.normalSign && console.log('got', directions, '11', numOcclusions);
+
+        occlusions[occlusionsMap[2]] = numOcclusions;
+      } else if (faceVertexUv.x === 0 && faceVertexUv.y > 0) {
+        let numOcclusions = 0;
+
+        localVector5.copy(minPoint);
+        localVector5[directions.normal] += directions.normalSign ? 0 : -1;
+        localVector5[directions.u]--;
+        numOcclusions += _isOccluded(localVector5);
+
+        localVector5.copy(minPoint);
+        localVector5[directions.normal] += directions.normalSign ? 0 : -1;
+        localVector5[directions.v] += faceVertexUv.y;
+        numOcclusions += _isOccluded(localVector5);
+
+        localVector5.copy(minPoint);
+        localVector5[directions.normal] += directions.normalSign ? 0 : -1;
+        localVector5[directions.u]--;
+        localVector5[directions.v] += faceVertexUv.y;
+        numOcclusions += _isOccluded(localVector5);
+
+// minPoint.equals(testVector) && directions.normal === 'x' && directions.normalSign && console.log('got', directions, '01', numOcclusions);
+
+        occlusions[occlusionsMap[3]] = numOcclusions;
+      }
+    }
+/* occlusions[0] = 4;
+occlusions[1] = 0;
+occlusions[2] = 1;
+occlusions[3] = 0; */
+
+    // abd
+    result[i * 6 + 0] = occlusions[0];
+    result[i * 6 + 1] = occlusions[1];
+    result[i * 6 + 2] = occlusions[3];
+
+    // bcd
+    result[i * 6 + 3] = occlusions[1];
+    result[i * 6 + 4] = occlusions[2];
+    result[i * 6 + 5] = occlusions[3];
+
+// minPoint.equals(testVector) && directions.normal === 'x' && directions.normalSign && console.log('result', faceVertices, occlusions);
+  }
+
+  return result;
+}
+
+const _getBlockIndex = (x, y, z) => x + y * 16 + z * 16 * 16;
 
 return {
   tesselate,

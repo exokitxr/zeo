@@ -8,17 +8,18 @@ const UINT32_SIZE = 4;
 const INT32_SIZE = 4;
 const UINT8_SIZE = 1;
 const FLOAT32_SIZE = 4;
-const MAP_CHUNK_HEADER_ENTRIES = 8;
+const MAP_CHUNK_HEADER_ENTRIES = 9;
 const MAP_CHUNK_HEADER_SIZE = UINT32_SIZE * MAP_CHUNK_HEADER_ENTRIES;
 const CULL_HEADER_ENTRIES = 1;
 const CULL_HEADER_SIZE = UINT32_SIZE * CULL_HEADER_ENTRIES;
 
 const _getObjectsChunkSizeFromMetadata = metadata => {
-  const {numPositions, numUvs, numFrames, numSkyLightmaps, numTorchLightmaps, numObjectIndices, numIndices, numObjects} = metadata;
+  const {numPositions, numUvs, numSsaos, numFrames, numSkyLightmaps, numTorchLightmaps, numObjectIndices, numIndices, numObjects} = metadata;
 
   return MAP_CHUNK_HEADER_SIZE + // header
     (FLOAT32_SIZE * numPositions) + // positions
     (FLOAT32_SIZE * numUvs) + // uvs
+    _align(UINT8_SIZE * numSsaos, FLOAT32_SIZE) + // ssaos
     (FLOAT32_SIZE * numFrames) + // frames
     _align(UINT8_SIZE * numSkyLightmaps, FLOAT32_SIZE) + // sky lightmaps
     _align(UINT8_SIZE * numTorchLightmaps, FLOAT32_SIZE) + // torch lightmaps
@@ -30,10 +31,11 @@ const _getObjectsChunkSizeFromMetadata = metadata => {
 };
 
 const _getObjectsChunkSize = (objectsChunk, skyLightmaps, torchLightmaps) => {
-  const {positions, uvs, frames, objectIndices, indices, objects} = objectsChunk;
+  const {positions, uvs, ssaos, frames, objectIndices, indices, objects} = objectsChunk;
 
   const numPositions = positions.length;
   const numUvs = uvs.length;
+  const numSsaos = ssaos.length;
   const numFrames = frames.length;
   const numSkyLightmaps = skyLightmaps.length;
   const numTorchLightmaps = torchLightmaps.length;
@@ -44,6 +46,7 @@ const _getObjectsChunkSize = (objectsChunk, skyLightmaps, torchLightmaps) => {
   return _getObjectsChunkSizeFromMetadata({
     numPositions,
     numUvs,
+    numSsaos,
     numFrames,
     numSkyLightmaps,
     numTorchLightmaps,
@@ -54,7 +57,7 @@ const _getObjectsChunkSize = (objectsChunk, skyLightmaps, torchLightmaps) => {
 };
 
 const stringifyGeometry = (objectsChunk, arrayBuffer, byteOffset) => {
-  const {positions, uvs, frames, objectIndices, skyLightmaps, torchLightmaps, indices, objects, geometries} = objectsChunk;
+  const {positions, uvs, ssaos, frames, objectIndices, skyLightmaps, torchLightmaps, indices, objects, geometries} = objectsChunk;
 
   if (arrayBuffer === undefined || byteOffset === undefined) {
     const bufferSize = _getObjectsChunkSize(objectsChunk, skyLightmaps, torchLightmaps);
@@ -66,6 +69,7 @@ const stringifyGeometry = (objectsChunk, arrayBuffer, byteOffset) => {
   let index = 0;
   headerBuffer[index++] = positions.length;
   headerBuffer[index++] = uvs.length;  
+  headerBuffer[index++] = ssaos.length;
   headerBuffer[index++] = frames.length;
   headerBuffer[index++] = skyLightmaps.length;
   headerBuffer[index++] = torchLightmaps.length;
@@ -81,6 +85,11 @@ const stringifyGeometry = (objectsChunk, arrayBuffer, byteOffset) => {
   const uvsBuffer = new Float32Array(arrayBuffer, byteOffset, uvs.length);
   uvsBuffer.set(uvs);
   byteOffset += FLOAT32_SIZE * uvs.length;
+
+  const ssaosBuffer = new Uint8Array(arrayBuffer, byteOffset, ssaos.length);
+  ssaosBuffer.set(ssaos);
+  byteOffset += UINT8_SIZE * ssaos.length;
+  byteOffset = _align(byteOffset, FLOAT32_SIZE);
 
   const framesBuffer = new Float32Array(arrayBuffer, byteOffset, frames.length);
   framesBuffer.set(frames);
@@ -133,6 +142,7 @@ const parseGeometry = (buffer, byteOffset) => {
   let index = 0;
   const numPositions = headerBuffer[index++];
   const numUvs = headerBuffer[index++];
+  const numSsaos = headerBuffer[index++];
   const numFrames = headerBuffer[index++];
   const numSkyLightmaps = headerBuffer[index++];
   const numTorchLightmaps = headerBuffer[index++];
@@ -148,6 +158,11 @@ const parseGeometry = (buffer, byteOffset) => {
   const uvsBuffer = new Float32Array(buffer, byteOffset, numUvs);
   const uvs = uvsBuffer;
   byteOffset += FLOAT32_SIZE * numUvs;
+
+  const ssaosBuffer = new Uint8Array(buffer, byteOffset, numSsaos);
+  const ssaos = ssaosBuffer;
+  byteOffset += UINT8_SIZE * numSsaos;
+  byteOffset = _align(byteOffset, FLOAT32_SIZE);
 
   const framesBuffer = new Float32Array(buffer, byteOffset, numFrames);
   const frames = framesBuffer;
@@ -198,6 +213,7 @@ const parseGeometry = (buffer, byteOffset) => {
     buffer,
     positions,
     uvs,
+    ssaos,
     frames,
     skyLightmaps,
     torchLightmaps,

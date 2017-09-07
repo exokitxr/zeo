@@ -111,6 +111,7 @@ class Objects {
       vertexShader: `\
 precision highp float;
 precision highp int;
+attribute float ssao;
 attribute vec3 frame;
 attribute float skyLightmap;
 attribute float torchLightmap;
@@ -118,6 +119,7 @@ attribute float objectIndex;
 
 varying vec3 vPosition;
 varying vec2 vUv;
+varying float vSsao;
 varying vec3 vViewPosition;
 varying vec3 vFrame;
 varying float vSkyLightmap;
@@ -133,6 +135,7 @@ void main() {
 
   vPosition = position.xyz;
   vUv = uv;
+  vSsao = ssao;
   vViewPosition = mvPosition.xyz;
   vFrame = frame;
   vSkyLightmap = skyLightmap;
@@ -164,6 +167,7 @@ uniform float worldTime;
 
 varying vec3 vPosition;
 varying vec2 vUv;
+varying float vSsao;
 varying vec3 vViewPosition;
 varying vec3 vFrame;
 varying float vSkyLightmap;
@@ -269,6 +273,8 @@ void main() {
       ) * 4.0 + 0.5) / 4.0
     );
   }
+
+  lightColor.rgb *= (1.0 - (vSsao * 255.0 / 3.0));
 
   vec3 outgoingLight = diffuseColor.rgb * (0.1 + lightColor * 0.9);
 
@@ -658,7 +664,7 @@ void main() {
     const _makeObjectsChunkMesh = (chunk, gbuffer) => {
       const {x, z} = chunk;
 
-      const {index, geometry, slices: {positions, uvs, frames, skyLightmaps, torchLightmaps, objectIndices, indices}} = gbuffer;
+      const {index, geometry, slices: {positions, uvs, ssaos, frames, skyLightmaps, torchLightmaps, objectIndices, indices}} = gbuffer;
       const material = objectsMaterial;
 
       const renderListEntry = {
@@ -678,13 +684,14 @@ void main() {
         skyLightmaps,
         torchLightmaps,
         update: chunkData => {
-          const {positions: newPositions, uvs: newUvs, frames: newFrames, skyLightmaps: newSkyLightmaps, torchLightmaps: newTorchLightmaps, objectIndices: newObjectIndices, indices: newIndices} = chunkData;
+          const {positions: newPositions, uvs: newUvs, ssaos: newSsaos, frames: newFrames, skyLightmaps: newSkyLightmaps, torchLightmaps: newTorchLightmaps, objectIndices: newObjectIndices, indices: newIndices} = chunkData;
           const heightfieldElement = elements.getEntitiesElement().querySelector(HEIGHTFIELD_PLUGIN)
           if (newPositions.length > 0 && heightfieldElement) {
             version++;
 
             positions.set(newPositions);
             uvs.set(newUvs);
+            ssaos.set(newSsaos);
             frames.set(newFrames);
             skyLightmaps.set(newSkyLightmaps);
             torchLightmaps.set(newTorchLightmaps);
@@ -693,6 +700,7 @@ void main() {
 
             const newPositionsLength = newPositions.length;
             const newUvsLength = newUvs.length;
+            const newSsaosLength = newSsaos.length;
             const newFramesLength = newFrames.length;
             const newSkyLightmapsLength = newSkyLightmaps.length;
             const newTorchLightmapsLength = newTorchLightmaps.length;
@@ -746,6 +754,7 @@ console.log('done');
 
                 renderer.updateAttribute(geometry.attributes.position, index * positions.length, newPositionsLength, false);
                 renderer.updateAttribute(geometry.attributes.uv, index * uvs.length, newUvsLength, false);
+                renderer.updateAttribute(geometry.attributes.ssao, index * ssaos.length, newSsaosLength, false);
                 renderer.updateAttribute(geometry.attributes.frame, index * frames.length, newFramesLength, false);
                 renderer.updateAttribute(geometry.attributes.skyLightmap, index * skyLightmaps.length, newSkyLightmapsLength, false);
                 renderer.updateAttribute(geometry.attributes.torchLightmap, index * torchLightmaps.length, newTorchLightmapsLength, false);
@@ -1192,6 +1201,11 @@ console.log('done');
           size: 2 * 3 * 4,
         },
         {
+          name: 'ssaos',
+          constructor: Uint8Array,
+          size: 3 * 1,
+        },
+        {
           name: 'frames',
           constructor: Float32Array,
           size: 3 * 3 * 4,
@@ -1228,7 +1242,7 @@ console.log('done');
       for (let i = 0; i < NUM_GEOMETRIES; i++) {
         const geometry = new THREE.BufferGeometry();
 
-        const {positions, uvs, frames, skyLightmaps, torchLightmaps, objectIndices, indices} = geometryBuffers[i].getAll();
+        const {positions, uvs, ssaos, frames, skyLightmaps, torchLightmaps, objectIndices, indices} = geometryBuffers[i].getAll();
 
         const positionAttribute = new THREE.BufferAttribute(positions, 3);
         positionAttribute.dynamic = true;
@@ -1236,6 +1250,9 @@ console.log('done');
         const uvAttribute = new THREE.BufferAttribute(uvs, 2);
         uvAttribute.dynamic = true;
         geometry.addAttribute('uv', uvAttribute);
+        const ssaoAttribute = new THREE.BufferAttribute(ssaos, 1, true);
+        ssaoAttribute.dynamic = true;
+        geometry.addAttribute('ssao', ssaoAttribute);
         const frameAttribute = new THREE.BufferAttribute(frames, 3);
         frameAttribute.dynamic = true;
         geometry.addAttribute('frame', frameAttribute);
@@ -1254,6 +1271,7 @@ console.log('done');
 
         renderer.updateAttribute(geometry.attributes.position, 0, geometry.attributes.position.array.length, false);
         renderer.updateAttribute(geometry.attributes.uv, 0, geometry.attributes.uv.array.length, false);
+        renderer.updateAttribute(geometry.attributes.ssao, 0, geometry.attributes.ssao.array.length, false);
         renderer.updateAttribute(geometry.attributes.frame, 0, geometry.attributes.frame.array.length, false);
         renderer.updateAttribute(geometry.attributes.skyLightmap, 0, geometry.attributes.skyLightmap.array.length, false);
         renderer.updateAttribute(geometry.attributes.torchLightmap, 0, geometry.attributes.torchLightmap.array.length, false);
@@ -1281,60 +1299,7 @@ console.log('done');
       };
     })();
     const objectsObject = (() => {
-      /* const {positions, uvs, frames, skyLightmaps, torchLightmaps, objectIndices, indices} = geometryBuffer.getAll();
-
-      const geometry = new THREE.BufferGeometry();
-
-      const positionAttribute = new THREE.BufferAttribute(positions, 3);
-      positionAttribute.dynamic = true;
-      const uvAttribute = new THREE.BufferAttribute(uvs, 2);
-      uvAttribute.dynamic = true;
-      const frameAttribute = new THREE.BufferAttribute(frames, 3);
-      frameAttribute.dynamic = true;
-      const skyLightmapAttribute = new THREE.BufferAttribute(skyLightmaps, 1, true);
-      skyLightmapAttribute.dynamic = true;
-      const torchLightmapAttribute = new THREE.BufferAttribute(torchLightmaps, 1, true);
-      torchLightmapAttribute.dynamic = true;
-      const objectIndexAttribute = new THREE.BufferAttribute(objectIndices, 1);
-      objectIndexAttribute.dynamic = true;
-      geometry.attributes = {
-        position: positionAttribute,
-        uv: uvAttribute,
-        frame: frameAttribute,
-        skyLightmap: skyLightmapAttribute,
-        torchLightmap: torchLightmapAttribute,
-        objectIndex: objectIndexAttribute,
-      };
-      const indexAttribute = new THREE.BufferAttribute(indices, 1);
-      indexAttribute.dynamic = true;
-      geometry.setIndex(indexAttribute);
-
-      const positionAttribute2 = new THREE.BufferAttribute(positions, 3);
-      positionAttribute2.dynamic = true;
-      const uvAttribute2 = new THREE.BufferAttribute(uvs, 2);
-      uvAttribute2.dynamic = true;
-      const frameAttribute2 = new THREE.BufferAttribute(frames, 3);
-      frameAttribute2.dynamic = true;
-      const skyLightmapAttribute2 = new THREE.BufferAttribute(skyLightmaps, 1, true);
-      skyLightmapAttribute2.dynamic = true;
-      const torchLightmapAttribute2 = new THREE.BufferAttribute(torchLightmaps, 1, true);
-      torchLightmapAttribute2.dynamic = true;
-      const objectIndexAttribute2 = new THREE.BufferAttribute(objectIndices, 1);
-      objectIndexAttribute2.dynamic = true;
-      geometry.attributes2 = {
-        position: positionAttribute2,
-        uv: uvAttribute2,
-        frame: frameAttribute2,
-        skyLightmap: skyLightmapAttribute2,
-        torchLightmap: torchLightmapAttribute2,
-        objectIndex: objectIndexAttribute2,
-      };
-      const indexAttribute2 = new THREE.BufferAttribute(indices, 1);
-      indexAttribute2.dynamic = true;
-      geometry.index2 = indexAttribute2; */
-
       const mesh = new THREE.Object3D();
-      // mesh.frustumCulled = false;
       mesh.updateModelViewMatrix = _updateModelViewMatrix;
       mesh.updateNormalMatrix = _updateNormalMatrix;
       mesh.renderList = [];

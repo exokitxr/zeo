@@ -44,7 +44,7 @@ class Objects {
     const {alea, indev} = randomUtils;
     const {jimp} = imageUtils;
 
-    const tesselateUtils = tesselateUtilsLib({THREE});
+    const tesselateUtils = tesselateUtilsLib({THREE, BLOCK_BUFFER_SIZE});
     const _getChunkIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
 
     const zeodeDataPath = path.join(dirname, dataDirectory, 'zeode.dat');
@@ -138,6 +138,7 @@ class Objects {
     const _makeChunkGeometry = chunk => {
       const geometriesPositions = _makeGeometeriesBuffer(Float32Array);
       const geometriesUvs = _makeGeometeriesBuffer(Float32Array);
+      const geometriesSsaos = _makeGeometeriesBuffer(Uint8Array);
       const geometriesFrames = _makeGeometeriesBuffer(Float32Array);
       const geometriesObjectIndices = _makeGeometeriesBuffer(Float32Array);
       const geometriesIndices = _makeGeometeriesBuffer(Uint32Array);
@@ -170,6 +171,9 @@ class Objects {
             const newFrames = newGeometry.getAttribute('frame').array;
             geometriesFrames[i].array.set(newFrames, geometriesFrames[i].index);
 
+            const newSsaos = newGeometry.getAttribute('ssao').array;
+            geometriesSsaos[i].array.set(newSsaos, geometriesSsaos[i].index);
+
             const numNewPositions = newPositions.length / 3;
             const newObjectIndices = new Float32Array(numNewPositions);
             for (let k = 0; k < numNewPositions; k++) {
@@ -193,6 +197,7 @@ class Objects {
 
             geometriesPositions[i].index += newPositions.length;
             geometriesUvs[i].index += newUvs.length;
+            geometriesSsaos[i].index += newSsaos.length;
             geometriesFrames[i].index += newFrames.length;
             geometriesObjectIndices[i].index += newObjectIndices.length;
             geometriesIndices[i].index += newIndices.length;
@@ -204,7 +209,7 @@ class Objects {
       const blockBuffer = chunk.getBlockBuffer();
       for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
         const voxels = blockBuffer.subarray(i * NUM_VOXELS_CHUNK_HEIGHT, (i + 1) * NUM_VOXELS_CHUNK_HEIGHT);
-        const {positions: newPositions, uvs: newUvs} = tesselateUtils.tesselate(voxels, [NUM_CELLS, NUM_CELLS, NUM_CELLS], {
+        const {positions: newPositions, uvs: newUvs, ssaos: newSsaos} = tesselateUtils.tesselate(voxels, [NUM_CELLS, NUM_CELLS, NUM_CELLS], {
           isTransparent: n => n ? blockTypes[n].transparent : false,
           isTranslucent: n => n ? blockTypes[n].translucent : false,
           getFaceUvs: (n, direction) => blockTypes[n].uvs[direction],
@@ -220,6 +225,8 @@ class Objects {
           geometriesPositions[i].array.set(newPositions, geometriesPositions[i].index);
 
           geometriesUvs[i].array.set(newUvs, geometriesUvs[i].index);
+
+          geometriesSsaos[i].array.set(newSsaos, geometriesSsaos[i].index);
 
           const newFrames = new Float32Array(newPositions.length);
           geometriesFrames[i].array.set(newFrames, geometriesFrames[i].index);
@@ -239,6 +246,7 @@ class Objects {
 
           geometriesPositions[i].index += newPositions.length;
           geometriesUvs[i].index += newUvs.length;
+          geometriesSsaos[i].index += newSsaos.length;
           geometriesFrames[i].index += newFrames.length;
           geometriesObjectIndices[i].index += newObjectIndices.length;
           geometriesIndices[i].index += newIndices.length;
@@ -249,12 +257,14 @@ class Objects {
       const geometry = new THREE.BufferGeometry();
       const positions = new Float32Array(GEOMETRY_BUFFER_SIZE / 4);
       const uvs = new Float32Array(GEOMETRY_BUFFER_SIZE / 4);
+      const ssaos = new Uint8Array(GEOMETRY_BUFFER_SIZE / 4);
       const frames = new Float32Array(GEOMETRY_BUFFER_SIZE / 4);
       const objectIndices = new Float32Array(GEOMETRY_BUFFER_SIZE / 4);
       const indices = new Uint32Array(GEOMETRY_BUFFER_SIZE / 4);
       const objects = new Uint32Array(GEOMETRY_BUFFER_SIZE / 4);
       let attributeIndex = 0;
       let uvIndex = 0;
+      let ssaoIndex = 0;
       let frameIndex = 0;
       let objectIndexIndex = 0;
       let indexIndex = 0;
@@ -267,6 +277,9 @@ class Objects {
 
         const newUvs = geometriesUvs[i].array.subarray(0, geometriesUvs[i].index);
         uvs.set(newUvs, uvIndex);
+
+        const newSsaos = geometriesSsaos[i].array.subarray(0, geometriesSsaos[i].index);
+        ssaos.set(newSsaos, ssaoIndex);
 
         const newFrames = geometriesFrames[i].array.subarray(0, geometriesFrames[i].index);
         frames.set(newFrames, frameIndex);
@@ -299,6 +312,7 @@ class Objects {
 
         attributeIndex += newPositions.length;
         uvIndex += newUvs.length;
+        ssaoIndex += newSsaos.length;
         frameIndex += newFrames.length;
         objectIndexIndex += newObjectIndices.length;
         indexIndex += newIndices.length;
@@ -308,6 +322,7 @@ class Objects {
       return {
         positions: new Float32Array(positions.buffer, positions.byteOffset, attributeIndex),
         uvs: new Float32Array(uvs.buffer, uvs.byteOffset, uvIndex),
+        ssaos: new Uint8Array(ssaos.buffer, ssaos.byteOffset, ssaoIndex),
         frames: new Float32Array(frames.buffer, frames.byteOffset, frameIndex),
         objectIndices: new Float32Array(objectIndices.buffer, objectIndices.byteOffset, objectIndexIndex),
         indices: new Uint32Array(indices.buffer, indices.byteOffset, indexIndex),
@@ -500,8 +515,12 @@ class Objects {
               return biomes[_getChunkIndex(x, z)];
             },
             registerGeometry(name, geometry) {
-              const frameAttribute = geometry.getAttribute('frame');
-              if (!frameAttribute) {
+              if (!geometry.getAttribute('ssao')) {
+                const ssaos = new Uint8Array(geometry.getAttribute('position').array.length / 3);
+                geometry.addAttribute('ssao', new THREE.BufferAttribute(ssaos, 1));
+              }
+
+              if (!geometry.getAttribute('frame')) {
                 const frames = new Float32Array(geometry.getAttribute('position').array.length);
                 geometry.addAttribute('frame', new THREE.BufferAttribute(frames, 3));
               }

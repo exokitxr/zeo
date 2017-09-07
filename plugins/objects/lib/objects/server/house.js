@@ -431,6 +431,27 @@ const house = objectApi => {
       })();
       objectApi.registerGeometry('glass', glassGeometry);
 
+      objectApi.registerGenerator('fake', chunk => { // XXX
+        if (chunk.x === 0 && chunk.z === -1) {
+          objectApi.setBlock(chunk, chunk.x * NUM_CELLS + 4, 5 * NUM_CELLS + 4, chunk.z * NUM_CELLS + 4, 'house-plank');
+
+          objectApi.setBlock(chunk, chunk.x * NUM_CELLS + 3, 5 * NUM_CELLS + 4, chunk.z * NUM_CELLS + 4, 'house-plank');
+          objectApi.setBlock(chunk, chunk.x * NUM_CELLS + 5, 5 * NUM_CELLS + 4, chunk.z * NUM_CELLS + 4, 'house-plank');
+          objectApi.setBlock(chunk, chunk.x * NUM_CELLS + 4, 5 * NUM_CELLS + 4, chunk.z * NUM_CELLS + 3, 'house-plank');
+          objectApi.setBlock(chunk, chunk.x * NUM_CELLS + 4, 5 * NUM_CELLS + 4, chunk.z * NUM_CELLS + 5, 'house-plank');
+          objectApi.setBlock(chunk, chunk.x * NUM_CELLS + 4, 5 * NUM_CELLS + 5, chunk.z * NUM_CELLS + 4, 'house-plank');
+          objectApi.setBlock(chunk, chunk.x * NUM_CELLS + 4, 5 * NUM_CELLS + 3, chunk.z * NUM_CELLS + 4, 'house-plank');
+
+          objectApi.setBlock(chunk, chunk.x * NUM_CELLS + 2, 5 * NUM_CELLS + 4, chunk.z * NUM_CELLS + 4, 'house-plank');
+
+          for (let dz = -1; dz <= 1; dz++) {
+            for (let dx = -1; dx <= 1; dx++) {
+              objectApi.setBlock(chunk, chunk.x * NUM_CELLS + 4 + dx, 5 * NUM_CELLS + 2, chunk.z * NUM_CELLS + 4 + dz, 'house-plank');
+            }
+          }
+        }
+      });
+
       objectApi.registerGenerator('house', chunk => {
         if (chunk.x === 0 && chunk.z === -1) {
           const elevation = Math.floor(objectApi.getHeightfield(chunk.x, chunk.z)[(0 + (0 * NUM_CELLS_OVERSCAN)) * 8]);
