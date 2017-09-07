@@ -7,7 +7,6 @@ module.exports = ({
 
 const mrch = require('mrch');
 const protocolUtils = require('./lib/utils/protocol-utils');
-const lightmapUtils = require('./lib/utils/lightmap-utils');
 const {
   NUM_CELLS,
   OVERSCAN,
@@ -478,8 +477,6 @@ const _generateMapChunk = (ox, oy, opts) => {
     geometries,
   } = _makeGeometries(ox, oy, ether, liquid);
   const colors = new Float32Array(NUM_POSITIONS_CHUNK);
-  const skyLightmaps = new Uint8Array(NUM_POSITIONS_CHUNK);
-  const torchLightmaps = new Uint8Array(NUM_POSITIONS_CHUNK);
 
   const heightfield = new Float32Array(NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN * HEIGHTFIELD_DEPTH);
   heightfield.fill(-1024);
@@ -526,8 +523,6 @@ const _generateMapChunk = (ox, oy, opts) => {
   const _postProcessGeometry = (start, count, getColor) => {
     const geometryPositions = new Float32Array(positions.buffer, positions.byteOffset + start * 4, count);
     const geometryColors = new Float32Array(colors.buffer, colors.byteOffset + start * 4, count);
-    const geometrySkyLightmaps = new Uint8Array(skyLightmaps.buffer, skyLightmaps.byteOffset + start / 3, count / 3);
-    const geometryTorchLightmaps = new Uint8Array(torchLightmaps.buffer, torchLightmaps.byteOffset + start / 3, count / 3);
 
     const numPositions = geometryPositions.length / 3;
     for (let j = 0; j < numPositions; j++) {
@@ -541,8 +536,6 @@ const _generateMapChunk = (ox, oy, opts) => {
       geometryColors[baseIndex + 1] = colorArray[1];
       geometryColors[baseIndex + 2] = colorArray[2];
 
-      geometrySkyLightmaps[j] = lightmapUtils.render(x, y, z, staticHeightfield);
-
       geometryPositions[baseIndex + 0] = (ox * NUM_CELLS) + x;
       geometryPositions[baseIndex + 2] = (oy * NUM_CELLS) + z;
     }
@@ -551,10 +544,8 @@ const _generateMapChunk = (ox, oy, opts) => {
   for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
     const geometry = geometries[i];
     const {attributeRange} = geometry;
-    _postProcessGeometry(attributeRange.landStart, attributeRange.landCount, (x, y, z) =>
-      _getBiome(Math.floor(x), Math.floor(z)).color);
-    _postProcessGeometry(attributeRange.liquidStart, attributeRange.liquidCount, (x, y, z) =>
-      liquidTypes[_getEtherIndex(Math.floor(x), Math.floor(y), Math.floor(z))]);
+    _postProcessGeometry(attributeRange.landStart, attributeRange.landCount, (x, y, z) => _getBiome(Math.floor(x), Math.floor(z)).color);
+    _postProcessGeometry(attributeRange.liquidStart, attributeRange.liquidCount, (x, y, z) => liquidTypes[_getEtherIndex(Math.floor(x), Math.floor(y), Math.floor(z))]);
 
     geometry.boundingSphere = new THREE.Sphere(
       new THREE.Vector3(ox * NUM_CELLS + NUM_CELLS_HALF, i * NUM_CELLS + NUM_CELLS_HALF, oy * NUM_CELLS + NUM_CELLS_HALF),
@@ -679,8 +670,6 @@ const _generateMapChunk = (ox, oy, opts) => {
   return {
     positions: new Float32Array(positions.buffer, positions.byteOffset, attributeIndex),
     colors: new Float32Array(colors.buffer, colors.byteOffset, attributeIndex),
-    skyLightmaps: new Uint8Array(skyLightmaps.buffer, skyLightmaps.byteOffset, attributeIndex / 3),
-    torchLightmaps: new Uint8Array(torchLightmaps.buffer, torchLightmaps.byteOffset, attributeIndex / 3),
     indices: new Uint32Array(indices.buffer, indices.byteOffset, indexIndex),
     geometries: geometries.map(geometry => ({
       indexRange: geometry.indexRange,
@@ -896,7 +885,7 @@ const _getStaticHeightfieldIndex = (x, z) => x + (z * NUM_CELLS_OVERSCAN);
   return points;
 })(); */
 
-const generator = (x, y, buffer, byteOffset, opts) => {
+const generate = (x, y, buffer, byteOffset, opts) => {
   if (opts === undefined) {
     opts = {};
   }
@@ -919,8 +908,11 @@ const generator = (x, y, buffer, byteOffset, opts) => {
     opts.regenerate = false;
   }
 
-  protocolUtils.stringifyDataChunk(_generateMapChunk(x, y, opts), buffer, byteOffset);
+  protocolUtils.stringifyData(_generateMapChunk(x, y, opts), buffer, byteOffset);
 };
-return generator;
+
+return {
+  generate,
+};
 
 };

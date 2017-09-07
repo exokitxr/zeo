@@ -9,11 +9,12 @@ const {
 
   RANGE,
 
+  NUM_POSITIONS_CHUNK,
+
   BIOMES,
 } = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
 
-const NUM_POSITIONS_CHUNK = 800 * 1024;
 // const LIGHTMAP_BUFFER_SIZE = 100 * 1024 * 4;
 // const NUM_BUFFERS = RANGE * RANGE + RANGE;
 const LIGHTMAP_PLUGIN = 'plugins-lightmap';
@@ -315,29 +316,24 @@ class Heightfield {
       queues[id] = cb;
     };
     worker.requestGenerate = (x, y, index, numPositions, numIndices, cb) => {
-      /* elements.requestElement(LIGHTMAP_PLUGIN)
-        .then(lightmapElement => { */
-          const id = _makeId();
-          // const heightfieldBuffer = _allocHslot(lightmapElement);
-          worker.postMessage({
-            method: 'generate',
-            id,
-            args: {
-              x,
-              y,
-              index,
-              numPositions,
-              numIndices,
-              buffer: generateBuffer,
-              // heightfieldBuffer,
-            },
-          }, [generateBuffer/*, heightfieldBuffer.buffer*/]);
-          queues[id] = newGenerateBuffer => {
-            generateBuffer = newGenerateBuffer;
+      const id = _makeId();
+      worker.postMessage({
+        method: 'generate',
+        id,
+        args: {
+          x,
+          y,
+          index,
+          numPositions,
+          numIndices,
+          buffer: generateBuffer,
+        },
+      }, [generateBuffer]);
+      queues[id] = newGenerateBuffer => {
+        generateBuffer = newGenerateBuffer;
 
-            cb(newGenerateBuffer);
-          };
-        // });
+        cb(newGenerateBuffer);
+      };
     };
     worker.requestUngenerate = (x, y) => {
       worker.postMessage({

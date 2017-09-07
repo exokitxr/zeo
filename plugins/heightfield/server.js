@@ -6,6 +6,8 @@ const trra = require('trra');
 
 const {
   NUM_CELLS,
+
+  NUM_POSITIONS_CHUNK,
 } = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
 const lightmapUtils = require('./lib/utils/lightmap-utils');
@@ -19,6 +21,8 @@ const DIRECTIONS = [
   [1, -1],
   [1, 1],
 ];
+
+const decorationsSymbol = Symbol();
 
 class Heightfield {
   constructor(archae) {
@@ -102,6 +106,34 @@ class Heightfield {
             });
         });
 
+        const _decorateChunkLightmaps = chunk => {
+          const uint32Buffer = chunk.getBuffer();
+          const geometry = protocolUtils.parseData(uint32Buffer.buffer, uint32Buffer.byteOffset);
+          const {positions, staticHeightfield} = geometry;
+
+          const numPositions = positions.length / 3;
+          const skyLightmaps = new Uint8Array(numPositions);
+          const torchLightmaps = new Uint8Array(numPositions);
+
+          const ox = chunk.x * NUM_CELLS;
+          const oz = chunk.z * NUM_CELLS;
+
+          for (let i = 0; i < numPositions; i++) {
+            const baseIndex = i * 3;
+            skyLightmaps[i] = lightmapUtils.render(
+              positions[baseIndex + 0] - ox,
+              positions[baseIndex + 1],
+              positions[baseIndex + 2] - oz,
+              staticHeightfield
+            );
+          }
+
+          chunk[decorationsSymbol] = {
+            skyLightmaps,
+            torchLightmaps,
+          };
+        };
+
         const heightfieldImgStatic = express.static(path.join(__dirname, 'lib', 'img'));
         function serveHeightfieldImg(req, res, next) {
           heightfieldImgStatic(req, res, next);
@@ -117,14 +149,21 @@ class Heightfield {
             let chunk = tra.getChunk(x, z);
             if (!chunk) {
               chunk = tra.makeChunk(x, z);
-              chunk.generate(generator);
+              chunk.generate(generator.generate);
               _saveChunks();
+            }
+            if (!chunk[decorationsSymbol]) {
+              _decorateChunkLightmaps(chunk);
             }
 
             res.type('application/octet-stream');
 
             const uint32Buffer = chunk.getBuffer();
-            res.send(new Buffer(uint32Buffer.buffer, uint32Buffer.byteOffset, uint32Buffer.byteLength));
+            res.write(new Buffer(uint32Buffer.buffer, uint32Buffer.byteOffset, uint32Buffer.byteLength));
+
+            const {[decorationsSymbol]: decorationsObject} = chunk;
+            const [arrayBuffer, byteOffset] = protocolUtils.stringifyDecorations(decorationsObject);
+            res.end(new Buffer(arrayBuffer, 0, byteOffset));
           } else {
             res.status(400);
             res.send();
@@ -156,18 +195,18 @@ class Heightfield {
                 let chunk = tra.getChunk(ox, oz);
                 if (!chunk) {
                   chunk = tra.makeChunk(ox, oz);
-                  chunk.generate(generator, {
+                  chunk.generate(generator.generate, {
                     newEther,
                   });
                 } else {
                   const uint32Buffer = chunk.getBuffer();
-                  const chunkData = protocolUtils.parseDataChunk(uint32Buffer.buffer, uint32Buffer.byteOffset);
+                  const chunkData = protocolUtils.parseData(uint32Buffer.buffer, uint32Buffer.byteOffset);
                   const oldBiomes = chunkData.biomes.slice();
                   const oldElevations = chunkData.elevations.slice();
                   const oldEther = chunkData.ether.slice();
                   const oldLiquid = chunkData.liquid.slice();
                   const oldLiquidTypes = chunkData.liquidTypes.slice();
-                  chunk.generate(generator, {
+                  chunk.generate(generator.generate, {
                     oldBiomes,
                     oldElevations,
                     oldEther,
@@ -176,6 +215,8 @@ class Heightfield {
                     newEther,
                   });
                 }
+                _decorateChunkLightmaps(chunk);
+
                 regenerated.push(chunk);
               }
             }
@@ -194,8 +235,13 @@ class Heightfield {
               const uint32Buffer = chunk.getBuffer();
               const chunkHeader2 = Uint32Array.from([uint32Buffer.byteLength]);
               res.write(new Buffer(chunkHeader2.buffer, chunkHeader2.byteOffset, chunkHeader2.byteLength));
-
               res.write(new Buffer(uint32Buffer.buffer, uint32Buffer.byteOffset, uint32Buffer.byteLength));
+
+              const {[decorationsSymbol]: decorationsObject} = chunk;
+              const [arrayBuffer, byteOffset] = protocolUtils.stringifyDecorations(decorationsObject);
+              const chunkHeader3 = Uint32Array.from([byteOffset]);
+              res.write(new Buffer(chunkHeader3.buffer, chunkHeader3.byteOffset, chunkHeader3.byteLength));
+              res.write(new Buffer(arrayBuffer, 0, byteOffset));
             }
             res.end();
           } else {
@@ -211,31 +257,31 @@ class Heightfield {
             let chunk = tra.getChunk(x, z);
             if (!chunk) {
               chunk = tra.makeChunk(x, z);
-              chunk.generate(generator);
+              chunk.generate(generator.generate);
               _saveChunks();
             }
             const uint32Buffer = chunk.getBuffer();
-            return Promise.resolve(protocolUtils.parseDataChunk(uint32Buffer.buffer, uint32Buffer.byteOffset).heightfield);
+            return Promise.resolve(protocolUtils.parseData(uint32Buffer.buffer, uint32Buffer.byteOffset).heightfield);
           },
           requestStaticHeightfield(x, z) {
             let chunk = tra.getChunk(x, z);
             if (!chunk) {
               chunk = tra.makeChunk(x, z);
-              chunk.generate(generator);
+              chunk.generate(generator.generate);
               _saveChunks();
             }
             const uint32Buffer = chunk.getBuffer();
-            return Promise.resolve(protocolUtils.parseDataChunk(uint32Buffer.buffer, uint32Buffer.byteOffset).staticHeightfield);
+            return Promise.resolve(protocolUtils.parseData(uint32Buffer.buffer, uint32Buffer.byteOffset).staticHeightfield);
           },
           requestBiomes(x, z) {
             let chunk = tra.getChunk(x, z);
             if (!chunk) {
               chunk = tra.makeChunk(x, z);
-              chunk.generate(generator);
+              chunk.generate(generator.generate);
               _saveChunks();
             }
             const uint32Buffer = chunk.getBuffer();
-            return Promise.resolve(protocolUtils.parseDataChunk(uint32Buffer.buffer, uint32Buffer.byteOffset).biomes);
+            return Promise.resolve(protocolUtils.parseData(uint32Buffer.buffer, uint32Buffer.byteOffset).biomes);
           },
           requestLightmaps(x, z, positions) {
             return this.requestStaticHeightfield(x, z)
