@@ -24,15 +24,7 @@ const dataSymbol = Symbol();
 
 const HEIGHTFIELD_SHADER = {
   uniforms: {
-    /* lightMap: {
-      type: 't',
-      value: null,
-    },
-    useLightMap: {
-      type: 'f',
-      value: 0,
-    },
-    d: {
+    /* d: {
       type: 'v2',
       value: null,
     }, */
@@ -81,8 +73,6 @@ precision highp int;
 #define FLAT_SHADED
 // uniform mat4 viewMatrix;
 uniform vec3 ambientLightColor;
-// uniform sampler2D lightMap;
-// uniform float useLightMap;
 // uniform vec2 d;
 uniform float sunIntensity;
 
@@ -97,7 +87,6 @@ varying float vTorchLightmap;
 void main() {
 	vec3 diffuseColor = vColor;
 
-  // vec3 lightColor = vec3(vLightmap);
   vec3 lightColor = vec3(
     floor(
       (
@@ -105,19 +94,6 @@ void main() {
       ) * 4.0 + 0.5
     ) / 4.0
   );
-  // vec3 lightColor = vec3(floor(vLightmap * 32.0 + 0.5) / 32.0);
-  /* vec3 lightColor;
-  if (useLightMap > 0.0) {
-    float u = (
-      floor(clamp(vPosition.x - d.x, 0.0, ${(NUM_CELLS).toFixed(8)})) +
-      (floor(clamp(vPosition.z - d.y, 0.0, ${(NUM_CELLS).toFixed(8)})) * ${(NUM_CELLS + 1).toFixed(8)}) +
-      0.5
-    ) / (${(NUM_CELLS + 1).toFixed(8)} * ${(NUM_CELLS + 1).toFixed(8)});
-    float v = (floor(vPosition.y) + 0.5) / ${NUM_CELLS_HEIGHT.toFixed(8)};
-    lightColor = texture2D( lightMap, vec2(u, v) ).rgb;
-  } else {
-    lightColor = vec3(sunIntensity);
-  } */
 
   vec3 fdx = vec3( dFdx( vViewPosition.x ), dFdx( vViewPosition.y ), dFdx( vViewPosition.z ) );
   vec3 fdy = vec3( dFdy( vViewPosition.x ), dFdy( vViewPosition.y ), dFdy( vViewPosition.z ) );
@@ -261,11 +237,6 @@ class Heightfield {
 
     const _getChunkIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
 
-    /* const m = new THREE.Mesh(new THREE.BoxBufferGeometry(1, 1, 1), new THREE.MeshPhongMaterial({color: 0xFF0000,}));
-    m.position.set(56, 88, -8);
-    m.updateMatrixWorld();
-    scene.add(m); */
-
     const forwardVector = new THREE.Vector3(0, 0, -1);
     const localVector = new THREE.Vector3();
     const localVector2 = new THREE.Vector3();
@@ -289,7 +260,6 @@ class Heightfield {
 
     let generateBuffer = new ArrayBuffer(NUM_POSITIONS_CHUNK);
     let terrainBuffer = new ArrayBuffer(NUM_POSITIONS_CHUNK * 4);
-    // let lightmapBuffer = new Uint8Array(LIGHTMAP_BUFFER_SIZE * NUM_BUFFERS);
     let cullBuffer = new ArrayBuffer(100 * 1024);
     // const _allocHslot = lightmapElement => new Float32Array(lightmapElement.lightmapper.buffers.alloc());
 
@@ -346,17 +316,6 @@ class Heightfield {
         },
       });
     };
-    /* worker.requestLightmaps = (lightmapBuffer, cb) => {
-      const id = _makeId();
-      worker.postMessage({
-        method: 'lightmaps',
-        id,
-        args: {
-          lightmapBuffer,
-        },
-      }, [lightmapBuffer.buffer]);
-      queues[id] = cb;
-    }; */
     worker.requestCull = (hmdPosition, projectionMatrix, matrixWorldInverse, cb) => {
       const id = _makeId();
       worker.postMessage({
@@ -446,221 +405,15 @@ class Heightfield {
         queues[id] = null;
 
         _cleanupQueues();
-      } else if (type === 'request') {
+      /* } else if (type === 'request') {
         const [id] = args;
         const {method} = data;
 
-        if (method === 'renderLightmap') {
-          throw new Error('not implemented');
-
-          /* const {lightmapBuffer} = data;
-
-          elements.requestElement(LIGHTMAP_PLUGIN)
-            .then(lightmapElement => {
-              lightmapElement.lightmapper.requestRender(lightmapBuffer, lightmapBuffer => {
-                worker.respond(id, lightmapBuffer, [lightmapBuffer.buffer]);
-              });
-            }); */
-        } else if (method === 'addLightmap') {
-          throw new Error('not implemented');
-
-          /* const {x, y, heightfield} = data;
-
-          elements.requestElement(LIGHTMAP_PLUGIN)
-            .then(lightmapElement => {
-              const shape = new lightmapElement.Lightmapper.Heightfield(x * NUM_CELLS, y * NUM_CELLS, heightfield, lightmapElement.Lightmapper.MaxBlend);
-              lightmapElement.lightmapper.add(shape, [heightfield.buffer], {update: false});
-
-              worker.respond(id, shape.id);
-            }); */
-        } else if (method === 'updateLightmaps') {
-          throw new Error('not implemented');
-
-          /* const {updatedLightmaps, freedHslots} = data;
-
-          elements.requestElement(LIGHTMAP_PLUGIN)
-            .then(lightmapElement => {
-              for (let i = 0; i < updatedLightmaps.length; i++) {
-                const updatedLightmap = updatedLightmaps[i];
-                const {shapeId, heightfield} = updatedLightmap;
-
-                lightmapElement.lightmapper.worker.setShapeData(shapeId, {
-                  data: heightfield,
-                }, [heightfield.buffer]);
-              }
-              for (let i = 0; i < freedHslots.length; i++) {
-                lightmapElement.lightmapper.buffers.free(freedHslots[i]);
-              }
-
-              worker.respond(id, null);
-            }); */
-        } else {
-          console.warn('heightfield got unknown worker request method:', JSON.stringify(method));
-        }
-      } else if (type === 'removeLightmap') {
-        throw new Error('not implemented');
-
-        /* const {shapeId} = data;
-
-        elements.requestElement(LIGHTMAP_PLUGIN)
-          .then(lightmapElement => {
-            lightmapElement.lightmapper.worker.removeShape(shapeId);
-          }); */
+        console.warn('heightfield got unknown worker request method:', JSON.stringify(method)); // XXX */
       } else {
         console.warn('heightfield got unknown worker message type:', JSON.stringify(type));
       }
     };
-
-    /* let refreshingLightmaps = false;
-    const refreshingLightmapsQueue = [];
-    const _refreshLightmaps = refreshed => {
-      if (!refreshingLightmaps) {
-        refreshingLightmaps = true;
-
-        (() => {
-          let wordOffset = 0;
-          const uint32Array = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset);
-          const int32Array = new Int32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset);
-
-          uint32Array[wordOffset] = refreshed.length;
-          wordOffset++;
-          for (let i = 0; i < refreshed.length; i++) {
-            const trackedMapChunkMeshes = refreshed[i];
-            const {offset: {x, y}} = trackedMapChunkMeshes;
-
-            int32Array[wordOffset + 0] = x;
-            int32Array[wordOffset + 1] = y;
-            wordOffset += 2;
-          }
-        })();
-
-        worker.requestLightmaps(lightmapBuffer, newLightmapBuffer => {
-          const uint32Array = new Uint32Array(newLightmapBuffer.buffer, newLightmapBuffer.byteOffset);
-          const int32Array = new Int32Array(newLightmapBuffer.buffer, newLightmapBuffer.byteOffset);
-
-          let byteOffset = 0;
-          const numLightmaps = uint32Array[byteOffset / 4];
-          byteOffset += 4;
-
-          for (let i = 0; i < numLightmaps; i++) {
-            const x = int32Array[byteOffset / 4];
-            byteOffset += 4;
-            const z = int32Array[byteOffset / 4];
-            byteOffset += 4;
-
-            const skyLightmapsLength = uint32Array[byteOffset / 4];
-            byteOffset += 4;
-
-            const newSkyLightmaps = new Uint8Array(newLightmapBuffer.buffer, newLightmapBuffer.byteOffset + byteOffset, skyLightmapsLength);
-            byteOffset += skyLightmapsLength;
-            let alignDiff = byteOffset % 4;
-            if (alignDiff > 0) {
-              byteOffset += 4 - alignDiff;
-            }
-
-            const torchLightmapsLength = uint32Array[byteOffset / 4];
-            byteOffset += 4;
-
-            const newTorchLightmaps = new Uint8Array(newLightmapBuffer.buffer, newLightmapBuffer.byteOffset + byteOffset, torchLightmapsLength);
-            byteOffset += torchLightmapsLength;
-            alignDiff = byteOffset % 4;
-            if (alignDiff > 0) {
-              byteOffset += 4 - alignDiff;
-            }
-
-            const trackedMapChunkMeshes = mapChunkMeshes[_getChunkIndex(x, z)];
-            if (trackedMapChunkMeshes) {
-              if (newSkyLightmaps.length > 0) {
-                const {index, skyLightmaps} = trackedMapChunkMeshes;
-                skyLightmaps.set(newSkyLightmaps);
-                renderer.updateAttribute(heightfieldObject.geometry.attributes.skyLightmap, index * skyLightmaps.length, newSkyLightmaps.length, false);
-              }
-              if (newTorchLightmaps.length > 0) {
-                const {index, torchLightmaps} = trackedMapChunkMeshes;
-                torchLightmaps.set(newTorchLightmaps);
-                renderer.updateAttribute(heightfieldObject.geometry.attributes.torchLightmap, index * torchLightmaps.length, newTorchLightmaps.length, false);
-              }
-            }
-          }
-
-          lightmapBuffer = newLightmapBuffer;
-
-          refreshingLightmaps = false;
-          if (refreshingLightmapsQueue.length > 0) {
-            _refreshLightmaps(refreshingLightmapsQueue.shift());
-          }
-        });
-      } else {
-        refreshingLightmapsQueue.push(refreshed);
-      }
-    }; */
-
-    /* let Lightmapper = null;
-    let lightmapper = null;
-    const _bindLightmapper = lightmapElement => {
-      Lightmapper = lightmapElement.Lightmapper;
-      lightmapper = lightmapElement.lightmapper;
-
-      _bindLightmaps();
-    };
-    const _unbindLightmapper = () => {
-      _unbindLightmaps();
-
-      Lightmapper = null;
-      lightmapper = null;
-    };
-    const _bindLightmaps = () => {
-      for (const index in mapChunkMeshes) {
-        const trackedMapChunkMeshes = mapChunkMeshes[index];
-        if (trackedMapChunkMeshes) {
-          _bindLightmap(trackedMapChunkMeshes);
-        }
-      }
-    };
-    const _unbindLightmaps = () => {
-      for (const index in mapChunkMeshes) {
-        const trackedMapChunkMeshes = mapChunkMeshes[index];
-        if (trackedMapChunkMeshes && trackedMapChunkMeshes.lightmap) {
-          _unbindLightmap(trackedMapChunkMeshes);
-        }
-      }
-    };
-    const _bindLightmap = trackedMapChunkMeshes => {
-      const {offset, staticHeightfield} = trackedMapChunkMeshes;
-      const {x, y} = offset;
-
-      const dayNightSkyboxEntity = elements.getEntitiesElement().querySelector(DAY_NIGHT_SKYBOX_PLUGIN);
-      const sunIntensity = (dayNightSkyboxEntity && dayNightSkyboxEntity.getSunIntensity) ? dayNightSkyboxEntity.getSunIntensity() : 0;
-      const shape = new Lightmapper.Heightfield(x * NUM_CELLS, y * NUM_CELLS, sunIntensity, staticHeightfield, Lightmapper.MaxBlend);
-      lightmapper.add(shape);
-      trackedMapChunkMeshes.shape = shape;
-    };
-    const _unbindLightmap = trackedMapChunkMeshes => {
-      lightmapper.remove(trackedMapChunkMeshes.shape);
-      trackedMapChunkMeshes.shape = null;
-    }; */
-    /* const elementListener = elements.makeListener(LIGHTMAP_PLUGIN);
-    elementListener.on('add', lightmapElement => {
-      lightmapElement.lightmapper.on('update', ([minX, minZ, maxX, maxZ]) => {
-        const refreshed = [];
-        for (const index in mapChunkMeshes) {
-          const trackedMapChunkMeshes = mapChunkMeshes[index];
-          if (trackedMapChunkMeshes) {
-            const {offset: {x, y: z}} = trackedMapChunkMeshes;
-
-            if (x >= minX && x < maxX && z >= minZ && z < maxZ) {
-              refreshed.push(trackedMapChunkMeshes);
-            }
-          }
-        }
-        if (refreshed.length > 0) {
-          _refreshLightmaps(refreshed);
-        }
-      });
-    }); */
-    /* elementListener.on('remove', () => {
-      _unbindLightmapper();
-    }); */
 
     return Promise.all([
       new Promise((accept, reject) => {
@@ -780,18 +533,12 @@ class Heightfield {
               geometry,
               material: heightfieldMaterial,
               groups: [],
-              /* groups: [{
-                start: 0,
-                count: Infinity,
-                materialIndex: 0,
-              }], */
               visible: false,
             },
             {
               object: heightfieldObject,
               geometry,
               material: oceanMaterial,
-              // material: heightfieldMaterial,
               groups: [],
               visible: false,
             },
@@ -920,25 +667,6 @@ class Heightfield {
         let mapChunkMeshes = {};
 
         const heightfieldObject = (() => {
-          /* const {positions, colors, skyLightmaps, torchLightmaps, indices} = geometryBuffer.getAll();
-
-          const geometry = new THREE.BufferGeometry();
-          const positionAttribute = new THREE.BufferAttribute(positions, 3);
-          positionAttribute.dynamic = true;
-          geometry.addAttribute('position', positionAttribute);
-          const colorAttribute = new THREE.BufferAttribute(colors, 3);
-          colorAttribute.dynamic = true;
-          geometry.addAttribute('color', colorAttribute);
-          const skyLightmapAttribute = new THREE.BufferAttribute(skyLightmaps, 1, true);
-          skyLightmapAttribute.dynamic = true;
-          geometry.addAttribute('skyLightmap', skyLightmapAttribute);
-          const torchLightmapAttribute = new THREE.BufferAttribute(torchLightmaps, 1, true);
-          torchLightmapAttribute.dynamic = true;
-          geometry.addAttribute('torchLightmap', torchLightmapAttribute);
-          const indexAttribute = new THREE.BufferAttribute(indices, 1);
-          indexAttribute.dynamic = true;
-          geometry.setIndex(indexAttribute); */
-
           const mesh = new THREE.Object3D();
           mesh.updateModelViewMatrix = _updateModelViewMatrix;
           mesh.updateNormalMatrix = _updateNormalMatrix;
